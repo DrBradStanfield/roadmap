@@ -10,7 +10,7 @@ round 2 on v2 (11 + 3). v3 folds in round 2's findings; review rounds are
 used up, so those changes are unreviewed until the first build review.
 Codex could not see the claude_business tools; the adversary checked them.
 Earlier analysis: [chat-topic-masters-proposal-2026-10-20.md](chat-topic-masters-proposal-2026-10-20.md).
-Stories: extends US-15 (chat) and US-42 (knowledge refresh).
+Story: US-50 (extends US-15 and US-42). Approved by Brad 2026-10-20 (D14–D20).
 
 ## The problem in one paragraph
 
@@ -40,6 +40,13 @@ most out of date.
 | D11 | All 113 masters now, in batches. |
 | D12 | Masters live in this repo's `docs/blog/`; triggers and source checks live in claude_business (`/blog-post`, supplement-wiki tooling). This is the existing split. |
 | D13 | ConsumerLab rules stand: our own words, never its proprietary sections, raw text never in the repo. |
+| D14 | Hide only single-subject posts; mixed posts stay routable; drug posts never link to a supplement master. |
+| D15 | A post hides only once its master was reviewed on or after the post's date, batch by batch, with an off switch. |
+| D16 | Harness runs use the brad@microvitamin.com Claude API account. |
+| D17 | Topics Brad has no video on carry a "Current evidence position", never his view. |
+| D18 | US-42 AC1, AC5, AC6 and AC8 amended for masters (done in docs/user-stories.md, with US-50). |
+| D19 | Monthly ConsumerLab checks run as a scheduled local session; Brad accepts ConsumerLab's terms risk. The YouTube bot may say publicly that his view changed. |
+| D20 | With Codex out of quota, masters publish on the Opus adversary alone. microvitamin.com copies publish when their master publishes. |
 
 ## What changed from v1, and why
 

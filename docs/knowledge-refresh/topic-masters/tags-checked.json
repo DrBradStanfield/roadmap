@@ -1,0 +1,2327 @@
+[
+  {
+    "handle": "1-394-person-study-on-taurine-proves-what-we-suspected",
+    "title": "1,394 Person Study on Taurine Proves What We Suspected",
+    "publishedAt": "2026-02-12T21:13:15Z",
+    "topics": [
+      "taurine-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Taurine trials and meta-analysis throughout.",
+    "changed_from_proposal": false,
+    "check_note": "Only taurine; magnesium taurate appears only as the taurine delivery form."
+  },
+  {
+    "handle": "12-product-beats-every-anti-aging-cream",
+    "title": "$12 Product Beats Every Anti-Aging Cream",
+    "publishedAt": "2026-06-26T08:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "120-years-of-exercise-history",
+    "title": "120 Years of Exercise Training History (learn from these mistakes)",
+    "publishedAt": "2025-09-15T00:17:53Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "25-reduction-in-skin-wrinkles-after-8-weeks-new-collagen-study",
+    "title": "25% Reduction in Skin Wrinkles After 8 Weeks (New Collagen Study)",
+    "publishedAt": "2025-06-11T22:02:52Z",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Collagen study, plus hyaluronic acid and sunscreen sections.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "5-livesaving-blog-tests",
+    "title": "The 5 Lifesaving Blood Tests EVERYONE Must Get!",
+    "publishedAt": "2024-09-04T05:32:23Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "5-supplements-that-actually-work",
+    "title": "5 Supplements That ACTUALLY Work",
+    "publishedAt": "2025-10-05T20:31:48Z",
+    "topics": [
+      "psyllium-benefits-forms-dosing-and-side-effects",
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+      "creatine-benefits-best-forms-dosing-and-side-effects",
+      "melatonin-benefits-forms-dosing-and-side-effects",
+      "magnesium-benefits-best-forms-dosing",
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "vitamin-k-benefits-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Multi-supplement stack post.",
+    "changed_from_proposal": true,
+    "check_note": "Added magnesium, vitamin D, vitamin K2 and B-vitamin sub-sections; also covers TMG (no master)."
+  },
+  {
+    "handle": "99-of-heart-attacks-had-this-prior-warning",
+    "title": "99% of Heart Attacks Had This Prior Warning",
+    "publishedAt": "2026-05-08T02:05:49Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "a-healthy-blood-pressure-is-wrecking-your-brain-new-study",
+    "title": "A “Healthy” Blood Pressure is WRECKING Your Brain! (New Study)",
+    "publishedAt": "2025-02-25T23:56:58Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "almost-all-turmeric-curcumin-brands-are-a-scam",
+    "title": "Almost All Turmeric (Curcumin) Brands Are a Scam",
+    "publishedAt": "2026-02-09T23:57:17Z",
+    "topics": [
+      "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is turmeric/curcumin.",
+    "changed_from_proposal": false,
+    "check_note": "Only turmeric/curcumin: research critique, indications, brand quality, dosing."
+  },
+  {
+    "handle": "alpha-lipoic-acid-antioxidant",
+    "title": "Alpha-Lipoic Acid: A Potent (But Potentially DAMAGING) Antioxidant",
+    "publishedAt": "2024-09-14T03:22:51Z",
+    "topics": [
+      "alpha-lipoic-acid-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is alpha-lipoic acid.",
+    "changed_from_proposal": false,
+    "check_note": "Only alpha-lipoic acid: uses, risks, forms."
+  },
+  {
+    "handle": "an-evidence-based-anti-aging-skincare-routine",
+    "title": "An Evidence-Based Anti-Aging Skincare Routine",
+    "publishedAt": "2025-09-07T21:16:10Z",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Skincare routine with a collagen section.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "anti-wrinkle-gel-cheap",
+    "title": "Retinoids: The World's #1 NIGHTLY Anti-Wrinkle Gel Is Stupidly Cheap",
+    "publishedAt": "2024-11-13T03:38:58Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "are-we-wrong-about-the-perfect-protein-intake",
+    "title": "Are We Wrong About the Perfect Protein Intake?",
+    "publishedAt": "2025-08-06T00:57:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Protein intake; no supplement master in focus.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "arthritis-breakthrough-from-a-common-6-drug",
+    "title": "Arthritis BREAKTHROUGH From a Common $6 Drug",
+    "publishedAt": "2025-06-03T01:26:25Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "ashwagandha-supplement-fails-in-new-study",
+    "title": "Ashwagandha Supplement Fails in New Study!",
+    "publishedAt": "2025-10-15T20:07:54Z",
+    "topics": [
+      "ashwagandha-benefits-forms-dosing-and-side-effects",
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Ashwagandha study, with a creatine-as-alternative section.",
+    "changed_from_proposal": true,
+    "check_note": "Added creatine: a full closing section recommends creatine over ashwagandha for performance and cognition."
+  },
+  {
+    "handle": "avoiding-cancer-easier-ever",
+    "title": "Why Avoiding Cancer is Now Easier Than Ever",
+    "publishedAt": "2024-11-04T03:29:43Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "benefits-apple-cider-vinegar",
+    "title": "What Are The Benefits of Apple Cider Vinegar Supplements?",
+    "publishedAt": "2024-09-06T04:03:40Z",
+    "topics": [
+      "apple-cider-vinegar-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is apple cider vinegar.",
+    "changed_from_proposal": false,
+    "check_note": "Only apple cider vinegar: blood sugar, weight, side effects."
+  },
+  {
+    "handle": "best-anti-wrinkle-cream",
+    "title": "The World's #1 Anti-Wrinkle Cream Is Ridiculously Cheap",
+    "publishedAt": "2024-10-22T02:04:46Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "best-diet-confirmed-by-5248916-person-year-study",
+    "title": "Best Diet Confirmed by 5,248,916 Person-Year Study",
+    "publishedAt": "2026-03-25T16:57:15Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "best-diet-for-a-longer-healthier-life",
+    "title": "These 20 Studies Reveal The BEST Diet for a Longer, Healthier Life",
+    "publishedAt": "2025-03-11T22:57:23Z",
+    "topics": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Diet post; nutrients mentioned in passing.",
+    "changed_from_proposal": true,
+    "check_note": "Added potassium: a substantive section on potassium intake and blood pressure; rest is diet (protein, fiber)."
+  },
+  {
+    "handle": "best-worst-forms-magnesium",
+    "title": "What Are the Best and Worst Forms of Magnesium to Take?",
+    "publishedAt": "2024-12-02T04:33:38Z",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is magnesium forms.",
+    "changed_from_proposal": false,
+    "check_note": "Only magnesium: deficiency, evidence, forms."
+  },
+  {
+    "handle": "blood-pressure-targets-just-changed",
+    "title": "Blood Pressure Targets Just Changed",
+    "publishedAt": "2025-11-26T19:24:41Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "blood-type-diet-needs",
+    "title": "The Blood Type Diet: Does Blood Type Dictate Dietary Needs?",
+    "publishedAt": "2024-12-07T00:20:31Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "brain-omega-3-discovery",
+    "title": "Your Brain on Omega-3, Tantalizing Discovery!",
+    "publishedAt": "2024-09-26T00:17:19Z",
+    "topics": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Omega-3 and B vitamins together.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "breaking-reduce-dementia-risk-45-percent",
+    "title": "BREAKING! Reduce Dementia Risk By 45%",
+    "publishedAt": "2024-08-22T02:25:09Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "build-muscle-faster-people",
+    "title": "Build Muscle Faster Than 99% of People By Doing This",
+    "publishedAt": "2024-08-29T19:37:29Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "calcium-rich-foods-diet",
+    "title": "How to Include More Calcium-Rich Foods in Your Diet",
+    "publishedAt": "2024-10-14T21:25:53Z",
+    "topics": [
+      "calcium-benefits-best-forms-dosing-and-side-effects",
+      "vitamin-d-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Dietary calcium plus vitamin D; food-focused.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "cancer-tests-you-need-right-now",
+    "title": "Cancer Tests You Need Right Now",
+    "publishedAt": "2026-01-16T22:43:52Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "collagen-peptides-can-fix-skin-wrinkles",
+    "title": "New Study Proves That Collagen Peptides Can Fix Skin Wrinkles!",
+    "publishedAt": "2025-03-12T23:28:06Z",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Whole post is collagen peptides for skin.",
+    "changed_from_proposal": true,
+    "check_note": "Collagen post that ends with a sunscreen/sun-protection recommendation (SPF 50); flipped to false because sunscreen has no master."
+  },
+  {
+    "handle": "completely-wrong-about-salt-new-study",
+    "title": "Completely WRONG About Salt (New Study)",
+    "publishedAt": "2026-04-01T19:38:46Z",
+    "topics": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Salt and blood pressure; potassium only in passing.",
+    "changed_from_proposal": true,
+    "check_note": "Added potassium: salt-substitute and potassium-intake section, matching the potassium tag on the salt-substitute post; mainly a sodium/diet post."
+  },
+  {
+    "handle": "concerning-omega-3-brain-study",
+    "title": "Concerning Omega-3 Brain Study",
+    "publishedAt": "2026-05-20T12:00:00Z",
+    "topics": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Omega-3 study with B-vitamin and oxidation caveats.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "controversial-supplement-cognitive-decline",
+    "title": "Controversial New Supplement: Can It Stop Cognitive Decline?",
+    "publishedAt": "2024-08-09T04:19:30Z",
+    "topics": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is multivitamin (COSMOS).",
+    "changed_from_proposal": false,
+    "check_note": "Only multivitamins (COSMOS cognition); vitamin A/E avoidance is framed as multivitamin selection."
+  },
+  {
+    "handle": "coronary-heart-disease-is-almost-eliminated",
+    "title": "Coronary Heart Disease is Almost ELIMINATED",
+    "publishedAt": "2026-02-08T19:17:34Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "creatine-fails-in-new-study-don-t-be-misled",
+    "title": "Creatine “FAILS” in New Study - Don’t Be Misled!",
+    "publishedAt": "2025-04-02T06:54:33Z",
+    "topics": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is creatine.",
+    "changed_from_proposal": false,
+    "check_note": "Only creatine: lean mass trial and performance benefits."
+  },
+  {
+    "handle": "current-evidence-does-not-support-zone-2-training",
+    "title": "\\\"Current Evidence Does NOT Support Zone 2 Training\\\"",
+    "publishedAt": "2025-08-29T18:23:08Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "david-sinclair-says-popular-peptide-causes-blindness",
+    "title": "David Sinclair Says Popular Peptide Causes Blindness",
+    "publishedAt": "2026-08-21T00:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "debunked-6-pill-found-to-reduce-heart-disease",
+    "title": "'Debunked' $6 Pill Found to Reduce Heart Disease",
+    "publishedAt": "2026-07-31T00:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "dementia-rates-plunged-in-study-of-1-million-people",
+    "title": "Dementia Rates PLUNGED in Study of 1 Million People",
+    "publishedAt": "2025-11-11T23:54:44Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "did-one-tiny-tweak-just-solve-heart-disease",
+    "title": "Did One Tiny Tweak Just Solve Heart Disease?",
+    "publishedAt": "2026-06-08T00:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "did-the-fda-just-approve-bpc-157",
+    "title": "Did the FDA Just Approve BPC-157?",
+    "publishedAt": "2026-07-25T20:19:44Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "diet-strongly-suspected-best",
+    "title": "Why This Diet is Strongly Suspected To Be The Best",
+    "publishedAt": "2024-10-14T22:54:37Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "difference-between-curcumin-turmeric",
+    "title": "FAQ: What's the Difference Between Curcumin and Turmeric?",
+    "publishedAt": "2024-09-13T20:30:03Z",
+    "topics": [
+      "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is turmeric/curcumin.",
+    "changed_from_proposal": false,
+    "check_note": "Only turmeric/curcumin: inflammation, weight, diabetes, arthritis, liver safety."
+  },
+  {
+    "handle": "difference-magnesium-oxide-glycinate",
+    "title": "What Is the Difference Between Magnesium Oxide and Glycinate?",
+    "publishedAt": "2024-10-06T22:16:11Z",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is magnesium forms.",
+    "changed_from_proposal": false,
+    "check_note": "Only magnesium: intake, deficiency testing, forms."
+  },
+  {
+    "handle": "do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead",
+    "title": "Do NOT Use Apple Cider Vinegar To Lose Weight (Use This Instead)",
+    "publishedAt": "2025-02-12T03:47:51Z",
+    "topics": [
+      "apple-cider-vinegar-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "ACV plus diet alternatives for weight loss.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "do-this-daily-to-stop-bone-loss-after-40",
+    "title": "Do This Daily to STOP Bone Loss After 40",
+    "publishedAt": "2025-07-03T02:07:16Z",
+    "topics": [
+      "calcium-benefits-best-forms-dosing-and-side-effects",
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "vitamin-k-benefits-forms-dosing-and-side-effects",
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Exercise first, then bone supplements.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "do-this-now-to-lower-your-heart-disease-risk-by-21",
+    "title": "Do This Now to Lower Your Heart Disease Risk by 21%",
+    "publishedAt": "2025-06-30T18:04:01Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "do-what-to-your-balls-to-increase-lifespan",
+    "title": "Do WHAT to Your Balls to Increase Lifespan??!",
+    "publishedAt": "2026-01-19T23:37:28Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "doctor-recommended-intermittent-fasting-hack-that-actually-works",
+    "title": "Doctor Recommended Intermittent Fasting Hack That ACTUALLY Works",
+    "publishedAt": "2025-04-30T00:47:26Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "doctor-reveals-why-he-takes-glycine-every-day",
+    "title": "Doctor Reveals Why He Takes Glycine Every Day",
+    "publishedAt": "2025-05-27T22:11:28Z",
+    "topics": [
+      "glycine-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is glycine.",
+    "changed_from_proposal": false,
+    "check_note": "Only glycine: longevity, sleep, metabolic, heart, brain."
+  },
+  {
+    "handle": "does-vitamin-k2-actually-protect-your-heart-new-trial",
+    "title": "Does Vitamin K2 Actually Protect Your Heart? (New Trial)",
+    "publishedAt": "2026-06-29T12:00:00Z",
+    "topics": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "K2 trial on arterial calcification.",
+    "changed_from_proposal": false,
+    "check_note": "Only vitamin K2 (heart trial, calcium paradox, bone, MK-7 stability, warfarin); statins appear as a one-paragraph analogy."
+  },
+  {
+    "handle": "eat-real-food-i-was-wrong",
+    "title": "Eat Real Food — I Was Wrong",
+    "publishedAt": "2026-01-19T23:37:09Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "exaple-home-workout-schedule",
+    "title": "Example Home-Based Workout Schedules That Are Scientifically Proven",
+    "publishedAt": "2024-06-26T20:28:40Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "exercise-is-the-closest-thing-we-have-to-the-fountain-of-youth",
+    "title": "Exercise is the Closest Thing We Have to the Fountain of Youth",
+    "publishedAt": "2025-07-17T22:34:02Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "exercise-snacks-are-a-longevity-cheat-code",
+    "title": "Exercise Snacks Are a Longevity Cheat Code",
+    "publishedAt": "2025-12-10T20:27:49Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "experts-were-wrong-about-testosterone-shocking-new-proof",
+    "title": "Experts Were WRONG About Testosterone (Shocking New Proof)",
+    "publishedAt": "2025-11-15T23:06:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "ezetimibe-is-the-most-underrated-weapon-against-heart-disease",
+    "title": "Ezetimibe is the Most Underrated Weapon Against Heart Disease",
+    "publishedAt": "2025-05-23T03:10:34Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "fastest-reverse-skin-aging",
+    "title": "The FASTEST Way To Reverse The Signs of Skin Aging",
+    "publishedAt": "2024-08-11T19:58:36Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "low",
+    "reason": "Skin routine with a brief supplements section.",
+    "changed_from_proposal": true,
+    "check_note": "Removed collagen: it appears only as one bullet; the post is a skincare routine (retinoids, AHAs, sunscreen, diet, exercise, sleep)."
+  },
+  {
+    "handle": "fatty-liver-treatment-breakthrough",
+    "title": "Fatty Liver Treatment BREAKTHROUGH",
+    "publishedAt": "2025-10-30T21:45:08Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "fix-gout-without-giving-up-meat",
+    "title": "Fix Gout Without Giving Up Meat",
+    "publishedAt": "2026-07-13T12:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "food-proven-trigger-gout",
+    "title": "What Types of Food Are Proven to Trigger Gout?",
+    "publishedAt": "2024-11-18T20:48:50Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "foods-help-unclog-arteries",
+    "title": "Myth Busting: Can Foods Help You Unclog Your Arteries?",
+    "publishedAt": "2024-09-10T20:19:42Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "hard-to-believe-dementia-effects-found",
+    "title": "These Diabetes Drugs May Also Slash Dementia Rates",
+    "publishedAt": "2025-07-13T22:34:36Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "harvard-says-this-is-the-healthiest-way-to-eat",
+    "title": "Harvard Says THIS Is the Healthiest Way to Eat",
+    "publishedAt": "2025-08-14T19:50:15Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "how-to-correctly-use-hyaluronic-acid-to-reverse-wrinkles-by-18",
+    "title": "How to Correctly Use Hyaluronic Acid to Reverse Wrinkles by 18%",
+    "publishedAt": "2025-04-24T01:49:02Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Hyaluronic acid has no master.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "how-to-prevent-a-heart-attack-for-5-45",
+    "title": "How to Prevent a Heart Attack for $5.45",
+    "publishedAt": "2025-02-04T23:48:02Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "hrt-just-changed",
+    "title": "HRT Just Changed",
+    "publishedAt": "2026-01-16T00:00:34Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "human-studies-nmn-supplements",
+    "title": "Human Studies on NMN Supplements: Are There Any Benefits?",
+    "publishedAt": "2024-11-07T22:07:19Z",
+    "topics": [
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is NMN/NAD boosters.",
+    "changed_from_proposal": false,
+    "check_note": "Only NMN/NAD boosters; niacin mortality concern is framed as NMN safety."
+  },
+  {
+    "handle": "i-got-a-full-body-mri-heres-why-you-shouldnt",
+    "title": "I Got a Full-Body MRI. Here's Why You Shouldn't.",
+    "publishedAt": "2026-04-01T19:40:22Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "i-was-wrong-about-red-light-masks-skin-aging",
+    "title": "I Was Wrong About Red Light Masks & Skin Aging",
+    "publishedAt": "2025-03-24T00:02:57Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "if-we-re-wearing-sunscreen-why-are-skin-cancer-rates-still-rising",
+    "title": "If We’re Wearing Sunscreen… Why Are Skin Cancer Rates STILL Rising?",
+    "publishedAt": "2025-08-14T00:22:32Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "if-you-re-struggling-to-find-time-to-exercise-read-this",
+    "title": "If you’re struggling to find time to exercise, read this",
+    "publishedAt": "2025-06-04T02:39:33Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "iron-supplementation-good-health",
+    "title": "Iron Benefits: Is Iron Supplementation Good for Your Health?",
+    "publishedAt": "2024-09-26T14:30:01Z",
+    "topics": [
+      "iron-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is iron supplements.",
+    "changed_from_proposal": false,
+    "check_note": "Only iron: intake, deficiency, supplement risks."
+  },
+  {
+    "handle": "is-the-berberine-hype-justified-should-you-take-it",
+    "title": "Is the Berberine Hype Justified & Should You Take It?",
+    "publishedAt": "2025-04-28T17:51:00Z",
+    "topics": [
+      "berberine-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Berberine, but also metformin, exercise and other options.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "ive-never-seen-anything-like-this-in-cancer-research",
+    "title": "I've Never Seen Anything Like This in Cancer Research",
+    "publishedAt": "2026-06-10T12:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "jeremy-clarkson-says-to-lie-to-your-doctor",
+    "title": "Jeremy Clarkson says to Lie to Your Doctor",
+    "publishedAt": "2026-07-22T21:24:12Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "lean-mass-hyper-responders-see-rapid-plaque-progression",
+    "title": "Lean Mass Hyper-Responders See Rapid Plaque Progression",
+    "publishedAt": "2025-04-16T22:47:20Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "lipoproteina",
+    "title": "Lipoprotein(a) is a Cheap, One-Time Blood Test Could Save Your Life",
+    "publishedAt": "2025-07-16T00:05:32Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "liposomal-vitamin-c-worth",
+    "title": "Is Liposomal Vitamin C Worth the Money or a Useless Fad?",
+    "publishedAt": "2024-12-09T15:30:08Z",
+    "topics": [
+      "vitamin-c-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is vitamin C (liposomal).",
+    "changed_from_proposal": false,
+    "check_note": "Only vitamin C (liposomal vs standard)."
+  },
+  {
+    "handle": "lizard-venom-regrows-irreplaceable-cartilage",
+    "title": "Lizard Venom Regrows 'Irreplaceable' Cartilage",
+    "publishedAt": "2026-04-29T12:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "longevity-experts-warning-fasting",
+    "title": "Why Longevity Experts Are Warning Against Fasting",
+    "publishedAt": "2024-08-22T00:56:03Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "lose-visceral-fat-without-starving-yourself",
+    "title": "Lose Visceral Fat Without Starving Yourself",
+    "publishedAt": "2026-08-05T12:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "losing-weight-intermittent-fasting",
+    "title": "5 Reasons You Aren't Losing Weight with Intermittent Fasting",
+    "publishedAt": "2025-01-03T15:30:01Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "low-dose-lithium-crushes-dementia",
+    "title": "Low-Dose Lithium CRUSHES Dementia & Brain Aging?",
+    "publishedAt": "2025-09-09T00:29:58Z",
+    "topics": [
+      "lithium-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is low-dose lithium.",
+    "changed_from_proposal": false,
+    "check_note": "Only lithium (Alzheimer's study, forms, dietary sources)."
+  },
+  {
+    "handle": "magnesium-l-threonate-effects-sleep",
+    "title": "Magnesium L-Threonate and Its Effects on Sleep Quality",
+    "publishedAt": "2024-06-12T20:32:54Z",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is magnesium L-threonate.",
+    "changed_from_proposal": false,
+    "check_note": "Only magnesium (L-threonate and sleep, interactions, side effects)."
+  },
+  {
+    "handle": "medications-potentially-improve-longevity",
+    "title": "Which Medications Can Potentially Improve Your Longevity?",
+    "publishedAt": "2024-07-18T23:19:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "men-over-50-read-this-before-using-trt-testosterone-therapy",
+    "title": "Men Over 50, Read THIS Before Using TRT/Testosterone Therapy",
+    "publishedAt": "2025-03-02T16:40:02Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "methylated-multivitamin-regular-ones",
+    "title": "Methylated Multivitamin vs Regular Ones: Which is Better?",
+    "publishedAt": "2024-11-28T07:00:07Z",
+    "topics": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Multivitamin form and methylated B vitamins.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "microdosing-tirzepatide-ozempic-glp1-for-longevity",
+    "title": "Microdosing Tirzepatide & Ozempic (GLP-1) for Longevity",
+    "publishedAt": "2025-10-22T04:35:09Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "mistakes-people-make-magnesium",
+    "title": "Which Mistakes Do Most People Make with Magnesium?",
+    "publishedAt": "2024-07-09T18:36:45Z",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is magnesium.",
+    "changed_from_proposal": false,
+    "check_note": "Only magnesium: testing, evidence, forms, dosing."
+  },
+  {
+    "handle": "mobile-iv-vitamin-therapy",
+    "title": "Mobile Vitamin IV Therapy: Does It Work and Should You Try It?",
+    "publishedAt": "2024-10-22T02:07:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "IV therapy, not a supplement master.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "more-exercise-more-plaque",
+    "title": "More Exercise, More Plaque?",
+    "publishedAt": "2026-03-10T23:24:23Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "more-vitamins-worse-health-new-trial",
+    "title": "They Had to Stop This Vitamin C Trial Early",
+    "publishedAt": "2026-07-08T12:00:00Z",
+    "topics": [
+      "vitamin-c-benefits-forms-dosing-and-side-effects",
+      "vitamin-e-benefits-forms-dosing-and-side-effects",
+      "vitamin-a-benefits-forms-dosing-and-side-effects",
+      "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Antioxidant vitamins that backfire.",
+    "changed_from_proposal": true,
+    "check_note": "Added lutein/zeaxanthin (AREDS2 section and brain frontier); also covers IV vitamin C trials, metformin, resveratrol, GlyNAC."
+  },
+  {
+    "handle": "multivitamin-contains-enough-riboflavin",
+    "title": "How to Know If Your Multivitamin Contains Enough Riboflavin",
+    "publishedAt": "2024-09-18T03:06:10Z",
+    "topics": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Riboflavin in multivitamins.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "multivitamins-are-no-longer-expensive-urine",
+    "title": "Multivitamins Are No Longer \"Expensive Urine\"",
+    "publishedAt": "2026-08-19T00:00:00Z",
+    "topics": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+      "vitamin-a-benefits-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects",
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Multivitamin evidence, with lutein and B6 sub-points.",
+    "changed_from_proposal": true,
+    "check_note": "Multivitamin case plus substantive sections on beta-carotene/AREDS2 lutein, B6 toxicity and riboflavin, VITACOG omega-3 with B vitamins, and the WHO dementia guideline."
+  },
+  {
+    "handle": "nasa-found-how-to-stop-osteoporosis",
+    "title": "NASA Found How To Stop Osteoporosis",
+    "publishedAt": "2026-08-07T12:00:00Z",
+    "topics": [
+      "calcium-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "low",
+    "reason": "Exercise-led osteoporosis post with a calcium step.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "new-studies-reveal-the-best-type-of-intermittent-fasting",
+    "title": "New Studies Reveal the BEST Type of Intermittent Fasting",
+    "publishedAt": "2025-02-06T23:11:41Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "new-study-just-crushed-the-coffee-health-controversy",
+    "title": "New Study Just Crushed the Coffee Health Controversy",
+    "publishedAt": "2025-05-22T01:05:30Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "new-study-reveals-the-best-exercise-to-reverse-skin-wrinkles",
+    "title": "New Study Reveals the BEST Exercise to Reverse Skin Wrinkles",
+    "publishedAt": "2025-04-30T00:47:40Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "new-study-reveals-the-best-exercise-to-treat-knee-arthritis",
+    "title": "New Study Reveals the BEST Exercise to Treat Knee Arthritis",
+    "publishedAt": "2026-01-11T22:03:32Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "new-study-says-i-was-wrong-about-nmn-and-nr",
+    "title": "New Study Says I Was Wrong About NMN and NR?",
+    "publishedAt": "2026-04-09T12:00:00Z",
+    "topics": [
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is NMN/NR.",
+    "changed_from_proposal": false,
+    "check_note": "Only NMN/NR and NAD; exercise mentioned in one closing sentence."
+  },
+  {
+    "handle": "new-vitamin-d-study-on-telomeres-and-aging",
+    "title": "New Vitamin D Study on Telomeres and Aging",
+    "publishedAt": "2025-10-16T20:05:51Z",
+    "topics": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Whole post is vitamin D.",
+    "changed_from_proposal": true,
+    "check_note": "Vitamin D telomere trial plus a substantive section on telomere-length testing (qPCR error, telomere-mortality cohorts, longevity-clinic testing), a test topic with no master."
+  },
+  {
+    "handle": "nmn-nad-supplements-for-anti-aging-just-changed",
+    "title": "NMN & NAD Supplements for Anti-Aging Just Changed",
+    "publishedAt": "2026-01-11T22:03:17Z",
+    "topics": [
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Whole post is NMN/NR.",
+    "changed_from_proposal": true,
+    "check_note": "NMN/NR post with a headed TMG section (TMG has no master) plus calorie-restriction history."
+  },
+  {
+    "handle": "no-evidence-to-support-the-use-of-collagen-supplements",
+    "title": "\\\"No Evidence to Support the Use of Collagen Supplements\\\"",
+    "publishedAt": "2025-08-27T21:15:34Z",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is a collagen meta-analysis.",
+    "changed_from_proposal": false,
+    "check_note": "Only collagen (2024 meta-analysis critique, mechanism)."
+  },
+  {
+    "handle": "nutrient-deficiency-blood-pressure",
+    "title": "The #1 Nutrient Deficiency in High Blood Pressure",
+    "publishedAt": "2024-12-07T00:41:36Z",
+    "topics": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Potassium and blood pressure; blood pressure is not a master.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "older-adults-seniors-creatine-supplements",
+    "title": "Can Older Adults and Seniors Still Take Creatine Supplements?",
+    "publishedAt": "2024-07-01T01:37:47Z",
+    "topics": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is creatine.",
+    "changed_from_proposal": false,
+    "check_note": "Only creatine (brain, kidney, hair loss, dosing)."
+  },
+  {
+    "handle": "omega-3-breakthrough-cuts-major-heart-events-by-43",
+    "title": "Omega-3 Breakthrough Cuts Major Heart Events by 43%",
+    "publishedAt": "2025-12-10T00:17:45Z",
+    "topics": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Whole post is omega-3.",
+    "changed_from_proposal": true,
+    "check_note": "Omega-3 dialysis trial post with headed sections on statins and spironolactone in dialysis patients (drug content)."
+  },
+  {
+    "handle": "omega-3-heart-arrhythmia",
+    "title": "New Study Links Omega-3 to Increased Heart Arrhythmia Risk",
+    "publishedAt": "2024-07-11T21:04:17Z",
+    "topics": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is omega-3.",
+    "changed_from_proposal": false,
+    "check_note": "Only omega-3 (atrial fibrillation study, trials, dosing)."
+  },
+  {
+    "handle": "only-supplements-work-2025",
+    "title": "The Only Supplements That ACTUALLY Work (2025)",
+    "publishedAt": "2024-11-19T03:13:05Z",
+    "topics": [
+      "creatine-benefits-best-forms-dosing-and-side-effects",
+      "protein-powders-benefits-types-dosing-and-side-effects",
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+      "psyllium-benefits-forms-dosing-and-side-effects",
+      "collagen-benefits-best-forms-dosing-and-side-effects",
+      "melatonin-benefits-forms-dosing-and-side-effects",
+      "glutathione-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Multi-supplement stack post.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "our-iq-will-start-dropping-soon-new-evidence",
+    "title": "Our IQ Will Start Dropping Soon (new evidence)",
+    "publishedAt": "2026-08-27T20:16:10Z",
+    "topics": [
+      "kelp-and-iodine-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Iodine deficiency and iodized salt policy.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "pcsk9i-breakthrough-cuts-heart-disease",
+    "title": "PCSK9i Breakthrough Cuts Heart Disease by 25%",
+    "publishedAt": "2025-12-16T20:07:50Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "peanut-allergies",
+    "title": "Doctors Needed to Do a Fast U-Turn on Peanut Allergies",
+    "publishedAt": "2026-01-27T22:29:09Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "popular-longevity-treatment-makes-you-sick",
+    "title": "Popular Longevity Treatment Makes You Sick",
+    "publishedAt": "2025-11-20T19:11:54Z",
+    "topics": [
+      "taurine-benefits-forms-dosing-and-side-effects",
+      "vitamin-c-benefits-forms-dosing-and-side-effects",
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "IV drip clinics, not a supplement master.",
+    "changed_from_proposal": true,
+    "check_note": "Added taurine, vitamin C and NAD+ (headed sections on IV infusions of each); mainly an IV-clinic risk post."
+  },
+  {
+    "handle": "popular-supplements-try-avoid",
+    "title": "Which Popular Supplements Should You Actually Try to Avoid?",
+    "publishedAt": "2024-08-11T19:43:34Z",
+    "topics": [
+      "vitamin-a-benefits-forms-dosing-and-side-effects",
+      "vitamin-c-benefits-forms-dosing-and-side-effects",
+      "vitamin-e-benefits-forms-dosing-and-side-effects",
+      "resveratrol-benefits-forms-dosing-and-side-effects",
+      "iron-benefits-forms-dosing-and-side-effects",
+      "calcium-benefits-best-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects",
+      "coq10-benefits-best-forms-dosing-and-side-effects",
+      "pqq-benefits-forms-dosing-and-side-effects",
+      "weight-loss-supplements-benefits-evidence-and-safety",
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Supplements-to-avoid list, plus metformin.",
+    "changed_from_proposal": true,
+    "check_note": "Added CoQ10/PQQ (headed section), fat-burner supplements and NR/NMN (niacin section); also covers metformin."
+  },
+  {
+    "handle": "resting-heart-rate-health",
+    "title": "How Does Your Resting Heart Rate Reflect Your Health?",
+    "publishedAt": "2024-10-28T23:50:50Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "reverse-signs-skin-aging",
+    "title": "How To Reverse the Signs of Skin Aging (Latest Protocol)",
+    "publishedAt": "2024-12-17T01:24:10Z",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Skin routine with a collagen section.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "ridiculously-cheap-ways-to-treat-skin-aging",
+    "title": "Ridiculously Cheap Ways to Treat Skin Aging",
+    "publishedAt": "2026-03-10T23:22:17Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "salt-substitutes-can-slash-your-death-risk-by-12",
+    "title": "Salt-Substitutes Can Slash Your 5-Year Death Risk by 12%",
+    "publishedAt": "2025-04-02T06:44:05Z",
+    "topics": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Potassium-chloride salt substitute RCT.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "scientists-just-found-an-easy-way-to-cut-dementia-risk-by-15",
+    "title": "Scientists Just Found an EASY Way to Cut Dementia Risk By 15%",
+    "publishedAt": "2025-05-20T20:21:44Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "seed-oils-toxic-inflammatory",
+    "title": "Are Seed Oils Toxic and Inflammatory?",
+    "publishedAt": "2024-09-29T01:35:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "shingles-vaccine-dementia",
+    "title": "The EXACT Moment I Stopped Fearing Dementia",
+    "publishedAt": "2025-12-23T18:44:46Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "shocking-study-links-melatonin-to-89-heart-failure-spike",
+    "title": "Shocking Study Links MELATONIN to 89% Heart Failure Spike",
+    "publishedAt": "2025-11-23T19:52:54Z",
+    "topics": [
+      "melatonin-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is melatonin safety.",
+    "changed_from_proposal": false,
+    "check_note": "Only melatonin (heart failure observational study critique, dosing)."
+  },
+  {
+    "handle": "should-you-be-taking-bpc-157-peptides",
+    "title": "Should YOU Be Taking BPC-157 Peptides?",
+    "publishedAt": "2025-02-16T20:15:44Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "should-you-use-ozempic-glp-1-weight-loss-meds-nuanced-answer",
+    "title": "Should You Use Ozempic (GLP-1) Weight Loss Meds? Nuanced Answer",
+    "publishedAt": "2025-02-22T07:41:55Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "shrink-the-fat-around-your-heart",
+    "title": "Shrink the Fat Around Your Heart",
+    "publishedAt": "2026-07-16T08:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "sleep-apnea-brain-aging",
+    "title": "This Commonly Missed Diagnosis Can Rapidly Age Your Brain",
+    "publishedAt": "2025-09-21T13:50:15Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "sleep-schedule-wake-refreshed",
+    "title": "Example Sleep Schedule to Help You Wake Up Refreshed",
+    "publishedAt": "2024-07-26T20:58:47Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Sleep habits; melatonin mentioned briefly.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "soon-well-forget-what-heart-attacks-are",
+    "title": "Soon We'll Forget What Heart Attacks Are",
+    "publishedAt": "2026-09-19T00:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "spend-40-dollars-avoid-dying-early",
+    "title": "Spend $40, Avoid Dying 12.2 Years Too Early",
+    "publishedAt": "2024-10-29T00:20:09Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "spirulina-significantly-improves-weight-in-new-study",
+    "title": "Spirulina “Significantly Improves Weight” in New Study",
+    "publishedAt": "2025-10-15T01:14:52Z",
+    "topics": [
+      "greens-powders-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Spirulina has no master.",
+    "changed_from_proposal": true,
+    "check_note": "Added greens powders: post is about spirulina, which the greens-powders master covers; also compares with DASH diet and fiber."
+  },
+  {
+    "handle": "stop-these-longevity-supplements-dangerous-side-effects",
+    "title": "Stop These Longevity Supplements (Dangerous Side Effects)",
+    "publishedAt": "2025-02-24T21:22:36Z",
+    "topics": [
+      "resveratrol-benefits-forms-dosing-and-side-effects",
+      "vitamin-c-benefits-forms-dosing-and-side-effects",
+      "vitamin-e-benefits-forms-dosing-and-side-effects",
+      "vitamin-a-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Longevity supplements to avoid, plus metformin.",
+    "changed_from_proposal": true,
+    "check_note": "Added vitamin A (mortality and toxicity paragraph in the vitamin E section); also covers metformin."
+  },
+  {
+    "handle": "study-exercise-blood-pressure",
+    "title": "New Study Reveals the BEST Exercise to Lower Blood Pressure",
+    "publishedAt": "2025-01-07T00:05:20Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "supplement-gummies-compared-capsules",
+    "title": "Are Supplement Gummies Effective Compared to Capsules?",
+    "publishedAt": "2025-01-29T16:30:07Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Dosage-form comparison, no single master.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "supplement-not-melatonin-improved-sleep-in-155-person-study",
+    "title": "Supplement (Not Melatonin) Improved Sleep in 155-Person Study",
+    "publishedAt": "2025-10-03T23:28:30Z",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "single_subject": true,
+    "confidence": "medium",
+    "reason": "Magnesium bisglycinate for sleep, with some sleep-strategy context.",
+    "changed_from_proposal": false,
+    "check_note": "Only magnesium (bisglycinate sleep trial, mechanisms, deficiency); eszopiclone appears only as a one-line comparison."
+  },
+  {
+    "handle": "supplements-best-skin-tightening",
+    "title": "Guide: Which Supplements Are Best for Skin Tightening?",
+    "publishedAt": "2024-12-31T00:13:37Z",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Collagen plus hyaluronic acid (no master).",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "surprising-heart-results-from-this-huge-melatonin-study",
+    "title": "Surprising Heart Results from This Huge Melatonin Study",
+    "publishedAt": "2026-03-18T06:09:58Z",
+    "topics": [
+      "melatonin-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is melatonin and the heart.",
+    "changed_from_proposal": false,
+    "check_note": "Only melatonin (heart study, cardiometabolic meta-analysis, dosing)."
+  },
+  {
+    "handle": "surprising-microbiome-effects-from-artificial-sweeteners",
+    "title": "Surprising Microbiome Effects from Artificial Sweeteners",
+    "publishedAt": "2025-10-29T22:37:37Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "taurine-time-to-throw-it-away-two-new-studies",
+    "title": "Taurine.. Time to Throw it Away? Two New Studies",
+    "publishedAt": "2025-07-08T18:07:26Z",
+    "topics": [
+      "taurine-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is taurine.",
+    "changed_from_proposal": false,
+    "check_note": "Only taurine (aging studies, metabolic benefits, safety)."
+  },
+  {
+    "handle": "the-1-top-remedy-for-dental-plaque",
+    "title": "The #1 Top Remedy for Dental Plaque",
+    "publishedAt": "2025-02-09T04:39:49Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-30-year-statin-panic-is-finally-over",
+    "title": "The 30-Year Statin Panic Is Finally Over",
+    "publishedAt": "2026-05-08T12:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-anti-aging-supplement-everyone-took-never-worked",
+    "title": "The Anti-Aging Supplement Everyone Took Never Worked",
+    "publishedAt": "2026-07-01T12:00:00Z",
+    "topics": [
+      "quercetin-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Fisetin and quercetin senolytics; fisetin has no master.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-anti-aging-supplement-scam-new-evidence",
+    "title": "The Anti-Aging Supplement Scam (New Evidence)",
+    "publishedAt": "2026-04-09T12:00:00Z",
+    "topics": [
+      "resveratrol-benefits-forms-dosing-and-side-effects",
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+      "astaxanthin-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "ITP results for several longevity supplements.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-best-diet-to-unclog-your-arteries",
+    "title": "The Best Diet to Unclog Your Arteries",
+    "publishedAt": "2025-02-15T00:14:11Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-cholesterol-war-is-over-heres-who-won",
+    "title": "The Cholesterol War Is Over (Here's Who Won)",
+    "publishedAt": "2026-04-23T12:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-coffee-evidence-just-changed",
+    "title": "The Coffee Evidence Just Changed",
+    "publishedAt": "2025-12-20T19:37:23Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-collagen-peptides-for-skin-story-is-changing",
+    "title": "The Collagen Peptides for Skin Story is Changing",
+    "publishedAt": "2026-10-15T00:00:00Z",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "medium",
+    "reason": "Collagen trials for skin, joints and muscle.",
+    "changed_from_proposal": false,
+    "check_note": "Only collagen (2026 meta-analyses, protein comparison, joints/muscle)."
+  },
+  {
+    "handle": "the-diet-my-patients-use-to-crush-visceral-fat",
+    "title": "The Diet My Patients Use to CRUSH Visceral Fat",
+    "publishedAt": "2025-09-11T23:24:13Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-fastest-way-to-lower-your-blood-pressure-naturally",
+    "title": "The Fastest Way to Lower Your Blood Pressure (Naturally!)",
+    "publishedAt": "2025-02-23T23:47:06Z",
+    "topics": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Blood pressure lifestyle plan with a potassium section.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-fastest-way-to-reverse-skin-aging-new-science",
+    "title": "The FASTEST Way To Reverse Skin Aging (New Science)",
+    "publishedAt": "2025-03-01T23:09:56Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-food-pyramids-replacement-is-a-huge-upgrade",
+    "title": "The Food Pyramid's Replacement is a HUGE Upgrade",
+    "publishedAt": "2025-06-12T23:08:09Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-grad-student-who-broke-microplastics-research",
+    "title": "The Grad Student Who Broke Microplastics Research",
+    "publishedAt": "2026-06-02T16:06:13Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-longevity-craze-is-actually-making-you-sicker",
+    "title": "The “Longevity” Craze is Actually Making You Sicker",
+    "publishedAt": "2025-07-29T23:10:36Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-most-important-antioxidant-study-i-ve-ever-read",
+    "title": "The Most Important Antioxidant Study I’ve Ever Read",
+    "publishedAt": "2026-02-03T00:32:28Z",
+    "topics": [
+      "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+      "glycine-benefits-forms-dosing-and-side-effects",
+      "glutathione-benefits-forms-dosing-and-side-effects",
+      "vitamin-e-benefits-forms-dosing-and-side-effects",
+      "vitamin-a-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "GlyNAC versus vitamin antioxidants, with exercise.",
+    "changed_from_proposal": true,
+    "check_note": "Added vitamin E (Nurses, CHAOS, Cochrane history) and vitamin A (Cochrane mortality); GlyNAC and antioxidants-with-exercise meta-analysis."
+  },
+  {
+    "handle": "the-most-underrated-exercise-for-overall-health-and-performance",
+    "title": "Power Training Is The Most Underrated Exercise for Overall Health & Performance",
+    "publishedAt": "2025-09-16T22:23:51Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-one-number-id-measure-to-avoid-a-heart-attack",
+    "title": "The One Number I'd Measure to Avoid a Heart Attack",
+    "publishedAt": "2026-10-11T21:59:44Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-only-three-supplements-doctor-brad-takes",
+    "title": "The Only Three Supplements Doctor Brad Takes",
+    "publishedAt": "2025-07-30T20:38:06Z",
+    "topics": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects",
+      "melatonin-benefits-forms-dosing-and-side-effects",
+      "magnesium-benefits-best-forms-dosing",
+      "vitamin-e-benefits-forms-dosing-and-side-effects",
+      "vitamin-a-benefits-forms-dosing-and-side-effects",
+      "glycine-benefits-forms-dosing-and-side-effects",
+      "collagen-benefits-best-forms-dosing-and-side-effects",
+      "creatine-benefits-best-forms-dosing-and-side-effects",
+      "psyllium-benefits-forms-dosing-and-side-effects",
+      "taurine-benefits-forms-dosing-and-side-effects",
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Stack post: omega-3, multivitamin, sleep supplement.",
+    "changed_from_proposal": true,
+    "check_note": "Added vitamin E/A (avoidance section), glycine (sleep), and the MicroVitamin+ paragraphs on collagen, creatine, psyllium, taurine, K2."
+  },
+  {
+    "handle": "the-protein-obsession-is-going-horribly-wrong",
+    "title": "The Protein Obsession Is Going Horribly Wrong",
+    "publishedAt": "2025-10-02T23:36:02Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Protein intake from food; protein powders only in passing.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-surprising-truth-about-methylene-blue-and-anti-aging",
+    "title": "The Surprising Truth About Methylene Blue and Anti-Aging",
+    "publishedAt": "2025-03-05T21:40:11Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Methylene blue has no master.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-truth-about-nitric-oxide-supplements-nitralis",
+    "title": "The Truth About Nitric Oxide Supplements (Nitralis®)",
+    "publishedAt": "2026-02-25T02:32:08Z",
+    "topics": [
+      "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+      "beetroot-benefits-forms-dosing-and-side-effects",
+      "arginine-benefits-forms-dosing-and-side-effects",
+      "l-citrulline-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Several nitric oxide ingredient masters.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-truth-about-saturated-fat-and-heart-disease",
+    "title": "The Truth About Saturated Fat and Heart Disease",
+    "publishedAt": "2026-02-22T18:52:40Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-truth-about-seed-oil-toxicity",
+    "title": "The Truth About Seed Oil Toxicity",
+    "publishedAt": "2026-05-18T12:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-unexpected-cause-of-the-scary-cancer-surge",
+    "title": "The Unexpected Cause of the Scary Cancer Surge",
+    "publishedAt": "2026-02-18T19:21:30Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "the-world-s-1-anti-aging-cream-sunscreen-just-got-updated",
+    "title": "The World’s #1 Anti-Aging Cream (Sunscreen) Just Got Updated",
+    "publishedAt": "2025-04-07T02:37:28Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "theanine-anti-aging-longevity",
+    "title": "Does Theanine Really Help with Anti-Aging and Longevity?",
+    "publishedAt": "2024-11-04T03:07:12Z",
+    "topics": [
+      "l-theanine-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is L-theanine.",
+    "changed_from_proposal": false,
+    "check_note": "Only L-theanine; tea/caffeine appears only as the dietary source."
+  },
+  {
+    "handle": "these-foods-lower-death-risk-by-23",
+    "title": "These Foods Lower Death Risk by 23%",
+    "publishedAt": "2025-03-17T00:43:40Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "these-tiny-changes-massively-upgrade-your-sleep-quality",
+    "title": "These TINY Changes Massively Upgrade Your Sleep Quality",
+    "publishedAt": "2025-05-15T23:17:50Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "this-2-food-beats-every-nitric-oxide-supplement",
+    "title": "This $2 Food Beats Every Nitric Oxide Supplement",
+    "publishedAt": "2026-03-18T06:11:43Z",
+    "topics": [
+      "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+      "beetroot-benefits-forms-dosing-and-side-effects",
+      "arginine-benefits-forms-dosing-and-side-effects",
+      "l-citrulline-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Arugula (food) versus nitric oxide supplements.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "this-2-remedy-beats-every-cold-medicine",
+    "title": "This $2 Remedy Beats Every Cold Medicine",
+    "publishedAt": "2026-04-16T12:00:00Z",
+    "topics": [
+      "zinc-benefits-forms-dosing-and-side-effects",
+      "manuka-honey-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Zinc lozenges plus saline rinse and honey.",
+    "changed_from_proposal": true,
+    "check_note": "Added manuka honey (honey-for-cough section; the master covers cough); also covers saline irrigation, nitric oxide and povidone-iodine sprays."
+  },
+  {
+    "handle": "this-amino-acid-was-accidentally-found-to-improve-our-sleep",
+    "title": "Glycine was Accidentally Found To Improve Our Sleep",
+    "publishedAt": "2025-08-20T02:05:05Z",
+    "topics": [
+      "glycine-benefits-forms-dosing-and-side-effects",
+      "melatonin-benefits-forms-dosing-and-side-effects",
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Glycine for sleep plus general sleep-habit advice.",
+    "changed_from_proposal": true,
+    "check_note": "Added melatonin and magnesium (headed sleep sections); also covers light, exercise, coffee and dinner timing."
+  },
+  {
+    "handle": "this-cheap-anti-inflammatory-cuts-heart-disease-by-12",
+    "title": "Cheap Anti-inflammatory (Colchicine) Cuts Heart Disease by 12%",
+    "publishedAt": "2025-07-13T22:35:37Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "this-incredibly-popular-supplement-damages-your-blood-vessels",
+    "title": "This Incredibly Popular Supplement DAMAGES Your Blood Vessels",
+    "publishedAt": "2025-05-15T23:18:01Z",
+    "topics": [
+      "calcium-benefits-best-forms-dosing-and-side-effects",
+      "iron-benefits-forms-dosing-and-side-effects",
+      "vitamin-e-benefits-forms-dosing-and-side-effects",
+      "vitamin-a-benefits-forms-dosing-and-side-effects",
+      "resveratrol-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Several risky supplements.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "this-mineral-deficiency-is-causing-strokes",
+    "title": "This Mineral Deficiency Is Causing Strokes",
+    "publishedAt": "2025-08-28T23:51:02Z",
+    "topics": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Potassium and stroke; unsure if fully single-subject.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "this-study-destroys-what-we-thought-about-exercise",
+    "title": "This Study DESTROYS What We Thought About Exercise",
+    "publishedAt": "2025-11-10T23:48:11Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "this-study-proved-we-were-wrong-about-vitamin-d",
+    "title": "This Study Proved We Were WRONG About Vitamin D",
+    "publishedAt": "2025-04-18T22:00:59Z",
+    "topics": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is vitamin D.",
+    "changed_from_proposal": false,
+    "check_note": "Only vitamin D (guideline revision, trials, high-dose risks)."
+  },
+  {
+    "handle": "this-vaccine-is-quietly-doing-something-to-your-heart",
+    "title": "This Vaccine is Quietly Doing Something to Your Heart",
+    "publishedAt": "2026-05-24T20:05:09Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "this-vaccine-just-changed-cancer-forever",
+    "title": "This Vaccine Just Changed Cancer Forever",
+    "publishedAt": "2026-08-26T05:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "this-vitamin-d-study-forced-me-to-change-my-view",
+    "title": "This Vitamin D Study Forced Me to Change My View",
+    "publishedAt": "2025-12-03T16:41:41Z",
+    "topics": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is vitamin D (TARGET-D).",
+    "changed_from_proposal": false,
+    "check_note": "Only vitamin D (TARGET-D trial, testing decision)."
+  },
+  {
+    "handle": "tmg-betaine-exploding-popularity",
+    "title": "Why TMG (Betaine) is Exploding in Popularity",
+    "publishedAt": "2024-10-09T13:30:02Z",
+    "topics": [
+      "b-vitamins-benefits-forms-dosing-and-side-effects",
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "TMG/betaine has no master (choline is distinct).",
+    "changed_from_proposal": true,
+    "check_note": "Added B vitamins and NMN (headed sections); main subject TMG has no master."
+  },
+  {
+    "handle": "trace-minerals-vitamins-fad",
+    "title": "Trace Minerals in Vitamins: What Are They and Is It a Fad?",
+    "publishedAt": "2025-01-07T00:08:13Z",
+    "topics": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "boron-benefits-forms-dosing-and-side-effects",
+      "kelp-and-iodine-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Trace minerals (iodine, iron, zinc) inside multivitamins.",
+    "changed_from_proposal": true,
+    "check_note": "Added boron and iodine (sections on benefits and intake); also brief iron, zinc, selenium, copper, chromium."
+  },
+  {
+    "handle": "vitamin-d3-k2-benefits-differences",
+    "title": "Vitamin D3 and K2: The Benefits, Differences, and Usage",
+    "publishedAt": "2024-06-20T20:21:11Z",
+    "topics": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Covers two masters, D3 and K2.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "vitamin-k2-d3-together",
+    "title": "Should You Take Vitamin K2 and Vitamin D3 Together?",
+    "publishedAt": "2024-11-25T20:42:35Z",
+    "topics": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Covers two masters, K2 and D3.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "we-are-witnessing-cancers-downfall",
+    "title": "We Are Witnessing Cancer's Downfall",
+    "publishedAt": "2026-09-10T20:02:09Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "we-are-witnessing-the-end-of-obesity",
+    "title": "We Are Witnessing the End of Obesity",
+    "publishedAt": "2026-10-06T03:22:05Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "we-were-wrong-about-aspirin-new-evidence",
+    "title": "We Were Wrong About Aspirin (New Evidence)",
+    "publishedAt": "2026-05-15T03:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "weapon-against-alzheimer-s-just-got-fda-approved",
+    "title": "Weapon Against Alzheimer’s Just Got FDA-Approved",
+    "publishedAt": "2026-01-26T16:41:21Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "weight-loss-in-new-retatrutide-study",
+    "title": "28.7% Weight Loss in New Retatrutide Study",
+    "publishedAt": "2025-12-18T05:52:56Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "were-all-about-to-become-lean-and-ripped-new-evidence",
+    "title": "We're All About to Become Lean AND Ripped (new evidence)",
+    "publishedAt": "2026-06-15T12:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "what-coffee-actually-does-to-your-brain-131821-person-study",
+    "title": "What Coffee Actually Does to Your Brain (131,821 Person Study)",
+    "publishedAt": "2026-03-04T00:31:31Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "what-is-the-best-magnesium-dose-form-14-studies-later",
+    "title": "What is the Best Magnesium Dose & Form? (14 Studies Later)",
+    "publishedAt": "2025-07-01T18:11:29Z",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is magnesium.",
+    "changed_from_proposal": false,
+    "check_note": "Only magnesium (associations, sleep RCTs, testing, forms)."
+  },
+  {
+    "handle": "what-microneedling-really-does-for-skin-aging",
+    "title": "What Microneedling REALLY Does for Skin Aging",
+    "publishedAt": "2026-03-01T23:39:13Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "what-should-your-blood-pressure-actually-be",
+    "title": "What Should Your Blood Pressure Actually Be?",
+    "publishedAt": "2026-07-21T12:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "what-they-re-hiding-about-lead-found-in-protein-powders",
+    "title": "What They’re HIDING About Lead Found in Protein Powders",
+    "publishedAt": "2025-11-04T20:37:47Z",
+    "topics": [
+      "protein-powders-benefits-types-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "medium",
+    "reason": "Protein powder lead, framed around general lead exposure.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "whats-causing-colon-cancer-to-rise-so-fast",
+    "title": "What's Causing Colon Cancer to Rise So Fast?",
+    "publishedAt": "2026-05-17T17:05:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "when-dosed-correctly-vitamin-d-cuts-sick-days-by-17",
+    "title": "When Dosed Correctly, Vitamin D Cuts Sick Days by 17%",
+    "publishedAt": "2025-06-14T00:01:42Z",
+    "topics": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "medium",
+    "reason": "Vitamin D trial in children; short post.",
+    "changed_from_proposal": false,
+    "check_note": "Only vitamin D (child sick-days trial, guidelines, dosing)."
+  },
+  {
+    "handle": "when-your-meds-start-making-you-sick",
+    "title": "When Your Meds Start Making You Sick",
+    "publishedAt": "2025-10-29T02:10:26Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "why-arent-cardiologists-prescribing-vitamin-k2",
+    "title": "Why Aren't Cardiologists Prescribing Vitamin K2?",
+    "publishedAt": "2026-09-03T20:14:01Z",
+    "topics": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is vitamin K2.",
+    "changed_from_proposal": false,
+    "check_note": "Only vitamin K2 (Rotterdam, CAC trials, plaque biology, dose, warfarin); statins/HDL drugs appear as brief analogies."
+  },
+  {
+    "handle": "why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking",
+    "title": "Why Creatine Is The ONE Supplement All Longevity Researchers Are Taking",
+    "publishedAt": "2025-03-26T19:59:34Z",
+    "topics": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is creatine.",
+    "changed_from_proposal": false,
+    "check_note": "Only creatine (brain, osteosarcopenia, muscle, safety, dosing)."
+  },
+  {
+    "handle": "why-healthy-people-still-have-heart-attacks",
+    "title": "Why Healthy People Still Have Heart Attacks",
+    "publishedAt": "2025-11-25T17:07:51Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "why-i-take-low-dose-tirzepatide-zepbound",
+    "title": "Why I Take Low-Dose Tirzepatide (Zepbound)",
+    "publishedAt": "2026-05-28T00:34:28Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "why-scientists-are-calling-taurine-the-youth-molecule",
+    "title": "Why Scientists Are Calling Taurine “The Youth Molecule”",
+    "publishedAt": "2025-03-25T23:52:48Z",
+    "topics": [
+      "taurine-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": true,
+    "confidence": "high",
+    "reason": "Whole post is taurine.",
+    "changed_from_proposal": false,
+    "check_note": "Only taurine (lifespan study, human evidence, metabolic benefits)."
+  },
+  {
+    "handle": "wrong-about-inflammation-heart-disease-new-study",
+    "title": "Wrong About Inflammation & Heart Disease (new study)",
+    "publishedAt": "2026-08-10T00:00:00Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Drug, lifestyle, test or other non-supplement topic.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "your-skin-loses-hyaluronic-acid-with-age",
+    "title": "Your Skin Loses 75% of This by Age 75 (New Fix)",
+    "publishedAt": "2026-03-25T16:55:45Z",
+    "topics": [],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "Hyaluronic acid has no master.",
+    "changed_from_proposal": false
+  },
+  {
+    "handle": "zma-supplements-benefits-research",
+    "title": "ZMA Supplements: What Are the Benefits and Research?",
+    "publishedAt": "2025-01-29T16:30:23Z",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing",
+      "zinc-benefits-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ],
+    "single_subject": false,
+    "confidence": "high",
+    "reason": "ZMA combines magnesium and zinc.",
+    "changed_from_proposal": true,
+    "check_note": "Added B vitamins (ZMA's B6 section)."
+  }
+]

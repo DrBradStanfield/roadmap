@@ -15,7 +15,7 @@
  */
 import { z } from 'zod';
 import { reportedToCanonical, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
-import { foldName, LAB_CATALOG, LAB_GROUPS, normalizeLabUnit } from './lab-catalog';
+import { foldName, LAB_CATALOG, LAB_GROUPS, normalizeLabUnit, PROMPT_DEFERRED_KEYS } from './lab-catalog';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES } from './validation';
 import { isCalendarDay } from './measurement-history';
@@ -164,10 +164,19 @@ export const CORE_METRIC_ALIASES: Record<MetricType, string[]> = {
   height: ['Height'],
 };
 
+/** Printed names the resolver knows but the prompt does not list yet: a
+ *  prompt change waits for the #166 benchmark (US-21 AC20). */
+const RESOLVER_ONLY_ALIASES: Partial<Record<MetricType, string[]>> = {
+  ldl: ['LDL-Cholesterol', 'LDL Chol Calc (NIH)', 'Cholesterol (LDL) (calculated)'],
+  hdl: ['HDL-Cholesterol', 'Cholesterol (HDL)'],
+  hba1c: ['Glycated haemoglobin (HbA1c)'],
+  psa: ['PSA, Total', 'Prostate Specific Ag'],
+};
+
 const CORE_NAME_INDEX = new Map<string, MetricType>();
 for (const metric of Object.keys(CORE_METRIC_ALIASES) as MetricType[]) {
   CORE_NAME_INDEX.set(foldName(metric), metric);
-  for (const alias of CORE_METRIC_ALIASES[metric]) CORE_NAME_INDEX.set(foldName(alias), metric);
+  for (const alias of [...CORE_METRIC_ALIASES[metric], ...(RESOLVER_ONLY_ALIASES[metric] ?? [])]) CORE_NAME_INDEX.set(foldName(alias), metric);
 }
 
 /** The core metric a printed name is, or null — exact after folding, never a substring. */
@@ -327,7 +336,7 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   10. REFERENCE RANGES: for each "additionalValues" row, return the row's printed reference range as "referenceLow" and "referenceHigh": the numbers as printed, in the row's printed unit, never converted. A one-sided range sets one side ("<5" is referenceHigh 5, ">40" is referenceLow 40) and the other is null; both are null when no range is printed.
 
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
-${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id).map((entry) => entry.key)] as const)
+${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id && !PROMPT_DEFERRED_KEYS.has(entry.key)).map((entry) => entry.key)] as const)
   .filter(([, keys]) => keys.length > 0)
   .map(([label, keys]) => `  ${label}: ${keys.join(', ')}`).join('\n')}
   Any other test: use the best descriptive snake_case name.
