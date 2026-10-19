@@ -774,6 +774,20 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     }
   }, [onComplete, onScreeningUpdate, results, history.documents]);
 
+  // One report can refuse the same test on several dates; the user needs it
+  // named once. A note says what to look for instead, where there is one, and
+  // a unit the test takes was refused for its number, not its unit (US-21
+  // AC15). Shown on the done screen and, beside the retry message, in review
+  // (US-12 AC6): a refusal is settled the moment the save answers.
+  const refusalLines = <>
+    {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}`, r])).values()].map(r => (
+      <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit, r.fault)}</p>
+    ))}
+    {[...new Map(refusedMeasurements.map(r => [`${r.metricType}|${r.reason}`, r])).values()].map(r => (
+      <p key={`${r.metricType}|${r.reason}`} className="upload-done-skipped">{measurementRefusalLine(r)}</p>
+    ))}
+  </>;
+
   // Portal to body so position:fixed resolves against the viewport — the
   // .health-tool container has a transform/contain that would otherwise pin
   // the modal inside the (very tall) widget root instead of the viewport.
@@ -872,6 +886,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               onCancel={handleDiscard}
               isSaving={isSaving}
               error={error}
+              refusals={refusalLines}
             />
           )}
 
@@ -898,16 +913,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                   {skippedLabValues} additional lab value{skippedLabValues !== 1 ? 's were' : ' was'} already saved at the same date.
                 </p>
               )}
-              {/* One report can refuse the same test on several dates; the
-                  user needs the spelling named once. A note says what to look
-                  for instead, where there is one, and a unit the test takes
-                  was refused for its number, not its unit (US-21 AC15). */}
-              {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}`, r])).values()].map(r => (
-                <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit, r.fault)}</p>
-              ))}
-              {[...new Map(refusedMeasurements.map(r => [`${r.metricType}|${r.reason}`, r])).values()].map(r => (
-                <p key={`${r.metricType}|${r.reason}`} className="upload-done-skipped">{measurementRefusalLine(r)}</p>
-              ))}
+              {refusalLines}
               {saveErrorCount > 0 && (
                 <p className="upload-done-skipped">
                   {saveErrorCount} item{saveErrorCount !== 1 ? 's' : ''} could not be saved. Please try again.

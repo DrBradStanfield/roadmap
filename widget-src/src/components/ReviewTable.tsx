@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef, memo } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, memo, type ReactNode } from 'react';
 import type { LpaUnit, UnitSystem, MetricType, MeasurementSource, ApiMeasurement, DocumentType } from '@roadmap/health-core';
 import {
   UNIT_DEFS,
@@ -91,6 +91,8 @@ interface ReviewTableProps {
   onCancel: () => void;
   isSaving: boolean;
   error: string | null;
+  /** The values the last save refused, shown beside its error (US-12 AC6). */
+  refusals?: ReactNode;
 }
 
 /** Full date state: day/month/year. Day is null when the LLM didn't extract one. */
@@ -498,6 +500,7 @@ export function ReviewTable({
   onCancel,
   isSaving,
   error,
+  refusals,
 }: ReviewTableProps) {
   const docHistoryIndex = useMemo(() => buildDocHistoryIndex(history.documents), [history.documents]);
   // Lp(a) has its own three units, kept in the record, as in the blood-test
@@ -951,6 +954,7 @@ export function ReviewTable({
       )}
 
       {error && <p className="upload-error">{error}</p>}
+      {refusals}
 
       <div className="review-actions">
         <button

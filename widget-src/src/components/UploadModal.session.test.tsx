@@ -137,6 +137,19 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 
+  it('US-12 AC6 / US-35 AC17 — a refusal shows at once beside the retry message when another branch fails', async () => {
+    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{
+      documentType: 'pathology_report', title: 'Synthetic report', documentDate: '2024-06-01',
+      contentMd: '', metadata: {}, sourceFileName: 'test.pdf',
+    }]);
+    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [{ index: 0, metricType: 'ldl', reason: 'out-of-range', message: 'synthetic' }] });
+    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [], errorCount: 1 });
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
+    expect(screen.getByText('LDL Cholesterol: the number was not saved. It is outside the range the record accepts.')).toBeTruthy();
+  });
   it('keeps failed save drafts for retry', async () => {
     vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic failure'));
     render(<Harness />); const value = await ready();
