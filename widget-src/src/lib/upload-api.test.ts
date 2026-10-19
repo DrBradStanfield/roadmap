@@ -9,7 +9,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { z } from 'zod';
 import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
-import { batchImportRequestSchema, labImportPageSchema } from '../../../packages/health-core/src/validation';
+import { batchImportRequestSchema, labImportPageSchema, labImportRequestSchema } from '../../../packages/health-core/src/validation';
 
 const FILES = [{ fileName: 'a.pdf', pages: [{ type: 'image' as const, content: 'AAAA', mimeType: 'image/png' }] }];
 
@@ -87,7 +87,7 @@ describe('privacy: no file name in the request body', () => {
     expect(raw[0]).not.toContain('Jane');
     expect(raw[0]).not.toContain('.pdf');
     expect(raw[0]).not.toContain('.zip');
-    expect(JSON.parse(raw[0])).toEqual({ batch: true, ownDates: 2, files: [
+    expect(JSON.parse(raw[0])).toEqual({ batch: true, ownDates: true, undatedPrev: true, files: [
       { fileName: 'file-1', pages: NAMED[0].pages },
       { fileName: 'file-2', pages: NAMED[1].pages },
     ] });
@@ -110,14 +110,42 @@ describe('privacy: no file name in the request body', () => {
     expect(oldBatchSchema.safeParse(body).success).toBe(true);
     const parsed = batchImportRequestSchema.parse(body);
     expect(parsed.files).toEqual([{ pages: NAMED[0].pages }, { pages: NAMED[1].pages }]);
-    expect(parsed.ownDates).toBe(2); // US-12 AC12, AC14: this widget files a value on its own day, dated or not
+    expect(parsed.ownDates).toBe(true); // US-12 AC12: this widget files a value on its own day
+  });
+
+  // US-12 AC14, deploy order: the widget ships before the Fly server. The live
+  // server's schemas, copied verbatim from 6a4c8902 (`git show
+  // 6a4c8902:packages/health-core/src/validation.ts`), take `ownDates: true`
+  // only, so the undated flag is a separate key that they strip.
+  const liveSingleSchema = z.object({
+    pages: z.array(labImportPageSchema).min(1).max(100),
+    unitSystem: z.enum(['si', 'conventional']).optional(),
+    ownDates: z.literal(true).optional(),
+  });
+  const liveBatchSchema = z.object({
+    batch: z.literal(true),
+    files: z.array(z.object({
+      pages: z.array(labImportPageSchema).min(1).max(100),
+    })).min(1).max(200),
+    ownDates: z.literal(true).optional(),
+  });
+
+  it('both bodies pass the LIVE server\'s schemas (6a4c8902), which strip the undated flag; the new ones keep it', async () => {
+    await labImport(NAMED[0].pages, 'si');
+    await labImportBatch(NAMED);
+    const [single, batch] = raw.map(r => JSON.parse(r));
+    const live = [liveSingleSchema.safeParse(single), liveBatchSchema.safeParse(batch)];
+    expect(live.map(r => r.success)).toEqual([true, true]);
+    expect(live.map(r => r.success && (r.data as Record<string, unknown>).undatedPrev)).toEqual([undefined, undefined]);
+    expect(live.map(r => r.success && r.data.ownDates)).toEqual([true, true]);
+    expect([labImportRequestSchema.parse(single).undatedPrev, batchImportRequestSchema.parse(batch).undatedPrev]).toEqual([true, true]);
   });
 
   // US-12 AC12: `ownDates` tells the server this widget files a value on its own day.
-  // US-12 AC14: `ownDates: 2` says it also asks the day of an undated previous column.
-  it('the single-file path sends pages, the unit system and ownDates: 2 only', async () => {
+  // US-12 AC14: `undatedPrev` tells it this widget asks for an undated previous column's date.
+  it('the single-file path sends pages, the unit system, ownDates and undatedPrev only', async () => {
     await labImport(NAMED[0].pages, 'si');
-    expect(JSON.parse(raw[0])).toEqual({ pages: NAMED[0].pages, unitSystem: 'si', ownDates: 2 });
+    expect(JSON.parse(raw[0])).toEqual({ pages: NAMED[0].pages, unitSystem: 'si', ownDates: true, undatedPrev: true });
   });
 });
 

@@ -49,25 +49,25 @@ function consumeQuota(ip: string, count: number): boolean {
 // required on every poll; without it, or with the wrong one, the batch does not
 // exist (404, the same answer as an id nobody created).
 const MAX_ACTIVE_BATCHES = 200;
-const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; ownDates?: OwnDates; reported?: boolean }>();
+const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; days: DayFlags; reported?: boolean }>();
 setInterval(() => {
   const cutoff = Date.now() - 60 * 60_000;
   for (const [id, b] of activeBatches) if (b.createdAt < cutoff) activeBatches.delete(id);
 }, 10 * 60_000);
 
-/** Which own days a widget reads (`labImportRequestSchema`). */
-type OwnDates = true | 2;
+/** The flags a widget sends to say which own days it reads. */
+type DayFlags = { ownDates?: true; undatedPrev?: true };
 
 /**
  * A widget from before dated previous columns ignores `recordedAt` and would
  * file those values on the report date, so it never gets them (US-12 AC12).
- * Only a newer widget sends `ownDates`. One from before undated previous
- * columns sends `true` and reads "undated" as a date, so it gets those only
- * with `2` (AC14).
+ * Only the new widget sends `ownDates: true`. One from before undated previous
+ * columns reads "undated" as a date, so it gets those only with
+ * `undatedPrev: true` (AC14).
  */
-function withDaysItReads<T>(result: T, ownDates?: OwnDates): T {
-  if (ownDates === 2) return result;
-  const reads = (v: { recordedAt?: string }) => !v.recordedAt || (ownDates === true && v.recordedAt !== UNDATED_PREVIOUS);
+function withDaysItReads<T>(result: T, { ownDates, undatedPrev }: DayFlags): T {
+  if (ownDates && undatedPrev) return result;
+  const reads = (v: { recordedAt?: string }) => !v.recordedAt || (!!ownDates && v.recordedAt !== UNDATED_PREVIOUS);
   const r = result as { values?: Array<{ recordedAt?: string }>; additionalValues?: Array<{ recordedAt?: string }> };
   return {
     ...result,
@@ -109,7 +109,7 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
       for (const stop of result.stops ?? []) reportExtractionStop(stop.code, stop.refusalCategory, 'batch');
     }
     return Response.json(
-      { status: result.status, results: result.results?.map(r => withDaysItReads(r, batch.ownDates)), completed: result.completed, total: result.total },
+      { status: result.status, results: result.results?.map(r => withDaysItReads(r, batch.days)), completed: result.completed, total: result.total },
     );
   } catch (error) {
     console.error('Batch poll error (v2):', error);
@@ -151,7 +151,7 @@ export async function action({ request }: ActionFunctionArgs) {
     // --- Batch mode ---
     const batchValidation = batchImportRequestSchema.safeParse(body);
     if (batchValidation.success) {
-      const { files, ownDates } = batchValidation.data;
+      const { files, ownDates, undatedPrev } = batchValidation.data;
       if (!consumeQuota(ip, files.length)) {
         return Response.json(
           { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
@@ -163,7 +163,7 @@ export async function action({ request }: ActionFunctionArgs) {
       }
       const { batchId } = await createBatch(files);
       const pollToken = newPollToken();
-      activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken, ownDates });
+      activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken, days: { ownDates, undatedPrev } });
       return Response.json({ success: true, batchId, pollToken, totalFiles: files.length });
     }
 
@@ -179,13 +179,13 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    const { pages, ownDates } = validation.data;
+    const { pages, ownDates, undatedPrev } = validation.data;
     try {
       // One deadline for the file's calls: a malformed answer's re-send gets what
       // is left. A timed-out HTTP attempt is still retried once in a fresh window
       // (fetchAnthropicRaw), kept for capacity blips; ~46 s answers make it rare (US-15 AC34).
       const result = await extractOrClassify(pages, { timeoutMs: 60_000 });
-      return Response.json({ success: true, data: withDaysItReads(result, ownDates), remaining: ipQuota.remaining(ip) });
+      return Response.json({ success: true, data: withDaysItReads(result, { ownDates, undatedPrev }), remaining: ipQuota.remaining(ip) });
     } catch (error) {
       // Declined or cut off: its own answer, so the widget does not say "try
       // again" (US-15 AC34). The code and category only, never document text.
