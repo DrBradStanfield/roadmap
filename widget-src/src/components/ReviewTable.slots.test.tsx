@@ -30,10 +30,13 @@ function review(results: FileResult[], measurements: ApiMeasurement[] = []) {
   const save = () => view.getByRole('button', { name: /^Save/ }) as HTMLButtonElement;
   const pick = (day: string) => { for (const p of view.queryAllByLabelText('Choose the date of the previous results')) fireEvent.change(p, { target: { value: day } }); };
   const input = (value: string) => Array.from(view.container.querySelectorAll<HTMLInputElement>('.bt-cell-input input')).find(i => i.value === value)!;
-  const notice = () => view.queryByText(/not saved: another reading holds that test on that day/)?.textContent ?? null;
+  const notice = () => view.queryByText(/not saved: .* a reading from another column/)?.textContent ?? null;
+  const boxes = () => view.queryAllByRole('checkbox', { name: /Replace the saved/ }) as HTMLInputElement[];
+  const inputs = () => Array.from(view.container.querySelectorAll<HTMLInputElement>('.bt-cell-input input')).map(i => i.value);
+  const context = () => Array.from(view.container.querySelectorAll('.bt-cell-context .bt-value-num')).map(e => e.textContent);
   const rows = (call = 0) => [...onSave.mock.calls[call][0].values.map((x: { metric: string; valueSI: number; recordedAt: string }) => `${x.metric}=${x.valueSI}@${x.recordedAt.slice(0, 10)}`),
     ...onSave.mock.calls[call][0].labValues.map((x: { name: string; value: number; recordedAt: string }) => `${x.name}=${x.value}@${x.recordedAt.slice(0, 10)}`)].sort();
-  return { view, onSave, save, pick, input, notice, rows };
+  return { view, onSave, save, pick, input, notice, rows, boxes, inputs, context };
 }
 
 /** The value count Save's own label promises ("Save 2 Values + 1 Additional"). */
@@ -48,7 +51,7 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
       const b = file('b.docx', '2026-04-10', [v('hdl', 1.4, U)]);
       const t = review(ordered(a, b));
       t.pick('2025-09-02');
-      expect(t.notice()).toBe('1 reading not saved: another reading holds that test on that day.');
+      expect(t.notice()).toBe('1 reading not saved: HDL Cholesterol on 2 Sep 2025 already has a reading from another column.');
       const label = promised(t.save());
       fireEvent.click(t.save());
       expect(t.rows()).toEqual([`hdl=${order === 'a first' ? 1.2 : 1.4}@2025-09-02`]);
@@ -60,7 +63,7 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
       const b = file('b.pdf', '2026-04-10', [v('ldl', 2.0), v('hdl', 1.4, '2025-09-02')]);
       const t = review(ordered(a, b));
       t.pick('2025-09-02');
-      expect(t.notice()).toBe('1 reading not saved: another reading holds that test on that day.');
+      expect(t.notice()).toBe('1 reading not saved: HDL Cholesterol on 2 Sep 2025 already has a reading from another column.');
       const label = promised(t.save());
       fireEvent.click(t.save());
       expect(t.rows()).toEqual(['hdl=1.4@2025-09-02', 'ldl=2@2026-04-10']);
@@ -72,13 +75,65 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
       const b = file('b.docx', '2026-04-10', [], [{ name: 'Sodium', value: 141, unit: 'mmol/L', recordedAt: U }]);
       const t = review(ordered(a, b));
       t.pick('2025-09-02');
-      expect(t.notice()).toBe('1 reading not saved: another reading holds that test on that day.');
+      expect(t.notice()).toBe('1 reading not saved: Sodium on 2 Sep 2025 already has a reading from another column.');
       const label = promised(t.save());
       fireEvent.click(t.save());
       expect(t.rows()).toEqual([order === 'a first' ? 'sodium=139@2025-09-02' : 'Sodium=141@2025-09-02']);
       expect(t.rows()).toHaveLength(label);
     });
   }
+
+  for (const order of ['held-equal first', 'differing first'] as const) {
+    const ordered = <T,>(equal: T, differing: T) => (order === 'held-equal first' ? [equal, differing] : [differing, equal]);
+
+    it(`same rank, one reading equal to the saved row, one differing (${order}): the differing one is the conflict, Replace unticked, no notice (US-13 AC3)`, () => {
+      const t = review(ordered(file('a.pdf', '2025-09-02', [v('hdl', 1.2)]), file('b.pdf', '2025-09-02', [v('hdl', 1.4)])), [held('H', 'hdl', 1.2, '2025-09-02')]);
+      expect(t.inputs()).toEqual(['1.4']);
+      expect(t.boxes().map(b => b.checked)).toEqual([false]);
+      expect(t.notice()).toBeNull();
+      fireEvent.click(t.boxes()[0]);
+      fireEvent.click(t.save());
+      expect(t.onSave.mock.calls[0][0].values).toEqual([expect.objectContaining({ metric: 'hdl', valueSI: 1.4, correctsId: 'H' })]);
+    });
+
+    it(`same rank on a dated previous day (${order}): the same`, () => {
+      const t = review(ordered(file('a.pdf', '2026-03-10', [v('hdl', 1.2, '2025-09-02')]), file('b.pdf', '2026-04-10', [v('hdl', 1.4, '2025-09-02')])), [held('H', 'hdl', 1.2, '2025-09-02')]);
+      expect(t.inputs()).toEqual(['1.4']);
+      expect(t.boxes().map(b => b.checked)).toEqual([false]);
+      expect(t.notice()).toBeNull();
+    });
+
+    it(`across ranks (${order}): a report reading equal to the saved row still holds the slot; the differing undated one is hidden and counted`, () => {
+      const t = review(ordered(file('b.pdf', '2025-09-02', [v('hdl', 1.2)]), file('a.docx', '2026-03-10', [v('hdl', 1.4, U)])), [held('H', 'hdl', 1.2, '2025-09-02')]);
+      t.pick('2025-09-02');
+      expect(t.boxes()).toEqual([]);
+      expect(t.notice()).toBe('1 reading not saved: HDL Cholesterol on 2 Sep 2025 already has a reading from another column.');
+    });
+
+    it(`an undated reading equal to the saved row shows as context in its own column though a report reading holds the slot (${order})`, () => {
+      const t = review(ordered(file('a.docx', '2026-03-10', [v('hdl', 1.2, U)]), file('b.pdf', '2025-09-02', [v('hdl', 1.4)])), [held('H', 'hdl', 1.2, '2025-09-02')]);
+      t.pick('2025-09-02');
+      expect(t.context()).toContain('1.2');
+      expect(t.notice()).toBeNull();
+    });
+  }
+
+  it('editing the winner updates the notice: an equal loser is counted once either side is edited', () => {
+    const t = review([file('a.docx', '2026-03-10', [v('hdl', 1.2, U)]), file('b.docx', '2026-04-10', [v('hdl', 1.2, U)])]);
+    t.pick('2025-09-02');
+    expect(t.notice()).toBeNull();
+    fireEvent.change(t.input('1.2'), { target: { value: '1.5' } });
+    expect(t.notice()).toBe('1 reading not saved: HDL Cholesterol on 2 Sep 2025 already has a reading from another column.');
+  });
+
+  it('the notice names each test and day, no values', () => {
+    const t = review([
+      file('a.docx', '2026-03-10', [v('hdl', 1.2, U)], [{ name: 'sodium', value: 139, unit: 'mmol/L', recordedAt: U }]),
+      file('b.docx', '2026-04-10', [v('hdl', 1.4, U)], [{ name: 'sodium', value: 141, unit: 'mmol/L', recordedAt: U }]),
+    ]);
+    t.pick('2025-09-02');
+    expect(t.notice()).toBe('2 readings not saved: HDL Cholesterol, Sodium on 2 Sep 2025 already have a reading from another column.');
+  });
 
   it('equal readings on one slot are one reading: no notice', () => {
     const t = review([file('a.docx', '2026-03-10', [v('hdl', 1.2, U)]), file('b.docx', '2026-04-10', [v('hdl', 1.2, U)])]);
@@ -91,7 +146,7 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
     fireEvent.change(t.view.container.querySelectorAll<HTMLInputElement>('.bt-cell-input input')[0], { target: { value: '1.5' } });
     expect(t.input('1.5')).toBeDefined();
     t.pick('2025-09-02');
-    expect(t.notice()).toBe('1 reading not saved: another reading holds that test on that day.');
+    expect(t.notice()).toBe('1 reading not saved: HDL Cholesterol on 2 Sep 2025 already has a reading from another column.');
     fireEvent.click(t.save());
     expect(t.rows()).toEqual(['hdl=1.2@2025-09-02']);
   });
