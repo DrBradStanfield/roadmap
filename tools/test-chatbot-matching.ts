@@ -68,6 +68,8 @@
  *                             query as the widget sends its history: alternating user and assistant
  *                             text, from a user turn to an assistant one. Any other shape exits the
  *                             harness before any API call.
+ *   pending?: string           the reason the entry is not run yet (e.g. its content is unmerged). Listed,
+ *                             never run or scored, unless --include-pending is passed.
  *   expect_roadmap_run?: boolean  answer check only: the answer must (true) or must not (false) call
  *                             run_roadmap. Every answer runs production's one-round loop (health-core
  *                             withRoadmapRound, US-15 AC33) on the fixture's raw user_context, and is
@@ -157,6 +159,7 @@ const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
 // the same context production does. Runs --answer-check-runs times (default = --runs,
 // usually 3) and requires majority pass. Set --answer-check-runs 1 to cut API spend.
 const fixedHandlesOnly = args.includes('--fixed-handles-only');
+const includePending = args.includes('--include-pending');
 const answerCheckMode = args.includes('--answer-check') || fixedHandlesOnly;
 const answerCheckRuns = Math.max(1, parseInt(getArg('--answer-check-runs', String(runs)), 10));
 
@@ -377,6 +380,7 @@ interface TestQuery {
   expect_empty_context?: true; // production collapses user_context to '{}' (see the header)
   expect_roadmap_run?: boolean; // the answer must (true) or must not (false) call run_roadmap (see the header)
   history?: Array<{ role: 'user' | 'assistant'; content: string }>; // earlier turns, before the query (see the header)
+  pending?: string;            // listed, not run, unless --include-pending (see the header)
 }
 
 const ALL_QUERIES: TestQuery[] = JSON.parse(
@@ -455,8 +459,17 @@ if (categories) filtered = filtered.filter(q => categories.includes(q.category))
 if (sourceFilter) filtered = filtered.filter(q => q.source === sourceFilter);
 if (categories) fixedHandle = fixedHandle.filter(q => categories.includes(q.category));
 if (sourceFilter) fixedHandle = fixedHandle.filter(q => q.source === sourceFilter);
+// A pending entry waits on content (e.g. an unmerged master): list it, never score it.
+const pending = includePending ? [] : [...filtered, ...fixedHandle].filter(q => q.pending);
+filtered = filtered.filter(q => !pending.includes(q));
+fixedHandle = fixedHandle.filter(q => !pending.includes(q));
+if (pending.length > 0) {
+  console.log(`\x1b[33mPending (skipped; --include-pending runs them): ${pending.length}\x1b[0m`);
+  for (const q of pending) console.log(`\x1b[33m  [${q.category}] "${q.query}": ${q.pending}\x1b[0m`);
+}
 const suite = [...filtered, ...fixedHandle];
 
+if (suite.length === 0 && pending.length > 0) process.exit(0);
 if (suite.length === 0) {
   const desc = [categoryFilter && `category "${categoryFilter}"`, sourceFilter && `source "${sourceFilter}"`].filter(Boolean).join(' AND ');
   console.error(`No queries match ${desc}`);

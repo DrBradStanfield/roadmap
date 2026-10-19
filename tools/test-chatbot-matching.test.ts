@@ -771,3 +771,67 @@ describe('test-chatbot-matching router view (US-50 AC3)', () => {
     }
   }, 60_000);
 });
+
+// US-50 (post-review N1): an entry with `pending` is listed, not run, unless
+// --include-pending is passed, so a fixture waiting on content cannot fail a run.
+describe('test-chatbot-matching pending entries (US-50)', () => {
+  const fixture = (query: string, pending?: string) => ({
+    query, category: 'pending-test', surface: 'doctor', answer_handles: [] as string[], must_mention: ['ok'], ...(pending ? { pending } : {}),
+  });
+
+  function run(fixtures: object[], flags: string[] = []) {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-pending-'));
+    try {
+      const stub = join(dir, 'fetch-stub.mjs');
+      const log = join(dir, 'calls.jsonl');
+      writeFileSync(stub, `
+        import fs from 'node:fs';
+        const read = fs.readFileSync;
+        fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? ${JSON.stringify(JSON.stringify(fixtures))} : read(p, ...rest);
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          fs.appendFileSync(${JSON.stringify(log)}, body.messages.at(-1).content + '\\n');
+          return new Response(JSON.stringify({
+            content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+          }), { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+        '--category', 'pending-test', '--fixed-handles-only', '--answer-check-runs', '1', ...flags]);
+      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
+      let calls: string[] = [];
+      try { calls = readFileSync(log, 'utf-8').trim().split('\n').filter(Boolean); } catch { /* no call made */ }
+      return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, ''), calls };
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('skips a pending entry and lists it with its reason', () => {
+    const { status, stderr, out, calls } = run([fixture('runs now'), fixture('waits', 'masters not merged')]);
+    expect(calls, stderr).toEqual(['runs now']);
+    expect(out).toContain('Pending (skipped; --include-pending runs them): 1');
+    expect(out).toContain('[pending-test] "waits": masters not merged');
+    expect(status).toBe(0);
+  }, 60_000);
+
+  it('--include-pending runs it', () => {
+    const { stderr, calls } = run([fixture('runs now'), fixture('waits', 'masters not merged')], ['--include-pending']);
+    expect(calls.sort(), stderr).toEqual(['runs now', 'waits']);
+  }, 60_000);
+
+  it('a category holding only pending entries lists them and exits 0 with no call', () => {
+    const { status, stderr, out, calls } = run([fixture('waits', 'masters not merged')]);
+    expect(calls, stderr).toEqual([]);
+    expect(out).toContain('[pending-test] "waits": masters not merged');
+    expect(status).toBe(0);
+  }, 60_000);
+
+  it('the four topic-masters fixtures are pending until masters-1 merges', () => {
+    const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Array<{ category: string; pending?: string }>;
+    const tm = all.filter(q => q.category === 'topic-masters');
+    expect(tm).toHaveLength(4);
+    expect(tm.every(q => q.pending === 'US-50 masters-1 not merged')).toBe(true);
+  });
+});

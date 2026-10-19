@@ -34,17 +34,17 @@ describe('answer prompt precedence (US-50 AC5)', () => {
   it('the current view outranks an older post; a newer post wins over the current view', () => {
     expect(loaded).toContain('a reference\'s "Current view" section outranks any loaded post or video published before the reference\'s reviewed date');
     expect(loaded).toContain('A loaded post or video published after that reviewed date wins over the current view: it may record a change of view the reference has not caught up with.');
-    expect(loaded).toContain('say plainly that the position has changed since the older post');
   });
 
-  it('attributes the change to Brad on doctor surfaces only; the brand surface uses its own voice (H1)', () => {
-    expect(loaded).toContain("On the doctor surfaces, say that Brad's view has changed, or that the newer post is Brad's latest position.");
-    expect(loaded).toContain('On the brand surface, state the current position in your own voice and never attribute it to Brad.');
+  it('the "view has changed" trigger is scoped to a Current view against a video post (N2)', () => {
+    expect(loaded).toContain("When a reference's Current view and a loaded video post differ, the more recent one wins: a post published after the reference's reviewed date may record a newer view; otherwise the Current view wins. On the doctor surfaces, say plainly that Brad's view has changed and what it is now; on the brand surface, state the current position in your own voice. A reference's Current evidence position is never Brad's view, so it never prompts a 'view has changed' remark. A post dated the same day as the reviewed date counts as covered by the Current view.");
+    expect(loaded).not.toContain('When loaded blocks differ');
   });
 
   it('the whose-view rule is scoped to references and leaves posts and the answer bank to "Brad\'s stated views" (B1)', () => {
     expect(loaded).toContain("Within a reference entry, only sentences in its Current view section that cite one of Brad's posts are Brad's view; its other sections and any Current evidence position are evidence summaries.");
-    expect(loaded).toContain('Brad\'s posts and the ANSWER BANK follow "Brad\'s stated views" above');
+    expect(loaded).toContain('Brad\'s posts and the ANSWER BANK follow "Brad\'s stated views" above.');
+    expect(loaded).not.toContain('the brand surface never attributes any of them to Brad'); // N6: the brand posture governs
     expect(system).toContain("Either quote Brad's loaded blog/script content directly (on the doctor surfaces an ANSWER BANK entry also counts as a record of Brad's view)");
     expect(loaded).not.toMatch(/^- \*\*Whose view\.\*\* Only sentences/m);
   });
@@ -69,8 +69,10 @@ describe('YouTube prompt and the master views (US-50 AC6)', () => {
     expect(youtube).toContain('Published: {{VIDEO_PUBLISHED}}');
   });
 
-  it("a video published after the reviewed date wins on Brad's view today", () => {
-    expect(youtube).toContain("If this video was published after the section's reviewed date, the video wins: it may record a change of view the topic page has not caught up with, so give the video's view and say plainly that it is Brad's newer position.");
+  it("the more recent of video and Current view wins, scoped as in the answer prompt (N2)", () => {
+    expect(youtube).toContain("When a topic page's Current view and this video differ, the more recent one wins: if the video was published after the page's reviewed date, the video may record a newer view, so give the video's view and say plainly that it is Brad's newer position; otherwise the Current view wins");
+    expect(youtube).toContain('a video dated the same day as the reviewed date counts as covered by the Current view');
+    expect(youtube).toContain('A Current evidence position is never Brad\'s view, so it never prompts a "view has changed" remark.');
   });
 
   it('states the two-axis rule and allows a public "view has changed"', () => {
