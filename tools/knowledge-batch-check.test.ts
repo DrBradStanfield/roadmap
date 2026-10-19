@@ -1517,3 +1517,140 @@ describe("US-42 AC2 void entries, number words, abbreviations (v3)", () => {
       "Martin Luther King Jr. spoke.", "Smith Sr. agreed with Lee et al. today, i.e. fine, e.g. here, vs. none.", "Dr. Who left."]);
   });
 });
+
+// ---- US-50 AC1 / US-42 AC1 amended: topic-master batches (--masters) ----
+
+describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
+  const SRC = '[{"name":"NIH ODS","url":"https://ods.od.nih.gov/x","checked":"2026-10-20","fingerprint":"abc123"}]';
+  const sections = (view = "## Current view (reviewed 20 October 2026)\n\nShort view [post-a].\n", videos = "## Brad's videos on this topic\n\n- 2026-01-01 Title: take.\n") =>
+    `\n${view}\n${videos}`;
+  const alphaFm = (extra: string[], summary = "Alpha summary, 200 mg in adults.") =>
+    fx("alpha.new.md").replace(/^summary:.*$/m, [`summary: "${summary}"`, ...extra].join("\n"));
+  const master = (extra: string[], body = sections(), summary?: string) => {
+    put("docs/blog/alpha.md", alphaFm(extra, summary).replace("## Dosing", `${body.trim()}\n\n## Dosing`));
+  };
+  const GOOD = [`reviewed: "2026-10-20"`, `sources: ${SRC}`];
+  const mrun = () => run({ masters: true });
+  const f1 = (r: Record<string, Result>) => fails(r.AC1).join("\n");
+
+  it("without the flag, added master keys still fail exactly as today", () => {
+    master(GOOD);
+    expect(f1(run())).toContain("frontmatter changed");
+  });
+  it("allows added reviewed and sources on a reference", () => {
+    master(GOOD);
+    const r = mrun();
+    expect(fails(r.AC1)).toEqual([]);
+    expect(fails(r.MASTER)).toEqual([]);
+  });
+  it("allows a changed summary when it equals the proposed correction, and only then", () => {
+    reps.alpha.proposed_summary_correction = "Alpha summary, 300 mg in adults.";
+    put("docs/blog/index.json", INDEX.replace("200 mg in adults", "300 mg in adults"));
+    master(GOOD, sections(), "Alpha summary, 300 mg in adults.");
+    expect(fails(mrun().AC1)).toEqual([]);
+    master(GOOD, sections(), "Alpha summary, 999 mg in adults.");
+    expect(f1(mrun())).toContain("summary line differs from proposed_summary_correction");
+  });
+  it("fails a changed summary with no proposed correction", () => {
+    master(GOOD, sections(), "Alpha summary, 999 mg in adults.");
+    expect(f1(mrun())).toContain("summary");
+  });
+  it("allows reviewed, topics and router in the index diff of a batch handle, and nothing else", () => {
+    master(GOOD);
+    const entries = JSON.parse(INDEX);
+    entries[0] = { ...entries[0], reviewed: "2026-10-20", topics: ["alpha"], router: "hidden" };
+    put("docs/blog/index.json", JSON.stringify(entries, null, 2));
+    expect(fails(mrun().AC1)).toEqual([]);
+    entries[0].title = "Alpha 2";
+    put("docs/blog/index.json", JSON.stringify(entries, null, 2));
+    expect(f1(mrun())).toContain("index.json");
+  });
+  it("still protects every other frontmatter field", () => {
+    master(GOOD);
+    put("docs/blog/alpha.md", readFileSync(join(root, "docs/blog/alpha.md"), "utf8").replace('title: "Alpha"', 'title: "Alpha 2"'));
+    expect(f1(mrun())).toContain("frontmatter");
+    master([...GOOD, 'tags: ["x"]']);
+    expect(f1(mrun())).toContain("frontmatter");
+  });
+  it("rejects topics or router on a reference", () => {
+    master([...GOOD, 'topics: ["alpha"]']);
+    expect(f1(mrun())).toContain("frontmatter");
+    master([...GOOD, "router: hidden"]);
+    expect(f1(mrun())).toContain("frontmatter");
+  });
+  it("rejects an invalid reviewed date", () => {
+    master([`reviewed: "2026-13-40"`, `sources: ${SRC}`]);
+    expect(f1(mrun())).toContain("reviewed");
+    master([`reviewed: 2026-10-20`, `sources: ${SRC}`]);
+    expect(f1(mrun())).toContain("reviewed");
+  });
+  it("rejects sources that do not parse, miss a key, are empty, or are absent next to reviewed", () => {
+    master([`reviewed: "2026-10-20"`, "sources: [not json"]);
+    expect(f1(mrun())).toContain("sources");
+    master([`reviewed: "2026-10-20"`, `sources: [{"name":"n","url":"u","checked":"2026-10-20"}]`]);
+    expect(f1(mrun())).toContain("fingerprint");
+    master([`reviewed: "2026-10-20"`]);
+    expect(f1(mrun())).toContain("sources");
+    master([`reviewed: "2026-10-20"`, "sources: []"]);
+    expect(f1(mrun())).toContain("sources");
+  });
+  it("rejects a multi-line sources value", () => {
+    master([`reviewed: "2026-10-20"`, "sources:", `  - name: x`]);
+    expect(f1(mrun())).toContain("sources");
+  });
+
+  describe("posts", () => {
+    const post = (extra: string[]) => `---\ntitle: "O"\n${extra.join("\n")}${extra.length ? "\n" : ""}---\n\nBody.\n`;
+    const only = (extra: string[]) => {
+      // "other" is a video post in the index (no type): commit it, then change its frontmatter.
+      put("docs/blog/other.md", post([]));
+      sh(["add", "-A"]); sh(["commit", "-q", "--allow-empty", "-m", "post"]);
+      put("docs/blog/other.md", post(extra));
+      const { results } = runBatch({ root, batch: "t", handles: ["other"], reportsDir: reports, exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports], masters: true });
+      return Object.fromEntries(results.map((x) => [x.id, x])) as Record<string, Result>;
+    };
+    it("allows added topics and router: hidden", () => {
+      expect(f1(only(['topics: ["alpha","beta"]', "router: hidden"]))).toBe("");
+    });
+    it("rejects topics that are not a JSON string array, and any router value but hidden", () => {
+      expect(f1(only(["topics: [1,2]"]))).toContain("topics");
+      expect(f1(only(["topics: alpha"]))).toContain("topics");
+      expect(f1(only(["router: shown"]))).toContain("router");
+    });
+    it("rejects reviewed or sources on a post, and a changed title", () => {
+      expect(f1(only([`reviewed: "2026-10-20"`]))).toContain("frontmatter");
+      expect(f1(only(['title: "O2"']))).toContain("frontmatter");
+    });
+  });
+
+  describe("master body", () => {
+    it("fails a reviewed master with neither a Current view nor an evidence-position section", () => {
+      master(GOOD, "\n## Brad's videos on this topic\n\nNone.\n");
+      expect(fails(mrun().MASTER).join()).toContain("Current view");
+    });
+    it("fails a master with both sections", () => {
+      master(GOOD, sections() + "\n## Current evidence position\n\nText.\n");
+      expect(fails(mrun().MASTER).join()).toContain("exactly one");
+    });
+    it("passes the evidence-position form with a videos list of None", () => {
+      master(GOOD, sections("## Current evidence position\n\nEvidence summary.\n", "## Brad's videos on this topic\n\nNone.\n"));
+      expect(fails(mrun().MASTER)).toEqual([]);
+    });
+    it("fails a Current view master whose videos section is missing or just None", () => {
+      master(GOOD, sections(undefined, ""));
+      expect(fails(mrun().MASTER).join()).toContain("Brad's videos");
+      master(GOOD, sections(undefined, "## Brad's videos on this topic\n\nNone.\n"));
+      expect(fails(mrun().MASTER).join()).toContain("Brad's videos");
+    });
+    it("does not run in the default mode", () => {
+      expect(run().MASTER).toBeUndefined();
+    });
+  });
+
+  it("the CLI accepts --masters", () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(main(["--masters"])).toBe(2); // still needs --batch
+    expect(String(err.mock.calls[0][0])).toContain("[--masters]");
+    err.mockRestore();
+  });
+});

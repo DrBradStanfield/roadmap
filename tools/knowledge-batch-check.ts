@@ -25,6 +25,11 @@
  *    voided, not deleted: every AC2 check skips it, it never covers a token, and the report lists "VOID <i>: <reason>".
  *  - AC6 allows the --out report path inside the repo: the batch report commits with the batch.
  *
+ *   Topic-master batches (US-50 AC1, US-42 AC1 amended) add --masters (put it last or before another flag): on a
+ *   reference the frontmatter may gain or change `reviewed: "YYYY-MM-DD"` and a one-line JSON `sources:`, and the
+ *   summary may change to the proposed correction; on a post it may gain `topics:` (JSON string array) and
+ *   `router: hidden`. Every other field stays protected. A reference with `reviewed` also gets the MASTER body check.
+ *
  *   npx tsx tools/knowledge-batch-check.ts --print-schema
  *   npx tsx tools/knowledge-batch-check.ts --example <handle>
  */
@@ -176,6 +181,36 @@ export const sha256 = (s: string | Buffer) => createHash("sha256").update(s).dig
 export function splitFrontmatter(text: string): { front: string; body: string } {
   const m = text.match(/^---\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/);
   return m ? { front: m[0], body: text.slice(m[0].length) } : { front: "", body: text };
+}
+
+/** The value after `key:` on its own frontmatter line, or null when the key has no line. */
+export const fmValue = (front: string, key: string) => new RegExp(`^${key}:[ \t]*(.*)$`, "m").exec(front)?.[1].trim() ?? null;
+
+export function validDate(s: string): boolean {
+  const d = new Date(`${s}T00:00:00Z`);
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
+const SOURCE_KEYS = ["name", "url", "checked", "fingerprint"];
+const jsonOf = (v: string): unknown => { try { return JSON.parse(v); } catch { return undefined; } };
+
+/** Shape errors of one master frontmatter value (US-50 AC1), or null. `value` is the text after `key:` on its line. */
+export function masterKeyError(key: string, value: string): string | null {
+  if (!value) return "needs its value on the same line";
+  if (key === "router") return value === "hidden" ? null : 'must be exactly "hidden"';
+  if (key === "reviewed") {
+    const d = /^"(\d{4}-\d{2}-\d{2})"$/.exec(value)?.[1];
+    return d && validDate(d) ? null : 'must be a quoted valid date, "YYYY-MM-DD"';
+  }
+  const j = jsonOf(value);
+  if (!Array.isArray(j) || !j.length) return "must be a single-line, non-empty JSON array";
+  if (key === "topics") return j.every((t) => typeof t === "string" && t) ? null : "must be an array of non-empty strings";
+  for (const [i, it] of j.entries()) {
+    const o = it as Record<string, unknown> | null;
+    const miss = SOURCE_KEYS.find((k) => typeof o?.[k] !== "string" || !o[k]);
+    if (miss) return `item ${i} is missing ${miss}`;
+    if (!validDate(o!.checked as string)) return `item ${i} has an invalid checked date`;
+  }
+  return null;
 }
 
 /** Undo turndown's backslash escapes. */
@@ -452,6 +487,8 @@ export interface Options {
   /** Allowed raw roots (default: the knowledge-map-raw roots of tools/codex-review-includes.json). */
   rawRoots?: string[];
   exclusionsPath?: string; exceptions?: Exception[]; noExclusions?: boolean;
+  /** Topic-master batch (US-50 AC1): the master frontmatter keys are allowed and the MASTER body check runs. */
+  masters?: boolean;
   checkIds?: boolean; headStatus?: (url: string) => number; delayMs?: number;
 }
 export interface Row {
@@ -526,6 +563,54 @@ function loadCtx(o: Options, base: string, handle: string, ac2: Check, index: Ma
     newBody: splitFrontmatter(newText ?? "").body, baseBody: splitFrontmatter(baseText ?? "").body };
 }
 
+const MASTER_INDEX_KEYS = ["reviewed", "topics", "router"];
+const MASTER_FRONT: Record<string, string[]> = { reference: ["reviewed", "sources"], video: ["topics", "router"] };
+
+/** US-50 AC1: only the master keys for this page type and a summary that equals the proposal may change. */
+function checkMasterFront(c: Ctx, bf: string, nf: string, corrections: Map<string, string>, ac1: Check) {
+  const keys = MASTER_FRONT[c.type ?? ""] ?? [];
+  const rest = (f: string) => f.split(/\r?\n/).filter((l) => l && l !== "---" && ![...keys, "summary"].some((k) => l.startsWith(`${k}:`))).join("\n");
+  if (rest(bf) !== rest(nf)) ac1.fails.push(`${c.rel}: frontmatter differs beyond the summary line and the master keys (${keys.join(", ") || "none for this type"})`);
+  const summaryOf = (f: string) => {
+    const v = fmValue(f, "summary") ?? "";
+    return (jsonOf(v) as string | undefined) ?? v.replace(/^'|'$/g, "");
+  };
+  const want = corrections.get(c.handle);
+  if (squash(summaryOf(nf)) !== squash(summaryOf(bf)) && (want === undefined || squash(summaryOf(nf)) !== squash(want))) {
+    ac1.fails.push(`${c.rel}: summary line differs from proposed_summary_correction${want === undefined ? " (none proposed)" : ""}`);
+  }
+  for (const k of keys) {
+    const v = fmValue(nf, k);
+    const err = v === null ? null : masterKeyError(k, v);
+    if (err) ac1.fails.push(`${c.rel}: ${k}: ${err}`);
+  }
+  const has = (k: string) => fmValue(nf, k) !== null;
+  if (c.type === "reference" && has("reviewed") !== has("sources")) ac1.fails.push(`${c.rel}: reviewed and sources go together (a master needs both)`);
+  if (c.type !== "reference" && has("router") && !has("topics")) ac1.fails.push(`${c.rel}: router: hidden needs topics`);
+}
+
+/** A reviewed reference is a master: one Current view or Current evidence position, and a videos section. */
+function checkMasterBody(c: Ctx, m: Check) {
+  if (c.type !== "reference" || c.newText === null || fmValue(splitFrontmatter(c.newText).front, "reviewed") === null) return;
+  const secs: { head: string; text: string[] }[] = [];
+  let fence = false;
+  for (const line of c.newBody.split(/\r?\n/)) {
+    if (/^\s*```/.test(line)) fence = !fence;
+    const h = fence ? null : /^#{1,2}\s+(.+?)\s*#*$/.exec(line);
+    if (h) secs.push({ head: h[1].replace(/\*\*/g, ""), text: [] }); else secs.at(-1)?.text.push(line);
+  }
+  const view = secs.filter((s) => /^Current view \(reviewed [^)]+\)$/.test(s.head));
+  const position = secs.filter((s) => s.head === "Current evidence position");
+  if (view.length + position.length !== 1) m.fails.push(`${c.handle}: needs exactly one of "## Current view (reviewed …)" or "## Current evidence position" (found ${view.length + position.length})`);
+  const videos = secs.filter((s) => /^Brad['’]s videos on this topic$/.test(s.head));
+  if (videos.length !== 1) m.fails.push(`${c.handle}: needs one "## Brad's videos on this topic" section (found ${videos.length})`);
+  else {
+    const text = videos[0].text.join("\n").trim();
+    if (!text) m.fails.push(`${c.handle}: "Brad's videos on this topic" is empty (write None if there are none)`);
+    else if (view.length && /^none\.?$/i.test(text)) m.fails.push(`${c.handle}: "Brad's videos on this topic" says None, but a Current view must cite his posts`);
+  }
+}
+
 function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
   const batch = new Set(o.handles);
   const corrections = new Map(ctxs.filter((c) => c.rep?.proposed_summary_correction != null).map((c) => [c.handle, c.rep!.proposed_summary_correction!]));
@@ -539,9 +624,11 @@ function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
       for (const h of new Set([...a.keys(), ...b.keys()])) {
         const x = a.get(h), y = b.get(h);
         if (JSON.stringify(x) === JSON.stringify(y)) continue;
-        const ok = batch.has(h) && corrections.has(h) && x && y &&
-          Object.keys({ ...x, ...y }).every((k) => k === "summary" || JSON.stringify(x[k]) === JSON.stringify(y[k]));
-        if (ok && squash(String(y.summary ?? "")) !== squash(corrections.get(h)!)) ac1.fails.push(`${idxRel}: index.json summary for "${h}" differs from proposed_summary_correction`);
+        const free = o.masters ? ["summary", ...MASTER_INDEX_KEYS] : ["summary"];
+        const summaryMoved = JSON.stringify(x?.summary) !== JSON.stringify(y?.summary);
+        const ok = batch.has(h) && (corrections.has(h) || (o.masters && !summaryMoved)) && x && y &&
+          Object.keys({ ...x, ...y }).every((k) => free.includes(k) || JSON.stringify(x[k]) === JSON.stringify(y[k]));
+        if (ok && corrections.has(h) && summaryMoved && squash(String(y.summary ?? "")) !== squash(corrections.get(h)!)) ac1.fails.push(`${idxRel}: index.json summary for "${h}" differs from proposed_summary_correction`);
         else if (ok) ac1.infos.push(`allowed summary correction: ${h}`);
         else ac1.fails.push(`${idxRel}: ${!x ? "entry added" : !y ? "entry removed" : "entry changed"} for "${h}"${batch.has(h) ? " (no proposed_summary_correction, or fields beyond summary changed)" : " (not in batch)"}`);
       }
@@ -557,6 +644,7 @@ function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
   for (const c of ctxs) {
     if (c.baseText === null || c.newText === null) continue;
     const bf = splitFrontmatter(c.baseText).front, nf = splitFrontmatter(c.newText).front;
+    if (o.masters) { checkMasterFront(c, bf, nf, corrections, ac1); continue; }
     const noSummary = (f: string) => f.split(/\r?\n/).filter((l) => !/^summary:/.test(l)).join("\n");
     if (corrections.has(c.handle)) {
       if (noSummary(bf) !== noSummary(nf)) ac1.fails.push(`${c.rel}: frontmatter differs beyond the summary line`);
@@ -1136,6 +1224,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   const ac6 = new Check("AC6", "diff touches only batch files");
   const ac7 = new Check("AC7", "grokipedia, products, references, banned phrases, exclusions");
   const pw = new Check("PATHWAY", "source line, deferral blockquote, no NZ logistics");
+  const master = new Check("MASTER", "topic-master sections (Current view or evidence position, Brad's videos)");
   const rows: Row[] = [];
   let index = new Map<string, { type?: string }>();
   try {
@@ -1153,6 +1242,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     const raw = c.rep ? loadRaw(c.rep, o, `${c.handle}:`, ac2) : null;
     if (c.newText !== null) {
       if (c.rep && raw) quoted = checkAc2(c, added, ac2, raw, c.baseText !== null ? pairTokenChanges(c) : { pairs: new Map(), orphans: [] });
+      if (o.masters) checkMasterBody(c, master);
       checkAc3(c, hedgeBefore, hedgeAfter, ac3);
       if (c.baseText !== null) deleted = checkAc4(c, ac4);
       checkAc7(c, ac7, pw, raw ? raw.abstracts : [], ids);
@@ -1195,7 +1285,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   ac6.infos.push("Shopify updated_at snapshot: separate tool, NOT checked here");
 
   const used = new Set<Exception>();
-  const results = [ac1, ac2, ac3, ac4, ac6, ac7, pw].map((c) => c.result(o.exceptions, used));
+  const results = [ac1, ac2, ac3, ac4, ac6, ac7, pw, ...(o.masters ? [master] : [])].map((c) => c.result(o.exceptions, used));
   for (const x of o.exceptions ?? []) {
     if (used.has(x)) continue;
     const r = results.find((y) => y.id === x.check) ?? results[results.length - 1];
@@ -1283,7 +1373,7 @@ export function main(argv: string[], overrides: Partial<Options> = {}): number {
   const a = parseArgs(argv);
   if (a["print-schema"]) { console.log(JSON.stringify(REPORT_SCHEMA, null, 2)); return 0; }
   if (typeof a.example === "string") { console.log(JSON.stringify(exampleReport(a.example), null, 2)); return 0; }
-  const usage = (msg: string) => { console.error(`${msg}\nusage: knowledge-batch-check.ts --batch <name> --handles <file> --base <git ref> [--reports <dir>] [--out <file>] [--exceptions <file>] [--no-exclusions] [--check-ids]`); return 2; };
+  const usage = (msg: string) => { console.error(`${msg}\nusage: knowledge-batch-check.ts --batch <name> --handles <file> --base <git ref> [--reports <dir>] [--out <file>] [--exceptions <file>] [--no-exclusions] [--check-ids] [--masters]`); return 2; };
   if (typeof a.batch !== "string" || typeof a.handles !== "string") return usage("--batch and --handles are required");
   if (typeof a.base !== "string") return usage("--base is required (no default)");
   const root = git(process.cwd(), ["rev-parse", "--show-toplevel"]).trim();
@@ -1304,7 +1394,7 @@ export function main(argv: string[], overrides: Partial<Options> = {}): number {
   }
   const checkIds = a["check-ids"] === true;
   const { results, rows, baseSha } = runBatch({ root, batch: a.batch, handles, reportsDir, base: a.base, outRel, exceptions,
-    noExclusions: a["no-exclusions"] === true, checkIds, ...overrides });
+    noExclusions: a["no-exclusions"] === true, checkIds, masters: a.masters !== undefined, ...overrides });
   for (const r of results) {
     console.log(`${r.status} ${r.id} ${r.title}`);
     for (const e of r.evidence) console.log(`    ${e}`);
