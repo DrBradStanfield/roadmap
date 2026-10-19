@@ -212,7 +212,7 @@ same commit).
   to `worker` (Sonnet 5.5, medium; Brad 2026-10-19 usage audit); implementation touching clinical
   logic, merge/FHIR, security or a live write path, and every knowledge-base entry
   or web page, to `worker-opus` (Opus, medium); every adversarial
-  check to a FRESH `adversary` (Opus, high). All pinned in `.claude/agents/`. Review rounds capped:
+  check to a FRESH `adversary` (Opus, medium). All pinned in `.claude/agents/`. Review rounds capped:
   one full review + one fix-scoped re-check, then Brad (docs/review-format.md). Full 1M context kept (Brad
   2026-10-20, no auto-compact cap); Brad compacts or `/clear`s by hand. Spawn them by name, never with a per-call `model`; never set
   `CLAUDE_CODE_SUBAGENT_MODEL`. Sonnet 5.5 (`general-purpose` + `model: sonnet`, 2026-09-29)
