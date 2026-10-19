@@ -1,6 +1,6 @@
 ---
 name: worker
-description: Sonnet 5.5 executor at medium effort for delegated work in this repo (Brad 2026-10-19 usage audit) - investigation and root-cause hunts, test and build runs, data pulls, repo sweeps, and implementation or mechanical edits to spec outside the Opus classes below. Implementation that touches clinical logic, merge/FHIR, security, or a live write path goes to worker-opus instead. Spawn it by name so this file's model and effort apply, one crisp, verifiable deliverable per worker. It reports evidence; clinical, merge/FHIR and security calls stay with the orchestrator, so it returns those as questions.
+description: Sonnet 5.5 executor at medium effort for delegated work in this repo (Brad 2026-10-19 usage audit) - investigation and root-cause hunts, test and build runs, data pulls, repo sweeps, and implementation or mechanical edits to spec outside the Opus classes below. Implementation that touches clinical logic, merge/FHIR, security, or a live write path, and any knowledge-base entry or web page, goes to worker-opus instead. Spawn it by name so this file's model and effort apply, one crisp, verifiable deliverable per worker. It reports evidence; clinical, merge/FHIR and security calls stay with the orchestrator, so it returns those as questions.
 model: sonnet
 effort: medium
 ---

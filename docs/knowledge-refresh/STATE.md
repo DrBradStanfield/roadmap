@@ -33,7 +33,7 @@ Every batch: AC8 signed by Brad (sheets signoff-*.md); answer checks (AC5) pre-r
 3. Batch 4 onward: next 20 changed pathways by traffic from ~/Documents/knowledge-refresh-recovery/runs/traffic-ranking-2026-10-14.csv (about 550 changed pathways remain; refresh-manifest.csv in the raw folder).
 
 ## Batch recipe (as run for batch 3)
-1. Handles file + empty exceptions file; one Opus `worker` per entry with docs/knowledge-refresh/writer-brief-batch-3.md (HANDLE in the prompt; own scratch folder), at most 5 in flight; commit each entry as it lands; orchestrator notes in batch-N-notes.md.
+1. Handles file + empty exceptions file; one `worker-opus` per entry with docs/knowledge-refresh/writer-brief-batch-3.md (HANDLE in the prompt; own scratch folder), at most 5 in flight; commit each entry as it lands; orchestrator notes in batch-N-notes.md.
 2. One Sonnet fixer: report records (AC2/AC4) + style, urgency and comparator audit (brief: ~/Documents/knowledge-refresh-recovery/runs/batch-3-fixer-brief.md).
 3. One Sonnet currency check against Medsafe data sheets (runs/currency-brief.md; ruling 13); the orchestrator rules each item in batch-N-currency-*.md.
 4. One `worker-opus` (Opus) applies style, urgency, comparator and accepted currency fixes; orchestrator files exceptions (data-sheet numbers, scrape defects, house lines).

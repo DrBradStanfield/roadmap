@@ -210,7 +210,8 @@ same commit).
 - **Model delegation (Brad, 2026-09-28):** the main session runs the newest Opus as orchestrator and
   keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. Delegated work goes
   to `worker` (Sonnet 5.5, medium; Brad 2026-10-19 usage audit); implementation touching clinical
-  logic, merge/FHIR, security or a live write path to `worker-opus` (Opus, medium); every adversarial
+  logic, merge/FHIR, security or a live write path, and every knowledge-base entry
+  or web page, to `worker-opus` (Opus, medium); every adversarial
   check to a FRESH `adversary` (Opus, high). All pinned in `.claude/agents/`. Review rounds capped:
   one full review + one fix-scoped re-check, then Brad (docs/review-format.md). Context auto-compacts
   at 250k (`.claude/settings.json`); `/clear` between unrelated tasks. Spawn them by name, never with a per-call `model`; never set
