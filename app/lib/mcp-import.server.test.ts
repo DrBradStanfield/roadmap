@@ -449,6 +449,44 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
     }
   });
 
+  it('US-35 AC18: parks first, sweeps after; a refused park is reported by status and class, never swallowed', async () => {
+    // Dropbox answered 429 to a park that raced the sweep's deletes (2026-10-20).
+    const cloud = new MemoryCloud();
+    cloud.files.set('imports/pending-abandoned.json', { json: '{}', version: 1, modified: '2026-09-02T07:30:00.000Z' });
+    const adapter = new MemoryAdapter(cloud);
+    const order: string[] = [];
+    let deleting = 0;
+    const { list, write, remove } = { list: adapter.list.bind(adapter), write: adapter.write.bind(adapter), remove: adapter.remove.bind(adapter) };
+    const tick = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    adapter.list = async (...args) => { order.push('list'); return list(...args); };
+    adapter.remove = async (...args) => {
+      order.push('remove');
+      deleting++;
+      try { await tick(10); return await remove(...args); } finally { deleting--; }
+    };
+    adapter.write = async (...args) => {
+      order.push('write');
+      await tick(5);
+      if (deleting > 0) throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429);
+      return write(...args);
+    };
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+
+    const stashed = await surface.stash(PAYLOAD, deadline());
+    expect(stashed).toHaveProperty('receipt', PAYLOAD.id);
+    expect(order).toEqual(['write', 'list', 'remove']);
+    expect(cloud.files.has('imports/pending-abandoned.json')).toBe(false);
+
+    // A park the provider refuses: the refusal stands, and Sentry hears status and class only.
+    vi.mocked(Sentry.captureMessage).mockClear();
+    adapter.write = async (...args) => { throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429); };
+    expect(await surface.stash(PAYLOAD, deadline())).toEqual({ refusal: expect.stringMatching(/could not be parked/) });
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('mcp_import: candidates not parked', {
+      level: 'warning', tags: { feature: 'mcp_import', errorClass: 'StorageError', httpStatus: 429 },
+    });
+    expect(JSON.stringify(vi.mocked(Sentry.captureMessage).mock.calls)).not.toMatch(new RegExp(`${PAYLOAD.id}|imports/`));
+  });
+
   it('a delete that fails does not fail the call — it is one count, naming no file', async () => {
     const adapter = new MemoryAdapter(new MemoryCloud());
     adapter.remove = async () => { throw new Error('dropbox said no'); };
