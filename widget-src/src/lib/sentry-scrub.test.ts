@@ -152,6 +152,26 @@ describe('scrubBreadcrumb — ui.click and ui.input element names', () => {
     leaks(out.message);
   });
 
+  // A class can say what the element shows: a result's status, a suggestion's
+  // priority, a document's type, a lab group. Those classes go; the rest stay.
+  const VALUE_CLASSES = 'status-urgent bt-status-bad review-doc-type--discharge_summary '
+    + 'health-record-type--lab_report suggestion-urgent alr-group-icon--thyroid';
+  const KEPT = 'body > div.hr-panel > span.stat-status';
+
+  it('drops value-encoding classes from the rebuilt path', () => {
+    const badge = element('SPAN', `stat-status ${VALUE_CLASSES}`,
+      element('DIV', 'hr-panel bt-status-bad', element('BODY', '', null)));
+    const out = scrubBreadcrumb({ category: 'ui.click', message: 'x' }, { event: { target: badge } })!;
+    expect(out.message).toBe(KEPT);
+  });
+
+  it('drops value-encoding classes in the no-target fallback, before the cut too', () => {
+    const message = `body > div.hr-panel.bt-status-bad > span.stat-status.${VALUE_CLASSES.split(' ').join('.')}`
+      + '[aria-label="Diabetic"]';
+    const out = scrubBreadcrumb({ category: 'ui.click', message })!;
+    expect(out.message).toBe(KEPT);
+  });
+
   it('leaves other categories as they were', () => {
     const crumbs = [
       { category: 'sentry.event', message: 'input[aria-label="x 0.4"]', data: { a: 1 } },

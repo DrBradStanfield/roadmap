@@ -10,6 +10,10 @@ let initialized = false;
 
 type PathElement = { tagName?: unknown; id?: unknown; className?: unknown; parentNode?: unknown };
 
+/** Classes that say what an element shows: a result's status, a suggestion's
+ *  priority, a document's type, a lab group (US-09 AC7d). */
+const VALUE_CLASS = /^(bt-status-|status-|suggestion-(info|attention|urgent)|review-doc-type--|health-record-type--|alr-group-icon--)/;
+
 /** The SDK's element path (up to five levels, outermost first) with tag, #id and .classes only. */
 function elementPath(target: unknown): string | undefined {
   const parts: string[] = [];
@@ -17,7 +21,7 @@ function elementPath(target: unknown): string | undefined {
     el = el.parentNode as PathElement | null) {
     const tag = el.tagName.toLowerCase();
     if (tag === 'html') break;
-    const classes = typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean) : [];
+    const classes = typeof el.className === 'string' ? el.className.split(/\s+/).filter(c => c && !VALUE_CLASS.test(c)) : [];
     parts.push(tag + (typeof el.id === 'string' && el.id ? `#${el.id}` : '') + classes.map(c => `.${c}`).join(''));
   }
   return parts.length ? parts.reverse().join(' > ') : undefined;
@@ -28,12 +32,14 @@ export function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb, hint?: Sentry.Bre
   // The SDK names a clicked or typed-in element by its aria-label, type, name,
   // title and alt, and a label can quote values ("Replace the saved zinc value
   // 0.4 … with 0.7 …") that scrubText misses. Keep tag, id and classes only
-  // (US-09 AC7d). Without the element, cut at the first attribute: the SDK
-  // does not escape values, so no pattern can tell where one ends. `data`
-  // goes whole: it held DOM refs and a component name, nothing we read.
+  // (US-09 AC7d), minus the classes that encode a value. Without the element,
+  // cut at the first attribute: the SDK does not escape values, so no pattern
+  // can tell where one ends. `data` goes whole: it held DOM refs and a
+  // component name, nothing we read.
   if (breadcrumb.category === 'ui.click' || breadcrumb.category === 'ui.input') {
     const event = hint?.event as { target?: unknown } | undefined;
-    breadcrumb.message = elementPath(event?.target ?? event) ?? breadcrumb.message?.split('[')[0].trimEnd();
+    breadcrumb.message = elementPath(event?.target ?? event) ?? breadcrumb.message?.split('[')[0].trimEnd()
+      .split(' > ').map(part => part.split('.').filter((c, i) => !i || !VALUE_CLASS.test(c)).join('.')).join(' > ');
     delete breadcrumb.data;
   }
   // Scrub fetch/xhr breadcrumbs (request bodies contain health data)
