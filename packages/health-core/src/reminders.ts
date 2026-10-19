@@ -429,6 +429,10 @@ export const REMINDER_CATEGORY_LABELS: Record<ReminderCategory, string> = {
  */
 export function formatReminderDate(dateStr: string): string {
   const date = new Date(dateStr);
+  // Date-only inputs name a calendar month, not an instant in the local zone.
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+  const month = dateOnly ? date.getUTCMonth() : date.getMonth();
+  const year = dateOnly ? date.getUTCFullYear() : date.getFullYear();
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${months[date.getMonth()]} ${date.getFullYear()}`;
+  return `${months[month]} ${year}`;
 }
