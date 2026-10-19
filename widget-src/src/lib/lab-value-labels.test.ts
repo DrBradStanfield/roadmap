@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { LAB_CATALOG } from '@roadmap/health-core';
-import { labUnitRefusalLine, labValueLabel } from './lab-value-labels';
+import { labUnitRefusalLine, labValueLabel, measurementRefusalLine } from './lab-value-labels';
 
 // US-21 AC11 / AC7: a catalogued test printed with no unit is refused, and the
 // line says so plainly instead of "unit not recognised ()" (adversary R3).
@@ -40,5 +40,18 @@ describe('labValueLabel', () => {
 
   it('names the test in a refused-unit line by its catalogue label', () => {
     expect(labUnitRefusalLine('vitamin_d', 'mg/dL')).toMatch(/^Vitamin D \(25-OH\): unit not recognised/);
+  });
+});
+
+// US-12 AC6 / US-35 AC17: a refused blood test value is named by its test,
+// with a reason the person can act on, and never the number.
+describe('measurementRefusalLine', () => {
+  it('words each refusal reason on its own', () => {
+    expect(measurementRefusalLine({ index: 0, metricType: 'ldl', reason: 'out-of-range', message: 'synthetic' }))
+      .toBe('LDL Cholesterol: the number was not saved. It is outside the range the record accepts.');
+    expect(measurementRefusalLine({ index: 0, metricType: 'ldl', reason: 'invalid-value', message: 'synthetic' }))
+      .toBe('LDL Cholesterol: the value was not a number the record can store, so it was not saved.');
+    expect(measurementRefusalLine({ index: 0, metricType: 'toString', reason: 'unknown-metric', message: 'synthetic' }))
+      .toBe('toString: not a test the record knows, so it was not saved.');
   });
 });

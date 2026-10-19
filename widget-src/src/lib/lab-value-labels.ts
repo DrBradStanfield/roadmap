@@ -29,7 +29,7 @@ export function labUnitRefusalLine(key: string, unit: string, fault?: LabUnitRef
  *  US-35 AC17): the test named, never the number or the store's message. */
 export function measurementRefusalLine({ metricType, reason }: MeasurementRefusal): string {
   const label = Object.prototype.hasOwnProperty.call(METRIC_LABELS, metricType) ? METRIC_LABELS[metricType] : metricType;
-  return reason === 'unknown-metric'
-    ? `${label}: not a test the record knows, so it was not saved.`
-    : `${label}: the number was not saved. It is outside the range the record accepts.`;
+  if (reason === 'unknown-metric') return `${label}: not a test the record knows, so it was not saved.`;
+  if (reason === 'invalid-value') return `${label}: the value was not a number the record can store, so it was not saved.`;
+  return `${label}: the number was not saved. It is outside the range the record accepts.`;
 }
