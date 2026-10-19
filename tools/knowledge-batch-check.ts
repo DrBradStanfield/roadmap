@@ -332,9 +332,9 @@ function normNumber(n: string, unit: string): { value: string; unit: string } {
   return { value: String(v), unit };
 }
 
-/** Topic-master dates (US-50): the view heading, a "([Brad, 15 Oct 2026](" citation and a "- 15 Oct 2026, [" video line. */
+/** Topic-master dates (US-50): the view heading, a "([Brad, 15 Oct 2026](" or "(Brad's current guidance, 15 Oct 2026)" citation, and a "- 15 Oct 2026, [" video line. */
 const MONTH = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]{0,6}";
-const MASTER_DATES = new RegExp(`^(?:(?:##\\s+)?Current view \\(reviewed \\d{1,2} ${MONTH} \\d{4}\\)\\s*$|\\s*(?:[-*]\\s+)?\\d{1,2} ${MONTH} \\d{4}(?=, \\[))|(?<=\\(\\[Brad, )\\d{1,2} ${MONTH} \\d{4}(?=\\]\\()`, "g");
+const MASTER_DATES = new RegExp(`^(?:(?:##\\s+)?Current view \\(reviewed \\d{1,2} ${MONTH} \\d{4}\\)\\s*$|\\s*(?:[-*]\\s+)?\\d{1,2} ${MONTH} \\d{4}(?=, \\[))|(?<=\\(\\[Brad, )\\d{1,2} ${MONTH} \\d{4}(?=\\]\\()|(?<=\\(Brad['’]s current guidance, )\\d{1,2} ${MONTH} \\d{4}(?=\\))`, "g");
 
 /** Strip everything the tokeniser must ignore, line by line. */
 function stripNoise(line: string): string {
@@ -630,9 +630,17 @@ function checkMasterBody(c: Ctx, m: Check, raw: RawSet | null, isPost: (h: strin
     const h = bradLink(u)?.[1]?.toLowerCase();
     return !!h && isPost(h) && rels.has(`docs/blog/${h}.md`);
   });
-  // A position is cited by its repo path as the link target, e.g. ([Brad, 9 Oct 2026](docs/products.md)).
-  const citesPosition = (sn: string) => [...sn.matchAll(/\]\(([^)\s]+)\)/g)].some(([, u]) => !u.startsWith("docs/blog/") && rels.has(u));
-  if (isView) for (const sn of said) if (!citesPost(sn) && !citesPosition(sn)) m.fails.push(`${c.handle}: Current view sentence links no video post or position file listed in extra_raw: ${clip(sn, 100)}`);
+  // A position is cited unlinked, "(Brad's current guidance, 9 Oct 2026)", and needs a POSITION:<path>: quote for that
+  // sentence (current_view_basis or changed_tokens) that is verbatim in a position file listed in extra_raw.
+  const basis = ((c.rep as { current_view_basis?: { sentence?: string; quote?: string }[] } | null)?.current_view_basis ?? [])
+    .map((b) => ({ line: String(b.sentence ?? ""), quote: String(b.quote ?? "") }));
+  const quotes = [...basis, ...(c.rep?.changed_tokens ?? []).filter((e) => !e.void).map((e) => ({ line: e.body_line, quote: e.raw_quote }))];
+  const citesPosition = (sn: string) => /\(Brad['’]s current guidance, \d{1,2} [A-Z][a-z]+ \d{4}\)/.test(sn) && quotes.some(({ line, quote }) => {
+    const p = /^\s*POSITION:([^:\s]+):\s*/.exec(quote), x = p && !p[1].startsWith("docs/blog/") ? raw?.extras.find((e) => e.repoRel === p[1]) : undefined;
+    return !!x && relates(line, cleanSentence(sn)) && hasQuote(x.norm, normQuote(quote.slice(p![0].length)));
+  });
+  for (const [, u] of c.newBody.matchAll(/\]\(([^)\s]+)\)/g)) if (!/^[a-z]+:/i.test(u) && MASTER_RAW.test(u)) m.fails.push(`${c.handle}: the body links a repo file (${u}); cite a position as "(Brad's current guidance, <D Mon YYYY>)"`);
+  if (isView) for (const sn of said) if (!citesPost(sn) && !citesPosition(sn)) m.fails.push(`${c.handle}: Current view sentence links no video post in extra_raw and has no quoted position citation: ${clip(sn, 100)}`);
   const videos = secs.filter((s) => /^##\s+Brad['’]s videos on this topic\s*$/.test(s.line));
   if (videos.length !== 1) { m.fails.push(`${c.handle}: needs one "## Brad's videos on this topic" section (found ${videos.length})`); return; }
   const text = videos[0].text.join("\n").trim(), none = /^none(?: yet)?\.?$/i.test(text);

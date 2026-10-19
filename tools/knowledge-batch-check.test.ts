@@ -1667,11 +1667,47 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
       master(GOOD, sections(undefined, "## Brad's videos on this topic\n\nNone.\n"));
       expect(fails(mrun().MASTER).join()).toContain("says None yet");
     });
-    it("passes a Current view from a position file alone with None yet. (the contract allows it)", () => {
-      put("docs/products.md", "Products.\n"); sh(["add", "docs/products.md"]); sh(["commit", "-q", "-m", "p", "--", "docs/products.md"]);
-      reps.alpha.extra_raw = [{ path: "/elsewhere/docs/products.md", sha256: sha256("Products.\n") }];
-      master(GOOD, sections("## Current view (reviewed 20 October 2026)\n\nA position ([Brad, 9 Oct 2026](docs/products.md)).\n", NONE_YET));
-      expect(fails(mrun().MASTER)).toEqual([]);
+    describe("US-50 AC1: a position-sourced sentence is cited unlinked as (Brad's current guidance, D Mon YYYY)", () => {
+      const PROD = "Products. Lithium is not an established nutrient and has no recommended intake.\n";
+      const Q = "Lithium is not an established nutrient and has no recommended intake";
+      const SENT = "Lithium is not an established nutrient (Brad's current guidance, 9 Oct 2026).";
+      const pos = (sentence = SENT) => {
+        put("docs/products.md", PROD); sh(["add", "docs/products.md"]); sh(["commit", "-q", "-m", "p", "--", "docs/products.md"]);
+        reps.alpha.extra_raw = [{ path: "/elsewhere/docs/products.md", sha256: sha256(PROD) }];
+        master(GOOD, sections(`## Current view (reviewed 20 October 2026)\n\n${sentence}\n`, NONE_YET));
+      };
+      const basis = (quote: string, sentence = SENT) => { (reps.alpha as unknown as Record<string, unknown>).current_view_basis = [{ sentence, source: "docs/products.md", quote }]; };
+      it("passes with a POSITION: quote in current_view_basis (Current view from positions alone, None yet.)", () => {
+        pos(); basis(`POSITION:docs/products.md: ${Q}`);
+        expect(fails(mrun().MASTER)).toEqual([]);
+      });
+      it("passes with a POSITION: quote in changed_tokens on that sentence", () => {
+        pos(); reps.alpha.changed_tokens.push({ body_line: SENT, raw_quote: `POSITION:docs/products.md: ${Q}` });
+        expect(fails(mrun().MASTER)).toEqual([]);
+      });
+      it("fails with no POSITION: quote, an unprefixed one, one not verbatim, or one for another sentence", () => {
+        pos();
+        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+        basis(Q);
+        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+        basis("POSITION:docs/products.md: Lithium is an established nutrient with a recommended intake");
+        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+        basis(`POSITION:docs/products.md: ${Q}`, "Some other sentence (Brad's current guidance, 9 Oct 2026).");
+        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+      });
+      it("fails when the path is not an extra_raw at base", () => {
+        pos(); basis(`POSITION:docs/products.md: ${Q}`); reps.alpha.extra_raw = [];
+        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+      });
+      it("rejects a repo-path link in the body", () => {
+        pos("A position ([Brad, 9 Oct 2026](docs/products.md)) (Brad's current guidance, 9 Oct 2026).");
+        basis(`POSITION:docs/products.md: ${Q}`, "A position ([Brad, 9 Oct 2026](docs/products.md)) (Brad's current guidance, 9 Oct 2026).");
+        expect(fails(mrun().MASTER).join()).toContain("links a repo file (docs/products.md)");
+      });
+      it("the date in the guidance citation carries no AC2 number", () => {
+        expect([...tokenise("Not a nutrient (Brad's current guidance, 9 Oct 2026).")]).toEqual([]);
+        expect([...tokenise("Not a nutrient (Brad’s current guidance, 19 October 2026).")]).toEqual([]);
+      });
     });
 
     describe("US-50 AC1: every Current view sentence cites a post or position in extra_raw", () => {
@@ -1680,17 +1716,17 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
         master(GOOD, view(`One cited ([Brad, 1 Mar 2026](${OTHER})). Two uncited.`));
         const f = fails(mrun().MASTER);
         expect(f).toHaveLength(1);
-        expect(f[0]).toContain("links no video post or position file listed in extra_raw: Two uncited.");
+        expect(f[0]).toContain("links no video post in extra_raw and has no quoted position citation: Two uncited.");
       });
       it("fails a link to a video post that is not an extra_raw, a reference page, or another site", () => {
         reps.alpha.extra_raw = [];
         master(GOOD, view(`Cited ([Brad, 1 Mar 2026](${OTHER})).`));
-        expect(fails(mrun().MASTER).join()).toContain("links no video post");
+        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
         reps.alpha.extra_raw = [{ path: "/elsewhere/docs/blog/other.md", sha256: sha256(OTHER_TEXT) }];
         master(GOOD, view("Cited ([Brad, 1 Mar 2026](https://drstanfield.com/blogs/articles/alpha))."));
-        expect(fails(mrun().MASTER).join()).toContain("links no video post");
+        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
         master(GOOD, view("Cited ([Brad, 1 Mar 2026](https://example.com/blogs/articles/other))."));
-        expect(fails(mrun().MASTER).join()).toContain("links no video post");
+        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
       });
       it("fails an empty Current view", () => {
         master(GOOD, view(""));
