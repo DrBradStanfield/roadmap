@@ -148,7 +148,29 @@ describe('US-12 AC4–6 upload session ownership', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
-    expect(screen.getByText('LDL Cholesterol: the number was not saved. It is outside the range the record accepts.')).toBeTruthy();
+    const line = screen.getByText('LDL Cholesterol: the number was not saved. It is outside the range the record accepts.');
+    // Its own spacing in review, not the done screen's negative margin.
+    expect(line.closest('.review-refusals')).not.toBeNull();
+    // One live region, so a screen reader hears the error and the refusal after Save.
+    const status = screen.getByRole('status');
+    expect(status.textContent).toContain('Failed to save. Please try again.');
+    expect(status.contains(line)).toBe(true);
+  });
+
+  it('US-12 AC6 — clears the refusal lines when a new Save starts, even when the retry throws', async () => {
+    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{
+      documentType: 'pathology_report', title: 'Synthetic report', documentDate: '2024-06-01',
+      contentMd: '', metadata: {}, sourceFileName: 'test.pdf',
+    }]).mockImplementationOnce(() => { throw new Error('synthetic outer failure'); });
+    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [{ index: 0, metricType: 'ldl', reason: 'out-of-range', message: 'synthetic' }] });
+    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [], errorCount: 1 });
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByText(/LDL Cholesterol: the number was not saved/);
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await waitFor(() => expect(synthesizeLabArchiveEntries).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
+    expect(screen.queryByText(/LDL Cholesterol: the number was not saved/)).toBeNull();
   });
   it('keeps failed save drafts for retry', async () => {
     vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic failure'));

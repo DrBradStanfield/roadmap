@@ -953,8 +953,11 @@ export function ReviewTable({
         <p className="review-date-hint">Pick a day for every new column before saving — keeps the saved date precise.</p>
       )}
 
-      {error && <p className="upload-error">{error}</p>}
-      {refusals}
+      {/* One live region, so a screen reader hears the save's answer (US-12 AC6). */}
+      <div className="review-save-outcome" role="status">
+        {error && <p className="upload-error">{error}</p>}
+        {refusals && <div className="review-refusals">{refusals}</div>}
+      </div>
 
       <div className="review-actions">
         <button

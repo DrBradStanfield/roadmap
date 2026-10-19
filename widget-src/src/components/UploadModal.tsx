@@ -677,6 +677,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     savingRef.current = true;
     setIsSaving(true);
     setError(null);
+    // The last save's refusals belong to it: never beside a new error.
+    setRefusedLabUnits([]);
+    setRefusedMeasurements([]);
     try {
       // Save core measurements, additional lab values, and documents in parallel
       const measurements = selectedValues.map(v => ({
@@ -886,7 +889,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               onCancel={handleDiscard}
               isSaving={isSaving}
               error={error}
-              refusals={refusalLines}
+              refusals={refusedLabUnits.length + refusedMeasurements.length > 0 ? refusalLines : undefined}
             />
           )}
 
