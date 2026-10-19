@@ -66,7 +66,7 @@ beforeEach(() => {
   build.shopify = true;
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(withValues);
-  vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0 } as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
+  vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
   vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [{}], errorCount: 0 } as Awaited<ReturnType<typeof bulkSaveDocuments>>);
   vi.mocked(bulkSaveLabValues).mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] });
   extractFromPdf.mockImplementation(async (f: File) => pages(f.name));

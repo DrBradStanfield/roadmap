@@ -39,6 +39,7 @@ import { isCalendarDay } from './measurement-history';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES } from './validation';
+import type { MEASUREMENT_REFUSAL_REASONS } from './product-events';
 
 /**
  * What the writer's clock means. `now` stamps the row; `latestDay` is the
@@ -229,14 +230,21 @@ function toStoredLab(
   return canonical.stored;
 }
 
-/** Rule 8 — SI canonical, inside the range the app itself accepts. */
+/** Rule 8 — SI canonical, inside the range the app itself accepts. The
+ *  assistant that typed the number reads it back in the refusal. */
 function checkMeasurementValue(metricType: string, value: number): EditRejection | null {
+  const fault = measurementValueFault(metricType, value);
+  return fault?.reason === 'out-of-range' ? { ...fault, message: `${fault.message} (got ${value})` } : fault;
+}
+
+/** Rule 8's refusal without the number, for a bulk refusal (US-35 AC17). */
+function measurementValueFault(metricType: string, value: number): EditRejection | null {
   if (!Number.isFinite(value)) return reject('invalid-value', 'A value must be a finite number');
   const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean; error?: { issues: Array<{ message: string }> } } }>;
   const field = METRIC_TO_FIELD[metricType];
   const parsed = shape[field].safeParse(value);
   if (parsed.success) return null;
-  return reject('out-of-range', `${parsed.error?.issues[0]?.message ?? 'Value out of range'} (got ${value})`);
+  return reject('out-of-range', parsed.error?.issues[0]?.message ?? 'Value out of range');
 }
 
 /**
@@ -480,9 +488,9 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
 /**
  * One reviewed row on its way into the record. `correctsId` is set when the
  * reviewer chose "Replace" on a slot another writer already holds — it turns
- * the write into a FHIR correction instead of a skip. Values are already the
- * date is already the day the reviewer confirmed: this is the save behind a
- * review step, not a fresh claim to validate. A lab row still carries the unit
+ * the write into a FHIR correction instead of a skip. Core values are already
+ * SI canonical, but still validated here. The date is the day the reviewer
+ * confirmed. A lab row still carries the unit
  * the report PRINTED — the conversion to SI happens here, at the write, so
  * there is one conversion site and the review table shows what the lab said.
  */
@@ -504,6 +512,17 @@ export interface LabUnitRefusal {
   fault?: CountFault;
 }
 
+export interface MeasurementRefusal {
+  /** Zero-based index in the submitted batch. */
+  index: number;
+  metricType: string;
+  reason: (typeof MEASUREMENT_REFUSAL_REASONS)[number];
+  message: string;
+  /** For `out-of-range`: which end of the accepted range it missed, so the
+   *  refusal can name that end without the value (US-35 AC17). */
+  bound?: 'above' | 'below';
+}
+
 export interface BulkAppendResult {
   file: RoadmapFile;
   saved: Array<FileMeasurement | FileLabValue>;
@@ -517,6 +536,8 @@ export interface BulkAppendResult {
    * `lab_unit_refused` event per spelling refusal only.
    */
   refused: LabUnitRefusal[];
+  /** Invalid core rows, distinct from occupied slots and lab-unit refusals. */
+  measurementRefusals: MeasurementRefusal[];
 }
 
 /**
@@ -540,8 +561,9 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
   const atLab = new Map(labValues.map((l, i) => [l.id, i]));
 
   const refused: BulkAppendResult['refused'] = [];
+  const measurementRefusals: MeasurementRefusal[] = [];
 
-  for (const input of rows) {
+  for (const [index, input] of rows.entries()) {
     // A lab row is CONVERTED before its slot is touched: a refused row must
     // not flip the active row it was going to replace.
     let makeRow: (recordedAt: string, correctsId: string | null) => FileMeasurement | FileLabValue;
@@ -557,6 +579,17 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
         recordedAt, createdAt: now, source: input.source, correctsId,
       });
     } else {
+      if (!(METRIC_TYPES as readonly string[]).includes(input.metricType)) {
+        measurementRefusals.push({ index, metricType: input.metricType, reason: 'unknown-metric', message: 'Unknown core metric' });
+        continue;
+      }
+      const invalid = measurementValueFault(input.metricType, input.value);
+      if (invalid) {
+        measurementRefusals.push(Number.isFinite(input.value)
+          ? { index, metricType: input.metricType, reason: 'out-of-range', message: invalid.message, bound: input.value > UNIT_DEFS[input.metricType as MetricType].validationRange.si.max ? 'above' : 'below' }
+          : { index, metricType: input.metricType, reason: 'invalid-value', message: invalid.message });
+        continue;
+      }
       makeRow = (recordedAt, correctsId) => createMeasurement({
         id: newId(), metricType: input.metricType, value: input.value,
         recordedAt, createdAt: now, source: input.source, correctsId,
@@ -581,5 +614,5 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
     saved.push(row);
   }
   const next = saved.length ? stampUpdatedAt({ ...file, measurements, labValues }, now) : file;
-  return { file: next, saved, skippedDuplicates, refused };
+  return { file: next, saved, skippedDuplicates, refused, measurementRefusals };
 }

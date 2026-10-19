@@ -247,7 +247,7 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     },
     decimalPlaces: { si: 0, conventional: 2 },
   },
-  psa: makeIdentityUnit('ng/mL', { min: 0, max: 100 }, 1),
+  psa: makeIdentityUnit('ng/mL', { min: 0, max: 10000 }, 1),
   lpa: {
     canonical: 'nmol/L',
     label: { si: 'nmol/L', conventional: 'mg/dL' },
@@ -298,6 +298,18 @@ export function fromCanonicalValue(
  */
 export function unitDecimalPlaces(metric: MetricType, system: UnitSystem, scale = 1): number {
   return Math.max(0, UNIT_DEFS[metric].decimalPlaces[system] + Math.round(Math.log10(scale)));
+}
+
+/**
+ * A range's end at `dp` places, rounded toward the inside of the range, so a
+ * value past the printed number is past the real bound too: 12.9 mmol/L of
+ * LDL is 498.8 mg/dL, printed 498, since 499 is refused (US-35 AC17).
+ * toPrecision strips float noise before the floor or ceiling.
+ */
+export function roundBoundInward(value: number, dp: number, end: 'min' | 'max'): number {
+  const scale = 10 ** dp;
+  const steps = Number((value * scale).toPrecision(12));
+  return (end === 'max' ? Math.floor(steps) : Math.ceil(steps)) / scale;
 }
 
 /** Format a canonical value for display (converted + rounded). */

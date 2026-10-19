@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UNIT_DEFS, UnitSystem } from './units';
+import { roundBoundInward, UNIT_DEFS, UnitSystem } from './units';
 import { FIELD_METRIC_MAP } from './mappings';
 import type { HealthInputs } from './types';
 import { IMPORT_LIMITS } from './import-hints';
@@ -95,7 +95,7 @@ export const healthInputSchema = z.object({
   psa: z
     .number()
     .min(0, 'PSA must be positive')
-    .max(100, 'PSA must be at most 100 ng/mL')
+    .max(10000, 'PSA must be at most 10,000 ng/mL')
     .optional(),
   lpa: z
     .number()
@@ -403,7 +403,7 @@ const IDENTITY_FIELD_RANGES: Record<string, { min: number; max: number }> = {
   birthMonth: { min: 1, max: 12 },
   systolicBp: { min: 60, max: 250 },
   diastolicBp: { min: 40, max: 150 },
-  psa: { min: 0, max: 100 },
+  psa: { min: 0, max: 10000 },
 };
 
 /**
@@ -467,6 +467,9 @@ function convertErrorMessage(
 
   const siLabel = unitDef.label.si;
   const convLabel = unitDef.label[unitSystem];
+  // One unit in both systems (mmHg, PSA's ng/mL): nothing to convert, and the
+  // number regex would split "10,000 ng/mL" at its comma.
+  if (siLabel === convLabel) return message;
   const decimals = unitDef.decimalPlaces[unitSystem];
   const fromCanonical = unitDef.fromCanonical[unitSystem];
 
@@ -474,14 +477,12 @@ function convertErrorMessage(
   // Match numbers followed by the SI unit label
   const regex = new RegExp(`(\\d+\\.?\\d*)\\s*${escapeRegex(siLabel)}`, 'g');
 
-  return message.replace(regex, (_match, value) => {
-    const siValue = parseFloat(value);
-    const convValue = fromCanonical(siValue);
-    // Format with appropriate decimal places
-    const formatted = decimals === 0
-      ? Math.round(convValue).toString()
-      : convValue.toFixed(decimals);
-    return `${formatted} ${convLabel}`;
+  // Rounded inward, so the number shown is one the field accepts and every
+  // value past it is refused: "at most 499 mg/dL" of LDL let 499 through the
+  // message and not the record (US-35 AC17).
+  return message.replace(regex, (_match, value, offset: number) => {
+    const end = /at most\s*$/.test(message.slice(0, offset)) ? 'max' : 'min';
+    return `${roundBoundInward(fromCanonical(parseFloat(value)), decimals, end).toFixed(decimals)} ${convLabel}`;
   });
 }
 
@@ -490,7 +491,7 @@ function convertErrorMessage(
  *
  * When the user is in US (conventional) mode, error messages like
  * "Weight must be at least 20 kg" will be converted to
- * "Weight must be at least 44 lbs".
+ * "Weight must be at least 45 lbs" (20 kg is 44.09 lbs, rounded inward).
  *
  * @param errors - Record of field names to error messages
  * @param unitSystem - The user's current unit system ('si' or 'conventional')

@@ -521,6 +521,85 @@ describe('US-35 AC6 — one slot rule for the website and the connector', () => 
 describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pure rule', () => {
   const day = '2026-08-01';
 
+  it('US-35 AC17 — refuses an invalid core correction without tombstoning the old row', () => {
+    const file = base();
+    const result = bulkAppendValues(file, [
+      { kind: 'measurement', metricType: 'ldl', value: -1, recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'm1' },
+    ], NOW);
+    expect(result.saved).toEqual([]);
+    expect(result.file).toBe(file);
+    expect(result.skippedDuplicates).toBe(0);
+    expect(result.measurementRefusals).toEqual([
+      { index: 0, metricType: 'ldl', reason: 'out-of-range', message: expect.any(String), bound: 'below' },
+    ]);
+  });
+
+  // Brad 2026-10-20: the PSA ceiling is 10,000 ng/mL; the upload save keeps it.
+  it('US-35 AC17 — saves an uploaded PSA of 9,999 and refuses 10,001, above the range, without the value', () => {
+    const result = bulkAppendValues(base(), [
+      { kind: 'measurement', metricType: 'psa', value: 9999, recordedAt: day, source: 'lab_import' },
+      { kind: 'measurement', metricType: 'psa', value: 10001, recordedAt: '2026-08-02', source: 'lab_import' },
+    ], NOW);
+    expect(result.saved.map(row => row.value)).toEqual([9999]);
+    expect(result.measurementRefusals).toEqual([
+      { index: 1, metricType: 'psa', reason: 'out-of-range', message: 'PSA must be at most 10,000 ng/mL', bound: 'above' },
+    ]);
+    expect(JSON.stringify(result.measurementRefusals)).not.toMatch(/10001|10,001/);
+  });
+
+  it.each([-1, 0, 19.99, 300.01, NaN, Infinity, -Infinity])('US-35 AC17 — refuses invalid weight %s without taking its slot', value => {
+    const result = bulkAppendValues(base(), [
+      { kind: 'measurement', metricType: 'weight', value, recordedAt: day, source: 'lab_import' },
+      { kind: 'measurement', metricType: 'weight', value: 70, recordedAt: day, source: 'lab_import' },
+    ], NOW);
+    expect(result.measurementRefusals).toMatchObject([{ index: 0, metricType: 'weight', reason: Number.isFinite(value) ? 'out-of-range' : 'invalid-value' }]);
+    expect(result.saved.map(row => row.value)).toEqual([70]);
+    expect(result.skippedDuplicates).toBe(0);
+  });
+
+  it('US-35 AC17 — a refusal names the metric and the reason, never the value', () => {
+    const result = bulkAppendValues(base(), [
+      { kind: 'measurement', metricType: 'weight', value: 987.65, recordedAt: day, source: 'lab_import' },
+    ], NOW);
+    const [refusal] = result.measurementRefusals;
+    expect(refusal).toMatchObject({ metricType: 'weight', reason: 'out-of-range', bound: 'above' });
+    expect(refusal.message).toMatch(/\S/);
+    expect(JSON.stringify(result.measurementRefusals)).not.toMatch(/987/);
+  });
+
+  it.each([20, 300])('US-35 AC17 — accepts inclusive weight boundary %s', value => {
+    const result = bulkAppendValues(base(), [
+      { kind: 'measurement', metricType: 'weight', value, recordedAt: day, source: 'lab_import' },
+    ], NOW);
+    expect(result.measurementRefusals).toEqual([]);
+    expect(result.saved.map(row => row.value)).toEqual([value]);
+  });
+
+  it.each(['unknown_metric', '__proto__', 'toString'])('US-35 AC17 — refuses unknown runtime metric %s without throwing', metricType => {
+    const file = base();
+    const result = bulkAppendValues(file, [
+      { kind: 'measurement', metricType, value: 70, recordedAt: day, source: 'lab_import' },
+    ], NOW);
+    expect(result.file).toBe(file);
+    expect(result.saved).toEqual([]);
+    expect(result.skippedDuplicates).toBe(0);
+    expect(result.measurementRefusals).toMatchObject([{ index: 0, metricType, reason: 'unknown-metric' }]);
+  });
+
+  it('US-35 AC17 — a refused correction does not block a later valid correction of the same row', () => {
+    const file = base();
+    const before = structuredClone(file);
+    const result = bulkAppendValues(file, [
+      { kind: 'measurement', metricType: 'ldl', value: Infinity, recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'm1' },
+      { kind: 'measurement', metricType: 'ldl', value: 3, recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'm1' },
+    ], NOW);
+    expect(result.measurementRefusals).toMatchObject([{ index: 0, reason: 'invalid-value' }]);
+    expect(result.saved).toMatchObject([{ value: 3, correctsId: 'm1', recordedAt: '2026-07-14' }]);
+    expect(result.file.measurements.find(row => row.id === 'm1')?.status).toBe('entered-in-error');
+    expect(result.skippedDuplicates).toBe(0);
+    expect(file).toEqual(before);
+  });
+
   it('appends free slots, skips taken ones, and never mutates the input', () => {
     const file = base();
     const before = JSON.stringify(file);
