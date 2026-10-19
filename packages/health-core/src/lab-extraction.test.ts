@@ -858,10 +858,10 @@ describe('US-12 AC12: a previous-results column with its own printed date become
     expect(unifiedSystemPrompt('full')).toContain('the ONE most recent previous column, dated or not (with no dates printed, the one beside the current results); ignore every older previous column.');
   });
 
-  it('full (website, BYOK): takes a previous column printed with a full day, ignores one with a month only or no date', () => {
+  it('full (website, BYOK): takes a previous column printed with a full day; one with a month only or no date is AC14\'s', () => {
     const prompt = unifiedSystemPrompt('full');
     expect(prompt).toContain('with "recordedAt" set to that column\'s collection date as YYYY-MM-DD (rules 3 and 4 apply)');
-    expect(prompt).toContain('A previous column dated with a month and year only, a trend graph, or a value you cannot tie to one column: IGNORE it completely.');
+    expect(prompt).toContain('A trend graph, or a value you cannot tie to one column: IGNORE it completely.');
     expect(prompt).toContain('at most ONE entry per metric per date');
     expect(prompt).not.toContain('even if those historical columns are dated');
   });
@@ -981,7 +981,7 @@ describe('US-12 AC14: an undated previous column is read, marked undated, for th
   it('full: rule 2 takes the most recent previous column dated or not, and marks an undated one "undated"', () => {
     const prompt = unifiedSystemPrompt('full');
     expect(prompt).toContain('Each of its rows is its own entry, even when that row\'s current result is blank');
-    expect(prompt).toContain('or to the exact string "undated" when no date is printed for that column anywhere in the document');
+    expect(prompt).toContain('or to the exact string "undated" when that column\'s date is not printed as a full day anywhere in the document (no date at all, or a month and year only: never invent a day, such as the 1st)');
     expect(UNDATED_PREVIOUS).toBe('undated');
   });
 

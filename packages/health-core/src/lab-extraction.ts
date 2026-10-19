@@ -43,8 +43,8 @@ export interface ExtractedValue {
 }
 
 /**
- * `recordedAt` for a value from a previous-results column that prints no date
- * (US-12 AC14). A reserved string, not a new field: every guard that keeps
+ * `recordedAt` for a value from a previous-results column that prints no full
+ * day: no date, or a month only (US-12 AC14). A reserved string, not a new field: every guard that keeps
  * own-dated values off a path already tests `recordedAt` (the route's strip
  * without `ownDates`, the connector's `previousColumn`), and a reader that
  * takes it for a day finds no date in it. Only the `full` prompt asks for it.
@@ -216,7 +216,7 @@ export const DOCUMENT_CLASSIFICATIONS = ['lab_report', ...DOCUMENT_TYPES] as con
  *  (US-12 AC12) or not (AC14); the connector keeps the base rule until the
  *  MCP 1.0.2 review ends (US-35 AC5). */
 const PREVIOUS_RESULTS_RULE: Record<DocumentPromptMode, string> = {
-  full: `PREVIOUS RESULTS: the current report's primary column (the most recent collection) gives entries with no "recordedAt". One column of earlier results (a "Previous", "Prev. Result" or "Last visit" column, or one column per visit) is extracted too: the ONE most recent previous column, dated or not (with no dates printed, the one beside the current results); ignore every older previous column. Each of its rows is its own entry, even when that row's current result is blank, with "recordedAt" set to that column's collection date as YYYY-MM-DD (rules 3 and 4 apply), or to the exact string "${UNDATED_PREVIOUS}" when no date is printed for that column anywhere in the document. A previous column dated with a month and year only, a trend graph, or a value you cannot tie to one column: IGNORE it completely. Return at most ONE entry per metric per date — never duplicate a metric on one date.`,
+  full: `PREVIOUS RESULTS: the current report's primary column (the most recent collection) gives entries with no "recordedAt". One column of earlier results (a "Previous", "Prev. Result" or "Last visit" column, or one column per visit) is extracted too: the ONE most recent previous column, dated or not (with no dates printed, the one beside the current results); ignore every older previous column. Each of its rows is its own entry, even when that row's current result is blank, with "recordedAt" set to that column's collection date as YYYY-MM-DD (rules 3 and 4 apply), or to the exact string "${UNDATED_PREVIOUS}" when that column's date is not printed as a full day anywhere in the document (no date at all, or a month and year only: never invent a day, such as the 1st). A trend graph, or a value you cannot tie to one column: IGNORE it completely. Return at most ONE entry per metric per date — never duplicate a metric on one date.`,
   metadata: 'If the report shows previous/historical results (in a "Previous" column, "Last visit" column, trend graph, or any side-by-side layout), IGNORE them completely. Extract ONLY values from the current report\'s primary column, even if those historical columns are dated. Return at most ONE entry per metric — never duplicate a metric in the output.',
 };
 

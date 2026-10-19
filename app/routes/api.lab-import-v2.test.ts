@@ -282,11 +282,41 @@ describe('US-12 AC12: a value with its own day reaches only a widget that reads 
     expect(results[0].additionalValues.map((v: { value: number }) => v.value)).toEqual([80]);
   });
 
-  it('US-12 AC14 — with the flag: the undated value answers, marked', async () => {
-    extractOrClassify.mockResolvedValueOnce(undated());
+  // A tab from before AC14 sends `ownDates` but reads "undated" as a date: it
+  // gets the undated column only with `undatedPrev: true`, this widget's flag.
+  const undatedAndDated = () => {
+    const result = undated();
+    result.values.push({ ...result.values[0], valueSI: 2.4, recordedAt: '2025-09-02' });
+    return result;
+  };
+
+  it('US-12 AC14 — ownDates alone (a tab from before AC14): the undated value is cut, a dated one kept, single file and batch', async () => {
+    extractOrClassify.mockResolvedValueOnce(undatedAndDated());
     const { data } = await (await action({ request: single({ ownDates: true }) } as never)).json();
-    expect(data.values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, 'undated']);
+    expect(data.values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, '2025-09-02']);
+    expect(data.additionalValues.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined]);
+    const { batchId, pollToken } = await (await action({ request: batch({ ownDates: true }) } as never)).json();
+    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...undatedAndDated() }] } as never);
+    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
+    expect(results[0].values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, '2025-09-02']);
+    expect(results[0].additionalValues.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined]);
+  });
+
+  it('US-12 AC14 — undatedPrev without ownDates: every own-dated value is still cut', async () => {
+    extractOrClassify.mockResolvedValueOnce(undatedAndDated());
+    const { data } = await (await action({ request: single({ undatedPrev: true }) } as never)).json();
+    expect(data.values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined]);
+  });
+
+  it('US-12 AC14 — both flags (this widget): the undated value answers, marked, single file and batch', async () => {
+    extractOrClassify.mockResolvedValueOnce(undatedAndDated());
+    const { data } = await (await action({ request: single({ ownDates: true, undatedPrev: true }) } as never)).json();
+    expect(data.values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, 'undated', '2025-09-02']);
     expect(data.additionalValues.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, 'undated']);
+    const { batchId, pollToken } = await (await action({ request: batch({ ownDates: true, undatedPrev: true }) } as never)).json();
+    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...undatedAndDated() }] } as never);
+    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
+    expect(results[0].values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, 'undated', '2025-09-02']);
   });
 
   it('batch, new widget: the poll answers both columns', async () => {
