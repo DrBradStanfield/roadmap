@@ -213,6 +213,16 @@ export function masterKeyError(key: string, value: string): string | null {
   return null;
 }
 
+/** The master's view heading (US-50 AC1), shared with knowledge-lint.ts; group 1 is set for a Current view. */
+export const VIEW_HEADING = /^##\s+(?:(Current view \(reviewed [^)]+\))|Current evidence position)\s*$/;
+/** The contract's first sentence of a Current evidence position (master-writer-contract.md). */
+export const EVIDENCE_OPENING = "Brad has not made a video on this topic; this is a summary of the evidence, not his view.";
+/** Frontmatter keys that appear more than once. */
+export const duplicateKeys = (front: string) => {
+  const keys = front.split(/\r?\n/).map((l) => /^([A-Za-z_][\w-]*):/.exec(l)?.[1]).filter((k): k is string => !!k);
+  return [...new Set(keys.filter((k, i) => keys.indexOf(k) !== i))];
+};
+
 /** Undo turndown's backslash escapes. */
 export const unescapeMd = (s: string) => s.replace(/\\([\\`*_{}[\]()#+\-.!|>~<])/g, "$1");
 
@@ -322,9 +332,14 @@ function normNumber(n: string, unit: string): { value: string; unit: string } {
   return { value: String(v), unit };
 }
 
+/** Topic-master dates (US-50): the view heading, a "([Brad, 15 Oct 2026](" citation and a "- 15 Oct 2026, [" video line. */
+const MONTH = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]{0,6}";
+const MASTER_DATES = new RegExp(`^(?:(?:##\\s+)?Current view \\(reviewed \\d{1,2} ${MONTH} \\d{4}\\)\\s*$|\\s*(?:[-*]\\s+)?\\d{1,2} ${MONTH} \\d{4}(?=, \\[))|(?<=\\(\\[Brad, )\\d{1,2} ${MONTH} \\d{4}(?=\\]\\()`, "g");
+
 /** Strip everything the tokeniser must ignore, line by line. */
 function stripNoise(line: string): string {
   return unescapeMd(line)
+    .replace(MASTER_DATES, " ")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/https?:\/\/\S+/g, " ")
     .replace(/\b10\.\d{4,9}\/\S+/g, " ")
@@ -569,6 +584,7 @@ const MASTER_FRONT: Record<string, string[]> = { reference: ["reviewed", "source
 /** US-50 AC1: only the master keys for this page type and a summary that equals the proposal may change. */
 function checkMasterFront(c: Ctx, bf: string, nf: string, corrections: Map<string, string>, ac1: Check) {
   const keys = MASTER_FRONT[c.type ?? ""] ?? [];
+  for (const k of duplicateKeys(nf)) ac1.fails.push(`${c.rel}: frontmatter key ${k} appears more than once`);
   const rest = (f: string) => f.split(/\r?\n/).filter((l) => l && l !== "---" && ![...keys, "summary"].some((k) => l.startsWith(`${k}:`))).join("\n");
   if (rest(bf) !== rest(nf)) ac1.fails.push(`${c.rel}: frontmatter differs beyond the summary line and the master keys (${keys.join(", ") || "none for this type"})`);
   const summaryOf = (f: string) => {
@@ -589,26 +605,40 @@ function checkMasterFront(c: Ctx, bf: string, nf: string, corrections: Map<strin
   if (c.type !== "reference" && has("router") && !has("topics")) ac1.fails.push(`${c.rel}: router: hidden needs topics`);
 }
 
-/** A reviewed reference is a master: one Current view or Current evidence position, and a videos section. */
-function checkMasterBody(c: Ctx, m: Check) {
-  if (c.type !== "reference" || c.newText === null || fmValue(splitFrontmatter(c.newText).front, "reviewed") === null) return;
-  const secs: { head: string; text: string[] }[] = [];
+/**
+ * Under --masters every batch reference is a master: reviewed and sources, one Current view or Current evidence position,
+ * and a videos section. Each Current view sentence links a video post or a position file that is an extra_raw (US-50 AC1).
+ */
+function checkMasterBody(c: Ctx, m: Check, raw: RawSet | null, isPost: (h: string) => boolean) {
+  if (c.type !== "reference" || c.newText === null) return;
+  const front = splitFrontmatter(c.newText).front;
+  for (const k of ["reviewed", "sources"]) if (fmValue(front, k) === null) m.fails.push(`${c.handle}: a master needs ${k} in its frontmatter`);
+  const secs: { line: string; text: string[] }[] = [];
   let fence = false;
   for (const line of c.newBody.split(/\r?\n/)) {
     if (/^\s*```/.test(line)) fence = !fence;
-    const h = fence ? null : /^#{1,2}\s+(.+?)\s*#*$/.exec(line);
-    if (h) secs.push({ head: h[1].replace(/\*\*/g, ""), text: [] }); else secs.at(-1)?.text.push(line);
+    if (!fence && /^#{1,2}\s/.test(line)) secs.push({ line, text: [] }); else secs.at(-1)?.text.push(line);
   }
-  const view = secs.filter((s) => /^Current view \(reviewed [^)]+\)$/.test(s.head));
-  const position = secs.filter((s) => s.head === "Current evidence position");
-  if (view.length + position.length !== 1) m.fails.push(`${c.handle}: needs exactly one of "## Current view (reviewed …)" or "## Current evidence position" (found ${view.length + position.length})`);
-  const videos = secs.filter((s) => /^Brad['’]s videos on this topic$/.test(s.head));
-  if (videos.length !== 1) m.fails.push(`${c.handle}: needs one "## Brad's videos on this topic" section (found ${videos.length})`);
-  else {
-    const text = videos[0].text.join("\n").trim();
-    if (!text) m.fails.push(`${c.handle}: "Brad's videos on this topic" is empty (write None if there are none)`);
-    else if (view.length && /^none\.?$/i.test(text)) m.fails.push(`${c.handle}: "Brad's videos on this topic" says None, but a Current view must cite his posts`);
-  }
+  const views = secs.filter((s) => VIEW_HEADING.test(s.line));
+  if (views.length !== 1) m.fails.push(`${c.handle}: needs exactly one of "## Current view (reviewed …)" or "## Current evidence position" (found ${views.length})`);
+  const view = views.length === 1 ? views[0] : null, isView = !!view && !!VIEW_HEADING.exec(view.line)![1];
+  const said = view ? sentences(view.text.join("\n")) : [];
+  if (view && !said.length) m.fails.push(`${c.handle}: "${view.line.replace(/^##\s+/, "")}" is empty`);
+  if (view && !isView && said.length && squash(said[0]) !== EVIDENCE_OPENING) m.fails.push(`${c.handle}: a Current evidence position must open with "${EVIDENCE_OPENING}"`);
+  const rels = new Set((raw?.extras ?? []).map((x) => x.repoRel).filter(Boolean));
+  const citesPost = (sn: string) => [...sn.matchAll(/\]\(([^)\s]+)\)/g)].some(([, u]) => {
+    const h = bradLink(u)?.[1]?.toLowerCase();
+    return !!h && isPost(h) && rels.has(`docs/blog/${h}.md`);
+  });
+  // A position is cited by its repo path as the link target, e.g. ([Brad, 9 Oct 2026](docs/products.md)).
+  const citesPosition = (sn: string) => [...sn.matchAll(/\]\(([^)\s]+)\)/g)].some(([, u]) => !u.startsWith("docs/blog/") && rels.has(u));
+  if (isView) for (const sn of said) if (!citesPost(sn) && !citesPosition(sn)) m.fails.push(`${c.handle}: Current view sentence links no video post or position file listed in extra_raw: ${clip(sn, 100)}`);
+  const videos = secs.filter((s) => /^##\s+Brad['’]s videos on this topic\s*$/.test(s.line));
+  if (videos.length !== 1) { m.fails.push(`${c.handle}: needs one "## Brad's videos on this topic" section (found ${videos.length})`); return; }
+  const text = videos[0].text.join("\n").trim(), none = /^none(?: yet)?\.?$/i.test(text);
+  if (!text) m.fails.push(`${c.handle}: "Brad's videos on this topic" is empty (write "None yet." if there are none)`);
+  else if (view && !isView && !none) m.fails.push(`${c.handle}: a Current evidence position says Brad has no video, but "Brad's videos on this topic" lists some`);
+  else if (isView && none && said.some(citesPost)) m.fails.push(`${c.handle}: "Brad's videos on this topic" says None yet, but the Current view cites a post`);
 }
 
 function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
@@ -686,7 +716,7 @@ interface RawSet {
 /** Brad's own posts and the files that carry his positions (US-50 AC1): raw for a master, read from the base revision. */
 const MASTER_RAW = /(?:^|\/)(docs\/blog\/[^/]+\.md|docs\/products\.md|docs\/guideline\/[^/]+\.md|app\/lib\/chat-system-prompt\.md|packages\/health-core\/src\/evidence\.ts|health_roadmap_algorithm\.md|roadmap_text\.html)$/;
 
-function loadRaw(rep: Report, o: Options, tag: string, ac2: Check): RawSet {
+function loadRaw(rep: Report, o: Options, tag: string, ac2: Check, isPost: (h: string) => boolean): RawSet {
   const roots = rootRegexes(o.rawRoots ?? defaultRawRoots());
   const repoReal = realpathSync(o.root);
   const open = (path: string, sha: string, label: string) => {
@@ -708,6 +738,9 @@ function loadRaw(rep: Report, o: Options, tag: string, ac2: Check): RawSet {
   for (const x of rep.extra_raw ?? []) {
     const repoRel = o.masters && !x.path.split("/").includes("..") ? MASTER_RAW.exec(x.path)?.[1] : undefined;
     if (repoRel) {
+      // A post is raw only when it is one of Brad's video posts outside this batch: never a reference, never a page the batch rewrites.
+      const post = /^docs\/blog\/(.+)\.md$/.exec(repoRel)?.[1];
+      if (post !== undefined && (!isPost(post) || o.handles.includes(post))) { ac2.fails.push(`${tag} extra_raw ${repoRel} is not a video post outside this batch`); continue; }
       const text = gitShow(o.root, o.base, repoRel);
       if (text === null) ac2.fails.push(`${tag} extra_raw ${repoRel} does not exist at ${o.base}`);
       else if (sha256(text) !== x.sha256) ac2.fails.push(`${tag} extra_raw sha256 mismatch for ${repoRel} at ${o.base} (file ${sha256(text)}, report ${x.sha256})`);
@@ -880,6 +913,7 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     // POST:<handle>: and POSITION:<path>: name one repo file (US-50 AC1); NIH: and EXTRA: search every extra_raw.
     const label0 = /^\s*(POST|POSITION):([^:\s]+)/.exec(prefixed?.[0] ?? "");
     const src = label0 ? (label0[1] === "POST" ? `docs/blog/${label0[2]}.md` : label0[2]) : undefined;
+    if (label0?.[1] === "POSITION" && src!.startsWith("docs/blog/")) return fail(`POSITION: names a post (${src}); quote a post with POST:<handle>: ${line}`);
     if (src && !raw.extras.some((x) => x.repoRel === src)) return fail(`raw_quote names ${src}, which is not an extra_raw file: ${line}`);
     const quote = prefixed ? entry.raw_quote.slice(prefixed[0].length) : entry.raw_quote;
     const q = normQuote(quote);
@@ -1091,7 +1125,10 @@ function refLines(body: string): string[] {
   return classifyLines(body).filter(({ line, ref }) => ref && (REF_LINE.test(line) || /^\s*(?:[-*]\s*)?\d+[.)]\s+\S/.test(line))).map((x) => x.line);
 }
 
-function referenceSourceCheck(newBody: string, baseBody: string, tag: string, ac7: Check, masters = false) {
+/** A drstanfield.com link to a video post (its handle) or the roadmap page ("" ), else null. */
+const bradLink = (u: string) => /^https?:\/\/(?:www\.)?drstanfield\.com\/(?:blogs\/articles\/([a-z0-9-]+)|pages\/roadmap)\/?(?:[?#][^\s)]*)?$/i.exec(u.replace(/[.,;]+$/, ""));
+
+function referenceSourceCheck(newBody: string, baseBody: string, tag: string, ac7: Check, isPost?: (h: string) => boolean) {
   const known = new Set(refLines(baseBody).flatMap((l) => (l.match(URL_RE) ?? []).map(hostOf)));
   for (const line of refLines(newBody)) {
     const urls = line.match(URL_RE) ?? [];
@@ -1101,7 +1138,8 @@ function referenceSourceCheck(newBody: string, baseBody: string, tag: string, ac
       const h = hostOf(u);
       if (!h) { ac7.fails.push(`${tag} reference line has an unparseable URL ${clip(u, 60)}: ${clip(line, 100)}`); continue; }
       if (ALLOWED_HOSTS.some((a) => h === a || h.endsWith(`.${a}`)) || known.has(h)) continue;
-      if (masters && /^https?:\/\/(?:www\.)?drstanfield\.com\/(?:blogs\/articles\/|pages\/roadmap)/i.test(u)) continue; // Brad's own posts (US-50)
+      const brad = isPost && bradLink(u);
+      if (brad && (brad[1] === undefined || isPost!(brad[1].toLowerCase()))) continue; // Brad's video posts and the roadmap page (US-50)
       ac7.fails.push(`${tag} reference line has unknown host ${h}: ${clip(line, 100)}`);
     }
   }
@@ -1159,7 +1197,7 @@ function primaryIds(line: string): PrimaryId[] {
   return [...out.values()];
 }
 
-function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"], idsOut: Map<string, PrimaryId & { handle: string }>, masters = false) {
+function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"], idsOut: Map<string, PrimaryId & { handle: string }>, isPost?: (h: string) => boolean) {
   const tag = `${c.handle}:`, rep = c.rep;
   const lines = normChars(c.newBody).split(/\r?\n/);
   for (const l of lines) {
@@ -1176,7 +1214,7 @@ function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"],
   }
   if (c.type === "reference") {
     referenceCheck(c.newBody, tag, ac7);
-    referenceSourceCheck(c.newBody, c.baseBody, tag, ac7, masters);
+    referenceSourceCheck(c.newBody, c.baseBody, tag, ac7, isPost);
     linkTextCheck(c.newBody, tag, ac7);
     productSectionCheck(c.newBody, c.baseBody, tag, ac7);
     // "New" ignores the leading number, so a renumbered reference is not new.
@@ -1247,6 +1285,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     index = new Map((JSON.parse(readOpt(join(o.root, "docs/blog/index.json")) ?? "[]") as { handle: string; type?: string }[]).map((e) => [e.handle, e]));
   } catch { /* AC1 reports an unparseable index */ }
   const ctxs = o.handles.map((h) => loadCtx(o, base, h, ac2, index));
+  const isPost = (h: string) => index.has(h) && !index.get(h)!.type; // a video post: an index entry with no type
   const ids = new Map<string, PrimaryId & { handle: string }>();
 
   checkAc1(o, base, ctxs, ac1);
@@ -1255,13 +1294,13 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     const added = [...newTokens].filter(([t, n]) => n > (baseTokens.get(t) ?? 0)).map(([t]) => t);
     const hedgeBefore = totalIn(c.baseBody, HEDGES), hedgeAfter = totalIn(c.newBody, HEDGES);
     let quoted = 0, deleted = 0;
-    const raw = c.rep ? loadRaw(c.rep, o, `${c.handle}:`, ac2) : null;
+    const raw = c.rep ? loadRaw(c.rep, o, `${c.handle}:`, ac2, isPost) : null;
     if (c.newText !== null) {
       if (c.rep && raw) quoted = checkAc2(c, added, ac2, raw, c.baseText !== null ? pairTokenChanges(c) : { pairs: new Map(), orphans: [] });
-      if (o.masters) checkMasterBody(c, master);
+      if (o.masters) checkMasterBody(c, master, raw, isPost);
       checkAc3(c, hedgeBefore, hedgeAfter, ac3);
       if (c.baseText !== null) deleted = checkAc4(c, ac4);
-      checkAc7(c, ac7, pw, raw ? raw.abstracts : [], ids, o.masters);
+      checkAc7(c, ac7, pw, raw ? raw.abstracts : [], ids, o.masters ? isPost : undefined);
     }
     rows.push({ handle: c.handle, type: c.type ?? "?", file: c.rel, rawRel: raw?.main?.rel ?? "-", rawSha: c.rep?.raw_sha256 ?? "-",
       bodySha: sha256(c.newBody), tokensNew: added.length, quoted, deleted, hedgeBefore, hedgeAfter,
@@ -1286,7 +1325,12 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     ...git(o.root, ["ls-files", "--others", "--exclude-standard"]).split("\n"),
   ].filter(Boolean));
   const allowed = new Set<string>(o.outRel ? [o.outRel] : []);
-  if (o.masters) { allowed.add(`docs/knowledge-refresh/${o.batch}-notes.md`); allowed.add(`docs/knowledge-refresh/exceptions-${o.batch}.json`); }
+  if (o.masters) {
+    allowed.add(`docs/knowledge-refresh/${o.batch}-notes.md`);
+    // The exceptions file is a batch file only once committed: a run must not pass on exceptions written after it started.
+    const exRel = `docs/knowledge-refresh/exceptions-${o.batch}.json`;
+    if (!git(o.root, ["status", "--porcelain", "--", exRel]).trim()) allowed.add(exRel);
+  }
   if (!ac1.fails.length) { allowed.add("docs/blog/index.json"); allowed.add("docs/blog/categories.json"); } // AC1 accepted them
   for (const c of ctxs) {
     const mine = (c.type ? [DIR_FOR[c.type]] : ["pathway", "blog", "guideline"]).map((d) => `docs/${d}/${c.handle}.md`);

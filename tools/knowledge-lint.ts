@@ -10,7 +10,8 @@
  *   dose-mismatch       a number plus unit in index.json's summary the body never states (AC2 tokeniser)
  *   product-rise        product mentions above the stored baseline (AC7)
  *   Topic masters (US-50 AC7). Static, in test:all (tools/knowledge-lint-masters.test.ts): topic-no-master, master-front
- *   fail; master-gate, master-doi warn. Weekly only, dated: master-stale, source-stale, master-places.
+ *   fail; master-gate, master-doi warn; lint-allowlist.json waives them as it does every rule. Weekly only, dated:
+ *   master-stale, source-stale, master-places, master-overlap (masters sharing a DOI: the pair goes to adversary review).
  * The selector picks what the model half (knowledge-lint-compare.ts) reads this
  * week: entries changed since the last run, entries whose algorithm topic
  * changed, and one of 13 hash buckets, so a full pass takes about a quarter.
@@ -27,7 +28,8 @@
  *     --append-metrics <YYYY-Www>   append the counts to chat-health/metrics.csv
  *     --queue                 add each finding to lint-fix-queue.json (knowledge side, once)
  *     --write-master-hashes [--date YYYY-MM-DD]
- *                             write the masters section of lint-state.json (free; each batch's publish commit runs it)
+ *                             write the masters section of lint-state.json (free; each batch's publish commit runs it);
+ *                             exits 1 on an unwaived master-places finding and keeps that master's earlier hashes
  *     --init-state            write the first lint-state.json (refuses if one exists); after
  *                             that only knowledge-lint-compare.ts --run advances it
  */
@@ -36,7 +38,7 @@ import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { getArg } from '../packages/health-core/src/models';
-import { fmValue, masterKeyError, validDate } from './knowledge-batch-check';
+import { VIEW_HEADING, duplicateKeys, fmValue, masterKeyError, sentences, validDate } from './knowledge-batch-check';
 
 export const SLICE_WEEKS = 13;
 const LOOP_DIR = 'docs/loops/chat-health';
@@ -55,7 +57,7 @@ export interface Entry { handle: string; type: EntryType; title: string; summary
 export type RuleId =
   | 'unresolved-marker' | 'uncited-reference' | 'uncited-list' | 'doi-shape' | 'pmid-shape' | 'id-mismatch'
   | 'link-dead' | 'grokipedia' | 'dose-mismatch' | 'product-rise'
-  | 'topic-no-master' | 'master-front' | 'master-gate' | 'master-doi' | 'master-stale' | 'source-stale' | 'master-places'
+  | 'topic-no-master' | 'master-front' | 'master-gate' | 'master-doi' | 'master-stale' | 'source-stale' | 'master-places' | 'master-overlap'
   | 'entry-vs-algorithm' | 'pathway-vs-reference' | 'reference-vs-reference';
 export interface Finding { rule: RuleId; handle: string; pair?: [string, string]; item: string; detail?: string }
 export interface AllowEntry { rule?: string; handle?: string; pair?: [string, string]; item?: string; reason: string; date: string; who: string }
@@ -461,8 +463,8 @@ export function nextState(entries: Entry[], prev: LintState | null, topics: Topi
 }
 
 // ---------------------------------------------------------------------------
-// Topic masters (US-50 AC7). A master is a reference with `reviewed:`; unrewritten
-// references are exempt. Static checks take no date; weekly checks take today.
+// Topic masters (US-50 AC7). A master is a reference with `reviewed:` or a view heading;
+// unrewritten references are exempt. Static checks take no date; weekly checks take today.
 // ---------------------------------------------------------------------------
 
 /** A text anchor in a place that must follow a master's current view: file plus a snippet, never a line number. */
@@ -477,13 +479,13 @@ const jsonList = (e: Entry, key: string): unknown[] => {
   try { const j = JSON.parse(fmValue(frontOf(e), key) ?? ''); return Array.isArray(j) ? j : []; } catch { return []; }
 };
 const topicsOf = (e: Entry) => jsonList(e, 'topics').filter((t): t is string => typeof t === 'string');
-const isMaster = (e: Entry) => e.type === 'reference' && fmValue(frontOf(e), 'reviewed') !== null;
+const isMaster = (e: Entry) => e.type === 'reference' && (fmValue(frontOf(e), 'reviewed') !== null || viewSection(e.body) !== null);
 const placeId = (p: MasterPlace) => `${p.file}: ${p.snippet}`;
 
 /** The "Current view (reviewed …)" or "Current evidence position" section, heading included. */
 export function viewSection(body: string): string | null {
   const lines = body.split('\n');
-  const i = lines.findIndex(l => /^##\s+(?:Current view \(reviewed [^)]*\)|Current evidence position)\s*$/.test(l));
+  const i = lines.findIndex(l => VIEW_HEADING.test(l));
   if (i < 0) return null;
   const j = lines.findIndex((l, k) => k > i && /^#{1,2}\s/.test(l));
   return lines.slice(i, j < 0 ? undefined : j).join('\n');
@@ -510,6 +512,7 @@ export function staticMasterFindings(entries: Entry[], products: string, cfg: Ma
       const v = fmValue(frontOf(e), k), err = v === null ? 'missing' : masterKeyError(k, v);
       if (err) fails.push({ rule: 'master-front', handle: e.handle, item: k, detail: err });
     }
+    for (const k of duplicateKeys(frontOf(e))) fails.push({ rule: 'master-front', handle: e.handle, item: k, detail: 'appears more than once' });
     const sec = cfg.productIngredients.includes(e.handle) ? viewSection(e.body) : null;
     if (!sec) continue;
     const lines = splitReferences(e.body).refs;
@@ -523,11 +526,12 @@ export function staticMasterFindings(entries: Entry[], products: string, cfg: Ma
 
 const readFrom = (root: string): Read => rel => existsSync(join(root, rel)) ? readFileSync(join(root, rel), 'utf8') : null;
 
-/** The static checks over the real files (the test:all half). */
+/** The static checks over the real files (the test:all half), less what lint-allowlist.json waives, matched as weekly. */
 export function staticMasterChecks(root: string) {
-  const entries = loadCorpus(root);
-  const topics = existsSync(join(root, PATHS.topics)) ? readJson(join(root, PATHS.topics)) : {};
-  return staticMasterFindings(entries, readFrom(root)('docs/products.md') ?? '', loadMastersConfig(topics.masters, new Set(entries.map(e => e.handle))));
+  const { entries, masters, allow } = loadInputs(root);
+  const { fails, warns } = staticMasterFindings(entries, readFrom(root)('docs/products.md') ?? '', masters);
+  const keep = (fs: Finding[]) => fs.filter(f => !isAllowed(f, allow));
+  return { fails: keep(fails), warns: keep(warns) };
 }
 
 export function loadMastersConfig(raw: { productIngredients?: string[]; places?: MasterPlace[] } | undefined, known: Set<string>): MastersConfig {
@@ -547,18 +551,22 @@ function placeHash(p: MasterPlace, read: Read): string | null {
   return para === undefined ? null : contentHash(normalise(para));
 }
 
+/**
+ * Each master's view hash and its places' hashes. A reference with registered places but no view yet is stored with
+ * hash "", so its first rewrite compares against the places as they stood before it.
+ */
 export function masterHashes(entries: Entry[], cfg: MastersConfig, read: Read, date: string): NonNullable<LintState['masters']> {
   const out: NonNullable<LintState['masters']> = {};
-  for (const e of entries.filter(isMaster)) {
-    const sec = viewSection(e.body);
-    if (!sec) continue;
-    const places = cfg.places.filter(p => p.topic === e.handle).map(p => [placeId(p), placeHash(p, read) ?? 'missing']);
-    out[e.handle] = { hash: viewHash(sec), at: date, places: Object.fromEntries(places) };
+  for (const e of entries.filter(x => x.type === 'reference')) {
+    const sec = viewSection(e.body), places = cfg.places.filter(p => p.topic === e.handle);
+    if (!sec && !places.length) continue;
+    out[e.handle] = { hash: sec ? viewHash(sec) : '', at: date, places: Object.fromEntries(places.map(p => [placeId(p), placeHash(p, read) ?? 'missing'])) };
   }
   return out;
 }
 
 const DAY = 864e5;
+const FETCHED = ['consumerlab', 'nih-ods'];
 /** Date-dependent; weekly only, never test:all. */
 export function weeklyMasterFindings(entries: Entry[], today: string, state: LintState | null, cfg: MastersConfig, read: Read): Finding[] {
   const out: Finding[] = [];
@@ -569,32 +577,52 @@ export function weeklyMasterFindings(entries: Entry[], today: string, state: Lin
       .reduce<Entry | null>((a, p) => !a || publishedOf(p)! > publishedOf(a)! ? p : a, null);
     if (reviewed && newest && reviewed < publishedOf(newest)!) out.push({ rule: 'master-stale', handle: m.handle, item: newest.handle, detail: `reviewed ${reviewed}, ${newest.handle} published ${publishedOf(newest)}` });
     for (const src of jsonList(m, 'sources') as { name?: string; checked?: string }[]) {
+      if (!FETCHED.includes(String(src?.name))) continue; // a brad-video entry is dated by its post, not fetched
       const age = src?.checked && validDate(src.checked) ? Math.round((Date.parse(today) - Date.parse(src.checked)) / DAY) : 0;
       if (age > 35) out.push({ rule: 'source-stale', handle: m.handle, item: String(src.name), detail: `checked ${src.checked}, ${age} days ago` });
     }
+    // No stored hash (a first rewrite) counts as a change, and a place with no stored hash as unchanged: check it or waive it.
     const sec = viewSection(m.body), prior = state?.masters?.[m.handle];
-    const changed = !!sec && !!prior && viewHash(sec) !== prior.hash;
+    const changed = !!sec && viewHash(sec) !== prior?.hash;
     for (const p of cfg.places.filter(x => x.topic === m.handle)) {
-      const id = placeId(p), now = placeHash(p, read);
+      const id = placeId(p), now = placeHash(p, read), was = prior?.places[id];
       if (now === null) out.push({ rule: 'master-places', handle: m.handle, item: id, detail: 'anchor text not found; re-register the place' });
-      else if (changed && prior!.places[id] === now) out.push({ rule: 'master-places', handle: m.handle, item: id, detail: `current view changed since ${prior!.at}; this place did not` });
+      else if (changed && (was === undefined || was === now)) out.push({ rule: 'master-places', handle: m.handle, item: id, detail: was === undefined ? 'no earlier hash for this place (first rewrite or newly registered); check it follows the current view' : `current view changed since ${prior!.at}; this place did not` });
     }
   }
+  return [...out, ...overlapFindings(entries.filter(isMaster))];
+}
+
+/** Masters that share a DOI may disagree about it: each pair goes to adversary review with both current views. */
+function overlapFindings(masters: Entry[]): Finding[] {
+  const out: Finding[] = [];
+  const dois = new Map(masters.map(m => [m.handle, new Set(extractIdentifiers(m.body).dois.map(d => d.toLowerCase()))]));
+  const said = (m: Entry) => { const t = sentences(viewSection(m.body) ?? '').join(' '); return t.length > 400 ? `${t.slice(0, 397)}...` : t; };
+  masters.forEach((a, i) => masters.slice(i + 1).forEach(b => {
+    const shared = [...dois.get(a.handle)!].filter(d => dois.get(b.handle)!.has(d)).sort();
+    if (shared.length) out.push({ rule: 'master-overlap', handle: a.handle, pair: [a.handle, b.handle], item: shared.join(' '), detail: `${a.handle}: "${said(a)}" | ${b.handle}: "${said(b)}"` });
+  }));
   return out;
 }
 
 /**
- * Store each master's current-view and place hashes (free; each batch's publish commit runs it). The
- * unchanged-place findings are returned first, since the write would otherwise erase what they compare against.
+ * Store each master's current-view and place hashes (free; each batch's publish commit runs it). A master with an
+ * unwaived master-places finding keeps its earlier entry (none, if it had none), so the drift is still there next
+ * week; it advances once the place changes or the finding is waived in lint-allowlist.json.
  */
-export function writeMasterHashes(root: string, date: string, entries: Entry[] = loadCorpus(root), cfg: MastersConfig = loadInputs(root).masters) {
+export function writeMasterHashes(root: string, date: string, entries?: Entry[], cfg?: MastersConfig, allow?: AllowEntry[]) {
   const file = join(root, PATHS.state);
   if (!existsSync(file)) throw new Error(`${PATHS.state} missing; run --init-state first`);
+  const inputs = entries && cfg && allow ? null : loadInputs(root);
+  const es = entries ?? inputs!.entries, c = cfg ?? inputs!.masters, al = allow ?? inputs!.allow;
   const state = readJson(file) as LintState, read = readFrom(root);
-  const findings = weeklyMasterFindings(entries, date, state, cfg, read).filter(f => f.rule === 'master-places');
-  state.masters = masterHashes(entries, cfg, read, date);
+  const findings = weeklyMasterFindings(es, date, state, c, read).filter(f => f.rule === 'master-places');
+  const unwaived = findings.filter(f => !isAllowed(f, al));
+  const next = masterHashes(es, c, read, date);
+  for (const h of new Set(unwaived.map(f => f.handle))) { if (state.masters?.[h]) next[h] = state.masters[h]; else delete next[h]; }
+  state.masters = next;
   writeFileSync(file, `${JSON.stringify(state, null, 1)}\n`);
-  return { written: Object.keys(state.masters).length, findings };
+  return { written: Object.keys(next).length, findings, unwaived };
 }
 
 // ---------------------------------------------------------------------------
@@ -660,7 +688,7 @@ export async function runLint(root: string, opts: { checkLinks?: { cap: number; 
 }
 
 const RULE_ORDER: RuleId[] = ['unresolved-marker', 'uncited-reference', 'uncited-list', 'doi-shape', 'pmid-shape', 'id-mismatch', 'link-dead', 'grokipedia', 'dose-mismatch', 'product-rise',
-  'topic-no-master', 'master-front', 'master-gate', 'master-doi', 'master-stale', 'source-stale', 'master-places'];
+  'topic-no-master', 'master-front', 'master-gate', 'master-doi', 'master-stale', 'source-stale', 'master-places', 'master-overlap'];
 
 export function dueSummary(r: Pick<LintResult, 'due' | 'cursor' | 'stateMissing'>): string {
   const n = (why: string) => r.due.filter(d => d.reasons.some(x => x.startsWith(why))).length;
@@ -731,9 +759,9 @@ export async function main(argv: string[], root: string, log: (s: string) => voi
     }
     if (has('--write-master-hashes')) {
       const r = writeMasterHashes(root, getArg(argv, '--date', new Date().toISOString().slice(0, 10)));
-      for (const f of r.findings) log(`WARN master-places ${f.handle}: ${f.item} (${f.detail})`);
-      log(`Wrote the masters section of ${PATHS.state}: ${r.written} masters.`);
-      return 0;
+      for (const f of r.findings) log(`${r.unwaived.includes(f) ? 'FAIL' : 'WAIVED'} master-places ${f.handle}: ${f.item} (${f.detail})`);
+      log(`Wrote the masters section of ${PATHS.state}: ${r.written} masters${r.unwaived.length ? `; ${r.unwaived.length} unwaived findings kept their masters' earlier hashes` : ''}.`);
+      return r.unwaived.length ? 1 : 0;
     }
     if (has('--dry-run')) {
       const { entries, state, topics, algo } = loadInputs(root);

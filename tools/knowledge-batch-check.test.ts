@@ -1522,8 +1522,17 @@ describe("US-42 AC2 void entries, number words, abbreviations (v3)", () => {
 
 describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
   const SRC = '[{"name":"NIH ODS","url":"https://ods.od.nih.gov/x","checked":"2026-10-20","fingerprint":"abc123"}]';
-  const sections = (view = "## Current view (reviewed 20 October 2026)\n\nShort view [post-a].\n", videos = "## Brad's videos on this topic\n\n- 2026-01-01 Title: take.\n") =>
+  const OTHER = "https://drstanfield.com/blogs/articles/other";
+  const VIEW = `## Current view (reviewed 20 October 2026)\n\nShort view ([Brad, 1 Mar 2026](${OTHER})).\n`;
+  const sections = (view = VIEW, videos = `## Brad's videos on this topic\n\n- 1 Mar 2026, [O](${OTHER}): take.\n`) =>
     `\n${view}\n${videos}`;
+  const OTHER_TEXT = "---\ntitle: \"O\"\n---\n\nBrad's video post.\n";
+  beforeEach(() => {
+    // "other" is a video post (index entry with no type) outside the batch: the Current view cites it, and it is an extra_raw.
+    put("docs/blog/other.md", OTHER_TEXT);
+    sh(["add", "docs/blog/other.md"]); sh(["commit", "-q", "-m", "post", "--", "docs/blog/other.md"]);
+    reps.alpha.extra_raw = [{ path: "/elsewhere/docs/blog/other.md", sha256: sha256(OTHER_TEXT) }];
+  });
   const alphaFm = (extra: string[], summary = "Alpha summary, 200 mg in adults.") =>
     fx("alpha.new.md").replace(/^summary:.*$/m, [`summary: "${summary}"`, ...extra].join("\n"));
   const master = (extra: string[], body = sections(), summary?: string) => {
@@ -1564,6 +1573,12 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
     entries[0].title = "Alpha 2";
     put("docs/blog/index.json", JSON.stringify(entries, null, 2));
     expect(f1(mrun())).toContain("index.json");
+  });
+  it("fails a frontmatter key that appears twice", () => {
+    master([...GOOD, `reviewed: "2026-10-21"`]);
+    expect(f1(mrun())).toContain("reviewed appears more than once");
+    master([...GOOD, `summary: "Alpha summary, 200 mg in adults."`]);
+    expect(f1(mrun())).toContain("summary appears more than once");
   });
   it("still protects every other frontmatter field", () => {
     master(GOOD);
@@ -1632,15 +1647,91 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
       master(GOOD, sections() + "\n## Current evidence position\n\nText.\n");
       expect(fails(mrun().MASTER).join()).toContain("exactly one");
     });
-    it("passes the evidence-position form with a videos list of None", () => {
-      master(GOOD, sections("## Current evidence position\n\nEvidence summary.\n", "## Brad's videos on this topic\n\nNone.\n"));
+    const EVIDENCE = "## Current evidence position\n\nBrad has not made a video on this topic; this is a summary of the evidence, not his view. Evidence summary.\n";
+    const NONE_YET = "## Brad's videos on this topic\n\nNone yet.\n";
+    it("passes the evidence-position form with a videos list of None yet.", () => {
+      master(GOOD, sections(EVIDENCE, NONE_YET));
       expect(fails(mrun().MASTER)).toEqual([]);
     });
-    it("fails a Current view master whose videos section is missing or just None", () => {
+    it("fails an evidence position that does not open with the contract sentence, or that lists videos", () => {
+      master(GOOD, sections("## Current evidence position\n\nEvidence summary.\n", NONE_YET));
+      expect(fails(mrun().MASTER).join()).toContain("must open with");
+      master(GOOD, sections(EVIDENCE));
+      expect(fails(mrun().MASTER).join()).toContain("lists some");
+    });
+    it("fails a Current view master whose videos section is missing, or says None yet. while the view cites a post", () => {
       master(GOOD, sections(undefined, ""));
       expect(fails(mrun().MASTER).join()).toContain("Brad's videos");
+      master(GOOD, sections(undefined, NONE_YET));
+      expect(fails(mrun().MASTER).join()).toContain("says None yet");
       master(GOOD, sections(undefined, "## Brad's videos on this topic\n\nNone.\n"));
-      expect(fails(mrun().MASTER).join()).toContain("Brad's videos");
+      expect(fails(mrun().MASTER).join()).toContain("says None yet");
+    });
+    it("passes a Current view from a position file alone with None yet. (the contract allows it)", () => {
+      put("docs/products.md", "Products.\n"); sh(["add", "docs/products.md"]); sh(["commit", "-q", "-m", "p", "--", "docs/products.md"]);
+      reps.alpha.extra_raw = [{ path: "/elsewhere/docs/products.md", sha256: sha256("Products.\n") }];
+      master(GOOD, sections("## Current view (reviewed 20 October 2026)\n\nA position ([Brad, 9 Oct 2026](docs/products.md)).\n", NONE_YET));
+      expect(fails(mrun().MASTER)).toEqual([]);
+    });
+
+    describe("US-50 AC1: every Current view sentence cites a post or position in extra_raw", () => {
+      const view = (t: string) => sections(`## Current view (reviewed 20 October 2026)\n\n${t}\n`);
+      it("fails a sentence with no link, while its neighbour passes", () => {
+        master(GOOD, view(`One cited ([Brad, 1 Mar 2026](${OTHER})). Two uncited.`));
+        const f = fails(mrun().MASTER);
+        expect(f).toHaveLength(1);
+        expect(f[0]).toContain("links no video post or position file listed in extra_raw: Two uncited.");
+      });
+      it("fails a link to a video post that is not an extra_raw, a reference page, or another site", () => {
+        reps.alpha.extra_raw = [];
+        master(GOOD, view(`Cited ([Brad, 1 Mar 2026](${OTHER})).`));
+        expect(fails(mrun().MASTER).join()).toContain("links no video post");
+        reps.alpha.extra_raw = [{ path: "/elsewhere/docs/blog/other.md", sha256: sha256(OTHER_TEXT) }];
+        master(GOOD, view("Cited ([Brad, 1 Mar 2026](https://drstanfield.com/blogs/articles/alpha))."));
+        expect(fails(mrun().MASTER).join()).toContain("links no video post");
+        master(GOOD, view("Cited ([Brad, 1 Mar 2026](https://example.com/blogs/articles/other))."));
+        expect(fails(mrun().MASTER).join()).toContain("links no video post");
+      });
+      it("fails an empty Current view", () => {
+        master(GOOD, view(""));
+        expect(fails(mrun().MASTER).join()).toContain("is empty");
+      });
+    });
+
+    describe("US-50 AC1: every batch reference is a master under --masters", () => {
+      it("fails a reference with a Current view but no reviewed or sources", () => {
+        master([]);
+        const f = fails(mrun().MASTER).join("\n");
+        expect(f).toContain("a master needs reviewed");
+        expect(f).toContain("a master needs sources");
+      });
+      it("fails a reference without the master sections, even with no reviewed key", () => {
+        master([], "\n");
+        expect(fails(mrun().MASTER).join()).toContain("needs exactly one");
+      });
+      it("fails when a base master loses reviewed and sources", () => {
+        master(GOOD);
+        sh(["add", "docs/blog/alpha.md"]); sh(["commit", "-q", "-m", "master", "--", "docs/blog/alpha.md"]);
+        put("docs/blog/alpha.md", readFileSync(join(root, "docs/blog/alpha.md"), "utf8").replace(/^reviewed:.*\n^sources:.*\n/m, ""));
+        expect(fails(mrun().MASTER).join()).toContain("a master needs reviewed");
+      });
+    });
+
+    it("US-50 AC1 tokeniser: the heading date, a citation date and a video-line date carry no number; other dates still do", () => {
+      expect([...tokenise("## Current view (reviewed 15 October 2026)")]).toEqual([]);
+      expect([...tokenise("Current view (reviewed 15 October 2026)")]).toEqual([]); // the heading as a cleaned body line
+      expect([...tokenise("He said so ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/x)).")]).toEqual([]);
+      expect([...tokenise("- 15 Oct 2026, [Title](https://drstanfield.com/blogs/articles/x): take.")]).toEqual([]);
+      expect([...tokenise("Trials ran from 15 Oct 2026.")]).toEqual(["15"]);
+      expect([...tokenise("## Current view (reviewed 15 October 2026) 5 mg")].sort()).toEqual(["15", "5 mg"]); // not the bare heading
+    });
+    it("US-50 AC1: a master's dates (heading, citation, video line) are not numbers; the happy path passes AC2", () => {
+      master(GOOD, sections(`## Current view (reviewed 20 October 2026)\n\nShort view ([Brad, 15 Oct 2026](${OTHER})).\n`,
+        `## Brad's videos on this topic\n\n- 15 Oct 2026, [O](${OTHER}): take.\n- 3 Dec 2025, [O](${OTHER}): older take.\n`));
+      const r = mrun();
+      expect(fails(r.AC2)).toEqual([]);
+      expect(r.AC2.evidence.join()).not.toContain('"15"');
+      expect(fails(r.MASTER)).toEqual([]);
     });
     it("does not run in the default mode", () => {
       expect(run().MASTER).toBeUndefined();
@@ -1656,9 +1747,9 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
 });
 
 describe("US-50 AC1 masters: Brad's posts and positions as raw, drstanfield.com references, batch files", () => {
-  const POST = "---\ntitle: \"Post X\"\n---\n\nIn my view participants took 300 mg in adults and did well.\n";
+  const POST = "---\ntitle: \"O\"\n---\n\nIn my view participants took 300 mg in adults and did well.\n";
   const rawEntry = (rel: string, text = POST, at = `/elsewhere/${rel}`) => ({ path: at, sha256: sha256(text) });
-  const withPost = (quote: string, rel = "docs/blog/post-x.md", text = POST) => {
+  const withPost = (quote: string, rel = "docs/blog/other.md", text = POST) => {
     put(rel, text);
     sh(["add", rel]); sh(["commit", "-q", "--allow-empty", "-m", "post", "--", rel]);
     reps.alpha.extra_raw = [rawEntry(rel, text)];
@@ -1668,11 +1759,11 @@ describe("US-50 AC1 masters: Brad's posts and positions as raw, drstanfield.com 
   const f2 = (r: Record<string, Result>) => fails(r.AC2).join("\n");
 
   it("accepts a POST:<handle>: quote against a docs/blog file, checked at the base revision", () => {
-    withPost(`POST:post-x: ${q}`);
+    withPost(`POST:other: ${q}`);
     expect(f2(run({ masters: true }))).toBe("");
   });
   it("without --masters the same report still fails", () => {
-    withPost(`POST:post-x: ${q}`);
+    withPost(`POST:other: ${q}`);
     expect(f2(run())).not.toBe("");
   });
   it("accepts POSITION:<path>: against a positions file", () => {
@@ -1682,18 +1773,33 @@ describe("US-50 AC1 masters: Brad's posts and positions as raw, drstanfield.com 
   it("fails a POST quote whose handle is not an extra_raw file, or a quote not in the file", () => {
     withPost(`POST:other-post: ${q}`);
     expect(f2(run({ masters: true }))).toContain("other-post");
-    withPost("POST:post-x: participants took 999 mg in adults and did well");
+    withPost("POST:other: participants took 999 mg in adults and did well");
     expect(f2(run({ masters: true }))).toContain("raw_quote");
   });
   it("verifies the sha256 against the base revision, not the working tree", () => {
-    withPost(`POST:post-x: ${q}`);
-    put("docs/blog/post-x.md", POST.replace("300 mg", "400 mg"));
+    withPost(`POST:other: ${q}`);
+    put("docs/blog/other.md", POST.replace("300 mg", "400 mg"));
     expect(f2(run({ masters: true }))).toBe("");
-    reps.alpha.extra_raw = [{ ...rawEntry("docs/blog/post-x.md"), sha256: sha256("other") }];
+    reps.alpha.extra_raw = [{ ...rawEntry("docs/blog/other.md"), sha256: sha256("other") }];
     expect(f2(run({ masters: true }))).toContain("sha256 mismatch");
   });
+  it("rejects a self-quote, a reference as a post, and a post this batch changes", () => {
+    withPost(`POST:alpha: ${q}`, "docs/blog/alpha.md", readFileSync(join(root, "docs/blog/alpha.md"), "utf8"));
+    expect(f2(run({ masters: true }))).toContain("extra_raw docs/blog/alpha.md is not a video post outside this batch");
+    // A reference outside the batch: commit an index that lists gamma as a reference.
+    const idx = JSON.parse(INDEX); idx.push({ handle: "gamma", summary: "g", title: "G", type: "reference" });
+    put("docs/blog/index.json", JSON.stringify(idx, null, 2)); sh(["add", "docs/blog/index.json"]); sh(["commit", "-q", "-m", "i", "--", "docs/blog/index.json"]);
+    withPost(`POST:gamma: ${q}`, "docs/blog/gamma.md");
+    expect(f2(run({ masters: true }))).toContain("extra_raw docs/blog/gamma.md is not a video post outside this batch");
+    withPost(`POST:other: ${q}`);
+    expect(f2(run({ masters: true, handles: ["alpha", "beta", "other"] }))).toContain("extra_raw docs/blog/other.md is not a video post outside this batch");
+  });
+  it("rejects a post quoted under POSITION:", () => {
+    withPost(`POSITION:docs/blog/other.md: ${q}`);
+    expect(f2(run({ masters: true }))).toContain("POSITION: names a post");
+  });
   it("rejects an extra_raw path outside the repo's posts and positions files", () => {
-    withPost(`POST:post-x: ${q}`);
+    withPost(`POST:other: ${q}`);
     reps.alpha.extra_raw = [{ path: "/elsewhere/docs/blog/../../secret.md", sha256: sha256(POST) }];
     expect(f2(run({ masters: true }))).toContain("extra_raw");
     reps.alpha.extra_raw = [{ path: "/elsewhere/docs/other/post-x.md", sha256: sha256(POST) }];
@@ -1703,21 +1809,36 @@ describe("US-50 AC1 masters: Brad's posts and positions as raw, drstanfield.com 
   const refAlpha = (url: string) => put("docs/blog/alpha.md", fx("alpha.new.md").replace("## References", `## References\n\n[3] Stanfield B. A video post. drstanfield.com. [${url}](${url})`));
   const f7 = (r: Record<string, Result>) => fails(r.AC7).join("\n");
   it("allows drstanfield.com article and roadmap URLs as reference hosts under --masters only", () => {
-    refAlpha("https://drstanfield.com/blogs/articles/some-post");
+    refAlpha("https://drstanfield.com/blogs/articles/other");
     expect(f7(run({ masters: true }))).not.toContain("unknown host");
     expect(f7(run())).toContain("unknown host drstanfield.com");
     refAlpha("https://drstanfield.com/pages/roadmap");
     expect(f7(run({ masters: true }))).not.toContain("unknown host");
     refAlpha("https://drstanfield.com/cart/evil");
     expect(f7(run({ masters: true }))).toContain("unknown host drstanfield.com");
+    refAlpha("https://drstanfield.com/blogs/articles/some-post"); // not in the index
+    expect(f7(run({ masters: true }))).toContain("unknown host drstanfield.com");
+    refAlpha("https://drstanfield.com/blogs/articles/beta"); // a pathway, not a video post
+    expect(f7(run({ masters: true }))).toContain("unknown host drstanfield.com");
+    refAlpha("https://drstanfield.com/blogs/articles/alpha"); // a reference, not a video post
+    expect(f7(run({ masters: true }))).toContain("unknown host drstanfield.com");
   });
 
   it("AC6: the batch's notes and exceptions files are batch files under --masters only", () => {
     put("docs/knowledge-refresh/t-notes.md", "n");
     put("docs/knowledge-refresh/exceptions-t.json", "[]");
+    sh(["add", "docs/knowledge-refresh/exceptions-t.json"]); sh(["commit", "-q", "-m", "x", "--", "docs/knowledge-refresh/exceptions-t.json"]);
     expect(fails(run({ masters: true }).AC6)).toEqual([]);
     expect(fails(run().AC6).join()).toContain("unexpected change: docs/knowledge-refresh/t-notes.md");
     put("docs/knowledge-refresh/other-notes.md", "n");
     expect(fails(run({ masters: true }).AC6).join()).toContain("other-notes.md");
+  });
+  it("AC6: an exceptions file written or changed after its last commit is flagged (US-42 AC11)", () => {
+    put("docs/knowledge-refresh/exceptions-t.json", "[]");
+    expect(fails(run({ masters: true }).AC6).join()).toContain("unexpected change: docs/knowledge-refresh/exceptions-t.json");
+    sh(["add", "docs/knowledge-refresh/exceptions-t.json"]); sh(["commit", "-q", "-m", "x", "--", "docs/knowledge-refresh/exceptions-t.json"]);
+    sh(["commit", "-q", "--allow-empty", "-m", "later"]);
+    put("docs/knowledge-refresh/exceptions-t.json", "[ ]");
+    expect(fails(run({ masters: true, base: "HEAD~2" }).AC6).join()).toContain("unexpected change: docs/knowledge-refresh/exceptions-t.json");
   });
 });
