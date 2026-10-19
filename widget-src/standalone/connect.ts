@@ -26,7 +26,7 @@ import { dropboxConfig } from './dropbox-config';
 import { clearAutoEnrolBlock } from './reminders';
 import { googleDriveConfig } from './google-config';
 import { clearLocalStorage, safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
-import { recordFailure } from '../src/lib/error-diagnostics';
+import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
 import { Sentry } from '../src/lib/sentry';
 
@@ -118,7 +118,7 @@ export async function migrateLocalInto(adapter: StorageAdapter): Promise<void> {
   try {
     ({ body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME));
   } catch (error) {
-    console.warn('On-device data unreadable — connecting without the lift', error);
+    console.warn('On-device data unreadable — connecting without the lift');
     return;
   }
   if (body == null) return;
@@ -147,13 +147,25 @@ export async function liftLocalInto(adapter: StorageAdapter, backend: Backend): 
   try {
     await migrateLocalInto(adapter);
   } catch (error) {
-    console.warn('Guest-data lift on connect failed', error);
+    console.warn('Guest-data lift on connect failed');
     // Nothing on this device has reached the cloud, so it is unsynced from its
     // OLDEST row: marking from "now" would let the next merge drop everything
     // the user typed before this connect (US-09 AC13).
     markSyncPending(await localUnsyncedSince());
-    Sentry.captureException(error, { tags: { area: 'cloud-connect', op: 'migrate-up', backend } });
+    Sentry.captureException(recordFailure(error, 'Cloud sync failed'), {
+      tags: { area: 'cloud-sync', op: 'migrate-up', backend, ...failureTags(error) },
+    });
   }
+}
+
+/** An OAuth return whose code exchange failed (US-09 AC6c): a fixed console
+ *  line and the strict envelope with closed-list tags. The provider's reply
+ *  can echo what was sent, so neither its text nor the error goes out. */
+export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'google-drive'): void {
+  console.warn(`${PROVIDER_LABELS[backend]} connect failed`);
+  Sentry.captureException(recordFailure(error, 'Cloud connect failed'), {
+    tags: { area: 'cloud-connect', backend, ...failureTags(error) },
+  });
 }
 
 /**
@@ -268,7 +280,7 @@ export async function logOff(backend: Backend): Promise<void> {
   try {
     await adapterFor(backend)?.disconnect();
   } catch (error) {
-    console.warn('Cloud disconnect during log-off failed', error);
+    console.warn('Cloud disconnect during log-off failed');
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'log-off', backend } });
   }
   // Wipe the on-device copy (RoadmapFile + version + named files + documents).
@@ -295,7 +307,7 @@ export async function prepareSwitch(current: Backend): Promise<void> {
   try {
     await copyDownFrom(adapter);
   } catch (error) {
-    console.warn('Copy-down before switch failed', error);
+    console.warn('Copy-down before switch failed');
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-down', backend: current } });
     throw new Error(
       `${PROVIDER_LABELS[current]} could not be reached, so your record there could not be copied to this browser. Try again once it answers.`,

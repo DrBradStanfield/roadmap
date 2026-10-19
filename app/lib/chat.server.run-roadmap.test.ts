@@ -153,6 +153,52 @@ describe('US-15 AC33: the run_roadmap round (streamed)', () => {
     ]);
     expect(result).toMatchObject({ content: ANSWER, isFallback: false, roadmapRun: { applied: 2, rejected: 0 } });
   });
+
+  // US-15 AC38: the client clears what streamed before a status line. The wire is
+  // unchanged (a status line is { type, text } and nothing more), so an old widget
+  // bundle reads it as before and a new one clears the preamble.
+  const PREAMBLE = 'Let me run those numbers through your roadmap.';
+  const preambleThenRun = () => sse([start,
+    { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+    { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: PREAMBLE } },
+    { type: 'content_block_stop', index: 0 },
+    { type: 'content_block_start', index: 1, content_block: { type: 'tool_use', id: 'toolu_run', name: 'run_roadmap', input: {} } },
+    { type: 'content_block_delta', index: 1, delta: { type: 'input_json_delta', partial_json: JSON.stringify(STATED) } },
+    { type: 'content_block_stop', index: 1 },
+    ...end('tool_use')]);
+
+  it('AC38: a preamble streams first, the status line comes between it and the answer, and carries only type and text', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce(preambleThenRun())
+      .mockResolvedValueOnce(sse([start,
+        { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: ANSWER } },
+        { type: 'content_block_stop', index: 0 },
+        ...end('end_turn')])) as unknown as typeof fetch;
+    const onEvent = vi.fn();
+    const result = await getChatCompletion([], user, true, onEvent, { guestInputs: PROFILE });
+    const events = onEvent.mock.calls.map((c) => c[0]);
+    expect(events).toEqual([
+      { type: 'text', text: PREAMBLE },
+      { type: 'status', text: ROADMAP_STATUS },
+      { type: 'text', text: ANSWER },
+    ]);
+    expect(Object.keys(events[1]).sort()).toEqual(['text', 'type']);
+    expect(result).toMatchObject({ content: ANSWER, isFallback: false });
+  });
+
+  it('AC38: a failed second call after the status line is the fallback, as before', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce(preambleThenRun())
+      .mockRejectedValue(new TypeError('fetch failed')) as unknown as typeof fetch;
+    const onEvent = vi.fn();
+    const result = await getChatCompletion([], user, true, onEvent, { guestInputs: PROFILE });
+    expect(onEvent.mock.calls.map((c) => c[0])).toEqual([
+      { type: 'text', text: PREAMBLE },
+      { type: 'status', text: ROADMAP_STATUS },
+    ]);
+    expect(result).toMatchObject({ content: FALLBACK_RESPONSE, isFallback: true, roadmapRun: { applied: 2, rejected: 0 } });
+  });
 });
 
 // US-49 with US-15 AC33: on a surface with both the form tools and the

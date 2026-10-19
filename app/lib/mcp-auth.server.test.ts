@@ -11,18 +11,26 @@
  * `mcp-grants` and `mcp-authorize` — which is why it keeps the older name.
  */
 import crypto from 'node:crypto';
+import https from 'node:https';
+import net from 'node:net';
+import zlib from 'node:zlib';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Every CIMD test needs DNS to say "public"; the address policy itself is
-// tested directly against `isPublicAddress`.
-vi.mock('node:dns/promises', () => ({
-  default: { lookup: async () => [{ address: '1.1.1.1', family: 4 }] },
-}));
+// The client-metadata fetch resolves through `node:dns` inside its connect-time
+// check (US-32 AC47). A test sets the answer; no lookup leaves the machine.
+const dnsAnswer = vi.hoisted(() => ({ records: [] as Array<{ address: string; family: number }> }));
+vi.mock('node:dns', async (importOriginal) => {
+  const real = await importOriginal<typeof import('node:dns')>();
+  const lookup = (_host: string, _options: unknown, callback: (err: Error | null, records: unknown) => void) =>
+    setImmediate(() => callback(null, dnsAnswer.records));
+  return { ...real, default: { ...real, lookup } };
+});
 import { checkAuthorize, MAX_STATE_LENGTH, sealState, verifyPkce } from './mcp-authorize.server';
 import { ALLOWED_REDIRECTS, isAllowedRedirect, isLoopbackRedirect, isPublicAddress, KNOWN_CLIENTS, redirectMatches, registerClient, resolveClient } from './mcp-clients.server';
 import { isMcpEnabled } from './mcp-config.server';
 import { ACCESS_LIFETIME_SECONDS, connectionKey, issueTokens, resetMcpMemory, spendWrites, STATE_LIFETIME_SECONDS, type AccessPayload, type RefreshPayload, type StatePayload, WRITE_COST, WRITES_PER_HOUR } from './mcp-grants.server';
 import { packSealed, seal, typeKey, unpackSealed, unseal } from './mcp-seal.server';
+import { serveClientMetadata, stubHttpsRequest } from './mcp-cimd.test-helpers';
 
 const KEY_A = Buffer.alloc(32, 1).toString('base64');
 const KEY_B = Buffer.alloc(32, 2).toString('base64');
@@ -33,6 +41,7 @@ beforeEach(() => {
   process.env.MCP_SEAL_KEYS = KEY_A;
   process.env.MCP_CLIENT_HMAC_KEY = Buffer.alloc(32, 9).toString('base64');
   resetMcpMemory();
+  dnsAnswer.records = [];
 });
 
 afterEach(() => {
@@ -291,13 +300,6 @@ describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', ()
     redirect_uris: ['https://claude.ai/api/mcp/auth_callback'],
   };
 
-  function respond(body: unknown, init: { type?: string; status?: number } = {}) {
-    return new Response(JSON.stringify(body), {
-      status: init.status ?? 200,
-      headers: { 'content-type': init.type ?? 'application/json' },
-    });
-  }
-
   it('rejects a non-public address, which is the whole point', () => {
     for (const [ip, family] of [['127.0.0.1', 4], ['10.0.0.5', 4], ['172.20.1.1', 4], ['192.168.1.1', 4],
       ['169.254.169.254', 4], ['100.64.0.1', 4], ['::1', 6], ['fd00::1', 6], ['fe80::1', 6],
@@ -308,63 +310,356 @@ describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', ()
     expect(isPublicAddress('2606:4700::1111', 6)).toBe(true);
   });
 
+  it('rejects a non-public address written in another spelling (US-32 AC45)', () => {
+    for (const ip of [
+      '0:0:0:0:0:ffff:127.0.0.1',
+      '0:0:0:0:0:FFFF:169.254.169.254',
+      '0000:0000:0000:0000:0000:ffff:7f00:0001',
+      '::ffff:7f00:1',
+      '64:ff9b::127.0.0.1',
+      '64:ff9b::7f00:1',
+      '2002:7f00:1::',
+      '2002:0101:0101::',
+      'ff02::1',
+      '::127.0.0.1',
+      '::7f00:1',
+      '::ffff:0:10.0.0.1',
+      '127.0.0.1',
+      '64:ff9b:1::7f00:1',
+      '64:ff9b:1::127.0.0.1',
+      'fc0::1',
+      'fd::1',
+      '::ffff:0:0:0:1',
+      '0:0:0:0:ffff:0:7f00:1',
+      '::ffff:0:7f00:1',
+      '0:0:0:0:ffff:0:101:101',
+    ]) {
+      expect(isPublicAddress(ip, 6), ip).toBe(false);
+    }
+    expect(isPublicAddress('0:0:0:0:0:ffff:1.1.1.1', 6)).toBe(true);
+    expect(isPublicAddress('::FFFF:1.1.1.1', 6)).toBe(true);
+    expect(isPublicAddress('::ffff:0101:0101', 6)).toBe(true);
+    expect(isPublicAddress('::1.1.1.1', 6)).toBe(true);
+    expect(isPublicAddress('2606:4700::1.1.1.1', 6)).toBe(true);
+  });
+
+  it('judges a well-known NAT64 address by the IPv4 it carries (US-32 AC45)', () => {
+    // 64:ff9b::/96 (RFC 6052): a DNS64 resolver synthesises these for IPv4-only
+    // hosts. The hex and dotted spellings of each address must agree.
+    for (const ip of [
+      '64:ff9b::101:101', '64:ff9b::1.1.1.1',
+      '64:FF9B::1.1.1.1', '64:ff9b:0:0:0:0:101:101',
+      '0064:ff9b:0000:0000:0000:0000:0101:0101', '0064:ff9b:0:0:0:0:1.1.1.1',
+    ]) {
+      expect(isPublicAddress(ip, 6), ip).toBe(true);
+    }
+    for (const ip of [
+      '64:ff9b::7f00:1', '64:ff9b::127.0.0.1',
+      '64:ff9b::a9fe:a9fe', '64:ff9b::169.254.169.254',
+      '64:ff9b::a00:5', '64:ff9b::10.0.0.5',
+      '64:ff9b::ac14:101', '64:ff9b::172.20.1.1',
+      '64:ff9b::c0a8:101', '64:ff9b::192.168.1.1',
+      '64:ff9b::6440:1', '64:ff9b::100.64.0.1',
+      '64:ff9b::e000:1', '64:ff9b::224.0.0.1',
+      '64:ff9b::', '64:ff9b::0.0.0.0',
+      '64:ff9b::1', '64:ff9b::0.0.0.1',
+      '0064:ff9b:0000:0000:0000:0000:a9fe:a9fe', '64:FF9B:0:0:0:0:169.254.169.254',
+    ]) {
+      expect(isPublicAddress(ip, 6), ip).toBe(false);
+    }
+    // The rest of 64:ff9b::/32 stays refused, local-use 64:ff9b:1::/48 included.
+    for (const ip of [
+      '64:ff9b:1::101:101', '64:ff9b:1::1.1.1.1',
+      '64:ff9b:0:0:1::101:101', '64:ff9b:0:0:1::1.1.1.1',
+      '64:ff9b:0:0:0:1:101:101', '64:ff9b:0:0:0:1:1.1.1.1',
+      '64:ff9b:ffff::101:101', '64:ff9b:ffff::1.1.1.1',
+    ]) {
+      expect(isPublicAddress(ip, 6), ip).toBe(false);
+    }
+    // Fails closed: garbage, a zone id, a prefix length, the wrong or an unknown family.
+    for (const [ip, family] of [
+      ['64:ff9b::101:101%eth0', 6], ['64:ff9b::1.1.1.1%eth0', 6],
+      ['64:ff9b::101:101/96', 6], ['64:ff9b::1.1.1', 6], ['64:ff9b::1.1.1.256', 6],
+      ['64:ff9b:::101:101', 6], ['64:ff9b::101:101:', 6], ['64:ff9b::1.1.1.1:101', 6],
+      ['64:ff9b::101:101', 4], ['64:ff9b::101:101', 0], ['64:ff9b::101:101', 5],
+      // Malformed dotted quads Number() would read (adversary on 0c5c8d3d): empty, padded, hex, exponent, leading zero.
+      ['64:ff9b::1..1.1', 6], ['64:ff9b::1.1.1.', 6], ['64:ff9b:: 1.1.1.1', 6], ['64:ff9b::1.1.1.1\n', 6],
+      ['64:ff9b::0x1.1.1.1', 6], ['64:ff9b::1e2.0.0.1', 6], ['64:ff9b::0177.0.0.1', 6], ['::ffff:1..1.1', 6], ['::1.1.1.', 6],
+      ['1..1.1', 4], ['0177.0.0.1', 4], ['1.1.1.1\n', 4], [' 1.1.1.1', 4], ['0x1.1.1.1', 4],
+    ] as Array<[string, number]>) {
+      expect(isPublicAddress(ip, family), `${ip} family ${family}`).toBe(false);
+    }
+  });
+
+  it('refuses the reserved ranges a public check must not pass (US-32 AC47)', () => {
+    for (const ip of [
+      '192.0.0.1', '192.0.0.255', '192.0.2.1', '198.18.0.1', '198.19.255.255', '198.51.100.1',
+      '203.0.113.1', '192.88.99.1', '240.0.0.1', '255.255.255.255',
+    ]) {
+      expect(isPublicAddress(ip, 4), ip).toBe(false);
+    }
+    for (const ip of ['192.0.1.1', '192.0.3.1', '198.17.255.255', '198.20.0.0', '198.51.101.1', '203.0.114.1', '192.88.100.1', '223.255.255.255']) {
+      expect(isPublicAddress(ip, 4), ip).toBe(true);
+    }
+    // IPv6: only global unicast, 2000::/3, minus its special blocks.
+    for (const ip of [
+      '2001:db8::1', '2001:0db8:ffff::1', '3fff::1', '3fff:fff:ffff::1', '2001:2::1', '2001::1',
+      '2001:0:4136:e378:8000:63bf:3fff:fdd2', '2001:10::1', '2001:1ff:ffff::1', '5f00::1', '100::1',
+      'fec0::1', 'feff::1', '::2', '1::1', '4000::1', 'e000::1',
+    ]) {
+      expect(isPublicAddress(ip, 6), ip).toBe(false);
+    }
+    for (const ip of ['2001:200::1', '2001:4860:4860::8888', '2a00:1450::1', '3ffe::1', '3fff:1000::1', '2001:db9::1']) {
+      expect(isPublicAddress(ip, 6), ip).toBe(true);
+    }
+  });
+
   it('refuses plain http', async () => {
-    vi.stubGlobal('fetch', vi.fn());
+    const spy = serveClientMetadata({ [CIMD]: METADATA });
     expect(await resolveClient('http://claude.ai/.well-known/oauth-client')).toBeNull();
-    expect(fetch).not.toHaveBeenCalled();
+    expect(spy).not.toHaveBeenCalled();
   });
 
-  it('sends no credentials, follows no redirect, and asks for JSON', async () => {
-    const spy = vi.fn(async () => respond(METADATA));
-    vi.stubGlobal('fetch', spy);
-    await resolveClient(CIMD);
-    const [, init] = spy.mock.calls[0] as unknown as [URL, RequestInit];
-    expect(init.redirect).toBe('error');
-    expect(init.credentials).toBe('omit');
-    expect((init.headers as Record<string, string>).Accept).toBe('application/json');
+  it('refuses a client id that carries credentials, which node:https would send (US-32 AC47)', async () => {
+    const withUser = 'https://user:secret@claude.ai/.well-known/oauth-client';
+    const spy = serveClientMetadata({ [withUser]: { ...METADATA, client_id: withUser } });
+    expect(await resolveClient(withUser)).toBeNull();
+    expect(await resolveClient('https://user@claude.ai/.well-known/oauth-client')).toBeNull();
+    expect(spy).not.toHaveBeenCalled();
   });
 
-  it('refuses a redirect', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => {
-      throw new TypeError('unexpected redirect');
-    }));
-    expect(await resolveClient(CIMD)).toBeNull();
+  it('asks for JSON with a fixed user-agent, sends no credentials, and keeps no TLS session (US-32 AC47)', async () => {
+    const spy = serveClientMetadata({ [CIMD]: METADATA });
+    expect(await resolveClient(CIMD)).toMatchObject({ clientId: CIMD, name: 'Claude' });
+    const [url, options] = spy.mock.calls[0] as unknown as [URL, https.RequestOptions];
+    expect(url.href).toBe(CIMD);
+    expect(options.headers).toEqual({ Accept: 'application/json', 'Accept-Encoding': 'gzip, deflate, br', 'User-Agent': 'node' });
+    expect(options.auth).toBeUndefined();
+    expect(options.method ?? 'GET').toBe('GET');
+    expect(typeof options.lookup).toBe('function');
+    expect(options.agent).toBeInstanceOf(https.Agent);
+    expect((options.agent as https.Agent & { maxCachedSessions: number }).maxCachedSessions).toBe(0);
+  });
+
+  it('refuses a redirect, and every other answer that is not 2xx (US-32 AC47)', async () => {
+    for (const status of [301, 302, 303, 307, 308, 304, 400, 403, 404, 500, 503]) {
+      resetMcpMemory();
+      stubHttpsRequest(() => ({ status, headers: { location: 'https://claude.ai/elsewhere' }, body: JSON.stringify(METADATA) }));
+      expect(await resolveClient(CIMD), String(status)).toBeNull();
+    }
+    resetMcpMemory();
+    stubHttpsRequest(() => ({ status: 203, body: JSON.stringify(METADATA) }));
+    expect(await resolveClient(CIMD)).not.toBeNull();
   });
 
   it('refuses the wrong content type', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => respond(METADATA, { type: 'text/html' })));
+    stubHttpsRequest(() => ({ headers: { 'content-type': 'text/html' }, body: JSON.stringify(METADATA) }));
     expect(await resolveClient(CIMD)).toBeNull();
   });
 
   it('refuses an oversize body even when content-length lies', async () => {
     const huge = JSON.stringify({ ...METADATA, pad: 'x'.repeat(70_000) });
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(huge, {
-      headers: { 'content-type': 'application/json', 'content-length': '10' },
-    })));
+    stubHttpsRequest(() => ({ headers: { 'content-length': '10' }, body: huge }));
     expect(await resolveClient(CIMD)).toBeNull();
   });
 
+  it('refuses a body whose content-length is over the cap before reading it', async () => {
+    stubHttpsRequest(() => ({ headers: { 'content-length': '65537' }, stall: 'body' }));
+    expect(await resolveClient(CIMD)).toBeNull();
+  });
+
+  it('decodes gzip, deflate and br, as fetch did (US-32 AC47)', async () => {
+    const json = JSON.stringify(METADATA);
+    for (const [coding, encode] of [
+      ['gzip', zlib.gzipSync], ['x-gzip', zlib.gzipSync], ['GZIP', zlib.gzipSync],
+      ['deflate', zlib.deflateSync], ['br', zlib.brotliCompressSync], ['identity', Buffer.from],
+    ] as Array<[string, (s: string) => Buffer]>) {
+      resetMcpMemory();
+      stubHttpsRequest(() => ({ headers: { 'content-encoding': coding }, body: encode(json) }));
+      expect(await resolveClient(CIMD), coding).toMatchObject({ clientId: CIMD, name: 'Claude' });
+    }
+  });
+
+  it('refuses a compressed body that decodes past the cap (US-32 AC47)', async () => {
+    const bomb = JSON.stringify({ ...METADATA, pad: 'x'.repeat(1_000_000) });
+    for (const [coding, packed] of [['gzip', zlib.gzipSync(bomb)], ['deflate', zlib.deflateSync(bomb)], ['br', zlib.brotliCompressSync(bomb)]] as const) {
+      expect(packed.byteLength, coding).toBeLessThan(65536);
+      resetMcpMemory();
+      stubHttpsRequest(() => ({ headers: { 'content-encoding': coding, 'content-length': String(packed.byteLength) }, body: packed }));
+      expect(await resolveClient(CIMD), coding).toBeNull();
+    }
+  });
+
+  it('refuses a content encoding it does not decode (US-32 AC47)', async () => {
+    for (const coding of ['compress', 'zstd', 'gzip, br', 'br, gzip', 'constructor', '__proto__', 'toString']) {
+      resetMcpMemory();
+      stubHttpsRequest(() => ({ headers: { 'content-encoding': coding }, body: JSON.stringify(METADATA) }));
+      expect(await resolveClient(CIMD), coding).toBeNull();
+    }
+  });
+
+  it('refuses the ports fetch refused, and port 0, and no other (US-32 AC47)', async () => {
+    for (const port of [0, 1, 21, 22, 25, 53, 110, 143, 465, 587, 993, 995, 2049, 6000, 6667, 10080]) {
+      const url = `https://claude.ai:${port}/.well-known/oauth-client`;
+      const spy = serveClientMetadata({ [url]: { ...METADATA, client_id: url } });
+      expect(await resolveClient(url), url).toBeNull();
+      expect(spy, url).not.toHaveBeenCalled();
+      spy.mockRestore();
+    }
+    for (const url of ['https://claude.ai:8443/.well-known/oauth-client', 'https://claude.ai:443/.well-known/oauth-client']) {
+      serveClientMetadata({ [new URL(url).href]: { ...METADATA, client_id: url } });
+      expect(await resolveClient(url), url).toMatchObject({ clientId: url });
+    }
+  });
+
+  it('gives up after one 5-second deadline, whether the headers, the body or its decoding stall (US-32 AC47)', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const gzipped = zlib.gzipSync(JSON.stringify(METADATA));
+    try {
+      for (const [stall, answer] of [
+        ['headers', { body: JSON.stringify(METADATA) }],
+        ['body', { body: JSON.stringify(METADATA) }],
+        ['body', { headers: { 'content-encoding': 'gzip' }, body: gzipped.subarray(0, gzipped.byteLength >> 1) }],
+      ] as const) {
+        resetMcpMemory();
+        const spy = stubHttpsRequest(() => ({ stall, ...answer }));
+        let settled = false;
+        const result = resolveClient(CIMD).finally(() => { settled = true; });
+        await vi.advanceTimersByTimeAsync(4999);
+        expect(settled, stall).toBe(false);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(await result, stall).toBeNull();
+        const req = spy.mock.results[0].value as { destroy: ReturnType<typeof vi.fn> };
+        expect(req.destroy, stall).toHaveBeenCalled();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('refuses metadata claiming a redirect URI we do not allow', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => respond({ ...METADATA, redirect_uris: ['https://evil.test/cb'] })));
+    serveClientMetadata({ [CIMD]: { ...METADATA, redirect_uris: ['https://evil.test/cb'] } });
     expect(await resolveClient(CIMD)).toBeNull();
   });
 
   it('caches, so a second authorize does not refetch', async () => {
-    const spy = vi.fn(async () => respond(METADATA));
-    vi.stubGlobal('fetch', spy);
+    const spy = serveClientMetadata({ [CIMD]: METADATA });
     expect(await resolveClient(CIMD)).not.toBeNull();
     expect(await resolveClient(CIMD)).not.toBeNull();
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it('refuses a document that claims a different client_id (draft §4, a MUST)', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => respond({ ...METADATA, client_id: 'https://claude.ai/other' })));
+    serveClientMetadata({ [CIMD]: { ...METADATA, client_id: 'https://claude.ai/other' } });
     expect(await resolveClient(CIMD)).toBeNull();
   });
 
   it('refuses a document with no client_id at all', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => respond({ client_name: 'Claude', redirect_uris: METADATA.redirect_uris })));
+    serveClientMetadata({ [CIMD]: { client_name: 'Claude', redirect_uris: METADATA.redirect_uris } });
     expect(await resolveClient(CIMD)).toBeNull();
+  });
+
+  it('fetches a public IP-literal host as before (US-32 AC47)', async () => {
+    const literal = 'https://1.1.1.1/client.json';
+    const spy = serveClientMetadata({ [literal]: { ...METADATA, client_id: literal } });
+    expect(await resolveClient(literal)).toMatchObject({ clientId: literal });
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes a public answer through the connect-time lookup, in both shapes Node asks for (US-32 AC47)', async () => {
+    const spy = serveClientMetadata({ [CIMD]: METADATA });
+    await resolveClient(CIMD);
+    const lookup = (spy.mock.calls[0] as unknown as [URL, https.RequestOptions])[1].lookup as unknown as (
+      host: string, options: { all?: boolean }, callback: (...args: unknown[]) => void) => void;
+    const records = [{ address: '1.1.1.1', family: 4 }, { address: '2606:4700::1111', family: 6 }];
+    dnsAnswer.records = records;
+    const call = (all: boolean) => new Promise<unknown[]>((resolve) => lookup('claude.ai', { all }, (...args) => resolve(args)));
+    expect(await call(true)).toEqual([null, records]);
+    expect(await call(false)).toEqual([null, '1.1.1.1', 4]);
+  });
+
+  /**
+   * The real connection path from here on: no stub, real sockets. A listener on
+   * the loopback address counts every connection that reaches it, so a check
+   * that let one through fails here even though the TLS handshake would then
+   * fail too ("TLS poison" needs only the connection).
+   */
+  describe('the real connection path (US-32 AC47)', () => {
+    async function listen(host: string): Promise<{ port: number; connections: () => number; close: () => Promise<void> }> {
+      let count = 0;
+      const server = net.createServer((socket) => {
+        count++;
+        socket.destroy();
+      });
+      await new Promise<void>((resolve) => server.listen(0, host, resolve));
+      return {
+        port: (server.address() as net.AddressInfo).port,
+        connections: () => count,
+        close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+      };
+    }
+
+    it('never opens a socket to an IP-literal host that is not public', async () => {
+      const connect = vi.spyOn(https.Agent.prototype, 'createConnection');
+      for (const host of ['127.0.0.1', '::1']) {
+        const server = await listen(host);
+        try {
+          const url = `https://${host.includes(':') ? `[${host}]` : host}:${server.port}/client.json`;
+          expect(await resolveClient(url), url).toBeNull();
+          expect(server.connections(), url).toBe(0);
+        } finally {
+          await server.close();
+        }
+      }
+      for (const url of ['https://127.0.0.1/', 'https://[::1]/', 'https://[64:ff9b::a9fe:a9fe]/', 'https://[::ffff:169.254.169.254]/', 'https://0x7f.1/']) {
+        expect(await resolveClient(url), url).toBeNull();
+      }
+      expect(connect).not.toHaveBeenCalled();
+    });
+
+    it('connects only to the answer it checked, so a rebinding resolver gets no second look', async () => {
+      const server = await listen('127.0.0.1');
+      try {
+        // An earlier lookup said public; the one the connection makes says loopback.
+        dnsAnswer.records = [{ address: '127.0.0.1', family: 4 }];
+        expect(await resolveClient(`https://localhost:${server.port}/client.json`)).toBeNull();
+        expect(server.connections()).toBe(0);
+      } finally {
+        await server.close();
+      }
+    });
+
+    it('refuses a name whose answer mixes public and private addresses, before any socket opens', async () => {
+      const server = await listen('127.0.0.1');
+      // `localhost`: if the check were not wired into the connection, Node's own
+      // resolver would send this request to the listener.
+      const url = `https://localhost:${server.port}/client.json`;
+      const answers = [
+        [{ address: '1.1.1.1', family: 4 }, { address: '127.0.0.1', family: 4 }],
+        [{ address: '127.0.0.1', family: 4 }, { address: '1.1.1.1', family: 4 }],
+        [{ address: '2606:4700::1111', family: 6 }, { address: '127.0.0.1', family: 4 }],
+        [{ address: '127.0.0.1', family: 4 }],
+        [],
+      ];
+      try {
+        for (const autoSelect of [true, false]) {
+          const before = net.getDefaultAutoSelectFamily();
+          net.setDefaultAutoSelectFamily(autoSelect);
+          try {
+            for (const records of answers) {
+              resetMcpMemory();
+              dnsAnswer.records = records;
+              expect(await resolveClient(url), JSON.stringify(records)).toBeNull();
+            }
+          } finally {
+            net.setDefaultAutoSelectFamily(before);
+          }
+        }
+        expect(server.connections()).toBe(0);
+      } finally {
+        await server.close();
+      }
+    });
   });
 
   it('is not a client at all unless it is a URL or one of our own ids', async () => {
@@ -422,10 +717,9 @@ describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () =>
   });
 
   it('resolves without touching the network, even when fetch would throw', async () => {
-    const spy = vi.fn(async () => {
+    const spy = vi.spyOn(https, 'request').mockImplementation(() => {
       throw new TypeError('fetch failed');
     });
-    vi.stubGlobal('fetch', spy);
     expect(await resolveClient(CLAUDE)).toEqual({
       clientId: CLAUDE,
       name: 'Claude',
@@ -437,18 +731,17 @@ describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () =>
   });
 
   it('resolves through the exact Cloudflare challenge that broke production', async () => {
-    const spy = vi.fn(async () => new Response('<html>Just a moment…</html>', {
+    const spy = stubHttpsRequest(() => ({
       status: 403,
       headers: { 'content-type': 'text/html; charset=UTF-8', 'cf-mitigated': 'challenge' },
+      body: '<html>Just a moment…</html>',
     }));
-    vi.stubGlobal('fetch', spy);
     expect(await resolveClient(CLAUDE)).not.toBeNull();
     expect(spy).not.toHaveBeenCalled();
   });
 
   it('pins an exact string, so lookalikes fall through to the fetch path', async () => {
-    const spy = vi.fn(async () => new Response('no', { status: 404 }));
-    vi.stubGlobal('fetch', spy);
+    const spy = serveClientMetadata();
     for (const lookalike of [
       'https://claude.ai/oauth/mcp-oauth-client-metadata/',
       'https://claude.ai.evil.test/oauth/mcp-oauth-client-metadata',
@@ -459,10 +752,9 @@ describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () =>
   });
 
   it('answers Claude Code on a loopback port with no fetch at all (US-32 AC21)', async () => {
-    const spy = vi.fn(async () => {
+    const spy = vi.spyOn(https, 'request').mockImplementation(() => {
       throw new TypeError('fetch failed');
     });
-    vi.stubGlobal('fetch', spy);
     const client = (await resolveClient(CLAUDE_CODE))!;
     expect(client).toEqual({
       clientId: CLAUDE_CODE,
@@ -488,10 +780,9 @@ describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () =>
    * `other`, indistinguishable from any dynamically-registered client.
    */
   it('answers Codex on its own loopback port with no fetch at all (US-32 AC30)', async () => {
-    const spy = vi.fn(async () => {
+    const spy = vi.spyOn(https, 'request').mockImplementation(() => {
       throw new TypeError('fetch failed');
     });
-    vi.stubGlobal('fetch', spy);
     const client = (await resolveClient(CODEX))!;
     expect(client).toEqual({
       clientId: CODEX,

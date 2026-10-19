@@ -33,6 +33,70 @@ describe('scrubSensitiveData', () => {
       });
     });
 
+    it('scrubs the extraction fields a lab row actually uses (US-09 AC7b)', () => {
+      const input = {
+        displayValue: 4.2,
+        valueSI: 3.1,
+        contentMarkdown: 'synthetic note',
+        display_value: 1,
+        value_si: 2,
+        content_markdown: 'note',
+        pageCount: 2,
+      };
+      expect(scrubSensitiveData(input)).toEqual({
+        displayValue: '[Filtered]',
+        valueSI: '[Filtered]',
+        contentMarkdown: '[Filtered]',
+        display_value: '[Filtered]',
+        value_si: '[Filtered]',
+        content_markdown: '[Filtered]',
+        pageCount: 2,
+      });
+    });
+
+    it('US-09 AC7c — an extracted row loses its names, range, dates, document text and LLM metadata', () => {
+      const input = {
+        metric: 'ferritin', metricName: 'ferritin', metric_name: 'ferritin',
+        printedName: 'Ferritin (serum)',
+        referenceLow: 30, reference_low: 30, referenceHigh: 400, reference_high: 400,
+        unrecognized: ['Synthetic marker 12 U'],
+        question: 'Is this 12 or 1.2?',
+        extractedText: 'Synthetic Person, ferritin 12',
+        recordedAt: '2026-03-01', recorded_at: '2026-03-01',
+        documentDate: '2026-03-01', document_date: '2026-03-01',
+        classification: 'lab_report',
+        supplementName: 'Synthetic iron', supplement_name: 'Synthetic iron',
+        metadata: { patient: 'Synthetic Person' },
+        // Kept: the unit is not the value and is what an alert is read by;
+        // a page count says nothing about the person.
+        unit: 'µg/L', displayUnit: 'µg/L', pageCount: 2,
+      };
+      const out = scrubSensitiveData(input) as Record<string, unknown>;
+      for (const key of Object.keys(input)) {
+        if (['unit', 'displayUnit', 'pageCount'].includes(key)) {
+          expect(out[key], key).toEqual(input[key as keyof typeof input]);
+        } else {
+          expect(out[key], key).toBe('[Filtered]');
+        }
+      }
+    });
+
+    it('US-09 AC7c — a report date, a collection date, a value being replaced and the chat document are filtered', () => {
+      const input = {
+        reportDate: '2026-03-01', report_date: '2026-03-01',
+        collectedOn: '2026-03-01', collected_on: '2026-03-01',
+        existingValue: 4.1,
+        documentType: 'lab_report', documentContent: 'synthetic document text',
+      };
+      const out = scrubSensitiveData(input) as Record<string, unknown>;
+      for (const key of Object.keys(input)) expect(out[key], key).toBe('[Filtered]');
+    });
+
+    it('US-09 AC7c — `name` is kept: the SDK names the OS and runtime by it', () => {
+      const contexts = { os: { name: 'Linux', version: '6.1' }, runtime: { name: 'node', version: 'v22' } };
+      expect(scrubSensitiveData(contexts)).toEqual(contexts);
+    });
+
     it('scrubs calculated results', () => {
       const input = { bmi: 24.5, egfr: 90, idealBodyWeight: 70, nonHdlCholesterol: 3.8 };
       const result = scrubSensitiveData(input);
@@ -151,7 +215,8 @@ describe('scrubSensitiveData', () => {
       };
       const result = scrubSensitiveData(input) as any;
       expect(result.data[0].metricType).toBe('[Filtered]');
-      expect(result.data[0].recordedAt).toBe('2025-01-01');
+      // Filtered since US-09 AC7c: the day a value was taken dates the result.
+      expect(result.data[0].recordedAt).toBe('[Filtered]');
       expect(result.data[1].metricType).toBe('[Filtered]');
     });
 

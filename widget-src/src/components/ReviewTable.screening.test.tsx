@@ -114,7 +114,7 @@ describe('ReviewTable — vitals and lab-row names (US-12 AC11)', () => {
     expect(chips).toHaveLength(1);
     expect(chips[0].tagName).toBe('SPAN');
     const labels = [...container.querySelectorAll('[aria-label]')].map(e => e.getAttribute('aria-label'));
-    expect(labels).toContain('Ferritin value');
+    expect(labels.some(l => l?.startsWith('Ferritin value from '))).toBe(true);
     expect(labels.some(l => l?.includes('lab:'))).toBe(false);
   });
 });

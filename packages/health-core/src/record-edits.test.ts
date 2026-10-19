@@ -640,8 +640,8 @@ describe('US-21 phase 3 — every catalogued lab value is stored in SI', () => {
   });
 
   it('US-21 phase 3 — an uncatalogued test has no SI definition, so it is stored exactly as reported', () => {
-    const row = ok(appendLabValue(base(), { metricName: 'Lipase', value: 44, unit: 'U/mL', recordedAt: '2026-08-14', now: NOW })).row as FileLabValue;
-    expect(row).toMatchObject({ metricName: 'lipase', unit: 'U/mL', value: 44 });
+    const row = ok(appendLabValue(base(), { metricName: 'Plateletcrit', value: 44, unit: 'U/mL', recordedAt: '2026-08-14', now: NOW })).row as FileLabValue;
+    expect(row).toMatchObject({ metricName: 'plateletcrit', unit: 'U/mL', value: 44 });
   });
 
   it('US-21 phase 3 — mg/dL reaches urea only under a nitrogen name; the bare molecule is refused', () => {
@@ -662,11 +662,11 @@ describe('US-21 phase 3 — every catalogued lab value is stored in SI', () => {
     const result = bulkAppendValues(base(), [
       { kind: 'lab', metricName: 'Vitamin D', value: 32, unit: 'ng/mL', referenceLow: 30, referenceHigh: 100, recordedAt: '2026-08-14', source: 'lab_import' },
       { kind: 'lab', metricName: 'ferritin', value: 210, unit: 'pmol/L', recordedAt: '2026-08-14', source: 'lab_import' },
-      { kind: 'lab', metricName: 'Lipase', value: 44, unit: 'U/mL', recordedAt: '2026-08-14', source: 'lab_import' },
+      { kind: 'lab', metricName: 'Plateletcrit', value: 44, unit: 'U/mL', recordedAt: '2026-08-14', source: 'lab_import' },
     ], NOW);
     expect(result.saved).toHaveLength(2);
     expect(result.saved[0]).toMatchObject({ metricName: 'Vitamin D', unit: 'nmol/L', value: 79.872, referenceLow: 74.88 });
-    expect(result.saved[1]).toMatchObject({ metricName: 'Lipase', unit: 'U/mL', value: 44 });
+    expect(result.saved[1]).toMatchObject({ metricName: 'Plateletcrit', unit: 'U/mL', value: 44 });
     expect(result.refused).toEqual([{ key: 'ferritin', unit: 'pmol/L', message: expect.stringContaining('µg/L') }]);
     // The usage signal's two words, and nothing else: `lab_unit_refused` counts
     // which spelling to add next, never the number that was refused.
@@ -688,7 +688,7 @@ describe('US-21 phase 3 — every catalogued lab value is stored in SI', () => {
     const plain = ok(correctValue(file, { id, newValue: 85, expectedValue: 80, now: NOW })).row as FileLabValue;
     expect(plain).toMatchObject({ unit: 'nmol/L', value: 85 });
     // An uncatalogued test has no unit to convert to, so a unit is still refused.
-    const other = ok(appendLabValue(base(), { metricName: 'Lipase', value: 44, unit: 'U/mL', recordedAt: '2026-08-14', now: NOW }));
+    const other = ok(appendLabValue(base(), { metricName: 'Plateletcrit', value: 44, unit: 'U/mL', recordedAt: '2026-08-14', now: NOW }));
     const refused = correctValue(other.file, { id: other.row.id, newValue: 40, unit: 'U/L', now: NOW });
     expect(refused.ok).toBe(false);
     if (!refused.ok) expect(refused.reason).toBe('unknown-unit');

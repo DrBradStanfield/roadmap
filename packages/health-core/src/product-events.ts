@@ -172,8 +172,9 @@ export const GUIDE_PLACEMENTS = ['header', 'footer'] as const;
  *  rows the parse refused, not files; the others sum to `picked`. `refused` and
  *  `tooLong` are files Claude declined or stopped short on (US-15 AC34). `docx`
  *  counts the picked .docx files, a kind that overlaps the rest; `picturesOnly`
- *  is a .docx of pictures and no text (US-12 AC13). */
-export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly'] as const;
+ *  is a .docx of pictures and no text (US-12 AC13). `undatedPrevious` counts
+ *  value rows read from an undated previous column, not files (AC14). */
+export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly', 'undatedPrevious'] as const;
 export type UploadOutcomeKey = (typeof UPLOAD_OUTCOME_KEYS)[number];
 /** The most one count may say; the server refuses more, so the client clamps. */
 export const UPLOAD_OUTCOME_MAX = 1000;
@@ -359,7 +360,7 @@ const UNIT_ATOMS = new Set([
   'mol', 'mmol', 'µmol', 'umol', 'nmol', 'pmol', 'fmol',
   'g', 'gm', 'kg', 'mg', 'µg', 'ug', 'mcg', 'ng', 'pg', 'fg',
   'l', 'dl', 'ml', 'µl', 'ul', 'mcl', 'fl', 'nl',
-  'eq', 'meq', 'kat', 'ukat', 'µkat', 'nkat', 'osm', 'mosm',
+  'eq', 'meq', 'kat', 'ukat', 'µkat', 'nkat', 'osm', 'mosm', 'osmol', 'mosmol',
   // Enzyme and international units, English and Romance spellings.
   'u', 'iu', 'miu', 'µiu', 'uiu', 'microiu', 'mciu', 'kiu', 'ku', 'mu', 'µu', 'uu', 'ui', 'mui', 'µui', 'au', 'unit', 'units',
   // Counts and what is counted.

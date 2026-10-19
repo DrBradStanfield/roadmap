@@ -83,11 +83,11 @@ export function reportExtractionStop(
  * Throws ExtractionStopError on a refusal or a max_tokens stop; `undefined`
  * means the answer will not parse.
  */
-function readExtraction(result: AnthropicResult): UnifiedExtractionResult | undefined {
+function readExtraction(result: AnthropicResult, mode: DocumentPromptMode): UnifiedExtractionResult | undefined {
   const stop = extractionStopCode(result.stopReason);
   if (stop) throw new ExtractionStopError(stop, result.refusalCategory);
   try {
-    return toUnifiedResult(parseUnifiedResult(parseExtractionJson(result.content)));
+    return toUnifiedResult(parseUnifiedResult(parseExtractionJson(result.content)), mode);
   } catch {
     // The error CLASS only, never its message: a SyntaxError quotes ~10 chars
     // of the model's answer and Zod names the values it received — both are
@@ -130,7 +130,7 @@ export async function extractOrClassify(
   };
 
   for (let call = 1; ; call++) {
-    const parsed = readExtraction(await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts));
+    const parsed = readExtraction(await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts), documentMode);
     if (parsed) return parsed;
     // A fixed message and no `cause`: Sentry serialises it (api.lab-import-v2).
     if (call >= 2) throw new Error('extraction returned malformed JSON');
@@ -590,28 +590,36 @@ export async function pollBatch(
     throw err;
   }
 
-  // Parse JSONL — some entries contain literal newlines in markdown content,
-  // so we can't simply split by \n. Reassemble split entries by checking for the custom_id prefix.
-  const resultsText = await resultsResponse.text();
-  const rawLines = resultsText.trim().split('\n');
-  const lines: string[] = [];
-  for (const line of rawLines) {
-    if (line.startsWith('{"custom_id":')) {
-      lines.push(line);
-    } else if (lines.length > 0) {
-      lines[lines.length - 1] += line;
-    }
+  // Parse complete JSONL records independently of whitespace/property order.
+  // Retain the legacy repair for records split by literal newlines: a new
+  // complete record always wins, so a damaged neighbor cannot swallow it.
+  const entries = [];
+  let pending = '';
+  for (const line of (await resultsResponse.text()).split('\n')) {
+    try {
+      const entry = JSON.parse(line);
+      if (!pending || (entry && typeof entry === 'object' && 'custom_id' in entry)) {
+        entries.push(entry);
+        pending = '';
+        continue;
+      }
+    } catch { /* try the legacy split-record repair below */ }
+    pending = /^\s*\{\s*"custom_id"\s*:/.test(line) ? line : pending + line;
+    try {
+      entries.push(JSON.parse(pending));
+      pending = '';
+    } catch { /* still incomplete or malformed; a complete record resynchronizes */ }
   }
 
-  // Parse each JSONL line and extract results, sorted by custom_id
+  // Extract results, sorted by their exact request identity (US-12 AC9).
   const resultMap = new Map<number, BatchFileResult>();
   const stops: ExtractionStopError[] = [];
 
-  for (const line of lines) {
+  for (const entry of entries) {
     try {
-      const entry = JSON.parse(line);
-      const index = parseInt(entry.custom_id?.replace('file-', ''), 10);
-      if (isNaN(index)) continue;
+      if (typeof entry?.custom_id !== 'string') continue;
+      const index = Number(entry.custom_id.slice(5));
+      if (!Number.isSafeInteger(index) || index < 0 || entry.custom_id !== `file-${index}`) continue;
 
       // Read as the single call reads: a refused or cut-off request still
       // comes back 'succeeded', maybe with partial text, and is never parsed
@@ -619,7 +627,7 @@ export async function pollBatch(
       if (entry.result?.type === 'succeeded') {
         const m = entry.result.message ?? {};
         try {
-          const parsed = readExtraction(toResult(m.content ?? [], toUsage(m.usage), m.stop_reason ?? undefined, m.stop_details?.category));
+          const parsed = readExtraction(toResult(m.content ?? [], toUsage(m.usage), m.stop_reason ?? undefined, m.stop_details?.category), 'full');
           if (parsed) {
             resultMap.set(index, { ...parsed, index });
             continue;

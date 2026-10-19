@@ -488,7 +488,7 @@ export const SUBSCRIPTION_TOOL_ONLY_ACK = 'Here is the change for you to confirm
 /** What the web chat streams: the model's deltas, and a status line between a tool round's two calls. */
 export type ChatStreamEvent = AnthropicStreamEvent | { type: 'status'; text: string };
 
-/** Shown while the second call of a run_roadmap round runs (US-15 AC33). */
+/** Shown while the second call of a run_roadmap round runs (US-15 AC33). The widget clears the text streamed before any status line (AC38), so the first call's preamble goes. */
 export const ROADMAP_STATUS = 'Running your numbers through the roadmap';
 
 const addUsage = (a: AnthropicUsage, b: AnthropicUsage): AnthropicUsage => ({

@@ -109,10 +109,12 @@ URL and no query. That log line is the whole detection mechanism, and it is enou
 because the user's report and Sentry's line arrive together.
 
 **Residual risks noticed during the build that this document does not name.**
-- **DNS rebinding on the CIMD fetch has a real window.** We resolve, check every address
-  is public, then call `fetch`, which resolves again. `fetch` offers no way to pin the
-  connection to the address we checked. §4 asks for the re-check at connect time and
-  that is implemented; the TOCTOU gap is not closed, only narrowed.
+- **DNS rebinding on the CIMD fetch: closed 2026-10-19 (US-32 AC47).** We used to
+  resolve, check every address was public, then call `fetch`, which resolved again, so a
+  rebinding resolver could answer differently the second time. The fetch now uses
+  `node:https` with its own `lookup`: the connection resolves once, every address in
+  that answer must be public, and the socket goes to one of them. IP-literal hosts are
+  checked before the request, and the agent keeps no TLS session ("TLS poison").
 - **The hourly write allowance is per machine.** It is an in-memory map, so N Fly
   machines multiply it by N. The 5× weighting still bounds the falsification attack, but
   by 5×-per-machine-per-hour. Stated in §3 rather than only here.

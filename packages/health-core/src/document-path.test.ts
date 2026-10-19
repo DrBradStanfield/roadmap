@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildDocumentRef, DOCUMENT_FOLDERS, extensionOf, sanitizeTitle } from './document-path';
 import { DOCUMENT_TYPES } from './validation';
+import { localDay } from './merge';
 
 describe('DOCUMENT_FOLDERS', () => {
   it('maps every DocumentType to a folder', () => {
@@ -84,4 +85,21 @@ describe('buildDocumentRef', () => {
     expect(ref.endsWith('.pdf')).toBe(true);
     expect(ref.split('/')[1].length).toBeLessThanOrEqual(80);
   });
+
+  // US-14 AC2: the date comes from the model reading an uploaded file, so a
+  // crafted PDF can make it a path. Only a real calendar day reaches the ref.
+  it.each(['../../x', '2026-01-01/../../x', '..', '2026-02-30', '2026-1-1', '', null, undefined])(
+    'US-14 AC2: a date that is not a calendar day (%s) falls back to today',
+    (date) => {
+      const ref = buildDocumentRef({
+        type: 'clinic_letter',
+        title: 'Letter',
+        date: date as string,
+        sourceFileName: 'letter.pdf',
+        existingRefs: [],
+      });
+      expect(ref).toBe(`Clinic letters/${localDay(new Date())} Letter.pdf`);
+      expect(ref.split('/')).toHaveLength(2);
+    },
+  );
 });

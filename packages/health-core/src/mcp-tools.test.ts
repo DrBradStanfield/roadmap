@@ -1259,6 +1259,19 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
     }
   });
+
+  it('US-21 AC19 — the English words in the audit\'s new test names are not test words; the tests still are', () => {
+    for (const detail of [
+      'the index page took 4 seconds', 'a gap of 2 rows', 'the absolute 3 and abs 4 values', 'average 5 clicks',
+      'the reverse 2 order', 'intact 3 times', 'gh issue 12', 'ab test 2 arms', 'sd 3 of the timings', 'the receptor 2 call was soluble 3',
+      'human 2 type 3 brain 4', 'uptake 5 percent 6', 'pro 2 plan', 'cardiac 3 combined 4',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+    }
+    for (const detail of ['my lipase 40 was dropped', 'troponin 12 went missing', 'PTH 4.2 was lost', 'D-dimer 0.4 row']) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
+    }
+  });
 });
 
 
@@ -1714,6 +1727,7 @@ import { recordSync } from './roadmap-doc';
 import { ROADMAP_FILE_NAME } from './adapter';
 import { parseUnifiedResult, toUnifiedResult, type UnifiedExtractionResult } from './lab-extraction';
 import { IMPORT_FILE_REASONS, IMPORT_LIMITS, IMPORT_REFUSALS, importHint } from './import-hints';
+import { EXTRACTION_STOP_CODES } from './models';
 
 const LAB_DAY = '2026-08-20';
 
@@ -1867,7 +1881,7 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
         { name: 'ferritin', value: 150, unit: 'ug/L' },
         { name: 'ferritin', value: 180, unit: 'ug/L', recordedAt: '2026-05-04' },
       ],
-    }));
+    }), 'full');
     const prepared = (fileDates?: Record<string, string>) =>
       prepareImport(base(), { ...bundleOf([extracted('cumulative.pdf', report)]), ...(fileDates ? { fileDates } : null) }, IMPORT_CTX);
     const offered = (fileDates?: Record<string, string>) =>
@@ -1882,6 +1896,26 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(assistant.payload.candidates.map((c) => [c.metric, c.recordedAt])).toEqual([
       ['ldl', '2026-08-20'], ['ldl', '2026-05-04'], ['ferritin', '2026-08-20'], ['ferritin', '2026-05-04'],
     ]);
+  });
+
+  // US-12 AC14: an undated previous column, even one a full-mode parse kept,
+  // is never offered on the connector: it carries a `recordedAt` marker.
+  it('AC5 — import_documents never offers an undated previous-column value', () => {
+    const report = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-08-20', document: null,
+      values: [
+        { metric: 'ldl', value: 2.6, unit: 'mmol/L', confidence: 'high' },
+        { metric: 'ldl', value: 3.1, unit: 'mmol/L', confidence: 'high', recordedAt: 'undated' },
+      ],
+      additionalValues: [
+        { name: 'ferritin', value: 150, unit: 'ug/L' },
+        { name: 'ferritin', value: 180, unit: 'ug/L', recordedAt: 'undated' },
+      ],
+    }), 'full');
+    expect(report.values.map((v) => v.recordedAt)).toEqual([undefined, 'undated']);
+    const prepared = prepareImport(base(), bundleOf([extracted('baseline.pdf', report)]), IMPORT_CTX);
+    expect(prepared.payload.candidates.map((c) => [c.metric, c.value, c.recordedAt])).toEqual([['ldl', 2.6, '2026-08-20'], ['ferritin', 150, '2026-08-20']]);
+    expect(prepared.unrecognized).toEqual([]);
   });
 
   it('US-21 AC7 — a lab printed with no unit is refused in words on the connector, uncatalogued or not, as before the 1.0.2 review', () => {
@@ -2002,7 +2036,7 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
   });
 
   it('AC13 — every reason in the table is a sentence that names the limit and the way round it', () => {
-    for (const reason of IMPORT_FILE_REASONS) {
+    for (const reason of [...IMPORT_FILE_REASONS, ...EXTRACTION_STOP_CODES]) {
       const hint = importHint(reason);
       expect(hint.length, reason).toBeGreaterThan(40);
       expect(hint, reason).toMatch(/[.!]$/);
@@ -2017,6 +2051,15 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(importHint('allowance')).toMatch(/allowance for the hour/);
     expect(importHint('time')).toMatch(/Ask again.*already filed are skipped/);
     expect(importHint('too_many')).toMatch(/twenty/);
+    // US-35 AC13 (2026-10-19): a file the model cut off or declined is not a bad scan, and
+    // the same request stops the same way again, so neither hint invites a retry of the same file.
+    // The connector reads at 3,072 output tokens and the website at 10,000, so the website is named first.
+    expect(importHint('too_long')).toMatch(/too long to read in one go\. Upload it on drstanfield\.com\/pages\/roadmap, which reads longer reports, or split it/);
+    expect(importHint('refused')).toMatch(/trying again will not help.*drstanfield\.com\/pages\/roadmap/);
+    for (const stop of EXTRACTION_STOP_CODES) {
+      expect(importHint(stop), stop).not.toBe(importHint('unreadable'));
+      expect(importHint(stop), stop).not.toMatch(/scan|safety|classifier|policy/i);
+    }
     // A reason outside the table is a bug in us, worded as unreadable rather than a bare token.
     expect(importHint('something_else')).toBe(importHint('unreadable'));
     expect(importHint(undefined)).toBe(importHint('unreadable'));

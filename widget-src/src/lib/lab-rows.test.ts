@@ -62,12 +62,12 @@ describe('US-21: groupLabValues', () => {
   });
 
   it('buckets uncatalogued names into the trailing "other" group', () => {
-    const groups = groupLabValues([row({ metricName: 'lipase', value: 27, unit: 'U/L' })]);
+    const groups = groupLabValues([row({ metricName: 'plateletcrit', value: 27, unit: 'U/L' })]);
     expect(groups).toHaveLength(1);
     expect(groups[0].id).toBe('other');
     expect(groups[0].label).toBe('Other tests');
     expect(groups[0].icon).toBe('flask');
-    expect(groups[0].series[0].label).toBe('Lipase');
+    expect(groups[0].series[0].label).toBe('Plateletcrit');
   });
 
   it('merges LLM re-extraction spelling drift into the same series via the catalogue key', () => {
@@ -153,7 +153,7 @@ describe('US-21 units fix: display-unit mapping in groupLabValues', () => {
   });
 
   it('uncatalogued tests still get typography normalization (x 10e9/L → ×10⁹/L)', () => {
-    const groups = groupLabValues([row({ metricName: 'reticulocytes', value: 60, unit: 'x 10e9/L' })]);
+    const groups = groupLabValues([row({ metricName: 'large_unstained_cells', value: 60, unit: 'x 10e9/L' })]);
     expect(groups[0].id).toBe('other');
     expect(groups[0].series[0].unit).toBe('×10⁹/L');
   });

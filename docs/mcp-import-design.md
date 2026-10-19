@@ -122,7 +122,9 @@ of truth for acceptance criteria and the schemas live in
     a live ChatGPT drag trial): `packages/health-core/src/import-hints.ts`
     is ONE closed table — reason → a sentence naming the limit and the way
     round it (accepted types + HEIC, 5/20 MB caps vs the website's 10, the
-    30-a-day quota, the hour's allowance, time, unreadable, too_many) — plus
+    30-a-day quota, the hour's allowance, time, unreadable, too_many, and
+    since 2026-10-19 the extraction stops too_long and refused, each its own
+    sentence instead of unreadable's clearer-scan advice) — plus
     the whole-call refusals (mobile drag, empty folder, malformed commit or
     arguments). Every `files[]` entry that was not read carries `hint`;
     `next` is short (counts, one instruction, the continuation) and points at

@@ -14,6 +14,7 @@ vi.mock('./product-events.server', async (importOriginal) => {
 });
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 import * as Sentry from '@sentry/react-router';
+import { recordServerEvent } from './product-events.server';
 import {
   hostedImporter,
   MAX_IMPORT_FILE_BYTES,
@@ -448,6 +449,46 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
     }
   });
 
+  it('US-35 AC18: parks first, sweeps after; a refused park is reported by status and class, never swallowed', async () => {
+    // Dropbox answered 429 to a park that raced the sweep's deletes (2026-10-20).
+    const cloud = new MemoryCloud();
+    cloud.files.set('imports/pending-abandoned.json', { json: '{}', version: 1, modified: '2026-09-02T07:30:00.000Z' });
+    const adapter = new MemoryAdapter(cloud);
+    const order: string[] = [];
+    let deleting = 0;
+    const { list, write, remove } = { list: adapter.list.bind(adapter), write: adapter.write.bind(adapter), remove: adapter.remove.bind(adapter) };
+    const tick = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    adapter.list = async (...args) => { order.push('list'); return list(...args); };
+    adapter.remove = async (...args) => {
+      order.push('remove');
+      deleting++;
+      try { await tick(10); return await remove(...args); } finally { deleting--; }
+    };
+    adapter.write = async (...args) => {
+      order.push('write');
+      await tick(5);
+      if (deleting > 0) throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429);
+      return write(...args);
+    };
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+
+    const stashed = await surface.stash(PAYLOAD, deadline());
+    expect(stashed).toHaveProperty('receipt', PAYLOAD.id);
+    expect(order).toEqual(['write', 'list', 'remove']);
+    expect(cloud.files.has('imports/pending-abandoned.json')).toBe(false);
+
+    // A park the provider refuses: the refusal stands, and Sentry hears status and class only.
+    vi.mocked(Sentry.captureMessage).mockClear();
+    adapter.write = async (...args) => { throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429); };
+    order.length = 0;
+    expect(await surface.stash(PAYLOAD, deadline())).toEqual({ refusal: expect.stringMatching(/could not be parked/) });
+    expect(order).toEqual([]); // no sweep after a refused park
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('mcp_import: candidates not parked', {
+      level: 'warning', tags: { feature: 'mcp_import', errorClass: 'StorageError', httpStatus: 429 },
+    });
+    expect(JSON.stringify(vi.mocked(Sentry.captureMessage).mock.calls)).not.toMatch(new RegExp(`${PAYLOAD.id}|imports/`));
+  });
+
   it('a delete that fails does not fail the call — it is one count, naming no file', async () => {
     const adapter = new MemoryAdapter(new MemoryCloud());
     adapter.remove = async () => { throw new Error('dropbox said no'); };
@@ -699,17 +740,39 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
   });
 
   // US-15 AC34: a declined or cut-off file is its own bounded signal, as on the
-  // website; the assistant still sees "unreadable" with its hint.
-  it('a refused file sends the stop signal with its category, not an exception, and stays unreadable', async () => {
+  // website. US-35 AC13 (2026-10-19): the assistant is told which, not
+  // "unreadable", whose hint asks for a clearer scan and so a retry.
+  it('a refused file sends the stop signal with its category, not an exception, and fails as refused', async () => {
     const cloud = new MemoryCloud();
     cloud.docs.set('labs.pdf', new Blob([PDF]));
     setImportSeams({ extract: async () => { throw new ExtractionStopError('refused', 'bio'); } });
     const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
-    expect('files' in bundle && bundle.files[0]).toMatchObject({ status: 'failed', reason: 'unreadable' });
+    expect('files' in bundle && bundle.files[0]).toMatchObject({ status: 'failed', reason: 'refused' });
     expect(Sentry.captureException).not.toHaveBeenCalled();
     expect(Sentry.captureMessage).toHaveBeenCalledWith('Lab import: extraction refused', expect.objectContaining({
       tags: expect.objectContaining({ path: 'connector', stopCode: 'refused', refusalCategory: 'bio' }),
     }));
+  });
+
+  it('a file cut off at max_tokens fails as too_long, and the extract counter stays route, phase and bucket (US-35 usage signal is the Sentry stop message)', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('a-long.pdf', new Blob([PDF]));
+    cloud.docs.set('b-declined.pdf', new Blob([PDF.map((b, i) => (i === PDF.length - 1 ? b ^ 1 : b))]));
+    // By the bytes, not the call order: two runners read the files side by side.
+    const long = Buffer.from(PDF).toString('base64');
+    setImportSeams({ extract: async (pages) => { throw new ExtractionStopError(pages[0].content === long ? 'too_long' : 'refused'); } });
+    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    expect('files' in bundle && bundle.files.map((f) => [f.name, f.status, f.reason])).toEqual([
+      ['a-long.pdf', 'failed', 'too_long'],
+      ['b-declined.pdf', 'failed', 'refused'],
+    ]);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Lab import: extraction too_long', expect.objectContaining({
+      tags: expect.objectContaining({ path: 'connector', stopCode: 'too_long' }),
+    }));
+    expect(vi.mocked(recordServerEvent).mock.calls.filter(([name]) => name === 'mcp_import').map(([, meta]) => meta)).toEqual([
+      { route: 'dropbox', phase: 'extract', files: '2-5' },
+    ]);
+    expect(Object.keys(vi.mocked(recordServerEvent).mock.calls[0][1] ?? {})).toEqual(['route', 'phase', 'files']);
   });
 
   it('a ZIP flows through extract(): entries in order under the same file, each typed, charged and hashed; junk and a nested zip named (AC5)', async () => {

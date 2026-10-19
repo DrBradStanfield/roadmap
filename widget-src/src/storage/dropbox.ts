@@ -138,7 +138,7 @@ export class DropboxAdapter implements StorageAdapter {
       body,
     });
     if (!res.ok) {
-      throw new StorageError(`Dropbox token exchange failed (${res.status}): ${await res.text()}`);
+      throw new StorageError(`Dropbox token exchange failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     }
     const json = (await res.json()) as { access_token: string; refresh_token: string; expires_in: number };
     saveTokens({
@@ -189,7 +189,7 @@ export class DropboxAdapter implements StorageAdapter {
       },
       body: bytes,
     });
-    if (!res.ok) throw new StorageError(`Dropbox document write failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`Dropbox document write failed (${res.status}).`, undefined, undefined, res.status);
   }
 
   // --- change signal (US-34) -------------------------------------------------
@@ -267,7 +267,7 @@ export class DropboxAdapter implements StorageAdapter {
       body: JSON.stringify(body),
       signal,
     });
-    if (!res.ok) throw new StorageError(`Dropbox call failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`Dropbox call failed (${res.status}).`, undefined, undefined, res.status);
     return res;
   }
 
@@ -306,7 +306,7 @@ export class DropboxAdapter implements StorageAdapter {
       body,
     });
     if (!res.ok) {
-      throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`);
+      throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status);
     }
     const json = (await res.json()) as { access_token: string; expires_in: number };
     this.tokens = {

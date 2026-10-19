@@ -32,7 +32,7 @@ import { openStep, signStep, UUID } from './mcp-step.server';
 import { recordServerEvent } from './product-events.server';
 import { machineFiles } from './rate-limiter';
 import { deadlineSignal, StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
-import { IMPORT_LIMITS, IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
+import { type ImportFileReason, IMPORT_LIMITS, IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import {
   type DocumentPromptMode,
   isImportableEntryName,
@@ -196,6 +196,14 @@ function countCleanupFailure(): void {
   Sentry.captureMessage('mcp_import: pending file not deleted', { level: 'warning', tags: { feature: 'mcp_import' } });
 }
 
+/** A park the provider refused, by HTTP status and error class only: never the message, which names the file (AC9, AC18). */
+function countParkFailure(error: unknown): false {
+  const errorClass = error instanceof Error && ['StorageError', 'TimeoutError', 'AbortError'].includes(error.name) ? error.name : 'other';
+  const httpStatus = error instanceof StorageError ? error.status : undefined;
+  Sentry.captureMessage('mcp_import: candidates not parked', { level: 'warning', tags: { feature: 'mcp_import', errorClass, ...(httpStatus ? { httpStatus } : null) } });
+  return false;
+}
+
 function pendingName(id: string): string {
   return `${PENDING_FOLDER}/pending-${id}.json`;
 }
@@ -222,9 +230,10 @@ function driveRefusal(client: McpClientLabel): string {
 }
 
 /** Why one file could not be read, as a closed word the assistant can act on. */
-function failureReason(error: unknown): string {
+function failureReason(error: unknown): ImportFileReason {
   if (isNetworkOrTimeoutError(error)) return 'time';
   if (error instanceof Error && /status 400/.test(error.message)) return 'too_large';
+  if (error instanceof ExtractionStopError) return error.code;
   return 'unreadable';
 }
 
@@ -442,15 +451,16 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       // Drive — so this is the one place a sweep reaches every user. It was in
       // `extract`, which `file_results` and every Drive user never call, so
       // their abandoned pending files were never swept at all.
-      const swept = sweepStale(Date.parse(payload.createdAt), signal);
       // The receipt is the payload's own id; the MAC that makes it ours lives in the file it names (AC7).
       const { mac, issued } = signStep('import', macFields(payload.id, payload), conn, audience, Date.parse(payload.createdAt));
       const pending: PendingFile = { v: 2, payload, issued, mac };
-      const parked = await adapter.write(pendingName(payload.id), pending, null, signal).then(() => true, () => false);
-      await swept;
+      // Park first, sweep after: deletes racing the park drew a Dropbox 429 that refused it (AC18).
+      // A refused park skips the sweep: the provider just pushed back, and the next stash sweeps.
+      const parked = await adapter.write(pendingName(payload.id), pending, null, signal).then(() => true, countParkFailure);
       if (!parked) {
         return { refusal: 'The candidates could not be parked in the user’s folder, so there is nothing to commit. Try the import again.' };
       }
+      await sweepStale(Date.parse(payload.createdAt), signal);
       return { receipt: payload.id, expiresAt: new Date((issued + RECEIPT_LIFETIME_SECONDS) * 1000).toISOString() };
     },
 

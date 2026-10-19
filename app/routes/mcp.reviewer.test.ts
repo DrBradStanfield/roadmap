@@ -15,7 +15,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import crypto from 'node:crypto';
 
-vi.mock('node:dns/promises', () => ({ default: { lookup: async () => [{ address: '1.1.1.1', family: 4 }] } }));
+import { serveClientMetadata } from '../lib/mcp-cimd.test-helpers';
 vi.mock('../lib/product-events.server', async (importOriginal) => {
   const original = await importOriginal<typeof import('../lib/product-events.server')>();
   return { ...original, recordServerEvent: vi.fn(async () => {}) };
@@ -73,9 +73,8 @@ function clearReviewerSecrets(): void {
 
 /** Dropbox's token endpoint, plus whatever CIMD document a test serves. */
 function stubFetch(documents: Record<string, unknown> = {}) {
-  vi.stubGlobal('fetch', vi.fn(async (input: string | URL, init: RequestInit = {}) => {
-    const url = String(input);
-    if (url in documents) return Response.json(documents[url]);
+  serveClientMetadata(documents);
+  vi.stubGlobal('fetch', vi.fn(async (_input: string | URL, init: RequestInit = {}) => {
     const body = new URLSearchParams(String(init.body ?? ''));
     if (body.get('grant_type') === 'refresh_token') {
       refreshed.push(body.get('refresh_token') ?? '');

@@ -19,11 +19,13 @@
 import {
   ConflictError,
   StorageError,
+  fetchOrFail,
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
 } from '@roadmap/health-core';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
+import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64, base64ToBytes } from '../lib/base64';
 
 const CONFIG_KEY = 'health_roadmap_github';
@@ -96,7 +98,7 @@ export class GitHubAdapter implements StorageAdapter {
   // --- file ops -------------------------------------------------------------
 
   async read(fileName: string): Promise<ReadResult> {
-    const res = await fetch(this.contentsUrl(fileName), { headers: this.headers() });
+    const res = await fetchOrFail('GitHub', this.contentsUrl(fileName), { headers: this.headers() });
     if (res.status === 404) return { body: null, version: null };
     if (!res.ok) throw new StorageError(`GitHub read failed (${res.status}): ${await res.text()}`);
     const json = (await res.json()) as { content?: string; sha: string };
@@ -135,7 +137,10 @@ export class GitHubAdapter implements StorageAdapter {
   }
 
   async readDocument(ref: string): Promise<Blob> {
-    const res = await fetch(this.contentsUrl(ref), { headers: this.headers() });
+    const url = this.contentsUrl(ref);
+    let res = await fetch(url, { headers: this.headers() });
+    const legacy = res.status === 404 ? legacyDocumentUrl(url, this.contentsUrl(''), ref) : null;
+    if (legacy) res = await fetch(legacy, { headers: this.headers() });
     if (!res.ok) throw new StorageError(`GitHub document read failed (${res.status}).`);
     const json = (await res.json()) as { content?: string };
     if (!json.content) throw new StorageError(`GitHub document empty or too large (>1 MB).`);
@@ -210,7 +215,7 @@ export class GitHubAdapter implements StorageAdapter {
 
   private contentsUrl(path: string): string {
     if (!this.config) throw new StorageError('GitHub is not connected.');
-    return `${API}/repos/${this.config.owner}/${this.config.repo}/contents/${path}`;
+    return `${API}/repos/${this.config.owner}/${this.config.repo}/contents/${encodeStoragePath(path)}`;
   }
 
   private headers(): Record<string, string> {

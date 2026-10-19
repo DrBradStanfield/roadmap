@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react';
-import { EXPECTED_NETWORK_ERRORS } from './error-diagnostics';
+import { ERROR_CLASS_TAGS, EXPECTED_NETWORK_ERRORS, HTTP_STATUS_TAGS } from './error-diagnostics';
 import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl, scrubEventText, dropLongStrings } from '@roadmap/health-core';
 
 declare const __SENTRY_RELEASE__: string;
@@ -8,18 +8,39 @@ const SENTRY_DSN = 'https://d7664c1590ec997ebf0126ed5917fea4@o4510813459709952.i
 
 let initialized = false;
 
-/** Scrub navigation, fetch/xhr and console breadcrumbs of PII/PHI. */
-function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | null {
-  // Strip ALL non-primitive values from UI breadcrumbs — DOM element refs
-  // contain React fiber circular references (__reactFiber$ → stateNode → element)
-  if ((breadcrumb.category === 'ui.click' || breadcrumb.category === 'ui.input') && breadcrumb.data) {
-    const safe: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(breadcrumb.data)) {
-      if (v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
-        safe[k] = v;
-      }
-    }
-    breadcrumb.data = safe;
+type PathElement = { tagName?: unknown; id?: unknown; className?: unknown; parentNode?: unknown };
+
+/** Classes that say what an element shows: a result's status, a suggestion's
+ *  priority, a document's type, a lab group (US-09 AC7d). */
+const VALUE_CLASS = /^(bt-status-|status-|suggestion-(info|attention|urgent)|review-doc-type--|health-record-type--|alr-group-icon--)/;
+
+/** The SDK's element path (up to five levels, outermost first) with tag, #id and .classes only. */
+function elementPath(target: unknown): string | undefined {
+  const parts: string[] = [];
+  for (let el = target as PathElement | null; el && typeof el.tagName === 'string' && parts.length < 5;
+    el = el.parentNode as PathElement | null) {
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'html') break;
+    const classes = typeof el.className === 'string' ? el.className.split(/\s+/).filter(c => c && !VALUE_CLASS.test(c)) : [];
+    parts.push(tag + (typeof el.id === 'string' && el.id ? `#${el.id}` : '') + classes.map(c => `.${c}`).join(''));
+  }
+  return parts.length ? parts.reverse().join(' > ') : undefined;
+}
+
+/** Scrub UI, navigation, fetch/xhr and console breadcrumbs of PII/PHI. */
+export function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb, hint?: Sentry.BreadcrumbHint): Sentry.Breadcrumb | null {
+  // The SDK names a clicked or typed-in element by its aria-label, type, name,
+  // title and alt, and a label can quote values that scrubText misses (the
+  // review's Replace label did, "… zinc value 0.4 … with 0.7 …", until US-13 AC10). Keep tag, id and classes only
+  // (US-09 AC7d), minus the classes that encode a value. Without the element,
+  // cut at the first attribute: the SDK does not escape values, so no pattern
+  // can tell where one ends. `data` goes whole: it held DOM refs and a
+  // component name, nothing we read.
+  if (breadcrumb.category === 'ui.click' || breadcrumb.category === 'ui.input') {
+    const event = hint?.event as { target?: unknown } | undefined;
+    breadcrumb.message = elementPath(event?.target ?? event) ?? breadcrumb.message?.split('[')[0].trimEnd()
+      .split(' > ').map(part => part.split('.').filter((c, i) => !i || !VALUE_CLASS.test(c)).join('.')).join(' > ');
+    delete breadcrumb.data;
   }
   // Scrub fetch/xhr breadcrumbs (request bodies contain health data)
   if ((breadcrumb.category === 'fetch' || breadcrumb.category === 'xhr') && breadcrumb.data) {
@@ -52,15 +73,21 @@ function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | nul
 export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   // Record errors can quote clinical filenames in messages, causes and fetch
   // breadcrumbs. These captures carry only closed operation/provider tags.
-  if (event.tags?.area === 'cloud-sync' || event.tags?.area === 'upload-save' || event.tags?.feature === 'upload') {
-    const { area, op, backend, branch, uploadErrorCode, cause } = event.tags;
+  const strictArea = ['cloud-sync', 'cloud-connect', 'upload-save'].includes(String(event.tags?.area));
+  // `upload_review`: the review's error boundary (US-13 AC9). Its breadcrumbs
+  // can quote what the review showed (its Replace label named the values until US-13 AC10).
+  const strictFeature = ['upload', 'upload_review'].find(feature => feature === event.tags?.feature);
+  if (strictArea || strictFeature) {
+    const { area, op, backend, branch, uploadErrorCode, cause, errorClass, httpStatus } = event.tags!;
     event.tags = {
-      ...(area === 'cloud-sync' || area === 'upload-save' ? { area } : { feature: 'upload' }),
-      ...(['write-document', 'read-document', 'persist', 'log-off', 'copy-down', 'load'].includes(String(op)) ? { op } : {}),
+      ...(strictArea ? { area } : { feature: strictFeature }),
+      ...(['write-document', 'read-document', 'persist', 'log-off', 'copy-down', 'migrate-up', 'load'].includes(String(op)) ? { op } : {}),
       ...(['google-drive', 'dropbox', 'github', 'self-host', 'local', 'file', 'memory'].includes(String(backend)) ? { backend } : {}),
       ...(['measurements', 'documents', 'labValues'].includes(String(branch)) ? { branch } : {}),
       ...(['rate_limit', 'timeout', 'server_restart', 'no_files', 'server_error', 'network', 'unknown'].includes(String(uploadErrorCode)) ? { uploadErrorCode } : {}),
       ...(['QuotaExceededError', 'SecurityError', 'TypeError', 'ReferenceError', 'other'].includes(String(cause)) ? { cause } : {}),
+      ...(ERROR_CLASS_TAGS.includes(String(errorClass)) ? { errorClass } : {}),
+      ...(HTTP_STATUS_TAGS.includes(String(httpStatus)) ? { httpStatus } : {}),
     };
     if (event.message) event.message = 'Health record operation failed';
     if (event.exception?.values) event.exception.values = event.exception.values.map(value => ({

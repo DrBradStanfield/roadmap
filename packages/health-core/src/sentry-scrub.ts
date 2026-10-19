@@ -14,7 +14,7 @@ const REDACTED = '[Filtered]';
  * Exact-match sensitive keys (compared lowercase).
  * Covers both camelCase (widget/API) and snake_case (database) variants.
  */
-const SENSITIVE_EXACT_KEYS = new Set([
+export const SENSITIVE_EXACT_KEYS: ReadonlySet<string> = new Set([
   // Health measurements
   'weightkg', 'weight_kg', 'weight',
   'waistcm', 'waist_cm', 'waist',
@@ -61,6 +61,19 @@ const SENSITIVE_EXACT_KEYS = new Set([
   // this is the field its number or its text sits in.
   'value', 'values', 'result', 'results',
   'title', 'note', 'notes', 'summary',
+  'displayvalue', 'display_value',
+  'valuesi', 'value_si',
+  'contentmarkdown', 'content_markdown',
+  // An extracted row or document, field by field (US-09 AC7c). `metric` is
+  // the health-specific name of `metricType`. `name` is NOT here: the SDK
+  // names the OS and runtime by it in `contexts`.
+  'metric', 'metricname', 'metric_name', 'printedname',
+  'referencelow', 'reference_low', 'referencehigh', 'reference_high',
+  'unrecognized', 'question', 'extractedtext', 'content_md', 'document_type',
+  'recordedat', 'recorded_at', 'documentdate', 'document_date',
+  'classification', 'supplementname', 'supplement_name', 'metadata',
+  'reportdate', 'report_date', 'collectedon', 'collected_on',
+  'existingvalue', 'documenttype', 'documentcontent',
   // Screening-specific
   'prostatepsavalue', 'prostate_psa_value',
   'lungpackyears', 'lung_pack_years',

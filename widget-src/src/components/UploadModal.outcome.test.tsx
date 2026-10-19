@@ -199,7 +199,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
-      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0,
+      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0,
     });
     expect(Object.values(outcomes()[0]!).every(Number.isInteger)).toBe(true);
     // A zero is never sent, so a server a deploy behind never meets a new key it would refuse.
@@ -207,6 +207,20 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
     expect(outcomes()).toHaveLength(1);
+  });
+
+  // US-12 AC14: how many values came from an undated previous column, a count only.
+  it('counts the values read from an undated previous column, core and lab rows alike', async () => {
+    const undated = { result: { ...withValues.result!, values: [
+      ...withValues.result!.values,
+      { metric: 'hdl', valueSI: 1.2, displayValue: 1.2, displayUnit: 'mmol/L', confidence: 'high', recordedAt: 'undated' },
+      { metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', confidence: 'high', recordedAt: '2024-01-10' },
+    ], additionalValues: [{ name: 'sodium', value: 139, unit: 'mmol/L', recordedAt: 'undated' }] } } as Import;
+    vi.mocked(labImport).mockResolvedValue(undated);
+    render_(); pick(pdf('baseline.pdf'));
+    await screen.findByDisplayValue('3.9');
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 1, withValues: 1, undatedPrevious: 2 });
   });
 
   it('fires for a run where no file could be read', async () => {

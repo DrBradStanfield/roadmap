@@ -13,6 +13,8 @@
  * subfolder of 'Health Plan by Dr Brad').
  */
 import type { DocumentType } from './validation';
+import { isCalendarDay } from './measurement-history';
+import { localDay } from './merge';
 
 /**
  * Title of the row the website's upload writes for a lab PDF it archives
@@ -70,21 +72,23 @@ export function splitDocumentRef(ref: string): { folder: string | null; name: st
 /**
  * Build the fileRef for an upload: `<folder>/<YYYY-MM-DD> <title><ext>`.
  *
- * - `date`: the DOCUMENT's own date (AI-extracted, user-corrected in review);
- *   pass the upload date as fallback when the document has none.
+ * - `date`: the DOCUMENT's own date (AI-extracted, user-corrected in review).
+ *   Anything but a real calendar day (none, or a crafted file's "../../x")
+ *   becomes today's local date, so the ref never leaves its folder (US-14 AC2).
  * - `existingRefs`: the refs already in the user's file — name collisions get
  *   a " (2)" / " (3)" suffix so nothing is ever overwritten.
  */
 export function buildDocumentRef(opts: {
   type: DocumentType;
   title: string;
-  date: string; // YYYY-MM-DD
+  date: string | null | undefined; // YYYY-MM-DD
   sourceFileName?: string | null;
   existingRefs: Iterable<string>;
 }): string {
   const folder = DOCUMENT_FOLDERS[opts.type] ?? 'Other documents';
   const ext = extensionOf(opts.sourceFileName);
-  let base = `${opts.date} ${sanitizeTitle(opts.title)}`;
+  const date = opts.date && isCalendarDay(opts.date) ? opts.date : localDay(new Date());
+  let base = `${date} ${sanitizeTitle(opts.title)}`;
   if (base.length + ext.length > MAX_NAME_LENGTH) {
     base = base.slice(0, MAX_NAME_LENGTH - ext.length).trimEnd();
   }

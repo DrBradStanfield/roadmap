@@ -3,6 +3,11 @@ import { Sentry } from '../lib/sentry';
 
 interface Props {
   children: React.ReactNode;
+  /** Shown instead of the whole-tool message, for one part of the page. */
+  fallback?: React.ReactNode;
+  /** With `fallback`: the Sentry tag naming that part. Only the error goes,
+   *  through the scrubbed path, never the component stack or props. */
+  feature?: string;
 }
 
 interface State {
@@ -21,10 +26,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('Health tool error:', error, info.componentStack);
-    Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
+    Sentry.captureException(error, this.props.feature ? { tags: { feature: this.props.feature } } : { extra: { componentStack: info.componentStack } });
   }
 
   render() {
+    if (this.state.hasError && this.props.fallback) return this.props.fallback;
     if (this.state.hasError) {
       return (
         <div className="health-tool-error">

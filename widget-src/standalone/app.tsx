@@ -12,7 +12,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { HealthTool } from '../src/components/HealthTool';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { initSentry, Sentry } from '../src/lib/sentry';
+import { initSentry } from '../src/lib/sentry';
 import { initRoadmapStore, flushRoadmapStoreSync, setPreEraseHook } from '../src/lib/roadmap-data';
 import { resolveAssistantName, setAssistantName, resolveSkipEmailGate, setSkipEmailGate } from '../src/lib/assistant-config';
 import { autoEnrolReminders, cancelRemindersForErase, pushReminderSchedule } from './reminders';
@@ -29,6 +29,7 @@ import {
   connectRefusal,
   liftLocalInto,
   rememberBackend,
+  reportConnectFailure,
   resolveRemembered,
   startOnBackend,
   storageState,
@@ -45,8 +46,7 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
   try {
     resumed = await DropboxAdapter.completeRedirect(dropboxConfig());
   } catch (error) {
-    console.warn('Dropbox connect failed', error);
-    Sentry.captureException(error, { tags: { area: 'cloud-connect', backend: 'dropbox' } });
+    reportConnectFailure(error, 'dropbox');
   }
   if (resumed) {
     await liftLocalInto(resumed, 'dropbox');
@@ -63,10 +63,7 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
     gdResumed = await GoogleDriveAdapter.completeRedirect(googleDriveConfig());
   } catch (error) {
     refused = connectRefusal(error) ?? undefined;
-    if (!refused) {
-      console.warn('Google Drive connect failed', error);
-      Sentry.captureException(error, { tags: { area: 'cloud-connect', backend: 'google-drive' } });
-    }
+    if (!refused) reportConnectFailure(error, 'google-drive');
   }
   if (gdResumed) {
     await liftLocalInto(gdResumed, 'google-drive');

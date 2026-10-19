@@ -137,9 +137,9 @@ apply): that work dir may hold a credential, so it is deleted even with
    ACs. Reviewer advice is not automatically correct. Record one status per
    finding in your reply: Accepted, Disputed (with evidence), or Needs Brad.
 3. **Fix accepted findings** with regression coverage, then re-run the
-   review so the verdict covers the new snapshot. A disputed BLOCKING
+   review ONCE, scoped to the fix diff (`docs/review-format.md` round cap). A disputed BLOCKING
    finding stays blocking until the reviewer withdraws it, a fix lands, or
-   Brad decides. Two rounds unresolved → Brad, with both positions.
+   Brad decides. Unresolved after that re-check → Brad, both positions.
 4. **Drift** in the output means the tree changed mid-review; the verdict
    covers the snapshot only. Re-run before relying on it.
 5. Report the snapshot id and model with the verdict. Do not invoke this

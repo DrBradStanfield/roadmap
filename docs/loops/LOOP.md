@@ -11,11 +11,11 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   the id, so bump it when a newer Opus ships; running on anything else → say so in the retro). Spend your tokens
   on synthesis, judgment, verification and the retro. Delegate all other work, parallel when independent: one
   crisp verifiable deliverable per worker, spend proportionate to the output's worth; justify unusual scale.
-- **Workers and reviewers are Opus at high effort**: spawn `worker` and `adversary` by name (their
-  `.claude/agents/*.md` pin `model: opus`, `effort: high`); never a per-call `model` (it overrides the pin).
-  Sonnet 5.5 (Brad 2026-10-07) and the newest Haiku (Brad 2026-10-13) are allowed for mechanical routines. You run at high effort: the cloud environment sets `CLAUDE_CODE_EFFORT_LEVEL=high`
-  (Brad, 2026-09-28; the Opus default was medium). It overrides every agent's pin, which is also high; never set
-  it lower.
+- **By name** (Brad 2026-10-19): `worker` (Sonnet) for mechanical work, `worker-opus` for live write paths or loop
+  code, `adversary` (Opus); `.claude/agents/*.md` pin model and effort; never a per-call `model`.
+  Sonnet 5.5 and Haiku are allowed for mechanical jobs (Brad 2026-10-07, 2026-10-13). You run at medium effort: the cloud environment sets `CLAUDE_CODE_EFFORT_LEVEL=medium`
+  (Brad, 2026-10-19; was high from 2026-09-28). It overrides every agent's pin (high), so cloud workers and
+  reviewers run at medium too; change it only on Brad's word.
 - Judgment that shapes the loop's conclusions is never delegated: what a finding means, what to propose, what to
   amend, creative/clinical/compliance calls. Workers gather, build and verify; you decide.
 - **Adversarial review before delivery**: after the report is drafted and before the issue opens, spawn ONE

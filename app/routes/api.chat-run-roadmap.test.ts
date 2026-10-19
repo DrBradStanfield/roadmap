@@ -49,6 +49,8 @@ const ANSWER = 'From your roadmap: your LDL card says to discuss it with your do
 // What only the tool computed: the SI LDL, and the payload's own keys.
 const TOOL_OUTPUT = [String(reportedToCanonical('ldl', 169, 'mg/dL')!.valueSI), 'latestValues', 'currentSuggestions', 'derivedValues'];
 const TOOL_INPUT = ['169', '83.7', '1.23', 'mg/dL'];
+/** Random ids (UUIDs, Sentry event and trace ids) can contain '169' by chance: strip them before looking for a value. */
+const withoutIds = (text: string) => text.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\b[0-9a-f]{16,}\b/gi, '<id>');
 
 let inserts: Array<{ table: string; row: Record<string, unknown> }>;
 let envelopes: unknown[];
@@ -116,13 +118,13 @@ describe('US-15 AC33: a run_roadmap turn keeps the tool\'s data out of every log
     const timing = JSON.parse(consoleCalls().match(/\{\\"evt\\":\\"chat_timing\\".*?\}(?=")/)![0].replace(/\\"/g, '"'));
     expect(timing.roadmapRun).toBe(true);
     for (const leak of [...TOOL_INPUT, ...TOOL_OUTPUT]) {
-      expect(consoleCalls()).not.toContain(leak);
-      expect(JSON.stringify(envelopes)).not.toContain(leak);
+      expect(withoutIds(consoleCalls())).not.toContain(leak);
+      expect(withoutIds(JSON.stringify(envelopes))).not.toContain(leak);
     }
     // The widget row keeps the question with its numbers masked (AC33, S2), and nothing the tool read or computed.
     const row = inserts.find((i) => i.table === 'chat_match_events')!.row;
     expect(row.message).toBe('analyse my data: LDL # mg/dL, weight # kg, HDL # mmol');
-    for (const leak of [...TOOL_INPUT.filter((s) => /\d/.test(s)), ...TOOL_OUTPUT]) expect(JSON.stringify(row)).not.toContain(leak);
+    for (const leak of [...TOOL_INPUT.filter((s) => /\d/.test(s)), ...TOOL_OUTPUT]) expect(withoutIds(JSON.stringify(row))).not.toContain(leak);
     expect(Object.keys(row).some((k) => /roadmap|tool/i.test(k))).toBe(false);
   });
 

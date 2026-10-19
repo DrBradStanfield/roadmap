@@ -14,7 +14,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import crypto from 'node:crypto';
 
-vi.mock('node:dns/promises', () => ({ default: { lookup: async () => [{ address: '1.1.1.1', family: 4 }] } }));
+import { serveClientMetadata } from '../lib/mcp-cimd.test-helpers';
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
@@ -44,6 +44,8 @@ let cloud: MemoryCloud;
 let connections = 0;
 
 beforeEach(() => {
+  // A client id that is a URL means a CIMD fetch: answered here, so no DNS or socket leaves the machine.
+  serveClientMetadata();
   process.env.MCP_ISSUER = ISSUER;
   process.env.MCP_SEAL_KEYS = Buffer.alloc(32, 3).toString('base64');
   process.env.MCP_CLIENT_HMAC_KEY = Buffer.alloc(32, 4).toString('base64');
@@ -581,11 +583,11 @@ describe('the consent screen cannot be framed and names its own trust (US-32)', 
 
   it('names the host that published an unpinned CIMD document', async () => {
     const clientId = 'https://assistant.example.test/oauth/client.json';
-    vi.stubGlobal('fetch', vi.fn(async () => Response.json({
+    serveClientMetadata({ [clientId]: {
       client_id: clientId,
       client_name: 'Example Assistant',
       redirect_uris: [REDIRECT],
-    })));
+    } });
     const screen = await (await authorize(clientId, REDIRECT)).text();
     expect(screen).toContain('registered at assistant.example.test');
     expect(screen).not.toContain('a known client');

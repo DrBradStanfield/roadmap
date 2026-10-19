@@ -277,7 +277,7 @@ export {
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
 export { mergeFiles, stampFields, CLOCK_KEYS, earliestRowStamp, dayOf, localDay, type MergeOptions } from './merge';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
-export { migrateFile, SchemaTooNewError } from './migrate';
+export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 
 // v2 reminder schedule (client-computed; the server is a dumb scheduler — §10)
 export {
@@ -301,6 +301,7 @@ export {
 // v2 measurement recency — dated chat history + newest-active-row resolution
 export {
   buildMeasurementHistory,
+  isCalendarDay,
   latestActivePerMetric,
   latestFromHistory,
   HISTORY_CAP_PER_METRIC,
@@ -359,6 +360,7 @@ export {
   ConflictError,
   LostUpdateError,
   StorageError,
+  fetchOrFail,
   jsonBody,
   sleepUntilAborted,
   type StorageAdapter,
@@ -398,6 +400,6 @@ export {
 } from './drive-rest';
 
 // US-35: the slot rule and the bulk save the website and the connector share.
-export { bulkAppendValues, correctValue, sameLabQuantity, slotKey, slotState, type BulkRow, type LabQuantity, type LabUnitRefusal, type SlotState } from './record-edits';
-export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName } from './lab-extraction';
+export { bulkAppendValues, correctValue, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type SlotState } from './record-edits';
+export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, UNDATED_PREVIOUS } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';

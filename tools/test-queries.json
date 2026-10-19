@@ -100,10 +100,11 @@
   {
     "query": "I feel anxious all the time",
     "expected": [
-      "adult-mental-health-counselling-and-therapy"
+      "adult-mental-health-counselling-and-therapy",
+      "anxiety-in-adults"
     ],
     "category": "mental-health",
-    "notes": "no dedicated adult anxiety pathway — palliative or children closest. 2026-09-29 (Sonnet 5.5 router move): expected was the palliative and children pathways, which router rule 2 forbids for an adult query with no palliative signal; now the adult mental health pathway. must_not_route pins rule 2: the palliative and youth entries are wrong for an adult with no palliative signal, even when the router prefers them (a known Sonnet 5.5 miss, 2026-09-29). The perinatal entry joins must_not_route for the same rule-2 reason (2026-09-29). These pin the router itself: since US-15 AC25 every routed pathway loads and only its title is hidden, so nothing in code removes a misroute. suicide-prevention-in-adults is not pinned: a crisis pathway may load for an anxious adult, and its title never shows.",
+    "notes": "2026-10-18 (Brad, issue #169): anxiety-in-adults joined expected; the 2026-10-15 refresh added it and the router picks it 3/3. Before that there was no adult anxiety pathway. 2026-09-29 (Sonnet 5.5 router move): expected was the palliative and children pathways, which router rule 2 forbids for an adult query with no palliative signal; now the adult mental health pathway. must_not_route pins rule 2: the palliative and youth entries are wrong for an adult with no palliative signal, even when the router prefers them (a known Sonnet 5.5 miss, 2026-09-29). The perinatal entry joins must_not_route for the same rule-2 reason (2026-09-29). These pin the router itself: since US-15 AC25 every routed pathway loads and only its title is hidden, so nothing in code removes a misroute. suicide-prevention-in-adults is not pinned: a crisis pathway may load for an anxious adult, and its title never shows.",
     "must_not_route": [
       "anxiety-distress-and-agitation-in-palliative-care",
       "anxiety-in-children-and-youth",
@@ -184,10 +185,11 @@
   {
     "query": "Acid reflux keeping me awake",
     "expected": [
-      "nsaids-and-dyspepsia-heartburn"
+      "nsaids-and-dyspepsia-heartburn",
+      "dyspepsia-and-heartburn-gord"
     ],
     "category": "gi",
-    "notes": "GERD lay term; no adult-specific GORD pathway. 2026-09-29: reflux-and-gord-in-children removed; rule 2 forbids it without a child signal."
+    "notes": "GERD lay term. 2026-10-18 (Brad, issue #169): dyspepsia-and-heartburn-gord joined expected; the 2026-10-15 refresh added the adult GORD pathway and the router picks it every run. 2026-09-29: reflux-and-gord-in-children removed; rule 2 forbids it without a child signal."
   },
   {
     "query": "IBS symptoms and treatment",
@@ -578,16 +580,21 @@
   {
     "query": "I keep waking up at night with acid burning my throat",
     "expected": [
-      "nsaids-and-dyspepsia-heartburn"
+      "nsaids-and-dyspepsia-heartburn",
+      "dyspepsia-and-heartburn-gord"
     ],
-    "category": "symptomatic"
+    "category": "symptomatic",
+    "notes": "2026-10-18 (Brad, issue #169): dyspepsia-and-heartburn-gord joined expected; the 2026-10-15 refresh added the adult GORD pathway and the router picks it every run."
   },
   {
     "query": "feel like there's a lump stuck in my throat after eating",
     "expected": [
-      "nsaids-and-dyspepsia-heartburn"
+      "nsaids-and-dyspepsia-heartburn",
+      "dyspepsia-and-heartburn-gord",
+      "dysphagia"
     ],
-    "category": "symptomatic"
+    "category": "symptomatic",
+    "notes": "2026-10-18 (Brad, issue #169): dyspepsia-and-heartburn-gord and dysphagia joined expected; the 2026-10-15 refresh added both, and router rule 1 puts the symptom pathway (dysphagia) first. Picked 12/12 (dysphagia) and 11/12 (GORD) over four 3-run arms."
   },
   {
     "query": "my stomach is full and burning after every meal and I've been on ibuprofen",
