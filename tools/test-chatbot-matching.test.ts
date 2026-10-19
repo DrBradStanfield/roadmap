@@ -734,4 +734,40 @@ describe('test-chatbot-matching router view (US-50 AC3)', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   }, 60_000);
+
+  // L3 (review 2026-10-20): fixture handles are checked against the full index;
+  // one the view hides is reported on its own line, and the run goes on.
+  it('reports expected and must_not_route handles the view hides, without exiting', () => {
+    interface Entry { handle: string; type?: string; youtube?: string; topics?: string[]; router?: string; reviewed?: string }
+    const index = JSON.parse(readFileSync(join(REPO_ROOT, 'docs/blog/index.json'), 'utf-8')) as Entry[];
+    const m = index.find(e => e.type === 'reference')!;
+    const [p1, p2] = index.filter(e => e.youtube);
+    m.reviewed = '2099-01-01';
+    for (const p of [p1, p2]) { p.topics = [m.handle]; p.router = 'hidden'; }
+    const fixtures = [{ query: 'hidden handle case', category: 'view-test', expected: [p1.handle, m.handle], must_not_route: [p2.handle] }];
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-hidden-'));
+    try {
+      const indexPath = join(dir, 'index.json');
+      writeFileSync(indexPath, JSON.stringify(index));
+      const stub = join(dir, 'fetch-stub.mjs');
+      writeFileSync(stub, `
+        import fs from 'node:fs';
+        const read = fs.readFileSync;
+        fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? ${JSON.stringify(JSON.stringify(fixtures))} : read(p, ...rest);
+        globalThis.fetch = async () => new Response(JSON.stringify({
+          content: [{ type: 'text', text: ${JSON.stringify(JSON.stringify({ handles: [m.handle] }))} }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts', '--category', 'view-test', '--runs', '1', '--index', indexPath]);
+      const { ANTHROPIC_API_KEY: _live, TOPIC_MASTER_HIDE: _flag, ...rest } = process.env; // never a real key: no call leaves the machine
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
+      const out = res.stdout.replace(/\x1b\[[0-9;]*m/g, '');
+      expect(res.stderr).not.toContain('not in the index');
+      expect(out, res.stderr).toContain(`Hidden by the router view (US-50 AC3): expected ${p1.handle}; must_not_route ${p2.handle}`);
+      expect(out).toContain('Passing:     1');
+      expect(res.status).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
 });

@@ -51,7 +51,7 @@ describe('block headers (US-50 AC5)', () => {
   const base: BlogIndexEntry = { title: 'T', handle: 'h', url: 'u', tags: [], publishedAt: '2025-03-12T08:00:00Z' };
 
   it('names the type and date', () => {
-    expect(contentHeader({ ...base, type: 'reference', reviewed: '2026-10-20' }, {})).toBe('[reference — current view reviewed 2026-10-20]');
+    expect(contentHeader({ ...base, type: 'reference', reviewed: '2026-10-20' }, {})).toBe('[reference — reviewed 2026-10-20]');
     expect(contentHeader({ ...base, type: 'reference' }, {})).toBe('[reference — published 2025-03-12]');
     expect(contentHeader({ ...base, youtube: 'https://youtu.be/x' }, {})).toBe('[video post — published 2025-03-12]');
     expect(contentHeader(base, {})).toBe('[article — published 2025-03-12]');
@@ -59,14 +59,14 @@ describe('block headers (US-50 AC5)', () => {
     expect(contentHeader(undefined, {})).toBe('[article]');
   });
 
-  it('carries the title and links from the frontmatter, and only those', () => {
-    expect(contentHeader(base, { title: 'A post', url: 'https://d/a', commerceUrl: 'https://m/a', keywords: ['k'] }))
-      .toBe('[article — published 2025-03-12]\ntitle: A post\nurl: https://d/a\ncommerceUrl: https://m/a');
+  it('carries the title, links and video link from the frontmatter, and only those (B2)', () => {
+    expect(contentHeader(base, { title: 'A post', url: 'https://d/a', commerceUrl: 'https://m/a', youtube: 'https://youtu.be/x', keywords: ['k'] }))
+      .toBe('[article — published 2025-03-12]\ntitle: A post\nurl: https://d/a\ncommerceUrl: https://m/a\nyoutube: https://youtu.be/x');
   });
 
   it('a loaded video post opens with its header; a pathway gets no link it never had', () => {
     const { content } = loadMatchedContent([video.handle, pathway.handle]);
-    expect(content!.startsWith(`[video post — published ${video.publishedAt.slice(0, 10)}]\ntitle: ${video.title}\nurl: ${video.url}\ncommerceUrl: ${video.commerceUrl}\n\n`)).toBe(true);
+    expect(content!.startsWith(`[video post — published ${video.publishedAt.slice(0, 10)}]\ntitle: ${video.title}\nurl: ${video.url}\ncommerceUrl: ${video.commerceUrl}\nyoutube: ${video.youtube}\n\n`)).toBe(true);
     expect(content).toContain(`\n\n---\n\n[pathway]\ntitle: ${pathway.title}\n\n`);
   });
 });

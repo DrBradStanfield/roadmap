@@ -83,7 +83,9 @@ export function indexEntry(handle: string, fm: Record<string, any>): IndexEntry 
   if (fm.summary) entry.summary = fm.summary;
   // Topic masters (US-50 AC2). A malformed value is left out, so it hides nothing.
   if (Array.isArray(fm.topics) && fm.topics.every((t: unknown) => typeof t === 'string')) entry.topics = fm.topics;
-  if (fm.router === 'hidden') entry.router = 'hidden';
+  // Only an article may leave the router's view; a master, pathway or guideline never does.
+  if (fm.router === 'hidden' && (fm.type ?? 'article') === 'article') entry.router = 'hidden';
+  else if (fm.router !== undefined) console.warn(`  ⚠ ${handle}: router: ${fm.router} refused (only "hidden", on an article)`);
   if (typeof fm.reviewed === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fm.reviewed)) entry.reviewed = fm.reviewed;
   return entry;
 }

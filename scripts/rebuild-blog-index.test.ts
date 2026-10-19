@@ -28,6 +28,12 @@ describe('rebuild-blog-index topic-master keys (US-50 AC2)', () => {
     expect(Object.keys(e)).toEqual(['title', 'handle', 'url', 'tags', 'keywords', 'publishedAt']);
   });
 
+  it('refuses router on a file that is not an article (M1)', () => {
+    expect(entry(['type: "reference"', 'router: "hidden"']).router).toBeUndefined();
+    expect(entry(['type: "pathway"', 'router: "hidden"']).router).toBeUndefined();
+    expect(entry(['type: "article"', 'router: "hidden"']).router).toBe('hidden');
+  });
+
   it('drops malformed values: router other than hidden, a non-array or non-string topics, a bad date', () => {
     expect(entry(['router: "visible"']).router).toBeUndefined();
     expect(entry(['topics: collagen']).topics).toBeUndefined();

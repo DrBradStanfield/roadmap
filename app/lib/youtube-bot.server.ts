@@ -33,7 +33,7 @@ import { cutText } from '../../packages/health-core/src/chat-history';
 import { findBlogByVideoId, type BlogIndexEntry } from './blog-index.server';
 import { loadBlogArticle } from './matched-content';
 import { stripFrontmatter } from './frontmatter';
-import { YOUTUBE_PROMPT_TEMPLATE, buildYouTubePlatformContext } from './youtube-context';
+import { YOUTUBE_PROMPT_TEMPLATE, buildYouTubePlatformContext, loadedHandles } from './youtube-context';
 import {
   buildSystemBlocks,
   buildConversationMessages,
@@ -881,8 +881,10 @@ export async function runPipeline(
     routerHandles = routerResult.handles;
   }
 
-  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, routerHandles, isFollowUp);
-  const blogArticles = loadMatchedArticlesFromHandles(routerHandles)?.content ?? null;
+  const matched = loadMatchedArticlesFromHandles(routerHandles);
+  const blogArticles = matched?.content ?? null;
+  // Master views skip only masters that actually loaded, not ones the cap skipped (US-50 AC6).
+  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, loadedHandles(routerHandles, matched), isFollowUp);
   // YouTube is a doctor-family surface (Brad's public channel) → strict doctor posture.
   const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, blogArticles });
   const conversationMessages = buildConversationMessages(history, thread.text);

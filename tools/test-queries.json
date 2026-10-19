@@ -7589,5 +7589,76 @@
     "source": "production",
     "expected_classification": "MEASUREMENT",
     "notes": "2026-W42 chat-health: widget turn, paraphrased. The user corrects an already-recorded value (wrong specimen): the prompt's MEASUREMENT definition ('READ BACK, RESTATE or CORRECT their own already-recorded numbers'). KNOWN-FLAKY: production labelled the real turn ROUTE mid-thread (classifier model unrecorded); replayed in thread, Haiku 5.5 ROUTE, Haiku 4.5 MEASUREMENT. Context-free, Haiku 5.5 gives MEASUREMENT 4/5, so a multi-run suite fails it about half the time; the harness cannot send prior turns."
+  },
+  {
+    "query": "Your 2025 video said collagen peptides can fix skin wrinkles. Is that still Dr Brad's view?",
+    "category": "topic-masters",
+    "source": "us-50-ac5-2026-10-20",
+    "surface": "doctor",
+    "answer_handles": [
+      "collagen-benefits-best-forms-dosing-and-side-effects",
+      "collagen-peptides-can-fix-skin-wrinkles"
+    ],
+    "must_match": [
+      "\\b(changed|updated|no longer|has since|more recent|newer)\\b"
+    ],
+    "must_not_mention": [
+      "fixes wrinkles",
+      "fix skin wrinkles"
+    ],
+    "notes": "US-50 AC5, pre-registered 2026-10-20 (review round 1, H3); not yet run (harness spend needs Brad's yes). Master vs older post: once the collagen master carries reviewed: and a Current view (AC1), its view outranks the 2025-03-12 post and the reply says plainly that Brad's view has changed. Before the rewrite this scores the current reference."
+  },
+  {
+    "query": "What does Dr Brad think about NMN and NR now?",
+    "category": "topic-masters",
+    "source": "us-50-ac5-2026-10-20",
+    "surface": "doctor",
+    "answer_handles": [
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+      "new-study-says-i-was-wrong-about-nmn-and-nr"
+    ],
+    "must_match": [
+      "\\b(changed|updated|newer|more recent|latest|since)\\b"
+    ],
+    "must_mention": [
+      "wrong"
+    ],
+    "notes": "US-50 AC5, pre-registered 2026-10-20 (review round 1, H3); not yet run (harness spend needs Brad's yes). Post newer than master: the 2026-04-09 post wins over a NAD master reviewed before that date, and the reply says plainly it is Brad's latest position. Valid while the master's reviewed date is before 2026-04-09; once it is on or after, the post leaves the router view."
+  },
+  {
+    "query": "What is Dr Brad's view on saffron for mood?",
+    "category": "topic-masters",
+    "source": "us-50-ac5-2026-10-20",
+    "surface": "doctor",
+    "answer_handles": [
+      "saffron-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_not_match": [
+      "\\bbrad(?:'s)? (thinks|believes|recommends|suggests|says|view is|position is|takes)\\b"
+    ],
+    "must_mention": [
+      "record"
+    ],
+    "notes": "US-50 AC5, pre-registered 2026-10-20 (review round 1, H3); not yet run (harness spend needs Brad's yes). Evidence position never attributed: Brad has no saffron post, so the master carries a Current evidence position. The reply gives the evidence and the 'no record of Brad making a specific statement' line, never a Brad view."
+  },
+  {
+    "query": "Does collagen help with wrinkles? Has the thinking on it changed?",
+    "category": "topic-masters",
+    "source": "us-50-ac5-2026-10-20",
+    "surface": "brand",
+    "answer_handles": [
+      "collagen-benefits-best-forms-dosing-and-side-effects",
+      "collagen-peptides-can-fix-skin-wrinkles"
+    ],
+    "must_not_mention": [
+      "Dr Brad",
+      "Brad's view",
+      "Brad thinks",
+      "Brad believes"
+    ],
+    "must_not_match": [
+      "\\bbrad\\b(?:'s)? (view|thinks|believes|position|changed|now|says)"
+    ],
+    "notes": "US-50 AC5, pre-registered 2026-10-20 (review round 1, H3); not yet run (harness spend needs Brad's yes). Brand surface: the current position is stated in the assistant's own voice and a change of position is never attributed to Brad (chat-posture-brand.md)."
   }
 ]

@@ -19,6 +19,8 @@ const fakes = vi.hoisted(() => {
     ref('tm-nad'),
     ref('tm-empty'),
     ref('tm-big', '2026-10-20'),
+    ref('tm-huge'),
+    ref('tm-master-long', '2026-10-20'),
     { title: 'An article', handle: 'tm-article', url: 'u', tags: [], publishedAt: '2025-01-01T00:00:00Z' },
   ];
 });
@@ -53,6 +55,8 @@ const files: Record<string, string> = {
   'tm-nad': `---\ntitle: "NAD"\n---\n\n# NAD\n\n## Current evidence position\n\nAn evidence summary, not Brad's view.\n\n## Evidence review\n\nMore.\n`,
   'tm-empty': `---\ntitle: "Empty"\n---\n\n# Empty\n\n## Evidence review\n\nOnly a review.\n`,
   'tm-big': `---\ntitle: "Big"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'x'.repeat(MAX_MASTER_VIEW_CHARS)}\n`,
+  'tm-huge': `---\ntitle: "Huge"\n---\n\n${'h'.repeat(110_000)}\n`,
+  'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
   'tm-article': `---\ntitle: "An article"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNot a master.\n`,
 };
 const realRead = fs.readFileSync;
@@ -83,7 +87,7 @@ describe('masterViews (US-50 AC6)', () => {
   it('adds each named master\'s section under its own label and header, in topics order', () => {
     fakeFiles();
     const block = masterViews(['tm-collagen', 'tm-nad', 'tm-empty'], [])!;
-    expect(block.startsWith(`${MASTER_VIEWS_HEADING}\n\n[reference — current view reviewed 2026-10-20]\ntitle: Collagen\n\n### Current view`)).toBe(true);
+    expect(block.startsWith(`${MASTER_VIEWS_HEADING}\n\n[reference — reviewed 2026-10-20]\ntitle: Collagen\n\n### Current view`)).toBe(true);
     expect(block).toContain('[reference — published 2024-01-01]\ntitle: NAD\n\n### Current evidence position');
     expect(block.indexOf('Collagen peptides')).toBeLessThan(block.indexOf('An evidence summary'));
     expect(block).not.toContain('Evidence review');
@@ -133,6 +137,38 @@ describe('runPipeline: the reply-or-skip input (US-50 AC6)', () => {
     expect(platform).toContain('Collagen peptides may improve skin hydration');
   });
 
+  it('the video post\'s publish date and the master\'s reviewed date both reach the model (Codex R1)', async () => {
+    fakeFiles();
+    await runPipeline(thread, entry, 'The video body.');
+    const platform = systemOf().find(t => t.includes('The video body.'))!;
+    expect(platform).toContain('Published: 2025-03-12');
+    expect(platform).toContain('[reference — reviewed 2026-10-20]');
+  });
+
+  it('a master the router picked but the cap skipped still adds its current view (H2, Codex R2)', async () => {
+    fakeFiles();
+    vi.mocked(routeQuery).mockResolvedValueOnce({ handles: ['tm-huge', 'tm-master-long'], rawJson: null, usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 }, latencyMs: 1, cacheHit: false, error: null });
+    await runPipeline(thread, { ...entry, topics: ['tm-master-long'] }, 'The video body.');
+    const texts = systemOf();
+    const articles = texts.find(t => t.startsWith('## Referenced Blog Articles'))!;
+    expect(articles).toContain('hhhh');
+    expect(articles).not.toContain("The long master's view.");
+    expect(texts.join('\n')).toContain(`${MASTER_VIEWS_HEADING}\n\n[reference — reviewed 2026-10-20]\ntitle: Long master\n\n### Current view (reviewed 20 October 2026)\n\nThe long master's view.`);
+  });
+
+  // H3 (pre-registered, not run here): a paid dry run of an off-topic comment
+  // (camera question) on a video whose post names a master must still return
+  // SKIP_NO_REPLY. The harness has no YouTube fixture type, so the check is run
+  // with tools/youtube-comment-dryrun.ts; this test pins its input: the master
+  // view is present and no router-matched block exists.
+  it('an off-topic comment gets the master view but no router-matched block (H3 skip input)', async () => {
+    fakeFiles();
+    await runPipeline({ ...thread, text: 'Love the lighting in this video, what camera do you use for filming?' }, entry, 'The video body.');
+    const texts = systemOf();
+    expect(texts.some(t => t.startsWith('## Referenced Blog Articles'))).toBe(false);
+    expect(texts.join('\n')).toContain(`${MASTER_VIEWS_HEADING}\n\n[reference`);
+  });
+
   it('a master the router picked loads once, as router-matched content', async () => {
     fakeFiles();
     vi.mocked(routeQuery).mockResolvedValueOnce({ handles: ['tm-collagen'], rawJson: null, usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 }, latencyMs: 1, cacheHit: false, error: null });
@@ -152,8 +188,8 @@ describe('youtube-comment-dryrun shares the context builder (US-50 AC6)', () => 
     expect(src).not.toMatch(/function buildYouTubePlatformContext/);
     expect(src).not.toContain('chat-youtube-prompt.md');
   });
-  it("passes the router's picks, so master views are de-duplicated as in the bot", () => {
-    expect(src).toMatch(/buildYouTubePlatformContext\(VIDEO_ID, [^)]*matchedHandles\)/);
+  it('passes the loaded handles, so master views are de-duplicated as in the bot', () => {
+    expect(src).toContain('buildYouTubePlatformContext(VIDEO_ID, blogPost.entry, blogPost.body, loadedHandles(matchedHandles,');
   });
 });
 

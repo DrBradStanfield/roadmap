@@ -35,7 +35,7 @@ import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
 import { loadBlogIndex, findBlogByVideoId, type BlogIndexEntry } from '../app/lib/blog-index.server';
 import { loadMatchedContent } from '../app/lib/matched-content';
-import { buildYouTubePlatformContext } from '../app/lib/youtube-context';
+import { buildYouTubePlatformContext, loadedHandles } from '../app/lib/youtube-context';
 import { routerView, routerIndexBlock } from '../app/lib/router-view';
 import { stripFrontmatter } from '../app/lib/frontmatter';
 import {
@@ -255,8 +255,9 @@ async function routeQuery(comment: string): Promise<{ handles: string[]; raw: st
 
 async function callMainLLM(comment: string, blogPost: BlogPost, matchedHandles: string[]): Promise<{ text: string; error: string | null }> {
   // The bot's own builder: the video's post plus the topic masters' current views (US-50 AC6).
-  const platformContext = buildYouTubePlatformContext(VIDEO_ID, blogPost.entry, blogPost.body, matchedHandles);
-  const matchedContent = loadMatchedContent(matchedHandles).content;
+  const matched = loadMatchedContent(matchedHandles);
+  const matchedContent = matched.content;
+  const platformContext = buildYouTubePlatformContext(VIDEO_ID, blogPost.entry, blogPost.body, loadedHandles(matchedHandles, matched.content ? matched : null));
 
   // System block construction mirrors production: cached blocks 1-3 (system prompt
   // + algorithm + products), then per-request platform context + matched content.

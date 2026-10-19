@@ -51,6 +51,24 @@ describe('routerView (US-50 AC3)', () => {
     expect(handles(view)).toEqual(['collagen', 'nad-nmn', 'two-masters', 'missing-master', 'article-as-master', 'an-article', 'no-topics']);
   });
 
+  it('hides only article entries: a reference, pathway or guideline marked hidden stays (M1)', () => {
+    const asRef = master('other-ref', '2026-10-20');
+    const hiddenRef: BlogIndexEntry = { ...asRef, topics: ['collagen'], router: 'hidden' };
+    const hiddenPathway = post('a-pathway', { type: 'pathway', topics: ['collagen'], router: 'hidden' });
+    expect(handles(routerView([collagen, hiddenRef, hiddenPathway], true))).toEqual(['collagen', 'other-ref', 'a-pathway']);
+  });
+
+  it('a hidden post with no publish date stays, and does not throw (L1)', () => {
+    const undated = post('undated', { topics: ['collagen'], router: 'hidden', publishedAt: undefined as unknown as string });
+    expect(handles(routerView([collagen, undated], true))).toEqual(['collagen', 'undated']);
+  });
+
+  it('a master whose reviewed is not YYYY-MM-DD hides nothing (L2)', () => {
+    const odd = master('odd', 'zzzz');
+    const hidden = post('odd-video', { topics: ['odd'], router: 'hidden' });
+    expect(handles(routerView([odd, hidden], true))).toEqual(['odd', 'odd-video']);
+  });
+
   it('TOPIC_MASTER_HIDE=off restores the full view', () => {
     const hidden = post('collagen-video', { topics: ['collagen'], router: 'hidden' });
     const prev = process.env.TOPIC_MASTER_HIDE;

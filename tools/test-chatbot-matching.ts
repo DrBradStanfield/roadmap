@@ -228,6 +228,8 @@ const INDEX_PATH = indexPathArg
 
 // The router's view, through the production function (US-50 AC3): a hidden post
 // whose masters are up to date leaves the allow-list, the index block and the count.
+// Fixture handles are checked against the full index; hidden ones are reported.
+const FULL_HANDLES = new Set((JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8')) as BlogIndexEntry[]).map(e => e.handle));
 const BLOG_INDEX: BlogIndexEntry[] = routerView(JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8')));
 
 const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
@@ -397,7 +399,7 @@ if (badFixed.length > 0) {
   process.exit(1);
 }
 // A mistyped forbidden handle can never be returned, so the guard would pass forever.
-const unknownForbidden = filtered.flatMap(q => (q.must_not_route ?? []).filter(h => !VALID_HANDLES.has(h)));
+const unknownForbidden = filtered.flatMap(q => (q.must_not_route ?? []).filter(h => !FULL_HANDLES.has(h)));
 if (unknownForbidden.length > 0) {
   console.error(`must_not_route names handles not in the index: ${unknownForbidden.join(', ')}`);
   process.exit(1);
@@ -673,6 +675,12 @@ console.log(`Runs each:   ${runs}`);
 console.log(`Concurrency: ${concurrency}`);
 if (answerCheckMode) console.log(`Answer model: ${ANSWER_MODEL}`);
 console.log(`Threshold:   ≤${(varianceThreshold * 100).toFixed(0)}% variance\n`);
+// A handle the router view hides can never be returned: report it, never exit (US-50 AC3).
+const hiddenIn = (key: 'expected' | 'must_not_route') =>
+  [...new Set(filtered.flatMap(q => q[key] ?? []).filter(h => FULL_HANDLES.has(h) && !VALID_HANDLES.has(h)))].join(', ') || 'none';
+if (hiddenIn('expected') !== 'none' || hiddenIn('must_not_route') !== 'none') {
+  console.log(`${YELLOW}Hidden by the router view (US-50 AC3): expected ${hiddenIn('expected')}; must_not_route ${hiddenIn('must_not_route')}${RESET}\n`);
+}
 
 // Warm the prompt cache with one call before running the suite. First call
 // creates the 80K-token cache block; subsequent calls read from it at a

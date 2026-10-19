@@ -32,11 +32,12 @@ FOLLOW-UP TURN: You already replied once in this comment thread (see the convers
 - If the message is hostile, sarcastic, bait, a rant, or mere disagreement without a question — return SKIP_NO_REPLY. Never argue, never defend yourself, never reply to hostility.
 - This is your LAST reply in this thread either way, so make it self-contained and do not invite further questions.`;
 
-export function buildYouTubePlatformContext(videoId: string, entry: BlogIndexEntry, body: string, routerHandles: string[], isFollowUp = false): string {
-  const views = masterViews(entry.topics, routerHandles);
+export function buildYouTubePlatformContext(videoId: string, entry: BlogIndexEntry, body: string, loaded: string[], isFollowUp = false): string {
+  const views = masterViews(entry.topics, loaded);
   const base = YOUTUBE_PROMPT_TEMPLATE
     .replace('{{VIDEO_TITLE}}', entry.title)
     .replace('{{VIDEO_URL}}', `https://youtu.be/${videoId}`)
+    .replace('{{VIDEO_PUBLISHED}}', entry.publishedAt?.slice(0, 10) || 'unknown')
     .replace('{{VIDEO_CONTENT}}', body);
   // The template ends with the video's content, so the master views follow it.
   const withViews = views ? `${base}\n\n${views}` : base;
@@ -48,6 +49,12 @@ export function buildYouTubePlatformContext(videoId: string, entry: BlogIndexEnt
 // video's post names, in its own labelled block. chat-youtube-prompt.md names
 // this heading and tells the model to ignore the block for reply-or-skip.
 // ---------------------------------------------------------------------------
+
+/** The router's handles whose content loaded: not skipped by the cap, and the
+ *  load produced something. The master views de-duplicate against these. */
+export function loadedHandles(routerHandles: string[], matched: { skipped: string[] } | null): string[] {
+  return matched ? routerHandles.filter(h => !matched.skipped.includes(h)) : [];
+}
 
 export const MASTER_VIEWS_HEADING = "## Brad's current view on this video's topics (added automatically for this video; not router-matched content)";
 
@@ -74,15 +81,15 @@ export function currentViewSection(md: string): string | null {
 
 /**
  * The master views for a comment: each reference named in the post's `topics`,
- * once, skipping masters the router already loaded (they arrive whole as
- * router-matched content). A section that would pass the cap is skipped, never
+ * once, skipping masters already loaded as router-matched content (pass the
+ * loaded handles, from loadedHandles(), never the router's raw picks). A section that would pass the cap is skipped, never
  * the rest. Null when nothing is added.
  */
-export function masterViews(topics: string[] | undefined, routerHandles: string[]): string | null {
+export function masterViews(topics: string[] | undefined, loaded: string[]): string | null {
   const parts: string[] = [];
   let total = 0;
   for (const handle of new Set(topics ?? [])) {
-    if (routerHandles.includes(handle)) continue;
+    if (loaded.includes(handle)) continue;
     const entry = loadBlogIndex().find(e => e.handle === handle);
     if (entry?.type !== 'reference') continue;
     const md = loadBlogArticle(handle);

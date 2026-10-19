@@ -53,8 +53,8 @@ export function contentHeader(entry: BlogIndexEntry | undefined, fm: Record<stri
   const type = entry?.type ?? 'article';
   const day = entry?.publishedAt?.slice(0, 10);
   const kind = type === 'article' && entry?.youtube ? 'video post' : type;
-  const label = entry?.reviewed ? `${kind} — current view reviewed ${entry.reviewed}` : day ? `${kind} — published ${day}` : kind;
-  const links = ['title', 'url', 'commerceUrl'].filter(k => typeof fm[k] === 'string').map(k => `${k}: ${fm[k]}`);
+  const label = entry?.reviewed ? `${kind} — reviewed ${entry.reviewed}` : day ? `${kind} — published ${day}` : kind;
+  const links = ['title', 'url', 'commerceUrl', 'youtube'].filter(k => typeof fm[k] === 'string').map(k => `${k}: ${fm[k]}`);
   return [`[${label}]`, ...links].join('\n');
 }
 
