@@ -43,6 +43,15 @@ describe('US-13 AC8: a new column date is a past calendar day before Save', () =
     expect(onSave.mock.calls[0][0].values[0].recordedAt).toBe('2024-06-01T00:00:00.000Z');
   });
 
+  it('an edit made before the day is picked survives the pick (the column re-keys)', () => {
+    const { view, onSave, save, picker } = review('2024-06');
+    const input = Array.from(view.container.querySelectorAll<HTMLInputElement>('.bt-cell-input input')).find(i => i.value === '3.0')!;
+    fireEvent.change(input, { target: { value: '3.5' } });
+    fireEvent.change(picker(), { target: { value: '2024-06-05' } });
+    fireEvent.click(save);
+    expect(onSave.mock.calls[0][0].values[0]).toMatchObject({ valueSI: 3.5, recordedAt: '2024-06-05T00:00:00.000Z', source: 'lab_import_edited' });
+  });
+
   it('a valid past day saves with no click, as before', () => {
     const { onSave, save } = review('2024-06-10');
     expect(save.disabled).toBe(false);
