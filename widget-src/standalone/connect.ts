@@ -25,7 +25,7 @@ import {
 import { dropboxConfig } from './dropbox-config';
 import { clearAutoEnrolBlock } from './reminders';
 import { googleDriveConfig } from './google-config';
-import { clearLocalStorage, safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
+import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
 import { Sentry } from '../src/lib/sentry';
@@ -267,6 +267,8 @@ export async function resolveRemembered(): Promise<ResolvedBackend> {
  *  - the local RoadmapFile cache (health_roadmap_file_v2 + _rev), any named
  *    record files (chat-history.json, …) and stored documents
  *    (LocalStorageAdapter.disconnect())
+ *  - off-file health data: matrix drafts and Lp(a) kept answers
+ *    (clearOffFileHealthData(); documents are already cleared above)
  *  - the legacy v1 health blob + the authenticated flag (clearLocalStorage())
  *  - the remembered-backend selection (BACKEND_KEY)
  *
@@ -288,6 +290,7 @@ export async function logOff(backend: Backend): Promise<void> {
   // Also clear the legacy v1 health blob + the authenticated flag (the shared
   // HealthTool source still writes these), so a shared device leaks nothing.
   clearLocalStorage();
+  clearOffFileHealthData();
   forgetBackend();
   location.reload();
 }
