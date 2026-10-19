@@ -8,3 +8,14 @@ export function encodeStoragePath(path: string): string {
   }).join('');
   return wellFormed.split('/').map(encodeURIComponent).join('/');
 }
+
+/**
+ * Where a raw-joined ref resolved before per-segment encoding (pre PR #186):
+ * everything from the first `#` dropped, `%xx` text left for the server to
+ * decode. Null when that is the same request as `url`. Reads only: US-14 AC1.
+ */
+export function legacyDocumentUrl(url: string, base: string, ref: string): string | null {
+  const legacy = new URL(base + ref);
+  legacy.hash = '';
+  return legacy.href === new URL(url).href ? null : legacy.href;
+}

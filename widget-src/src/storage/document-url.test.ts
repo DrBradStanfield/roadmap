@@ -20,7 +20,7 @@ const malformedRefs = [
   ['documents/😀.pdf', 'documents/%F0%9F%98%80.pdf'],
   ['documents/\ufeff.pdf', 'documents/%EF%BB%BF.pdf'],
 ] as const;
-it.each(malformedRefs)('US-12 AC13b: preserves URL string conversion for generated or malformed ref %s', async (ref, escaped) => {
+it.each(malformedRefs)('US-14 AC1: preserves URL string conversion for generated or malformed ref %s', async (ref, escaped) => {
   for (const kind of ['github', 'webdav'] as const) {
     const paths: string[] = [];
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
@@ -41,7 +41,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const davBase = 'https://synthetic.invalid/dav/base%20folder/literal%23/%2523';
 const davConfig = { username: 'synthetic', password: 'synthetic-placeholder' };
 
-// US-12 AC13b: refs stay logical paths; only the HTTP boundary escapes them.
+// US-14 AC1: refs stay logical paths; only the HTTP boundary escapes them.
 // All HTTP is mocked: these assertions prove request construction, not provider acceptance.
 describe.each([davBase, `${davBase}/`])('WebDAV document request paths with base %s', (base) => {
   it('keeps base escaping and the collection slash through PROPFIND and a missing-parent retry', async () => {
@@ -92,7 +92,7 @@ describe.each([davBase, `${davBase}/`])('WebDAV document request paths with base
 });
 afterEach(() => { vi.unstubAllGlobals(); });
 
-// US-12 AC13b: refs stay logical paths; only the HTTP boundary escapes them.
+// US-14 AC1: refs stay logical paths; only the HTTP boundary escapes them.
 // All HTTP is mocked: these assertions prove request construction, not provider acceptance.
 describe('GitHub document request paths', () => {
   it.each([409, 422])('uses the same escaped path on a %s SHA retry without choosing a branch', async (status) => {
@@ -170,5 +170,38 @@ describe('GitHub document request paths', () => {
     const payload = await requests[2].json();
     expect(payload).toEqual({ message: `Update ${ref}`, content: btoa('synthetic bytes') });
     expect(refs[0]).toContain('Letter #1.pdf');
+  });
+});
+
+// US-14 AC1: documents written before PR #186 sit where the raw ref resolved
+// (everything from `#` dropped, `%xx` text decoded by the server). A read 404 at
+// the encoded URL retries once there. The fake server stores by decoded path.
+describe.each(['github', 'webdav'] as const)('legacy document reads (%s)', (kind) => {
+  const base = kind === 'github' ? `${repoUrl}/contents/` : `${davBase}/`;
+  const serve = (stored: Map<string, string>, requests: string[]) =>
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      const request = new Request(url, init);
+      requests.push(request.url);
+      const body = stored.get(decodeURIComponent(new URL(request.url).pathname));
+      if (body === undefined) return new Response('', { status: 404 });
+      return kind === 'github' ? json({ content: btoa(body), sha: 'old-sha' }) : new Response(body);
+    }));
+  const adapter = () => kind === 'github' ? new GitHubAdapter(githubConfig) : new WebDavAdapter({ ...davConfig, url: davBase });
+
+  it.each([
+    [refs[0], 'Clinic letters/2026-01-01 Letter ', 'Clinic%20letters/2026-01-01%20Letter%20'],
+    ['documents/literal %20.pdf', 'documents/literal  .pdf', 'documents/literal%20%20.pdf'],
+  ])('reads %s from its pre-encoding location', async (ref, legacyPath, legacyUrlPath) => {
+    const requests: string[] = [];
+    serve(new Map([[decodeURIComponent(new URL(base).pathname) + legacyPath, 'legacy bytes']]), requests);
+    expect(await (await adapter().readDocument(ref)).text()).toBe('legacy bytes');
+    expect(requests).toEqual([base + encoded(ref), base + legacyUrlPath]);
+  });
+
+  it('makes no second request for a plain ref', async () => {
+    const requests: string[] = [];
+    serve(new Map(), requests);
+    await expect(adapter().readDocument('documents/space résumé.pdf')).rejects.toThrow(/404/);
+    expect(requests).toHaveLength(1);
   });
 });
