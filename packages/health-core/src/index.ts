@@ -360,6 +360,7 @@ export {
   ConflictError,
   LostUpdateError,
   StorageError,
+  fetchOrFail,
   jsonBody,
   sleepUntilAborted,
   type StorageAdapter,

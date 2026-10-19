@@ -19,6 +19,7 @@
 import {
   ConflictError,
   StorageError,
+  fetchOrFail,
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
@@ -96,7 +97,7 @@ export class GitHubAdapter implements StorageAdapter {
   // --- file ops -------------------------------------------------------------
 
   async read(fileName: string): Promise<ReadResult> {
-    const res = await fetch(this.contentsUrl(fileName), { headers: this.headers() });
+    const res = await fetchOrFail('GitHub', this.contentsUrl(fileName), { headers: this.headers() });
     if (res.status === 404) return { body: null, version: null };
     if (!res.ok) throw new StorageError(`GitHub read failed (${res.status}): ${await res.text()}`);
     const json = (await res.json()) as { content?: string; sha: string };
