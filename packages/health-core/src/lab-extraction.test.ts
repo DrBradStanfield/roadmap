@@ -306,7 +306,7 @@ describe('US-35 AC2/AC5: isImportableEntryName', () => {
 // US-12 AC8 — dot thousands on a count, apostrophe thousands, and a count of
 // the rows the parse dropped
 // ---------------------------------------------------------------------------
-import { canonicalLabRow, canonicalLabValue, LAB_CATALOG, LAB_GROUPS, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
+import { canonicalLabRow, LAB_CATALOG, LAB_GROUPS, labSlotKey, PROMPT_DEFERRED_KEYS, resolveLabCatalogEntry } from './lab-catalog';
 
 describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted', () => {
   // A null optional field is not an unreadable value: the row stays.
@@ -823,15 +823,39 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
           return key;
         });
       });
-      // Every key, plus the one name that carries its own factor (US-21 AC20).
-      expect([...named].sort()).toEqual([...LAB_CATALOG.map(e => e.key), 'bun'].sort());
+      // Every key but the AC19 tests, held back until the #166 benchmark.
+      expect([...named].sort()).toEqual(LAB_CATALOG.map(e => e.key).filter(k => !PROMPT_DEFERRED_KEYS.has(k)).sort());
     });
-    it(`${mode}: a urea nitrogen row is offered the name "bun", which keeps BUN's mg/dL factor (US-21 AC20)`, () => {
-      const renal = block(unifiedSystemPrompt(mode)).find(l => l.trim().startsWith('Renal'))!;
-      expect(renal).toMatch(/\burea, bun\b/);
-      expect(resolveLabCatalogEntry('bun')?.key).toBe('urea');
-      expect(canonicalLabValue(resolveLabCatalogEntry('bun')!, 14, 'mg/dL')).toMatchObject({ factor: 0.357 });
-      expect(canonicalLabValue(resolveLabCatalogEntry('urea')!, 14, 'mg/dL')).toBeNull();
+    // US-21 AC19/AC20: the catalogue grew, the prompt did not. Its two name
+    // lists are pinned to what main rendered before (2026-10-20); a change here
+    // is a prompt change and waits for the #166 Haiku benchmark.
+    it(`${mode}: the TARGET METRICS and ADDITIONAL VALUES lists are unchanged by the catalogue additions`, () => {
+      const prompt = unifiedSystemPrompt(mode);
+      const target = prompt.slice(prompt.indexOf('TARGET METRICS (use these exact keys):'), prompt.indexOf('CRITICAL RULES')).trimEnd().split('\n').slice(1);
+      expect(target).toEqual([
+        '  - "hba1c" — HbA1c, Hemoglobin A1c, Glycated Hemoglobin, A1C, Glycated Haemoglobin, Haemoglobin A1c',
+        '  - "ldl" — LDL, LDL-C, LDL Cholesterol, LDL Cholesterol (calc), LDL Cholesterol (calculated), LDL Chol Calc, Low Density Lipoprotein',
+        '  - "total_cholesterol" — Total Cholesterol, TC, Cholesterol Total, Cholesterol, Cholesterol, Total, Total Chol',
+        '  - "hdl" — HDL, HDL-C, HDL Cholesterol, High Density Lipoprotein',
+        '  - "triglycerides" — Triglycerides, TG, Trigs, Triglyceride',
+        '  - "apob" — ApoB, Apolipoprotein B, Apo B',
+        '  - "creatinine" — Creatinine, Creat, Cr, Serum Creatinine',
+        '  - "psa" — PSA, Prostate Specific Antigen, Prostate-Specific Antigen',
+        '  - "lpa" — Lp(a), Lipoprotein(a), Lipoprotein little a, Lipoprotein (a)',
+        '  - "systolic_bp" — Systolic Blood Pressure, Systolic BP, SBP',
+        '  - "diastolic_bp" — Diastolic Blood Pressure, Diastolic BP, DBP',
+      ]);
+      expect(block(prompt)).toEqual([
+        '  Renal & electrolytes: sodium, potassium, chloride, bicarbonate, urea, urate, urine_acr, urine_creatinine, urine_pcr, cystatin_c, egfr',
+        '  Liver: alt, ast, ggt, alp, bilirubin_total, bilirubin_direct, ldh, albumin, total_protein, globulin',
+        '  Blood count: haemoglobin, haematocrit, rbc, wbc, platelets, neutrophils, lymphocytes, monocytes, eosinophils, basophils, mcv, mch, mchc, rdw',
+        '  Thyroid: tsh, ft4, ft3, anti_tpo',
+        '  Hormones: testosterone_total, free_testosterone, free_testosterone_calculated, shbg, estradiol, prolactin, cortisol_am, psa_free, lh, fsh, progesterone, dhea_s, igf1',
+        '  Vitamins & minerals: vitamin_d, vitamin_b12, b12_active, folate, ferritin, iron, tibc, transferrin, transferrin_sat, magnesium, calcium_corrected, calcium_total, phosphate, zinc',
+        '  Inflammation: crp, esr',
+        '  Metabolic: glucose, glucose_random, insulin, apoa1, homocysteine, ck',
+        '  Any other test: use the best descriptive snake_case name.',
+      ]);
     });
     it(`${mode}: an uncatalogued test still gets a descriptive name, and no hand-kept name survives`, () => {
       const lines = block(unifiedSystemPrompt(mode));

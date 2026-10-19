@@ -98,6 +98,11 @@ const PERCENT_OF_WBC_NOTE = { '%': {
   note: 'A percentage is a share of the white count, not a count: this record keeps the absolute count (×10⁹/L or cells/µL), so look for that line on the same report',
   assistant: 'Do not work the count out from the percentage',
 } };
+/** NRBC in % or "/100 WBC" is a ratio to the white count (US-21 AC19). */
+const NRBC_PER_100_WBC = {
+  note: 'NRBC per 100 white cells is a ratio, not a count: this record keeps the absolute count (×10⁹/L), so look for that line on the same report',
+  assistant: 'Do not work the count out from the ratio',
+};
 /** An enzyme activity: international units and "units" are the same unit. */
 const ENZYME_ALIASES = ['iu/l'];
 /** An electrolyte with one charge: mEq/L and mmol/L are the same number. */
@@ -138,14 +143,13 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'chloride', label: 'Chloride', group: 'renal', unit: 'mmol/L', aliases: ['cl', 'cl-'], unitAliases: MEQ_ALIASES },
   { key: 'bicarbonate', label: 'Bicarbonate', group: 'renal', unit: 'mmol/L', aliases: ['hco3', 'co2', 'total co2', 'carbon dioxide, total', 'carbon dioxide'], unitAliases: MEQ_ALIASES },
   {
-    key: 'urea', label: 'Urea', group: 'renal', unit: 'mmol/L', aliases: ['bun', 'blood urea nitrogen', 'urea nitrogen', 'urea nitrogen (bun)', 'urea (bun)'],
+    key: 'urea', label: 'Urea', group: 'renal', unit: 'mmol/L', aliases: ['bun', 'blood urea nitrogen', 'urea nitrogen', 'urea nitrogen (bun)', 'blood urea nitrogen (bun)', 'urea (bun)'],
     // mg/dL under the bare name "urea" is ambiguous — US reports print the
     // nitrogen, the rest of the world the molecule — so it is REFUSED there
     // and accepted only under a nitrogen name. Urea nitrogen is the 2 N of the
     // molecule, 28.014 g/mol: ×10 → mg/L, ÷28.014 → mmol/L. "Urea (BUN)" does
-    // not say which a lab means, so it takes mmol/L only (US-21 AC20). The
-    // first name is offered to the extractor, so a BUN row keeps its factor.
-    nameConversions: [{ names: ['bun', 'blood urea nitrogen', 'urea nitrogen', 'urea nitrogen (bun)'], conversions: { 'mg/dl': 0.357 } }],
+    // not say which a lab means, so it takes mmol/L only (US-21 AC20).
+    nameConversions: [{ names: ['bun', 'blood urea nitrogen', 'urea nitrogen', 'urea nitrogen (bun)', 'blood urea nitrogen (bun)'], conversions: { 'mg/dl': 0.357 } }],
   },
   { key: 'urate', label: 'Urate', group: 'renal', unit: 'mmol/L', aliases: ['uric acid'], conversions: { 'mg/dl': 0.05948, 'µmol/l': 0.001 } }, // urate 168.11 g/mol; a micromole is a thousandth of a millimole (UK labs print µmol/L)
   { key: 'urine_acr', label: 'Urine ACR', group: 'renal', unit: 'mg/mmol', aliases: ['albumin creatinine ratio', 'acr', 'microalbumin ratio'], conversions: { 'mg/g': 0.113, 'mg/g creat': 0.113, 'mg/g creatinine': 0.113 } }, // creatinine 113.12 g/mol: 1 g ≡ 8.840 mmol
@@ -159,7 +163,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'egfr_cystatin', label: 'eGFR (cystatin C)', group: 'renal', unit: 'mL/min/1.73m²', aliases: ['egfrcys', 'egfr cystatin c', 'egfr cystatin'], unitAliases: EGFR_ALIASES },
   { key: 'egfr_combined', label: 'eGFR (creatinine-cystatin C)', group: 'renal', unit: 'mL/min/1.73m²', aliases: ['egfrcr-cys', 'egfr cr-cys', 'egfr creatinine-cystatin c'], unitAliases: EGFR_ALIASES },
   { key: 'anion_gap', label: 'Anion gap', group: 'renal', unit: 'mmol/L', aliases: [], unitAliases: MEQ_ALIASES },
-  { key: 'osmolality_serum', label: 'Osmolality (serum)', group: 'renal', unit: 'mOsm/kg', aliases: ['serum osmolality', 'plasma osmolality', 'osmolality, serum', 'osmolality, plasma', 'osmolality (plasma)'] },
+  { key: 'osmolality_serum', label: 'Osmolality (serum)', group: 'renal', unit: 'mOsm/kg', aliases: ['serum osmolality', 'plasma osmolality', 'osmolality, serum', 'osmolality, plasma', 'osmolality (plasma)'], unitAliases: ['mmol/kg', 'mosmol/kg'] }, // mOsmol/kg is mOsm/kg spelled out; labs print the same number as mmol/kg
 
   // ── Liver ─────────────────────────────────────────────────────────────
   { key: 'alt', label: 'ALT', group: 'liver', unit: 'U/L', aliases: ['alanine aminotransferase', 'sgpt', 'alt (sgpt)'], unitAliases: ENZYME_ALIASES },
@@ -195,9 +199,12 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   // US-21 AC19. RDW-SD is the width in fL, a test of its own beside RDW-CV in %.
   { key: 'rdw_sd', label: 'RDW-SD', group: 'haematology', unit: 'fL', aliases: [] },
   { key: 'mpv', label: 'MPV', group: 'haematology', unit: 'fL', aliases: ['mean platelet volume'] },
-  { key: 'immature_granulocytes', label: 'Immature granulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['immature granulocyte count'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
-  { key: 'reticulocytes', label: 'Reticulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['reticulocyte count', 'retic count', 'absolute reticulocyte count'], unitAliases: COUNT_ALIASES_9, conversions: { '×10¹²/l': 1000 } }, // 10¹² is a thousand 10⁹; a reticulocyte % is refused
-  { key: 'nrbc', label: 'NRBC', group: 'haematology', unit: '×10⁹/L', aliases: ['nucleated red blood cells', 'nucleated rbc', 'nucleated red cells'], unitAliases: COUNT_ALIASES_9 }, // "/100 WBC" is a ratio: refused
+  { key: 'immature_granulocytes', label: 'Immature granulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['immature granulocyte count', 'immature grans (abs)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
+  { key: 'reticulocytes', label: 'Reticulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['reticulocyte count', 'retic count', 'absolute reticulocyte count'], unitAliases: COUNT_ALIASES_9, conversions: { '×10¹²/l': 1000 }, refusalNotes: { '%': {
+    note: 'A percentage is a share of the red cells, not a count: this record keeps the absolute count (×10⁹/L), so look for that line on the same report',
+    assistant: 'Do not work the count out from the percentage',
+  } } }, // 10¹² is a thousand 10⁹
+  { key: 'nrbc', label: 'NRBC', group: 'haematology', unit: '×10⁹/L', aliases: ['nucleated red blood cells', 'nucleated rbc', 'nucleated red cells'], unitAliases: COUNT_ALIASES_9, refusalNotes: { '%': NRBC_PER_100_WBC, '/100 wbc': NRBC_PER_100_WBC } },
   // D-dimer only in fibrinogen-equivalent units: a bare ng/mL is often D-dimer
   // units (DDU), about half the FEU number, so no spelling without FEU converts.
   { key: 'd_dimer', label: 'D-dimer', group: 'haematology', unit: 'mg/L FEU', aliases: [], unitAliases: ['mg/l (feu)', 'µg/ml feu', 'µg/ml (feu)'], conversions: { 'ng/ml feu': 0.001, 'ng/ml (feu)': 0.001, 'µg/l feu': 0.001, 'µg/l (feu)': 0.001 } }, // µg/mL is mg/L; ng/mL is µg/L, a thousandth of mg/L
@@ -213,7 +220,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   // thyroxine index stays uncatalogued: two scales share its name.
   { key: 'total_t4', label: 'Total T4', group: 'thyroid', unit: 'nmol/L', aliases: ['t4 total', 't4, total', 'thyroxine (t4)', 'total thyroxine'], conversions: { 'µg/dl': 12.87 } }, // thyroxine 776.87 g/mol
   { key: 'total_t3', label: 'Total T3', group: 'thyroid', unit: 'nmol/L', aliases: ['t3 total', 't3, total', 'triiodothyronine (t3)', 'total triiodothyronine'], conversions: { 'ng/dl': 0.01536, 'ng/ml': 1.536, 'µg/l': 1.536 } }, // triiodothyronine 650.97 g/mol
-  { key: 'reverse_t3', label: 'Reverse T3', group: 'thyroid', unit: 'pmol/L', aliases: ['rt3', 'reverse triiodothyronine'], conversions: { 'pg/ml': 1.536, 'ng/dl': 15.36 } }, // reverse T3 650.97 g/mol, as T3
+  { key: 'reverse_t3', label: 'Reverse T3', group: 'thyroid', unit: 'pmol/L', aliases: ['rt3', 'reverse triiodothyronine'], conversions: { 'pg/ml': 1.536, 'ng/dl': 15.36, 'nmol/l': 1000 } }, // reverse T3 650.97 g/mol, as T3; a nanomole is a thousand picomoles
   { key: 't3_uptake', label: 'T3 uptake', group: 'thyroid', unit: '%', aliases: ['t-uptake', 't3u'] }, // a ratio (THBR) or arbitrary units is refused
   { key: 'thyroglobulin', label: 'Thyroglobulin', group: 'thyroid', unit: 'µg/L', aliases: [], unitAliases: NG_PER_ML },
   // Antibody assays: no conversion across assays. TRAb in U/L is refused: older non-WHO assays are not IU/L.
@@ -221,7 +228,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'trab', label: 'TRAb', group: 'thyroid', unit: 'IU/L', aliases: ['tsh receptor antibodies', 'tsh receptor antibody', 'thyrotropin receptor antibodies'] },
 
   // ── Hormones ──────────────────────────────────────────────────────────
-  { key: 'testosterone_total', label: 'Testosterone (total)', group: 'hormones', unit: 'nmol/L', aliases: ['total testosterone', 'testosterone', 'testosterone, total'], conversions: { 'ng/dl': 0.0347, 'ng/ml': 3.467 } }, // testosterone 288.42 g/mol
+  { key: 'testosterone_total', label: 'Testosterone (total)', group: 'hormones', unit: 'nmol/L', aliases: ['total testosterone', 'testosterone', 'testosterone, total', 'plasma testosterone'], conversions: { 'ng/dl': 0.0347, 'ng/ml': 3.467 } }, // testosterone 288.42 g/mol
   // Measured and calculated free testosterone are two tests, as total and
   // corrected calcium are: same unit and factors, never one slot.
   { key: 'free_testosterone', label: 'Free testosterone', group: 'hormones', unit: 'pmol/L', aliases: ['testosterone, free'], conversions: FREE_TESTOSTERONE },
@@ -312,6 +319,21 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'lactate', label: 'Lactate', group: 'metabolic', unit: 'mmol/L', aliases: ['lactic acid'], conversions: { 'mg/dl': 0.111 } }, // lactic acid 90.08 g/mol
   { key: 'fructosamine', label: 'Fructosamine', group: 'metabolic', unit: 'µmol/L', aliases: [] },
 ];
+
+/**
+ * The tests US-21 AC19 added. The extraction prompt does not suggest their
+ * keys until the #166 Haiku benchmark: a prompt change waits for it. The
+ * catalogue still resolves whatever name the model returns.
+ */
+export const PROMPT_DEFERRED_KEYS: ReadonlySet<string> = new Set([
+  'egfr_cystatin', 'egfr_combined', 'anion_gap', 'osmolality_serum', 'bilirubin_indirect', 'lipase', 'amylase', 'rdw_sd',
+  'mpv', 'immature_granulocytes', 'reticulocytes', 'nrbc', 'd_dimer', 'fibrinogen', 'total_t4', 'total_t3', 'reverse_t3',
+  't3_uptake', 'thyroglobulin', 'anti_tg', 'trab', 'pth', 'amh', 'bioavailable_testosterone', 'psa_free_percent', 'estrone',
+  'androstenedione', 'oh_progesterone_17', 'dht', 'acth', 'gh', 'hcg', 'red_cell_folate', 'calcium_ionised', 'uibc', 'stfr',
+  'copper', 'caeruloplasmin', 'selenium', 'omega3_index', 'vitamin_a', 'vitamin_e', 'vitamin_c', 'vitamin_b6', 'vitamin_b1',
+  'mma', 'procalcitonin', 'ige', 'rf', 'anti_ccp', 'total_iga', 'ttg_iga', 'nt_probnp', 'bnp', 'troponin_t', 'troponin_i',
+  'c_peptide', 'eag', 'vldl', 'lactate', 'fructosamine',
+]);
 
 const SUPERSCRIPT_DIGITS: Record<string, string> = {
   '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',

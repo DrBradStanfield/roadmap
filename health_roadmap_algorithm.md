@@ -180,7 +180,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `potassium` | mmol/L | meq/l | 1 | mEq/L and mmol/L are the same number for a singly charged ion |
 | `chloride` | mmol/L | meq/l | 1 | mEq/L and mmol/L are the same number for a singly charged ion |
 | `bicarbonate` | mmol/L | meq/l | 1 | mEq/L and mmol/L are the same number for a singly charged ion |
-| `urea` | mmol/L | mg/dl (printed name: bun / blood urea nitrogen / urea nitrogen) | 0.357 | urea nitrogen, the molecule’s 2 N, 28.014 g/mol. mg/dL reaches this slot ONLY under a nitrogen name: under the bare name "urea" it is ambiguous (US nitrogen vs the whole molecule), so it is refused. "Urea Nitrogen (BUN)" takes it too, as a nitrogen name; "Urea (BUN)" does not say which, so it is refused there (US-21 AC20) |
+| `urea` | mmol/L | mg/dl (printed name: bun / blood urea nitrogen / urea nitrogen) | 0.357 | urea nitrogen, the molecule’s 2 N, 28.014 g/mol. mg/dL reaches this slot ONLY under a nitrogen name: under the bare name "urea" it is ambiguous (US nitrogen vs the whole molecule), so it is refused. "Urea Nitrogen (BUN)" and "Blood Urea Nitrogen (BUN)" take it too, as nitrogen names; "Urea (BUN)" does not say which, so it is refused there (US-21 AC20) |
 | `urate` | mmol/L | mg/dl | 0.05948 | urate 168.11 g/mol |
 | `urate` | mmol/L | µmol/l | 0.001 | a micromole is a thousandth of a millimole (UK labs print µmol/L) |
 | `urine_acr` | mg/mmol | mg/g | 0.113 | creatinine 113.12 g/mol, so 1 g ≡ 8.840 mmol |
@@ -199,6 +199,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `egfr_combined` | mL/min/1.73m² | ml/min/1.73 m² | 1 | spacing only |
 | `egfr_combined` | mL/min/1.73m² | ml/min/1.73 | 1 | the body-surface area left unwritten (LabCorp) |
 | `anion_gap` | mmol/L | meq/l | 1 | mEq/L and mmol/L are the same number for a singly charged ion |
+| `osmolality_serum` | mOsm/kg | mmol/kg | 1 | labs print osmolality in mmol/kg as the same number |
+| `osmolality_serum` | mOsm/kg | mosmol/kg | 1 | mOsm/kg spelled out |
 | `alt` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
 | `ast` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
 | `ggt` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
@@ -303,6 +305,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `total_t3` | nmol/L | µg/l | 1.536 | triiodothyronine 650.97 g/mol (µg/L is the ng/mL number) |
 | `reverse_t3` | pmol/L | pg/ml | 1.536 | reverse T3 650.97 g/mol, as T3 |
 | `reverse_t3` | pmol/L | ng/dl | 15.36 | reverse T3 650.97 g/mol, as T3 |
+| `reverse_t3` | pmol/L | nmol/l | 1000 | a nanomole is a thousand picomoles |
 | `thyroglobulin` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
 | `anti_tg` | IU/mL | kiu/l | 1 | kIU/L and IU/mL are the same number |
 | `testosterone_total` | nmol/L | ng/dl | 0.0347 | testosterone 288.42 g/mol |
@@ -409,7 +412,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 
 A plain "calcium" is total calcium (`calcium_total`), never corrected calcium (US-21 AC12, fixed 2026-10-18; it used to land on `calcium_corrected`). Rows already stored under the key `calcium_corrected` stay there: no migration. A row stored as a plain calcium (the website upload's snake_case `calcium`, or the assistant's printed "Calcium") now reads as total calcium.
 
-Twenty catalogued tests take only their canonical unit, so they have no row above: `cystatin_c` (mg/L), `osmolality_serum` (mOsm/kg), `mcv` (fL), `mch` (pg), `rdw` (%), `rdw_sd` (fL), `mpv` (fL), `t3_uptake` (%), `trab` (IU/L), `shbg` (nmol/L), `psa_free_percent` (%), `b12_active` (pmol/L), `transferrin_sat` (%), `stfr` (mg/L), `omega3_index` (%), `vitamin_b1` (nmol/L), `anti_ccp` (U/mL), `ttg_iga` (U/mL), `homocysteine` (µmol/L) and `fructosamine` (µmol/L). Any other spelling is refused. (Until 2026-10-20 this sentence named three; five more already took only their canonical unit.)
+Nineteen catalogued tests take only their canonical unit, so they have no row above: `cystatin_c` (mg/L), `mcv` (fL), `mch` (pg), `rdw` (%), `rdw_sd` (fL), `mpv` (fL), `t3_uptake` (%), `trab` (IU/L), `shbg` (nmol/L), `psa_free_percent` (%), `b12_active` (pmol/L), `transferrin_sat` (%), `stfr` (mg/L), `omega3_index` (%), `vitamin_b1` (nmol/L), `anti_ccp` (U/mL), `ttg_iga` (U/mL), `homocysteine` (µmol/L) and `fructosamine` (µmol/L). Any other spelling is refused. (Until 2026-10-20 this sentence named three; five more already took only their canonical unit.)
 
 Non-HDL cholesterol is deliberately not catalogued. The app derives it from total cholesterol and HDL, so a stored lab row would duplicate it; a printed one is kept as an uncatalogued row with its printed unit.
 
@@ -417,11 +420,12 @@ Non-HDL cholesterol is deliberately not catalogued. The app derives it from tota
 
 - **D-dimer** converts only from a spelling that says FEU. A bare ng/mL is often D-dimer units (DDU), about half the FEU number.
 - **NT-proBNP and BNP in pmol/L, and TRAb in U/L**, are refused. Older non-WHO TRAb assays print U/L that are not IU/L.
-- **Osmolality** resolves only under a serum or plasma name: a bare "osmolality" is as often the urine test.
+- **Osmolality** resolves only under a serum or plasma name: a bare "osmolality" is as often the urine test. It takes mOsm/kg, mOsmol/kg and mmol/kg, the same number.
+- **Immature granulocytes in %, reticulocytes in %, and NRBC in % or per 100 WBC** are refused with a note pointing at the absolute count, as a differential in % is.
 - **AMH** converts at the 140 kDa dimer convention (7.14 pmol/L per ng/mL), as insulin's 6.00 is one. Growth hormone in mIU/L and soluble transferrin receptor in nmol/L are assay-dependent and refused.
 - **Left out:** the free thyroxine index (two scales share the name), every unitless ratio and index (TC/HDL, INR, free androgen index, HOMA-IR, A/G, BUN/creatinine), PT and APTT in seconds, base excess, and a bare "T4", "T3" or "troponin", which can mean either test. A printed one stays an uncatalogued row with its printed unit.
 
-AC20 adds the comma, bracket and "absolute" spellings US, AU and NZ reports print for tests already catalogued ("Bilirubin, Total", "ALT (SGPT)", "Neutrophils (Absolute)"). There is no punctuation fold: each spelling is listed. "Urea Nitrogen (BUN)" takes BUN's mg/dL factor; "Urea (BUN)" does not (see the `urea` row). The extraction prompt now offers `bun` beside `urea`, so a website upload of a US BUN in mg/dL keeps the factor instead of being refused under the bare name. The core metrics gained the printed names on Brad's own reports ("Cholesterol (HDL)", "Cholesterol (LDL) (calculated)") and six more ("HDL-Cholesterol", "LDL-Cholesterol", "LDL Chol Calc (NIH)", "Glycated haemoglobin (HbA1c)", "PSA, Total", "Prostate Specific Ag"). A direct LDL is not yet a core alias: which LDL wins a day with both is open (US-21 AC19 notes).
+AC20 adds the comma, bracket and "absolute" spellings US, AU and NZ reports print for tests already catalogued ("Bilirubin, Total", "ALT (SGPT)", "Neutrophils (Absolute)"). There is no punctuation fold: each spelling is listed. "Urea Nitrogen (BUN)" takes BUN's mg/dL factor; "Urea (BUN)" does not (see the `urea` row). The extraction prompt is unchanged: it does not yet suggest the new keys, the new core names or `bun`; that prompt change waits for the #166 Haiku benchmark. What a US BUN in mg/dL does today depends on the name it arrives under. Under a printed nitrogen name ("BUN", "Urea Nitrogen", "Blood Urea Nitrogen (BUN)", or the extractor's `blood_urea_nitrogen`) it converts at ×0.357. Under "Urea (BUN)" or the bare `urea` it is refused. The assistant routes (`file_results`, `add_lab_values`) store the printed name, so they convert. The website stores the extractor's snake_case name, and the prompt still suggests only `urea` for a urea row, so a website BUN in mg/dL is still refused there. The core resolver (not the prompt) gained the printed names on Brad's own reports ("Cholesterol (HDL)", "Cholesterol (LDL) (calculated)") and six more ("HDL-Cholesterol", "LDL-Cholesterol", "LDL Chol Calc (NIH)", "Glycated haemoglobin (HbA1c)", "PSA, Total", "Prostate Specific Ag"). A direct LDL is not yet a core alias: which LDL wins a day with both is open (US-21 AC19 notes).
 
 Three-file sync: `evidence.ts` and `roadmap_text.html` are untouched because no threshold, suggestion or user-facing sentence changes — only the unit a stored number is expressed in. This holds for the 2026-10-20 additions too: no suggestion reads a catalogued test (`suggestions.ts` never reads `labValues`), so they are record-keeping only. If any of them ever drives a suggestion, all three files change.
 

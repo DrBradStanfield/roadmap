@@ -1062,3 +1062,49 @@ describe('US-21 AC20 — comma, bracket and "absolute" spellings reach their tes
     expect(resolveCoreMetricName('Cholesterol (total/HDL)')).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// US-21 AC19/AC20 review round (2026-10-20, Opus adversary + Codex).
+// ---------------------------------------------------------------------------
+describe('US-21 AC19/AC20 — review round: osmolality and reverse T3 spellings, count notes, printed names', () => {
+  const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
+
+  it('US-21 AC19 — serum osmolality takes mmol/kg and mOsmol/kg as mOsm/kg; reverse T3 takes nmol/L at ×1000', () => {
+    expect(canonicalLabValue(entryOf('Serum Osmolality'), 290, 'mmol/kg')).toMatchObject({ value: 290, unit: 'mOsm/kg', factor: 1 });
+    expect(canonicalLabValue(entryOf('Serum Osmolality'), 290, 'mOsmol/kg')).toMatchObject({ value: 290, unit: 'mOsm/kg', factor: 1 });
+    expect(canonicalLabValue(entryOf('Reverse T3'), 0.23, 'nmol/L')).toMatchObject({ value: 230, unit: 'pmol/L', factor: 1000 });
+  });
+
+  it('US-21 AC19 — immature granulocytes, reticulocytes and NRBC in % or per 100 WBC are refused with a note pointing at the count', () => {
+    for (const [name, unit, phrase] of [
+      ['Immature Granulocytes', '%', 'share of the white count'],
+      ['Reticulocytes', '%', 'share of the red cells'],
+      ['NRBC', '%', 'per 100 white cells'],
+      ['NRBC', '/100 WBC', 'per 100 white cells'],
+    ] as const) {
+      expect(canonicalLabValue(entryOf(name), 1, unit), `${name} ${unit}`).toBeNull();
+      expect(labUnitRefusalNote(entryOf(name), unit), `${name} ${unit}`).toContain(phrase);
+      expect(labUnitRefusal(entryOf(name), unit), `${name} ${unit}`).toContain('Do not work the count out');
+    }
+  });
+
+  it('US-21 AC19/AC20 — "Immature Grans (Abs)" and "Plasma Testosterone" reach their tests', () => {
+    expect(labSlotKey('Immature Grans (Abs)')).toBe('immature_granulocytes');
+    expect(labSlotKey('Plasma Testosterone')).toBe('testosterone_total');
+    expect(canonicalLabValue(entryOf('Plasma Testosterone'), 500, 'ng/dL')).toMatchObject({ value: 17.35, unit: 'nmol/L' });
+  });
+
+  // What a printed BUN in mg/dL does today, by the name it arrives under. The
+  // assistant routes store the printed name; the website's extractor names a
+  // urea row `urea` (the prompt is unchanged until the #166 benchmark), so a
+  // website BUN in mg/dL is still refused there.
+  it.each([
+    ['BUN', 5.355], ['Urea Nitrogen', 5.355], ['Blood Urea Nitrogen (BUN)', 5.355], ['blood_urea_nitrogen', 5.355],
+    ['Urea (BUN)', null], ['urea', null],
+  ] as const)('US-21 AC20 — "%s" 15 mg/dL is stored as %s mmol/L (null: refused)', (name, stored) => {
+    expect(labSlotKey(name)).toBe('urea');
+    const result = canonicalLabValue(entryOf(name), 15, 'mg/dL');
+    if (stored === null) expect(result).toBeNull();
+    else expect(result).toMatchObject({ value: stored, unit: 'mmol/L' });
+  });
+});
