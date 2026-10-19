@@ -1777,13 +1777,17 @@ describe('US-12 AC15/AC16 — import_documents refuses a urine creatinine, infer
     classification: 'lab_report', reportDate: LAB_DAY, values, additionalValues: [], document: null,
   }), 'metadata');
 
-  it('mg/mmol is an unrecognized line with why; no candidate, no droppedValues', () => {
+  it('mg/mmol and "mg/dL (urine)" are unrecognized lines with why; no candidate, no droppedValues', () => {
     const { payload, files, unrecognized } = prepareImport(base(), bundleOf([extracted('acr.pdf', modelAnswer([
       { metric: 'creatinine', value: 12, unit: 'mg/mmol', confidence: 'high' },
+      { metric: 'creatinine', value: 80, unit: 'mg/dL (urine)', confidence: 'high' },
     ]))]), IMPORT_CTX);
     expect(payload.candidates).toEqual([]);
     expect(files[0].droppedValues).toBeUndefined();
-    expect(unrecognized).toEqual(['creatinine 12 mg/mmol: not saved. This unit is usually a urine result.']);
+    expect(unrecognized).toEqual([
+      'creatinine 12 mg/mmol: not saved. This unit is usually a urine result.',
+      'creatinine 80 mg/dL (urine): not saved. This unit is usually a urine result.',
+    ]);
   });
 
   it('a blank unit is inferred, stored in SI and asked about at medium: 1.1 from mg/dL, 95 as µmol/L', () => {

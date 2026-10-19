@@ -42,7 +42,7 @@ describe('US-12 AC15: a creatinine in a unit the table does not know is refused,
   it('the connector (metadata mode) infers a blank or unknown unit and stores SI; a urine unit is still refused (D7a, Brad 2026-10-20)', () => {
     const result = toUnifiedResult(parseUnifiedResult({
       classification: 'lab_report', reportDate: '2026-10-10', document: null,
-      values: [creat(1.1, ''), creat(95, ''), creat(80, 'mg/dL (urine)'), creat(12, 'mg/mmol')],
+      values: [creat(1.1, ''), creat(95, ''), creat(80, 'mg/dL (24h)'), creat(12, 'mg/mmol')],
       additionalValues: [{ name: 'Serum Creatinine', value: 3, unit: '' }, { name: 'creatinine', value: 2, unit: 'mg/g' }],
     }), 'metadata');
     expect(result.values.map(v => [v.displayValue, Math.round(v.valueSI * 100) / 100, v.confidence, v.unitGuessed])).toEqual([
@@ -58,7 +58,21 @@ describe('US-12 AC15: a creatinine in a unit the table does not know is refused,
   it('a bracket or a word is never stripped: "mg/dL (urine)", "µmol/L (U)", "mg/dL (24h)" stay unknown', () => {
     const result = extract([creat(80, 'mg/dL (urine)'), creat(80, 'µmol/L (U)'), creat(80, 'mg/dL (24h)')]);
     expect(result.values).toEqual([]);
-    expect(result.refusedValues?.map(r => r.reason)).toEqual(Array(3).fill('This unit could not be read as a blood creatinine.'));
+    expect(result.refusedValues?.map(r => r.reason)).toEqual([
+      'This unit is usually a urine result.', 'This unit is usually a urine result.', 'This unit could not be read as a blood creatinine.',
+    ]);
+  });
+
+  // Fix 3 (Brad: never treat a urine row as blood creatinine): a urine marker as
+  // a whole token is a urine unit on every path, the connector included.
+  const URINE_MARKED = ['mg/dL (urine)', 'µmol/L (U)', 'mmol/L urine', 'µmol/L [u]', 'mg/dL Urin', 'urine'];
+  it.each(['full', 'metadata'] as const)('%s mode: a unit with a urine marker is refused as a urine result; "U/L" and plain µmol/L are not', (mode) => {
+    const result = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-10-10', document: null, additionalValues: [],
+      values: [...URINE_MARKED.map(unit => creat(80, unit)), creat(80, 'U/L'), creat(80, 'µmol/L'), creat(80, 'mg/dL (uric)')],
+    }), mode);
+    expect(result.refusedValues?.filter(r => r.reason === 'This unit is usually a urine result.').map(r => r.unit)).toEqual(URINE_MARKED);
+    expect(result.values.map(v => v.displayUnit)).toEqual(mode === 'full' ? ['µmol/L'] : ['U/L', 'µmol/L', 'mg/dL (uric)']);
   });
 
   it('a lab row named creatinine in an unknown unit is refused too; "Cr" (chromium) and a known unit stay lab rows', () => {

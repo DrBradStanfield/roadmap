@@ -214,7 +214,9 @@ function readPrintedUnit(metric: MetricType, value: number, unit: string) {
  *  spaces). Not mmol/L: a serum creatinine can print in it too. */
 const URINE_OR_RATIO_UNITS = new Set(['mg/mmol', 'g/mol', 'mg/g', 'mg/mg', 'g/g', 'mg/gcreat', 'mg/gcr', 'mg/24h', 'mmol/24h', 'ml/min']);
 
-const isUrineOrRatioUnit = (unit: string) => URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
+/** A urine marker as a whole token: "(urine)", "(U)", "[u]", "urine", "urin". Never "U/L". */
+const URINE_MARKER = /(?:^|[\s(\[])urine?(?=$|[\s)\]])|[(\[]\s*u\s*[)\]]/i;
+const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
 
 /** Why a creatinine was refused, in the user's words (US-12 AC15). */
 function creatinineRefusal(unit: string): string {
