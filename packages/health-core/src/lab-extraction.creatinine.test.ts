@@ -17,7 +17,11 @@ const extract = (values: unknown[], additionalValues: unknown[] = []) => toUnifi
 const creat = (value: number, unit: string) => ({ metric: 'creatinine', value, unit, confidence: 'high' });
 
 describe('US-12 AC15: a creatinine in a unit the table does not know is refused, never guessed', () => {
-  const URINE = ['mg/mmol', 'g/mol', 'mg/g', 'mg/mg', 'g/g', 'mg/g creat', 'mg/g Cr', 'mmol/L', 'mg/24h', 'mmol/24h', 'mL/min', 'mg/mmol H'];
+  const URINE = ['mg/mmol', 'g/mol', 'mg/g', 'mg/mg', 'g/g', 'mg/g creat', 'mg/g Cr', 'mg/24h', 'mmol/24h', 'mL/min', 'mg/mmol H'];
+
+  it('mmol/L is refused with the neutral line: a serum creatinine can print in it too', () => {
+    expect(extract([creat(0.08, 'mmol/L')]).refusedValues?.[0].reason).toBe('This unit could not be read as a blood creatinine.');
+  });
 
   it.each(URINE)('PCR or ACR filed as creatinine in %s: refused as usually a urine result', (unit) => {
     for (const value of [2, 25]) {
@@ -38,7 +42,7 @@ describe('US-12 AC15: a creatinine in a unit the table does not know is refused,
   it('a bracket or a word is never stripped: "mg/dL (urine)", "µmol/L (U)", "mg/dL (24h)" stay unknown', () => {
     const result = extract([creat(80, 'mg/dL (urine)'), creat(80, 'µmol/L (U)'), creat(80, 'mg/dL (24h)')]);
     expect(result.values).toEqual([]);
-    expect(result.refusedValues?.map(r => r.reason)).toEqual(Array(3).fill('Creatinine is not measured in this unit.'));
+    expect(result.refusedValues?.map(r => r.reason)).toEqual(Array(3).fill('This unit could not be read as a blood creatinine.'));
   });
 
   it('a lab row named creatinine in an unknown unit is refused too; "Cr" (chromium) and a known unit stay lab rows', () => {
@@ -69,7 +73,7 @@ describe('US-12 AC15: a creatinine in a unit the table does not know is refused,
 describe('US-12 AC15: a serum creatinine with a garbled unit is read after a narrow clean-up', () => {
   it.each([
     ['µmol/L H', 120, 120], ['µmol/L L', 50, 50], ['µmol/L HH', 300, 300], ['µmol/L LL', 30, 30], ['µmol/L *', 90, 90],
-    ['µmol/I', 85, 85], ['mcmol/L', 85, 85], ['mg%', 1, 88.4], ['mg/dL H', 1.5, 132.6], ['µmol / L', 85, 85],
+    ['µmol/I', 85, 85], ['mcmol/L', 85, 85], ['mg%', 1, 88.4], ['mg %', 1, 88.4], ['µmol/L ↑', 120, 120], ['µmol/L (H)', 120, 120], ['µmol/L*', 90, 90], ['µmol/L h', 120, 120], ['µmol/L [L]', 50, 50], ['mg/dL H', 1.5, 132.6], ['µmol / L', 85, 85],
   ])('"%s" %s reads as %s µmol/L, confident', (unit, value, si) => {
     const [v] = extract([creat(value, unit)]).values;
     expect(v.valueSI).toBeCloseTo(si, 6);

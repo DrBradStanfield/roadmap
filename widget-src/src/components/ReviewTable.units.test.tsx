@@ -110,6 +110,13 @@ describe('US-13 AC11: a core value shows what the report printed when the cell s
     expect(container.querySelector('.bt-cell-printed')?.textContent).toBe('Printed: 2.8 (no unit)');
   });
 
+  it('compares by number: "1.1 mg/dL" shown as "1.10" gets no note', () => {
+    const { container } = render(<ReviewTable grading={{}} results={printed({ valueSI: 97.24, displayValue: 1.1 })}
+      history={{ measurements: [], labValues: [], documents: [] }} unitSystem="conventional" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />);
+    expect(container.querySelector<HTMLInputElement>('.bt-cell-review input')!.value).toBe('1.10');
+    expect(container.querySelector('.bt-cell-printed')).toBeNull();
+  });
+
   it('says nothing when the cell shows the printed number in a known unit', () => {
     const { container } = renderReview(printed({ valueSI: 85, displayValue: 85, displayUnit: 'µmol/L', displaySystem: 'si' }));
     expect(container.querySelector('.bt-cell-printed')).toBeNull();

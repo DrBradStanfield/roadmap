@@ -175,15 +175,24 @@ export function resolveCoreMetricName(name: string): MetricType | null {
   return CORE_NAME_INDEX.get(foldName(name)) ?? null;
 }
 
+/** A flag printed beside a value or its unit (H, L, HH, LL, *, ↑, ↓, any case):
+ *  one grammar for a count row's value (US-12 AC8) and a creatinine's unit
+ *  (AC15), so the two cannot drift. */
+const FLAG = String.raw`(?:HH|LL|H|L|\*|↑|↓)`;
+const VALUE_FLAG = String.raw`[(\[]?\s*${FLAG}\s*[)\]]?`;
+/** A flag ending a unit: after a space, bracketed, or a symbol. A bare letter
+ *  needs the space, or "mmol/L" would lose its own L. */
+const TRAILING_UNIT_FLAG = new RegExp(String.raw`(?:\s+${VALUE_FLAG}|\s*[(\[]\s*${FLAG}\s*[)\]]|\s*[*↑↓])$`, 'i');
+
 /**
  * A creatinine unit as a report garbles it, read once more (US-12 AC15): a
- * trailing flag dropped ("µmol/L H"), "µmol/I" read as "µmol/L", "mg%" as
- * "mg/dL", "mcmol/L" as "µmol/L". The extractor's step only: `lookupUnit`
- * stays exact for every other caller. A bracket or a word is never stripped,
- * so "mg/dL (urine)" stays unknown.
+ * trailing flag dropped ("µmol/L H", "µmol/L (H)", "µmol/L*"), "µmol/I" read
+ * as "µmol/L", "mg%" as "mg/dL", "mcmol/L" as "µmol/L". The extractor's step
+ * only: `lookupUnit` stays exact for every other caller. A bracketed word is
+ * never stripped, so "mg/dL (urine)" stays unknown.
  */
 function cleanedCreatinineUnit(unit: string): string {
-  return unit.trim().replace(/\s+(?:HH|LL|H|L|\*)$/, '').replace(/mol\/I$/, 'mol/L').replace(/^mg%$/i, 'mg/dL').replace(/^mcmol\//i, 'µmol/');
+  return unit.trim().replace(TRAILING_UNIT_FLAG, '').replace(/mol\/I$/, 'mol/L').replace(/^mg\s*%$/i, 'mg/dL').replace(/^mcmol\//i, 'µmol/');
 }
 
 /** The printed number as the record stores it: the raw unit first, then, for creatinine only, the cleaned one. */
@@ -192,15 +201,16 @@ function readPrintedUnit(metric: MetricType, value: number, unit: string) {
     ?? (metric === 'creatinine' ? reportedToCanonical(metric, value, cleanedCreatinineUnit(unit)) : null);
 }
 
-/** Units a urine creatinine or a creatinine ratio prints in, folded (case, spaces). */
-const URINE_OR_RATIO_UNITS = new Set(['mg/mmol', 'g/mol', 'mg/g', 'mg/mg', 'g/g', 'mg/gcreat', 'mg/gcr', 'mmol/l', 'mg/24h', 'mmol/24h', 'ml/min']);
+/** Units a creatinine ratio or a timed urine result prints in, folded (case,
+ *  spaces). Not mmol/L: a serum creatinine can print in it too. */
+const URINE_OR_RATIO_UNITS = new Set(['mg/mmol', 'g/mol', 'mg/g', 'mg/mg', 'g/g', 'mg/gcreat', 'mg/gcr', 'mg/24h', 'mmol/24h', 'ml/min']);
 
 /** Why a creatinine was refused, in the user's words (US-12 AC15). */
 function creatinineRefusal(unit: string): string {
   if (!unit) return 'No unit was printed.';
   return URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''))
     ? 'This unit is usually a urine result.'
-    : 'Creatinine is not measured in this unit.';
+    : 'This unit could not be read as a blood creatinine.';
 }
 
 /** Above this a creatinine (µmol/L) asks "Was this a blood test?" (US-13 AC11).
@@ -429,7 +439,7 @@ function readModelNumber(v: unknown): unknown {
 const DOT_THOUSANDS = String.raw`[1-9]\d{0,2}\.\d{3}`;
 const DOT_THOUSANDS_TOKEN = new RegExp(`^[+-]?${DOT_THOUSANDS}$`);
 
-const COUNT_STRING = /^\s*[+-]?[\d.,]+\s*(?:[(\[]?\s*(?:HH|LL|H|L|\*|↑|↓)\s*[)\]]?)?\s*$/i;
+const COUNT_STRING = new RegExp(String.raw`^\s*[+-]?[\d.,]+\s*(?:${VALUE_FLAG})?\s*$`, 'i');
 
 /**
  * A count row: a per-µL or per-mm³ denominator, whatever comes before it

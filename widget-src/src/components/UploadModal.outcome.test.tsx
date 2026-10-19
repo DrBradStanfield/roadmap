@@ -652,4 +652,15 @@ describe('US-12 AC15, AC16: refused and guessed units are shown and counted', ()
     await screen.findByRole('button', { name: 'Done' });
     expect(screen.getByRole('list', { name: 'Values not saved' })).toBeTruthy();
   });
+
+  it('a file whose only values were refused is not "No blood test values found." and not counted noValues', async () => {
+    vi.mocked(labImport).mockResolvedValue({ result: { ...nothing.result!,
+      refusedValues: [{ metric: 'creatinine', value: 2, unit: 'mg/mmol', reason: 'This unit is usually a urine result.' }],
+    } } as Import);
+    render_(); pick(pdf('acr.pdf'));
+    await screen.findByRole('list', { name: 'Values not saved' });
+    expect(reasonFor('acr.pdf')).toBeNull();
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 1, unitsRefused: 1 });
+  });
 });

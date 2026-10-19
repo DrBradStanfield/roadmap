@@ -491,8 +491,8 @@ export function buildMatrixModel(
         confidence: v.confidence,
         question: v.question,
         // What the report printed, when the cell shows something else: a
-        // converted number, or a guessed unit (US-13 AC11).
-        printed: v.unitGuessed || initialDisplay !== String(v.displayValue)
+        // converted number, or a guessed unit (US-13 AC11). By number: "1.10" is "1.1".
+        printed: v.unitGuessed || Number(initialDisplay) !== v.displayValue
           ? `Printed: ${v.displayValue} ${v.displayUnit || '(no unit)'}` : undefined,
         valueSI: v.valueSI,
         displayUnit: v.displayUnit,

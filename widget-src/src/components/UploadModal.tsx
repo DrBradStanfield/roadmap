@@ -249,7 +249,7 @@ function NotSaved({ results }: { results: FileResult[] }) {
   if (rows.length === 0) return null;
   return (
     <div className="upload-file-notices">
-      <p className="upload-file-notices-title">Not saved. If one was a blood test, type it into the table:</p>
+      <p className="upload-file-notices-title">Not saved. If one was a blood test, add it to your blood test table after saving:</p>
       <ul aria-label="Values not saved">
         {rows.map((v, i) => (
           <li key={i}><span className="upload-file-notice-name">{shortName(v.fileName)}</span> {METRIC_LABELS[v.metric as MetricType] ?? v.metric} {`${v.value} ${v.unit}`.trim()}. {v.reason}</li>
@@ -424,7 +424,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       for (const r of finished) {
         if (r.error) continue;
         if (hasValues(r)) withValues++;
-        else runNotices.push({ name: r.fileName, reason: r.document ? 'documentOnly' : 'noValues' });
+        // A file whose only values were refused is said under "Not saved", not "no values" (US-12 AC15).
+        else if (!r.refusedValues?.length) runNotices.push({ name: r.fileName, reason: r.document ? 'documentOnly' : 'noValues' });
         values.undatedPrevious += [...r.values, ...r.additionalValues].filter(v => v.recordedAt === UNDATED_PREVIOUS).length;
         values.unitsGuessed += r.values.filter(v => v.unitGuessed).length;
         values.unitsRefused += r.refusedValues?.length ?? 0;
