@@ -2312,3 +2312,15 @@ describe('Codex finding on c6790d5c — the default model', () => {
     expect(argv2[argv2.indexOf('--model') + 1]).toBe('some-other-model');
   });
 });
+
+describe('US-40 AC7 — the review-round cap says the same thing in the contract, the skill and the story', () => {
+  const read = (p: string) => readFileSync(resolve(__dirname, '..', p), 'utf8').replace(/\s+/g, ' ');
+  it('one full review, one fix-scoped re-check, then Brad (Brad, 2026-10-19)', () => {
+    const story = read('docs/user-stories.md').split('### US-40')[1].split('### US-4')[0];
+    for (const text of [read('docs/review-format.md'), read('.claude/skills/codex-review/SKILL.md'), story]) {
+      expect(/re-?(check|run)[^.]*(ONCE|at most one|one re-check)|at most ONE re-check|one re-check/i.test(text)).toBe(true);
+      expect(/fix diff/i.test(text)).toBe(true);
+      expect(/two rounds unresolved/i.test(text)).toBe(false);
+    }
+  });
+});

@@ -180,6 +180,12 @@ export function resolveRecordedAt(recordedAt: string | undefined, ctx: EditConte
   return day;
 }
 
+/** Rule 9 as a day or null: absent or refused is null (the review's column date, US-13 AC8). */
+export function validDay(day: string | null | undefined, ctx: EditContext): string | null {
+  const resolved = day ? resolveRecordedAt(day, ctx) : null;
+  return typeof resolved === 'string' ? resolved : null;
+}
+
 /**
  * Rule 8 — the typed number in SI canonical units. `undefined` means the
  * caller already holds canonical; a label that is neither of the metric's two

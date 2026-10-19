@@ -5,8 +5,10 @@
 // Visual is driven by .bt-cell-* classes — the parent passes wrapperClass
 // to position the cell + signal mode (input / correcting / draft / review).
 
+import { useId } from 'react';
 import type React from 'react';
 import type { MetricType } from '@roadmap/health-core';
+import { describedBy } from '../lib/aria';
 import {
   type CellUnit,
   type Grading,
@@ -40,6 +42,9 @@ export interface NumericInputCellProps {
   disabled?: boolean;
   placeholder?: string;
   ariaLabel?: string;
+  /** Ids of visible text that describes the input. The label stays
+   *  value-free; values are heard from that text (US-13 AC10). */
+  ariaDescribedBy?: string;
   /** Caller-supplied error (e.g. save failure) — takes precedence over
    *  the local validation error so retry feedback is visible inline. */
   externalError?: string | null;
@@ -58,9 +63,10 @@ export function NumericInputCell({
   metric, display, value, valueSI, onChange,
   wrapperClass, inputClass = 'bt-input',
   grading,
-  active, autoFocus, disabled, placeholder, ariaLabel, externalError, validationResult,
+  active, autoFocus, disabled, placeholder, ariaLabel, ariaDescribedBy, externalError, validationResult,
   onFocus, onBlur, onKeyDown = blockBadNumericKeys, inputRef, note,
 }: NumericInputCellProps) {
+  const errorId = useId();
   const validationError = validationResult !== undefined ? validationResult
     : metric && display ? validateTypedValue(metric, value, display).error : null;
   const error = externalError ?? validationError;
@@ -91,7 +97,8 @@ export function NumericInputCell({
         placeholder={placeholder}
         aria-label={ariaLabel}
         aria-invalid={!!error}
-        title={error ?? undefined}
+        // The visible error, not a title: a title is captured with the page (US-13 AC10).
+        aria-describedby={describedBy(ariaDescribedBy, error && errorId)}
         autoFocus={autoFocus}
         disabled={disabled}
         className={`${inputClass}${active ? ' bt-input-active' : ''}${error ? ' bt-input-error' : ''}`}
@@ -99,7 +106,7 @@ export function NumericInputCell({
       {note}
       <div className="bt-cell-foot">
         {error
-          ? <span className="bt-input-error-text">{error}</span>
+          ? <span id={errorId} className="bt-input-error-text">{error}</span>
           : <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>}
       </div>
     </div>
