@@ -62,7 +62,8 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   value at the upload save, split by `refusal`, and by `metric` for `invalid-value` only: an
   `out-of-range` row names no metric, so it never says whose value is past a bound; never a
   value. It fires once per tab per (metric, refusal) pair, so it counts kinds of refusal, not
-  refused values) →
+  refused values; for `out-of-range` the metric keys that throttle in the browser and is never
+  sent, so two tests past their bounds in one tab are two rows with no metric) →
   medication_history_viewed →
   reminder_optin/optout → report_email_* →
   reminder_sent (server; cross-check against `reminder_optin_v2.last_sent`

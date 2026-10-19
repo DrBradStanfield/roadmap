@@ -203,6 +203,7 @@ export {
   formatTargetLine,
   formatGradedValue,
   unitDecimalPlaces,
+  roundBoundInward,
   // Feet/inches height conversion helpers
   inchesToFeetInches,
   feetInchesToInches,

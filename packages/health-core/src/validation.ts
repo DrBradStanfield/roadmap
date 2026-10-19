@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UNIT_DEFS, UnitSystem } from './units';
+import { roundBoundInward, UNIT_DEFS, UnitSystem } from './units';
 import { FIELD_METRIC_MAP } from './mappings';
 import type { HealthInputs } from './types';
 import { IMPORT_LIMITS } from './import-hints';
@@ -477,14 +477,12 @@ function convertErrorMessage(
   // Match numbers followed by the SI unit label
   const regex = new RegExp(`(\\d+\\.?\\d*)\\s*${escapeRegex(siLabel)}`, 'g');
 
-  return message.replace(regex, (_match, value) => {
-    const siValue = parseFloat(value);
-    const convValue = fromCanonical(siValue);
-    // Format with appropriate decimal places
-    const formatted = decimals === 0
-      ? Math.round(convValue).toString()
-      : convValue.toFixed(decimals);
-    return `${formatted} ${convLabel}`;
+  // Rounded inward, so the number shown is one the field accepts and every
+  // value past it is refused: "at most 499 mg/dL" of LDL let 499 through the
+  // message and not the record (US-35 AC17).
+  return message.replace(regex, (_match, value, offset: number) => {
+    const end = /at most\s*$/.test(message.slice(0, offset)) ? 'max' : 'min';
+    return `${roundBoundInward(fromCanonical(parseFloat(value)), decimals, end).toFixed(decimals)} ${convLabel}`;
   });
 }
 
@@ -493,7 +491,7 @@ function convertErrorMessage(
  *
  * When the user is in US (conventional) mode, error messages like
  * "Weight must be at least 20 kg" will be converted to
- * "Weight must be at least 44 lbs".
+ * "Weight must be at least 45 lbs" (20 kg is 44.09 lbs, rounded inward).
  *
  * @param errors - Record of field names to error messages
  * @param unitSystem - The user's current unit system ('si' or 'conventional')

@@ -157,9 +157,13 @@ export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[])
   const result = store.bulkSaveMeasurements(measurements);
   // Counted like a refused lab unit, in closed words only (US-35 AC17). The
   // metric rides only on an invalid value: an out-of-range one would say this
-  // visitor's value is past a bound, and an unknown metric is free text.
+  // visitor's value is past a bound, and an unknown metric is free text. An
+  // out-of-range metric still keys the tab's throttle, locally, so two tests
+  // past their bounds count twice.
   for (const row of result.refused) {
-    trackProductEvent('measurement_refused', MEASUREMENT_REFUSALS_WITH_METRIC.includes(row.reason) ? { metric: row.metricType as MetricType, refusal: row.reason } : { refusal: row.reason });
+    if (MEASUREMENT_REFUSALS_WITH_METRIC.includes(row.reason)) trackProductEvent('measurement_refused', { metric: row.metricType as MetricType, refusal: row.reason });
+    else if (row.reason === 'out-of-range') trackProductEvent('measurement_refused', { refusal: row.reason }, row.metricType);
+    else trackProductEvent('measurement_refused', { refusal: row.reason });
   }
   return result;
 }

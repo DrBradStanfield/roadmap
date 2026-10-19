@@ -41,7 +41,7 @@ describe('explicit local-first data path', () => {
     await flushRoadmapStore();
     const persisted = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
     expect(persisted.measurements.map((row: { value: number }) => row.value)).toEqual([70]);
-    expect(trackProductEvent).toHaveBeenCalledWith('measurement_refused', { refusal: 'out-of-range' });
+    expect(trackProductEvent).toHaveBeenCalledWith('measurement_refused', { refusal: 'out-of-range' }, 'weight');
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -53,15 +53,18 @@ describe('explicit local-first data path', () => {
     vi.mocked(trackProductEvent).mockClear();
     await data.bulkSaveMeasurements([
       { metricType: 'weight', value: 987.65, recordedAt: '2026-08-01', source: 'lab_import' },
+      { metricType: 'psa', value: 10001, recordedAt: '2026-08-01', source: 'lab_import' },
       { metricType: 'ldl', value: NaN, recordedAt: '2026-08-01', source: 'lab_import' },
       { metricType: 'LDL 4.2', value: 4.2, recordedAt: '2026-08-01', source: 'lab_import' },
     ]);
+    // An out-of-range metric is the tab's throttle key (third argument), never metadata (Codex R1).
     expect(vi.mocked(trackProductEvent).mock.calls).toEqual([
-      ['measurement_refused', { refusal: 'out-of-range' }],
+      ['measurement_refused', { refusal: 'out-of-range' }, 'weight'],
+      ['measurement_refused', { refusal: 'out-of-range' }, 'psa'],
       ['measurement_refused', { metric: 'ldl', refusal: 'invalid-value' }],
       ['measurement_refused', { refusal: 'unknown-metric' }],
     ]);
-    expect(JSON.stringify(vi.mocked(trackProductEvent).mock.calls)).not.toMatch(/987|4\.2|NaN|weight/);
+    expect(JSON.stringify(vi.mocked(trackProductEvent).mock.calls.map(call => call[1]))).not.toMatch(/987|10001|4\.2|NaN|weight|psa/);
   });
 
   it('saves and corrects a dated measurement through the imported API', async () => {

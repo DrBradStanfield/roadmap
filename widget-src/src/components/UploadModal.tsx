@@ -7,6 +7,7 @@ import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocument
 import { trackProductEvent } from '../lib/server-api';
 import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
 import { labUnitRefusalLine, measurementRefusalLine } from '../lib/lab-value-labels';
+import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -277,6 +278,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   // that unit for that test. Shown by name — a dropped value must never be silent.
   const [refusedLabUnits, setRefusedLabUnits] = useState<LabUnitRefusal[]>([]);
   const [refusedMeasurements, setRefusedMeasurements] = useState<MeasurementRefusal[]>([]);
+  // Lp(a)'s refusal names its range in the unit its field shows (US-05 AC2).
+  const [lpaUnit] = useLpaUnit(unitSystem);
   const [isSaving, setIsSaving] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const savingRef = useRef(false);
@@ -791,7 +794,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit, r.fault)}</p>
     ))}
     {[...new Map(refusedMeasurements.map(r => [`${r.metricType}|${r.reason}|${r.bound}`, r])).values()].map(r => (
-      <p key={`${r.metricType}|${r.reason}|${r.bound}`} className="upload-done-skipped">{measurementRefusalLine(r, metricUnitOverrides?.[r.metricType as MetricType] ?? unitSystem)}</p>
+      <p key={`${r.metricType}|${r.reason}|${r.bound}`} className="upload-done-skipped">{measurementRefusalLine(r, r.metricType === 'lpa' ? lpaUnit : metricUnitOverrides?.[r.metricType as MetricType] ?? unitSystem)}</p>
     ))}
   </>;
 

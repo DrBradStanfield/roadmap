@@ -162,13 +162,16 @@ export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey, n
 export function trackProductEvent(
   eventName: ProductEventName,
   metadata?: ProductEventMetadata,
+  /** Part of this tab's throttle key only, never sent: the metric of an
+   *  out-of-range refusal, which the row may not carry (US-35 AC17). */
+  localDetail?: string,
 ): void {
   if (!SHOPIFY_SURFACE) return;
   if (!(PER_ACTION_EVENT_NAMES as readonly string[]).includes(eventName)) {
     try {
       // Counted per (test, spelling), and a refused value per (metric, word):
       // collapsing them would hide all but the first — the very list each signal builds.
-      const detail = metadata?.key ? `_${metadata.key}_${metadata.unit}` : metadata?.refusal ? `_${metadata.metric}_${metadata.refusal}` : '';
+      const detail = metadata?.key ? `_${metadata.key}_${metadata.unit}` : metadata?.refusal ? `_${metadata.metric ?? localDetail}_${metadata.refusal}` : '';
       const sentKey = `hr_pe_${eventName}${detail}`;
       if (sessionStorage.getItem(sentKey)) return;
       sessionStorage.setItem(sentKey, '1');
