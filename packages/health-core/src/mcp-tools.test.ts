@@ -1186,6 +1186,8 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'BP 140/90 went in the wrong column',
       'free T4 15 was refused',
       'my Lp(a) is 90 and it shows nothing',
+      // A catalogued test whose short name is also GitHub's CLI (Codex 2026-10-20).
+      'My GH is 4.2 and was omitted',
     ]) {
       const outcome = reportFeedback({ ...GOOD, detail }, NOW);
       expect(outcome, detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
@@ -1263,7 +1265,7 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
   it('US-21 AC19 — the English words in the audit\'s new test names are not test words; the tests still are', () => {
     for (const detail of [
       'the index page took 4 seconds', 'a gap of 2 rows', 'the absolute 3 and abs 4 values', 'average 5 clicks',
-      'the reverse 2 order', 'intact 3 times', 'gh issue 12', 'ab test 2 arms', 'sd 3 of the timings', 'the receptor 2 call was soluble 3',
+      'the reverse 2 order', 'intact 3 times', 'GitHub issue 12', 'ab test 2 arms', 'sd 3 of the timings', 'the receptor 2 call was soluble 3',
       'human 2 type 3 brain 4', 'uptake 5 percent 6', 'pro 2 plan', 'cardiac 3 combined 4',
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');

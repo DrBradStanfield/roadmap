@@ -684,11 +684,11 @@ const GENERIC_NAME_WORDS = new Set([
  * Short names that are English (or markup) long before they are tests: "na" is
  * not applicable, "gt" is `&gt;` in every rendering bug ever filed, "am" is a
  * clock and half a sentence, "oh" is a sigh, "sat" is a verb, and "hs" is only
- * the prefix of hs-CRP, which `crp` already carries. "gh" is GitHub, "ab" an
+ * the prefix of hs-CRP, which `crp` already carries. "ab" is an
  * A/B test and "sd" a standard deviation in any bug report. Everything else short —
  * bp, hb, t3, t4, e2 — stays, so "BP 140/90" and "free T4 15" are refused.
  */
-const SHORT_NAME_WORDS = new Set(['na', 'gt', 'hs', 'am', 'oh', 'sat', 'gh', 'ab', 'sd']);
+const SHORT_NAME_WORDS = new Set(['na', 'gt', 'hs', 'am', 'oh', 'sat', 'ab', 'sd']);
 
 /** "Lp(a)" is one name, not "lp" and "a" — folded before either side is read. */
 export function foldLpa(text: string): string {
