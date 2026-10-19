@@ -180,7 +180,7 @@ describe('US-12 AC14: an undated previous column waits for the user\'s date', ()
     const { cells } = buildMatrixModel(sheet('2026-03-10'), dates, held, [], 'si');
     // Its own column still, compared against the saved rows on its picked day.
     expect(cells.get('ldl|2025-09-02')).toMatchObject({ state: 'context', id: 'held-ldl' });
-    expect(cells.get('ldl|undated:0')).toBeUndefined();
+    expect(cells.get('ldl|undated:0')).toMatchObject({ state: 'context', id: 'held-ldl' });
     expect(cells.get('hdl|undated:0')).toMatchObject({ state: 'editable', existing: { id: 'held-hdl' } });
   });
 });
