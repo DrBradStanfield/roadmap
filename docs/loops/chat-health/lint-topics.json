@@ -5,6 +5,11 @@
   "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects": "cholesterol-lowering supplement",
   "same-benefits-forms-dosing-and-side-effects": "SAMe"
  },
+ "masters": {
+  "about": "US-50 AC7. productIngredients: handles of masters whose topic is a MicroVitamin ingredient; a DOI in their current view that docs/products.md lacks is a warning in test:all. places: where a master's topic lives outside the master (products.md block, evidence.ts id, diet-guideline line, answer-bank entry, system-prompt rule), each {topic: master handle, file: repo-relative, snippet: text anchor, never a line number}. The weekly lint flags a place that did not change when the master's current view did; a deliberate non-change is waived in lint-allowlist.json (rule master-places, item '<file>: <snippet>') with who and date. Both lists start empty and grow with the batches.",
+  "productIngredients": [],
+  "places": []
+ },
  "topics": [
   {
    "topic": "lipids",

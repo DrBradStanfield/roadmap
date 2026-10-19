@@ -9,6 +9,8 @@
  *   grokipedia                                             no body cites Grokipedia (AC7, F6)
  *   dose-mismatch       a number plus unit in index.json's summary the body never states (AC2 tokeniser)
  *   product-rise        product mentions above the stored baseline (AC7)
+ *   Topic masters (US-50 AC7). Static, in test:all (tools/knowledge-lint-masters.test.ts): topic-no-master, master-front
+ *   fail; master-gate, master-doi warn. Weekly only, dated: master-stale, source-stale, master-places.
  * The selector picks what the model half (knowledge-lint-compare.ts) reads this
  * week: entries changed since the last run, entries whose algorithm topic
  * changed, and one of 13 hash buckets, so a full pass takes about a quarter.
@@ -24,6 +26,8 @@
  *                             HEAD the DOIs and PMIDs of this week's due entries
  *     --append-metrics <YYYY-Www>   append the counts to chat-health/metrics.csv
  *     --queue                 add each finding to lint-fix-queue.json (knowledge side, once)
+ *     --write-master-hashes [--date YYYY-MM-DD]
+ *                             write the masters section of lint-state.json (free; each batch's publish commit runs it)
  *     --init-state            write the first lint-state.json (refuses if one exists); after
  *                             that only knowledge-lint-compare.ts --run advances it
  */
@@ -32,6 +36,7 @@ import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { getArg } from '../packages/health-core/src/models';
+import { fmValue, masterKeyError, validDate } from './knowledge-batch-check';
 
 export const SLICE_WEEKS = 13;
 const LOOP_DIR = 'docs/loops/chat-health';
@@ -50,6 +55,7 @@ export interface Entry { handle: string; type: EntryType; title: string; summary
 export type RuleId =
   | 'unresolved-marker' | 'uncited-reference' | 'uncited-list' | 'doi-shape' | 'pmid-shape' | 'id-mismatch'
   | 'link-dead' | 'grokipedia' | 'dose-mismatch' | 'product-rise'
+  | 'topic-no-master' | 'master-front' | 'master-gate' | 'master-doi' | 'master-stale' | 'source-stale' | 'master-places'
   | 'entry-vs-algorithm' | 'pathway-vs-reference' | 'reference-vs-reference';
 export interface Finding { rule: RuleId; handle: string; pair?: [string, string]; item: string; detail?: string }
 export interface AllowEntry { rule?: string; handle?: string; pair?: [string, string]; item?: string; reason: string; date: string; who: string }
@@ -60,6 +66,8 @@ export interface LintState {
   entries: Record<string, { hash: string; products: number }>;
   /** Per comparison id: the last attempt and whether its answer was usable (knowledge-lint-compare.ts). */
   pairs?: Record<string, { last_attempted: string; status: 'done' | 'retry' | 'parked'; attempts?: number }>;
+  /** Per master: the current-view hash and each registered place's hash at `at` (writeMasterHashes, US-50 AC7). */
+  masters?: Record<string, { hash: string; at: string; places: Record<string, string> }>;
 }
 export interface DueItem { handle: string; reasons: string[] }
 interface Meta { handle: string; type?: string; title?: string; summary?: string; keywords?: string[] }
@@ -442,6 +450,7 @@ export function nextState(entries: Entry[], prev: LintState | null, topics: Topi
     lastRun: advance ? date : prev?.lastRun ?? null,
     cursor: advance ? (cursor + 1) % SLICE_WEEKS : cursor,
     pairs: prev?.pairs ?? {},
+    ...(prev?.masters ? { masters: prev.masters } : {}),
     algorithm: Object.fromEntries(topics.map(t => [t.topic, contentHash(algorithmExcerpt(algo, t.headings))])),
     entries: Object.fromEntries(entries.map(e => {
       const products = productMentions(e.body);
@@ -452,19 +461,156 @@ export function nextState(entries: Entry[], prev: LintState | null, topics: Topi
 }
 
 // ---------------------------------------------------------------------------
+// Topic masters (US-50 AC7). A master is a reference with `reviewed:`; unrewritten
+// references are exempt. Static checks take no date; weekly checks take today.
+// ---------------------------------------------------------------------------
+
+/** A text anchor in a place that must follow a master's current view: file plus a snippet, never a line number. */
+export interface MasterPlace { topic: string; file: string; snippet: string }
+export interface MastersConfig { productIngredients: string[]; places: MasterPlace[] }
+type Read = (rel: string) => string | null;
+
+const frontOf = (e: Entry) => /^---\n([\s\S]*?)\n---/.exec(e.raw)?.[1] ?? '';
+const reviewedOf = (e: Entry) => /^"(\d{4}-\d{2}-\d{2})"$/.exec(fmValue(frontOf(e), 'reviewed') ?? '')?.[1] ?? null;
+const publishedOf = (e: Entry) => /^publishedAt:\s*"?(\d{4}-\d{2}-\d{2})/m.exec(frontOf(e))?.[1] ?? null;
+const jsonList = (e: Entry, key: string): unknown[] => {
+  try { const j = JSON.parse(fmValue(frontOf(e), key) ?? ''); return Array.isArray(j) ? j : []; } catch { return []; }
+};
+const topicsOf = (e: Entry) => jsonList(e, 'topics').filter((t): t is string => typeof t === 'string');
+const isMaster = (e: Entry) => e.type === 'reference' && fmValue(frontOf(e), 'reviewed') !== null;
+const placeId = (p: MasterPlace) => `${p.file}: ${p.snippet}`;
+
+/** The "Current view (reviewed …)" or "Current evidence position" section, heading included. */
+export function viewSection(body: string): string | null {
+  const lines = body.split('\n');
+  const i = lines.findIndex(l => /^##\s+(?:Current view \(reviewed [^)]*\)|Current evidence position)\s*$/.test(l));
+  if (i < 0) return null;
+  const j = lines.findIndex((l, k) => k > i && /^#{1,2}\s/.test(l));
+  return lines.slice(i, j < 0 ? undefined : j).join('\n');
+}
+/** The view's hash ignores its heading, so a re-review that changes only the date is not a change of view. */
+const viewHash = (section: string) => contentHash(normalise(section.split('\n').slice(1).join('\n')));
+
+export function staticMasterFindings(entries: Entry[], products: string, cfg: MastersConfig): { fails: Finding[]; warns: Finding[] } {
+  const fails: Finding[] = [], warns: Finding[] = [];
+  const refs = new Map(entries.filter(e => e.type === 'reference').map(e => [e.handle, e]));
+  const prod = unescapeMd(products).toLowerCase();
+  for (const e of entries) {
+    if (e.type === 'article') {
+      const hidden = fmValue(frontOf(e), 'router') === 'hidden';
+      for (const t of topicsOf(e)) {
+        const m = refs.get(t);
+        if (!m) { fails.push({ rule: 'topic-no-master', handle: e.handle, item: t }); continue; }
+        const r = reviewedOf(m), pub = publishedOf(e);
+        if (hidden && (!r || (pub && r < pub))) warns.push({ rule: 'master-gate', handle: e.handle, item: t, detail: r ? `master reviewed ${r}, post published ${pub}` : 'master has no reviewed date' });
+      }
+    }
+    if (!isMaster(e)) continue;
+    for (const k of ['reviewed', 'sources']) {
+      const v = fmValue(frontOf(e), k), err = v === null ? 'missing' : masterKeyError(k, v);
+      if (err) fails.push({ rule: 'master-front', handle: e.handle, item: k, detail: err });
+    }
+    const sec = cfg.productIngredients.includes(e.handle) ? viewSection(e.body) : null;
+    if (!sec) continue;
+    const lines = splitReferences(e.body).refs;
+    const cited = findMarkers(sec).flatMap(m => m.nums).map(n => lines.get(n) ?? '');
+    for (const doi of extractIdentifiers([sec, ...cited].join('\n')).dois) {
+      if (!prod.includes(doi.toLowerCase())) warns.push({ rule: 'master-doi', handle: e.handle, item: doi.toLowerCase(), detail: 'in the current view, not in docs/products.md' });
+    }
+  }
+  return { fails, warns };
+}
+
+const readFrom = (root: string): Read => rel => existsSync(join(root, rel)) ? readFileSync(join(root, rel), 'utf8') : null;
+
+/** The static checks over the real files (the test:all half). */
+export function staticMasterChecks(root: string) {
+  const entries = loadCorpus(root);
+  const topics = existsSync(join(root, PATHS.topics)) ? readJson(join(root, PATHS.topics)) : {};
+  return staticMasterFindings(entries, readFrom(root)('docs/products.md') ?? '', loadMastersConfig(topics.masters, new Set(entries.map(e => e.handle))));
+}
+
+export function loadMastersConfig(raw: { productIngredients?: string[]; places?: MasterPlace[] } | undefined, known: Set<string>): MastersConfig {
+  const cfg = { productIngredients: raw?.productIngredients ?? [], places: raw?.places ?? [] };
+  for (const h of [...cfg.productIngredients, ...cfg.places.map(p => p.topic)]) if (!known.has(h)) throw new Error(`lint-topics.json: no entry "${h}"`);
+  cfg.places.forEach((p, i) => {
+    if (!p.file || p.file.startsWith('/') || p.file.split('/').includes('..')) throw new Error(`lint-topics.json masters.places[${i}]: file must be a repo-relative path`);
+    if (!p.snippet?.trim()) throw new Error(`lint-topics.json masters.places[${i}]: snippet is empty`);
+  });
+  return cfg;
+}
+
+/** Hash of the paragraph holding the snippet (so edits elsewhere in the file don't count); null when the anchor text is gone. */
+function placeHash(p: MasterPlace, read: Read): string | null {
+  const text = read(p.file);
+  const para = text?.split(/\n\s*\n/).find(x => normalise(x).includes(normalise(p.snippet)));
+  return para === undefined ? null : contentHash(normalise(para));
+}
+
+export function masterHashes(entries: Entry[], cfg: MastersConfig, read: Read, date: string): NonNullable<LintState['masters']> {
+  const out: NonNullable<LintState['masters']> = {};
+  for (const e of entries.filter(isMaster)) {
+    const sec = viewSection(e.body);
+    if (!sec) continue;
+    const places = cfg.places.filter(p => p.topic === e.handle).map(p => [placeId(p), placeHash(p, read) ?? 'missing']);
+    out[e.handle] = { hash: viewHash(sec), at: date, places: Object.fromEntries(places) };
+  }
+  return out;
+}
+
+const DAY = 864e5;
+/** Date-dependent; weekly only, never test:all. */
+export function weeklyMasterFindings(entries: Entry[], today: string, state: LintState | null, cfg: MastersConfig, read: Read): Finding[] {
+  const out: Finding[] = [];
+  const posts = entries.filter(e => e.type === 'article');
+  for (const m of entries.filter(isMaster)) {
+    const reviewed = reviewedOf(m);
+    const newest = posts.filter(p => topicsOf(p).includes(m.handle) && publishedOf(p))
+      .reduce<Entry | null>((a, p) => !a || publishedOf(p)! > publishedOf(a)! ? p : a, null);
+    if (reviewed && newest && reviewed < publishedOf(newest)!) out.push({ rule: 'master-stale', handle: m.handle, item: newest.handle, detail: `reviewed ${reviewed}, ${newest.handle} published ${publishedOf(newest)}` });
+    for (const src of jsonList(m, 'sources') as { name?: string; checked?: string }[]) {
+      const age = src?.checked && validDate(src.checked) ? Math.round((Date.parse(today) - Date.parse(src.checked)) / DAY) : 0;
+      if (age > 35) out.push({ rule: 'source-stale', handle: m.handle, item: String(src.name), detail: `checked ${src.checked}, ${age} days ago` });
+    }
+    const sec = viewSection(m.body), prior = state?.masters?.[m.handle];
+    const changed = !!sec && !!prior && viewHash(sec) !== prior.hash;
+    for (const p of cfg.places.filter(x => x.topic === m.handle)) {
+      const id = placeId(p), now = placeHash(p, read);
+      if (now === null) out.push({ rule: 'master-places', handle: m.handle, item: id, detail: 'anchor text not found; re-register the place' });
+      else if (changed && prior!.places[id] === now) out.push({ rule: 'master-places', handle: m.handle, item: id, detail: `current view changed since ${prior!.at}; this place did not` });
+    }
+  }
+  return out;
+}
+
+/**
+ * Store each master's current-view and place hashes (free; each batch's publish commit runs it). The
+ * unchanged-place findings are returned first, since the write would otherwise erase what they compare against.
+ */
+export function writeMasterHashes(root: string, date: string, entries: Entry[] = loadCorpus(root), cfg: MastersConfig = loadInputs(root).masters) {
+  const file = join(root, PATHS.state);
+  if (!existsSync(file)) throw new Error(`${PATHS.state} missing; run --init-state first`);
+  const state = readJson(file) as LintState, read = readFrom(root);
+  const findings = weeklyMasterFindings(entries, date, state, cfg, read).filter(f => f.rule === 'master-places');
+  state.masters = masterHashes(entries, cfg, read, date);
+  writeFileSync(file, `${JSON.stringify(state, null, 1)}\n`);
+  return { written: Object.keys(state.masters).length, findings };
+}
+
+// ---------------------------------------------------------------------------
 // Run and report
 // ---------------------------------------------------------------------------
 
-export interface LintInputs { entries: Entry[]; state: LintState | null; allow: AllowEntry[]; topics: Topic[]; nouns: Record<string, string>; algo: string }
+export interface LintInputs { entries: Entry[]; state: LintState | null; allow: AllowEntry[]; topics: Topic[]; nouns: Record<string, string>; masters: MastersConfig; algo: string }
 
 export function loadInputs(root: string): LintInputs {
   const opt = (p: string) => existsSync(join(root, p)) ? readJson(join(root, p)) : null;
   const entries = loadCorpus(root);
-  const { topics = [], nouns = {} } = (opt(PATHS.topics) ?? {}) as { topics?: Topic[]; nouns?: Record<string, string> };
+  const { topics = [], nouns = {}, masters } = (opt(PATHS.topics) ?? {}) as { topics?: Topic[]; nouns?: Record<string, string>; masters?: Parameters<typeof loadMastersConfig>[0] };
   const known = new Set(entries.map(e => e.handle));
   for (const h of [...topics.flatMap(t => t.handles), ...Object.keys(nouns)]) if (!known.has(h)) throw new Error(`lint-topics.json: no entry "${h}"`);
   return {
-    entries, topics, nouns, state: opt(PATHS.state), allow: validateAllowList(opt(PATHS.allow) ?? {}),
+    entries, topics, nouns, masters: loadMastersConfig(masters, known), state: opt(PATHS.state), allow: validateAllowList(opt(PATHS.allow) ?? {}),
     algo: existsSync(join(root, PATHS.algorithm)) ? readFileSync(join(root, PATHS.algorithm), 'utf8') : '',
   };
 }
@@ -477,7 +623,7 @@ export interface LintResult {
 }
 
 export async function runLint(root: string, opts: { checkLinks?: { cap: number; delayMs: number; fetchImpl: Fetch } }): Promise<LintResult> {
-  const { entries, state, allow, topics, algo } = loadInputs(root);
+  const { entries, state, allow, topics, masters, algo } = loadInputs(root);
   const corpus = { total: entries.length, pathway: 0, guideline: 0, reference: 0, article: 0 };
   const stats: Stats = { grokBodies: 0, grokRefs: 0, grokVia: 0, grokMentions: 0, grokOnlyDirect: 0, grokOnlyAny: 0, productBodies: 0, productMentions: 0 };
   const all: Finding[] = [];
@@ -490,6 +636,9 @@ export async function runLint(root: string, opts: { checkLinks?: { cap: number; 
     if (r.stats.products) stats.productBodies++;
     stats.productMentions += r.stats.products;
   }
+  const date = new Date().toISOString().slice(0, 10), read = readFrom(root);
+  const sm = staticMasterFindings(entries, read('docs/products.md') ?? '', masters);
+  all.push(...sm.fails, ...sm.warns, ...weeklyMasterFindings(entries, date, state, masters, read));
   const due = selectDue(entries, state, topics, algo);
   let links: LintResult['links'] = null;
   if (opts.checkLinks) {
@@ -505,12 +654,13 @@ export async function runLint(root: string, opts: { checkLinks?: { cap: number; 
   }
   const findings = all.filter(f => !isAllowed(f, allow));
   return {
-    date: new Date().toISOString().slice(0, 10), corpus, findings, suppressed: all.length - findings.length,
+    date, corpus, findings, suppressed: all.length - findings.length,
     allowEntries: allow.length, stats, due, cursor: state?.cursor ?? 0, stateMissing: !state, links,
   };
 }
 
-const RULE_ORDER: RuleId[] = ['unresolved-marker', 'uncited-reference', 'uncited-list', 'doi-shape', 'pmid-shape', 'id-mismatch', 'link-dead', 'grokipedia', 'dose-mismatch', 'product-rise'];
+const RULE_ORDER: RuleId[] = ['unresolved-marker', 'uncited-reference', 'uncited-list', 'doi-shape', 'pmid-shape', 'id-mismatch', 'link-dead', 'grokipedia', 'dose-mismatch', 'product-rise',
+  'topic-no-master', 'master-front', 'master-gate', 'master-doi', 'master-stale', 'source-stale', 'master-places'];
 
 export function dueSummary(r: Pick<LintResult, 'due' | 'cursor' | 'stateMissing'>): string {
   const n = (why: string) => r.due.filter(d => d.reasons.some(x => x.startsWith(why))).length;
@@ -577,6 +727,12 @@ export async function main(argv: string[], root: string, log: (s: string) => voi
       const next = nextState(entries, null, topics, algo, '', false);
       writeFileSync(stateFile, `${JSON.stringify(next, null, 1)}\n`);
       log(`Wrote ${PATHS.state}: ${Object.keys(next.entries).length} entries, next slice ${next.cursor + 1} of ${SLICE_WEEKS}.`);
+      return 0;
+    }
+    if (has('--write-master-hashes')) {
+      const r = writeMasterHashes(root, getArg(argv, '--date', new Date().toISOString().slice(0, 10)));
+      for (const f of r.findings) log(`WARN master-places ${f.handle}: ${f.item} (${f.detail})`);
+      log(`Wrote the masters section of ${PATHS.state}: ${r.written} masters.`);
       return 0;
     }
     if (has('--dry-run')) {
