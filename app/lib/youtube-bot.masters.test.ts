@@ -156,3 +156,17 @@ describe('youtube-comment-dryrun shares the context builder (US-50 AC6)', () => 
     expect(src).toMatch(/buildYouTubePlatformContext\(VIDEO_ID, [^)]*matchedHandles\)/);
   });
 });
+
+// US-50 AC3: the dry run routes through the production router view and index
+// block, so it hides exactly what production hides, and states the view's count.
+describe('youtube-comment-dryrun uses the router view (US-50 AC3)', () => {
+  const src = fs.readFileSync('tools/youtube-comment-dryrun.ts', 'utf-8');
+  it('builds its allow-list, index block and entry count from routerView', () => {
+    expect(src).toMatch(/import \{[^}]*\brouterView\b[^}]*\brouterIndexBlock\b[^}]*\} from '\.\.\/app\/lib\/router-view'/);
+    expect(src).toContain('routerView(loadBlogIndex())');
+    expect(src).toContain('routerIndexBlock(ROUTER_VIEW)');
+    expect(src).toContain('.replace(/\\{\\{ENTRY_COUNT\\}\\}/g, String(ROUTER_VIEW.length))');
+    expect(src).not.toContain('TYPE_ORDER');
+    expect(src).not.toContain('# KB Index');
+  });
+});

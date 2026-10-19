@@ -36,6 +36,7 @@ import { spawnSync } from 'child_process';
 import { loadBlogIndex, findBlogByVideoId, type BlogIndexEntry } from '../app/lib/blog-index.server';
 import { loadMatchedContent } from '../app/lib/matched-content';
 import { buildYouTubePlatformContext } from '../app/lib/youtube-context';
+import { routerView, routerIndexBlock } from '../app/lib/router-view';
 import { stripFrontmatter } from '../app/lib/frontmatter';
 import {
   CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams, parseClassification,
@@ -90,25 +91,19 @@ const usingTestKey = !!process.env.ANTHROPIC_TEST_API_KEY;
 // Load prompts + cached blocks (same files production reads)
 // ---------------------------------------------------------------------------
 
+// The production router view and index block (US-50 AC3): a dry run hides
+// exactly what production hides, and states the view's entry count.
+const ROUTER_VIEW = routerView(loadBlogIndex());
+
 const CLASSIFIER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-classifier-prompt.md'), 'utf-8');
-const ROUTER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8');
+const ROUTER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8')
+  .replace(/\{\{ENTRY_COUNT\}\}/g, String(ROUTER_VIEW.length));
 const SYSTEM_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-system-prompt.md'), 'utf-8');
 const ALGORITHM_DOC = fs.readFileSync(path.join(REPO_ROOT, 'health_roadmap_algorithm.md'), 'utf-8');
 const PRODUCTS_DOC = fs.readFileSync(path.join(REPO_ROOT, 'docs/products.md'), 'utf-8');
 
-const BLOG_INDEX: BlogIndexEntry[] = loadBlogIndex();
-const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
-
-// Router index block (one line per entry, same construction as production)
-const TYPE_ORDER: Record<string, number> = { reference: 0, guideline: 1, pathway: 2, article: 3 };
-const ROUTER_INDEX_BLOCK = `# KB Index\n\n${[...BLOG_INDEX]
-  .sort((a, b) => {
-    const ta = TYPE_ORDER[a.type ?? 'article'] ?? 3;
-    const tb = TYPE_ORDER[b.type ?? 'article'] ?? 3;
-    return ta - tb || a.handle.localeCompare(b.handle);
-  })
-  .map(e => `[${e.type ?? 'article'}] ${e.handle}: ${e.summary ?? e.title}`)
-  .join('\n')}`;
+const VALID_HANDLES = new Set(ROUTER_VIEW.map(e => e.handle));
+const ROUTER_INDEX_BLOCK = routerIndexBlock(ROUTER_VIEW);
 
 // ---------------------------------------------------------------------------
 // Look up matching blog post by youtube: frontmatter via shared blog-index
