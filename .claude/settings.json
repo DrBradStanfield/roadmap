@@ -4,7 +4,6 @@
     "pr": "",
     "sessionUrl": false
   },
-  "autoCompactWindow": 250000,
   "hooks": {
     "PreToolUse": [
       {
