@@ -2,12 +2,13 @@
 // (inside test:all, never date-dependent). The weekly checks take today's date as an argument and run only
 // from tools/knowledge-lint.ts. Extends the US-43 lint; there is no second lint.
 import { describe, it, expect, vi } from 'vitest';
+import { createHash } from 'node:crypto';
 import { mkdtempSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  entryFrom, isAllowed, loadInputs, main, nextState, staticMasterChecks, staticMasterFindings, weeklyMasterFindings,
+  entryFrom, isAllowed, loadInputs, main, masterViewHash, nextState, queueItem, validateAllowList, staticMasterChecks, staticMasterFindings, weeklyMasterFindings,
   writeMasterHashes, type AllowEntry, type LintState, type MastersConfig,
 } from './knowledge-lint';
 
@@ -43,6 +44,10 @@ describe('US-50 AC7 static: a rewritten master needs sources', () => {
     const { fails } = staticMasterFindings(bad, '', CFG);
     expect(fails.map((f) => f.handle).sort()).toEqual(['m1', 'm2', 'm3', 'm4']);
     expect(new Set(rules(fails))).toEqual(new Set(['master-front']));
+  });
+  it('fails a source name outside consumerlab, nih-ods and brad-video', () => {
+    const { fails } = staticMasterFindings([master('n', [`reviewed: "2026-10-20"`, `sources: ${SRC('2026-10-20', 'NIH ODS')}`])], '', CFG);
+    expect(fails.map((f) => f.detail)).toEqual(['item 0 name must be one of consumerlab, nih-ods, brad-video']);
   });
   it('fails a frontmatter key that appears twice, and a reference with a view heading but no reviewed', () => {
     const dup = master('d1', [`reviewed: "2026-10-20"`, `sources: ${SRC()}`, `reviewed: "2026-10-21"`]);
@@ -147,6 +152,15 @@ describe('US-50 AC7 weekly checks (date-dependent, never in test:all)', () => {
       expect(f[0].detail).toContain('A helps sleep.');
       expect(f[0].detail).toContain('B does not help sleep.');
     });
+    it('three masters sharing one DOI keep all three pairs, each with its own queue id', () => {
+      const es = [m('a', 'A.', '10.1000/s'), m('b', 'B.', '10.1000/s'), m('c', 'C.', '10.1000/s')];
+      const f = weeklyMasterFindings(es, '2026-10-20', null, CFG, none).filter((x) => x.rule === 'master-overlap');
+      expect(f.map((x) => x.pair!.join('+'))).toEqual(['a+b', 'a+c', 'b+c']);
+      expect(new Set(f.map((x) => queueItem(x).id)).size).toBe(3);
+      expect(queueItem({ ...f[0], pair: ['b', 'a'] }).id).toBe(queueItem(f[0]).id);
+      // A finding with no pair keeps its old id (rule|handle|item), so existing queue items still dedupe.
+      expect(queueItem({ rule: 'grokipedia', handle: 'h', item: 'i' }).id).toBe(createHash('sha256').update('grokipedia|h|i').digest('hex').slice(0, 12));
+    });
     it('is silent for masters with no shared DOI, and ignores unrewritten references', () => {
       const es = [m('a', 'A.', '10.1000/x'), m('b', 'B.', '10.1000/y'), entry('old', 'reference', [], '[1] https://doi.org/10.1000/x\n')];
       expect(weeklyMasterFindings(es, '2026-10-20', null, CFG, none)).toEqual([]);
@@ -158,7 +172,9 @@ describe('US-50 AC7 weekly checks (date-dependent, never in test:all)', () => {
     const cfg: MastersConfig = { productIngredients: [], places: [{ topic: 'm', file: 'docs/products.md', snippet: 'Creatine 5 g' }] };
     const file = (extra: string) => () => `Intro.\n\n${extra}Creatine 5 g daily in the blend.\n\nOutro.\n`;
     const ID = 'docs/products.md: Creatine 5 g';
-    const waive: AllowEntry = { rule: 'master-places', handle: 'm', item: ID, reason: 'Dose unchanged on purpose', date: '2026-10-20', who: 'Brad' };
+    /** A waiver for this place, scoped to one current view (round-2 N3). */
+    const waiveFor = (t: string): AllowEntry => ({ rule: 'master-places', handle: 'm', item: ID, view: masterViewHash(view(t)), reason: 'Dose unchanged on purpose', date: '2026-10-20', who: 'Brad' });
+    const waive = waiveFor('One');
     const stateOf = (o: string) => JSON.parse(readFileSync(join(o, 'docs/loops/chat-health/lint-state.json'), 'utf8')) as LintState;
     const unrewritten = entry('m', 'reference', [], 'Body.\n');
     /** A master whose view "One" is stored, its place included (seeded through a waiver). */
@@ -218,7 +234,7 @@ describe('US-50 AC7 weekly checks (date-dependent, never in test:all)', () => {
       const two = [master('m', undefined, view('Two'))];
       expect(writeMasterHashes(o, '2026-11-10', two, cfg, []).unwaived).toHaveLength(1);
       expect(weeklyMasterFindings(two, '2026-11-17', stateOf(o), cfg, read).map((x) => x.rule)).toEqual(['master-places']);
-      expect(writeMasterHashes(o, '2026-11-18', two, cfg, [waive]).unwaived).toEqual([]);
+      expect(writeMasterHashes(o, '2026-11-18', two, cfg, [waiveFor('Two')]).unwaived).toEqual([]);
       expect(stateOf(o).masters!.m.at).toBe('2026-11-18');
       expect(weeklyMasterFindings(two, '2026-11-24', stateOf(o), cfg, read)).toEqual([]);
     });
@@ -235,10 +251,49 @@ describe('US-50 AC7 weekly checks (date-dependent, never in test:all)', () => {
       const f = weeklyMasterFindings([master('m', undefined, view('One'))], '2026-10-27', s, cfg, (rel) => readFileSync(join(o, rel), 'utf8'));
       expect(f.map((x) => x.detail ?? '').join()).toContain('anchor text not found');
     });
-    it('is waived by an allow-list entry with who and date, matched on the place', () => {
-      const f = { rule: 'master-places' as const, handle: 'm', item: ID };
+    it('is waived by an allow-list entry with who and date, matched on the place and the view hash', () => {
+      const f = { rule: 'master-places' as const, handle: 'm', item: ID, view: waive.view };
       expect(isAllowed(f, [waive])).toBe(true);
       expect(isAllowed({ ...f, item: 'other' }, [waive])).toBe(false);
+      expect(isAllowed({ ...f, view: 'other-view' }, [waive])).toBe(false);
+      expect(isAllowed(f, [{ ...waive, view: undefined }])).toBe(false);
+      expect(() => validateAllowList({ entries: [{ ...waive, view: undefined }] })).toThrow(/view/);
+    });
+    it('a waiver covers only the view it names: a later change of view re-opens the place (round-2 probe L1)', () => {
+      const { o, read } = seeded();
+      const three = [master('m', undefined, view('Three'))];
+      const raw = weeklyMasterFindings(three, '2026-10-27', stateOf(o), cfg, read);
+      expect(raw.filter((f) => !isAllowed(f, [waive])).map((f) => f.rule)).toEqual(['master-places']);
+      expect(writeMasterHashes(o, '2026-10-27', three, cfg, [waive]).unwaived).toHaveLength(1);
+    });
+    it('a place registered after the rewrite is flagged once, then cleared by editing it (probe L2)', () => {
+      const o = mkRoot({ 'docs/products.md': file('')() });
+      const one = [master('m', undefined, view('One'))];
+      const s0 = { ...stateOf(o), masters: {} };
+      writeFileSync(join(o, 'docs/loops/chat-health/lint-state.json'), JSON.stringify(s0));
+      expect(writeMasterHashes(o, '2026-10-20', one, cfg, []).unwaived).toHaveLength(1);
+      writeFileSync(join(o, 'docs/products.md'), 'Creatine 5 g daily, now 6 g in some.\n');
+      expect(writeMasterHashes(o, '2026-10-21', one, cfg, []).unwaived).toEqual([]);
+      expect(weeklyMasterFindings(one, '2026-10-27', stateOf(o), cfg, (rel) => readFileSync(join(o, rel), 'utf8'))).toEqual([]);
+    });
+    it('a place edited after a hold clears it; publishing no longer stays stuck (probe L3)', () => {
+      const o = mkRoot({ 'docs/products.md': file('')() });
+      writeMasterHashes(o, '2026-10-20', [master('m', undefined, view('One'))], CFG, []);
+      const two = [master('m', undefined, view('Two'))];
+      expect(writeMasterHashes(o, '2026-10-21', two, cfg, []).unwaived).toHaveLength(1);
+      writeFileSync(join(o, 'docs/products.md'), 'Creatine 5 g daily, now 6 g in some.\n');
+      expect(writeMasterHashes(o, '2026-10-22', two, cfg, []).unwaived).toEqual([]);
+      expect(stateOf(o).masters!.m.hash).toBe(masterViewHash(view('Two')));
+    });
+    it('a held master keeps the earlier hash of a place that did change, so it is not flagged next week', () => {
+      const cfg2: MastersConfig = { productIngredients: [], places: [...cfg.places, { topic: 'm', file: 'docs/products.md', snippet: 'Outro' }] };
+      const o = mkRoot({ 'docs/products.md': file('')() });
+      writeMasterHashes(o, '2026-10-20', [master('m', undefined, view('One'))], cfg2, [waive, { ...waive, item: 'docs/products.md: Outro' }]);
+      writeFileSync(join(o, 'docs/products.md'), 'Intro.\n\nCreatine 5 g daily in the blend.\n\nOutro, edited.\n');
+      const two = [master('m', undefined, view('Two'))];
+      expect(writeMasterHashes(o, '2026-10-21', two, cfg2, []).unwaived.map((f) => f.item)).toEqual([ID]);
+      const f = weeklyMasterFindings(two, '2026-10-27', stateOf(o), cfg2, (rel) => readFileSync(join(o, rel), 'utf8'));
+      expect(f.map((x) => x.item)).toEqual([ID]);
     });
     it('writeMasterHashes keeps every other state key, and a later run of nextState keeps the masters section', () => {
       const o = mkRoot({ 'docs/products.md': file('')() });

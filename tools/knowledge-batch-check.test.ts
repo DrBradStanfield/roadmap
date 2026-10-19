@@ -1521,17 +1521,21 @@ describe("US-42 AC2 void entries, number words, abbreviations (v3)", () => {
 // ---- US-50 AC1 / US-42 AC1 amended: topic-master batches (--masters) ----
 
 describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
-  const SRC = '[{"name":"NIH ODS","url":"https://ods.od.nih.gov/x","checked":"2026-10-20","fingerprint":"abc123"}]';
+  const SRC = '[{"name":"nih-ods","url":"https://ods.od.nih.gov/x","checked":"2026-10-20","fingerprint":"abc123"}]';
   const OTHER = "https://drstanfield.com/blogs/articles/other";
   const VIEW = `## Current view (reviewed 20 October 2026)\n\nShort view ([Brad, 1 Mar 2026](${OTHER})).\n`;
   const sections = (view = VIEW, videos = `## Brad's videos on this topic\n\n- 1 Mar 2026, [O](${OTHER}): take.\n`) =>
     `\n${view}\n${videos}`;
-  const OTHER_TEXT = "---\ntitle: \"O\"\n---\n\nBrad's video post.\n";
+  const OTHER_TEXT = "---\ntitle: \"O\"\n---\n\nIn this video Brad explains why he changed his view on alpha supplements.\n";
+  const POSTQ = "POST:other: Brad explains why he changed his view on alpha supplements";
+  /** The current_view_basis entries a test's view sentences need. */
+  const basisFor = (...sentences: string[]) => { reps.alpha.current_view_basis = sentences.map((sentence) => ({ sentence, source: "other", quote: POSTQ })); };
   beforeEach(() => {
     // "other" is a video post (index entry with no type) outside the batch: the Current view cites it, and it is an extra_raw.
     put("docs/blog/other.md", OTHER_TEXT);
     sh(["add", "docs/blog/other.md"]); sh(["commit", "-q", "-m", "post", "--", "docs/blog/other.md"]);
     reps.alpha.extra_raw = [{ path: "/elsewhere/docs/blog/other.md", sha256: sha256(OTHER_TEXT) }];
+    basisFor(`Short view ([Brad, 1 Mar 2026](${OTHER})).`);
   });
   const alphaFm = (extra: string[], summary = "Alpha summary, 200 mg in adults.") =>
     fx("alpha.new.md").replace(/^summary:.*$/m, [`summary: "${summary}"`, ...extra].join("\n"));
@@ -1609,6 +1613,10 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
     master([`reviewed: "2026-10-20"`, "sources: []"]);
     expect(f1(mrun())).toContain("sources");
   });
+  it("rejects a source name outside consumerlab, nih-ods and brad-video", () => {
+    master([`reviewed: "2026-10-20"`, `sources: ${SRC.replace("nih-ods", "NIH ODS")}`]);
+    expect(f1(mrun())).toContain("name must be one of consumerlab, nih-ods, brad-video");
+  });
   it("rejects a multi-line sources value", () => {
     master([`reviewed: "2026-10-20"`, "sources:", `  - name: x`]);
     expect(f1(mrun())).toContain("sources");
@@ -1659,13 +1667,23 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
       master(GOOD, sections(EVIDENCE));
       expect(fails(mrun().MASTER).join()).toContain("lists some");
     });
+    it("fails a Current evidence position that cites a Brad post or his current guidance", () => {
+      master(GOOD, sections(EVIDENCE.replace("Evidence summary.", `See ([Brad, 1 Mar 2026](${OTHER})).`), NONE_YET));
+      expect(fails(mrun().MASTER).join()).toContain("a Current evidence position cites Brad");
+      master(GOOD, sections(EVIDENCE.replace("Evidence summary.", "A view (Brad's current guidance, 9 Oct 2026)."), NONE_YET));
+      expect(fails(mrun().MASTER).join()).toContain("a Current evidence position cites Brad");
+    });
+    it("rejects plain None.: only None yet. is accepted", () => {
+      master(GOOD, sections(EVIDENCE, "## Brad's videos on this topic\n\nNone.\n"));
+      expect(fails(mrun().MASTER).join()).toContain('says None (write "None yet."');
+    });
     it("fails a Current view master whose videos section is missing, or says None yet. while the view cites a post", () => {
       master(GOOD, sections(undefined, ""));
       expect(fails(mrun().MASTER).join()).toContain("Brad's videos");
       master(GOOD, sections(undefined, NONE_YET));
       expect(fails(mrun().MASTER).join()).toContain("says None yet");
       master(GOOD, sections(undefined, "## Brad's videos on this topic\n\nNone.\n"));
-      expect(fails(mrun().MASTER).join()).toContain("says None yet");
+      expect(fails(mrun().MASTER).join()).toContain("says None");
     });
     describe("US-50 AC1: a position-sourced sentence is cited unlinked as (Brad's current guidance, D Mon YYYY)", () => {
       const PROD = "Products. Lithium is not an established nutrient and has no recommended intake.\n";
@@ -1676,28 +1694,67 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
         reps.alpha.extra_raw = [{ path: "/elsewhere/docs/products.md", sha256: sha256(PROD) }];
         master(GOOD, sections(`## Current view (reviewed 20 October 2026)\n\n${sentence}\n`, NONE_YET));
       };
-      const basis = (quote: string, sentence = SENT) => { (reps.alpha as unknown as Record<string, unknown>).current_view_basis = [{ sentence, source: "docs/products.md", quote }]; };
+      const basis = (quote: string, sentence = SENT) => { reps.alpha.current_view_basis = [{ sentence, source: "docs/products.md", quote }]; };
       it("passes with a POSITION: quote in current_view_basis (Current view from positions alone, None yet.)", () => {
         pos(); basis(`POSITION:docs/products.md: ${Q}`);
         expect(fails(mrun().MASTER)).toEqual([]);
       });
-      it("passes with a POSITION: quote in changed_tokens on that sentence", () => {
-        pos(); reps.alpha.changed_tokens.push({ body_line: SENT, raw_quote: `POSITION:docs/products.md: ${Q}` });
-        expect(fails(mrun().MASTER)).toEqual([]);
+      it("fails with only a changed_tokens quote: the current_view_basis entry is required", () => {
+        pos(); reps.alpha.current_view_basis = [];
+        reps.alpha.changed_tokens.push({ body_line: SENT, raw_quote: `POSITION:docs/products.md: ${Q}` });
+        expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
+      });
+      const masterFails = () => fails(mrun().MASTER).join();
+      it("rejects a one-letter basis sentence with a one-word quote (round-2 probe 1)", () => {
+        pos("Lithium cures depression and everyone should take it (Brad's current guidance, 9 Oct 2026).");
+        basis("POSITION:docs/products.md: no", "e");
+        expect(masterFails()).toContain("no current_view_basis entry");
+      });
+      it("rejects the exact sentence with a one-word quote, and an empty quote after the prefix (probes 2, 3)", () => {
+        const S = "Lithium cures depression (Brad's current guidance, 9 Oct 2026).";
+        pos(S); basis("POSITION:docs/products.md: Products", S);
+        expect(masterFails()).toContain("no current_view_basis entry");
+        basis("POSITION:docs/products.md: ", S);
+        expect(masterFails()).toContain("no current_view_basis entry");
+      });
+      it("rejects a guidance citation whose date is not a real month (probe 4)", () => {
+        const S = "Lithium is not an established nutrient (Brad's current guidance, 31 Foo 1901).";
+        pos(S); basis(`POSITION:docs/products.md: ${Q}`, S);
+        expect(masterFails()).toContain("no current_view_basis entry");
+      });
+      it("rejects one basis entry covering several sentences by substring (probe 5)", () => {
+        pos("Lithium is not an established nutrient (Brad's current guidance, 9 Oct 2026). Lithium cures gout (Brad's current guidance, 9 Oct 2026).");
+        basis(`POSITION:docs/products.md: ${Q}`, "Lithium");
+        expect(fails(mrun().MASTER).filter((f) => f.includes("no current_view_basis entry"))).toHaveLength(2);
+      });
+      it("rejects a basis entry whose sentence only contains the body sentence", () => {
+        pos(); basis(`POSITION:docs/products.md: ${Q}`, `${SENT} And more.`);
+        expect(masterFails()).toContain("no current_view_basis entry");
+      });
+      it("whole batch: a laundered sentence fails (probe 7)", () => {
+        pos("Brad takes lithium every day for mood (Brad's current guidance, 9 Oct 2026).");
+        basis("POSITION:docs/products.md: no", "e");
+        expect(fails(mrun().MASTER).length).toBeGreaterThan(0);
+      });
+      it("dates do not hide doses (probe 6)", () => {
+        expect([...tokenise("- 15 Oct 2026, [T](https://drstanfield.com/blogs/articles/x): take 15 mg.")]).toContain("15 mg");
+        expect([...tokenise("Take 15 mg ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/x)).")]).toContain("15 mg");
+        expect([...tokenise("Take 15 mg (Brad's current guidance, 15 Oct 2026).")]).toContain("15 mg");
+        expect([...tokenise("Current view (reviewed 15 Oct 2026) take 15 mg")].length).toBeGreaterThan(0);
       });
       it("fails with no POSITION: quote, an unprefixed one, one not verbatim, or one for another sentence", () => {
         pos();
-        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+        expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
         basis(Q);
-        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+        expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
         basis("POSITION:docs/products.md: Lithium is an established nutrient with a recommended intake");
-        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+        expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
         basis(`POSITION:docs/products.md: ${Q}`, "Some other sentence (Brad's current guidance, 9 Oct 2026).");
-        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+        expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
       });
       it("fails when the path is not an extra_raw at base", () => {
         pos(); basis(`POSITION:docs/products.md: ${Q}`); reps.alpha.extra_raw = [];
-        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+        expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
       });
       it("rejects a repo-path link in the body", () => {
         pos("A position ([Brad, 9 Oct 2026](docs/products.md)) (Brad's current guidance, 9 Oct 2026).");
@@ -1713,20 +1770,42 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
     describe("US-50 AC1: every Current view sentence cites a post or position in extra_raw", () => {
       const view = (t: string) => sections(`## Current view (reviewed 20 October 2026)\n\n${t}\n`);
       it("fails a sentence with no link, while its neighbour passes", () => {
+        basisFor(`One cited ([Brad, 1 Mar 2026](${OTHER})).`, "Two uncited.");
         master(GOOD, view(`One cited ([Brad, 1 Mar 2026](${OTHER})). Two uncited.`));
         const f = fails(mrun().MASTER);
         expect(f).toHaveLength(1);
-        expect(f[0]).toContain("links no video post in extra_raw and has no quoted position citation: Two uncited.");
+        expect(f[0]).toContain("no current_view_basis entry for this exact sentence with a verbatim POST:<the linked post>: or POSITION:<path>: quote (6 words or 30 characters): Two uncited.");
       });
       it("fails a link to a video post that is not an extra_raw, a reference page, or another site", () => {
         reps.alpha.extra_raw = [];
         master(GOOD, view(`Cited ([Brad, 1 Mar 2026](${OTHER})).`));
-        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+        expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
         reps.alpha.extra_raw = [{ path: "/elsewhere/docs/blog/other.md", sha256: sha256(OTHER_TEXT) }];
         master(GOOD, view("Cited ([Brad, 1 Mar 2026](https://drstanfield.com/blogs/articles/alpha))."));
-        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+        expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
         master(GOOD, view("Cited ([Brad, 1 Mar 2026](https://example.com/blogs/articles/other))."));
-        expect(fails(mrun().MASTER).join()).toContain("no quoted position citation");
+        expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
+      });
+      it("a post link with no verified POST quote for that sentence fails (probe 8)", () => {
+        const S = `Brad takes lithium every day for mood ([Brad, 1 Mar 2026](${OTHER})).`;
+        master(GOOD, view(S));
+        expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
+      });
+      it("a post-linked sentence needs a POST quote for that same post, 6 words or 30 characters, verbatim at base", () => {
+        const S = `Cited ([Brad, 1 Mar 2026](${OTHER})).`;
+        master(GOOD, view(S));
+        for (const quote of [
+          "POSITION:docs/products.md: Brad explains why he changed his view on alpha supplements", // wrong kind
+          "POST:post-y: Brad explains why he changed his view on alpha supplements", // another handle
+          "POST:other: changed his view", // under the floor
+          "POST:other: Brad explains why he never changed his view on beta supplements", // not verbatim
+          "Brad explains why he changed his view on alpha supplements", // no prefix
+        ]) {
+          reps.alpha.current_view_basis = [{ sentence: S, source: "other", quote }];
+          expect(fails(mrun().MASTER).join(), quote).toContain("no current_view_basis entry");
+        }
+        basisFor(S);
+        expect(fails(mrun().MASTER)).toEqual([]);
       });
       it("fails an empty Current view", () => {
         master(GOOD, view(""));
@@ -1762,6 +1841,7 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
       expect([...tokenise("## Current view (reviewed 15 October 2026) 5 mg")].sort()).toEqual(["15", "5 mg"]); // not the bare heading
     });
     it("US-50 AC1: a master's dates (heading, citation, video line) are not numbers; the happy path passes AC2", () => {
+      basisFor(`Short view ([Brad, 15 Oct 2026](${OTHER})).`);
       master(GOOD, sections(`## Current view (reviewed 20 October 2026)\n\nShort view ([Brad, 15 Oct 2026](${OTHER})).\n`,
         `## Brad's videos on this topic\n\n- 15 Oct 2026, [O](${OTHER}): take.\n- 3 Dec 2025, [O](${OTHER}): older take.\n`));
       const r = mrun();
@@ -1774,6 +1854,32 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
     });
   });
 
+  describe("--masters reads only the batch's own committed exceptions file", () => {
+    const cli = (ex?: string) => {
+      put("handles.txt", "alpha\n");
+      vi.spyOn(process, "cwd").mockReturnValue(root);
+      const err = vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.spyOn(console, "log").mockImplementation(() => {});
+      const code = main(["--batch", "t", "--handles", join(root, "handles.txt"), "--base", "HEAD", "--reports", reports, "--no-exclusions", "--masters", ...(ex ? ["--exceptions", ex] : [])]);
+      const msg = err.mock.calls.map((c) => String(c[0])).join("\n");
+      vi.restoreAllMocks();
+      return { code, msg };
+    };
+    it("refuses no --exceptions, another file, and an uncommitted batch file", () => {
+      expect(cli().msg).toContain("--masters needs --exceptions docs/knowledge-refresh/exceptions-t.json");
+      put("other.json", "[]");
+      expect(cli(join(root, "other.json")).msg).toContain("--masters needs --exceptions");
+      put("docs/knowledge-refresh/exceptions-t.json", "[]");
+      const r = cli(join(root, "docs/knowledge-refresh/exceptions-t.json"));
+      expect(r.code).toBe(2);
+      expect(r.msg).toContain("has uncommitted changes");
+    });
+    it("accepts the committed batch file", () => {
+      put("docs/knowledge-refresh/exceptions-t.json", "[]");
+      sh(["add", "docs/knowledge-refresh/exceptions-t.json"]); sh(["commit", "-q", "-m", "x", "--", "docs/knowledge-refresh/exceptions-t.json"]);
+      expect(cli(join(root, "docs/knowledge-refresh/exceptions-t.json")).code).not.toBe(2);
+    });
+  });
   it("the CLI accepts --masters", () => {
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(main(["--masters"])).toBe(2); // still needs --batch

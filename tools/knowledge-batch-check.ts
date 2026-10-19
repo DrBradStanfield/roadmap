@@ -63,6 +63,8 @@ export interface Report {
   new?: boolean;
   /** Optional further raw sources; a raw_quote prefixed "NIH: " or "EXTRA: " is matched in these. */
   extra_raw?: { path: string; sha256: string }[];
+  /** Topic masters (US-50): one entry per Current view sentence, its quote prefixed POST:<handle>: or POSITION:<path>:. */
+  current_view_basis?: { sentence: string; source?: string; quote: string }[];
 }
 
 export const REPORT_SCHEMA = {
@@ -191,6 +193,7 @@ export function validDate(s: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
 }
 const SOURCE_KEYS = ["name", "url", "checked", "fingerprint"];
+export const SOURCE_NAMES = ["consumerlab", "nih-ods", "brad-video"];
 const jsonOf = (v: string): unknown => { try { return JSON.parse(v); } catch { return undefined; } };
 
 /** Shape errors of one master frontmatter value (US-50 AC1), or null. `value` is the text after `key:` on its line. */
@@ -208,11 +211,17 @@ export function masterKeyError(key: string, value: string): string | null {
     const o = it as Record<string, unknown> | null;
     const miss = SOURCE_KEYS.find((k) => typeof o?.[k] !== "string" || !o[k]);
     if (miss) return `item ${i} is missing ${miss}`;
+    if (!SOURCE_NAMES.includes(o!.name as string)) return `item ${i} name must be one of ${SOURCE_NAMES.join(", ")}`;
     if (!validDate(o!.checked as string)) return `item ${i} has an invalid checked date`;
   }
   return null;
 }
 
+/** The repo file a POST:<handle>: or POSITION:<path>: quote names, and the quote after the prefix (US-50 AC1). */
+const quoteSource = (q: string) => {
+  const m = /^\s*(POST|POSITION):([^:\s]+):\s*/.exec(q);
+  return m ? { kind: m[1], rel: m[1] === "POST" ? `docs/blog/${m[2]}.md` : m[2], text: q.slice(m[0].length) } : null;
+};
 /** The master's view heading (US-50 AC1), shared with knowledge-lint.ts; group 1 is set for a Current view. */
 export const VIEW_HEADING = /^##\s+(?:(Current view \(reviewed [^)]+\))|Current evidence position)\s*$/;
 /** The contract's first sentence of a Current evidence position (master-writer-contract.md). */
@@ -334,6 +343,7 @@ function normNumber(n: string, unit: string): { value: string; unit: string } {
 
 /** Topic-master dates (US-50): the view heading, a "([Brad, 15 Oct 2026](" or "(Brad's current guidance, 15 Oct 2026)" citation, and a "- 15 Oct 2026, [" video line. */
 const MONTH = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]{0,6}";
+const GUIDANCE = new RegExp(`\\(Brad['’]s current guidance, \\d{1,2} ${MONTH} \\d{4}\\)`);
 const MASTER_DATES = new RegExp(`^(?:(?:##\\s+)?Current view \\(reviewed \\d{1,2} ${MONTH} \\d{4}\\)\\s*$|\\s*(?:[-*]\\s+)?\\d{1,2} ${MONTH} \\d{4}(?=, \\[))|(?<=\\(\\[Brad, )\\d{1,2} ${MONTH} \\d{4}(?=\\]\\()|(?<=\\(Brad['’]s current guidance, )\\d{1,2} ${MONTH} \\d{4}(?=\\))`, "g");
 
 /** Strip everything the tokeniser must ignore, line by line. */
@@ -625,28 +635,29 @@ function checkMasterBody(c: Ctx, m: Check, raw: RawSet | null, isPost: (h: strin
   const said = view ? sentences(view.text.join("\n")) : [];
   if (view && !said.length) m.fails.push(`${c.handle}: "${view.line.replace(/^##\s+/, "")}" is empty`);
   if (view && !isView && said.length && squash(said[0]) !== EVIDENCE_OPENING) m.fails.push(`${c.handle}: a Current evidence position must open with "${EVIDENCE_OPENING}"`);
-  const rels = new Set((raw?.extras ?? []).map((x) => x.repoRel).filter(Boolean));
-  const citesPost = (sn: string) => [...sn.matchAll(/\]\(([^)\s]+)\)/g)].some(([, u]) => {
-    const h = bradLink(u)?.[1]?.toLowerCase();
-    return !!h && isPost(h) && rels.has(`docs/blog/${h}.md`);
+  // Each Current view sentence has a current_view_basis entry for that exact sentence whose quote is verbatim, at base, in
+  // the file it names: POST:<handle>: for a sentence linking that post, POSITION:<path>: for "(Brad's current guidance, …)".
+  const postsIn = (sn: string) => [...sn.matchAll(/\]\(([^)\s]+)\)/g)].map(([, u]) => bradLink(u)?.[1]?.toLowerCase()).filter((h): h is string => !!h);
+  const verified = (sn: string) => (c.rep?.current_view_basis ?? []).flatMap((b) => {
+    const named = cleanSentence(String(b.sentence ?? "")) === sn ? quoteSource(String(b.quote ?? "")) : null;
+    const x = named && !(named.kind === "POSITION" && named.rel.startsWith("docs/blog/")) ? raw?.extras.find((e) => e.repoRel === named.rel) : undefined;
+    const q = normQuote(named?.text ?? "");
+    return x && !(q.length < 30 && q.split(" ").length < 6) && hasQuote(x.norm, q) ? [named!] : [];
   });
-  // A position is cited unlinked, "(Brad's current guidance, 9 Oct 2026)", and needs a POSITION:<path>: quote for that
-  // sentence (current_view_basis or changed_tokens) that is verbatim in a position file listed in extra_raw.
-  const basis = ((c.rep as { current_view_basis?: { sentence?: string; quote?: string }[] } | null)?.current_view_basis ?? [])
-    .map((b) => ({ line: String(b.sentence ?? ""), quote: String(b.quote ?? "") }));
-  const quotes = [...basis, ...(c.rep?.changed_tokens ?? []).filter((e) => !e.void).map((e) => ({ line: e.body_line, quote: e.raw_quote }))];
-  const citesPosition = (sn: string) => /\(Brad['’]s current guidance, \d{1,2} [A-Z][a-z]+ \d{4}\)/.test(sn) && quotes.some(({ line, quote }) => {
-    const p = /^\s*POSITION:([^:\s]+):\s*/.exec(quote), x = p && !p[1].startsWith("docs/blog/") ? raw?.extras.find((e) => e.repoRel === p[1]) : undefined;
-    return !!x && relates(line, cleanSentence(sn)) && hasQuote(x.norm, normQuote(quote.slice(p![0].length)));
-  });
+  const supported = (sn: string) => {
+    const v = verified(sn);
+    return postsIn(sn).some((h) => isPost(h) && v.some((n) => n.kind === "POST" && n.rel === `docs/blog/${h}.md`)) ||
+      (GUIDANCE.test(sn) && v.some((n) => n.kind === "POSITION"));
+  };
   for (const [, u] of c.newBody.matchAll(/\]\(([^)\s]+)\)/g)) if (!/^[a-z]+:/i.test(u) && MASTER_RAW.test(u)) m.fails.push(`${c.handle}: the body links a repo file (${u}); cite a position as "(Brad's current guidance, <D Mon YYYY>)"`);
-  if (isView) for (const sn of said) if (!citesPost(sn) && !citesPosition(sn)) m.fails.push(`${c.handle}: Current view sentence links no video post in extra_raw and has no quoted position citation: ${clip(sn, 100)}`);
+  if (isView) for (const sn of said) if (!supported(sn)) m.fails.push(`${c.handle}: Current view sentence has no current_view_basis entry for this exact sentence with a verbatim POST:<the linked post>: or POSITION:<path>: quote (6 words or 30 characters): ${clip(sn, 100)}`);
+  if (view && !isView) for (const sn of said) if (postsIn(sn).length || /\(Brad['’]s current guidance/.test(sn)) m.fails.push(`${c.handle}: a Current evidence position cites Brad (a post link or his current guidance): ${clip(sn, 100)}`);
   const videos = secs.filter((s) => /^##\s+Brad['’]s videos on this topic\s*$/.test(s.line));
   if (videos.length !== 1) { m.fails.push(`${c.handle}: needs one "## Brad's videos on this topic" section (found ${videos.length})`); return; }
-  const text = videos[0].text.join("\n").trim(), none = /^none(?: yet)?\.?$/i.test(text);
-  if (!text) m.fails.push(`${c.handle}: "Brad's videos on this topic" is empty (write "None yet." if there are none)`);
+  const text = videos[0].text.join("\n").trim(), none = /^none yet\.$/i.test(text);
+  if (!text || /^none\.?$/i.test(text)) m.fails.push(`${c.handle}: "Brad's videos on this topic" ${text ? "says None" : "is empty"} (write "None yet." if there are none)`);
   else if (view && !isView && !none) m.fails.push(`${c.handle}: a Current evidence position says Brad has no video, but "Brad's videos on this topic" lists some`);
-  else if (isView && none && said.some(citesPost)) m.fails.push(`${c.handle}: "Brad's videos on this topic" says None yet, but the Current view cites a post`);
+  else if (isView && none && said.some((sn) => postsIn(sn).length)) m.fails.push(`${c.handle}: "Brad's videos on this topic" says None yet, but the Current view cites a post`);
 }
 
 function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
@@ -919,9 +930,8 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     if (/\.\.\.|\u2026/.test(entry.raw_quote)) return fail("raw_quote contains an ellipsis (a paraphrase marker); quote the raw verbatim");
     const prefixed = /^\s*(?:NIH|EXTRA|POST:[^:\s]+|POSITION:[^:\s]+):\s*/.exec(entry.raw_quote);
     // POST:<handle>: and POSITION:<path>: name one repo file (US-50 AC1); NIH: and EXTRA: search every extra_raw.
-    const label0 = /^\s*(POST|POSITION):([^:\s]+)/.exec(prefixed?.[0] ?? "");
-    const src = label0 ? (label0[1] === "POST" ? `docs/blog/${label0[2]}.md` : label0[2]) : undefined;
-    if (label0?.[1] === "POSITION" && src!.startsWith("docs/blog/")) return fail(`POSITION: names a post (${src}); quote a post with POST:<handle>: ${line}`);
+    const named = quoteSource(entry.raw_quote), src = named?.rel;
+    if (named?.kind === "POSITION" && src!.startsWith("docs/blog/")) return fail(`POSITION: names a post (${src}); quote a post with POST:<handle>: ${line}`);
     if (src && !raw.extras.some((x) => x.repoRel === src)) return fail(`raw_quote names ${src}, which is not an extra_raw file: ${line}`);
     const quote = prefixed ? entry.raw_quote.slice(prefixed[0].length) : entry.raw_quote;
     const q = normQuote(quote);
@@ -1452,6 +1462,12 @@ export function main(argv: string[], overrides: Partial<Options> = {}): number {
   const rel = out ? relative(root, out) : "";
   const outRel = out && !rel.startsWith("..") && !isAbsolute(rel) ? rel : undefined;
   if (outRel) { const bad = validateOut(outRel, handles); if (bad) return usage(bad); }
+  if (a.masters !== undefined) {
+    // A masters run reads only its own committed exceptions file (US-42 AC11): none written after the run began.
+    const exRel = `docs/knowledge-refresh/exceptions-${a.batch}.json`;
+    if (typeof a.exceptions !== "string" || !existsSync(a.exceptions) || realPath(resolve(a.exceptions)) !== realPath(join(root, exRel))) return usage(`--masters needs --exceptions ${exRel}`);
+    if (git(root, ["status", "--porcelain", "--", exRel]).trim()) return usage(`${exRel} has uncommitted changes; commit it before the run`);
+  }
   let exceptions: Exception[] = [];
   if (a.exceptions !== undefined) {
     if (typeof a.exceptions !== "string" || !existsSync(a.exceptions)) return usage(`--exceptions file not found: ${String(a.exceptions)}`);

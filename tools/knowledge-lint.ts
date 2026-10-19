@@ -59,8 +59,9 @@ export type RuleId =
   | 'link-dead' | 'grokipedia' | 'dose-mismatch' | 'product-rise'
   | 'topic-no-master' | 'master-front' | 'master-gate' | 'master-doi' | 'master-stale' | 'source-stale' | 'master-places' | 'master-overlap'
   | 'entry-vs-algorithm' | 'pathway-vs-reference' | 'reference-vs-reference';
-export interface Finding { rule: RuleId; handle: string; pair?: [string, string]; item: string; detail?: string }
-export interface AllowEntry { rule?: string; handle?: string; pair?: [string, string]; item?: string; reason: string; date: string; who: string }
+/** `view` (master-places only): the current-view hash the finding was raised against; a waiver covers that view only. */
+export interface Finding { rule: RuleId; handle: string; pair?: [string, string]; item: string; detail?: string; view?: string }
+export interface AllowEntry { rule?: string; handle?: string; pair?: [string, string]; item?: string; reason: string; date: string; who: string; view?: string }
 export interface Topic { topic: string; headings: string[]; handles: string[]; terms?: string[] }
 export interface LintState {
   version: 1; lastRun: string | null; cursor: number;
@@ -331,6 +332,7 @@ export function validateAllowList(json: { entries?: unknown[] }): AllowEntry[] {
     if (!a.reason?.trim()) bad('missing reason');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date ?? '')) bad('date must be YYYY-MM-DD');
     if (!a.who?.trim()) bad('missing who');
+    if (a.rule === 'master-places' && !a.view?.trim()) bad('a master-places waiver needs the view hash it applies to (view)');
   });
   return entries;
 }
@@ -343,7 +345,7 @@ export const pairAllowances = (rule: string, pair: [string, string], allow: Allo
   allow.filter(a => a.rule === rule && samePair(a.pair, pair));
 
 export const isAllowed = (f: Finding, allow: AllowEntry[]) => allow.some(a =>
-  (a.rule === undefined || a.rule === f.rule) && (a.handle ? a.handle === f.handle : samePair(a.pair, f.pair)) && (a.item === undefined || a.item === f.item));
+  (f.rule !== 'master-places' || a.view === f.view) && (a.rule === undefined || a.rule === f.rule) && (a.handle ? a.handle === f.handle : samePair(a.pair, f.pair)) && (a.item === undefined || a.item === f.item));
 
 // ---------------------------------------------------------------------------
 // Fix queue: every knowledge-side finding, deterministic or model, fixed by a
@@ -352,7 +354,7 @@ export const isAllowed = (f: Finding, allow: AllowEntry[]) => allow.some(a =>
 
 /** A deterministic finding as a queue item; the id hashes rule, handle and item, so it is stable across weeks. */
 export const queueItem = (f: Finding) => ({
-  id: sha(`${f.rule}|${f.handle}|${f.item}`).slice(0, 12), rule: f.rule, side: 'knowledge' as const,
+  id: sha(`${f.rule}|${f.handle}|${f.pair ? `${[...f.pair].sort().join('+')}|` : ''}${f.item}`).slice(0, 12), rule: f.rule, side: 'knowledge' as const,
   handles: [f.handle], fix_handle: f.handle, item: f.item, ...(f.detail ? { detail: f.detail } : {}),
 });
 
@@ -492,6 +494,8 @@ export function viewSection(body: string): string | null {
 }
 /** The view's hash ignores its heading, so a re-review that changes only the date is not a change of view. */
 const viewHash = (section: string) => contentHash(normalise(section.split('\n').slice(1).join('\n')));
+/** The hash a master-places waiver names (`view`); "" for a master with no view section. */
+export const masterViewHash = (body: string) => { const sec = viewSection(body); return sec ? viewHash(sec) : ''; };
 
 export function staticMasterFindings(entries: Entry[], products: string, cfg: MastersConfig): { fails: Finding[]; warns: Finding[] } {
   const fails: Finding[] = [], warns: Finding[] = [];
@@ -566,7 +570,6 @@ export function masterHashes(entries: Entry[], cfg: MastersConfig, read: Read, d
 }
 
 const DAY = 864e5;
-const FETCHED = ['consumerlab', 'nih-ods'];
 /** Date-dependent; weekly only, never test:all. */
 export function weeklyMasterFindings(entries: Entry[], today: string, state: LintState | null, cfg: MastersConfig, read: Read): Finding[] {
   const out: Finding[] = [];
@@ -577,17 +580,17 @@ export function weeklyMasterFindings(entries: Entry[], today: string, state: Lin
       .reduce<Entry | null>((a, p) => !a || publishedOf(p)! > publishedOf(a)! ? p : a, null);
     if (reviewed && newest && reviewed < publishedOf(newest)!) out.push({ rule: 'master-stale', handle: m.handle, item: newest.handle, detail: `reviewed ${reviewed}, ${newest.handle} published ${publishedOf(newest)}` });
     for (const src of jsonList(m, 'sources') as { name?: string; checked?: string }[]) {
-      if (!FETCHED.includes(String(src?.name))) continue; // a brad-video entry is dated by its post, not fetched
+      if (src?.name === 'brad-video') continue; // dated by its post, not fetched
       const age = src?.checked && validDate(src.checked) ? Math.round((Date.parse(today) - Date.parse(src.checked)) / DAY) : 0;
       if (age > 35) out.push({ rule: 'source-stale', handle: m.handle, item: String(src.name), detail: `checked ${src.checked}, ${age} days ago` });
     }
     // No stored hash (a first rewrite) counts as a change, and a place with no stored hash as unchanged: check it or waive it.
     const sec = viewSection(m.body), prior = state?.masters?.[m.handle];
-    const changed = !!sec && viewHash(sec) !== prior?.hash;
+    const view = sec ? viewHash(sec) : '', changed = !!sec && view !== prior?.hash;
     for (const p of cfg.places.filter(x => x.topic === m.handle)) {
       const id = placeId(p), now = placeHash(p, read), was = prior?.places[id];
-      if (now === null) out.push({ rule: 'master-places', handle: m.handle, item: id, detail: 'anchor text not found; re-register the place' });
-      else if (changed && (was === undefined || was === now)) out.push({ rule: 'master-places', handle: m.handle, item: id, detail: was === undefined ? 'no earlier hash for this place (first rewrite or newly registered); check it follows the current view' : `current view changed since ${prior!.at}; this place did not` });
+      if (now === null) out.push({ rule: 'master-places', handle: m.handle, item: id, view, detail: 'anchor text not found; re-register the place' });
+      else if (changed && (was === undefined || was === now)) out.push({ rule: 'master-places', handle: m.handle, item: id, view, detail: was === undefined ? 'no earlier hash for this place (first rewrite or newly registered); check it follows the current view' : `current view changed since ${prior!.at}; this place did not` });
     }
   }
   return [...out, ...overlapFindings(entries.filter(isMaster))];
@@ -607,8 +610,9 @@ function overlapFindings(masters: Entry[]): Finding[] {
 
 /**
  * Store each master's current-view and place hashes (free; each batch's publish commit runs it). A master with an
- * unwaived master-places finding keeps its earlier entry (none, if it had none), so the drift is still there next
- * week; it advances once the place changes or the finding is waived in lint-allowlist.json.
+ * unwaived master-places finding keeps its earlier view hash, so the drift is still there next week. Its flagged places
+ * store their hash now, so a later edit clears them; its other places keep their earlier hash. It advances once every
+ * flagged place changes or is waived for this view (a waiver names the view hash) in lint-allowlist.json.
  */
 export function writeMasterHashes(root: string, date: string, entries?: Entry[], cfg?: MastersConfig, allow?: AllowEntry[]) {
   const file = join(root, PATHS.state);
@@ -619,7 +623,11 @@ export function writeMasterHashes(root: string, date: string, entries?: Entry[],
   const findings = weeklyMasterFindings(es, date, state, c, read).filter(f => f.rule === 'master-places');
   const unwaived = findings.filter(f => !isAllowed(f, al));
   const next = masterHashes(es, c, read, date);
-  for (const h of new Set(unwaived.map(f => f.handle))) { if (state.masters?.[h]) next[h] = state.masters[h]; else delete next[h]; }
+  for (const h of new Set(unwaived.map(f => f.handle))) {
+    const prior = state.masters?.[h], flagged = new Set(unwaived.filter(f => f.handle === h).map(f => f.item));
+    const places = Object.fromEntries(Object.entries(next[h]?.places ?? {}).map(([id, now]) => [id, flagged.has(id) ? now : prior?.places[id] ?? now]));
+    next[h] = { hash: prior?.hash ?? '', at: prior?.at ?? date, places };
+  }
   state.masters = next;
   writeFileSync(file, `${JSON.stringify(state, null, 1)}\n`);
   return { written: Object.keys(next).length, findings, unwaived };
@@ -759,7 +767,7 @@ export async function main(argv: string[], root: string, log: (s: string) => voi
     }
     if (has('--write-master-hashes')) {
       const r = writeMasterHashes(root, getArg(argv, '--date', new Date().toISOString().slice(0, 10)));
-      for (const f of r.findings) log(`${r.unwaived.includes(f) ? 'FAIL' : 'WAIVED'} master-places ${f.handle}: ${f.item} (${f.detail})`);
+      for (const f of r.findings) log(`${r.unwaived.includes(f) ? 'FAIL' : 'WAIVED'} master-places ${f.handle}: ${f.item} (${f.detail}; view ${f.view})`);
       log(`Wrote the masters section of ${PATHS.state}: ${r.written} masters${r.unwaived.length ? `; ${r.unwaived.length} unwaived findings kept their masters' earlier hashes` : ''}.`);
       return r.unwaived.length ? 1 : 0;
     }
