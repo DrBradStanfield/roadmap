@@ -212,14 +212,18 @@ function readPrintedUnit(metric: MetricType, value: number, unit: string) {
 
 /** Units a creatinine ratio or a timed urine result prints in, folded (case,
  *  spaces). Not mmol/L: a serum creatinine can print in it too. */
-const URINE_OR_RATIO_UNITS = new Set(['mg/mmol', 'g/mol', 'mg/g', 'mg/mg', 'g/g', 'mg/gcreat', 'mg/gcr', 'mg/24h', 'mmol/24h', 'ml/min']);
+const URINE_OR_RATIO_UNITS = new Set(['mg/mmol', 'g/mol', 'mg/g', 'mg/mg', 'g/g', 'mg/24h', 'mmol/24h', 'ml/min']);
+/** A ratio whose denominator names creatinine, in any spelling the catalogue's
+ *  ACR and PCR rows print ("mg/g creat", "mg/g creatinine", "mg/mmol Cr").
+ *  A mass or amount denominator only: "µmol/L creatinine" is not a ratio. */
+const PER_CREATININE = /\/\s*[mµu]?(?:g|mol)\s*(?:creat(?:inine)?|cr)(?![a-z])/i;
 
 /** A urine marker between letter edges ("urine,", "/urine", "(urinary)", "urina",
  *  "orina", "Harn", "moczu"), "U-Creat", a trailing " U" or ",U", or "(U)".
  *  Never "U/L", "IU", "mU/L", "(uric)" or "(uncorrected)". No lookbehind:
  *  this runs in the BYOK browser bundle too. */
 const URINE_MARKER = /(?:^|[^a-z])(?:urin(?:e|a|ary)?|orina|harn|moczu)(?![a-z])|(?:^|[^a-z])u-(?:creat|cr)|[\s,]u$|[(\[]\s*u\s*[)\]]/i;
-const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit.trim()) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
+const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit.trim()) || PER_CREATININE.test(unit) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
 
 /** Why a creatinine was refused, in the user's words (US-12 AC15). */
 function creatinineRefusal(unit: string): string {

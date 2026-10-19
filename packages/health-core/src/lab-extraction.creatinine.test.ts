@@ -70,8 +70,10 @@ describe('US-12 AC15: a creatinine in a unit the table does not know is refused,
     'mg/dL (urine)', 'µmol/L (U)', 'mmol/L urine', 'µmol/L [u]', 'mg/dL Urin', 'urine',
     'mg/dL urine,', 'µmol/L urine:', 'mg/dL/urine', 'mg/dL-urine', 'mg/dL (urinary)', 'µmol/L (urina)', 'mg/dL (orina)',
     'umol/L Harn', 'µmol/L moczu', 'U-Creat', 'µmol/L U', 'µmol/L,U',
+    // Codex R1: a ratio whose denominator names creatinine, in every spelling.
+    'mg/g creatinine', 'mg/mmol creat', 'g/mol creatinine', 'mg/mg creatinine', 'mg/g Creat.', 'mg/mmol Cr',
   ];
-  const NOT_MARKED = ['U/L', 'IU/L', 'mU/L', 'mg/dL (uncorrected)', 'mg/dL (uric)', 'µmol/L (serum)'];
+  const NOT_MARKED = ['U/L', 'IU/L', 'mU/L', 'mg/dL (uncorrected)', 'mg/dL (uric)', 'µmol/L (serum)', 'µmol/L creatinine'];
   it.each(['full', 'metadata'] as const)('%s mode: a unit with a urine marker is refused as a urine result; "U/L", "IU", "(uric)" and plain µmol/L are not', (mode) => {
     const result = toUnifiedResult(parseUnifiedResult({
       classification: 'lab_report', reportDate: '2026-10-10', document: null, additionalValues: [],

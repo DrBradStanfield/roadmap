@@ -1781,12 +1781,14 @@ describe('US-12 AC15/AC16 — import_documents refuses a urine creatinine, infer
     const { payload, files, unrecognized } = prepareImport(base(), bundleOf([extracted('acr.pdf', modelAnswer([
       { metric: 'creatinine', value: 12, unit: 'mg/mmol', confidence: 'high' },
       { metric: 'creatinine', value: 80, unit: 'mg/dL (urine)', confidence: 'high' },
+      { metric: 'creatinine', value: 95, unit: 'mg/g creatinine', confidence: 'high' },
     ]))]), IMPORT_CTX);
     expect(payload.candidates).toEqual([]);
     expect(files[0].droppedValues).toBeUndefined();
     expect(unrecognized).toEqual([
       'creatinine 12 mg/mmol: not saved. This unit is usually a urine result.',
       'creatinine 80 mg/dL (urine): not saved. This unit is usually a urine result.',
+      'creatinine 95 mg/g creatinine: not saved. This unit is usually a urine result.',
     ]);
   });
 
