@@ -677,12 +677,15 @@ function defaultRawRoots(): string[] {
 }
 
 interface RawSet {
-  main: { norm: string; rel: string; pmid: string | null } | null; extras: { path: string; norm: string; pmid: string | null }[];
+  main: { norm: string; rel: string; pmid: string | null } | null; extras: { path: string; norm: string; pmid: string | null; repoRel?: string }[];
   /** Files under a pubmed/ folder headed "# PubMed <pmid>": the only raw that verifies a primary reference. */
   abstracts: { pmid: string; norm: string }[];
 }
 
 /** Open a report's raw files: each must resolve (realpath) under an allowed raw root, never inside the repo, with the sha256 the report gives. */
+/** Brad's own posts and the files that carry his positions (US-50 AC1): raw for a master, read from the base revision. */
+const MASTER_RAW = /(?:^|\/)(docs\/blog\/[^/]+\.md|docs\/products\.md|docs\/guideline\/[^/]+\.md|app\/lib\/chat-system-prompt\.md|packages\/health-core\/src\/evidence\.ts|health_roadmap_algorithm\.md|roadmap_text\.html)$/;
+
 function loadRaw(rep: Report, o: Options, tag: string, ac2: Check): RawSet {
   const roots = rootRegexes(o.rawRoots ?? defaultRawRoots());
   const repoReal = realpathSync(o.root);
@@ -699,10 +702,18 @@ function loadRaw(rep: Report, o: Options, tag: string, ac2: Check): RawSet {
     return { norm: normQuote(text), rel: real.slice(hit[0].replace(/[^/]+\/$/, "").length), pmid };
   };
   const main = open(rep.raw_path, rep.raw_sha256, "raw");
-  const extras: { path: string; norm: string; pmid: string | null }[] = [];
+  const extras: RawSet["extras"] = [];
   const abstracts: { pmid: string; norm: string }[] = [];
   if (main?.pmid) abstracts.push({ pmid: main.pmid, norm: main.norm });
   for (const x of rep.extra_raw ?? []) {
+    const repoRel = o.masters && !x.path.split("/").includes("..") ? MASTER_RAW.exec(x.path)?.[1] : undefined;
+    if (repoRel) {
+      const text = gitShow(o.root, o.base, repoRel);
+      if (text === null) ac2.fails.push(`${tag} extra_raw ${repoRel} does not exist at ${o.base}`);
+      else if (sha256(text) !== x.sha256) ac2.fails.push(`${tag} extra_raw sha256 mismatch for ${repoRel} at ${o.base} (file ${sha256(text)}, report ${x.sha256})`);
+      else extras.push({ path: x.path, norm: normQuote(text), pmid: null, repoRel });
+      continue;
+    }
     const e = open(x.path, x.sha256, "extra_raw");
     if (!e) continue;
     extras.push({ path: x.path, norm: e.norm, pmid: e.pmid });
@@ -853,7 +864,7 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     const base = tokenCounts(ctxLines[head], { keepRefs: true });
     return new Set([...tokenCounts(`${ctxLines[head]}\n${ctxLines[idx]}`, { keepRefs: true })].filter(([t, n]) => n > (base.get(t) ?? 0)).map(([t]) => t));
   };
-  const sources = (prefixed: boolean) => (prefixed ? raw.extras : raw.main ? [{ ...raw.main, path: "" }] : []);
+  const sources = (prefixed: boolean, src?: string) => (prefixed ? raw.extras.filter((x) => !src || x.repoRel === src) : raw.main ? [{ ...raw.main, path: "" }] : []);
   /** Validate one entry on its own; returns the numbers it supports (body_line and verbatim quote share them), or null after a FAIL. */
   const verifyEntry = (entry: Entry, n: number): Set<string> | null => {
     const label = `${tag} changed_tokens[${n}]`;
@@ -865,20 +876,24 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     }
     if (!entry.raw_quote.trim()) return fail(`has an empty raw_quote: ${line}`);
     if (/\.\.\.|\u2026/.test(entry.raw_quote)) return fail("raw_quote contains an ellipsis (a paraphrase marker); quote the raw verbatim");
-    const prefixed = /^\s*(?:NIH|EXTRA):\s*/.exec(entry.raw_quote);
+    const prefixed = /^\s*(?:NIH|EXTRA|POST:[^:\s]+|POSITION:[^:\s]+):\s*/.exec(entry.raw_quote);
+    // POST:<handle>: and POSITION:<path>: name one repo file (US-50 AC1); NIH: and EXTRA: search every extra_raw.
+    const label0 = /^\s*(POST|POSITION):([^:\s]+)/.exec(prefixed?.[0] ?? "");
+    const src = label0 ? (label0[1] === "POST" ? `docs/blog/${label0[2]}.md` : label0[2]) : undefined;
+    if (src && !raw.extras.some((x) => x.repoRel === src)) return fail(`raw_quote names ${src}, which is not an extra_raw file: ${line}`);
     const quote = prefixed ? entry.raw_quote.slice(prefixed[0].length) : entry.raw_quote;
     const q = normQuote(quote);
     if (q.length < 30 && q.split(" ").length < 6) return fail(`raw_quote too short (need 6 words or 30 characters): ${line}`);
     const inQuote = tokenise(quote, { keepRefs: true });
     const shared = [...lineTokens(entry.body_line)].filter((t) => inQuote.has(t));
     if (!shared.length) {
-      const verbatim = sources(!!prefixed).some((x) => hasQuote(x.norm, q));
+      const verbatim = sources(!!prefixed, src).some((x) => hasQuote(x.norm, q));
       if (!verbatim) return fail(`raw_quote is not in the raw file: ${line}`);
       if (lineTokens(entry.body_line).size) return fail(`raw_quote shares no number with its body_line: ${line}`);
       ac2.warns.push(`${label} entry supports no number in its body_line: ${line}`); return new Set(); }
     const hits = new Map<string, { pmid: string | null; path: string }[]>();
     let partial = false;
-    for (const x of sources(!!prefixed)) {
+    for (const x of sources(!!prefixed, src)) {
       for (const tok of shared) {
         const r = findWhole(x.norm, q, tok, /\n/.test(quote.trim()));
         if (r === "ok") hits.set(tok, [...(hits.get(tok) ?? []), { pmid: x.pmid, path: "path" in x ? x.path : "" }]); else if (r === "partial") partial = true;
@@ -1076,7 +1091,7 @@ function refLines(body: string): string[] {
   return classifyLines(body).filter(({ line, ref }) => ref && (REF_LINE.test(line) || /^\s*(?:[-*]\s*)?\d+[.)]\s+\S/.test(line))).map((x) => x.line);
 }
 
-function referenceSourceCheck(newBody: string, baseBody: string, tag: string, ac7: Check) {
+function referenceSourceCheck(newBody: string, baseBody: string, tag: string, ac7: Check, masters = false) {
   const known = new Set(refLines(baseBody).flatMap((l) => (l.match(URL_RE) ?? []).map(hostOf)));
   for (const line of refLines(newBody)) {
     const urls = line.match(URL_RE) ?? [];
@@ -1086,6 +1101,7 @@ function referenceSourceCheck(newBody: string, baseBody: string, tag: string, ac
       const h = hostOf(u);
       if (!h) { ac7.fails.push(`${tag} reference line has an unparseable URL ${clip(u, 60)}: ${clip(line, 100)}`); continue; }
       if (ALLOWED_HOSTS.some((a) => h === a || h.endsWith(`.${a}`)) || known.has(h)) continue;
+      if (masters && /^https?:\/\/(?:www\.)?drstanfield\.com\/(?:blogs\/articles\/|pages\/roadmap)/i.test(u)) continue; // Brad's own posts (US-50)
       ac7.fails.push(`${tag} reference line has unknown host ${h}: ${clip(line, 100)}`);
     }
   }
@@ -1143,7 +1159,7 @@ function primaryIds(line: string): PrimaryId[] {
   return [...out.values()];
 }
 
-function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"], idsOut: Map<string, PrimaryId & { handle: string }>) {
+function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"], idsOut: Map<string, PrimaryId & { handle: string }>, masters = false) {
   const tag = `${c.handle}:`, rep = c.rep;
   const lines = normChars(c.newBody).split(/\r?\n/);
   for (const l of lines) {
@@ -1160,7 +1176,7 @@ function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"],
   }
   if (c.type === "reference") {
     referenceCheck(c.newBody, tag, ac7);
-    referenceSourceCheck(c.newBody, c.baseBody, tag, ac7);
+    referenceSourceCheck(c.newBody, c.baseBody, tag, ac7, masters);
     linkTextCheck(c.newBody, tag, ac7);
     productSectionCheck(c.newBody, c.baseBody, tag, ac7);
     // "New" ignores the leading number, so a renumbered reference is not new.
@@ -1245,7 +1261,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
       if (o.masters) checkMasterBody(c, master);
       checkAc3(c, hedgeBefore, hedgeAfter, ac3);
       if (c.baseText !== null) deleted = checkAc4(c, ac4);
-      checkAc7(c, ac7, pw, raw ? raw.abstracts : [], ids);
+      checkAc7(c, ac7, pw, raw ? raw.abstracts : [], ids, o.masters);
     }
     rows.push({ handle: c.handle, type: c.type ?? "?", file: c.rel, rawRel: raw?.main?.rel ?? "-", rawSha: c.rep?.raw_sha256 ?? "-",
       bodySha: sha256(c.newBody), tokensNew: added.length, quoted, deleted, hedgeBefore, hedgeAfter,
@@ -1270,6 +1286,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     ...git(o.root, ["ls-files", "--others", "--exclude-standard"]).split("\n"),
   ].filter(Boolean));
   const allowed = new Set<string>(o.outRel ? [o.outRel] : []);
+  if (o.masters) { allowed.add(`docs/knowledge-refresh/${o.batch}-notes.md`); allowed.add(`docs/knowledge-refresh/exceptions-${o.batch}.json`); }
   if (!ac1.fails.length) { allowed.add("docs/blog/index.json"); allowed.add("docs/blog/categories.json"); } // AC1 accepted them
   for (const c of ctxs) {
     const mine = (c.type ? [DIR_FOR[c.type]] : ["pathway", "blog", "guideline"]).map((d) => `docs/${d}/${c.handle}.md`);

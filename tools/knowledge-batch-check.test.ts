@@ -1654,3 +1654,70 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
     err.mockRestore();
   });
 });
+
+describe("US-50 AC1 masters: Brad's posts and positions as raw, drstanfield.com references, batch files", () => {
+  const POST = "---\ntitle: \"Post X\"\n---\n\nIn my view participants took 300 mg in adults and did well.\n";
+  const rawEntry = (rel: string, text = POST, at = `/elsewhere/${rel}`) => ({ path: at, sha256: sha256(text) });
+  const withPost = (quote: string, rel = "docs/blog/post-x.md", text = POST) => {
+    put(rel, text);
+    sh(["add", rel]); sh(["commit", "-q", "--allow-empty", "-m", "post", "--", rel]);
+    reps.alpha.extra_raw = [rawEntry(rel, text)];
+    reps.alpha.changed_tokens = [{ body_line: "Trials used 300 mg in adults [1].", raw_quote: quote }];
+  };
+  const q = "participants took 300 mg in adults and did well";
+  const f2 = (r: Record<string, Result>) => fails(r.AC2).join("\n");
+
+  it("accepts a POST:<handle>: quote against a docs/blog file, checked at the base revision", () => {
+    withPost(`POST:post-x: ${q}`);
+    expect(f2(run({ masters: true }))).toBe("");
+  });
+  it("without --masters the same report still fails", () => {
+    withPost(`POST:post-x: ${q}`);
+    expect(f2(run())).not.toBe("");
+  });
+  it("accepts POSITION:<path>: against a positions file", () => {
+    withPost(`POSITION:docs/products.md: ${q}`, "docs/products.md");
+    expect(f2(run({ masters: true }))).toBe("");
+  });
+  it("fails a POST quote whose handle is not an extra_raw file, or a quote not in the file", () => {
+    withPost(`POST:other-post: ${q}`);
+    expect(f2(run({ masters: true }))).toContain("other-post");
+    withPost("POST:post-x: participants took 999 mg in adults and did well");
+    expect(f2(run({ masters: true }))).toContain("raw_quote");
+  });
+  it("verifies the sha256 against the base revision, not the working tree", () => {
+    withPost(`POST:post-x: ${q}`);
+    put("docs/blog/post-x.md", POST.replace("300 mg", "400 mg"));
+    expect(f2(run({ masters: true }))).toBe("");
+    reps.alpha.extra_raw = [{ ...rawEntry("docs/blog/post-x.md"), sha256: sha256("other") }];
+    expect(f2(run({ masters: true }))).toContain("sha256 mismatch");
+  });
+  it("rejects an extra_raw path outside the repo's posts and positions files", () => {
+    withPost(`POST:post-x: ${q}`);
+    reps.alpha.extra_raw = [{ path: "/elsewhere/docs/blog/../../secret.md", sha256: sha256(POST) }];
+    expect(f2(run({ masters: true }))).toContain("extra_raw");
+    reps.alpha.extra_raw = [{ path: "/elsewhere/docs/other/post-x.md", sha256: sha256(POST) }];
+    expect(f2(run({ masters: true }))).toContain("extra_raw");
+  });
+
+  const refAlpha = (url: string) => put("docs/blog/alpha.md", fx("alpha.new.md").replace("## References", `## References\n\n[3] Stanfield B. A video post. drstanfield.com. [${url}](${url})`));
+  const f7 = (r: Record<string, Result>) => fails(r.AC7).join("\n");
+  it("allows drstanfield.com article and roadmap URLs as reference hosts under --masters only", () => {
+    refAlpha("https://drstanfield.com/blogs/articles/some-post");
+    expect(f7(run({ masters: true }))).not.toContain("unknown host");
+    expect(f7(run())).toContain("unknown host drstanfield.com");
+    refAlpha("https://drstanfield.com/pages/roadmap");
+    expect(f7(run({ masters: true }))).not.toContain("unknown host");
+    refAlpha("https://drstanfield.com/cart/evil");
+    expect(f7(run({ masters: true }))).toContain("unknown host drstanfield.com");
+  });
+
+  it("AC6: the batch's notes and exceptions files are batch files under --masters only", () => {
+    put("docs/knowledge-refresh/t-notes.md", "n");
+    put("docs/knowledge-refresh/exceptions-t.json", "[]");
+    expect(fails(run({ masters: true }).AC6)).toEqual([]);
+    expect(fails(run().AC6).join()).toContain("unexpected change: docs/knowledge-refresh/t-notes.md");
+    put("docs/knowledge-refresh/other-notes.md", "n");
+    expect(fails(run({ masters: true }).AC6).join()).toContain("other-notes.md");
+  });
+});
