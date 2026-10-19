@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { IMPORT_LIMITS } from './import-hints';
-import { convertValidationErrorsToUnits, healthInputSchema, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
+import { convertValidationErrorsToUnits, healthInputSchema, METRIC_TYPES, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
 import { UNIT_DEFS } from './units';
+import { METRIC_TO_FIELD } from './mappings';
 
 // ---------------------------------------------------------------------------
 // Client-side input validation (identity fields only — no unit conversion)
@@ -61,27 +62,43 @@ describe('validateInputValue', () => {
   });
 
   // PSA
-  // US-35 AC17 (Brad 2026-10-19): metastatic prostate cancer can read above 100.
-  it('rejects PSA above max (200)', () => {
-    expect(validateInputValue('psa', 200.1)).toBeUndefined();
+  // US-35 AC17 (Brad 2026-10-20): metastatic prostate cancer can read in the thousands.
+  it('rejects PSA above max (10,000)', () => {
+    expect(validateInputValue('psa', 10001)).toBeUndefined();
   });
 
   it('accepts PSA within range', () => {
     expect(validateInputValue('psa', 2.5)).toBe(2.5);
     expect(validateInputValue('psa', 150)).toBe(150);
+    expect(validateInputValue('psa', 9999)).toBe(9999);
   });
 
   it('accepts PSA at boundaries', () => {
     expect(validateInputValue('psa', 0)).toBe(0);
-    expect(validateInputValue('psa', 200)).toBe(200);
+    expect(validateInputValue('psa', 10000)).toBe(10000);
   });
 
-  it('US-35 AC17 — the schema, the form range and the unit table agree on the PSA ceiling of 200 ng/mL', () => {
-    expect(healthInputSchema.shape.psa.safeParse(200).success).toBe(true);
-    const over = healthInputSchema.shape.psa.safeParse(200.1);
+  it('US-35 AC17 — the schema, the form range and the unit table agree on the PSA ceiling of 10,000 ng/mL', () => {
+    expect(healthInputSchema.shape.psa.safeParse(9999).success).toBe(true);
+    expect(healthInputSchema.shape.psa.safeParse(10000).success).toBe(true);
+    const over = healthInputSchema.shape.psa.safeParse(10001);
     expect(over.success).toBe(false);
-    expect(over.error?.issues[0]?.message).toBe('PSA must be at most 200 ng/mL');
-    expect(UNIT_DEFS.psa.validationRange).toEqual({ si: { min: 0, max: 200 }, conventional: { min: 0, max: 200 } });
+    expect(over.error?.issues[0]?.message).toBe('PSA must be at most 10,000 ng/mL');
+    expect(UNIT_DEFS.psa.validationRange).toEqual({ si: { min: 0, max: 10000 }, conventional: { min: 0, max: 10000 } });
+  });
+
+  // The upload refusal names the unit table's end of the range (US-35 AC17),
+  // and the record refuses on the schema: the two must be one range.
+  it('US-35 AC17 — every core metric\'s schema bounds are its unit table\'s SI range', () => {
+    for (const metric of METRIC_TYPES) {
+      const { min, max } = UNIT_DEFS[metric].validationRange.si;
+      const field = (healthInputSchema.shape as Record<string, { safeParse: (v: number) => { success: boolean } }>)[METRIC_TO_FIELD[metric]];
+      expect([min, max, min - 1e-6, max + 1e-6].map(v => field.safeParse(v).success), metric).toEqual([true, true, false, false]);
+    }
+  });
+
+  it('US-35 AC17 — a PSA message in US units keeps its comma (one unit in both systems)', () => {
+    expect(convertValidationErrorsToUnits({ psa: 'PSA must be at most 10,000 ng/mL' }, 'conventional')).toEqual({ psa: 'PSA must be at most 10,000 ng/mL' });
   });
 
   // Edge cases

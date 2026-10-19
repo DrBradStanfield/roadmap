@@ -95,7 +95,7 @@ export const healthInputSchema = z.object({
   psa: z
     .number()
     .min(0, 'PSA must be positive')
-    .max(200, 'PSA must be at most 200 ng/mL')
+    .max(10000, 'PSA must be at most 10,000 ng/mL')
     .optional(),
   lpa: z
     .number()
@@ -403,7 +403,7 @@ const IDENTITY_FIELD_RANGES: Record<string, { min: number; max: number }> = {
   birthMonth: { min: 1, max: 12 },
   systolicBp: { min: 60, max: 250 },
   diastolicBp: { min: 40, max: 150 },
-  psa: { min: 0, max: 200 },
+  psa: { min: 0, max: 10000 },
 };
 
 /**
@@ -467,6 +467,9 @@ function convertErrorMessage(
 
   const siLabel = unitDef.label.si;
   const convLabel = unitDef.label[unitSystem];
+  // One unit in both systems (mmHg, PSA's ng/mL): nothing to convert, and the
+  // number regex would split "10,000 ng/mL" at its comma.
+  if (siLabel === convLabel) return message;
   const decimals = unitDef.decimalPlaces[unitSystem];
   const fromCanonical = unitDef.fromCanonical[unitSystem];
 

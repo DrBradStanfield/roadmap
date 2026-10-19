@@ -518,6 +518,9 @@ export interface MeasurementRefusal {
   metricType: string;
   reason: (typeof MEASUREMENT_REFUSAL_REASONS)[number];
   message: string;
+  /** For `out-of-range`: which end of the accepted range it missed, so the
+   *  refusal can name that end without the value (US-35 AC17). */
+  bound?: 'above' | 'below';
 }
 
 export interface BulkAppendResult {
@@ -582,7 +585,9 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
       }
       const invalid = measurementValueFault(input.metricType, input.value);
       if (invalid) {
-        measurementRefusals.push({ index, metricType: input.metricType, reason: Number.isFinite(input.value) ? 'out-of-range' : 'invalid-value', message: invalid.message });
+        measurementRefusals.push(Number.isFinite(input.value)
+          ? { index, metricType: input.metricType, reason: 'out-of-range', message: invalid.message, bound: input.value > UNIT_DEFS[input.metricType as MetricType].validationRange.si.max ? 'above' : 'below' }
+          : { index, metricType: input.metricType, reason: 'invalid-value', message: invalid.message });
         continue;
       }
       makeRow = (recordedAt, correctsId) => createMeasurement({

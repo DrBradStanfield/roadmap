@@ -59,8 +59,10 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   others), `undatedPrevious` (US-12 AC14: values from an undated previous column, not files); a key not sent is 0 (zero counts are omitted); an unpaired start is located by its outcome row) →
   cloud_connect_started/success → chat_opened → correction_made →
   lab_rows_viewed/lab_row_added → measurement_refused (US-35 AC17: a refused blood test
-  value at the upload save, split by `metric` and `refusal`; never a value. It fires once per
-  tab per (metric, refusal) pair, so it counts kinds of refusal, not refused values) →
+  value at the upload save, split by `refusal`, and by `metric` for `invalid-value` only: an
+  `out-of-range` row names no metric, so it never says whose value is past a bound; never a
+  value. It fires once per tab per (metric, refusal) pair, so it counts kinds of refusal, not
+  refused values) →
   medication_history_viewed →
   reminder_optin/optout → report_email_* →
   reminder_sent (server; cross-check against `reminder_optin_v2.last_sent`

@@ -41,14 +41,15 @@ describe('explicit local-first data path', () => {
     await flushRoadmapStore();
     const persisted = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
     expect(persisted.measurements.map((row: { value: number }) => row.value)).toEqual([70]);
-    expect(trackProductEvent).toHaveBeenCalledWith('measurement_refused', { metric: 'weight', refusal: 'out-of-range' });
+    expect(trackProductEvent).toHaveBeenCalledWith('measurement_refused', { refusal: 'out-of-range' });
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  // US-35 AC17 · the usage signal: which core metric was refused and why, in
-  // closed words. The number is the one thing the counter may never hold, and
-  // a metric off METRIC_TYPES is free text, so it is not sent either.
-  it('US-35 AC17 — counts each refused value by metric and refusal word, never the value', async () => {
+  // US-35 AC17 · the usage signal: why a core value was refused, in closed
+  // words. The number is the one thing the counter may never hold; a metric
+  // off METRIC_TYPES is free text; and an out-of-range row names no metric,
+  // since that would say this visitor's value is past a bound (Brad 2026-10-20).
+  it('US-35 AC17 — counts each refused value by refusal word, naming the metric only for an invalid value', async () => {
     vi.mocked(trackProductEvent).mockClear();
     await data.bulkSaveMeasurements([
       { metricType: 'weight', value: 987.65, recordedAt: '2026-08-01', source: 'lab_import' },
@@ -56,11 +57,11 @@ describe('explicit local-first data path', () => {
       { metricType: 'LDL 4.2', value: 4.2, recordedAt: '2026-08-01', source: 'lab_import' },
     ]);
     expect(vi.mocked(trackProductEvent).mock.calls).toEqual([
-      ['measurement_refused', { metric: 'weight', refusal: 'out-of-range' }],
+      ['measurement_refused', { refusal: 'out-of-range' }],
       ['measurement_refused', { metric: 'ldl', refusal: 'invalid-value' }],
       ['measurement_refused', { refusal: 'unknown-metric' }],
     ]);
-    expect(JSON.stringify(vi.mocked(trackProductEvent).mock.calls)).not.toMatch(/987|4\.2|NaN/);
+    expect(JSON.stringify(vi.mocked(trackProductEvent).mock.calls)).not.toMatch(/987|4\.2|NaN|weight/);
   });
 
   it('saves and corrects a dated measurement through the imported API', async () => {

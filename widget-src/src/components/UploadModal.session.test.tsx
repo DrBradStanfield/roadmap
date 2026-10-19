@@ -125,10 +125,10 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(labImport).toHaveBeenCalledOnce();
   });
   it('US-12 AC6 / US-35 AC17 — a refused core value is settled: named once on its own line, no retry offered', async () => {
-    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [0, 1].map(index => ({ index, metricType: 'ldl', reason: 'out-of-range' as const, message: 'synthetic' })) });
+    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [0, 1].map(index => ({ index, metricType: 'psa', reason: 'out-of-range' as const, message: 'synthetic', bound: 'above' as const })) });
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    expect(await screen.findByText('LDL Cholesterol: the number was not saved. It is outside the range the record accepts.')).toBeTruthy();
+    expect(await screen.findByText('PSA not saved: above 10,000 ng/mL, the highest value this tool accepts. Check the report, then enter it again.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
     expect(screen.queryByText(/try again/)).toBeNull();
     expect(screen.queryByText('No items saved')).toBeNull();
@@ -142,13 +142,13 @@ describe('US-12 AC4–6 upload session ownership', () => {
       documentType: 'pathology_report', title: 'Synthetic report', documentDate: '2024-06-01',
       contentMd: '', metadata: {}, sourceFileName: 'test.pdf',
     }]);
-    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [{ index: 0, metricType: 'ldl', reason: 'out-of-range', message: 'synthetic' }] });
+    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [{ index: 0, metricType: 'psa', reason: 'out-of-range', message: 'synthetic', bound: 'above' }] });
     vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [], errorCount: 1 });
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
-    const line = screen.getByText('LDL Cholesterol: the number was not saved. It is outside the range the record accepts.');
+    const line = screen.getByText('PSA not saved: above 10,000 ng/mL, the highest value this tool accepts. Check the report, then enter it again.');
     // Its own spacing in review, not the done screen's negative margin.
     expect(line.closest('.review-refusals')).not.toBeNull();
     // One live region, so a screen reader hears the error and the refusal after Save.
@@ -162,15 +162,15 @@ describe('US-12 AC4–6 upload session ownership', () => {
       documentType: 'pathology_report', title: 'Synthetic report', documentDate: '2024-06-01',
       contentMd: '', metadata: {}, sourceFileName: 'test.pdf',
     }]).mockImplementationOnce(() => { throw new Error('synthetic outer failure'); });
-    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [{ index: 0, metricType: 'ldl', reason: 'out-of-range', message: 'synthetic' }] });
+    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [{ index: 0, metricType: 'psa', reason: 'out-of-range', message: 'synthetic', bound: 'above' }] });
     vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [], errorCount: 1 });
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByText(/LDL Cholesterol: the number was not saved/);
+    await screen.findByText(/PSA not saved: above 10,000 ng\/mL/);
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await waitFor(() => expect(synthesizeLabArchiveEntries).toHaveBeenCalledTimes(2));
     expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
-    expect(screen.queryByText(/LDL Cholesterol: the number was not saved/)).toBeNull();
+    expect(screen.queryByText(/PSA not saved: above 10,000 ng\/mL/)).toBeNull();
   });
   it('keeps failed save drafts for retry', async () => {
     vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic failure'));

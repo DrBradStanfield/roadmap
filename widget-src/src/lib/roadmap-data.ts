@@ -11,6 +11,7 @@ import {
   knownMinorOf,
   resolveLabCatalogEntry,
 } from '@roadmap/health-core';
+import { MEASUREMENT_REFUSALS_WITH_METRIC } from '@roadmap/health-core/product-events';
 import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, setChatHistoryFactory } from './chat-history-access';
@@ -154,11 +155,11 @@ export async function saveScreening(screeningKey: string, value: string): Promis
 export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[]): Promise<BulkSaveResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
   const result = store.bulkSaveMeasurements(measurements);
-  // Counted like a refused lab unit, in closed words only (US-35 AC17). Any
-  // reason but unknown-metric was checked against METRIC_TYPES first; an
-  // unknown metric is free text, so it is not sent.
+  // Counted like a refused lab unit, in closed words only (US-35 AC17). The
+  // metric rides only on an invalid value: an out-of-range one would say this
+  // visitor's value is past a bound, and an unknown metric is free text.
   for (const row of result.refused) {
-    trackProductEvent('measurement_refused', row.reason === 'unknown-metric' ? { refusal: row.reason } : { metric: row.metricType as MetricType, refusal: row.reason });
+    trackProductEvent('measurement_refused', MEASUREMENT_REFUSALS_WITH_METRIC.includes(row.reason) ? { metric: row.metricType as MetricType, refusal: row.reason } : { refusal: row.reason });
   }
   return result;
 }

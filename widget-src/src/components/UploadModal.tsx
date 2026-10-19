@@ -790,8 +790,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}`, r])).values()].map(r => (
       <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit, r.fault)}</p>
     ))}
-    {[...new Map(refusedMeasurements.map(r => [`${r.metricType}|${r.reason}`, r])).values()].map(r => (
-      <p key={`${r.metricType}|${r.reason}`} className="upload-done-skipped">{measurementRefusalLine(r)}</p>
+    {[...new Map(refusedMeasurements.map(r => [`${r.metricType}|${r.reason}|${r.bound}`, r])).values()].map(r => (
+      <p key={`${r.metricType}|${r.reason}|${r.bound}`} className="upload-done-skipped">{measurementRefusalLine(r, metricUnitOverrides?.[r.metricType as MetricType] ?? unitSystem)}</p>
     ))}
   </>;
 

@@ -44,14 +44,28 @@ describe('labValueLabel', () => {
 });
 
 // US-12 AC6 / US-35 AC17: a refused blood test value is named by its test,
-// with a reason the person can act on, and never the number.
+// with a reason the person can act on, and never the number. Out of range, it
+// names the end of the range it missed, in the units the person reads (Brad,
+// 2026-10-20: "explain what's out of range, otherwise it will confuse users").
 describe('measurementRefusalLine', () => {
   it('words each refusal reason on its own', () => {
-    expect(measurementRefusalLine({ index: 0, metricType: 'ldl', reason: 'out-of-range', message: 'synthetic' }))
-      .toBe('LDL Cholesterol: the number was not saved. It is outside the range the record accepts.');
-    expect(measurementRefusalLine({ index: 0, metricType: 'ldl', reason: 'invalid-value', message: 'synthetic' }))
+    expect(measurementRefusalLine({ index: 0, metricType: 'ldl', reason: 'out-of-range', message: 'synthetic', bound: 'above' }, 'si'))
+      .toBe('LDL Cholesterol not saved: above 12.9 mmol/L, the highest value this tool accepts. Check the report, then enter it again.');
+    expect(measurementRefusalLine({ index: 0, metricType: 'ldl', reason: 'invalid-value', message: 'synthetic' }, 'si'))
       .toBe('LDL Cholesterol: the value was not a number the record can store, so it was not saved.');
-    expect(measurementRefusalLine({ index: 0, metricType: 'toString', reason: 'unknown-metric', message: 'synthetic' }))
+    expect(measurementRefusalLine({ index: 0, metricType: 'toString', reason: 'unknown-metric', message: 'synthetic' }, 'si'))
       .toBe('toString: not a test the record knows, so it was not saved.');
+  });
+
+  it('names the PSA ceiling of 10,000 ng/mL', () => {
+    expect(measurementRefusalLine({ index: 0, metricType: 'psa', reason: 'out-of-range', message: 'synthetic', bound: 'above' }, 'si'))
+      .toBe('PSA not saved: above 10,000 ng/mL, the highest value this tool accepts. Check the report, then enter it again.');
+  });
+
+  it('names the floor for a value below the range, in US units when the person reads them', () => {
+    expect(measurementRefusalLine({ index: 0, metricType: 'hba1c', reason: 'out-of-range', message: 'synthetic', bound: 'below' }, 'si'))
+      .toBe('HbA1c not saved: below 9 mmol/mol, the lowest value this tool accepts. Check the report, then enter it again.');
+    expect(measurementRefusalLine({ index: 0, metricType: 'ldl', reason: 'out-of-range', message: 'synthetic', bound: 'above' }, 'conventional'))
+      .toBe('LDL Cholesterol not saved: above 500 mg/dL, the highest value this tool accepts. Check the report, then enter it again.');
   });
 });

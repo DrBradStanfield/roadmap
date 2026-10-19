@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MEASUREMENT_REFUSAL_REASONS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
+import { EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
 import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { METRIC_TYPES } from '../../packages/health-core/src/validation';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
@@ -47,7 +47,7 @@ const metadataSchema = z
     from: z.enum(LPA_UNITS).optional(),
     /** US-05 AC3: the Lp(a) check's answer, a label only. */
     answer: z.enum(LPA_CHECK_ANSWERS).optional(),
-    /** US-35 AC17: the core metric a refused value was for, and why, both closed words. */
+    /** US-35 AC17: why a core value was refused, and for an invalid value only, its metric (checkEventKeys). Closed words. */
     metric: z.enum(METRIC_TYPES).optional(),
     refusal: z.enum(MEASUREMENT_REFUSAL_REASONS).optional(),
     ...(Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, uploadOutcomeCount])) as Record<UploadOutcomeKey, typeof uploadOutcomeCount>),
@@ -124,6 +124,10 @@ function checkEventKeys(
     if (only && !only.includes(key)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', key], message: 'key is not one this event may carry' });
     }
+  }
+  // A metric beside an out-of-range refusal would say this visitor's value is past a bound.
+  if (metadata.metric !== undefined && !(MEASUREMENT_REFUSALS_WITH_METRIC as readonly unknown[]).includes(metadata.refusal)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', 'metric'], message: 'key is not one this event may carry' });
   }
   // `unit` is any lab spelling on `lab_unit_refused`; here, only an Lp(a) unit.
   if (event.eventName === 'lpa_unit_selected' && metadata.unit !== undefined && !(LPA_UNITS as readonly unknown[]).includes(metadata.unit)) {

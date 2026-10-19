@@ -247,7 +247,7 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     },
     decimalPlaces: { si: 0, conventional: 2 },
   },
-  psa: makeIdentityUnit('ng/mL', { min: 0, max: 200 }, 1),
+  psa: makeIdentityUnit('ng/mL', { min: 0, max: 10000 }, 1),
   lpa: {
     canonical: 'nmol/L',
     label: { si: 'nmol/L', conventional: 'mg/dL' },

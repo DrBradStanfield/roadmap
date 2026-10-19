@@ -67,12 +67,14 @@ describe('trackProductEvent on the Shopify surface', () => {
 
   it('US-35 AC17 — counts a refused measurement once per metric and refusal word, not once per tab', async () => {
     const { trackProductEvent } = await import('./server-api');
-    trackProductEvent('measurement_refused', { metric: 'ldl', refusal: 'out-of-range' });
-    trackProductEvent('measurement_refused', { metric: 'ldl', refusal: 'out-of-range' });
-    trackProductEvent('measurement_refused', { metric: 'psa', refusal: 'out-of-range' });
+    trackProductEvent('measurement_refused', { metric: 'ldl', refusal: 'invalid-value' });
+    trackProductEvent('measurement_refused', { metric: 'ldl', refusal: 'invalid-value' });
+    trackProductEvent('measurement_refused', { metric: 'psa', refusal: 'invalid-value' });
+    trackProductEvent('measurement_refused', { refusal: 'out-of-range' });
+    trackProductEvent('measurement_refused', { refusal: 'out-of-range' });
     trackProductEvent('measurement_refused', { refusal: 'unknown-metric' });
     expect(fetchMock.mock.calls.map(c => JSON.parse((c[1] as RequestInit).body as string).metadata)).toEqual([
-      { metric: 'ldl', refusal: 'out-of-range' }, { metric: 'psa', refusal: 'out-of-range' }, { refusal: 'unknown-metric' },
+      { metric: 'ldl', refusal: 'invalid-value' }, { metric: 'psa', refusal: 'invalid-value' }, { refusal: 'out-of-range' }, { refusal: 'unknown-metric' },
     ]);
   });
 

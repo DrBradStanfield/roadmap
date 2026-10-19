@@ -530,8 +530,21 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
     expect(result.file).toBe(file);
     expect(result.skippedDuplicates).toBe(0);
     expect(result.measurementRefusals).toEqual([
-      { index: 0, metricType: 'ldl', reason: 'out-of-range', message: expect.any(String) },
+      { index: 0, metricType: 'ldl', reason: 'out-of-range', message: expect.any(String), bound: 'below' },
     ]);
+  });
+
+  // Brad 2026-10-20: the PSA ceiling is 10,000 ng/mL; the upload save keeps it.
+  it('US-35 AC17 — saves an uploaded PSA of 9,999 and refuses 10,001, above the range, without the value', () => {
+    const result = bulkAppendValues(base(), [
+      { kind: 'measurement', metricType: 'psa', value: 9999, recordedAt: day, source: 'lab_import' },
+      { kind: 'measurement', metricType: 'psa', value: 10001, recordedAt: '2026-08-02', source: 'lab_import' },
+    ], NOW);
+    expect(result.saved.map(row => row.value)).toEqual([9999]);
+    expect(result.measurementRefusals).toEqual([
+      { index: 1, metricType: 'psa', reason: 'out-of-range', message: 'PSA must be at most 10,000 ng/mL', bound: 'above' },
+    ]);
+    expect(JSON.stringify(result.measurementRefusals)).not.toMatch(/10001|10,001/);
   });
 
   it.each([-1, 0, 19.99, 300.01, NaN, Infinity, -Infinity])('US-35 AC17 — refuses invalid weight %s without taking its slot', value => {
@@ -549,7 +562,7 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
       { kind: 'measurement', metricType: 'weight', value: 987.65, recordedAt: day, source: 'lab_import' },
     ], NOW);
     const [refusal] = result.measurementRefusals;
-    expect(refusal).toMatchObject({ metricType: 'weight', reason: 'out-of-range' });
+    expect(refusal).toMatchObject({ metricType: 'weight', reason: 'out-of-range', bound: 'above' });
     expect(refusal.message).toMatch(/\S/);
     expect(JSON.stringify(result.measurementRefusals)).not.toMatch(/987/);
   });
