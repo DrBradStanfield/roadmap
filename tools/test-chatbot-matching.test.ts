@@ -528,7 +528,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   // negation or condition before the test name is a refusal, and a grade in another clause still fails.
   it('the AC36 fixture fails a grade of a saved value and passes a refusal to grade', () => {
     // Each answer carries the parts the fixture requires (a saved value, a height request and why), plus one test sentence.
-    const ask = ' Your saved LDL is 3.9 mmol/L. Please tell me your height, because the roadmap needs it to work out your BMI and protein target.';
+    const ask = ' Your saved LDL is 3.9 mmol/L. Please tell me your height, because the roadmap needs it to work out your BMI and protein target. You can enter it in the roadmap tool.';
     const grades = [
       "Your LDL is high, but I can't run the plan without your height.",
       "I can't run your plan yet, but your LDL is high.",
@@ -562,6 +562,27 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     ];
     expect(verdicts(fixtureOf('what do my results show?'), [...grades, ...refusals].map(s => s + ask)))
       .toEqual([...grades.map(() => 'fail'), ...refusals.map(() => 'pass')]);
+  }, 120_000);
+
+  // US-15 AC36 (2026-10-20, Brad): with no plan, the bot asks for the missing value and says where to give
+  // it. The chat cannot save sex or height, so it points to the tool and never claims a save.
+  it('the AC36 fixtures fail an answer that skips the tool or claims to save the height', () => {
+    const why = ' Your saved LDL is 3.9 mmol/L. Please tell me your height, because the roadmap needs it to work out your BMI and protein target.';
+    expect(verdicts(fixtureOf('what do my results show?'), [why, why + ' Enter it in the roadmap tool and it can run your plan.']))
+      .toEqual(['fail', 'pass']);
+    const bad = [
+      "I've saved your height as 165 cm. Your roadmap can now run.",
+      "Done! I've updated your height to 165 cm in the form.",
+      "Sure, I'll save that for you. Add anything else in the form.",
+      'Your height is now saved. You can also enter it in the tool.',
+      'Thanks! At 165 cm the roadmap can run your plan.',
+    ];
+    const good = [
+      "I can't save it from this chat. Please enter your height in the roadmap tool, and it can then run your plan.",
+      "This chat can't store it, so add your height (165 cm) to your profile in the tool.",
+      "I'm not able to save values here. Fill in your height in the form and press Save.",
+    ];
+    expect(verdicts(fixtureOf('can you save my height'), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
   }, 120_000);
 
   it('the insulin case fails the roadmap\'s screening cut-offs given as her target (US-15 AC32)', () => {

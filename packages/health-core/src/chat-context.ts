@@ -121,8 +121,9 @@ export const MINOR_CHAT_RULE =
  */
 export const NO_PLAN_CHAT_RULE =
   "When the user's health data has saved values but no `currentSuggestions` because `missingInputs` names `sex` or " +
-  '`heightCm`, the roadmap has no plan yet. Use and mention the values they have saved, without grading them, ask for ' +
-  'the missing sex or height, and say in one plain sentence why: the roadmap needs height and sex to work out the plan ' +
+  '`heightCm`, the roadmap has no plan yet. Use and mention the values they have saved, without grading them, ask them to ' +
+  'enter the missing sex or height in the roadmap tool (this chat cannot save them), and say in one plain sentence ' +
+  'why: the roadmap needs height and sex to work out the plan ' +
   '(BMI, waist-to-height ratio, the protein target from ideal body weight, and kidney function, as eGFR needs sex), ' +
   'and with them it can run their plan.';
 

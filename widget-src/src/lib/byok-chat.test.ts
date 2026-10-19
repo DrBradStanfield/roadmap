@@ -89,7 +89,7 @@ describe('BYOK chat context — per-field sanitizing', () => {
     expect(context.excludedFields).toEqual(['heightCm']);
     expect(context.missingInputs).toContain('heightCm');
     expect(context).not.toHaveProperty('currentSuggestions');
-    expect(state.sent!.system).toMatch(/no `currentSuggestions`.*ask for/i);
+    expect(state.sent!.system).toMatch(/no `currentSuggestions`.*ask them to enter the missing sex or height in the roadmap tool/i);
     expect(state.sent!.system).toMatch(/needs height and sex to work out the plan/);
   });
 

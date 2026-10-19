@@ -13,6 +13,7 @@ import {
 } from './chat.server';
 import { chatContextOf, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE } from '../../packages/health-core/src/chat-context';
 import { MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
+import { EDITABLE_FIELDS } from '../../packages/health-core/src/chat-edits';
 import { loadBlogIndex } from './blog-index.server';
 
 describe('buildConversationMessages', () => {
@@ -111,9 +112,17 @@ describe('buildSystemBlocks', () => {
       expect(text).toContain(NO_PLAN_CHAT_RULE);
     }
     expect(NO_PLAN_CHAT_RULE).toMatch(/without grading them/);
-    expect(NO_PLAN_CHAT_RULE).toMatch(/ask for the missing sex or height/);
+    expect(NO_PLAN_CHAT_RULE).toMatch(/ask them to enter the missing sex or height in the roadmap tool \(this chat cannot save them\)/);
     expect(NO_PLAN_CHAT_RULE).toMatch(/one plain sentence why: the roadmap needs height and sex to work out the plan/);
     expect(NO_PLAN_CHAT_RULE).not.toMatch(/\u2014/);
+  });
+
+  // US-15 AC36 (2026-10-20, Brad): the rule sends the user to the tool because the chat has no
+  // way to save sex or height: the form tool's fields are measurements only. If this fails, a
+  // save path exists, and the rule should offer it instead.
+  it('US-15 AC36: the chat cannot propose sex or height, so the no-plan rule points to the tool', () => {
+    expect(EDITABLE_FIELDS).not.toContain('sex');
+    expect(EDITABLE_FIELDS).not.toContain('heightCm');
   });
 
   it('includes evidence in second block', () => {
