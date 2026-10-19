@@ -41,8 +41,9 @@ export async function labImport(
       // No Content-Type header — the route parses JSON regardless of it
       // (parseSimpleRequestJson). Same-origin via the app proxy; no CORS here.
       // `ownDates`: this widget files a value on its own day (US-12 AC12);
-      // `undatedPrev`: it asks the day of an undated previous column (AC14).
-      body: JSON.stringify({ pages, unitSystem, ownDates: true, undatedPrev: true }),
+      // `undatedPrev`: it asks the day of an undated previous column (AC14);
+      // `refusedRows`: it lists refused values under "Not saved" (AC15).
+      body: JSON.stringify({ pages, unitSystem, ownDates: true, undatedPrev: true, refusedRows: true }),
     });
     if (response.status === 429) {
       return { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
@@ -82,7 +83,7 @@ export async function labImportBatch(
       // is a compatibility label that names nothing: a server older than
       // 2026-10-13 requires the field, and CI ships this widget before the
       // server. Drop it once every live server strips it.
-      body: JSON.stringify({ batch: true, ownDates: true, undatedPrev: true, files: files.map(({ pages }, i) => ({ fileName: `file-${i + 1}`, pages })) }),
+      body: JSON.stringify({ batch: true, ownDates: true, undatedPrev: true, refusedRows: true, files: files.map(({ pages }, i) => ({ fileName: `file-${i + 1}`, pages })) }),
     });
     if (response.status === 429) {
       return { batchId: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };

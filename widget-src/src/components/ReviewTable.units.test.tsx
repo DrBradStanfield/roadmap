@@ -87,3 +87,37 @@ describe('US-21 AC18: a core value whose unit was guessed shows its question, hi
     expect(container.querySelector('.bt-cell-low-confidence')).toBeNull();
   });
 });
+
+// Issue #166: the review showed only the converted number, so "177 µmol/L"
+// gave no hint that the report printed "2" with no unit (US-13 AC11).
+describe('US-13 AC11: a core value shows what the report printed when the cell shows something else', () => {
+  const printed = (v: Partial<FileResult['values'][number]>): FileResult[] => [{
+    fileName: 'labs.pdf', reportDate: DAY, additionalValues: [],
+    values: [{ metric: 'creatinine', valueSI: 132.6, displayValue: 1.5, displayUnit: 'mg/dL', displaySystem: 'conventional', confidence: 'high', ...v }],
+  }];
+
+  it('a converted value: "Printed: 1.5 mg/dL" beside 133 µmol/L, heard with the input', () => {
+    const { container, getByRole } = renderReview(printed({}));
+    expect(container.querySelector('.bt-cell-printed')?.textContent).toBe('Printed: 1.5 mg/dL');
+    expect(getByRole('textbox', { name: /Creatinine value from/, description: /Printed: 1\.5 mg\/dL/ })).toBeTruthy();
+  });
+
+  it('a guessed unit with none printed: "Printed: 2.8 (no unit)"', () => {
+    const { container } = renderReview([{
+      fileName: 'labs.pdf', reportDate: DAY, additionalValues: [],
+      values: [{ metric: 'ldl', valueSI: 2.8, displayValue: 2.8, displayUnit: '', displaySystem: 'si', confidence: 'medium', unitGuessed: true }],
+    }]);
+    expect(container.querySelector('.bt-cell-printed')?.textContent).toBe('Printed: 2.8 (no unit)');
+  });
+
+  it('says nothing when the cell shows the printed number in a known unit', () => {
+    const { container } = renderReview(printed({ valueSI: 85, displayValue: 85, displayUnit: 'µmol/L', displaySystem: 'si' }));
+    expect(container.querySelector('.bt-cell-printed')).toBeNull();
+  });
+
+  it('a creatinine too high for blood shows its question, highlighted', () => {
+    const { container } = renderReview(printed({ valueSI: 1200, displayValue: 1200, displayUnit: 'µmol/L', displaySystem: 'si', confidence: 'medium', question: 'Was this a blood test?' }));
+    expect(container.querySelector('.bt-cell-question')?.textContent).toBe('Was this a blood test?');
+    expect(container.querySelector('.bt-cell-low-confidence')).not.toBeNull();
+  });
+});

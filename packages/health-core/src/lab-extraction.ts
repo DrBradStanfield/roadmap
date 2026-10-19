@@ -43,6 +43,20 @@ export interface ExtractedValue {
   /** YYYY-MM, only beside `UNDATED_PREVIOUS`: the month a month-only previous
    *  column printed, so the review can name it. Never a day (US-12 AC14). */
   printedMonth?: string;
+  /** The printed unit was blank or unknown, so `resolveUnit` guessed it from the number (US-12 AC16). */
+  unitGuessed?: true;
+}
+
+/** A lab row the extractor would not convert or save: a creatinine whose unit
+ *  is still unknown after its clean-up (US-12 AC15). Listed under "Not saved". */
+export interface RefusedLabValue {
+  metric: string;
+  value: number;
+  /** As printed; "" when none was. */
+  unit: string;
+  reason: string;
+  recordedAt?: string;
+  printedMonth?: string;
 }
 
 /**
@@ -110,6 +124,10 @@ export interface UnifiedExtractionResult {
    *  malformed row), so the person is told some were left out (US-12 AC8).
    *  Absent where nothing was parsed from a model's reply. */
   droppedValueCount?: number;
+  /** Rows refused rather than guessed (US-12 AC15); absent when none was.
+   *  Never in `droppedValueCount`: only the HTTP route adds them there, for a
+   *  widget that predates this field. */
+  refusedValues?: RefusedLabValue[];
 }
 
 // ---------------------------------------------------------------------------
@@ -157,6 +175,39 @@ export function resolveCoreMetricName(name: string): MetricType | null {
   return CORE_NAME_INDEX.get(foldName(name)) ?? null;
 }
 
+/**
+ * A creatinine unit as a report garbles it, read once more (US-12 AC15): a
+ * trailing flag dropped ("µmol/L H"), "µmol/I" read as "µmol/L", "mg%" as
+ * "mg/dL", "mcmol/L" as "µmol/L". The extractor's step only: `lookupUnit`
+ * stays exact for every other caller. A bracket or a word is never stripped,
+ * so "mg/dL (urine)" stays unknown.
+ */
+function cleanedCreatinineUnit(unit: string): string {
+  return unit.trim().replace(/\s+(?:HH|LL|H|L|\*)$/, '').replace(/mol\/I$/, 'mol/L').replace(/^mg%$/i, 'mg/dL').replace(/^mcmol\//i, 'µmol/');
+}
+
+/** The printed number as the record stores it: the raw unit first, then, for creatinine only, the cleaned one. */
+function readPrintedUnit(metric: MetricType, value: number, unit: string) {
+  return reportedToCanonical(metric, value, unit)
+    ?? (metric === 'creatinine' ? reportedToCanonical(metric, value, cleanedCreatinineUnit(unit)) : null);
+}
+
+/** Units a urine creatinine or a creatinine ratio prints in, folded (case, spaces). */
+const URINE_OR_RATIO_UNITS = new Set(['mg/mmol', 'g/mol', 'mg/g', 'mg/mg', 'g/g', 'mg/gcreat', 'mg/gcr', 'mmol/l', 'mg/24h', 'mmol/24h', 'ml/min']);
+
+/** Why a creatinine was refused, in the user's words (US-12 AC15). */
+function creatinineRefusal(unit: string): string {
+  if (!unit) return 'No unit was printed.';
+  return URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''))
+    ? 'This unit is usually a urine result.'
+    : 'Creatinine is not measured in this unit.';
+}
+
+/** Above this a creatinine (µmol/L) asks "Was this a blood test?" (US-13 AC11).
+ *  D6, Brad's proposal: a display question, not a clinical threshold, so the
+ *  three clinical files carry no line for it. */
+const CREATININE_ASK_ABOVE = 500;
+
 /** Exported for testing */
 export function resolveUnit(metric: MetricType, unitStr: string, value: number): {
   valueSI: number;
@@ -165,7 +216,7 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
   /** The number fits both scales, so no guess is safe (US-21 AC18). */
   fitsBoth?: true;
 } {
-  const reported = reportedToCanonical(metric, value, unitStr);
+  const reported = readPrintedUnit(metric, value, unitStr);
   if (reported) return { ...reported, confident: true };
 
   // Fallback: check which validation range the value fits
@@ -192,21 +243,26 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
     if (!VALID_METRICS.includes(v.metric as MetricType)) continue;
     const metric = v.metric as MetricType;
     const { valueSI, system, confident, fitsBoth } = resolveUnit(metric, v.unit, v.value);
+    const asks = [
+      !confident && `${v.unit ? `Unit "${v.unit}" was inferred` : 'No unit was printed, so the unit was inferred'} — please verify this value`,
+      metric === 'creatinine' && valueSI > CREATININE_ASK_ABOVE && 'Was this a blood test?',
+    ].filter(Boolean);
+    const question = asks.length ? [v.question?.trim().replace(/[^.?!]$/, '$&.'), ...asks].filter(Boolean).join(' ') : v.question;
     values.push({
       metric: v.metric,
       valueSI,
       displayValue: v.value,
       displayUnit: v.unit,
       displaySystem: system,
-      // A guessed unit (none printed, or one not known) and a number that fits
-      // both scales (Lp(a) 50): low, so the review flags it and it never saves
-      // unnoticed (US-21 AC18).
-      confidence: fitsBoth ? 'low' : !confident && v.confidence === 'high' ? 'medium' : v.confidence,
-      question: !confident
-        ? [v.question?.trim().replace(/[^.?!]$/, '$&.'), `${v.unit ? `Unit "${v.unit}" was inferred` : 'No unit was printed, so the unit was inferred'} — please verify this value`].filter(Boolean).join(' ')
-        : v.question,
+      // A number that fits both scales (Lp(a) 50) is low; any question (a
+      // guessed unit, the model's doubt, a creatinine too high for blood) is at
+      // most medium, so the review flags it and it never saves unnoticed
+      // (US-21 AC18, US-13 AC11).
+      confidence: fitsBoth ? 'low' : question && v.confidence === 'high' ? 'medium' : v.confidence,
+      question,
       ...(v.recordedAt ? { recordedAt: v.recordedAt } : null),
       ...(v.printedMonth ? { printedMonth: v.printedMonth } : null),
+      ...(!confident ? { unitGuessed: true as const } : null),
     });
   }
   return values;
@@ -522,7 +578,20 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
       : v.recordedAt === reportDay ? [{ ...v, recordedAt: undefined }]
         : reportDay && isCalendarDay(reportDay) && isCalendarDay(v.recordedAt) && v.recordedAt < reportDay ? [v] : [];
   };
-  const coreRows = parsed.values.flatMap(ownDay);
+  // A creatinine whose unit is blank or unknown, even cleaned, is never
+  // guessed and never saved, as a core value or as a lab row named creatinine
+  // ("Cr" alone may be chromium): it is listed with why (US-12 AC15). A urine
+  // ratio guessed as mg/dL became a low eGFR (issue #166).
+  const refusedValues: RefusedLabValue[] = [];
+  const refusesCreatinine = (v: { value: number; unit: string; recordedAt?: string; printedMonth?: string }) => {
+    if (readPrintedUnit('creatinine', v.value, v.unit)) return false;
+    refusedValues.push({
+      metric: 'creatinine', value: v.value, unit: v.unit, reason: creatinineRefusal(v.unit),
+      ...(v.recordedAt ? { recordedAt: v.recordedAt } : null), ...(v.printedMonth ? { printedMonth: v.printedMonth } : null),
+    });
+    return true;
+  };
+  const coreRows = isLab ? parsed.values.flatMap(ownDay).filter(v => v.metric !== 'creatinine' || !refusesCreatinine(v)) : [];
   const slot = (metric: string, day?: string) => `${metric}@${day ?? ''}`;
   const taken = new Set(coreRows.map(v => slot(v.metric, v.recordedAt)));
   const additionalValues: typeof parsed.additionalValues = [];
@@ -531,7 +600,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
     if (metric && PROMOTABLE.has(metric) && !taken.has(slot(metric, v.recordedAt)) && reportedToCanonical(metric, v.value, v.unit)) {
       taken.add(slot(metric, v.recordedAt));
       coreRows.push({ metric, value: v.value, unit: v.unit, confidence: 'high', recordedAt: v.recordedAt, printedMonth: v.printedMonth });
-    } else {
+    } else if (metric !== 'creatinine' || foldName(v.name) === 'cr' || !refusesCreatinine(v)) {
       additionalValues.push(v);
     }
   }
@@ -550,6 +619,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
       metadata: parsed.document.metadata as Record<string, unknown>,
     } : null,
     droppedValueCount: isLab ? parsed.droppedValueCount : 0,
+    ...(refusedValues.length ? { refusedValues } : null),
   };
 }
 

@@ -1753,6 +1753,36 @@ function bundleOf(files: ExtractedFile[]) {
   return { route: 'dropbox' as const, remaining: [], files };
 }
 
+// Issue #166 on import_documents (D7a, D7b): the connector runs the same
+// extractor (metadata mode), so a creatinine it cannot read is an
+// `unrecognized` line, once, never a candidate and never "could not be read";
+// a creatinine too high for blood carries its question (US-12 AC15, US-13 AC11).
+describe('US-12 AC15 — import_documents lists a refused creatinine as unrecognized', () => {
+  const modelAnswer = (values: unknown[]) => toUnifiedResult(parseUnifiedResult({
+    classification: 'lab_report', reportDate: LAB_DAY, values, additionalValues: [], document: null,
+  }), 'metadata');
+
+  it('mg/mmol and a blank unit are unrecognized lines with why; no candidate, no droppedValues', () => {
+    const { payload, files, unrecognized } = prepareImport(base(), bundleOf([extracted('acr.pdf', modelAnswer([
+      { metric: 'creatinine', value: 2, unit: 'mg/mmol', confidence: 'high' },
+      { metric: 'creatinine', value: 3, unit: '', confidence: 'high' },
+    ]))]), IMPORT_CTX);
+    expect(payload.candidates).toEqual([]);
+    expect(files[0].droppedValues).toBeUndefined();
+    expect(unrecognized).toEqual([
+      'creatinine 2 mg/mmol: not saved. This unit is usually a urine result.',
+      'creatinine 3: not saved. No unit was printed.',
+    ]);
+  });
+
+  it('a creatinine above 500 µmol/L is offered with its question and medium confidence', () => {
+    const { payload } = prepareImport(base(), bundleOf([extracted('high.pdf', modelAnswer([
+      { metric: 'creatinine', value: 1200, unit: 'µmol/L', confidence: 'high' },
+    ]))]), IMPORT_CTX);
+    expect(payload.candidates[0]).toMatchObject({ metric: 'creatinine', confidence: 'medium', question: 'Was this a blood test?' });
+  });
+});
+
 describe('US-35 AC6 — prepareImport slots every candidate against the record', () => {
   it('free, held_equal by displayed string, one candidate per slot, and the file report', () => {
     const file = base(); // m1: ldl 3.4 on 2026-07-14; l1: ferritin 210 on 2026-07-14
