@@ -39,6 +39,7 @@ import { isCalendarDay } from './measurement-history';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES } from './validation';
+import type { MEASUREMENT_REFUSAL_REASONS } from './product-events';
 
 /**
  * What the writer's clock means. `now` stamps the row; `latestDay` is the
@@ -509,7 +510,7 @@ export interface MeasurementRefusal {
   /** Zero-based index in the submitted batch. */
   index: number;
   metricType: string;
-  reason: 'unknown-metric' | 'invalid-value' | 'out-of-range';
+  reason: (typeof MEASUREMENT_REFUSAL_REASONS)[number];
   message: string;
 }
 

@@ -580,6 +580,38 @@ describe('the refused-unit counter', () => {
   });
 });
 
+/**
+ * US-35 AC17 — the refused-measurement counter: which core metric the record
+ * refused at the upload save, and why, as closed words. Never the value, and
+ * never a printed name, which is free text.
+ */
+describe('the refused-measurement counter', () => {
+  it('takes a core metric id and a closed refusal word, from a browser', () => {
+    for (const refusal of ['out-of-range', 'invalid-value']) {
+      expect(parseProductEvent({ eventName: 'measurement_refused', visitorId: VISITOR, metadata: { metric: 'ldl', refusal } }))
+        .toEqual({ eventName: 'measurement_refused', visitorId: VISITOR, metadata: { metric: 'ldl', refusal } });
+    }
+    expect(parseProductEvent({ eventName: 'measurement_refused', visitorId: VISITOR, metadata: { refusal: 'unknown-metric' } }))
+      .toEqual({ eventName: 'measurement_refused', visitorId: VISITOR, metadata: { refusal: 'unknown-metric' } });
+  });
+
+  it('refuses a metric off METRIC_TYPES, a free word, a number, or any other key', () => {
+    for (const metadata of [
+      { metric: 'ferritin', refusal: 'out-of-range' }, { metric: 'LDL Cholesterol', refusal: 'out-of-range' },
+      { metric: '4.2', refusal: 'out-of-range' }, { metric: 'ldl', refusal: '4.2' }, { metric: 'ldl', refusal: 'slot-occupied' },
+      { metric: 'ldl', refusal: 'out-of-range', value: 4.2 }, { metric: 'ldl', refusal: 'out-of-range', count: 1 },
+      { metric: 'ldl', refusal: 'out-of-range', key: 'ldl' }, { metric: 'ldl', refusal: 'out-of-range', reason: 'out-of-range' },
+    ]) {
+      expect(parseProductEvent({ eventName: 'measurement_refused', visitorId: VISITOR, metadata }), JSON.stringify(metadata)).toBeNull();
+    }
+  });
+
+  it('lets no other event carry a metric or a refusal', () => {
+    expect(parseProductEvent({ eventName: 'upload_saved', visitorId: VISITOR, metadata: { metric: 'ldl' } })).toBeNull();
+    expect(parseProductEvent({ eventName: 'lab_unit_refused', visitorId: VISITOR, metadata: { key: 'ferritin', refusal: 'out-of-range' } })).toBeNull();
+  });
+});
+
 /** US-05 AC2 — the Lp(a) unit counter: which unit was chosen, and from which. */
 describe('the Lp(a) unit counter', () => {
   it('takes the two unit labels, from a browser', () => {

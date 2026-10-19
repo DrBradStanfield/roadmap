@@ -1,5 +1,5 @@
 /** Shopify services only. Health records are read and written by roadmap-data. */
-import type { GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, LpaUnit, ProductEventName, REMOTE_CHANGE_BACKENDS } from '@roadmap/health-core';
+import type { GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, LpaUnit, MeasurementRefusal, MetricType, ProductEventName, REMOTE_CHANGE_BACKENDS } from '@roadmap/health-core';
 import { PER_ACTION_EVENT_NAMES, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { safeGetItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
@@ -143,6 +143,9 @@ export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey, n
   from?: LpaUnit;
   /** `lpa_check_answered` (US-05 AC3): the answer, a label only. */
   answer?: (typeof LPA_CHECK_ANSWERS)[number];
+  /** `measurement_refused` (US-35 AC17): the core metric id and why. Never a value. */
+  metric?: MetricType;
+  refusal?: MeasurementRefusal['reason'];
 }
 
 /**
@@ -163,9 +166,10 @@ export function trackProductEvent(
   if (!SHOPIFY_SURFACE) return;
   if (!(PER_ACTION_EVENT_NAMES as readonly string[]).includes(eventName)) {
     try {
-      // Counted per (test, spelling): collapsing them would hide every spelling
-      // but the first — the very list this signal exists to build.
-      const sentKey = `hr_pe_${eventName}${metadata?.key ? `_${metadata.key}_${metadata.unit}` : ''}`;
+      // Counted per (test, spelling), and a refused value per (metric, word):
+      // collapsing them would hide all but the first — the very list each signal builds.
+      const detail = metadata?.key ? `_${metadata.key}_${metadata.unit}` : metadata?.refusal ? `_${metadata.metric}_${metadata.refusal}` : '';
+      const sentKey = `hr_pe_${eventName}${detail}`;
       if (sessionStorage.getItem(sentKey)) return;
       sessionStorage.setItem(sentKey, '1');
     } catch { /* sessionStorage unavailable — still send once */ }

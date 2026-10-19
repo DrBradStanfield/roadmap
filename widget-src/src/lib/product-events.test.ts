@@ -65,6 +65,17 @@ describe('trackProductEvent on the Shopify surface', () => {
     expect(body.metadata).toEqual({ picked: 1, openFailed: 1 });
   });
 
+  it('US-35 AC17 — counts a refused measurement once per metric and refusal word, not once per tab', async () => {
+    const { trackProductEvent } = await import('./server-api');
+    trackProductEvent('measurement_refused', { metric: 'ldl', refusal: 'out-of-range' });
+    trackProductEvent('measurement_refused', { metric: 'ldl', refusal: 'out-of-range' });
+    trackProductEvent('measurement_refused', { metric: 'psa', refusal: 'out-of-range' });
+    trackProductEvent('measurement_refused', { refusal: 'unknown-metric' });
+    expect(fetchMock.mock.calls.map(c => JSON.parse((c[1] as RequestInit).body as string).metadata)).toEqual([
+      { metric: 'ldl', refusal: 'out-of-range' }, { metric: 'psa', refusal: 'out-of-range' }, { refusal: 'unknown-metric' },
+    ]);
+  });
+
   it('sends allow-listed metadata when given', async () => {
     const { trackProductEvent } = await import('./server-api');
     trackProductEvent('cloud_connect_success', { provider: 'dropbox' });

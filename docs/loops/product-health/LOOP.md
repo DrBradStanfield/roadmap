@@ -58,7 +58,8 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   `refused`, `tooLong`, `valuesDropped`, `docx`, `picturesOnly` (US-12 AC13; `docx` overlaps the
   others); a key not sent is 0 (zero counts are omitted); an unpaired start is located by its outcome row) →
   cloud_connect_started/success → chat_opened → correction_made →
-  lab_rows_viewed/lab_row_added → medication_history_viewed →
+  lab_rows_viewed/lab_row_added → measurement_refused (US-35 AC17: a refused blood test
+  value at the upload save, split by `metric` and `refusal`; never a value) → medication_history_viewed →
   reminder_optin/optout → report_email_* →
   reminder_sent (server; cross-check against `reminder_optin_v2.last_sent`
   stamps) → reminder_email_clicked (server; the reminder button, counted

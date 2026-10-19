@@ -4,6 +4,7 @@ import {
   type FileReminderOptIn,
   type HealthInputs,
   type LpaUnit,
+  type MetricType,
   isLabUnitWord,
   labUnitTaken,
   type ReminderScheduleItem,
@@ -151,7 +152,15 @@ export async function saveScreening(screeningKey: string, value: string): Promis
   return store ? store.saveScreening(screeningKey, value) : false;
 }
 export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[]): Promise<BulkSaveResult> {
-  return store ? store.bulkSaveMeasurements(measurements) : { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
+  if (!store) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
+  const result = store.bulkSaveMeasurements(measurements);
+  // Counted like a refused lab unit, in closed words only (US-35 AC17). Any
+  // reason but unknown-metric was checked against METRIC_TYPES first; an
+  // unknown metric is free text, so it is not sent.
+  for (const row of result.refused) {
+    trackProductEvent('measurement_refused', row.reason === 'unknown-metric' ? { refusal: row.reason } : { metric: row.metricType as MetricType, refusal: row.reason });
+  }
+  return result;
 }
 export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };

@@ -49,6 +49,11 @@ export const PRODUCT_EVENT_NAMES = [
   // US-21 phase 3: a lab row was refused for its unit, so nothing was written.
   // Metadata is the catalogue KEY and the unit spelling — never the value.
   'lab_unit_refused',
+  // US-35 AC17: a core blood test value was refused at the upload save, so
+  // nothing was written. Metadata is the METRIC_TYPES id and a
+  // MEASUREMENT_REFUSAL_REASONS word — never the value, never a printed name.
+  // Not `lab_unit_refused`: that counter lists spellings to teach the catalogue.
+  'measurement_refused',
   // US-22 plan-ready email. Server-originated (no browser visitor): recorded
   // with the nil-UUID sentinel, see SERVER_VISITOR_ID in product-events.server.
   'report_email_sent',
@@ -103,6 +108,10 @@ export const PRODUCT_EVENT_NAMES = [
   // stated values the plan used and how many it refused. Never a value or a field.
   'chat_run_roadmap',
 ] as const;
+
+/** US-35 AC17: why the record refused a core value. `MeasurementRefusal.reason`
+ *  (record-edits.ts) is typed from this list, so the two cannot drift. */
+export const MEASUREMENT_REFUSAL_REASONS = ['unknown-metric', 'invalid-value', 'out-of-range'] as const;
 
 /** US-05 AC3: the Lp(a) check's answers. The report's unit, when the answer
  *  wrote a correction, or `keep`: the report matches neither number, or its
