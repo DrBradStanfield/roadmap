@@ -301,6 +301,7 @@ export {
 // v2 measurement recency — dated chat history + newest-active-row resolution
 export {
   buildMeasurementHistory,
+  isCalendarDay,
   latestActivePerMetric,
   latestFromHistory,
   HISTORY_CAP_PER_METRIC,
@@ -398,6 +399,6 @@ export {
 } from './drive-rest';
 
 // US-35: the slot rule and the bulk save the website and the connector share.
-export { bulkAppendValues, correctValue, sameLabQuantity, slotKey, slotState, type BulkRow, type LabQuantity, type LabUnitRefusal, type SlotState } from './record-edits';
+export { bulkAppendValues, correctValue, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type SlotState } from './record-edits';
 export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';

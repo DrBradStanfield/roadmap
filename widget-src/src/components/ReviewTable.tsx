@@ -16,6 +16,8 @@ import {
   canonicalLabRow,
   sameLabQuantity,
   slotState,
+  validDay,
+  isCalendarDay,
   type LabQuantity,
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
@@ -101,18 +103,22 @@ interface FullDate {
   year: string;       // "2024"
 }
 
+/** A printed date as review state. A day is kept only if it exists in its
+ *  month; a date with no real month (null, "June 2024", "2024-13") shows this
+ *  month with no day (US-13 AC8). */
 function parseReportDate(dateStr: string | null): FullDate {
-  if (!dateStr) {
+  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?(?:[T ]|$)/.exec(dateStr ?? '');
+  if (!m || !isCalendarDay(`${m[1]}-${m[2]}-01`)) {
     const now = getCurrentDateValue();
     return { day: null, month: now.month, year: now.year };
   }
-  const parts = dateStr.split('-');
-  const now = getCurrentDateValue();
-  return {
-    day: parts.length >= 3 ? parts[2] : null,
-    month: parts[1] || now.month,
-    year: parts[0] || now.year,
-  };
+  return { day: m[3] && isCalendarDay(`${m[1]}-${m[2]}-${m[3]}`) ? m[3] : null, month: m[2], year: m[1] };
+}
+
+/** A column's date when it is a calendar day that has happened, else null:
+ *  only then is it set, and Save allowed (US-13 AC8). */
+function columnDay(date: FullDate): string | null {
+  return date.day ? validDay(fullDateToIso(date), { now: new Date().toISOString() }) : null;
 }
 
 function getDaysInMonth(month: string, year: string): number {
@@ -757,13 +763,11 @@ export function ReviewTable({
   const nothingSelected = selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0;
 
   /** A column with no date isn't saveable. Existing-history columns always
-   *  have a YYYY-MM-DD date; new (upload) columns require day+month+year so
-   *  dedup against history matches exactly (a month-only upload would
-   *  silently synthesise day=01 and either duplicate or miss-match). */
-  const allDatesSet = useMemo(() => matrix.columns.every(col => {
-    if (!col.isNew) return true;
-    return !!(col.date.year && col.date.month && col.date.day);
-  }), [matrix.columns]);
+   *  have a YYYY-MM-DD date; new (upload) columns require a calendar day that
+   *  has happened, so dedup against history matches exactly (a month-only
+   *  upload would silently synthesise day=01) and no misread or future date
+   *  is ever written: rows are append-only (US-13 AC8). */
+  const allDatesSet = useMemo(() => matrix.columns.every(col => !col.isNew || !!columnDay(col.date)), [matrix.columns]);
 
   /** Column-level date editing: propagate to every contributing date source so
    *  the matrix stays consistent. New-column dates only — existing-history
@@ -785,7 +789,7 @@ export function ReviewTable({
   };
 
   const handleSave = () => {
-    if (hasInvalid) return;
+    if (hasInvalid || !allDatesSet) return;
     // Collect core lab values
     const selected: ReviewedValue[] = [];
     const selectedLabValues: ReviewedLabValue[] = [];
@@ -972,7 +976,7 @@ export function ReviewTable({
       })}
 
       {!allDatesSet && (
-        <p className="review-date-hint">Pick a day for every new column before saving — keeps the saved date precise.</p>
+        <p className="review-date-hint">Pick a past day for every new column before saving — keeps the saved date precise.</p>
       )}
 
       {hasInvalid && <p role="status">Correct or clear the values with errors before saving.</p>}
@@ -1103,18 +1107,35 @@ function MatrixColumnHeader({ col, onDateChange }: { col: MatrixColumn; onDateCh
       </div>
     );
   }
-  // needsDay flags new columns where the LLM didn't extract a day so the
-  // user sees "— Mon 'YY" and is gated from saving until they pick one.
+  const onChange = (picked: string) => {
+    const parsed = parseIsoToFullDate(picked);
+    if (parsed) onDateChange(col, parsed);
+  };
+  if (columnDay(col.date)) {
+    return <DraftDateCell date={fullDateToIso(col.date)} ariaLabel="Choose column date" onChange={onChange} />;
+  }
+  return <PickDayHeader col={col} onChange={onChange} />;
+}
+
+/** A new column with no past day yet (US-13 AC8): "— Mon 'YY" over a picker
+ *  that starts EMPTY. A prefilled picker fires no change for its own day, so that day
+ *  could never be chosen. One element, so later headers stay over their values. */
+function PickDayHeader({ col, onChange }: { col: MatrixColumn; onChange: (picked: string) => void }) {
+  const ref = useRef<HTMLInputElement | null>(null);
+  const month = MONTHS_SHORT.find(m => m.value === col.date.month.padStart(2, '0'))?.label ?? col.date.month;
+  const open = () => {
+    try { ref.current?.showPicker?.(); }
+    catch { ref.current?.click(); }
+  };
   return (
-    <DraftDateCell
-      date={fullDateToIso(col.date)}
-      needsDay={!col.date.day}
-      ariaLabel="Choose column date"
-      onChange={picked => {
-        const parsed = parseIsoToFullDate(picked);
-        if (parsed) onDateChange(col, parsed);
-      }}
-    />
+    <button type="button" onClick={open} title="Pick the exact day"
+            className="bt-cell-value bt-cell-draft-date bt-cell-draft-date-incomplete">
+      <span className="bt-date-day">— {month}</span>
+      <span className="bt-date-year">'{col.date.year.slice(-2)}</span>
+      <input ref={ref} type="date" value="" onChange={e => onChange(e.target.value)}
+             className="bt-date-hidden-icon"
+             aria-label="Choose column date"/>
+    </button>
   );
 }
 
