@@ -56,7 +56,7 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   upload_outcome (one per RUN, US-12 AC10: sum its integer keys `picked`, `withValues`,
   `documentOnly`, `noValues`, `openFailed`, `tooLarge`, `truncated`, `serverError`, `limitError`,
   `refused`, `tooLong`, `valuesDropped`, `docx`, `picturesOnly` (US-12 AC13; `docx` overlaps the
-  others); a key not sent is 0 (zero counts are omitted); an unpaired start is located by its outcome row) →
+  others), `undatedPrevious` (US-12 AC14: values from an undated previous column, not files); a key not sent is 0 (zero counts are omitted); an unpaired start is located by its outcome row) →
   cloud_connect_started/success → chat_opened → correction_made →
   lab_rows_viewed/lab_row_added → medication_history_viewed →
   reminder_optin/optout → report_email_* →

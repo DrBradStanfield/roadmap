@@ -16,6 +16,9 @@ import {
   canonicalLabRow,
   sameLabQuantity,
   slotState,
+  validDay,
+  isCalendarDay,
+  UNDATED_PREVIOUS,
   type LabQuantity,
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
@@ -99,20 +102,43 @@ interface FullDate {
   day: string | null; // "01"-"31" or null
   month: string;      // "1"-"12"
   year: string;       // "2024"
+  /** An undated previous column the user has not dated yet (US-12 AC14):
+   *  month and year are empty. */
+  undated?: true;
 }
 
+/** A printed date as review state. A day is kept only if it exists in its
+ *  month; a date with no real month (null, "June 2024", "2024-13") shows this
+ *  month with no day (US-13 AC8). */
 function parseReportDate(dateStr: string | null): FullDate {
-  if (!dateStr) {
+  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?(?:[T ]|$)/.exec(dateStr ?? '');
+  if (!m || !isCalendarDay(`${m[1]}-${m[2]}-01`)) {
     const now = getCurrentDateValue();
     return { day: null, month: now.month, year: now.year };
   }
-  const parts = dateStr.split('-');
-  const now = getCurrentDateValue();
-  return {
-    day: parts.length >= 3 ? parts[2] : null,
-    month: parts[1] || now.month,
-    year: parts[0] || now.year,
-  };
+  return { day: m[3] && isCalendarDay(`${m[1]}-${m[2]}-${m[3]}`) ? m[3] : null, month: m[2], year: m[1] };
+}
+
+/** The date of an undated previous column until the user picks one: no
+ *  month, so it never shares a column with the report's or any month's (US-12 AC14). */
+const UNDATED_DATE: FullDate = { day: null, month: '', year: '', undated: true };
+
+/** "Jun" for "6" or "06". */
+function monthLabel(month: string): string {
+  return MONTHS_SHORT.find(m => m.value === month.padStart(2, '0'))?.label ?? month;
+}
+
+/** "5 Jan 2019" for 2019-01-05, "Jun 2025" for 2025-06; null for anything
+ *  else (an undated column's key, `undated:<file>`, is no date). */
+function longDate(day: string): string | null {
+  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(day);
+  return m && `${m[3] ? `${Number(m[3])} ` : ''}${monthLabel(m[2])} ${m[1]}`;
+}
+
+/** A column's date when it is a calendar day that has happened, else null:
+ *  only then is it set, and Save allowed (US-13 AC8). */
+function columnDay(date: FullDate): string | null {
+  return date.day ? validDay(fullDateToIso(date), { now: new Date().toISOString() }) : null;
 }
 
 function getDaysInMonth(month: string, year: string): number {
@@ -206,6 +232,10 @@ interface MatrixColumn {
   date: FullDate;       // mutable for new columns; sourced from history for existing
   isNew: boolean;       // false = history-only; true = at least one upload contributes
   sources: string[];    // upload date sources at this date (`dateSource`; empty for history-only columns)
+  /** An undated previous column (US-12 AC14): its file, whose report day it
+   *  must come before, and the month it printed, if any. Keyed by its file,
+   *  picked or not, so it never merges with another column. */
+  undated?: { fi: number; printedMonth?: string };
 }
 
 interface CoreRow {
@@ -241,6 +271,26 @@ type EditableMatrixCell =
   | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; question?: string; valueSI: number; displayUnit: string; existing?: ExistingCell }
   | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; referenceLow?: number | null; referenceHigh?: number | null; existing?: ExistingCell };
 
+/** What a cell's review state (typed text, touched, Replace) is keyed by: its
+ *  value's place in the extraction, never its column. A picked date re-keys
+ *  the column, and an edit or a clear made before the pick must survive it. */
+function editId(cell: EditableMatrixCell): string {
+  return cell.kind === 'core' ? valueId(cell.fi, 'core', cell.vi) : valueId(cell.fi, 'additional', cell.ai);
+}
+function valueId(fi: number, kind: 'core' | 'additional', i: number): string {
+  return `${fi}:${kind === 'core' ? 'v' : 'a'}${i}`;
+}
+
+/** A Replace tick holds for one saved row only: a date moved onto another
+ *  saved row's slot starts unticked. */
+function replaceKey(cell: EditableMatrixCell, existing: ExistingCell): string {
+  return `${editId(cell)}>${existing.id}`;
+}
+
+/** A reading a review hides because another holds its (test, day): named, never its value. */
+interface HiddenReading { label: string; day: DateKey }
+type Quantity = { valueSI?: number; lab?: LabQuantity };
+
 /** A core cell as rendered: its text in the row's unit and the value it saves. */
 interface CoreCellView { text: string; valueSI?: number; error: string | null }
 
@@ -261,7 +311,10 @@ export function buildMatrixModel(
   labValueHistory: ApiLabValue[],
   unitSystem: UnitSystem,
   metricUnitOverrides?: Partial<Record<MetricType, CellUnit>>,
-): { columns: MatrixColumn[]; coreRows: CoreRow[]; additionalRows: AdditionalRow[]; cells: Map<string, MatrixCell> } {
+  /** Values the user edited (`editId`): never hidden as already saved. Their
+   *  cell stays editable against the saved row, judged by the edited text. */
+  touched?: { has(id: string): boolean },
+): { columns: MatrixColumn[]; coreRows: CoreRow[]; additionalRows: AdditionalRow[]; cells: Map<string, MatrixCell>; hiddenReadings: HiddenReading[] } {
   const cells = new Map<string, MatrixCell>();
   const columnsByKey = new Map<DateKey, MatrixColumn>();
   const coreMetricsSeen = new Set<MetricType>();
@@ -270,26 +323,16 @@ export function buildMatrixModel(
   /** Resolved display unit for a core metric, honouring per-metric override. */
   const displayFor = (metric: MetricType): CellUnit => metricUnitOverrides?.[metric] ?? unitSystem;
 
-  /** Resolve an upload value against whatever already holds the cell:
-   *  'skip' = leave the cell alone (equal value already saved, or an earlier
-   *  file in this batch already claimed it); an ExistingCell = conflict;
-   *  undefined = free slot. A core metric compares stored values: its rounded
-   *  display can hide a real difference (Lp(a) 124.9 and 125 nmol/L both read
-   *  "50.0" mg/dL, either side of the Elevated line, US-13 AC3). An additional
-   *  lab compares quantities: the record holds it in SI, the report prints its
-   *  own unit, so health-core's `sameLabQuantity` converts both, as the
-   *  connector does (US-35 AC6). */
-  const collide = (cellKey: string, display: string, valueSI?: number, lab?: LabQuantity): ExistingCell | 'skip' | undefined => {
-    const prev = cells.get(cellKey);
-    if (!prev) return undefined;
-    if (prev.state !== 'context') return 'skip';
-    const equal = valueSI !== undefined && prev.valueSI !== undefined
-      ? sameValue(prev.valueSI, valueSI)
-      : lab && prev.lab
-        ? sameLabQuantity(prev.lab, lab)
-        : slotState(prev.displayValue, display) === 'held_equal';
-    return equal ? 'skip' : { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI, lab: prev.lab, displayUnit: prev.displayUnit };
-  };
+  /** Two readings are the same quantity. A core metric compares stored
+   *  values: its rounded display can hide a real difference (Lp(a) 124.9 and
+   *  125 nmol/L both read "50.0" mg/dL, either side of the Elevated line,
+   *  US-13 AC3). An additional lab compares quantities: the record holds it in
+   *  SI, the report prints its own unit, so health-core's `sameLabQuantity`
+   *  converts both, as the connector does (US-35 AC6). */
+  const sameQuantity = (a: Quantity, b: Quantity, display?: string, shown?: string) =>
+    a.valueSI !== undefined && b.valueSI !== undefined ? sameValue(a.valueSI, b.valueSI)
+      : a.lab && b.lab ? sameLabQuantity(a.lab, b.lab)
+        : display !== undefined && shown !== undefined && slotState(shown, display) === 'held_equal';
 
   const addColumn = (dateKey: DateKey, date: FullDate, source: string | null) => {
     let col = columnsByKey.get(dateKey);
@@ -307,11 +350,20 @@ export function buildMatrixModel(
   /** A value's date: its own printed day when it has one (US-12 AC12), else
    *  its file's. The date state holds only what the user picked; a printed day
    *  nobody edited is read from the value itself. */
-  const valueDate = (fi: number, recordedAt?: string): FullDate | undefined =>
-    recordedAt ? fileDates[dateSource(fi, recordedAt)] ?? parseReportDate(recordedAt) : fileDates[fi];
-  const valueDateKey = (fi: number, recordedAt?: string): DateKey | null => {
-    const date = valueDate(fi, recordedAt);
-    return date ? buildDatePrefix(date) : null;
+  type Dated = { recordedAt?: string; printedMonth?: string };
+  const valueDate = (fi: number, { recordedAt }: Dated): FullDate | undefined =>
+    recordedAt ? fileDates[dateSource(fi, recordedAt)] ?? (recordedAt === UNDATED_PREVIOUS ? UNDATED_DATE : parseReportDate(recordedAt)) : fileDates[fi];
+  /** The column a value sits in. An undated previous column is keyed by its
+   *  file, picked or not, so it never merges with another (US-12 AC14). */
+  const valueDateKey = (fi: number, v: Dated): DateKey | null => {
+    const date = valueDate(fi, v);
+    return !date ? null : v.recordedAt === UNDATED_PREVIOUS ? `undated:${fi}` : buildDatePrefix(date);
+  };
+  /** The day a value's slot is on: its column's, or an undated column's picked
+   *  day (null until picked). Held rows and primary readings are met here. */
+  const slotDateKey = (fi: number, v: Dated): DateKey | null => {
+    const date = valueDate(fi, v);
+    return !date || date.undated ? null : buildDatePrefix(date);
   };
 
   // 1) Seed columns + cells from existing history (greyed context). A blood
@@ -323,7 +375,7 @@ export function buildMatrixModel(
   //    matrix, off the date axis. One rule for the seeding and the overlay.
   const bloodTestSet = new Set<string>(BLOOD_TEST_METRICS);
   const vitalSet = new Set<string>(VITAL_METRICS);
-  const uploadDates = new Set(results.flatMap((r, fi) => [...r.values, ...r.additionalValues].map(v => valueDateKey(fi, v.recordedAt))));
+  const uploadDates = new Set(results.flatMap((r, fi) => [...r.values, ...r.additionalValues].map(v => slotDateKey(fi, v))));
   for (const m of measurementHistory) {
     const dateKey = m.recordedAt.slice(0, 10);
     const metric = m.metricType as MetricType;
@@ -362,36 +414,73 @@ export function buildMatrixModel(
     });
   }
 
-  // 2) Overlay upload values. On an occupied slot: an equal value is already
-  //    recorded (leave the context cell), a differing one becomes a conflict
-  //    the user resolves in the table — never a silent drop (US-32).
-  //    Primary columns first: a file's own reading of a (metric, day) wins
-  //    over another file's previous-column read of it (US-12 AC12).
-  const claimed = new Set<string>();
-  for (const previous of [false, true]) results.forEach((r, fi) => {
-    /** A slot a primary reading claimed, even one the record already held
-     *  equal, is never taken by a previous-column read. */
-    const ceded = (cellKey: string) => (previous ? claimed.has(cellKey) : (claimed.add(cellKey), false));
+  // 2) Overlay upload values, one reading per (test, day), in the save's own
+  //    rank: a report's own reading claims its slot first, then a dated
+  //    previous column's, then an undated one's (on its picked day), then
+  //    file order (US-12 AC12, AC14). A later reading of a claimed slot is
+  //    hidden, as AC12 hides it, and listed in `hiddenReadings` (`place`), so
+  //    it is never dropped silently. On a held slot: an equal value is
+  //    already recorded (context), a differing one a conflict the user
+  //    resolves in the table (US-32).
+  const claims = new Map<string, { rank: number; quantity: Quantity; edited: boolean; heldEqual: boolean }>();
+  /** The saved rows, by slot, before any upload cell takes one. */
+  const savedRows = new Map(cells);
+  const hiddenReadings: HiddenReading[] = [];
+  const rankOf = (recordedAt?: string) => (!recordedAt ? 0 : recordedAt === UNDATED_PREVIOUS ? 2 : 1);
+  /**
+   * Where one reading lands: an ExistingCell (a conflict with the saved row)
+   * or undefined (a free slot) to place an editable cell, null for none.
+   * A reading equal to the saved row, and not edited, is already recorded:
+   * context, shown in its own column too (an undated one's, US-13 AC3), and
+   * never counted. Within one rank a winner that only matched the saved row
+   * does not block a differing reading, which becomes the conflict (US-13
+   * AC3). Otherwise a claimed slot hides the later reading, counted when it
+   * differs from the winner or either side was edited (US-12 AC14).
+   */
+  const place = (slot: string, cellKey: string, rank: number, display: string, quantity: Quantity, edited: boolean, label: string): ExistingCell | undefined | null => {
+    const held = savedRows.get(slot);
+    const prev = held?.state === 'context' ? held : undefined;
+    const equalHeld = !edited && !!prev && sameQuantity(quantity, prev, display, prev.displayValue);
+    const winner = claims.get(slot);
+    const blocked = !!winner && !(winner.rank === rank && winner.heldEqual);
+    if (!blocked) claims.set(slot, { rank, quantity, edited, heldEqual: equalHeld });
+    if (equalHeld) {
+      // Never over a conflict another reading of this test already put in
+      // the same column (a test printed twice in one undated column).
+      if (slot !== cellKey && cells.get(cellKey)?.state !== 'editable') cells.set(cellKey, prev!);
+      return null;
+    }
+    if (blocked) {
+      if (edited || winner!.edited || !sameQuantity(quantity, winner!.quantity)) hiddenReadings.push({ label, day: slot.slice(slot.lastIndexOf('|') + 1) });
+      return null;
+    }
+    return prev && { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI, lab: prev.lab, displayUnit: prev.displayUnit };
+  };
+  for (const rank of [0, 1, 2]) results.forEach((r, fi) => {
     /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
-    const columnFor = (recordedAt?: string): DateKey | null => {
-      const dateKey = valueDateKey(fi, recordedAt);
-      if (dateKey) addColumn(dateKey, valueDate(fi, recordedAt)!, dateSource(fi, recordedAt));
+    const columnFor = (v: Dated): DateKey | null => {
+      const dateKey = valueDateKey(fi, v);
+      if (!dateKey) return null;
+      const col = addColumn(dateKey, valueDate(fi, v)!, dateSource(fi, v.recordedAt));
+      if (v.recordedAt === UNDATED_PREVIOUS) col.undated ??= { fi, printedMonth: v.printedMonth };
       return dateKey;
     };
+    /** Where a value meets a held row or a primary reading: its slot's day. */
+    const slotFor = (rowKey: string, v: Dated, dateKey: DateKey) => `${rowKey}|${slotDateKey(fi, v) ?? dateKey}`;
 
     r.values.forEach((v, vi) => {
-      if (!!v.recordedAt !== previous) return;
-      const dateKey = columnFor(v.recordedAt);
+      if (rankOf(v.recordedAt) !== rank) return;
+      const dateKey = columnFor(v);
       if (!dateKey) return;
       const metric = v.metric as MetricType;
       coreMetricsSeen.add(metric);
       const cellKey = `${metric}|${dateKey}`;
+      const slot = slotFor(metric, v, dateKey);
       const initialDisplay = UNIT_DEFS[metric]
         ? cellText(metric, v.valueSI, displayFor(metric))
         : String(v.displayValue);
-      if (ceded(cellKey)) return;
-      const existing = collide(cellKey, initialDisplay, v.valueSI);
-      if (existing === 'skip') return;
+      const existing = place(slot, cellKey, rank, initialDisplay, { valueSI: v.valueSI }, !!touched?.has(valueId(fi, 'core', vi)), METRIC_LABELS[metric] || metric);
+      if (existing === null) return;
       cells.set(cellKey, {
         state: 'editable', kind: 'core', fi, vi,
         initialDisplay,
@@ -404,8 +493,8 @@ export function buildMatrixModel(
     });
 
     r.additionalValues.forEach((av, ai) => {
-      if (!!av.recordedAt !== previous) return;
-      const dateKey = columnFor(av.recordedAt);
+      if (rankOf(av.recordedAt) !== rank) return;
+      const dateKey = columnFor(av);
       if (!dateKey) return;
       const nameKey = normaliseLabName(av.name);
       if (!additionalByKey.has(nameKey)) {
@@ -422,10 +511,10 @@ export function buildMatrixModel(
         });
       }
       const cellKey = `${nameKey}|${dateKey}`;
+      const slot = slotFor(nameKey, av, dateKey);
       const lab = { name: av.name, value: av.value, unit: av.unit };
-      if (ceded(cellKey)) return;
-      const existing = collide(cellKey, String(av.value), undefined, lab);
-      if (existing === 'skip') return;
+      const existing = place(slot, cellKey, rank, String(av.value), { lab }, !!touched?.has(valueId(fi, 'additional', ai)), labValueLabel(av.name));
+      if (existing === null) return;
       cells.set(cellKey, {
         state: 'editable',
         kind: 'additional',
@@ -446,7 +535,11 @@ export function buildMatrixModel(
   //    reads the same as the live timeline, then any vitals the report
   //    printed (BP; extraction never returns weight or waist): save takes
   //    every cell, so every cell needs a row (US-12 AC11). Additional rows alphabetic.
-  const columns = Array.from(columnsByKey.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+  //    An undated previous column comes first: it is older than its report.
+  const columns = Array.from(columnsByKey.values())
+    .sort((a, b) => Number(!a.date.undated) - Number(!b.date.undated)
+      || (a.date.undated ? '' : buildDatePrefix(a.date)).localeCompare(b.date.undated ? '' : buildDatePrefix(b.date))
+      || a.dateKey.localeCompare(b.dateKey));
   const coreRows: CoreRow[] = [...BLOOD_TEST_METRICS, ...VITAL_METRICS]
     .filter(m => coreMetricsSeen.has(m as MetricType))
     .map(m => ({ kind: 'core' as const, metric: m as MetricType }));
@@ -454,7 +547,7 @@ export function buildMatrixModel(
     a.displayName.localeCompare(b.displayName),
   );
 
-  return { columns, coreRows, additionalRows, cells };
+  return { columns, coreRows, additionalRows, cells, hiddenReadings };
 }
 
 /** What a screen reader names the row: the metric key, or the lab row's own name (never its `lab:` key). */
@@ -576,18 +669,42 @@ export function ReviewTable({
   // saveable. Cells in `context` state come from history (greyed, no edit);
   // `editable` cells come from this upload. Save selection = an editable
   // cell whose `editedDisplayValues` entry is non-empty (clear-to-skip).
+  // Per-cell edit metadata. Membership = "user touched this cell" (drives
+  // the touched-stays-on-toggle behaviour below). `display` is the row's
+  // display unit at the moment of edit, read at save time so a unit toggle
+  // *after* typing doesn't misconvert the typed value into the wrong SI.
+  const touchedRef = useRef<Map<string, { display?: CellUnit }>>(new Map());
+  // How many values are touched: rebuilds the matrix when a value is first
+  // edited, so a slot's winner and loser are judged as edited (`place`).
+  const [touchedCount, setTouchedCount] = useState(0);
   const matrix = useMemo(
-    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units),
-    [results, fileDates, history.measurements, history.labValues, unitSystem, units],
+    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedRef.current),
+    [results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedCount],
   );
+  /** One line naming the hidden readings by test and day, never a value (US-12 AC14). */
+  const hiddenNotice = useMemo(() => {
+    const n = matrix.hiddenReadings.length;
+    if (n === 0) return null;
+    // Grouped by where: a day, or every unpicked undated column as one group.
+    const undated = new Set(matrix.hiddenReadings.map(r => r.day).filter(day => !longDate(day)));
+    const byPlace = new Map<string, Set<string>>();
+    for (const { label, day } of matrix.hiddenReadings) {
+      const date = longDate(day);
+      const place = date ? `on ${date}` : `in the undated previous column${undated.size > 1 ? 's' : ''}`;
+      byPlace.set(place, (byPlace.get(place) ?? new Set()).add(label));
+    }
+    const names = [...byPlace.values()].reduce((count, labels) => count + labels.size, 0);
+    const groups = [...byPlace].map(([place, labels]) => `${[...labels].join(', ')} ${place}`).join('; ');
+    return `${n} reading${n === 1 ? '' : 's'} not saved: ${groups} already ${names === 1 ? 'has' : 'have'} another reading.`;
+  }, [matrix]);
 
   // Initial display values are derived from the matrix (not from raw results)
   // so the unit-system switch re-formats them and dedup-collapsed cells
   // (LLM value silently dropped where history wins) don't appear here.
   const initialDisplayValues = useMemo<Record<string, string>>(() => {
     const map: Record<string, string> = {};
-    for (const [cellKey, cell] of matrix.cells) {
-      if (cell.state === 'editable') map[cellKey] = cell.initialDisplay;
+    for (const cell of matrix.cells.values()) {
+      if (cell.state === 'editable') map[editId(cell)] = cell.initialDisplay;
     }
     return map;
   }, [matrix]);
@@ -595,39 +712,35 @@ export function ReviewTable({
   const [editedDisplayValues, setEditedDisplayValues] = useState<Record<string, string>>(
     () => ({ ...initialDisplayValues }),
   );
-  // Per-cell edit metadata. Membership = "user touched this cell" (drives
-  // the touched-stays-on-toggle behaviour below). `display` is the row's
-  // display unit at the moment of edit, read at save time so a unit toggle
-  // *after* typing doesn't misconvert the typed value into the wrong SI.
-  const touchedRef = useRef<Map<string, { display?: CellUnit }>>(new Map());
-
   // Conflict cells only: "Replace the saved value with this one". Default
   // off — the record already holds a value, so replacing is the user's call.
   const [replaceChecked, setReplaceChecked] = useState<Record<string, boolean>>({});
-  const toggleReplace = useCallback((cellKey: string, on: boolean) => {
-    setReplaceChecked(prev => ({ ...prev, [cellKey]: on }));
+  const toggleReplace = useCallback((key: string, on: boolean) => {
+    setReplaceChecked(prev => ({ ...prev, [key]: on }));
   }, []);
 
-  const updateEditedDisplayValue = useCallback((cellKey: string, value: string, display?: CellUnit) => {
-    const existing = touchedRef.current.get(cellKey);
-    touchedRef.current.set(cellKey, { display: display ?? existing?.display });
-    setEditedDisplayValues(prev => ({ ...prev, [cellKey]: value }));
+  const updateEditedDisplayValue = useCallback((id: string, value: string, display?: CellUnit) => {
+    const existing = touchedRef.current.get(id);
+    if (!existing) setTouchedCount(n => n + 1);
+    touchedRef.current.set(id, { display: display ?? existing?.display });
+    setEditedDisplayValues(prev => ({ ...prev, [id]: value }));
   }, []);
 
   // Reformat on unit-system switch + pick up newly-editable cells when a
   // date change reshapes the matrix. User-touched cells keep their text;
-  // untouched cells get re-seeded from the (re-formatted) initial; cells
-  // that vanished from the model drop out.
+  // untouched cells get re-seeded from the (re-formatted) initial; untouched
+  // cells that vanished from the model drop out.
   useEffect(() => {
     setEditedDisplayValues(prev => {
       const next: Record<string, string> = {};
       const touched = touchedRef.current;
-      for (const cellKey of Object.keys(initialDisplayValues)) {
-        next[cellKey] = touched.has(cellKey) && prev[cellKey] !== undefined
-          ? prev[cellKey]
-          : initialDisplayValues[cellKey];
+      for (const id of Object.keys(initialDisplayValues)) {
+        next[id] = touched.has(id) && prev[id] !== undefined ? prev[id] : initialDisplayValues[id];
       }
-      for (const k of touched.keys()) if (!(k in initialDisplayValues)) touched.delete(k);
+      // A touched value that is not editable just now (its day holds it as
+      // saved, or a primary reading took the slot) keeps its text for when
+      // the day moves on: an edit is never dropped by a date pick.
+      for (const id of touched.keys()) if (!(id in next) && prev[id] !== undefined) next[id] = prev[id];
       return next;
     });
   }, [initialDisplayValues]);
@@ -642,10 +755,10 @@ export function ReviewTable({
   };
   // Equal rendered text preserves valid extraction precision. An explicit
   // correction of an invalid extraction must instead use the typed quantity.
-  const isEditedText = (cellKey: string, cell: EditableMatrixCell, editedStr: string) => {
-    const typedIn = touchedRef.current.get(cellKey)?.display;
+  const isEditedText = (cell: EditableMatrixCell, editedStr: string) => {
+    const typedIn = touchedRef.current.get(editId(cell))?.display;
     const metric = metricOf(cell);
-    return (touchedRef.current.has(cellKey) && extractedError(cell) !== null)
+    return (touchedRef.current.has(editId(cell)) && extractedError(cell) !== null)
       || editedStr !== (typedIn && metric && UNIT_DEFS[metric] ? cellText(metric, cell.valueSI, typedIn) : cell.initialDisplay);
   };
 
@@ -653,21 +766,21 @@ export function ReviewTable({
    *  untouched, which re-deriving from its rounded display would move (Lp(a)
    *  124.9 nmol/L shows "50.0" mg/dL → 125); once edited, the typed number in the
    *  unit it was typed in, so a toggle after typing never misconverts it. */
-  const savedValue = (cellKey: string, cell: EditableMatrixCell, editedStr: string): number | undefined => {
+  const savedValue = (cell: EditableMatrixCell, editedStr: string): number | undefined => {
     const parsed = parseLocalisedNumber(editedStr);
     if (parsed === undefined) return undefined;
-    if (!isEditedText(cellKey, cell, editedStr)) return cell.valueSI;
+    if (!isEditedText(cell, editedStr)) return cell.valueSI;
     const metric = metricOf(cell);
     if (!metric || !UNIT_DEFS[metric]) return parsed;
-    return cellToSI(metric, parsed, touchedRef.current.get(cellKey)?.display ?? units[metric] ?? unitSystem);
+    return cellToSI(metric, parsed, touchedRef.current.get(editId(cell))?.display ?? units[metric] ?? unitSystem);
   };
 
   // Validate the quantity we save, not a rounded rendering after a unit switch.
-  const cellError = (cellKey: string, cell: EditableMatrixCell, text: string): string | null => {
+  const cellError = (cell: EditableMatrixCell, text: string): string | null => {
     const metric = metricOf(cell);
     if (!text || !metric || !UNIT_DEFS[metric]) return null;
-    if (isEditedText(cellKey, cell, text)) {
-      return validateTypedValue(metric, text, touchedRef.current.get(cellKey)?.display ?? units[metric] ?? unitSystem).error;
+    if (isEditedText(cell, text)) {
+      return validateTypedValue(metric, text, touchedRef.current.get(editId(cell))?.display ?? units[metric] ?? unitSystem).error;
     }
     return extractedError(cell);
   };
@@ -684,7 +797,6 @@ export function ReviewTable({
 
   const collectSaveableCells = () => {
     interface CellPayload {
-      cellKey: string;
       dateKey: DateKey;
       cell: EditableMatrixCell;
       value: number;
@@ -695,14 +807,14 @@ export function ReviewTable({
     for (const [cellKey, cell] of matrix.cells) {
       if (cell.state !== 'editable') continue;
       // A conflicting cell saves only when the user asserts the replacement.
-      if (cell.existing && !replaceChecked[cellKey]) continue;
-      const editedStr = (editedDisplayValues[cellKey] ?? cell.initialDisplay).trim();
+      if (cell.existing && !replaceChecked[replaceKey(cell, cell.existing)]) continue;
+      const editedStr = (editedDisplayValues[editId(cell)] ?? cell.initialDisplay).trim();
       if (!editedStr) continue;
-      if (cellError(cellKey, cell, editedStr)) {
+      if (cellError(cell, editedStr)) {
         hasInvalid = true;
         continue;
       }
-      const value = savedValue(cellKey, cell, editedStr);
+      const value = savedValue(cell, editedStr);
       if (value === undefined) continue;
       // A "replacement" that matches what is already saved would append a
       // correction row that corrects nothing. The slot is already right.
@@ -710,30 +822,48 @@ export function ReviewTable({
       // dateKey is the suffix after the LAST `|` — robust against the
       // (rare) chance the rowKey itself contains a separator.
       const dateKey = cellKey.slice(cellKey.lastIndexOf('|') + 1);
-      out.push({ cellKey, dateKey, cell, value, isEdited: isEditedText(cellKey, cell, editedStr) });
+      out.push({ dateKey, cell, value, isEdited: isEditedText(cell, editedStr) });
     }
     return { cells: out, hasInvalid };
   };
 
   const { cells: saveableCells, hasInvalid } = useMemo(collectSaveableCells, [matrix, editedDisplayValues, replaceChecked]);
+  /** Cells whose value as now typed is the saved row's: already saved, so no
+   *  Replace is offered and nothing saves (an edit judged by its edited value). */
+  const heldEqual = useMemo(() => {
+    const ids = new Set<string>();
+    for (const cell of matrix.cells.values()) {
+      if (cell.state !== 'editable' || !cell.existing) continue;
+      const text = (editedDisplayValues[editId(cell)] ?? cell.initialDisplay).trim();
+      const value = savedValue(cell, text);
+      if (value !== undefined && replacesNothing(cell, cell.existing, value, text)) ids.add(editId(cell));
+    }
+    return ids;
+  }, [matrix, editedDisplayValues]);
+  // A Replace box gone because the edit now equals the saved row loses its
+  // tick, so it never comes back ticked.
+  useEffect(() => {
+    const gone = [...matrix.cells.values()].flatMap(c => (c.state === 'editable' && c.existing && heldEqual.has(editId(c)) ? [replaceKey(c, c.existing)] : []));
+    if (gone.some(k => replaceChecked[k])) setReplaceChecked(prev => Object.fromEntries(Object.entries(prev).filter(([k]) => !gone.includes(k))));
+  }, [heldEqual]);
   // What each core cell shows, and the value its colour grades: the value it
   // saves (US-13 AC4), in the row's unit. Typed text is kept verbatim in the
   // unit it was typed in, so a unit toggle shows the same quantity in the new
   // unit and edits nothing (as a typed weight is kept, US-05).
   const coreCellViews = useMemo(() => {
     const views = new Map<string, CoreCellView>();
-    for (const [cellKey, cell] of matrix.cells) {
+    for (const cell of matrix.cells.values()) {
       if (cell.state !== 'editable') continue;
       const metric = metricOf(cell);
       if (!metric) continue;
-      const text = (editedDisplayValues[cellKey] ?? cell.initialDisplay).trim();
-      const valueSI = savedValue(cellKey, cell, text);
+      const text = (editedDisplayValues[editId(cell)] ?? cell.initialDisplay).trim();
+      const valueSI = savedValue(cell, text);
       const shownIn = units[metric] ?? unitSystem;
-      const typedIn = touchedRef.current.get(cellKey)?.display ?? shownIn;
-      views.set(cellKey, {
+      const typedIn = touchedRef.current.get(editId(cell))?.display ?? shownIn;
+      views.set(editId(cell), {
         valueSI,
-        error: cellError(cellKey, cell, text),
-        text: !isEditedText(cellKey, cell, text) ? cell.initialDisplay
+        error: cellError(cell, text),
+        text: !isEditedText(cell, text) ? cell.initialDisplay
           : typedIn === shownIn || valueSI === undefined || !UNIT_DEFS[metric] ? text
           : cellText(metric, valueSI, shownIn),
       });
@@ -756,14 +886,37 @@ export function ReviewTable({
   }, [results, history.documents, docChecked]);
   const nothingSelected = selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0;
 
+  /** The new columns Save may write on: a calendar day that has happened
+   *  (US-13 AC8), and for an undated previous column one before its report's
+   *  own day when that is known, so a stray "today" never dates it (US-12 AC14). */
+  const datedColumns = useMemo(() => new Set(matrix.columns.filter(col => {
+    const day = columnDay(col.date);
+    const report = col.undated && columnDay(fileDates[col.undated.fi]);
+    return day && (!report || day < report);
+  }).map(col => col.dateKey)), [matrix.columns, fileDates]);
+
+  /** What an undated column's header asks for while it has no day: a day in
+   *  its printed month, before its file's report day when that is known, even
+   *  when the file shows no report column (US-12 AC14). */
+  const pickHints = useMemo(() => new Map(matrix.columns.flatMap(col => {
+    if (!col.undated) return [];
+    const { printedMonth: month } = col.undated;
+    const report = columnDay(fileDates[col.undated.fi]);
+    const inMonth = month ? ` in ${longDate(month)}` : '';
+    const before = report ? ` before ${longDate(report)}` : '';
+    return [[col.dateKey, `Pick a day${inMonth}${before}`] as const];
+  })), [matrix.columns, fileDates]);
+
   /** A column with no date isn't saveable. Existing-history columns always
-   *  have a YYYY-MM-DD date; new (upload) columns require day+month+year so
-   *  dedup against history matches exactly (a month-only upload would
-   *  silently synthesise day=01 and either duplicate or miss-match). */
-  const allDatesSet = useMemo(() => matrix.columns.every(col => {
-    if (!col.isNew) return true;
-    return !!(col.date.year && col.date.month && col.date.day);
-  }), [matrix.columns]);
+   *  have a YYYY-MM-DD date; a new (upload) column that will write a cell
+   *  needs to be in `datedColumns`, so dedup against history matches exactly (a month-only
+   *  upload would silently synthesise day=01) and no misread or future date
+   *  is ever written: rows are append-only (US-13 AC8). A column whose cells
+   *  are all cleared writes nothing and needs no date. */
+  const allDatesSet = useMemo(() => {
+    const writing = new Set(saveableCells.map(c => c.dateKey));
+    return matrix.columns.every(col => !col.isNew || !writing.has(col.dateKey) || datedColumns.has(col.dateKey));
+  }, [matrix.columns, saveableCells, datedColumns]);
 
   /** Column-level date editing: propagate to every contributing date source so
    *  the matrix stays consistent. New-column dates only — existing-history
@@ -771,9 +924,13 @@ export function ReviewTable({
   const handleColumnDateChange = (col: MatrixColumn, update: Partial<FullDate>) => {
     if (!col.isNew) return;
     setFileDates(prev => {
+      // An undated column's day comes before its report's: a later pick (a
+      // stray "today") is refused, never written (US-12 AC14).
+      const report = col.undated && columnDay(prev[col.undated.fi]);
+      if (report && update.day && fullDateToIso({ ...col.date, ...update }) >= report) return prev;
       const next = { ...prev };
       for (const source of col.sources) {
-        const merged = { ...(prev[source] ?? col.date), ...update };
+        const merged: FullDate = { ...(prev[source] ?? col.date), ...update, undated: undefined };
         if (merged.day) {
           const maxDay = getDaysInMonth(merged.month, merged.year);
           if (parseInt(merged.day) > maxDay) merged.day = String(maxDay);
@@ -785,19 +942,29 @@ export function ReviewTable({
   };
 
   const handleSave = () => {
-    if (hasInvalid) return;
+    if (hasInvalid || !allDatesSet) return;
     // Collect core lab values
     const selected: ReviewedValue[] = [];
     const selectedLabValues: ReviewedLabValue[] = [];
 
     // O(1) column lookup so save doesn't go quadratic on big uploads.
     const columnsByKey = new Map(matrix.columns.map(col => [col.dateKey, col]));
+    // One row per (test, day). buildMatrixModel already shows one reading per
+    // slot, in this same rank (US-12 AC12, AC14); this is the backstop.
+    const rank = (cell: EditableMatrixCell) => {
+      const day = (cell.kind === 'core' ? results[cell.fi]?.values[cell.vi] : results[cell.fi]?.additionalValues[cell.ai])?.recordedAt;
+      return !day ? 0 : day === UNDATED_PREVIOUS ? 2 : 1;
+    };
+    const slots = new Set<string>();
 
-    for (const c of saveableCells) {
+    for (const c of [...saveableCells].sort((a, b) => rank(a.cell) - rank(b.cell))) {
       const col = columnsByKey.get(c.dateKey);
       if (!col) continue;
       const recordedAt = buildRecordedAt(col.date);
       const cell = c.cell;
+      const slot = `${cell.kind === 'core' ? metricOf(cell) : normaliseLabName(results[cell.fi]?.additionalValues[cell.ai]?.name ?? '')}|${recordedAt}`;
+      if (slots.has(slot)) continue;
+      slots.add(slot);
       if (cell.kind === 'core') {
         const metric = metricOf(cell);
         if (!metric) continue;
@@ -880,7 +1047,10 @@ export function ReviewTable({
           coreCellViews={coreCellViews}
           onCellChange={updateEditedDisplayValue}
           onColumnDateChange={handleColumnDateChange}
+          datedColumns={datedColumns}
+          pickHints={pickHints}
           replaceChecked={replaceChecked}
+          heldEqual={heldEqual}
           onReplaceToggle={toggleReplace}
         />
       )}
@@ -972,8 +1142,10 @@ export function ReviewTable({
       })}
 
       {!allDatesSet && (
-        <p className="review-date-hint">Pick a day for every new column before saving — keeps the saved date precise.</p>
+        <p className="review-date-hint">Pick a past day for every new column before saving, and for previous results a day before the report's — keeps the saved date precise.</p>
       )}
+
+      {hiddenNotice && <p className="review-date-hint" role="status">{hiddenNotice}</p>}
 
       {hasInvalid && <p role="status">Correct or clear the values with errors before saving.</p>}
       {error && <p className="upload-error">{error}</p>}
@@ -1014,15 +1186,18 @@ interface ReviewMatrixProps {
   grading: Grading;
   editedDisplayValues: Record<string, string>;
   coreCellViews: ReadonlyMap<string, CoreCellView>;
-  onCellChange: (cellKey: string, value: string, display?: CellUnit) => void;
+  onCellChange: (id: string, value: string, display?: CellUnit) => void;
   onColumnDateChange: (col: MatrixColumn, update: Partial<FullDate>) => void;
+  datedColumns: ReadonlySet<DateKey>;
+  pickHints: ReadonlyMap<DateKey, string>;
   replaceChecked: Record<string, boolean>;
-  onReplaceToggle: (cellKey: string, on: boolean) => void;
+  heldEqual: ReadonlySet<string>;
+  onReplaceToggle: (key: string, on: boolean) => void;
 }
 
 function ReviewMatrix({
   matrix, unitSystem, metricUnitOverrides, onToggleFieldUnit, onChooseLpaUnit, grading,
-  editedDisplayValues, coreCellViews, onCellChange, onColumnDateChange, replaceChecked, onReplaceToggle,
+  editedDisplayValues, coreCellViews, onCellChange, onColumnDateChange, datedColumns, pickHints, replaceChecked, heldEqual, onReplaceToggle,
 }: ReviewMatrixProps) {
   const scrollSync = useMatrixScrollSync(matrix.columns.length);
 
@@ -1034,7 +1209,7 @@ function ReviewMatrix({
           <div ref={scrollSync.registerHeader} onScroll={scrollSync.onScroll} className="bt-cell-strip">
             <div className="bt-strip-inner">
               {matrix.columns.map(col => (
-                <MatrixColumnHeader key={col.dateKey} col={col} onDateChange={onColumnDateChange} />
+                <MatrixColumnHeader key={col.dateKey} col={col} set={datedColumns.has(col.dateKey)} hint={pickHints.get(col.dateKey)} onDateChange={onColumnDateChange} />
               ))}
               <div className="bt-strip-spacer"/>
             </div>
@@ -1058,6 +1233,7 @@ function ReviewMatrix({
             coreCellViews={coreCellViews}
             onCellChange={onCellChange}
             replaceChecked={replaceChecked}
+          heldEqual={heldEqual}
             onReplaceToggle={onReplaceToggle}
           />
         ))}
@@ -1082,6 +1258,7 @@ function ReviewMatrix({
                 coreCellViews={coreCellViews}
                 onCellChange={onCellChange}
                 replaceChecked={replaceChecked}
+          heldEqual={heldEqual}
                 onReplaceToggle={onReplaceToggle}
               />
             ))}
@@ -1095,7 +1272,7 @@ function ReviewMatrix({
 /** Column header — shows the date. New (upload) columns render an editable
  *  date picker so the user can fix LLM-misread dates; existing-history
  *  columns are read-only (correction goes through the live timeline). */
-function MatrixColumnHeader({ col, onDateChange }: { col: MatrixColumn; onDateChange: (col: MatrixColumn, update: Partial<FullDate>) => void }) {
+function MatrixColumnHeader({ col, set, hint, onDateChange }: { col: MatrixColumn; set: boolean; hint?: string; onDateChange: (col: MatrixColumn, update: Partial<FullDate>) => void }) {
   if (!col.isNew) {
     return (
       <div className="bt-cell-value bt-cell-context bt-cell-date">
@@ -1103,26 +1280,26 @@ function MatrixColumnHeader({ col, onDateChange }: { col: MatrixColumn; onDateCh
       </div>
     );
   }
-  // needsDay flags new columns where the LLM didn't extract a day so the
-  // user sees "— Mon 'YY" and is gated from saving until they pick one.
+  const onChange = (picked: string) => {
+    const parsed = parseIsoToFullDate(picked);
+    if (parsed) onDateChange(col, parsed);
+  };
+  // A column with no past day yet (US-13 AC8) opens an empty picker; an
+  // undated previous column (US-12 AC14) names its limits (`pickHints`).
   return (
     <DraftDateCell
-      date={fullDateToIso(col.date)}
-      needsDay={!col.date.day}
-      ariaLabel="Choose column date"
-      onChange={picked => {
-        const parsed = parseIsoToFullDate(picked);
-        if (parsed) onDateChange(col, parsed);
-      }}
+      date={col.date.undated ? '' : fullDateToIso(col.date)}
+      needsDay={!set}
+      placeholder={hint}
+      ariaLabel={col.undated ? 'Choose the date of the previous results' : 'Choose column date'}
+      onChange={onChange}
     />
   );
 }
 
 function formatColumnDate(date: FullDate): string {
-  const monthEntry = MONTHS_SHORT.find(m => m.value === date.month.padStart(2, '0'));
-  const monthLabel = monthEntry?.label ?? date.month;
   const yy = date.year.slice(-2);
-  return date.day ? `${date.day} ${monthLabel} '${yy}` : `${monthLabel} '${yy}`;
+  return date.day ? `${date.day} ${monthLabel(date.month)} '${yy}` : `${monthLabel(date.month)} '${yy}`;
 }
 
 interface MatrixRowViewProps {
@@ -1138,14 +1315,15 @@ interface MatrixRowViewProps {
   scrollSync: ReturnType<typeof useMatrixScrollSync>;
   editedDisplayValues: Record<string, string>;
   coreCellViews: ReadonlyMap<string, CoreCellView>;
-  onCellChange: (cellKey: string, value: string, display?: CellUnit) => void;
+  onCellChange: (id: string, value: string, display?: CellUnit) => void;
   replaceChecked: Record<string, boolean>;
-  onReplaceToggle: (cellKey: string, on: boolean) => void;
+  heldEqual: ReadonlySet<string>;
+  onReplaceToggle: (key: string, on: boolean) => void;
 }
 
 function MatrixRowView({
   row, rowIdx, columns, cells, unitSystem, metricUnitOverrides, onToggleFieldUnit, onChooseLpaUnit,
-  grading, scrollSync, editedDisplayValues, coreCellViews, onCellChange, replaceChecked, onReplaceToggle,
+  grading, scrollSync, editedDisplayValues, coreCellViews, onCellChange, replaceChecked, heldEqual, onReplaceToggle,
 }: MatrixRowViewProps) {
   const rowKey = matrixRowKey(row);
   const rowDisplay = row.kind === 'core' ? (metricUnitOverrides?.[row.metric] ?? unitSystem) : unitSystem;
@@ -1167,21 +1345,21 @@ function MatrixRowView({
       <div ref={el => scrollSync.registerRow(rowIdx, el)} onScroll={scrollSync.onScroll} className="bt-cell-strip">
         <div className="bt-strip-inner">
           {columns.map(col => {
-            const cellKey = matrixCellKey(rowKey, col.dateKey);
-            const cell = cells.get(cellKey) ?? { state: 'empty' as const };
+            const cell = cells.get(matrixCellKey(rowKey, col.dateKey)) ?? { state: 'empty' as const };
+            const id = cell.state === 'editable' ? editId(cell) : '';
             return (
               <MatrixCellView
                 key={col.dateKey}
                 cell={cell}
-                cellKey={cellKey}
                 row={row}
                 unitSystem={rowDisplay}
                 grading={grading}
-                editedValue={coreCellViews.get(cellKey)?.text ?? editedDisplayValues[cellKey] ?? ''}
-                valueSI={coreCellViews.get(cellKey)?.valueSI}
-                validationError={coreCellViews.get(cellKey)?.error}
+                editedValue={coreCellViews.get(id)?.text ?? editedDisplayValues[id] ?? ''}
+                valueSI={coreCellViews.get(id)?.valueSI}
+                validationError={coreCellViews.get(id)?.error}
                 onCellChange={onCellChange}
-                replace={replaceChecked[cellKey] ?? false}
+                replace={cell.state === 'editable' && !!cell.existing && !!replaceChecked[replaceKey(cell, cell.existing)]}
+                alreadySaved={heldEqual.has(id)}
                 onReplaceToggle={onReplaceToggle}
               />
             );
@@ -1215,7 +1393,6 @@ function describeRow(row: MatrixRow, display: CellUnit, grading: Grading): { lab
 
 interface MatrixCellViewProps {
   cell: MatrixCell;
-  cellKey: string;
   row: MatrixRow;
   unitSystem: CellUnit;
   grading: Grading;
@@ -1223,13 +1400,17 @@ interface MatrixCellViewProps {
   /** The value a core cell saves, which its colour grades (US-13 AC4). */
   valueSI?: number;
   validationError?: string | null;
-  onCellChange: (cellKey: string, value: string, display?: CellUnit) => void;
+  /** Keyed by `editId`. */
+  onCellChange: (id: string, value: string, display?: CellUnit) => void;
   replace: boolean;
-  onReplaceToggle: (cellKey: string, on: boolean) => void;
+  /** The value as now typed is the saved row's: no Replace is offered. */
+  alreadySaved: boolean;
+  /** Keyed by `replaceKey`. */
+  onReplaceToggle: (key: string, on: boolean) => void;
 }
 
 const MatrixCellView = memo(function MatrixCellView({
-  cell, cellKey, row, unitSystem, grading, editedValue, valueSI, validationError, onCellChange, replace, onReplaceToggle,
+  cell, row, unitSystem, grading, editedValue, valueSI, validationError, onCellChange, replace, alreadySaved, onReplaceToggle,
 }: MatrixCellViewProps) {
   if (cell.state === 'empty') {
     // NBSP keeps :empty from matching — the theme has a global
@@ -1252,7 +1433,7 @@ const MatrixCellView = memo(function MatrixCellView({
   const isCore = cell.kind === 'core';
   // Stamp the row's display unit so a toggle-after-typing doesn't
   // misconvert the typed value at save time.
-  const handleChange = (v: string) => onCellChange(cellKey, v, isCore ? unitSystem : undefined);
+  const handleChange = (v: string) => onCellChange(editId(cell), v, isCore ? unitSystem : undefined);
   // A guessed unit (medium) and a doubtful read (low) both ask to be checked (US-21 AC18).
   const lowConfClass = isCore && cell.confidence !== 'high' ? ' bt-cell-low-confidence' : '';
   let storedText: string | null = null;
@@ -1304,15 +1485,15 @@ const MatrixCellView = memo(function MatrixCellView({
     <div className="bt-cell-conflict">
       <span className="bt-value-num num bt-cell-conflict-old">{oldText}</span>
       {input}
-      <label className="bt-cell-conflict-replace">
+      {!alreadySaved && <label className="bt-cell-conflict-replace">
         <input
           type="checkbox"
           checked={replace}
-          onChange={(e) => onReplaceToggle(cellKey, e.target.checked)}
+          onChange={(e) => onReplaceToggle(replaceKey(cell, cell.existing!), e.target.checked)}
           aria-label={`Replace the saved ${rowName(row)} value ${heardOld} with ${heardNew}`}
         />
         <span aria-hidden="true">Replace</span>
-      </label>
+      </label>}
     </div>
   );
 });

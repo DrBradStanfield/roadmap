@@ -23,6 +23,7 @@ import {
   zipMemberName,
   fileNameLine,
   unifiedSystemPrompt,
+  UNDATED_PREVIOUS,
 } from './lab-extraction';
 import { oneLine } from './plan';
 
@@ -116,7 +117,7 @@ describe('US-12: toUnifiedResult', () => {
       additionalValues: [{ name: 'sodium', value: 141, unit: 'mmol/L' }],
       document: null,
     });
-    const result = toUnifiedResult(parsed);
+    const result = toUnifiedResult(parsed, 'full');
     expect(result.classification).toBe('lab_report');
     expect(result.reportDate).toBe('2026-01-15');
     expect(result.values).toHaveLength(1);
@@ -133,7 +134,7 @@ describe('US-12: toUnifiedResult', () => {
       additionalValues: [{ name: '', value: 141, unit: 'mmol/L' }],
       document: null,
     });
-    expect(toUnifiedResult(parsed).additionalValues).toHaveLength(0);
+    expect(toUnifiedResult(parsed, 'full').additionalValues).toHaveLength(0);
   });
 
   it('builds a document result for a non-lab classification, ignoring values/additionalValues', () => {
@@ -151,7 +152,7 @@ describe('US-12: toUnifiedResult', () => {
         metadata: { scanType: 'colonoscopy' },
       },
     });
-    const result = toUnifiedResult(parsed);
+    const result = toUnifiedResult(parsed, 'full');
     expect(result.classification).toBe('scan_result');
     expect(result.values).toEqual([]);
     expect(result.additionalValues).toEqual([]);
@@ -173,7 +174,7 @@ describe('US-12: toUnifiedResult', () => {
       unrecognized: ['vitamin D: 45 ng/mL'],
       document: null,
     });
-    expect(toUnifiedResult(parsed).unrecognized).toEqual(['vitamin D: 45 ng/mL']);
+    expect(toUnifiedResult(parsed, 'full').unrecognized).toEqual(['vitamin D: 45 ng/mL']);
   });
 });
 
@@ -182,7 +183,7 @@ describe('US-12 AC11: a core test filed under additionalValues becomes the core 
   // additionalValues, so they saved as lab rows and the plan said "not entered".
   const extract = (values: unknown[], additionalValues: unknown[]) => toUnifiedResult(parseUnifiedResult({
     classification: 'lab_report', reportDate: null, values, additionalValues, document: null,
-  }));
+  }), 'full');
 
   it('moves systolic_bp, diastolic_bp, apolipoprotein_b and psa to values, converted like any core row', () => {
     const result = extract([], [
@@ -245,7 +246,7 @@ describe('US-12 AC11: a core test filed under additionalValues becomes the core 
       classification: 'clinic_letter', reportDate: null, values: [],
       additionalValues: [{ name: 'systolic_bp', value: 118, unit: 'mmHg' }],
       document: { title: 'Letter', documentDate: null, contentMarkdown: '', metadata: {} },
-    }));
+    }), 'full');
     expect(result.values).toEqual([]);
   });
 });
@@ -560,7 +561,7 @@ describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted'
       { name: 'sodium', value: 141, unit: 'mmol/L' },
     ] });
     expect(one.droppedValueCount).toBe(1);
-    expect(toUnifiedResult(one).droppedValueCount).toBe(1);
+    expect(toUnifiedResult(one, 'full').droppedValueCount).toBe(1);
 
     // A row with no name is dropped, and counted, not filtered out unseen later.
     const unnamed = parseUnifiedResult({ ...base, additionalValues: [
@@ -568,8 +569,8 @@ describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted'
       { name: '  ', value: 4.1, unit: 'mmol/L' },
       { name: 'sodium', value: 141, unit: 'mmol/L' },
     ] });
-    expect(toUnifiedResult(unnamed).droppedValueCount).toBe(2);
-    expect(toUnifiedResult(unnamed).additionalValues.map(v => v.name)).toEqual(['sodium']);
+    expect(toUnifiedResult(unnamed, 'full').droppedValueCount).toBe(2);
+    expect(toUnifiedResult(unnamed, 'full').additionalValues.map(v => v.name)).toEqual(['sodium']);
 
     const good = parseUnifiedResult({
       ...base,
@@ -577,7 +578,7 @@ describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted'
       additionalValues: [{ name: 'sodium', value: '141', unit: 'mmol/L' }],
     });
     expect(good.droppedValueCount).toBe(0);
-    expect(toUnifiedResult(good).droppedValueCount).toBe(0);
+    expect(toUnifiedResult(good, 'full').droppedValueCount).toBe(0);
 
     const mixed = parseUnifiedResult({
       ...base,
@@ -589,7 +590,7 @@ describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted'
     });
     expect(mixed.droppedValueCount).toBe(4);
     // A document's stray value rows are discarded with the values, not reported.
-    expect(toUnifiedResult({ ...mixed, classification: 'clinic_letter' }).droppedValueCount).toBe(0);
+    expect(toUnifiedResult({ ...mixed, classification: 'clinic_letter' }, 'full').droppedValueCount).toBe(0);
   });
 });
 
@@ -727,7 +728,7 @@ describe('US-21 AC7: the prompt copies each unit as printed and never converts',
 describe('US-21 AC7/AC8: a unit printed only in the range column reaches the write as printed', () => {
   const lab = (row: Record<string, unknown>) => toUnifiedResult(parseUnifiedResult({
     classification: 'lab_report', reportDate: '2026-01-15', values: [], additionalValues: [row], document: null,
-  })).additionalValues;
+  }), 'full').additionalValues;
 
   it('keeps 450 pg/mL with its printed range; the catalogue then converts value and range by one factor', () => {
     const [b12] = lab({ name: 'vitamin_b12', value: 450, unit: 'pg/mL', referenceLow: 200, referenceHigh: 900 });
@@ -779,7 +780,7 @@ describe('US-21 AC7/AC8: a unit printed only in the range column reaches the wri
     });
     expect(parsed.droppedValueCount).toBe(0);
     expect(parsed.values.map(v => v.unit)).toEqual(['', '', '']);
-    const values = toUnifiedResult(parsed).values;
+    const values = toUnifiedResult(parsed, 'full').values;
     expect(values.map(v => v.metric)).toEqual(['ldl', 'hdl', 'apob']);
     expect(values.every(v => v.question?.includes('No unit was printed'))).toBe(true);
   });
@@ -788,7 +789,7 @@ describe('US-21 AC7/AC8: a unit printed only in the range column reaches the wri
     const [ldl] = toUnifiedResult(parseUnifiedResult({
       classification: 'lab_report', reportDate: '2026-01-15', document: null, additionalValues: [],
       values: [{ metric: 'ldl', value: 2.8, unit: '', confidence: 'high' }],
-    })).values;
+    }), 'full').values;
     expect(ldl.confidence).toBe('low'); // 2.8 fits mmol/L and mg/dL alike: no guess is safe
     expect(ldl.question).toBe('No unit was printed, so the unit was inferred — please verify this value');
   });
@@ -797,7 +798,7 @@ describe('US-21 AC7/AC8: a unit printed only in the range column reaches the wri
     const [ldl] = toUnifiedResult(parseUnifiedResult({
       classification: 'lab_report', reportDate: '2026-01-15', document: null, additionalValues: [],
       values: [{ metric: 'ldl', value: 2.6, unit: '', confidence: 'medium', question: 'Faint print.' }],
-    })).values;
+    }), 'full').values;
     expect(ldl.question).toBe('Faint print. No unit was printed, so the unit was inferred — please verify this value');
   });
 });
@@ -854,13 +855,13 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
 // values; an undated one is ignored, as before. Synthetic two-date table.
 describe('US-12 AC12: a previous-results column with its own printed date becomes that date\'s values', () => {
   it('full: takes only the ONE most recent dated previous column, so a cumulative report cannot outgrow the token cap', () => {
-    expect(unifiedSystemPrompt('full')).toContain('Extract only the ONE most recent such column; ignore every older previous column.');
+    expect(unifiedSystemPrompt('full')).toContain('the ONE most recent previous column, dated or not (with no dates printed, the one beside the current results); ignore every older previous column.');
   });
 
-  it('full (website, BYOK): takes a previous column printed with a full day, ignores one with a month only or no date', () => {
+  it('full (website, BYOK): takes a previous column printed with a full day; one with a month only or no date is AC14\'s', () => {
     const prompt = unifiedSystemPrompt('full');
-    expect(prompt).toContain('Each of its rows is its own entry with "recordedAt" set to that column\'s collection date as YYYY-MM-DD');
-    expect(prompt).toContain('A previous column whose date is not printed as a full day (a month and year only, or no date at all), a trend graph, or a value you cannot tie to one printed day: IGNORE it completely.');
+    expect(prompt).toContain('with "recordedAt" set to that column\'s collection date as YYYY-MM-DD (rules 3 and 4 apply)');
+    expect(prompt).toContain('A trend graph, or a value you cannot tie to one column: IGNORE it completely.');
     expect(prompt).toContain('at most ONE entry per metric per date');
     expect(prompt).not.toContain('even if those historical columns are dated');
   });
@@ -883,7 +884,7 @@ describe('US-12 AC12: a previous-results column with its own printed date become
       { name: 'sodium', value: 138, unit: 'mmol/L', referenceLow: 135, referenceHigh: 145, recordedAt: '2025-09-02' },
     ],
     ...extra,
-  }));
+  }), 'full');
 
   it('carries each previous value\'s own day on the value; the primary column has none', () => {
     const result = twoDates();
@@ -896,7 +897,7 @@ describe('US-12 AC12: a previous-results column with its own printed date become
     const [v] = toUnifiedResult(parseUnifiedResult({
       classification: 'lab_report', reportDate: '2026-03-10', document: null, additionalValues: [],
       values: [{ metric: 'hdl', value: 1.4, unit: 'mmol/L', confidence: 'high', recordedAt: '2026-03-10' }],
-    })).values;
+    }), 'full').values;
     expect(v.recordedAt).toBeUndefined();
   });
 
@@ -904,7 +905,7 @@ describe('US-12 AC12: a previous-results column with its own printed date become
     classification: 'lab_report', reportDate, document: null,
     values: [{ metric: 'ldl', value: 3.1, unit: 'mmol/L', confidence: 'high', recordedAt }],
     additionalValues: [{ name: 'sodium', value: 138, unit: 'mmol/L', recordedAt }],
-  }));
+  }), 'full');
 
   it('an empty, blank or null recordedAt is the primary column: the value stays, on the report date', () => {
     for (const blank of ['', '   ', null, undefined]) {
@@ -956,7 +957,7 @@ describe('US-12 AC12: a previous-results column with its own printed date become
         { metric: 'ldl', value: 2.6, unit: 'mmol/L', confidence: 'high' },
         { metric: 'ldl', value: 3.1, unit: 'mmol/L', confidence: 'high', recordedAt: '2026-10-03' },
       ],
-    }));
+    }), 'full');
     expect(result.values.map(v => [v.displayValue, v.recordedAt])).toEqual([[2.6, undefined]]);
   });
 
@@ -967,9 +968,109 @@ describe('US-12 AC12: a previous-results column with its own printed date become
         { name: 'apolipoprotein_b', value: 0.9, unit: 'g/L' },
         { name: 'apolipoprotein_b', value: 1.1, unit: 'g/L', recordedAt: '2025-09-02' },
       ],
-    }));
+    }), 'full');
     expect(result.values.map(v => [v.metric, v.valueSI, v.recordedAt])).toEqual([['apob', 0.9, undefined], ['apob', 1.1, '2025-09-02']]);
     expect(result.additionalValues).toEqual([]);
+  });
+});
+
+// A Word baseline sheet with no dates anywhere: its blood results only in a
+// "Prev. Result" column, "Today's Result" blank for those rows. Synthetic
+// two-column table: weight in today's column, LDL and sodium only in Prev.
+describe('US-12 AC14: an undated previous column is read, marked undated, for the review to date', () => {
+  it('full: rule 2 takes the most recent previous column dated or not, and marks an undated one "undated"', () => {
+    const prompt = unifiedSystemPrompt('full');
+    expect(prompt).toContain('Each of its rows is its own entry, even when that row\'s current result is blank');
+    expect(prompt).toContain('or to the exact string "undated" when that column\'s date is not printed as a full day anywhere in the document (no date at all, or a month and year only: never invent a day, such as the 1st). For a month and year only, also set "printedMonth" to that month as YYYY-MM.');
+    expect(UNDATED_PREVIOUS).toBe('undated');
+  });
+
+  it('full: a sheet whose main content is a table of test results is a lab_report, body or lifestyle metrics beside it or not; a letter keeps its type', () => {
+    const prompt = unifiedSystemPrompt('full');
+    expect(prompt).toContain('A sheet whose main content is a table of test results is a "lab_report", even when it also lists body measurements or lifestyle metrics. A letter, discharge summary or scan report that only contains a section of blood results keeps its own type.');
+    expect(prompt).not.toContain('ANY blood or lab result rows');
+  });
+
+  it('metadata (the connector): neither rule; the base rule word for word', () => {
+    const prompt = unifiedSystemPrompt('metadata');
+    expect(prompt).not.toContain('undated');
+    expect(prompt).not.toContain('table of test results');
+    expect(prompt).not.toContain('printedMonth');
+    expect(prompt).toContain('- "lab_report": Blood test results, pathology panels, metabolic panels, lipid panels\n');
+  });
+
+  const undatedSheet = (reportDate: string | null, recordedAt: unknown = 'undated') => parseUnifiedResult({
+    classification: 'lab_report', reportDate, document: null,
+    values: [
+      { metric: 'ldl', value: 3.4, unit: 'mmol/L', confidence: 'high', recordedAt },
+      { metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high' },
+    ],
+    additionalValues: [
+      { name: 'sodium', value: 139, unit: 'mmol/L', recordedAt },
+      { name: 'apolipoprotein_b', value: 1.1, unit: 'g/L', recordedAt },
+    ],
+  });
+
+  it('full: the undated column keeps its marker, with or without a report date; the primary column has none', () => {
+    for (const reportDate of [null, '2026-03-10']) {
+      const result = toUnifiedResult(undatedSheet(reportDate), 'full');
+      expect(result.values.map(v => [v.metric, v.recordedAt]), String(reportDate)).toEqual([['ldl', 'undated'], ['hdl', undefined], ['apob', 'undated']]);
+      expect(result.additionalValues.map(v => [v.name, v.recordedAt])).toEqual([['sodium', 'undated']]);
+      expect(result.droppedValueCount).toBe(0);
+    }
+  });
+
+  it('full: the marker is matched before the report date, so a report date of "undated" never makes it primary', () => {
+    expect(toUnifiedResult(undatedSheet('undated'), 'full').values.map(v => v.recordedAt)).toEqual(['undated', undefined, 'undated']);
+  });
+
+  it('full: only the exact marker (trimmed) counts; anything like it is left out, uncounted', () => {
+    expect(toUnifiedResult(undatedSheet(null, '  undated '), 'full').values.map(v => v.recordedAt)).toEqual(['undated', undefined, 'undated']);
+    for (const odd of ['Undated', 'UNDATED', 'undated column', 'none', 'prev']) {
+      const result = toUnifiedResult(undatedSheet('2026-03-10', odd), 'full');
+      expect(result.values.map(v => v.metric), odd).toEqual(['hdl']);
+      expect(result.additionalValues, odd).toEqual([]);
+      expect(result.droppedValueCount, odd).toBe(0);
+    }
+  });
+
+  it('metadata (the connector): an undated value is left out, uncounted; the primary column stays', () => {
+    for (const result of [toUnifiedResult(undatedSheet('2026-03-10'), 'metadata')]) {
+      expect(result.values.map(v => [v.metric, v.recordedAt])).toEqual([['hdl', undefined]]);
+      expect(result.additionalValues).toEqual([]);
+      expect(result.droppedValueCount).toBe(0);
+    }
+  });
+
+  const monthSheet = (printedMonth: unknown, recordedAt: unknown = 'undated', reportDate: string | null = '2026-03-10') => toUnifiedResult(parseUnifiedResult({
+    classification: 'lab_report', reportDate, document: null,
+    values: [{ metric: 'ldl', value: 3.4, unit: 'mmol/L', confidence: 'high', recordedAt, printedMonth }],
+    additionalValues: [
+      { name: 'sodium', value: 139, unit: 'mmol/L', recordedAt, printedMonth },
+      { name: 'apolipoprotein_b', value: 1.1, unit: 'g/L', recordedAt, printedMonth },
+    ],
+  }), 'full');
+
+  it('full: a month-only column carries its printedMonth on every value, promoted ones too', () => {
+    const result = monthSheet('2024-06');
+    expect(result.values.map(v => [v.metric, v.recordedAt, v.printedMonth])).toEqual([['ldl', 'undated', '2024-06'], ['apob', 'undated', '2024-06']]);
+    expect(result.additionalValues.map(v => [v.name, v.printedMonth])).toEqual([['sodium', '2024-06']]);
+    expect(monthSheet('2024-06', 'undated', null).values[0].printedMonth).toBe('2024-06');
+  });
+
+  it('full: a printedMonth that is malformed, not a real month, after the report\'s month, or not on an undated value is dropped; the value stays', () => {
+    for (const odd of ['2024-6', 'June 2024', '2024-13', '2024-06-01', '2026-04', 202406, null]) {
+      const result = monthSheet(odd);
+      expect(result.values.map(v => [v.recordedAt, v.printedMonth]), String(odd)).toEqual([['undated', undefined], ['undated', undefined]]);
+      expect(result.additionalValues[0].printedMonth, String(odd)).toBeUndefined();
+      expect(result.droppedValueCount).toBe(0);
+    }
+    expect(monthSheet('2024-06', '2025-09-02').values.map(v => v.printedMonth)).toEqual([undefined, undefined]);
+    expect(monthSheet('2024-06', null).values.map(v => v.printedMonth)).toEqual([undefined, undefined]);
+  });
+
+  it('full: a dated previous column still reads as before', () => {
+    expect(toUnifiedResult(undatedSheet('2026-03-10', '2025-09-02'), 'full').values.map(v => v.recordedAt)).toEqual(['2025-09-02', undefined, '2025-09-02']);
   });
 });
 

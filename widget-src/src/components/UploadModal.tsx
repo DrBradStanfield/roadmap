@@ -1,7 +1,7 @@
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { IMPORT_LIMITS, zipMemberName, type LabUnitRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS, UNDATED_PREVIOUS, zipMemberName, type LabUnitRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -9,6 +9,7 @@ import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } fro
 import { labUnitRefusalLine } from '../lib/lab-value-labels';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
+import { ErrorBoundary } from './ErrorBoundary';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -132,7 +133,7 @@ const MAX_FILES = 200;
 const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
 
 /** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
-type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx'>;
+type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious'>;
 /** `name` is the file's whole path, its identity; the list shows it short (`noticeName`).
  *  `count` is how many the notice stands for (values dropped); `text` overrides the reason's. */
 interface FileNotice { name: string; reason: FileNoticeReason; count?: number; text?: string }
@@ -228,11 +229,12 @@ function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, 
 }
 
 /** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
- *  `docx` is how many of the picked files were .docx (AC13). A zero is never
+ *  `docx` is how many of the picked files were .docx (AC13); `undatedPrevious`
+ *  how many values came from an undated previous column (AC14). A zero is never
  *  sent: every key is optional, so a server a deploy behind meets a new key
  *  only once it counts something. */
-function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[]): void {
-  const counts: Partial<Record<UploadOutcomeKey, number>> = { picked, withValues, docx };
+function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[], undatedPrevious = 0): void {
+  const counts: Partial<Record<UploadOutcomeKey, number>> = { picked, withValues, docx, undatedPrevious };
   for (const n of notices) counts[n.reason] = (counts[n.reason] ?? 0) + (n.count ?? 1);
   trackProductEvent('upload_outcome', Object.fromEntries(
     UPLOAD_OUTCOME_KEYS.filter(k => counts[k]).map(k => [k, Math.min(counts[k]!, UPLOAD_OUTCOME_MAX)]),
@@ -400,13 +402,15 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     };
     const finish = (finished: FileResult[]) => {
       let withValues = 0;
+      let undatedPrevious = 0;
       for (const r of finished) {
         if (r.error) continue;
         if (hasValues(r)) withValues++;
         else runNotices.push({ name: r.fileName, reason: r.document ? 'documentOnly' : 'noValues' });
+        undatedPrevious += [...r.values, ...r.additionalValues].filter(v => v.recordedAt === UNDATED_PREVIOUS).length;
       }
       setNotices(runNotices);
-      trackUploadOutcome(tooLarge.length + names.length, withValues, docx, runNotices);
+      trackUploadOutcome(tooLarge.length + names.length, withValues, docx, runNotices, undatedPrevious);
     };
 
     try {
@@ -856,6 +860,13 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
 
           {state === 'review' && <FileNotices notices={notices} />}
           {state === 'review' && (
+            // A review that throws while rendering is never a dead widget (US-13 AC9).
+            <ErrorBoundary feature="upload_review" fallback={
+              <div className="upload-review-error" role="alert">
+                <p>Something went wrong showing these results. Your file was read; please try again.</p>
+                <button type="button" className="btn-primary" onClick={handleDiscard}>Cancel</button>
+              </div>
+            }>
             <ReviewTable
               results={results}
               history={history}
@@ -870,6 +881,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               isSaving={isSaving}
               error={error}
             />
+            </ErrorBoundary>
           )}
 
           {state === 'done' && (

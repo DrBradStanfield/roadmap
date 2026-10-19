@@ -6,6 +6,26 @@ function makeEvent(overrides: Partial<Sentry.ErrorEvent>): Sentry.ErrorEvent {
   return { type: undefined, ...overrides } as Sentry.ErrorEvent;
 }
 
+// US-13 AC9: a review that throws while rendering reports through the strict
+// branch, so nothing the review showed (values, units, names typed into
+// labels) leaves the browser. Synthetic values.
+describe('scrubEvent — the upload review boundary (feature upload_review)', () => {
+  it('keeps the tag, and no number survives anywhere in the event', () => {
+    const event = makeEvent({
+      message: 'Review failed at 0.4',
+      tags: { feature: 'upload_review', metric: 'zinc 0.4' },
+      exception: { values: [{ type: 'TypeError', value: "Cannot read properties of undefined (reading 'padStart') at 0.4 weird", mechanism: { type: 'generic', handled: true } }] },
+      breadcrumbs: [{ category: 'ui.click', message: 'button[aria-label="Replace the saved Zinc value 0.4 weird with 0.7 weird"]', data: { value: 0.7 } }],
+      extra: { componentStack: 'at Cell (value 0.4)' },
+      contexts: { review: { value: 0.7 } },
+      request: { url: 'https://example.test/pages/roadmap?value=0.4', data: '0.4' },
+    });
+    const scrubbed = scrubEvent(event);
+    expect(scrubbed?.tags).toEqual({ feature: 'upload_review' });
+    expect(JSON.stringify(scrubbed)).not.toMatch(/\d/);
+  });
+});
+
 describe('scrubEvent — SDK self-noise filter', () => {
   // Regression: Sentry 7620498452 / 7645126135 — when a third-party error
   // (e.g. the Horizon theme's "@shopify/events" module-specifier TypeError)

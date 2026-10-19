@@ -90,8 +90,11 @@ export interface ExtractedValue {
   displaySystem?: import('@roadmap/health-core').UnitSystem;
   confidence: 'high' | 'medium' | 'low';
   question?: string;
-  /** This value's own day, from a dated previous-results column (US-12 AC12); absent for the report's own date. */
+  /** This value's own day, from a dated previous-results column (US-12 AC12),
+   *  or "undated" (`UNDATED_PREVIOUS`, AC14); absent for the report's own date. */
   recordedAt?: string;
+  /** YYYY-MM, only beside "undated": a month-only previous column's month (AC14). */
+  printedMonth?: string;
 }
 
 /** Document data returned by the LLM for non-lab documents.
@@ -111,8 +114,9 @@ export interface AdditionalLabValue {
   unit: string;
   referenceLow?: number | null;
   referenceHigh?: number | null;
-  /** As on `ExtractedValue` (US-12 AC12). */
+  /** As on `ExtractedValue` (US-12 AC12, AC14). */
   recordedAt?: string;
+  printedMonth?: string;
 }
 
 export interface LabImportResult {
