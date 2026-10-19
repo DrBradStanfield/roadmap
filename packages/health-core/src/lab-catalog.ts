@@ -72,6 +72,10 @@ export interface LabCatalogEntry {
    *  takes would not say what to do next (US-21 AC15: a differential in %):
    *  `note` for everyone, `assistant` only in the copy an assistant reads. */
   refusalNotes?: Record<string, { note: string; assistant?: string }>;
+  /** In `unit`: a value no human sample reaches, set only where a ×1000
+   *  conversion leads here (US-21 AC21). A row whose converted value or printed
+   *  high bound passes it was printed a prefix away, so it is refused, never rescaled. */
+  ceiling?: number;
 }
 
 /** Cell counts: every analyser spelling of ×10⁹/L. "G/L" is giga-per-litre —
@@ -200,7 +204,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'rdw_sd', label: 'RDW-SD', group: 'haematology', unit: 'fL', aliases: [] },
   { key: 'mpv', label: 'MPV', group: 'haematology', unit: 'fL', aliases: ['mean platelet volume'] },
   { key: 'immature_granulocytes', label: 'Immature granulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['immature granulocyte count', 'immature grans (abs)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
-  { key: 'reticulocytes', label: 'Reticulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['reticulocyte count', 'retic count', 'absolute reticulocyte count'], unitAliases: COUNT_ALIASES_9, conversions: { '×10¹²/l': 1000 }, refusalNotes: { '%': {
+  { key: 'reticulocytes', label: 'Reticulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['reticulocyte count', 'retic count', 'absolute reticulocyte count'], unitAliases: COUNT_ALIASES_9, conversions: { '×10¹²/l': 1000 }, ceiling: 2000, refusalNotes: { '%': {
     note: 'A percentage is a share of the red cells, not a count: this record keeps the absolute count (×10⁹/L), so look for that line on the same report',
     assistant: 'Do not work the count out from the percentage',
   } } }, // 10¹² is a thousand 10⁹
@@ -220,7 +224,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   // thyroxine index stays uncatalogued: two scales share its name.
   { key: 'total_t4', label: 'Total T4', group: 'thyroid', unit: 'nmol/L', aliases: ['t4 total', 't4, total', 'thyroxine (t4)', 'total thyroxine'], conversions: { 'µg/dl': 12.87 } }, // thyroxine 776.87 g/mol
   { key: 'total_t3', label: 'Total T3', group: 'thyroid', unit: 'nmol/L', aliases: ['t3 total', 't3, total', 'triiodothyronine (t3)', 'total triiodothyronine'], conversions: { 'ng/dl': 0.01536, 'ng/ml': 1.536, 'µg/l': 1.536 } }, // triiodothyronine 650.97 g/mol
-  { key: 'reverse_t3', label: 'Reverse T3', group: 'thyroid', unit: 'pmol/L', aliases: ['rt3', 'reverse triiodothyronine'], conversions: { 'pg/ml': 1.536, 'ng/dl': 15.36, 'nmol/l': 1000 } }, // reverse T3 650.97 g/mol, as T3; a nanomole is a thousand picomoles
+  { key: 'reverse_t3', label: 'Reverse T3', group: 'thyroid', unit: 'pmol/L', aliases: ['rt3', 'reverse triiodothyronine'], conversions: { 'pg/ml': 1.536, 'ng/dl': 15.36, 'nmol/l': 1000 }, ceiling: 10000 }, // reverse T3 650.97 g/mol, as T3; a nanomole is a thousand picomoles
   { key: 't3_uptake', label: 'T3 uptake', group: 'thyroid', unit: '%', aliases: ['t-uptake', 't3u'] }, // a ratio (THBR) or arbitrary units is refused
   { key: 'thyroglobulin', label: 'Thyroglobulin', group: 'thyroid', unit: 'µg/L', aliases: [], unitAliases: NG_PER_ML },
   // Antibody assays: no conversion across assays. TRAb in U/L is refused: older non-WHO assays are not IU/L.
@@ -231,8 +235,8 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'testosterone_total', label: 'Testosterone (total)', group: 'hormones', unit: 'nmol/L', aliases: ['total testosterone', 'testosterone', 'testosterone, total', 'plasma testosterone'], conversions: { 'ng/dl': 0.0347, 'ng/ml': 3.467 } }, // testosterone 288.42 g/mol
   // Measured and calculated free testosterone are two tests, as total and
   // corrected calcium are: same unit and factors, never one slot.
-  { key: 'free_testosterone', label: 'Free testosterone', group: 'hormones', unit: 'pmol/L', aliases: ['testosterone, free'], conversions: FREE_TESTOSTERONE },
-  { key: 'free_testosterone_calculated', label: 'Free testosterone (calculated)', group: 'hormones', unit: 'pmol/L', aliases: ['calculated free testosterone', 'cft', 'calculated free t'], conversions: FREE_TESTOSTERONE },
+  { key: 'free_testosterone', label: 'Free testosterone', group: 'hormones', unit: 'pmol/L', aliases: ['testosterone, free'], conversions: FREE_TESTOSTERONE, ceiling: 10000 },
+  { key: 'free_testosterone_calculated', label: 'Free testosterone (calculated)', group: 'hormones', unit: 'pmol/L', aliases: ['calculated free testosterone', 'cft', 'calculated free t'], conversions: FREE_TESTOSTERONE, ceiling: 10000 },
   { key: 'shbg', label: 'SHBG', group: 'hormones', unit: 'nmol/L', aliases: ['sex hormone binding globulin', 'shbg (sex hormone binding globulin)'] },
   { key: 'estradiol', label: 'Estradiol', group: 'hormones', unit: 'pmol/L', aliases: ['oestradiol', 'e2'], conversions: { 'pg/ml': 3.671, 'ng/l': 3.671 } }, // estradiol 272.38 g/mol
   { key: 'prolactin', label: 'Prolactin', group: 'hormones', unit: 'mIU/L', aliases: [], unitAliases: ['µiu/ml', 'microiu/ml', 'mciu/ml'] }, // ng/mL is deliberately REFUSED: the mIU factor is assay-dependent (~21.2 for the WHO 3rd IS), so converting would invent precision
@@ -312,7 +316,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'bnp', label: 'BNP', group: 'metabolic', unit: 'ng/L', aliases: ['b-type natriuretic peptide', 'brain natriuretic peptide'], unitAliases: PG_PER_ML },
   { key: 'troponin_t', label: 'Troponin T', group: 'metabolic', unit: 'ng/L', aliases: ['hs troponin t', 'hs-troponin t', 'high sensitivity troponin t', 'hs-tnt', 'hs-ctnt'], unitAliases: PG_PER_ML, conversions: { 'µg/l': 1000, 'ng/ml': 1000 } }, // a microgram is a thousand nanograms
   { key: 'troponin_i', label: 'Troponin I', group: 'metabolic', unit: 'ng/L', aliases: ['hs troponin i', 'hs-troponin i', 'high sensitivity troponin i', 'hs-tni', 'hs-ctni'], unitAliases: PG_PER_ML, conversions: { 'µg/l': 1000, 'ng/ml': 1000 } }, // a microgram is a thousand nanograms
-  { key: 'c_peptide', label: 'C-peptide', group: 'metabolic', unit: 'pmol/L', aliases: [], conversions: { 'ng/ml': 331.1, 'µg/l': 331.1, 'nmol/l': 1000 } }, // C-peptide 3020.3 g/mol; a nanomole is a thousand picomoles
+  { key: 'c_peptide', label: 'C-peptide', group: 'metabolic', unit: 'pmol/L', aliases: [], conversions: { 'ng/ml': 331.1, 'µg/l': 331.1, 'nmol/l': 1000 }, ceiling: 50000 }, // C-peptide 3020.3 g/mol; a nanomole is a thousand picomoles
   // Derived values the app does not derive (eAG from HbA1c, VLDL from triglycerides): kept as printed tests.
   { key: 'eag', label: 'eAG', group: 'metabolic', unit: 'mmol/L', aliases: ['estimated average glucose'], conversions: GLUCOSE },
   { key: 'vldl', label: 'VLDL cholesterol', group: 'metabolic', unit: 'mmol/L', aliases: ['vldl-c', 'vldl chol'], conversions: { 'mg/dl': 0.02586 } }, // cholesterol 386.65 g/mol
@@ -418,6 +422,7 @@ export function acceptedLabUnits(entry: LabCatalogEntry): string[] {
  * alone, so a health value never enters the message.
  */
 export function labUnitRefusal(entry: LabCatalogEntry, unit: string, fault?: CountFault | null): string {
+  if (fault === 'ceiling') return `${entry.label} in "${unit}": ${ceilingNote(entry, unit)}. Ask the person to check the report; ${NOT_ON_YOUR_OWN}`;
   if (fault === 'scale') return `${entry.label} in "${unit}": ${SCALE_NOTE}. Ask the person to check the report; ${NOT_ON_YOUR_OWN}`;
   if (labUnitTaken(entry, unit)) {
     return `${entry.label} in "${unit}" was not stored. ${WHOLE_COUNT}: ask the person whether the report means thousands per µL (×10³/µL); ${NOT_ON_YOUR_OWN}`;
@@ -431,7 +436,15 @@ export function labUnitRefusal(entry: LabCatalogEntry, unit: string, fault?: Cou
  *  website's upload summary shows it under its own words. */
 export function labUnitRefusalNote(entry: LabCatalogEntry | undefined, unit: string, fault?: CountFault | null): string | undefined {
   if (fault === 'scale') return SCALE_NOTE;
+  if (entry && fault === 'ceiling') return `${ceilingNote(entry, unit)}. Check the report, then type it in`;
   return labUnitTaken(entry, unit) ? WHOLE_COUNT_NOTE : entry?.refusalNotes?.[normalizeLabUnit(unit).toLowerCase()]?.note;
+}
+
+/** Why a row above its test's ceiling was refused (US-21 AC21): the ceiling is the catalogue's, never the row's number. */
+function ceilingNote(entry: LabCatalogEntry, unit: string): string {
+  const printed = normalizeLabUnit(unit);
+  const pair = printed.toLowerCase() === entry.unit.toLowerCase() ? '' : ` (${printed} vs ${entry.unit})`;
+  return `${entry.label} above ${entry.ceiling?.toLocaleString('en-US')} ${entry.unit} is not a measured value, so the printed unit is probably wrong${pair}`;
 }
 
 /** True when the test takes this spelling, so a refusal in it was about the
@@ -475,16 +488,20 @@ export function canonicalLabValue(
   entry: LabCatalogEntry, value: number, unit: string,
 ): { value: number; unit: string; factor: number } | null {
   const spelling = normalizeLabUnit(unit).toLowerCase();
-  if (!spelling) return null;
-  const factor = spelling === entry.unit.toLowerCase() || entry.unitAliases?.includes(spelling)
-    ? 1
-    : entry.conversions?.[spelling];
+  const factor = factorOf(entry, spelling);
   if (factor === undefined || countRowFault(entry, spelling, value)) return null;
   return { value: scaleBy(value, factor), unit: entry.unit, factor };
 }
 
-/** Why a count per µL was refused for its number (US-21 AC15). */
-export type CountFault = 'decimal' | 'scale';
+/** The factor from a matched spelling to the entry's unit, or `undefined` when it takes no such spelling. */
+function factorOf(entry: LabCatalogEntry, spelling: string): number | undefined {
+  if (!spelling) return undefined;
+  return spelling === entry.unit.toLowerCase() || entry.unitAliases?.includes(spelling) ? 1 : entry.conversions?.[spelling];
+}
+
+/** Why a row in a spelling its test takes was refused for its numbers: a count
+ *  per µL (US-21 AC15), or a value past the test's ceiling (US-21 AC21). */
+export type CountFault = 'decimal' | 'scale' | 'ceiling';
 
 /**
  * Cells are counted, so under a per-µL label a row must read as one count
@@ -511,12 +528,17 @@ function offRangeScale(entry: LabCatalogEntry, value: number, low?: number | nul
   return value > high * 100 || (LOW_SIDE_COUNTS.has(entry.key) && value < low / 100);
 }
 
-/** The fault that refused this row, or `null` when the count check passes. */
+/** The fault that refused this row, or `null` when the count and ceiling checks pass. */
 export function labCountFault(
   entry: LabCatalogEntry,
   row: { value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null },
 ): CountFault | null {
-  return countRowFault(entry, normalizeLabUnit(row.unit).toLowerCase(), row.value, row.referenceLow, row.referenceHigh);
+  const spelling = normalizeLabUnit(row.unit).toLowerCase();
+  const fault = countRowFault(entry, spelling, row.value, row.referenceLow, row.referenceHigh);
+  const factor = factorOf(entry, spelling);
+  if (fault || entry.ceiling === undefined || factor === undefined) return fault;
+  // The value or the printed high bound past the ceiling once converted (US-21 AC21).
+  return [row.value, row.referenceHigh].some((n) => typeof n === 'number' && n * factor > entry.ceiling!) ? 'ceiling' : null;
 }
 
 /** A correction sent in cells/µL, against the range its row already holds:

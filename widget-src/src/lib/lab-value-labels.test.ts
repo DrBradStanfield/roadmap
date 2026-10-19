@@ -42,3 +42,11 @@ describe('labValueLabel', () => {
     expect(labUnitRefusalLine('vitamin_d', 'mg/dL')).toMatch(/^Vitamin D \(25-OH\): unit not recognised/);
   });
 });
+
+// US-21 AC21: a value above its test's ceiling reads as the note alone.
+describe('labUnitRefusalLine: above the ceiling', () => {
+  it('US-21 AC21 — names the test, the printed unit and what to check', () => {
+    expect(labUnitRefusalLine('free_testosterone', 'nmol/L', 'ceiling')).toBe(
+      'Free testosterone above 10,000 pmol/L is not a measured value, so the printed unit is probably wrong (nmol/L vs pmol/L). Check the report, then type it in.');
+  });
+});
