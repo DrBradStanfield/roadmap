@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef, memo, useId } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, memo, useId, type ReactNode } from 'react';
 import type { LpaUnit, UnitSystem, MetricType, MeasurementSource, ApiMeasurement, DocumentType } from '@roadmap/health-core';
 import {
   UNIT_DEFS,
@@ -99,6 +99,8 @@ interface ReviewTableProps {
   onCancel: () => void;
   isSaving: boolean;
   error: string | null;
+  /** The values the last save refused, shown beside its error (US-12 AC6). */
+  refusals?: ReactNode;
 }
 
 /** Full date state: day/month/year. Day is null when the LLM didn't extract one. */
@@ -600,6 +602,7 @@ export function ReviewTable({
   onCancel,
   isSaving,
   error,
+  refusals,
 }: ReviewTableProps) {
   const docHistoryIndex = useMemo(() => buildDocHistoryIndex(history.documents), [history.documents]);
   // Lp(a) has its own three units, kept in the record, as in the blood-test
@@ -1156,7 +1159,11 @@ export function ReviewTable({
       {hiddenNotice && <p className="review-date-hint" role="status">{hiddenNotice}</p>}
 
       {hasInvalid && <p role="status">Correct or clear the values with errors before saving.</p>}
-      {error && <p className="upload-error">{error}</p>}
+      {/* One live region, so a screen reader hears the save's answer (US-12 AC6). */}
+      <div className="review-save-outcome" role="status">
+        {error && <p className="upload-error">{error}</p>}
+        {refusals && <div className="review-refusals">{refusals}</div>}
+      </div>
 
       <div className="review-actions">
         <button

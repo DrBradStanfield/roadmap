@@ -1,12 +1,13 @@
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, zipMemberName, type LabUnitRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, zipMemberName, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { labUnitRefusalLine } from '../lib/lab-value-labels';
+import { labUnitRefusalLine, measurementRefusalLine } from '../lib/lab-value-labels';
+import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -294,6 +295,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   // US-21 phase 3: lab rows the record would not store because it does not know
   // that unit for that test. Shown by name — a dropped value must never be silent.
   const [refusedLabUnits, setRefusedLabUnits] = useState<LabUnitRefusal[]>([]);
+  const [refusedMeasurements, setRefusedMeasurements] = useState<MeasurementRefusal[]>([]);
+  // Lp(a)'s refusal names its range in the unit its field shows (US-05 AC2).
+  const [lpaUnit] = useLpaUnit(unitSystem);
   const [isSaving, setIsSaving] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const savingRef = useRef(false);
@@ -317,6 +321,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     setSavedDocCount(0);
     setSavedLabCount(0);
     setRefusedLabUnits([]);
+    setRefusedMeasurements([]);
   }, []);
 
   // Closing active work only hides it. Drafts and pending saves remain mounted.
@@ -700,6 +705,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     savingRef.current = true;
     setIsSaving(true);
     setError(null);
+    // The last save's refusals belong to it: never beside a new error.
+    setRefusedLabUnits([]);
+    setRefusedMeasurements([]);
     try {
       // Save core measurements, additional lab values, and documents in parallel
       const measurements = selectedValues.map(v => ({
@@ -751,7 +759,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         return fallback;
       };
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
-        measurements.length > 0 ? bulkSaveMeasurements(measurements).catch(failed('measurements', { saved: [], skippedDuplicates: 0, errorCount: measurements.length })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
+        measurements.length > 0 ? bulkSaveMeasurements(measurements).catch(failed('measurements', { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
         docPayloads.length > 0 ? bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length })) : Promise.resolve({ saved: [], errorCount: 0 }),
         labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
       ]);
@@ -760,12 +768,13 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       setSkippedMeasurements(savedValues.skippedDuplicates);
       setSkippedLabValues(savedLabValues.skippedDuplicates);
       setRefusedLabUnits(savedLabValues.refused);
+      setRefusedMeasurements(savedValues.refused);
       const saveErrors = savedValues.errorCount + savedLabValues.errorCount + savedDocs.errorCount;
       setSaveErrorCount(saveErrors);
       setSavedDocCount(savedDocs.saved.length);
       setSavedLabCount(savedLabValues.saved.length);
       // A save error is the only failure: it keeps the review open so a second
-      // Save retries that branch (US-12 AC6). A duplicate and a refused unit
+      // Save retries that branch (US-12 AC6). A duplicate and a refused unit or number
       // are settled outcomes — the data is already there, or the record will
       // never take it — and neither is anything a retry could change.
       const totalSaved = savedValues.saved.length + savedDocs.saved.length + savedLabValues.saved.length;
@@ -795,6 +804,20 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       setIsSaving(false);
     }
   }, [onComplete, onScreeningUpdate, results, history.documents]);
+
+  // One report can refuse the same test on several dates; the user needs it
+  // named once. A note says what to look for instead, where there is one, and
+  // a unit the test takes was refused for its number, not its unit (US-21
+  // AC15). Shown on the done screen and, beside the retry message, in review
+  // (US-12 AC6): a refusal is settled the moment the save answers.
+  const refusalLines = <>
+    {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}`, r])).values()].map(r => (
+      <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit, r.fault)}</p>
+    ))}
+    {[...new Map(refusedMeasurements.map(r => [`${r.metricType}|${r.reason}|${r.bound}`, r])).values()].map(r => (
+      <p key={`${r.metricType}|${r.reason}|${r.bound}`} className="upload-done-skipped">{measurementRefusalLine(r, r.metricType === 'lpa' ? lpaUnit : metricUnitOverrides?.[r.metricType as MetricType] ?? unitSystem)}</p>
+    ))}
+  </>;
 
   // Portal to body so position:fixed resolves against the viewport — the
   // .health-tool container has a transform/contain that would otherwise pin
@@ -901,6 +924,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               onCancel={handleDiscard}
               isSaving={isSaving}
               error={error}
+              refusals={refusedLabUnits.length + refusedMeasurements.length > 0 ? refusalLines : undefined}
             />
             </ErrorBoundary>
           )}
@@ -916,7 +940,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 {savedDocCount > 0 && `${savedDocCount} document${savedDocCount !== 1 ? 's' : ''}`}
                 {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0
                   && skippedMeasurements === 0 && skippedLabValues === 0 && saveErrorCount === 0
-                  && refusedLabUnits.length === 0 && 'No items saved'}
+                  && refusedLabUnits.length === 0 && refusedMeasurements.length === 0 && 'No items saved'}
               </p>
               {skippedMeasurements > 0 && (
                 <p className="upload-done-skipped">
@@ -928,13 +952,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                   {skippedLabValues} additional lab value{skippedLabValues !== 1 ? 's were' : ' was'} already saved at the same date.
                 </p>
               )}
-              {/* One report can refuse the same test on several dates; the
-                  user needs the spelling named once. A note says what to look
-                  for instead, where there is one, and a unit the test takes
-                  was refused for its number, not its unit (US-21 AC15). */}
-              {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}`, r])).values()].map(r => (
-                <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit, r.fault)}</p>
-              ))}
+              {refusalLines}
               {saveErrorCount > 0 && (
                 <p className="upload-done-skipped">
                   {saveErrorCount} item{saveErrorCount !== 1 ? 's' : ''} could not be saved. Please try again.

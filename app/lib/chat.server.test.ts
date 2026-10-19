@@ -11,8 +11,9 @@ import {
   MAX_MESSAGE_LENGTH,
   loadMatchedArticlesFromHandles,
 } from './chat.server';
-import { chatContextOf, MINOR_CHAT_RULE } from '../../packages/health-core/src/chat-context';
+import { chatContextOf, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE } from '../../packages/health-core/src/chat-context';
 import { MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
+import { EDITABLE_FIELDS } from '../../packages/health-core/src/chat-edits';
 import { loadBlogIndex } from './blog-index.server';
 
 describe('buildConversationMessages', () => {
@@ -101,6 +102,32 @@ describe('buildSystemBlocks', () => {
       expect(text).toContain('the plan is built for adults');
       expect(text).toContain("the child's doctor");
     }
+  });
+
+  // US-15 AC36 (2026-10-18, Brad): saved values with no sex or height reach the model with no
+  // plan; it asks for them and says why, and grades nothing itself (AC31).
+  it('US-15 AC36: the base prompt carries the no-plan rule on every surface, byte-identical to health-core\'s', () => {
+    for (const surfaceContext of [undefined, 'DOCTOR', 'BRAND']) {
+      const text = buildSystemBlocks('{}', { surfaceContext })[0].text;
+      expect(text).toContain(NO_PLAN_CHAT_RULE);
+    }
+    expect(NO_PLAN_CHAT_RULE).toMatch(/without grading them/);
+    expect(NO_PLAN_CHAT_RULE).toMatch(/ask them to enter the missing sex or height in the roadmap tool \(this chat cannot save them\)/);
+    expect(NO_PLAN_CHAT_RULE).toMatch(/one plain sentence why: the roadmap needs height and sex to work out the plan/);
+    // Review R2 (2026-10-20): a plan computed this turn from stated values wins (AC33), without naming the tool.
+    expect(NO_PLAN_CHAT_RULE).toMatch(/and no tool result this turn holds a plan/);
+    expect(NO_PLAN_CHAT_RULE).not.toContain('run_roadmap');
+    // Review R4: eGFR needs more than sex.
+    expect(NO_PLAN_CHAT_RULE).toMatch(/kidney function, as eGFR needs sex, age and creatinine/);
+    expect(NO_PLAN_CHAT_RULE).not.toMatch(/\u2014/);
+  });
+
+  // US-15 AC36 (2026-10-20, Brad): the rule sends the user to the tool because the chat has no
+  // way to save sex or height: the form tool's fields are measurements only. If this fails, a
+  // save path exists, and the rule should offer it instead.
+  it('US-15 AC36: the chat cannot propose sex or height, so the no-plan rule points to the tool', () => {
+    expect(EDITABLE_FIELDS).not.toContain('sex');
+    expect(EDITABLE_FIELDS).not.toContain('heightCm');
   });
 
   it('includes evidence in second block', () => {
@@ -192,7 +219,19 @@ describe('resolveChatContext', () => {
   it('falls back to the empty context on malformed inputs', () => {
     expect(resolveChatContext('garbage')).toEqual(EMPTY_CHAT_CONTEXT);
     expect(resolveChatContext(123)).toEqual(EMPTY_CHAT_CONTEXT);
-    expect(resolveChatContext({ weightKg: 80 })).toEqual(EMPTY_CHAT_CONTEXT);
+    expect(resolveChatContext({ unitSystem: 'si', medications: [], screenings: [] })).toEqual(EMPTY_CHAT_CONTEXT);
+  });
+
+  // US-15 AC36 (2026-10-18): a saved value with no sex or height used to collapse to '{}',
+  // and the chat told the user they had no data.
+  it('US-15 AC36: saved values with no sex or height send what is saved, with no plan', () => {
+    const ctx = resolveChatContext({ weightKg: 80, ldlC: 3.9, unitSystem: 'si', medications: [], screenings: [] });
+    expect(ctx).not.toEqual(EMPTY_CHAT_CONTEXT);
+    const parsed = JSON.parse(ctx.userContextJson);
+    expect(parsed.latestValues).toEqual({ weightKg: '80', ldlC: '3.9' });
+    expect(parsed.missingInputs).toEqual(expect.arrayContaining(['sex', 'heightCm']));
+    expect(parsed).not.toHaveProperty('currentSuggestions');
+    expect(parsed).not.toHaveProperty('derivedValues');
   });
 });
 
@@ -263,9 +302,16 @@ describe('resolveChatContext — client inputs', () => {
     expect(parsed.excludedFields).toEqual(['ldlC']);
   });
 
-  it('still returns no context when the required fields are unusable', () => {
-    expect(contextOf({ heightCm: 9999, sex: 'male', ldlC: 2.1 })).toBeNull();
-    expect(contextOf({ heightCm: 180, sex: 'martian', ldlC: 2.1 })).toBeNull();
+  // US-15 AC36 (2026-10-18): this used to return no context, so the chat said the user had no data.
+  it('US-15 AC36: unusable required fields give the no-plan context: the values, the field named, never its value', () => {
+    for (const [payload, field] of [[{ heightCm: 9999, sex: 'male', ldlC: 2.1 }, 'heightCm'], [{ heightCm: 180, sex: 'martian', ldlC: 2.1 }, 'sex']] as const) {
+      const { json, parsed } = contextOf(payload)!;
+      expect(parsed.latestValues).toEqual({ ldlC: '2.1' });
+      expect(parsed.excludedFields).toEqual([field]);
+      expect(parsed.missingInputs).toContain(field);
+      expect(parsed).not.toHaveProperty('currentSuggestions');
+      expect(json).not.toMatch(/9999|martian/);
+    }
   });
 });
 

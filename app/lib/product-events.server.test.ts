@@ -580,6 +580,49 @@ describe('the refused-unit counter', () => {
   });
 });
 
+/**
+ * US-35 AC17 — the refused-measurement counter: which core metric the record
+ * refused at the upload save, and why, as closed words. Never the value, and
+ * never a printed name, which is free text.
+ */
+describe('the refused-measurement counter', () => {
+  it('takes a core metric id with an invalid value, and a closed refusal word alone, from a browser', () => {
+    expect(parseProductEvent({ eventName: 'measurement_refused', visitorId: VISITOR, metadata: { metric: 'ldl', refusal: 'invalid-value' } }))
+      .toEqual({ eventName: 'measurement_refused', visitorId: VISITOR, metadata: { metric: 'ldl', refusal: 'invalid-value' } });
+    for (const refusal of ['out-of-range', 'unknown-metric']) {
+      expect(parseProductEvent({ eventName: 'measurement_refused', visitorId: VISITOR, metadata: { refusal } }))
+        .toEqual({ eventName: 'measurement_refused', visitorId: VISITOR, metadata: { refusal } });
+    }
+  });
+
+  // Brad 2026-10-20: a metric beside out-of-range would tell analytics this
+  // visitor's value for that test is past a clinical bound.
+  it('refuses a metric beside an out-of-range or unknown-metric refusal, or with no refusal', () => {
+    for (const metadata of [
+      { metric: 'psa', refusal: 'out-of-range' }, { metric: 'ldl', refusal: 'unknown-metric' }, { metric: 'ldl' },
+    ]) {
+      expect(parseProductEvent({ eventName: 'measurement_refused', visitorId: VISITOR, metadata }), JSON.stringify(metadata)).toBeNull();
+    }
+  });
+
+  it('refuses a metric off METRIC_TYPES, a free word, a number, or any other key', () => {
+    for (const metadata of [
+      { metric: 'ferritin', refusal: 'invalid-value' }, { metric: 'LDL Cholesterol', refusal: 'invalid-value' },
+      { metric: '4.2', refusal: 'invalid-value' }, { metric: 'ldl', refusal: '4.2' }, { metric: 'ldl', refusal: 'slot-occupied' },
+      { metric: 'ldl', refusal: 'invalid-value', value: 4.2 }, { metric: 'ldl', refusal: 'invalid-value', count: 1 },
+      { metric: 'ldl', refusal: 'invalid-value', key: 'ldl' }, { metric: 'ldl', refusal: 'invalid-value', reason: 'invalid-value' },
+      { refusal: 'out-of-range', value: 10001 },
+    ]) {
+      expect(parseProductEvent({ eventName: 'measurement_refused', visitorId: VISITOR, metadata }), JSON.stringify(metadata)).toBeNull();
+    }
+  });
+
+  it('lets no other event carry a metric or a refusal', () => {
+    expect(parseProductEvent({ eventName: 'upload_saved', visitorId: VISITOR, metadata: { metric: 'ldl' } })).toBeNull();
+    expect(parseProductEvent({ eventName: 'lab_unit_refused', visitorId: VISITOR, metadata: { key: 'ferritin', refusal: 'out-of-range' } })).toBeNull();
+  });
+});
+
 /** US-05 AC2 — the Lp(a) unit counter: which unit was chosen, and from which. */
 describe('the Lp(a) unit counter', () => {
   it('takes the two unit labels, from a browser', () => {

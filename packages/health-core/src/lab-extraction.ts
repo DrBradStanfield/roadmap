@@ -598,9 +598,11 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   // The undated marker (AC14) is matched first and needs no report date.
   const reportDay = parsed.reportDate === null ? null : toDay(parsed.reportDate);
   // A printed month rides only on an undated value: a real month, not after
-  // the report's. Anything else is dropped; the value stays.
-  const printedMonth = (m?: string) =>
-    m && /^\d{4}-\d{2}$/.test(m) && isCalendarDay(`${m}-01`) && !(reportDay && isCalendarDay(reportDay) && `${m}-01` > reportDay) ? m : undefined;
+  // the report's (a full day or a month only). Anything else is dropped; the
+  // value stays.
+  const realMonth = (m?: string | null): m is string => !!m && /^\d{4}-\d{2}$/.test(m) && isCalendarDay(`${m}-01`);
+  const reportMonth = reportDay && isCalendarDay(reportDay) ? reportDay.slice(0, 7) : realMonth(reportDay) ? reportDay : null;
+  const printedMonth = (m?: string) => realMonth(m) && !(reportMonth && m > reportMonth) ? m : undefined;
   const ownDay = <T extends { recordedAt?: string; printedMonth?: string }>(row: T): T[] => {
     const v = { ...row, printedMonth: row.recordedAt === UNDATED_PREVIOUS ? printedMonth(row.printedMonth) : undefined };
     return !v.recordedAt ? [v]

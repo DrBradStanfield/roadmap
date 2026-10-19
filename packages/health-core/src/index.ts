@@ -203,6 +203,7 @@ export {
   formatTargetLine,
   formatGradedValue,
   unitDecimalPlaces,
+  roundBoundInward,
   // Feet/inches height conversion helpers
   inchesToFeetInches,
   feetInchesToInches,
@@ -311,7 +312,7 @@ export {
 
 // The chat's plan context: what a client sends, and the sanitizing builder
 // both chats read it through (US-15 AC11)
-export { chatContextOf, buildChatContextJson, MINOR_CHAT_RULE, type ChatContextPayload } from './chat-context';
+export { chatContextOf, buildChatContextJson, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE, type ChatContextPayload } from './chat-context';
 
 // US-15 AC33: run the plan code on values stated in the chat; the one-round tool loop every chat shares
 export { chatToolsFor, withRoadmapRound, type ChatTurnMessage } from './run-roadmap';
@@ -400,6 +401,6 @@ export {
 } from './drive-rest';
 
 // US-35: the slot rule and the bulk save the website and the connector share.
-export { bulkAppendValues, correctValue, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type SlotState } from './record-edits';
+export { bulkAppendValues, correctValue, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type SlotState } from './record-edits';
 export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, UNDATED_PREVIOUS, type RefusedLabValue } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';

@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { IMPORT_LIMITS } from './import-hints';
-import { convertValidationErrorsToUnits, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
+import { convertValidationErrorsToUnits, healthInputSchema, METRIC_TYPES, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
+import { UNIT_DEFS } from './units';
+import { METRIC_TO_FIELD } from './mappings';
 
 // ---------------------------------------------------------------------------
 // Client-side input validation (identity fields only — no unit conversion)
@@ -60,17 +62,43 @@ describe('validateInputValue', () => {
   });
 
   // PSA
-  it('rejects PSA above max (100)', () => {
-    expect(validateInputValue('psa', 150)).toBeUndefined();
+  // US-35 AC17 (Brad 2026-10-20): metastatic prostate cancer can read in the thousands.
+  it('rejects PSA above max (10,000)', () => {
+    expect(validateInputValue('psa', 10001)).toBeUndefined();
   });
 
   it('accepts PSA within range', () => {
     expect(validateInputValue('psa', 2.5)).toBe(2.5);
+    expect(validateInputValue('psa', 150)).toBe(150);
+    expect(validateInputValue('psa', 9999)).toBe(9999);
   });
 
   it('accepts PSA at boundaries', () => {
     expect(validateInputValue('psa', 0)).toBe(0);
-    expect(validateInputValue('psa', 100)).toBe(100);
+    expect(validateInputValue('psa', 10000)).toBe(10000);
+  });
+
+  it('US-35 AC17 — the schema, the form range and the unit table agree on the PSA ceiling of 10,000 ng/mL', () => {
+    expect(healthInputSchema.shape.psa.safeParse(9999).success).toBe(true);
+    expect(healthInputSchema.shape.psa.safeParse(10000).success).toBe(true);
+    const over = healthInputSchema.shape.psa.safeParse(10001);
+    expect(over.success).toBe(false);
+    expect(over.error?.issues[0]?.message).toBe('PSA must be at most 10,000 ng/mL');
+    expect(UNIT_DEFS.psa.validationRange).toEqual({ si: { min: 0, max: 10000 }, conventional: { min: 0, max: 10000 } });
+  });
+
+  // The upload refusal names the unit table's end of the range (US-35 AC17),
+  // and the record refuses on the schema: the two must be one range.
+  it('US-35 AC17 — every core metric\'s schema bounds are its unit table\'s SI range', () => {
+    for (const metric of METRIC_TYPES) {
+      const { min, max } = UNIT_DEFS[metric].validationRange.si;
+      const field = (healthInputSchema.shape as Record<string, { safeParse: (v: number) => { success: boolean } }>)[METRIC_TO_FIELD[metric]];
+      expect([min, max, min - 1e-6, max + 1e-6].map(v => field.safeParse(v).success), metric).toEqual([true, true, false, false]);
+    }
+  });
+
+  it('US-35 AC17 — a PSA message in US units keeps its comma (one unit in both systems)', () => {
+    expect(convertValidationErrorsToUnits({ psa: 'PSA must be at most 10,000 ng/mL' }, 'conventional')).toEqual({ psa: 'PSA must be at most 10,000 ng/mL' });
   });
 
   // Edge cases
@@ -119,10 +147,11 @@ describe('convertValidationErrorsToUnits', () => {
   });
 
   describe('Conventional (US) unit system', () => {
+    // 20 kg is 44.09 lbs, and 44 lbs is refused: a bound rounds inward (US-35 AC17).
     it('converts weight from kg to lbs', () => {
       const errors = { weightKg: 'Weight must be at least 20 kg' };
       const result = convertValidationErrorsToUnits(errors, 'conventional');
-      expect(result.weightKg).toBe('Weight must be at least 44 lbs');
+      expect(result.weightKg).toBe('Weight must be at least 45 lbs');
     });
 
     it('converts weight max from kg to lbs', () => {
@@ -146,7 +175,7 @@ describe('convertValidationErrorsToUnits', () => {
     it('converts waist from cm to inches', () => {
       const errors = { waistCm: 'Waist must be at least 40 cm' };
       const result = convertValidationErrorsToUnits(errors, 'conventional');
-      expect(result.waistCm).toBe('Waist must be at least 15.7 in');
+      expect(result.waistCm).toBe('Waist must be at least 15.8 in');
     });
 
     it('converts HbA1c from mmol/mol to %', () => {
@@ -160,8 +189,8 @@ describe('convertValidationErrorsToUnits', () => {
     it('converts LDL from mmol/L to mg/dL', () => {
       const errors = { ldlC: 'LDL-c must be at most 12.9 mmol/L' };
       const result = convertValidationErrorsToUnits(errors, 'conventional');
-      // 12.9 × 38.67 ≈ 499
-      expect(result.ldlC).toBe('LDL-c must be at most 499 mg/dL');
+      // 12.9 × 38.67 = 498.8, and 499 mg/dL is refused: the bound rounds inward (US-35 AC17).
+      expect(result.ldlC).toBe('LDL-c must be at most 498 mg/dL');
     });
 
     it('converts ApoB from g/L to mg/dL', () => {
@@ -174,8 +203,8 @@ describe('convertValidationErrorsToUnits', () => {
     it('converts creatinine from µmol/L to mg/dL', () => {
       const errors = { creatinine: 'Creatinine must be at least 10 µmol/L' };
       const result = convertValidationErrorsToUnits(errors, 'conventional');
-      // 10 / 88.4 ≈ 0.11
-      expect(result.creatinine).toBe('Creatinine must be at least 0.11 mg/dL');
+      // 10 / 88.4 = 0.113, and 0.11 mg/dL is refused: the bound rounds inward (US-35 AC17).
+      expect(result.creatinine).toBe('Creatinine must be at least 0.12 mg/dL');
     });
 
     it('does not convert blood pressure (same units)', () => {
@@ -202,9 +231,9 @@ describe('convertValidationErrorsToUnits', () => {
       };
       const result = convertValidationErrorsToUnits(errors, 'conventional');
 
-      expect(result.weightKg).toBe('Weight must be at least 44 lbs');
+      expect(result.weightKg).toBe('Weight must be at least 45 lbs');
       expect(result.heightCm).toBe('Height must be at least 19.7 in');
-      expect(result.ldlC).toBe('LDL-c must be at most 499 mg/dL');
+      expect(result.ldlC).toBe('LDL-c must be at most 498 mg/dL');
     });
   });
 
