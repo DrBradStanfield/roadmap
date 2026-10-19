@@ -1,3 +1,7 @@
+---
+artifact: https://claude.ai/artifact/FyiiPMvF4dTyTGHYLPyqTT
+---
+
 # Topic masters: plan (v3)
 
 Status: plan for Brad, 2026-10-20. Nothing built. Reviewed twice by a fresh
