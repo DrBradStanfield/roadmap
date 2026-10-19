@@ -29,6 +29,44 @@ describe('explicit local-first data path', () => {
     vi.unstubAllGlobals();
   });
 
+  it('US-35 AC17 / US-12 AC6 — returns an invalid core row as a refusal, not a retryable error or a duplicate', async () => {
+    const result = await data.bulkSaveMeasurements([
+      { metricType: 'weight', value: -1, recordedAt: '2026-08-01', source: 'lab_import' },
+      { metricType: 'weight', value: 70, recordedAt: '2026-08-01', source: 'lab_import' },
+    ]);
+    expect(result.refused).toMatchObject([{ index: 0, metricType: 'weight', reason: 'out-of-range' }]);
+    expect(result.errorCount).toBe(0);
+    expect(result.skippedDuplicates).toBe(0);
+    expect(result.saved.map(row => row.value)).toEqual([70]);
+    await flushRoadmapStore();
+    const persisted = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+    expect(persisted.measurements.map((row: { value: number }) => row.value)).toEqual([70]);
+    expect(trackProductEvent).toHaveBeenCalledWith('measurement_refused', { refusal: 'out-of-range' }, 'weight');
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  // US-35 AC17 · the usage signal: why a core value was refused, in closed
+  // words. The number is the one thing the counter may never hold; a metric
+  // off METRIC_TYPES is free text; and an out-of-range row names no metric,
+  // since that would say this visitor's value is past a bound (Brad 2026-10-20).
+  it('US-35 AC17 — counts each refused value by refusal word, naming the metric only for an invalid value', async () => {
+    vi.mocked(trackProductEvent).mockClear();
+    await data.bulkSaveMeasurements([
+      { metricType: 'weight', value: 987.65, recordedAt: '2026-08-01', source: 'lab_import' },
+      { metricType: 'psa', value: 10001, recordedAt: '2026-08-01', source: 'lab_import' },
+      { metricType: 'ldl', value: NaN, recordedAt: '2026-08-01', source: 'lab_import' },
+      { metricType: 'LDL 4.2', value: 4.2, recordedAt: '2026-08-01', source: 'lab_import' },
+    ]);
+    // An out-of-range metric is the tab's throttle key (third argument), never metadata (Codex R1).
+    expect(vi.mocked(trackProductEvent).mock.calls).toEqual([
+      ['measurement_refused', { refusal: 'out-of-range' }, 'weight'],
+      ['measurement_refused', { refusal: 'out-of-range' }, 'psa'],
+      ['measurement_refused', { metric: 'ldl', refusal: 'invalid-value' }],
+      ['measurement_refused', { refusal: 'unknown-metric' }],
+    ]);
+    expect(JSON.stringify(vi.mocked(trackProductEvent).mock.calls.map(call => call[1]))).not.toMatch(/987|10001|4\.2|NaN|weight|psa/);
+  });
+
   it('saves and corrects a dated measurement through the imported API', async () => {
     const added = await data.addMeasurement('ldl', 4.2, '2026-08-01');
     expect(added.status).toBe('inserted');

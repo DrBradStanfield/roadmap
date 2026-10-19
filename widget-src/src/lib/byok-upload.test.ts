@@ -189,3 +189,18 @@ describe('US-15 AC34: a BYOK answer cut off with no text is too_long, not empty'
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+// Issue #166: the Pages build runs the same extractor, so a urine ratio the
+// model filed as creatinine is refused there too, and shown once: never also
+// counted as a value that could not be read (US-12 AC15).
+describe('US-12 AC15: the BYOK path refuses a creatinine it cannot read', () => {
+  it('lists {creatinine, mg/mmol} and a blank unit as refused, keeps them out of values and out of droppedValueCount', async () => {
+    stubAnthropic(message('{"classification":"lab_report","reportDate":"2026-10-10","values":['
+      + '{"metric":"creatinine","value":2,"unit":"mg/mmol","confidence":"high"},'
+      + '{"metric":"creatinine","value":3,"unit":"","confidence":"high"}],"additionalValues":[],"document":null}'));
+    const { result } = await labImport(PAGES, 'si');
+    expect(result!.values).toEqual([]);
+    expect(result!.refusedValues!.map(r => [r.value, r.unit])).toEqual([[2, 'mg/mmol'], [3, '']]);
+    expect(result!.droppedValueCount).toBe(0);
+  });
+});

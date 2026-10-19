@@ -43,6 +43,20 @@ export interface ExtractedValue {
   /** YYYY-MM, only beside `UNDATED_PREVIOUS`: the month a month-only previous
    *  column printed, so the review can name it. Never a day (US-12 AC14). */
   printedMonth?: string;
+  /** The printed unit was blank or unknown, so `resolveUnit` guessed it from the number (US-12 AC16). */
+  unitGuessed?: true;
+}
+
+/** A lab row the extractor would not convert or save: a creatinine whose unit
+ *  is still unknown after its clean-up (US-12 AC15). Listed under "Not saved". */
+export interface RefusedLabValue {
+  metric: string;
+  value: number;
+  /** As printed; "" when none was. */
+  unit: string;
+  reason: string;
+  recordedAt?: string;
+  printedMonth?: string;
 }
 
 /**
@@ -110,6 +124,10 @@ export interface UnifiedExtractionResult {
    *  malformed row), so the person is told some were left out (US-12 AC8).
    *  Absent where nothing was parsed from a model's reply. */
   droppedValueCount?: number;
+  /** Rows refused rather than guessed (US-12 AC15); absent when none was.
+   *  Never in `droppedValueCount`: only the HTTP route adds them there, for a
+   *  widget that predates this field. */
+  refusedValues?: RefusedLabValue[];
 }
 
 // ---------------------------------------------------------------------------
@@ -166,6 +184,60 @@ export function resolveCoreMetricName(name: string): MetricType | null {
   return CORE_NAME_INDEX.get(foldName(name)) ?? null;
 }
 
+/** A flag printed beside a value or its unit (H, L, HH, LL, *, ↑, ↓, any case):
+ *  one grammar for a count row's value (US-12 AC8) and a creatinine's unit
+ *  (AC15), so the two cannot drift. */
+const FLAG = String.raw`(?:HH|LL|H|L|\*|↑|↓)`;
+const VALUE_FLAG = String.raw`[(\[]?\s*${FLAG}\s*[)\]]?`;
+/** A flag ending a unit: after a space, bracketed, or a symbol. A bare letter
+ *  needs the space, or "mmol/L" would lose its own L. */
+const TRAILING_UNIT_FLAG = new RegExp(String.raw`(?:\s+${VALUE_FLAG}|\s*[(\[]\s*${FLAG}\s*[)\]]|\s*[*↑↓])$`, 'i');
+
+/**
+ * A creatinine unit as a report garbles it, read once more (US-12 AC15): a
+ * trailing flag dropped ("µmol/L H", "µmol/L (H)", "µmol/L*"), "µmol/I" read
+ * as "µmol/L", "mg%" as "mg/dL", "mcmol/L" as "µmol/L". The extractor's step
+ * only: `lookupUnit` stays exact for every other caller. A bracketed word is
+ * never stripped, so "mg/dL (urine)" stays unknown.
+ */
+function cleanedCreatinineUnit(unit: string): string {
+  return unit.trim().replace(TRAILING_UNIT_FLAG, '').replace(/mol\/I$/, 'mol/L').replace(/^mg\s*%$/i, 'mg/dL').replace(/^mcmol\//i, 'µmol/');
+}
+
+/** The printed number as the record stores it: the raw unit first, then, for creatinine only, the cleaned one. */
+function readPrintedUnit(metric: MetricType, value: number, unit: string) {
+  return reportedToCanonical(metric, value, unit)
+    ?? (metric === 'creatinine' ? reportedToCanonical(metric, value, cleanedCreatinineUnit(unit)) : null);
+}
+
+/** Units a creatinine ratio or a timed urine result prints in, folded (case,
+ *  spaces). Not mmol/L: a serum creatinine can print in it too. */
+const URINE_OR_RATIO_UNITS = new Set(['mg/mmol', 'g/mol', 'mg/g', 'mg/mg', 'g/g', 'mg/24h', 'mmol/24h', 'ml/min']);
+/** A ratio whose denominator names creatinine, in any spelling the catalogue's
+ *  ACR and PCR rows print ("mg/g creat", "mg/g creatinine", "mg/mmol Cr").
+ *  A mass or amount denominator only: "µmol/L creatinine" is not a ratio. */
+const PER_CREATININE = /\/\s*[mµu]?(?:g|mol)\s*(?:creat(?:inine)?|cr)(?![a-z])/i;
+
+/** A urine marker between letter edges ("urine,", "/urine", "(urinary)", "urina",
+ *  "orina", "Harn", "moczu"), "U-Creat", a trailing " U" or ",U", or "(U)".
+ *  Never "U/L", "IU", "mU/L", "(uric)" or "(uncorrected)". No lookbehind:
+ *  this runs in the BYOK browser bundle too. */
+const URINE_MARKER = /(?:^|[^a-z])(?:urin(?:e|a|ary)?|orina|harn|moczu)(?![a-z])|(?:^|[^a-z])u-(?:creat|cr)|[\s,]u$|[(\[]\s*u\s*[)\]]/i;
+const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit.trim()) || PER_CREATININE.test(unit) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
+
+/** Why a creatinine was refused, in the user's words (US-12 AC15). */
+function creatinineRefusal(unit: string): string {
+  if (!unit) return 'No unit was printed.';
+  return isUrineOrRatioUnit(unit)
+    ? 'This unit is usually a urine result.'
+    : 'This unit could not be read as a blood creatinine.';
+}
+
+/** Above this a creatinine (µmol/L) asks "Was this a blood test?" (US-13 AC11).
+ *  D6, Brad's proposal: a display question, not a clinical threshold, so the
+ *  three clinical files carry no line for it. */
+const CREATININE_ASK_ABOVE = 500;
+
 /** Exported for testing */
 export function resolveUnit(metric: MetricType, unitStr: string, value: number): {
   valueSI: number;
@@ -174,7 +246,7 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
   /** The number fits both scales, so no guess is safe (US-21 AC18). */
   fitsBoth?: true;
 } {
-  const reported = reportedToCanonical(metric, value, unitStr);
+  const reported = readPrintedUnit(metric, value, unitStr);
   if (reported) return { ...reported, confident: true };
 
   // Fallback: check which validation range the value fits
@@ -201,21 +273,26 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
     if (!VALID_METRICS.includes(v.metric as MetricType)) continue;
     const metric = v.metric as MetricType;
     const { valueSI, system, confident, fitsBoth } = resolveUnit(metric, v.unit, v.value);
+    const asks = [
+      !confident && `${v.unit ? `Unit "${v.unit}" was inferred` : 'No unit was printed, so the unit was inferred'} — please verify this value`,
+      metric === 'creatinine' && valueSI > CREATININE_ASK_ABOVE && 'Was this a blood test?',
+    ].filter(Boolean);
+    const question = asks.length ? [v.question?.trim().replace(/[^.?!]$/, '$&.'), ...asks].filter(Boolean).join(' ') : v.question;
     values.push({
       metric: v.metric,
       valueSI,
       displayValue: v.value,
       displayUnit: v.unit,
       displaySystem: system,
-      // A guessed unit (none printed, or one not known) and a number that fits
-      // both scales (Lp(a) 50): low, so the review flags it and it never saves
-      // unnoticed (US-21 AC18).
-      confidence: fitsBoth ? 'low' : !confident && v.confidence === 'high' ? 'medium' : v.confidence,
-      question: !confident
-        ? [v.question?.trim().replace(/[^.?!]$/, '$&.'), `${v.unit ? `Unit "${v.unit}" was inferred` : 'No unit was printed, so the unit was inferred'} — please verify this value`].filter(Boolean).join(' ')
-        : v.question,
+      // A number that fits both scales (Lp(a) 50) is low; any question (a
+      // guessed unit, the model's doubt, a creatinine too high for blood) is at
+      // most medium, so the review flags it and it never saves unnoticed
+      // (US-21 AC18, US-13 AC11).
+      confidence: fitsBoth ? 'low' : question && v.confidence === 'high' ? 'medium' : v.confidence,
+      question,
       ...(v.recordedAt ? { recordedAt: v.recordedAt } : null),
       ...(v.printedMonth ? { printedMonth: v.printedMonth } : null),
+      ...(!confident ? { unitGuessed: true as const } : null),
     });
   }
   return values;
@@ -382,7 +459,7 @@ function readModelNumber(v: unknown): unknown {
 const DOT_THOUSANDS = String.raw`[1-9]\d{0,2}\.\d{3}`;
 const DOT_THOUSANDS_TOKEN = new RegExp(`^[+-]?${DOT_THOUSANDS}$`);
 
-const COUNT_STRING = /^\s*[+-]?[\d.,]+\s*(?:[(\[]?\s*(?:HH|LL|H|L|\*|↑|↓)\s*[)\]]?)?\s*$/i;
+const COUNT_STRING = new RegExp(String.raw`^\s*[+-]?[\d.,]+\s*(?:${VALUE_FLAG})?\s*$`, 'i');
 
 /**
  * A count row: a per-µL or per-mm³ denominator, whatever comes before it
@@ -521,9 +598,11 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   // The undated marker (AC14) is matched first and needs no report date.
   const reportDay = parsed.reportDate === null ? null : toDay(parsed.reportDate);
   // A printed month rides only on an undated value: a real month, not after
-  // the report's. Anything else is dropped; the value stays.
-  const printedMonth = (m?: string) =>
-    m && /^\d{4}-\d{2}$/.test(m) && isCalendarDay(`${m}-01`) && !(reportDay && isCalendarDay(reportDay) && `${m}-01` > reportDay) ? m : undefined;
+  // the report's (a full day or a month only). Anything else is dropped; the
+  // value stays.
+  const realMonth = (m?: string | null): m is string => !!m && /^\d{4}-\d{2}$/.test(m) && isCalendarDay(`${m}-01`);
+  const reportMonth = reportDay && isCalendarDay(reportDay) ? reportDay.slice(0, 7) : realMonth(reportDay) ? reportDay : null;
+  const printedMonth = (m?: string) => realMonth(m) && !(reportMonth && m > reportMonth) ? m : undefined;
   const ownDay = <T extends { recordedAt?: string; printedMonth?: string }>(row: T): T[] => {
     const v = { ...row, printedMonth: row.recordedAt === UNDATED_PREVIOUS ? printedMonth(row.printedMonth) : undefined };
     return !v.recordedAt ? [v]
@@ -531,7 +610,29 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
       : v.recordedAt === reportDay ? [{ ...v, recordedAt: undefined }]
         : reportDay && isCalendarDay(reportDay) && isCalendarDay(v.recordedAt) && v.recordedAt < reportDay ? [v] : [];
   };
-  const coreRows = parsed.values.flatMap(ownDay);
+  // A creatinine whose unit is blank or unknown, even cleaned, is never
+  // guessed and never saved, as a core value or as a lab row named creatinine
+  // ("Cr" alone may be chromium): it is listed with why (US-12 AC15). A urine
+  // ratio guessed as mg/dL became a low eGFR (issue #166).
+  const refusedValues: RefusedLabValue[] = [];
+  // The connector (`metadata`, its prompt alone) refuses only a urine or ratio
+  // unit; a blank or unknown one is inferred and stored in SI, as before (D7a,
+  // Brad 2026-10-20: "save it as SI unit"; US-12 AC15).
+  const refusesCreatinine = (v: { value: number; unit: string; recordedAt?: string; printedMonth?: string }) => {
+    if (readPrintedUnit('creatinine', v.value, v.unit) || (mode === 'metadata' && !isUrineOrRatioUnit(v.unit))) return false;
+    refusedValues.push({
+      metric: 'creatinine', value: v.value, unit: v.unit, reason: creatinineRefusal(v.unit),
+      ...(v.recordedAt ? { recordedAt: v.recordedAt } : null), ...(v.printedMonth ? { printedMonth: v.printedMonth } : null),
+    });
+    return true;
+  };
+  // mmol/L is a real creatinine unit the table leaves out (website: refused
+  // above); on the connector it converts exactly, never by `resolveUnit`'s
+  // guess, which would read a urine ACR's 3.2 as mg/dL (D7a, adversary R1).
+  const exactMmol = <T extends { metric: string; value: number; unit: string }>(v: T): T =>
+    mode === 'metadata' && v.metric === 'creatinine' && /^mmol\/l$/i.test(cleanedCreatinineUnit(v.unit).replace(/\s+/g, ''))
+      ? { ...v, value: Math.round(v.value * 1e6) / 1e3, unit: 'µmol/L' } : v;
+  const coreRows = isLab ? parsed.values.flatMap(ownDay).filter(v => v.metric !== 'creatinine' || !refusesCreatinine(v)).map(exactMmol) : [];
   const slot = (metric: string, day?: string) => `${metric}@${day ?? ''}`;
   const taken = new Set(coreRows.map(v => slot(v.metric, v.recordedAt)));
   const additionalValues: typeof parsed.additionalValues = [];
@@ -540,7 +641,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
     if (metric && PROMOTABLE.has(metric) && !taken.has(slot(metric, v.recordedAt)) && reportedToCanonical(metric, v.value, v.unit)) {
       taken.add(slot(metric, v.recordedAt));
       coreRows.push({ metric, value: v.value, unit: v.unit, confidence: 'high', recordedAt: v.recordedAt, printedMonth: v.printedMonth });
-    } else {
+    } else if (metric !== 'creatinine' || foldName(v.name) === 'cr' || !refusesCreatinine(v)) {
       additionalValues.push(v);
     }
   }
@@ -559,6 +660,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
       metadata: parsed.document.metadata as Record<string, unknown>,
     } : null,
     droppedValueCount: isLab ? parsed.droppedValueCount : 0,
+    ...(refusedValues.length ? { refusedValues } : null),
   };
 }
 

@@ -2518,6 +2518,22 @@ a.action-btn-small.action-btn-small:hover {
   line-height: 1.45;
 }
 
+/* US-12 AC6: the review's save answer is a live region. Kept displayed while
+   empty (the storefront theme hides div:empty), so what lands in it is heard. */
+.review-save-outcome.review-save-outcome:empty {
+  display: block;
+}
+
+/* Refusals under the save error in review: padding, not the done screen's
+   negative margin, so they never overlap it, even if a theme zeroes p margins. */
+.review-refusals {
+  padding-top: 8px;
+}
+
+.review-refusals .upload-done-skipped.upload-done-skipped {
+  margin: 0 0 8px;
+}
+
 .upload-done-btn {
   padding: 10px 32px;
   font-size: 15px;
@@ -5199,9 +5215,11 @@ a.action-btn-small.action-btn-small:hover {
   min-width: 0;
 }
 /* A lab cell whose unit differs from its row's (US-35 AC6), the SI value a
-   converted lab saves, and a core value's question (both US-21 AC18). */
+   converted lab saves, and a core value's question (both US-21 AC18) and
+   printed value (US-13 AC11). */
 .bt-cell-unit,
 .bt-cell-si,
+.bt-cell-printed,
 .bt-cell-question {
   display: block;
   font-size: 0.7em;

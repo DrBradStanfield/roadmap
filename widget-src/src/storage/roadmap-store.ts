@@ -61,6 +61,7 @@ import {
   type HealthInputs,
   type LabUnitRefusal,
   type LpaUnit,
+  type MeasurementRefusal,
   type MeasurementSource,
   type ReminderScheduleItem,
   type RoadmapFile,
@@ -211,6 +212,7 @@ export interface BulkSaveResult {
   saved: ApiMeasurement[];
   skippedDuplicates: number;
   errorCount: number;
+  refused: MeasurementRefusal[];
 }
 export interface BulkLabValuesResult {
   saved: ApiLabValue[];
@@ -540,19 +542,22 @@ export class RoadmapStore {
    *  the connector's import, US-35 AC8): replace-on-`correctsId` only while
    *  that row still holds the slot, skip a taken slot, never two actives. */
   bulkSaveMeasurements(measurements: BulkMeasurementInput[]): BulkSaveResult {
-    return this.bulkSave(measurements.map((m) => ({ kind: 'measurement' as const, ...m }))) as BulkSaveResult;
+    const { saved, skippedDuplicates, measurementRefusals } = this.bulkSave(measurements.map((m) => ({ kind: 'measurement' as const, ...m })));
+    // A refused number is the caller's to SHOW, like a refused lab unit: no
+    // retry can change it, so it is not an error (US-12 AC6, US-35 AC17).
+    return { saved: saved as ApiMeasurement[], skippedDuplicates, errorCount: 0, refused: measurementRefusals };
   }
 
   bulkSaveLabValues(values: BulkLabValueInput[]): BulkLabValuesResult {
-    return this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' }))) as BulkLabValuesResult;
+    const { saved, skippedDuplicates, refused } = this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' })));
+    return { saved: saved as ApiLabValue[], skippedDuplicates, errorCount: 0, refused };
   }
 
-  private bulkSave(rows: BulkRow[]): { saved: Array<ApiMeasurement | ApiLabValue>; skippedDuplicates: number; errorCount: number; refused: LabUnitRefusal[] } {
+  private bulkSave(rows: BulkRow[]): ReturnType<typeof bulkAppendValues> {
     const result = bulkAppendValues(this.file, rows, new Date().toISOString());
     this.file = result.file;
     if (result.saved.length) this.touch();
-    // Always empty for measurements; for labs, the rows the caller must SHOW.
-    return { saved: result.saved as Array<ApiMeasurement | ApiLabValue>, skippedDuplicates: result.skippedDuplicates, errorCount: 0, refused: result.refused };
+    return result;
   }
 
   /**

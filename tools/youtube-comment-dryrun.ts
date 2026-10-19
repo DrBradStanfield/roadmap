@@ -16,6 +16,7 @@
  *   - health_roadmap_algorithm.md
  *   - docs/blog/index.json (router handle index)
  *   - docs/blog/<slug>.md (per-video platform-context, looked up by youtube: frontmatter)
+ *   - app/lib/youtube-context.ts (the bot's platform-context builder and its YouTube prompt)
  *
  * Auth for YouTube comment fetch: shells out to claude_business/tools/youtube-analytics.js
  * (read-only OAuth as b.d.stanfield@gmail.com — same token used for analytics).
@@ -34,6 +35,9 @@ import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
 import { loadBlogIndex, findBlogByVideoId, type BlogIndexEntry } from '../app/lib/blog-index.server';
 import { loadMatchedContent } from '../app/lib/matched-content';
+import { buildYouTubePlatformContext, loadedHandles } from '../app/lib/youtube-context';
+import { routerView, routerIndexBlock } from '../app/lib/router-view';
+import { stripFrontmatter } from '../app/lib/frontmatter';
 import {
   CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams, parseClassification,
 } from '../packages/health-core/src/models';
@@ -87,26 +91,19 @@ const usingTestKey = !!process.env.ANTHROPIC_TEST_API_KEY;
 // Load prompts + cached blocks (same files production reads)
 // ---------------------------------------------------------------------------
 
+// The production router view and index block (US-50 AC3): a dry run hides
+// exactly what production hides, and states the view's entry count.
+const ROUTER_VIEW = routerView(loadBlogIndex());
+
 const CLASSIFIER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-classifier-prompt.md'), 'utf-8');
-const ROUTER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8');
+const ROUTER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8')
+  .replace(/\{\{ENTRY_COUNT\}\}/g, String(ROUTER_VIEW.length));
 const SYSTEM_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-system-prompt.md'), 'utf-8');
-const YOUTUBE_PROMPT_TEMPLATE = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-youtube-prompt.md'), 'utf-8');
 const ALGORITHM_DOC = fs.readFileSync(path.join(REPO_ROOT, 'health_roadmap_algorithm.md'), 'utf-8');
 const PRODUCTS_DOC = fs.readFileSync(path.join(REPO_ROOT, 'docs/products.md'), 'utf-8');
 
-const BLOG_INDEX: BlogIndexEntry[] = loadBlogIndex();
-const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
-
-// Router index block (one line per entry, same construction as production)
-const TYPE_ORDER: Record<string, number> = { reference: 0, guideline: 1, pathway: 2, article: 3 };
-const ROUTER_INDEX_BLOCK = `# KB Index\n\n${[...BLOG_INDEX]
-  .sort((a, b) => {
-    const ta = TYPE_ORDER[a.type ?? 'article'] ?? 3;
-    const tb = TYPE_ORDER[b.type ?? 'article'] ?? 3;
-    return ta - tb || a.handle.localeCompare(b.handle);
-  })
-  .map(e => `[${e.type ?? 'article'}] ${e.handle}: ${e.summary ?? e.title}`)
-  .join('\n')}`;
+const VALID_HANDLES = new Set(ROUTER_VIEW.map(e => e.handle));
+const ROUTER_INDEX_BLOCK = routerIndexBlock(ROUTER_VIEW);
 
 // ---------------------------------------------------------------------------
 // Look up matching blog post by youtube: frontmatter via shared blog-index
@@ -116,6 +113,7 @@ interface BlogPost {
   slug: string;
   title: string;
   body: string;
+  entry: BlogIndexEntry;
 }
 
 function loadBlogPostForVideo(videoId: string): BlogPost {
@@ -128,7 +126,8 @@ function loadBlogPostForVideo(videoId: string): BlogPost {
   return {
     slug: entry.handle,
     title: entry.title,
-    body: content.replace(/^---[\s\S]*?---\n\n?/, ''),
+    body: stripFrontmatter(content),
+    entry,
   };
 }
 
@@ -254,16 +253,11 @@ async function routeQuery(comment: string): Promise<{ handles: string[]; raw: st
   }
 }
 
-function buildYouTubePlatformContext(blogPost: BlogPost): string {
-  return YOUTUBE_PROMPT_TEMPLATE
-    .replace('{{VIDEO_TITLE}}', blogPost.title)
-    .replace('{{VIDEO_URL}}', `https://youtu.be/${VIDEO_ID}`)
-    .replace('{{VIDEO_CONTENT}}', blogPost.body);
-}
-
 async function callMainLLM(comment: string, blogPost: BlogPost, matchedHandles: string[]): Promise<{ text: string; error: string | null }> {
-  const platformContext = buildYouTubePlatformContext(blogPost);
-  const matchedContent = loadMatchedContent(matchedHandles).content;
+  // The bot's own builder: the video's post plus the topic masters' current views (US-50 AC6).
+  const matched = loadMatchedContent(matchedHandles);
+  const matchedContent = matched.content;
+  const platformContext = buildYouTubePlatformContext(VIDEO_ID, blogPost.entry, blogPost.body, loadedHandles(matchedHandles, matched.content ? matched : null));
 
   // System block construction mirrors production: cached blocks 1-3 (system prompt
   // + algorithm + products), then per-request platform context + matched content.

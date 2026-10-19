@@ -25,8 +25,6 @@
  *   docs/chat-architecture.md § YouTube comment replier
  *   tools/youtube-comment-dryrun.ts (preview tool, same pipeline)
  */
-import fs from 'fs';
-import path from 'path';
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
@@ -34,6 +32,8 @@ import { routeQuery, sanitizeForRouter, ROUTER_VERSION, type RouterResult } from
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { findBlogByVideoId, type BlogIndexEntry } from './blog-index.server';
 import { loadBlogArticle } from './matched-content';
+import { stripFrontmatter } from './frontmatter';
+import { YOUTUBE_PROMPT_TEMPLATE, buildYouTubePlatformContext, loadedHandles } from './youtube-context';
 import {
   buildSystemBlocks,
   buildConversationMessages,
@@ -77,15 +77,6 @@ const CHANNEL_ID = process.env.YOUTUBE_BOT_CHANNEL_ID;
 const CLIENT_ID = process.env.YOUTUBE_BOT_CLIENT_ID;
 const CLIENT_SECRET = process.env.YOUTUBE_BOT_CLIENT_SECRET;
 const REFRESH_TOKEN = process.env.YOUTUBE_BOT_REFRESH_TOKEN;
-
-const YOUTUBE_PROMPT_PATH = path.join(process.cwd(), 'app/lib/chat-youtube-prompt.md');
-
-let YOUTUBE_PROMPT_TEMPLATE = '';
-try {
-  YOUTUBE_PROMPT_TEMPLATE = fs.readFileSync(YOUTUBE_PROMPT_PATH, 'utf-8');
-} catch {
-  console.warn('YouTube bot: chat-youtube-prompt.md not found — bot will not start');
-}
 
 // ---------------------------------------------------------------------------
 // Module state
@@ -181,29 +172,6 @@ async function getAccessToken(): Promise<string> {
   cachedAccessToken = data.access_token;
   cachedAccessTokenExpiresAt = Date.now() + data.expires_in * 1000;
   return cachedAccessToken;
-}
-
-// ---------------------------------------------------------------------------
-// Platform-context construction — substitutes the video's blog post (looked up
-// via the shared blog-index/loader the on-site chatbot already uses).
-// ---------------------------------------------------------------------------
-
-/** Appended to the platform context on follow-up turns only. The bot has
- *  already answered once in this thread; the bar for speaking again is higher
- *  and disengaging from hostility is mandatory (agreed with Brad 2026-08-10). */
-const FOLLOWUP_POSTURE = `
-
-FOLLOW-UP TURN: You already replied once in this comment thread (see the conversation history). This is a follow-up directed at you.
-- Answer ONLY a genuine, substantive follow-up question you can ground in the video content or provided articles.
-- If the message is hostile, sarcastic, bait, a rant, or mere disagreement without a question — return SKIP_NO_REPLY. Never argue, never defend yourself, never reply to hostility.
-- This is your LAST reply in this thread either way, so make it self-contained and do not invite further questions.`;
-
-function buildYouTubePlatformContext(videoId: string, entry: BlogIndexEntry, body: string, isFollowUp = false): string {
-  const base = YOUTUBE_PROMPT_TEMPLATE
-    .replace('{{VIDEO_TITLE}}', entry.title)
-    .replace('{{VIDEO_URL}}', `https://youtu.be/${videoId}`)
-    .replace('{{VIDEO_CONTENT}}', body);
-  return isFollowUp ? base + FOLLOWUP_POSTURE : base;
 }
 
 // ---------------------------------------------------------------------------
@@ -703,7 +671,7 @@ function loadVideoBody(videoId: string): { entry: BlogIndexEntry; body: string }
   if (!entry) return null;
   const fullContent = loadBlogArticle(entry.handle);
   if (!fullContent) return null;
-  return { entry, body: fullContent.replace(/^---[\s\S]*?---\n\n?/, '') };
+  return { entry, body: stripFrontmatter(fullContent) };
 }
 
 function filterThread(thread: YouTubeThread): FilterResult {
@@ -913,8 +881,10 @@ export async function runPipeline(
     routerHandles = routerResult.handles;
   }
 
-  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, isFollowUp);
-  const blogArticles = loadMatchedArticlesFromHandles(routerHandles)?.content ?? null;
+  const matched = loadMatchedArticlesFromHandles(routerHandles);
+  const blogArticles = matched?.content ?? null;
+  // Master views skip only masters that actually loaded, not ones the cap skipped (US-50 AC6).
+  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, loadedHandles(routerHandles, matched), isFollowUp);
   // YouTube is a doctor-family surface (Brad's public channel) → strict doctor posture.
   const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, blogArticles });
   const conversationMessages = buildConversationMessages(history, thread.text);

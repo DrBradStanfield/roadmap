@@ -237,8 +237,11 @@ describe('US-15 AC25 — titles in the sources line, not the content loaded', ()
     { handles, latencyMs: 0, cacheHit: false, usage: { inputTokens: 0, cacheReadTokens: 0 } } as Awaited<ReturnType<typeof routeQuery>>,
   );
   const sources = (out: Array<{ type: string; titles?: string[] }>) => out.filter((l) => l.type === 'sources');
-  const article = async (h: string) =>
-    (await vi.importActual<typeof import('../lib/matched-content')>('../lib/matched-content')).loadBlogArticle(h)!;
+  // The entry as the model reads it: header, no frontmatter (US-50 AC4, AC5).
+  const article = async (h: string) => {
+    const m = await vi.importActual<typeof import('../lib/matched-content')>('../lib/matched-content');
+    return m.contentBlock(h, m.loadBlogArticle(h)!);
+  };
 
   it('an adult anxiety question loads all three pathways and titles only the adult one', async () => {
     routes(HANDLES);

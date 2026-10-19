@@ -1186,6 +1186,8 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'BP 140/90 went in the wrong column',
       'free T4 15 was refused',
       'my Lp(a) is 90 and it shows nothing',
+      // A catalogued test whose short name is also GitHub's CLI (Codex 2026-10-20).
+      'My GH is 4.2 and was omitted',
     ]) {
       const outcome = reportFeedback({ ...GOOD, detail }, NOW);
       expect(outcome, detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
@@ -1263,7 +1265,7 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
   it('US-21 AC19 — the English words in the audit\'s new test names are not test words; the tests still are', () => {
     for (const detail of [
       'the index page took 4 seconds', 'a gap of 2 rows', 'the absolute 3 and abs 4 values', 'average 5 clicks',
-      'the reverse 2 order', 'intact 3 times', 'gh issue 12', 'ab test 2 arms', 'sd 3 of the timings', 'the receptor 2 call was soluble 3',
+      'the reverse 2 order', 'intact 3 times', 'GitHub issue 12', 'ab test 2 arms', 'sd 3 of the timings', 'the receptor 2 call was soluble 3',
       'human 2 type 3 brain 4', 'uptake 5 percent 6', 'pro 2 plan', 'cardiac 3 combined 4',
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
@@ -1766,6 +1768,77 @@ function bundleOf(files: ExtractedFile[]) {
   return { route: 'dropbox' as const, remaining: [], files };
 }
 
+// Issue #166 on import_documents (D7a, D7b): the connector runs the same
+// extractor (metadata mode). A creatinine in a urine or ratio unit is an
+// `unrecognized` line, once, never a candidate and never "could not be read";
+// a blank or unknown unit is inferred and stored in SI, as before (D7a, Brad
+// 2026-10-20: "save it as SI unit"); a creatinine too high for blood carries
+// its question (US-12 AC15, AC16, US-13 AC11).
+describe('US-12 AC15/AC16 — import_documents refuses a urine creatinine, infers a blank unit', () => {
+  const modelAnswer = (values: unknown[]) => toUnifiedResult(parseUnifiedResult({
+    classification: 'lab_report', reportDate: LAB_DAY, values, additionalValues: [], document: null,
+  }), 'metadata');
+
+  it('mg/mmol and "mg/dL (urine)" are unrecognized lines with why; no candidate, no droppedValues', () => {
+    const { payload, files, unrecognized } = prepareImport(base(), bundleOf([extracted('acr.pdf', modelAnswer([
+      { metric: 'creatinine', value: 12, unit: 'mg/mmol', confidence: 'high' },
+      { metric: 'creatinine', value: 80, unit: 'mg/dL (urine)', confidence: 'high' },
+      { metric: 'creatinine', value: 95, unit: 'mg/g creatinine', confidence: 'high' },
+    ]))]), IMPORT_CTX);
+    expect(payload.candidates).toEqual([]);
+    expect(files[0].droppedValues).toBeUndefined();
+    expect(unrecognized).toEqual([
+      'creatinine 12 mg/mmol: not saved. This unit is usually a urine result.',
+      'creatinine 80 mg/dL (urine): not saved. This unit is usually a urine result.',
+      'creatinine 95 mg/g creatinine: not saved. This unit is usually a urine result.',
+    ]);
+  });
+
+  it('a blank unit is inferred, stored in SI and asked about at medium: 1.1 from mg/dL, 95 as µmol/L', () => {
+    for (const [value, si] of [[1.1, 97.24], [95, 95]]) {
+      const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('blank.pdf', modelAnswer([
+        { metric: 'creatinine', value, unit: '', confidence: 'high' },
+      ]))]), IMPORT_CTX);
+      expect(unrecognized).toEqual([]);
+      expect(payload.candidates).toHaveLength(1);
+      expect(payload.candidates[0]).toMatchObject({ metric: 'creatinine', unit: 'µmol/L', confidence: 'medium', question: 'No unit was printed, so the unit was inferred — please verify this value' });
+      expect(payload.candidates[0].value).toBeCloseTo(si, 1);
+    }
+  });
+
+  it('mmol/L converts ×1000 (adversary R1): 3.2 is refused by the save range, 0.09 is 90, 1.5 asks', () => {
+    const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('mmol.pdf', modelAnswer([
+      { metric: 'creatinine', value: 3.2, unit: 'mmol/L', confidence: 'high' },
+    ]))]), IMPORT_CTX);
+    expect(payload.candidates).toEqual([]);
+    expect(unrecognized).toHaveLength(1);
+    expect(unrecognized[0]).toMatch(/^creatinine: /);
+    for (const [value, si, confidence] of [[0.09, 90, 'high'], [1.5, 1500, 'medium']] as const) {
+      const { payload: p } = prepareImport(base(), bundleOf([extracted('mmol.pdf', modelAnswer([
+        { metric: 'creatinine', value, unit: 'mmol/L', confidence: 'high' },
+      ]))]), IMPORT_CTX);
+      expect(p.candidates[0]).toMatchObject({ metric: 'creatinine', value: si, confidence });
+    }
+  });
+
+  it('a blank-unit creatinine filed as a lab row stays a lab row and is turned away as a core test (R3)', () => {
+    const answer = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: LAB_DAY, values: [], document: null,
+      additionalValues: [{ name: 'Serum Creatinine', value: 95, unit: '' }],
+    }), 'metadata');
+    const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('row.pdf', answer)]), IMPORT_CTX);
+    expect(payload.candidates).toEqual([]);
+    expect(unrecognized).toEqual(['Serum Creatinine: "Serum Creatinine" is the core metric creatinine — write it as a measurement, in SI units']);
+  });
+
+  it('a creatinine above 500 µmol/L is offered with its question and medium confidence', () => {
+    const { payload } = prepareImport(base(), bundleOf([extracted('high.pdf', modelAnswer([
+      { metric: 'creatinine', value: 650, unit: 'µmol/L', confidence: 'high' },
+    ]))]), IMPORT_CTX);
+    expect(payload.candidates[0]).toMatchObject({ metric: 'creatinine', value: 650, confidence: 'medium', question: 'Was this a blood test?' });
+  });
+});
+
 describe('US-35 AC6 — prepareImport slots every candidate against the record', () => {
   it('free, held_equal by displayed string, one candidate per slot, and the file report', () => {
     const file = base(); // m1: ldl 3.4 on 2026-07-14; l1: ferritin 210 on 2026-07-14
@@ -2079,6 +2152,19 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     file.documents.push({ id: `d-${name}`, title: 'Blood test results', type: 'pathology_report', date: null, fileRef: '', contentHash: `sha256-${name}`, mimeType: 'application/pdf', extractedText: '', addedAt: NOW, sourceFileName: name, metadata: {} });
     return file;
   }
+
+  it('US-35 AC17 — rejects the whole commit when a core row is refused, including documents and valid labs', () => {
+    const file = base();
+    const before = structuredClone(file);
+    const payload = payloadFor(file, [extracted('new.pdf', labReport())]);
+    const core = payload.candidates.find(c => c.kind === 'measurement')!;
+    core.value = -1; // Defense in depth at commit, even if a prepared payload is invalid.
+    const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: payload.candidates.map(c => c.id), replace: [] }, NOW);
+    expect(outcome.status).toBe('rejected');
+    expect(outcome).not.toHaveProperty('file');
+    expect(outcome.text).toMatch(/Nothing was written/);
+    expect(file).toEqual(before);
+  });
 
   it('files accepted free candidates with source lab_import, and documents as metadata rows', () => {
     const file = base();
@@ -3319,5 +3405,18 @@ describe('US-21 AC15 — the import preview checks the row the commit will check
     expect(outcome.status).toBe('rejected');
     expect(outcome.text).toContain('absolute count');
     expect(outcome.text).toContain('Do not work the count out from the percentage');
+  });
+});
+
+// US-21 AC21 review (Codex R1, 2026-10-20): a ceiling refusal on file_results
+// is one `unrecognized` line in the shape every connector refusal takes: the
+// row the assistant sent, then the refusal, whose own words never hold the number.
+describe('US-21 AC21 — file_results names a ceiling refusal like every other row refusal', () => {
+  it('US-21 AC21 — "<printed name> <value> <unit>: <refusal>"', () => {
+    const result = prepared(labCall([row('free_testosterone', 'Free Testosterone', 200, 'nmol/L', { referenceLow: 163, referenceHigh: 473 })]));
+    expect(result.unrecognized).toEqual([
+      'Free Testosterone 200 nmol/L: Free testosterone in "nmol/L": Free testosterone above 10,000 pmol/L is not a measured value, ' +
+        'so the printed unit is probably wrong (nmol/L vs pmol/L). Ask the person to check the report; do not re-send it in another unit on your own.',
+    ]);
   });
 });

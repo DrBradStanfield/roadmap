@@ -235,9 +235,10 @@ export const EMPTY_CHAT_CONTEXT: ChatContext = Object.freeze({
  *
  * The v1 server-side health tables were purged June 2026, so the
  * client-supplied `guestInputs` is the ONLY possible source of health context.
- * Inputs that are absent or fail schema validation (an empty form — v2 invites
- * chat before any data entry — or a malformed payload) degrade to the empty
- * context, never an error. (Regression: Sentry 7563968375 — the logged-in
+ * Inputs that are absent or hold nothing (an empty form — v2 invites chat
+ * before any data entry — or a malformed payload) degrade to the empty
+ * context, never an error; saved values with no sex or height still reach the
+ * model, with no plan (US-15 AC36). (Regression: Sentry 7563968375 — the logged-in
  * path used to read the purged tables and 500 on every message.) The Pages
  * BYOK chat builds the same JSON with the same function, which is also the
  * anti-injection boundary: see health-core chat-context.ts (US-15 AC11).
@@ -296,12 +297,12 @@ export function matchDocumentTitle(
  * matched-content.ts), plus a Sentry warning for a handle with no file.
  * `titled` limits the titles named, never the content. Null when nothing loaded.
  */
-export function loadMatchedArticlesFromHandles(handles: string[], titled = handles): { content: string; titles: string[] } | null {
+export function loadMatchedArticlesFromHandles(handles: string[], titled = handles): { content: string; titles: string[]; skipped: string[] } | null {
   for (const handle of handles) {
     if (!loadBlogArticle(handle)) Sentry.captureMessage(`Router picked handle with no content: ${handle}`, { level: 'warning' });
   }
-  const { content, titles } = loadMatchedContent(handles, titled);
-  return content ? { content, titles } : null;
+  const { content, titles, skipped } = loadMatchedContent(handles, titled);
+  return content ? { content, titles, skipped } : null;
 }
 
 // ---------------------------------------------------------------------------

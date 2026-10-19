@@ -10,7 +10,8 @@
  * routing behavior, so sharing those files catches any drift. The one server
  * import is app/lib/matched-content.ts, the Sentry-free loader production uses
  * for matched articles (its only dependency is blog-index.server.ts, so tsx can
- * follow it). It reads from process.cwd(): run from the repo root.
+ * follow it). It reads from process.cwd(): run from the repo root. The router
+ * view and its index block come from app/lib/router-view.ts, as in production.
  *
  * Each query runs N times; pass = at least one expected handle appears in
  * the intersection of all runs (consistently returned across retries).
@@ -58,15 +59,19 @@
  *                             gets production's buildSystemBlocks (so the evidence and knowledge-overview
  *                             blocks too) with the fixture's posture, which it must name: the widget's is
  *                             'doctor'. An explicit {} is production's empty context ('{}', no data
- *                             entered). Any other payload that makes no plan, has a key the widget never
- *                             sends, or loses a field to its range exits the harness before any API call.
- *   expect_empty_context?: true  with user_context: production collapses this payload to '{}' (no sex
- *                             or height, so no plan), and the answer gets '{}' as production sends it.
- *                             A payload that does make a plan then exits the harness before any API call.
+ *                             entered). Any other payload that makes no plan undeclared, has a key the
+ *                             widget never sends, or loses a field to its range exits the harness before
+ *                             any API call.
+ *   expect_no_plan?: true      with user_context: this payload makes no plan (no sex or height), and the
+ *                             answer gets the saved values with no cards, as production sends them
+ *                             (US-15 AC36). A payload that does make a plan then exits the harness before
+ *                             any API call.
  *   history?: {role, content}[]  answer check only: earlier turns of the conversation, sent before the
  *                             query as the widget sends its history: alternating user and assistant
  *                             text, from a user turn to an assistant one. Any other shape exits the
  *                             harness before any API call.
+ *   pending?: string           the reason the entry is not run yet (e.g. its content is unmerged). Listed,
+ *                             never run or scored, unless --include-pending is passed.
  *   expect_roadmap_run?: boolean  answer check only: the answer must (true) or must not (false) call
  *                             run_roadmap. Every answer runs production's one-round loop (health-core
  *                             withRoadmapRound, US-15 AC33) on the fixture's raw user_context, and is
@@ -119,6 +124,8 @@ import {
 } from '../packages/health-core/src/models';
 import { chatToolsFor, withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
+import { routerView, routerIndexBlock, ROUTER_SUMMARY_MAX_CHARS } from '../app/lib/router-view';
+import type { BlogIndexEntry } from '../app/lib/blog-index.server';
 import { parseRouterReply } from '../app/lib/router-reply';
 import { buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
 import { healthInputSchema } from '../packages/health-core/src/validation';
@@ -154,6 +161,7 @@ const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
 // the same context production does. Runs --answer-check-runs times (default = --runs,
 // usually 3) and requires majority pass. Set --answer-check-runs 1 to cut API spend.
 const fixedHandlesOnly = args.includes('--fixed-handles-only');
+const includePending = args.includes('--include-pending');
 const answerCheckMode = args.includes('--answer-check') || fixedHandlesOnly;
 const answerCheckRuns = Math.max(1, parseInt(getArg('--answer-check-runs', String(runs)), 10));
 
@@ -215,13 +223,6 @@ const ROUTER_MODEL = getArg('--model', PRODUCTION_ROUTER_MODEL);
 const thinkingOff = !args.includes('--effort-low');
 const callStats: CallStat[] = [];
 
-interface BlogIndexEntry {
-  title: string;
-  handle: string;
-  type?: 'reference' | 'article' | 'guideline' | 'pathway';
-  summary?: string;
-}
-
 // --index <path> overrides the index the ROUTER sees, so an experimental index
 // (e.g. summary-capped) can be A/B'd against production without touching
 // docs/blog/index.json. Matched-article loading still reads the real .md files.
@@ -230,26 +231,17 @@ const INDEX_PATH = indexPathArg
   ? path.resolve(indexPathArg)
   : path.join(REPO_ROOT, 'docs/blog/index.json');
 
-const BLOG_INDEX: BlogIndexEntry[] = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8'));
+// The router's view, through the production function (US-50 AC3): a hidden post
+// whose masters are up to date leaves the allow-list, the index block and the count.
+// Fixture handles are checked against the full index; hidden ones are reported.
+const FULL_HANDLES = new Set((JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8')) as BlogIndexEntry[]).map(e => e.handle));
+const BLOG_INDEX: BlogIndexEntry[] = routerView(JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8')));
 
 const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
 
-// Mirrors ROUTER_SUMMARY_MAX_CHARS + capSummary() in chat-router.server.ts.
-// The harness did NOT truncate until 2026-08-07, so it was rendering FULL
-// summaries while production rendered capped ones — every "baseline" number
-// measured a prompt production never sends. --summary-cap overrides it so
+// --summary-cap overrides ROUTER_SUMMARY_MAX_CHARS (router-view.ts) so
 // alternative caps can be A/B'd without editing the index.
-const SUMMARY_CAP = args.includes('--summary-cap') ? parseInt(getArg('--summary-cap', '150'), 10) : 150;
-
-function capSummary(s: string): string {
-  if (s.length <= SUMMARY_CAP) return s;
-  const cut = s.slice(0, SUMMARY_CAP);
-  for (const sep of ['. ', '; ', ', ', ' ']) {
-    const p = cut.lastIndexOf(sep);
-    if (p > SUMMARY_CAP * 0.6) return cut.slice(0, p).replace(/[ ,;.]+$/, '');
-  }
-  return cut.trimEnd();
-}
+const SUMMARY_CAP = args.includes('--summary-cap') ? parseInt(getArg('--summary-cap', String(ROUTER_SUMMARY_MAX_CHARS)), 10) : ROUTER_SUMMARY_MAX_CHARS;
 
 // Mirrors repairHandle() in app/lib/chat-router.server.ts — strips a leading
 // `<type>-` when the remainder is a real handle (the router emits
@@ -267,16 +259,7 @@ function repairHandle(h: string): string {
   return h;
 }
 
-const TYPE_ORDER: Record<string, number> = { pathway: 0, guideline: 1, reference: 2, article: 3 };
-
-const ROUTER_INDEX_BLOCK: string = [...BLOG_INDEX]
-  .sort((a, b) => {
-    const tr = (TYPE_ORDER[a.type ?? 'article'] ?? 3) - (TYPE_ORDER[b.type ?? 'article'] ?? 3);
-    if (tr !== 0) return tr;
-    return a.handle.localeCompare(b.handle);
-  })
-  .map(e => `[${e.type ?? 'article'}] ${e.handle}: ${capSummary(e.summary ?? e.title ?? '')}`)
-  .join('\n');
+const ROUTER_INDEX_BLOCK = routerIndexBlock(BLOG_INDEX, SUMMARY_CAP);
 
 // {{ENTRY_COUNT}} substitution must mirror chat-router.server.ts getRouterPrompt().
 // Without it the harness would send the literal placeholder to the model and
@@ -396,14 +379,18 @@ interface TestQuery {
   answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
   surface?: 'doctor' | 'brand'; // answer check adds that surface's posture block (see the header)
   user_context?: unknown;      // answer check sends this widget payload as the user's data (see the header)
-  expect_empty_context?: true; // production collapses user_context to '{}' (see the header)
+  expect_no_plan?: true;       // user_context makes no plan: no sex or height (see the header)
   expect_roadmap_run?: boolean; // the answer must (true) or must not (false) call run_roadmap (see the header)
   history?: Array<{ role: 'user' | 'assistant'; content: string }>; // earlier turns, before the query (see the header)
+  pending?: string;            // listed, not run, unless --include-pending (see the header)
 }
 
-const ALL_QUERIES: TestQuery[] = JSON.parse(
+const LOADED_QUERIES: TestQuery[] = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'test-queries.json'), 'utf-8')
 );
+// A pending entry waits on content (e.g. an unmerged master). It is dropped here,
+// before any validation below, so an invalid one never stops a run; it is listed later.
+const ALL_QUERIES = includePending ? LOADED_QUERIES : LOADED_QUERIES.filter(q => !q.pending);
 
 // Classifier-only entries (test-classifier.ts) live in the same file but
 // have no `expected` handles array — exclude them from the router suite.
@@ -421,7 +408,7 @@ if (badFixed.length > 0) {
   process.exit(1);
 }
 // A mistyped forbidden handle can never be returned, so the guard would pass forever.
-const unknownForbidden = filtered.flatMap(q => (q.must_not_route ?? []).filter(h => !VALID_HANDLES.has(h)));
+const unknownForbidden = filtered.flatMap(q => (q.must_not_route ?? []).filter(h => !FULL_HANDLES.has(h)));
 if (unknownForbidden.length > 0) {
   console.error(`must_not_route names handles not in the index: ${unknownForbidden.join(', ')}`);
   process.exit(1);
@@ -446,11 +433,14 @@ for (const q of ALL_QUERIES.filter(q => q.user_context !== undefined)) {
     console.error(`user_context needs a surface on: ${q.query}`);
     process.exit(1);
   }
-  // As /api/chat. Only an explicit {}, or a payload declared to collapse, may resolve to the empty context.
+  // As /api/chat. Only an explicit {} may resolve to the empty context, and only a payload
+  // declared expect_no_plan to a context with no cards.
   const ctx = resolveChatContext(q.user_context);
-  const empty = JSON.stringify(q.user_context) === '{}' || q.expect_empty_context === true;
+  const empty = JSON.stringify(q.user_context) === '{}';
+  const noPlan = !empty && !('currentSuggestions' in JSON.parse(ctx.userContextJson));
   const unknown = Object.keys(q.user_context ?? {}).filter(k => !CONTEXT_KEYS.has(k));
-  if ((ctx === EMPTY_CHAT_CONTEXT) !== empty || unknown.length > 0 || JSON.parse(ctx.userContextJson).excludedFields) {
+  if ((ctx === EMPTY_CHAT_CONTEXT) !== empty || noPlan !== (q.expect_no_plan === true) || unknown.length > 0
+    || JSON.parse(ctx.userContextJson).excludedFields) {
     console.error(`user_context does not parse${unknown.length ? ` (unknown keys: ${unknown.join(', ')})` : ''} on: ${q.query}`);
     process.exit(1);
   }
@@ -473,12 +463,19 @@ if (badRegex.length > 0) {
 }
 // --category takes a comma list, so several categories share one run and one cache warmup.
 const categories = categoryFilter?.split(',');
-if (categories) filtered = filtered.filter(q => categories.includes(q.category));
-if (sourceFilter) filtered = filtered.filter(q => q.source === sourceFilter);
-if (categories) fixedHandle = fixedHandle.filter(q => categories.includes(q.category));
-if (sourceFilter) fixedHandle = fixedHandle.filter(q => q.source === sourceFilter);
+const selected = (q: TestQuery) => (!categories || categories.includes(q.category)) && (!sourceFilter || q.source === sourceFilter);
+filtered = filtered.filter(selected);
+fixedHandle = fixedHandle.filter(selected);
+// The pending entries this run would have held: listed, never scored.
+const pending = LOADED_QUERIES.filter(q => !ALL_QUERIES.includes(q) && selected(q)
+  && (Array.isArray(q.expected) ? !fixedHandlesOnly : answerCheckMode && Array.isArray(q.answer_handles)));
+if (pending.length > 0) {
+  console.log(`\x1b[33mPending (skipped; --include-pending runs them): ${pending.length}\x1b[0m`);
+  for (const q of pending) console.log(`\x1b[33m  [${q.category}] "${q.query}": ${q.pending}\x1b[0m`);
+}
 const suite = [...filtered, ...fixedHandle];
 
+if (suite.length === 0 && pending.length > 0) process.exit(0);
 if (suite.length === 0) {
   const desc = [categoryFilter && `category "${categoryFilter}"`, sourceFilter && `source "${sourceFilter}"`].filter(Boolean).join(' AND ');
   console.error(`No queries match ${desc}`);
@@ -697,6 +694,12 @@ console.log(`Runs each:   ${runs}`);
 console.log(`Concurrency: ${concurrency}`);
 if (answerCheckMode) console.log(`Answer model: ${ANSWER_MODEL}`);
 console.log(`Threshold:   ≤${(varianceThreshold * 100).toFixed(0)}% variance\n`);
+// A handle the router view hides can never be returned: report it, never exit (US-50 AC3).
+const hiddenIn = (key: 'expected' | 'must_not_route') =>
+  [...new Set(filtered.flatMap(q => q[key] ?? []).filter(h => FULL_HANDLES.has(h) && !VALID_HANDLES.has(h)))].join(', ') || 'none';
+if (hiddenIn('expected') !== 'none' || hiddenIn('must_not_route') !== 'none') {
+  console.log(`${YELLOW}Hidden by the router view (US-50 AC3): expected ${hiddenIn('expected')}; must_not_route ${hiddenIn('must_not_route')}${RESET}\n`);
+}
 
 // Warm the prompt cache with one call before running the suite. First call
 // creates the 80K-token cache block; subsequent calls read from it at a

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { loadBlogIndex } from './blog-index.server';
+import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { parseFrontmatter, stripFrontmatter } from './frontmatter';
 
 // Sentry-free on purpose: the router harness and the YouTube dry run import this
 // under tsx, which cannot follow chat.server.ts's server import chain. Paths
@@ -43,8 +44,30 @@ export function loadBlogArticle(handle: string): string | null {
 }
 
 /**
+ * The line a loaded block opens with: its type and date (US-50 AC5), so the
+ * answer model can rank a master's current view above an older post. Then the
+ * title and the links the posture rules cite, from the file's own frontmatter,
+ * which is otherwise stripped (US-50 AC4); a pathway gains no link it never had.
+ */
+export function contentHeader(entry: BlogIndexEntry | undefined, fm: Record<string, unknown>): string {
+  const type = entry?.type ?? 'article';
+  const day = entry?.publishedAt?.slice(0, 10);
+  const kind = type === 'article' && entry?.youtube ? 'video post' : type;
+  const label = entry?.reviewed ? `${kind} — reviewed ${entry.reviewed}` : day ? `${kind} — published ${day}` : kind;
+  const links = ['title', 'url', 'commerceUrl', 'youtube'].filter(k => typeof fm[k] === 'string').map(k => `${k}: ${fm[k]}`);
+  return [`[${label}]`, ...links].join('\n');
+}
+
+/** An entry as the answer model reads it: header, then the body without frontmatter. */
+export function contentBlock(handle: string, content: string): string {
+  const entry = loadBlogIndex().find(a => a.handle === handle);
+  return `${contentHeader(entry, parseFrontmatter(content) ?? {})}\n\n${stripFrontmatter(content)}`;
+}
+
+/**
  * Concatenate the content for the router's handles, in order, up to
- * MAX_BLOG_CHARS. An entry that would overflow the cap is skipped (listed in
+ * MAX_BLOG_CHARS, each as contentBlock() gives it, so frontmatter never counts
+ * (US-50 AC4). An entry that would overflow the cap is skipped (listed in
  * `skipped`), never the rest of the list (US-15 AC23). `titles` names the
  * entries loaded, from the blog index, never model output (US-15 AC20), and
  * only those in `titled`; the content is the same either way (US-15 AC25).
@@ -55,8 +78,9 @@ export function loadMatchedContent(handles: string[], titled = handles): { conte
   const skipped: string[] = [];
   let totalChars = 0;
   for (const handle of handles) {
-    const content = loadBlogArticle(handle);
-    if (!content) continue;
+    const raw = loadBlogArticle(handle);
+    if (!raw) continue;
+    const content = contentBlock(handle, raw);
     if (totalChars + content.length > MAX_BLOG_CHARS) {
       skipped.push(handle);
       continue;

@@ -1101,6 +1101,21 @@ describe('US-12 AC14: an undated previous column is read, marked undated, for th
     expect(monthSheet('2024-06', null).values.map(v => v.printedMonth)).toEqual([undefined, undefined]);
   });
 
+  it('US-12 AC14: a printedMonth later than a month-only report\'s month is dropped; the value stays', () => {
+    const months = (printedMonth: string, reportDate: string) => {
+      const result = monthSheet(printedMonth, 'undated', reportDate);
+      expect(result.values.map(v => v.recordedAt), reportDate).toEqual(['undated', 'undated']);
+      expect(result.additionalValues.map(v => v.name), reportDate).toEqual(['sodium']);
+      return [...result.values.map(v => v.printedMonth), result.additionalValues[0].printedMonth];
+    };
+    expect(months('2025-07', '2025-06')).toEqual([undefined, undefined, undefined]);
+    expect(months('2025-06', '2025-06')).toEqual(['2025-06', '2025-06', '2025-06']);
+    expect(months('2025-05', '2025-06')).toEqual(['2025-05', '2025-05', '2025-05']);
+    expect(months('2025-07', '2025-06-15')).toEqual([undefined, undefined, undefined]);
+    expect(months('2025-06', '2025-06-15')).toEqual(['2025-06', '2025-06', '2025-06']);
+    expect(months('2025-05', '2025-06-15')).toEqual(['2025-05', '2025-05', '2025-05']);
+  });
+
   it('full: a dated previous column still reads as before', () => {
     expect(toUnifiedResult(undatedSheet('2026-03-10', '2025-09-02'), 'full').values.map(v => v.recordedAt)).toEqual(['2025-09-02', undefined, '2025-09-02']);
   });

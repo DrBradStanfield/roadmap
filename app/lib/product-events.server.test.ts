@@ -580,6 +580,49 @@ describe('the refused-unit counter', () => {
   });
 });
 
+/**
+ * US-35 AC17 — the refused-measurement counter: which core metric the record
+ * refused at the upload save, and why, as closed words. Never the value, and
+ * never a printed name, which is free text.
+ */
+describe('the refused-measurement counter', () => {
+  it('takes a core metric id with an invalid value, and a closed refusal word alone, from a browser', () => {
+    expect(parseProductEvent({ eventName: 'measurement_refused', visitorId: VISITOR, metadata: { metric: 'ldl', refusal: 'invalid-value' } }))
+      .toEqual({ eventName: 'measurement_refused', visitorId: VISITOR, metadata: { metric: 'ldl', refusal: 'invalid-value' } });
+    for (const refusal of ['out-of-range', 'unknown-metric']) {
+      expect(parseProductEvent({ eventName: 'measurement_refused', visitorId: VISITOR, metadata: { refusal } }))
+        .toEqual({ eventName: 'measurement_refused', visitorId: VISITOR, metadata: { refusal } });
+    }
+  });
+
+  // Brad 2026-10-20: a metric beside out-of-range would tell analytics this
+  // visitor's value for that test is past a clinical bound.
+  it('refuses a metric beside an out-of-range or unknown-metric refusal, or with no refusal', () => {
+    for (const metadata of [
+      { metric: 'psa', refusal: 'out-of-range' }, { metric: 'ldl', refusal: 'unknown-metric' }, { metric: 'ldl' },
+    ]) {
+      expect(parseProductEvent({ eventName: 'measurement_refused', visitorId: VISITOR, metadata }), JSON.stringify(metadata)).toBeNull();
+    }
+  });
+
+  it('refuses a metric off METRIC_TYPES, a free word, a number, or any other key', () => {
+    for (const metadata of [
+      { metric: 'ferritin', refusal: 'invalid-value' }, { metric: 'LDL Cholesterol', refusal: 'invalid-value' },
+      { metric: '4.2', refusal: 'invalid-value' }, { metric: 'ldl', refusal: '4.2' }, { metric: 'ldl', refusal: 'slot-occupied' },
+      { metric: 'ldl', refusal: 'invalid-value', value: 4.2 }, { metric: 'ldl', refusal: 'invalid-value', count: 1 },
+      { metric: 'ldl', refusal: 'invalid-value', key: 'ldl' }, { metric: 'ldl', refusal: 'invalid-value', reason: 'invalid-value' },
+      { refusal: 'out-of-range', value: 10001 },
+    ]) {
+      expect(parseProductEvent({ eventName: 'measurement_refused', visitorId: VISITOR, metadata }), JSON.stringify(metadata)).toBeNull();
+    }
+  });
+
+  it('lets no other event carry a metric or a refusal', () => {
+    expect(parseProductEvent({ eventName: 'upload_saved', visitorId: VISITOR, metadata: { metric: 'ldl' } })).toBeNull();
+    expect(parseProductEvent({ eventName: 'lab_unit_refused', visitorId: VISITOR, metadata: { key: 'ferritin', refusal: 'out-of-range' } })).toBeNull();
+  });
+});
+
 /** US-05 AC2 — the Lp(a) unit counter: which unit was chosen, and from which. */
 describe('the Lp(a) unit counter', () => {
   it('takes the two unit labels, from a browser', () => {
@@ -627,7 +670,7 @@ describe('the Lp(a) check counter', () => {
 });
 
 describe('the upload outcome counter (US-12 AC10)', () => {
-  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, refused: 1, tooLong: 1, valuesDropped: 3, docx: 1, picturesOnly: 1, undatedPrevious: 4 };
+  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, refused: 1, tooLong: 1, valuesDropped: 3, docx: 1, picturesOnly: 1, undatedPrevious: 4, unitsGuessed: 2, unitsRefused: 1 };
 
   it('takes integer counts from a browser', () => {
     expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata: counts }))
@@ -636,7 +679,7 @@ describe('the upload outcome counter (US-12 AC10)', () => {
 
   it('refuses a string, a negative, a fraction, a count over 1000 and a value-shaped field', () => {
     for (const metadata of [
-      { picked: '9' }, { openFailed: -1 }, { withValues: 1.5 }, { tooLarge: 1001 }, { valuesDropped: 1001 }, { docx: 1.5 }, { docx: 'docx' }, { undatedPrevious: 1.5 }, { undatedPrevious: -1 }, { undatedPrevious: 'undated' },
+      { picked: '9' }, { openFailed: -1 }, { withValues: 1.5 }, { tooLarge: 1001 }, { valuesDropped: 1001 }, { docx: 1.5 }, { docx: 'docx' }, { undatedPrevious: 1.5 }, { undatedPrevious: -1 }, { undatedPrevious: 'undated' }, { unitsGuessed: 1.5 }, { unitsRefused: -1 }, { unitsRefused: 'creatinine' },
       { picked: 1, fileName: 'report.pdf' }, { picked: 1, unit: 'mmol/L' }, { picked: 1, value: 4.2 },
     ]) {
       expect(
