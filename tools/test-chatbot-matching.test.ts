@@ -427,7 +427,10 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
         '--category', CATEGORIES, '--fixed-handles-only', '--answer-check-runs', '1']);
       const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
       const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
+      // Under the tests' 120 s. A killed harness must throw: its missing ✗ lines would read as passes
+      // (deploy run 39484726768: three graded answers "passed" on a loaded runner).
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 110_000 });
+      if (res.error) throw res.error;
       let calls: Array<{ query: string; system: Array<{ text: string }>; tools: boolean }> = [];
       try { calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l)); } catch { /* no call made */ }
       return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, ''), calls };

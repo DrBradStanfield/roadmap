@@ -839,4 +839,7 @@ if (verbose) {
 
 console.log();
 // Any errored API call makes the run's numbers untrustworthy — never exit green.
-process.exit(passOk && varOk && fixedGateOk && apiErrorCount === 0 ? 0 : 1);
+// Exit only after stdout drains: process.exit() drops what a full pipe (64 KB) has not yet delivered,
+// which cut the last failures from a long report on a loaded CI runner (deploy run 39484726768).
+const exitCode = passOk && varOk && fixedGateOk && apiErrorCount === 0 ? 0 : 1;
+process.stdout.write('', () => process.exit(exitCode));
