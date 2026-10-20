@@ -326,6 +326,7 @@ export {
   LAB_GROUPS,
   resolveLabCatalogEntry,
   canonicalLabRow,
+  labCountFault,
   labSlotKey,
   normalizeLabUnit,
   displayLabUnit,

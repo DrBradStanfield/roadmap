@@ -14,6 +14,7 @@ import {
   labSlotKey,
   resolveLabCatalogEntry,
   canonicalLabRow,
+  labCountFault,
   sameLabQuantity,
   slotState,
   validDay,
@@ -24,7 +25,7 @@ import {
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
 import type { RefusedLabValue } from '@roadmap/health-core';
-import { labValueLabel } from '../lib/lab-value-labels';
+import { labUnitRefusalLine, labValueLabel } from '../lib/lab-value-labels';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
 import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI, validateTypedValue } from '../lib/blood-test-cell';
@@ -1440,7 +1441,7 @@ const MatrixCellView = memo(function MatrixCellView({
   // Ids of the text that describes the inputs: labels name the test and
   // column, never a value (US-13 AC10).
   const id = useId();
-  const [unitId, siId, oldId, newId, printedId] = ['unit', 'si', 'old', 'new', 'printed'].map(part => `${id}${part}`);
+  const [unitId, siId, oldId, newId, printedId, refusedId] = ['unit', 'si', 'old', 'new', 'printed', 'refused'].map(part => `${id}${part}`);
   if (cell.state === 'empty') {
     // NBSP keeps :empty from matching — the theme has a global
     // `div:empty { display: none }` (specificity beats .bt-cell-empty).
@@ -1468,16 +1469,20 @@ const MatrixCellView = memo(function MatrixCellView({
   // A guessed unit (medium) and a doubtful read (low) both ask to be checked (US-21 AC18).
   const lowConfClass = isCore && cell.confidence !== 'high' ? ' bt-cell-low-confidence' : '';
   let storedText: string | null = null;
+  let refusedText: string | null = null;
   if (cell.kind === 'additional') {
     // What Save stores for a catalogued test printed in another unit: the write's
     // own canonicalLabRow on the number as it now reads, so a row the write
     // refuses (a count off its range's scale) previews nothing (US-21 AC18).
+    // A row past its test's ceiling says the line Save would refuse it with,
+    // never the impossible number (US-21 AC21).
     const entry = resolveLabCatalogEntry(cell.lab.name);
     const typed = entry ? parseLocalisedNumber(editedValue) : undefined;
-    const row = entry && typed !== undefined
-      ? canonicalLabRow(entry, { value: typed, unit: cell.lab.unit, referenceLow: cell.referenceLow, referenceHigh: cell.referenceHigh })
-      : null;
+    const printed = typed === undefined ? null
+      : { value: typed, unit: cell.lab.unit, referenceLow: cell.referenceLow, referenceHigh: cell.referenceHigh };
+    const row = entry && printed ? canonicalLabRow(entry, printed) : null;
     if (row && row.factor !== 1) storedText = `${row.stored.value} ${row.stored.unit}`;
+    else if (entry && printed && labCountFault(entry, printed) === 'ceiling') refusedText = labUnitRefusalLine(entry.key, cell.lab.unit, 'ceiling');
   }
   const label = `${rowName(row)} value from ${columnWords}`;
   const newUnitShown = showUnit(cell.displayUnit);
@@ -1502,8 +1507,8 @@ const MatrixCellView = memo(function MatrixCellView({
       onChange={handleChange}
       wrapperClass="bt-cell-input bt-cell-review"
       ariaLabel={label}
-      ariaDescribedBy={describedBy(newUnitShown && unitId, storedText && siId)}
-      note={<>{unitNote(cell.displayUnit)}{storedText && <span id={siId} className="bt-cell-si">→ {storedText}</span>}</>}
+      ariaDescribedBy={describedBy(newUnitShown && unitId, storedText && siId, refusedText && refusedId)}
+      note={<>{unitNote(cell.displayUnit)}{storedText && <span id={siId} className="bt-cell-si">→ {storedText}</span>}{refusedText && <span id={refusedId} className="bt-cell-refused">{refusedText}</span>}</>}
     />
   );
 

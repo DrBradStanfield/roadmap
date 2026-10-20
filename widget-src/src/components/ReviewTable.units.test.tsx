@@ -56,6 +56,27 @@ describe('US-21 AC18: a catalogued test printed in another unit shows the SI val
   });
 });
 
+describe('US-21 AC21: a row past its test\'s ceiling says so in the review, before Save', () => {
+  const freeT = (unit: string): FileResult[] => [{
+    fileName: 'labs.pdf', reportDate: DAY, values: [],
+    additionalValues: [{ name: 'Free Testosterone', value: 312.6, unit, referenceLow: 163, referenceHigh: 473 }],
+  }];
+
+  it('free T 312.6 "nmol/L" with range 163–473 shows the refusal line and never the converted 312,600', () => {
+    const { container, getByRole } = renderReview(freeT('nmol/L'));
+    const line = 'Free testosterone above 10,000 pmol/L is not a measured value, so the printed unit is probably wrong (nmol/L vs pmol/L). Check the report, then type it in.';
+    expect(container.querySelector('.bt-cell-refused')?.textContent).toBe(line);
+    expect(getByRole('textbox', { name: 'Free testosterone value from 10 Mar 2026', description: line })).toBeTruthy();
+    expect(container.querySelector('.bt-cell-si')).toBeNull();
+    expect(container.textContent).not.toMatch(/312[,.\s]?600/);
+  });
+
+  it('the same row printed in pmol/L shows no note', () => {
+    const { container } = renderReview(freeT('pmol/L'));
+    expect(container.querySelector('.bt-cell-refused')).toBeNull();
+  });
+});
+
 describe('US-21 AC1: a catalogued row is named by the catalogue\'s label, as the blood-test matrix names it', () => {
   it('ft4 reads "Free T4" and urine_acr "Urine ACR", not a title-cased key', () => {
     const { container } = renderReview([{
