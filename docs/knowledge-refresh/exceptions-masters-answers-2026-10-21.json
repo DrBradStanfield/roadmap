@@ -30,5 +30,13 @@
   "reason": "Brad 2026-10-21: the MicroVitamin+ Powder section now names the MicroVitamin capsules once, to state the corrected 26 + 4 = 30 ingredient count (products.md:136); a correction, not new promotion.",
   "by": "orchestrator",
   "date": "2026-10-21"
+ },
+ {
+  "check": "AC7",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "report says product mentions 2 -> 2, recomputed 3 -> 4",
+  "reason": "Brad 2026-10-21: the report is append-only and its count (2 -> 2) predates the corrected ingredient-count sentence; the recount is 3 -> 4, covered by the 'rose' exception above.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
  }
 ]
