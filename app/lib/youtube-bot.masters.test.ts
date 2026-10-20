@@ -76,16 +76,16 @@ const files: Record<string, string> = {
 const KEY_POINTS = '## Key safety points\n\n- May interact with warfarin [1].\n- Not for pregnant people [2].\n- Mild bloating is common [1, 2].';
 files['tm-keyed'] = `---\ntitle: "Keyed"\n---\n\n## Current view (reviewed 20 October 2026)\n\nKeyed view.\n\n${KEY_POINTS}\n\n## 5. Safety and Side Effects\n\nFull safety text.\n\n## 6. Drug Interactions\n\nFull interactions text [3].\n\n## 9. References\n\n[1] Ref one.\n[2] Ref two.\n[3] Ref three.\n`;
 files['tm-keylong'] = `---\ntitle: "Keylong"\n---\n\n## Current view (reviewed 20 October 2026)\n\nKeylong view.\n\n## Key safety points\n\n- ${'k'.repeat(1_500)} [1].\n\n## 6. Drug Interactions\n\nKeylong interactions.\n`;
-// Fourteen synthetic masters with a view and key points, as the stack post
-// (the-only-three-supplements-doctor-brad-takes) names once batch 3 lands, each
-// with whole safety sections far past the cap. The last stands in for vitamin K.
-// Sizes are below the real masters' (views 1,233 to 2,449 characters, mean
-// 1,823; reference lines median 258, measured 2026-10-21), so this pins the
-// rule, not the real total.
+// Fourteen synthetic masters at realistic sizes, as the stack post
+// (the-only-three-supplements-doctor-brad-takes) names once batch 3 lands: a
+// ~1,800-character view, ~1,000-character key points carrying [n] markers, long
+// reference lines, and whole safety sections far past the cap. The last stands
+// in for vitamin K. Measured 2026-10-21: views 1,233 to 2,449 characters (mean
+// 1,823), reference lines median 258.
 const STACK = 14;
-const stackPoints = (i: number) => `## Key safety points\n\n- ${i === STACK - 1 ? 'Vitamin K may weaken warfarin; people on warfarin should ask their doctor first [1]. ' : ''}${String(i % 10).repeat(700)} [1].\n- Second point [1].\n- Third point [1].`;
+const stackPoints = (i: number) => `## Key safety points\n\n- ${i === STACK - 1 ? 'Vitamin K may weaken warfarin; people on warfarin should ask their doctor first [1]. ' : ''}${String(i % 10).repeat(500)} [1].\n- Second point ${'b'.repeat(200)} [1, 2].\n- Third point ${'c'.repeat(150)} [2].`;
 for (let i = 0; i < STACK; i++) {
-  files[`tm-stack-${i}`] = `---\ntitle: "Stack ${i}"\nreviewed: "2026-10-20"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'v'.repeat(1_400)}\n\n${stackPoints(i)}\n\n## 5. Safety and Side Effects\n\nStack ${i} safety. ${'s'.repeat(8_000)}\n\n## 6. Drug Interactions\n\nStack ${i} interactions. ${'i'.repeat(5_000)}\n\n## 7. Dietary Sources\n\nFood.\n\n## 9. References\n\n[1] Stack ref ${i}.\n`;
+  files[`tm-stack-${i}`] = `---\ntitle: "Stack ${i}"\nreviewed: "2026-10-20"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'v'.repeat(1_800)}\n\n${stackPoints(i)}\n\n## 5. Safety and Side Effects\n\nStack ${i} safety [1]. ${'s'.repeat(8_000)}\n\n## 6. Drug Interactions\n\nStack ${i} interactions [2]. ${'i'.repeat(5_000)}\n\n## 7. Dietary Sources\n\nFood.\n\n## 9. References\n\n[1] Stack ref ${i} ${'r'.repeat(600)}\n[2] Stack ref two ${i} ${'q'.repeat(600)}\n`;
 }
 const realRead = fs.readFileSync;
 function fakeFiles() {
@@ -150,11 +150,12 @@ describe('masterViews on the published masters (US-50 AC6)', () => {
 // not yet retrofitted. With fourteen such masters, vitamin K's warfarin point
 // always goes in.
 describe('masterViews with key safety points (US-50 AC12)', () => {
-  it('a retrofitted master adds its view, its key points and the lines they cite, not its full safety sections', () => {
+  it('a retrofitted master adds its view and key points with the [n] markers stripped, no reference lines, no full safety sections', () => {
     fakeFiles();
     const block = masterViews(['tm-keyed'], [])!;
-    expect(block).toContain(`title: Keyed\n\n### Current view (reviewed 20 October 2026)\n\nKeyed view.\n\n${KEY_POINTS.replace(/^## /, '### ')}\n\nReferences cited above:\n\n[1] Ref one.\n[2] Ref two.`);
-    for (const text of ['Full safety text.', 'Full interactions text', 'Drug Interactions', 'Ref three.']) expect(block).not.toContain(text);
+    expect(block).toContain(`title: Keyed\n\n### Current view (reviewed 20 October 2026)\n\nKeyed view.\n\n${KEY_POINTS.replace(/^## /, '### ').replace(/ ?\[\d+(?:, \d+)*\]/g, '')}`);
+    expect(block).not.toMatch(/\[\d/);
+    for (const text of ['Full safety text.', 'Full interactions text', 'Drug Interactions', 'Ref one.', 'Ref two.', 'Ref three.', 'References cited above']) expect(block).not.toContain(text);
   });
 
   it('an un-retrofitted master beside it still adds its whole interactions and safety sections under the cap', () => {
@@ -177,7 +178,7 @@ describe('masterViews with key safety points (US-50 AC12)', () => {
     expect(warn.mock.calls.map(([m]) => String(m))).toContain('YouTube master views: key safety points over 1500 characters, dropped: tm-keylong');
   });
 
-  it('the stack post: fourteen views with key points, vitamin K keeps its warfarin point, no whole safety section, under 40,000', () => {
+  it('the stack post: fourteen views with key points, vitamin K keeps its warfarin point, no markers, no reference lines, no whole safety section, under 50,000', () => {
     fakeFiles();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const block = masterViews(Array.from({ length: STACK }, (_, i) => `tm-stack-${i}`), [])!;
@@ -185,9 +186,11 @@ describe('masterViews with key safety points (US-50 AC12)', () => {
     expect(block.match(/^### Key safety points$/gm)).toHaveLength(STACK);
     expect(block.slice(block.indexOf(`title: Stack ${STACK - 1}`))).toContain('Vitamin K may weaken warfarin');
     for (const text of ['Drug Interactions', 'Safety and Side Effects', 'Food.']) expect(block).not.toContain(text);
-    expect(block.match(/^\[1\] Stack ref \d+\.$/gm)).toHaveLength(STACK);
+    expect(block).not.toMatch(/\[\d/);
+    for (const text of ['Stack ref', 'References cited above']) expect(block).not.toContain(text);
     expect(MAX_MASTER_VIEW_CHARS).toBe(40_000);
-    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS);
+    expect(block.length).toBeGreaterThan(MAX_MASTER_VIEW_CHARS - 10_000); // views and key points are not capped
+    expect(block.length).toBeLessThan(50_000);
     expect(warn).not.toHaveBeenCalled();
   });
 });

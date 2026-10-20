@@ -60,11 +60,15 @@ export const MASTER_VIEWS_HEADING = "## Brad's current view and safety notes on 
 
 /**
  * What the master views add (US-50 AC12). Each named master adds its current
- * view and, when it has one, its authored "Key safety points" section with the
- * bibliography lines that section cites; these always go in, uncapped. A view
+ * view and, when it has one, its authored "Key safety points" section, with
+ * the [n] markers stripped and no reference lines; these always go in, uncapped
+ * (measured 2026-10-21: about 3,000 characters per master, 14 masters about
+ * 42,000). A view
  * over MAX_VIEW_CHARS or key points over MAX_KEY_POINTS_CHARS (the writer
  * contract's limit, heading and body) is malformed: it is dropped and logged.
- * A master without key points (not yet retrofitted, or dropped) adds its whole
+ * MAX_MASTER_VIEW_CHARS governs only the whole safety sections of masters
+ * without key points, never views or key points. A master without key points
+ * (not yet retrofitted, or dropped) adds its whole
  * safety sections instead, while they fit MAX_MASTER_VIEW_CHARS in topics
  * order: first every such master's Drug Interactions, then the Safety and Side
  * Effects sections, never for a master whose interactions were skipped. Those
@@ -120,10 +124,12 @@ function citedNumbers(text: string): number[] {
   return [...cited].sort((a, b) => a - b);
 }
 
-/** A section with every heading in it demoted one level, followed by the
- *  bibliography lines its [n] markers cite. */
+/** A section with every heading in it demoted one level. */
+const demote = (section: string): string => section.replace(/^(#+) /gm, '#$1 ').trim();
+
+/** A section demoted, followed by the bibliography lines its [n] markers cite. */
 function withCitations(section: string, refs: Map<number, string>): string {
-  const demoted = section.replace(/^(#+) /gm, '#$1 ').trim();
+  const demoted = demote(section);
   const cited = citedNumbers(demoted).flatMap(n => refs.get(n) ?? []);
   return cited.length > 0 ? `${demoted}\n\nReferences cited above:\n\n${cited.join('\n')}` : demoted;
 }
@@ -140,15 +146,16 @@ export function safetySections(md: string): string[] {
     .map(s => withCitations(s, refs));
 }
 
-/** A master's "Key safety points" section (US-50 AC12) with the lines it
- *  cites. Null text when it has none, or when the section (heading and body)
+/** A master's "Key safety points" section (US-50 AC12), demoted, with its [n]
+ *  markers stripped and no reference lines (a marker with no line is noise in
+ *  a comment reply). Null text when it has none, or when the section (heading and body)
  *  is over MAX_KEY_POINTS_CHARS, which sets `over`. */
 function keySafetyPoints(md: string): { text: string | null; over: boolean } {
   const body = stripFrontmatter(md);
   const section = sectionOf(body, KEY_POINTS_HEADING);
   if (!section) return { text: null, over: false };
   if (section.length > MAX_KEY_POINTS_CHARS) return { text: null, over: true };
-  return { text: withCitations(section, bibliography(body)), over: false };
+  return { text: demote(section).replace(/ ?\[\d+(?:\s*[,–-]\s*\d+)*\]/g, ''), over: false };
 }
 
 /**
