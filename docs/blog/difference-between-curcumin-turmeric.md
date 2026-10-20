@@ -8,6 +8,7 @@ tags: ["Supplements","Research","General Health"]
 keywords: ["alzheimer","antioxidant","blood sugar","cardiovascular","cognitive","curcumin","dementia","diabetes","exercise","hba1c","inflammation","insulin resistance","kidney","lifespan","obesity","resveratrol","sleep","turmeric","weight loss"]
 summary: "Dr Brad's curcumin and turmeric post: most evidence supports use for osteoarthritis pain relief, comparable to NSAIDs; benefits for inflammation, weight loss, diabetes, and dementia are small or limited. Covers bioavailability, piperine, liver injury risk, arthritis, cognitive decline."
 topics: ["turmeric-curcumin-benefits-best-forms-dosing-and-side-effects"]
+router: hidden
 ---
 
 Turmeric is one of the most popular and widely available supplements on the market today. The robust orange spice is broadly used in culinary recipes around the world, but its use as a health supplement has been taking off in recent years. You may also have heard of curcumin in discussions of turmeric, which brings up many questions. Is there a difference between turmeric and curcumin? Is turmeric (or curcumin) a valuable health supplement? Are they safe to take? Read on to find out what the science is saying.

@@ -1549,7 +1549,8 @@
     "summary": "Dr Brad’s turmeric curcumin post: most supplements are mislabeled or ineffective; curcumin may help knee arthritis, ulcerative colitis, and prediabetes but needs 95% standardized extract and NovaSOL enhancer. Avoid piperine-only products.",
     "topics": [
       "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects"
-    ]
+    ],
+    "router": "hidden"
   },
   {
     "title": "Coronary Heart Disease is Almost ELIMINATED",
@@ -3828,7 +3829,8 @@
     "summary": "Dr Brad’s glycine post: he takes 3g/day for sleep quality (falls asleep faster, less groggy) with a strong safety profile. Covers metabolic health, blood sugar, inflammation, heart attack risk, longevity in mice, and brain function.",
     "topics": [
       "glycine-benefits-forms-dosing-and-side-effects"
-    ]
+    ],
+    "router": "hidden"
   },
   {
     "title": "Ezetimibe is the Most Underrated Weapon Against Heart Disease",
@@ -4492,7 +4494,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/b-vitamins-forms-dosing-safety",
     "type": "reference",
-    "summary": "Reference on B vitamins: energy metabolism, brain health, depression, stroke prevention. At-risk groups include older adults, vegans, metformin users, and MTHFR carriers. Covers all eight B vitamins, active forms (methylfolate, methylcobalamin), and megadose risks. Always discuss with your doctor."
+    "summary": "Reference on B vitamins. Brad: diet first, reach the recommended intake, skip megadoses; Australia warns on B6 over 10 mg a day. B vitamins may slow brain shrinkage with high omega-3. Avoid high-dose niacin and folic acid (outside pregnancy). Talk to your doctor first if pregnant or on medicines.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Beetroot: Benefits, Forms, Dosing, and Side Effects",
@@ -4972,7 +4975,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/electrolytes-guide",
     "type": "reference",
-    "summary": "Reference on electrolytes: hydration, muscle cramps, fatigue, heart rhythm, bone health. Key minerals: sodium, potassium, magnesium, calcium. Supplements mainly needed for endurance exercise >90 min or heat exposure. Always discuss with your doctor."
+    "summary": "Reference on electrolytes (sodium, potassium, magnesium, calcium and more). Water is enough for an hour of exercise; replace electrolytes, mainly sodium, after 90+ minutes of strenuous exercise or for diarrhea. Talk to your doctor first with kidney disease, high blood pressure or ACE inhibitors.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Extra Virgin Olive Oil: Benefits, Quality, Dosing, and Side Effects",
@@ -5179,7 +5183,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/glycine-supplement-guide-benefits-forms-dosage-and-side-effects",
     "type": "reference",
-    "summary": "Reference on glycine: sleep quality, overactive bladder, joint health, glutathione/antioxidant support. Conditionally essential amino acid; older adults, athletes may have higher needs. Forms: powder, capsules, magnesium glycinate, collagen peptides; 3-5 g/day typical. Always discuss with your doctor."
+    "summary": "Reference on glycine. Brad's view: in three small trials, 3 g before bed improved rated sleep quality, sleep onset and next-day tiredness; no trial showed fewer wake-ups. GlyNAC corrected glutathione deficiency in older adults. Talk to your doctor first if pregnant or on clozapine.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Green Coffee Bean Extract: Benefits, Forms, Dosing, and Side Effects",
@@ -5533,7 +5538,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/protein-powder-guide",
     "type": "reference",
-    "summary": "How much protein per day, protein target in g/kg, whey vs casein vs plant protein powders, athletes, older adults, sarcopenia."
+    "summary": "Reference on protein powders. Brad's view: pea protein powder can help when whole foods fall short; his own target is 1.2 g/kg of ideal body weight a day, and with resistance training extra benefit shrinks after 1.3 g/kg. Covers whey, casein, plant types. Kidney disease? Talk to your doctor first.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Quercetin: Benefits, Forms, Dosing, and Side Effects",
@@ -5802,7 +5808,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/turmeric-curcumin-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on turmeric and curcumin: joint pain, osteoarthritis, gut health, depression, cholesterol. Enhanced forms (Meriva, BCM-95) with a fatty meal; 500-1500 mg/day. Liver caution with high-bioavailability forms. Always discuss with your doctor."
+    "summary": "Reference on turmeric and curcumin. Brad steers most patients away from the supplements; curcumin may help ulcerative colitis, knee arthritis, indigestion and prediabetes. Trials used 500-2,000 mg/day. Liver injury reported. Talk to your doctor first, especially if pregnant or on blood thinners.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Valerian: Benefits, Forms, Dosing, and Side Effects",
@@ -6374,7 +6381,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/omega-3-fish-oil-guide",
     "type": "reference",
-    "summary": "Reference on omega-3 (fish oil): heart health, triglyceride reduction, brain and cognitive benefits, EPA vs DHA distinction, oily fish vs supplement dosing, and safety. Covers the major cardiovascular trials in detail — VITAL (28% MI reduction, NEJM 2018), REDUCE-IT (Vascepa / icosapent ethyl, 25% MACE reduction with mineral-oil placebo controversy), STRENGTH (null with corn-oil placebo), ASCEND, JELIS — plus dose-response, AF risk at high doses, and who benefits most (CVD, high triglycerides, low fish intake). Always discuss with your doctor."
+    "summary": "Reference on omega-3 fish oil. Brad takes about 1 g a day for heart and brain health (VITAL: 28% fewer heart attacks) and avoids higher doses linked to atrial fibrillation. Covers forms, major trials, triglycerides and safety. Talk to your doctor first, especially if you take blood thinners.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Weight Loss Supplements: Benefits, Evidence, and Safety",
@@ -6570,7 +6578,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/cholesterol-supplements-evidence-dosing",
     "type": "reference",
-    "summary": "Reference on cholesterol-lowering supplements: high LDL, high triglycerides, heart disease risk. For statin-intolerant adults or mild hypercholesterolemia. Plant sterols/stanols, psyllium, omega-3s best evidenced; red yeast rice variable. Always discuss with your doctor."
+    "summary": "Reference on cholesterol-lowering supplements. Sterols/stanols, red yeast rice and high-dose niacin have the best evidence; psyllium also lowers LDL. Guidelines no longer recommend niacin and recommend no supplement for LDL. Talk to your doctor first, especially if taking a statin or blood thinner.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Garcinia Cambogia: Benefits, Forms, Dosing, and Side Effects",
@@ -6857,7 +6866,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/nitric-oxide-supplements-guide",
     "type": "reference",
-    "summary": "Reference on nitric oxide supplements: blood pressure, exercise, erectile dysfunction. Adults with hypertension or ED. L-arginine, L-citrulline, beetroot nitrate; 3-8g/day. Avoid post-heart attack or kidney disease. Always discuss with your doctor."
+    "summary": "Reference on nitric oxide supplements (L-arginine, L-citrulline, beetroot nitrate). Brad recommends none: the evidence is on dietary nitrate; rocket (arugula) is richest per gram. Trials used about 400 mg nitrate a day. Talk to your doctor first after a heart attack or on blood pressure medicines.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Phosphatidylserine: Benefits, Forms, Dosing, and Side Effects",
@@ -6929,7 +6939,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/potassium-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on potassium: blood pressure, stroke risk, heart health, muscle cramps, electrolyte balance. Deficiency common in people eating processed foods or taking diuretics. Forms include citrate, gluconate, chloride; supplements typically capped at 99 mg/pill. Caution with kidney disease. Always discuss with your doctor."
+    "summary": "Reference on potassium. Brad's view: most people fall short; get 3,500 to 5,000 mg daily from food with healthy kidneys and use a potassium-enriched salt substitute; pills are optional. Talk to your doctor first if you have kidney disease or take ACE inhibitors, ARBs or potassium-sparing diuretics.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Vitamin C: Benefits, Best Forms, Dosing, and Side Effects",
@@ -7640,7 +7651,8 @@
     "publishedAt": "2025-04-01T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/multivitamins-what-the-evidence-actually-shows",
     "type": "reference",
-    "summary": "Reference on multivitamins: nutrient gaps, memory, bone and immune health. For adults with poor diet or deficiency risk. COSMOS trial found cognitive benefit in older adults; mixed evidence for heart disease, cancer. Always discuss with your doctor."
+    "summary": "Reference on multivitamins. Brad's view: COSMOS found a small benefit to memory and global cognition in older adults, but no effect on cancer, heart disease or lifespan. Megadoses can harm; he sees no role for vitamins A or E. Talk to your doctor first, especially if you take warfarin or smoke.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Why Creatine Is The ONE Supplement All Longevity Researchers Are Taking",
@@ -9446,7 +9458,8 @@
     "summary": "Dr Brad's curcumin and turmeric post: most evidence supports use for osteoarthritis pain relief, comparable to NSAIDs; benefits for inflammation, weight loss, diabetes, and dementia are small or limited. Covers bioavailability, piperine, liver injury risk, arthritis, cognitive decline.",
     "topics": [
       "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects"
-    ]
+    ],
+    "router": "hidden"
   },
   {
     "title": "Myth Busting: Can Foods Help You Unclog Your Arteries?",
@@ -9854,7 +9867,8 @@
     "summary": "Dr Brad's multivitamin post: COSMOS studies show multivitamin/mineral supplementation equivalent to 2 years less cognitive aging, but avoid beta-carotene and vitamin E. Covers brain health, memory, cognitive decline prevention, megadosing risks, supplement selection.",
     "topics": [
       "multivitamins-benefits-evidence-dosing-and-side-effects"
-    ]
+    ],
+    "router": "hidden"
   },
   {
     "title": "Example Sleep Schedule to Help You Wake Up Refreshed",
@@ -9944,7 +9958,8 @@
     "summary": "Dr Brad's omega-3 post: supplements at ~1g/day are still worth taking despite a 2024 UK Biobank study showing 133% higher atrial fibrillation risk. Covers EPA, DHA, ALA, fish oil, heart disease, AF risk, megadosing concerns, and the major trials — VITAL (28% MI reduction at 1g/day), STRENGTH (null at 4g/day with AF signal), REDUCE-IT (Vascepa / icosapent ethyl, 25% CVD reduction with the mineral-oil placebo controversy).",
     "topics": [
       "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
-    ]
+    ],
+    "router": "hidden"
   },
   {
     "title": "Which Mistakes Do Most People Make with Magnesium?",
