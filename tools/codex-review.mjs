@@ -1132,6 +1132,17 @@ function searcher(values, patterns) {
 }
 
 // --- 2. Immutable snapshot: source in work/src, artifacts beside it (CR1) ---
+// Prune earlier runs' leftovers first: each work dir holds a ~2 GB snapshot, and a kept (incomplete) run or a
+// SIGKILL'd one never reaches the exit handler. 4,098 of them filled the disk by 2026-10-20 (196 GB).
+// Anything older than twice the longest allowed run (min 2 h) cannot belong to a live review.
+{
+  const cutoff = Date.now() - Math.max(2 * 3_600_000, 2 * TIMEOUT_MS);
+  for (const name of readdirSync(tmpdir())) {
+    if (!/^(codex-review|cr-subj|cr-idx)-/.test(name)) continue;
+    const p = join(tmpdir(), name);
+    try { if (lstatSync(p).isDirectory() && statSync(p).mtimeMs < cutoff) rmSync(p, { recursive: true, force: true }); } catch { /* gone or busy */ }
+  }
+}
 work = mkdtempSync(join(tmpdir(), "codex-review-"));
 // --record: verify the local record BEFORE anything can read it (a wrong
 // account must never be disclosed, not merely detected afterwards).
