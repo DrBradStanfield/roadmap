@@ -233,9 +233,12 @@ CREATE POLICY "Users can delete own measurements"
 -- Explicit grants ensure the authenticated role can access tables after DROP/CREATE.
 -- Without these, the anon key + custom JWT client silently fails.
 
--- RLS scopes rows, not columns. Remove the old table-wide UPDATE privilege
--- before allowing profile edits; identity links and email remain admin-owned.
-REVOKE UPDATE ON profiles FROM authenticated;
+-- RLS scopes rows, not columns. Remove the table-wide privileges Supabase grants
+-- by default (live 2026-10-21: anon and authenticated held INSERT, UPDATE,
+-- DELETE and TRUNCATE; TRUNCATE ignores RLS) before allowing profile edits;
+-- identity links, email, credits and plan remain admin-owned (US-09 AC27).
+-- No code writes profiles except through the service role.
+REVOKE ALL ON profiles FROM anon, authenticated;
 GRANT SELECT ON profiles TO authenticated;
 GRANT UPDATE (sex, birth_year, birth_month, unit_system, first_name, last_name, height)
   ON profiles TO authenticated;

@@ -74,6 +74,7 @@ export async function getAuthenticatedUser(request: Request) {
   const userId = await getOrCreateSupabaseUser(
     customerId, customerInfo.email, customerInfo.firstName, customerInfo.lastName,
   );
+  if (!userId) return null; // an unproven link answers as a guest (US-09 AC27)
   return { userId, customerId, client: createUserClient(userId), admin };
 }
 

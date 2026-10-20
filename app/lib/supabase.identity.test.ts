@@ -7,24 +7,37 @@ const schema = readFileSync('supabase/rls-policies.sql', 'utf8');
 const triggerMetadata = schema.match(/NEW\.(raw_(?:user|app)_meta_data)->>'shopify_customer_id'/)?.[1];
 if (!triggerMetadata) throw new Error('Profile trigger identity source not found');
 
-const state = vi.hoisted(() => ({ from: vi.fn(), create: vi.fn(), list: vi.fn() }));
-vi.mock('@supabase/supabase-js', () => ({ createClient: () => ({ from: state.from, auth: { admin: { createUser: state.create, listUsers: state.list } } }) }));
+// No listUsers on the mock: a full scan fails live past ~300 users (US-09 AC27),
+// so any call to it throws here.
+const state = vi.hoisted(() => ({ from: vi.fn(), create: vi.fn(), getById: vi.fn(), warn: vi.fn() }));
+vi.mock('@supabase/supabase-js', () => ({ createClient: () => ({ from: state.from, auth: { admin: { createUser: state.create, getUserById: state.getById } } }) }));
+vi.mock('@sentry/react-router', () => ({ captureMessage: state.warn, captureException: vi.fn() }));
 vi.stubEnv('SUPABASE_URL', 'https://example.invalid');
 vi.stubEnv('SUPABASE_SERVICE_KEY', 'synthetic');
 vi.stubEnv('SUPABASE_ANON_KEY', 'synthetic');
 vi.stubEnv('SUPABASE_JWT_SECRET', 'synthetic');
 
+type AuthUser = { id: string; email: string; app_metadata?: Record<string, string>; user_metadata?: Record<string, string> };
 let profiles: Array<Record<string, any>>;
+let authUsers: Map<string, AuthUser>;
 let writes: Array<Record<string, any>>;
+let audits: Array<Record<string, any>>;
 let lookupError: boolean;
 let competingInsert: boolean;
 let counter = 0;
 let mapUser: typeof import('./supabase.server').getOrCreateSupabaseUser;
+let webhookUser: typeof import('./supabase.server').getUserIdByCustomerId;
+const addAuth = (id: string, customer: string | null, extra: Partial<AuthUser> = {}) =>
+  authUsers.set(id, { id, email, app_metadata: customer ? { provider: 'email', shopify_customer_id: customer } : { provider: 'email' }, ...extra });
 beforeEach(async () => {
-  vi.resetModules(); profiles = []; writes = []; lookupError = false; competingInsert = false;
-  ({ getOrCreateSupabaseUser: mapUser } = await import('./supabase.server'));
+  vi.resetModules(); profiles = []; writes = []; audits = []; authUsers = new Map(); lookupError = false; competingInsert = false;
+  ({ getOrCreateSupabaseUser: mapUser, getUserIdByCustomerId: webhookUser } = await import('./supabase.server'));
+  state.warn.mockReset();
   state.create.mockReset().mockResolvedValue({ data: null, error: { message: 'already registered' } });
-  state.list.mockReset().mockResolvedValue({ data: { users: [] }, error: null });
+  state.getById.mockReset().mockImplementation(async (id: string) => {
+    const user = authUsers.get(id);
+    return user ? { data: { user }, error: null } : { data: { user: null }, error: { message: 'User not found' } };
+  });
   state.from.mockImplementation((table: string) => {
     const filters: Array<[string, unknown]> = []; let payload: Record<string, any> | undefined; let ignore = false; let update = false;
     const q: any = {};
@@ -35,7 +48,7 @@ beforeEach(async () => {
       payload = row; ignore = opts?.ignoreDuplicates; return q;
     };
     q.update = (row: Record<string, any>) => { payload = row; update = true; return q; };
-    q.insert = () => ({ then: (resolve: any) => resolve({ error: null }) });
+    q.insert = (row: Record<string, any>) => { if (table === 'audit_logs') audits.push(row); return { then: (resolve: any) => resolve({ error: null }) }; };
     q.then = (resolve: any, reject: any) => Promise.resolve().then(() => {
       if (table !== 'profiles') return { data: null, error: null };
       if (payload) {
@@ -53,7 +66,9 @@ beforeEach(async () => {
 });
 const identity = () => `customer-${++counter}`;
 const email = 'synthetic@example.invalid';
-// US-15 AC9: only Shopify-authenticated identity may acquire its own principal.
+// US-09 AC27: a Shopify customer reaches a principal only through admin-written
+// proof. Anything unproven is refused as null (the caller answers as a guest),
+// never thrown into a 500, never cached.
 describe('Shopify principal reuse', () => {
   it('does not reuse a signup profile poisoned through the schema-selected user metadata source', async () => {
     const customer = identity();
@@ -62,7 +77,8 @@ describe('Shopify principal reuse', () => {
       raw_app_meta_data: {} as Record<string, string>,
     };
     profiles.push({ id: 'mobile', email, shopify_customer_id: signup[triggerMetadata as keyof typeof signup].shopify_customer_id ?? null });
-    await expect(mapUser(customer, email)).rejects.toThrow(/identity|link/i);
+    addAuth('mobile', null, { user_metadata: { shopify_customer_id: customer } });
+    expect(await mapUser(customer, email)).toBeNull();
     expect(writes).toEqual([]);
   });
   it('accepts the new-account trigger mapping from administrator-owned metadata', async () => {
@@ -76,38 +92,44 @@ describe('Shopify principal reuse', () => {
     expect(profiles[0].shopify_customer_id).toBe(customer);
   });
   it.each(['other-customer', null])('refuses an email profile linked to %s, without caching it', async link => {
-    const customer = identity(); profiles.push({ id: 'foreign', email, shopify_customer_id: link });
-    await expect(mapUser(customer, email)).rejects.toThrow(/identity|link/i);
-    await expect(mapUser(customer, email)).rejects.toThrow(/identity|link/i);
+    const customer = identity(); profiles.push({ id: 'foreign', email, shopify_customer_id: link }); addAuth('foreign', link);
+    expect(await mapUser(customer, email)).toBeNull();
+    expect(await mapUser(customer, email)).toBeNull();
     expect(writes).toEqual([]); expect(state.create).toHaveBeenCalledTimes(2);
   });
   it('preserves an existing mapping only when admin-written proof matches', async () => {
     const customer = identity();
-    profiles.push({ id: 'own', email, shopify_customer_id: customer });
-    state.list.mockResolvedValue({ data: { users: [{ id: 'own', email, app_metadata: { shopify_customer_id: customer } }] }, error: null });
+    profiles.push({ id: 'own', email, shopify_customer_id: customer }); addAuth('own', customer);
     expect(await mapUser(customer, email)).toBe('own');
     expect(await mapUser(customer, email)).toBe('own');
     expect(state.create).not.toHaveBeenCalled();
-    expect(state.list).toHaveBeenCalledTimes(1);
+    expect(state.getById).toHaveBeenCalledTimes(1);
   });
   it('accepts a concurrent same-customer profile only with matching admin proof', async () => {
     const customer = identity();
     state.create.mockImplementationOnce(async () => {
-      profiles.push({ id: 'raced', email, shopify_customer_id: customer });
+      profiles.push({ id: 'raced', email, shopify_customer_id: customer }); addAuth('raced', customer);
       return { data: null, error: { message: 'duplicate' } };
     });
-    state.list.mockResolvedValue({ data: { users: [{ id: 'raced', email, app_metadata: { shopify_customer_id: customer } }] }, error: null });
     expect(await mapUser(customer, email)).toBe('raced');
     expect(writes).toEqual([]);
   });
   it('does not treat user-editable auth metadata as identity proof', async () => {
-    const customer = identity(); state.list.mockResolvedValue({ data: { users: [{ id: 'unlinked', email, user_metadata: { shopify_customer_id: customer }, app_metadata: {} }] }, error: null });
-    await expect(mapUser(customer, email)).rejects.toThrow(/identity|link/i); expect(writes).toEqual([]);
+    const customer = identity();
+    profiles.push({ id: 'unlinked', email, shopify_customer_id: null });
+    addAuth('unlinked', null, { user_metadata: { shopify_customer_id: customer } });
+    expect(await mapUser(customer, email)).toBeNull(); expect(writes).toEqual([]);
+  });
+  it('never adopts an account by email, even one whose auth user carries proof, and never lists users', async () => {
+    const customer = identity();
+    profiles.push({ id: 'auth-only', email, shopify_customer_id: null }); addAuth('auth-only', customer);
+    expect(await mapUser(customer, email)).toBeNull();
+    expect(writes).toEqual([]);
   });
   it('does not overwrite a competing profile when an auth candidate has server-owned proof', async () => {
-    const customer = identity(); profiles.push({ id: 'candidate', email: 'changed@example.invalid', shopify_customer_id: 'different' });
-    state.list.mockResolvedValue({ data: { users: [{ id: 'candidate', email, app_metadata: { shopify_customer_id: customer } }] }, error: null });
-    await expect(mapUser(customer, email)).rejects.toThrow(/identity|link/i);
+    const customer = identity(); profiles.push({ id: 'candidate', email, shopify_customer_id: 'different' });
+    addAuth('candidate', customer);
+    expect(await mapUser(customer, email)).toBeNull();
     expect(profiles[0].shopify_customer_id).toBe('different');
   });
   it('creates a new user with server-owned identity proof', async () => {
@@ -119,14 +141,14 @@ describe('Shopify principal reuse', () => {
   it('does not overwrite a conflicting profile inserted after the precheck', async () => {
     competingInsert = true;
     state.create.mockResolvedValueOnce({ data: { user: { id: 'racing' } }, error: null });
-    await expect(mapUser(identity(), email)).rejects.toThrow(/identity|link/i);
+    expect(await mapUser(identity(), email)).toBeNull();
     expect(profiles).toEqual([{ id: 'racing', shopify_customer_id: 'competing', email: 'competing@example.invalid' }]);
   });
   it('converges two concurrent creations of the same Shopify identity', async () => {
     const customer = identity(); let created = false;
     state.create.mockImplementation(async () => {
       if (created) return { data: null, error: { message: 'duplicate' } };
-      created = true; profiles.push({ id: 'shared', email, shopify_customer_id: customer });
+      created = true; profiles.push({ id: 'shared', email, shopify_customer_id: customer }); addAuth('shared', customer);
       return { data: { user: { id: 'shared' } }, error: null };
     });
     expect(await Promise.all([mapUser(customer, email), mapUser(customer, email)])).toEqual(['shared', 'shared']);
@@ -140,43 +162,52 @@ describe('Shopify principal reuse', () => {
     expect(await mapUser(customer, email, 'Synthetic', 'Person')).toBe('triggered');
     expect(profiles[0]).toMatchObject({ first_name: 'Synthetic', last_name: 'Person' });
   });
-  it('finds an auth-only same-customer principal beyond the first page', async () => {
-    const customer = identity();
-    state.list.mockImplementation(async (options?: { page: number }) => ({
-      data: { users: options?.page === 2
-        ? [{ id: 'later', email: email.toUpperCase(), app_metadata: { shopify_customer_id: customer } }]
-        : Array.from({ length: 1000 }, (_, i) => ({ id: `filler-${i}`, email: `filler-${i}@example.invalid`, app_metadata: {} })) },
-      error: null,
-    }));
-    expect(await mapUser(customer, email)).toBe('later');
-    expect(state.list.mock.calls).toEqual([[{ page: 1, perPage: 1000 }], [{ page: 2, perPage: 1000 }]]);
-    expect(profiles[0]).toMatchObject({ id: 'later', shopify_customer_id: customer });
-  });
-  it('stops at an exhausted page without inventing a principal', async () => {
+  it('fails clearly when no account holds the email after a refused creation', async () => {
     await expect(mapUser(identity(), email)).rejects.toThrow(/create/i);
-    expect(state.list).toHaveBeenCalledTimes(1); expect(writes).toEqual([]);
+    expect(writes).toEqual([]);
   });
-  it('bounds enumeration and refuses rather than creating a competing account', async () => {
-    state.list.mockResolvedValue({ data: { users: Array.from({ length: 1000 }, (_, i) => ({ id: `f-${i}`, email: `f-${i}@example.invalid` })) }, error: null });
-    await expect(mapUser(identity(), email)).rejects.toThrow(/limit/i);
-    expect(state.list).toHaveBeenCalledTimes(10); expect(writes).toEqual([]);
-  });
-  it('reports a later page failure clearly without an upsert', async () => {
-    state.list.mockResolvedValueOnce({ data: { users: Array.from({ length: 1000 }, () => ({ email: 'other@example.invalid' })) }, error: null })
-      .mockResolvedValueOnce({ data: null, error: { message: 'synthetic page failure' } });
-    await expect(mapUser(identity(), email)).rejects.toThrow(/list/i);
-    expect(state.list).toHaveBeenCalledTimes(2); expect(writes).toEqual([]);
-  });
-  it('refuses a stored Shopify mapping that has no matching admin-written proof', async () => {
+  it('refuses a legacy stored mapping without admin-written proof: no 500, no writes, no cache, a value-free warning', async () => {
     const customer = identity();
     profiles.push({ id: 'legacy', email, shopify_customer_id: customer });
-    state.list.mockResolvedValue({ data: { users: [{ id: 'legacy', email, app_metadata: {} }] }, error: null });
-    await expect(mapUser(customer, email)).rejects.toThrow(/provenance|verification/i);
+    addAuth('legacy', null, { user_metadata: { shopify_customer_id: customer } });
+    expect(await mapUser(customer, email)).toBeNull();
     expect(writes).toEqual([]);
     expect(state.create).not.toHaveBeenCalled();
+    expect(state.warn).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(state.warn.mock.calls)).not.toContain(customer);
+    expect(audits).toEqual([expect.objectContaining({ user_id: 'legacy', action: 'IDENTITY_LINK_UNPROVEN' })]);
+    expect(JSON.stringify(audits)).not.toContain(customer);
+    // Once the backfill writes the proof, the next request is accepted: the refusal was never cached.
+    addAuth('legacy', customer);
+    expect(await mapUser(customer, email)).toBe('legacy');
   });
   it('fails clearly on profile lookup errors before trying to create an account', async () => {
     lookupError = true; await expect(mapUser(identity(), email)).rejects.toThrow(/lookup/i);
     expect(state.create).not.toHaveBeenCalled();
+  });
+  it('fails clearly, uncached, when the auth user cannot be read', async () => {
+    const customer = identity(); profiles.push({ id: 'unreadable', email, shopify_customer_id: customer });
+    await expect(mapUser(customer, email)).rejects.toThrow(/auth user/i);
+    addAuth('unreadable', customer);
+    expect(await mapUser(customer, email)).toBe('unreadable');
+  });
+});
+
+// US-09 AC27: the orders/paid webhook shares the customer→principal cache with
+// chat, so it may neither credit nor cache an unproven link.
+describe('webhook customer lookup', () => {
+  it('returns no principal for a legacy unproven link, and a later chat request cannot reach it through the cache', async () => {
+    const customer = identity();
+    profiles.push({ id: 'legacy', email, shopify_customer_id: customer }); addAuth('legacy', null);
+    expect(await webhookUser(customer)).toBeNull();
+    expect(await mapUser(customer, email)).toBeNull();
+    expect(state.getById).toHaveBeenCalledTimes(2);
+  });
+  it('caches only a proven link', async () => {
+    const customer = identity();
+    profiles.push({ id: 'own', email, shopify_customer_id: customer }); addAuth('own', customer);
+    expect(await webhookUser(customer)).toBe('own');
+    expect(await mapUser(customer, email)).toBe('own');
+    expect(state.getById).toHaveBeenCalledTimes(1);
   });
 });
