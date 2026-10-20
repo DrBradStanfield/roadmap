@@ -67,6 +67,8 @@ interface Option {
   blurb: string;
   /** A quieter second line under the blurb. */
   note?: string;
+  /** What to do on the provider's own screen, said before the user goes there (US-09 AC21). */
+  hint?: string;
   advanced?: boolean;
   local?: boolean;
 }
@@ -79,6 +81,7 @@ const OPTIONS: Option[] = [
     // US-09 AC17: Google's consent screen lists the email permission (openid
     // email, google-config.ts); only the reminders opt-in uses the address.
     note: 'Google also shares your email address. We use it only to remind you when a check-up or blood test is due.',
+    hint: "On Google's screen, tick the Google Drive box. Without it we cannot save your file.",
   },
   {
     id: 'dropbox',
@@ -190,6 +193,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
                     </span>
                     <span className="hr-opt-blurb">{o.blurb}</span>
                     {o.note && <span className="hr-opt-note">{o.note}</span>}
+                    {o.hint && <span className="hr-opt-hint">{o.hint}</span>}
                   </span>
                 </button>
               </React.Fragment>

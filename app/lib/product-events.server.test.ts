@@ -118,6 +118,15 @@ describe('parseProductEvent', () => {
     ).toBeNull();
   });
 
+  it('takes cloud_connect_cancelled with a provider and nothing else (US-09 AC22)', () => {
+    expect(
+      parseProductEvent({ eventName: 'cloud_connect_cancelled', visitorId: VISITOR, metadata: { provider: 'google-drive' } }),
+    ).toMatchObject({ metadata: { provider: 'google-drive' } });
+    expect(
+      parseProductEvent({ eventName: 'cloud_connect_cancelled', visitorId: VISITOR, metadata: { provider: 'google-drive', count: 1 } }),
+    ).toBeNull();
+  });
+
   it('rejects missing fields', () => {
     expect(parseProductEvent({ eventName: 'chat_opened' })).toBeNull();
     expect(parseProductEvent({ visitorId: VISITOR })).toBeNull();

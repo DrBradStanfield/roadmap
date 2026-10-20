@@ -105,6 +105,7 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   measurement_refused: ['metric', 'refusal'],
   chat_run_roadmap: ['count', 'rejected'],
   chat_profile_edit: ['field', 'choice'],
+  cloud_connect_cancelled: ['provider'],
 };
 
 /**
