@@ -218,7 +218,7 @@ describe('US-16 AC2: the proposal banner, after review', () => {
     expect(banner()).toBeNull();
   });
 
-  it('erasing the data clears the proposal', async () => {
+  it('US-16 AC2 / US-09: erasing the data clears the pending profile proposal', async () => {
     localStorage.setItem('health_roadmap_unit_system', 'si');
     // A saved profile, so the plan shows and with it the delete link.
     const view = await guestWithoutProfile({ sex: 'female', heightCm: 175 });

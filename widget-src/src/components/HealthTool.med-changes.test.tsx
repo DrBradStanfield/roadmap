@@ -396,3 +396,25 @@ describe('US-06 AC12: a chat edit resets the drug\'s escalation answer', () => {
     expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@20', statin_escalation: 'yes@null' });
   });
 });
+
+describe('US-16 AC2 / US-09: erasing the data clears the pending chat Undo', () => {
+  it('the "Medication updated from chat." banner goes on erase, so Undo cannot write the old medication back', async () => {
+    await pageWith(LDL_3, [['statin', 'rosuvastatin', 20]], '#statin-name');
+    act(() => chat.props!.onProposeEdit([{ kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }]));
+    await settle();
+    expect(document.body.textContent).toContain('Medication updated from chat.');
+    expect(document.querySelector('.chat-med-undo-btn')).not.toBeNull();
+
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', () => {});
+    fireEvent.click(await waitFor(() => {
+      const link = Array.from(document.querySelectorAll('button, a')).find((e) => e.textContent?.trim() === 'Delete All My Data');
+      expect(link).toBeTruthy();
+      return link!;
+    }));
+    await waitFor(() => expect(document.querySelector('.chat-med-undo')).toBeNull());
+    expect(document.body.textContent).not.toContain('Medication updated from chat.');
+    await settle();
+    expect(await recorded()).toEqual({});
+  });
+});
