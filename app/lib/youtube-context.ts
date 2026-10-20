@@ -46,7 +46,7 @@ export function buildYouTubePlatformContext(videoId: string, entry: BlogIndexEnt
 
 // ---------------------------------------------------------------------------
 // Topic masters (US-50 AC6): the current-view section of each master the
-// video's post names, in its own labelled block. chat-youtube-prompt.md names
+// video's post names, then its safety sections, in their own labelled block. chat-youtube-prompt.md names
 // this heading and tells the model to ignore the block for reply-or-skip.
 // ---------------------------------------------------------------------------
 
@@ -56,16 +56,20 @@ export function loadedHandles(routerHandles: string[], matched: { skipped: strin
   return matched ? routerHandles.filter(h => !matched.skipped.includes(h)) : [];
 }
 
-export const MASTER_VIEWS_HEADING = "## Brad's current view on this video's topics (added automatically for this video; not router-matched content)";
+export const MASTER_VIEWS_HEADING = "## Brad's current view and safety notes on this video's topics (added automatically for this video; not router-matched content)";
 
 /**
- * Cap on the master views one comment adds. A current-view section is 3 to 6
- * sentences (about 1,000 to 2,000 characters), so 12,000 holds every master a
- * post names today with room to spare, while a malformed section (a missing
- * next heading pulling in the whole 29K to 83K reference) is skipped. The
- * YouTube context is uncached, so every character is paid on every comment.
+ * Caps on what the master views add. One master's block (header, current view,
+ * safety sections) runs 4,900 (taurine) to 12,900 characters (vitamin C) on the
+ * six masters published 2026-10-20, so 16,000 per master holds each with room,
+ * while a malformed section (a missing next heading pulling in the whole 29K to
+ * 83K reference) is skipped. A block over the cap is dropped whole: the view is
+ * never sent without its safety text. The 30,000 total holds the two largest
+ * masters together, or three typical ones; the YouTube context is uncached, so
+ * every character (about 7,500 tokens at the total) is paid on every comment.
  */
-export const MAX_MASTER_VIEW_CHARS = 12_000;
+export const MAX_MASTER_BLOCK_CHARS = 16_000;
+export const MAX_MASTER_VIEW_CHARS = 30_000;
 
 /** A master's "Current view" or "Current evidence position" section, heading to
  *  the next `## ` heading, demoted one level to sit under MASTER_VIEWS_HEADING.
@@ -79,11 +83,26 @@ export function currentViewSection(md: string): string | null {
   return `#${heading[0]}${next === -1 ? rest : rest.slice(0, next)}`.trim();
 }
 
+/** A body heading that names safety, side effects, cautions, interactions,
+ *  contraindications or who should not take it ("## 5. Safety and Side
+ *  Effects", "## 6. Drug Interactions" on the published masters). */
+const SAFETY_HEADING = /^## .*\b(?:safety|side effects?|cautions?|interactions?|contraindications?|who should not)\b/i;
+
+/** Each safety section of a master, heading to the next `## ` heading, every
+ *  heading in it demoted one level. Empty when the master has none. */
+export function safetySections(md: string): string[] {
+  return stripFrontmatter(md).split(/^(?=## )/m)
+    .filter(s => SAFETY_HEADING.test(s))
+    .map(s => s.replace(/^(#+) /gm, '#$1 ').trim());
+}
+
 /**
  * The master views for a comment: each reference named in the post's `topics`,
  * once, skipping masters already loaded as router-matched content (pass the
- * loaded handles, from loadedHandles(), never the router's raw picks). A section that would pass the cap is skipped, never
- * the rest. Null when nothing is added.
+ * loaded handles, from loadedHandles(), never the router's raw picks). A master
+ * with a current view adds it, then its safety sections. A master whose block
+ * would pass either cap is skipped whole, never the rest. Null when nothing is
+ * added.
  */
 export function masterViews(topics: string[] | undefined, loaded: string[]): string | null {
   const parts: string[] = [];
@@ -95,8 +114,8 @@ export function masterViews(topics: string[] | undefined, loaded: string[]): str
     const md = loadBlogArticle(handle);
     const section = md && currentViewSection(md);
     if (!section) continue;
-    const block = `${contentHeader(entry, parseFrontmatter(md) ?? {})}\n\n${section}`;
-    if (total + block.length > MAX_MASTER_VIEW_CHARS) continue;
+    const block = [contentHeader(entry, parseFrontmatter(md) ?? {}), section, ...safetySections(md)].join('\n\n');
+    if (block.length > MAX_MASTER_BLOCK_CHARS || total + block.length > MAX_MASTER_VIEW_CHARS) continue;
     parts.push(block);
     total += block.length;
   }

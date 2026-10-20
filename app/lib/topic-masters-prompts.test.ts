@@ -76,9 +76,29 @@ describe('YouTube prompt and the master views (US-50 AC6)', () => {
     expect(youtube).toContain('A Current evidence position is never Brad\'s view, so it never prompts a "view has changed" remark.');
   });
 
+  it('the safety sections are evidence summaries, never Brad\'s view (US-50 AC6)', () => {
+    expect(youtube).toContain("followed by that page's safety, side-effect and drug-interaction sections. Those safety sections are evidence summaries, never Brad's view; use them when a reply touches safety, side effects or interactions.");
+    expect(MASTER_VIEWS_HEADING).toContain('current view and safety notes');
+  });
+
   it('states the two-axis rule and allows a public "view has changed"', () => {
     expect(youtube).toContain("The video's content is the authority on what the video said; this section is the authority on Brad's view today.");
     expect(youtube).toContain("a reply may say publicly that Brad's view has changed since the video");
+  });
+});
+
+// US-50 AC11: Brad's omega-3 brand (products.md) on the doctor surfaces only;
+// the brand posture never presents Brad's routine as an endorsement.
+describe('omega-3 brand (US-50 AC11)', () => {
+  const brand = readFileSync('app/lib/chat-posture-brand.md', 'utf-8');
+  const products = readFileSync('docs/products.md', 'utf-8');
+  it('the doctor surfaces share WHC UnoCardio 1000 and its link; the brand surface gives criteria only', () => {
+    expect(system).toContain("On the doctor surfaces, when a user asks which omega-3 Brad takes or which one to buy, also say that the brand he takes himself and recommends is WHC UnoCardio 1000 Fish Oil, with its Amazon link from the PRODUCTS section. On the brand surface, Brad's personal routine is never an endorsement: give the criteria only, with no brand name or link.");
+    expect(system).toContain('describe the ingredient criteria (a fish-oil providing meaningful EPA/DHA per serving)');
+    expect(system).toContain('Dr. Stanfield does not sell an Omega-3 product.');
+    expect(system).not.toContain('do not link a specific branded product');
+    expect(products).toContain('**WHC UnoCardio 1000 Fish Oil**, available on Amazon: https://amzn.to/');
+    expect(brand).toContain('do not present Brad\'s personal routine as an endorsement');
   });
 });
 

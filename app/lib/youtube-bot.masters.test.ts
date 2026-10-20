@@ -21,6 +21,7 @@ const fakes = vi.hoisted(() => {
     ref('tm-big', '2026-10-20'),
     ref('tm-huge'),
     ref('tm-master-long', '2026-10-20'),
+    ref('tm-safe'), ref('tm-safe-big'), ref('tm-mid1'), ref('tm-mid2'),
     { title: 'An article', handle: 'tm-article', url: 'u', tags: [], publishedAt: '2025-01-01T00:00:00Z' },
   ];
 });
@@ -45,7 +46,7 @@ vi.mock('./chat.server', async (orig) => ({
 }));
 
 import { runPipeline } from './youtube-bot.server';
-import { currentViewSection, masterViews, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS } from './youtube-context';
+import { currentViewSection, safetySections, masterViews, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_MASTER_BLOCK_CHARS } from './youtube-context';
 import { getChatCompletion } from './chat.server';
 import { routeQuery } from './chat-router.server';
 
@@ -54,7 +55,11 @@ const files: Record<string, string> = {
   'tm-collagen': `---\ntitle: "Collagen"\nreviewed: "2026-10-20"\n---\n\n# Collagen\n\nIntro.\n\n${VIEW}\n\n## Brad's videos on this topic\n\n- 2025: old video.\n\n## Evidence review\n\nLong review.\n`,
   'tm-nad': `---\ntitle: "NAD"\n---\n\n# NAD\n\n## Current evidence position\n\nAn evidence summary, not Brad's view.\n\n## Evidence review\n\nMore.\n`,
   'tm-empty': `---\ntitle: "Empty"\n---\n\n# Empty\n\n## Evidence review\n\nOnly a review.\n`,
-  'tm-big': `---\ntitle: "Big"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'x'.repeat(MAX_MASTER_VIEW_CHARS)}\n`,
+  'tm-big': `---\ntitle: "Big"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'x'.repeat(MAX_MASTER_BLOCK_CHARS)}\n`,
+  'tm-safe': `---\ntitle: "Safe"\n---\n\n## Current view (reviewed 20 October 2026)\n\nSafe view.\n\n## 3. Evidence for Benefits\n\nBenefits.\n\n## 5. Safety and Side Effects\n\n### Common Side Effects\n\nMild bloating.\n\n## 6. Drug Interactions\n\nMay interact with warfarin.\n\n## 7. Dietary Sources\n\nFood.\n\n## Cautions\n\nA caution.\n\n## Who Should Not Take It\n\nPregnant people.\n\n## Who Should Consider Taking It\n\nMost adults.\n`,
+  'tm-safe-big': `---\ntitle: "Safe big"\n---\n\n## Current view (reviewed 20 October 2026)\n\nA short view.\n\n## 5. Safety and Side Effects\n\n${'s'.repeat(MAX_MASTER_BLOCK_CHARS)}\n`,
+  'tm-mid1': `---\ntitle: "Mid1"\n---\n\n## Current view (reviewed 20 October 2026)\n\nMid one.\n\n## Safety\n\n${'1'.repeat(MAX_MASTER_BLOCK_CHARS - 200)}\n`,
+  'tm-mid2': `---\ntitle: "Mid2"\n---\n\n## Current view (reviewed 20 October 2026)\n\nMid two.\n\n## Safety\n\n${'2'.repeat(MAX_MASTER_BLOCK_CHARS - 200)}\n`,
   'tm-huge': `---\ntitle: "Huge"\n---\n\n${'h'.repeat(110_000)}\n`,
   'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
   'tm-article': `---\ntitle: "An article"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNot a master.\n`,
@@ -83,6 +88,38 @@ describe('currentViewSection (US-50 AC6)', () => {
   });
 });
 
+describe('safetySections (US-50 AC6)', () => {
+  it('is empty for a master with no safety section', () => {
+    expect(safetySections(files['tm-nad'])).toEqual([]);
+  });
+});
+
+// The six masters published on 2026-10-20: every one adds its view plus its
+// "Safety and Side Effects" and "Drug Interactions" sections, within the caps.
+describe('masterViews on the published masters (US-50 AC6)', () => {
+  const MASTERS = [
+    'collagen-benefits-best-forms-dosing-and-side-effects',
+    'vitamin-k-benefits-forms-dosing-and-side-effects',
+    'magnesium-benefits-best-forms-dosing',
+    'taurine-benefits-forms-dosing-and-side-effects',
+    'creatine-benefits-best-forms-dosing-and-side-effects',
+    'vitamin-c-benefits-forms-dosing-and-side-effects',
+  ];
+  it.each(MASTERS)('%s adds its view, then its safety and interaction sections', (handle) => {
+    const block = masterViews([handle], [])!;
+    expect(block).not.toBeNull();
+    const view = block.indexOf('### Current view (reviewed');
+    const safety = block.search(/^### \d+\. Safety and Side Effects$/m);
+    const interactions = block.search(/^### \d+\. Drug Interactions$/m);
+    expect(view).toBeGreaterThan(-1);
+    expect(safety).toBeGreaterThan(view);
+    expect(interactions).toBeGreaterThan(safety);
+    expect(block).not.toMatch(/^### \d+\. (?:References|Overview|Recommended Dosing)/m);
+    expect(block).not.toContain("Brad's videos on this topic");
+    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_BLOCK_CHARS + MASTER_VIEWS_HEADING.length + 2);
+  });
+});
+
 describe('masterViews (US-50 AC6)', () => {
   it('adds each named master\'s section under its own label and header, in topics order', () => {
     fakeFiles();
@@ -102,12 +139,39 @@ describe('masterViews (US-50 AC6)', () => {
     expect(block).not.toContain('Not a master');
   });
 
-  it('a section that would pass the cap is skipped, never the rest', () => {
+  it('a master whose block would pass the per-master cap is skipped whole, never the rest', () => {
     fakeFiles();
     const block = masterViews(['tm-big', 'tm-collagen'], [])!;
     expect(block).not.toContain('xxxx');
     expect(block).toContain('Collagen peptides');
-    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
+  });
+
+  it('safety text that would pass the per-master cap drops the whole master, never the view alone (US-50 AC6)', () => {
+    fakeFiles();
+    const block = masterViews(['tm-safe-big', 'tm-collagen'], [])!;
+    expect(block).not.toContain('A short view.');
+    expect(block).not.toContain('ssss');
+    expect(block).toContain('Collagen peptides');
+  });
+
+  it('a master that would pass the total cap is skipped, never the rest', () => {
+    fakeFiles();
+    const block = masterViews(['tm-mid1', 'tm-mid2', 'tm-collagen'], [])!;
+    expect(block).toContain('Mid one.');
+    expect(block).not.toContain('Mid two.');
+    expect(block).toContain('Collagen peptides');
+    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2 + 3 * 7);
+  });
+
+  it('adds the safety, side-effect, caution, interaction and who-should-not sections after the view (US-50 AC6)', () => {
+    fakeFiles();
+    const block = masterViews(['tm-safe'], [])!;
+    expect(block).toContain('### Current view');
+    for (const text of ['### 5. Safety and Side Effects', '#### Common Side Effects', 'Mild bloating.', '### 6. Drug Interactions', 'May interact with warfarin.', '### Cautions', '### Who Should Not Take It', 'Pregnant people.']) {
+      expect(block).toContain(text);
+      expect(block.indexOf(text)).toBeGreaterThan(block.indexOf('Safe view.'));
+    }
+    for (const text of ['Benefits.', 'Food.', 'Most adults.']) expect(block).not.toContain(text);
   });
 
   it('no topics, or nothing to add, gives null', () => {
