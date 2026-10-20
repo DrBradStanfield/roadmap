@@ -75,12 +75,12 @@ Write the reference report schema (reference-writer-contract.md rule 6) with the
 After its first write the report is evidence: never edit it, not even to append (Brad 2026-10-20). Put each correction in a new `<handle>.addendum-<N>.json` beside it, N one higher than the last (1, 2, 3; a gap fails). The checker applies addenda in numeric order:
 
 ```json
-{"append": {"changed_tokens": [], "extra_raw": [], "current_view_basis": [], "deleted_sentences": [], "ask_brad": [], "needs_pubmed": [], "positions_drift": [], "notes": "text added to notes"},
+{"append": {"changed_tokens": [], "extra_raw": [], "current_view_basis": [], "deleted_sentences": [], "ask_brad": [], "needs_pubmed": [], "positions_drift": [], "grokipedia_claims": [], "notes": "text added to notes"},
  "void": [{"section": "changed_tokens", "index": 0, "reason": "why this entry is wrong"}],
  "set": {"proposed_summary_correction": "the new summary"}}
 ```
 
-- `append` adds entries. `void` retires one: `section` is changed_tokens, current_view_basis, deleted_sentences, extra_raw or ask_brad; `index` counts the array as merged before this addendum; `reason` is required. One entry is voided once.
+- `append` adds entries. `void` retires one: `section` is changed_tokens, current_view_basis, deleted_sentences, extra_raw, ask_brad, grokipedia_claims or positions_drift (never needs_pubmed: it carries safety work items); `index` counts the array as merged before this addendum; `reason` is required. One entry is voided once.
 - `set` takes only a non-empty `proposed_summary_correction`. Any other key fails the run.
 - An entry written `"void": true` inline must carry a non-empty `void_reason` (`"void": false` counts as absent). If that is the report's only fault, do not rewrite it: an addendum that voids the same entry with a reason repairs it. A report with any other fault gets no addenda applied; it needs a fresh report.
 - The batch report shows each void as section, index, source (`[base]` or `[addendum-N]`) and a short hash of the reason, so a reason may be plain prose.
