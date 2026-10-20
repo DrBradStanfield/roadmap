@@ -386,19 +386,21 @@ Schema: ${SCHEMA_URL}
  * Overwriting any OTHER existing file is normal `-o` behaviour and stays
  * allowed.
  */
-function assertWritableTarget(htmlOut: string, recordPath: string | undefined): void {
+function assertWritableTarget(htmlOut: string, recordPath: string | undefined, valuesFrom: string | null): void {
   if (htmlOut.startsWith('--')) {
     throw new PlanError(`--html needs an output path, not ${htmlOut}`, 'Try `--html plan.html`.');
   }
-  let sameFile = false;
-  try {
-    sameFile = recordPath !== undefined && realpathSync.native(htmlOut) === realpathSync.native(recordPath);
-  } catch {
-    // No such file yet — nothing to overwrite.
-  }
-  if (sameFile) {
-    throw new PlanError('--html would overwrite the record file itself', 'Give the report its own path, e.g. `--html plan.html`.');
-  }
+  const real = (p: string) => {
+    try {
+      return realpathSync.native(p);
+    } catch {
+      return null; // No such file yet — nothing to overwrite.
+    }
+  };
+  const target = real(htmlOut);
+  const hits = (p: string | null | undefined) => !!p && p !== '-' && target !== null && real(p) === target;
+  const hit = hits(recordPath) ? 'the record file itself' : hits(valuesFrom) ? 'the values file' : null;
+  if (hit) throw new PlanError(`--html would overwrite ${hit}`, 'Give the report its own path, e.g. `--html plan.html`.');
 }
 
 export async function run(argv: string[]): Promise<number> {
@@ -406,12 +408,22 @@ export async function run(argv: string[]): Promise<number> {
     process.stdout.write(HELP);
     return 0;
   }
+  // Operands are found by position, never by value: a record path that
+  // happens to equal the --html target must still count as the record.
+  const operandAt = new Set<number>();
+  const operand = (flag: string): string | null => {
+    const at = argv.indexOf(flag);
+    if (at < 0) return null;
+    operandAt.add(at + 1);
+    return argv[at + 1] ?? '';
+  };
   const htmlAt = argv.indexOf('--html');
-  const htmlOut = htmlAt >= 0 ? argv[htmlAt + 1] : null;
+  const htmlOut = operand('--html');
   const valuesAt = argv.indexOf('--from-values');
-  const valuesFrom = valuesAt >= 0 ? argv[valuesAt + 1] : null;
-  const path = argv.find((a) => !a.startsWith('--') && a !== htmlOut && a !== valuesFrom);
-  const unknown = argv.find((a) => a.startsWith('--') && !['--json', '--html', '--from-values'].includes(a) && a !== htmlOut && a !== valuesFrom);
+  const valuesFrom = operand('--from-values');
+  const rest = argv.filter((_, i) => !operandAt.has(i));
+  const [path, extra] = rest.filter((a) => !a.startsWith('--'));
+  const unknown = rest.find((a) => a.startsWith('--') && !['--json', '--html', '--from-values'].includes(a));
 
   try {
     if (valuesAt >= 0 && (!valuesFrom || valuesFrom.startsWith('--'))) throw new PlanError('--from-values needs a JSON file, or `-` for stdin', 'Try `--from-values values.json`.');
@@ -419,7 +431,8 @@ export async function run(argv: string[]): Promise<number> {
     if (!path && !valuesFrom) throw new PlanError('No record file given', 'Run `npx tsx tools/get-plan.ts --help` for usage.');
     if (htmlAt >= 0 && !htmlOut) throw new PlanError('--html needs an output path', 'Try `--html plan.html`.');
     if (unknown) throw new PlanError(`Unknown option ${unknown}`, 'Run with --help for the options.');
-    if (htmlOut) assertWritableTarget(htmlOut, path);
+    if (extra !== undefined) throw new PlanError(`Unexpected argument ${oneLine(extra)}`, 'Give one record file. Run with --help for the options.');
+    if (htmlOut) assertWritableTarget(htmlOut, path, valuesFrom);
 
     const plan = computePlan(valuesFrom ? recordFromValues(readValues(valuesFrom)) : await loadRecord(path!));
     if (htmlOut) {

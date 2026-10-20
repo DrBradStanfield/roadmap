@@ -505,6 +505,29 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
     expect(result.stdout).toMatch(/LDL Cholesterol\s+124 mg\/dL/);
   });
 
+  it('never lets --html overwrite an input, whatever the argument order (Codex R1)', async () => {
+    const { dir: recDir, path: rec } = writeFixture(createEmptyFile(CTX));
+    const values = spec([]);
+    const before = [readFileSync(rec), readFileSync(values)];
+    for (const argv of [
+      [rec, '--from-values', values, '--html', rec],
+      ['--from-values', values, '--html', values],
+      [rec, '--html', rec],
+    ]) {
+      const result = await captureRun(argv);
+      expect(result.code).toBe(1);
+      expect(result.stderr).not.toContain('This is a bug');
+    }
+    expect([readFileSync(rec), readFileSync(values)]).toEqual(before);
+    rmSync(recDir, { recursive: true, force: true });
+  });
+
+  it('refuses a second positional argument instead of ignoring it', async () => {
+    const result = await captureRun([spec([]), 'extra.json']);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Unexpected argument extra.json');
+  });
+
   it('refuses a two-unit metric given without a unit, in one plain line', async () => {
     const result = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 3.2 }])]);
     expect(result.code).toBe(1);
