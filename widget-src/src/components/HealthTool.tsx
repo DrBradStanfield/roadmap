@@ -172,19 +172,6 @@ function unsavedProfile(p: ProposedProfileEdit, saved: Partial<HealthInputs>, un
  *  the lists the store holds (US-15 AC10). Never the form's: a failed save
  *  would leave a row the record lacks, and a re-read inside the debounce
  *  would put the old list back with nothing to undo it. */
-/** One save per key, 300 ms after its last change: rapid dropdown changes
- *  would otherwise race. A save scheduled before an erase never lands in the
- *  erased record (US-16 AC2a). */
-function debounceSave(timers: Map<string, ReturnType<typeof setTimeout>>, key: string, save: () => void): void {
-  const erase = getEraseIdentity();
-  const existing = timers.get(key);
-  if (existing) clearTimeout(existing);
-  timers.set(key, setTimeout(() => {
-    timers.delete(key);
-    if (getEraseIdentity() === erase) save();
-  }, 300));
-}
-
 async function mirrorSavedLists(): Promise<void> {
   const result = await loadLatestMeasurements();
   if (result) patchMirror({ medications: result.medications, screenings: result.screenings });
@@ -368,6 +355,20 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // still writing or failed to write, or a remote change the relay holds. The
   // screen's values are pre-erase then, so no banner is made or answered.
   const eraseUnshown = useCallback(() => getEraseIdentity() !== shownEraseRef.current, []);
+  // True while this tab's erase runs: the form takes no edit (US-16 AC2a).
+  const erasingRef = useRef(false);
+  // One save per key, 300 ms after its last change: rapid dropdown changes
+  // would otherwise race. A save scheduled before an erase, or firing while
+  // the screen is behind one, never lands in the erased record (US-16 AC2a).
+  const debounceSave = useCallback((timers: Map<string, ReturnType<typeof setTimeout>>, key: string, save: () => void) => {
+    const erase = getEraseIdentity();
+    const existing = timers.get(key);
+    if (existing) clearTimeout(existing);
+    timers.set(key, setTimeout(() => {
+      timers.delete(key);
+      if (getEraseIdentity() === erase && !eraseUnshown()) save();
+    }, 300));
+  }, [eraseUnshown]);
 
   // The RoadmapStore is authoritative. Never replay the retired v1 cache into it.
   useEffect(() => {
@@ -770,10 +771,14 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     if (!confirmed) return false;
 
     setIsDeleting(true);
+    erasingRef.current = true;
     const result = await deleteUserData();
+    erasingRef.current = false;
     setIsDeleting(false);
 
-    if (result.success) {
+    // An erase whose write failed still leaves the erased copy in the store,
+    // which retries it: the screen shows that copy too (US-16 AC2a).
+    if (result.success || eraseUnshown()) {
       clearLocalStorage();
       setInputs({});
       setPreviousMeasurements([]);
@@ -791,18 +796,21 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         timers.current.clear();
       }
       previousInputsRef.current = {};
+    }
+    if (result.success) {
       const done = result.chatErased ? ERASE_DONE : ERASE_DONE_CHAT_PENDING;
       window.alert(result.warning ? `${done}\n\n${result.warning}` : done);
     } else {
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }
     return result.success;
-  }, []);
+  }, [eraseUnshown]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
   // field, so several made at once all land (US-16 AC1).
   const handleInputChange = useCallback(<K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => {
+    if (erasingRef.current) return;
     if (unit) typedIn.current[field] = { value, unit };
     // The user's own sex or height outranks a chat proposal for it (US-16 AC2).
     if (field === 'sex' || field === 'heightCm') setProfileProposal(null);
@@ -823,6 +831,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     doseValue: number | null,
     doseUnit: string | null,
   ) => {
+    if (erasingRef.current) return;
     // Update local state immediately
     setMedications(prev => {
       const idx = prev.findIndex(m => m.medicationKey === medicationKey);
@@ -839,9 +848,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
     debounceSave(medSaveTimers.current, medicationKey,
       () => void saveMedication(medicationKey, drugName, doseValue, doseUnit).then(mirrorSavedLists));
-  }, []);
+  }, [debounceSave]);
 
   const handleScreeningChange = useCallback((screeningKey: string, value: string) => {
+    if (erasingRef.current) return;
     setScreenings(prev => {
       const idx = prev.findIndex(s => s.screeningKey === screeningKey);
       const updated: ApiScreening = {
@@ -855,7 +865,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
     debounceSave(screeningSaveTimers.current, screeningKey,
       () => void saveScreening(screeningKey, value).then(mirrorSavedLists));
-  }, []);
+  }, [debounceSave]);
 
   const supSaveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   useEffect(() => () => { for (const t of supSaveTimers.current.values()) clearTimeout(t); }, []);
@@ -868,6 +878,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     status: string = 'active',
     startedAt?: string,
   ) => {
+    if (erasingRef.current) return;
     setSupplements(prev => {
       const idx = prev.findIndex(s => s.supplementKey === supplementKey);
       const updated: ApiSupplement = {
@@ -885,9 +896,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
     debounceSave(supSaveTimers.current, supplementKey,
       () => void saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt));
-  }, []);
+  }, [debounceSave]);
 
   const handleSupplementDelete = useCallback((supplementKey: string) => {
+    if (erasingRef.current) return;
     setSupplements(prev => prev.filter(s => s.supplementKey !== supplementKey));
     deleteSupplementApi(supplementKey);
   }, []);
@@ -945,12 +957,14 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     // escalation first. Flat mode too: the chat changes the drug on purpose,
     // and the answer was about the old one (US-06 AC12). An answer the same
     // reply states wins, whatever its order in the reply.
+    // An answer the form holds but has not saved yet was about the old drug
+    // too: it is reset as well, and only the saved one is Undo's to restore.
     const escalationKey = (ESCALATION_KEY_OF as Partial<Record<string, string>>)[edit.medicationKey];
-    const answer = escalationKey && !stated.has(escalationKey) && saved.find(m => m.medicationKey === escalationKey);
-    if (answer && answer.drugName !== 'not_yet'
+    if (escalationKey && !stated.has(escalationKey)
       && (edit.drugName !== undo[0].drugName || edit.doseValue !== undo[0].doseValue)) {
-      undo.unshift({ key: answer.medicationKey, drugName: answer.drugName, doseValue: answer.doseValue, doseUnit: answer.doseUnit });
-      handleMedicationChange(answer.medicationKey, 'not_yet', null, null);
+      const answer = saved.find(m => m.medicationKey === escalationKey && m.drugName !== 'not_yet');
+      if (answer) undo.unshift({ key: answer.medicationKey, drugName: answer.drugName, doseValue: answer.doseValue, doseUnit: answer.doseUnit });
+      if (answer || medSaveTimers.current.has(escalationKey)) handleMedicationChange(escalationKey, 'not_yet', null, null);
     }
     handleMedicationChange(edit.medicationKey, edit.drugName, edit.doseValue, edit.doseUnit);
     return undo;
@@ -969,8 +983,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   };
 
   const handleProposeEdit = useCallback((edits: ProposedEdit[]) => {
-    // No banner while the screen is behind an erase (US-16 AC2a).
-    const unshown = eraseUnshown();
+    // While the store holds an erase the screen does not show, the reply comes
+    // from the conversation the erase tombstones: none of it applies (US-16 AC2a).
+    if (eraseUnshown()) return;
     let hasFieldEdit = false;
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
     // Undo restores every medication row the reply changed, the last edit
@@ -985,12 +1000,12 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         default: break;
       }
     }
-    if (undo.length > 0 && !unshown) setMedUndo(undo);
+    if (undo.length > 0) setMedUndo(undo);
     // A reply's profile proposal replaces any pending one; within the reply, a
     // later stated field wins. A field already saved with the same value (as
     // the user sees it) needs no Save.
     const profiles = edits.filter((e): e is ProposedProfileEdit => e.kind === 'profile');
-    if (profiles.length > 0 && !unshown) {
+    if (profiles.length > 0) {
       const profile = profiles.reduce((a, e) => ({ kind: 'profile', sex: e.sex ?? a.sex, heightCm: e.heightCm ?? a.heightCm }));
       const pending = unsavedProfile(profile, inputsRef.current, unitSystem);
       setProfileProposal(pending);
