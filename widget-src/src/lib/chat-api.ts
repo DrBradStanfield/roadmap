@@ -385,6 +385,13 @@ export async function sendMessage(
     // Persist guest session token if returned
     if (data?.sessionToken) setGuestSessionToken(data.sessionToken);
 
+    // A guest is its token plus its IP, so a new IP is a new guest who does
+    // not own the stored thread (US-15 AC6a). The server refused before any
+    // work, so the message goes once into a new conversation.
+    if (response.status === 404 && conversationId && data?.error === 'Conversation not found') {
+      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits);
+    }
+
     if (response.status === 429) {
       return {
         result: null,

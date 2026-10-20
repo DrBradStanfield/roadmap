@@ -183,6 +183,8 @@ async function refreshSubscriptionIfStale(
   return plan;
 }
 
+const conversationNotFound = () => Response.json({ success: false, error: 'Conversation not found' }, { status: 404 });
+
 async function checkConversationParent(auth: AuthResult, conversationId: string): Promise<Response | null> {
   const { data: parent, error } = await auth.client
     .from('chat_conversations')
@@ -194,10 +196,9 @@ async function checkConversationParent(auth: AuthResult, conversationId: string)
     reportChatError('Chat: Failed to check conversation');
     return Response.json({ success: false, error: 'Failed to check conversation' }, { status: 500 });
   }
-  return parent ? null : Response.json({ success: false, error: 'Conversation not found' }, { status: 404 });
+  return parent ? null : conversationNotFound();
 }
 
-// ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // GET — list conversations or load conversation messages
 // ---------------------------------------------------------------------------
@@ -210,14 +211,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return Response.json({ success: false, error: 'Invalid conversationId' }, { status: 400 });
     }
 
-    // Guest without a session token — return empty default (don't create a session just to list conversations).
-    // A named transcript is not a list. It still needs a principal and a parent check.
+    // Guest without a session token — return empty default (don't create a session just to list conversations)
     const sessionToken = url.searchParams.get('sessionToken');
-    if (!conversationId && !getCustomerId(request) && !sessionToken) {
+    if (!getCustomerId(request) && !sessionToken) {
       // A GET naming a customer meets the framework check first, so an
       // unsigned one gets its 400; a duplicated id that passes it is still a
       // guest (US-09 AC24). A bare GET skips it (US-15 AC9).
       if (url.searchParams.getAll('logged_in_customer_id').some((v) => v !== '')) await authenticate.public.appProxy(request);
+      // No token, no customer: no principal owns any thread (US-15 AC6a).
+      if (conversationId) return conversationNotFound();
       return Response.json({
         success: true,
         conversations: [],

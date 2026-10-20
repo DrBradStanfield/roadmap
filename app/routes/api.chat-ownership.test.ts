@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   auth: vi.fn(),
   audit: vi.fn(),
+  guestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
   buildConversationMessages: vi.fn(() => []),
   classify: vi.fn(async (..._args: unknown[]) => ({ routerSkipped: true, classification: 'SKIP', latencyMs: 0 })),
   complete: vi.fn(),
@@ -28,7 +29,7 @@ vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn(
 vi.mock('../lib/supabase.server', () => ({
   logAudit: mocks.audit, getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
   createUserClient: vi.fn(() => ({ from: mocks.from })),
-  getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
+  getOrCreateGuestSession: mocks.guestSession,
   GuestRateLimitError: class extends Error {},
 }));
 // MAX_MESSAGE_LENGTH is the real one, so the length tests below pin the route
@@ -66,7 +67,7 @@ beforeEach(() => {
   principal = owner; dbError = false; reads = []; writes = []; messages = []; queries = [];
   parents = [{ id: owner, user_id: owner }, { id: guest, user_id: guest }, { id: foreign, user_id: foreign }];
   mocks.classify.mockClear(); mocks.complete.mockClear();
-  mocks.audit.mockClear();
+  mocks.audit.mockClear(); mocks.guestSession.mockClear();
   mocks.auth.mockImplementation(async () => principal === guest ? null : ({ client: { from: mocks.from }, userId: principal, customerId: '123', admin: null }));
   mocks.from.mockImplementation((table: string) => {
     const filters: Array<[string, unknown]> = [];
@@ -216,12 +217,15 @@ describe('stored parent ownership', () => {
     expect((await res.json()).conversations.map((c: { id: string }) => c.id)).toEqual([userId]);
     expect(queries).toEqual([{ table: 'chat_conversations', operation: 'select', filters: [] }]);
   });
-  it('checks the guest parent for a transcript GET even without a session token', async () => {
+  // US-15 AC6a: with no token and no customer nothing can own the id, so the
+  // route answers 404 without minting a guest session to find that out.
+  it('answers a sessionless guest transcript GET with 404 and creates no guest session', async () => {
     principal = guest;
     const res = await loader({ request: new Request(`https://example.invalid/api/chat?conversationId=${foreign}`), params: {} } as Parameters<typeof loader>[0]);
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ success: false, error: 'Conversation not found' });
-    expectScopedParent(foreign); expect(reads).toEqual(['chat_conversations']);
+    expect(mocks.guestSession).not.toHaveBeenCalled();
+    expect(queries).toEqual([]);
   });
   it('keeps the sessionless list GET empty without database access', async () => {
     const res = await loader({ request: new Request('https://example.invalid/api/chat'), params: {} } as Parameters<typeof loader>[0]);

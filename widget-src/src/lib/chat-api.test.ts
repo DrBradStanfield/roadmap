@@ -135,3 +135,62 @@ describe('chat-api transient upstream retry (US-15 AC3)', () => {
     expect(Sentry.captureMessage).toHaveBeenCalledWith('Chat listConversations failed', expect.anything());
   });
 });
+
+// US-15 AC6a: a guest's identity is its session token plus its IP, so a new IP
+// is a new guest who does not own the stored thread, and every send in it
+// answers 404. The client starts a fresh conversation and sends the message
+// there once, so it is neither lost nor sent twice.
+describe('chat-api: a thread the server no longer recognizes (US-15 AC6a)', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+  const bodyOf = (call: number) => JSON.parse(fetchMock.mock.calls[call][1].body);
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('US-15 AC6a: a 404 for the stored thread resends the message once, in a new conversation', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonError(404, 'Conversation not found'))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true, conversationId: 'c2', messageId: 'm2', content: 'hi', sessionToken: 'new-tok', isGuest: true }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      }));
+
+    const { result, error } = await sendMessage('my message', 'c1', null);
+
+    expect(error).toBeNull();
+    expect(result?.conversationId).toBe('c2');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(bodyOf(0)).toMatchObject({ message: 'my message', conversationId: 'c1' });
+    expect(bodyOf(1).message).toBe('my message');
+    expect(bodyOf(1)).not.toHaveProperty('conversationId');
+    expect(result?.sessionToken).toBe('new-tok');
+  });
+
+  it('US-15 AC6a: a 404 on a message that named no thread is an error, not a resend', async () => {
+    fetchMock.mockResolvedValueOnce(jsonError(404, 'Conversation not found'));
+
+    const { result, error } = await sendMessage('my message', null, null);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result).toBeNull();
+    expect(error?.error).toBe('Conversation not found');
+  });
+
+  it('US-15 AC6a: a 404 in the new conversation too surfaces the error after two requests', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonError(404, 'Conversation not found'))
+      .mockResolvedValueOnce(jsonError(404, 'Conversation not found'));
+
+    const { result, error } = await sendMessage('my message', 'c1', null);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result).toBeNull();
+    expect(error?.error).toBe('Conversation not found');
+  });
+});

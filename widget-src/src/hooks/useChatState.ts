@@ -302,7 +302,10 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         createdAt: new Date().toISOString(),
         ...(result.isFallback ? { isFallback: true } : {}),
       };
-      const finalMessages = [...optimisticMessages, assistantMsg];
+      // chat-api moved the message to a new thread when the server no longer
+      // recognized this one (US-15 AC6a): show that thread, not the old turns.
+      const restarted = currentConvId !== null && result.conversationId !== currentConvId;
+      const finalMessages = [...(restarted ? [optimisticMsg] : optimisticMessages), assistantMsg];
       setMessages(finalMessages);
       if ((approach.thinking || approach.sources.length > 0) && !result.isFallback) {
         setApproachById(prev => ({ ...prev, [assistantMsg.id]: approach }));
@@ -321,7 +324,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
       let finalConversations = currentConvs;
       let finalConvId = currentConvId;
-      if (!currentConvId) {
+      if (!currentConvId || restarted) {
         finalConvId = result.conversationId;
         setActiveConversationId(finalConvId);
         finalConversations = [{
