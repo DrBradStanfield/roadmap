@@ -6,10 +6,29 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["vitamin d", "vitamin d3", "cholecalciferol", "ergocalciferol", "calcifediol", "calcium", "bone density", "osteoporosis", "osteomalacia", "rickets", "immune", "sun", "sunscreen", "uv", "spf", "cardiovascular", "heart attack", "stroke", "blood pressure", "hypertension", "cholesterol", "ldl", "hdl", "triglycerides", "diabetes", "insulin resistance", "blood sugar", "hba1c", "obesity", "weight loss", "depression", "cognitive", "brain health", "dementia", "alzheimer", "inflammation", "cancer", "breast cancer", "colon cancer", "prostate cancer", "lung cancer", "statin", "magnesium", "boron", "sleep", "insomnia", "migraine", "aging", "longevity", "muscle", "sarcopenia", "exercise", "skin", "psoriasis", "asthma"]
-summary: "Reference on vitamin D: benefits (bone health, immune function, mood), common deficiency symptoms (fatigue, bone pain, low immunity), forms (D3 preferred over D2), optimal dosing and blood levels, and safety ceiling. Covers dark-skin, elderly, and northern-latitude populations at risk. Always discuss with your doctor."
+summary: "Brad: most adults gain little from extra vitamin D; follow the RDA (600 IU, 800 IU from 70); 4,000 IU a day or more lowered bone density. Supplements suit people low in D and four guideline groups. After a heart attack, TARGET-D hinted at more strokes. Talk to your doctor before exceeding the RDA."
+reviewed: "2026-10-20"
+sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/vitamin-d-supplements-review/vitamin-d/","checked":"2026-09-29","fingerprint":"sha256:5ae7d76b7ea7c30da383fc8b8c17fda462fe4babb3cd5e1040aa62f3252eb782"},{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:8d28b5a67b819377ca98cf982411052799fac605214c0a39b8f14e5ec1005de8"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/this-vitamin-d-study-forced-me-to-change-my-view","checked":"2026-10-20","fingerprint":"publishedAt:2025-12-03T16:41:41Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-16T20:05:51Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-supplements-that-actually-work","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-05T20:31:48Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30T20:38:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/do-this-daily-to-stop-bone-loss-after-40","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-03T02:07:16Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/when-dosed-correctly-vitamin-d-cuts-sick-days-by-17","checked":"2026-10-20","fingerprint":"publishedAt:2025-06-14T00:01:42Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d","checked":"2026-10-20","fingerprint":"publishedAt:2025-04-18T22:00:59Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/vitamin-k2-d3-together","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-25T20:42:35Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/calcium-rich-foods-diet","checked":"2026-10-20","fingerprint":"publishedAt:2024-10-14T21:25:53Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/vitamin-d3-k2-benefits-differences","checked":"2026-10-20","fingerprint":"publishedAt:2024-06-20T20:21:11Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/vitamin-d-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/vitamin-d-benefits-forms-dosing-and-side-effects)*
+
+## Current view (reviewed 20 October 2026)
+
+Brad's view is that most adults gain little from vitamin D supplements: in the VITAL trial, 2,000 IU a day for a median of 5.3 years in 25,871 adults did not significantly reduce cancer or major cardiovascular events ([Brad, 3 Dec 2025](https://drstanfield.com/blogs/articles/this-vitamin-d-study-forced-me-to-change-my-view)). He reads the trials as showing that people who are low in vitamin D benefit from supplementing while people with adequate levels do not, which suggests most people already have adequate levels ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)). For most adults he follows the 2024 Endocrine Society guideline: the recommended daily intake of 600 IU for younger adults, rising to 800 IU at 70 and above, with supplementation singled out for children up to 18, pregnant women, people with prediabetes and people over 75 ([Brad, 16 Oct 2025](https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging)). He takes 1,000 IU of vitamin D3 himself, and says that does not mean you need to ([Brad, 16 Oct 2025](https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging)). More is not better: in a 3-year Canadian trial, 4,000 and 10,000 IU a day made wrist bone density worse, falling by about 2.4% and 3.5% ([Brad, 16 Oct 2025](https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging)). He does not order vitamin D tests for otherwise healthy people, but since the TARGET-D trial (52% fewer repeat heart attacks with treat-to-target dosing, in an unblinded trial whose main outcome was not significant) he offers testing after a heart attack as an option, not a must, though the stroke and heart-failure results leaned the wrong way ([Brad, 3 Dec 2025](https://drstanfield.com/blogs/articles/this-vitamin-d-study-forced-me-to-change-my-view)).
+
+## Brad's videos on this topic
+
+- 3 Dec 2025, [This Vitamin D Study Forced Me to Change My View](https://drstanfield.com/blogs/articles/this-vitamin-d-study-forced-me-to-change-my-view): TARGET-D found fewer repeat heart attacks with treat-to-target dosing after a heart attack, but it was unblinded and missed its main outcome; Brad now offers testing to these patients as an option.
+- 16 Oct 2025, [New Vitamin D Study on Telomeres and Aging](https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging): the 140 base-pair telomere difference in VITAL is within measurement error and did not show up as fewer heart attacks or cancers; follow the recommended daily intake and skip routine testing.
+- 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drstanfield.com/blogs/articles/5-supplements-that-actually-work): vitamin D at guideline doses in a multivitamin; high doses lowered bone density. Superseded on the age for 800 IU (50 here, 70 in the 16 Oct 2025 post).
+- 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes](https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes): Brad takes 1,000 IU in his multivitamin because high doses lowered wrist bone density and muscle strength and raised falls.
+- 3 Jul 2025, [Do This Daily to STOP Bone Loss After 40](https://drstanfield.com/blogs/articles/do-this-daily-to-stop-bone-loss-after-40): exercise is the main tool against bone loss; Brad takes D3 with K2 and magnesium to support bone.
+- 14 Jun 2025, [When Dosed Correctly, Vitamin D Cuts Sick Days by 17%](https://drstanfield.com/blogs/articles/when-dosed-correctly-vitamin-d-cuts-sick-days-by-17): daily vitamin D over winter cut sick days by 17% and fever days by 43% in Danish children; typical healthy adults need 600 to 800 IU. Superseded on the age for 800 IU (50 here, 70 in the 16 Oct 2025 post).
+- 18 Apr 2025, [This Study Proved We Were WRONG About Vitamin D](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d): the 2024 Endocrine Society guideline dropped target levels and routine testing and kept supplements for four groups. Superseded on the age for 800 IU (50 here, 70 in the 16 Oct 2025 post).
+- 25 Nov 2024, [Should You Take Vitamin K2 and Vitamin D3 Together?](https://drstanfield.com/blogs/articles/vitamin-k2-d3-together): mainly about K2; vitamins D and K work together, and the dose question goes to the Endocrine Society guideline.
+- 14 Oct 2024, [How to Include More Calcium-Rich Foods in Your Diet](https://drstanfield.com/blogs/articles/calcium-rich-foods-diet): the body needs vitamin D to absorb calcium; the RDA (600 IU, 800 IU over 70) assumes little sun.
+- 20 Jun 2024, [Vitamin D3 and K2: The Benefits, Differences, and Usage](https://drstanfield.com/blogs/articles/vitamin-d3-k2-benefits-differences): benefits beyond deficiency are mixed; Brad then took 1,000 to 2,000 IU. Superseded on dose (1,000 IU since the 2024 guideline, 18 Apr 2025 post).
 
 ## 1. Overview
 
@@ -21,7 +40,7 @@ In foods and supplements, vitamin D exists in two main forms: D2 (ergocalciferol
 
 ### Prevalence of Deficiency
 
-Vitamin D deficiency is widespread. According to NHANES 2011-2014 data, 5% of the US population is at risk of deficiency (25(OH)D below 30 nmol/L or 12 ng/mL), and an additional 18% is at risk of inadequacy (30-49 nmol/L or 12-19.6 ng/mL) [1]. Most people in the United States consume less than recommended amounts: 92% of men, more than 97% of women, and 94% of people aged 1 year and older ingest less than the Estimated Average Requirement (400 IU) of vitamin D from food and beverages alone [1]. Sun exposure partially compensates, which is why serum levels are generally higher than dietary intake alone would predict.
+Brad's view is that the evidence does not support the idea that a large part of the population is low in vitamin D ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)). According to NHANES 2011-2014 data, 5% of the US population is at risk of deficiency (25(OH)D below 30 nmol/L or 12 ng/mL), and an additional 18% is at risk of inadequacy (30-49 nmol/L or 12-19.6 ng/mL) [1]. Most people in the United States consume less than recommended amounts: 92% of men, more than 97% of women, and 94% of people aged 1 year and older ingest less than the Estimated Average Requirement (400 IU) of vitamin D from food and beverages alone [1]. Sun exposure partially compensates, which is why serum levels are generally higher than dietary intake alone would predict.
 
 Rates of deficiency vary significantly by race and ethnicity: 17.5% of non-Hispanic Black Americans are at risk of deficiency, compared to 7.6% of non-Hispanic Asians, 5.9% of Hispanics, and 2.1% of non-Hispanic White people [1].
 
@@ -88,7 +107,7 @@ Vitamin D regulates calcium and phosphorus absorption, maintains serum mineral c
 
 **Bone mineral density in sufficient adults:** Among 687 adults (mean age 63) with sufficient vitamin D (mean 27 ng/mL), 2,000 IU/day D3 for 2 years did not improve bone mineral density or bone structure despite raising levels to 39 ng/mL (LeBoff, J Bone Miner Res 2020) [4]. In postmenopausal women with levels near 20 ng/mL, doses from 400 to 4,800 IU/day were not associated with significant bone mineral density effects compared to placebo (Smith, J Intern Med 2018) [4].
 
-**High-dose harm to bone:** In adults with osteoporosis, 4,000 IU and 10,000 IU daily for 3 years reduced bone mineral density in the lower leg compared to 400 IU/day, with 10,000 IU also reducing forearm BMD. The loss was greater in women than men (Burt, JAMA 2019; Burt, J Bone Miner Res 2020) [4].
+**High-dose harm to bone:** In a Canadian trial, 4,000 IU and 10,000 IU daily for 3 years reduced bone mineral density in the lower leg compared to 400 IU/day, with 10,000 IU also reducing forearm BMD. The loss was greater in women than men (Burt, JAMA 2019; Burt, J Bone Miner Res 2020) [4]. In Brad's account the participants were healthy adults, and wrist bone density fell by about 2.4% at 4,000 IU and 3.5% at 10,000 IU, compared with 1.2% at 400 IU ([Brad, 14 Jun 2025](https://drstanfield.com/blogs/articles/when-dosed-correctly-vitamin-d-cuts-sick-days-by-17)).
 
 **Fracture healing:** Vitamin D deficiency may impede fracture healing. A case report described a 44-year-old man with severe deficiency (4 ng/mL) whose thighbone fracture failed to heal for 4 years despite multiple surgeries; after vitamin D correction (reaching 24 ng/mL), the fracture healed within 8 months (Moone, Nutrition 2021) [4]. However, giving vitamin D alone without adequate calcium did not improve wrist fracture healing in deficient postmenopausal women (Heyer, J Bone Miner Res 2021) [4].
 
@@ -116,7 +135,7 @@ Vitamin D regulates calcium and phosphorus absorption, maintains serum mineral c
 
 **Incidence:** Clinical trials consistently show vitamin D supplementation does not reduce overall cancer incidence in people with adequate vitamin D levels. The VITAL trial (25,871 participants, 2,000 IU/day, median 5.3 years) found no reduction in breast, prostate, or colorectal cancer rates. However, normal-weight participants had greater reductions in cancer incidence than those with overweight or obesity (Manson, NEJM 2018) [1][4].
 
-**Mortality:** Three meta-analyses of clinical trials found vitamin D supplementation significantly reduces total cancer mortality by 12-13%, with most benefit from daily dosing rather than bolus doses [1]. The VITAL trial, excluding the first 2 years, showed a 25% lower rate of cancer death with vitamin D (Manson, NEJM 2018) [4]. A secondary analysis found advanced (metastatic or fatal) cancer was reduced by 17% overall and by 38% in those with normal BMI (Chandler, JAMA Netw Open 2020) [4]. A European trial of 2,157 adults aged 70+ found 2,000 IU/day D3 reduced invasive cancer risk by 24%, which increased to 61% when combined with omega-3s and home strength training (Bischoff-Ferrari, Front Nutr 2022) [4].
+**Mortality:** Three meta-analyses of clinical trials found vitamin D supplementation significantly reduces total cancer mortality by 12-13%, with most benefit from daily dosing rather than bolus doses [1]. The VITAL trial, excluding the first 2 years, showed a 25% lower rate of cancer death with vitamin D (Manson, NEJM 2018) [4]. A secondary analysis found advanced (metastatic or fatal) cancer was reduced by 17% overall and by 38% in those with normal BMI (Chandler, JAMA Netw Open 2020) [4]. In VITAL's main analysis, the reduction in cancer deaths did not reach statistical significance ([Brad, 16 Oct 2025](https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging)). A European trial of 2,157 adults aged 70+ found 2,000 IU/day D3 reduced invasive cancer risk by 24%, which increased to 61% when combined with omega-3s and home strength training (Bischoff-Ferrari, Front Nutr 2022) [4].
 
 **WHI long-term follow-up:** 400 IU D3 plus 1,000 mg calcium daily did not affect cancer incidence during the 7-year trial, but reduced cancer mortality by 7% over a 22.3-year median follow-up (WHI, 2024) [1].
 
@@ -128,11 +147,11 @@ Vitamin D regulates calcium and phosphorus absorption, maintains serum mineral c
 
 **Pancreatic cancer:** Levels of 20-29 ng/mL were associated with 25% lower risk, and above 30 ng/mL with 29% lower risk compared to below 20 ng/mL, in a review of 5 large studies (Wolpin, Cancer Epidemiol Biomarkers Prev 2011) [4]. However, the NIH notes an investigation that found increased pancreatic cancer risk at levels at or above 40 ng/mL [1].
 
-**Overall mortality from all causes:** A study of over 300,000 UK adults found mortality risk decreased as vitamin D levels rose to 24 ng/mL and then leveled off (Fan, J Clin Endocrinol Metab 2020) [4]. A meta-analysis found D3 supplementation reduced overall mortality by 11%, while D2 had no effect (Chowdhury, BMJ 2014) [4]. A Danish population study found 20-24 ng/mL was associated with the lowest mortality risk, with levels of 56 ng/mL conferring 42% higher mortality (Durup, J Clin Endocrinol Metab 2012) [4].
+**Overall mortality from all causes:** A study of over 300,000 UK adults found mortality risk decreased as vitamin D levels rose to 24 ng/mL and then leveled off (Fan, J Clin Endocrinol Metab 2020) [4]. A meta-analysis found D3 supplementation reduced overall mortality by 11%, while D2 had no effect (Chowdhury, BMJ 2014) [4]. A 2020 meta-analysis covering 21 trials and more than 83,000 participants found no mortality benefit ([Brad, 14 Jun 2025](https://drstanfield.com/blogs/articles/when-dosed-correctly-vitamin-d-cuts-sick-days-by-17)). A Danish population study found 20-24 ng/mL was associated with the lowest mortality risk, with levels of 56 ng/mL conferring 42% higher mortality (Durup, J Clin Endocrinol Metab 2012) [4].
 
 **Cancer treatment adjunct:** Among 339 people with advanced solid tumors in Italy with low vitamin D (mean 13 ng/mL), supplementing during checkpoint inhibitor therapy reduced death risk by 33% and treatment discontinuation by 28% (Bersanelli, Cancer Immunol Immunother 2023) [4]. In people with digestive tract cancers positive for p53 gene mutations, 2,000 IU/day for 5 years reduced relapse or death to 30.6% versus 80.9% for placebo (Kanno, JAMA Open 2023) [4]. In 150 palliative care cancer patients with low vitamin D, 4,000 IU/day for 12 weeks slowed the rate of fentanyl dose increase and reduced fatigue (Frankling, Cancers 2021) [4].
 
-**Synthesis:** Vitamin D supplementation does not appear to reduce cancer incidence in vitamin D-sufficient populations but does reduce cancer mortality by approximately 12-25%, particularly with daily dosing and in normal-weight individuals. Maintaining levels of 20-35 ng/mL appears optimal. Higher levels (above 40 ng/mL) do not appear to provide additional benefit and may increase certain risks.
+**Synthesis:** Vitamin D supplementation does not appear to reduce cancer incidence in vitamin D-sufficient populations but may reduce cancer mortality by approximately 12-25%, particularly with daily dosing and in normal-weight individuals. Older observational analyses suggested levels of 20-35 ng/mL; the 2024 guideline found no proven target and does not recommend routine testing [1]. Higher levels (above 40 ng/mL) do not appear to provide additional benefit and may increase certain risks.
 
 ### Cardiovascular Disease
 
@@ -148,7 +167,9 @@ Vitamin D regulates calcium and phosphorus absorption, maintains serum mineral c
 
 **Arterial stiffness:** In overweight African-Americans with vitamin D deficiency (mean ~15 ng/mL), high doses (60,000 or 120,000 IU monthly, raising levels to ~35 ng/mL) improved arterial stiffness by 8-10%, but a lower dose (18,000 IU/month, raising levels to 23 ng/mL) did not (Raed, PLOSOne 2017) [4].
 
-**Synthesis:** Despite strong observational associations between low vitamin D and cardiovascular risk, clinical trials do not support supplementation for CVD prevention, even in deficient populations. The exception is a potential synergistic benefit with statin therapy, where maintaining sufficient vitamin D levels may improve lipid profiles.
+**TARGET-D trial:** In people with acute coronary artery blockages (mostly heart attacks), raising vitamin D levels to over 40 ng/mL for an average of 4.2 years (requiring 5,000 IU per day in about half the patients) did not reduce mortality, but there were about half as many heart attacks, 78% more strokes and a slight increase in heart failure hospitalizations; only the heart attack reduction was statistically significant (May, AHA25 2025) [4]. The trial was not blinded, and its main combined outcome of death, heart attack, heart failure hospitalization or stroke did not differ significantly between groups ([Brad, 3 Dec 2025](https://drstanfield.com/blogs/articles/this-vitamin-d-study-forced-me-to-change-my-view)).
+
+**Synthesis:** Despite strong observational associations between low vitamin D and cardiovascular risk, clinical trials do not support supplementation for CVD prevention, even in deficient populations. The exception is a potential synergistic benefit with statin therapy, where maintaining sufficient vitamin D levels may improve lipid profiles. Brad reads TARGET-D as a hint of heart benefit from treat-to-target dosing in some groups that needs better-designed follow-up studies ([Brad, 3 Dec 2025](https://drstanfield.com/blogs/articles/this-vitamin-d-study-forced-me-to-change-my-view)).
 
 ### Diabetes and Insulin Resistance
 
@@ -178,6 +199,8 @@ Vitamin D regulates calcium and phosphorus absorption, maintains serum mineral c
 
 **High-dose risk:** A large Australian study found that monthly 60,000 IU D3 for 5 years in adults with adequate vitamin D increased antidepressant use by 10% compared to placebo (Rahman, Int J Geriatr Psychiatry 2022) [4].
 
+Brad notes a meta-analysis in which supplements improved symptoms in people with clinical signs of depression, but not mood in people without clinically significant symptoms ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)).
+
 **Synthesis:** Despite plausible mechanisms and epidemiological associations, vitamin D supplementation does not prevent or treat depression in most populations. The sole exception may be in people with comorbid diabetes and vitamin D deficiency.
 
 ### Cognitive Function and Dementia
@@ -194,7 +217,7 @@ Vitamin D regulates calcium and phosphorus absorption, maintains serum mineral c
 
 ### Respiratory Infections and COVID-19
 
-**Respiratory infections:** A meta-analysis of 25 studies found vitamin D supplementation protects against acute respiratory tract infection primarily in people very deficient (below 10 ng/mL), reducing risk by 42% overall and by 70% with daily or weekly dosing (Martineau, BMJ 2017) [4]. Large monthly doses (60,000-100,000 IU) did not reduce infections (Murdoch, JAMA 2012; Pham, Lancet Diabetes Endocrinol 2021) [4]. A study in Indian adults found 2,000 IU/day for 6 months modestly reduced acute respiratory episodes, even among those with adequate baseline levels (Gundapuneni, Int J Med Pharma Res 2025) [4]. A study in Danish children (mean baseline level 32 ng/mL) found 800 IU/day for 24 weeks during winter resulted in 17% fewer sick days and 43% fewer days of respiratory infections with fever (Clerico, Eur J Nutr 2025) [4].
+**Respiratory infections:** A meta-analysis of 25 studies found vitamin D supplementation protects against acute respiratory tract infection primarily in people very deficient (below 10 ng/mL), reducing risk by 42% overall and by 70% with daily or weekly dosing (Martineau, BMJ 2017) [4]. Large monthly doses (60,000-100,000 IU) did not reduce infections (Murdoch, JAMA 2012; Pham, Lancet Diabetes Endocrinol 2021) [4]. A study in Indian adults found 2,000 IU/day for 6 months modestly reduced acute respiratory episodes, even among those with adequate baseline levels (Gundapuneni, Int J Med Pharma Res 2025) [4]. A study in Danish children (mean baseline level 32 ng/mL) found 800 IU/day for 24 weeks during winter resulted in 17% fewer sick days and 43% fewer days of respiratory infections with fever (Clerico, Eur J Nutr 2025) [4]. Brad's account of the same trial gives the dose as 25 µg (1,000 IU) daily for six months ([Brad, 14 Jun 2025](https://drstanfield.com/blogs/articles/when-dosed-correctly-vitamin-d-cuts-sick-days-by-17)).
 
 **COVID-19 prevention:** A Mexican study of 302 unvaccinated healthcare workers (64% deficient) found 4,000 IU/day D3 for 30 days reduced COVID-19 infection risk by 77% (Villasis-Keever, Arch Med Res 2022) [4].
 
@@ -295,21 +318,29 @@ While signs of toxicity are unlikely below 10,000 IU/day, the FNB noted that eve
 
 ### Practical Dosing by Indication
 
-**General supplementation (to maintain levels of 20-30 ng/mL):** 600-1,000 IU D3 daily, taken with the largest meal of the day [1][4].
+Brad follows the 2024 Endocrine Society guideline. It recommends routine vitamin D supplementation for four groups (children and teens age 1 to 18 years, pregnant women, adults with pre-diabetes, and adults age 75 years and older), but not for healthy adults age 19 to 74. It does not recommend specific doses but notes that all individuals should adhere to the RDA [1][6].
 
-**Correcting deficiency (below 20 ng/mL):** 1,000-2,000 IU D3 daily for 6-8 weeks, then reassess. Obese individuals may require 2,000-4,000 IU/day [4].
+**Healthy adults (19 to 74):** Follow the recommended daily intake: 600 IU for younger adults, increasing to 800 IU at 70 and above ([Brad, 16 Oct 2025](https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging)). Taking vitamin D with the largest meal of the day may improve absorption [4].
 
-**Older adults (75+):** 800-1,000 IU D3 daily is recommended by the Endocrine Society. Taking with calcium (800-1,200 mg/day from food and supplements combined) improves bone outcomes [1][6].
+**No routine testing, no target level:** The guideline acknowledges we don't know what optimal levels of vitamin D are, so it abandoned its earlier thresholds for insufficiency and deficiency and advises against routine screening ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)). A test makes sense when risk factors point toward checking ([Brad, 16 Oct 2025](https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging)). Brad does not order vitamin D tests for otherwise healthy patients; since the TARGET-D trial he offers testing after a heart attack as an option, not a must (see Cardiovascular Disease) ([Brad, 3 Dec 2025](https://drstanfield.com/blogs/articles/this-vitamin-d-study-forced-me-to-change-my-view)).
+
+**Children and teens (1 to 18 years):** Empiric vitamin D helps prevent nutritional rickets and may lower respiratory-infection risk ([Brad, 14 Jun 2025](https://drstanfield.com/blogs/articles/when-dosed-correctly-vitamin-d-cuts-sick-days-by-17)). In Brad's summary of the guideline, kids up to 18 should get about 1,500 IU daily ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)).
+
+**Pregnancy:** Supplementation during pregnancy can lower the risk of preeclampsia and preterm birth; in Brad's summary of the guideline, the benefits came with doses around 3,000 IU daily ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)). Talk to your doctor before taking more than the RDA in pregnancy.
+
+**Prediabetes:** For people at high risk of progressing to diabetes, vitamin D could play a preventive role; studies suggest an average dose of about 3,500 IU daily ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)).
+
+**Older adults (75+):** The Endocrine Society recommends routine supplementation at this age but no specific dose, beyond following the RDA of 800 IU over age 70 [1]. Taking with calcium (800-1,200 mg/day from food and supplements combined) improves bone outcomes [1][6].
+
+**People at high risk of deficiency:** If someone is older, housebound, or clearly at high risk of deficiency, Brad recommends a moderate daily dose rather than a blood test first ([Brad, 3 Dec 2025](https://drstanfield.com/blogs/articles/this-vitamin-d-study-forced-me-to-change-my-view)). Where a doctor has diagnosed a deficiency, the doctor sets the dose.
 
 **Breastfed infants:** 400 IU D3 daily starting shortly after birth, per the American Academy of Pediatrics [1].
 
-**Pregnancy:** 600-1,000 IU D3 daily. Higher doses (up to 4,000 IU/day) may be indicated in deficient women but should be discussed with a healthcare provider [4].
-
-**Statin users:** Statin users may require 21% higher doses to achieve the same level increase (Bischoff-Ferrari, JAGS 2017) [4]. Maintaining adequate vitamin D appears to improve statin efficacy for cholesterol reduction.
+**Statin users:** Statin users had a 21.4% smaller rise in vitamin D levels than non-users (Bischoff-Ferrari, JAGS 2017) [4].
 
 **Avoid bolus dosing:** Large infrequent doses (monthly or annual) are consistently less effective and may be harmful. Studies show 60,000 IU/month or 500,000 IU/year increased falls, fractures, and potentially cancer-related deaths compared to daily dosing [4]. Daily or weekly dosing is preferred.
 
-Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes 1,000 IU of Vitamin D3 (cholecalciferol) — a daily dose that aligns with maintaining adequate 25(OH)D levels for most adults, combined with Vitamin K2 MK-7 (90 mcg) and Boron (1 mg) for synergistic bone health support.
+Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes 1,000 IU of Vitamin D3 (cholecalciferol), down from 2,000 IU since the 2024 guideline ([Brad, 14 Jun 2025](https://drstanfield.com/blogs/articles/when-dosed-correctly-vitamin-d-cuts-sick-days-by-17)), combined with Vitamin K2 MK-7 (90 mcg) and Boron (1 mg) for synergistic bone health support.
 
 ### How to Read a Supplement Label
 
@@ -317,7 +348,7 @@ Vitamin D is measured in International Units (IU) or micrograms (mcg). The conve
 
 ### Target Blood Levels
 
-Based on the totality of evidence across multiple health outcomes, maintaining 25(OH)D levels of **20-30 ng/mL** appears optimal. Levels below 20 ng/mL increase risk across many conditions. Levels above 30 ng/mL have not consistently shown additional benefit and levels above 40-50 ng/mL are associated with potential adverse effects including increased falls, fractures, cardiovascular events, and mortality [1][4].
+There is no target level to dose toward: the 2024 Endocrine Society guideline has not identified 25(OH)D concentrations associated with sufficiency and does not recommend routine testing in healthy people [1] ([Brad, 16 Oct 2025](https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging)). Older observational analyses, across multiple health outcomes, suggested 25(OH)D levels of **20-30 ng/mL**. Levels below 20 ng/mL increase risk across many conditions. Levels above 30 ng/mL have not consistently shown additional benefit and levels above 40-50 ng/mL are associated with potential adverse effects including increased falls, fractures, cardiovascular events, and mortality [1][4].
 
 ## 5. Safety and Side Effects
 
@@ -381,7 +412,7 @@ The combination of high calcium intake (~2,100 mg/day) with moderate vitamin D (
 | Drug Class | Effect on Vitamin D | Notes |
 |---|---|---|
 | Orlistat (weight loss) | Reduces vitamin D absorption from food and supplements | Supplement vitamin D and separate from orlistat doses [1] |
-| Statins | Complex bidirectional effects. Rosuvastatin may increase levels by ~23 ng/mL; atorvastatin may modestly decrease levels. All statins may reduce endogenous vitamin D synthesis | Statin users may need ~21% more vitamin D to achieve the same serum increase. Separate high-dose vitamin D from atorvastatin, lovastatin, and simvastatin as they compete for the same metabolizing enzyme (CYP3A4) [1][4] |
+| Statins | Complex bidirectional effects. Rosuvastatin may increase levels by ~23 ng/mL; atorvastatin may modestly decrease levels. All statins may reduce endogenous vitamin D synthesis | Statin users had a 21.4% smaller rise in vitamin D levels than non-users. Separate high-dose vitamin D from atorvastatin, lovastatin, and simvastatin as they compete for the same metabolizing enzyme (CYP3A4) [1][4] |
 | Corticosteroids (prednisone) | Reduce calcium absorption and impair vitamin D metabolism. Deficiency was more than twice as common in oral steroid users (11%) vs. nonusers (5%) | Consider higher vitamin D doses and monitoring [1][4] |
 | Proton pump inhibitors (PPIs) | Long-term use associated with lower vitamin D levels. In one study, 100% of pantoprazole users were deficient vs. 25% of non-users (Losurdo, J Clin Med 2023) | Monitor vitamin D in chronic PPI users [4] |
 | Anticonvulsants | Phenobarbital, phenytoin increase vitamin D catabolism | May require higher supplement doses [1] |
@@ -450,13 +481,13 @@ Exercise can temporarily raise vitamin D levels. Moderate-intensity exercise (jo
 
 [6] Demay MB, Pittas AG, Bikle DD, et al. "Vitamin D for the Prevention of Disease: An Endocrine Society Clinical Practice Guideline." *J Clin Endocrinol Metab*. 2024;109(8):1907-1947. [https://pubmed.ncbi.nlm.nih.gov/38828931/](https://pubmed.ncbi.nlm.nih.gov/38828931/)
 
-[7] Shah VP, Nayfeh T, Alsawaf Y, et al. "A Systematic Review Supporting the Endocrine Society Clinical Practice Guidelines on Vitamin D." *J Clin Endocrinol Metab*. 2024;109(8):1961-1974. [https://pubmed.ncbi.nlm.nih.gov/38828886/](https://pubmed.ncbi.nlm.nih.gov/38828886/)
+[7] Shah VP, Nayfeh T, Alsawaf Y, et al. "A Systematic Review Supporting the Endocrine Society Clinical Practice Guidelines on Vitamin D." *J Clin Endocrinol Metab*. 2024;109(8):1961-1974. [https://pubmed.ncbi.nlm.nih.gov/38828942/](https://pubmed.ncbi.nlm.nih.gov/38828942/)
 
 [8] Munns CF, Shaw N, Kiely M, et al. "Global consensus recommendations on prevention and management of nutritional rickets." *J Clin Endocrinol Metab*. 2016;101:394-415. [https://pubmed.ncbi.nlm.nih.gov/26745253/](https://pubmed.ncbi.nlm.nih.gov/26745253/)
 
 [9] Tripkovic L, Lambert H, Hart K, et al. "Comparison of vitamin D2 and vitamin D3 supplementation in raising serum 25-hydroxyvitamin D status: A systematic review and meta-analysis." *Am J Clin Nutr*. 2012;95:1357-64. [https://pubmed.ncbi.nlm.nih.gov/22552031/](https://pubmed.ncbi.nlm.nih.gov/22552031/)
 
-[10] Graeff-Armas LA, Bendik I, Kunz I, et al. "Supplemental 25-hydroxycholecalciferol is more effective than cholecalciferol in raising serum 25-hydroxyvitamin D concentrations in older adults." *J Nutr*. 2020;150:73-81. [https://pubmed.ncbi.nlm.nih.gov/31504686/](https://pubmed.ncbi.nlm.nih.gov/31504686/)
+[10] Graeff-Armas LA, Bendik I, Kunz I, et al. "Supplemental 25-hydroxycholecalciferol is more effective than cholecalciferol in raising serum 25-hydroxyvitamin D concentrations in older adults." *J Nutr*. 2020;150(1):73-81. [https://pubmed.ncbi.nlm.nih.gov/31518424/](https://pubmed.ncbi.nlm.nih.gov/31518424/)
 
 [11] U.S. Department of Agriculture, Agricultural Research Service. FoodData Central. [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
 
@@ -488,7 +519,7 @@ Exercise can temporarily raise vitamin D levels. Moderate-intensity exercise (jo
 
 [25] Hahn J, Cook NR, Alexander EK, et al. "Vitamin D and marine omega 3 fatty acid supplementation and incident autoimmune disease: VITAL randomized controlled trial." *BMJ*. 2022;376:e066452. [https://doi.org/10.1136/bmj-2021-066452](https://doi.org/10.1136/bmj-2021-066452)
 
-[26] Jeong SH, Kim JS, Shin JW, et al. "Decreased serum vitamin D in idiopathic benign paroxysmal positional vertigo." *Neurology*. 2020;95(9):e1110-e1121. [https://doi.org/10.1212/WNL.0000000000010122](https://doi.org/10.1212/WNL.0000000000010122)
+[26] Jeong SH, Kim JS, Shin JW, et al. "Decreased serum vitamin D in idiopathic benign paroxysmal positional vertigo." *J Neurol*. 2013;260(3):832-838. [https://pubmed.ncbi.nlm.nih.gov/23096068/](https://pubmed.ncbi.nlm.nih.gov/23096068/)
 
 [27] Smith LM, Gallagher JC, Suiter C. "Medium doses of daily vitamin D decrease falls and higher doses increase falls." *J Steroid Biochem Mol Biol*. 2017;173:317-322. [https://pubmed.ncbi.nlm.nih.gov/28323044/](https://pubmed.ncbi.nlm.nih.gov/28323044/)
 
@@ -496,7 +527,7 @@ Exercise can temporarily raise vitamin D levels. Moderate-intensity exercise (jo
 
 [29] Burt LA, Billington EO, Rose MS, et al. "Effect of high-dose vitamin D supplementation on volumetric bone density and bone strength." *JAMA*. 2019;322(8):736-745. [https://pubmed.ncbi.nlm.nih.gov/31454046/](https://pubmed.ncbi.nlm.nih.gov/31454046/)
 
-[30] Durup D, Jorgensen HL, Christensen J, et al. "A reverse J-shaped association between serum 25-hydroxyvitamin D and cardiovascular disease mortality." *J Clin Endocrinol Metab*. 2012;97(8):2644-2652. [https://pubmed.ncbi.nlm.nih.gov/22573406/](https://pubmed.ncbi.nlm.nih.gov/22573406/)
+[30] Durup D, Jorgensen HL, Christensen J, et al. "A reverse J-shaped association of all-cause mortality with serum 25-hydroxyvitamin D in general practice: the CopD study." *J Clin Endocrinol Metab*. 2012;97(8):2644-2652. [https://pubmed.ncbi.nlm.nih.gov/22573406/](https://pubmed.ncbi.nlm.nih.gov/22573406/)
 
 [31] Fan X, Wang J, Song M, et al. "Vitamin D status and risk of all-cause and cause-specific mortality in a large cohort." *J Clin Endocrinol Metab*. 2020;105(10):e3606-e3620.
 
@@ -506,12 +537,12 @@ Exercise can temporarily raise vitamin D levels. Moderate-intensity exercise (jo
 
 [34] McCullough ML, Zoltick ES, Weinstein SJ, et al. "Circulating vitamin D and colorectal cancer risk." *J Natl Cancer Inst*. 2018.
 
-[35] Kristal AR, Till C, Song X, et al. "Plasma vitamin D and prostate cancer risk." *Cancer Epidemiol Biomarkers Prev*. 2014;23(8):1494-504. [https://pubmed.ncbi.nlm.nih.gov/24732039/](https://pubmed.ncbi.nlm.nih.gov/24732039/)
+[35] Kristal AR, Till C, Song X, et al. "Plasma vitamin D and prostate cancer risk: results from the Selenium and Vitamin E Cancer Prevention Trial." *Cancer Epidemiol Biomarkers Prev*. 2014;23(8):1494-504. [https://pubmed.ncbi.nlm.nih.gov/24732629/](https://pubmed.ncbi.nlm.nih.gov/24732629/)
 
 [36] Neale RE, Baxter C, Romero BD, et al. "The D-Health Trial: a randomized trial of the effect of vitamin D on mortality." *Lancet Diabetes Endocrinol*. 2022;10(2):120-128.
 
 [37] Zittermann A, Ernst JB, Prokop S, et al. "Effect of vitamin D on all-cause mortality in heart failure (EVITA)." *Eur Heart J*. 2017;38:2279-86.
 
-[38] National Heart, Lung, and Blood Institute PETAL Clinical Trials Network. "Early high-dose vitamin D3 for critically ill, vitamin D-deficient patients." *N Engl J Med*. 2019;381:2529-40.
+[38] National Heart, Lung, and Blood Institute PETAL Clinical Trials Network. "Early high-dose vitamin D3 for critically ill, vitamin D-deficient patients." *N Engl J Med*. 2019;381(26):2529-2540. [https://pubmed.ncbi.nlm.nih.gov/31826336/](https://pubmed.ncbi.nlm.nih.gov/31826336/)
 
 [39] Dai Q, Zhu X, Manson JE, et al. "Magnesium status and supplementation influence vitamin D status and metabolism." *Am J Clin Nutr*. 2018;108(6):1249-1258. [https://pubmed.ncbi.nlm.nih.gov/30541089/](https://pubmed.ncbi.nlm.nih.gov/30541089/)

@@ -1101,7 +1101,8 @@
     "summary": "Dr Brad's NMN and NR post: gut bacteria break both down into cheap nicotinic acid before NAD is rebuilt, making premium NAD supplements no better than basic niacin. Covers meta-analyses showing no muscle, metabolic, or cognitive benefit; exercise as the evidence-based approach to NAD.",
     "topics": [
       "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
-    ]
+    ],
+    "router": "hidden"
   },
   {
     "title": "The Anti-Aging Supplement Scam (New Evidence)",
@@ -2032,7 +2033,8 @@
     "summary": "Dr Brad's vitamin D post: TARGET-D trial found 52% fewer recurrent heart attacks with treat-to-target dosing post-MI, but was unblinded. Brad now offers vitamin D testing as option to post-MI patients. Covers cardiovascular risk and deficiency.",
     "topics": [
       "vitamin-d-benefits-forms-dosing-and-side-effects"
-    ]
+    ],
+    "router": "hidden"
   },
   {
     "title": "Blood Pressure Targets Just Changed",
@@ -2901,7 +2903,8 @@
     "summary": "“Dr Brad’s low-dose lithium post: cautiously interested but not yet recommending supplements. Lithium orotate may prevent Alzheimer’s plaque buildup; lithium carbonate likely ineffective. Covers dementia, cognitive decline, brain aging in adults.”",
     "topics": [
       "lithium-benefits-forms-dosing-and-side-effects"
-    ]
+    ],
+    "router": "hidden"
   },
   {
     "title": "An Evidence-Based Anti-Aging Skincare Routine",
@@ -3566,7 +3569,8 @@
     "publishedAt": "2025-06-17T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/lithium-orotate-forms-dosing-safety",
     "type": "reference",
-    "summary": "Reference on low-dose lithium: mood, depression, dementia, neuroprotection. OTC forms: lithium orotate, aspartate (typically 5mg elemental lithium/day). Distinct from prescription lithium for bipolar disorder. Always discuss with your doctor."
+    "summary": "Reference on low-dose lithium. Brad: caution until better evidence. Not an established nutrient; mostly mouse and water studies; trials small, mostly high-dose; no completed randomised orotate trial. Talk to your doctor first, especially if pregnant or taking diuretics or anti-inflammatories.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "When Dosed Correctly, Vitamin D Cuts Sick Days by 17%",
@@ -3594,7 +3598,8 @@
     "summary": "Dr Brad’s vitamin D post: 1,000 IU/day cut sick days 17% and fever-days 43% in children during winter when baseline levels were adequate. Covers immune function, 2024 Endocrine Society dose guidelines (600-800 IU adults), risks of high-dose supplementation, and MicroVitamin D reduction rationale.",
     "topics": [
       "vitamin-d-benefits-forms-dosing-and-side-effects"
-    ]
+    ],
+    "router": "hidden"
   },
   {
     "title": "The Food Pyramid's Replacement is a HUGE Upgrade",
@@ -4394,7 +4399,7 @@
     "publishedAt": "2025-05-13T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/taurine-supplement-guide-evidence-dosing-forms",
     "type": "reference",
-    "summary": "Reference on taurine. Brad takes it for metabolic benefits: a 2025 meta-analysis of 34 trials found lower blood sugar, blood pressure and blood fats. Levels do not fall with age. 1-3 g/day appears safe. Talk to your doctor first if you take blood-pressure medicines or have a blood cancer.",
+    "summary": "Reference on taurine. Brad takes it for metabolic benefits: a 2025 meta-analysis of 34 trials found lower blood sugar, blood pressure and blood fats. Levels do not fall with age. 1-3 g/day appears safe. Talk to your doctor first if you take blood-pressure medicines.",
     "reviewed": "2026-10-20"
   },
   {
@@ -5660,7 +5665,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/resveratrol-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on resveratrol: heart health, blood pressure, blood sugar, and memory. Mixed human evidence — animal benefits rarely translate. Trans-resveratrol preferred; 150–500 mg/day; higher doses may raise LDL. Always discuss with your doctor."
+    "summary": "Reference on resveratrol. Brad says it is not a good strategy: no good evidence it extends life, no effect on mouse lifespan in the Interventions Testing Program, and it reduced exercise benefits in a trial. Avoid in pregnancy; talk to your doctor first if you take blood thinners.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Selenium: Benefits, Best Forms, Dosing, and Side Effects",
@@ -6284,7 +6290,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/nad-boosters-nmn-nr-nadh-evidence-guide",
     "type": "reference",
-    "summary": "Reference on NAD boosters (NMN, NR, NADH): energy, fatigue, muscle, cognitive function. Adults with chronic fatigue, insulin resistance, or age-related decline. NMN 250-900mg/day, NR 250-1000mg/day, NADH 5-20mg; human trial results largely disappointing. Cancer and kidney concerns noted. Always discuss with your doctor."
+    "summary": "Dr Brad's view on NAD boosters (NMN, NR, NADH): NMN and NR raise blood NAD+ but trials show no benefit you would notice, and gut bacteria turn both into cheap vitamin B3. He recommends exercise instead. Talk to your doctor first, especially if you have cancer or kidney disease or are pregnant.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Olive Leaf Extract: Benefits, Forms, Dosing, and Side Effects",
@@ -7037,7 +7044,8 @@
     "summary": "Dr Brad’s vitamin D post: most adults don’t benefit from high-dose supplements; Endocrine Society now recommends 600-800 IU daily for general population. Covers deficiency, bone density, cancer, depression, falls risk, pregnancy, prediabetes, and adults over 75.",
     "topics": [
       "vitamin-d-benefits-forms-dosing-and-side-effects"
-    ]
+    ],
+    "router": "hidden"
   },
   {
     "title": "Lean Mass Hyper-Responders See Rapid Plaque Progression",
@@ -7456,7 +7464,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d3-supplement-guide-dosing-forms-benefits-safety",
     "type": "reference",
-    "summary": "Reference on vitamin D: benefits (bone health, immune function, mood), common deficiency symptoms (fatigue, bone pain, low immunity), forms (D3 preferred over D2), optimal dosing and blood levels, and safety ceiling. Covers dark-skin, elderly, and northern-latitude populations at risk. Always discuss with your doctor."
+    "summary": "Brad: most adults gain little from extra vitamin D; follow the RDA (600 IU, 800 IU from 70); 4,000 IU a day or more lowered bone density. Supplements suit people low in D and four guideline groups. After a heart attack, TARGET-D hinted at more strokes. Talk to your doctor before exceeding the RDA.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Magnesium: Benefits, Best Forms, Dosing, and Side Effects",
@@ -8970,7 +8979,8 @@
     "summary": "Dr Brad's review of 12+ human NMN studies: what NAD+ boosting does, what NMN human trials actually show (energy, metabolism, muscle), Brad's 4 key takeaways, and his current recommendation on NMN supplementation. Covers: NMN, NAD+, aging, longevity. Always discuss with your doctor.",
     "topics": [
       "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
-    ]
+    ],
+    "router": "hidden"
   },
   {
     "title": "Why Avoiding Cancer is Now Easier Than Ever",

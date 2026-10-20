@@ -180,7 +180,7 @@ The evidence for BCAA supplementation for muscle building is mixed and depends h
 
 **Resistance training in older women:** 9 g BCAAs 3x/week (split pre- and post-exercise) for 8 weeks did NOT improve muscle strength in 30 sedentary postmenopausal women beyond placebo, though both groups improved from baseline (Bagheri, *Exp Gerontol* 2021) [64].
 
-**Fatigue:** A study found a negligible effect of BCAAs on fatigue in older adults performing resistance training, while the placebo group actually showed a larger decrease in fatigue (Robbins, *Dietetics* 2025) [65].
+**Fatigue:** In a study of older adults performing resistance training, ConsumerLab reads the registered primary outcome as a negligible effect of BCAAs on fatigue, while the placebo group actually showed a larger decrease in fatigue, and calls the abstract highly misleading [6]. The study's authors report that fatigue fell with BCAAs and rose with placebo (Robbins, *Dietetics* 2025) [65].
 
 ### Other Muscle-Enhancing Supplements
 
@@ -350,7 +350,7 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 
 [7] Eghbali E, et al. "Supplementing With Which Form of Creatine (Hydrochloride or Monohydrate) Alongside Resistance Training Can Have More Impacts on Anabolic/Catabolic Hormones, Strength and Body Composition?" *Physiol Res*. 2024;73(5):739-753. doi: [10.33549/physiolres.935323](https://doi.org/10.33549/physiolres.935323) PMID: 39545789. https://pubmed.ncbi.nlm.nih.gov/39545789/
 
-[8] Londono-Velasquez V, et al. "Comparison of creatine monohydrate and hydrochloride in elite athletes." *J Int Soc Sports Nutr*. 2025.
+[8] Londoño-Velásquez D, et al. "Creatine monohydrate versus creatine hydrochloride on strength and body composition in elite team-sport athletes: A placebo-controlled randomized clinical trial comparing low dosages." *J Int Soc Sports Nutr*. 2025;22(sup1):2533658. doi: [10.1080/15502783.2025.2533658](https://doi.org/10.1080/15502783.2025.2533658)
 
 [9] Williamson L, New D. "How the use of creatine supplements can elevate serum creatinine in the absence of underlying kidney pathology." *BMJ Case Rep*. 2014;2014. doi: [10.1136/bcr-2014-204754](https://doi.org/10.1136/bcr-2014-204754) PMID: 25239988. https://pubmed.ncbi.nlm.nih.gov/25239988/
 
@@ -364,9 +364,9 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 
 [14] Trexler ET, Smith-Ryan AE. "Creatine and Caffeine: Considerations for Concurrent Supplementation." *Int J Sport Nutr Exerc Metab*. 2015;25(6):607-623. doi: [10.1123/ijsnem.2014-0193](https://doi.org/10.1123/ijsnem.2014-0193) PMID: 26219105. https://pubmed.ncbi.nlm.nih.gov/26219105/
 
-[15] GRAS Notice No. 931; Howard AN. USOO5968544A. 1999. Stability of creatine in solution.
+[15] GRAS Notice No. 931 (see [5]); Howard AN, Harris RC. "Compositions containing creatine." US Patent US5968544A. 1999. [https://patents.google.com/patent/US5968544A/en](https://patents.google.com/patent/US5968544A/en)
 
-[16] Saiki T, et al. "Stability of creatine monohydrate powder." *Food Res Int*. 2025; Jager R, et al. *Amino Acids*. 2011.
+[16] Saiki PY, et al. "Multi-analytical characterization of creatine degradation for dietary supplement safety assessment." *Food Res Int*. 2025;221(Pt 3):117472. doi: [10.1016/j.foodres.2025.117472](https://doi.org/10.1016/j.foodres.2025.117472) PMID: 41214971. https://pubmed.ncbi.nlm.nih.gov/41214971/; Jäger R, et al. "Analysis of the efficacy, safety, and regulatory status of novel forms of creatine." *Amino Acids*. 2011;40(5):1369-1383. doi: [10.1007/s00726-011-0874-6](https://doi.org/10.1007/s00726-011-0874-6) PMID: 21424716. https://pubmed.ncbi.nlm.nih.gov/21424716/
 
 [17] Burke DG, et al. "Effect of creatine and weight training on muscle creatine and performance in vegetarians." *Med Sci Sports Exerc*. 2003. PMID: 14600563. [https://pubmed.ncbi.nlm.nih.gov/14600563/](https://pubmed.ncbi.nlm.nih.gov/14600563/)
 
@@ -380,7 +380,7 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 
 [22] Candow DG, et al. "Effect of 12 months of creatine supplementation and whole-body resistance training on measures of bone, muscle and strength in older males." *Nutr Health*. 2021;27(2):151-159 (published online 2020). doi: [10.1177/0260106020975247](https://doi.org/10.1177/0260106020975247) PMID: 33234019. https://pubmed.ncbi.nlm.nih.gov/33234019/
 
-[23] Rusterholz M, et al. "Creatine supplementation combined with high-repetition resistance training in older adults." *Adv Exer Health Sci*. 2026.
+[23] Rusterholz F, Candow DG, et al. "Effects of different creatine monohydrate supplementation strategies and resistance-band training in untrained healthy adults (≥ 50 years of age)." *Adv Exer Health Sci*. 2026;3(1):57-68. doi: [10.1016/j.aehs.2026.01.001](https://doi.org/10.1016/j.aehs.2026.01.001)
 
 [24] Fairman CM, et al. "Creatine supplementation does not add to resistance training effects in prostate cancer patients under androgen deprivation therapy: A double-blind randomized trial." *J Sci Med Sport*. 2025;28(2):118-124 (published online 2024). doi: [10.1016/j.jsams.2024.09.002](https://doi.org/10.1016/j.jsams.2024.09.002) PMID: 39366880. https://pubmed.ncbi.nlm.nih.gov/39366880/
 
@@ -396,7 +396,7 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 
 [30] Chilibeck PD, et al. "Creatine monohydrate and resistance training increase bone mineral content and density in older men." *J Nutr Health Aging*. 2005;9(5):352-353. PMID: 16222402. https://pubmed.ncbi.nlm.nih.gov/16222402/
 
-[31] Candow DG, et al. "Effect of creatine supplementation combined with resistance training on bone biomarkers." *Med Sci Sports Exerc*. 2008;40(10):1754-1762.
+[31] Candow DG, et al. "Low-dose creatine combined with protein during resistance training in older men." *Med Sci Sports Exerc*. 2008;40(9):1645-1652. doi: [10.1249/MSS.0b013e318176b310](https://doi.org/10.1249/MSS.0b013e318176b310) PMID: 18685526. https://pubmed.ncbi.nlm.nih.gov/18685526/
 
 [32] Smith-Ryan AE, et al. "Creatine supplementation in women's health: a lifespan perspective." *Nutrients*. 2021. PMID: 33800439. [https://pubmed.ncbi.nlm.nih.gov/33800439/](https://pubmed.ncbi.nlm.nih.gov/33800439/)
 
@@ -430,7 +430,7 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 
 [47] Osama M, et al. "Additional Benefits of Creatine Supplementation with Physical Therapy and Resistance Exercise in Knee Osteoarthritis: A Randomized Controlled Trial." *J Clin Med*. 2025;14(23). doi: [10.3390/jcm14238538](https://doi.org/10.3390/jcm14238538) PMID: 41375841. https://pubmed.ncbi.nlm.nih.gov/41375841/
 
-[48] Cochrane review of nutritional interventions for McArdle disease. 2014.
+[48] Quinlivan R, Martinuzzi A, Schoser B. "Pharmacological and nutritional treatment for McArdle disease (Glycogen Storage Disease type V)." *Cochrane Database Syst Rev*. 2014;(11):CD003458. doi: [10.1002/14651858.CD003458.pub5](https://doi.org/10.1002/14651858.CD003458.pub5) PMID: 25391139. https://pubmed.ncbi.nlm.nih.gov/25391139/
 
 [49] Fuld JP, et al. "Creatine supplementation during pulmonary rehabilitation in chronic obstructive pulmonary disease." *Thorax*. 2005;60(7):531-537. doi: [10.1136/thx.2004.030452](https://doi.org/10.1136/thx.2004.030452) PMID: 15994258. https://pubmed.ncbi.nlm.nih.gov/15994258/
 
@@ -464,7 +464,7 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 
 [64] Bagheri R, et al. "BCAA supplementation and resistance training in postmenopausal women." *Exp Gerontol*. 2021. PMID: 33279662. https://pubmed.ncbi.nlm.nih.gov/33279662/
 
-[65] Robbins RE, et al. "BCAAs and fatigue in older adults during resistance training." *Dietetics*. 2025.
+[65] Robbins R, et al. "Branched-Chain Amino Acids Combined with Exercise Improves Physical Function and Quality of Life in Older Adults: Results from a Pilot Randomized Controlled Trial." *Dietetics (Basel)*. 2025;4(3):32. doi: [10.3390/dietetics4030032](https://doi.org/10.3390/dietetics4030032) PMID: 40860958. https://pubmed.ncbi.nlm.nih.gov/40860958/
 
 [66] Castell LM, et al. "Does glutamine have a role in reducing infections in athletes?" *Eur J Appl Physiol Occup Physiol*. 1996;73(5):488-490. doi: [10.1007/BF00334429](https://doi.org/10.1007/BF00334429) PMID: 8803512. https://pubmed.ncbi.nlm.nih.gov/8803512/
 
@@ -493,7 +493,7 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 
 [79] Lak M, et al. "Does creatine cause hair loss? A 12-week randomized controlled trial." *J Int Soc Sports Nutr*. 2025;22(sup1):2495229. doi: [10.1080/15502783.2025.2495229](https://doi.org/10.1080/15502783.2025.2495229) PMID: 40265319. https://pubmed.ncbi.nlm.nih.gov/40265319/
 
-[80] Janvresse A, et al. "Creatine supplementation and sleep quality." *Master of Science Thesis*. 2023; Toniolo RA, et al. *J Neural Transm (Vienna)*. 2018; Lyoo IK, et al. *Am J Psychiatry*. 2012.
+[80] Janvresse A, et al. "Creatine supplementation and sleep quality." *Master of Science Thesis*. 2023; Toniolo RA, et al. *J Neural Transm (Vienna)*. 2018;125(2):247-257. PMID: 29177955. https://pubmed.ncbi.nlm.nih.gov/29177955/; Lyoo IK, et al. *Am J Psychiatry*. 2012;169(9):937-945. PMID: 22864465. https://pubmed.ncbi.nlm.nih.gov/22864465/
 
 [81] Kammer RT. "Lone atrial fibrillation associated with creatine monohydrate supplementation." *Pharmacotherapy*. 2005;25(5):762-764. doi: [10.1592/phco.25.5.762.63580](https://doi.org/10.1592/phco.25.5.762.63580) PMID: 15899738. https://pubmed.ncbi.nlm.nih.gov/15899738/
 

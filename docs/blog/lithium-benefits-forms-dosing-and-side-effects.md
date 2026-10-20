@@ -6,10 +6,20 @@ publishedAt: "2025-06-17T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["lithium", "lithium orotate", "lithium aspartate", "lithium carbonate", "lithium citrate", "cognitive", "brain health", "mood", "dementia", "alzheimer", "depression", "anxiety", "longevity", "neuroprotection", "suicide", "bipolar", "aging", "anti-aging", "inflammation", "GSK-3"]
-summary: "Reference on low-dose lithium: mood, depression, dementia, neuroprotection. OTC forms: lithium orotate, aspartate (typically 5mg elemental lithium/day). Distinct from prescription lithium for bipolar disorder. Always discuss with your doctor."
+summary: "Reference on low-dose lithium. Brad: caution until better evidence. Not an established nutrient; mostly mouse and water studies; trials small, mostly high-dose; no completed randomised orotate trial. Talk to your doctor first, especially if pregnant or taking diuretics or anti-inflammatories."
+reviewed: "2026-10-20"
+sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/lithium-low-dose-supplements/lithium/","checked":"2026-09-29","fingerprint":"sha256:e0e6d307c853f46829cde15abbfc43c979867adaad53f0491ca42c4bc7f85ecf"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/low-dose-lithium-crushes-dementia","checked":"2026-10-20","fingerprint":"publishedAt:2025-09-09T00:29:58Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/lithium-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/lithium-benefits-forms-dosing-and-side-effects)*
+
+## Current view (reviewed 20 October 2026)
+
+Brad says better clinical evidence is needed before making strong recommendations about low-dose lithium supplements, and for now caution is warranted ([Brad, 9 Sep 2025](https://drstanfield.com/blogs/articles/low-dose-lithium-crushes-dementia)). Lithium is not an established nutrient: there is no recommended daily intake for it anywhere and no recognised deficiency, and the interest in low-dose lithium comes mainly from animal studies and from population studies of lithium in drinking water, which can't show cause and effect (Brad's current guidance, 9 Oct 2026). A study in *Nature* found much lower lithium in the brains of people with mild cognitive impairment or Alzheimer's disease, and in mice lithium orotate almost completely blocked plaque and tau build-up while lithium carbonate had no significant effect, but the work relied heavily on mouse models ([Brad, 9 Sep 2025](https://drstanfield.com/blogs/articles/low-dose-lithium-crushes-dementia)). The human trials so far have been small, most used prescription lithium at doses far higher than a supplement contains, all the dementia and memory trials enrolled people who already had memory problems, and lithium orotate itself has not yet been tested in a completed randomised human trial (Brad's current guidance, 9 Oct 2026). The best dose for protecting the brain is not known, and too much lithium can have serious side effects; low doses are likely safer, but risks still exist ([Brad, 9 Sep 2025](https://drstanfield.com/blogs/articles/low-dose-lithium-crushes-dementia)). People who live where drinking water is rich in lithium, or who eat a lot of high-lithium foods, may already get enough ([Brad, 9 Sep 2025](https://drstanfield.com/blogs/articles/low-dose-lithium-crushes-dementia)).
+
+## Brad's videos on this topic
+
+- 9 Sep 2025, [Low-Dose Lithium CRUSHES Dementia & Brain Aging?](https://drstanfield.com/blogs/articles/low-dose-lithium-crushes-dementia): a *Nature* study links low brain lithium to Alzheimer's disease, and in mice lithium orotate blocked plaque build-up where lithium carbonate did not; Brad wants better clinical evidence before recommending a supplement. Superseded on the human trials: his October 2026 guidance stresses that they are small, mostly used high-dose prescription lithium, and have not yet tested lithium orotate.
 
 ## 1. Overview
 
@@ -91,7 +101,7 @@ A small placebo-controlled study gave 24 former drug users 400 micrograms of lit
 
 #### Alcoholism and Addiction
 
-A 1986 report by Sartori described 42 alcoholic patients who took 150 mg/day of lithium orotate during rehabilitation. They were the 42 of 105 starters who stayed on treatment for at least six months, drawn from one private practice's records. Ten had no relapse for over three and up to 10 years, 13 had none for 1 to 3 years, and 12 relapsed within 6 to 12 months. Side effects were minor: eight patients had muscle weakness, loss of appetite or mild apathy [15].
+A 1986 report by Sartori described 42 alcoholic patients who took 150 mg/day of lithium orotate during rehabilitation. They were the 42 of 105 starters who stayed on treatment for at least six months, drawn from one private practice's records. Ten had no relapse for over three and up to 10 years, 13 had none for 1 to 3 years, and 12 relapsed within 6 to 12 months. Side effects were minor: eight patients had muscle weakness, loss of appetite or mild apathy [15]. It was a case series with no control group, not a randomised trial [15].
 
 ### Cognitive Impairment, Alzheimer's Disease, and Dementia
 
@@ -105,7 +115,7 @@ Low-dose lithium has shown mixed evidence of benefit for treating Alzheimer's di
 
 In a subset of the trial's participants, lithium significantly raised blood levels of brain-derived neurotrophic factor (BDNF) and improved scores on a cognitive impairment scale compared with placebo (Leyhe et al., *J Alzheimers Dis*, 2009) [18]. ConsumerLab reads this differently: it says the BDNF rise was not linked with cognitive improvement [1].
 
-**Preclinical data:** A recent study in mice suggests a possible role for a commonly available form of lithium in treating Alzheimer's disease, although more research is needed [1]. The orotate form, particularly at low dose, may offer benefits in Alzheimer's disease, although research is at a very early stage [1].
+**Preclinical data:** A recent study in mice suggests a possible role for a commonly available form of lithium in treating Alzheimer's disease, although more research is needed [1]. The orotate form, particularly at low dose, may offer benefits in Alzheimer's disease, although research is at a very early stage [1]. Brad's video on the mouse study adds that the same research found much lower lithium in the brains of people with mild cognitive impairment or Alzheimer's disease, and that in mice lithium orotate almost completely blocked plaque and tau build-up while lithium carbonate had no significant effect; the findings rest mainly on mouse models [28].
 
 **Epidemiological evidence:** The Danish drinking-water study described above found an 18% lower dementia risk in areas with higher water lithium [1].
 
@@ -297,7 +307,7 @@ In the US, supplement labels are required to state the amount of elemental lithi
 
 [1] ConsumerLab. "Low-Dose Lithium Supplements Review." Updated July 15, 2026; accessed September 2026. [https://www.consumerlab.com/reviews/lithium-low-dose-supplements/lithium/](https://www.consumerlab.com/reviews/lithium-low-dose-supplements/lithium/)
 
-[2] Lithium Prescribing Information. 2018. U.S. Food and Drug Administration.
+[2] Lithium Prescribing Information. 2018. U.S. Food and Drug Administration. [https://www.accessdata.fda.gov/drugsatfda_docs/label/2018/017812s033,018421s032,018558s027lbl.pdf](https://www.accessdata.fda.gov/drugsatfda_docs/label/2018/017812s033,018421s032,018558s027lbl.pdf)
 
 [3] Gitlin M. "Lithium side effects and toxicity: prevalence and management strategies." *Int J Bipolar Disord*. 2016;4(1):27. doi: [10.1186/s40345-016-0068-y](https://doi.org/10.1186/s40345-016-0068-y) PMID: 27900734. https://pubmed.ncbi.nlm.nih.gov/27900734/
 
@@ -309,7 +319,7 @@ In the US, supplement labels are required to state the amount of elemental lithi
 
 [7] Guelen PJM, Janssen TJ, de Witte TC, et al. "Bioavailability of lithium from lithium citrate syrup versus conventional lithium carbonate tablets." *Biopharm Drug Dispos*. 1992;13(7):503-511. doi: [10.1002/bdd.2510130704](https://doi.org/10.1002/bdd.2510130704) PMID: 1489941. https://pubmed.ncbi.nlm.nih.gov/1489941/
 
-[8] Hanlon LW, Romaine M, Gilroy FJ, Deitrick JE. "Lithium chloride as a substitute for sodium chloride in the diet." *JAMA*. 1949;139(11):688-692. doi: [10.1001/jama.1949.02900280012004](https://doi.org/10.1001/jama.1949.02900280012004)
+[8] Hanlon LW, Romaine M 3rd, et al. "Lithium chloride as a substitute for sodium chloride in the diet; observations on its toxicity." *JAMA*. 1949;139(11):688-692. [https://pubmed.ncbi.nlm.nih.gov/18128981/](https://pubmed.ncbi.nlm.nih.gov/18128981/)
 
 [9] Schrauzer GN, Shrestha KP. "Lithium in drinking water and the incidences of crimes, suicides, and arrests related to drug addictions." *Biol Trace Elem Res*. 1990;25(2):105-113. doi: [10.1007/BF02990271](https://doi.org/10.1007/BF02990271) PMID: 1699579. https://pubmed.ncbi.nlm.nih.gov/1699579/
 
@@ -319,7 +329,7 @@ In the US, supplement labels are required to state the amount of elemental lithi
 
 [12] Kessing LV, Gerds TA, Knudsen NN, et al. "Association of Lithium in Drinking Water With the Incidence of Dementia." *JAMA Psychiatry*. 2017;74(10):1005-1010. doi: [10.1001/jamapsychiatry.2017.2362](https://doi.org/10.1001/jamapsychiatry.2017.2362) PMID: 28832877. https://pubmed.ncbi.nlm.nih.gov/28832877/
 
-[13] Greenblatt JM. "Low-Dose Lithium for Mental Health." *Townsend Letter*. 2015.
+[13] Greenblatt JM, Grossmann K. "Lithium: The Magic Mineral." *Townsend Letter*. January 2015. https://www.townsendletter.com/lithium-magic-mineral/
 
 [14] Schrauzer GN, de Vroey E. "Effects of nutritional lithium supplementation on mood." *Biol Trace Elem Res*. 1994;40(1):89-101. doi: [10.1007/BF02916824](https://doi.org/10.1007/BF02916824) PMID: 7511924. https://pubmed.ncbi.nlm.nih.gov/7511924/
 
@@ -345,6 +355,8 @@ In the US, supplement labels are required to state the amount of elemental lithi
 
 [25] Pauze DK, Brooks DE. "Lithium toxicity from an internet dietary supplement." *J Med Toxicol*. 2007;3(2):61-62.
 
-[26] US Geological Survey. "Lithium in Groundwater Used for Drinking-Water Supply in the United States." Scientific Investigations Report 2013/5170. [https://pubs.usgs.gov/sir/2013/5170/](https://pubs.usgs.gov/sir/2013/5170/)
+[26] Lindsey BD, Belitz K, Cravotta CA 3rd, et al. "Lithium in groundwater used for drinking-water supply in the United States." *Sci Total Environ*. 2021;767:144691. [https://pubmed.ncbi.nlm.nih.gov/33454610/](https://pubmed.ncbi.nlm.nih.gov/33454610/)
 
 [27] Lithium carbonate tablets and capsules, prescribing information (Hikma Pharmaceuticals USA Inc.). DailyMed, U.S. National Library of Medicine. Effective August 16, 2026; accessed October 8, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=b839ff4b-f62d-41ab-a823-550a756d58ec](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=b839ff4b-f62d-41ab-a823-550a756d58ec)
+
+[28] Stanfield B. "Low-Dose Lithium CRUSHES Dementia & Brain Aging?" 9 September 2025. [https://drstanfield.com/blogs/articles/low-dose-lithium-crushes-dementia](https://drstanfield.com/blogs/articles/low-dose-lithium-crushes-dementia)

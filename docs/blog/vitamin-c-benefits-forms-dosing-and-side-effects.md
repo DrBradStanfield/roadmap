@@ -87,8 +87,8 @@ Vitamin C supplements are available in several chemical forms. The key differenc
 | Sodium ascorbate | Non-acidic form; vitamin C combined with sodium. Sometimes marketed as "buffered vitamin C" when combined with ascorbic acid. | Similar to ascorbic acid [17][18] | Non-acidic; gentler on the stomach | Contains sodium — may be a concern for those restricting sodium intake [6]. |
 | Ascorbyl palmitate | Fat-soluble form; often found in softgel capsules. | Mixed evidence; may improve absorption slightly but not clearly demonstrated [6]. | Good | Useful for oil-based formulations. |
 | Liposomal vitamin C | Vitamin C encapsulated in a phospholipid (fat) layer, designed to enhance absorption through cell membranes. | One manufacturer-conducted study found a single 500 mg dose increased blood levels 21% more than non-liposomal vitamin C and 8% more in white blood cells [20]. However, an earlier study at 5 g found no advantage [21]. | Good | Significantly more expensive (~50 cents per 500 mg vs. a few cents for regular ascorbic acid). The modest absorption advantage does not justify the cost premium for most people [6]. |
-| Liposomal hydrogel vitamin C | Liposomal vitamin C encased in a hydrogel matrix (e.g., galactomannan from fenugreek seed). | One manufacturer-conducted study found blood levels nearly 7 times higher over 12 hours compared to unformulated vitamin C from a 1,000 mg tablet providing ~350 mg vitamin C [22]. | Good | Expensive (~33 cents per 500 mg). Study did not evaluate performance when taken with food. |
-| PureWay-C (ascorbic acid + fatty acids) | Vitamin C combined with lipid metabolites. | After 4 hours, absorption from a 1 g dose was similar to ascorbic acid and Ester-C [23]. | Good | No demonstrated absorption advantage over regular ascorbic acid. |
+| Liposomal hydrogel vitamin C | Liposomal vitamin C encased in a hydrogel matrix (e.g., galactomannan from fenugreek seed). | One manufacturer-conducted study found blood levels more than 7 times higher over 12 hours compared to unformulated vitamin C from a 1,000 mg tablet providing ~350 mg vitamin C [22]. | Good | Expensive (~33 cents per 500 mg). Study did not evaluate performance when taken with food. |
+| PureWay-C (ascorbic acid + fatty acids) | Vitamin C combined with lipid metabolites. | ConsumerLab reads the study as showing absorption from a 1 g dose similar to ascorbic acid and Ester-C after 4 hours [6]; the study itself reported the highest absolute serum vitamin C levels of the forms tested [23]. | Good | ConsumerLab sees no demonstrated absorption advantage over regular ascorbic acid [6]. |
 
 ### Key Principles for Form Selection
 
@@ -110,7 +110,7 @@ However, the evidence for topical vitamin C is limited:
 
 - Vitamin C cannot easily penetrate the outermost skin layer (stratum corneum). Applying vitamin C topically does not boost skin levels if the blood is already saturated, which occurs with daily oral intake of approximately 500 mg [28][29].
 - Laboratory research on animal skin found that best absorption required a pH below 3.5 and vitamin C concentrations of 10-20% [28]. Products containing vitamin E and ferulic acid may help increase formulation stability [30][31].
-- A small study of women (average age 55) with photo-aged skin found that applying 5% vitamin C serum daily for 6 months improved investigator-rated skin properties by only 2.3 points on a 17-point scale versus 1.4 points with placebo [32].
+- A small study of women (average age 55) with photo-aged skin found that applying 5% vitamin C cream daily for 6 months significantly improved investigator-rated skin properties, by 2.3 points on a 17-point scale versus 1.4 points with placebo [6][32].
 - Several studies showed that sunscreen containing vitamin C combined with vitamin E reduced UV-induced skin damage more than sunscreen alone [33][34][35]. However, applying 5% vitamin C alone did not prevent UV-induced skin redness compared to placebo [36].
 - Phosphate derivatives are more stable but less well absorbed. Palmitate derivatives may improve absorption but evidence is mixed. Glucoside derivatives show greater stability and penetration, but it is unknown whether this form converts to active ascorbic acid after skin penetration. Dehydroascorbic acid does not appear to increase skin vitamin C levels when applied topically [28][26].
 
@@ -153,7 +153,7 @@ Blood pressure appears to be modestly reduced with vitamin C supplementation, at
 
 A meta-analysis of 29 short-term studies, most using 500-1,000 mg/day, found average decreases of 3.84 mmHg systolic and 1.48 mmHg diastolic [51]. In patients with hypertension, the reductions were somewhat larger: 4.85 mmHg systolic and 1.67 mmHg diastolic. The blood pressure reduction is minor compared to pharmaceutical treatments (ACE inhibitors and diuretics reduce pressures by approximately 10 mmHg), and the studies were short (2 weeks to 6 months), so effects on cardiovascular events were not assessed [51].
 
-Vitamin C's blood pressure-lowering mechanism may involve reducing endothelin-1 activity, thereby relaxing blood vessels. A 3-month US study found that 500 mg/day of timed-release vitamin C in overweight and obese individuals (who tend to have elevated endothelin-1 activity) reduced endothelin-1 activity as much as daily aerobic walking for 45-60 minutes. Participants were not vitamin C deficient at baseline (mean blood level 68 micromoles/L, rising to 85.2 micromoles/L with supplementation) [52].
+Vitamin C's blood pressure-lowering mechanism may involve reducing endothelin-1 activity, thereby relaxing blood vessels. A 3-month US study found that 500 mg/day of timed-release vitamin C in overweight and obese individuals (who tend to have elevated endothelin-1 activity) reduced endothelin-1 activity as much as daily aerobic walking for 45-60 minutes. Participants were not vitamin C deficient at baseline (mean blood level 68 micromoles/L, rising to 85.2 micromoles/L with supplementation) [6].
 
 ### Blood Sugar and Type 2 Diabetes
 
@@ -230,11 +230,11 @@ The role of vitamin C in cancer treatment remains controversial and under active
 
 - A UK study found that people with the highest dietary vitamin C intakes were 19% less likely to have nuclear cataracts and 33% less likely to experience 10-year cataract progression compared to those with the lowest intakes. Those who had taken supplements (including multivitamins) were also less likely to have cataracts, but this did not reduce subsequent progression risk [92].
 - Long-term studies (>10 years) suggest that the daily vitamin C intake needed to saturate the eye is only about 150-250 mg/day and that this modest dose may reduce cataract risk [93].
-- A long-term study of a moderate-dose multivitamin (containing 60 mg vitamin C) found reduced cataract risk, but adding a separate high-dose vitamin C supplement (500 mg/day — about 6 times the RDA) eliminated this benefit [93].
+- A long-term study of a moderate-dose multivitamin (containing 60 mg vitamin C) found reduced cataract risk, but adding a separate high-dose vitamin C supplement (500 mg/day — about 6 times the RDA) eliminated this benefit [6].
 - In a 5-year Japanese cohort of more than 30,000 adults aged 45-64, higher dietary vitamin C was associated with reduced cataract risk [94].
 - Case-control studies indicate that vitamin C intakes greater than 300 mg/day reduce cataract formation risk by 70-75% [2][4].
-- However, an 8-year Swedish study of 25,593 women found a 25% increase in cataract removals among those supplementing with approximately 1,000 mg/day. Women supplementing for 10+ years had a 46% increase [95].
-- In the AREDS trial, high-dose supplementation (500 mg vitamin C, 400 IU vitamin E, 15 mg beta-carotene) did not significantly reduce cataract risk or progression [96]. The AREDS2 study confirmed this [97].
+- However, an 8-year Swedish study of 24,593 women found a 25% increase in cataract removals among those supplementing with approximately 1,000 mg/day. Women supplementing for 10+ years had a 46% increase [95].
+- In the AREDS trial, high-dose supplementation (500 mg vitamin C, 400 IU vitamin E, 15 mg beta-carotene) did not significantly reduce cataract risk or progression [96].
 
 **Synthesis for cataracts:** Over the long term (10+ years), low-to-moderate-dose vitamin C (60-250 mg/day) appears to help prevent cataracts, while high-dose supplementation (approximately 1,000 mg/day) does not and may increase risk.
 
@@ -281,7 +281,7 @@ The relationship between vitamin C supplementation and exercise is complex. High
 - A 10-week study in healthy young women found that 1,000 mg vitamin C plus 400 IU vitamin E daily prevented increases in fat-free mass (muscle) during strength training, while the placebo group gained muscle and decreased fat mass. The researchers concluded these vitamins "should be avoided by healthy young women who want to increase fat-free mass" [117].
 - An 11-week study in Norway found that 500 mg vitamin C with 260 IU synthetic vitamin E (taken before and after training, and morning/evening on rest days) prevented the increase in mitochondrial proteins thought to improve muscular endurance during running and cycling training 3-4 times per week. However, overall performance (VO2max and a running test) improved equally in both groups. A similar study using half the vitamin C dose did not find this blunting effect. The authors advise caution with high-dose antioxidant supplementation during endurance training [118].
 - A 12-week study in healthy elderly men found that high-dose vitamin C/E during strength training constrained bone density benefits compared to placebo. Lower back bone density increased more in the placebo group, and hip bone density increased only in the placebo group [119].
-- However, a study of 86 young male athletes in India with adequate blood vitamin C/E levels but low dietary intake found that 1,000 mg vitamin C and/or 400 mg vitamin E during 8 weeks of high-intensity interval training (HIIT) did not impair improvements in maximal oxygen consumption or body weight reduction. Those supplementing with vitamin C plus vitamin E showed slightly greater improvement in vertical jump height. The authors suggested vitamin C and E may have reduced HIIT-induced oxidative stress without blunting adaptation in this population [120].
+- However, a study of 106 young male athletes in India with adequate blood vitamin C/E levels but low dietary intake found that 1,000 mg vitamin C and/or 400 mg vitamin E during 8 weeks of high-intensity interval training (HIIT) did not impair improvements in maximal oxygen consumption or body weight reduction. Those supplementing with vitamin C plus vitamin E showed slightly greater improvement in vertical jump height. The authors suggested vitamin C and E may have reduced HIIT-induced oxidative stress without blunting adaptation in this population [120].
 
 **Synthesis:** High-dose vitamin C supplementation (500-1,000 mg/day), particularly in combination with vitamin E, may interfere with beneficial exercise adaptations including mitochondrial biogenesis, muscle growth, and bone density improvements in healthy individuals. Athletes and those engaged in regular training should be cautious about high-dose antioxidant supplementation during training periods.
 
@@ -442,7 +442,7 @@ Vitamin C enhances nonheme iron absorption. In healthy individuals, this does no
 
 ### Copper Depletion
 
-High doses of vitamin C may modestly decrease copper levels. Young healthy men who took 1,500 mg/day (500 mg three times daily) for 2 months experienced significantly reduced ceruloplasmin activity (the protein that stores and transports copper). Blood copper levels also decreased but not significantly [132]. A separate study found that 635 mg/day for 1 month decreased ceruloplasmin activity, while lower doses (5-635 mg/day) did not decrease blood copper levels [133].
+High doses of vitamin C may modestly decrease copper levels. Young healthy men who took 1,500 mg/day (500 mg three times daily) for 2 months experienced significantly reduced ceruloplasmin activity (the protein that stores and transports copper). Blood copper levels also decreased but not significantly [132]. A separate study found that 605 mg/day for 3 weeks decreased ceruloplasmin activity, while doses from 5 to 605 mg/day did not decrease blood copper levels [133].
 
 ### Pro-oxidant Activity
 
@@ -480,8 +480,8 @@ Vitamin C supplements can interact with several medications. The most clinically
 
 | Drug | Interaction | Clinical Recommendation |
 |------|------------|------------------------|
-| **Levothyroxine (Synthroid)** | Vitamin C may increase absorption by increasing gastric acid secretion. A 6-week study found 1 g/day of vitamin C with levothyroxine reduced TSH from 9.01 to 2.27 mU/L in hypothyroid patients [143]. | People on stable levothyroxine doses should consult their doctor before starting vitamin C. |
-| **Warfarin** | An early 1971 case report suggested interference [144], but subsequent research has not confirmed this. 1 g/day for 6 months did not affect warfarin requirements [145]. Doses of 3-10 g/day for 7 days in 19 adults on warfarin did not affect prothrombin ratios, though blood warfarin levels decreased by approximately 17.5% (not considered clinically significant) [146]. 2 g/day for 6 weeks did not increase bleeding risk in healthy men [147]. | Current evidence does not support a clinically significant interaction. |
+| **Levothyroxine (Synthroid)** | Vitamin C may increase absorption by increasing gastric acid secretion. A 6-week study found 1 g/day of vitamin C with levothyroxine reduced TSH from 9.01 to 2.27 mU/L in hypothyroid patients [6]. | People on stable levothyroxine doses should consult their doctor before starting vitamin C. |
+| **Warfarin** | An early 1971 case report suggested interference [144], but subsequent research has not confirmed this. 1 g/day for 6 months did not affect warfarin requirements [6]. Doses of 3-10 g/day for 7 days in 19 adults on warfarin did not affect prothrombin ratios, though blood warfarin levels decreased by approximately 17.5% (not considered clinically significant) [146]. 2 g/day for 6 weeks did not increase bleeding risk in healthy men [147]. | Current evidence does not support a clinically significant interaction. |
 | **Indinavir (HIV drug)** | High-dose vitamin C may reduce effectiveness [148]. | Discuss with prescriber. |
 | **Tricyclic antidepressants** | Vitamin C may reduce absorption [6]. | Consider separating dosing times. |
 | **Acetaminophen (Tylenol)** | The risk of liver damage from high acetaminophen doses may increase with very large (3 g) vitamin C doses [6]. | Avoid combining high doses of both. |
@@ -515,7 +515,7 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [4] Jacob RA, Sotoudeh G. "Vitamin C function and status in chronic disease." *Nutr Clin Care*. 2002;5:66-74. [https://pubmed.ncbi.nlm.nih.gov/12134712/](https://pubmed.ncbi.nlm.nih.gov/12134712/)
 
-[5] Gershoff SN. "Vitamin C (ascorbic acid): new roles, new requirements?" *Nutr Rev*. 1993;51:313-26. [https://pubmed.ncbi.nlm.nih.gov/8108051/](https://pubmed.ncbi.nlm.nih.gov/8108051/)
+[5] Gershoff SN. "Vitamin C (ascorbic acid): new roles, new requirements?" *Nutr Rev*. 1993;51:313-26. [https://pubmed.ncbi.nlm.nih.gov/8108031/](https://pubmed.ncbi.nlm.nih.gov/8108031/)
 
 [6] ConsumerLab. "Vitamin C Supplements Review." Accessed 2025. [https://www.consumerlab.com/reviews/vitamin-c-supplement-review/vitaminc/](https://www.consumerlab.com/reviews/vitamin-c-supplement-review/vitaminc/)
 
@@ -523,11 +523,11 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [8] Padayatty SJ, Riordan HD, Hewitt SM, et al. "Intravenously administered vitamin C as cancer therapy: three cases." *CMAJ*. 2006;174:937-42. [https://pubmed.ncbi.nlm.nih.gov/16567755/](https://pubmed.ncbi.nlm.nih.gov/16567755/)
 
-[9] Institute of Medicine. Food and Nutrition Board. *Dietary Reference Intakes for Vitamin C, Vitamin E, Selenium, and Carotenoids*. Washington, DC: National Academy Press, 2000.
+[9] Institute of Medicine. Food and Nutrition Board. *Dietary Reference Intakes for Vitamin C, Vitamin E, Selenium, and Carotenoids*. Washington, DC: National Academy Press, 2000. [https://pubmed.ncbi.nlm.nih.gov/25077263/](https://pubmed.ncbi.nlm.nih.gov/25077263/)
 
 [10] Weinstein M, Babyn P, Zlotkin S. "An orange a day keeps the doctor away: scurvy in the year 2000." *Pediatrics*. 2001;108:E55. [https://pubmed.ncbi.nlm.nih.gov/11533373/](https://pubmed.ncbi.nlm.nih.gov/11533373/)
 
-[11] Wang AH, Still C. "Old world meets modern: a case report of scurvy." *Nutr Clin Pract*. 2007;22:445-8. [https://pubmed.ncbi.nlm.nih.gov/17644698/](https://pubmed.ncbi.nlm.nih.gov/17644698/)
+[11] Wang AH, Still C. "Old world meets modern: a case report of scurvy." *Nutr Clin Pract*. 2007;22:445-8. [https://pubmed.ncbi.nlm.nih.gov/17644699/](https://pubmed.ncbi.nlm.nih.gov/17644699/)
 
 [12] NIH Office of Dietary Supplements. "Vitamin C — Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/VitaminC-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminC-HealthProfessional/)
 
@@ -535,41 +535,41 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [14] Hujoel PP, et al. "Bleeding tendency and ascorbic acid requirements." *Nutr Rev*. 2021. doi: 10.1093/nutrit/nuaa115
 
-[15] Stapleton FB, et al. "Vitamin C deficiency mimicking juvenile arthritis." *J Pediatr*. 2019.
+[15] Perkins A, Sontheimer C, Otjen JP, Shenoi S. "Scurvy masquerading as juvenile idiopathic arthritis or vasculitis with elevated inflammatory markers: a case series." *J Pediatr*. 2020;218:234-237.e2. [https://pubmed.ncbi.nlm.nih.gov/31843213/](https://pubmed.ncbi.nlm.nih.gov/31843213/)
 
-[16] Shameek G, et al. "Vitamin C deficiency and pulmonary arterial hypertension." *Chest*. 2020.
+[16] Gayen SK, Abdelrahman AA, Preston IR, Petit RD. "Vitamin C deficiency-induced pulmonary arterial hypertension." *Chest*. 2020;157:e21-e23. [https://pubmed.ncbi.nlm.nih.gov/32033656/](https://pubmed.ncbi.nlm.nih.gov/32033656/)
 
-[17] Mangels AR, Block G, Frey CM, et al. "The bioavailability to humans of ascorbic acid from oranges, orange juice and cooked broccoli is similar to that of synthetic ascorbic acid." *J Nutr*. 1993;123:1054-61. [https://pubmed.ncbi.nlm.nih.gov/8505666/](https://pubmed.ncbi.nlm.nih.gov/8505666/)
+[17] Mangels AR, Block G, Frey CM, et al. "The bioavailability to humans of ascorbic acid from oranges, orange juice and cooked broccoli is similar to that of synthetic ascorbic acid." *J Nutr*. 1993;123:1054-61. [https://pubmed.ncbi.nlm.nih.gov/8505665/](https://pubmed.ncbi.nlm.nih.gov/8505665/)
 
 [18] Johnston CS, Luo B. "Comparison of the absorption and excretion of three commercially available sources of vitamin C." *J Am Diet Assoc*. 1994;94:779-81. [https://pubmed.ncbi.nlm.nih.gov/8021423/](https://pubmed.ncbi.nlm.nih.gov/8021423/)
 
-[19] Moyad MA, Combs MA, Vrablic AS, et al. "Vitamin C metabolites, independent of smoking status, significantly enhance leukocyte, but not plasma ascorbate concentrations." *Adv Ther*. 2008;25:995-1009. [https://pubmed.ncbi.nlm.nih.gov/18836695/](https://pubmed.ncbi.nlm.nih.gov/18836695/)
+[19] Moyad MA, Combs MA, Vrablic AS, et al. "Vitamin C metabolites, independent of smoking status, significantly enhance leukocyte, but not plasma ascorbate concentrations." *Adv Ther*. 2008;25:995-1009. [https://pubmed.ncbi.nlm.nih.gov/18836692/](https://pubmed.ncbi.nlm.nih.gov/18836692/)
 
 [20] Purpura M, et al. "Liposomal vitamin C bioavailability." *Eur J Nutr*. 2024.
 
-[21] Hickey S, et al. "Pharmacokinetics of oral vitamin C." *J Nutri Envir Med*. 2008.
+[21] Hickey S, Roberts HJ, Miller NJ. "Pharmacokinetics of oral vitamin C." *J Nutr Environ Med*. 2008;17:169-77. [https://doi.org/10.1080/13590840802305423](https://doi.org/10.1080/13590840802305423)
 
-[22] Ashil J, et al. "Liposomal hydrogel vitamin C absorption." *RSC Adv*. 2021.
+[22] Joseph A, Kumar D, Balakrishnan A, et al. "Surface-engineered liposomal particles of calcium ascorbate with fenugreek galactomannan enhanced the oral bioavailability of ascorbic acid: a randomized, double-blinded, 3-sequence, crossover study." *RSC Adv*. 2021;11:38161-71. [https://pubmed.ncbi.nlm.nih.gov/35498071/](https://pubmed.ncbi.nlm.nih.gov/35498071/)
 
-[23] Pancorbo D, et al. "PureWay-C vitamin C bioavailability." *Med Sci Monit*. 2008.
+[23] Pancorbo D, Vazquez C, Fletcher MA. "Vitamin C-lipid metabolites: uptake and retention and effect on plasma C-reactive protein and oxidized LDL levels in healthy volunteers." *Med Sci Monit*. 2008;14:CR547-51. [https://pubmed.ncbi.nlm.nih.gov/18971870/](https://pubmed.ncbi.nlm.nih.gov/18971870/)
 
 [24] Carr AC, et al. "Vitamin C pharmacokinetics and bioavailability." *Nutrients*. 2013.
 
-[25] Vinson JA, et al. "Bioavailability of vitamin C with bioflavonoids." *Am J Clin Nutr*. 1988.
+[25] Vinson JA, Bose P. "Comparative bioavailability to humans of ascorbic acid alone or in a citrus extract." *Am J Clin Nutr*. 1988;48:601-4. [https://pubmed.ncbi.nlm.nih.gov/3414575/](https://pubmed.ncbi.nlm.nih.gov/3414575/)
 
 [26] Pullar JM, et al. "The roles of vitamin C in skin health." *Nutrients*. 2017.
 
-[27] Rhie G, et al. "Vitamin C levels in aged skin." *J Invest Dermatol*. 2001.
+[27] Rhie G, Shin MH, Seo JY, et al. "Aging- and photoaging-dependent changes of enzymic and nonenzymic antioxidants in the epidermis and dermis of human skin in vivo." *J Invest Dermatol*. 2001;117:1212-7. [https://pubmed.ncbi.nlm.nih.gov/11710935/](https://pubmed.ncbi.nlm.nih.gov/11710935/)
 
 [28] Pinnell SR. "Cutaneous photodamage, oxidative stress, and topical antioxidant protection." *Dermatol Surg*. 2001.
 
 [29] Levine M, Conry-Cantilena C, Wang Y, et al. "Vitamin C pharmacokinetics in healthy volunteers: evidence for a recommended dietary allowance." *Proc Natl Acad Sci USA*. 1996;93:3704-9. [https://pubmed.ncbi.nlm.nih.gov/8623000/](https://pubmed.ncbi.nlm.nih.gov/8623000/)
 
-[30] Lin JY, et al. "Vitamin C and vitamin E combination for UV protection." *J Am Acad Dermatol*. 2003.
+[30] Lin JY, Selim MA, Shea CR, et al. "UV photoprotection by combination topical antioxidants vitamin C and vitamin E." *J Am Acad Dermatol*. 2003;48:866-74. [https://pubmed.ncbi.nlm.nih.gov/12789176/](https://pubmed.ncbi.nlm.nih.gov/12789176/)
 
 [31] Lin FH, et al. "Ferulic acid stabilizes vitamins C and E topical formulation." *J Invest Dermatol*. 2005.
 
-[32] Humbert PG, et al. "Topical ascorbic acid on photo-aged skin." *Exp Dermatol*. 2003.
+[32] Humbert PG, Haftek M, Creidi P, et al. "Topical ascorbic acid on photoaged skin. Clinical, topographical and ultrastructural evaluation: double-blind study vs. placebo." *Exp Dermatol*. 2003;12:237-44. [https://pubmed.ncbi.nlm.nih.gov/12823436/](https://pubmed.ncbi.nlm.nih.gov/12823436/)
 
 [33] Darr D, et al. "Effectiveness of antioxidants (vitamins C and E) with and without sunscreens as topical photoprotectants." *Acta Derm Venereol*. 1996.
 
@@ -589,7 +589,7 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [41] Wintergerst ES, Maggini S, Hornig DH. "Immune-enhancing role of vitamin C and zinc and effect on clinical conditions." *Ann Nutr Metab*. 2006;50:85-94. [https://pubmed.ncbi.nlm.nih.gov/16373990/](https://pubmed.ncbi.nlm.nih.gov/16373990/)
 
-[42] Hemila H. "The role of vitamin C in the treatment of the common cold." *Am Fam Physician*. 2007;76:1111. [https://pubmed.ncbi.nlm.nih.gov/17990834/](https://pubmed.ncbi.nlm.nih.gov/17990834/)
+[42] Hemila H. "The role of vitamin C in the treatment of the common cold." *Am Fam Physician*. 2007;76:1111. [https://pubmed.ncbi.nlm.nih.gov/17992770/](https://pubmed.ncbi.nlm.nih.gov/17992770/)
 
 [43] Johnston CS. "The antihistamine action of ascorbic acid." *Subcell Biochem*. 1996;25:189-213. [https://pubmed.ncbi.nlm.nih.gov/8821975/](https://pubmed.ncbi.nlm.nih.gov/8821975/)
 
@@ -597,27 +597,25 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [45] Fogleman C, et al. "Vitamin C for mild to moderate COVID-19." *J Am Board Fam Med*. 2022.
 
-[46] Seymour CW, et al. "Effect of high-dose vitamin C on organ failure and mortality in critically ill patients with COVID-19." *JAMA Network*. 2023.
+[46] LOVIT-COVID Investigators; REMAP-CAP Investigators; Adhikari NKJ, et al. "Intravenous vitamin C for patients hospitalized with COVID-19: two harmonized randomized clinical trials." *JAMA*. 2023;330:1745-59. [https://pubmed.ncbi.nlm.nih.gov/37877585/](https://pubmed.ncbi.nlm.nih.gov/37877585/)
 
 [47] Zhang J, et al. "Pilot trial of high-dose vitamin C in critically ill COVID-19 patients." *Ann Intensive Care*. 2021.
 
-[48] Chaudhary S, et al. "High-dose vitamin C in critically ill COVID-19 patients." *Acute Crit Care*. 2020.
+[48] Chaudhary SMD, Wright RM, Patarroyo-Aponte G. "Role of vitamin C in critically ill patients with COVID-19: is it effective?" *Acute Crit Care*. 2020;35:307-8. [https://pubmed.ncbi.nlm.nih.gov/33081436/](https://pubmed.ncbi.nlm.nih.gov/33081436/)
 
 [49] Hemila H. "Vitamin C and mechanical ventilation." *J Intensive Care*. 2020.
 
-[50] Fong D, et al. "Oxalate nephropathy and vitamin C supplementation during the COVID-19 pandemic." *Kidney Int Rep*. 2022.
+[50] Fong P, Wusirika R, Rueda J, et al. "Increased rates of supplement-associated oxalate nephropathy during COVID-19 pandemic." *Kidney Int Rep*. 2022;7:2608-16. [https://pubmed.ncbi.nlm.nih.gov/36120391/](https://pubmed.ncbi.nlm.nih.gov/36120391/)
 
 [51] Juraschek SP, et al. "Effects of vitamin C supplementation on blood pressure: a meta-analysis." *Am J Clin Nutr*. 2012.
-
-[52] Dow CA, et al. "Vitamin C and endothelin-1 activity in overweight adults." *Am Phys Soc Conf*. 2015.
 
 [53] Mason SA, et al. "Vitamin C supplementation in type 2 diabetes." *Diab Obes Metab*. 2019.
 
 [54] Ye Z, Song H. "Antioxidant vitamins intake and the risk of coronary heart disease: meta-analysis of cohort studies." *Eur J Cardiovasc Prev Rehabil*. 2008;15:26-34. [https://pubmed.ncbi.nlm.nih.gov/18277182/](https://pubmed.ncbi.nlm.nih.gov/18277182/)
 
-[55] Willcox BJ, Curb JD, Rodriguez BL. "Antioxidants in cardiovascular health and disease: key lessons from epidemiologic studies." *Am J Cardiol*. 2008;101:75D-86D. [https://pubmed.ncbi.nlm.nih.gov/18474276/](https://pubmed.ncbi.nlm.nih.gov/18474276/)
+[55] Willcox BJ, Curb JD, Rodriguez BL. "Antioxidants in cardiovascular health and disease: key lessons from epidemiologic studies." *Am J Cardiol*. 2008;101:75D-86D. [https://pubmed.ncbi.nlm.nih.gov/18474278/](https://pubmed.ncbi.nlm.nih.gov/18474278/)
 
-[56] Honarbakhsh S, Schachter M. "Vitamins and cardiovascular disease." *Br J Nutr*. 2008. [https://pubmed.ncbi.nlm.nih.gov/18847518/](https://pubmed.ncbi.nlm.nih.gov/18847518/)
+[56] Honarbakhsh S, Schachter M. "Vitamins and cardiovascular disease." *Br J Nutr*. 2009;101:1113-31. [https://pubmed.ncbi.nlm.nih.gov/18826726/](https://pubmed.ncbi.nlm.nih.gov/18826726/)
 
 [57] Osganian SK, Stampfer MJ, Rimm E, et al. "Vitamin C and risk of coronary heart disease in women." *J Am Coll Cardiol*. 2003;42:246-52. [https://pubmed.ncbi.nlm.nih.gov/12875759/](https://pubmed.ncbi.nlm.nih.gov/12875759/)
 
@@ -641,9 +639,9 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [67] Goyal A, et al. "Serum vitamin C and mortality." *Cancer Epidemiol Biomarkers Prev*. 2013.
 
-[68] Tian Y, et al. "Vitamin C blood levels and all-cause mortality." *Nutrition*. 2022.
+[68] Tian T, Shao J, Shen Z, et al. "Association of serum vitamin C with all-cause and cause-specific death: data from National Health and Nutrition Examination Survey (NHANES 2003-2006)." *Nutrition*. 2022;101:111696. [https://pubmed.ncbi.nlm.nih.gov/35660506/](https://pubmed.ncbi.nlm.nih.gov/35660506/)
 
-[69] Lee DH, Folsom AR, Harnack L, et al. "Does supplemental vitamin C increase cardiovascular disease risk in women with diabetes?" *Am J Clin Nutr*. 2004;80:1194-200. [https://pubmed.ncbi.nlm.nih.gov/15531664/](https://pubmed.ncbi.nlm.nih.gov/15531664/)
+[69] Lee DH, Folsom AR, Harnack L, et al. "Does supplemental vitamin C increase cardiovascular disease risk in women with diabetes?" *Am J Clin Nutr*. 2004;80:1194-200. [https://pubmed.ncbi.nlm.nih.gov/15531665/](https://pubmed.ncbi.nlm.nih.gov/15531665/)
 
 [70] Zhang S, Hunter DJ, Forman MR, et al. "Dietary carotenoids and vitamins A, C, and E and risk of breast cancer." *J Natl Cancer Inst*. 1999;91:547-56. [https://pubmed.ncbi.nlm.nih.gov/10088626/](https://pubmed.ncbi.nlm.nih.gov/10088626/)
 
@@ -653,9 +651,9 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [73] Lin J, Cook NR, Albert C, et al. "Vitamins C and E and beta carotene supplementation and cancer risk." *J Natl Cancer Inst*. 2009;101:14-23. [https://pubmed.ncbi.nlm.nih.gov/19116389/](https://pubmed.ncbi.nlm.nih.gov/19116389/)
 
-[74] Galan P, Briancon S, Favier A, et al. "Antioxidant status and risk of cancer in the SU.VI.MAX study." *Br J Nutr*. 2005;94:125-32. [https://pubmed.ncbi.nlm.nih.gov/16115340/](https://pubmed.ncbi.nlm.nih.gov/16115340/)
+[74] Galan P, Briancon S, Favier A, et al. "Antioxidant status and risk of cancer in the SU.VI.MAX study." *Br J Nutr*. 2005;94:125-32. [https://pubmed.ncbi.nlm.nih.gov/16115341/](https://pubmed.ncbi.nlm.nih.gov/16115341/)
 
-[75] Taylor PR, Li B, Dawsey SM, et al. "Prevention of esophageal cancer: the nutrition intervention trials in Linxian, China." *Cancer Res*. 1994;54(7 Suppl):2029s-31s. [https://pubmed.ncbi.nlm.nih.gov/8137331/](https://pubmed.ncbi.nlm.nih.gov/8137331/)
+[75] Taylor PR, Li B, Dawsey SM, et al. "Prevention of esophageal cancer: the nutrition intervention trials in Linxian, China." *Cancer Res*. 1994;54(7 Suppl):2029s-31s. [https://pubmed.ncbi.nlm.nih.gov/8137333/](https://pubmed.ncbi.nlm.nih.gov/8137333/)
 
 [76] Bjelakovic G, Nikolova D, Simonetti RG, Gluud C. "Antioxidant supplements for preventing gastrointestinal cancers." *Cochrane Database Syst Rev*. 2008;(3):CD004183. [https://pubmed.ncbi.nlm.nih.gov/18677777/](https://pubmed.ncbi.nlm.nih.gov/18677777/)
 
@@ -669,7 +667,7 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [81] Moertel CG, Fleming TR, Creagan ET, et al. "High-dose vitamin C versus placebo in the treatment of patients with advanced cancer." *N Engl J Med*. 1985;312:137-41. [https://pubmed.ncbi.nlm.nih.gov/3880867/](https://pubmed.ncbi.nlm.nih.gov/3880867/)
 
-[82] Coulter I, Hardy M, Shekelle P, et al. "Effect of the supplemental use of antioxidants vitamin C, vitamin E, and coenzyme Q10 for the prevention and treatment of cancer." AHRQ Publication No. 04-E003. 2003. [https://pubmed.ncbi.nlm.nih.gov/15468265/](https://pubmed.ncbi.nlm.nih.gov/15468265/)
+[82] Shekelle P, Hardy ML, Coulter I, et al. "Effect of the supplemental use of antioxidants vitamin C, vitamin E, and coenzyme Q10 for the prevention and treatment of cancer." *Evid Rep Technol Assess (Summ)*. 2003:1-3. AHRQ Publication No. 04-E003. [https://pubmed.ncbi.nlm.nih.gov/15523748/](https://pubmed.ncbi.nlm.nih.gov/15523748/)
 
 [83] Chen Q, Espey MG, Sun AY, et al. "Pharmacologic doses of ascorbate act as a prooxidant and decrease growth of aggressive tumor xenografts in mice." *Proc Natl Acad Sci USA*. 2008;105:11105-9. [https://pubmed.ncbi.nlm.nih.gov/18678913/](https://pubmed.ncbi.nlm.nih.gov/18678913/)
 
@@ -677,7 +675,7 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [85] Chen Q, Espey MG, Sun AY, et al. "Ascorbate in pharmacologic concentrations selectively generates ascorbate radical and hydrogen peroxide in extracellular fluid in vivo." *Proc Natl Acad Sci USA*. 2007;104:8749-54. [https://pubmed.ncbi.nlm.nih.gov/17502596/](https://pubmed.ncbi.nlm.nih.gov/17502596/)
 
-[86] Levine M, Espey MG, Chen Q. "Losing and finding a way at C: new promise for pharmacologic ascorbate in cancer treatment." *Free Radic Biol Med*. 2009;47:27-9. [https://pubmed.ncbi.nlm.nih.gov/19361557/](https://pubmed.ncbi.nlm.nih.gov/19361557/)
+[86] Levine M, Espey MG, Chen Q. "Losing and finding a way at C: new promise for pharmacologic ascorbate in cancer treatment." *Free Radic Biol Med*. 2009;47:27-9. [https://pubmed.ncbi.nlm.nih.gov/19361554/](https://pubmed.ncbi.nlm.nih.gov/19361554/)
 
 [87] Lawenda BD, Kelly KM, Ladas EJ, et al. "Should supplemental antioxidant administration be avoided during chemotherapy and radiation therapy?" *J Natl Cancer Inst*. 2008;100:773-83. [https://pubmed.ncbi.nlm.nih.gov/18505970/](https://pubmed.ncbi.nlm.nih.gov/18505970/)
 
@@ -691,21 +689,19 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [92] Yonova-Doing E, et al. "Genetic and dietary factors influencing the progression of nuclear cataract." *Ophthalmology*. 2016.
 
-[93] Jacques PF, et al. "Long-term vitamin C supplement use and cataract risk." *Am J Clin Nutr*. 1997.
+[93] Jacques PF, Taylor A, Hankinson SE, et al. "Long-term vitamin C supplement use and prevalence of early age-related lens opacities." *Am J Clin Nutr*. 1997;66:911-6. [https://pubmed.ncbi.nlm.nih.gov/9322567/](https://pubmed.ncbi.nlm.nih.gov/9322567/)
 
 [94] Yoshida M, Takashima Y, Inoue M, et al. "Prospective study showing that dietary vitamin C reduced the risk of age-related cataracts in a middle-aged Japanese population." *Eur J Nutr*. 2007;46:118-24. [https://pubmed.ncbi.nlm.nih.gov/17265171/](https://pubmed.ncbi.nlm.nih.gov/17265171/)
 
-[95] Rautiainen S, Lindblad BE, Morgenstern R, Wolk A. "Vitamin C supplements and the risk of age-related cataract." *Am J Clin Nutr*. 2010;91(2):487-93. [https://pubmed.ncbi.nlm.nih.gov/20016012/](https://pubmed.ncbi.nlm.nih.gov/20016012/)
+[95] Rautiainen S, Lindblad BE, Morgenstern R, Wolk A. "Vitamin C supplements and the risk of age-related cataract." *Am J Clin Nutr*. 2010;91(2):487-93. [https://pubmed.ncbi.nlm.nih.gov/19923367/](https://pubmed.ncbi.nlm.nih.gov/19923367/)
 
 [96] Age-Related Eye Disease Study Research Group. "AREDS report no. 9." *Arch Ophthalmol*. 2001;119:1439-52. [https://pubmed.ncbi.nlm.nih.gov/11594943/](https://pubmed.ncbi.nlm.nih.gov/11594943/)
-
-[97] Age-Related Eye Disease Study 2 Research Group. "AREDS2 report no. 4." *JAMA Ophthalmol*. 2013. [https://pubmed.ncbi.nlm.nih.gov/23644932/](https://pubmed.ncbi.nlm.nih.gov/23644932/)
 
 [98] Chong EW, Wong TY, Kreis AJ, et al. "Dietary antioxidants and primary prevention of age related macular degeneration: systematic review and meta-analysis." *BMJ*. 2007;335:755. [https://pubmed.ncbi.nlm.nih.gov/17923720/](https://pubmed.ncbi.nlm.nih.gov/17923720/)
 
 [99] van Leeuwen R, Boekhoorn S, Vingerling JR, et al. "Dietary intake of antioxidants and risk of age-related macular degeneration." *JAMA*. 2005;294:3101-7. [https://pubmed.ncbi.nlm.nih.gov/16380590/](https://pubmed.ncbi.nlm.nih.gov/16380590/)
 
-[100] Evans J. "Primary prevention of age related macular degeneration." *BMJ*. 2007;335:729. [https://pubmed.ncbi.nlm.nih.gov/17916811/](https://pubmed.ncbi.nlm.nih.gov/17916811/)
+[100] Evans J. "Primary prevention of age related macular degeneration." *BMJ*. 2007;335:729. [https://pubmed.ncbi.nlm.nih.gov/17923719/](https://pubmed.ncbi.nlm.nih.gov/17923719/)
 
 [101] Age-Related Eye Disease Study Research Group. "AREDS report no. 8." *Arch Ophthalmol*. 2001;119:1417-36. [https://pubmed.ncbi.nlm.nih.gov/11594942/](https://pubmed.ncbi.nlm.nih.gov/11594942/)
 
@@ -721,7 +717,7 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [107] He H, et al. "Vitamin C supplementation in NAFLD." *Front Nutr*. 2021.
 
-[108] Harrison FE, et al. "Vitamin C and the brain." *Free Radic Biol Med*. 2010.
+[108] Harrison FE, May JM. "Vitamin C function in the brain: vital role of the ascorbate transporter SVCT2." *Free Radic Biol Med*. 2009;46:719-30. [https://pubmed.ncbi.nlm.nih.gov/19162177/](https://pubmed.ncbi.nlm.nih.gov/19162177/)
 
 [109] Moret C, et al. "Norepinephrine and depression." *Neuropsychiatry Dis Treat*. 2011.
 
@@ -733,19 +729,19 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [113] Chen JY, et al. "Low vitamin C and post-herpetic neuralgia." *Br J Nutr*. 2011.
 
-[114] Carr AC, et al. "Intravenous vitamin C and herpes zoster pain." *J Transl Med*. 2017.
+[114] Carr AC, McCall C. "The role of vitamin C in the treatment of pain: new insights." *J Transl Med*. 2017;15:77. [https://pubmed.ncbi.nlm.nih.gov/28410599/](https://pubmed.ncbi.nlm.nih.gov/28410599/)
 
-[115] Kim MS, et al. "Intravenous vitamin C in herpes zoster." *Ann Dermatol*. 2016.
+[115] Kim MS, Kim DJ, Na CH, Shin BS. "A study of intravenous administration of vitamin C in the treatment of acute herpetic pain and postherpetic neuralgia." *Ann Dermatol*. 2016;28:677-83. [https://pubmed.ncbi.nlm.nih.gov/27904265/](https://pubmed.ncbi.nlm.nih.gov/27904265/)
 
 [116] Gunton JE, et al. "Vitamin C and diabetic foot ulcer healing." *Brit J Nutr*. 2020.
 
-[117] Maurilio TL, et al. "Vitamin C and E supplementation during strength training in women." *Int J Exerc Sci*. 2019.
+[117] Dutra MT, Alex S, Silva AF, et al. "Antioxidant supplementation impairs changes in body composition induced by strength training in young women." *Int J Exerc Sci*. 2019;12:287-96. [https://pubmed.ncbi.nlm.nih.gov/30899342/](https://pubmed.ncbi.nlm.nih.gov/30899342/)
 
 [118] Paulsen G, et al. "Vitamin C and E supplementation hampers cellular adaptation to endurance training." *J Physiol*. 2014.
 
-[119] Stunes AK, et al. "High-dose antioxidants constrain skeletal benefits of resistance training in elderly men." *Eur J Appl Phys*. 2017.
+[119] Stunes AK, Syversen U, Berntsen S, et al. "High doses of vitamin C plus E reduce strength training-induced improvements in areal bone mineral density in elderly men." *Eur J Appl Physiol*. 2017;117:1073-84. [https://pubmed.ncbi.nlm.nih.gov/28382551/](https://pubmed.ncbi.nlm.nih.gov/28382551/)
 
-[120] Sarkar S, et al. "Vitamin C and E supplementation during HIIT in athletes." *SMHS*. 2023.
+[120] Sarkar S, Dey SK, Datta G, et al. "Vitamin C and E supplementation and high intensity interval training induced changes in lipid profile and haematological variables of young males." *Sports Med Health Sci*. 2023;5:137-45. [https://pubmed.ncbi.nlm.nih.gov/37424529/](https://pubmed.ncbi.nlm.nih.gov/37424529/)
 
 [121] Cashman MW, et al. "Nutrition and nail disease." *Clin Dermatol*. 2010.
 
@@ -763,15 +759,15 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [128] Ferraro PM, et al. "Vitamin C supplements and kidney stone risk." *Am J Kidney Dis*. 2016.
 
-[129] Fijen LM, et al. "Oxalate nephropathy from high-dose vitamin C." *BMJ Case Rep*. 2019.
+[129] Fijen L, Weijmer M. "Acute oxalate nephropathy due to high vitamin C doses and exocrine pancreatic insufficiency." *BMJ Case Rep*. 2019;12:e231504. [https://pubmed.ncbi.nlm.nih.gov/31748360/](https://pubmed.ncbi.nlm.nih.gov/31748360/)
 
 [130] Lin Y, et al. "Vitamin C-induced oxalate nephropathy." *CEN Case Rep*. 2018.
 
-[131] Pal R, et al. "Oxalate nephropathy from vitamin C and dietary oxalate." *Clin Nephrol Case Stud*. 2024.
+[131] Pal A, Aydin-Ghormoz E, Lightle A, et al. "Diet-induced hyperoxaluria: a case based mini-review." *Clin Nephrol Case Stud*. 2024;12:52-7. [https://pubmed.ncbi.nlm.nih.gov/39391374/](https://pubmed.ncbi.nlm.nih.gov/39391374/)
 
-[132] Finley EB, et al. "High-dose vitamin C and copper metabolism." *Am J Clin Nutr*. 1983.
+[132] Finley EB, Cerklewski FL. "Influence of ascorbic acid supplementation on copper status in young adult men." *Am J Clin Nutr*. 1983;37:553-6. [https://pubmed.ncbi.nlm.nih.gov/6837490/](https://pubmed.ncbi.nlm.nih.gov/6837490/)
 
-[133] Jacob RA, et al. "Vitamin C and copper." *J Nutr*. 1987.
+[133] Jacob RA, Skala JH, Omaye ST, et al. "Effect of varying ascorbic acid intakes on copper absorption and ceruloplasmin levels of young men." *J Nutr*. 1987;117:2109-15. [https://pubmed.ncbi.nlm.nih.gov/3694287/](https://pubmed.ncbi.nlm.nih.gov/3694287/)
 
 [134] Lee SH, Oe T, Blair IA. "Vitamin C-induced decomposition of lipid hydroperoxides to endogenous genotoxins." *Science*. 2001;292:2083-6. [https://pubmed.ncbi.nlm.nih.gov/11408659/](https://pubmed.ncbi.nlm.nih.gov/11408659/)
 
@@ -779,25 +775,21 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 
 [136] Carr A, Frei B. "Does vitamin C act as a pro-oxidant under physiological conditions?" *FASEB J*. 1999;13:1007-24. [https://pubmed.ncbi.nlm.nih.gov/10336883/](https://pubmed.ncbi.nlm.nih.gov/10336883/)
 
-[137] Rex DK, et al. "Colorectal cancer screening recommendations." *Am J Gastroenterol*. 2009.
+[137] Rex DK, Johnson DA, Anderson JC, et al. "American College of Gastroenterology guidelines for colorectal cancer screening 2009." *Am J Gastroenterol*. 2009;104:739-50. [https://pubmed.ncbi.nlm.nih.gov/19240699/](https://pubmed.ncbi.nlm.nih.gov/19240699/)
 
 [138] Lee W, et al. "Vitamin C interference with urine dipstick tests." *J Clin Lab Anal*. 2017.
 
-[139] Unic A, et al. "Effect of ascorbic acid on urine test parameters." *J Clin Lab Anal*. 2018.
+[139] Unic A, Nikolac Gabaj N, Miler M, et al. "Ascorbic acid: a black hole of urine chemistry screening." *J Clin Lab Anal*. 2018;32:e22390. [https://pubmed.ncbi.nlm.nih.gov/29479748/](https://pubmed.ncbi.nlm.nih.gov/29479748/)
 
-[140] Gabaj NN, et al. "Ascorbic acid interference with urinalysis." *Annals of Clinical Biochemistry*. 2020.
+[140] Nikolac Gabaj N, Miler M, Unic A, et al. "Ascorbic acid in urine still compromises urinalysis results." *Ann Clin Biochem*. 2020;57:64-8. [https://pubmed.ncbi.nlm.nih.gov/31569954/](https://pubmed.ncbi.nlm.nih.gov/31569954/)
 
-[141] Maskovic J, et al. "Vitamin C interference with urine mineral measurement." *Lab Med*. 2024.
+[141] Mašković S, Nikolac Gabaj N. "Ascorbic acid and glucose can cause significant interference on quantitative measurement of biochemistry analytes in urine." *Lab Med*. 2025;56:254-8. [https://pubmed.ncbi.nlm.nih.gov/39550214/](https://pubmed.ncbi.nlm.nih.gov/39550214/)
 
 [142] Friedlander JI, et al. "Diet and interstitial cystitis." *BJU Int*. 2012.
 
-[143] Antunez PB, et al. "Vitamin C and levothyroxine absorption." *Rev Argent Endocrinol Metab*. 2011.
-
 [144] Rosenthal G. "Interaction of ascorbic acid and warfarin." *JAMA*. 1971.
 
-[145] Dedichen HG, et al. "Vitamin C and warfarin anticoagulant therapy." *Boll Soc Ital Cardiol*. 1973.
-
-[146] Feetam CL, et al. "Vitamin C and warfarin pharmacokinetics." *Toxicol Appl Pharmacol*. 1975.
+[146] Feetam CL, Leach RH, Meynell MJ. "Lack of a clinically important interaction between warfarin and ascorbic acid." *Toxicol Appl Pharmacol*. 1975;31:544-7. [https://pubmed.ncbi.nlm.nih.gov/1145638/](https://pubmed.ncbi.nlm.nih.gov/1145638/)
 
 [147] Tofler GH, et al. "Effect of vitamin C on hemostasis." *Thromb Res*. 2000.
 

@@ -129,12 +129,15 @@ describe('masterViews on the published masters (US-50 AC6)', () => {
   // A post naming five reviewed masters (collagen, creatine, magnesium, taurine,
   // vitamin K): every view goes in, safety sections fill the rest of the cap,
   // and each one skipped for the cap is logged with its handle.
-  it('the-only-three-supplements-doctor-brad-takes: all five views, then safety within the total cap', () => {
+  it('the-only-three-supplements-doctor-brad-takes: every master view, then safety within the total cap', () => {
     const entry = loadBlogIndex().find(e => e.handle === 'the-only-three-supplements-doctor-brad-takes')!;
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const block = masterViews(entry.topics, [])!;
     const views = block.match(/^### Current view \(reviewed/gm) ?? [];
-    expect(views).toHaveLength(5);
+    // One view per named master that has a Current view (grows as masters are rewritten).
+    const withView = entry.topics!.filter(h => /^## Current view \(reviewed/m.test((fs.existsSync(path.join(process.cwd(), 'docs/blog', `${h}.md`)) ? fs.readFileSync(path.join(process.cwd(), 'docs/blog', `${h}.md`), 'utf-8') : '')));
+    expect(withView.length).toBeGreaterThanOrEqual(5);
+    expect(views).toHaveLength(withView.length);
     expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
     expect(block).toMatch(/^### \d+\. Safety and Side Effects$/m);
     // Vitamin K's interactions (warfarin) outrank every master's side effects.

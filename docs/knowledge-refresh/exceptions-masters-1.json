@@ -129,54 +129,6 @@
  },
  {
   "check": "AC2",
-  "handle": "magnesium-benefits-best-forms-dosing",
-  "match": "token \"126 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- 9 Jul 2024, [Which Mistakes Do Most People Make with Magnesium?](https://drstanfield.com/blogs/articles/mistakes-pe...\"",
-  "reason": "Checker tokenisation (\"126 mg of magnesium each day\": words between the unit and \"each day\"); source states it verbatim: mistakes-people-make-magnesium.md: \"I take an added 126 mg of magnesium each day, which is about 30% of the RDI\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "taurine-benefits-forms-dosing-and-side-effects",
-  "match": "token \"6000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- 8 Jul 2025, [Taurine.. Time to Throw it Away? Two New Studies](https://drstanfield.com/blogs/articles/taurine-time-...\" | \"**Meta-analysis of blood pressure trials:** A meta-analysis of seven placebo-controlled clinical trials (103 particip...\"",
-  "reason": "Checker tokenisation (unit glued to the number (\"6g\") and a range (\"1 and 6 g\")); source states it verbatim: 1-394-person-study-on-taurine-proves-what-we-suspected.md + taurine-time-to-throw-it-away-two-new-studies.md: \"The doses used in the studies varied between 0.5g and 6g per day; varied between 1 and 6 g per day\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
-  "match": "token \">12 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad sees creatine as worth considering for both body and brain performance, and says the evidence for its performanc...\"",
-  "reason": "Checker tokenisation (\"over 12 weeks\" (duration) read as a \">\" comparison); source states it verbatim: creatine-fails-in-new-study-don-t-be-misled.md: \"any benefit in terms of lean body mass gains during the 12 weeks of exercise compared to the control group\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "token \"50 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Most adults need 75 to 90 mg of vitamin C a day, and Brad advises against megadosing by default, because taking a lot...\"",
-  "reason": "Checker tokenisation (units spelled out in the source (\"milligrams per kilogram\")); source states it verbatim: more-vitamins-worse-health-new-trial.md: \"50 milligrams per kilogram, every six hours, for four days\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "token \"14000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Most adults need 75 to 90 mg of vitamin C a day, and Brad advises against megadosing by default, because taking a lot...\"",
-  "reason": "Checker tokenisation (units spelled out in the source (\"grams ... a day\") and a range); source states it verbatim: more-vitamins-worse-health-new-trial.md: \"that works out to roughly 14 to 16 grams of vitamin C a day\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "token \"16000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Most adults need 75 to 90 mg of vitamin C a day, and Brad advises against megadosing by default, because taking a lot...\"",
-  "reason": "Checker tokenisation (units spelled out in the source (\"grams ... a day\") and a range); source states it verbatim: more-vitamins-worse-health-new-trial.md: \"that works out to roughly 14 to 16 grams of vitamin C a day\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
   "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
   "match": "body line has no entry quoting \"10\": Hormetic dose-response: Resveratrol's pharmacodynamic effects often follow a hormetic dose-response curve, where low ...",
   "reason": "Line unchanged from main except reference renumbering. Its \"10\" became a needed token only because review fix 7 added the Chachay 2014 trial (PMID 24582567: \"3000 mg resveratrol (n = 10) or placebo (n = 10) daily for 8 weeks\"), raising the body count of \"10\". The line's own number predates masters-1 and its raw is not in this batch.",
@@ -188,6 +140,222 @@
   "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
   "match": "body line has no entry quoting \"10\": An analysis of data from 10 studies involving 698 participants found that taking resveratrol (dose range: 8 to 1,500 ...",
   "reason": "Line unchanged from main except reference renumbering. Its \"10\" became a needed token only because review fix 7 added the Chachay 2014 trial (PMID 24582567: \"3000 mg resveratrol (n = 10) or placebo (n = 10) daily for 8 weeks\"), raising the body count of \"10\". The line's own number predates masters-1 and its raw is not in this batch.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Methylation Considerations",
+  "reason": "Brad 2026-10-20 deleted the subsection's only content (unsupported methylation concern and the TMG product sentence); an empty heading would be wrong.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"150 mg/day\": Cognitive function in postmenopausal women | 150 mg/day (75 mg twice daily) | 12 months | Modest cognitive improvemen...",
+  "reason": "Checker tokenisation: 150 mg/day equals the abstract's \"75 mg twice daily\"; quote is in the report.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"150 mg/day\": Menstrual migraine | 150 mg/day | 3 months | No benefit [49] |",
+  "reason": "Checker tokenisation: 150 mg/day equals the abstract's \"75 mg twice daily\"; quote is in the report.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[26] raw_quote shares no number with its body_line: - However, a study of 106 young male athletes in India with adequate blood vitamin C/E levels but...",
+  "reason": "Checker tokenisation: the abstract spells the sample size \"Hundred six\" (106).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[27] raw_quote shares no number with its body_line: | Liposomal hydrogel vitamin C | Liposomal vitamin C encased in a hydrogel matrix (e.g., galactom...",
+  "reason": "Checker tokenisation: body \"more than 7 times\" equals the abstract's \">7-fold\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \">7\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Liposomal hydrogel vitamin C | Liposomal vitamin C encased in a hydrogel matrix (e.g., galactomannan from fenugreek...\"",
+  "reason": "Checker tokenisation: body \"more than 7 times\" equals the abstract's \">7-fold\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"106\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- However, a study of 106 young male athletes in India with adequate blood vitamin C/E levels but low dietary intake ...\"",
+  "reason": "Checker tokenisation: the abstract spells the sample size \"Hundred six\" (106).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host academicjournals.org: [2] Cheng W, Yan-hua R, Fang-gang N, Guo-an Z. \"The content and ratio of type I and III collagen ...",
+  "reason": "Real paper on this publisher's site, cited by ConsumerLab; the publisher has a low-quality open-access reputation (flagged for review/Brad).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host nutraingredients.com: [13] Collagen Stewardship Alliance (CSA). \"Response to Myung et al. systematic review.\" 2025. Rep...",
+  "reason": "Industry body statement (Collagen Stewardship Alliance / GROW Coalition) as reported by NutraIngredients; the trade-press report is the primary record of the statement.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host nutraingredients.com: [14] GROW Coalition. \"Response to Myung et al. systematic review.\" 2025. Reported in NutraIngredi...",
+  "reason": "Industry body statement (Collagen Stewardship Alliance / GROW Coalition) as reported by NutraIngredients; the trade-press report is the primary record of the statement.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host law.cornell.edu: [69] FDA. 21 CFR 189.5, \"Prohibited cattle materials\" ([https://www.law.cornell.edu/cfr/text/21/1...",
+  "reason": "US regulation text (21 CFR) hosted by Cornell LII: a legitimate primary source.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host longdom.org: [73] Ruff KJ et al. \"Eggshell Membrane+Fish Oil Combination (Move3) Reduces Exercise-Induced Join...",
+  "reason": "Real paper on this publisher's site, cited by ConsumerLab; the publisher has a low-quality open-access reputation (flagged for review/Brad).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [8] Shade C. \"The Science Behind NMN — A Stable, Reliable NAD+ Activator and Anti-Aging Molecule.\" *Integr Med (Encin...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host nobelprize.org: 2. Dam H. The discovery of vitamin K, its biological functions and therapeutical application. Nob...",
+  "reason": "Dam's Nobel lecture (1946), primary source on nobelprize.org.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host accessdata.fda.gov: [2] Lithium Prescribing Information. 2018. U.S. Food and Drug Administration. [https://www.access...",
+  "reason": "FDA lithium prescribing information: legitimate primary regulatory source.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [8] Hanlon LW, Romaine M 3rd, et al. \"Lithium chloride as a substitute for sodium chloride in the diet; observations ...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host patents.google.com: [15] GRAS Notice No. 931 (see [5]); Howard AN, Harris RC. \"Compositions containing creatine.\" US ...",
+  "reason": "US patent text (Google Patents): legitimate primary source.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [42] Hemila H. \"The role of vitamin C in the treatment of the common cold.\" *Am Fam Physician*. 2007;76:1111. [https:...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [48] Chaudhary SMD, Wright RM, Patarroyo-Aponte G. \"Role of vitamin C in critically ill patients with COVID-19: is it...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [82] Shekelle P, Hardy ML, Coulter I, et al. \"Effect of the supplemental use of antioxidants vitamin C, vitamin E, an...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [86] Levine M, Espey MG, Chen Q. \"Losing and finding a way at C: new promise for pharmacologic ascorbate in cancer tr...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [140] Nikolac Gabaj N, Miler M, Unic A, et al. \"Ascorbic acid in urine still compromises urinalysis results.\" *Ann Cl...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [146] Feetam CL, Leach RH, Meynell MJ. \"Lack of a clinically important interaction between warfarin and ascorbic acid...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host townsendletter.com: [13] Greenblatt JM, Grossmann K. \"Lithium: The Magic Mineral.\" *Townsend Letter*. January 2015. h...",
+  "reason": "Round 2 fix 9 (orchestrator-accepted): the real Townsend Letter article (January 2015) that ConsumerLab cites as Greenblatt 2015; the URL returned 200 on 2026-10-20 and the page names Greenblatt and Grossmann. A practitioner magazine, not indexed in PubMed; the claim also cites ConsumerLab [1]. Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5\": Piceid: The predominant glycosylated form of resveratrol in grape skins and wine. In red wines, total stilbene levels...",
+  "reason": "Checker tokenisation: the bare digit 5 became a needed token only because round 2 fix 7 added 'month 5' (PBAR abstract) on other lines. The Piceid line's numbers (4-5 mg/L, 5- to 20-fold) are unchanged from origin/main; only its citation markers changed earlier in the batch. Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "token \"71.7\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A 2-year trial involved 120 healthy older adults (average age 71.7) in three groups. In the group taking resveratro...\"",
+  "reason": "Checker tokenisation (body 'average age 71.7' vs the abstract's 'aged 71.7 ± 4.6 years': unit and spread around the number); source states it verbatim: pubmed/40922000.md: \"involved 120 healthy subjects aged 71.7 ± 4.6 years divided into 3 groups\". Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "token \"350 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A 2-year trial involved 120 healthy older adults (average age 71.7) in three groups. In the group taking resveratro...\"",
+  "reason": "Checker tokenisation ('350 mg twice daily' read as 350 mg per day; the abstract writes 'bid'); source states it verbatim: pubmed/40922000.md: \"B) resveratrol 350 mg bid + TA-65 100U\". Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm.",
   "by": "orchestrator",
   "date": "2026-10-20"
  }
