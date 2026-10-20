@@ -544,6 +544,23 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
     expect(result.stderr).toContain('Give age, or birthYear');
   });
 
+  it('protects a record file literally named - (Codex re-check R1)', async () => {
+    const recDir = mkdtempSync(join(tmpdir(), 'get-plan-dash-'));
+    const cwd = process.cwd();
+    writeFileSync(join(recDir, '-'), JSON.stringify(createEmptyFile(CTX)));
+    const before = readFileSync(join(recDir, '-'));
+    process.chdir(recDir);
+    try {
+      const result = await captureRun(['-', '--html', './-']);
+      expect(result.code).toBe(1);
+      expect(result.stderr).toContain('the record file itself');
+    } finally {
+      process.chdir(cwd);
+    }
+    expect(readFileSync(join(recDir, '-'))).toEqual(before);
+    rmSync(recDir, { recursive: true, force: true });
+  });
+
   it('refuses a second positional argument instead of ignoring it', async () => {
     const result = await captureRun([spec([]), 'extra.json']);
     expect(result.code).toBe(1);

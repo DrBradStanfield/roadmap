@@ -399,8 +399,9 @@ function assertWritableTarget(htmlOut: string, recordPath: string | undefined, v
     }
   };
   const target = real(htmlOut);
-  const hits = (p: string | null | undefined) => !!p && p !== '-' && target !== null && real(p) === target;
-  const hit = hits(recordPath) ? 'the record file itself' : hits(valuesFrom) ? 'the values file' : null;
+  const hits = (p: string | null | undefined) => !!p && target !== null && real(p) === target;
+  // `-` means stdin only for --from-values; a record file may really be named `-`.
+  const hit = hits(recordPath) ? 'the record file itself' : valuesFrom !== '-' && hits(valuesFrom) ? 'the values file' : null;
   if (hit) throw new PlanError(`--html would overwrite ${hit}`, 'Give the report its own path, e.g. `--html plan.html`.');
 }
 
