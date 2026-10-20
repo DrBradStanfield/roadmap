@@ -80,6 +80,20 @@ export function verifyAppProxySignature(request: Request, nowSeconds = Date.now(
 }
 
 /**
+ * Refuse an app-proxy request (it carries `signature`) on a route that is not
+ * for one: the index and the admin routes (US-09 AC24). The proxy maps the
+ * whole app root, and both the index's old redirect and `authenticate.admin`'s
+ * bounce page copy the query, `signature` included, into a Location header,
+ * handing anyone a freshly signed query. The admin launch signs with `hmac`
+ * and never carries `signature`, so it passes.
+ */
+export function refuseAppProxyRequest(request: Request): void {
+  if (new URL(request.url).searchParams.has('signature')) {
+    throw new Response('Not Found', { status: 404 });
+  }
+}
+
+/**
  * The caller's IP, as far as anything here can know it. Every rate limiter in
  * the app keys on this one reader (2026-09-02) — a second copy would silently
  * reopen a bypass — so the caller must name which of THREE trust models its
@@ -109,9 +123,17 @@ export function verifyAppProxySignature(request: Request, nowSeconds = Date.now(
  * whatever the caller typed. Only entries a proxy we trust appended count.
  * If XFF yields no hop at all (missing, blank, or holding only Fly's own
  * address), `'shopify'` falls back to `Fly-Client-IP` — one shared bucket
- * beats none. An XFF holding ONLY forged hops and no shopper cannot happen on
- * these routes: Shopify appends the shopper before signing, and the HMAC check
- * runs before the limiter, so a request that skipped Shopify never gets here.
+ * beats none.
+ *
+ * Residual (US-09 AC24): the HMAC check proves Shopify signed the QUERY, not
+ * that the request came through Shopify. Anyone holding a valid signed query
+ * can send it straight to *.fly.dev with an XFF they wrote. Fly's peer is then
+ * the caller, and the hop read as the shopper (one left of the caller's own
+ * address if Fly appended it, else the last) is one the caller typed, so a
+ * direct hit can steer its bucket. `Fly-Client-IP` cannot be the key instead: behind the proxy it is
+ * Shopify's egress, every shopper's (docs/reference.md, the Fly-Client-IP
+ * gotcha). The mitigation is closing the leaks that hand out signed queries
+ * (the index and admin routes refuse `signature`, `refuseAppProxyRequest`).
  */
 export function getClientIp(request: Request, trust: 'fly' | 'shopify'): string {
   const flyIp = request.headers.get('fly-client-ip')?.trim() || '';

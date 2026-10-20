@@ -2,18 +2,13 @@ import type { LoaderFunctionArgs } from "react-router";
 import { redirect, Form, useLoaderData } from "react-router";
 
 import { login } from "../../shopify.server";
+import { refuseAppProxyRequest } from "../../lib/local-first-route.server";
 
 import styles from "./styles.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  refuseAppProxyRequest(request);
   const url = new URL(request.url);
-
-  // An app-proxy request (it carries `signature`) is never redirected: copying
-  // its query would hand anyone a freshly signed one (US-09 AC24). The admin
-  // launch signs with `hmac` instead and still lands on /app.
-  if (url.searchParams.has("signature")) {
-    throw new Response("Not Found", { status: 404 });
-  }
 
   if (url.searchParams.get("shop")) {
     throw redirect(`/app?${url.searchParams.toString()}`);
