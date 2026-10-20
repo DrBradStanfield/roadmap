@@ -770,6 +770,6 @@ describe('US-32 AC38 — a bare /mcp/authorize is a plain start-from-ChatGPT pag
   it('still refuses an unknown client, which is not a bare visit', async () => {
     const res = await get(`/mcp/authorize?${authorizeQuery('https://evil.test/client.json')}`);
     expect(res.status).toBe(400);
-    expect(events('mcp_authorize_refused')).toEqual([{ client: 'other', reason: 'unknown-client' }]);
+    expect(events('mcp_authorize_refused')).toEqual([{ client: 'other', reason: 'unknown-client', detail: 'cimd-fetch-failed' }]);
   });
 });
