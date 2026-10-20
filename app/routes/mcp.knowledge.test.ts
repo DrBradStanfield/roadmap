@@ -196,6 +196,8 @@ describe('US-41 AC6 — on, the two tools are listed after the nine', () => {
       expect(tool.annotations).toEqual({ readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false });
     }
     expect(JSON.stringify([KNOWLEDGE_TOOLS, NOTICE, KNOWLEDGE_NOTE])).not.toContain('—');
+    // Every result and refusal carries the emergency line (orchestrator, review round 1).
+    expect(NOTICE.endsWith(' If this could be an emergency, such as chest pain, stroke signs or trouble breathing, call your local emergency number now.')).toBe(true);
   });
 });
 

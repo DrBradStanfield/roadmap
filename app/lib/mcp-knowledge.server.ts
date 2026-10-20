@@ -46,7 +46,8 @@ const MAX_SECTION_LENGTH = 120;
 export const NOTICE =
   'Educational information from Dr Brad Stanfield\'s library, not personalised medical advice. Always discuss changes ' +
   'with your healthcare provider. Medication doses, new prescriptions and drug interactions are questions for the ' +
-  'user\'s doctor or pharmacist.';
+  'user\'s doctor or pharmacist. If this could be an emergency, such as chest pain, stroke signs or trouble ' +
+  'breathing, call your local emergency number now.';
 
 /** The chatbot's safety rules that matter once the text leaves it, carried in both descriptions. */
 const RULES =
