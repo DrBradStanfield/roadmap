@@ -27,12 +27,12 @@ import { importFilesBucket, isRefusalReason, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_
 import { KNOWN_CLIENTS, type McpClientLabel } from './mcp-clients.server';
 import { cappedBody } from './capped-body.server';
 import { hostedImporter } from './mcp-import.server';
-import { callKnowledgeTool, isKnowledgeTool, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, knowledgeToolsEnabled } from './mcp-knowledge.server';
+import { callKnowledgeTool, isKnowledgeTool, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, knowledgeToolsEnabled, NOTICE } from './mcp-knowledge.server';
 import { recordServerEvent } from './product-events.server';
 import { type FileLabValue, type FileMeasurement, type RoadmapFile, stableStringify } from '../../packages/health-core/src/roadmap-file';
 import { githubFiler } from './github-issues.server';
 import { isMcpEnabled, issuer } from './mcp-config.server';
-import { type AccessPayload, allowToolCall, chargeWrites, claimProposal, connectionKey, grantLive, grantRefreshToken, WRITE_COST } from './mcp-grants.server';
+import { type AccessPayload, allowKnowledgeCall, allowToolCall, chargeWrites, claimProposal, connectionKey, grantLive, grantRefreshToken, WRITE_COST } from './mcp-grants.server';
 import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
 import { audienceFor, hash, unpackSealed } from './mcp-seal.server';
 import { issueProposal, openProposal, STEP_WINDOWS, UUID } from './mcp-step.server';
@@ -496,13 +496,11 @@ function hostedSurface(token: AccessPayload, now: string) {
       // our one shared app identity, so a loop here is a loop at the provider.
       // Not counted: a client stuck in a loop would otherwise write the
       // counter thousands of times and drown the tool it is looping on.
-      if (!allowToolCall(connectionKey(token))) {
-        return {
-          answer: {
-            text: 'Too many tool calls from this connection in the last minute. Wait a moment, then try again.',
-            isError: true,
-          },
-        };
+      // The knowledge tools also have their own, tighter brake, and every answer of theirs opens with the notice (US-41 AC10, AC11).
+      const library = knowledge && isKnowledgeTool(name);
+      if (!allowToolCall(connectionKey(token)) || (library && !allowKnowledgeCall(connectionKey(token)))) {
+        const text = 'Too many tool calls from this connection in the last minute. Wait a moment, then try again.';
+        return { answer: { text: library ? `${NOTICE}\n\n${text}` : text, isError: true } };
       }
       // A bug in us must reach the client as an error carrying THIS request's
       // id, never as a 500 the vendor cannot match to anything — the stdio
@@ -510,7 +508,7 @@ function hostedSurface(token: AccessPayload, now: string) {
       // already words by here; what lands in this catch is ours.
       try {
         // The knowledge tools open no record and mint no provider token: bundled files only.
-        const answer = knowledge && isKnowledgeTool(name) ? callKnowledgeTool(name, args) : await callHostedTool(token, name, args, now);
+        const answer = library ? callKnowledgeTool(name, args) : await callHostedTool(token, name, args, now);
         countToolCall(token.clientId, name, answer.isError ? 'refused' : 'ok', answer.reason, stepOf(name, args));
         return { answer };
       } catch {

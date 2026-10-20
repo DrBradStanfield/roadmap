@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { bestSection, buildIndex, search, tokenize, type Index } from '../../tools/search-knowledge';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { loadBlogArticle } from './matched-content';
-import { stripFrontmatter } from './frontmatter';
+import { parseFrontmatter, stripFrontmatter } from './frontmatter';
 import { routerView } from './router-view';
 import type { McpToolDefinition, ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 
@@ -58,14 +58,21 @@ const RULES =
   'date may record a newer view. Never present a Dr Brad product as treating or preventing a disease. Cite the ' +
   'link of any entry you use.';
 
-/** Handle words every master shares (benefits-forms-dosing-and-side-effects), which name no topic. */
-const SHARED_HANDLE_WORDS = new Set(tokenize('benefits forms dosing side effects best types evidence vitamins supplements'));
+/**
+ * Handle words that name no master's topic: the ones every master shares
+ * (benefits-forms-dosing-and-side-effects), and generic words a query uses
+ * about other things ("olive oil", "cholesterol target", "beetroot extract").
+ */
+const SHARED_HANDLE_WORDS = new Set(tokenize(
+  'benefits forms dosing side effects best types evidence vitamins supplements ' +
+  'oil fish acid extract root seed leaf powders lowering boosters cholesterol oxide',
+));
 
 const RESULT_SCHEMA = {
   type: 'object',
   properties: {
     handle: { type: 'string' },
-    type: { type: 'string', enum: ['reference', 'article', 'guideline', 'pathway'] },
+    type: { type: 'string', enum: ['reference', 'article', 'guideline'] },
     master: { type: 'boolean', description: 'A topic page carrying Dr Brad\'s current view.' },
     title: { type: 'string' },
     url: { type: ['string', 'null'] },
@@ -84,7 +91,7 @@ export const KNOWLEDGE_TOOLS: McpToolDefinition[] = [
     title: 'Search Dr Brad\'s education library',
     description:
       'Search Dr Brad Stanfield\'s education library: his topic pages on supplements, each with his current view, ' +
-      'his video articles, and the clinical pathways and guidelines his own chatbot draws on. Returns at most ' +
+      'his video articles, and his clinical guidelines on diet, exercise and sleep. Returns at most ' +
       `${MAX_RESULTS} entries, topic pages first when the query names their topic, each with a short excerpt, its ` +
       'handle and a public link; read one in full with get_article. This is a word search over files on this ' +
       'server and no model runs here, so query with topic words ("magnesium sleep"), never the user\'s values or ' +
@@ -123,7 +130,8 @@ export const KNOWLEDGE_TOOLS: McpToolDefinition[] = [
     description:
       'Read one entry of Dr Brad Stanfield\'s education library by the handle search_knowledge returned. An entry ' +
       `longer than ${MAX_ARTICLE_CHARS.toLocaleString('en-US')} characters is cut there; \`sections\` lists its headings, ` +
-      'and `section` (words from one heading, e.g. "Safety" or "Drug Interactions") reads that section instead. ' +
+      'and `section` (words from one heading, e.g. "Safety" or "Drug Interactions") reads that section instead. A cut ' +
+      'entry always carries its safety, side-effect, toxicity and interaction sections whole, after the cut. ' +
       'Before answering about a dose, side effects or interactions, read the entry\'s safety and interactions ' +
       'sections. No model runs here, and it reads nothing from the health record.' + RULES,
     inputSchema: {
@@ -170,32 +178,70 @@ export function isKnowledgeTool(name: string): boolean {
 /** A topic master (US-50 AC1): a reference with a review date. */
 const isMaster = (entry: BlogIndexEntry) => entry.type === 'reference' && /^\d{4}-\d{2}-\d{2}$/.test(entry.reviewed ?? '');
 
-function describeEntry(entry: BlogIndexEntry) {
+/**
+ * Brad's own writing only (AC11): his video articles, his guidelines and the
+ * topic masters. Pathways (HealthPathways-derived) and the other references
+ * (ConsumerLab-derived) stay with the chatbot and are never served here.
+ */
+export const isServed = (entry: BlogIndexEntry) => (entry.type ?? 'article') === 'article' || entry.type === 'guideline' || isMaster(entry);
+
+/** `url` is the file's own frontmatter link, as the chatbot cites it; never the index's synthesised one. */
+function describeEntry(entry: BlogIndexEntry, raw: string) {
   const master = isMaster(entry);
+  const url = parseFrontmatter(raw)?.url;
   return {
     handle: entry.handle,
     type: entry.type ?? 'article',
     master,
     title: entry.title,
-    url: entry.url || null,
+    url: typeof url === 'string' && url ? url : null,
     date: master ? entry.reviewed! : entry.publishedAt?.slice(0, 10) || null,
   };
 }
 
-/** The index the chatbot's router sees (posts a current master covers are left out), built once. */
+/** The served part of the index the chatbot's router sees (posts a current master covers are left out), built once. */
 let built: { index: Index; byHandle: Map<string, BlogIndexEntry> } | null = null;
 function library() {
   if (!built) {
-    const view = routerView(loadBlogIndex());
+    const view = routerView(loadBlogIndex()).filter(isServed);
     built = { index: buildIndex(view), byHandle: new Map(view.map((e) => [e.handle, e])) };
   }
   return built;
 }
 
-/** The body as the model should read it: frontmatter off. Null for a handle with no file. */
-function bodyOf(handle: string): string | null {
-  const raw = loadBlogArticle(handle);
-  return raw === null ? null : stripFrontmatter(raw).trim();
+/** The body as the model should read it: frontmatter off. */
+const bodyOf = (raw: string) => stripFrontmatter(raw).trim();
+
+/** A heading naming safety, side effects, toxicity or interactions, at any level from `##`. */
+const SAFETY_HEADING = /^(#{2,6}) .*\b(?:safety|side effects?|toxicity|interactions?)\b.*$/gim;
+
+/**
+ * Every safety block of a body: a matching heading to the next heading of its
+ * level or higher. A block inside one already taken is not taken again.
+ */
+export function safetyBlocks(body: string): string[] {
+  const blocks: string[] = [];
+  let taken = -1;
+  for (const m of body.matchAll(SAFETY_HEADING)) {
+    if (m.index! < taken) continue;
+    const rest = body.slice(m.index! + m[0].length);
+    const next = rest.search(new RegExp(`^#{2,${m[1].length}} `, 'm'));
+    taken = m.index! + m[0].length + (next === -1 ? rest.length : next);
+    blocks.push(body.slice(m.index!, taken).trim());
+  }
+  return blocks;
+}
+
+/**
+ * A whole entry over the cap: its start, a note, then every safety block
+ * whole. The room for the blocks is reserved first, so the total stays inside
+ * the cap and a cut never drops a safety, toxicity or interaction section.
+ */
+function cutEntry(body: string): string {
+  const blocks = safetyBlocks(body).join('\n\n');
+  const note = `\n\n[Cut at the ${MAX_ARTICLE_CHARS.toLocaleString('en-US')}-character limit (the entry has ${body.length.toLocaleString('en-US')}). `
+    + `Its safety, side-effect, toxicity and interaction sections follow whole; read any other part with section.]\n\n`;
+  return `${body.slice(0, Math.max(0, MAX_ARTICLE_CHARS - note.length - blocks.length))}${note}${blocks}`.slice(0, MAX_ARTICLE_CHARS);
 }
 
 /** The `## ` sections of a body, each from its heading to the next. */
@@ -216,21 +262,23 @@ function searchKnowledge(query: string): ToolAnswer {
   const ranked = [...first, ...pool.filter((hit) => !first.includes(hit))].slice(0, MAX_RESULTS);
   const results = ranked.map((hit) => {
     const entry = byHandle.get(hit.handle)!;
-    const body = bodyOf(hit.handle) ?? '';
+    const raw = loadBlogArticle(hit.handle) ?? '';
+    const body = bodyOf(raw);
     // A master's excerpt is its Current view (the chatbot's precedence rule); any other entry's, its best-matching section.
     const view = isMaster(entry) ? sectionsOf(body).find((s) => /^## Current (view|evidence position)\b/.test(s)) : undefined;
     const excerpt = (view ?? bestSection(body, query, MAX_EXCERPT_CHARS)).trim().slice(0, MAX_EXCERPT_CHARS);
-    return { ...describeEntry(entry), summary: entry.summary ?? '', excerpt };
+    return { ...describeEntry(entry, raw), summary: entry.summary ?? '', excerpt };
   });
   return answer({ notice: NOTICE, results });
 }
 
 function getArticle(handle: string, wanted: string | undefined): ToolAnswer {
   const entry = loadBlogIndex().find((e) => e.handle === handle);
-  const body = entry ? bodyOf(handle) : null;
-  if (!entry || body === null) {
+  const raw = entry && isServed(entry) ? loadBlogArticle(handle) : null;
+  if (!entry || raw === null) {
     return { text: `${NOTICE}\n\nNo entry has that handle. Use a handle search_knowledge returned.`, isError: true, reason: 'not-found' };
   }
+  const body = bodyOf(raw);
   const sections = sectionsOf(body);
   const headings = sections.map(headingOf);
   let text = body;
@@ -244,10 +292,11 @@ function getArticle(handle: string, wanted: string | undefined): ToolAnswer {
     [text, section] = [sections[i].trim(), headings[i]];
   }
   const truncated = text.length > MAX_ARTICLE_CHARS;
-  const cut = truncated
-    ? `${text.slice(0, MAX_ARTICLE_CHARS)}\n\n[Cut at ${MAX_ARTICLE_CHARS.toLocaleString('en-US')} of ${text.length.toLocaleString('en-US')} characters. Read a later part with section.]`
-    : text;
-  return answer({ notice: NOTICE, ...describeEntry(entry), section, sections: headings, body: cut, truncated });
+  // A whole entry keeps its safety blocks; one section is cut plainly, since the
+  // section list names the safety sections to read next.
+  const cut = !truncated ? text : section === null ? cutEntry(text)
+    : `${text.slice(0, MAX_ARTICLE_CHARS - 120)}\n\n[Cut at the ${MAX_ARTICLE_CHARS.toLocaleString('en-US')}-character limit; this section has ${text.length.toLocaleString('en-US')}.]`;
+  return answer({ notice: NOTICE, ...describeEntry(entry, raw), section, sections: headings, body: cut, truncated });
 }
 
 /** An OK answer: the text is the structured answer serialised, as on every other tool, so the notice leads both. */

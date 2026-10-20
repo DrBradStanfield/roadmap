@@ -17,7 +17,9 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { INSTRUCTIONS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
-import { KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_RESULTS, NOTICE } from '../lib/mcp-knowledge.server';
+import { callKnowledgeTool, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_RESULTS, NOTICE, safetyBlocks } from '../lib/mcp-knowledge.server';
+import { loadBlogIndex } from '../lib/blog-index.server';
+import { parseFrontmatter } from '../lib/frontmatter';
 import { recordServerEvent } from '../lib/product-events.server';
 import { action, loader } from './mcp.$';
 
@@ -211,9 +213,12 @@ describe('US-41 AC7 — search_knowledge: masters first, capped, the notice on e
     }
   });
 
-  it('does not promote a master on the words every master shares', async () => {
-    const results = (await call(await connect(), 'search_knowledge', { query: 'benefits of exercise' })).structuredContent!.results as Array<Record<string, any>>;
+  it('does not promote a master on the words every master shares, or on generic ones (adversary R4)', async () => {
+    const access = await connect();
+    const results = (await call(access, 'search_knowledge', { query: 'benefits of exercise' })).structuredContent!.results as Array<Record<string, any>>;
     expect(results[0].master).toBe(false);
+    const olive = (await call(access, 'search_knowledge', { query: 'olive oil heart' })).structuredContent!.results as Array<Record<string, any>>;
+    expect(olive[0].handle).not.toBe(OMEGA3);
   });
 
   it('returns at most five results, each excerpt capped, the notice first in text and structure', async () => {
@@ -245,8 +250,8 @@ describe('US-41 AC8 — get_article: one entry, size-capped, sections on request
     const s = answer.structuredContent!;
     expect(s.notice).toBe(NOTICE);
     expect(s.truncated).toBe(true);
-    expect(s.body.length).toBeLessThan(MAX_ARTICLE_CHARS + 200);
-    expect(s.body).toContain(`Cut at ${MAX_ARTICLE_CHARS.toLocaleString('en-US')}`);
+    expect(s.body.length).toBeLessThanOrEqual(MAX_ARTICLE_CHARS);
+    expect(s.body).toContain(`Cut at the ${MAX_ARTICLE_CHARS.toLocaleString('en-US')}-character limit`);
     expect(s.sections.length).toBeGreaterThan(3);
     expect(s.body).not.toMatch(/^---\n/);
   });
@@ -303,7 +308,7 @@ describe('US-41 AC9 — the user\'s AI pays: no network, no model, no record', (
   });
 });
 
-describe('US-41 AC11/AC12 — rate-limited like every tool; counted by name only', () => {
+describe('US-41 AC11/AC12 — rate-limited, tighter than the other tools; counted by name only', () => {
   beforeEach(() => { process.env.MCP_KNOWLEDGE_TOOLS = 'on'; });
 
   it('counts a call as tool, client and outcome, never the query or handle', async () => {
@@ -317,11 +322,89 @@ describe('US-41 AC11/AC12 — rate-limited like every tool; counted by name only
     ]);
   });
 
-  it('shares the per-connection limit of 120 calls a minute', async () => {
+  it('allows 30 knowledge calls a minute per connection; the refusal opens with the notice', async () => {
     const access = await connect();
-    for (let i = 0; i < 120; i++) expect((await call(access, 'get_article', { handle: MAGNESIUM })).isError).toBeFalsy();
+    for (let i = 0; i < 30; i++) expect((await call(access, 'get_article', { handle: MAGNESIUM })).isError).toBeFalsy();
     const over = await call(access, 'search_knowledge', { query: 'magnesium' });
     expect(over.isError).toBe(true);
-    expect(over.content[0].text).toContain('Too many tool calls');
+    expect(over.content[0].text).toBe(`${NOTICE}\n\nToo many tool calls from this connection in the last minute. Wait a moment, then try again.`);
+    // The record tools keep their own 120 (and their own words).
+    expect((await call(access, 'nope', {})).content[0].text).toBe('No tool named nope.');
+  });
+
+  it('a knowledge call refused by the shared 120 also opens with the notice (Codex R1)', async () => {
+    const access = await connect();
+    for (let i = 0; i < 120; i++) await call(access, 'nope', {});
+    const over = await call(access, 'get_article', { handle: MAGNESIUM });
+    expect(over.content[0].text.startsWith(`${NOTICE}\n\nToo many tool calls`)).toBe(true);
+  });
+
+  it('off, the rate-limit refusal is the old words, notice-free', async () => {
+    delete process.env.MCP_KNOWLEDGE_TOOLS;
+    const access = await connect();
+    for (let i = 0; i < 120; i++) await call(access, 'nope', {});
+    expect((await call(access, 'search_knowledge', { query: 'magnesium' })).content[0].text)
+      .toBe('Too many tool calls from this connection in the last minute. Wait a moment, then try again.');
+  });
+});
+
+describe('US-41 AC11 — only Brad-authored content: articles, guidelines, topic masters (adversary R3)', () => {
+  const index = loadBlogIndex();
+  const notServed = index.filter((e) => !isServed(e));
+
+  it('serves the three sets and nothing else', () => {
+    expect(notServed.filter((e) => e.type === 'pathway').length).toBeGreaterThan(700);
+    expect(notServed.every((e) => e.type === 'pathway' || (e.type === 'reference' && !e.reviewed))).toBe(true);
+    expect(index.filter(isServed).every((e) => (e.type ?? 'article') === 'article' || e.type === 'guideline' || !!e.reviewed)).toBe(true);
+  });
+
+  it('never returns a pathway or a non-master reference, searched by each one\'s own title', () => {
+    const banned = new Set(notServed.map((e) => e.handle));
+    for (const e of notServed) {
+      const results = (callKnowledgeTool('search_knowledge', { query: e.title.slice(0, 200) }).structured as { results: Array<{ handle: string }> }).results;
+      for (const r of results) expect(banned.has(r.handle), `${e.handle} -> ${r.handle}`).toBe(false);
+    }
+  });
+
+  it('refuses to read any pathway or non-master reference', () => {
+    for (const e of notServed) {
+      const answer = callKnowledgeTool('get_article', { handle: e.handle });
+      expect(answer.isError, e.handle).toBe(true);
+      expect(answer.reason).toBe('not-found');
+    }
+  });
+});
+
+describe('US-41 AC8 — a cut entry keeps every safety section (adversary R1)', () => {
+  it('a whole-entry read of every served entry holds each safety, side-effect, toxicity and interaction heading, inside the cap', () => {
+    let cut = 0;
+    for (const e of loadBlogIndex().filter(isServed)) {
+      const raw = readFileSync(`${e.type === 'guideline' ? 'docs/guideline' : 'docs/blog'}/${e.handle}.md`, 'utf8');
+      const s = callKnowledgeTool('get_article', { handle: e.handle }).structured as { body: string; truncated: boolean };
+      expect(s.body.length, e.handle).toBeLessThanOrEqual(MAX_ARTICLE_CHARS);
+      if (s.truncated) cut++;
+      for (const [heading] of raw.matchAll(/^#{2,6} .*\b(?:safety|side effects?|toxicity|interactions?)\b.*$/gim)) {
+        expect(s.body, `${e.handle}: ${heading}`).toContain(heading);
+      }
+    }
+    expect(cut).toBeGreaterThan(15);
+  });
+
+  it('takes a nested safety block once, and stops at the next heading of its level', () => {
+    const body = '## A\nx\n### Toxicity\nt\n## 5. Safety\ns\n### Drug interactions\nd\n## 6. Other\no';
+    expect(safetyBlocks(body)).toEqual(['### Toxicity\nt', '## 5. Safety\ns\n### Drug interactions\nd']);
+  });
+});
+
+describe('US-41 AC7 — url is the file\'s own link, never the index\'s (adversary R2)', () => {
+  it('a guideline has none; an article has its frontmatter url', () => {
+    const guideline = callKnowledgeTool('get_article', { handle: 'sleep' }).structured as { type: string; url: string | null };
+    expect(guideline).toMatchObject({ type: 'guideline', url: null });
+    const article = loadBlogIndex().find((e) => (e.type ?? 'article') === 'article')!;
+    const own = parseFrontmatter(readFileSync(`docs/blog/${article.handle}.md`, 'utf8'))!.url;
+    expect(own).toMatch(/^https:\/\//);
+    expect((callKnowledgeTool('get_article', { handle: article.handle }).structured as { url: string }).url).toBe(own);
+    const results = (callKnowledgeTool('search_knowledge', { query: 'sleep insomnia guidance' }).structured as { results: Array<{ type: string; url: string | null }> }).results;
+    expect(results.find((r) => r.type === 'guideline')?.url).toBeNull();
   });
 });

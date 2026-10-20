@@ -307,8 +307,8 @@ proved before the connector is switched on. Rotate by setting the secret again.
 **The knowledge tools: `MCP_KNOWLEDGE_TOOLS`** (US-41 AC6). `on` adds `search_knowledge` and
 `get_article` to `tools/list` on `health-tool-edu`; unset or any other value leaves the list
 byte-identical to 1.0.2. Not before OpenAI's verdict on 1.0.2: a changed tool list is a new
-submission (1.1). The tools read only bundled files and call no model, so the switch costs
-nothing per call. Set without `--stage` (it restarts the app); unset to turn them off.
+submission (1.1). The tools read only bundled files (Brad's articles, guidelines and topic masters)
+and call no model, so the switch costs nothing per call. Set without `--stage` (it restarts the app); unset to turn them off.
 
 ```bash
 fly secrets set MCP_KNOWLEDGE_TOOLS=on -a health-tool-edu
