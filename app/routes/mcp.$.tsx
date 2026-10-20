@@ -21,13 +21,13 @@
 import crypto from 'node:crypto';
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { getClientIp } from '../lib/local-first-route.server';
+import { cappedBody } from '../lib/capped-body.server';
 import { mcpClientLabel, mcpEndpoint, originRejected } from '../lib/mcp.server';
 import { recordServerEvent } from '../lib/product-events.server';
 import { type AuthorizeRequest, checkAuthorize, sealState, verifyPkce } from '../lib/mcp-authorize.server';
 import {
   isLoopbackRedirect,
   KNOWN_CLIENTS,
-  readCapped,
   redirectMatches,
   registerClient,
   resolveClient,
@@ -64,9 +64,6 @@ import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
 const STATE_COOKIE = '__Host-mcp-state';
 const STATE_COOKIE_ATTRS = 'Secure; HttpOnly; SameSite=Lax; Path=/';
 const CLEAR_STATE_COOKIE = `${STATE_COOKIE}=; ${STATE_COOKIE_ATTRS}; Max-Age=0`;
-
-/** 64 KB at the OAuth doors: a registration document is the largest honest body. */
-const AUTH_BODY_CAP = 64 * 1024;
 
 /**
  * One shape for every funnel row, built in one place (US-32 AC34). A refused
@@ -117,15 +114,6 @@ function escapeHtml(text: string): string {
 
 function tooLarge(): Response {
   return oauthError('invalid_request', 'That request body is too large', 413);
-}
-
-/** Read a form or JSON body, capped, or null when it is over the cap. */
-async function cappedBody(request: Request): Promise<string | null> {
-  try {
-    return await readCapped(request, AUTH_BODY_CAP);
-  } catch {
-    return null;
-  }
 }
 
 function redirectTo(location: string, headers: Record<string, string> = {}): Response {

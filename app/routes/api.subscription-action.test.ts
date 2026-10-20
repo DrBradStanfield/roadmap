@@ -11,6 +11,8 @@ const events = vi.hoisted(() => ({ record: vi.fn(async () => {}) }));
 vi.mock('../lib/product-events.server', () => ({ recordServerEvent: events.record }));
 
 import { action } from './api.subscription-action';
+import { SMALL_BODY_CAP } from '../lib/capped-body.server';
+import { streamingPost } from '../lib/capped-body.test-helpers';
 import { forgedQuery, proxyPairs, signedQuery, TEST_PROXY_SECRET } from '../lib/app-proxy.test-helpers';
 
 const ENV = { SHOPIFY_API_SECRET: TEST_PROXY_SECRET, CHAT_SUBSCRIPTION_ACTIONS: 'on', CHAT_SURFACE: 'brand', CS_GATEWAY_CHAT_URL: 'http://gateway.test:8081', CHAT_GATEWAY_SECRET: 'g'.repeat(40) };
@@ -113,5 +115,16 @@ describe('US-49 AC5 — POST /api/subscription-action', () => {
     fetchMock.mockResolvedValue(Response.json({ ok: false, error: 'not logged in' }, { status: 403 }));
     expect(await (await post({ token: TOKEN })).json()).toEqual({ success: false, status: 'refused', code: 'unavailable' });
     expect(events.record).not.toHaveBeenCalled();
+  });
+});
+
+describe('api.subscription-action body cap (US-09 AC25)', () => {
+  it('answers 413 to a chunked body over 64 KB and stops reading', async () => {
+    const { request, pulled } = streamingPost(`https://health-tool-app.fly.dev/api/subscription-action${signedQuery(proxyPairs('8099'))}`,
+      100 * SMALL_BODY_CAP, { headers: { 'content-type': 'application/json' } });
+    const res = await action({ request, params: {} } as unknown as Parameters<typeof action>[0]);
+    expect(res.status).toBe(413);
+    expect(pulled.bytes).toBeLessThanOrEqual(SMALL_BODY_CAP + 2 * 16 * 1024);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

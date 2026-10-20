@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { sendFeedbackEmail } from '../lib/email.server';
 import { recordFeedbackSubmission } from '../lib/product-events.server';
-import { getClientIp } from '../lib/local-first-route.server';
+import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 import { getCustomerId } from '../lib/route-helpers.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 
@@ -34,7 +34,8 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    const body = await request.json();
+    const body = await parseSimpleRequestJson(request);
+    if (body === BODY_TOO_LARGE) return Response.json({ success: false, error: 'Request too large' }, { status: 413 });
     const parsed = feedbackSchema.safeParse(body);
 
     if (!parsed.success) {

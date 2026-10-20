@@ -22,6 +22,7 @@ export const ALLOWED_ORIGINS = new Set([
 ]);
 
 import crypto from 'node:crypto';
+import { cappedBody, SMALL_BODY_CAP } from './capped-body.server';
 
 /** Proxied requests older than this are rejected as replay (Shopify standard). */
 const PROXY_TIMESTAMP_WINDOW_SECONDS = 10 * 60;
@@ -169,15 +170,21 @@ export function corsHeaders(request: Request): Record<string, string> {
   };
 }
 
+/** What `parseSimpleRequestJson` returns for a body over its cap (caller answers 413). */
+export const BODY_TOO_LARGE = Symbol('body too large');
+
 /**
  * Parse the body as JSON regardless of Content-Type: clients send text/plain
  * so the POST stays a CORS "simple request" — remix-serve answers OPTIONS
  * with 405 before route handlers run, so a preflight would always fail.
- * Returns null on malformed input (caller turns that into a 400).
+ * Returns null on malformed input (caller turns that into a 400), and
+ * BODY_TOO_LARGE past `cap` (US-09 AC25).
  */
-export async function parseSimpleRequestJson(request: Request): Promise<unknown> {
+export async function parseSimpleRequestJson(request: Request, cap = SMALL_BODY_CAP): Promise<unknown> {
+  const text = await cappedBody(request, cap);
+  if (text === null) return BODY_TOO_LARGE;
   try {
-    return JSON.parse(await request.text());
+    return JSON.parse(text);
   } catch {
     return null;
   }

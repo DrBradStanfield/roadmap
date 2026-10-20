@@ -26,6 +26,8 @@ vi.mock('../lib/product-events.server', async (importOriginal) => ({
 }));
 
 import { action } from './api.feedback';
+import { SMALL_BODY_CAP } from '../lib/capped-body.server';
+import { streamingPost } from '../lib/capped-body.test-helpers';
 import { forgedQuery, proxyPairs, signedQuery, TEST_PROXY_SECRET } from '../lib/app-proxy.test-helpers';
 
 let n = 0;
@@ -117,5 +119,18 @@ describe('api.feedback customer id (US-09 AC24)', () => {
     } finally {
       process.env.SHOPIFY_API_SECRET = saved;
     }
+  });
+});
+
+describe('api.feedback body cap (US-09 AC25)', () => {
+  it('answers 413 to a body whose Content-Length lies low, and stops reading', async () => {
+    const { request, pulled } = streamingPost('https://drstanfield.com/api/feedback', 100 * SMALL_BODY_CAP, {
+      headers: { 'content-length': '40', ...proxied('198.51.100.60', '6.6.6.1') },
+    });
+    const before = recordFeedbackSubmission.mock.calls.length;
+    const res = await action({ request, params: {} } as unknown as Parameters<typeof action>[0]);
+    expect(res.status).toBe(413);
+    expect(pulled.bytes).toBeLessThanOrEqual(SMALL_BODY_CAP + 2 * 16 * 1024);
+    expect(recordFeedbackSubmission.mock.calls.length).toBe(before);
   });
 });

@@ -1,7 +1,7 @@
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { z } from 'zod';
 import { createRateLimiter } from '../lib/rate-limiter';
-import { ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { ALLOWED_ORIGINS, BODY_TOO_LARGE, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 
 /**
  * Stateless Google OAuth token exchange for the local-first Drive backend
@@ -68,7 +68,9 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ error: 'Google Drive exchange is not configured' }, { status: 503, headers });
   }
 
-  const parsed = bodySchema.safeParse(await parseSimpleRequestJson(request));
+  const body = await parseSimpleRequestJson(request);
+  if (body === BODY_TOO_LARGE) return Response.json({ error: 'Request too large' }, { status: 413, headers });
+  const parsed = bodySchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: 'Invalid input' }, { status: 400, headers });
 
   const params = new URLSearchParams({ client_id: clientId, client_secret: clientSecret });
