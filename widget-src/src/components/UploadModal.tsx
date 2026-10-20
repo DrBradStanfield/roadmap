@@ -155,6 +155,7 @@ const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
   limitError: 'Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.',
 };
 const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
+const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
 const LEGACY_DOC_TEXT = 'Word .doc files cannot be read. Save it as a PDF or .docx, then upload that.';
 
 function noticeText({ reason, count = 1, text }: FileNotice): string {
@@ -477,6 +478,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       }
       inputs.push(...otherFiles.map(file => ({ fileName: file.name, getFile: async () => file })));
       names.push(...inputs.map(i => i.fileName));
+      // A ZIP opens into more than the window counted: past MAX_FILES the server
+      // refuses the whole batch, so the rest are named and sent nowhere (US-12 AC17).
+      for (const { fileName } of inputs.splice(MAX_FILES)) runNotices.push({ name: fileName, reason: 'limitError', text: OVER_LIMIT_TEXT });
 
       if (inputs.length === 0 || abort.signal.aborted) {
         if (!abort.signal.aborted) {

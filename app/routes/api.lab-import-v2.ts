@@ -36,10 +36,18 @@ const PER_IP_DAILY_LIMIT = IMPORT_LIMITS.websiteFiles;
 // local-first routes use (rate-limiter.ts), weighted by file count.
 const ipQuota = createQuotaCounter(PER_IP_DAILY_LIMIT, DAY_MS, 30 * 60_000);
 
-/** Consume `count` files against the per-IP quota AND the machine $-cap. */
+/** Consume `count` files against the per-IP quota AND the machine $-cap; all or nothing. */
 function consumeQuota(ip: string, count: number): boolean {
   if (!ipQuota.take(ip, count)) return false;
-  return machineFiles.take('machine', count);
+  if (machineFiles.take('machine', count)) return true;
+  ipQuota.refund(ip, count);
+  return false;
+}
+
+/** Hand back files charged for a batch that never reached Anthropic. */
+function refundQuota(ip: string, count: number): void {
+  ipQuota.refund(ip, count);
+  machineFiles.refund('machine', count);
 }
 
 // Batch poll state — per-machine, like v1 (a poll landing on the other Fly
@@ -51,24 +59,36 @@ function consumeQuota(ip: string, count: number): boolean {
 // required on every poll; without it, or with the wrong one, the batch does not
 // exist (404, the same answer as an id nobody created).
 const MAX_ACTIVE_BATCHES = 200;
-const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; days: DayFlags; refusedRows?: true; served?: true }>();
+const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; days: DayFlags; refusedRows?: true; servedAt?: number }>();
 // Batches Anthropic still holds for us, id → createdAt: each is deleted there
-// once ended (US-12 AC18). The sweep takes a batch whose results were served,
-// so a re-poll (a lost answer) still works until then, and one nobody polled
-// to the end (the tab closed) after an hour. deleteBatch cancels a batch still
-// running, so the next sweep can delete it. Every batch ends within 24 h, so
-// after 25 the sweep stops trying. Per machine and in memory, like
-// activeBatches: a restart forgets them, and Anthropic's 29 days apply.
+// once ended (US-12 AC18). The sweep takes a batch whose results were served
+// at least 10 minutes ago, so a re-poll after a lost answer has that long, and
+// one nobody polled to the end (the tab closed) after an hour. deleteBatch
+// cancels a batch still running, so the next sweep can delete it. Every batch
+// ends within 24 h, so after 25 the sweep stops trying. Per machine and in
+// memory, like activeBatches: a restart forgets them, and Anthropic's 29 days apply.
 const undeletedBatches = new Map<string, number>();
-setInterval(async () => {
-  const now = Date.now();
-  for (const [id, b] of activeBatches) {
-    if (b.served || b.createdAt < now - 60 * 60_000) { activeBatches.delete(id); undeletedBatches.set(id, b.createdAt); }
-  }
-  for (const [id, createdAt] of undeletedBatches) {
-    if (await deleteBatch(id) || createdAt < now - 25 * 60 * 60_000) undeletedBatches.delete(id);
+let sweeping = false;
+const sweep = setInterval(async () => {
+  if (sweeping) return; // a slow sweep (up to 200 deletes) never overlaps the next
+  sweeping = true;
+  try {
+    const now = Date.now();
+    for (const [id, b] of activeBatches) {
+      if ((b.servedAt ?? now) <= now - 10 * 60_000 || b.createdAt < now - 60 * 60_000) {
+        activeBatches.delete(id);
+        undeletedBatches.set(id, b.createdAt);
+      }
+    }
+    for (const [id, createdAt] of undeletedBatches) {
+      if (await deleteBatch(id) || createdAt < now - 25 * 60 * 60_000) undeletedBatches.delete(id);
+    }
+  } finally {
+    sweeping = false;
   }
 }, 10 * 60_000);
+// Never hold the process open just to sweep, as rate-limiter.ts does.
+sweep.unref?.();
 
 /** The flags a widget sends to say which own days it reads. */
 type DayFlags = { ownDates?: true; undatedPrev?: true };
@@ -131,10 +151,10 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
   }
   try {
     const result = await pollBatch(batchId);
-    // Served: the next sweep deletes it at Anthropic (US-12 AC18). Each stopped
+    // Served: a sweep at least 10 minutes on deletes it at Anthropic (US-12 AC18). Each stopped
     // file is reported once, when the batch ends: it can be polled again (US-15 AC34).
-    if (result.status === 'ended' && !batch.served) {
-      batch.served = true;
+    if (result.status === 'ended' && !batch.servedAt) {
+      batch.servedAt = Date.now();
       for (const stop of result.stops ?? []) reportExtractionStop(stop.code, stop.refusalCategory, 'batch');
     }
     return Response.json(
@@ -181,16 +201,17 @@ export async function action({ request }: ActionFunctionArgs) {
     const batchValidation = batchImportRequestSchema.safeParse(body);
     if (batchValidation.success) {
       const { files, ownDates, undatedPrev, refusedRows } = batchValidation.data;
+      // Busy is checked first, so a refused batch is never charged.
+      if (activeBatches.size >= MAX_ACTIVE_BATCHES) {
+        return Response.json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429 });
+      }
       if (!consumeQuota(ip, files.length)) {
         return Response.json(
           { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
           { status: 429 },
         );
       }
-      if (activeBatches.size >= MAX_ACTIVE_BATCHES) {
-        return Response.json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429 });
-      }
-      const { batchId } = await createBatch(files);
+      const { batchId } = await createBatch(files).catch((err: unknown) => { refundQuota(ip, files.length); throw err; });
       const pollToken = newPollToken();
       activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken, days: { ownDates, undatedPrev }, refusedRows });
       return Response.json({ success: true, batchId, pollToken, totalFiles: files.length });

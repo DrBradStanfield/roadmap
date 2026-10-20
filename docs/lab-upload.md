@@ -269,7 +269,7 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 | Max pages | 20 per PDF (client); 100 page blocks per request (`labImportRequestSchema`) | `pdf-extract.ts`, `validation.ts` |
 | Max file size | 10 MB per file (client only); server rejects bodies over 200 MB | `UploadModal.tsx`, `api.lab-import-v2.ts` |
 | Max tokens | 10000 (`'full'`, one file), 12288 (batch, BYOK), 3072 (`'metadata'`) | `anthropic.server.ts`, `lab-extraction.ts` |
-| Worst-case cost | bounded by the quotas, not the file cap: 200 files × ~$0.005 ≈ $1 per IP per day | |
+| Worst-case cost | bounded by the machine cap, not the per-IP limit: about 500 files a day per machine (`AI_DAILY_FILE_CAP`) ≈ low tens of $ worst case, per machine and per Fly app (the figure the cap's comment in `api.lab-import-v2.ts` gives). Since the per-IP limit rose to 200, three IPs can reach the cap in a day. | |
 | Sentry | `feature: 'lab_import_v2'`, page count and types only, never values | `api.lab-import-v2.ts` |
 
 ---
@@ -282,7 +282,7 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 - App-proxy HMAC on both methods; Zod validation (`labImportRequestSchema` `{ pages[1..100], unitSystem? }`, `batchImportRequestSchema` `{ batch: true, files: [{ pages }] }`); quota consumed before the model call. No file name reaches the server (it can hold a patient's name): a batch result comes back by request index (`custom_id` `file-N`) and the browser maps it to its file; a name an older widget sends is stripped by the schema. The widget sends `fileName: "file-N"` on each batch file, a compatibility label that names nothing, because CI ships the widget before the server and a server older than 2026-10-13 requires the field; drop it once every live server strips it.
 - Calls `extractOrClassify(pages)` and returns `{ success, data, remaining }`. `unitSystem` is accepted and ignored; display units are resolved from the record's profile client-side.
 - Batch state (`activeBatches`, max 200) is per machine: a poll landing on the other Fly machine 404s and the client falls back. Accepted.
-- An ended batch is deleted at Anthropic by the 10-minute sweep, never by the poll (`deleteBatch`, US-12 AC18). A poll that reads the results marks the batch served and keeps answering it, so a re-poll after a lost answer works; the next sweep deletes it (0 to 10 minutes after the first answer). A batch nobody polled to the end goes an hour after upload: one still running is cancelled, then deleted on a later sweep, retried for up to 25 h. In memory: a restart forgets them, and Anthropic's 29-day retention applies.
+- An ended batch is deleted at Anthropic by the 10-minute sweep, never by the poll (`deleteBatch`, US-12 AC18). A poll that reads the results stamps `servedAt` and keeps answering; the first sweep at least 10 minutes later deletes it, so it goes 10 to 20 minutes after the first answer and a re-poll always has 10. A batch nobody polled to the end goes an hour after upload: one still running is cancelled, then deleted on a later sweep, retried for up to 25 h. Sweeps never overlap (an in-flight guard) and the interval is `unref`'d. In memory: a restart, or a machine stopped while idle, forgets them, and Anthropic's 29-day retention applies.
 - The v1 `api.lab-import.ts` and the `bulkMeasurements` branch of `api.measurements.ts` were deleted in the 2026-06-12 teardown; there is no server save path.
 
 ### `app/lib/anthropic.server.ts`

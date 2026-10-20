@@ -490,6 +490,34 @@ describe('US-12 AC9: a ZIP member over the per-file limit is named and never rea
   });
 });
 
+// US-12 AC17 (PR #201 review R1): the window caps the files picked, but a ZIP
+// opens into more. Past 200 the server refuses the whole batch, so the run
+// sends the first 200 and names the rest, sending them nowhere.
+describe('US-12 AC17: one upload sends at most 200 files, ZIP members included', () => {
+  type Poll = Awaited<ReturnType<typeof pollBatchStatus>>;
+  it('a ZIP of 200 plus one loose file: the 200 are sent, the loose file is named and not sent', async () => {
+    const paths = Array.from({ length: 200 }, (_, i) => `r${i}.pdf`);
+    zipBundle(async () => paths.map(name => ({ name, entry: { async: async () => new Blob([name]) } })));
+    vi.mocked(labImportBatch).mockResolvedValue({ batchId: 'batch_abc' });
+    vi.mocked(pollBatchStatus).mockImplementation(async () => ({
+      status: 'ended', completed: 200, total: 200,
+      results: vi.mocked(labImportBatch).mock.calls[0]![0].map((_f, index) => ({ ...withValues.result!, index })),
+    }) as Poll);
+    vi.useFakeTimers();
+    try {
+      render_(); pick(zip('labs.zip'), pdf('loose.pdf'));
+      await vi.waitFor(() => expect(labImportBatch).toHaveBeenCalled());
+      await vi.advanceTimersByTimeAsync(5000);
+    } finally { vi.useRealTimers(); }
+    await screen.findAllByDisplayValue('3.9');
+    expect(vi.mocked(labImportBatch).mock.calls[0]![0]).toHaveLength(200);
+    expect(extractFromPdf.mock.calls.map(([f]) => (f as File).name)).not.toContain('loose.pdf');
+    expect(reasonFor('loose.pdf')).toBe('Not read. It is over the 200-file limit for one upload. Upload it separately.');
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 201, withValues: 200, limitError: 1 }));
+  });
+});
+
 // US-12 AC9: the GitHub Pages build has no server of ours and no daily limit.
 // It reads with the user's own Anthropic key, so a 429 is that key's
 // per-minute rate limit, and a failure is Anthropic's, never "our server".

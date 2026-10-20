@@ -3,9 +3,7 @@
  * Bundled in health-upload.js (separate IIFE).
  */
 import JSZip from 'jszip';
-import { fileNameLine, isImportableEntryName } from '@roadmap/health-core';
-
-const MAX_FILES = 200;
+import { fileNameLine, IMPORT_LIMITS, isImportableEntryName } from '@roadmap/health-core';
 
 /** ZIP entry enumeration — filters junk, dotfiles, unsupported extensions
  *  (the rule is health-core's, shared with the connector's import). */
@@ -21,7 +19,7 @@ export async function getZipEntries(file: File): Promise<Array<{ name: string; e
     entries.push({ name, entry });
   });
 
-  return entries.slice(0, MAX_FILES);
+  return entries.slice(0, IMPORT_LIMITS.websiteFiles);
 }
 
 /** Returns true if file is a ZIP */

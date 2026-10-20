@@ -30,6 +30,7 @@ vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
 import * as Sentry from '@sentry/react-router';
 import { ExtractionStopError } from '../lib/anthropic.server';
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
+import { machineFiles } from '../lib/rate-limiter';
 import { action, loader } from './api.lab-import-v2';
 
 const FILES = [{ fileName: 'a.pdf', pages: [{ type: 'image', content: 'AAAA', mimeType: 'image/png' }] }];
@@ -426,5 +427,33 @@ describe('US-12 AC15: a refused value reaches an old widget as a value that coul
   it('refusedRows is `true` or absent', async () => {
     expect((await action({ request: single({ refusedRows: 1 }) } as never)).status).toBe(400);
     expect((await action({ request: batch({ refusedRows: 'yes' }) } as never)).status).toBe(400);
+  });
+});
+
+// PR #201 review R2: a file is charged only if it reaches Anthropic. Busy is
+// covered in api.lab-import-v2.sweep.test.ts (it fills the batch table).
+describe('US-12 AC17: a batch that never reaches Anthropic costs no quota', () => {
+  const remaining = async (ip: string) =>
+    (await (await loader({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', { headers: { 'fly-client-ip': ip } }) } as never)).json()).remaining;
+  const one = (ip: string) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST', headers: { 'fly-client-ip': ip }, body: JSON.stringify({ batch: true, files: FILES }),
+  });
+
+  it('the machine cap refuses: the IP is not charged', async () => {
+    machineFiles.take('machine', machineFiles.remaining('machine'));
+    try {
+      const res = await action({ request: one('10.4.0.1') } as never);
+      expect(res.status).toBe(429);
+      expect(await remaining('10.4.0.1')).toBe(200);
+    } finally { machineFiles.reset(); }
+  });
+
+  it('createBatch throws: the IP and the machine are both refunded', async () => {
+    createBatch.mockRejectedValueOnce(new Error('Batch API error (status 500)'));
+    const machineBefore = machineFiles.remaining('machine');
+    const res = await action({ request: one('10.4.0.2') } as never);
+    expect(res.status).toBe(500);
+    expect(await remaining('10.4.0.2')).toBe(200);
+    expect(machineFiles.remaining('machine')).toBe(machineBefore);
   });
 });
