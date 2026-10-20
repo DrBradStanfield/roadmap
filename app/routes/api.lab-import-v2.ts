@@ -3,10 +3,11 @@ import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
 import { UNDATED_PREVIOUS } from '../../packages/health-core/src/lab-extraction';
-import { extractOrClassify, createBatch, pollBatch, deleteBatch, BatchRefusedError, ExtractionStopError, reportExtractionStop } from '../lib/anthropic.server';
+import { extractOrClassify, createBatch, pollBatch, BatchRefusedError, ExtractionStopError, reportExtractionStop } from '../lib/anthropic.server';
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
+import { activeBatches, MAX_ACTIVE_BATCHES, type DayFlags } from '../lib/lab-batches.server';
 
 /**
  * Lab extraction for the LOCAL-FIRST storefront page (Phase 4 "thin server
@@ -49,50 +50,6 @@ function refundQuota(ip: string, count: number): void {
   ipQuota.refund(ip, count);
   machineFiles.refund('machine', count);
 }
-
-// Batch poll state — per-machine, like v1 (a poll landing on the other Fly
-// machine returns 404 and the client falls back; same accepted risk as v1).
-//
-// A batch id is Anthropic's, not a secret, and the poll returns EXTRACTED LAB
-// TEXT — so the id alone must not be enough to read someone else's results.
-// Each batch carries a random `pollToken`, handed to the uploader once and
-// required on every poll; without it, or with the wrong one, the batch does not
-// exist (404, the same answer as an id nobody created).
-const MAX_ACTIVE_BATCHES = 200;
-const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; days: DayFlags; refusedRows?: true; servedAt?: number }>();
-// Batches Anthropic still holds for us, id → createdAt: each is deleted there
-// once ended (US-12 AC18). The sweep takes a batch whose results were served
-// at least 10 minutes ago, so a re-poll after a lost answer has that long, and
-// one nobody polled to the end (the tab closed) after an hour. deleteBatch
-// cancels a batch still running, so the next sweep can delete it. Every batch
-// ends within 24 h, so after 25 the sweep stops trying. Per machine and in
-// memory, like activeBatches: a restart forgets them, and Anthropic's 29 days apply.
-const undeletedBatches = new Map<string, number>();
-let sweeping = false;
-const sweep = setInterval(async () => {
-  if (sweeping) return; // a slow sweep (up to 200 deletes) never overlaps the next
-  sweeping = true;
-  try {
-    const now = Date.now();
-    for (const [id, b] of activeBatches) {
-      // A served batch keeps its 10 minutes, however old; an unserved one gets an hour.
-      if (b.servedAt ? b.servedAt <= now - 10 * 60_000 : b.createdAt < now - 60 * 60_000) {
-        activeBatches.delete(id);
-        undeletedBatches.set(id, b.createdAt);
-      }
-    }
-    for (const [id, createdAt] of undeletedBatches) {
-      if (await deleteBatch(id) || createdAt < now - 25 * 60 * 60_000) undeletedBatches.delete(id);
-    }
-  } finally {
-    sweeping = false;
-  }
-}, 10 * 60_000);
-// Never hold the process open just to sweep, as rate-limiter.ts does.
-sweep.unref?.();
-
-/** The flags a widget sends to say which own days it reads. */
-type DayFlags = { ownDates?: true; undatedPrev?: true };
 
 /**
  * A widget from before dated previous columns ignores `recordedAt` and would

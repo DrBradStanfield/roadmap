@@ -32,7 +32,7 @@ let loadedAt = 0;
 const toNextSweep = () => 10 * MIN - ((Date.now() - loadedAt) % (10 * MIN));
 
 beforeAll(async () => {
-  // The sweep is armed when the module loads: fake the clock first.
+  // The sweep is armed when lab-batches.server loads, which the route imports: fake the clock first.
   vi.useFakeTimers({ toFake: ['setInterval', 'Date'] });
   loadedAt = Date.now();
   ({ action } = await import('./api.lab-import-v2'));
