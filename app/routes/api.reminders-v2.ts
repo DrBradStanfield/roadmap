@@ -37,8 +37,8 @@ import { recordServerEvent } from '../lib/product-events.server';
  *            confers far more than "verify my email"). Anyone can name anyone's
  *            inbox here, so the typed lane's rules hold (AC8): a new address
  *            gets its capability token ONCE (the browser saves it in the user's
- *            own cloud file); an existing address is a schedule refresh and
- *            gets nothing back.
+ *            own cloud file); an existing address is a schedule refresh (never
+ *            of a Google-verified row, US-23 AC7) and gets nothing back.
  *  - update: capability token + replacement schedule (client re-pushes on
  *            every data change / app visit).
  *  - cancel: capability token → the row is tombstoned (schedule emptied);
@@ -153,7 +153,8 @@ export async function action({ request }: ActionFunctionArgs) {
     // had just been rotated — no token in their file means schedule pushes
     // never start and toggle-off is a no-op.
     if (enrolment.token) return Response.json({ token: enrolment.token, email }, { headers });
-    // The address lane, already enrolled: the schedule was refreshed and NO
+    // The address lane, already enrolled: the schedule was refreshed (a
+    // Google-verified row is left whole, same reply: US-23 AC7) and NO
     // token is returned (AC8 — it would hand the cancel capability to whoever
     // typed the address). This reply is a bounded membership oracle, accepted
     // by Brad 2026-09-10; the limits above bound it.

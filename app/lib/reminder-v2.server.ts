@@ -189,7 +189,8 @@ export type Enrolment = { isNew: true; token: string } | { isNew: false; token?:
 /**
  * Credential-free enrolment (Dropbox, GitHub, typed — US-17 AC7/AC8). Anyone
  * can POST anyone's email, so a write here may only ever CREATE a fresh row
- * or refresh the SCHEDULE of an existing one. Three attacks the shape of this
+ * or refresh the SCHEDULE of an existing address-lane one; a Google-verified
+ * row is left whole (US-23 AC7, 2026-10-20). Three attacks the shape of this
  * function exists to kill (adversarial reviews 2026-08-14 and 2026-09-10):
  *  - never rotate an existing row's token: an upsert on email would, and the
  *    victim's own device's next schedule push would 404 into "you
@@ -228,10 +229,13 @@ export async function enrolByEmail(
   if (error) throw new Error(`reminder_optin_v2 lookup failed: ${error.message}`);
 
   if (data) {
+    // Never a Google-verified row's schedule (US-23 AC7): its owner pushes it
+    // by token. The UPDATE filters, so the reply and round trips match.
     const { error: updateError } = await requireAdmin()
       .from('reminder_optin_v2')
       .update({ schedule: ensureAnnualFloor(schedule), updated_at: new Date().toISOString() })
-      .eq('email', normalized);
+      .eq('email', normalized)
+      .neq('provider', 'google-drive');
     if (updateError) throw new Error(`reminder_optin_v2 refresh failed: ${updateError.message}`);
     return { isNew: false };
   }
