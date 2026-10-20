@@ -22,5 +22,21 @@
   "reason": "Brad 2026-10-21: count corrected to products.md:136 (v8 powder = 26 core + 4 = 30); 25 was the v7 count",
   "by": "orchestrator",
   "date": "2026-10-21"
+ },
+ {
+  "check": "AC6",
+  "handle": "",
+  "match": "unexpected change: docs/loops/chat-health/lint-state.json",
+  "reason": "Expected: the master-hash write (knowledge-lint --write-master-hashes) in 6bad0d8c rewrote the turmeric master hash in lint-state.json.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC7",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "product mentions rose 3 -> 4",
+  "reason": "Brad 2026-10-21: the MicroVitamin+ Powder section now names the MicroVitamin capsules once, to state the corrected 26 + 4 = 30 ingredient count (products.md:136); a correction, not new promotion.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
  }
 ]
