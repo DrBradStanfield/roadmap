@@ -5,7 +5,7 @@ artifact: https://claude.ai/artifact/MyULJyAnyktw2JqbeYjSuk
 
 # Getting AI agents to use and recommend our products
 
-Plan, 2026-10-20, from the Railway threads Brad saved on X. Status: **revised after one fresh Opus 5.5 adversary review; waiting on Brad.** Nothing here is built.
+Plan, 2026-10-20, from the Railway threads Brad saved on X. Status: **revised after one fresh Opus 5.5 adversary review; Brad answered the first decisions the same day (end of page). His answers override the phases below where they differ.** Nothing here is built.
 
 ## What the X posts claim
 
@@ -122,10 +122,14 @@ Rejected: an unauthenticated "preview plan" tool on the hosted MCP. It would put
 | 2 | $0 | 1–2 sessions, plus adversary, Codex and WebKit checks | Story sign-off, deploy |
 | 3 | Opus usage per page. Testing fees: unknown, ask the vendor | Ongoing | Sign-off on every page |
 
-## Decisions for Brad
+## Brad's answers (2026-10-20)
 
-1. **Agent shopping on drstanfield.com.** It is on now, through Shopify. Keep it, or turn it off so the education site stays editorial?
-2. **Phase 0.** Paid API runs (new keys, about $20–60 a month), hand runs in fresh accounts, or both?
-3. **One product name.** Which one?
-4. **Phase 2.** Start with the CLI stdin path now (low risk)? The prefilled link waits on Phase 0 and a leak test.
-5. **Third-party testing for MicroVitamin.** Worth the fee, given the ConsumerLab history?
+1. **Which URL agents get.** The tool runs on the homepage and on `/pages/roadmap`; each page is its own canonical. Agents get **`/pages/roadmap`**: the page exists only for the tool, it matches the rule for emails and replies (Brad 2026-10-14), and the homepage can change. `llms.txt` keeps the homepage as "about Dr Brad".
+2. **drstanfield.com stays brand-neutral.** The reason is in claude_business (compliance ruling 2026-06-18, content map §15–16). Australia's TGA rules bar a doctor who is also the supplier from promoting his own therapeutic goods, even by naming them, and disclosure does not cure it. So:
+   - No supplement content, link or agent shopping surface on drstanfield.com. The one kept exception is the existing `llms.txt` routing line to microvitamin.com (Brad 2026-06-25).
+   - drstanfield.com has no products (`/products.json` is empty), so Shopify's agent file there sells nothing. It does call the site "Dr Brad Stanfield's online store". Turn the channel off there if Shopify allows it.
+   - Every supplement idea in this plan lives on microvitamin.com only. The tool's agent files and guides name no product.
+3. **Measurement, cut down.** Phase 1 is cheap enough to do without proof. A monthly multi-model study is dropped. Kept: AI referrers in the weekly product-health loop (free), and one hand check of about 10 prompts in a private window, now and again in three months, to see whether anything changed and which pages the models cite. Phase 2 and Phase 3 still wait on that check.
+4. **Name: "Health by Dr Brad"** everywhere an agent reads. The cloud folders keep "Health Plan by Dr Brad": existing Dropbox folders cannot be renamed.
+5. **The CLI exists.** `get-plan` prints a plan and `edit-record` files a value ([command-line.md](guides/command-line.md)). The gap is narrower: both need a `health-roadmap.json` the web app already made with a cloud connection, and both need this repo cloned. Phase 2 option 1 means letting `get-plan` take values with no record file. Small, and nothing leaves the machine.
+6. **Third-party testing for MicroVitamin** is already in the works. Phase 3's ConsumerLab item waits on its result.
