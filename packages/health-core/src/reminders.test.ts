@@ -401,6 +401,27 @@ describe('getCategoryGroup', () => {
 });
 
 describe('formatReminderDate', () => {
+  it.each([
+    ['2025-01-01', 'Jan 2025'],
+    ['2024-12-01', 'Dec 2024'],
+    ['2024-02-29', 'Feb 2024'],
+    ['2024-12-31', 'Dec 2024'],
+    ['2025-03-01', 'Mar 2025'],
+  ])('keeps calendar date %s in its own month (US-17)', (input, expected) => {
+    expect(formatReminderDate(input)).toBe(expected);
+  });
+
+  it.each([
+    '2025-01-01T00:30:00.000Z',
+    '2024-12-31T23:30:00-08:00',
+    '2025-01-01T00:30:00+14:00',
+  ])('preserves local display of timestamp %s (US-17)', (input) => {
+    const expected = new Intl.DateTimeFormat('en-US', {
+      month: 'short', year: 'numeric',
+    }).format(new Date(input));
+    expect(formatReminderDate(input)).toBe(expected);
+  });
+
   it('formats ISO date to Mon YYYY (US-17)', () => {
     // Noon UTC so getMonth()/getFullYear() name the same month in every IANA
     // zone. Midnight UTC on the 1st is the previous local day west of UTC, so
