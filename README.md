@@ -115,7 +115,7 @@ cp .env.example .env   # fill in what you need
 npm run test:all
 ```
 
-Node 20.10 or newer. Never run `shopify app dev`: the dev preview overrides
+Node 22 or newer. Never run `shopify app dev`: the dev preview overrides
 production.
 
 ## Tests

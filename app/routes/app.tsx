@@ -20,7 +20,7 @@ export default function App() {
   // The @shopify/shopify-app-react-router AppProvider initializes App Bridge, which registers the
   // Polaris web components (`s-*`) the admin routes render. No Polaris React context is needed.
   return (
-    <AppProvider embedded apiKey={apiKey}>
+    <AppProvider apiKey={apiKey}>
       <NavMenu>
         <Link to="/app" rel="home">
           Home

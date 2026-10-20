@@ -53,7 +53,7 @@ describe('api.chat malformed body', () => {
 // US-15 AC9 (Sentry JAVASCRIPT-REMIX-6E): a request without a valid app-proxy
 // signature gets the framework's own 400, not a 500, and is never a Sentry
 // error. `authenticate.public.appProxy` rejects by THROWING a Response
-// (@shopify/shopify-app-react-router 1.2.0, authenticate.js:17), which the
+// (@shopify/shopify-app-react-router 3.0.2, authenticate.js:17), which the
 // route's catch-all used to swallow as "Chat: Action failed".
 // react-router returns a thrown Response from a resource route as-is, without
 // calling handleError (7.18.3, handleQueryRouteError) — so the route must let
