@@ -1,4 +1,4 @@
-<!-- generated — never edit; source hash sha256:cee10030b0db94c654a62f25091ad9e4dcc6f709ba58db9cce1f7e9a36b9bedc -->
+<!-- generated — never edit; source hash sha256:cb76c81e6559d98f36333ecfa6c4e06c81766f7c1f15039d3867206d7334c237 -->
 <!-- Built by claude_business tools/sync-shared-docs.mjs from docs/customer-service/answer-bank.md. Edit the master there and rerun the sync. -->
 
 Approved answers to questions customers have asked by email (81 entries), written in the first person. Each entry gives the question, then the answer.
