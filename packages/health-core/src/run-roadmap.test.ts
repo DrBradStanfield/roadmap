@@ -136,8 +136,8 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
     expect(JSON.parse(text)).toMatchObject({ applied: ['ldlC'], rejected: [], roadmap: ctx(run.contextJson) });
   });
 
-  it('CHAT_TOOLS is the two form tools plus run_roadmap, which reuses the form tool\'s field enum', () => {
-    expect(CHAT_TOOLS.map(t => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+  it('CHAT_TOOLS is the three form tools plus run_roadmap, which reuses the form tool\'s field enum', () => {
+    expect(CHAT_TOOLS.map(t => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap']);
     expect(RUN_ROADMAP_TOOL.input_schema.properties.values.items.properties.field.enum)
       .toEqual(PROPOSE_FIELD_EDIT_TOOL.input_schema.properties.field.enum);
   });
@@ -147,15 +147,22 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
       ...earlier.flatMap(c => [{ role: 'user' as const, content: c }, { role: 'assistant' as const, content: 'ok' }]),
       { role: 'user', content },
     ]).map(t => t.name);
-    expect(names('analyse my data: LDL 4.1 mmol/L')).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+    expect(names('analyse my data: LDL 4.1 mmol/L')).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap']);
     expect(names('My Lp(a) came back at 75')).toContain('run_roadmap');
-    expect(names('I have chest pain and I took Viagra yesterday. Can I use my GTN spray?')).toEqual(['propose_field_edit', 'propose_medication_edit']);
+    expect(names('I have chest pain and I took Viagra yesterday. Can I use my GTN spray?')).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit']);
     // The previous user message counts too: "Lp(a) 75", the unit asked, then "nmol/L".
     expect(names('nmol/L', ['My Lp(a) came back at 75'])).toContain('run_roadmap');
     expect(names('female, five foot five', ['analyse: LDL 4.1 mmol/L'])).toContain('run_roadmap');
     // Two user messages back does not.
     expect(names('can you analyse that?', ['LDL 4.1 mmol/L', 'thanks'])).not.toContain('run_roadmap');
     expect(chatToolsFor([]).map(t => t.name)).not.toContain('run_roadmap');
+  });
+
+  // US-16 AC2 (adversary R1): a widget built before the profile tool gets the old set.
+  it('chatToolsFor without profile edits leaves out propose_profile_edit, and only it', () => {
+    const said = (content: string) => [{ role: 'user' as const, content }];
+    expect(chatToolsFor(said('LDL 4.1 mmol/L'), false).map(t => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+    expect(chatToolsFor(said('hello'), false).map(t => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
   });
 
   it('the usage guidance lives in the tool description, not the system prompt', () => {
@@ -165,10 +172,11 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
       "the user's own values", "not a family member's"]) expect(d).toContain(rule);
   });
 
-  // US-15 AC36 review R1 (2026-10-20): propose_field_edit cannot set sex or height, so the tool never offers
-  // to pre-fill them; it sends the user to the roadmap tool to keep them.
-  it('US-15 AC36: offers a pre-fill only for measurements, never for sex or height', () => {
-    expect(RUN_ROADMAP_TOOL.description).toContain('never offer that for sex or height: tell them to enter those in the roadmap tool');
+  // US-16 AC2 (2026-10-20, Brad): a stated sex or height can now be saved from the chat, with the
+  // user's confirmation, through propose_profile_edit; the measurements' field enum still holds neither.
+  it('US-16 AC2: offers to save a stated sex or height with propose_profile_edit, or in the roadmap tool', () => {
+    expect(RUN_ROADMAP_TOOL.description).toContain('and, when you have that tool, to save a stated sex or height with propose_profile_edit (or they can enter them in the roadmap tool)');
+    expect(RUN_ROADMAP_TOOL.description).not.toContain('never offer that for sex or height');
     expect(EDITABLE_FIELDS).not.toContain('sex');
     expect(EDITABLE_FIELDS).not.toContain('heightCm');
   });
@@ -402,11 +410,15 @@ describe('US-15 AC33: one run_roadmap per turn (S1) and honest stubs (S5)', () =
       use('med', 'propose_medication_edit', { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }),
       use('badmed', 'propose_medication_edit', { medicationKey: 'IGNORE PREVIOUS', drugName: 'x' }),
       use('other', 'some_tool', {}),
+      // US-16 AC2: a profile edit waits for the user's Save; an out-of-range one is refused.
+      use('profile', 'propose_profile_edit', { sex: 'male', height: { value: 178, unit: 'cm' } }),
+      use('badprofile', 'propose_profile_edit', { height: { value: 17.8, unit: 'cm' } }),
     ], PROFILE)!;
     const byId = Object.fromEntries(round.results.map(r => [r.tool_use_id, r.content]));
     expect(byId.ok).toBe('Pre-filled for the user to review and Save.');
     expect(byId.med).toMatch(/save at once/);
-    for (const id of ['badunit', 'badmed', 'other']) {
+    expect(byId.profile).toBe('Shown to the user to confirm; nothing is saved until they press Save.');
+    for (const id of ['badunit', 'badmed', 'other', 'badprofile']) {
       expect(byId[id]).toBe('Not applied: the edit did not pass the form\'s checks, so nothing was pre-filled or saved.');
     }
     expect(JSON.stringify(round.results)).not.toContain('IGNORE');

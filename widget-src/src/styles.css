@@ -3964,14 +3964,24 @@ a.action-btn-small.action-btn-small:hover {
 
 /* --- Floating chat FAB --- */
 
-/* Medication-from-chat undo banner (top-centre, above the FAB). */
-.chat-med-undo {
+/* The chat's banners (top-centre, above the FAB): the medication undo and the
+   profile proposal (US-16 AC2) stack in one column, so neither covers the other. */
+.chat-banners {
   position: fixed;
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  /* One above .chat-expanded so the undo toast stays visible over the panel. */
+  /* left: 50% alone would cap a banner at half the viewport. */
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  /* One above .chat-expanded so the banners stay visible over the panel. */
   z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.chat-med-undo {
   display: flex;
   align-items: center;
   gap: 12px;

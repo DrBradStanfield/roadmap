@@ -92,7 +92,9 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   sent once per tab, so the split counts each tab's first answer only;
   `chat_run_roadmap` (server: the chat ran the plan on values typed into
   it; `count` used and `rejected` stated values, counts only, read against
-  `chat_opened`, US-15 AC33); `subscription_action_confirmed` (server, name only: a customer
+  `chat_opened`, US-15 AC33); `chat_profile_edit` split by `field` (sex|heightCm) and
+  `choice` (shown|saved|declined): the saved/shown ratio is the chat-proposed profile save's
+  adoption, names only, never a value (US-16 AC2); `subscription_action_confirmed` (server, name only: a customer
   confirmed a subscription change card in the microvitamin.com chat, US-49 subscriptions; a zero
   is by design while `CHAT_SUBSCRIPTION_ACTIONS` is off); `reminder_optin_v2` total by `provider`. Read `mcp_authorize_shown` with a
   clock: more than two rows a second from one client, with no

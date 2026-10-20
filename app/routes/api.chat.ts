@@ -402,6 +402,8 @@ export async function action({ request }: ActionFunctionArgs) {
     // Only the widget's own chat applies form edits, so only it gets the tools (US-15 AC19):
     // the server holds the other surfaces to that, whatever their body says.
     const canApplyEdits = widget && body.canApplyEdits === true;
+    // US-16 AC2: only a widget that applies a profile edit says so; an older one would write it as a medication.
+    const canApplyProfileEdits = canApplyEdits && body.canApplyProfileEdits === true;
     // The streamed turn opens its stream here, before stage 1, so the user
     // sees progress while the classifier, router and content load (US-15
     // AC20). From here on a failure is a `done` line there and an HTTP 500
@@ -539,7 +541,7 @@ export async function action({ request }: ActionFunctionArgs) {
       // replacing a health answer. run_roadmap reads the widget's own record (US-15 AC33).
       const subscriptionTool = subscriptionsOn && !widget;
       const completion = await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, onEvent,
-        subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs } : undefined);
+        subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs, ...(canApplyProfileEdits ? { profileEdits: true } : {}) } : undefined);
       const tAfterLlm = Date.now();
       // US-15 AC33 usage signal: one counter per run_roadmap round, the numbers of
       // stated values used and rejected and nothing else. Fire-and-forget.

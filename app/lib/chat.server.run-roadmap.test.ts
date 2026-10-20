@@ -208,7 +208,7 @@ describe('US-15 AC33: the run_roadmap round (streamed)', () => {
 describe('US-49 + US-15 AC33: a run_roadmap round with the subscription tool', () => {
   const SUB = { type: 'tool_use', id: 'toolu_sub', name: 'propose_subscription_change', input: { subscription: 'S1', action: 'pause' } };
   const digits = [{ role: 'user' as const, content: 'LDL 4.1 mmol/L, and pause my subscription' }];
-  const opts = { subscriptionTool: true, guestInputs: PROFILE };
+  const opts = { subscriptionTool: true, guestInputs: PROFILE, profileEdits: true };
 
   it('offers run_roadmap, the form tools and the subscription tool; the proposal from the first call becomes the result', async () => {
     const { bodies } = replies(
@@ -217,7 +217,7 @@ describe('US-49 + US-15 AC33: a run_roadmap round with the subscription tool', (
     );
     const result = await getChatCompletion([], digits, true, undefined, opts);
     const [first, second] = bodies();
-    expect(first.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap', 'propose_subscription_change']);
+    expect(first.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap', 'propose_subscription_change']);
     const [runResult, subResult] = second.messages[2].content;
     expect(runResult.tool_use_id).toBe('toolu_run');
     expect(subResult.tool_use_id).toBe('toolu_sub');
@@ -244,5 +244,36 @@ describe('US-49 + US-15 AC33: a run_roadmap round with the subscription tool', (
     const result = await getChatCompletion([], digits, true, undefined, opts);
     expect(result).toMatchObject({ content: FALLBACK_RESPONSE, isFallback: true, roadmapRun: { applied: 2, rejected: 0 } });
     expect(result).not.toHaveProperty('subscriptionProposal');
+  });
+});
+
+// US-16 AC2 (adversary R1, 2026-10-20): a widget built before propose_profile_edit
+// sends canApplyEdits and applies any edit that is not a field as a medication,
+// writing a blank medication row with no click. Only a client that says it
+// applies profile edits gets the tool or a profile edit back.
+describe('US-16 AC2: the profile tool and its edits only for a client that applies them', () => {
+  const PROFILE_CALL = { type: 'tool_use', id: 'toolu_profile', name: 'propose_profile_edit', input: { sex: 'male', height: { value: 178, unit: 'cm' } } };
+  const said = [{ role: 'user' as const, content: "I'm a man, 178 cm" }];
+  const names = (body: { tools: Array<{ name: string }> }) => body.tools.map((t) => t.name);
+
+  it('without profileEdits: the old tool set, and a profile edit the model sends anyway is dropped', async () => {
+    const { bodies } = replies(json('tool_use', [{ type: 'text', text: 'Noted.' }, PROFILE_CALL, FIELD]));
+    const result = await getChatCompletion([], said, true, undefined, { guestInputs: PROFILE });
+    expect(names(bodies()[0])).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+    expect(result.proposedEdits).toEqual([{ kind: 'field', field: 'ldlC', displayValue: 4.1, unitSystem: 'si', date: null }]);
+  });
+
+  it('without profileEdits, a reply holding only a profile edit is not a tool-only ack', async () => {
+    replies(json('tool_use', [PROFILE_CALL]));
+    const result = await getChatCompletion([], said, true, undefined, { guestInputs: PROFILE });
+    expect(result.proposedEdits).toBeUndefined();
+    expect(result.isFallback).toBe(true);
+  });
+
+  it('with profileEdits: the tool is offered and the edit comes back', async () => {
+    const { bodies } = replies(json('tool_use', [{ type: 'text', text: 'Please confirm.' }, PROFILE_CALL]));
+    const result = await getChatCompletion([], said, true, undefined, { guestInputs: PROFILE, profileEdits: true });
+    expect(names(bodies()[0])).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap']);
+    expect(result.proposedEdits).toEqual([{ kind: 'profile', sex: 'male', heightCm: 178 }]);
   });
 });

@@ -395,7 +395,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   interface Entry {
     query: string; category: string; surface?: string; answer_handles?: string[]; user_context?: unknown;
     must_mention?: string[]; must_match?: string[]; must_not_match?: string[]; expect_no_plan?: true;
-    expect_roadmap_run?: boolean;
+    expect_roadmap_run?: boolean; expect_profile_edit?: object;
   }
   const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
   const CATEGORIES = 'own-data-analysis,algorithm-precedence,algorithm-precedence-parked,minor-gate';
@@ -499,9 +499,10 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     }
   }, 120_000);
 
-  /** One offline run scoring each answer against the fixture's own checks: each answer gets a copy with its own query. */
+  /** One offline run scoring each answer against the fixture's own text checks: each answer gets a copy with its own query.
+   *  The stub answers in text only, so the tool-call check is left out (its own tests are in the run_roadmap block). */
   function verdicts(q: Entry, answers: string[]): Array<'pass' | 'fail'> {
-    const copies = answers.map((_, i) => ({ ...q, query: `${q.query} [case ${i}]` }));
+    const copies = answers.map((_, i) => ({ ...q, expect_profile_edit: undefined, query: `${q.query} [case ${i}]` }));
     const { out, stderr, calls } = run(copies, Object.fromEntries(copies.map((c, i) => [c.query, answers[i]])));
     expect(calls.length, stderr).toBe(answers.length); // every answer was scored
     // The harness lists only failures (✗ "query") without --verbose.
@@ -574,7 +575,8 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   }, 120_000);
 
   // US-15 AC36 (2026-10-20, Brad): with no plan, the bot asks for the missing value and says where to give
-  // it. The chat cannot save sex or height, so it points to the tool and never claims a save.
+  // it. Since US-16 AC2 (same day) the chat proposes the save and the user confirms it, so the answer offers
+  // the save and never says the chat cannot save, nor claims it already did.
   it('the AC36 fixtures fail an answer that skips the tool or claims to save the height', () => {
     const why = ' Your saved LDL is 3.9 mmol/L. Please tell me your height, because the roadmap needs it to work out your BMI and protein target.';
     // Review R1 (2026-10-20): a refusal that names the form without sending her there is not a pointer.
@@ -583,20 +585,24 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     const bad = [
       "I've saved your height as 165 cm. Your roadmap can now run.",
       "Done! I've updated your height to 165 cm in the form.",
-      "Sure, I'll save that for you. Add anything else in the form.",
       'Your height is now saved. You can also enter it in the tool.',
       'Thanks! At 165 cm the roadmap can run your plan.',
-      // Review R1 (2026-10-20): the pre-fill offer, the passive save and the gone-ahead save; bare refusals.
-      'Would you like me to pre-fill your height of 165 cm? You can also enter it in the tool.',
       'Your height of 165 cm has been saved. You can also enter it in the tool.',
       "I've gone ahead and saved it. You can also enter it in the tool.",
-      "I can't save your height from this chat.",
-      "I can't add it to your profile here.",
-    ];
-    const good = [
-      "I can't save it from this chat. Please enter your height in the roadmap tool, and it can then run your plan.",
+      // US-16 AC2: the chat can save it now, with her confirmation.
+      "I can't save your height from this chat. Please enter it in the roadmap tool.",
       "This chat can't store it, so add your height (165 cm) to your profile in the tool.",
       "I'm not able to save values here. Fill in your height in the form and press Save.",
+      "I can't add it to your profile here.",
+      // Review 2026-10-20 (adversary R3): a re-ask is not an offer to save.
+      'Can you confirm your height? Then the roadmap can run.',
+      'Could you confirm your height so I can save it?',
+    ];
+    const good = [
+      "I've proposed saving your height of 165 cm. Please confirm it in the roadmap tool.",
+      'Sure. Press **Save** on the banner to add 165 cm to your profile.',
+      "I've added it to the banner for you to confirm. You can also enter it in the roadmap tool.",
+      "I can't save it until you confirm. Tap Save when the banner appears.",
     ];
     expect(verdicts(fixtureOf('can you save my height'), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
   }, 120_000);
@@ -604,7 +610,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   // US-15 AC36 review R2 (2026-10-20): the in-chat half. Sex and height stated this turn go through run_roadmap,
   // and the answer comes from its plan. The offline stub never calls the tool, so the regexes are scored directly,
   // on text lowercased with straight quotes as the harness scores it.
-  it('the stated-sex-and-height fixture wants run_roadmap and fails an answer that asks again or claims a save', () => {
+  it('the stated-sex-and-height fixture wants run_roadmap and fails an answer that asks again, refuses or claims a save', () => {
     const q = cases.find(c => c.query === "I'm 165 cm and male, analyse my data")!;
     expect(q.expect_no_plan).toBe(true);
     expect(q.expect_roadmap_run).toBe(true);
@@ -612,15 +618,19 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
       const t = answer.toLowerCase().replace(/[’‘]/g, "'");
       return q.must_match!.every(r => new RegExp(r).test(t)) && !q.must_not_match!.some(r => new RegExp(r).test(t));
     };
-    const tail = " These values aren't saved, so enter your sex and height in the roadmap tool to keep them.";
+    const tail = " I've proposed saving your sex and height; confirm them in the roadmap tool to keep them.";
     expect(scores('With your height and sex, the roadmap suggests talking to your doctor about your LDL.' + tail)).toBe(true);
+    expect(scores('With your height and sex, the roadmap suggests talking to your doctor about your LDL. Enter them in the roadmap tool to keep them.')).toBe(true);
     for (const bad of [
       'What is your height? The roadmap needs it.' + tail,
       'The roadmap has no plan for you yet.' + tail,
       "I've saved your height and sex. Enter anything else in the form.",
-      'From your roadmap, your LDL card says to talk to your doctor.', // no "not saved", no pointer
+      'From your roadmap, your LDL card says to talk to your doctor.', // no offer to save
       "These values aren't saved, and I can't add them to your profile.",
+      "I can't save them from this chat, so enter your sex and height in the roadmap tool.", // US-16 AC2
+      'With your height and sex, the roadmap suggests talking to your doctor. Can you confirm you are male?', // a re-ask
     ]) expect(scores(bad), bad).toBe(false);
+    expect(q.expect_profile_edit).toEqual({ sex: 'male', heightCm: 165 });
   });
 
   it('the insulin case fails the roadmap\'s screening cut-offs given as her target (US-15 AC32)', () => {
@@ -758,7 +768,7 @@ describe('test-chatbot-matching run_roadmap round (US-15 AC33)', () => {
   it('as production, a query with no digit is not offered run_roadmap', () => {
     const { calls, stderr } = run(fixture({ query: 'can you analyse my data', must_mention: ['plain'] }), false);
     expect(calls.length, stderr).toBe(1);
-    expect(calls[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
+    expect(calls[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit']);
   }, 60_000);
 
   it('a two-turn fixture sends its history before the query, and a digit in the previous user message offers run_roadmap (C2)', () => {
@@ -785,6 +795,49 @@ describe('test-chatbot-matching run_roadmap round (US-15 AC33)', () => {
     expect(run(fixture({ expect_roadmap_run: true, must_mention: ['plain'] }), false).out).toContain('did not call run_roadmap');
     expect(run(fixture({ expect_roadmap_run: false }), true).out).toContain('called run_roadmap');
   }, 120_000);
+
+  // US-16 AC2 (review 2026-10-20, adversary R3): the reply must propose saving the stated values.
+  it('expect_profile_edit passes the stated values, fails a wrong or missing proposal, and scores an empty reply on toolOnlyAck', () => {
+    const profileRun = (expect_profile_edit: unknown, content: unknown[], extra: Record<string, unknown> = {}) => {
+      const dir = mkdtempSync(join(tmpdir(), 'chatbot-profile-'));
+      try {
+        const stub = join(dir, 'fetch-stub.mjs');
+        const fx = fixture({ query: "I'm a man, 165 cm", must_mention: undefined, expect_profile_edit, ...extra });
+        writeFileSync(stub, `
+          import fs from 'node:fs';
+          const read = fs.readFileSync;
+          fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? ${JSON.stringify(JSON.stringify([fx]))} : read(p, ...rest);
+          globalThis.fetch = async () => new Response(JSON.stringify({ content: ${JSON.stringify(content)}, stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } }),
+            { status: 200, headers: { 'content-type': 'application/json' } });
+        `);
+        const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+          '--category', 'own-data-analysis', '--fixed-handles-only', '--answer-check-runs', '1', '--verbose']);
+        const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+        const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
+        return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, '') };
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    };
+    const call = (input: unknown, id = 'toolu_p') => ({ type: 'tool_use', id, name: 'propose_profile_edit', input });
+    const text = { type: 'text', text: 'Press Save on the banner to keep them.' };
+    const both = { sex: 'male', heightCm: 165 };
+    expect(profileRun(both, [text, call({ sex: 'male', height: { value: 165, unit: 'cm' } })]).out).toContain('Fixed-handle answer checks: 1/1 ✓');
+    // Merged as the widget merges one reply's calls; 65 in is 165.1 cm, within 0.1.
+    expect(profileRun(both, [call({ sex: 'male' }), call({ height: { value: 65, unit: 'in' } }, 'toolu_q'), text]).out).toContain('1/1 ✓');
+    expect(profileRun(both, [text]).out).toContain('no propose_profile_edit');
+    expect(profileRun(both, [text, call({ sex: 'female', height: { value: 170, unit: 'cm' } })]).out)
+      .toMatch(/proposed sex female, not male[\s\S]*proposed height 170 cm, not 165/);
+    // A call the parser refuses (feet) proposes nothing.
+    expect(profileRun(both, [text, call({ height: { value: 5.4, unit: 'ft' } })]).out).toContain('no propose_profile_edit');
+    // A tool-only reply is scored on the line the widget shows, so a must_match on it passes.
+    expect(profileRun({ heightCm: 165 }, [call({ height: { value: 165, unit: 'cm' } })], { must_match: ['press save'] }).out).toContain('1/1 ✓');
+    for (const bad of [{}, { heightCm: '165' }, { sex: 'man' }, { weight: 80 }, 'yes']) {
+      const { status, stderr } = profileRun(bad, [text]);
+      expect(stderr).toMatch(/expect_profile_edit must name/);
+      expect(status).toBe(1);
+    }
+  }, 180_000);
 
   it('expect_roadmap_run alone still triggers the answer check (Codex PR 150 round 4)', () => {
     expect(run(fixture({ must_mention: undefined, expect_roadmap_run: true }), false).out).toContain('did not call run_roadmap');

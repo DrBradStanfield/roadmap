@@ -38,6 +38,8 @@ import {
   type ProposedEdit,
   type ProposedFieldEdit,
   type ProposedMedicationEdit,
+  type ProposedProfileEdit,
+  formatHeightDisplay,
 } from '@roadmap/health-core';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
@@ -142,6 +144,21 @@ const countedCorrection: CorrectFn = async (id, newValue) => {
   if (status === 'ok') trackProductEvent('correction_made');
   return status;
 };
+
+/** The profile fields a chat proposal carries: the names its counter may send (US-16 AC2). */
+const profileFields = (p: ProposedProfileEdit) =>
+  [...(p.sex ? ['sex' as const] : []), ...(p.heightCm !== null ? ['heightCm' as const] : [])];
+
+const sexLabel = (sex: 'male' | 'female') => (sex === 'male' ? 'Male' : 'Female');
+
+/** The fields of a proposal the profile does not already hold, as the user
+ *  sees them; null when none, so no banner (US-16 AC2). */
+function unsavedProfile(p: ProposedProfileEdit, saved: Partial<HealthInputs>, units: UnitSystem): ProposedProfileEdit | null {
+  const sex = p.sex !== saved.sex ? p.sex : null;
+  const heightCm = p.heightCm !== null && (saved.heightCm == null
+    || formatHeightDisplay(saved.heightCm, units) !== formatHeightDisplay(p.heightCm, units)) ? p.heightCm : null;
+  return sex || heightCm !== null ? { kind: 'profile', sex, heightCm } : null;
+}
 
 /** After a medication or screening save, failed or not, the chat copy takes
  *  the lists the store holds (US-15 AC10). Never the form's: a failed save
@@ -591,6 +608,12 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setMedications(result.medications);
       setScreenings(result.screenings);
       setDocumentHistory(result.documents);
+      // Another device erased the record (US-16 AC2 / US-09): a chat banner
+      // left standing would write pre-erase values into the empty record.
+      if (result.medications.length === 0) {
+        setMedUndo(null);
+        if (result.previousMeasurements.length === 0) setProfileProposal(null);
+      }
     }
   }, [reloadValues, longitudinalDebounce]);
 
@@ -700,6 +723,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     liveSwiper()?.updateAutoHeight();
   }, [formStage, supplements, documentHistory]);
 
+  // US-16 AC2: a sex or height the chat proposed, waiting for the user's Save.
+  // The form writes these on change, so nothing reaches the form until then.
+  const [profileProposal, setProfileProposal] = useState<ProposedProfileEdit | null>(null);
+
   const handleDeleteData = useCallback(async () => {
     const confirmed = window.confirm(ERASE_CONFIRM);
     if (!confirmed) return false;
@@ -715,6 +742,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setHistory([]);
       setMedications([]);
       setScreenings([]);
+      setProfileProposal(null);
+      setMedUndo(null);
       previousInputsRef.current = {};
       window.alert(result.chatErased ? ERASE_DONE : ERASE_DONE_CHAT_PENDING);
     } else {
@@ -728,6 +757,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // field, so several made at once all land (US-16 AC1).
   const handleInputChange = useCallback(<K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => {
     if (unit) typedIn.current[field] = { value, unit };
+    // The user's own sex or height outranks a chat proposal for it (US-16 AC2).
+    if (field === 'sex' || field === 'heightCm') setProfileProposal(null);
     setInputs(prev => ({ ...prev, [field]: value }));
   }, []);
   // A matrix's draft value, as the plan and the chat read it (US-03 AC6);
@@ -892,6 +923,16 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     return undo;
   }, [handleMedicationChange]);
 
+  // Only what the profile does not already hold shows, however it changed since.
+  const pendingProfile = profileProposal && unsavedProfile(profileProposal, inputs, unitSystem);
+  const answerProfileProposal = (save: boolean) => {
+    if (!pendingProfile) return;
+    if (save && pendingProfile.sex) handleInputChange('sex', pendingProfile.sex);
+    if (save && pendingProfile.heightCm !== null) handleInputChange('heightCm', pendingProfile.heightCm);
+    for (const field of profileFields(pendingProfile)) trackProductEvent('chat_profile_edit', { field, choice: save ? 'saved' : 'declined' });
+    setProfileProposal(null);
+  };
+
   const handleProposeEdit = useCallback((edits: ProposedEdit[]) => {
     let hasFieldEdit = false;
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
@@ -899,17 +940,32 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     // first. Field edits are drafts the person saves or discards.
     const undo: NonNullable<typeof medUndo> = [];
     for (const edit of edits) {
-      if (edit.kind === 'field') { applyFieldEdit(edit); hasFieldEdit = true; }
-      else undo.unshift(...applyMedicationEdit(edit, stated));
+      switch (edit.kind) {
+        case 'field': applyFieldEdit(edit); hasFieldEdit = true; break;
+        case 'medication': undo.unshift(...applyMedicationEdit(edit, stated)); break;
+        case 'profile': break; // merged below
+        // A kind this build does not know writes nothing (an older server's reply, or a newer one's).
+        default: break;
+      }
     }
     if (undo.length > 0) setMedUndo(undo);
+    // A reply's profile proposal replaces any pending one; within the reply, a
+    // later stated field wins. A field already saved with the same value (as
+    // the user sees it) needs no Save.
+    const profiles = edits.filter((e): e is ProposedProfileEdit => e.kind === 'profile');
+    if (profiles.length > 0) {
+      const profile = profiles.reduce((a, e) => ({ kind: 'profile', sex: e.sex ?? a.sex, heightCm: e.heightCm ?? a.heightCm }));
+      const pending = unsavedProfile(profile, inputsRef.current, unitSystem);
+      setProfileProposal(pending);
+      for (const field of pending ? profileFields(pending) : []) trackProductEvent('chat_profile_edit', { field, choice: 'shown' });
+    }
     // Mobile hand-off: bring the user to the form so they SEE the pre-filled
     // cell + Save button (they were on the chat tab). Mirror handleAutoFocusEmail.
     if (hasFieldEdit && isMobileRef.current) {
       setActiveTab('input');
       liveSwiper()?.slideTo(0);
     }
-  }, [applyFieldEdit, applyMedicationEdit]);
+  }, [applyFieldEdit, applyMedicationEdit, unitSystem]);
 
   const undoMedEdit = useCallback(() => {
     if (!medUndo) return;
@@ -1103,16 +1159,39 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
       {/* Undo banner for a medication the chat just changed (meds auto-save, so
           the chat applies + states the change and offers an explicit Undo). */}
-      {medUndo && createPortal(
-        <div className="chat-med-undo no-print" role="status">
-          <span className="chat-med-undo-text">Medication updated from chat.</span>
-          <button type="button" className="chat-med-undo-btn" onClick={undoMedEdit}>Undo</button>
-          <button
-            type="button"
-            className="chat-med-undo-dismiss"
-            aria-label="Dismiss"
-            onClick={() => setMedUndo(null)}
-          >✕</button>
+      {/* Both portal outside the masked widget root, so their column carries
+          the Clarity mask (US-09 AC8), and stacks them (styles.css .chat-banners). */}
+      {(medUndo || pendingProfile) && createPortal(
+        <div className="chat-banners no-print" data-clarity-mask="true">
+          {medUndo && (
+            <div className="chat-med-undo" role="status">
+              <span className="chat-med-undo-text">Medication updated from chat.</span>
+              <button type="button" className="chat-med-undo-btn" onClick={undoMedEdit}>Undo</button>
+              <button
+                type="button"
+                className="chat-med-undo-dismiss"
+                aria-label="Dismiss"
+                onClick={() => setMedUndo(null)}
+              >✕</button>
+            </div>
+          )}
+          {/* US-16 AC2: a sex or height the chat proposed. Nothing is written
+              until the user presses Save; Not now writes nothing. */}
+          {pendingProfile && (
+            <div className="chat-med-undo chat-profile-proposal" role="status">
+              <span className="chat-med-undo-text">
+                Save to your profile: {[
+                  pendingProfile.sex && sexLabel(pendingProfile.sex)
+                    + (inputs.sex ? ` (replaces ${sexLabel(inputs.sex)})` : ''),
+                  pendingProfile.heightCm !== null && (inputs.heightCm != null
+                    ? `height ${formatHeightDisplay(pendingProfile.heightCm, unitSystem)} (replaces ${formatHeightDisplay(inputs.heightCm, unitSystem)})`
+                    : formatHeightDisplay(pendingProfile.heightCm, unitSystem)),
+                ].filter(Boolean).join(', ')}?
+              </span>
+              <button type="button" className="chat-med-undo-btn" onClick={() => answerProfileProposal(true)}>Save</button>
+              <button type="button" className="chat-med-undo-dismiss" onClick={() => answerProfileProposal(false)}>Not now</button>
+            </div>
+          )}
         </div>,
         document.body,
       )}

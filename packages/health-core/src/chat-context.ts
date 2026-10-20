@@ -118,14 +118,17 @@ export const MINOR_CHAT_RULE =
  * The rule every chat's prompt carries for a context with values and no plan
  * (US-15 AC36): no usable sex or height. Verdicts come only from the plan
  * (AC31), so the model grades nothing and asks for what the plan needs.
+ * Once stated, the chat proposes saving them where it has the tool (US-16 AC2).
  */
 export const NO_PLAN_CHAT_RULE =
   "When the user's health data has saved values but no `currentSuggestions` because `missingInputs` names `sex` or " +
   '`heightCm`, and no tool result this turn holds a plan, the roadmap has no plan yet. Use and mention the values ' +
-  'they have saved, without grading them, ask them to enter the missing sex or height in the roadmap tool (this ' +
-  'chat cannot save them), and say in one plain sentence why: the roadmap needs height and sex to work out the plan ' +
+  'they have saved, without grading them, ask them for the missing sex or height, and say in one plain sentence ' +
+  'why: the roadmap needs height and sex to work out the plan ' +
   '(BMI, waist-to-height ratio, the protein target from ideal body weight, and kidney function, as eGFR needs sex, ' +
-  'age and creatinine), and with them it can run their plan.';
+  'age and creatinine), and with them it can run their plan. Once they state them, propose saving them with ' +
+  '`propose_profile_edit` when you have that tool (they confirm before anything is saved); they can also enter ' +
+  'them in the roadmap tool.';
 
 /**
  * The JSON the model reads for a payload, or null when it holds nothing:

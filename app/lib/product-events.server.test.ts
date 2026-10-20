@@ -669,6 +669,34 @@ describe('the Lp(a) check counter', () => {
   });
 });
 
+/** US-16 AC2 — the chat's profile proposal: the field's name and what the user did, never the value. */
+describe('the chat profile-edit counter', () => {
+  it('takes a field and a choice from a browser', () => {
+    for (const field of ['sex', 'heightCm']) {
+      for (const choice of ['shown', 'saved', 'declined']) {
+        const metadata = { field, choice };
+        expect(parseProductEvent({ eventName: 'chat_profile_edit', visitorId: VISITOR, metadata }))
+          .toEqual({ eventName: 'chat_profile_edit', visitorId: VISITOR, metadata });
+      }
+    }
+  });
+
+  it('refuses a value, another word or any other key', () => {
+    for (const metadata of [
+      { field: 'male', choice: 'saved' }, { field: 'heightCm', choice: '178' }, { field: 178, choice: 'saved' },
+      { field: 'weightKg', choice: 'saved' }, { field: 'sex', choice: 'saved', value: 'male' },
+      { field: 'sex', choice: 'saved', count: 1 }, { field: 'heightCm', choice: 'saved', unit: 'cm' },
+    ]) {
+      expect(parseProductEvent({ eventName: 'chat_profile_edit', visitorId: VISITOR, metadata }), JSON.stringify(metadata)).toBeNull();
+    }
+  });
+
+  it('lets no other event carry a field or a choice', () => {
+    expect(parseProductEvent({ eventName: 'correction_made', visitorId: VISITOR, metadata: { field: 'sex' } })).toBeNull();
+    expect(parseProductEvent({ eventName: 'chat_opened', visitorId: VISITOR, metadata: { choice: 'saved' } })).toBeNull();
+  });
+});
+
 describe('the upload outcome counter (US-12 AC10)', () => {
   const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, refused: 1, tooLong: 1, valuesDropped: 3, docx: 1, picturesOnly: 1, undatedPrevious: 4, unitsGuessed: 2, unitsRefused: 1 };
 

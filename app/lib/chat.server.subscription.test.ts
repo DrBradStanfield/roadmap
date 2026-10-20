@@ -43,8 +43,8 @@ describe('US-49 AC7 — the subscription tool in getChatCompletion', () => {
 
   it('with the form tools too, both are sent', async () => {
     const bodies = stubAnthropic([{ type: 'text', text: 'Press Confirm below.' }, proposal]);
-    const r = await getChatCompletion([], messages, true, undefined, { subscriptionTool: true });
-    expect(bodies()[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_subscription_change']);
+    const r = await getChatCompletion([], messages, true, undefined, { subscriptionTool: true, profileEdits: true });
+    expect(bodies()[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'propose_subscription_change']);
     expect(r.content).toBe('Press Confirm below.');
     expect(r.subscriptionProposal?.action).toBe('pause');
   });
