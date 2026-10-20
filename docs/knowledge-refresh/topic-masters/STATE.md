@@ -23,6 +23,14 @@ Read this first after a compaction. Story: US-50 in docs/user-stories.md. Plan: 
 - Answer checks after deploy, on `ANTHROPIC_MICROVITAMIN_API_KEY` loaded with node or dotenv. The .env does not source in zsh; a shell load once fell back to the production key.
 - Batches 3–12: 93 references, about 10 per batch. Order: changed-view topics first, then 90-day chat traffic (counts from chat_match_events).
 
+## Fix at mastering
+
+These posts are not masters yet, so the masters-answers round (2026-10-21) left them alone. Fix each when its master is written:
+
+- bone-broth-benefits-forms-dosing-and-side-effects.md:189 says MicroVitamin+ Powder has "25 core" ingredients. The v8 powder has 26 core plus 4 additions, 30 in total (products.md:136); Europe's Unflavored powder is v9 (products.md:121, :733, :734).
+- psyllium-benefits-forms-dosing-and-side-effects.md:67 also says "25 core" and gives 2.5 g of psyllium without naming v8.
+- prebiotics-benefits-types-dosing-and-side-effects.md:62 also says "25 core", and says the powder has both acacia fibre and psyllium. No version has both: v8 has 2.5 g of psyllium husk; v9 swaps it for 5 g of acacia fibre (products.md:733).
+
 ## Batch recipe (as run for masters-1)
 
 1. Handles file `docs/knowledge-refresh/masters-<n>-handles.txt` and an inputs manifest (Sonnet): CL raw in claude_business knowledge-map-raw/refresh-2026-09-29/consumerlab/review/, NIH in .../nih/, posts from tags-checked.json, positions from products.md and the clinical files.

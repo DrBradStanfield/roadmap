@@ -264,7 +264,7 @@ A basic MVM providing nutrients at or near 100% of the Daily Value for most vita
 
 Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) is a low-dose, evidence-based multivitamin formulated around human RCT data. It provides 25 ingredients including methylated B12 and folate (bypassing MTHFR limitations), glycinate-form minerals (zinc, selenium, copper, manganese, chromium) with approximately 43% higher bioavailability than standard gluconate forms, magnesium taurate (126 mg elemental), choline bitartrate (181.5 mg), TMG (500 mg), hyaluronic acid (200 mg), vitamin D3 (1,000 IU), vitamin K2 MK-7 (90 mcg), and lutein/lycopene for eye health. The formula deliberately excludes vitamin A and vitamin E based on evidence of potential harm from high-dose supplementation. Available at $55 one-time or $49.50/month on subscription.
 
-For those who also want collagen, creatine, psyllium husk fiber, and extra taurine, [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) contains all 25 core ingredients plus these four premium additions in a single daily scoop ($90 one-time / $81/month subscription).
+For those who also want collagen, creatine, psyllium husk fiber, and extra taurine, [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder), in its v8 formula, contains all 26 core ingredients plus these four premium additions, 30 ingredients in total, in a single daily scoop ($90 one-time / $81/month subscription). The v8 powder is sold in the USA and every other market except Europe's Unflavored powder, which has moved to v9: it swaps the psyllium for 5 g of acacia fibre, drops potassium and changes some other doses.
 
 ## 5. Safety and Side Effects
 

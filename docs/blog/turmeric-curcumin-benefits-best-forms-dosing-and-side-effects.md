@@ -7,13 +7,13 @@ type: "reference"
 tags: ["Supplements"]
 keywords: ["turmeric", "curcumin", "curcuminoids", "inflammation", "joint health", "osteoarthritis", "rheumatoid arthritis", "cognitive", "brain health", "antioxidant", "pain", "depression", "diabetes", "insulin resistance", "cholesterol", "ldl", "hdl", "triglycerides", "blood sugar", "hba1c", "liver", "fatty liver", "weight loss", "obesity", "blood pressure", "gut health", "ulcerative colitis", "cancer", "migraine", "eye health", "gout", "uric acid", "aging"]
 summary: "Reference on turmeric and curcumin. Brad steers most patients away from the supplements; curcumin may help ulcerative colitis, knee arthritis, indigestion and prediabetes. Trials used 500-2,000 mg/day. Liver injury reported. Talk to your doctor first, especially if pregnant or on blood thinners."
-reviewed: "2026-10-20"
+reviewed: "2026-10-21"
 sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/turmeric-curcumin-supplements-spice-review/turmeric/","checked":"2026-09-29","fingerprint":"sha256:c06afa4ed07157706681e1aa71268c974c0faf452b8604cc1826be5d3dd3ebcb"},{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/turmeric","checked":"2026-09-29","fingerprint":"sha256:fd7ff36470df95b997bec4e7ccaafef31a8841bd02f3e882653c88411d5bb441"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/almost-all-turmeric-curcumin-brands-are-a-scam","checked":"2026-10-20","fingerprint":"publishedAt:2026-02-09T23:57:17Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/difference-between-curcumin-turmeric","checked":"2026-10-20","fingerprint":"publishedAt:2024-09-13T20:30:03Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/turmeric-curcumin-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/turmeric-curcumin-benefits-best-forms-dosing-and-side-effects)*
 
-## Current view (reviewed 20 October 2026)
+## Current view (reviewed 21 October 2026)
 
 Brad tends to encourage his patients not to take curcumin supplements, because of problems with labelling, absorption and disappointing human trials ([Brad, 9 Feb 2026](https://drstanfield.com/blogs/articles/almost-all-turmeric-curcumin-brands-are-a-scam)). He says curcumin appears to work for specific inflammatory conditions, sometimes as well as medicines, and names ulcerative colitis, knee arthritis and chronic indigestion, along with prediabetes ([Brad, 9 Feb 2026](https://drstanfield.com/blogs/articles/almost-all-turmeric-curcumin-brands-are-a-scam)). In the ulcerative colitis trial he cites, over 50% of patients who added curcumin to their standard medicine reached remission after 4 weeks, and none in the placebo group did ([Brad, 9 Feb 2026](https://drstanfield.com/blogs/articles/almost-all-turmeric-curcumin-brands-are-a-scam)). Trials that found tentative benefit often used 500 to 2,000 mg of curcumin a day, and there is no standard guidance on the best dose for any condition ([Brad, 9 Feb 2026](https://drstanfield.com/blogs/articles/almost-all-turmeric-curcumin-brands-are-a-scam)). If you do try it, he advises checking the curcumin content rather than the turmeric root weight and choosing a product with a bioavailability enhancer; the study that cast doubt on piperine found NovaSOL the most effective at raising blood levels ([Brad, 9 Feb 2026](https://drstanfield.com/blogs/articles/almost-all-turmeric-curcumin-brands-are-a-scam)). Speak with your doctor before starting, because liver injury has been reported with curcumin supplements ([Brad, 9 Feb 2026](https://drstanfield.com/blogs/articles/almost-all-turmeric-curcumin-brands-are-a-scam)). If you take curcumin supplements, he advises regular blood tests to check your liver function ([Brad, 13 Sep 2024](https://drstanfield.com/blogs/articles/difference-between-curcumin-turmeric)).
 
@@ -390,13 +390,13 @@ This is the most serious safety concern. Even though curcumin is studied for fat
 - Severity: mild (50%), moderate (40%), fatal (1 case)
 - 7 of 10 carried the HLA-B*35:01 genetic variant, also linked to liver injury from green tea, Garcinia cambogia, and Fo-ti
 
-**Additional case review:** An analysis of 11 other U.S. cases (2012-2022) found 91% were female (average age 58), duration before injury ranged from 2 weeks to 13 months (average 8 weeks), and dosage ranged from 100-3,000 mg/day. More than half were asymptomatic, identified only by abnormal liver tests. All but one showed 50% improvement within 30 days of discontinuation [118].
+**Additional case review:** An analysis of 11 other U.S. cases (2012-2022) found 91% were female (median age 58), duration before injury ranged from 2 weeks to 13 months (average 8 weeks), and dosage ranged from 100-3,000 mg/day. More than half were asymptomatic, identified only by abnormal liver tests. After they stopped the supplements (four also received steroids), liver tests returned to normal in all of them [118].
 
 **Population exposure:** A study estimated the exposure to potentially hepatotoxic botanicals in U.S. adults, identifying turmeric/curcumin as one of the most commonly used supplements with liver injury reports [119].
 
 **NCCIH warning:** "Many curcumin products with increased bioavailability are on the market, and liver damage has been reported in some people who have consumed these bioavailable formulations" [2].
 
-**Liver tests:** Brad advises anyone taking curcumin supplements to have regular blood tests of liver function, because liver injury can occur without symptoms [118][140].
+**Liver tests:** Brad advises anyone taking curcumin supplements to have regular blood tests of liver function, because liver injury from curcumin is rare but serious [140]. In a series of 11 people with liver injury linked to turmeric supplements, more than half (six of the 11) had no symptoms and were found only through abnormal liver tests [118].
 
 **Warning signs:** Fatigue, nausea, poor appetite, dark urine, jaundice (yellowing of skin/eyes), or pale stools. Stop supplementation immediately and consult a healthcare provider if any occur [2][117].
 

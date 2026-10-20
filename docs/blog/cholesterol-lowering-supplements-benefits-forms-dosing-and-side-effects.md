@@ -119,7 +119,7 @@ Psyllium lowers cholesterol by binding bile acids in the intestinal lumen, preve
 
 **Earlier meta-analyses** similarly support LDL reductions of 5-10% with psyllium supplementation at doses of 7-15 g/day, with benefits appearing consistent regardless of exact study duration [12][37].
 
-Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 2.5 g of psyllium husk per daily serving, which contributes to overall soluble fiber intake and supports gut health.
+Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 2.5 g of psyllium husk per daily serving in its v8 formula, which contributes to overall soluble fiber intake and supports gut health. Europe's Unflavored powder has moved to v9, which uses 5 g of acacia fiber instead of psyllium.
 
 ### Soluble Fiber — Beta-Glucan (Oats and Barley)
 
@@ -328,7 +328,7 @@ Laboratory research suggests beta-sitosterol may inhibit thrombin, potentially i
 | Omega-3 (high dose) | Warfarin, heparin, clopidogrel, aspirin | Increased bleeding | Monitor bleeding parameters |
 | Psyllium | Metformin, digoxin, carbamazepine, other oral meds | Reduced drug absorption | Separate by 1-2 hours |
 | Policosanol | Antiplatelet/anticoagulant drugs | Increased bleeding | Use cautiously |
-| Pantethine | Anticoagulants and antiplatelets (e.g., warfarin, aspirin, clopidogrel) | Possible added bleeding risk. This is theoretical: it rests on reduced platelet aggregation in small, old studies, and there are no data on bleeding events in people [9][58] | No dose threshold has been established, so the caution applies at any dose. Talk to your doctor before combining |
+| Pantethine | Anticoagulants and antiplatelets (e.g., warfarin, aspirin, clopidogrel) | Possible added bleeding risk. This is theoretical: it rests on reduced platelet aggregation in one small 1981 study, and we found no reports of bleeding events in people [9][58] | No dose threshold has been established, so the caution applies at any dose. Talk to your doctor before combining |
 | Beta-sitosterol | Dabigatran (thrombin inhibitors) | Theoretical bleeding risk | Unconfirmed in humans |
 | Niacin | Statins | Increased myopathy risk | Medical supervision required |
 

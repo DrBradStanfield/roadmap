@@ -281,6 +281,8 @@ Sources: National Academies, 2005; International Society of Sports Nutrition, 20
 
 These are trial and guideline figures. Brad's own view on how much is useful is in the Current view above.
 
+The RDA while breastfeeding is 1.3 g/kg a day [115]. Brad's view (October 2026) is that about 1.3 to 1.6 g/kg a day is a reasonable target during this time. The range is his judgement, not a target tested in trials.
+
 ### Per-Meal Protein
 
 The usable amount of protein from a single meal for muscle synthesis is believed to be roughly 30 g [1]. Protein taken after, rather than before, exercise may be more beneficial [1]. It has been suggested that dividing daily protein intake over three meals may best stimulate muscle growth (Paddon-Jones, *Curr Opin Clin Nutr Metab Care*, 2009) [89].
@@ -303,7 +305,7 @@ Plant proteins have a lower ratio of essential amino acids to total protein, so 
 
 ### Protein Powder as Part of MicroVitamin+ Powder
 
-Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 12.5 g of collagen peptides and 5 g of creatine monohydrate alongside all 26 core ingredients of the MicroVitamin capsules, plus 2.5 g of psyllium husk and 1 g of extra taurine: 30 ingredients in total. Combining creatine with protein supports enhanced strength gains and muscle recovery. The creatine component provides an evidence-based complement to dietary protein intake for adults seeking to maintain muscle mass and physical performance.
+Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder), in its v8 formula, includes 12.5 g of collagen peptides and 5 g of creatine monohydrate alongside all 26 core ingredients of the MicroVitamin capsules, plus 2.5 g of psyllium husk and 1 g of extra taurine: 30 ingredients in total. The v8 powder is sold in the USA and every other market except Europe's Unflavored powder, which has moved to v9: it swaps the psyllium for 5 g of acacia fibre, drops potassium and changes some other doses. Combining creatine with protein supports enhanced strength gains and muscle recovery. The creatine component provides an evidence-based complement to dietary protein intake for adults seeking to maintain muscle mass and physical performance.
 
 ### Mixing and Preparation
 
@@ -650,3 +652,5 @@ Source: USDA Nutrient Database [1].
 [113] Daley SF, Corado A. "Phenylketonuria (PKU)." *StatPearls*. 2026. PMID: 30570999. https://pubmed.ncbi.nlm.nih.gov/30570999/
 
 [114] Elango R, Ball RO. "Protein and Amino Acid Requirements during Pregnancy." *Adv Nutr*. 2016;7(4):839S-844S. doi: [10.3945/an.115.011817](https://doi.org/10.3945/an.115.011817). PMID: 27422521.
+
+[115] Weiler M, Hertzler SR, Dvoretskiy S. "Is It Time to Reconsider the U.S. Recommendations for Dietary Protein and Amino Acid Intake?" *Nutrients*. 2023;15(4):838. doi: [10.3390/nu15040838](https://doi.org/10.3390/nu15040838). PMID: 36839196.
