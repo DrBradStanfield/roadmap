@@ -18,8 +18,10 @@ import {
   markSyncPending,
   ROADMAP_FILE_NAME,
   saveRoadmapFileInto,
+  signalLogOff,
   type StorageAdapter,
 } from '../src/storage';
+import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { dropboxConfig } from './dropbox-config';
 import { clearAutoEnrolBlock } from './reminders';
 import { googleDriveConfig } from './google-config';
@@ -271,6 +273,9 @@ export async function resolveRemembered(): Promise<ResolvedBackend> {
  * reload also discards all in-memory store state.
  */
 export async function logOff(backend: Backend): Promise<void> {
+  // Close the local-write barrier BEFORE any await: disconnect, an in-flight
+  // failed save, and the navigation lifecycle can all race the device wipe.
+  beginRoadmapLogOff();
   // Sign out of the active cloud (drops its tokens locally; the remote file is
   // left untouched — adapter.disconnect() issues no remote delete).
   try {
@@ -280,12 +285,21 @@ export async function logOff(backend: Backend): Promise<void> {
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'log-off', backend } });
   }
   // Wipe the on-device copy (RoadmapFile + version + named files + documents).
-  await new LocalStorageAdapter().disconnect();
+  // Only its content-free erase-fence write can throw, after the health keys
+  // are gone; log-off still finishes (US-09 AC2c).
+  try {
+    await new LocalStorageAdapter().disconnect();
+  } catch (error) {
+    console.warn('Device wipe during log-off failed');
+    Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'log-off-device', backend: 'local' } });
+  }
   // Also clear the legacy v1 health blob + the authenticated flag (the shared
   // HealthTool source still writes these), so a shared device leaks nothing.
   clearLocalStorage();
   clearOffFileHealthData();
   forgetBackend();
+  // Again, now the wipe has freed space for it (Codex re-check R1).
+  signalLogOff();
   location.reload();
 }
 

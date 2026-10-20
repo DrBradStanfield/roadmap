@@ -27,6 +27,56 @@ const FILE_KEY = 'health_roadmap_file_v2';
  *  erase needs in local mode, where the file must survive to carry eraseEpoch. */
 export const NAMED_FILE_PREFIX = 'health_roadmap_file_v2:';
 
+// Page-lifetime barrier: logout navigates away. Never reopen it in this page;
+// an async save may still hold pre-logout health data. Other named files are
+// separate stores and are deliberately outside this roadmap-only barrier.
+// Every other cloud-mode tab on this device latches too (US-09 AC2c): a
+// content-free key set and removed at once reaches them as `storage` events,
+// leaving no residue.
+const LOG_OFF_SIGNAL_KEY = 'health_roadmap_log_off_signal';
+let roadmapWritesStopped = false;
+export function stopRoadmapLocalWrites(): void {
+  roadmapWritesStopped = true;
+  signalLogOff();
+}
+/** Tell the other tabs. A full localStorage drops the write silently, so
+ *  log-off sends it again once the device wipe has freed space (Codex R1). */
+export function signalLogOff(): void {
+  safeSetItem(LOG_OFF_SIGNAL_KEY, '1');
+  safeRemoveItem(LOG_OFF_SIGNAL_KEY);
+}
+function latchOnLogOffSignal(event: Event): void {
+  if ((event as StorageEvent).key === LOG_OFF_SIGNAL_KEY) roadmapWritesStopped = true;
+}
+/** Only a cloud-mode page listens: there the device copy is a mirror. A local
+ *  page's device copy is its only store, so latching would lose its edits.
+ *  Re-adding the same listener is a no-op. */
+export function latchOnOtherTabsLogOff(): void {
+  if (typeof window !== 'undefined') window.addEventListener('storage', latchOnLogOffSignal);
+}
+export function roadmapLocalWritesStopped(): boolean {
+  return roadmapWritesStopped;
+}
+
+// Content-free invalidation only: no message ids, text, health values or times.
+// Keep it outside the wiped prefixes so a later log-off cannot reset the fence.
+const LOCAL_ERASE_GENERATION_KEY = 'health_roadmap_local_erase_generation';
+export function localEraseGeneration(): string | null {
+  return safeGetItem(LOCAL_ERASE_GENERATION_KEY);
+}
+export function clearLocalNamedFiles(): void {
+  // Shared stores also run without a browser; then there is no device copy.
+  if (typeof localStorage === 'undefined') return;
+  removeByPrefix(NAMED_FILE_PREFIX);
+  try {
+    localStorage.setItem(LOCAL_ERASE_GENERATION_KEY, crypto.randomUUID());
+  } catch (error) {
+    // A missing fence could let an old tab write erased content back. Do not
+    // report completed cleanup if invalidation could not be stored.
+    throw new StorageError('Could not complete on-device history cleanup.', undefined, error);
+  }
+}
+
 function fileKey(fileName: string): string {
   return fileName === ROADMAP_FILE_NAME ? FILE_KEY : NAMED_FILE_PREFIX + fileName;
 }
@@ -49,9 +99,9 @@ export class LocalStorageAdapter implements StorageAdapter {
     safeRemoveItem(versionKey(ROADMAP_FILE_NAME));
     // Named record files (chat-history.json, …) and stored documents live under
     // their prefixes — clear both so log-off leaves no health data behind on a
-    // shared device.
-    removeByPrefix(NAMED_FILE_PREFIX);
+    // shared device. Documents go first: the named-file fence write can throw.
     removeByPrefix(DOC_KEY_PREFIX);
+    clearLocalNamedFiles();
   }
 
   // localStorage is synchronous, so read and write wrap readSync and writeSync.
@@ -78,6 +128,11 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult {
+    // Check at the synchronous write boundary, including saves whose async
+    // read/merge began BEFORE logout. A catch-only guard is too early.
+    if (fileName === ROADMAP_FILE_NAME && roadmapLocalWritesStopped()) {
+      throw new StorageError('On-device roadmap persistence stopped for logout.');
+    }
     // `?? '0'` is defensive: localStorage is externally mutable, so tolerate a
     // present file with a missing version key (treat it as version 0).
     const current = safeGetItem(fileKey(fileName)) == null ? null : safeGetItem(versionKey(fileName)) ?? '0';

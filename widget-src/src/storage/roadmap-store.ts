@@ -72,10 +72,16 @@ import {
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
 import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core';
-import { LocalStorageAdapter, NAMED_FILE_PREFIX } from './local-storage-adapter';
+import {
+  LocalStorageAdapter,
+  clearLocalNamedFiles,
+  latchOnOtherTabsLogOff,
+  roadmapLocalWritesStopped,
+  stopRoadmapLocalWrites,
+} from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
-import { clearMatrixDrafts, clearOffFileHealthData, LPA_CHECK_KEPT_KEY, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { clearMatrixDrafts, clearOffFileHealthData, LPA_CHECK_KEPT_KEY, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { recordFailure, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -120,8 +126,17 @@ function notify(name: string): void {
  *  far-future instant because an older bundle in another tab still reads it
  *  as "keep rows newer than this" past an erase: so it keeps nothing extra. */
 export function markSyncPending(): void {
+  if (roadmapLocalWritesStopped()) return;
   safeSetItem(PENDING_MIRROR_KEY, '9999-12-31T23:59:59.999Z');
   notify(SYNC_PENDING_EVENT);
+}
+
+/** Stop this page (and every other tab, by a storage signal) recreating the
+ *  roadmap after logout, without erasing cloud data or cancelling successful
+ *  cloud saves (including lifecycle flushes). */
+export function beginRoadmapLogOff(): void {
+  stopRoadmapLocalWrites();
+  clearSyncPending();
 }
 
 function clearSyncPending(): void {
@@ -330,6 +345,7 @@ export class RoadmapStore {
     const revision = adapter instanceof LocalStorageAdapter ? adapter.revision(ROADMAP_FILE_NAME) : null;
     const store = new RoadmapStore(sync, adapter, await sync.load(), deviceId, cloudUnreachable);
     store.seenRevision = revision;
+    if (adapter.id !== 'local') latchOnOtherTabsLogOff();
     // A previous cloud session failed to save and mirrored its changes
     // on-device (see persist()'s catch). Merge them in now and schedule a save
     // to lift them up; the marker clears only once a cloud save succeeds.
@@ -750,7 +766,7 @@ export class RoadmapStore {
    * teardown on Brad's server, the chat-history tombstones), so an erase
    * refused here has changed nothing anywhere (US-09 AC23).
    */
-  async deleteUserData(beforeErase?: () => Promise<void>): Promise<{ success: boolean; error?: string }> {
+  async deleteUserData(beforeErase?: () => Promise<void>): Promise<{ success: boolean; error?: string; warning?: string }> {
     // An erase lists the rows it removes, so it must read the record it
     // removes them from. A session on-device because the cloud could not be
     // read cannot, and refuses before anything moves.
@@ -773,6 +789,9 @@ export class RoadmapStore {
     await beforeErase?.();
     // From here every failure comes back as a refusal, never a rejection: the
     // caller's step has run, and its page must leave its deleting state.
+    // Once the flush lands the record IS erased: a later cleanup failure is a
+    // warning, so the caller still clears its screen and mirror (US-11 AC3b).
+    let erased = false;
     try {
       this.cancelDebounce();
       // Bump the erase epoch so the empty file BEATS the merge — persist goes
@@ -832,6 +851,7 @@ export class RoadmapStore {
       }
       this.touch(); // a change like any other: a failed flush leaves it for a hide to retry
       await this.flush();
+      erased = true;
       // The erase reached the cloud — wipe the on-device residue too (failure
       // mirror + marker + named files/documents), so no pre-erase copy outlives
       // the erase on this device (US-11). On a failed flush we keep the mirror
@@ -846,16 +866,18 @@ export class RoadmapStore {
         // The other record files (chat-history.json) sit under the adapter's
         // named-file prefix, which only disconnect() clears — and disconnect()
         // here would delete the erased record file we just wrote. Their
-        // contents are already tombstoned (roadmap-data.ts erases chat history
-        // BEFORE this), so removing the keys can resurrect nothing.
-        removeByPrefix(NAMED_FILE_PREFIX);
+        // contents are already tombstoned (roadmap-data.ts's beforeErase step
+        // erases chat history first). Also rotate the content-free fence
+        // so another tab cannot merge its old snapshot into the missing file.
+        clearLocalNamedFiles();
       } else {
         clearSyncPending();
         await new LocalStorageAdapter().disconnect();
       }
       return { success: true };
     } catch (e) {
-      return { success: false, error: (e as Error).message };
+      const message = (e as Error).message;
+      return erased ? { success: true, warning: message } : { success: false, error: message };
     }
   }
 
@@ -1164,7 +1186,7 @@ export class RoadmapStore {
       // so returning false (not rethrowing) keeps them from re-creating the
       // unhandled rejection Sentry's noise filters dropped; awaited callers
       // (flush) check the result.
-      if (this.adapter.id !== 'local') {
+      if (this.adapter.id !== 'local' && !roadmapLocalWritesStopped()) {
         markSyncPending();
         // Deliberately the merged transfer primitive, NOT a plain overwrite: the
         // local file may hold guest-era data this session never loaded (no

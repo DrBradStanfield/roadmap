@@ -53,7 +53,18 @@ function makeStorage(): Storage {
   return s as unknown as Storage;
 }
 
-import { logOff, prepareSwitch, storageState, BACKEND_KEY, type Backend } from './connect';
+import { storageState, BACKEND_KEY, type Backend } from './connect';
+
+// logOff closes a page-lifetime barrier (US-09 AC2c). A fresh module graph per
+// test is a fresh page, so one test's log-off never leaks into the next.
+let logOff: typeof import('./connect').logOff;
+let prepareSwitch: typeof import('./connect').prepareSwitch;
+let local: typeof import('../src/storage/local-storage-adapter');
+beforeEach(async () => {
+  vi.resetModules();
+  ({ logOff, prepareSwitch } = await import('./connect'));
+  local = await import('../src/storage/local-storage-adapter');
+});
 
 const FILE_KEY = 'health_roadmap_file_v2';
 const REV_KEY = 'health_roadmap_file_v2_rev';
@@ -193,6 +204,10 @@ describe('prepareSwitch (US-09 AC13)', () => {
   it('copies down, then signs out, when the cloud answers', async () => {
     await expect(prepareSwitch('dropbox')).resolves.toBeUndefined();
     expect(disconnectSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('US-09 AC2c: a log-off in an earlier test leaves this page writing', async () => {
+    expect(local.roadmapLocalWritesStopped()).toBe(false);
   });
 
   it('has nothing to copy down from the device tier', async () => {
