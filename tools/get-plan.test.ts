@@ -11,7 +11,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { readFileSync, mkdtempSync, writeFileSync, rmSync, realpathSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, dirname } from 'node:path';
+import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   calculateHealthResults,
@@ -455,15 +455,25 @@ describe('US-30 follow-up — an ignored value is never shown as a plan input', 
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('renders a measurement row with no recordedAt as a file problem, not a tool bug', async () => {
+  it('US-29 AC4 / US-30 AC5: omits malformed undated measurements without reporting a tool bug', async () => {
     const file = fixture();
     file.measurements = file.measurements.map((m) => ({ ...m, recordedAt: undefined as unknown as string }));
     const { dir, path } = writeFixture(file);
+    const originalBytes = readFileSync(path);
 
     const result = await captureRun([path]);
     expect(result.stderr).not.toContain('This is a bug');
     expect(result.code).toBe(0);
-    expect(result.stdout).toContain('LDL Cholesterol');
+    // The migration boundary drops malformed rows, rather than presenting an
+    // undated stored observation as a current plan value (US-29 AC4).
+    expect(result.stdout).not.toContain('LDL Cholesterol');
+    const json = await captureRun([path, '--json']);
+    expect(json.code).toBe(0);
+    expect(JSON.parse(json.stdout).currentValues).toEqual([]);
+    expect(JSON.parse(json.stdout).inputs.ldlC).toBeUndefined();
+    // US-30 AC6: omission in a read-only result is not a write to the source.
+    expect(readFileSync(path)).toEqual(originalBytes);
+    expect(readdirSync(dir)).toEqual([basename(path)]);
     rmSync(dir, { recursive: true, force: true });
   });
 
