@@ -522,6 +522,28 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
     rmSync(recDir, { recursive: true, force: true });
   });
 
+  it('refuses a metric named after an Object.prototype key in one plain line (adversary R1)', async () => {
+    for (const metric of ['__proto__', 'constructor', 'toString']) {
+      const result = await captureRun(['--from-values', spec([{ metric, value: 3 }])]);
+      expect(result.code).toBe(1);
+      expect(result.stderr).not.toContain('This is a bug');
+    }
+  });
+
+  it('says the HTML report came from the values given (adversary R3)', async () => {
+    const out = join(dir, 'plan.html');
+    expect((await captureRun(['--from-values', spec([]), '--html', out])).code).toBe(0);
+    const html = readFileSync(out, 'utf8');
+    expect(html).toContain('from the values you gave');
+    expect(html).not.toContain('record file');
+  });
+
+  it('refuses age together with birthMonth instead of dropping the month (adversary R4)', async () => {
+    const result = await captureRun(['--from-values', spec([], { birthMonth: 11 })]);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Give age, or birthYear');
+  });
+
   it('refuses a second positional argument instead of ignoring it', async () => {
     const result = await captureRun([spec([]), 'extra.json']);
     expect(result.code).toBe(1);
