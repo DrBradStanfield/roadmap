@@ -158,6 +158,13 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
     expect(chatToolsFor([]).map(t => t.name)).not.toContain('run_roadmap');
   });
 
+  // US-16 AC2 (adversary R1): a widget built before the profile tool gets the old set.
+  it('chatToolsFor without profile edits leaves out propose_profile_edit, and only it', () => {
+    const said = (content: string) => [{ role: 'user' as const, content }];
+    expect(chatToolsFor(said('LDL 4.1 mmol/L'), false).map(t => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+    expect(chatToolsFor(said('hello'), false).map(t => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
+  });
+
   it('the usage guidance lives in the tool description, not the system prompt', () => {
     const d = RUN_ROADMAP_TOOL.description;
     for (const rule of ['not in their saved data', 'do NOT convert', 'stated them in this conversation', 'ASK which unit',

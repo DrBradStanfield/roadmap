@@ -76,6 +76,12 @@
  *                             run_roadmap. Every answer runs production's one-round loop (health-core
  *                             withRoadmapRound, US-15 AC33) on the fixture's raw user_context, and is
  *                             scored on the second call's text when the tool ran.
+ *   expect_profile_edit?: {sex?, heightCm?}  answer check only (US-16 AC2): the reply must propose
+ *                             saving these, through production's parser: its propose_profile_edit
+ *                             calls, merged as the widget merges them (a later field wins), must hold
+ *                             each stated field (height in cm, to 0.1). A reply with no text is scored
+ *                             on production's toolOnlyAck line, as the widget shows it. Any other
+ *                             shape exits the harness before any API call.
  *
  * A fetch that throws (timeout, DNS, reset) counts as an API error, like a non-2xx:
  * visible, scored as ∅, and the run continues but never exits green. So does a
@@ -123,6 +129,7 @@ import {
   PROMPT_CACHE, getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat,
 } from '../packages/health-core/src/models';
 import { chatToolsFor, withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
+import { toolOnlyAck, type ProposedEdit, type ProposedProfileEdit } from '../packages/health-core/src/chat-edits';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { routerView, routerIndexBlock, ROUTER_SUMMARY_MAX_CHARS } from '../app/lib/router-view';
 import type { BlogIndexEntry } from '../app/lib/blog-index.server';
@@ -381,6 +388,7 @@ interface TestQuery {
   user_context?: unknown;      // answer check sends this widget payload as the user's data (see the header)
   expect_no_plan?: true;       // user_context makes no plan: no sex or height (see the header)
   expect_roadmap_run?: boolean; // the answer must (true) or must not (false) call run_roadmap (see the header)
+  expect_profile_edit?: { sex?: 'male' | 'female'; heightCm?: number }; // the reply proposes saving these (see the header)
   history?: Array<{ role: 'user' | 'assistant'; content: string }>; // earlier turns, before the query (see the header)
   pending?: string;            // listed, not run, unless --include-pending (see the header)
 }
@@ -451,6 +459,14 @@ const badHistory = ALL_QUERIES.filter(q => q.history !== undefined && !(Array.is
   && q.history.every((m, i) => m && m.role === (i % 2 === 0 ? 'user' : 'assistant') && typeof m.content === 'string' && m.content.length > 0)));
 if (badHistory.length > 0) {
   console.error(`history must alternate user and assistant text, ending on the assistant, on: ${badHistory.map(q => q.query).join(', ')}`);
+  process.exit(1);
+}
+// A profile check that names no field, or a field the tool cannot carry, could never fail or never pass.
+const badProfile = ALL_QUERIES.filter(q => q.expect_profile_edit !== undefined && !(
+  q.expect_profile_edit && typeof q.expect_profile_edit === 'object' && Object.keys(q.expect_profile_edit).length > 0
+  && Object.entries(q.expect_profile_edit).every(([k, v]) => (k === 'sex' && (v === 'male' || v === 'female')) || (k === 'heightCm' && typeof v === 'number'))));
+if (badProfile.length > 0) {
+  console.error(`expect_profile_edit must name sex (male or female) and/or heightCm (a number), on: ${badProfile.map(q => q.query).join(', ')}`);
   process.exit(1);
 }
 // A regex that cannot compile would throw mid-run, after money is spent.
@@ -528,6 +544,19 @@ function claimed(response: string, phrases: string[]): string[] {
   }));
 }
 
+/** US-16 AC2: why a reply's profile proposal is not the expected one, merged as the widget merges it. */
+function profileEditFailures(expected: NonNullable<TestQuery['expect_profile_edit']>, edits: ProposedEdit[]): string[] {
+  const profiles = edits.filter((e): e is ProposedProfileEdit => e.kind === 'profile');
+  if (profiles.length === 0) return ['no propose_profile_edit'];
+  const sex = profiles.reduce<string | null>((a, e) => e.sex ?? a, null);
+  const heightCm = profiles.reduce<number | null>((a, e) => e.heightCm ?? a, null);
+  return [
+    ...(expected.sex !== undefined && sex !== expected.sex ? [`proposed sex ${sex ?? 'none'}, not ${expected.sex}`] : []),
+    ...(expected.heightCm !== undefined && (heightCm === null || Math.abs(heightCm - expected.heightCm) > 0.1)
+      ? [`proposed height ${heightCm ?? 'none'} cm, not ${expected.heightCm}`] : []),
+  ];
+}
+
 /** A failed answer call: its label (a status or a fetch error) and any detail. */
 class AnswerApiError extends Error {
   constructor(readonly label: string, detail?: string) { super(detail ? `${label}: ${detail}` : label); }
@@ -586,8 +615,10 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
   if (data.stopReason === 'refusal') {
     return { passed: false, failures: [`refusal (${data.category ?? 'no category'})`], response: '' };
   }
-  // Thinking blocks come first on Sonnet; join every text block, as production does.
-  const response = data.contentBlocks.filter(c => c.type === 'text').map(c => (c as { text?: string }).text ?? '').join('');
+  // Thinking blocks come first on Sonnet; join every text block, as production does,
+  // and a reply with only form edits shows production's toolOnlyAck line instead.
+  const text = data.contentBlocks.filter(c => c.type === 'text').map(c => (c as { text?: string }).text ?? '').join('');
+  const response = text.trim() || turn.proposedEdits.length === 0 ? text : toolOnlyAck(turn.proposedEdits);
   const lower = response.toLowerCase();
 
   const failures: string[] = [];
@@ -607,6 +638,7 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
   if (q.expect_roadmap_run !== undefined && q.expect_roadmap_run !== (turn.counts !== null)) {
     failures.push(q.expect_roadmap_run ? 'did not call run_roadmap' : 'called run_roadmap');
   }
+  if (q.expect_profile_edit) failures.push(...profileEditFailures(q.expect_profile_edit, turn.proposedEdits));
 
   return { passed: failures.length === 0, failures, response };
 }
@@ -633,7 +665,7 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   if (forbidden.length > 0) routingPassed = false;
 
   let answerCheck: AnswerCheckResult | null = null;
-  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || q.must_match?.length || q.must_not_match?.length || typeof q.max_length_chars === 'number' || q.expect_roadmap_run !== undefined)) {
+  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || q.must_match?.length || q.must_not_match?.length || typeof q.max_length_chars === 'number' || q.expect_roadmap_run !== undefined || q.expect_profile_edit)) {
     const answerRuns: AnswerCheckResult[] = [];
     for (let i = 0; i < answerCheckRuns; i++) {
       answerRuns.push(await checkAnswer(q, intersection));

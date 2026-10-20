@@ -240,9 +240,11 @@ const rawMedicationEditSchema = z.object({
   doseUnit: z.string().max(16).optional().nullable(),
 });
 
+// A null field is absent (the model may send `sex: null`); an unknown key, at
+// either level, refuses the whole edit.
 const rawProfileEditSchema = z.object({
-  sex: z.enum(['male', 'female']).optional(),
-  height: z.object({ value: z.number().finite(), unit: z.enum(['cm', 'in']) }).optional(),
+  sex: z.enum(['male', 'female']).nullish(),
+  height: z.object({ value: z.number().finite(), unit: z.enum(['cm', 'in']) }).strict().nullish(),
 }).strict();
 
 /**

@@ -85,4 +85,9 @@ describe('Clarity masking — health values never reach a session recording', ()
     expect(/className="hr-modal hr-modal--wide"\s+data-clarity-mask="true"/
       .test(src('../../standalone/history-lightbox.tsx'))).toBe(true);
   });
+
+  it('masks the chat banners: the profile proposal names a sex and height (US-16 AC2)', () => {
+    // The rendered check is in HealthTool.chat-profile.test.tsx.
+    expect(src('./HealthTool.tsx')).toContain('<div className="chat-banners no-print" data-clarity-mask="true">');
+  });
 });

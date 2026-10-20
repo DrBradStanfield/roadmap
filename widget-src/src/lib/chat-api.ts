@@ -324,6 +324,11 @@ async function readChatStream(response: Response, onDelta: (delta: ChatDelta) =>
 /** Same window as the server's chat-dedup.server.ts. */
 const DEDUP_WINDOW_MS = 60_000;
 
+/** The server's proposed edits of a kind this build applies; any other is dropped, never applied as something else. */
+const EDIT_KINDS: readonly unknown[] = ['field', 'medication', 'profile'] satisfies ProposedEdit['kind'][];
+const knownEdits = (edits: unknown): ProposedEdit[] =>
+  Array.isArray(edits) ? edits.filter((e): e is ProposedEdit => EDIT_KINDS.includes(e?.kind)) : [];
+
 /**
  * `history` is the conversation so far, from the widget's own file. On
  * local-first builds the server stores nothing the widget says (US-15 AC7),
@@ -361,7 +366,8 @@ export async function sendMessage(
           ...(LOCAL_FIRST ? { history: history.slice(-MAX_HISTORY_MESSAGES).map(({ role, content }) => ({ role, content })) } : {}),
           ...chatBodyParts(),
           stream: true,
-          ...(canApplyEdits ? { canApplyEdits: true } : {}),
+          // US-16 AC2: this build applies a profile edit, so the server may propose one.
+          ...(canApplyEdits ? { canApplyEdits: true, canApplyProfileEdits: true } : {}),
         }),
       },
       Boolean(conversationId),
@@ -427,9 +433,7 @@ export async function sendMessage(
         sessionToken: data.sessionToken,
         isGuest: data.isGuest,
         ...(data.isFallback === true ? { isFallback: true } : {}),
-        ...(Array.isArray(data.proposedEdits) && data.proposedEdits.length > 0
-          ? { proposedEdits: data.proposedEdits as ProposedEdit[] }
-          : {}),
+        ...(knownEdits(data.proposedEdits).length > 0 ? { proposedEdits: knownEdits(data.proposedEdits) } : {}),
         ...(readSubscriptionCard(data.subscriptionCard) ? { subscriptionCard: readSubscriptionCard(data.subscriptionCard)! } : {}),
       },
       error: null,

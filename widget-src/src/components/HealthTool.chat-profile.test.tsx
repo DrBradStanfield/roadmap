@@ -14,7 +14,7 @@ import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@te
 import { parseProposedEdit, ROADMAP_FILE_NAME, type ProposedEdit, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 
 const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void) }));
@@ -44,7 +44,7 @@ async function recordOnDisk(): Promise<RoadmapFile> {
   return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
 }
 const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
-const banner = () => document.body.querySelector('.chat-med-undo[role="status"]') as HTMLElement | null;
+const banner = () => document.body.querySelector('.chat-profile-proposal[role="status"]') as HTMLElement | null;
 /** The plan computed: the empty preview ("Real suggestions appear once you fill in your details") is gone. */
 const planShown = (view: RenderResult) =>
   !view.container.querySelector('.plan-empty-preview') && !!view.container.querySelector('.health-results-panel .stat-card');
@@ -168,5 +168,104 @@ describe('US-16 AC2: the chat proposes a sex and height; the user confirms', () 
     expect(banner()!.textContent).not.toContain('Male');
     expect(vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'chat_profile_edit'))
       .toEqual([['chat_profile_edit', { field: 'heightCm', choice: 'shown' }]]);
+  });
+});
+
+// Review fixes, 2026-10-20 (Codex R1/R2, adversary R1/R2/R4).
+describe('US-16 AC2: the proposal banner, after review', () => {
+  /** One chat reply holding these tool inputs, each through the real parser. */
+  const reply = (...inputs: unknown[]) => act(() => chat.proposeEdit!(inputs.map((i) => parseProposedEdit('propose_profile_edit', i)!)));
+
+  it('a new reply replaces the pending proposal: 180 then 175, with 175 saved, shows no banner', async () => {
+    localStorage.setItem('health_roadmap_unit_system', 'si');
+    await guestWithoutProfile({ sex: 'male', heightCm: 175 });
+    reply({ height: { value: 180, unit: 'cm' } });
+    expect(banner()!.textContent).toContain('height 180 cm (replaces 175 cm)');
+    reply({ height: { value: 175, unit: 'cm' } });
+    expect(banner()).toBeNull();
+    // And a sex from an earlier reply does not ride into a later one.
+    reply({ sex: 'female' });
+    reply({ height: { value: 182, unit: 'cm' } });
+    expect(banner()!.textContent).toBe('Save to your profile: height 182 cm (replaces 175 cm)?SaveNot now');
+  });
+
+  it('within one reply, a later stated field wins and an absent one does not erase', async () => {
+    localStorage.setItem('health_roadmap_unit_system', 'si');
+    await guestWithoutProfile();
+    reply({ sex: 'male', height: { value: 180, unit: 'cm' } }, { height: { value: 182, unit: 'cm' } });
+    expect(banner()!.textContent).toBe('Save to your profile: Male, 182 cm?SaveNot now');
+  });
+
+  it('never names a field that already holds the value, even after the form changes under the banner', async () => {
+    localStorage.setItem('health_roadmap_unit_system', 'si');
+    const view = await guestWithoutProfile({ sex: 'female' });
+    reply({ sex: 'male', height: { value: 178, unit: 'cm' } });
+    expect(banner()!.textContent).toContain('Male (replaces Female)');
+    // The user picks Male in the form: their own entry outranks the proposal, which goes.
+    fireEvent.click(Array.from(view.container.querySelectorAll('.sex-toggle-btn')).find((b) => b.textContent?.trim() === 'Male')!);
+    expect(banner()).toBeNull();
+    await wait(1500);
+    expect((await recordOnDisk()).profile.sex).toBe('male');
+    expect((await recordOnDisk()).profile).not.toHaveProperty('heightCm');
+  });
+
+  it('a height typed in the form clears the proposal', async () => {
+    localStorage.setItem('health_roadmap_unit_system', 'si');
+    const view = await guestWithoutProfile({ sex: 'male' });
+    reply({ height: { value: 178, unit: 'cm' } });
+    expect(banner()).not.toBeNull();
+    fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '181' } });
+    expect(banner()).toBeNull();
+  });
+
+  it('erasing the data clears the proposal', async () => {
+    localStorage.setItem('health_roadmap_unit_system', 'si');
+    // A saved profile, so the plan shows and with it the delete link.
+    const view = await guestWithoutProfile({ sex: 'female', heightCm: 175 });
+    reply({ sex: 'male', height: { value: 178, unit: 'cm' } });
+    expect(banner()).not.toBeNull();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', () => {});
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await waitFor(() => expect(banner()).toBeNull());
+    await wait(1500);
+    const profile = (await recordOnDisk()).profile;
+    expect(profile).not.toHaveProperty('sex');
+    expect(profile).not.toHaveProperty('heightCm');
+  });
+
+  it('US-09 AC8: the banner portals to <body>, outside the widget root, and is masked from Clarity', async () => {
+    const view = await guestWithoutProfile();
+    reply({ sex: 'male' });
+    expect(view.container.contains(banner())).toBe(false);
+    expect(banner()!.closest('[data-clarity-mask="true"]')).not.toBeNull();
+  });
+
+  it('stacks beside the medication Undo banner instead of covering it', async () => {
+    await guestWithoutProfile();
+    act(() => chat.proposeEdit!([
+      { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
+      parseProposedEdit('propose_profile_edit', { sex: 'female' })!,
+    ]));
+    const column = document.body.querySelectorAll('.chat-banners');
+    expect(column).toHaveLength(1);
+    const banners = column[0].querySelectorAll(':scope > [role="status"]');
+    expect(Array.from(banners, (b) => b.textContent)).toEqual(['Medication updated from chat.Undo✕', 'Save to your profile: Female?SaveNot now']);
+    expect(column[0].getAttribute('data-clarity-mask')).toBe('true');
+    // Answering one leaves the other.
+    pressButton('Not now');
+    expect(document.body.querySelector('.chat-banners [role="status"]')!.textContent).toBe('Medication updated from chat.Undo✕');
+  });
+
+  it('adversary R1: an edit of a kind this build does not know writes nothing', async () => {
+    await guestWithoutProfile();
+    const before = await recordOnDisk();
+    act(() => chat.proposeEdit!([{ kind: 'goal', target: 5 } as unknown as ProposedEdit]));
+    await wait(1500);
+    expect(document.body.querySelector('.chat-banners')).toBeNull();
+    expect((await loadLatestMeasurements())?.medications ?? []).toEqual([]);
+    const after = await recordOnDisk();
+    expect(after.medications).toEqual(before.medications);
+    expect(after.profile).toEqual(before.profile);
   });
 });

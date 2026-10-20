@@ -26,7 +26,7 @@ import { resolveRecordedAt } from './record-edits';
 import { knownMinorOf } from './calculations';
 import { buildChatContextJson } from './chat-context';
 import {
-  CHAT_EDIT_TOOLS, EDITABLE_FIELDS, parseProposedEdit, parseProposedEdits,
+  CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_PROFILE_EDIT_TOOL, parseProposedEdit, parseProposedEdits,
   type EditableField, type ProposedEdit,
 } from './chat-edits';
 
@@ -87,11 +87,14 @@ export const CHAT_TOOLS = [...CHAT_EDIT_TOOLS, RUN_ROADMAP_TOOL];
  * only when the latest or the previous user message has a digit, since it
  * runs only on stated values ("Lp(a) 75", the unit asked, then "nmol/L"); the
  * form tools always. Tools render before the system prompt, so the two shapes
- * cache separately.
+ * cache separately. `profileEdits` false leaves out propose_profile_edit, for
+ * a widget built before it (US-16 AC2), which would apply its edit as a
+ * medication.
  */
-export function chatToolsFor(messages: readonly ChatTurnMessage[]) {
+export function chatToolsFor(messages: readonly ChatTurnMessage[], profileEdits = true) {
   const said = messages.filter(m => m.role === 'user' && typeof m.content === 'string').slice(-2);
-  return said.some(m => /\d/.test(m.content as string)) ? CHAT_TOOLS : CHAT_EDIT_TOOLS;
+  const tools = said.some(m => /\d/.test(m.content as string)) ? CHAT_TOOLS : CHAT_EDIT_TOOLS;
+  return profileEdits ? tools : tools.filter(t => t !== PROPOSE_PROFILE_EDIT_TOOL);
 }
 
 export interface RoadmapRun {

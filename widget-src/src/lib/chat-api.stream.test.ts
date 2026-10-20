@@ -116,7 +116,21 @@ describe('chat-api streaming (US-15 AC16/AC17)', () => {
     await sendMessage('q', null, null, [], () => {}, true);
     const bodies = fetchMock.mock.calls.map((c) => JSON.parse(c[1].body));
     expect(bodies[0]).not.toHaveProperty('canApplyEdits');
+    expect(bodies[0]).not.toHaveProperty('canApplyProfileEdits');
     expect(bodies[1].canApplyEdits).toBe(true);
+    // US-16 AC2: this build applies a profile edit, so it says so.
+    expect(bodies[1].canApplyProfileEdits).toBe(true);
+  });
+
+  // US-16 AC2 (adversary R1): an edit of a kind this build does not know is dropped
+  // here, so it never reaches the form as something else.
+  it('keeps only the edit kinds this build applies', async () => {
+    const field = { kind: 'field', field: 'ldlC', displayValue: 4.1, unitSystem: 'si', date: null };
+    const profile = { kind: 'profile', sex: 'male', heightCm: 178 };
+    fetchMock.mockResolvedValueOnce(ndjson([{ ...done, proposedEdits: [field, { kind: 'goal', target: 5 }, null, 'x', profile] }]));
+    expect((await sendMessage('q', null, null, [], () => {}, true)).result?.proposedEdits).toEqual([field, profile]);
+    fetchMock.mockResolvedValueOnce(ndjson([{ ...done, proposedEdits: [{ kind: 'goal' }] }]));
+    expect((await sendMessage('r', null, null, [], () => {}, true)).result).not.toHaveProperty('proposedEdits');
   });
 
   it('a refusal or fallback done line carries isFallback and replaces the streamed text', async () => {

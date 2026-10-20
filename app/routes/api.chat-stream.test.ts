@@ -346,10 +346,21 @@ describe('US-15 AC19 — tools only for a client that applies edits', () => {
   });
 
   it('canApplyEdits: true sends the form tools, and run_roadmap when the message has a digit (US-15 AC33)', async () => {
-    const sent = await anthropicBody({ message: 'hello', localFirst: true, canApplyEdits: true });
+    const flags = { localFirst: true, canApplyEdits: true, canApplyProfileEdits: true };
+    const sent = await anthropicBody({ message: 'hello', ...flags });
     expect(sent.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit']);
-    const withValue = await anthropicBody({ message: 'my LDL is 4.1 mmol/L', localFirst: true, canApplyEdits: true });
+    const withValue = await anthropicBody({ message: 'my LDL is 4.1 mmol/L', ...flags });
     expect(withValue.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap']);
+  });
+
+  // US-16 AC2 (adversary R1): a widget built before the profile tool sends canApplyEdits alone,
+  // and would write a profile edit as a blank medication row. It gets the old tool set.
+  it('US-16 AC2: canApplyEdits without canApplyProfileEdits gets no profile tool', async () => {
+    const old = await anthropicBody({ message: 'my LDL is 4.1 mmol/L', localFirst: true, canApplyEdits: true });
+    expect(old.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+    const notTrue = await anthropicBody({ message: 'hello', localFirst: true, canApplyEdits: true, canApplyProfileEdits: 'yes' });
+    expect(notTrue.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
+    expect(await anthropicBody({ message: 'hello', localFirst: true, canApplyProfileEdits: true })).not.toHaveProperty('tools');
   });
 
   it('the streamed path passes the same flag', async () => {

@@ -533,15 +533,20 @@ const subscriptionToolResult: ToolResultFor = (b, blocks) => {
  * every brand-surface turn while subscription actions are enabled, logged in or
  * not, so that surface keeps one cached prefix shape. In a run_roadmap round its
  * call gets its own tool_result, and the proposal is read from both calls' blocks.
+ *
+ * `opts.profileEdits` (US-16 AC2): propose_profile_edit goes only to a client
+ * that says it applies it. A widget built before it applies any edit that is
+ * not a field as a medication, so it gets neither the tool nor a profile edit.
  */
 export async function getChatCompletion(
   systemBlocks: SystemBlock[],
   messages: ChatTurnMessage[],
   canApplyEdits: boolean,
   onEvent?: (event: ChatStreamEvent) => void,
-  opts?: { subscriptionTool?: boolean; guestInputs?: unknown },
+  opts?: { subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean },
 ): Promise<ChatCompletionResult> {
-  const tools = [...(canApplyEdits ? chatToolsFor(messages) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];
+  const profileEdits = opts?.profileEdits === true;
+  const tools = [...(canApplyEdits ? chatToolsFor(messages, profileEdits) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];
   const body = {
     ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: systemBlocks,
@@ -580,7 +585,7 @@ export async function getChatCompletion(
     }
     // Truncated: keep the answer, add nothing the user sees, log the stop only.
     if (stopReason === 'max_tokens') console.warn(JSON.stringify({ evt: 'chat_truncated', stopReason }));
-    const proposedEdits = turn?.proposedEdits ?? [];
+    const proposedEdits = (turn?.proposedEdits ?? []).filter(e => profileEdits || e.kind !== 'profile');
     // A round's proposal may be in its first call (beside run_roadmap), so read both.
     const blocks = turn && turn.final !== turn.first ? [...turn.first.contentBlocks, ...result.contentBlocks] : result.contentBlocks;
     const subscriptionProposal = opts?.subscriptionTool ? parseSubscriptionProposal(blocks) : null;

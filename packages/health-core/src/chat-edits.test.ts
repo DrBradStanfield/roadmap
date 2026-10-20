@@ -285,6 +285,17 @@ describe('US-16 AC2: parseProposedEdit — profile edits', () => {
     expect(parseProposedEdit(PROFILE, { sex: 'male', birthYear: 1974 })).toBeNull();
     expect(parseProposedEdit(PROFILE, {})).toBeNull();
   });
+  // Review 2026-10-20 (Codex R3, adversary R5): the nested height is strict too.
+  it('refuses an unknown key inside the height, and the sex beside it', () => {
+    expect(parseProposedEdit(PROFILE, { sex: 'male', height: { value: 178, unit: 'cm', feet: 5 } })).toBeNull();
+    expect(parseProposedEdit(PROFILE, { height: { value: 70, unit: 'in', note: 'about' } })).toBeNull();
+  });
+  it('treats a null sex or height as absent, not a refusal', () => {
+    expect(parseProposedEdit(PROFILE, { sex: null, height: { value: 178, unit: 'cm' } }))
+      .toEqual({ kind: 'profile', sex: null, heightCm: 178 });
+    expect(parseProposedEdit(PROFILE, { sex: 'female', height: null })).toEqual({ kind: 'profile', sex: 'female', heightCm: null });
+    expect(parseProposedEdit(PROFILE, { sex: null, height: null })).toBeNull();
+  });
   it('a profile-only turn asks the user to confirm, never claims a save', () => {
     const profile = parseProposedEdit(PROFILE, { sex: 'male' })!;
     const line = toolOnlyAck([profile]);
