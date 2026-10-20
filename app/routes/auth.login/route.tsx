@@ -3,6 +3,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, useActionData, useLoaderData } from "react-router";
 
 import { login } from "../../shopify.server";
+import { cappedRequest, SMALL_BODY_CAP } from "../../lib/capped-body.server";
 
 import { loginErrorMessage } from "./error.server";
 
@@ -13,7 +14,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const errors = loginErrorMessage(await login(request));
+  // login() reads the form itself, unauthenticated (US-09 AC25).
+  const capped = await cappedRequest(request, SMALL_BODY_CAP);
+  if (!capped) return new Response(null, { status: 413 });
+  const errors = loginErrorMessage(await login(capped));
 
   return {
     errors,

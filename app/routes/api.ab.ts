@@ -4,7 +4,7 @@ import { authenticate } from '../shopify.server';
 import { getActiveABTests, recordABEvent, type ABEventType } from '../lib/supabase.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { isBotUA } from '../lib/bot-detect';
-import { getClientIp } from '../lib/local-first-route.server';
+import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 
 // 10 events per minute per visitor (generous, prevents abuse)
 const checkABRateLimit = createRateLimiter(10, 60_000, 5 * 60_000);
@@ -26,12 +26,8 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ success: false, error: 'bot' });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ success: false, error: 'Invalid JSON' }, { status: 400 });
-  }
+  const body = await parseSimpleRequestJson(request);
+  if (body === BODY_TOO_LARGE) return Response.json({ success: false, error: 'Request too large' }, { status: 413 });
 
   const b = body as Record<string, unknown>;
   const eventData = b?.impression || b?.conversion;

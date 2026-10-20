@@ -32,6 +32,7 @@ import { BatchRefusedError, ExtractionStopError } from '../lib/anthropic.server'
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { machineFiles } from '../lib/rate-limiter';
 import { action, loader } from './api.lab-import-v2';
+import { streamingPost } from '../lib/capped-body.test-helpers';
 
 const FILES = [{ fileName: 'a.pdf', pages: [{ type: 'image', content: 'AAAA', mimeType: 'image/png' }] }];
 
@@ -475,5 +476,26 @@ describe('US-12 AC17: a batch that never reaches Anthropic costs no quota', () =
       expect(await remaining(`10.4.1.${i}`)).toBe(199);
       expect(machineFiles.remaining('machine')).toBe(machineBefore - 1);
     }
+  });
+});
+
+describe('lab-import body cap (US-09 AC25)', () => {
+  const MB = 1024 * 1024;
+  it('answers 413 to a body over 200 MB whose Content-Length lies low, and stops reading', async () => {
+    const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 260 * MB, {
+      headers: { 'fly-client-ip': '10.1.8.1', 'content-length': '1000' }, chunkBytes: MB,
+    });
+    const res = await action({ request } as never);
+    expect(res.status).toBe(413);
+    expect(pulled.bytes).toBeLessThanOrEqual(202 * MB);
+    expect(createBatch).not.toHaveBeenCalled();
+  });
+
+  it('answers 413 to a declared length over 200 MB without reading it', async () => {
+    const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 10, {
+      headers: { 'fly-client-ip': '10.1.8.2', 'content-length': String(200 * MB + 1) },
+    });
+    expect((await action({ request } as never)).status).toBe(413);
+    expect(pulled.bytes).toBeLessThanOrEqual(10);
   });
 });

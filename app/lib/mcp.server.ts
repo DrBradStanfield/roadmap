@@ -24,7 +24,8 @@ import { describeStorageFailure, isStorageFailure } from '../../packages/health-
 import { folderNudge, type GuardRefusal, isToolName, MAX_APPROVAL_LENGTH, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
 import { importFilesBucket, isRefusalReason, MCP_TOOL_NAMES, type McpRefusalReason, type McpToolName } from '../../packages/health-core/src/product-events';
-import { KNOWN_CLIENTS, readCapped, type McpClientLabel } from './mcp-clients.server';
+import { KNOWN_CLIENTS, type McpClientLabel } from './mcp-clients.server';
+import { cappedBody } from './capped-body.server';
 import { hostedImporter } from './mcp-import.server';
 import { recordServerEvent } from './product-events.server';
 import { type FileLabValue, type FileMeasurement, type RoadmapFile, stableStringify } from '../../packages/health-core/src/roadmap-file';
@@ -570,10 +571,8 @@ export async function mcpEndpoint(request: Request, now = new Date().toISOString
   // the ones that would refresh at Dropbox (US-32 AC38).
   if (!grantLive(token)) return unauthorized();
 
-  let text: string;
-  try {
-    text = await readCapped(request, RPC_BODY_CAP);
-  } catch {
+  const text = await cappedBody(request, RPC_BODY_CAP);
+  if (text === null) {
     return Response.json(rpcFailure(null, INVALID_REQUEST, 'That request body is too large'), { status: 413 });
   }
   let body: unknown;

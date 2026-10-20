@@ -39,6 +39,8 @@ vi.mock('../lib/product-events.server', async (importOriginal) => ({
 }));
 
 import { action } from './api.measurements';
+import { SMALL_BODY_CAP } from '../lib/capped-body.server';
+import { streamingPost } from '../lib/capped-body.test-helpers';
 
 const SCHEDULE = [{ category: 'blood_test_lipids', label: 'Lipid panel blood test', dueAt: '2027-05-12' }];
 let emailCounter = 0;
@@ -142,5 +144,15 @@ describe('input hardening', () => {
     await action({ request: capture({ email, schedule: SCHEDULE }) } as never);
 
     expect(subscribeToKlaviyo).toHaveBeenCalledWith({ email });
+  });
+});
+
+describe('api.measurements body cap (US-09 AC25)', () => {
+  it('answers 413 to a chunked body over 64 KB and stops reading', async () => {
+    const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/measurements', 100 * SMALL_BODY_CAP);
+    const res = await action({ request } as never);
+    expect(res.status).toBe(413);
+    expect(pulled.bytes).toBeLessThanOrEqual(SMALL_BODY_CAP + 2 * 16 * 1024);
+    expect(subscribeToKlaviyo).not.toHaveBeenCalled();
   });
 });

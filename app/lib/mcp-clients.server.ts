@@ -13,6 +13,7 @@ import zlib from 'node:zlib';
 import type { McpOAuthDetail } from '../../packages/health-core/src/product-events';
 import { clientHmacKey } from './mcp-config.server';
 import { b64url } from './mcp-seal.server';
+import { readCapped } from './capped-body.server';
 
 /**
  * Which assistant is calling, as a closed enum. Free text in a counter is how
@@ -473,30 +474,6 @@ function getCimdDocument(url: URL): Promise<{ text: string; cacheControl: string
 function cacheTtlMs(header: string | null): number {
   const match = /max-age=(\d+)/.exec(header ?? '');
   return match ? Number(match[1]) * 1000 : 5 * 60 * 1000;
-}
-
-/**
- * Read at most `cap` bytes of a request or a response body, or throw. A
- * `content-length` is the sender's claim, so it is checked where it exists but
- * never believed — a chunked body has none at all. Takes a web `Request` or
- * `Response`, or a Node stream such as an `IncomingMessage`.
- */
-export async function readCapped(
-  source: { body: ReadableStream<Uint8Array> | null } | AsyncIterable<Uint8Array>,
-  cap: number,
-): Promise<string> {
-  // A web stream is async-iterable in Node; the DOM types just do not say so.
-  const chunks = 'body' in source ? (source.body as unknown as AsyncIterable<Uint8Array> | null) : source;
-  if (!chunks) return '';
-  const read: Uint8Array[] = [];
-  let size = 0;
-  // Leaving the loop early (the throw) cancels a web stream and destroys a Node one.
-  for await (const chunk of chunks) {
-    size += chunk.byteLength;
-    if (size > cap) throw new Error('body too large');
-    read.push(chunk);
-  }
-  return Buffer.concat(read).toString('utf8');
 }
 
 /**

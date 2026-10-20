@@ -17,6 +17,7 @@ import { type ActionFunctionArgs } from 'react-router';
 import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { getCustomerId } from '../lib/route-helpers.server';
+import { BODY_TOO_LARGE, parseSimpleRequestJson } from '../lib/local-first-route.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { recordServerEvent } from '../lib/product-events.server';
 import {
@@ -46,8 +47,8 @@ export async function action({ request }: ActionFunctionArgs) {
   if (!/^application\/json\b/i.test(request.headers.get('content-type') ?? '')) {
     return Response.json({ success: false, error: 'JSON required' }, { status: 415 });
   }
-  let body: unknown;
-  try { body = await request.json(); } catch { return Response.json({ success: false, error: 'Invalid JSON body' }, { status: 400 }); }
+  const body = await parseSimpleRequestJson(request);
+  if (body === BODY_TOO_LARGE) return Response.json({ success: false, error: 'Request too large' }, { status: 413 });
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) return Response.json({ success: false, error: 'Invalid input' }, { status: 400 });
 

@@ -10,6 +10,7 @@ import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
 import { getAuthenticatedUser, getCustomerId, checkSubscriptionFromTags, getCustomerOrders, isValidUuid } from '../lib/route-helpers.server';
 import { getClientIp } from '../lib/local-first-route.server';
+import { cappedBody } from '../lib/capped-body.server';
 import { authenticate } from '../shopify.server';
 import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
@@ -316,11 +317,15 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
     }
 
+    // 2 MB: 20 prior turns at their longest plus the plan context come to
+    // well under half of it (US-09 AC25).
+    const text = await cappedBody(request, 2 * 1024 * 1024);
+    if (text === null) return Response.json({ success: false, error: 'Request too large' }, { status: 413 });
     // A malformed body is client error, not ours: Node's SyntaxError message
     // quotes the offending text, so it must not reach the outer capture.
     let body;
     try {
-      body = await request.json();
+      body = JSON.parse(text);
     } catch {
       return Response.json({ success: false, error: 'Invalid JSON body' }, { status: 400 });
     }
