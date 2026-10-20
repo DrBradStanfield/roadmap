@@ -66,14 +66,18 @@ export const MASTER_VIEWS_HEADING = "## Brad's current view and safety notes on 
  * what is left in topics order: first every master's Drug Interactions, then
  * the Safety and Side Effects sections; one that would pass the cap is skipped
  * and logged, and a master whose interactions were skipped adds no other
- * safety section. One master's full block
- * runs about 6,900 (taurine) to 19,400 characters (vitamin C) with its cited
- * references, so 40,000 holds two or three masters in full; a post naming five
- * (the-only-three-supplements-doctor-brad-takes) gets all five views and three
- * masters' safety text. The YouTube context is uncached, so every character
- * (about 10,000 tokens at the cap) is paid on every comment.
+ * safety section. Sections go in whole, never trimmed. A master's Drug
+ * Interactions section runs about 2,000 to 7,000 characters with its cited
+ * references; 80,000 lets the stack post
+ * (the-only-three-supplements-doctor-brad-takes), which names ten masters with
+ * a view once batch 2 lands, carry every view and every master's interactions
+ * (about 79,000 measured 2026-10-21); 40,000 dropped six masters' interactions,
+ * vitamin K's warfarin warning among them. An interim figure (orchestrator,
+ * 2026-10-21) until each master gains a short "Key safety points" section. The
+ * YouTube context is uncached, so every character (about 20,000 tokens at the
+ * cap) is paid on every comment.
  */
-export const MAX_MASTER_VIEW_CHARS = 40_000;
+export const MAX_MASTER_VIEW_CHARS = 80_000;
 export const MAX_VIEW_CHARS = 6_000;
 
 /** A master's "Current view" or "Current evidence position" section, heading to

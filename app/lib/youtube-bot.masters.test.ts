@@ -22,6 +22,7 @@ const fakes = vi.hoisted(() => {
     ref('tm-huge'),
     ref('tm-master-long', '2026-10-20'),
     ref('tm-safe'), ref('tm-mid1'), ref('tm-mid2'), ref('tm-cited'), ref('tm-numbered'), ref('tm-malformed'), ref('tm-rule'), ref('tm-ix'),
+    ...Array.from({ length: 10 }, (_, i) => ref(`tm-stack-${i}`, '2026-10-20')),
     { title: 'An article', handle: 'tm-article', url: 'u', tags: [], publishedAt: '2025-01-01T00:00:00Z' },
   ];
 });
@@ -49,7 +50,6 @@ import { runPipeline } from './youtube-bot.server';
 import { platformChatCompletion } from './platform-chat.server';
 import { currentViewSection, safetySections, masterViews, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS } from './youtube-context';
 import { getChatCompletion } from './chat.server';
-import { loadBlogIndex } from './blog-index.server';
 import { routeQuery } from './chat-router.server';
 
 const VIEW = '## Current view (reviewed 20 October 2026)\n\nCollagen peptides may improve skin hydration [the-collagen-peptides-for-skin-story-is-changing].';
@@ -70,6 +70,16 @@ const files: Record<string, string> = {
   'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
   'tm-article': `---\ntitle: "An article"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNot a master.\n`,
 };
+// Ten synthetic masters mirroring the stack post's ten masters with a view once
+// batch 2 lands (knowledge-refresh/masters-2, measured 2026-10-21): views about
+// 1,500 characters, Drug Interactions 2,000 to 7,000, Safety and Side Effects
+// 2,300 to 22,500, in the post's topics order. The last stands in for vitamin K.
+const STACK_IX = [2_200, 4_600, 2_400, 7_000, 4_200, 2_400, 2_100, 2_100, 2_200, 6_700];
+const STACK_SAFETY = [8_000, 8_000, 4_900, 22_500, 3_600, 6_300, 7_500, 11_800, 2_300, 3_600];
+const stackIx = (i: number) => `### 6. Drug Interactions\n\n${i === 9 ? 'Warfarin: vitamin K lowers its effect. ' : ''}${String(i).repeat(STACK_IX[i])}`;
+STACK_IX.forEach((_, i) => {
+  files[`tm-stack-${i}`] = `---\ntitle: "Stack ${i}"\nreviewed: "2026-10-20"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'v'.repeat(1_500)}\n\n## 5. Safety and Side Effects\n\nStack ${i} safety. ${'s'.repeat(STACK_SAFETY[i])}\n\n${stackIx(i).replace(/^#/, '')}\n\n## 7. Dietary Sources\n\nFood.\n`;
+});
 const realRead = fs.readFileSync;
 function fakeFiles() {
   vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
@@ -126,25 +136,27 @@ describe('masterViews on the published masters (US-50 AC6)', () => {
     expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
   });
 
-  // A post naming five reviewed masters (collagen, creatine, magnesium, taurine,
-  // vitamin K): every view goes in, safety sections fill the rest of the cap,
-  // and each one skipped for the cap is logged with its handle.
-  it('the-only-three-supplements-doctor-brad-takes: every master view, then safety within the total cap', () => {
-    const entry = loadBlogIndex().find(e => e.handle === 'the-only-three-supplements-doctor-brad-takes')!;
+});
+
+// The stack post (the-only-three-supplements-doctor-brad-takes) names ten
+// masters with a view once batch 2 lands. A synthetic fixture of the same sizes
+// keeps this deterministic as the real masters change: every view goes in,
+// every master's Drug Interactions section goes in whole, and only Safety and
+// Side Effects sections are skipped for the cap, each one logged.
+describe('masterViews on a stack post naming ten masters (US-50 AC6)', () => {
+  it('every view and every whole Drug Interactions section fit the cap; vitamin K keeps its warfarin warning', () => {
+    fakeFiles();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const block = masterViews(entry.topics, [])!;
-    const views = block.match(/^### Current view \(reviewed/gm) ?? [];
-    // One view per named master that has a Current view (grows as masters are rewritten).
-    const withView = entry.topics!.filter(h => /^## Current view \(reviewed/m.test((fs.existsSync(path.join(process.cwd(), 'docs/blog', `${h}.md`)) ? fs.readFileSync(path.join(process.cwd(), 'docs/blog', `${h}.md`), 'utf-8') : '')));
-    expect(withView.length).toBeGreaterThanOrEqual(5);
-    expect(views).toHaveLength(withView.length);
+    const block = masterViews(STACK_IX.map((_, i) => `tm-stack-${i}`), [])!;
+    expect(block.match(/^### Current view \(reviewed/gm)).toHaveLength(10);
+    STACK_IX.forEach((_, i) => expect(block).toContain(`title: Stack ${i}\n\n### Current view (reviewed 20 October 2026)\n\n${'v'.repeat(1_500)}\n\n${stackIx(i)}`));
+    expect(block.slice(block.indexOf('title: Stack 9'))).toContain('### 6. Drug Interactions\n\nWarfarin');
+    expect(block).toMatch(/^### 5\. Safety and Side Effects$/m);
+    expect(block).not.toContain('Food.');
     expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
-    expect(block).toMatch(/^### \d+\. Safety and Side Effects$/m);
-    // Vitamin K's interactions (warfarin) outrank every master's side effects.
-    const vitK = block.slice(block.indexOf('title: Vitamin K'));
-    expect(vitK).toMatch(/^### \d+\. Drug Interactions$/m);
-    expect(vitK).toContain('Warfarin');
-    for (const [msg] of warn.mock.calls) expect(String(msg)).toMatch(/^YouTube master views: safety section skipped for the cap: [a-z0-9-]+ /);
+    const logged = warn.mock.calls.map(([m]) => String(m));
+    expect(logged.length).toBeGreaterThan(0);
+    for (const m of logged) expect(m).toMatch(/^YouTube master views: safety section skipped for the cap: tm-stack-\d "## 5\. Safety and Side Effects"$/);
   });
 });
 
