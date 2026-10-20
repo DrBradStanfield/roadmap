@@ -40,6 +40,11 @@ const CHATGPT_REDIRECT = CHATGPT_REDIRECTS[0];
 /** OpenAI tests "ChatGPT and Codex surfaces", so the pinned Codex client sees the box too (US-32 AC38). */
 const CODEX = 'https://chatgpt.com/oauth/codex/client.json';
 const CODEX_REDIRECT = 'http://127.0.0.1:4567/callback';
+/** Anthropic reviews the Claude connector directory, so the pinned Claude and Claude Code clients see the box too (US-32 AC49). */
+const CLAUDE = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
+const CLAUDE_REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
+const CLAUDE_CODE = 'https://claude.ai/oauth/claude-code-client-metadata';
+const CLAUDE_CODE_REDIRECT = 'http://localhost:4567/callback';
 const VERIFIER = 'v'.repeat(64);
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('base64url');
 const NOW = '2026-09-02T10:00:00.000Z';
@@ -114,6 +119,7 @@ afterEach(() => {
   vi.resetAllMocks();
   vi.restoreAllMocks();
   clearReviewerSecrets();
+  delete process.env.MCP_REVIEWER_VENDORS;
   delete process.env.MCP_SEAL_KEYS;
   delete process.env.GOOGLE_DRIVE_CLIENT_ID;
   delete process.env.GOOGLE_DRIVE_SECRET;
@@ -122,6 +128,15 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** A self-contained DCR client id, minted through `/mcp/register` with whatever name and callback it claims. */
+async function registerDcr(clientName: string, redirectUri: string): Promise<string> {
+  const register = await post('/mcp/register', {
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ client_name: clientName, redirect_uris: [redirectUri] }),
+  });
+  return (await register.json()).client_id as string;
+}
 
 function unescapeHtml(text: string): string {
   return text.replace(/&#(\d+);/g, (_, c) => String.fromCharCode(Number(c)));
@@ -319,19 +334,16 @@ describe('US-32 AC38 — the form is for the exact pinned ChatGPT and Codex clie
     expect(hasReviewerForm(html)).toBe(false);
   });
 
-  it('shows no form to Claude, Claude Code, another CIMD client or a DCR client', async () => {
+  it('shows no form to another CIMD client or a DCR client, whatever name or callback they claim', async () => {
     const other = 'https://assistant.example/client.json';
     stubFetch({ [other]: { client_id: other, client_name: 'ChatGPT', redirect_uris: [CHATGPT_REDIRECT] } });
-    const register = await post('/mcp/register', {
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ client_name: 'ChatGPT', redirect_uris: [CHATGPT_REDIRECT] }),
-    });
-    const dcr = (await register.json()).client_id as string;
+    const dcr = await registerDcr('ChatGPT', CHATGPT_REDIRECT);
+    // US-32 AC49: a DCR client calling itself Claude, on Claude's own callback, is still not the pinned Claude.
+    const dcrClaude = await registerDcr('Claude', CLAUDE_REDIRECT);
     const cases: Array<[string, string]> = [
-      ['https://claude.ai/oauth/mcp-oauth-client-metadata', 'https://claude.ai/api/mcp/auth_callback'],
-      ['https://claude.ai/oauth/claude-code-client-metadata', 'http://localhost:4567/callback'],
       [other, CHATGPT_REDIRECT],
       [dcr, CHATGPT_REDIRECT],
+      [dcrClaude, CLAUDE_REDIRECT],
     ];
     for (const [clientId, redirect] of cases) {
       const html = await consentHtml(clientId, redirect);
@@ -640,6 +652,159 @@ describe('US-32 AC38 — the connection key', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Anthropic's reviewer (US-32 AC49)
+// ---------------------------------------------------------------------------
+
+const ANTHROPIC_HEADING = 'Anthropic reviewers: sign in here';
+
+describe('US-32 AC49 — MCP_REVIEWER_VENDORS decides whose review is pending; unset is OpenAI alone', () => {
+  const box = async (clientId: string, redirect: string) => hasReviewerForm(await consentHtml(clientId, redirect));
+
+  it('unset: ChatGPT and Codex get the box, Claude and Claude Code none, and a forged Claude sign-in is refused', async () => {
+    expect(await box(CHATGPT, CHATGPT_REDIRECT)).toBe(true);
+    expect(await box(CODEX, CODEX_REDIRECT)).toBe(true);
+    expect(await box(CLAUDE, CLAUDE_REDIRECT)).toBe(false);
+    expect(await box(CLAUDE_CODE, CLAUDE_CODE_REDIRECT)).toBe(false);
+    // The Dropbox button's own sealed state, posted with reviewer=1 as if the box had been there.
+    for (const [clientId, redirect] of [[CLAUDE, CLAUDE_REDIRECT], [CLAUDE_CODE, CLAUDE_CODE_REDIRECT]]) {
+      const res = await signIn(allStates(await consentHtml(clientId, redirect))[0], USERNAME, PASSWORD);
+      expect(res.status, clientId).toBe(400);
+      expect(res.headers.get('location'), clientId).toBeNull();
+    }
+    expect(events('mcp_connect')).toEqual([]);
+  });
+
+  it('anthropic alone: Claude and Claude Code get the box, ChatGPT and Codex none, and a forged ChatGPT sign-in is refused', async () => {
+    process.env.MCP_REVIEWER_VENDORS = 'anthropic';
+    expect(await box(CLAUDE, CLAUDE_REDIRECT)).toBe(true);
+    expect(await box(CLAUDE_CODE, CLAUDE_CODE_REDIRECT)).toBe(true);
+    expect(await box(CHATGPT, CHATGPT_REDIRECT)).toBe(false);
+    expect(await box(CODEX, CODEX_REDIRECT)).toBe(false);
+    const res = await signIn(allStates(await consentHtml())[0], USERNAME, PASSWORD);
+    expect(res.status).toBe(400);
+    expect(events('mcp_connect')).toEqual([]);
+  });
+
+  it('openai,anthropic (spaces forgiven): all four pinned clients get the box', async () => {
+    process.env.MCP_REVIEWER_VENDORS = 'openai, anthropic';
+    for (const [clientId, redirect] of [[CHATGPT, CHATGPT_REDIRECT], [CODEX, CODEX_REDIRECT], [CLAUDE, CLAUDE_REDIRECT], [CLAUDE_CODE, CLAUDE_CODE_REDIRECT]]) {
+      expect(await box(clientId, redirect), clientId).toBe(true);
+    }
+  });
+
+  it('a junk value fails closed: no box for anyone, and no sign-in', async () => {
+    for (const junk of ['', 'OpenAI', 'claude', 'openai,anthropc', 'openai;anthropic', 'all']) {
+      process.env.MCP_REVIEWER_VENDORS = junk;
+      for (const [clientId, redirect] of [[CHATGPT, CHATGPT_REDIRECT], [CLAUDE, CLAUDE_REDIRECT]]) {
+        expect(await box(clientId, redirect), `${junk} ${clientId}`).toBe(false);
+      }
+      const res = await signIn(allStates(await consentHtml())[0], USERNAME, PASSWORD);
+      expect(res.status, junk).toBe(400);
+    }
+    expect(events('mcp_connect')).toEqual([]);
+  });
+});
+
+describe('US-32 AC49 — the exact pinned Claude and Claude Code clients get the same box, for Anthropic', () => {
+  beforeEach(() => {
+    process.env.MCP_REVIEWER_VENDORS = 'openai,anthropic';
+  });
+
+  it('shows the open box above the choice to the pinned Claude client, worded for Anthropic', async () => {
+    const html = await consentHtml(CLAUDE, CLAUDE_REDIRECT);
+    expect(html).toContain(ANTHROPIC_HEADING);
+    expect(html).toContain('For Anthropic’s connector review only. This is not your Dropbox or Google password.');
+    expect(html).not.toContain(REVIEWER_HEADING);
+    expect(html.indexOf(ANTHROPIC_HEADING)).toBeLessThan(html.indexOf('Continue to Dropbox'));
+    expect(unpackSealed<{ provider: string; clientId: string }>('state', reviewerState(html))).toMatchObject({ provider: 'dropbox', clientId: CLAUDE });
+  });
+
+  it('shows it to the pinned Claude Code client on its loopback callback', async () => {
+    const html = await consentHtml(CLAUDE_CODE, CLAUDE_CODE_REDIRECT);
+    expect(html).toContain(ANTHROPIC_HEADING);
+    expect(hasReviewerForm(html)).toBe(true);
+  });
+
+  it('leaves the ChatGPT and Codex box worded for OpenAI', async () => {
+    for (const [clientId, redirect] of [[CHATGPT, CHATGPT_REDIRECT], [CODEX, CODEX_REDIRECT]]) {
+      const html = await consentHtml(clientId, redirect);
+      expect(html, clientId).toContain(REVIEWER_HEADING);
+      expect(html, clientId).not.toContain(ANTHROPIC_HEADING);
+    }
+  });
+
+  it('shows no box to a Claude id with a query string, nor to a DCR client named Claude', async () => {
+    const lookalike = `${CLAUDE}?x=1`;
+    stubFetch({ [lookalike]: { client_id: lookalike, client_name: 'Claude', redirect_uris: [CLAUDE_REDIRECT] } });
+    const dcr = await registerDcr('Claude', CLAUDE_REDIRECT);
+    for (const clientId of [lookalike, dcr]) {
+      const html = await consentHtml(clientId, CLAUDE_REDIRECT);
+      expect(html, clientId).toContain('Continue to Dropbox');
+      expect(hasReviewerForm(html), clientId).toBe(false);
+    }
+  });
+
+  for (const [label, clientId, redirect] of [
+    ['claude', CLAUDE, CLAUDE_REDIRECT],
+    ['claude_code', CLAUDE_CODE, CLAUDE_CODE_REDIRECT],
+  ] as const) {
+    it(`signs ${label} in to the reviewer record alone, back to its own callback, counted via reviewer`, async () => {
+      seedReviewerRecord();
+      const res = await signIn(reviewerState(await consentHtml(clientId, redirect)), USERNAME, PASSWORD);
+      expect(res.status).toBe(302);
+      const to = new URL(res.headers.get('location')!);
+      expect(to.origin + to.pathname).toBe(redirect);
+      const code = to.searchParams.get('code')!;
+      expectGenerationOnly('code', code);
+      const redeemed = await token({ grant_type: 'authorization_code', code, redirect_uri: redirect, code_verifier: VERIFIER, client_id: clientId });
+      expect(redeemed.status).toBe(200);
+      const { access_token: access, refresh_token: refresh } = (await redeemed.json()) as { access_token: string; refresh_token: string };
+      expectGenerationOnly('access', access);
+      expectGenerationOnly('refresh', refresh);
+      const read = await callTool(access, 'read_record', {});
+      expect(read.isError).toBe(false);
+      expect(JSON.parse(read.text).profile).toMatchObject({ birthYear: 1979, heightCm: 178, sex: 'male' });
+      // The reviewer's own token, and no other: the same record OpenAI's reviewer reaches.
+      expect(refreshed).toEqual([REVIEWER_RT]);
+      expect(adapterTokens).toEqual([REVIEWER_ACCESS]);
+      expect(events('mcp_connect')).toEqual([{ client: label, provider: 'dropbox', via: 'reviewer' }]);
+    });
+  }
+
+  it('refuses a wrong login for Claude the same way: re-rendered, counted, no code', async () => {
+    const res = await signIn(reviewerState(await consentHtml(CLAUDE, CLAUDE_REDIRECT)), USERNAME, 'wrong-password');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('location')).toBeNull();
+    const html = await res.text();
+    expect(html).toContain('That username or password is not right.');
+    expect(html).toContain(ANTHROPIC_HEADING);
+    expect(html).not.toContain('wrong-password');
+    expect(events('mcp_connect')).toEqual([]);
+  });
+
+  it('refuses reviewer=1 on a state sealed for a Claude lookalike or a DCR client named Claude', async () => {
+    const lookalike = `${CLAUDE}?x=1`;
+    stubFetch({ [lookalike]: { client_id: lookalike, client_name: 'Claude', redirect_uris: [CLAUDE_REDIRECT] } });
+    const dcr = await registerDcr('Claude', CLAUDE_REDIRECT);
+    for (const clientId of [lookalike, dcr]) {
+      const res = await signIn(allStates(await consentHtml(clientId, CLAUDE_REDIRECT))[0], USERNAME, PASSWORD);
+      expect(res.status, clientId).toBe(400);
+      expect(res.headers.get('location'), clientId).toBeNull();
+    }
+    expect(events('mcp_connect')).toEqual([]);
+  });
+
+  it('shows no box to Claude between reviews', async () => {
+    clearReviewerSecrets();
+    expect(hasReviewerForm(await consentHtml(CLAUDE, CLAUDE_REDIRECT))).toBe(false);
+  });
+
+  it('names both reviews in the custody sentence while the token is held', async () => {
+    expect(unescapeHtml(await consentHtml(CLAUDE, CLAUDE_REDIRECT))).toContain('except, while an OpenAI or Anthropic app review is pending, the Dropbox credential of one invented reviewer account');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Refusals
 // ---------------------------------------------------------------------------
 
@@ -661,8 +826,9 @@ describe('US-32 AC38 — reviewer=1 is refused where it does not belong', () => 
       [LOOKALIKE]: { client_id: LOOKALIKE, client_name: 'ChatGPT', redirect_uris: [CHATGPT_REDIRECT] },
       [codexLookalike]: { client_id: codexLookalike, client_name: 'Codex', redirect_uris: [CODEX_REDIRECT] },
     });
+    const other = await registerDcr('Codex', CODEX_REDIRECT);
     for (const [clientId, redirect] of [
-      ['https://claude.ai/oauth/mcp-oauth-client-metadata', 'https://claude.ai/api/mcp/auth_callback'],
+      [other, CODEX_REDIRECT],
       [LOOKALIKE, CHATGPT_REDIRECT],
       [codexLookalike, CODEX_REDIRECT],
     ]) {

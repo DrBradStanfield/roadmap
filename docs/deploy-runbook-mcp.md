@@ -310,8 +310,27 @@ Why it exists, and Brad's exception: [mcp-architecture.md](mcp-architecture.md) 
 [the plan](reviews/2026-10-01-chatgpt-reviewer-signin-plan.md). In one line: OpenAI's
 reviewer signs in on our consent page with a username and password we issued, and the
 session reads the invented reviewer account's Dropbox record through a token our server
-holds. The box shows for the exact pinned ChatGPT and Codex clients only, and only while all three
-secrets below are set and well formed. **It is on only while a review is pending.**
+holds. The box shows for the exact pinned ChatGPT and Codex clients and, since 2026-10-20
+(US-32 AC49), the exact pinned Claude and Claude Code clients for Anthropic's reviewer, and
+only while all three secrets below are set and well formed. **It is on only while a review is
+pending.** Both vendors' reviewers share the one account, password and record: a kill or a
+rotation for one ends the other's sessions too.
+
+**Whose review is pending: `MCP_REVIEWER_VENDORS`** (US-32 AC49). A comma list of `openai`
+and/or `anthropic`. Unset means `openai`. Any other word turns every box off. The box is
+visible to every user of a listed client, so list only the vendor actually reviewing:
+
+```bash
+# Submitting to Anthropic's Connectors Directory, with OpenAI's review still pending:
+fly secrets set MCP_REVIEWER_VENDORS=openai,anthropic -a health-tool-edu
+# After Anthropic's verdict: back to OpenAI alone (or unset, which means the same).
+fly secrets set MCP_REVIEWER_VENDORS=openai -a health-tool-edu
+# After OpenAI's verdict, with Anthropic still reviewing:
+fly secrets set MCP_REVIEWER_VENDORS=anthropic -a health-tool-edu
+```
+
+The list gates the box and new sign-ins only. A reviewer session already connected
+survives a change to it; the three secrets below remain the kill switch.
 
 **The three secrets, on `health-tool-edu` only.** All three valid, or the feature is off.
 
@@ -373,8 +392,8 @@ It prints `ok` or `fail`: the three secrets have the shape the server accepts, t
 token refreshes with the server's own `client_id` + `client_secret` call, and the app
 folder lists.
 
-**Kill switch, and the between-reviews state** (Brad's decision, 2026-10-02). After
-OpenAI's verdict, unset all three. The consent page goes back to exactly what every
+**Kill switch, and the between-reviews state** (Brad's decision, 2026-10-02). Once
+neither OpenAI nor Anthropic has a review pending, unset all three. The consent page goes back to exactly what every
 other user sees, with no code change, and every reviewer session ends on its next
 request (`/token` answers `invalid_grant`, `/mcp` 401):
 
