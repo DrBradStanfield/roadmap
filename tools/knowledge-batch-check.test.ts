@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  type Report, type Result, REPORT_SCHEMA, exampleReport, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
+  type Report, type Result, REPORT_SCHEMA, applyAddenda, exampleReport, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
   sentences, sha256, tokenise, validateReport,
 } from "./knowledge-batch-check";
 
@@ -1982,5 +1982,149 @@ describe("US-50 AC1 masters: Brad's posts and positions as raw, drstanfield.com 
     sh(["commit", "-q", "--allow-empty", "-m", "later"]);
     put("docs/knowledge-refresh/exceptions-t.json", "[ ]");
     expect(fails(run({ masters: true, base: "HEAD~2" }).AC6).join()).toContain("unexpected change: docs/knowledge-refresh/exceptions-t.json");
+  });
+});
+
+describe("US-42 AC2 report addenda: reports stay append-only, corrections go in <handle>.addendum-<N>.json", () => {
+  const add = (n: number | string, a: unknown, handle = "alpha") => writeFileSync(join(reports, `${handle}.addendum-${n}.json`), JSON.stringify(a));
+  const wrong = () => { reps.alpha.changed_tokens = [{ body_line: "Trials used 300 mg in adults [1].", raw_quote: "participants took 999 mg in adults" }]; };
+  const good = { body_line: "Trials used 300 mg in adults [1].", raw_quote: "participants took 300 mg in adults" };
+  const batch = (over: Partial<Parameters<typeof runBatch>[0]> = {}) => {
+    writeReports();
+    return runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports], ...over });
+  };
+
+  it("appends entries and voids a wrong one with its reason; the base report file is never written", () => {
+    wrong();
+    expect(fails(run().AC2).join()).toContain("300 mg");
+    add(1, { append: { changed_tokens: [good] }, void: [{ section: "changed_tokens", index: 0, reason: "quoted the wrong dose" }] });
+    const before = readFileSync(join(reports, "alpha.json"), "utf8");
+    const { results, rows } = batch();
+    const ac2 = results.find((r) => r.id === "AC2")!;
+    expect(fails(ac2)).toEqual([]);
+    expect(ac2.evidence.join("\n")).toContain("alpha: VOID 0: quoted the wrong dose");
+    expect(readFileSync(join(reports, "alpha.json"), "utf8")).toBe(before);
+    expect(rows.find((r) => r.handle === "alpha")!.addenda).toEqual(["alpha.addendum-1.json"]);
+    expect(rows.find((r) => r.handle === "beta")!.addenda).toEqual([]);
+  });
+  it("sets proposed_summary_correction and nothing else", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace(/^summary:.*$/m, 'summary: "Alpha summary, 300 mg in adults."'));
+    expect(fails(run().AC1).join()).toContain("proposed_summary_correction");
+    add(1, { set: { proposed_summary_correction: "Alpha summary, 300 mg in adults." } });
+    expect(fails(run().AC1)).toEqual([]);
+    add(1, { set: { notes: "x" } });
+    expect(fails(run().AC2).join()).toContain("alpha.addendum-1.json: set.notes: unknown key");
+  });
+  it("fails an unknown key at any level", () => {
+    add(1, { replace: {} });
+    expect(fails(run().AC2).join()).toContain("alpha.addendum-1.json: replace: unknown key");
+    add(1, { append: { headings_after: [] } });
+    expect(fails(run().AC2).join()).toContain("append.headings_after: unknown key");
+    add(1, { void: [{ section: "changed_tokens", index: 0, reason: "r", extra: 1 }] });
+    expect(fails(run().AC2).join()).toContain("void[0].extra: unknown key");
+  });
+  it("fails a void without a reason, out of range, or on a section that cannot be voided", () => {
+    add(1, { void: [{ section: "changed_tokens", index: 0 }] });
+    expect(fails(run().AC2).join()).toContain("void[0].reason: non-empty string expected");
+    add(1, { void: [{ section: "changed_tokens", index: 0, reason: " " }] });
+    expect(fails(run().AC2).join()).toContain("void[0].reason: non-empty string expected");
+    add(1, { void: [{ section: "changed_tokens", index: 5, reason: "r" }] });
+    expect(fails(run().AC2).join()).toContain("void[0].index: no changed_tokens entry 5");
+    add(1, { void: [{ section: "needs_pubmed", index: 0, reason: "r" }] });
+    expect(fails(run().AC2).join()).toContain("void[0].section");
+  });
+  it("applies addenda in numeric order (2 before 10), voids indexing the array merged so far", () => {
+    wrong();
+    add(2, { append: { changed_tokens: [good, good] } });
+    add(10, { void: [{ section: "changed_tokens", index: 0, reason: "first draft" }, { section: "changed_tokens", index: 2, reason: "duplicate" }] });
+    const { results, rows } = batch();
+    const ac2 = results.find((r) => r.id === "AC2")!;
+    expect(fails(ac2)).toEqual([]);
+    expect(ac2.evidence.join("\n")).toContain("alpha: VOID 2: duplicate");
+    expect(rows[0].addenda).toEqual(["alpha.addendum-2.json", "alpha.addendum-10.json"]);
+    const md = renderReport("t", "HEAD", "abc", results, rows, false);
+    expect(md).toContain("## Addenda applied");
+    expect(md).toContain("- alpha: alpha.addendum-2.json, alpha.addendum-10.json");
+  });
+  it("applyAddenda appends notes, voids the other sections, and leaves a report without addenda unchanged", () => {
+    const r = { ...exampleReport("x"), notes: "base", ask_brad: [{ item: "a", why: "b" }] } as Record<string, unknown>;
+    const copy = JSON.stringify(r);
+    expect(applyAddenda(r, [])).toEqual({ report: r, errors: [], voids: [] });
+    const out = applyAddenda(r, [{ name: "x.addendum-1.json", data: { append: { notes: "more", ask_brad: [{ item: "c", why: "d" }] },
+      void: [{ section: "ask_brad", index: 0, reason: "answered" }, { section: "deleted_sentences", index: 0, reason: "kept" }] } }]);
+    expect(out.errors).toEqual([]);
+    expect(out.report.notes).toBe("base\nmore");
+    expect(out.report.ask_brad).toEqual([{ item: "a", why: "b", void: true, void_reason: "answered" }, { item: "c", why: "d" }]);
+    expect((out.report.deleted_sentences as { void?: boolean }[])[0].void).toBe(true);
+    expect(out.voids).toEqual(["VOID ask_brad 0: answered", "VOID deleted_sentences 0: kept"]);
+    expect(JSON.stringify(r)).toBe(copy);
+  });
+  it("a voided deleted_sentences entry no longer justifies a removal", () => {
+    add(1, { void: [{ section: "deleted_sentences", index: 0, reason: "wrong sentence" }] });
+    expect(fails(run().AC4).join()).toContain("sentence removed and not in deleted_sentences");
+  });
+  it("fails an addendum that is not JSON", () => {
+    writeFileSync(join(reports, "alpha.addendum-1.json"), "{");
+    expect(fails(run().AC2).join()).toContain("alpha.addendum-1.json: not JSON");
+  });
+
+  describe("extra_raw: several entries for one path (US-50)", () => {
+    const POST = "---\ntitle: \"O\"\n---\n\nIn my view participants took 300 mg in adults and did well.\n";
+    beforeEach(() => {
+      put("docs/blog/other.md", POST);
+      sh(["add", "docs/blog/other.md"]); sh(["commit", "-q", "-m", "post", "--", "docs/blog/other.md"]);
+      reps.alpha.changed_tokens = [{ body_line: "Trials used 300 mg in adults [1].", raw_quote: "POST:other: participants took 300 mg in adults and did well" }];
+      reps.alpha.extra_raw = [{ path: "/elsewhere/docs/blog/other.md", sha256: sha256("stale frontmatter") }];
+    });
+    it("a stale sha alone FAILs; an addendum with the current sha passes and the stale one is INFO", () => {
+      expect(fails(run({ masters: true }).AC2).join()).toContain("sha256 mismatch");
+      add(1, { append: { extra_raw: [{ path: "/elsewhere/docs/blog/other.md", sha256: sha256(POST) }] } });
+      const ac2 = run({ masters: true }).AC2;
+      expect(fails(ac2)).toEqual([]);
+      expect(ac2.evidence.join("\n")).toContain(`alpha: extra_raw docs/blog/other.md: superseded sha ${sha256("stale frontmatter")}`);
+    });
+    it("works the same for a raw file outside the repo", () => {
+      reps.alpha.changed_tokens = [good];
+      const f = join(reports, "extra.txt");
+      writeFileSync(f, "anything");
+      reps.alpha.extra_raw = [{ path: f, sha256: sha256("old") }, { path: f, sha256: sha256("anything") }];
+      const ac2 = run().AC2;
+      expect(fails(ac2)).toEqual([]);
+      expect(ac2.evidence.join("\n")).toContain(`superseded sha ${sha256("old")}`);
+    });
+  });
+
+  describe("--check-ids-cap", () => {
+    const many = (n: number) => put("docs/blog/alpha.md", fx("alpha.new.md").trimEnd() + "\n\n" + Array.from({ length: n }, (_, i) => `[${i + 3}] R. T. PMID: ${10000000 + i}`).join("\n\n") + "\n");
+    it("defaults to 60 without --masters and to unlimited with it; the option overrides both", () => {
+      many(65);
+      const seen: string[] = [];
+      const go = (over: Partial<Parameters<typeof runBatch>[0]>) => { seen.length = 0; return run({ checkIds: true, headStatus: (u) => { seen.push(u); return 200; }, delayMs: 0, ...over }).AC7; };
+      go({});
+      expect(seen.length).toBe(60);
+      go({ masters: true });
+      expect(seen.length).toBe(65);
+      expect(go({ masters: true, idCap: 10 }).evidence.join()).toContain("55 identifiers not checked (cap 10)");
+      expect(seen.length).toBe(10);
+    });
+    it("the CLI takes a positive integer and rejects anything else", () => {
+      many(3);
+      writeReports();
+      writeFileSync(join(reports, "handles.txt"), "alpha\nbeta\n");
+      const cwd = process.cwd();
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      const err = vi.spyOn(console, "error").mockImplementation(() => {});
+      process.chdir(root);
+      try {
+        const seen: string[] = [];
+        const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--no-exclusions", "--base", "HEAD", "--check-ids"];
+        const ov = { rawRoots: [reports], headStatus: (u: string) => { seen.push(u); return 200; }, delayMs: 0 };
+        main([...args, "--check-ids-cap", "2"], ov);
+        expect(seen.length).toBe(2);
+        expect(main([...args, "--check-ids-cap", "0"], ov)).toBe(2);
+        expect(main([...args, "--check-ids-cap", "x"], ov)).toBe(2);
+        expect(main([...args, "--check-ids-cap"], ov)).toBe(2);
+      } finally { process.chdir(cwd); log.mockRestore(); err.mockRestore(); }
+    });
   });
 });

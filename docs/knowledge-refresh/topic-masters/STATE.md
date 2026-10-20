@@ -31,6 +31,8 @@ Read this first after a compaction. Story: US-50 in docs/user-stories.md. Plan: 
    - Exceptions only for AC2, AC4, AC7 and PATHWAY, never with ConsumerLab quotes.
    - Keep fixtures and the sign-off sheet off the branch (AC6).
    - Merge origin/main into the branch before each run.
+   - Reports are append-only evidence: auto mode blocks any edit to them. After the first write, a correction (a stale extra_raw sha256, a new quote after a Brad-directed edit) goes in a new `<handle>.addendum-<N>.json`, never in the report (master-writer-contract.md § Report). The batch report lists the addenda applied.
+   - `--check-ids` under `--masters` checks every DOI and PMID, one a second; `--check-ids-cap <n>` limits it.
 5. Review branch built fresh from origin/main with only the batch files (temp GIT_INDEX_FILE). Stage raws under refresh-2026-09-29/batch-masters-<n>/{cl,nih,pubmed}. Then, in parallel:
    - a fresh `adversary`;
    - Codex `--range origin/main..review/masters-<n> --include <staging> --include ~/.codex-review/diff-reports/masters-<n>`.
