@@ -1763,12 +1763,11 @@
   {
     "query": "Is there any issue taking Sleep and the magnesium dosage within it along with either the microvitamin pill or powder, which also has magnesium in it?",
     "expected": [
-      "magnesium-benefits-best-forms-dosing",
-      "best-worst-forms-magnesium"
+      "magnesium-benefits-best-forms-dosing"
     ],
     "category": "product",
     "source": "production",
-    "notes": "Long multi-product safety query — tests handling of verbose real-world messages | Expected empty handles until 2026-09-29. 2026-09-29 router rule 7 rework (Sonnet 5.5 router move): the question is the combined magnesium dose, an ingredient health effect, so rule 7's ingredient clause routes it to the magnesium entries; products.md still supplies each product's dose."
+    "notes": "Long multi-product safety query — tests handling of verbose real-world messages | Expected empty handles until 2026-09-29. 2026-09-29 router rule 7 rework (Sonnet 5.5 router move): the question is the combined magnesium dose, an ingredient health effect, so rule 7's ingredient clause routes it to the magnesium entries; products.md still supplies each product's dose. Re-pointed to the topic master (US-50 AC3, masters-1, 2026-10-20): the post it named is hidden from the router."
   },
   {
     "query": "Are the vitamins organic food based",
@@ -2777,12 +2776,11 @@
     "query": "K2 is NOT involved in blood clotting. Show me a reference.",
     "expected": [
       "vitamin-k-benefits-forms-dosing-and-side-effects",
-      "vitamin-k2-d3-together",
-      "does-vitamin-k2-actually-protect-your-heart-new-trial"
+      "vitamin-k2-d3-together"
     ],
     "category": "supplement",
     "source": "production",
-    "notes": "2026-08-22 chat-health loop: YouTube comment on the 5-supplements video (cross-content case — companion blog does not cover K clotting). vitamin-k reference body has a Blood Clotting section citing K2 clotting efficacy; no K summary mentioned clotting; router returned empty."
+    "notes": "2026-08-22 chat-health loop: YouTube comment on the 5-supplements video (cross-content case — companion blog does not cover K clotting). vitamin-k reference body has a Blood Clotting section citing K2 clotting efficacy; no K summary mentioned clotting; router returned empty. Re-pointed to the topic master (US-50 AC3, masters-1, 2026-10-20): the post it named is hidden from the router."
   },
   {
     "query": "female",
@@ -2866,34 +2864,29 @@
   {
     "query": "Could there be other variables affected by K2 that would reduce risks of cardiac related incidents? CAC is only one and nit even the most reliable",
     "expected": [
-      "why-arent-cardiologists-prescribing-vitamin-k2",
-      "does-vitamin-k2-actually-protect-your-heart-new-trial",
       "vitamin-k-benefits-forms-dosing-and-side-effects"
     ],
     "category": "supplement",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment on the cardiologists-K2 video (bare-comment path). Self-contained - names K2 and CAC; two K2 entries carry those terms; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: hyperlipidaemia steal 3/3 (selection-side). W38 (2026-09-19) (two arms, 6 runs each): passes 6/6 on today's 1024-entry index and fails 6/6 (∅ or the hyperlipidaemia steal) on the 1022-entry index the W36 run used — the two entries added since (soon-well-forget-what-heart-attacks-are, we-are-witnessing-cancers-downfall) flipped it, not a fix; still a residue shape. 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes both final arms (hyperlipidaemia steal at this session's baseline)."
+    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment on the cardiologists-K2 video (bare-comment path). Self-contained - names K2 and CAC; two K2 entries carry those terms; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: hyperlipidaemia steal 3/3 (selection-side). W38 (2026-09-19) (two arms, 6 runs each): passes 6/6 on today's 1024-entry index and fails 6/6 (∅ or the hyperlipidaemia steal) on the 1022-entry index the W36 run used — the two entries added since (soon-well-forget-what-heart-attacks-are, we-are-witnessing-cancers-downfall) flipped it, not a fix; still a residue shape. 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes both final arms (hyperlipidaemia steal at this session's baseline). Re-pointed to the topic master (US-50 AC3, masters-1, 2026-10-20): the post it named is hidden from the router."
   },
   {
     "query": "A vascular surgeon on YouTube recommends vitamin K2, so why do you two see things differently?",
     "expected": [
-      "why-arent-cardiologists-prescribing-vitamin-k2",
-      "does-vitamin-k2-actually-protect-your-heart-new-trial"
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
     ],
     "category": "supplement",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment, bare-comment path. Third-party-recommender disagreement about K2 - the cardiologists-K2 blog is exactly this topic; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (third-party-recommender shape). W38 (2026-09-19, two arms, 6 runs each): passes 6/6 on today's 1024-entry index (→ vitamin-k-benefits) AND 6/6 on the 1022-entry index the W36 run used (→ cardiologists-K2) — the W36 ∅ 3/3 did not reproduce on an identical index: cross-session variance, not a fix; watch. 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes both final arms with why-arent-cardiologists-prescribing-vitamin-k2 first (an intermediate draft led with the generic K2 reference; the rule-6 example now says Brad's article first per rule 4). Expected list unchanged."
+    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment, bare-comment path. Third-party-recommender disagreement about K2 - the cardiologists-K2 blog is exactly this topic; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (third-party-recommender shape). W38 (2026-09-19, two arms, 6 runs each): passes 6/6 on today's 1024-entry index (→ vitamin-k-benefits) AND 6/6 on the 1022-entry index the W36 run used (→ cardiologists-K2) — the W36 ∅ 3/3 did not reproduce on an identical index: cross-session variance, not a fix; watch. 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes both final arms with why-arent-cardiologists-prescribing-vitamin-k2 first (an intermediate draft led with the generic K2 reference; the rule-6 example now says Brad's article first per rule 4). Expected list unchanged. Re-pointed to the topic master (US-50 AC3, masters-1, 2026-10-20): the post it named is hidden from the router."
   },
   {
     "query": "But I took natto almost everyday, that is like 350-600 mcg of vitamin k2. Should I stop my natto?",
     "expected": [
-      "why-arent-cardiologists-prescribing-vitamin-k2",
-      "vitamin-k-benefits-forms-dosing-and-side-effects",
-      "does-vitamin-k2-actually-protect-your-heart-new-trial"
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
     ],
     "category": "supplement",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment, bare-comment path. Self-contained should-I-stop question naming K2 and dose; cardiologists-K2 summary carries MK-7 dosing verbatim; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (should-I-stop shape survives the Rule 6 fix). W38 (2026-09-19) (two arms, 6 runs each): passes 6/6 on today's 1024-entry index and fails ∅ 6/6 on the 1022-entry index the W36 run used — the two entries added since (soon-well-forget-what-heart-attacks-are, we-are-witnessing-cancers-downfall) flipped it, not a fix; still a residue shape. 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes on all four arms (index-dependent, see W38)."
+    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment, bare-comment path. Self-contained should-I-stop question naming K2 and dose; cardiologists-K2 summary carries MK-7 dosing verbatim; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (should-I-stop shape survives the Rule 6 fix). W38 (2026-09-19) (two arms, 6 runs each): passes 6/6 on today's 1024-entry index and fails ∅ 6/6 on the 1022-entry index the W36 run used — the two entries added since (soon-well-forget-what-heart-attacks-are, we-are-witnessing-cancers-downfall) flipped it, not a fix; still a residue shape. 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes on all four arms (index-dependent, see W38). Re-pointed to the topic master (US-50 AC3, masters-1, 2026-10-20): the post it named is hidden from the router."
   },
   {
     "query": "I'd like to have microdose trazepatide. How do I start the process",
@@ -4707,7 +4700,7 @@
       "waistCm": 84,
       "birthYear": 1966,
       "birthMonth": 3,
-      "psa": 4.0
+      "psa": 4
     },
     "must_match": [
       "\\brepeat|\\b4(\\.0)? (ng/ml )?or (higher|more|above|greater|over)\\b|≥ ?4\\b|>= ?4\\b|\\bat or above 4\\b|\\bat least 4\\b|\\b4 and above\\b|\\babove or equal to 4"
@@ -7674,12 +7667,11 @@
   {
     "query": "You look kind of strange in this one... could that be from the taurin??",
     "expected": [
-      "taurine-benefits-forms-dosing-and-side-effects",
-      "1-394-person-study-on-taurine-proves-what-we-suspected"
+      "taurine-benefits-forms-dosing-and-side-effects"
     ],
     "category": "supplement",
     "source": "production",
-    "notes": "2026-W42 chat-health: YouTube comment, paraphrased. A remark about the presenter, then a side-effect question with 'taurine' misspelled. Production routed nothing (one sample, no error); the W42 replay picked the taurine reference 18/18. Guards against the lead-in or the misspelling dropping the supplement."
+    "notes": "2026-W42 chat-health: YouTube comment, paraphrased. A remark about the presenter, then a side-effect question with 'taurine' misspelled. Production routed nothing (one sample, no error); the W42 replay picked the taurine reference 18/18. Guards against the lead-in or the misspelling dropping the supplement. Re-pointed to the topic master (US-50 AC3, masters-1, 2026-10-20): the post it named is hidden from the router."
   },
   {
     "query": "The March 8.5 creatinine was actually a urine sample, not blood",
@@ -7767,5 +7759,107 @@
     "must_mention": [
       "hydration"
     ]
+  },
+  {
+    "query": "Should I take 1,000 mg of vitamin C every day?",
+    "category": "masters-1",
+    "source": "us-42-ac5-masters-1-2026-10-20",
+    "pending": "masters-1 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "vitamin-c-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\b75\\b[^.]{0,30}\\b90\\b"
+    ],
+    "must_not_match": [
+      "\\b(i|brad|he) recommends? (taking )?1,?000 ?mg"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry, Current view: \"Most adults need 75 to 90 mg of vitamin C a day, and Brad advises against megadosing by default\". Practical Dosing now gives trial doses only: \"These are doses used in trials, not recommendations\"."
+  },
+  {
+    "query": "Does vitamin K2 shrink the soft plaque in my arteries?",
+    "category": "masters-1",
+    "source": "us-42-ac5-masters-1-2026-10-20",
+    "pending": "masters-1 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "(did not|didn't|no) (differ|difference|change|reduc)|no better than placebo|same as placebo"
+    ],
+    "must_not_match": [
+      "k2 (shrinks|reduces|reverses|removes) (the )?(soft )?plaque"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry: \"soft plaque, the kind that can rupture, did not differ from placebo in the two dedicated trials\"."
+  },
+  {
+    "query": "I take levothyroxine every morning. When should I take my magnesium?",
+    "category": "masters-1",
+    "source": "us-42-ac5-masters-1-2026-10-20",
+    "pending": "masters-1 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "must_match": [
+      "\\b(two|2|four|4)[- ]hours?\\b",
+      "(doctor|pharmacist)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry, Current view: \"keep magnesium at least two hours apart from drugs such as rosuvastatin (Crestor), some antibiotics, sotalol, gabapentin and levothyroxine\"; interaction section: \"magnesium antacids at least four hours before or after levothyroxine. Ask your pharmacist about the gap for your medicine\"."
+  },
+  {
+    "query": "I have leukaemia. Is it safe for me to take taurine?",
+    "category": "masters-1",
+    "source": "us-42-ac5-masters-1-2026-10-20",
+    "pending": "masters-1 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "taurine-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "doctor"
+    ],
+    "must_match": [
+      "(mice|mouse|animal)"
+    ],
+    "must_not_match": [
+      "only (in )?cells in a (petri )?dish"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry: \"In mouse models, taurine supplements accelerated myeloid leukaemia\"; summary: \"Talk to your doctor first if you take blood-pressure medicines or have a blood cancer.\" The dish dismissal is gone from the entry."
+  },
+  {
+    "query": "Do I need a loading phase when I start creatine?",
+    "category": "masters-1",
+    "source": "us-42-ac5-masters-1-2026-10-20",
+    "pending": "masters-1 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\b5 ?(g|grams)\\b",
+      "(no need|not need|don't need|do not need|without|skip|isn't necessary|is not necessary|not necessary)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry: \"Brad recommends 5 g a day with no loading phase [93].\""
+  },
+  {
+    "query": "Will collagen peptides get rid of my wrinkles?",
+    "category": "masters-1",
+    "source": "us-42-ac5-masters-1-2026-10-20",
+    "pending": "masters-1 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "hydration",
+      "elasticity"
+    ],
+    "must_not_match": [
+      "collagen(?: peptides)? (?:can |will )?(reduces?|get rid of|fix(?:es)?|removes?|smooths?|erases?) (?:your )?(?:skin )?wrinkles"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry, Current view: \"collagen peptides may improve skin hydration and elasticity, but it found no effect on wrinkles\"."
   }
 ]

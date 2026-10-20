@@ -7,6 +7,7 @@ publishedAt: "2024-09-26T00:17:19Z"
 tags: ["Supplements"]
 keywords: ["alzheimer","brain health","cognitive","dementia","dha","epa","exercise","inflammation","omega-3","stroke","tmg","zinc"]
 summary: "Dr Brad's omega-3 and brain health post: DHA/EPA may improve cognition and reduce dementia risk, but B vitamins appear necessary to unlock the benefit. Covers memory, Alzheimer's, homocysteine, 1g/day dose."
+topics: ["omega-3-fish-oil-benefits-forms-dosing-and-side-effects","b-vitamins-benefits-forms-dosing-and-side-effects"]
 ---
 
 A groundbreaking discovery is overturning everything we thought about omega-3 and brain health.

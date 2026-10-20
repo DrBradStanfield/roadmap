@@ -8,6 +8,7 @@ tags: ["General Health","Preventative Care","Research"]
 keywords: ["cardiovascular","circadian","hormone","inflammation","insomnia","melatonin","sleep"]
 product: "sleep"
 summary: "Dr Brad’s melatonin post: the 89% heart failure headline is misleading — the observational study has major flaws and RCT data suggests melatonin may benefit heart health. Covers insomnia, sleep aid safety, dosage (0.3mg vs high-dose), circadian rhythm."
+topics: ["melatonin-benefits-forms-dosing-and-side-effects"]
 ---
 
 People who use melatonin supplements have an **89% higher risk of developing heart failure**, according to a new study of over 130,000 adults \[1\].

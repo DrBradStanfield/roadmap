@@ -7,6 +7,7 @@ publishedAt: "2025-04-02T06:44:05Z"
 tags: ["Diet","General Health","Research"]
 keywords: ["blood pressure","blood sugar","bmi","fiber","obesity","potassium","stroke","weight loss"]
 summary: "Dr Brad’s salt substitute post: switching to potassium-chloride salt substitute cut 5-year death risk 12% and stroke risk 14% in a 15,000-person RCT. Covers blood pressure, sodium, potassium, fiber, lean protein, and weight loss."
+topics: ["potassium-benefits-forms-dosing-and-side-effects"]
 ---
 
 Heart disease and strokes kill millions worldwide each year. But what if reducing your risk required just one tiny change you’d barely notice? A groundbreaking new study suggests exactly that. But is it really so simple? We’ll take a look at the findings in this article and what they mean for your health in the real world.

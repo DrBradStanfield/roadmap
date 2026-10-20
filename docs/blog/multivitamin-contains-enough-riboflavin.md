@@ -7,6 +7,7 @@ publishedAt: "2024-09-18T03:06:10Z"
 tags: ["Supplements"]
 keywords: ["kidney","omega-3","skin","vitamin b","vitamin b2","vitamin b3","vitamin b6"]
 summary: "Dr Brad's riboflavin (vitamin B2) post: 75% RDA in a multivitamin is sensible; deficiency is rare but higher risk in vegans, elderly, and those on certain meds. Covers symptoms, dietary sources, migraine use, megadose safety."
+topics: ["multivitamins-benefits-evidence-dosing-and-side-effects","b-vitamins-benefits-forms-dosing-and-side-effects"]
 ---
 
 Riboflavin is a key vitamin in the bodily processes that help transform carbohydrates into energy for your body to use. Like most vitamins, your body can't make it on its own, classifying it as an essential nutrient you have to get from food or supplements.

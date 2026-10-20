@@ -6,6 +6,7 @@ publishedAt: "2025-01-29T16:30:23Z"
 tags: ["Supplements"]
 keywords: ["blood pressure","blood sugar","cholesterol","cognitive","diabetes","exercise","hormone","hypertension","magnesium","muscle","potassium","resistance training","sleep","stroke","testosterone","vitamin b6","zinc"]
 summary: "Dr Brad's ZMA post: evidence doesn't support ZMA over individual ingredients; the funded 2000 study showed benefits but later RCTs did not. Covers testosterone, sleep, muscle, zinc toxicity risk, athletes, bodybuilders, fitness supplements."
+topics: ["magnesium-benefits-best-forms-dosing","zinc-benefits-forms-dosing-and-side-effects","b-vitamins-benefits-forms-dosing-and-side-effects"]
 ---
 
 The supplement industry is constantly churning with innovation, remixes of existing supplements, rebrands of old trends, and new use cases based on the latest science. It's not uncommon for a new supplement to start gaining popularity, but if you find a name you haven't encountered before, it's important to research what it actually is.

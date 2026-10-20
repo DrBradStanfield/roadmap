@@ -8,6 +8,7 @@ tags: ["Supplements"]
 keywords: ["aging","anti-aging","cardiovascular","collagen","exercise","hyaluronic acid","inflammation","longevity","peptide","photoaging","skin","sleep","sunscreen","uv","wrinkles","zinc"]
 product: "microvitamin-plus"
 summary: "Dr Brad's skin tightening post: hyaluronic acid and collagen peptides are the only supplements with evidence for reducing wrinkles and improving skin elasticity. Covers sunscreen (zinc oxide), safe vs harmful UV filters, aging skin, photoaging, skin tightening."
+topics: ["collagen-benefits-best-forms-dosing-and-side-effects"]
 ---
 
 One of the only constants in life is aging. The passage of time affects us all, though not always equally; differences in genetics, in exposure to things light ultraviolet radiation and environmental contamination, in our overall health and access to medical care, can all influence how we age.

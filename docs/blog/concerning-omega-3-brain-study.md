@@ -8,6 +8,7 @@ tags: ["Supplements", "Research", "General Health"]
 keywords: ["alzheimer", "b-vitamins", "brain health", "cognitive", "dementia", "dha", "epa", "fish oil", "folate", "folic acid", "omega-3", "tmg", "vitamin b12", "vitamin b6"]
 product: "microvitamin"
 summary: "Dr Brad's omega-3 post: a new ADNI study found faster cognitive decline in omega-3 users, but it didn't measure oxidation (the bottle) or B-vitamin status (the co-factor). Brad still takes omega-3 with B-vitamins and TMG. Covers VITACOG, DHA peroxidation, Albert NZ fish oil, ADNI biomarkers."
+topics: ["omega-3-fish-oil-benefits-forms-dosing-and-side-effects","b-vitamins-benefits-forms-dosing-and-side-effects"]
 ---
 
 In 2024, I made a video called *Your Brain on Omega-3*. I said omega-3 plus B-vitamins was one of the most defensible things you could take for your brain. Last week, a study landed that found the opposite [1]. Older adults who took omega-3 declined faster — on every cognitive test the researchers measured [1].

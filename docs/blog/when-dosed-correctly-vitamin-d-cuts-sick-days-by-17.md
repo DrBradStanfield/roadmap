@@ -7,6 +7,7 @@ publishedAt: "2025-06-14T00:01:42Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["calcium","cardiovascular","diabetes","magnesium","muscle"]
 summary: "Dr Brad’s vitamin D post: 1,000 IU/day cut sick days 17% and fever-days 43% in children during winter when baseline levels were adequate. Covers immune function, 2024 Endocrine Society dose guidelines (600-800 IU adults), risks of high-dose supplementation, and MicroVitamin D reduction rationale."
+topics: ["vitamin-d-benefits-forms-dosing-and-side-effects"]
 ---
 
 There’s been so much hype around vitamin D—and, unfortunately, most studies have been disappointing when it comes to real-world benefits.

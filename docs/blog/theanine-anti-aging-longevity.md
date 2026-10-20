@@ -6,6 +6,7 @@ publishedAt: "2024-11-04T03:07:12Z"
 tags: ["General Health"]
 keywords: ["aging","anti-aging","cognitive","exercise","inflammation","l-theanine","lifespan","longevity","muscle","oxidative stress","sleep","uv"]
 summary: "Dr Brad's L-theanine post: current evidence is animal and worm studies only — no human RCTs — so Brad does not take it or include it in MicroVitamin. Covers longevity claims, aging, cognitive decline, tea vs supplements."
+topics: ["l-theanine-benefits-forms-dosing-and-side-effects"]
 ---
 
 There are few certainties in life, but one of them is that we all, without fail, will age. Aging is the nature of biological life and of the universe itself through entropy. But, just because it is inevitable doesn't mean we as a species have resigned ourselves to it. Significant amounts of effort have been spent looking for ways to fight aging and death, ranging from the mystical to the scientific, throughout all of human history.

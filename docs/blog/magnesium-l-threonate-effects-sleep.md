@@ -7,6 +7,8 @@ publishedAt: "2024-06-12T20:32:54Z"
 tags: ["Supplements"]
 keywords: ["blood sugar","cognitive","exercise","glycine","insomnia","magnesium","muscle","sleep","statin","vitamin c"]
 summary: "Dr Brad's magnesium L-threonate post: evidence for sleep benefits is weak — small studies exist but are low quality or not specific to this form. Covers magnesium forms, drug interactions (statins, gabapentin), dosing safety, insomnia."
+topics: ["magnesium-benefits-best-forms-dosing"]
+router: hidden
 ---
 
 Good health is essential for a good life, but there are many pressures from every angle pushing us towards less healthy lifestyles. Whether it's processed foods, a sedentary desk job, or long hours preventing us from sleeping, it's a lot to fight against. That's why whenever a supplement or medication shows promise, even the most meager hint is often picked up and carried through thousands of exciting blog posts for the _Next Big Breakthrough_ in health.

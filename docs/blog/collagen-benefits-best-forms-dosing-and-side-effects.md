@@ -6,10 +6,28 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["collagen", "collagen peptides", "hydrolyzed collagen", "collagen hydrolysate", "type i collagen", "type ii collagen", "type iii collagen", "undenatured collagen", "gelatin", "skin", "wrinkles", "joint health", "bone density", "osteoporosis", "gut health", "peptides", "hyaluronic acid", "glycine", "proline", "hydroxyproline", "aging", "anti-aging", "longevity", "muscle", "sarcopenia", "strength training", "resistance training", "diabetes", "blood sugar", "insulin resistance", "inflammation", "hair", "nails", "wound healing", "collagen powder"]
-summary: "Reference on collagen peptides: skin aging and wrinkle reduction, joint pain and mobility, muscle recovery, hydrolysed vs gelatin forms, dosing (10–15g/day), and evidence quality. Covers who benefits — skin health, joint issues, older adults. Always discuss with your doctor."
+summary: "Reference on collagen peptides. A 2026 meta-analysis found they may improve skin hydration and elasticity, but not wrinkles; trials used 0.5 to 10 g a day. Covers forms, joint, bone, muscle and wound evidence, safety, and Brad's current view. Always discuss with your doctor."
+reviewed: "2026-10-20"
+sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/collagen-supplements-review-peptides-hydrolysate/collagen/","checked":"2026-09-29","fingerprint":"sha256:b4a969b545cecb30c07a1fd839a84453ca3181e9dd18ea14cc1e36aff98b44c3"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing","checked":"2026-10-20","fingerprint":"publishedAt:2026-10-15"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/an-evidence-based-anti-aging-skincare-routine","checked":"2026-10-20","fingerprint":"publishedAt:2025-09-07"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/no-evidence-to-support-the-use-of-collagen-supplements","checked":"2026-10-20","fingerprint":"publishedAt:2025-08-27"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/25-reduction-in-skin-wrinkles-after-8-weeks-new-collagen-study","checked":"2026-10-20","fingerprint":"publishedAt:2025-06-11"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/collagen-peptides-can-fix-skin-wrinkles","checked":"2026-10-20","fingerprint":"publishedAt:2025-03-12"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/supplements-best-skin-tightening","checked":"2026-10-20","fingerprint":"publishedAt:2024-12-31"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/reverse-signs-skin-aging","checked":"2026-10-20","fingerprint":"publishedAt:2024-12-17"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-19"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/collagen-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/collagen-benefits-best-forms-dosing-and-side-effects)*
+
+## Current view (reviewed 20 October 2026)
+
+A 2026 meta-analysis of 35 trials and more than 2,500 people gives reasonable evidence that collagen peptides may improve skin hydration and elasticity, but it found no effect on wrinkles, and longer studies are likely needed to settle wrinkles ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)). Elasticity only clearly improved in trials lasting at least 12 weeks, and Brad's own correction of the errors in the 2026 Grimes and Mahto dataset, which had concluded there was no evidence of benefit, points the same way ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)). Trials used 0.5 to 10 g a day (Brad's current guidance, 19 Oct 2026). Three trials that compared collagen with the same amount of another protein lean in favour of collagen, but none is conclusive on its own, and for osteoarthritis pain collagen did not come out ahead where trials matched the protein ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)). Brad's guidance suggests collagen peptides for adults concerned about skin ageing, skin hydration or skin elasticity, not for a skin disease, rash, wound, ulcer or burn (Brad's current guidance, 18 Oct 2026). Brad sells a supplement that contains collagen, so he asks readers to weigh his view with that conflict of interest in mind ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)).
+
+## Brad's videos on this topic
+
+- 15 Oct 2026, [The Collagen Peptides for Skin Story is Changing](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing): a 2026 meta-analysis, and Brad's own correction of the Grimes and Mahto data, point to benefits for skin hydration and elasticity but not wrinkles; Brad is keeping collagen in his formula.
+- 7 Sep 2025, [An Evidence-Based Anti-Aging Skincare Routine](https://drstanfield.com/blogs/articles/an-evidence-based-anti-aging-skincare-routine): lists collagen peptides as a skin supplement, citing a 2023 meta-analysis of 26 trials for hydration and elasticity. Superseded on the evidence: the 15 Oct 2026 post accepts that the 2023 analysis had data errors and rests on the 2026 meta-analysis instead.
+- 27 Aug 2025, ["No Evidence to Support the Use of Collagen Supplements"](https://drstanfield.com/blogs/articles/no-evidence-to-support-the-use-of-collagen-supplements): pushes back on the 2025 Myung review: 7 of the 9 trials it rated highest quality found a benefit. Superseded on wrinkles: the 2026 meta-analysis found no effect on wrinkles.
+- 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes](https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes): explains why Brad takes collagen peptides, citing the 2023 meta-analysis for hydration and elasticity. Superseded on the evidence: the view now rests on the 2026 meta-analysis.
+- 11 Jun 2025, [25% Reduction in Skin Wrinkles After 8 Weeks (New Collagen Study)](https://drstanfield.com/blogs/articles/25-reduction-in-skin-wrinkles-after-8-weeks-new-collagen-study): a trial of bovine collagen in 66 women reduced eye wrinkles, and the animal source mattered less than processing. Superseded on wrinkles: the 2026 meta-analysis found no effect on wrinkles.
+- 12 Mar 2025, [New Study Proves That Collagen Peptides Can Fix Skin Wrinkles!](https://drstanfield.com/blogs/articles/collagen-peptides-can-fix-skin-wrinkles): said collagen peptides reduce wrinkles at 2.5 to 15 g a day. Superseded on wrinkles (no pooled effect) and on dose: Brad's current guidance gives the trials' range of 0.5 to 10 g a day.
+- 31 Dec 2024, [Guide: Which Supplements Are Best for Skin Tightening?](https://drstanfield.com/blogs/articles/supplements-best-skin-tightening): names collagen peptides and hyaluronic acid as the supplements with evidence for wrinkles and elasticity. Superseded on wrinkles: the 2026 meta-analysis found no effect on wrinkles.
+- 17 Dec 2024, [How To Reverse the Signs of Skin Aging (Latest Protocol)](https://drstanfield.com/blogs/articles/reverse-signs-skin-aging): Brad took 10 to 15 g a day and cited a wrinkle reduction of about 8%. Superseded on wrinkles (no pooled effect) and on dose: Brad's current guidance gives the trials' range of 0.5 to 10 g a day.
+- 19 Nov 2024, [The Only Supplements That ACTUALLY Work (2025)](https://drstanfield.com/blogs/articles/only-supplements-work-2025): Brad took 10 to 15 g a day for skin wrinkles and hydration. Superseded on wrinkles (no pooled effect) and on dose: Brad's current guidance gives the trials' range of 0.5 to 10 g a day.
 
 ## 1. Overview
 
@@ -25,7 +43,7 @@ There are at least 28 identified types of collagen, but the predominant types in
 
 Collagen supplements are typically derived from animal sources: bovine (cow) hides and bones, porcine (pig) skin, chicken sternal cartilage, fish skin and scales, or eggshell membranes [1]. No plant-based organism produces collagen, although "vegan collagen alternatives" made from fermented amino acids in ratios mimicking human collagen have recently been developed [1].
 
-Several placebo-controlled clinical studies suggest that supplemental collagen -- particularly hydrolyzed collagen peptides -- may modestly improve the appearance of aging skin, reduce joint pain and stiffness in osteoarthritis, increase bone mineral density, and aid in wound healing [1][2]. However, the evidence base is predominantly composed of small, manufacturer-funded studies with modest effect sizes, and a recent systematic review found that benefits on skin hydration and elasticity were no longer statistically significant when only high-quality, independent studies were analyzed [4]. The following sections review this evidence in detail.
+Several placebo-controlled clinical studies suggest that supplemental collagen -- particularly hydrolyzed collagen peptides -- may modestly improve the appearance of aging skin, reduce joint pain and stiffness in osteoarthritis, increase bone mineral density, and aid in wound healing [1][2]. However, the evidence base is predominantly composed of small, manufacturer-funded studies with modest effect sizes, and a recent systematic review found that benefits on skin hydration and elasticity were no longer statistically significant when only high-quality, independent studies were analyzed [4]. A larger 2026 meta-analysis of 35 trials later found that collagen peptides may improve skin hydration and elasticity, but found no effect on wrinkles [75]. The following sections review this evidence in detail.
 
 ## 2. Forms and Bioavailability
 
@@ -81,9 +99,15 @@ A clinical study comparing a single 10-gram dose of collagen hydrolysate from fi
 
 ### Skin Aging and Wrinkles
 
-The evidence for collagen supplementation and skin health is the most extensively studied application. Multiple placebo-controlled trials suggest modest improvements in skin wrinkles, elasticity, and hydration, though a rigorous systematic review has raised important questions about the quality of this evidence.
+The evidence for collagen supplementation and skin health is the most extensively studied application. Multiple placebo-controlled trials suggest modest improvements in skin wrinkles, elasticity, and hydration. The pooled analyses disagree: a 2025 systematic review raised questions about the quality of this evidence, and a larger 2026 meta-analysis found benefits for hydration and elasticity but not for wrinkles [75].
 
-**Systematic review (2025):** A review of 23 clinical studies found that collagen supplementation (approximately 3 g/day for approximately 12 weeks) modestly improved skin hydration and elasticity compared to placebo, but did NOT reduce wrinkles. Critically, when only high-quality or independent (non-manufacturer-funded) studies were considered, there were no significant improvements in any outcome measure [4]. However, this review has been criticized by some in the skincare industry for inaccurate classification of independent versus manufacturer-funded studies, and for incorrectly citing the duration and collagen source in certain included studies [13][14].
+**Systematic review (2025):** A review of 23 clinical studies found that collagen supplementation (approximately 3 g/day for approximately 12 weeks) modestly improved skin hydration and elasticity compared to placebo, but did NOT reduce wrinkles. Critically, when only high-quality or independent (non-manufacturer-funded) studies were considered, there were no significant improvements in any outcome measure [4]. However, this review has been criticized by some in the skincare industry for inaccurate classification of independent versus manufacturer-funded studies, and for incorrectly citing the duration and collagen source in certain included studies [13][14]. Brad argued that the result for the independent trials only just missed statistical significance, and that 7 of the 9 studies the review graded as high quality showed a benefit [77].
+
+**Re-analysis (2026):** Grimes and Mahto re-checked the two positive meta-analyses from 2021 and 2023 and found real errors: the standard error was entered where the standard deviation belonged, which inflated small differences, and different elasticity measurements were pooled together. To conclude there was no evidence of benefit, they leaned on one test, whether trials that used more collagen showed bigger effects, and found no clear pattern [76]. Brad checked their published dataset against the original papers and found the collagen and comparison groups the wrong way around in eight trials. After correction, the elasticity effect rose from 0.37, which could have been zero, to about 0.6 and reached statistical significance; hydration stayed at about 0.5 [77].
+
+**Meta-analysis (2026):** Batool and colleagues pooled 35 trials and more than 2,500 people. Collagen peptides improved hydration (effect size 0.44) and elasticity (0.62, after setting aside two trials with extreme negative results), and reduced water loss through the skin. Elasticity only clearly improved in trials lasting at least 12 weeks. There was no effect on wrinkles; the authors suggest this is likely due to time, because fewer wrinkles need long-term changes in the deeper structure of the skin. Independently conducted trials reported effect sizes comparable to sponsored ones [75]. Trials used 0.5 to 10 g a day [75].
+
+The single trials below report wrinkle reductions. When wrinkle results were pooled in the 2026 meta-analysis, there was no effect [75].
 
 **Verisol (porcine type I collagen peptides):** The most studied branded ingredient for skin. Key trials:
 
@@ -123,7 +147,7 @@ Evidence for collagen's effects on hair and nails is limited and mixed.
 
 ### Joint Pain and Osteoarthritis
 
-Collagen supplementation for at least 3-6 months may modestly reduce joint stiffness and/or pain according to multiple studies using various forms. Results have been inconsistent, and several studies have shown no benefit.
+Collagen supplementation for at least 3-6 months may modestly reduce joint stiffness and/or pain according to multiple studies using various forms. Results have been inconsistent, and several studies have shown no benefit. A 2026 umbrella review of 16 meta-analyses covering 113 trials found a modest reduction in osteoarthritis pain, but almost all of those trials compared collagen with a placebo that had no protein. In the CHAMP trial, which matched the protein, knee pain improved no more with collagen than with milk protein [77][78].
 
 **Undenatured collagen (UC-II):**
 
@@ -214,7 +238,7 @@ Supplements for skin frequently combine collagen with hyaluronic acid, another c
 
 | Goal | Form | Daily Dose | Duration to Benefit |
 |------|------|:--:|:--:|
-| Skin wrinkles/elasticity | Hydrolyzed collagen (Verisol or similar) | 2.5-5 g | 4-12 weeks |
+| Skin hydration/elasticity | Hydrolyzed collagen peptides | 0.5-10 g (range used in trials) | 12 weeks or more for elasticity |
 | Cellulite reduction | Hydrolyzed collagen (Verisol) | 2.5 g | 3-6 months |
 | Joint pain (osteoarthritis) | Hydrolyzed collagen peptides | 5-10 g | 3-6 months |
 | Joint pain (osteoarthritis) | UC-II (undenatured type II) | 40 mg (~10 mg collagen) | 3-6 months |
@@ -227,7 +251,7 @@ Supplements for skin frequently combine collagen with hyaluronic acid, another c
 
 ### Practical Dosing Notes
 
-**Skin:** Even doses as low as 0.5 grams may provide some benefit for skin, but the best evidence is with 2.5 grams of well-characterized collagen peptides (e.g., Verisol). Doses of 5 grams do not appear to provide additional benefit over 2.5 grams for skin outcomes [1][16].
+**Skin:** Even doses as low as 0.5 grams may provide some benefit for skin, but the best evidence is with 2.5 grams of well-characterized collagen peptides (e.g., Verisol). Doses of 5 grams do not appear to provide additional benefit over 2.5 grams for skin outcomes [1][16]. Trials in the 2026 meta-analysis used 0.5 to 10 g a day, and elasticity only clearly improved in trials lasting at least 12 weeks [75].
 
 **Joints:** Hydrolyzed collagen for joint pain typically requires 5-10 grams daily. UC-II (undenatured collagen) uses a much smaller dose of 40 mg. These two approaches work through different mechanisms and should not be directly compared on a weight basis. Benefits for joint pain may take 3 months to become apparent and may require up to 6 months for the full effect [1][36].
 
@@ -336,7 +360,7 @@ No clinically significant drug interactions with collagen have been documented i
 ## 8. Frequently Asked Questions
 
 **Does collagen actually work for wrinkles?**
-The evidence suggests a modest benefit. Multiple placebo-controlled trials show 7-20% improvement in wrinkle volume with daily collagen peptide supplementation for 4-12 weeks. However, a systematic review of 23 studies found that when only high-quality, independent studies were analyzed, the benefits were no longer statistically significant [4]. The best-supported regimen is 2.5 g/day of Verisol-type collagen peptides for at least 8 weeks [15].
+Not on current pooled evidence. Multiple placebo-controlled trials show 7-20% improvement in wrinkle volume with daily collagen peptide supplementation for 4-12 weeks, and the most-studied regimen is 2.5 g/day of Verisol-type collagen peptides for at least 8 weeks [15]. However, a systematic review of 23 studies found that when only high-quality, independent studies were analyzed, the benefits were no longer statistically significant [4], and a 2026 meta-analysis of 35 trials found no effect on wrinkles, while finding benefits for hydration and elasticity [75]. Longer studies are likely needed to settle whether collagen peptides improve wrinkles [77].
 
 **Is collagen powder better than collagen pills?**
 Neither form is inherently superior. The key consideration is dose: most clinical studies used 2.5-10 grams of collagen daily. Collagen pills typically provide 1-5 grams per serving, which may require multiple capsules, while powders easily deliver 5-15 grams per scoop. Powders are also generally more cost-effective per gram [1].
@@ -486,7 +510,7 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [63] Zhang Y et al. "Oral administration of type II collagen suppresses inflammatory arthritis in mice and rheumatoid arthritis in humans." *Arthritis Rheum*. 2008. PMID: [18240258](https://pubmed.ncbi.nlm.nih.gov/18240258/)
 
-[64] Barnett ML et al. "Treatment of rheumatoid arthritis with oral type II collagen." *Arthritis Rheum*. 1998;41(2):290-297. doi: [10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-R](https://doi.org/10.1002/1529-0131(199802)41:2%3C290::AID-ART13%3E3.0.CO;2-R)
+[64] Barnett ML et al. "Treatment of rheumatoid arthritis with oral type II collagen." *Arthritis Rheum*. 1998;41(2):290-297. doi: [10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-R](https://doi.org/10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-R)
 
 [65] Kalic T et al. "Collagen -- An Important Fish Allergen for Improved Diagnosis." *J Allergy Clin Immunol*. 2020;8(9):3084-3092. doi: [10.1016/j.jaip.2020.04.063](https://doi.org/10.1016/j.jaip.2020.04.063)
 
@@ -507,3 +531,11 @@ There are no clinical studies evaluating collagen supplementation specifically d
 [73] Ruff KJ et al. "Eggshell membrane and fish oil for exercise-induced joint pain." *Int J Phys Med Rehabil*. 2020.
 
 [74] Hsu TF et al. "Oral Hyaluronan Relieves Wrinkles and Improves Dry Skin." *Nutrients*. 2021;13(7):2220. doi: [10.3390/nu13072220](https://doi.org/10.3390/nu13072220)
+
+[75] Batool et al. Oral collagen peptides and skin: meta-analysis. *J Cosmet Dermatol*. 2026. doi: [10.1111/jocd.71041](https://doi.org/10.1111/jocd.71041)
+
+[76] Grimes DR, Mahto A. Re-analysis of collagen supplement meta-analyses for skin aging. 2026. doi: [10.1111/jocd.71208](https://doi.org/10.1111/jocd.71208)
+
+[77] Stanfield B. "The Collagen Peptides for Skin Story is Changing." 15 October 2026. [https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)
+
+[78] 2026 umbrella review of collagen meta-analyses. doi: [10.1093/asjof/ojag018](https://doi.org/10.1093/asjof/ojag018)

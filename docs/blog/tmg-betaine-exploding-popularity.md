@@ -7,6 +7,7 @@ publishedAt: "2024-10-09T13:30:02Z"
 tags: ["Supplements","Exercise","General Health"]
 keywords: ["alzheimer","betaine","brain health","cholesterol","cognitive","creatine","dementia","exercise","muscle","nmn","omega-3","resistance training","testosterone","tmg"]
 summary: "Dr Brad's TMG (betaine) post: supports muscle strength, testosterone, and may lower dementia risk via homocysteine reduction. Covers exercise performance, CrossFit, resistance training, Alzheimer's risk, cholesterol safety concern at 4g+, and NMN comparison."
+topics: ["b-vitamins-benefits-forms-dosing-and-side-effects","nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"]
 ---
 
 Recent scientific breakthroughs have sparked a surge in the popularity of TMG supplements.

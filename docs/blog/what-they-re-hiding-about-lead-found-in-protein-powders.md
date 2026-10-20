@@ -7,6 +7,7 @@ publishedAt: "2025-11-04T20:37:47Z"
 tags: ["Diet","Supplements"]
 keywords: ["hypertension","kidney"]
 summary: "Dr Brad’s protein powder lead post: Consumer Reports’ threshold is 17x stricter than the FDA’s, and typical daily dietary lead exposure already matches the worst-tested powder. Plant-based powders have higher lead; pea protein is Brad’s choice."
+topics: ["protein-powders-benefits-types-dosing-and-side-effects"]
 ---
 
 A new analysis from Consumer Reports has made headlines with a disturbing claim: **protein powders and shakes contain high levels of lead**.

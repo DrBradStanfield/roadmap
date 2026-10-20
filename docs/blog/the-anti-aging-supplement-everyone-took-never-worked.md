@@ -7,6 +7,7 @@ publishedAt: "2026-07-01T12:00:00Z"
 tags: ["Supplements", "Research"]
 keywords: ["aging", "alzheimer", "anti-aging", "fisetin", "inflammation", "kidney", "lifespan", "longevity", "quercetin", "senescence", "senolytics"]
 summary: "Dr Brad's senolytic supplement post: fisetin and quercetin were never proven in humans — the rigorous NIA mouse trial and the one fisetin RCT found nothing, and a p16 antibody error means hundreds of senescence papers measured the wrong protein. Covers zombie cells, dasatinib+quercetin."
+topics: ["quercetin-benefits-forms-dosing-and-side-effects"]
 ---
 
 There's a man in Wales who earns millions of dollars by reading other people's research. He sits down with papers that have already passed peer review, already been printed in the biggest journals in the world, and he goes looking for the mistakes everyone else missed [1].

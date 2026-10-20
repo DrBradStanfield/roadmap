@@ -7,6 +7,8 @@ publishedAt: "2025-04-02T06:54:33Z"
 tags: ["Research","Exercise","Supplements"]
 keywords: ["creatine","exercise","muscle","resistance training","strength training"]
 summary: "Dr Brad's analysis of a 2024 study questioning creatine efficacy — why the headlines were misleading, what the evidence actually shows about creatine for muscle strength and lean mass, and why Brad continues to recommend creatine supplementation. Always discuss with your doctor."
+topics: ["creatine-benefits-best-forms-dosing-and-side-effects"]
+router: hidden
 ---
 
 A recent study is challenging everything we thought we knew about creatine supplements.

@@ -8,6 +8,7 @@ tags: ["Supplements"]
 keywords: ["aging","blood pressure","bmi","bone density","calcium","exercise","heart attack","inflammation","ldl","longevity","muscle","omega-3","vitamin d","vitamin d3"]
 product: "microvitamin"
 summary: "Dr Brad’s vitamin D post: the telomere study headline is overblown — 140 base pairs is within measurement error and didn’t improve heart attack or cancer outcomes in VITAL. Covers vitamin D dose (600-1000 IU), routine blood testing, bone density risk at high doses, telomere aging."
+topics: ["vitamin-d-benefits-forms-dosing-and-side-effects"]
 ---
 
 The latest headlines are claiming that a new study shows vitamin D can slow aging.

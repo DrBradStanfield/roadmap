@@ -6,6 +6,7 @@ publishedAt: "2024-11-28T07:00:07Z"
 tags: ["Supplements"]
 keywords: ["cardiovascular","cognitive","folate","folic acid","vitamin b9"]
 summary: "Dr Brad's methylated multivitamin post: evidence for benefits is weak and megadose methylated B supplements carry potential risks; most people don't need them. Covers MTHFR mutation, methylfolate, depression, cancer risk, and cardiovascular disease."
+topics: ["multivitamins-benefits-evidence-dosing-and-side-effects","b-vitamins-benefits-forms-dosing-and-side-effects"]
 ---
 
 These days, it's difficult to go more than a few hours without seeing an advertisement for some kind of vitamin or supplement, at least in markets like the United States, where regulations on advertising them are lax. To stand out, many of these supplements will make bold claims, accompanied by footnotes that explain that there's no backing from the FDA and that they haven't been evaluated for those claims, as a way to waive any liability and put the burden on the consumer.

@@ -7,6 +7,8 @@ publishedAt: "2024-10-06T22:16:11Z"
 tags: ["Supplements"]
 keywords: ["atherosclerosis","blood pressure","blood sugar","cardiovascular","cholesterol","diabetes","glycine","inflammation","magnesium","muscle","sleep","stroke","taurine","vitamin c","vitamin d"]
 summary: "Dr Brad's magnesium forms post: glycinate is best absorbed with fewest side effects; oxide is poorly absorbed; citrate causes laxative effects; L-threonate lacks human data. Covers deficiency, sleep, blood pressure, diabetes, stroke."
+topics: ["magnesium-benefits-best-forms-dosing"]
+router: hidden
 ---
 
 Magnesium is the seventh most abundant element on the planet and is found all throughout nature in many different forms. We use magnesium in everything from fire starters and fireworks to coatings on steel structures, and down at the microscopic level, it's present in many different foods we eat and all throughout our bodies. It's an essential element and is a critical nutrient for over 300 enzymatic processes throughout the body, including for the regulation of muscle function, nerve function, blood sugar levels, blood pressure levels, and the synthesis of protein, bone, and even DNA.

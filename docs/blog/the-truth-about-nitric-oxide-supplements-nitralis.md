@@ -7,6 +7,7 @@ publishedAt: "2026-02-25T02:32:08Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["aging","blood pressure","cardiovascular","cognitive","exercise","muscle","rapamycin"]
 summary: "Dr Brad’s nitric oxide post: L-arginine and L-citrulline don’t reliably improve performance; beetroot nitrate at 380mg+/day reduces blood pressure. DoNotAge Nitralis is underdosed with a fraudulent trial. Recommends nitrate-rich foods or quality beetroot juice."
+topics: ["nitric-oxide-supplements-benefits-forms-dosing-and-side-effects","beetroot-benefits-forms-dosing-and-side-effects","arginine-benefits-forms-dosing-and-side-effects","l-citrulline-benefits-forms-dosing-and-side-effects"]
 ---
 
 I honestly can't believe what I've just read.  

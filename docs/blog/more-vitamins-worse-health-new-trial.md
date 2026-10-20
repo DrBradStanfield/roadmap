@@ -8,6 +8,7 @@ tags: ["Supplements", "Research"]
 keywords: ["aging", "cardiovascular", "exercise", "kidney", "lung cancer", "metformin", "muscle", "prostate", "resistance training", "resveratrol", "vitamin a", "vitamin c", "vitamin e", "zinc"]
 product: "microvitamin"
 summary: "Dr Brad's antioxidant supplements post: megadosing backfires—IV vitamin C, high-dose vitamin E and beta-carotene raised harm—but the right form and dose can help. Covers the AREDS2 lutein/zeaxanthin swap, exercise blunting, metformin, and older adults."
+topics: ["vitamin-c-benefits-forms-dosing-and-side-effects","vitamin-e-benefits-forms-dosing-and-side-effects","vitamin-a-benefits-forms-dosing-and-side-effects","lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects"]
 ---
 
 Earlier this month, one of the most rigorous trials ever run on a vitamin was stopped early — because the people getting the vitamin were dying faster than the people getting nothing [1].

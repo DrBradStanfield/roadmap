@@ -7,6 +7,8 @@ publishedAt: "2026-06-29T12:00:00Z"
 tags: ["Supplements", "Research", "Preventative Care"]
 keywords: ["atherosclerosis", "bone density", "calcium", "cardiovascular", "heart attack", "magnesium", "statin", "stroke", "vitamin d", "vitamin k", "warfarin"]
 summary: "Dr Brad's vitamin K2 post: a new trial shows K2 modestly slows coronary artery calcification, but no trial shows fewer heart attacks and plaque-stability effects are unknown — so it's not a proven heart protector. Covers MK-7, 90 mcg dosing, warfarin, and supplement quality."
+topics: ["vitamin-k-benefits-forms-dosing-and-side-effects"]
+router: hidden
 ---
 
 A year ago, the heart evidence for vitamin K2 looked intriguing but unproven. We needed a bigger, cleaner trial before anyone got excited. Well, that trial just landed — and the vitamin K2 group built up less calcium in their arteries than the placebo group [1].

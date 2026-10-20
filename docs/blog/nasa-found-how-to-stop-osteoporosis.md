@@ -7,6 +7,7 @@ publishedAt: "2026-08-07T12:00:00Z"
 tags: ["Exercise", "Research", "Preventative Care"]
 keywords: ["bone density", "calcium", "exercise", "muscle", "osteoporosis", "resistance training", "vitamin d"]
 summary: "How to increase bone density, calcium supplements for bones, osteoporosis exercise, hopping, heavy lifting."
+topics: ["calcium-benefits-best-forms-dosing-and-side-effects"]
 ---
 
 Ever wondered why an astronaut needs to sit in a wheelchair when they come home? They lose significant amounts of muscle. But they also lose bone, and at the hip they lose it roughly 10 times faster than a post-menopausal woman does on Earth [1][2].

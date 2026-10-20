@@ -8,6 +8,7 @@ tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin H
 keywords: ["aging","antioxidant","blood pressure","calcium","cholesterol","diabetes","exercise","heart attack","inflammation","iron","lifespan","longevity","muscle","osteoporosis","prostate","resveratrol","testosterone","vitamin a","vitamin d","vitamin e","zinc"]
 product: "microvitamin"
 summary: "Dr Brad’s harmful supplements post: calcium raises heart attack risk via artery calcification; iron, vitamin E, vitamin A, and resveratrol lack proven benefit and may harm. Covers blood vessel health, osteoporosis, antioxidants, longevity."
+topics: ["calcium-benefits-best-forms-dosing-and-side-effects","iron-benefits-forms-dosing-and-side-effects","vitamin-e-benefits-forms-dosing-and-side-effects","vitamin-a-benefits-forms-dosing-and-side-effects","resveratrol-benefits-forms-dosing-and-side-effects"]
 ---
 
 It’s absolutely wild to me how many of my patients at the clinic, when I ask them what supplements they are taking, mention one that is actively damaging their blood vessels.

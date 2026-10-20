@@ -7,6 +7,7 @@ publishedAt: "2026-02-09T23:57:17Z"
 tags: ["General Health","Preventative Care","Research","Supplements"]
 keywords: ["aging","alzheimer","bmi","cholesterol","cognitive","curcumin","diabetes","exercise","inflammation","ldl","muscle","turmeric","weight loss"]
 summary: "Dr Brad’s turmeric curcumin post: most supplements are mislabeled or ineffective; curcumin may help knee arthritis, ulcerative colitis, and prediabetes but needs 95% standardized extract and NovaSOL enhancer. Avoid piperine-only products."
+topics: ["turmeric-curcumin-benefits-best-forms-dosing-and-side-effects"]
 ---
 
 Lies and deception.

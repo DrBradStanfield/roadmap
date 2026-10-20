@@ -7,6 +7,8 @@ publishedAt: "2024-07-01T01:37:47Z"
 tags: ["Supplements"]
 keywords: ["aging","alzheimer","brain health","cognitive","creatine","creatinine","exercise","gout","hormone","kidney","magnesium","muscle","sleep","testosterone","uric acid"]
 summary: "Dr Brad's creatine post: recommends creatine monohydrate for older adults for muscle and potential cognitive/memory benefits. Covers 5g daily dose, kidney safety, hair loss myth, gout, and brain creatine research."
+topics: ["creatine-benefits-best-forms-dosing-and-side-effects"]
+router: hidden
 ---
 
 Creatine is a popular workout supplement due to its impact on muscle performance and growth. But, it's also a chemical used by the brain and throughout the body, with impacts on many different systems. Sure, 95% of your body's creatine is used by your muscles, but the remaining 5% can be found in the kidneys, liver, **and even the brain.**

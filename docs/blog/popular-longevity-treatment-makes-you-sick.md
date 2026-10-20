@@ -7,6 +7,7 @@ publishedAt: "2025-11-20T19:11:54Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["aging","anti-aging","blood pressure","blood sugar","cardiovascular","cholesterol","diabetes","hba1c","inflammation","kidney","ldl","muscle","nad","sleep","taurine","triglycerides","vitamin c","zinc"]
 summary: "Dr Brad’s IV therapy post: advises avoiding IV drip clinics — benefits unproven, real risks include infection, kidney failure and inflammation, oral supplements preferred. Covers NAD+ IV, vitamin C infusion, taurine, anti-aging claims."
+topics: ["taurine-benefits-forms-dosing-and-side-effects","vitamin-c-benefits-forms-dosing-and-side-effects","nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"]
 ---
 
 It’s a nearly $3 billion market and growing fast. IV therapy clinics—where you can get cocktails of vitamins and other nutrients dripped directly into your veins—are supposed to do everything from detoxing our systems to fighting aging. But a new article in the respected medical journal JAMA highlights some concerns \[1\].

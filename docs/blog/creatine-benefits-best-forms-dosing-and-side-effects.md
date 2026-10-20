@@ -6,10 +6,26 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["creatine", "creatine monohydrate", "creatine hydrochloride", "creatine hcl", "bcaa", "branched-chain amino acids", "leucine", "isoleucine", "valine", "muscle", "strength training", "resistance training", "exercise", "cognitive", "brain health", "energy", "sarcopenia", "aging", "longevity", "depression", "sleep", "collagen", "taurine", "hmb", "glutamine", "insulin resistance", "diabetes", "heart health", "cardiovascular", "bone density", "osteoporosis", "fibromyalgia", "weight loss"]
-summary: "Reference on creatine: muscle strength, muscle size, sarcopenia, cognitive function under sleep deprivation. Benefits older adults, athletes, and vegetarians. Best form: creatine monohydrate 3-5 g/day. Always discuss with your doctor."
+summary: "Reference on creatine. Brad's view: worth considering for body and brain. With resistance training it raises strength and lean mass in older adults; meta-analyses found memory gains, notably in women. Take 5 g/day of monohydrate, no loading. Not advised with severe kidney problems."
+reviewed: "2026-10-20"
+sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/review-creatine/creatine/","checked":"2026-09-29","fingerprint":"sha256:2d8545d21a72a758f870c48d82107f53aa07bfbf4f033911cc0df320e33d6eb6"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-15T20:07:54Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-supplements-that-actually-work","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-05T20:31:48Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30T20:38:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/creatine-fails-in-new-study-don-t-be-misled","checked":"2026-10-20","fingerprint":"publishedAt:2025-04-02T06:54:33Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking","checked":"2026-10-20","fingerprint":"publishedAt:2025-03-26T19:59:34Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-19T03:13:05Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/older-adults-seniors-creatine-supplements","checked":"2026-10-20","fingerprint":"publishedAt:2024-07-01T01:37:47Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/creatine-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/creatine-benefits-best-forms-dosing-and-side-effects)*
+
+## Current view (reviewed 20 October 2026)
+
+Brad sees creatine as worth considering for both body and brain performance, and says the evidence for its performance and cognitive benefits is clear and consistent ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). Used with resistance training, creatine improves upper and lower body strength and increases lean mass in older adults, and Brad recommends it for anyone interested in healthy aging, not only athletes ([Brad, 5 Oct 2025](https://drstanfield.com/blogs/articles/5-supplements-that-actually-work)). The newest meta-analysis he cites, of 16 randomised trials, found gains in memory, attention time and processing speed, with particular benefit for women, adults aged 18 to 60 and people with underlying conditions ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). A trial of 60 adults found that creatine's extra lean mass came in the first week, probably as water, with no significant extra gain over 12 weeks of exercise, but it did not measure muscle performance, which is the main reason Brad takes creatine ([Brad, 2 Apr 2025](https://drstanfield.com/blogs/articles/creatine-fails-in-new-study-don-t-be-misled)). Brad recommends 5 g of creatine monohydrate a day with no loading phase: loading raises the chance of tummy upset, and 5 g also saturates the muscles, only more slowly ([Brad, 26 Mar 2025](https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking)). The evidence suggests creatine is not a problem for people with normal kidney function, but it raises blood creatinine, which makes kidney tests look worse than they are, and Brad does not recommend creatine for people with severe kidney problems; with significant kidney disease he reduces the dose or stops it ([Brad, 26 Mar 2025](https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking)).
+
+## Brad's videos on this topic
+
+- 15 Oct 2025, [Ashwagandha Supplement Fails in New Study!](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study): ashwagandha did not improve aerobic fitness in a new trial; for performance, creatine has much stronger and more consistent evidence, and meta-analyses found gains in memory, attention and processing speed, for women as much as men.
+- 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drstanfield.com/blogs/articles/5-supplements-that-actually-work): creatine is one of Brad's top five for healthy aging; meta-analyses found better memory, especially in older adults and women, and with resistance training more strength and lean mass in older adults.
+- 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes](https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes): creatine is one of four ingredients Brad added to the powder version of the multivitamin he designed; a strong majority of the hundreds of studies found better exercise capacity.
+- 2 Apr 2025, [Creatine “FAILS” in New Study - Don’t Be Misled!](https://drstanfield.com/blogs/articles/creatine-fails-in-new-study-don-t-be-misled): a 60-person trial found creatine's extra lean mass came in the first week, probably as water, with no significant extra gain during 12 weeks of exercise; it did not measure strength or muscle performance, the main reason Brad still takes 5 g a day.
+- 26 Mar 2025, [Why Creatine Is The ONE Supplement All Longevity Researchers Are Taking](https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking): creatine raises brain creatine and improved memory in meta-analyses, with early signs for depression, combined bone and muscle loss, and blood-vessel health; take 5 g of monohydrate a day without loading; there is no evidence it causes hair loss; Brad does not recommend it with severe kidney problems.
+- 19 Nov 2024, [The Only Supplements That ACTUALLY Work (2025)](https://drstanfield.com/blogs/articles/only-supplements-work-2025): Brad takes 5 g of creatine monohydrate a day for exercise capacity, recovery and memory, and called the kidney, hair-loss, uric acid and cramping worries disproven. Superseded on kidneys: in March 2025 he said he does not recommend creatine for people with severe kidney problems.
+- 1 Jul 2024, [Can Older Adults and Seniors Still Take Creatine Supplements?](https://drstanfield.com/blogs/articles/older-adults-seniors-creatine-supplements): older adults can consider 5 g of monohydrate a day; memory gains are possible but still being studied; people with kidney disease should talk to their doctor first. Superseded in part on the brain: later posts cite a 16-trial meta-analysis that also found gains in attention and processing speed.
 
 ## 1. Overview
 
@@ -19,7 +35,7 @@ When creatine is metabolized, the body creates a waste product called creatinine
 
 Creatine monohydrate is the most common and best-studied supplemental form [1][3], and there are over 500 peer-reviewed publications on creatine supplementation [4]. As a dietary supplement, it is classified as Generally Recognized as Safe (GRAS) by the U.S. FDA at levels up to 5 grams per serving [5].
 
-Creatine may also improve exercise tolerance in people with congestive heart failure (CHF) and muscle strength in people with muscular dystrophies. It does not improve memory in young adults and has shown very limited benefits on cognition in older adults, including menopausal women [1].
+Creatine may also improve exercise tolerance in people with congestive heart failure (CHF) and muscle strength in people with muscular dystrophies. It does not improve memory in young adults and has shown very limited benefits on cognition in older adults, including menopausal women [1]. Brad reads the memory research more positively: he cites two meta-analyses that found memory gains, the first particularly in older adults and the later one with greater benefit in women [91].
 
 This article also covers branched-chain amino acids (BCAAs: leucine, isoleucine, and valine), which are often marketed alongside creatine as muscle-enhancing supplements. BCAAs are essential amino acids that make up approximately one-third of skeletal muscle protein. They are precursors in the synthesis of alanine and glutamine and are involved in several metabolic processes. During prolonged aerobic exercise, the body may break down muscle to release BCAAs for energy, which is the rationale behind BCAA supplementation for preventing muscle breakdown [6].
 
@@ -88,11 +104,11 @@ Creatine may temporarily increase muscle size and, according to some (but not al
 
 **Psychological component:** A study of 15 men found that those told they were receiving creatine (but actually receiving placebo) completed the same total volume in squat press as those receiving actual creatine, and both outperformed a group told they were receiving placebo. This suggests that belief of benefit may partially account for some of creatine's strength effects (Aguiar, *Res Sports Med* 2022) [26].
 
-**Body composition effects:** Creatine may cause some weight gain from water retention. The gain may be small (about 1 lb or less) and is temporary [1].
+**Body composition effects:** Creatine may cause some weight gain from water retention. The gain may be small (about 1 lb or less) and is temporary [1]. In a trial of 60 adults, creatine alone added about half a kilogram of lean mass in its first week, before exercise began, and no significant extra gain over the next 12 weeks of supervised exercise; the trial did not measure muscle performance [94].
 
 ### Sarcopenia and Aging
 
-Creatine combined with resistance training has been studied as a way to counter age-related muscle loss. A meta-analysis of RCTs involving 721 participants reported a mean gain of 1.37 kg in lean body mass over 7–52 weeks of combined creatine and resistance training [27]. Another meta-analysis of 357 older adults found greater gains in fat-free mass, chest press and leg press strength, and 30-second chair stand performance than resistance training alone [28]. Still, the evidence is mixed on whether creatine helps older adults who do resistance training. If it does, the benefits are modest [1].
+Creatine combined with resistance training has been studied as a way to counter age-related muscle loss. A meta-analysis of RCTs involving 721 participants reported a mean gain of 1.37 kg in lean body mass over 7–52 weeks of combined creatine and resistance training [27]. Another meta-analysis of 357 older adults found greater gains in fat-free mass, chest press and leg press strength, and 30-second chair stand performance than resistance training alone [28]. Still, the evidence is mixed on whether creatine helps older adults who do resistance training. If it does, the benefits are modest [1]. Brad reads the first of these meta-analyses [27] as showing that creatine with resistance training improves upper and lower body strength and increases lean mass in older adults [92].
 
 ### Bone Density
 
@@ -180,7 +196,7 @@ The evidence for BCAA supplementation for muscle building is mixed and depends h
 
 **Maintenance dose:** 2 to 5 g of creatine per day [1]. In the same study, 2 g/day maintained the higher level for a further 30 days [71].
 
-**Loading-free protocol:** In the same study, 3 g/day produced a similar 20% rise in muscle total creatine, more gradually, over a period of 28 days [71]. Some studies have shown benefit using a constant dose (such as 5 grams daily) rather than a larger loading dose [1].
+**Loading-free protocol:** In the same study, 3 g/day produced a similar 20% rise in muscle total creatine, more gradually, over a period of 28 days [71]. Some studies have shown benefit using a constant dose (such as 5 grams daily) rather than a larger loading dose [1]. Brad advises 5 g a day without loading, which saturates the muscles more slowly and with less chance of tummy upset [93].
 
 **General health dose:** The ISSN position stand suggests that habitual low dietary creatine intake (for example, 3 g/day) throughout life may provide significant health benefits [72].
 
@@ -213,6 +229,8 @@ Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/micr
 | McArdle disease | 150 mg/kg for 5 days | 60 mg/kg/day | Ongoing |
 | Muscular dystrophies | None | 10 g/day (adults), 5 g/day (children) | Ongoing |
 | Gyrate atrophy | — | 1.5 g/day | Ongoing |
+
+Brad recommends 5 g a day with no loading phase [93].
 
 ### BCAA Dosing
 
@@ -256,7 +274,7 @@ Little is known about potential long-term adverse effects of creatine, and there
 
 Creatine supplementation is generally safe for kidneys in healthy individuals. Clinical studies of up to 30 g/day for 1 year and 10 g/day for 5 years have not shown significant kidney damage (Pline, *Ann Pharmacother* 2005) [1]. In one study, kidney function in long-term creatine users was normal compared with a control group (Poortmans, *Med Sci Sports Exerc* 1999) [82].
 
-**Kidney disease:** ConsumerLab reports that many experts consider the risk of kidney injury from short-term creatine use to be low even among people with existing kidney problems, but long-term safety in this group remains unclear, so it seems prudent to consult your doctor before using creatine [1]. The Mayo Clinic states it "might be unsafe" for people with kidney issues [83].
+**Kidney disease:** ConsumerLab reports that many experts consider the risk of kidney injury from short-term creatine use to be low even among people with existing kidney problems, but long-term safety in this group remains unclear, so it seems prudent to consult your doctor before using creatine [1]. The Mayo Clinic states it "might be unsafe" for people with kidney issues [83]. Brad does not recommend creatine for people with severe kidney problems, and for patients with significant kidney disease he reduces the dose or stops it [93].
 
 **Kidney stones:** There is no evidence creatine causes kidney stones. The speculation stems from the shared observation of elevated creatinine levels, but creatinine does not cause stones [1].
 
@@ -496,3 +514,11 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 [89] Purchas RW, et al. "Cooking temperature effects on the forms of iron and levels of several other compounds in beef semitendinosus muscle." *Meat Sci*. 2004. PMID: 22062229. [https://pubmed.ncbi.nlm.nih.gov/22062229/](https://pubmed.ncbi.nlm.nih.gov/22062229/)
 
 [90] Harris RC, Soderlund K, Hultman E. "Elevation of creatine in resting and exercised muscle of normal subjects by creatine supplementation." *Clin Sci (Lond)*. 1992. PMID: 1327657. [https://pubmed.ncbi.nlm.nih.gov/1327657/](https://pubmed.ncbi.nlm.nih.gov/1327657/)
+
+[91] Stanfield B. "Ashwagandha Supplement Fails in New Study!" drstanfield.com. 15 October 2025. [https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)
+
+[92] Stanfield B. "5 Supplements That ACTUALLY Work." drstanfield.com. 5 October 2025. [https://drstanfield.com/blogs/articles/5-supplements-that-actually-work](https://drstanfield.com/blogs/articles/5-supplements-that-actually-work)
+
+[93] Stanfield B. "Why Creatine Is The ONE Supplement All Longevity Researchers Are Taking." drstanfield.com. 26 March 2025. [https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking](https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking)
+
+[94] Stanfield B. "Creatine “FAILS” in New Study - Don’t Be Misled!" drstanfield.com. 2 April 2025. [https://drstanfield.com/blogs/articles/creatine-fails-in-new-study-don-t-be-misled](https://drstanfield.com/blogs/articles/creatine-fails-in-new-study-don-t-be-misled)

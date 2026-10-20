@@ -8,6 +8,7 @@ tags: ["Supplements"]
 keywords: ["aging","alzheimer","antioxidant","betaine","blood pressure","blood sugar","bmi","bone density","brain health","calcium","cardiovascular","cholesterol","cognitive","collagen","creatine","dementia","dha","diabetes","epa","fiber","folic acid","gut health","hyaluronic acid","inflammation","ldl","lifespan","longevity","magnesium","melatonin","muscle","obesity","omega-3","psyllium","resistance training","skin","sleep","stroke","taurine","testosterone","tmg","vitamin d","vitamin k2","weight loss"]
 product: "microvitamin"
 summary: "Dr Brad's top 5 supplement picks for healthy aging: psyllium husk (fibre, LDL, blood sugar), multivitamin/mineral (cognition, magnesium), omega-3 ~1g/day (heart, brain), creatine (muscle, memory in older adults), TMG (homocysteine, Alzheimer's risk). Bonus: melatonin 0.8mg sustained-release."
+topics: ["psyllium-benefits-forms-dosing-and-side-effects","multivitamins-benefits-evidence-dosing-and-side-effects","omega-3-fish-oil-benefits-forms-dosing-and-side-effects","creatine-benefits-best-forms-dosing-and-side-effects","melatonin-benefits-forms-dosing-and-side-effects","magnesium-benefits-best-forms-dosing","vitamin-d-benefits-forms-dosing-and-side-effects","vitamin-k-benefits-forms-dosing-and-side-effects","b-vitamins-benefits-forms-dosing-and-side-effects"]
 ---
 
 What are the best supplements to maximize our chances of living a long, healthy life? In this article, I’ll walk you through my top five picks, grounded in research rather than hype or speculation.

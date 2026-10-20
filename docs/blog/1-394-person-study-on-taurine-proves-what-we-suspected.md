@@ -7,6 +7,8 @@ publishedAt: "2026-02-12T21:13:15Z"
 tags: ["General Health","Research","Supplements"]
 keywords: ["aging","alzheimer","anti-aging","blood pressure","blood sugar","bmi","brain health","cholesterol","dementia","diabetes","hba1c","inflammation","ldl","lifespan","longevity","magnesium","muscle","oxidative stress","taurine","triglycerides"]
 summary: "Dr Brad's taurine post: continues recommending taurine based on RCT meta-analyses showing benefits for blood pressure, blood sugar, cholesterol, and inflammation. Covers 1–3g dose, magnesium taurate form, dementia risk, diabetes, cardiovascular health."
+topics: ["taurine-benefits-forms-dosing-and-side-effects"]
+router: hidden
 ---
 
 There was absolute despair in the longevity community a few months ago.

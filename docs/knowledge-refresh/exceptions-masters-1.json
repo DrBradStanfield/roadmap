@@ -1,0 +1,194 @@
+[
+ {
+  "check": "AC7",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "reference lines never cited: 64",
+  "reason": "Pre-existing on main before masters-1 (writer report notes it); not introduced by the batch. Cleanup belongs to the reference-hygiene backlog.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "reference lines never cited: 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39",
+  "reason": "Pre-existing on main before masters-1; ruling 10 forbids dropping bibliographic detail to pass. Reference-hygiene backlog.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "token \">20 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Brain fog and fatigue (n=32):** A 24-week study among 32 adults (average age 47) with long COVID (particularly \"bra...\"",
+  "reason": "Checker tokenisation (\"over 20 weeks\" (duration) read as a \">\" comparison); source states it verbatim: nmn-nad-supplements-for-anti-aging-just-changed.md: \"NAD+ increased 2.6- to 3.1-fold after 5–10 weeks and remained elevated at 20 weeks\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "token \"125 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Healthy middle-aged adults (n=36):** Taking 125 mg NMN twice daily (250 mg/day) for 12 weeks raised serum nicotinam...\"",
+  "reason": "Checker tokenisation (\"125 mg NMN twice daily\" read as 125 mg per day); source states it verbatim: pubmed/36797393.md: \"A total of 36 healthy middle-aged participants received one capsule of either 125 mg NMN or placebo twice a day\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "token \"65 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Older men with diabetes (n=14):** In men aged 65 or over (average age 81.1) with diabetes and reduced grip strength...\"",
+  "reason": "Checker tokenisation (\"aged 65 or over\" vs the source's \"aged ≥65 years\": comparator placement); source states it verbatim: pubmed/36443648.md: \"male patients with diabetes aged ≥65 years with reduced grip strength\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "token \"≤300 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **European expert panel:** No side effects of NMN were reported in clinical studies using up to 900 mg/day for 2 mo...\"",
+  "reason": "Checker tokenisation (\"at a maximum of 300 mg per day\" read as a comparison the source words differently); source: reviews-nmn-nadh-nicotinamide-riboside-nmn-nadh-nicotinamide-riboside.md (ConsumerLab raw), changed_tokens[53] in the external report (voided there because the checker reads the comparison differently; this exception records it). No licensed text quoted here.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "token \"≥800 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Animal toxicology:** In a 91-day rat study, the highest dose with no observed adverse effect was 1,000 mg/kg/day ...\"",
+  "reason": "Checker tokenisation (\"no less than 800 mg/kg\" vs the source's \"NLT 800 mg NMN/kg\": abbreviation and word between unit parts); source states it verbatim: pubmed/38765763.md: \"the NOAEL was considered to be NLT 800 mg NMN/kg body weight in Wistar rats\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"65\": Higher-dose trial: In 31 healthy adults aged 20 to 65, 1,250 mg NMN once daily for up to 4 weeks caused no changes be...",
+  "reason": "Checker tokenisation (range \"20 to 65\" vs the source's \"20-65 years\": unit glued to the range); source states it verbatim: pubmed/36002548.md: \"in 31 healthy adult men and women aged 20-65 years\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "token \"15\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review:** Some have suggested resveratrol might help with type 2 diabetes, but a Cochrane analysis found...\"",
+  "reason": "Checker tokenisation (number word in the source (\"fifteen\")); source states it verbatim: pubmed/36014469.md: \"studies were selected for the systematic review and fifteen were included in the meta-analysis\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "token \"250 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review:** Some have suggested resveratrol might help with type 2 diabetes, but a Cochrane analysis found...\" | \"**In older sedentary men:** Healthy men in their sixties who were not physically active were given 250 mg/day of tran...\" | \"| Exercise training | 150-250 mg/day | 4-8 weeks | May blunt exercise adaptations [60][61] |\"",
+  "reason": "Checker tokenisation (ranges and \"daily\" placement (\"250−500 mg/day\", \"250 mg ... daily\", \"100 mg or 250 mg\")); sources: pubmed/36014469.md: \"HbA1c improved in subjects aged 45−59 years with doses of 250−500 mg\"; and reviews-resveratrol-review-resveratrol-red-wine.md (ConsumerLab raw), changed_tokens[116] and [117] in the external report. No licensed text quoted here.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "token \"45\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review:** Some have suggested resveratrol might help with type 2 diabetes, but a Cochrane analysis found...\"",
+  "reason": "Checker tokenisation (range with a minus sign and glued unit (\"45−59 years\")); source states it verbatim: pubmed/36014469.md: \"HbA1c improved in subjects aged 45−59 years with doses of 250−500 mg\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "token \"59\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review:** Some have suggested resveratrol might help with type 2 diabetes, but a Cochrane analysis found...\"",
+  "reason": "Checker tokenisation (range with a minus sign and glued unit (\"45−59 years\")); source states it verbatim: pubmed/36014469.md: \"HbA1c improved in subjects aged 45−59 years with doses of 250−500 mg\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "token \">60\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review:** Some have suggested resveratrol might help with type 2 diabetes, but a Cochrane analysis found...\"",
+  "reason": "Checker tokenisation (\"over 60\" vs the source's \"older than 60 years\": unit glued to the comparison); source states it verbatim: pubmed/36014469.md: \"but not in subjects older than 60 years\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤5000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In healthy volunteers, daily doses up to 5 g for 29 days were judged safe, although 2.5 g and 5 g caused mild to mode...\" | \"Short-term studies of resveratrol in healthy volunteers have shown no serious side effects. However, the long-term sa...\"",
+  "reason": "Checker tokenisation (\"up to 5 g\" read as a comparison; the source lists the doses); source states it verbatim: pubmed/20935227.md + pubmed/17548692.md: \"Forty healthy volunteers ingested resveratrol at 0.5, 1.0, 2.5, or 5.0 g daily for 29 days; single doses of 0.5, 1, 2.5, or 5 g\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.2 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A clinical study in patients with multiple myeloma using SRT501 — a proprietary micronized resveratrol formulation wi...\"",
+  "reason": "Checker tokenisation (value and unit separated by the CI in the source); source states it verbatim: pubmed/40580309.md: \"BUN [weighted mean difference (WMD) =  - 1.20; 95% CI: - 1.89, - 0.51 mg/dL\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "token \">3 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Resveratrol demonstrates anti-platelet (blood-thinning) activity through peroxidase-mediated inactivation of cyclooxy...\"",
+  "reason": "Checker tokenisation (\"over 3 months\" (duration) read as a \">\" comparison); source states it verbatim: pubmed/22240353.md: \"One group received 10 mg RES capsule daily for 3 months\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "token \"126 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- 9 Jul 2024, [Which Mistakes Do Most People Make with Magnesium?](https://drstanfield.com/blogs/articles/mistakes-pe...\"",
+  "reason": "Checker tokenisation (\"126 mg of magnesium each day\": words between the unit and \"each day\"); source states it verbatim: mistakes-people-make-magnesium.md: \"I take an added 126 mg of magnesium each day, which is about 30% of the RDI\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "taurine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- 8 Jul 2025, [Taurine.. Time to Throw it Away? Two New Studies](https://drstanfield.com/blogs/articles/taurine-time-...\" | \"**Meta-analysis of blood pressure trials:** A meta-analysis of seven placebo-controlled clinical trials (103 particip...\"",
+  "reason": "Checker tokenisation (unit glued to the number (\"6g\") and a range (\"1 and 6 g\")); source states it verbatim: 1-394-person-study-on-taurine-proves-what-we-suspected.md + taurine-time-to-throw-it-away-two-new-studies.md: \"The doses used in the studies varied between 0.5g and 6g per day; varied between 1 and 6 g per day\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \">12 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad sees creatine as worth considering for both body and brain performance, and says the evidence for its performanc...\"",
+  "reason": "Checker tokenisation (\"over 12 weeks\" (duration) read as a \">\" comparison); source states it verbatim: creatine-fails-in-new-study-don-t-be-misled.md: \"any benefit in terms of lean body mass gains during the 12 weeks of exercise compared to the control group\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"50 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Most adults need 75 to 90 mg of vitamin C a day, and Brad advises against megadosing by default, because taking a lot...\"",
+  "reason": "Checker tokenisation (units spelled out in the source (\"milligrams per kilogram\")); source states it verbatim: more-vitamins-worse-health-new-trial.md: \"50 milligrams per kilogram, every six hours, for four days\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"14000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Most adults need 75 to 90 mg of vitamin C a day, and Brad advises against megadosing by default, because taking a lot...\"",
+  "reason": "Checker tokenisation (units spelled out in the source (\"grams ... a day\") and a range); source states it verbatim: more-vitamins-worse-health-new-trial.md: \"that works out to roughly 14 to 16 grams of vitamin C a day\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"16000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Most adults need 75 to 90 mg of vitamin C a day, and Brad advises against megadosing by default, because taking a lot...\"",
+  "reason": "Checker tokenisation (units spelled out in the source (\"grams ... a day\") and a range); source states it verbatim: more-vitamins-worse-health-new-trial.md: \"that works out to roughly 14 to 16 grams of vitamin C a day\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10\": Hormetic dose-response: Resveratrol's pharmacodynamic effects often follow a hormetic dose-response curve, where low ...",
+  "reason": "Line unchanged from main except reference renumbering. Its \"10\" became a needed token only because review fix 7 added the Chachay 2014 trial (PMID 24582567: \"3000 mg resveratrol (n = 10) or placebo (n = 10) daily for 8 weeks\"), raising the body count of \"10\". The line's own number predates masters-1 and its raw is not in this batch.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10\": An analysis of data from 10 studies involving 698 participants found that taking resveratrol (dose range: 8 to 1,500 ...",
+  "reason": "Line unchanged from main except reference renumbering. Its \"10\" became a needed token only because review fix 7 added the Chachay 2014 trial (PMID 24582567: \"3000 mg resveratrol (n = 10) or placebo (n = 10) daily for 8 weeks\"), raising the body count of \"10\". The line's own number predates masters-1 and its raw is not in this batch.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ }
+]
