@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
+import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
 import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { METRIC_TYPES } from '../../packages/health-core/src/validation';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
@@ -70,6 +70,8 @@ const metadataSchema = z
  */
 const serverMetadataSchema = metadataSchema.extend({
   reason: z.string().optional(),
+  /** US-32 AC48: which branch of an OAuth refusal fired, judged against its reason in checkEventKeys. */
+  detail: z.string().optional(),
   /** US-32 AC38: a connection made through the reviewer sign-in. Server-only, owned by `mcp_connect`. */
   via: z.enum(['reviewer']).optional(),
   /** US-36 AC9: which half of a two-phase write a tool call was. Server-only, owned by `mcp_tool_call`. */
@@ -89,6 +91,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   metric: ['measurement_refused'],
   refusal: ['measurement_refused'],
   via: ['mcp_connect'],
+  detail: ['mcp_authorize_refused', 'mcp_connect_failed'],
   step: ['mcp_tool_call'],
   rejected: ['chat_run_roadmap'],
   field: ['chat_profile_edit'],
@@ -105,6 +108,7 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   measurement_refused: ['metric', 'refusal'],
   chat_run_roadmap: ['count', 'rejected'],
   chat_profile_edit: ['field', 'choice'],
+  cloud_connect_cancelled: ['provider'],
 };
 
 /**
@@ -140,6 +144,12 @@ function checkEventKeys(
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', 'unit'], message: 'unit is not one this event may carry' });
   }
   const reason = metadata.reason;
+  // A detail is only its own reason's word: none without one, and no other reason's.
+  const details: readonly unknown[] = typeof reason === 'string' && Object.hasOwn(MCP_OAUTH_DETAILS, reason)
+    ? MCP_OAUTH_DETAILS[reason as keyof typeof MCP_OAUTH_DETAILS] : [];
+  if (metadata.detail !== undefined && !details.includes(metadata.detail)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', 'detail'], message: 'detail is not one this reason may carry' });
+  }
   if (reason === undefined) return;
   const allowed: readonly string[] = EVENT_REASONS[event.eventName as keyof typeof EVENT_REASONS] ?? [];
   if (!allowed.includes(reason as string)) {
@@ -166,7 +176,7 @@ const serverEventSchema = eventShellSchema
 
 export type ProductEventInput = z.infer<typeof productEventSchema>;
 /** The schema parses `reason` as a string; a PRODUCER may only write a word. */
-type ServerEventMetadata = z.infer<typeof serverMetadataSchema> & { reason?: McpRefusalReason | McpOAuthReason };
+type ServerEventMetadata = z.infer<typeof serverMetadataSchema> & { reason?: McpRefusalReason | McpOAuthReason; detail?: McpOAuthDetail };
 type ServerProductEvent = { eventName: ProductEventName; visitorId: string; metadata?: ServerEventMetadata };
 
 /**
@@ -219,7 +229,9 @@ function cleanMetadata(event: ServerProductEvent & { metadata: object }): { clea
   const dropped: string[] = [];
   for (const [key, value] of Object.entries(metadata)) {
     // The EVENT, one key at a time: `reason` is judged against its own event.
-    if (serverEventSchema.safeParse({ ...event, metadata: { [key]: value } }).success) clean[key] = value;
+    // A detail is judged beside its reason, so a valid pair survives an unrelated bad key.
+    const probe = key === 'detail' ? { reason: metadata.reason, detail: value } : { [key]: value };
+    if (serverEventSchema.safeParse({ ...event, metadata: probe }).success) clean[key] = value;
     else dropped.push(key);
   }
   return { clean: Object.keys(clean).length ? clean : undefined, dropped };

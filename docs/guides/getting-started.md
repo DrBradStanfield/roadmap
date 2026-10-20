@@ -2,7 +2,7 @@
 title: "An open-source health record you can connect to your AI"
 description: "The code is public and MIT licensed. Your record is one file in your own cloud, so the website, the command line and an AI with file access can all read it."
 slug: "ai-health-record"
-updated: "2026-10-12"
+updated: "2026-10-20"
 stories: ["US-29", "US-30", "US-31", "US-32", "US-38"]
 ---
 
@@ -169,7 +169,7 @@ In that same clone, `npx tsx tools/get-plan.ts <your file>` prints the same plan
 
 ## If it gets something wrong
 
-Open the tool and correct the value there. The app appends the correction and marks the old row as an error, which is the same thing the rules above describe and the safest undo you have. If your AI used `edit-record`, the `.bak` file sitting beside your record is the version from just before that write.
+Open the tool and correct the value there: [how to fix a value](/blogs/guides/upload-lab-report#fix-a-value-after-saving). The app appends the correction and marks the old row as an error, which is the same thing the rules above describe and the safest undo you have. If your AI used `edit-record`, the `.bak` file sitting beside your record is the version from just before that write.
 
 ## What this cannot do
 

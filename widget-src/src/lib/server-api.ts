@@ -176,7 +176,9 @@ export function trackProductEvent(
       // collapsing them would hide all but the first — the very list each signal builds.
       const detail = metadata?.key ? `_${metadata.key}_${metadata.unit}`
         : metadata?.refusal ? `_${metadata.metric ?? localDetail}_${metadata.refusal}`
-        : metadata?.choice ? `_${metadata.field}_${metadata.choice}` : '';
+        : metadata?.choice ? `_${metadata.field}_${metadata.choice}`
+        // Per provider, so a tab that tries Dropbox then Drive counts both (US-09 AC22).
+        : eventName.startsWith('cloud_connect_') && metadata?.provider ? `_${metadata.provider}` : '';
       const sentKey = `hr_pe_${eventName}${detail}`;
       if (sessionStorage.getItem(sentKey)) return;
       sessionStorage.setItem(sentKey, '1');

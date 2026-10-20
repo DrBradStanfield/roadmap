@@ -14,6 +14,7 @@
  *
  * Usage:
  *   npx tsx tools/get-plan.ts <health-roadmap.json>
+ *   npx tsx tools/get-plan.ts --from-values <values.json | ->
  *   npx tsx tools/get-plan.ts <file> --json
  *   npx tsx tools/get-plan.ts <file> --html plan.html
  *
@@ -22,10 +23,13 @@
  * gitignored and built by nobody — the package-name import would silently run
  * a stale engine on a fresh clone.
  */
-import { chmodSync, realpathSync, writeFileSync } from 'node:fs';
+import { chmodSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { z } from 'zod';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
 import { FIELD_METRIC_MAP } from '../packages/health-core/src/mappings';
+import { updateProfile } from '../packages/health-core/src/mcp-tools';
+import { appendLabValue, appendMeasurement } from '../packages/health-core/src/record-edits';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
 import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
 import {
@@ -33,6 +37,7 @@ import {
   currentValues,
   dueSplit,
   PlanError,
+  oneLine,
   planPayload,
   printable,
   renderJson,
@@ -40,9 +45,9 @@ import {
   type DisplayRow,
   type Plan,
 } from '../packages/health-core/src/plan';
-import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '../packages/health-core/src/roadmap-file';
+import { createEmptyFile, CURRENT_SCHEMA_VERSION, type RoadmapFile } from '../packages/health-core/src/roadmap-file';
 import type { Suggestion } from '../packages/health-core/src/types';
-import { formatDisplayValue, getDisplayLabel } from '../packages/health-core/src/units';
+import { formatDisplayValue, getDisplayLabel, hasUnitChoice, UNIT_DEFS, type MetricType } from '../packages/health-core/src/units';
 
 // ---------------------------------------------------------------------------
 // Load — the untrusted-bytes boundary
@@ -60,6 +65,85 @@ export async function loadRecord(path: string, now = new Date()): Promise<Roadma
     if (!isStorageFailure(error)) throw error;
     const failed = describeStorageFailure(error, path);
     throw new PlanError(failed.message, failed.hint);
+  }
+}
+
+/**
+ * Start from numbers (US-30 AC7): build the record in memory, through the same
+ * writers `edit-record` uses — `updateProfile`, `appendMeasurement`,
+ * `appendLabValue` — so ranges, unit conversion and the one-value-per-day rule
+ * are theirs, not a second copy. Nothing is saved.
+ */
+const valuesSpec = z.object({
+  sex: z.enum(['male', 'female']),
+  heightCm: z.number(),
+  age: z.number().int().optional(),
+  birthYear: z.number().int().optional(),
+  birthMonth: z.number().int().optional(),
+  unitSystem: z.enum(['si', 'conventional']).optional(),
+  values: z.array(z.object({
+    metric: z.string().optional(),
+    test: z.string().optional(),
+    value: z.number(),
+    unit: z.string().optional(),
+    date: z.string().optional(),
+  }).strict()).max(100),
+}).strict();
+
+const VALUES_SHAPE = 'Shape: {"sex":"male","age":52,"heightCm":178,"values":[{"metric":"ldl","value":3.2,"unit":"mmol/L"}]}. See --help.';
+
+export function recordFromValues(raw: string, now = new Date()): RoadmapFile {
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    throw new PlanError('The values are not valid JSON', VALUES_SHAPE);
+  }
+  const parsed = valuesSpec.safeParse(json);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    throw new PlanError(`Values: ${oneLine([...issue.path, issue.message].join(' '))}`, VALUES_SHAPE);
+  }
+  const spec = parsed.data;
+  if (spec.age !== undefined && (spec.birthYear !== undefined || spec.birthMonth !== undefined)) {
+    throw new PlanError('Give age, or birthYear (+ birthMonth), not both', VALUES_SHAPE);
+  }
+  const at = now.toISOString();
+  let file = createEmptyFile({ deviceId: 'get-plan-values', now: at });
+  // An age alone sets January, as run-roadmap does for the chatbot.
+  const fromAge = spec.age !== undefined;
+  const birthYear = fromAge ? now.getFullYear() - spec.age! : spec.birthYear;
+  const birthMonth = fromAge ? 1 : spec.birthMonth;
+  const profile = updateProfile(file, { sex: spec.sex, heightCm: spec.heightCm, birthYear, birthMonth }, at);
+  if (profile.status !== 'ok') throw new PlanError(oneLine(profile.text), VALUES_SHAPE);
+  if (profile.file) file = profile.file;
+  // In memory only, so no profile timestamp to keep.
+  if (spec.unitSystem) file = { ...file, profile: { ...file.profile, unitSystem: spec.unitSystem } };
+
+  for (const [i, row] of spec.values.entries()) {
+    const where = `values[${i}]`;
+    if (!row.metric === !row.test) throw new PlanError(`${where}: give either metric (a core metric) or test (any other blood test)`, VALUES_SHAPE);
+    // A metric with two unit labels (LDL mmol/L or mg/dL) never guesses; a lab
+    // value with no unit is refused by appendLabValue itself.
+    const metric = row.metric as MetricType;
+    if (!row.unit && row.metric && Object.hasOwn(UNIT_DEFS, metric) && hasUnitChoice(metric)) {
+      const { si, conventional } = UNIT_DEFS[metric].label;
+      throw new PlanError(`${where}: ${oneLine(row.metric)} needs a unit (${si} or ${conventional})`, 'Add "unit", e.g. {"metric":"ldl","value":3.2,"unit":"mmol/L"}.');
+    }
+    const result = row.metric
+      ? appendMeasurement(file, { metricType: row.metric, value: row.value, unit: row.unit, recordedAt: row.date, now: at })
+      : appendLabValue(file, { metricName: row.test!, value: row.value, unit: row.unit ?? '', recordedAt: row.date, now: at });
+    if (!result.ok) throw new PlanError(`${where}: ${oneLine(result.message)}`, 'Nothing was computed. Run with --help for the options.');
+    file = result.file;
+  }
+  return file;
+}
+
+function readValues(source: string): string {
+  try {
+    return readFileSync(source === '-' ? 0 : source, 'utf8');
+  } catch {
+    throw new PlanError(`Cannot read the values from ${oneLine(source)}`, 'Give a JSON file, or `-` to read it from stdin.');
   }
 }
 
@@ -99,11 +183,11 @@ function byPriority(suggestions: Suggestion[]): Array<{ priority: string; label:
 // Renderers
 // ---------------------------------------------------------------------------
 
-export function renderText(plan: Plan): string {
+export function renderText(plan: Plan, from = 'your record file'): string {
   const out: string[] = [];
   out.push('YOUR HEALTH PLAN');
   out.push(profileLine(plan));
-  out.push(`Computed ${plan.today} from your record file. Not medical advice — take it to your doctor.`);
+  out.push(`Computed ${plan.today} from ${from}. Not medical advice — take it to your doctor.`);
 
   const row = (r: DisplayRow) => `  ${r.label.padEnd(20)} ${String(r.value).padStart(6)} ${r.unit.padEnd(9)} ${r.date}${r.excluded ? '  (excluded — out of range)' : ''}`;
   const values = currentValues(plan);
@@ -159,7 +243,7 @@ function esc(value: unknown): string {
   return String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
-export function renderHtml(plan: Plan): string {
+export function renderHtml(plan: Plan, from = 'your own record file'): string {
   const { overdue, upcoming } = dueSplit(plan);
   const values = currentValues(plan);
   const rows = (items: DisplayRow[]) =>
@@ -220,7 +304,7 @@ footer{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--line);color:v
 </style></head><body><main>
 <h1>Your health plan</h1>
 <p class="sub">${esc(profileLine(plan))}</p>
-<p class="sub">Computed ${esc(plan.today)} from your own record file, on your own machine.</p>
+<p class="sub">Computed ${esc(plan.today)} from ${esc(from)}, on your own machine.</p>
 <p class="disclaimer"><b>Disclaimer:</b> This tool is for educational purposes only and is not a substitute for professional medical advice. Always consult with your healthcare provider before making any health decisions. Suggestions are based on general guidelines and may not apply to your individual situation.</p>
 
 <h2>Current values</h2>
@@ -239,7 +323,7 @@ ${overdue.length + upcoming.length === 0 ? '<li class="sub">Nothing scheduled.</
 
 ${suggestions}
 
-<footer>Generated by <code>tools/get-plan.ts</code> — offline, from <code>health-roadmap.json</code> (schemaVersion ${CURRENT_SCHEMA_VERSION}). Nothing left this machine.</footer>
+<footer>Generated by <code>tools/get-plan.ts</code> — offline, record schemaVersion ${CURRENT_SCHEMA_VERSION}. Nothing left this machine.</footer>
 </main></body></html>
 `;
 }
@@ -253,9 +337,23 @@ export const HELP = `get_plan — compute your health plan from your own record 
   npx tsx tools/get-plan.ts <health-roadmap.json>          readable report
   npx tsx tools/get-plan.ts <file> --json                  machine-readable
   npx tsx tools/get-plan.ts <file> --html <out.html>       self-contained page
+  npx tsx tools/get-plan.ts --from-values <values.json|->  no record file: numbers in, plan out
 
 Reads the file and nothing else: no network, no model, no telemetry, and the
 record is never written back.
+
+--from-values takes JSON (a file, or \`-\` for stdin), builds the record in
+memory by edit-record's own rules, and writes nothing. Works with --json/--html:
+  {"sex":"male","age":52,"heightCm":178,
+   "values":[{"metric":"ldl","value":3.2,"unit":"mmol/L"},
+             {"test":"ferritin","value":210,"unit":"µg/L"}]}
+  sex, heightCm       required
+  age | birthYear     optional, but without one the age-based steps drop out;
+                      birthYear (+ birthMonth) is exact, age may be a year off
+  unitSystem          optional: si (default, mmol/L) or conventional (mg/dL)
+  metric / test       a core metric, or any other blood test
+  unit                required wherever the metric has two (ldl, hba1c, weight, …)
+  date                YYYY-MM-DD, default today
 
 --json emits:
   instruction    how to present this plan: keep the hedging, keep the citations
@@ -289,19 +387,22 @@ Schema: ${SCHEMA_URL}
  * Overwriting any OTHER existing file is normal `-o` behaviour and stays
  * allowed.
  */
-function assertWritableTarget(htmlOut: string, recordPath: string): void {
+function assertWritableTarget(htmlOut: string, recordPath: string | undefined, valuesFrom: string | null): void {
   if (htmlOut.startsWith('--')) {
     throw new PlanError(`--html needs an output path, not ${htmlOut}`, 'Try `--html plan.html`.');
   }
-  let sameFile = false;
-  try {
-    sameFile = realpathSync.native(htmlOut) === realpathSync.native(recordPath);
-  } catch {
-    // No such file yet — nothing to overwrite.
-  }
-  if (sameFile) {
-    throw new PlanError('--html would overwrite the record file itself', 'Give the report its own path, e.g. `--html plan.html`.');
-  }
+  const real = (p: string) => {
+    try {
+      return realpathSync.native(p);
+    } catch {
+      return null; // No such file yet — nothing to overwrite.
+    }
+  };
+  const target = real(htmlOut);
+  const hits = (p: string | null | undefined) => !!p && target !== null && real(p) === target;
+  // `-` means stdin only for --from-values; a record file may really be named `-`.
+  const hit = hits(recordPath) ? 'the record file itself' : valuesFrom !== '-' && hits(valuesFrom) ? 'the values file' : null;
+  if (hit) throw new PlanError(`--html would overwrite ${hit}`, 'Give the report its own path, e.g. `--html plan.html`.');
 }
 
 export async function run(argv: string[]): Promise<number> {
@@ -309,23 +410,38 @@ export async function run(argv: string[]): Promise<number> {
     process.stdout.write(HELP);
     return 0;
   }
+  // Operands are found by position, never by value: a record path that
+  // happens to equal the --html target must still count as the record.
+  const operandAt = new Set<number>();
+  const operand = (flag: string): string | null => {
+    const at = argv.indexOf(flag);
+    if (at < 0) return null;
+    operandAt.add(at + 1);
+    return argv[at + 1] ?? '';
+  };
   const htmlAt = argv.indexOf('--html');
-  const htmlOut = htmlAt >= 0 ? argv[htmlAt + 1] : null;
-  const path = argv.find((a) => !a.startsWith('--') && a !== htmlOut);
-  const unknown = argv.find((a) => a.startsWith('--') && a !== '--json' && a !== '--html' && a !== htmlOut);
+  const htmlOut = operand('--html');
+  const valuesAt = argv.indexOf('--from-values');
+  const valuesFrom = operand('--from-values');
+  const rest = argv.filter((_, i) => !operandAt.has(i));
+  const [path, extra] = rest.filter((a) => !a.startsWith('--'));
+  const unknown = rest.find((a) => a.startsWith('--') && !['--json', '--html', '--from-values'].includes(a));
 
   try {
-    if (!path) throw new PlanError('No record file given', 'Run `npx tsx tools/get-plan.ts --help` for usage.');
+    if (valuesAt >= 0 && (!valuesFrom || valuesFrom.startsWith('--'))) throw new PlanError('--from-values needs a JSON file, or `-` for stdin', 'Try `--from-values values.json`.');
+    if (valuesFrom && path) throw new PlanError('Give a record file or --from-values, not both', 'Run with --help for the options.');
+    if (!path && !valuesFrom) throw new PlanError('No record file given', 'Run `npx tsx tools/get-plan.ts --help` for usage.');
     if (htmlAt >= 0 && !htmlOut) throw new PlanError('--html needs an output path', 'Try `--html plan.html`.');
     if (unknown) throw new PlanError(`Unknown option ${unknown}`, 'Run with --help for the options.');
-    if (htmlOut) assertWritableTarget(htmlOut, path);
+    if (extra !== undefined) throw new PlanError(`Unexpected argument ${oneLine(extra)}`, 'Give one record file. Run with --help for the options.');
+    if (htmlOut) assertWritableTarget(htmlOut, path, valuesFrom);
 
-    const plan = computePlan(await loadRecord(path));
+    const plan = computePlan(valuesFrom ? recordFromValues(readValues(valuesFrom)) : await loadRecord(path!));
     if (htmlOut) {
       try {
         // As private as the record it summarises: the report carries the same
         // values, and writeFileSync's mode is filtered by the umask.
-        writeFileSync(htmlOut, renderHtml(plan), { mode: 0o600 });
+        writeFileSync(htmlOut, renderHtml(plan, valuesFrom ? 'the values you gave' : undefined), { mode: 0o600 });
         chmodSync(htmlOut, 0o600);
       } catch {
         throw new PlanError(`Cannot write ${htmlOut}`, 'Check the directory exists.');
@@ -334,7 +450,7 @@ export async function run(argv: string[]): Promise<number> {
     } else if (argv.includes('--json')) {
       process.stdout.write(`${renderJson(plan)}\n`);
     } else {
-      process.stdout.write(`${renderText(plan)}\n`);
+      process.stdout.write(`${renderText(plan, valuesFrom ? 'the values you gave' : undefined)}\n`);
     }
     return 0;
   } catch (error) {

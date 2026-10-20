@@ -2,7 +2,7 @@
 title: "Run your health plan from the command line"
 description: "Two commands in this repo read your health-roadmap.json and write to it: one prints your plan offline, one files a new value."
 slug: "command-line"
-updated: "2026-10-12"
+updated: "2026-10-20"
 stories: ["US-30", "US-31", "US-33"]
 ---
 
@@ -51,6 +51,18 @@ For a page you can keep, print, or take to an appointment:
 The HTML is one self-contained file. It loads nothing from the internet, so it still reads years from now.
 
 The plan needs your height and sex to compute anything. Without them it stops and tells you.
+
+## Start from numbers
+
+No record yet? You can still get a plan from numbers you have. Put them in JSON and pass the file, or `-` to read standard input:
+
+```
+echo '{"sex":"male","age":52,"heightCm":178,"values":[{"metric":"ldl","value":3.2,"unit":"mmol/L"}]}' | npx tsx tools/get-plan.ts --from-values -
+```
+
+It prints the same plan as above (add `--json` or `--html <out>` as before). The record exists only in memory: nothing is written, nothing is sent, and the numbers are gone when the command ends.
+
+`sex` and `heightCm` are required. Give `age`, or `birthYear` with an optional `birthMonth`: without either, the plan leaves out every age-based step, and age alone can be a year off near a birthday. Add `"unitSystem":"conventional"` to see mg/dL instead of mmol/L. Each value is a core `metric` (`ldl`, `hba1c`, `weight`, …) or any other blood `test`, with an optional `date` (default today). A metric with two units needs its `unit`: LDL without one stops with `ldl needs a unit (mmol/L or mg/dL)` rather than guess. Values go through the same range checks as `edit-record`. To keep the numbers, enter them in the app; no command here creates a record file.
 
 ## Add a value
 
