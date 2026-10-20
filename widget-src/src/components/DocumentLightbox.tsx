@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { deleteDocument, readDocumentFile } from '../lib/roadmap-data';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format';
+import { viewableType } from '../lib/file-kinds';
 import type { ApiDocument } from '../lib/api-types';
 import { renderMarkdown } from '../lib/markdown';
 import { useIsMobile } from '../lib/useIsMobile';
@@ -44,9 +45,21 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
       setOpenError('Could not load the original file from your cloud storage.');
       return;
     }
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank', 'noopener');
-    // Give the new tab time to take ownership of the blob before revoking.
+    // Only a vetted passive type opens in a tab; anything else (an SVG, HTML)
+    // would run script with this page's origin, so it downloads (US-14 AC3).
+    const type = viewableType(doc.fileRef, blob.type);
+    const url = URL.createObjectURL(new Blob([blob], { type: type ?? 'application/octet-stream' }));
+    if (type) {
+      window.open(url, '_blank', 'noopener');
+    } else {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.fileRef.split('/').pop() || 'document';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+    // Give the new tab or the download time to take the blob before revoking.
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
   };
 

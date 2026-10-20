@@ -8,7 +8,7 @@
  *  AC2      every fresh row sits out a 3-day quiet period measured from
  *           created_at (never updated_at — refreshes touch that);
  *  AC7/AC8  an optin against an existing address refreshes the schedule
- *           ONLY: token never rotated and NEVER RETURNED (the silent-
+ *           ONLY, and never a Google-verified row's: token never rotated and NEVER RETURNED (the silent-
  *           unsubscribe attack: optin the victim, cancel with the token),
  *           last_sent kept (no resend amplification), provider immutable;
  *           a tombstoned token refuses schedule pushes so the device flips
@@ -30,7 +30,7 @@ function makeQuery(): Record<string, unknown> {
       calls.push({ method, args });
       return q;
     };
-  for (const m of ['from', 'select', 'eq', 'insert', 'upsert', 'update', 'delete', 'order', 'range', 'lt', 'in']) q[m] = chain(m);
+  for (const m of ['from', 'select', 'eq', 'neq', 'insert', 'upsert', 'update', 'delete', 'order', 'range', 'lt', 'in']) q[m] = chain(m);
   q.maybeSingle = () => {
     calls.push({ method: 'maybeSingle', args: [] });
     return Promise.resolve(primedResults.shift() ?? { data: null, error: null });
@@ -255,7 +255,7 @@ describe('US-23 AC5/AC8 — unsubscribe is a DURABLE tombstone for every lane', 
 describe('US-17 AC8 — a credential-free optin creates or refreshes, never clobbers, never hands out a token', () => {
   it('the silent-unsubscribe attack: optin against an enrolled address returns NO token and rotates nothing', async () => {
     primedResults = [
-      { data: { id: 'row-1' }, error: null }, // lookup: the victim's Google-verified row
+      { data: { id: 'row-1' }, error: null }, // lookup: the victim's address-lane row
       { data: null, error: null },            // schedule refresh
     ];
 
@@ -274,6 +274,45 @@ describe('US-17 AC8 — a credential-free optin creates or refreshes, never clob
     expect(payload).not.toHaveProperty('provider');
     expect(payload).toHaveProperty('schedule');
     expect(calls.map((c) => c.method)).not.toContain('upsert');
+  });
+
+  // US-23 AC7: the Origin allow-list is not authentication, so an address-lane
+  // optin naming a Google-verified address must not rewrite that row's schedule.
+  // The UPDATE itself excludes google-drive rows: the database reads the
+  // provider at write time, so a verified write landing after the lookup is
+  // covered too, and the reply and round trips are the same whichever row it
+  // met (no new oracle beyond AC8's accepted refreshed-vs-new one).
+  it('US-23 AC7: the schedule refresh never writes a Google-verified row', async () => {
+    primedResults = [
+      { data: { id: 'row-1' }, error: null }, // lookup: the victim's row, any lane
+      { data: null, error: null },            // the refresh, filtered by provider
+    ];
+
+    const result = await enrolByEmail('victim@example.com', 'typed', [VALID_ITEM]);
+
+    expect(result).toEqual({ isNew: false });
+    const methods = calls.map((c) => c.method);
+    const writeChain = calls.slice(methods.indexOf('update'));
+    expect(writeChain).toContainEqual({ method: 'neq', args: ['provider', 'google-drive'] });
+    expect(writeChain).toContainEqual({ method: 'eq', args: ['email', 'victim@example.com'] });
+  });
+
+  it('US-23 AC7: the reply and the queries are the same for a verified row and an address-lane row', async () => {
+    const run = async (provider: string) => {
+      calls.length = 0;
+      primedResults = [{ data: { id: 'row-1', provider }, error: null }, { data: null, error: null }];
+      const result = await enrolByEmail('victim@example.com', 'dropbox', [VALID_ITEM]);
+      return { result, chain: calls.map((c) => ({ method: c.method, args: c.args })) };
+    };
+    // The lookup returns the row's provider here, so a JS branch on it would
+    // change the reply or the chain. The provider filter lives in the UPDATE.
+    const verified = await run('google-drive');
+    const addressLane = await run('typed');
+    expect(verified.result).toEqual({ isNew: false });
+    expect(addressLane.result).toEqual({ isNew: false });
+    expect(verified.chain.filter((c) => c.method === 'update')).toHaveLength(1);
+    expect(addressLane.chain.filter((c) => c.method === 'update')).toHaveLength(1);
+    expect(verified.chain).toEqual(addressLane.chain);
   });
 
   it('the tombstone refill: a refresh against an unsubscribed row rewrites the schedule but is not a new enrolment', async () => {

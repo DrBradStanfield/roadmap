@@ -18,14 +18,27 @@ describe('US-12: isImage', () => {
     expect(isImage(file('photo.jpeg', ''))).toBe(true);
     expect(isImage(file('photo.png', ''))).toBe(true);
     expect(isImage(file('photo.heic', ''))).toBe(true);
+    expect(isImage(file('photo.heif', ''))).toBe(true);
   });
 
   it('is case-insensitive on extension', () => {
     expect(isImage(file('PHOTO.JPG', ''))).toBe(true);
   });
 
-  it('falls back to mime type when extension is unrecognized', () => {
-    expect(isImage(file('blob', 'image/webp'))).toBe(true);
+  it('falls back to an allowed mime type when extension is unrecognized', () => {
+    expect(isImage(file('blob', 'image/jpeg'))).toBe(true);
+    expect(isImage(file('blob', 'image/png'))).toBe(true);
+    expect(isImage(file('blob', 'image/heic'))).toBe(true);
+    expect(isImage(file('blob', 'image/heif'))).toBe(true);
+  });
+
+  // US-14 AC3: an SVG can carry script, and its original would be archived as
+  // image/svg+xml. Only the listed types are images; any other image/* is not.
+  it('US-14 AC3: rejects SVG and every other image type off the allow-list', () => {
+    expect(isImage(file('chart.svg', 'image/svg+xml'))).toBe(false);
+    expect(isImage(file('blob', 'image/svg+xml'))).toBe(false);
+    expect(isImage(file('photo.webp', 'image/webp'))).toBe(false);
+    expect(isImage(file('photo.gif', 'image/gif'))).toBe(false);
   });
 
   it('rejects non-image files', () => {
