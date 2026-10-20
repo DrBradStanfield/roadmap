@@ -141,6 +141,8 @@ function sanitizeStamp<T>(row: T, anchor: string): T {
  * so a future date demotes every later genuine entry to 'entered-in-error'.
  * `recordedAt` is deliberately left alone — it is the clinical date of the
  * value, and moving it would move the row into a different day slot.
+ * Document `addedAt` is also left alone: clamping it to each file's own
+ * anchor splits one document's content identity and can revive a deletion.
  */
 function sanitizeCreatedAt<T>(row: T, anchor: string): T {
   if (!isObject(row) || typeof row.createdAt !== 'string' || !after(row.createdAt, anchor)) return row;
@@ -256,7 +258,11 @@ export function migrateFile(
   // way to persist anything again.
   const rowsOf = <T>(rows: unknown): T[] => asArray<T>(rows).filter((r) => isObject(r));
   const stamped = <T>(rows: unknown): T[] => rowsOf<T>(rows).map((r) => sanitizeStamp(r, anchor));
-  const dated = <T>(rows: unknown): T[] => rowsOf<T>(rows).map((r) => sanitizeCreatedAt(r, anchor));
+  // US-29 AC4: omit malformed clinical days; never invent a date or move a
+  // valid observation to another slot. Keep the original timestamp and zone.
+  const dated = <T extends { recordedAt: string }>(rows: unknown): T[] => rowsOf<T>(rows)
+    .filter((r) => typeof r.recordedAt === 'string' && isCalendarDay(r.recordedAt.slice(0, 10)))
+    .map((r) => sanitizeCreatedAt(r, anchor));
   // Profile and screenings: the object's own stamp, and each field's (US-10
   // AC6). A field stamp that is not a stamp is dropped, so its field reads the
   // object's stamp; a map with none left is dropped whole. A missing or
