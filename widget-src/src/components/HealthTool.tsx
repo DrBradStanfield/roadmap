@@ -100,7 +100,9 @@ export const ERASE_CONFIRM =
   'This cannot be undone. ' +
   // The erase lists the rows it can see (US-09 AC23), and keeps the rest.
   'A value another device has not saved yet, or saves while the erase runs, is kept and arrives later. ' +
-  "With no cloud connected, only this browser's copy is erased, not a cloud you connect afterwards.\n\n" +
+  // A guest erase lists this browser's rows; a cloud connected later loses
+  // them, and its profile and screenings, to the higher epoch (US-09 AC23).
+  'With no cloud connected, the values in this browser are erased. If you later connect a cloud, the same values are erased there too and its profile and screening answers are reset; values this browser never held stay.\n\n' +
   `${SHOPIFY_SURFACE ? 'Six' : 'Four'} things this cannot reach:\n` +
   '1. Documents you uploaded that are already in your cloud folder. They stay.\n' +
   '2. Candidate files from a connector import (imports/pending-*.json). They stay until your next import.\n' +

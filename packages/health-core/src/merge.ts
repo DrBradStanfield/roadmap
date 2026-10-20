@@ -715,7 +715,13 @@ export function mergeFiles(
       lastDeviceId: opts.deviceId,
       lamport: Math.max(local.meta.lamport, remote.meta.lamport) + 1,
       eraseEpoch: localEpoch, // equal on both sides in this branch
-      ...laterErase(local.meta.erasedAt, remote.meta.erasedAt),
+      // When one side listed its rows and the other did not, the listing
+      // erase's rows go by id; the time that still decides is the unlisted
+      // erase's, or a copy that missed it would lose rows typed between the
+      // two (US-09 AC23).
+      ...(!local.erasedRows === !remote.erasedRows
+        ? laterErase(local.meta.erasedAt, remote.meta.erasedAt)
+        : laterErase((local.erasedRows ? remote : local).meta.erasedAt, undefined)),
     },
 
     profile: mergeFields<RoadmapProfile>(local.profile, remote.profile),

@@ -30,13 +30,16 @@ describe('erase confirm copy (US-11)', () => {
 
   // US-09 AC23 (adversary R2): the erase lists the rows it can see, so the
   // copy says what it does not reach: a value another device has not saved,
-  // or saves during the erase, and a cloud connected after a guest erase.
+  // or saves during the erase. A cloud connected after a guest erase loses
+  // the values this browser held and its profile and screening answers
+  // (Codex re-check R1, adversary re-check R1).
   it('US-09 AC23: says the erase covers this browser and the connected cloud file, and what it keeps', async () => {
     for (const shopify of [true, false]) {
       const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending } = await eraseCopyOn(shopify);
       expect(confirm).toContain('erased, in this browser and in your connected cloud file.');
       expect(confirm).toContain('A value another device has not saved yet, or saves while the erase runs, is kept and arrives later.');
-      expect(confirm).toContain("With no cloud connected, only this browser's copy is erased, not a cloud you connect afterwards.");
+      expect(confirm).toContain('With no cloud connected, the values in this browser are erased. If you later connect a cloud, the same values are erased there too and its profile and screening answers are reset; values this browser never held stay.');
+      expect(confirm).not.toMatch(/not a cloud you connect afterwards/);
       for (const after of [done, pending]) {
         expect(after).toContain('A value another device had not saved yet, or saved during the erase, is kept and arrives later.');
         expect(after).not.toMatch(/—/);

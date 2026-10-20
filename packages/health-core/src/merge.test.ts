@@ -1378,6 +1378,59 @@ describe('mergeFiles — erasedRows: an erase decides by the rows it listed (US-
     }
   });
 
+  it('US-09 AC23: at one epoch, a listing erase takes the unlisted erase\'s erasedAt, so a stale copy keeps a row typed between them (adversary re-check R2)', () => {
+    // The cloud: erased by an old app at epoch 1 on 1 September, no list.
+    const drive = emptyFile();
+    drive.meta.eraseEpoch = 1;
+    drive.meta.erasedAt = '2026-09-01T00:00:00.001Z';
+    // A guest copy erased by the new app at epoch 1 on 21 October, listing its rows.
+    const guest = listed(['guest-row']);
+    guest.meta.erasedAt = '2026-10-21T00:00:00.001Z';
+    // A laptop at epoch 0: an LDL from before the cloud erase, an HDL typed after it.
+    const laptop = emptyFile();
+    laptop.measurements = [
+      measurement({ id: 'pre', metricType: 'ldl', value: 3, recordedAt: '2026-08-01', createdAt: '2026-08-01T00:00:00Z' }),
+      measurement({ id: 'mid', metricType: 'hdl', value: 1.4, recordedAt: '2026-09-15', createdAt: '2026-09-15T00:00:00Z' }),
+    ];
+    for (const lifted of [mergeFiles(guest, drive, OPTS), mergeFiles(drive, guest, OPTS)]) {
+      expect(lifted.meta.erasedAt).toBe('2026-09-01T00:00:00.001Z');
+      for (const merged of [mergeFiles(laptop, lifted, OPTS), mergeFiles(lifted, laptop, OPTS)]) {
+        expect(merged.measurements.map((r) => r.id)).toEqual(['mid']);
+      }
+    }
+    // Both listing, or neither: the later erase time, as before.
+    const other = listed(['other-row']);
+    other.meta.erasedAt = '2026-09-01T00:00:00.001Z';
+    for (const merged of [mergeFiles(guest, other, OPTS), mergeFiles(other, guest, OPTS)]) {
+      expect(merged.meta.erasedAt).toBe('2026-10-21T00:00:00.001Z');
+    }
+    const plain = emptyFile();
+    plain.meta.eraseEpoch = 1;
+    plain.meta.erasedAt = '2026-10-21T00:00:00.001Z';
+    for (const merged of [mergeFiles(drive, plain, OPTS), mergeFiles(plain, drive, OPTS)]) {
+      expect(merged.meta.erasedAt).toBe('2026-10-21T00:00:00.001Z');
+    }
+  });
+
+  it('US-09 AC23: a guest erase listing a copied-down row removes it from a cloud connected later, keeps the cloud\'s unseen rows, and resets its profile (Codex re-check R1, adversary re-check R1)', () => {
+    // The cloud: r1 was copied down to this browser on a provider switch; r2 came later.
+    const drive = emptyFile();
+    drive.measurements = [
+      measurement({ id: 'r1', metricType: 'ldl', value: 3, recordedAt: '2026-09-01', createdAt: '2026-09-01T00:00:00Z' }),
+      measurement({ id: 'r2', metricType: 'hdl', value: 1.4, recordedAt: '2026-10-10', createdAt: '2026-10-10T00:00:00Z' }),
+    ];
+    drive.profile = { updatedAt: '2026-10-10T00:00:00Z', lamport: 5, heightCm: 180 };
+    drive.screenings = { colorectalMethod: 'fit_annual', updatedAt: '2026-10-10T00:00:00Z', lamport: 5 };
+    // The guest erase, with no cloud connected, listed what this browser held: r1.
+    const guest = listed(['r1']);
+    guest.meta.erasedAt = '2026-10-21T00:00:00.001Z';
+    for (const merged of [mergeFiles(guest, drive, OPTS), mergeFiles(drive, guest, OPTS)]) {
+      expect(merged.measurements.map((r) => r.id)).toEqual(['r2']);
+      expect(merged.profile.heightCm).toBeUndefined();
+      expect(merged.screenings.colorectalMethod).toBeUndefined();
+    }
+  });
+
   it('US-09 AC23: a losing row whose id is not a string is skipped, not thrown on (adversary R4)', () => {
     const stale = everyArray('new');
     stale.measurements.push({ ...measurement({ id: 'x', metricType: 'ldl', value: 3 }), id: 7 as unknown as string });
