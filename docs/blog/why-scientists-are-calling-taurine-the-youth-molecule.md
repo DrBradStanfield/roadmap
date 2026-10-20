@@ -7,6 +7,8 @@ publishedAt: "2025-03-25T23:52:48Z"
 tags: ["Supplements","General Health","Research"]
 keywords: ["aging","alzheimer","anti-aging","blood pressure","blood sugar","bmi","brain health","cholesterol","dementia","diabetes","exercise","hba1c","inflammation","ldl","lifespan","magnesium","muscle","oxidative stress","taurine","triglycerides"]
 summary: "Dr Brad’s taurine post: promising evidence supports it for metabolic health (blood sugar, blood pressure, cholesterol, triglycerides) and exercise performance; aging/lifespan data is still preliminary. Covers dosing 1-6g/day, dementia risk, safety."
+topics: ["taurine-benefits-forms-dosing-and-side-effects"]
+router: hidden
 ---
 
 There’s a popular ingredient in energy drinks that’s recently been gaining attention for its potential to fight aging and boost key health parameters.

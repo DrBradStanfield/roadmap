@@ -7,6 +7,7 @@ publishedAt: "2024-08-11T19:43:34Z"
 tags: ["Supplements"]
 keywords: ["aging","antioxidant","blood sugar","calcium","cardiovascular","cholesterol","cognitive","coq10","creatine","curcumin","diabetes","exercise","folate","folic acid","glycine","inflammation","iron","kidney","longevity","lung cancer","metformin","muscle","nad","niacin","nmn","osteoporosis","oxidative stress","pcsk9","resveratrol","sleep","statin","testosterone","vitamin a","vitamin b3","vitamin c","vitamin d","vitamin e","zinc"]
 summary: "Dr Brad's supplements-to-avoid post: 9 supplements with risks outweighing benefits per clinical trials. Covers antioxidants (vitamins A, C, E), CoQ10, resveratrol, metformin (non-diabetics), iron, calcium, high-dose folic acid, niacin, and fat burners."
+topics: ["vitamin-a-benefits-forms-dosing-and-side-effects","vitamin-c-benefits-forms-dosing-and-side-effects","vitamin-e-benefits-forms-dosing-and-side-effects","resveratrol-benefits-forms-dosing-and-side-effects","iron-benefits-forms-dosing-and-side-effects","calcium-benefits-best-forms-dosing-and-side-effects","b-vitamins-benefits-forms-dosing-and-side-effects","coq10-benefits-best-forms-dosing-and-side-effects","pqq-benefits-forms-dosing-and-side-effects","weight-loss-supplements-benefits-evidence-and-safety","nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"]
 ---
 
 Supplements are very popular the world over and range from simple vitamins and minerals to exotic plants and extracts to untested mixtures of unknown ingredients.

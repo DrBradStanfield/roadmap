@@ -8,6 +8,8 @@ tags: ["Skin Health","Supplements"]
 keywords: ["aging","collagen","peptide","skin","wrinkles"]
 product: "microvitamin-plus"
 summary: “Dr Brad's collagen peptides post: evidence likely supports benefits for skin hydration, elasticity, and wrinkles despite a 2025 meta-analysis claiming otherwise. Covers statistical pooling flaws, industry bias concerns, mechanism via fibroblasts, and Brad's personal decision to continue taking collagen.”
+topics: ["collagen-benefits-best-forms-dosing-and-side-effects"]
+router: hidden
 ---
 
 A brand-new analysis just made a shocking claim:

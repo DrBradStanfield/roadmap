@@ -8,6 +8,7 @@ tags: ["Diet", "Research", "Supplements"]
 keywords: ["blood pressure", "cardiovascular", "cognitive", "folate", "iodine", "potassium", "stroke"]
 product: "microvitamin"
 summary: "Iodine deficiency, iodized salt and IQ, goitre, thyroid, pink/sea salt has no iodine, RDA 150mcg, pregnancy supplement."
+topics: ["kelp-and-iodine-benefits-forms-dosing-and-side-effects"]
 ---
 
 In 1916, a pathologist named Dr David Marine walked into a school board meeting in Ohio, and asked for permission to run an experiment on four and a half thousand schoolgirls.

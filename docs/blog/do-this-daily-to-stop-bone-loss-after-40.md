@@ -8,6 +8,7 @@ tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin H
 keywords: ["bone density","calcium","dexa","exercise","magnesium","muscle","osteoporosis","resistance training","vitamin d","vitamin d3","vitamin k2"]
 product: "microvitamin"
 summary: "Dr Brad’s bone loss post: resistance and impact exercise are the primary tools to prevent osteoporosis after 40; D3, K2, and magnesium support bone health; calcium supplements have mixed evidence. Covers DEXA screening, fracture risk, postmenopausal bone loss, bisphosphonates."
+topics: ["calcium-benefits-best-forms-dosing-and-side-effects","vitamin-d-benefits-forms-dosing-and-side-effects","vitamin-k-benefits-forms-dosing-and-side-effects","magnesium-benefits-best-forms-dosing"]
 ---
 
 One in three people who break their hip will be dead within 1 year. After 10 years, only 8.5% will be alive, compared to 39.8% in the general population \[1\].

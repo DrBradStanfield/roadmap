@@ -798,6 +798,7 @@ describe('test-chatbot-matching router view (US-50 AC3)', () => {
   it('drops a hidden post whose master is up to date from the index block and the count', () => {
     interface Entry { handle: string; type?: string; youtube?: string; topics?: string[]; router?: string; reviewed?: string }
     const index = JSON.parse(readFileSync(join(REPO_ROOT, 'docs/blog/index.json'), 'utf-8')) as Entry[];
+    for (const e of index) delete e.router; // start from a view that hides nothing, so the counts below are exact
     const m = index.find(e => e.type === 'reference')!;
     const p = index.find(e => e.youtube)!;
     m.reviewed = '2099-01-01';

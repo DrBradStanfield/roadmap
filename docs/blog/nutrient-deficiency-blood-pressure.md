@@ -7,6 +7,7 @@ publishedAt: "2024-12-07T00:41:36Z"
 tags: ["Diet"]
 keywords: ["blood pressure","cholesterol","diabetes","exercise","fiber","heart attack","kidney","magnesium","potassium","stroke","weight loss"]
 summary: "Dr Brad's blood pressure post: potassium deficiency is the top modifiable nutrient factor for high blood pressure. A meta-analysis of 22 RCTs found 3,500-4,700mg/day reduces systolic BP by 7 mmHg. Covers sodium-potassium balance, magnesium link, food sources, kidney safety."
+topics: ["potassium-benefits-forms-dosing-and-side-effects"]
 ---
 
 High blood pressure is a key risk factor for heart disease — the world's top killer, and strokes. Research shows there is one nutrient deficiency that has a massive impact on blood pressure. And it's a nutrient few of us are getting enough of.

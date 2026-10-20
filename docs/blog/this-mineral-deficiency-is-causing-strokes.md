@@ -7,6 +7,7 @@ publishedAt: "2025-08-28T23:51:02Z"
 tags: ["Diet","Preventative Care"]
 keywords: ["atherosclerosis","blood pressure","cardiovascular","diabetes","heart attack","hypertension","inflammation","potassium","stroke"]
 summary: "Dr Brad’s post on potassium deficiency and stroke risk: how low potassium raises blood pressure and stroke risk, how much potassium we need, food sources vs supplements, and the safe blood pressure target. Covers: stroke prevention, heart health, blood pressure, mineral deficiency."
+topics: ["potassium-benefits-forms-dosing-and-side-effects"]
 ---
 
 Strokes are one of the leading causes of death globally \[1\].

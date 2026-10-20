@@ -7,6 +7,7 @@ publishedAt: "2024-10-14T21:25:53Z"
 tags: ["Diet"]
 keywords: ["blood pressure","calcium","cardiovascular","cholesterol","estrogen","kidney","muscle","omega-3","osteoporosis","skin","uv","vitamin d"]
 summary: "Dr Brad's calcium post: get calcium from diet first — dairy, fatty fish, dark leafy greens, fortified foods. Supplements fine to fill gaps but exceeding RDA may raise heart disease risk. Covers osteoporosis, bone health, postmenopausal women, vegans, vitamin D absorption."
+topics: ["calcium-benefits-best-forms-dosing-and-side-effects","vitamin-d-benefits-forms-dosing-and-side-effects"]
 ---
 
 Got milk? Millions of us remember this ad campaign, originally kicked off in 1993 and still ongoing through today, albeit with gaps. The goal of the ad campaign was to promote sales of dairy products, primarily milk, for their health benefits. The most widely promoted of those benefits was the high levels of calcium present in milk.

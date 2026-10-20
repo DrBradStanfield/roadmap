@@ -8,6 +8,7 @@ tags: ["Skin Health"]
 keywords: ["aging","anti-aging","collagen","exercise","gut health","hyaluronic acid","inflammation","microbiome","muscle","oxidative stress","photoaging","resistance training","selenium","skin","sleep","spf","sunscreen","tretinoin","uv","vitamin a","vitamin b3","vitamin c","vitamin d","vitamin e","wrinkles","zinc"]
 product: "sleep"
 summary: "Dr Brad’s skincare routine post: sunscreen, tretinoin or adapalene, diet/exercise/sleep are the evidence-based core. Covers collagen peptides, hyaluronic acid, mineral sunscreen, red light therapy, laser, IPL, and Botox for wrinkles and skin aging."
+topics: ["collagen-benefits-best-forms-dosing-and-side-effects"]
 ---
 
 Here’s an evidence-based skincare routine that I use and recommend to my patients in the clinic. It starts with the fundamentals, and we’ll look at some of the latest evidence for their impact.

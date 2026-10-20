@@ -7,6 +7,7 @@ publishedAt: "2026-01-11T22:03:17Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["aging","anti-aging","exercise","lifespan","longevity","muscle","nad","nmn","skin","sleep","testosterone","tmg"]
 summary: "Dr Brad’s NMN and NAD+ supplements post: evidence does not support NMN or NR for anti-aging or longevity in humans. Covers NAD+ decline with age, failed ITP mouse study, long COVID RCT (no benefit), and why TMG may be more useful than NAD+ precursors."
+topics: ["nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"]
 ---
 
 Over the last decade, NMN and NAD+ supplements were hyped as groundbreaking tools in the quest for longevity. Boost your NAD+ levels, the story went, and you might slow aging, boost energy, and even extend your life. But new evidence has called that entire narrative into question.

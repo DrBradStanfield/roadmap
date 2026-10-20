@@ -6,10 +6,24 @@ publishedAt: "2025-05-13T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["taurine", "magnesium taurate", "cardiovascular", "heart health", "blood pressure", "hypertension", "exercise", "aging", "longevity", "lifespan", "healthspan", "anti-aging", "cholesterol", "triglycerides", "blood sugar", "diabetes", "insulin resistance", "inflammation", "brain health", "cognitive", "sleep", "muscle", "strength training", "creatine", "coq10", "glycine", "gut health", "microbiome", "obesity", "weight loss"]
-summary: "Reference on taurine: blood pressure, heart health, cholesterol, blood sugar, exercise recovery, aging. Strongest evidence in prehypertension and metabolic syndrome. Forms: powder or capsules, 1-6 g/day typical. Always discuss with your doctor."
+summary: "Reference on taurine. Brad takes it for metabolic benefits: a 2025 meta-analysis of 34 trials found lower blood sugar, blood pressure and blood fats. Levels do not fall with age. 1-3 g/day appears safe. Talk to your doctor first if you take blood-pressure medicines or have a blood cancer."
+reviewed: "2026-10-20"
+sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/taurine-supplements-review/taurine/","checked":"2026-09-29","fingerprint":"sha256:34dd95389868356b5a2aa5ef4099ab49cc3b899c2c0bc3ea66a4918f5aceacb0"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/1-394-person-study-on-taurine-proves-what-we-suspected","checked":"2026-10-20","fingerprint":"publishedAt:2026-02-12T21:13:15Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick","checked":"2026-10-20","fingerprint":"publishedAt:2025-11-20T19:11:54Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30T20:38:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/taurine-time-to-throw-it-away-two-new-studies","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-08T18:07:26Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/why-scientists-are-calling-taurine-the-youth-molecule","checked":"2026-10-20","fingerprint":"publishedAt:2025-03-25T23:52:48Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/taurine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/taurine-benefits-forms-dosing-and-side-effects)*
+
+## Current view (reviewed 20 October 2026)
+
+Brad still takes taurine, as magnesium taurate plus extra taurine, because randomized trials in people suggest it appears to have metabolic benefits; he bases that on human data, not on mouse lifespan studies, and says his taking it does not mean you should ([Brad, 12 Feb 2026](https://drstanfield.com/blogs/articles/1-394-person-study-on-taurine-proves-what-we-suspected)). A 2025 meta-analysis of 34 randomized controlled trials (1,394 people) found that taurine lowered fasting blood sugar by 5.90 mg/dL, HbA1c by 0.21%, systolic blood pressure by 4.38 mmHg and diastolic by 2.54 mmHg, and also lowered triglycerides, total and LDL cholesterol, and markers of inflammation and oxidative stress ([Brad, 12 Feb 2026](https://drstanfield.com/blogs/articles/1-394-person-study-on-taurine-proves-what-we-suspected)). A 2023 study proposed that falling taurine levels drive aging, but a later study that measured the same people, monkeys and mice over time found levels did not fall with age, which undercut that idea ([Brad, 12 Feb 2026](https://drstanfield.com/blogs/articles/1-394-person-study-on-taurine-proves-what-we-suspected)). Taurine appears to be safe at 1 to 3 g a day, and the trials in the 2024 meta-analysis used 0.5 to 6 g a day ([Brad, 12 Feb 2026](https://drstanfield.com/blogs/articles/1-394-person-study-on-taurine-proves-what-we-suspected)). Brad's current guidance cites a dose-response analysis in the 2025 meta-analysis that identified 1.5 to 3.0 g a day as optimal, and says doses of 0.5 to 6 g a day appear safe with no significant adverse effects (Brad's current guidance, 14 Oct 2026). A 2025 study identified taurine as a regulator of myeloid cancers; Brad says that from the human studies so far there are no known risks with taurine supplementation, though better data could change that ([Brad, 8 Jul 2025](https://drstanfield.com/blogs/articles/taurine-time-to-throw-it-away-two-new-studies)).
+
+## Brad's videos on this topic
+
+- 12 Feb 2026, [1,394 Person Study on Taurine Proves What We Suspected](https://drstanfield.com/blogs/articles/1-394-person-study-on-taurine-proves-what-we-suspected): a 2025 meta-analysis of 34 trials found lower blood sugar, blood pressure, blood fats and inflammation markers; Brad keeps taking taurine, which appears safe at 1 to 3 g a day, and was never swayed by the mouse lifespan debate.
+- 20 Nov 2025, [Popular Longevity Treatment Makes You Sick](https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick): IV drip clinics are best avoided; the metabolic evidence for taurine comes from oral doses, and no trials back taurine infusions.
+- 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes](https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes): Brad takes extra taurine because a meta-analysis found it lowered fasting blood sugar, blood pressure, triglycerides, LDL cholesterol, HbA1c and insulin.
+- 8 Jul 2025, [Taurine.. Time to Throw it Away? Two New Studies](https://drstanfield.com/blogs/articles/taurine-time-to-throw-it-away-two-new-studies): a new study found taurine levels do not fall with age, so taurine supplements probably will not slow aging; Brad keeps taking it for the human metabolic data and says human studies so far show no known risks from taurine supplements, though a new study tied taurine to myeloid cancers. Superseded on the trial dose range: the 2024 meta-analysis used 0.5 to 6 g a day, not 1 to 6 g.
+- 25 Mar 2025, [Why Scientists Are Calling Taurine “The Youth Molecule”](https://drstanfield.com/blogs/articles/why-scientists-are-calling-taurine-the-youth-molecule): taurine extended lifespan in worms and mice, and a 2024 meta-analysis of 25 trials found metabolic benefits; Brad takes it while waiting for human aging data. Superseded on aging: a later study found taurine levels do not fall with age. Superseded on the trial dose range (0.5 to 6 g a day).
 
 ## 1. Overview
 
@@ -17,7 +31,7 @@ Taurine is a water-soluble amino sulfonic acid [1].
 
 People make taurine from other nutrients: vitamin B6 and the amino acids methionine and cysteine. Because the body makes its own taurine, there is no dietary requirement for it [1]. Low taurine levels can still occur when the diet lacks taurine or its building blocks. This sometimes happens in people fed entirely by vein and in vegetarians, although it is not known whether low levels in vegetarians are clinically significant [1][2].
 
-Taurine levels tend to fall with age [1][3]. Animal studies linking taurine to longer lifespan drew wide news coverage in 2023, but there is currently no evidence in people that taurine supplementation increases lifespan [1].
+Cross-sectional studies, including the 2023 Singh study, suggested that taurine levels fall with age [1][3]. A later study that measured the same people, monkeys and mice over time found that levels did not fall, and may even rise [24]. Animal studies linking taurine to longer lifespan drew wide news coverage in 2023, but there is currently no evidence in people that taurine supplementation increases lifespan [1].
 
 Taurine is thought to help regulate heartbeat and maintain cell membranes. It may also affect the release of neurotransmitters. The liver also joins taurine to bile acids to form bile salts, which are needed to emulsify fats in the intestine [1].
 
@@ -59,6 +73,8 @@ Taurine supplementation may modestly lower blood pressure [1]. Trials have inclu
 
 **Updated meta-analyses (2024):** A 2024 meta-analysis of 25 randomized controlled trials involving 1,024 participants found significant reductions in blood pressure alongside improvements in other metabolic markers (Tzang et al., *Nutr Diabetes*, 2024) [6].
 
+**Meta-analysis of 34 trials (2025):** A larger 2025 meta-analysis of 34 randomized controlled trials (1,394 participants) found that systolic blood pressure fell by 4.38 mmHg and diastolic blood pressure by 2.54 mmHg [24].
+
 **Clinical significance:** The 3–7 mmHg systolic reduction observed across trials is modest [1]. Individuals with low blood pressure or those taking antihypertensive medications should use taurine with caution due to potential additive effects [1][8].
 
 ### Congestive Heart Failure
@@ -73,13 +89,15 @@ Small trials by Azuma and colleagues suggest that taurine may benefit congestive
 
 ### Lipid Metabolism and Cholesterol
 
-**Human evidence:** The 2024 meta-analysis by Tzang et al. found that taurine supplementation significantly reduced triglycerides but did not significantly change HDL cholesterol [6].
+**Human evidence:** The 2024 meta-analysis by Tzang et al. found that taurine supplementation significantly reduced triglycerides but did not significantly change HDL cholesterol [6]. The larger 2025 meta-analysis of 34 trials found lower triglycerides (−14.42 mg/dL), total cholesterol (−12.41 mg/dL) and LDL cholesterol (−5.08 mg/dL) [24].
 
 ### Diabetes and Metabolic Syndrome
 
 Supplementation may lower fasting blood glucose.
 
 **2024 meta-analysis:** The meta-analysis by Tzang et al. (*Nutr Diabetes*, 2024) of randomized controlled trials found that taurine supplementation reduced fasting blood glucose, blood pressure, and triglyceride levels, with a dose-dependent fall in fasting glucose. Doses ranged from 0.5 to 6 g/day, with follow-up periods between 5 and 365 days [6].
+
+**2025 meta-analysis:** A 2025 meta-analysis of 34 randomized controlled trials (1,394 participants) found that taurine lowered fasting blood sugar by 5.90 mg/dL and HbA1c by 0.21% [24].
 
 **Clinical context:** The metabolic benefits of taurine appear to be most pronounced in individuals already showing metabolic dysfunction (elevated blood sugar, triglycerides, or blood pressure). There is no evidence that taurine supplementation benefits metabolic parameters in healthy individuals with normal values.
 
@@ -115,11 +133,11 @@ Interest in taurine and aging grew after a 2023 paper by Singh et al. in *Scienc
 
 **Mechanisms identified:** In these animal studies, taurine reduced cellular senescence, protected against telomerase deficiency, suppressed mitochondrial dysfunction, decreased DNA damage, and attenuated inflammaging (age-related inflammation) [3].
 
-**Human healthspan markers:** While no human lifespan data exist, the 2024 meta-analysis by Tzang et al. of 25 RCTs (1,024 participants, doses 0.5–6 g/day) found that taurine supplementation improved metabolic markers in adults, including reductions in blood pressure, fasting glucose, and triglycerides. These are risk factors for cardiovascular disease and diabetes [6].
+**Human healthspan markers:** While no human lifespan data exist, the 2024 meta-analysis by Tzang et al. of 25 RCTs (1,024 participants, doses 0.5–6 g/day) found that taurine supplementation improved metabolic markers in adults, including reductions in blood pressure, fasting glucose, and triglycerides. These are risk factors for cardiovascular disease and diabetes [6]. The 2025 meta-analysis also found lower C-reactive protein and other markers of inflammation and oxidative stress [24].
 
 **DNA and cellular protection:** Laboratory research suggests taurine may help protect DNA from oxidative damage, both in isolated DNA and in human blood cells exposed to hexavalent chromium (Messina et al., *Adv Exp Med Biol*, 2000; Husain et al., *Amino Acids*, 2020) [19][20].
 
-**Limitations:** Research is needed to determine if long-term supplementation with taurine yields similar benefits in humans and is safe. The animal data are interesting, but the gap between animal lifespan extension and human evidence remains large [1][3].
+**Limitations:** Research is needed to determine if long-term supplementation with taurine yields similar benefits in humans and is safe. The animal data are interesting, but the gap between animal lifespan extension and human evidence remains large [1][3]. A later study that followed the same people, monkeys and mice over time found that taurine levels did not fall with age and did not track consistently with muscle strength or body weight, which undercut the idea that low taurine drives aging [24].
 
 ### Neurological and Cognitive Function
 
@@ -139,7 +157,7 @@ The sources for this article do not cover taurine and gut bacteria.
 
 ### Cancer and Immune Implications
 
-The sources for this article do not cover taurine and cancer or immune function.
+A 2025 study identified taurine as a regulator of myeloid cancers. In mouse models, taurine supplements accelerated myeloid leukaemia, and the authors suggest carefully weighing the benefits of supplemental taurine in people with leukaemia [26]. No harm from taurine supplements has been established in people; Brad notes that human studies so far show no known risks with supplementation [25]. The sources for this article do not cover taurine and immune function.
 
 ### Other Proposed Uses
 
@@ -291,3 +309,9 @@ Diet-associated DCM in dogs first came to light in the 1990s and may have increa
 [22] Pion PD, Kittleson MD, Rogers QR, Morris JG. "Myocardial failure in cats associated with low plasma taurine: a reversible cardiomyopathy." *Science*. 1987;237(4816):764-768. doi: [10.1126/science.3616607](https://doi.org/10.1126/science.3616607) PMID: 3616607. https://pubmed.ncbi.nlm.nih.gov/3616607/
 
 [23] Freeman LM, Stern JA, Fries R, et al. "Diet-associated dilated cardiomyopathy in dogs: what do we know?" *J Am Vet Med Assoc*. 2018;253(11):1390-1394. doi: [10.2460/javma.253.11.1390](https://doi.org/10.2460/javma.253.11.1390) PMID: 30451613. https://pubmed.ncbi.nlm.nih.gov/30451613/
+
+[24] Stanfield B. "1,394 Person Study on Taurine Proves What We Suspected." drstanfield.com, 12 Feb 2026. [https://drstanfield.com/blogs/articles/1-394-person-study-on-taurine-proves-what-we-suspected](https://drstanfield.com/blogs/articles/1-394-person-study-on-taurine-proves-what-we-suspected)
+
+[25] Stanfield B. "Taurine.. Time to Throw it Away? Two New Studies." drstanfield.com, 8 Jul 2025. [https://drstanfield.com/blogs/articles/taurine-time-to-throw-it-away-two-new-studies](https://drstanfield.com/blogs/articles/taurine-time-to-throw-it-away-two-new-studies)
+
+[26] Sharma S, Rodems BJ, Baker CD, et al. "Taurine from tumour niche drives glycolysis to promote leukaemogenesis." *Nature*. 2025;644(8075):263-272. doi: [10.1038/s41586-025-09018-7](https://doi.org/10.1038/s41586-025-09018-7) PMID: 40369079. https://pubmed.ncbi.nlm.nih.gov/40369079/

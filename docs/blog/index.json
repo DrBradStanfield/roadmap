@@ -20,7 +20,11 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/collagen-skin-evidence-2026",
     "youtube": "https://www.youtube.com/watch?v=t7O3gYNdPJM",
     "product": "microvitamin-plus",
-    "summary": "Does collagen work for skin? Hydration, elasticity, wrinkles; collagen vs protein; Grimes 2026 errors, CHAMP trial."
+    "summary": "Does collagen work for skin? Hydration, elasticity, wrinkles; collagen vs protein; Grimes 2026 errors, CHAMP trial.",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "router": "hidden"
   },
   {
     "title": "The One Number I'd Measure to Avoid a Heart Attack",
@@ -177,7 +181,11 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-k2-artery-calcification-trials",
     "youtube": "https://youtu.be/6dxE_HSpVXY",
     "product": "microvitamin",
-    "summary": "Should I take vitamin K2 for calcified arteries, coronary calcium score, MK-7 dose 90-120 mcg not 720, DANCODE, warfarin"
+    "summary": "Should I take vitamin K2 for calcified arteries, coronary calcium score, MK-7 dose 90-120 mcg not 720, DANCODE, warfarin",
+    "topics": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "router": "hidden"
   },
   {
     "title": "Our IQ Will Start Dropping Soon (new evidence)",
@@ -201,7 +209,10 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/iodine-deficiency-coming-back",
     "youtube": "https://youtu.be/CfrE9yZhYFs",
     "product": "microvitamin",
-    "summary": "Iodine deficiency, iodized salt and IQ, goitre, thyroid, pink/sea salt has no iodine, RDA 150mcg, pregnancy supplement."
+    "summary": "Iodine deficiency, iodized salt and IQ, goitre, thyroid, pink/sea salt has no iodine, RDA 150mcg, pregnancy supplement.",
+    "topics": [
+      "kelp-and-iodine-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "This Vaccine Just Changed Cancer Forever",
@@ -283,7 +294,14 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/do-multivitamins-work",
     "youtube": "https://youtu.be/lULieGSxVrU",
     "product": "microvitamin",
-    "summary": "Are multivitamins expensive urine? COSMOS memory results, AREDS2 lutein, B6 nerve damage, yellow urine, WHO guideline."
+    "summary": "Are multivitamins expensive urine? COSMOS memory results, AREDS2 lutein, B6 nerve damage, yellow urine, WHO guideline.",
+    "topics": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+      "vitamin-a-benefits-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects",
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Wrong About Inflammation & Heart Disease (new study)",
@@ -335,7 +353,10 @@
     "publishedAt": "2026-08-07T12:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/how-to-increase-bone-density",
     "youtube": "https://youtu.be/bPviC3mFAxg",
-    "summary": "How to increase bone density, calcium supplements for bones, osteoporosis exercise, hopping, heavy lifting."
+    "summary": "How to increase bone density, calcium supplements for bones, osteoporosis exercise, hopping, heavy lifting.",
+    "topics": [
+      "calcium-benefits-best-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Lose Visceral Fat Without Starving Yourself",
@@ -546,7 +567,13 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/antioxidant-supplements-dose-safety",
     "youtube": "https://www.youtube.com/watch?v=5gU4ydlgf_Y",
     "product": "microvitamin",
-    "summary": "Dr Brad's antioxidant supplements post: megadosing backfires—IV vitamin C, high-dose vitamin E and beta-carotene raised harm—but the right form and dose can help. Covers the AREDS2 lutein/zeaxanthin swap, exercise blunting, metformin, and older adults."
+    "summary": "Dr Brad's antioxidant supplements post: megadosing backfires—IV vitamin C, high-dose vitamin E and beta-carotene raised harm—but the right form and dose can help. Covers the AREDS2 lutein/zeaxanthin swap, exercise blunting, metformin, and older adults.",
+    "topics": [
+      "vitamin-c-benefits-forms-dosing-and-side-effects",
+      "vitamin-e-benefits-forms-dosing-and-side-effects",
+      "vitamin-a-benefits-forms-dosing-and-side-effects",
+      "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "The Anti-Aging Supplement Everyone Took Never Worked",
@@ -572,7 +599,10 @@
     "publishedAt": "2026-07-01T12:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/do-anti-aging-supplements-work",
     "youtube": "https://www.youtube.com/watch?v=cy5ntNFqWoM",
-    "summary": "Dr Brad's senolytic supplement post: fisetin and quercetin were never proven in humans — the rigorous NIA mouse trial and the one fisetin RCT found nothing, and a p16 antibody error means hundreds of senescence papers measured the wrong protein. Covers zombie cells, dasatinib+quercetin."
+    "summary": "Dr Brad's senolytic supplement post: fisetin and quercetin were never proven in humans — the rigorous NIA mouse trial and the one fisetin RCT found nothing, and a p16 antibody error means hundreds of senescence papers measured the wrong protein. Covers zombie cells, dasatinib+quercetin.",
+    "topics": [
+      "quercetin-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Does Vitamin K2 Actually Protect Your Heart? (New Trial)",
@@ -599,7 +629,11 @@
     "publishedAt": "2026-06-29T12:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-k2-coronary-calcium",
     "youtube": "https://www.youtube.com/watch?v=jtvFe_cibS8",
-    "summary": "Dr Brad's vitamin K2 post: a new trial shows K2 modestly slows coronary artery calcification, but no trial shows fewer heart attacks and plaque-stability effects are unknown — so it's not a proven heart protector. Covers MK-7, 90 mcg dosing, warfarin, and supplement quality."
+    "summary": "Dr Brad's vitamin K2 post: a new trial shows K2 modestly slows coronary artery calcification, but no trial shows fewer heart attacks and plaque-stability effects are unknown — so it's not a proven heart protector. Covers MK-7, 90 mcg dosing, warfarin, and supplement quality.",
+    "topics": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "router": "hidden"
   },
   {
     "title": "$12 Product Beats Every Anti-Aging Cream",
@@ -814,7 +848,11 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/omega-3-brain-study-evidence",
     "youtube": "https://www.youtube.com/watch?v=gAjyBJl1OF8",
     "product": "microvitamin",
-    "summary": "Dr Brad's omega-3 post: a new ADNI study found faster cognitive decline in omega-3 users, but it didn't measure oxidation (the bottle) or B-vitamin status (the co-factor). Brad still takes omega-3 with B-vitamins and TMG. Covers VITACOG, DHA peroxidation, Albert NZ fish oil, ADNI biomarkers."
+    "summary": "Dr Brad's omega-3 post: a new ADNI study found faster cognitive decline in omega-3 users, but it didn't measure oxidation (the bottle) or B-vitamin status (the co-factor). Brad still takes omega-3 with B-vitamins and TMG. Covers VITACOG, DHA peroxidation, Albert NZ fish oil, ADNI biomarkers.",
+    "topics": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "The Truth About Seed Oil Toxicity",
@@ -1030,7 +1068,11 @@
     "publishedAt": "2026-04-16T12:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/cold-remedies-zinc-honey-saline",
     "youtube": "https://www.youtube.com/watch?v=Pi7syWem5CM",
-    "summary": "Dr Brad's cold remedies post: zinc lozenges, hypertonic saline rinse, and honey outperform most OTC cold medicines. Zinc acetate/gluconate >75mg/day shortens colds ~33%; saline cuts duration ~2 days; honey eases cough."
+    "summary": "Dr Brad's cold remedies post: zinc lozenges, hypertonic saline rinse, and honey outperform most OTC cold medicines. Zinc acetate/gluconate >75mg/day shortens colds ~33%; saline cuts duration ~2 days; honey eases cough.",
+    "topics": [
+      "zinc-benefits-forms-dosing-and-side-effects",
+      "manuka-honey-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "New Study Says I Was Wrong About NMN and NR?",
@@ -1056,7 +1098,10 @@
     "publishedAt": "2026-04-09T12:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/nmn-nr-nad-supplement-evidence",
     "youtube": "https://www.youtube.com/watch?v=XB6B_XjQMa8",
-    "summary": "Dr Brad's NMN and NR post: gut bacteria break both down into cheap nicotinic acid before NAD is rebuilt, making premium NAD supplements no better than basic niacin. Covers meta-analyses showing no muscle, metabolic, or cognitive benefit; exercise as the evidence-based approach to NAD."
+    "summary": "Dr Brad's NMN and NR post: gut bacteria break both down into cheap nicotinic acid before NAD is rebuilt, making premium NAD supplements no better than basic niacin. Covers meta-analyses showing no muscle, metabolic, or cognitive benefit; exercise as the evidence-based approach to NAD.",
+    "topics": [
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ]
   },
   {
     "title": "The Anti-Aging Supplement Scam (New Evidence)",
@@ -1080,7 +1125,12 @@
     "publishedAt": "2026-04-09T12:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/anti-aging-supplement-scam-itp",
     "youtube": "https://www.youtube.com/watch?v=Y28TiY5muIo",
-    "summary": "Dr Brad's anti-aging supplement skepticism post: most longevity supplements (AKG, resveratrol, NR, fish oil, astaxanthin) failed to extend lifespan in the ITP's 2026 results. Only prescription drugs (rapamycin, acarbose, canagliflozin) have shown reproducible lifespan extension."
+    "summary": "Dr Brad's anti-aging supplement skepticism post: most longevity supplements (AKG, resveratrol, NR, fish oil, astaxanthin) failed to extend lifespan in the ITP's 2026 results. Only prescription drugs (rapamycin, acarbose, canagliflozin) have shown reproducible lifespan extension.",
+    "topics": [
+      "resveratrol-benefits-forms-dosing-and-side-effects",
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+      "astaxanthin-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "I Got a Full-Body MRI. Here's Why You Shouldn't.",
@@ -1125,7 +1175,10 @@
     "publishedAt": "2026-04-01T19:38:46Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/sodium-blood-pressure-research",
     "youtube": "https://www.youtube.com/watch?v=8gnJTNUQehs",
-    "summary": "Dr Brad's salt post: lower sodium reduces blood pressure and stroke risk for most people; the J-curve claim doesn't hold in umbrella review evidence. Covers hypertension, potassium intake, salt substitutes, and sodium sensitivity variation."
+    "summary": "Dr Brad's salt post: lower sodium reduces blood pressure and stroke risk for most people; the J-curve claim doesn't hold in umbrella review evidence. Covers hypertension, potassium intake, salt substitutes, and sodium sensitivity variation.",
+    "topics": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Best Diet Confirmed by 5,248,916 Person-Year Study",
@@ -1197,7 +1250,13 @@
     "publishedAt": "2026-03-18T06:11:43Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/nitric-oxide-arugula-vs-supplements",
     "youtube": "https://www.youtube.com/watch?v=RAPNAdxtyuE",
-    "summary": "Dr Brad's nitric oxide post: arugula beats beetroot and supplements as a nitrate source — ~63g salad hits the 300mg nitrate threshold. Covers L-arginine, L-citrulline, beetroot juice, tadalafil, blood pressure, exercise performance, oxalate risk."
+    "summary": "Dr Brad's nitric oxide post: arugula beats beetroot and supplements as a nitrate source — ~63g salad hits the 300mg nitrate threshold. Covers L-arginine, L-citrulline, beetroot juice, tadalafil, blood pressure, exercise performance, oxalate risk.",
+    "topics": [
+      "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+      "beetroot-benefits-forms-dosing-and-side-effects",
+      "arginine-benefits-forms-dosing-and-side-effects",
+      "l-citrulline-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Surprising Heart Results from This Huge Melatonin Study",
@@ -1227,7 +1286,10 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/melatonin-heart-health-evidence",
     "youtube": "https://www.youtube.com/watch?v=k6OWC6f1Jtk",
     "product": "sleep",
-    "summary": "Dr Brad's melatonin heart health post: a flawed observational study raised alarm but a 63-RCT meta-analysis shows melatonin reduces blood pressure, LDL, and inflammation. Covers sleep, heart disease, dosing (0.3-1mg), timing, and product quality."
+    "summary": "Dr Brad's melatonin heart health post: a flawed observational study raised alarm but a 63-RCT meta-analysis shows melatonin reduces blood pressure, LDL, and inflammation. Covers sleep, heart disease, dosing (0.3-1mg), timing, and product quality.",
+    "topics": [
+      "melatonin-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "More Exercise, More Plaque?",
@@ -1352,7 +1414,13 @@
     "publishedAt": "2026-02-25T02:32:08Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/nitric-oxide-supplements-evidence",
     "youtube": "https://www.youtube.com/watch?v=cIrRyu5_thc",
-    "summary": "Dr Brad’s nitric oxide post: L-arginine and L-citrulline don’t reliably improve performance; beetroot nitrate at 380mg+/day reduces blood pressure. DoNotAge Nitralis is underdosed with a fraudulent trial. Recommends nitrate-rich foods or quality beetroot juice."
+    "summary": "Dr Brad’s nitric oxide post: L-arginine and L-citrulline don’t reliably improve performance; beetroot nitrate at 380mg+/day reduces blood pressure. DoNotAge Nitralis is underdosed with a fraudulent trial. Recommends nitrate-rich foods or quality beetroot juice.",
+    "topics": [
+      "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+      "beetroot-benefits-forms-dosing-and-side-effects",
+      "arginine-benefits-forms-dosing-and-side-effects",
+      "l-citrulline-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "The Truth About Saturated Fat and Heart Disease",
@@ -1443,7 +1511,11 @@
     "publishedAt": "2026-02-12T21:13:15Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/taurine-rct-meta-analysis-1394-people",
     "youtube": "https://www.youtube.com/watch?v=RGfmGu08MQ4",
-    "summary": "Dr Brad's taurine post: continues recommending taurine based on RCT meta-analyses showing benefits for blood pressure, blood sugar, cholesterol, and inflammation. Covers 1–3g dose, magnesium taurate form, dementia risk, diabetes, cardiovascular health."
+    "summary": "Dr Brad's taurine post: continues recommending taurine based on RCT meta-analyses showing benefits for blood pressure, blood sugar, cholesterol, and inflammation. Covers 1–3g dose, magnesium taurate form, dementia risk, diabetes, cardiovascular health.",
+    "topics": [
+      "taurine-benefits-forms-dosing-and-side-effects"
+    ],
+    "router": "hidden"
   },
   {
     "title": "Almost All Turmeric (Curcumin) Brands Are a Scam",
@@ -1473,7 +1545,10 @@
     "publishedAt": "2026-02-09T23:57:17Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/turmeric-curcumin-supplement-guide",
     "youtube": "https://www.youtube.com/watch?v=vU1fCn0W6Uc",
-    "summary": "Dr Brad’s turmeric curcumin post: most supplements are mislabeled or ineffective; curcumin may help knee arthritis, ulcerative colitis, and prediabetes but needs 95% standardized extract and NovaSOL enhancer. Avoid piperine-only products."
+    "summary": "Dr Brad’s turmeric curcumin post: most supplements are mislabeled or ineffective; curcumin may help knee arthritis, ulcerative colitis, and prediabetes but needs 95% standardized extract and NovaSOL enhancer. Avoid piperine-only products.",
+    "topics": [
+      "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Coronary Heart Disease is Almost ELIMINATED",
@@ -1541,7 +1616,14 @@
     "publishedAt": "2026-02-03T00:32:28Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/antioxidants-aging-research",
     "youtube": "https://www.youtube.com/watch?v=kpn4NvWJaz4",
-    "summary": "Dr Brad’s antioxidant post: in adults over 45, antioxidants combined with exercise improve muscle strength and physical function; GlyNAC preferred over Vitamin A or E. Covers oxidative stress, glutathione, aging, muscle, exercise adaptation."
+    "summary": "Dr Brad’s antioxidant post: in adults over 45, antioxidants combined with exercise improve muscle strength and physical function; GlyNAC preferred over Vitamin A or E. Covers oxidative stress, glutathione, aging, muscle, exercise adaptation.",
+    "topics": [
+      "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+      "glycine-benefits-forms-dosing-and-side-effects",
+      "glutathione-benefits-forms-dosing-and-side-effects",
+      "vitamin-e-benefits-forms-dosing-and-side-effects",
+      "vitamin-a-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Doctors Needed to Do a Fast U-Turn on Peanut Allergies",
@@ -1727,7 +1809,10 @@
     "publishedAt": "2026-01-11T22:03:17Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/nmn-nad-human-evidence",
     "youtube": "https://www.youtube.com/watch?v=lt8Z0fNukBw",
-    "summary": "Dr Brad’s NMN and NAD+ supplements post: evidence does not support NMN or NR for anti-aging or longevity in humans. Covers NAD+ decline with age, failed ITP mouse study, long COVID RCT (no benefit), and why TMG may be more useful than NAD+ precursors."
+    "summary": "Dr Brad’s NMN and NAD+ supplements post: evidence does not support NMN or NR for anti-aging or longevity in humans. Covers NAD+ decline with age, failed ITP mouse study, long COVID RCT (no benefit), and why TMG may be more useful than NAD+ precursors.",
+    "topics": [
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ]
   },
   {
     "title": "The EXACT Moment I Stopped Fearing Dementia",
@@ -1869,7 +1954,8 @@
     "publishedAt": "2025-12-15T01:17:08Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-k2-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on vitamin K: bone health, cardiovascular health, nocturnal leg cramps. Older adults, postmenopausal women. Forms K1, K2 MK-7 (90-375 mcg/day), K2 MK-4 (45 mg pharmacological). Avoid if on warfarin without medical supervision. Always discuss with your doctor."
+    "summary": "Reference on vitamin K. Brad's view: high-dose K2 (360-720 mcg MK-7) slowed coronary calcium in trials, but no trial shows fewer heart attacks. Aim for the 90-120 mcg adequate intake; avoid megadoses. 180 mcg slowed bone density loss; fractures unproven. Warfarin: extreme caution.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Exercise Snacks Are a Longevity Cheat Code",
@@ -1915,7 +2001,10 @@
     "publishedAt": "2025-12-10T00:17:45Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/omega-3-fish-oil-heart-health",
     "youtube": "https://www.youtube.com/watch?v=H8zUZOIZ7oY",
-    "summary": "Dr Brad's omega-3 post: fish oil likely protects heart health but dose matters. 4g/day cut major cardiovascular events by 43% in dialysis patients; Brad takes 1g/day to avoid atrial fibrillation risk seen at higher doses. Covers EPA, DHA, heart attack, stroke, kidney failure, and the major CV trials — VITAL (28% MI reduction at 1g/day), STRENGTH (null at 4g/day), and REDUCE-IT (Vascepa / icosapent ethyl) framing."
+    "summary": "Dr Brad's omega-3 post: fish oil likely protects heart health but dose matters. 4g/day cut major cardiovascular events by 43% in dialysis patients; Brad takes 1g/day to avoid atrial fibrillation risk seen at higher doses. Covers EPA, DHA, heart attack, stroke, kidney failure, and the major CV trials — VITAL (28% MI reduction at 1g/day), STRENGTH (null at 4g/day), and REDUCE-IT (Vascepa / icosapent ethyl) framing.",
+    "topics": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "This Vitamin D Study Forced Me to Change My View",
@@ -1940,7 +2029,10 @@
     "publishedAt": "2025-12-03T16:41:41Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d-heart-health-target-d-trial",
     "youtube": "https://www.youtube.com/watch?v=d44hcq-JLCI",
-    "summary": "Dr Brad's vitamin D post: TARGET-D trial found 52% fewer recurrent heart attacks with treat-to-target dosing post-MI, but was unblinded. Brad now offers vitamin D testing as option to post-MI patients. Covers cardiovascular risk and deficiency."
+    "summary": "Dr Brad's vitamin D post: TARGET-D trial found 52% fewer recurrent heart attacks with treat-to-target dosing post-MI, but was unblinded. Brad now offers vitamin D testing as option to post-MI patients. Covers cardiovascular risk and deficiency.",
+    "topics": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Blood Pressure Targets Just Changed",
@@ -2018,7 +2110,10 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/melatonin-heart-failure-risk",
     "youtube": "https://www.youtube.com/watch?v=L_WgUlPNYHo",
     "product": "sleep",
-    "summary": "Dr Brad’s melatonin post: the 89% heart failure headline is misleading — the observational study has major flaws and RCT data suggests melatonin may benefit heart health. Covers insomnia, sleep aid safety, dosage (0.3mg vs high-dose), circadian rhythm."
+    "summary": "Dr Brad’s melatonin post: the 89% heart failure headline is misleading — the observational study has major flaws and RCT data suggests melatonin may benefit heart health. Covers insomnia, sleep aid safety, dosage (0.3mg vs high-dose), circadian rhythm.",
+    "topics": [
+      "melatonin-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Popular Longevity Treatment Makes You Sick",
@@ -2052,7 +2147,12 @@
     "publishedAt": "2025-11-20T19:11:54Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/iv-therapy-risks-evidence",
     "youtube": "https://www.youtube.com/watch?v=tLG6qWWPEsI",
-    "summary": "Dr Brad’s IV therapy post: advises avoiding IV drip clinics — benefits unproven, real risks include infection, kidney failure and inflammation, oral supplements preferred. Covers NAD+ IV, vitamin C infusion, taurine, anti-aging claims."
+    "summary": "Dr Brad’s IV therapy post: advises avoiding IV drip clinics — benefits unproven, real risks include infection, kidney failure and inflammation, oral supplements preferred. Covers NAD+ IV, vitamin C infusion, taurine, anti-aging claims.",
+    "topics": [
+      "taurine-benefits-forms-dosing-and-side-effects",
+      "vitamin-c-benefits-forms-dosing-and-side-effects",
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Vitamin A: Benefits, Forms, Dosing, and Side Effects",
@@ -2201,7 +2301,10 @@
     "publishedAt": "2025-11-04T20:37:47Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/lead-in-protein-powders",
     "youtube": "https://www.youtube.com/watch?v=6zkAApqtrYQ",
-    "summary": "Dr Brad’s protein powder lead post: Consumer Reports’ threshold is 17x stricter than the FDA’s, and typical daily dietary lead exposure already matches the worst-tested powder. Plant-based powders have higher lead; pea protein is Brad’s choice."
+    "summary": "Dr Brad’s protein powder lead post: Consumer Reports’ threshold is 17x stricter than the FDA’s, and typical daily dietary lead exposure already matches the worst-tested powder. Plant-based powders have higher lead; pea protein is Brad’s choice.",
+    "topics": [
+      "protein-powders-benefits-types-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Fatty Liver Treatment BREAKTHROUGH",
@@ -2383,7 +2486,10 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d-telomeres-vital-study",
     "youtube": "https://www.youtube.com/watch?v=3qtUBN3b6sA",
     "product": "microvitamin",
-    "summary": "Dr Brad’s vitamin D post: the telomere study headline is overblown — 140 base pairs is within measurement error and didn’t improve heart attack or cancer outcomes in VITAL. Covers vitamin D dose (600-1000 IU), routine blood testing, bone density risk at high doses, telomere aging."
+    "summary": "Dr Brad’s vitamin D post: the telomere study headline is overblown — 140 base pairs is within measurement error and didn’t improve heart attack or cancer outcomes in VITAL. Covers vitamin D dose (600-1000 IU), routine blood testing, bone density risk at high doses, telomere aging.",
+    "topics": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Ashwagandha Supplement Fails in New Study!",
@@ -2402,7 +2508,11 @@
     "publishedAt": "2025-10-15T20:07:54Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/ashwagandha-research-evidence",
     "youtube": "https://www.youtube.com/watch?v=3Vp3i4bS8VU",
-    "summary": "Dr Brad’s ashwagandha post: no evidence for exercise performance; may help stress and anxiety. Covers 600mg/day RCT, VO2max, cortisol, HPA axis, creatine as alternative for muscle and cognitive performance in men, women, and older adults."
+    "summary": "Dr Brad’s ashwagandha post: no evidence for exercise performance; may help stress and anxiety. Covers 600mg/day RCT, VO2max, cortisol, HPA axis, creatine as alternative for muscle and cognitive performance in men, women, and older adults.",
+    "topics": [
+      "ashwagandha-benefits-forms-dosing-and-side-effects",
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Spirulina “Significantly Improves Weight” in New Study",
@@ -2432,7 +2542,10 @@
     "publishedAt": "2025-10-15T01:14:52Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/spirulina-evidence-review",
     "youtube": "https://www.youtube.com/watch?v=Xcha7yqRglo",
-    "summary": "Dr Brad’s spirulina post: modest benefits for weight, LDL, and blood pressure in overweight adults, but evidence quality is low and effects are smaller than DASH diet or fiber supplements. Covers dosing 2-3g/day, cholesterol, triglycerides, hypertension, obesity."
+    "summary": "Dr Brad’s spirulina post: modest benefits for weight, LDL, and blood pressure in overweight adults, but evidence quality is low and effects are smaller than DASH diet or fiber supplements. Covers dosing 2-3g/day, cholesterol, triglycerides, hypertension, obesity.",
+    "topics": [
+      "greens-powders-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "5 Supplements That ACTUALLY Work",
@@ -2490,7 +2603,18 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/supplements-strongest-evidence",
     "youtube": "https://www.youtube.com/watch?v=HQeIhuROnpM",
     "product": "microvitamin",
-    "summary": "Dr Brad's top 5 supplement picks for healthy aging: psyllium husk (fibre, LDL, blood sugar), multivitamin/mineral (cognition, magnesium), omega-3 ~1g/day (heart, brain), creatine (muscle, memory in older adults), TMG (homocysteine, Alzheimer's risk). Bonus: melatonin 0.8mg sustained-release."
+    "summary": "Dr Brad's top 5 supplement picks for healthy aging: psyllium husk (fibre, LDL, blood sugar), multivitamin/mineral (cognition, magnesium), omega-3 ~1g/day (heart, brain), creatine (muscle, memory in older adults), TMG (homocysteine, Alzheimer's risk). Bonus: melatonin 0.8mg sustained-release.",
+    "topics": [
+      "psyllium-benefits-forms-dosing-and-side-effects",
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+      "creatine-benefits-best-forms-dosing-and-side-effects",
+      "melatonin-benefits-forms-dosing-and-side-effects",
+      "magnesium-benefits-best-forms-dosing",
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "vitamin-k-benefits-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "SAMe: Benefits, Forms, Dosing, and Side Effects",
@@ -2553,7 +2677,11 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-bisglycinate-sleep",
     "youtube": "https://www.youtube.com/watch?v=v6paAVTSevY",
     "product": "sleep",
-    "summary": "Dr Brad’s magnesium bisglycinate post: supports sleep quality and recommends it as part of a broader sleep strategy. Covers 250mg elemental dose, insomnia severity index results, magnesium deficiency, and glycine synergy for poor sleep."
+    "summary": "Dr Brad’s magnesium bisglycinate post: supports sleep quality and recommends it as part of a broader sleep strategy. Covers 250mg elemental dose, insomnia severity index results, magnesium deficiency, and glycine synergy for poor sleep.",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "router": "hidden"
   },
   {
     "title": "The Protein Obsession Is Going Horribly Wrong",
@@ -2770,7 +2898,10 @@
     "publishedAt": "2025-09-09T00:29:58Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/low-dose-lithium-cognitive-health-research",
     "youtube": "https://www.youtube.com/watch?v=h0b3EfuKaYQ",
-    "summary": "“Dr Brad’s low-dose lithium post: cautiously interested but not yet recommending supplements. Lithium orotate may prevent Alzheimer’s plaque buildup; lithium carbonate likely ineffective. Covers dementia, cognitive decline, brain aging in adults.”"
+    "summary": "“Dr Brad’s low-dose lithium post: cautiously interested but not yet recommending supplements. Lithium orotate may prevent Alzheimer’s plaque buildup; lithium carbonate likely ineffective. Covers dementia, cognitive decline, brain aging in adults.”",
+    "topics": [
+      "lithium-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "An Evidence-Based Anti-Aging Skincare Routine",
@@ -2811,7 +2942,10 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/skincare-routine-evidence-based",
     "youtube": "https://www.youtube.com/watch?v=PvzE-1f5dW4",
     "product": "sleep",
-    "summary": "Dr Brad’s skincare routine post: sunscreen, tretinoin or adapalene, diet/exercise/sleep are the evidence-based core. Covers collagen peptides, hyaluronic acid, mineral sunscreen, red light therapy, laser, IPL, and Botox for wrinkles and skin aging."
+    "summary": "Dr Brad’s skincare routine post: sunscreen, tretinoin or adapalene, diet/exercise/sleep are the evidence-based core. Covers collagen peptides, hyaluronic acid, mineral sunscreen, red light therapy, laser, IPL, and Botox for wrinkles and skin aging.",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "\\\"Current Evidence Does NOT Support Zone 2 Training\\\"",
@@ -2852,7 +2986,10 @@
     "publishedAt": "2025-08-28T23:51:02Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/potassium-deficiency-stroke-risk",
     "youtube": "https://www.youtube.com/watch?v=lb5FleSDefo",
-    "summary": "Dr Brad’s post on potassium deficiency and stroke risk: how low potassium raises blood pressure and stroke risk, how much potassium we need, food sources vs supplements, and the safe blood pressure target. Covers: stroke prevention, heart health, blood pressure, mineral deficiency."
+    "summary": "Dr Brad’s post on potassium deficiency and stroke risk: how low potassium raises blood pressure and stroke risk, how much potassium we need, food sources vs supplements, and the safe blood pressure target. Covers: stroke prevention, heart health, blood pressure, mineral deficiency.",
+    "topics": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "\\\"No Evidence to Support the Use of Collagen Supplements\\\"",
@@ -2873,7 +3010,11 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/collagen-supplements-evidence-critique",
     "youtube": "https://www.youtube.com/watch?v=U8uPzDdG77c",
     "product": "microvitamin-plus",
-    "summary": "“Dr Brad's collagen peptides post: evidence likely supports benefits for skin hydration, elasticity, and wrinkles despite a 2025 meta-analysis claiming otherwise. Covers statistical pooling flaws, industry bias concerns, mechanism via fibroblasts, and Brad's personal decision to continue taking collagen.”"
+    "summary": "“Dr Brad's collagen peptides post: evidence likely supports benefits for skin hydration, elasticity, and wrinkles despite a 2025 meta-analysis claiming otherwise. Covers statistical pooling flaws, industry bias concerns, mechanism via fibroblasts, and Brad's personal decision to continue taking collagen.”",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "router": "hidden"
   },
   {
     "title": "Glycine was Accidentally Found To Improve Our Sleep",
@@ -2903,7 +3044,12 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/glycine-sleep-quality",
     "youtube": "https://www.youtube.com/watch?v=YHaqsps24tk",
     "product": "sleep",
-    "summary": "Dr Brad's glycine post: 3g glycine before bed improves sleep quality and reduces next-day fatigue without disrupting sleep architecture. Covers dosage, melatonin 0.8mg sustained-release, magnesium, morning light, and exercise for sleep."
+    "summary": "Dr Brad's glycine post: 3g glycine before bed improves sleep quality and reduces next-day fatigue without disrupting sleep architecture. Covers dosage, melatonin 0.8mg sustained-release, magnesium, morning light, and exercise for sleep.",
+    "topics": [
+      "glycine-benefits-forms-dosing-and-side-effects",
+      "melatonin-benefits-forms-dosing-and-side-effects",
+      "magnesium-benefits-best-forms-dosing"
+    ]
   },
   {
     "title": "Harvard Says THIS Is the Healthiest Way to Eat",
@@ -3036,7 +3182,23 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/evidence-based-supplement-stack",
     "youtube": "https://www.youtube.com/watch?v=iuWUL0_t5B0",
     "product": "microvitamin-plus",
-    "summary": "Dr Brad’s supplement stack post: he takes only omega-3 (~1g), MicroVitamin multivitamin, and a sleep supplement (melatonin 0.8mg sustained-release, magnesium glycinate, glycine). Covers dementia risk, atrial fibrillation, B vitamin-omega-3 synergy, vitamin D dosing, creatine, collagen, psyllium, taurine."
+    "summary": "Dr Brad’s supplement stack post: he takes only omega-3 (~1g), MicroVitamin multivitamin, and a sleep supplement (melatonin 0.8mg sustained-release, magnesium glycinate, glycine). Covers dementia risk, atrial fibrillation, B vitamin-omega-3 synergy, vitamin D dosing, creatine, collagen, psyllium, taurine.",
+    "topics": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects",
+      "melatonin-benefits-forms-dosing-and-side-effects",
+      "magnesium-benefits-best-forms-dosing",
+      "vitamin-e-benefits-forms-dosing-and-side-effects",
+      "vitamin-a-benefits-forms-dosing-and-side-effects",
+      "glycine-benefits-forms-dosing-and-side-effects",
+      "collagen-benefits-best-forms-dosing-and-side-effects",
+      "creatine-benefits-best-forms-dosing-and-side-effects",
+      "psyllium-benefits-forms-dosing-and-side-effects",
+      "taurine-benefits-forms-dosing-and-side-effects",
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "The “Longevity” Craze is Actually Making You Sicker",
@@ -3261,7 +3423,11 @@
     "publishedAt": "2025-07-08T18:07:26Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/taurine-supplements-aging",
     "youtube": "https://www.youtube.com/watch?v=Onkl2RDBP8c",
-    "summary": "Dr Brad’s taurine post: taurine likely does not decline with age, undermining the 2023 lifespan theory, but Brad continues taking it for metabolic benefits. Covers blood sugar, blood pressure, cholesterol, HbA1c, triglycerides, cancer safety concern, aging, supplements."
+    "summary": "Dr Brad’s taurine post: taurine likely does not decline with age, undermining the 2023 lifespan theory, but Brad continues taking it for metabolic benefits. Covers blood sugar, blood pressure, cholesterol, HbA1c, triglycerides, cancer safety concern, aging, supplements.",
+    "topics": [
+      "taurine-benefits-forms-dosing-and-side-effects"
+    ],
+    "router": "hidden"
   },
   {
     "title": "Do This Daily to STOP Bone Loss After 40",
@@ -3293,7 +3459,13 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/bone-loss-after-40",
     "youtube": "https://www.youtube.com/watch?v=EbDxVr9-MYo",
     "product": "microvitamin",
-    "summary": "Dr Brad’s bone loss post: resistance and impact exercise are the primary tools to prevent osteoporosis after 40; D3, K2, and magnesium support bone health; calcium supplements have mixed evidence. Covers DEXA screening, fracture risk, postmenopausal bone loss, bisphosphonates."
+    "summary": "Dr Brad’s bone loss post: resistance and impact exercise are the primary tools to prevent osteoporosis after 40; D3, K2, and magnesium support bone health; calcium supplements have mixed evidence. Covers DEXA screening, fracture risk, postmenopausal bone loss, bisphosphonates.",
+    "topics": [
+      "calcium-benefits-best-forms-dosing-and-side-effects",
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "vitamin-k-benefits-forms-dosing-and-side-effects",
+      "magnesium-benefits-best-forms-dosing"
+    ]
   },
   {
     "title": "What is the Best Magnesium Dose & Form? (14 Studies Later)",
@@ -3326,7 +3498,11 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-dose-forms-guide",
     "youtube": "https://www.youtube.com/watch?v=oL6CtBcfcDo",
     "product": "microvitamin",
-    "summary": "Dr Brad’s magnesium post: favor glycinate or taurate forms; avoid oxide (poorly absorbed). Blood tests miss deficiency. RDA 420mg men/320mg women; 126mg supplement tops up diet. Best RCT evidence is for sleep in older adults."
+    "summary": "Dr Brad’s magnesium post: favor glycinate or taurate forms; avoid oxide (poorly absorbed). Blood tests miss deficiency. RDA 420mg men/320mg women; 126mg supplement tops up diet. Best RCT evidence is for sleep in older adults.",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "router": "hidden"
   },
   {
     "title": "Do This Now to Lower Your Heart Disease Risk by 21%",
@@ -3415,7 +3591,10 @@
     "publishedAt": "2025-06-14T00:01:42Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d-dosing-immune-health-evidence-review",
     "youtube": "https://www.youtube.com/watch?v=WgA4Tow7cGo",
-    "summary": "Dr Brad’s vitamin D post: 1,000 IU/day cut sick days 17% and fever-days 43% in children during winter when baseline levels were adequate. Covers immune function, 2024 Endocrine Society dose guidelines (600-800 IU adults), risks of high-dose supplementation, and MicroVitamin D reduction rationale."
+    "summary": "Dr Brad’s vitamin D post: 1,000 IU/day cut sick days 17% and fever-days 43% in children during winter when baseline levels were adequate. Covers immune function, 2024 Endocrine Society dose guidelines (600-800 IU adults), risks of high-dose supplementation, and MicroVitamin D reduction rationale.",
+    "topics": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "The Food Pyramid's Replacement is a HUGE Upgrade",
@@ -3480,7 +3659,10 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/collagen-peptides-skin-evidence",
     "youtube": "https://www.youtube.com/watch?v=Ueb3lUhaT2o",
     "product": "microvitamin-plus",
-    "summary": "Dr Brad's collagen peptides post: bovine collagen reduced eye wrinkles 25% and improved hydration 26% in 8 weeks; collagen source matters less than processing. Covers collagen vs protein, hyaluronic acid, sunscreen for skin aging."
+    "summary": "Dr Brad's collagen peptides post: bovine collagen reduced eye wrinkles 25% and improved hydration 26% in 8 weeks; collagen source matters less than processing. Covers collagen vs protein, hyaluronic acid, sunscreen for skin aging.",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Aloe Vera: Benefits, Forms, Dosing, and Side Effects",
@@ -3638,7 +3820,10 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/glycine-sleep-benefits",
     "youtube": "https://www.youtube.com/watch?v=elK5Nq8oT3c",
     "product": "sleep",
-    "summary": "Dr Brad’s glycine post: he takes 3g/day for sleep quality (falls asleep faster, less groggy) with a strong safety profile. Covers metabolic health, blood sugar, inflammation, heart attack risk, longevity in mice, and brain function."
+    "summary": "Dr Brad’s glycine post: he takes 3g/day for sleep quality (falls asleep faster, less groggy) with a strong safety profile. Covers metabolic health, blood sugar, inflammation, heart attack risk, longevity in mice, and brain function.",
+    "topics": [
+      "glycine-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Ezetimibe is the Most Underrated Weapon Against Heart Disease",
@@ -4010,7 +4195,14 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/supplements-that-damage-blood-vessels",
     "youtube": "https://www.youtube.com/watch?v=INeQLAdDkEE",
     "product": "microvitamin",
-    "summary": "Dr Brad’s harmful supplements post: calcium raises heart attack risk via artery calcification; iron, vitamin E, vitamin A, and resveratrol lack proven benefit and may harm. Covers blood vessel health, osteoporosis, antioxidants, longevity."
+    "summary": "Dr Brad’s harmful supplements post: calcium raises heart attack risk via artery calcification; iron, vitamin E, vitamin A, and resveratrol lack proven benefit and may harm. Covers blood vessel health, osteoporosis, antioxidants, longevity.",
+    "topics": [
+      "calcium-benefits-best-forms-dosing-and-side-effects",
+      "iron-benefits-forms-dosing-and-side-effects",
+      "vitamin-e-benefits-forms-dosing-and-side-effects",
+      "vitamin-a-benefits-forms-dosing-and-side-effects",
+      "resveratrol-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "These TINY Changes Massively Upgrade Your Sleep Quality",
@@ -4202,7 +4394,8 @@
     "publishedAt": "2025-05-13T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/taurine-supplement-guide-evidence-dosing-forms",
     "type": "reference",
-    "summary": "Reference on taurine: blood pressure, heart health, cholesterol, blood sugar, exercise recovery, aging. Strongest evidence in prehypertension and metabolic syndrome. Forms: powder or capsules, 1-6 g/day typical. Always discuss with your doctor."
+    "summary": "Reference on taurine. Brad takes it for metabolic benefits: a 2025 meta-analysis of 34 trials found lower blood sugar, blood pressure and blood fats. Levels do not fall with age. 1-3 g/day appears safe. Talk to your doctor first if you take blood-pressure medicines or have a blood cancer.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Amla (Indian Gooseberry): Benefits, Forms, Dosing, and Side Effects",
@@ -4652,7 +4845,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/creatine-supplementation-evidence-based-guide-benefits-forms-dosage-safety",
     "type": "reference",
-    "summary": "Reference on creatine: muscle strength, muscle size, sarcopenia, cognitive function under sleep deprivation. Benefits older adults, athletes, and vegetarians. Best form: creatine monohydrate 3-5 g/day. Always discuss with your doctor."
+    "summary": "Reference on creatine. Brad's view: worth considering for body and brain. With resistance training it raises strength and lean mass in older adults; meta-analyses found memory gains, notably in women. Take 5 g/day of monohydrate, no loading. Not advised with severe kidney problems.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "DHEA: Benefits, Forms, Dosing, and Side Effects",
@@ -5810,7 +6004,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/collagen-peptides-benefits-forms-dosing-and-side-effects",
     "type": "reference",
-    "summary": "Reference on collagen peptides: skin aging and wrinkle reduction, joint pain and mobility, muscle recovery, hydrolysed vs gelatin forms, dosing (10–15g/day), and evidence quality. Covers who benefits — skin health, joint issues, older adults. Always discuss with your doctor."
+    "summary": "Reference on collagen peptides. A 2026 meta-analysis found they may improve skin hydration and elasticity, but not wrinkles; trials used 0.5 to 10 g a day. Covers forms, joint, bone, muscle and wound evidence, safety, and Brad's current view. Always discuss with your doctor.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Cranberry: Benefits, Best Forms, Dosing, and Side Effects",
@@ -6255,7 +6450,10 @@
     "publishedAt": "2025-04-28T17:51:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/berberine-evidence-review",
     "youtube": "https://www.youtube.com/watch?v=WAo-f0_s9p0",
-    "summary": "“Dr Brad’s berberine post: modest evidence for blood sugar and cholesterol in pre-diabetics/type 2 diabetes; not recommended for healthy adults due to possible muscle and testosterone harms. Covers metformin comparison, weight loss, LDL, HbA1c, GLP-1.”"
+    "summary": "“Dr Brad’s berberine post: modest evidence for blood sugar and cholesterol in pre-diabetics/type 2 diabetes; not recommended for healthy adults due to possible muscle and testosterone harms. Covers metformin comparison, weight loss, LDL, HbA1c, GLP-1.”",
+    "topics": [
+      "berberine-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "How to Correctly Use Hyaluronic Acid to Reverse Wrinkles by 18%",
@@ -6770,7 +6968,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-c-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on vitamin C: immune support, collagen synthesis, antioxidant, modest blood pressure reduction, shorter cold duration. Higher risk of deficiency in smokers, post-bariatric surgery, restrictive diets. Ascorbic acid preferred form; 75-200 mg/day typical; kidney stone risk at higher doses in men. Always discuss with your doctor."
+    "summary": "Reference on vitamin C. Brad's view: adults need 75-90 mg a day; don't megadose. High-dose IV vitamin C raised deaths in burns and sepsis trials. Big antioxidant doses around workouts blunt training gains in young people. Liposomal: no proven benefit at 10x the cost. Always discuss with your doctor.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "Zinc: Benefits, Best Forms, Dosing, and Side Effects",
@@ -6835,7 +7034,10 @@
     "publishedAt": "2025-04-18T22:00:59Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d-supplements-guidelines",
     "youtube": "https://www.youtube.com/watch?v=lseY2Vk5Rq8",
-    "summary": "Dr Brad’s vitamin D post: most adults don’t benefit from high-dose supplements; Endocrine Society now recommends 600-800 IU daily for general population. Covers deficiency, bone density, cancer, depression, falls risk, pregnancy, prediabetes, and adults over 75."
+    "summary": "Dr Brad’s vitamin D post: most adults don’t benefit from high-dose supplements; Endocrine Society now recommends 600-800 IU daily for general population. Covers deficiency, bone density, cancer, depression, falls risk, pregnancy, prediabetes, and adults over 75.",
+    "topics": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Lean Mass Hyper-Responders See Rapid Plaque Progression",
@@ -7288,7 +7490,8 @@
     "publishedAt": "2025-04-08T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-forms-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on magnesium: benefits for sleep, muscle cramps, blood pressure, and anxiety; comparison of forms (glycinate and bisglycinate preferred over oxide); dosing guidance; and common deficiency signs. Covers who needs more — stress, poor sleep, leg cramps, athletes. Always discuss with your doctor."
+    "summary": "Reference on magnesium. Brad's view: many people fall short and a normal blood test can miss it; reach the RDA (420 mg men, 320 mg women) from food first, with a low-dose top-up. He favours glycinate or taurate over oxide. Sleep evidence is modest. Ask your doctor about medicines or kidney disease.",
+    "reviewed": "2026-10-20"
   },
   {
     "title": "The World’s #1 Anti-Aging Cream (Sunscreen) Just Got Updated",
@@ -7332,7 +7535,11 @@
     "publishedAt": "2025-04-02T06:54:33Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/creatine-lean-mass-study",
     "youtube": "https://www.youtube.com/watch?v=leuiEKMAiuM",
-    "summary": "Dr Brad's analysis of a 2024 study questioning creatine efficacy — why the headlines were misleading, what the evidence actually shows about creatine for muscle strength and lean mass, and why Brad continues to recommend creatine supplementation. Always discuss with your doctor."
+    "summary": "Dr Brad's analysis of a 2024 study questioning creatine efficacy — why the headlines were misleading, what the evidence actually shows about creatine for muscle strength and lean mass, and why Brad continues to recommend creatine supplementation. Always discuss with your doctor.",
+    "topics": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "router": "hidden"
   },
   {
     "title": "Salt-Substitutes Can Slash Your 5-Year Death Risk by 12%",
@@ -7356,7 +7563,10 @@
     "publishedAt": "2025-04-02T06:44:05Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/salt-substitute-blood-pressure",
     "youtube": "https://www.youtube.com/watch?v=h7pWaoW6idQ",
-    "summary": "Dr Brad’s salt substitute post: switching to potassium-chloride salt substitute cut 5-year death risk 12% and stroke risk 14% in a 15,000-person RCT. Covers blood pressure, sodium, potassium, fiber, lean protein, and weight loss."
+    "summary": "Dr Brad’s salt substitute post: switching to potassium-chloride salt substitute cut 5-year death risk 12% and stroke risk 14% in a 15,000-person RCT. Covers blood pressure, sodium, potassium, fiber, lean protein, and weight loss.",
+    "topics": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Multivitamins: Benefits, Evidence, Dosing, and Side Effects",
@@ -7453,7 +7663,11 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/creatine-supplements-brain-health-muscle-safety-evidence",
     "youtube": "https://www.youtube.com/watch?v=7gyOZrfPWX8",
     "product": "microvitamin-plus",
-    "summary": "Dr Brad’s creatine post: recommends 5g daily creatine monohydrate for muscle, cognition, and healthy aging. Covers memory benefits in older adults and women, osteosarcopenia, cardiovascular markers, hair loss and kidney safety myths, loading phase myth."
+    "summary": "Dr Brad’s creatine post: recommends 5g daily creatine monohydrate for muscle, cognition, and healthy aging. Covers memory benefits in older adults and women, osteosarcopenia, cardiovascular markers, hair loss and kidney safety myths, loading phase myth.",
+    "topics": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "router": "hidden"
   },
   {
     "title": "Why Scientists Are Calling Taurine “The Youth Molecule”",
@@ -7489,7 +7703,11 @@
     "publishedAt": "2025-03-25T23:52:48Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/taurine-supplement-benefits",
     "youtube": "https://www.youtube.com/watch?v=mdwZIFEHfu4",
-    "summary": "Dr Brad’s taurine post: promising evidence supports it for metabolic health (blood sugar, blood pressure, cholesterol, triglycerides) and exercise performance; aging/lifespan data is still preliminary. Covers dosing 1-6g/day, dementia risk, safety."
+    "summary": "Dr Brad’s taurine post: promising evidence supports it for metabolic health (blood sugar, blood pressure, cholesterol, triglycerides) and exercise performance; aging/lifespan data is still preliminary. Covers dosing 1-6g/day, dementia risk, safety.",
+    "topics": [
+      "taurine-benefits-forms-dosing-and-side-effects"
+    ],
+    "router": "hidden"
   },
   {
     "title": "I Was Wrong About Red Light Masks & Skin Aging",
@@ -7569,7 +7787,10 @@
     "publishedAt": "2025-03-12T23:28:06Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/collagen-peptides-skin-wrinkles",
     "youtube": "https://www.youtube.com/watch?v=m4Tx7ZyBbwQ",
-    "summary": "Dr Brad’s collagen peptides post: evidence supports 2.5-15g daily to reduce wrinkles, elasticity, and skin hydration. Covers 2023 meta-analysis of 26 RCTs, 14-31% wrinkle reduction, collagen vs protein debate, safety, and sunscreen use."
+    "summary": "Dr Brad’s collagen peptides post: evidence supports 2.5-15g daily to reduce wrinkles, elasticity, and skin hydration. Covers 2023 meta-analysis of 26 RCTs, 14-31% wrinkle reduction, collagen vs protein debate, safety, and sunscreen use.",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "These 20 Studies Reveal The BEST Diet for a Longer, Healthier Life",
@@ -7610,7 +7831,10 @@
     "publishedAt": "2025-03-11T22:57:23Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/best-diet-health-evidence",
     "youtube": "https://www.youtube.com/watch?v=6k5q80tGIPg",
-    "summary": "Dr Brad’s best diet post: optimize around 3 principles — essential vitamins/minerals (potassium, magnesium), 1.6g/kg protein favoring plants, and high fiber. Legumes top the list. Avoid processed carbs, sugar, saturated fat, and excess salt."
+    "summary": "Dr Brad’s best diet post: optimize around 3 principles — essential vitamins/minerals (potassium, magnesium), 1.6g/kg protein favoring plants, and high fiber. Legumes top the list. Avoid processed carbs, sugar, saturated fat, and excess salt.",
+    "topics": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "The Surprising Truth About Methylene Blue and Anti-Aging",
@@ -7752,7 +7976,13 @@
     "publishedAt": "2025-02-24T21:22:36Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/supplements-hidden-side-effects",
     "youtube": "https://www.youtube.com/watch?v=eeXhF6b_P0o",
-    "summary": "Dr Brad’s supplement safety post: avoid resveratrol, metformin (non-diabetics), high-dose vitamin C, and vitamin E — all lack lifespan evidence and blunt exercise benefits; vitamin E may increase mortality and prostate cancer risk."
+    "summary": "Dr Brad’s supplement safety post: avoid resveratrol, metformin (non-diabetics), high-dose vitamin C, and vitamin E — all lack lifespan evidence and blunt exercise benefits; vitamin E may increase mortality and prostate cancer risk.",
+    "topics": [
+      "resveratrol-benefits-forms-dosing-and-side-effects",
+      "vitamin-c-benefits-forms-dosing-and-side-effects",
+      "vitamin-e-benefits-forms-dosing-and-side-effects",
+      "vitamin-a-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "The Fastest Way to Lower Your Blood Pressure (Naturally!)",
@@ -7780,7 +8010,10 @@
     "publishedAt": "2025-02-23T23:47:06Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/lower-blood-pressure-naturally",
     "youtube": "https://www.youtube.com/watch?v=szMdop7aBxw",
-    "summary": "Dr Brad’s blood pressure post: diet, exercise, and sleep can meaningfully lower hypertension without medication. Covers DASH diet, potassium, fibre, isometric exercise (wall squats best per 2023 meta-analysis), and sleep quality. For hypertension, high BP, cardiovascular risk."
+    "summary": "Dr Brad’s blood pressure post: diet, exercise, and sleep can meaningfully lower hypertension without medication. Covers DASH diet, potassium, fibre, isometric exercise (wall squats best per 2023 meta-analysis), and sleep quality. For hypertension, high BP, cardiovascular risk.",
+    "topics": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Should You Use Ozempic (GLP-1) Weight Loss Meds? Nuanced Answer",
@@ -7888,7 +8121,10 @@
     "publishedAt": "2025-02-12T03:47:51Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/apple-cider-vinegar-weight-loss-evidence",
     "youtube": "https://www.youtube.com/watch?v=AcUbzqJwDbg",
-    "summary": "Dr Brad’s apple cider vinegar post: ACV evidence is too weak to recommend for weight loss or blood sugar control. Covers Mediterranean diet, high-protein diet, exercise snacks, metformin, GLP-1 medications for obesity and blood sugar management."
+    "summary": "Dr Brad’s apple cider vinegar post: ACV evidence is too weak to recommend for weight loss or blood sugar control. Covers Mediterranean diet, high-protein diet, exercise snacks, metformin, GLP-1 medications for obesity and blood sugar management.",
+    "topics": [
+      "apple-cider-vinegar-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "The #1 Top Remedy for Dental Plaque",
@@ -7995,7 +8231,12 @@
     ],
     "publishedAt": "2025-01-29T16:30:23Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/cholesterol-supplements-evidence",
-    "summary": "Dr Brad's ZMA post: evidence doesn't support ZMA over individual ingredients; the funded 2000 study showed benefits but later RCTs did not. Covers testosterone, sleep, muscle, zinc toxicity risk, athletes, bodybuilders, fitness supplements."
+    "summary": "Dr Brad's ZMA post: evidence doesn't support ZMA over individual ingredients; the funded 2000 study showed benefits but later RCTs did not. Covers testosterone, sleep, muscle, zinc toxicity risk, athletes, bodybuilders, fitness supplements.",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing",
+      "zinc-benefits-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Are Supplement Gummies Effective Compared to Capsules?",
@@ -8161,7 +8402,12 @@
     "publishedAt": "2025-01-07T00:08:13Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/trace-minerals-multivitamin",
     "youtube": "https://www.youtube.com/watch?v=_hOxXq0wi-0",
-    "summary": "Dr Brad's trace minerals post: trace minerals in multivitamins are not a fad — they cover dietary gaps for iodine, iron, and zinc. Key warning: avoid megadose supplements. Covers chromium, copper, iodine, iron, selenium, zinc, boron, and toxicity thresholds."
+    "summary": "Dr Brad's trace minerals post: trace minerals in multivitamins are not a fad — they cover dietary gaps for iodine, iron, and zinc. Key warning: avoid megadose supplements. Covers chromium, copper, iodine, iron, selenium, zinc, boron, and toxicity thresholds.",
+    "topics": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "boron-benefits-forms-dosing-and-side-effects",
+      "kelp-and-iodine-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "New Study Reveals the BEST Exercise to Lower Blood Pressure",
@@ -8249,7 +8495,10 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/skin-tightening-supplements-guide",
     "youtube": "https://www.youtube.com/watch?v=IAXYVyiYZKQ",
     "product": "microvitamin-plus",
-    "summary": "Dr Brad's skin tightening post: hyaluronic acid and collagen peptides are the only supplements with evidence for reducing wrinkles and improving skin elasticity. Covers sunscreen (zinc oxide), safe vs harmful UV filters, aging skin, photoaging, skin tightening."
+    "summary": "Dr Brad's skin tightening post: hyaluronic acid and collagen peptides are the only supplements with evidence for reducing wrinkles and improving skin elasticity. Covers sunscreen (zinc oxide), safe vs harmful UV filters, aging skin, photoaging, skin tightening.",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Greens Powders: Benefits, Types, Dosing, and Side Effects",
@@ -8374,7 +8623,10 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/evidence-based-skin-aging-protocol",
     "youtube": "https://www.youtube.com/watch?v=SxCwmm6BI8I",
     "product": "microvitamin-plus",
-    "summary": "Dr Brad's skin aging reversal post: 8 strategies — mineral sunscreen, ceramide moisturizer, hyaluronic acid supplements, collagen peptides (10-15g), retinoids (tretinoin/adapalene), AHA/BHA exfoliants, exercise, diet. Covers wrinkles and photoaging."
+    "summary": "Dr Brad's skin aging reversal post: 8 strategies — mineral sunscreen, ceramide moisturizer, hyaluronic acid supplements, collagen peptides (10-15g), retinoids (tretinoin/adapalene), AHA/BHA exfoliants, exercise, diet. Covers wrinkles and photoaging.",
+    "topics": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Is Liposomal Vitamin C Worth the Money or a Useless Fad?",
@@ -8402,7 +8654,11 @@
     ],
     "publishedAt": "2024-12-09T15:30:08Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/liposomal-vitamin-c-evidence",
-    "summary": "Dr Brad's liposomal vitamin C post: not worth the cost — absorption is higher but no proven clinical benefit over regular vitamin C. Covers liposome mechanism, absorption studies, cataract/cardiovascular claims, cost comparison, kidney stones, scurvy, antioxidant."
+    "summary": "Dr Brad's liposomal vitamin C post: not worth the cost — absorption is higher but no proven clinical benefit over regular vitamin C. Covers liposome mechanism, absorption studies, cataract/cardiovascular claims, cost comparison, kidney stones, scurvy, antioxidant.",
+    "topics": [
+      "vitamin-c-benefits-forms-dosing-and-side-effects"
+    ],
+    "router": "hidden"
   },
   {
     "title": "The #1 Nutrient Deficiency in High Blood Pressure",
@@ -8427,7 +8683,10 @@
     "publishedAt": "2024-12-07T00:41:36Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/potassium-blood-pressure",
     "youtube": "https://www.youtube.com/watch?v=_Nn20bBtHwI",
-    "summary": "Dr Brad's blood pressure post: potassium deficiency is the top modifiable nutrient factor for high blood pressure. A meta-analysis of 22 RCTs found 3,500-4,700mg/day reduces systolic BP by 7 mmHg. Covers sodium-potassium balance, magnesium link, food sources, kidney safety."
+    "summary": "Dr Brad's blood pressure post: potassium deficiency is the top modifiable nutrient factor for high blood pressure. A meta-analysis of 22 RCTs found 3,500-4,700mg/day reduces systolic BP by 7 mmHg. Covers sodium-potassium balance, magnesium link, food sources, kidney safety.",
+    "topics": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "The Blood Type Diet: Does Blood Type Dictate Dietary Needs?",
@@ -8478,7 +8737,11 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-forms-compared-best-absorbed",
     "youtube": "https://www.youtube.com/watch?v=3HtDE-7IOHQ",
     "product": "sleep",
-    "summary": "Dr Brad's magnesium forms post: prefers magnesium taurate (combined magnesium + taurine benefits); glycinate is a good alternative. Covers citrate, oxide, l-threonate, taurate, malate, orotate — absorption, sleep, blood pressure, diabetes."
+    "summary": "Dr Brad's magnesium forms post: prefers magnesium taurate (combined magnesium + taurine benefits); glycinate is a good alternative. Covers citrate, oxide, l-threonate, taurate, malate, orotate — absorption, sleep, blood pressure, diabetes.",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "router": "hidden"
   },
   {
     "title": "Methylated Multivitamin vs Regular Ones: Which is Better?",
@@ -8496,7 +8759,11 @@
     ],
     "publishedAt": "2024-11-28T07:00:07Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/methylated-vs-regular-multivitamins",
-    "summary": "Dr Brad's methylated multivitamin post: evidence for benefits is weak and megadose methylated B supplements carry potential risks; most people don't need them. Covers MTHFR mutation, methylfolate, depression, cancer risk, and cardiovascular disease."
+    "summary": "Dr Brad's methylated multivitamin post: evidence for benefits is weak and megadose methylated B supplements carry potential risks; most people don't need them. Covers MTHFR mutation, methylfolate, depression, cancer risk, and cardiovascular disease.",
+    "topics": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Should You Take Vitamin K2 and Vitamin D3 Together?",
@@ -8520,7 +8787,11 @@
     "publishedAt": "2024-11-25T20:42:35Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-k2-d3-benefits",
     "youtube": "https://www.youtube.com/watch?v=s2bPHAo4z6Y",
-    "summary": "Dr Brad's vitamin K2 + D3 post: MK7 90mcg worthwhile for bone health and may reduce arterial calcium in those with high CAC scores, but cardiovascular evidence is still emerging. Covers K1 vs K2, bone density, atherosclerosis, warfarin interaction, MicroVitamin."
+    "summary": "Dr Brad's vitamin K2 + D3 post: MK7 90mcg worthwhile for bone health and may reduce arterial calcium in those with high CAC scores, but cardiovascular evidence is still emerging. Covers K1 vs K2, bone density, atherosclerosis, warfarin interaction, MicroVitamin.",
+    "topics": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "The Only Supplements That ACTUALLY Work (2025)",
@@ -8571,7 +8842,17 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/evidence-based-supplements-guide",
     "youtube": "https://www.youtube.com/watch?v=uwnXLsAL9wM",
     "product": "sleep",
-    "summary": "Dr Brad's supplement stack post: creatine 5g, protein 1.6g/kg, TMG 500mg, multivitamin, omega-3 1g, psyllium husk, collagen 10-15g, hyaluronic acid 200mg, melatonin 0.8mg sustained-release, glycine+NAC for glutathione. Covers muscle, brain, heart, skin, sleep."
+    "summary": "Dr Brad's supplement stack post: creatine 5g, protein 1.6g/kg, TMG 500mg, multivitamin, omega-3 1g, psyllium husk, collagen 10-15g, hyaluronic acid 200mg, melatonin 0.8mg sustained-release, glycine+NAC for glutathione. Covers muscle, brain, heart, skin, sleep.",
+    "topics": [
+      "creatine-benefits-best-forms-dosing-and-side-effects",
+      "protein-powders-benefits-types-dosing-and-side-effects",
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+      "psyllium-benefits-forms-dosing-and-side-effects",
+      "collagen-benefits-best-forms-dosing-and-side-effects",
+      "melatonin-benefits-forms-dosing-and-side-effects",
+      "glutathione-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "What Types of Food Are Proven to Trigger Gout?",
@@ -8686,7 +8967,10 @@
     "publishedAt": "2024-11-07T22:07:19Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/nmn-supplements-human-studies",
     "youtube": "https://www.youtube.com/watch?v=am2RHcPOaLA",
-    "summary": "Dr Brad's review of 12+ human NMN studies: what NAD+ boosting does, what NMN human trials actually show (energy, metabolism, muscle), Brad's 4 key takeaways, and his current recommendation on NMN supplementation. Covers: NMN, NAD+, aging, longevity. Always discuss with your doctor."
+    "summary": "Dr Brad's review of 12+ human NMN studies: what NAD+ boosting does, what NMN human trials actually show (energy, metabolism, muscle), Brad's 4 key takeaways, and his current recommendation on NMN supplementation. Covers: NMN, NAD+, aging, longevity. Always discuss with your doctor.",
+    "topics": [
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Why Avoiding Cancer is Now Easier Than Ever",
@@ -8743,7 +9027,10 @@
     ],
     "publishedAt": "2024-11-04T03:07:12Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/l-theanine-aging-evidence",
-    "summary": "Dr Brad's L-theanine post: current evidence is animal and worm studies only — no human RCTs — so Brad does not take it or include it in MicroVitamin. Covers longevity claims, aging, cognitive decline, tea vs supplements."
+    "summary": "Dr Brad's L-theanine post: current evidence is animal and worm studies only — no human RCTs — so Brad does not take it or include it in MicroVitamin. Covers longevity claims, aging, cognitive decline, tea vs supplements.",
+    "topics": [
+      "l-theanine-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Spend $40, Avoid Dying 12.2 Years Too Early",
@@ -8897,7 +9184,11 @@
     "publishedAt": "2024-10-14T21:25:53Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/calcium-rich-foods",
     "youtube": "https://www.youtube.com/watch?v=eeYQk7iaXo0",
-    "summary": "Dr Brad's calcium post: get calcium from diet first — dairy, fatty fish, dark leafy greens, fortified foods. Supplements fine to fill gaps but exceeding RDA may raise heart disease risk. Covers osteoporosis, bone health, postmenopausal women, vegans, vitamin D absorption."
+    "summary": "Dr Brad's calcium post: get calcium from diet first — dairy, fatty fish, dark leafy greens, fortified foods. Supplements fine to fill gaps but exceeding RDA may raise heart disease risk. Covers osteoporosis, bone health, postmenopausal women, vegans, vitamin D absorption.",
+    "topics": [
+      "calcium-benefits-best-forms-dosing-and-side-effects",
+      "vitamin-d-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Why TMG (Betaine) is Exploding in Popularity",
@@ -8927,7 +9218,11 @@
     "publishedAt": "2024-10-09T13:30:02Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/tmg-betaine-benefits",
     "youtube": "https://www.youtube.com/watch?v=GsR6KcK4lHA",
-    "summary": "Dr Brad's TMG (betaine) post: supports muscle strength, testosterone, and may lower dementia risk via homocysteine reduction. Covers exercise performance, CrossFit, resistance training, Alzheimer's risk, cholesterol safety concern at 4g+, and NMN comparison."
+    "summary": "Dr Brad's TMG (betaine) post: supports muscle strength, testosterone, and may lower dementia risk via homocysteine reduction. Covers exercise performance, CrossFit, resistance training, Alzheimer's risk, cholesterol safety concern at 4g+, and NMN comparison.",
+    "topics": [
+      "b-vitamins-benefits-forms-dosing-and-side-effects",
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ]
   },
   {
     "title": "What Is the Difference Between Magnesium Oxide and Glycinate?",
@@ -8956,7 +9251,11 @@
     "publishedAt": "2024-10-06T22:16:11Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-glycinate-vs-oxide",
     "youtube": "https://www.youtube.com/watch?v=3HtDE-7IOHQ",
-    "summary": "Dr Brad's magnesium forms post: glycinate is best absorbed with fewest side effects; oxide is poorly absorbed; citrate causes laxative effects; L-threonate lacks human data. Covers deficiency, sleep, blood pressure, diabetes, stroke."
+    "summary": "Dr Brad's magnesium forms post: glycinate is best absorbed with fewest side effects; oxide is poorly absorbed; citrate causes laxative effects; L-threonate lacks human data. Covers deficiency, sleep, blood pressure, diabetes, stroke.",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "router": "hidden"
   },
   {
     "title": "Are Seed Oils Toxic and Inflammatory?",
@@ -9002,7 +9301,10 @@
     ],
     "publishedAt": "2024-09-26T14:30:01Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/iron-supplementation-guide",
-    "summary": "Dr Brad's iron supplementation post: avoid iron supplements unless prescribed for confirmed deficiency — excess causes GI damage, organ iron build-up, and zinc absorption issues. Covers iron deficiency anemia, high-risk groups (pregnancy, vegans, menorrhagia), and upper intake limits."
+    "summary": "Dr Brad's iron supplementation post: avoid iron supplements unless prescribed for confirmed deficiency — excess causes GI damage, organ iron build-up, and zinc absorption issues. Covers iron deficiency anemia, high-risk groups (pregnancy, vegans, menorrhagia), and upper intake limits.",
+    "topics": [
+      "iron-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Your Brain on Omega-3, Tantalizing Discovery!",
@@ -9028,7 +9330,11 @@
     "publishedAt": "2024-09-26T00:17:19Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/omega-3-brain-b-vitamins",
     "youtube": "https://www.youtube.com/watch?v=Yg77_SrN6rw",
-    "summary": "Dr Brad's omega-3 and brain health post: DHA/EPA may improve cognition and reduce dementia risk, but B vitamins appear necessary to unlock the benefit. Covers memory, Alzheimer's, homocysteine, 1g/day dose."
+    "summary": "Dr Brad's omega-3 and brain health post: DHA/EPA may improve cognition and reduce dementia risk, but B vitamins appear necessary to unlock the benefit. Covers memory, Alzheimer's, homocysteine, 1g/day dose.",
+    "topics": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "How to Know If Your Multivitamin Contains Enough Riboflavin",
@@ -9049,7 +9355,11 @@
     "publishedAt": "2024-09-18T03:06:10Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/riboflavin-multivitamin-guide",
     "youtube": "https://www.youtube.com/watch?v=5GaCPDsJFGE",
-    "summary": "Dr Brad's riboflavin (vitamin B2) post: 75% RDA in a multivitamin is sensible; deficiency is rare but higher risk in vegans, elderly, and those on certain meds. Covers symptoms, dietary sources, migraine use, megadose safety."
+    "summary": "Dr Brad's riboflavin (vitamin B2) post: 75% RDA in a multivitamin is sensible; deficiency is rare but higher risk in vegans, elderly, and those on certain meds. Covers symptoms, dietary sources, migraine use, megadose safety.",
+    "topics": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Alpha-Lipoic Acid: A Potent (But Potentially DAMAGING) Antioxidant",
@@ -9085,7 +9395,10 @@
     "publishedAt": "2024-09-14T03:22:51Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/alpha-lipoic-acid-benefits-risks",
     "youtube": "https://www.youtube.com/watch?v=p4tX7XwZMDU",
-    "summary": "Dr Brad's alpha-lipoic acid post: ALA benefits diabetic neuropathy (600mg/day), blood sugar, metabolic syndrome, and male infertility, but may harm healthy adults, blunt exercise gains, and worsen Alzheimer's. R-isomer preferred."
+    "summary": "Dr Brad's alpha-lipoic acid post: ALA benefits diabetic neuropathy (600mg/day), blood sugar, metabolic syndrome, and male infertility, but may harm healthy adults, blunt exercise gains, and worsen Alzheimer's. R-isomer preferred.",
+    "topics": [
+      "alpha-lipoic-acid-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "FAQ: What's the Difference Between Curcumin and Turmeric?",
@@ -9120,7 +9433,10 @@
     "publishedAt": "2024-09-13T20:30:03Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/curcumin-vs-turmeric",
     "youtube": "https://www.youtube.com/watch?v=rntf8VM9nAM",
-    "summary": "Dr Brad's curcumin and turmeric post: most evidence supports use for osteoarthritis pain relief, comparable to NSAIDs; benefits for inflammation, weight loss, diabetes, and dementia are small or limited. Covers bioavailability, piperine, liver injury risk, arthritis, cognitive decline."
+    "summary": "Dr Brad's curcumin and turmeric post: most evidence supports use for osteoarthritis pain relief, comparable to NSAIDs; benefits for inflammation, weight loss, diabetes, and dementia are small or limited. Covers bioavailability, piperine, liver injury risk, arthritis, cognitive decline.",
+    "topics": [
+      "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Myth Busting: Can Foods Help You Unclog Your Arteries?",
@@ -9186,7 +9502,10 @@
     ],
     "publishedAt": "2024-09-06T04:03:40Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/apple-cider-vinegar-guide",
-    "summary": "Dr Brad's apple cider vinegar post: evidence is weak and he does not recommend ACV as a supplement. Covers blood sugar control, HbA1c, weight loss, diabetes, obesity, tooth enamel erosion, and digestive side effects."
+    "summary": "Dr Brad's apple cider vinegar post: evidence is weak and he does not recommend ACV as a supplement. Covers blood sugar control, HbA1c, weight loss, diabetes, obesity, tooth enamel erosion, and digestive side effects.",
+    "topics": [
+      "apple-cider-vinegar-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Digestive Enzymes: Benefits, Types, Dosing, and Side Effects",
@@ -9482,7 +9801,20 @@
     "publishedAt": "2024-08-11T19:43:34Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/supplements-evidence-avoid",
     "youtube": "https://www.youtube.com/watch?v=eeYQk7iaXo0",
-    "summary": "Dr Brad's supplements-to-avoid post: 9 supplements with risks outweighing benefits per clinical trials. Covers antioxidants (vitamins A, C, E), CoQ10, resveratrol, metformin (non-diabetics), iron, calcium, high-dose folic acid, niacin, and fat burners."
+    "summary": "Dr Brad's supplements-to-avoid post: 9 supplements with risks outweighing benefits per clinical trials. Covers antioxidants (vitamins A, C, E), CoQ10, resveratrol, metformin (non-diabetics), iron, calcium, high-dose folic acid, niacin, and fat burners.",
+    "topics": [
+      "vitamin-a-benefits-forms-dosing-and-side-effects",
+      "vitamin-c-benefits-forms-dosing-and-side-effects",
+      "vitamin-e-benefits-forms-dosing-and-side-effects",
+      "resveratrol-benefits-forms-dosing-and-side-effects",
+      "iron-benefits-forms-dosing-and-side-effects",
+      "calcium-benefits-best-forms-dosing-and-side-effects",
+      "b-vitamins-benefits-forms-dosing-and-side-effects",
+      "coq10-benefits-best-forms-dosing-and-side-effects",
+      "pqq-benefits-forms-dosing-and-side-effects",
+      "weight-loss-supplements-benefits-evidence-and-safety",
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Controversial New Supplement: Can It Stop Cognitive Decline?",
@@ -9509,7 +9841,10 @@
     "publishedAt": "2024-08-09T04:19:30Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/multivitamin-cognitive-decline",
     "youtube": "https://www.youtube.com/watch?v=2DONY-rYFQY",
-    "summary": "Dr Brad's multivitamin post: COSMOS studies show multivitamin/mineral supplementation equivalent to 2 years less cognitive aging, but avoid beta-carotene and vitamin E. Covers brain health, memory, cognitive decline prevention, megadosing risks, supplement selection."
+    "summary": "Dr Brad's multivitamin post: COSMOS studies show multivitamin/mineral supplementation equivalent to 2 years less cognitive aging, but avoid beta-carotene and vitamin E. Covers brain health, memory, cognitive decline prevention, megadosing risks, supplement selection.",
+    "topics": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Example Sleep Schedule to Help You Wake Up Refreshed",
@@ -9596,7 +9931,10 @@
     "publishedAt": "2024-07-11T21:04:17Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/omega-3-atrial-fibrillation-risk-evidence",
     "youtube": "https://www.youtube.com/watch?v=q71tHoHeXZo",
-    "summary": "Dr Brad's omega-3 post: supplements at ~1g/day are still worth taking despite a 2024 UK Biobank study showing 133% higher atrial fibrillation risk. Covers EPA, DHA, ALA, fish oil, heart disease, AF risk, megadosing concerns, and the major trials — VITAL (28% MI reduction at 1g/day), STRENGTH (null at 4g/day with AF signal), REDUCE-IT (Vascepa / icosapent ethyl, 25% CVD reduction with the mineral-oil placebo controversy)."
+    "summary": "Dr Brad's omega-3 post: supplements at ~1g/day are still worth taking despite a 2024 UK Biobank study showing 133% higher atrial fibrillation risk. Covers EPA, DHA, ALA, fish oil, heart disease, AF risk, megadosing concerns, and the major trials — VITAL (28% MI reduction at 1g/day), STRENGTH (null at 4g/day with AF signal), REDUCE-IT (Vascepa / icosapent ethyl, 25% CVD reduction with the mineral-oil placebo controversy).",
+    "topics": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Which Mistakes Do Most People Make with Magnesium?",
@@ -9625,7 +9963,11 @@
     "publishedAt": "2024-07-09T18:36:45Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-deficiency-forms-guide",
     "youtube": "https://www.youtube.com/watch?v=9X6pweXDxjg",
-    "summary": "Dr Brad's magnesium post: 52% of people are deficient despite normal blood tests, because serum reflects less than 1% of body stores. Covers best forms (glycinate, taurate), elemental dosing (320-420mg RDA), supplement label pitfalls, and links to diet quality."
+    "summary": "Dr Brad's magnesium post: 52% of people are deficient despite normal blood tests, because serum reflects less than 1% of body stores. Covers best forms (glycinate, taurate), elemental dosing (320-420mg RDA), supplement label pitfalls, and links to diet quality.",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "router": "hidden"
   },
   {
     "title": "Coconut Oil and MCT Oil: Benefits, Forms, Dosing, and Side Effects",
@@ -9701,7 +10043,11 @@
     "publishedAt": "2024-07-01T01:37:47Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/creatine-older-adults-guide",
     "youtube": "https://www.youtube.com/watch?v=FsHq03ecnhM",
-    "summary": "Dr Brad's creatine post: recommends creatine monohydrate for older adults for muscle and potential cognitive/memory benefits. Covers 5g daily dose, kidney safety, hair loss myth, gout, and brain creatine research."
+    "summary": "Dr Brad's creatine post: recommends creatine monohydrate for older adults for muscle and potential cognitive/memory benefits. Covers 5g daily dose, kidney safety, hair loss myth, gout, and brain creatine research.",
+    "topics": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "router": "hidden"
   },
   {
     "title": "Example Home-Based Workout Schedules That Are Scientifically Proven",
@@ -9795,7 +10141,11 @@
     "publishedAt": "2024-06-20T20:21:11Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d3-k2-research",
     "youtube": "https://www.youtube.com/watch?v=s2bPHAo4z6Y",
-    "summary": "Dr Brad's vitamin D3 and K2 post: evidence is mixed beyond deficiency; Brad takes D3 1000-2000IU and K2 MK-7 90mcg. Covers bone health, cardiovascular disease, osteoporosis, coronary artery calcification, cancer, and drug interactions."
+    "summary": "Dr Brad's vitamin D3 and K2 post: evidence is mixed beyond deficiency; Brad takes D3 1000-2000IU and K2 MK-7 90mcg. Covers bone health, cardiovascular disease, osteoporosis, coronary artery calcification, cancer, and drug interactions.",
+    "topics": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ]
   },
   {
     "title": "Cinnamon: Benefits, Forms, Dosing, and Side Effects",
@@ -9868,7 +10218,11 @@
     "publishedAt": "2024-06-12T20:32:54Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-l-threonate-sleep-evidence",
     "youtube": "https://www.youtube.com/watch?v=9X6pweXDxjg",
-    "summary": "Dr Brad's magnesium L-threonate post: evidence for sleep benefits is weak — small studies exist but are low quality or not specific to this form. Covers magnesium forms, drug interactions (statins, gabapentin), dosing safety, insomnia."
+    "summary": "Dr Brad's magnesium L-threonate post: evidence for sleep benefits is weak — small studies exist but are low quality or not specific to this form. Covers magnesium forms, drug interactions (statins, gabapentin), dosing safety, insomnia.",
+    "topics": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "router": "hidden"
   },
   {
     "title": "Choline: Benefits, Best Forms, Dosing, and Side Effects",

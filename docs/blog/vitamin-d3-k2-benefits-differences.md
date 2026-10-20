@@ -7,6 +7,7 @@ publishedAt: "2024-06-20T20:21:11Z"
 tags: ["Supplements"]
 keywords: ["bone density","calcium","cardiovascular","kidney","muscle","osteoporosis","stroke","sunscreen","vitamin a","vitamin b12","vitamin c","vitamin d","vitamin d3","vitamin k","vitamin k2"]
 summary: "Dr Brad's vitamin D3 and K2 post: evidence is mixed beyond deficiency; Brad takes D3 1000-2000IU and K2 MK-7 90mcg. Covers bone health, cardiovascular disease, osteoporosis, coronary artery calcification, cancer, and drug interactions."
+topics: ["vitamin-d-benefits-forms-dosing-and-side-effects","vitamin-k-benefits-forms-dosing-and-side-effects"]
 ---
 
 Many people, when they think of vitamins, first think of the letters. Vitamin A, vitamin C, vitamin D; and some have numbers attached like vitamin B12. All vitamins have more than one form, similar in chemical structure but different enough that they can have different biological reactions and uptake.

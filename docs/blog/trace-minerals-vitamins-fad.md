@@ -7,6 +7,7 @@ publishedAt: "2025-01-07T00:08:13Z"
 tags: ["Supplements"]
 keywords: ["bone density","boron","calcium","cholesterol","estrogen","fiber","hormone","iodine","iron","magnesium","osteoporosis","potassium","selenium","skin","testosterone","vitamin b12","vitamin d","zinc"]
 summary: "Dr Brad's trace minerals post: trace minerals in multivitamins are not a fad — they cover dietary gaps for iodine, iron, and zinc. Key warning: avoid megadose supplements. Covers chromium, copper, iodine, iron, selenium, zinc, boron, and toxicity thresholds."
+topics: ["multivitamins-benefits-evidence-dosing-and-side-effects","boron-benefits-forms-dosing-and-side-effects","kelp-and-iodine-benefits-forms-dosing-and-side-effects"]
 ---
 
 There was a time in the past where vitamins were vitamins, and if you wanted to get more than just a vitamin or a B complex at any given time, you would need to take a whole roster of pills and supplements. Eventually, though, people started inventing multivitamin pills that contain numerous vitamins. Eventually, they added in minerals as well, to make MVMs, or Multi Vitamin and Mineral supplements.

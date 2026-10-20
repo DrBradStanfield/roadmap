@@ -7,6 +7,7 @@ publishedAt: "2026-03-18T06:11:43Z"
 tags: ["General Health","Research","Supplements"]
 keywords: ["blood pressure","cardiovascular","dementia","exercise","hypertension","kidney","muscle","olive oil","stroke"]
 summary: "Dr Brad's nitric oxide post: arugula beats beetroot and supplements as a nitrate source — ~63g salad hits the 300mg nitrate threshold. Covers L-arginine, L-citrulline, beetroot juice, tadalafil, blood pressure, exercise performance, oxalate risk."
+topics: ["nitric-oxide-supplements-benefits-forms-dosing-and-side-effects","beetroot-benefits-forms-dosing-and-side-effects","arginine-benefits-forms-dosing-and-side-effects","l-citrulline-benefits-forms-dosing-and-side-effects"]
 ---
 
 Nitric oxide levels fall with age — and this decline is linked to an array of age-related problems in areas like heart, brain, reproductive, and muscle health \[1\]\[2\]. Cue predatory supplement brands that try to take your money by spinning a story that their pill will stop this decline.

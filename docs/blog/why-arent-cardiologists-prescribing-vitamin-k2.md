@@ -8,6 +8,8 @@ tags: ["Supplements", "Research", "Preventative Care"]
 keywords: ["calcium", "cardiovascular", "cholesterol", "hdl", "heart attack", "ultrasound", "vitamin d", "vitamin k"]
 product: "microvitamin"
 summary: "Should I take vitamin K2 for calcified arteries, coronary calcium score, MK-7 dose 90-120 mcg not 720, DANCODE, warfarin"
+topics: ["vitamin-k-benefits-forms-dosing-and-side-effects"]
+router: hidden
 ---
 
 In the early 1990s, a team of scientists went door to door through one suburb of Rotterdam and asked nearly five thousand people over the age of fifty-five a simple question. What do you eat?

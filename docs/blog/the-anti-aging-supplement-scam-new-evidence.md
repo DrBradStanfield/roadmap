@@ -7,6 +7,7 @@ publishedAt: "2026-04-09T12:00:00Z"
 tags: ["Supplements", "Research"]
 keywords: ["aging", "anti-aging", "fish oil", "lifespan", "longevity", "nad+", "rapamycin", "resveratrol", "skin"]
 summary: "Dr Brad's anti-aging supplement skepticism post: most longevity supplements (AKG, resveratrol, NR, fish oil, astaxanthin) failed to extend lifespan in the ITP's 2026 results. Only prescription drugs (rapamycin, acarbose, canagliflozin) have shown reproducible lifespan extension."
+topics: ["resveratrol-benefits-forms-dosing-and-side-effects","nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects","astaxanthin-benefits-forms-dosing-and-side-effects"]
 ---
 
 ## The Program Nobody Talks About

@@ -8,6 +8,8 @@ tags: ["Skin Health", "Supplements", "Research"]
 keywords: ["aging", "collagen", "hyaluronic acid", "muscle", "skin", "wrinkles"]
 product: "microvitamin-plus"
 summary: "Does collagen work for skin? Hydration, elasticity, wrinkles; collagen vs protein; Grimes 2026 errors, CHAMP trial."
+topics: ["collagen-benefits-best-forms-dosing-and-side-effects"]
+router: hidden
 ---
 
 Look, I hear you. One minute collagen peptides are great for skin health. The next, they’re a complete waste of money.

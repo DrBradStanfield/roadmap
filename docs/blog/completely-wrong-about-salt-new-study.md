@@ -7,6 +7,7 @@ publishedAt: "2026-04-01T19:38:46Z"
 tags: ["Diet","General Health","Research"]
 keywords: ["blood pressure","cardiovascular","exercise","heart attack","hypertension","kidney","potassium","stroke"]
 summary: "Dr Brad's salt post: lower sodium reduces blood pressure and stroke risk for most people; the J-curve claim doesn't hold in umbrella review evidence. Covers hypertension, potassium intake, salt substitutes, and sodium sensitivity variation."
+topics: ["potassium-benefits-forms-dosing-and-side-effects"]
 ---
 
 In 1942, a 33-year-old woman walked into a hospital with a blood pressure so high, it was destroying her eyes. Her kidneys were failing. At the time, there were no effective treatments. So in a last-ditch effort, her doctor — a German refugee named Walter Kempner — put her on a radical experiment: nothing but rice, fruit, and juice. Almost zero salt. He told her to come back in two weeks \[1\].

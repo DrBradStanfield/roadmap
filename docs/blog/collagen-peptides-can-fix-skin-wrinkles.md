@@ -7,6 +7,7 @@ publishedAt: "2025-03-12T23:28:06Z"
 tags: ["Supplements","Skin Health"]
 keywords: ["aging","collagen","hyaluronic acid","peptide","skin","sleep","spf","sunscreen","uv","wrinkles"]
 summary: "Dr Brad’s collagen peptides post: evidence supports 2.5-15g daily to reduce wrinkles, elasticity, and skin hydration. Covers 2023 meta-analysis of 26 RCTs, 14-31% wrinkle reduction, collagen vs protein debate, safety, and sunscreen use."
+topics: ["collagen-benefits-best-forms-dosing-and-side-effects"]
 ---
 
 There are loads of products on the market promising to reduce wrinkles. For many of them, it’s just unproven hype.

@@ -7,6 +7,7 @@ publishedAt: "2026-04-16T12:00:00Z"
 tags: ["Supplements", "Research", "General Health"]
 keywords: ["cold", "flu", "honey", "iodine", "immune", "inflammation", "vitamin c", "vitamin d", "zinc"]
 summary: "Dr Brad's cold remedies post: zinc lozenges, hypertonic saline rinse, and honey outperform most OTC cold medicines. Zinc acetate/gluconate >75mg/day shortens colds ~33%; saline cuts duration ~2 days; honey eases cough."
+topics: ["zinc-benefits-forms-dosing-and-side-effects","manuka-honey-benefits-forms-dosing-and-side-effects"]
 ---
 
 ## Zinc Lozenges: The Accidental Discovery

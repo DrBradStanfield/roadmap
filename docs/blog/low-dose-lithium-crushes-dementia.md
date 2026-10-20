@@ -7,6 +7,7 @@ publishedAt: "2025-09-09T00:29:58Z"
 tags: ["Preventative Care","Supplements"]
 keywords: ["alzheimer","cognitive","dementia","inflammation","iron"]
 summary: “Dr Brad’s low-dose lithium post: cautiously interested but not yet recommending supplements. Lithium orotate may prevent Alzheimer’s plaque buildup; lithium carbonate likely ineffective. Covers dementia, cognitive decline, brain aging in adults.”
+topics: ["lithium-benefits-forms-dosing-and-side-effects"]
 ---
 
 “Lithium deficiency is … a potential common mechanism for the … degeneration of the brain that leads to the onset of Alzheimer’s disease.”

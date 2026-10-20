@@ -7,6 +7,8 @@ publishedAt: "2024-07-09T18:36:45Z"
 tags: ["Supplements"]
 keywords: ["antioxidant","atherosclerosis","blood pressure","blood sugar","calcium","cardiovascular","dementia","diabetes","fiber","heart attack","magnesium","muscle","potassium","sleep","stroke"]
 summary: "Dr Brad's magnesium post: 52% of people are deficient despite normal blood tests, because serum reflects less than 1% of body stores. Covers best forms (glycinate, taurate), elemental dosing (320-420mg RDA), supplement label pitfalls, and links to diet quality."
+topics: ["magnesium-benefits-best-forms-dosing"]
+router: hidden
 ---
 
 Magnesium is an essential mineral, which means it's important that you get enough in your diet to stay healthy and that you _must_ get it from dietary or supplementary sources because your body can't make it on your own. It's used throughout the body for processes including muscle function, nerve function, regulating blood sugar, controlling blood pressure, and making new protein, bone, and even DNA. It's also commonly found in everything from fortified cereals to multivitamins and dedicated dietary supplements.

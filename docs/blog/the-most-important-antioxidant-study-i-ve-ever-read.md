@@ -7,6 +7,7 @@ publishedAt: "2026-02-03T00:32:28Z"
 tags: ["General Health","Preventative Care","Research","Supplements"]
 keywords: ["aging","antioxidant","cardiovascular","cholesterol","cognitive","exercise","glycine","inflammation","ldl","lifespan","muscle","nmn","oxidative stress","selenium","vitamin a","vitamin c","vitamin e"]
 summary: "Dr Brad’s antioxidant post: in adults over 45, antioxidants combined with exercise improve muscle strength and physical function; GlyNAC preferred over Vitamin A or E. Covers oxidative stress, glutathione, aging, muscle, exercise adaptation."
+topics: ["nac-n-acetyl-cysteine-benefits-dosing-and-side-effects","glycine-benefits-forms-dosing-and-side-effects","glutathione-benefits-forms-dosing-and-side-effects","vitamin-e-benefits-forms-dosing-and-side-effects","vitamin-a-benefits-forms-dosing-and-side-effects"]
 ---
 
 For years, antioxidants were hailed as miracle compounds that could slow aging, improve heart health, and enhance physical performance. Then, almost as quickly as they rose to fame, they fell out of favor. But now, new evidence is challenging everything we thought we knew.

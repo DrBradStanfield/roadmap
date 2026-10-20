@@ -8,6 +8,7 @@ tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin H
 keywords: ["aging","collagen","hyaluronic acid","peptide","photoaging","skin","spf","sunscreen","wrinkles"]
 product: "microvitamin-plus"
 summary: "Dr Brad's collagen peptides post: bovine collagen reduced eye wrinkles 25% and improved hydration 26% in 8 weeks; collagen source matters less than processing. Covers collagen vs protein, hyaluronic acid, sunscreen for skin aging."
+topics: ["collagen-benefits-best-forms-dosing-and-side-effects"]
 ---
 
 Collagen is simple, safe, and cheap, and it can dramatically improve markers of skin health. A brand new study only increases our confidence in its effectiveness, while also shedding light on an important question that has not been clear until now. Which source of collagen will give us the best results, and how do we know we are taking the right kind?

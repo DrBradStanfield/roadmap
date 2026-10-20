@@ -7,6 +7,7 @@ publishedAt: "2025-03-11T22:57:23Z"
 tags: ["Diet","General Health","Research"]
 keywords: ["ala","blood pressure","calcium","cardiovascular","dha","diabetes","epa","exercise","fiber","gut health","inflammation","iron","kidney","magnesium","muscle","obesity","olive oil","omega-3","potassium","skin","stroke","vitamin b12","vitamin d","weight loss","zinc"]
 summary: "Dr Brad’s best diet post: optimize around 3 principles — essential vitamins/minerals (potassium, magnesium), 1.6g/kg protein favoring plants, and high fiber. Legumes top the list. Avoid processed carbs, sugar, saturated fat, and excess salt."
+topics: ["potassium-benefits-forms-dosing-and-side-effects"]
 ---
 
 How do we know, truly know, what the best diet is for a longer, healthier life?

@@ -8,6 +8,7 @@ tags: ["Supplements", "Research", "Preventative Care"]
 keywords: ["beta-carotene", "boron", "brain health", "cardiovascular", "cognitive", "dementia", "folate", "lutein", "magnesium", "manganese", "omega-3", "prostate", "riboflavin", "vitamin a", "vitamin b12", "vitamin b2", "vitamin b6", "vitamin c", "vitamin d", "vitamin e", "vitamin k", "zeaxanthin", "zinc"]
 product: "microvitamin"
 summary: "Are multivitamins expensive urine? COSMOS memory results, AREDS2 lutein, B6 nerve damage, yellow urine, WHO guideline."
+topics: ["multivitamins-benefits-evidence-dosing-and-side-effects","lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects","vitamin-a-benefits-forms-dosing-and-side-effects","b-vitamins-benefits-forms-dosing-and-side-effects","omega-3-fish-oil-benefits-forms-dosing-and-side-effects"]
 ---
 
 In 2007, a doctor on television summed up the mainstream view of multivitamins in three words: expensive urine. The line stuck. It is still the single most repeated argument against taking a multivitamin, and for a long time it was a reasonable summary of the evidence.

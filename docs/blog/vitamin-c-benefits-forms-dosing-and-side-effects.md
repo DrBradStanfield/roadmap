@@ -6,10 +6,24 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["vitamin c", "ascorbic acid", "calcium ascorbate", "sodium ascorbate", "ascorbyl palmitate", "liposomal vitamin c", "ester-c", "antioxidant", "immune", "collagen", "skin", "iron", "blood pressure", "hypertension", "blood sugar", "diabetes", "insulin resistance", "gout", "uric acid", "kidney", "cardiovascular", "heart health", "stroke", "cancer", "cataracts", "inflammation", "depression", "exercise", "aging", "longevity", "scurvy", "copper"]
-summary: "Reference on vitamin C: immune support, collagen synthesis, antioxidant, modest blood pressure reduction, shorter cold duration. Higher risk of deficiency in smokers, post-bariatric surgery, restrictive diets. Ascorbic acid preferred form; 75-200 mg/day typical; kidney stone risk at higher doses in men. Always discuss with your doctor."
+summary: "Reference on vitamin C. Brad's view: adults need 75-90 mg a day; don't megadose. High-dose IV vitamin C raised deaths in burns and sepsis trials. Big antioxidant doses around workouts blunt training gains in young people. Liposomal: no proven benefit at 10x the cost. Always discuss with your doctor."
+reviewed: "2026-10-20"
+sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/vitamin-c-supplement-review/vitaminc/","checked":"2026-09-29","fingerprint":"sha256:0700978a6052f63e40fd6137b74b28a6a377b6911460c7fba73fa1e124242473"},{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/VitaminC-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:c90bdbe5335f77121d0603a4cc602e844987bad2ba22430bb33a7b09bd374f3d"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial","checked":"2026-10-20","fingerprint":"publishedAt:2026-07-08T12:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick","checked":"2026-10-20","fingerprint":"publishedAt:2025-11-20T19:11:54Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/stop-these-longevity-supplements-dangerous-side-effects","checked":"2026-10-20","fingerprint":"publishedAt:2025-02-24T21:22:36Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth","checked":"2026-10-20","fingerprint":"publishedAt:2024-12-09T15:30:08Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-supplements-try-avoid","checked":"2026-10-20","fingerprint":"publishedAt:2024-08-11T19:43:34Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/vitamin-c-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/vitamin-c-benefits-forms-dosing-and-side-effects)*
+
+## Current view (reviewed 20 October 2026)
+
+Most adults need 75 to 90 mg of vitamin C a day, and Brad advises against megadosing by default, because taking a lot of one antioxidant has, again and again, done nothing useful and sometimes done real harm ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). In a 2026 trial in people with severe burns, high-dose intravenous vitamin C (50 mg per kg every six hours for four days, roughly 14 to 16 g a day) was stopped early because deaths roughly doubled, though the exact size is uncertain; the same dose had already raised death or lasting organ failure in sepsis, 44.5% versus 38.5% ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). If you are young, healthy and training, big doses of antioxidant vitamins around workouts are a mistake, because they blunt the signal exercise uses to adapt; in older adults, antioxidants with exercise did slightly better than exercise alone, but the effects were small and their real-world significance is unclear ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). Brad advises avoiding IV drip clinics: the evidence is too weak to recommend IV vitamin C for cancer or fatigue, and people with a history of kidney disease have developed kidney failure after it ([Brad, 20 Nov 2025](https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick)). Liposomal vitamin C is absorbed somewhat better, but it has no proven benefit over regular vitamin C and costs about 10 times as much ([Brad, 9 Dec 2024](https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth)). Very high doses, in the thousands of milligrams, can cause nausea, diarrhea and stomach cramps and can contribute to kidney stones, and in people with hemochromatosis excess vitamin C can make iron overload worse ([Brad, 9 Dec 2024](https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth)).
+
+## Brad's videos on this topic
+
+- 8 Jul 2026, [They Had to Stop This Vitamin C Trial Early](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial): high-dose IV vitamin C raised deaths in a burns trial and death or organ failure in a sepsis trial; megadosing antioxidants keeps backfiring, and big doses around workouts blunt training gains in young people.
+- 20 Nov 2025, [Popular Longevity Treatment Makes You Sick](https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick): avoid IV drip clinics; IV vitamin C has too little evidence for cancer or fatigue and known harms, including kidney failure in people with kidney disease.
+- 24 Feb 2025, [Stop These Longevity Supplements (Dangerous Side Effects)](https://drstanfield.com/blogs/articles/stop-these-longevity-supplements-dangerous-side-effects): avoid high-dose vitamin C; 1,000 mg with another antioxidant blunted gains from exercise, so aim to reach the 90 mg recommended intake, mostly from food, rather than exceed it.
+- 9 Dec 2024, [Is Liposomal Vitamin C Worth the Money or a Useless Fad?](https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth): liposomal vitamin C is absorbed somewhat better but has no proven benefit over regular vitamin C and costs about 10 times as much.
+- 11 Aug 2024, [Which Popular Supplements Should You Actually Try to Avoid?](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid): direct antioxidants, including high-dose vitamin C, can blunt the benefits of exercise, especially when taken after a workout.
 
 ## 1. Overview
 
@@ -206,7 +220,7 @@ The role of vitamin C in cancer treatment remains controversial and under active
 
 **Historical context:** In the 1970s, Cameron, Campbell, and Pauling reported that high-dose vitamin C (intravenous and oral) had beneficial effects on quality of life and survival in terminal cancer patients [79][80]. However, a subsequent randomized, double-blind, placebo-controlled trial at the Mayo Clinic found that 10 g/day oral vitamin C produced no benefit over placebo in advanced colorectal cancer [81]. A 2003 review concluded that vitamin C confers no significant survival benefit in advanced cancer [82].
 
-**The IV vs. oral distinction:** The discrepancy between the early positive findings and the Mayo Clinic result may be explained by route of administration. Cameron and colleagues used both IV and oral vitamin C, while Moertel's Mayo Clinic trial used only oral. Oral vitamin C can produce plasma concentrations of at most 220 micromoles/L, whereas intravenous administration can achieve 26,000 micromoles/L [7][8]. At these pharmacologic concentrations, vitamin C is selectively cytotoxic to tumor cells in vitro, acting as a pro-oxidant that generates hydrogen peroxide with selective toxicity toward cancer cells [83][84][85]. Based on this rationale, several case reports of remarkably long survival in patients with advanced cancers treated with high-dose IV vitamin C, and promising animal data, some researchers advocate for reassessment of IV vitamin C as a cancer treatment [3][8][86].
+**The IV vs. oral distinction:** The discrepancy between the early positive findings and the Mayo Clinic result may be explained by route of administration. Cameron and colleagues used both IV and oral vitamin C, while Moertel's Mayo Clinic trial used only oral. Oral vitamin C can produce plasma concentrations of at most 220 micromoles/L, whereas intravenous administration can achieve 26,000 micromoles/L [7][8]. At these pharmacologic concentrations, vitamin C is selectively cytotoxic to tumor cells in vitro, acting as a pro-oxidant that generates hydrogen peroxide with selective toxicity toward cancer cells [83][84][85]. Based on this rationale, several case reports of remarkably long survival in patients with advanced cancers treated with high-dose IV vitamin C, and promising animal data, some researchers advocate for reassessment of IV vitamin C as a cancer treatment [3][8][86]. Brad's view is more cautious: the IV vitamin C studies so far are small, the evidence is not strong enough to recommend it for cancer treatment or prevention, and it has known harms, including kidney failure in people with a history of kidney disease [152].
 
 **Safety concern during treatment:** Whether vitamin C (and other antioxidants) interacts with chemotherapy or radiation therapy is unresolved. Some data suggest antioxidants might protect tumor cells from treatment [87][88][89]. Other data suggest they protect normal tissues from treatment-induced damage and/or enhance treatment effectiveness [90][91]. Due to this uncertainty, individuals undergoing chemotherapy or radiation should consult their oncologist before taking vitamin C, especially at high doses [87].
 
@@ -316,17 +330,21 @@ The UL for vitamin C from food, beverages, and supplements combined is **2,000 m
 
 ### Practical Dosing by Purpose
 
-**General supplementation (to fill dietary gaps):** 75-200 mg/day. This range meets the RDA and approaches tissue saturation levels. Most people eating 5 varied servings of fruits and vegetables daily will obtain more than 200 mg from diet alone [9][12].
+These are doses used in trials, not recommendations; Brad's view is in the Current view.
 
-**Cold prevention/immune support:** 200-1,000 mg/day, ideally taken as divided doses (e.g., 500 mg twice daily). Regular daily use during cold season has the best evidence. Starting after symptoms begin is not effective [38][39].
+Brad's view is to reach the RDA, mostly from food, and not to exceed it by default; he treats a label promising several thousand percent of the daily value as a warning sign, not a selling point [151][153]. The higher doses below are those used in trials, and the cautions in Section 6 apply to them.
 
-**Blood pressure support:** 500-1,000 mg/day, based on the meta-analysis showing modest reductions. Effects are small relative to pharmaceutical treatment [51].
+**General:** The RDA is 75-90 mg; food usually supplies it. Most people eating 5 varied servings of fruits and vegetables daily will obtain more than 200 mg from diet alone [9][12].
 
-**Gout/uric acid reduction:** 500 mg/day. The uric acid-lowering effect plateaus around 400-500 mg/day with no further benefit at higher doses [104].
+**Colds:** Trials used 200-1,000 mg/day for cold prevention. Regular daily use during cold season has the best evidence. Starting after symptoms begin is not effective [38][39].
 
-**AREDS formula (AMD progression):** 500 mg/day as part of the AREDS combination supplement, recommended only for people with intermediate or advanced AMD in one eye [101][102].
+**Blood pressure:** Trials used 500-1,000 mg/day for blood pressure; the meta-analysis showed modest reductions. Effects are small relative to pharmaceutical treatment [51].
 
-**Smokers:** RDA + 35 mg/day (125 mg for men, 110 mg for women). Higher supplementation may be beneficial for those who smoke, as they experience increased oxidative stress depleting vitamin C stores [12].
+**Gout and uric acid:** Trials used 500 mg/day to lower uric acid. The uric acid-lowering effect plateaus around 400-500 mg/day with no further benefit at higher doses [104].
+
+**AREDS formula (AMD progression):** The AREDS trials used 500 mg/day as part of the AREDS combination supplement, which is recommended only for people with intermediate or advanced AMD in one eye [101][102].
+
+**Smokers:** The RDA for smokers is 35 mg/day higher (125 mg for men, 110 mg for women), because smoking increases oxidative stress, which depletes vitamin C stores [12].
 
 ### How to Read a Supplement Label
 
@@ -788,3 +806,9 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 [149] Cheung MC, Zhao XQ, Chait A, et al. "Antioxidant supplements block the response of HDL to simvastatin-niacin therapy." *Arterioscler Thromb Vasc Biol*. 2001;21:1320-6. [https://pubmed.ncbi.nlm.nih.gov/11498460/](https://pubmed.ncbi.nlm.nih.gov/11498460/)
 
 [150] Sahud MA, et al. "Aspirin and vitamin C levels." *Lancet*. 1971.
+
+[151] Stanfield B. "They Had to Stop This Vitamin C Trial Early." drstanfield.com. 8 July 2026. [https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)
+
+[152] Stanfield B. "Popular Longevity Treatment Makes You Sick." drstanfield.com. 20 November 2025. [https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick](https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick)
+
+[153] Stanfield B. "Stop These Longevity Supplements (Dangerous Side Effects)." drstanfield.com. 24 February 2025. [https://drstanfield.com/blogs/articles/stop-these-longevity-supplements-dangerous-side-effects](https://drstanfield.com/blogs/articles/stop-these-longevity-supplements-dangerous-side-effects)

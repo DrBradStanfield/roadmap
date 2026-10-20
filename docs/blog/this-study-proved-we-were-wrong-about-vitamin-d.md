@@ -7,6 +7,7 @@ publishedAt: "2025-04-18T22:00:59Z"
 tags: ["Supplements"]
 keywords: ["aging","blood sugar","bone density","calcium","cognitive","diabetes","lifespan","skin","sleep","vitamin d"]
 summary: "Dr Brad’s vitamin D post: most adults don’t benefit from high-dose supplements; Endocrine Society now recommends 600-800 IU daily for general population. Covers deficiency, bone density, cancer, depression, falls risk, pregnancy, prediabetes, and adults over 75."
+topics: ["vitamin-d-benefits-forms-dosing-and-side-effects"]
 ---
 
 There’s been a ton of hype about vitamin D in recent years. Supporters say it’s a cure-all—boosting everything from your heart health to your lifespan. But is it really the magic bullet we’ve been sold?
