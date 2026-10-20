@@ -120,16 +120,18 @@ describe('the batch poll needs the token the upload was given', () => {
     expect(await answer.json()).toEqual({ allowed: true, remaining: expect.any(Number) });
   });
 
-  // US-15 AC34: one Sentry message per stopped file, sent when the batch ends.
-  // The ended batch is then forgotten (US-12 AC18), so it cannot be reported twice.
-  it('reports each stopped file once, with its category, when the batch ends', async () => {
-    pollBatch.mockResolvedValueOnce({
+  // US-15 AC34: one Sentry message per stopped file, sent when the batch ends,
+  // never again when the same ended batch is polled once more.
+  it('reports each stopped file once, with its category, however often the ended batch is polled', async () => {
+    const ended = {
       status: 'ended', completed: 2, total: 2,
       results: [{ index: 0, errorCode: 'refused' }, { index: 1, errorCode: 'too_long' }],
       stops: [new ExtractionStopError('refused', 'bio'), new ExtractionStopError('too_long')],
-    } as never);
+    } as never;
+    pollBatch.mockResolvedValueOnce(ended).mockResolvedValueOnce(ended);
     const { batchId, pollToken } = await newBatch();
     const answer = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
+    await action({ request: poll({ batchId, pollToken }) } as never);
     expect(answer).not.toHaveProperty('stops');
     expect(vi.mocked(Sentry.captureMessage).mock.calls).toEqual([
       ['Lab import: extraction refused', expect.objectContaining({ tags: expect.objectContaining({ path: 'batch', refusalCategory: 'bio' }) })],
@@ -146,43 +148,17 @@ describe('the batch poll needs the token the upload was given', () => {
   });
 });
 
-// US-12 AC18: Anthropic keeps a batch, what we sent and what came back, for up
-// to 29 days unless we delete it. We delete it once its results are back.
-describe('US-12 AC18: an ended batch is deleted at Anthropic once its results are read', () => {
-  it('deletes the batch after answering its results, and forgets it', async () => {
+// US-12 AC18: the poll never deletes. A lost answer must not lose the batch:
+// a re-poll gets the same results until the sweep deletes it
+// (api.lab-import-v2.sweep.test.ts).
+describe('US-12 AC18: the poll answers an ended batch again and deletes nothing', () => {
+  it('serves the results to a second poll, with no delete', async () => {
     const { batchId, pollToken } = await newBatch();
-    const answer = await action({ request: poll({ batchId, pollToken }) } as never);
-    expect(await answer.json()).toMatchObject({ status: 'ended' });
-    expect(deleteBatch).toHaveBeenCalledWith(batchId);
-    // Its results are gone at Anthropic, so a second poll answers like an unknown batch.
+    const first = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
     const again = await action({ request: poll({ batchId, pollToken }) } as never);
-    expect(again.status).toBe(404);
-    expect(pollBatch).toHaveBeenCalledTimes(1);
-  });
-
-  it('deletes nothing while the batch is still processing', async () => {
-    pollBatch.mockResolvedValueOnce({ status: 'processing', completed: 0, total: 1 } as never);
-    const { batchId, pollToken } = await newBatch();
-    await action({ request: poll({ batchId, pollToken }) } as never);
+    expect(again.status).toBe(200);
+    expect(await again.json()).toEqual(first);
     expect(deleteBatch).not.toHaveBeenCalled();
-  });
-
-  it('deletes nothing when the results could not be fetched', async () => {
-    pollBatch.mockRejectedValueOnce(new Error('Batch results error (500)'));
-    const { batchId, pollToken } = await newBatch();
-    const answer = await action({ request: poll({ batchId, pollToken }) } as never);
-    expect(await answer.json()).toMatchObject({ status: 'processing' });
-    expect(deleteBatch).not.toHaveBeenCalled();
-  });
-
-  it('a failed delete does not touch the answer', async () => {
-    for (const failure of [() => deleteBatch.mockResolvedValueOnce(false), () => deleteBatch.mockRejectedValueOnce(new Error('boom'))]) {
-      failure();
-      const { batchId, pollToken } = await newBatch();
-      const answer = await action({ request: poll({ batchId, pollToken }) } as never);
-      expect(answer.status).toBe(200);
-      expect(await answer.json()).toMatchObject({ status: 'ended', completed: 1, total: 1 });
-    }
   });
 });
 

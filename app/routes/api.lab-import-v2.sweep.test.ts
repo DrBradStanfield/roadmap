@@ -1,18 +1,22 @@
 /**
- * US-12 AC18: a batch whose results nobody fetched (the tab closed) is still
- * deleted at Anthropic. The 10-minute sweep forgets a batch after an hour and
- * asks Anthropic to delete it, again each sweep until it is gone. `deleteBatch`
- * cancels a batch still running, so a later sweep can delete it.
+ * US-12 AC18: every batch is deleted at Anthropic by the 10-minute sweep, never
+ * by the poll. A batch whose results were served goes at the next sweep, so a
+ * re-poll after a lost answer still works until then. One nobody polled to the
+ * end (the tab closed) goes an hour after its upload. The sweep retries a failed
+ * delete each time (`deleteBatch` cancels a batch still running, so a later
+ * sweep can delete it) and gives up 25 hours after the upload.
  */
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 
 const createBatch = vi.fn(async () => ({ batchId: 'batch_left' }));
+const pollBatch = vi.fn();
 const deleteBatch = vi.fn(async () => true);
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('../lib/anthropic.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   createBatch: (...a: unknown[]) => createBatch(...(a as [])),
+  pollBatch: (...a: unknown[]) => pollBatch(...(a as [])),
   deleteBatch: (...a: unknown[]) => deleteBatch(...(a as [])),
 }));
 vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
@@ -21,6 +25,7 @@ vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
 }));
 
 const MIN = 60_000;
+const URL = 'https://health-tool-app.fly.dev/api/lab-import-v2';
 let action: typeof import('./api.lab-import-v2').action;
 
 beforeAll(async () => {
@@ -29,18 +34,41 @@ beforeAll(async () => {
   ({ action } = await import('./api.lab-import-v2'));
 });
 
-async function upload(batchId: string): Promise<void> {
+beforeEach(() => {
+  deleteBatch.mockReset();
+  deleteBatch.mockResolvedValue(true);
+  pollBatch.mockResolvedValue({ status: 'ended', completed: 1, total: 1, results: [{ index: 0 }] });
+});
+
+async function upload(batchId: string): Promise<string> {
   createBatch.mockResolvedValueOnce({ batchId });
-  const res = await action({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+  const res = await action({ request: new Request(URL, {
     method: 'POST', headers: { 'fly-client-ip': '10.3.0.1' },
     body: JSON.stringify({ batch: true, files: [{ pages: [{ type: 'image', content: 'AAAA', mimeType: 'image/png' }] }] }),
   }) } as never);
   expect(res.status).toBe(200);
+  return (await res.json()).pollToken;
 }
 
-describe('US-12 AC18: an abandoned batch is deleted by the sweep', () => {
-  it('leaves a batch younger than an hour alone, deletes it after, and stops once it is gone', async () => {
-    await upload('batch_left');
+const poll = (batchId: string, pollToken: string) =>
+  action({ request: new Request(URL, { method: 'POST', body: JSON.stringify({ batchId, pollToken }) }) } as never);
+
+describe('US-12 AC18: the sweep deletes each batch at Anthropic', () => {
+  it('deletes a served batch at the next sweep; until then a re-poll still gets its results', async () => {
+    const token = await upload('batch_served');
+    expect((await poll('batch_served', token)).status).toBe(200);
+    expect(deleteBatch).not.toHaveBeenCalled();
+    const again = await poll('batch_served', token);
+    expect(await again.json()).toMatchObject({ status: 'ended', results: [{ index: 0 }] });
+    await vi.advanceTimersByTimeAsync(10 * MIN);
+    expect(deleteBatch).toHaveBeenCalledWith('batch_served');
+    expect((await poll('batch_served', token)).status).toBe(404);
+  });
+
+  it('leaves an unserved batch an hour (a poll that only saw it processing serves nothing), deletes it after, and stops once it is gone', async () => {
+    pollBatch.mockResolvedValueOnce({ status: 'processing', completed: 0, total: 1 });
+    const token = await upload('batch_left');
+    await poll('batch_left', token);
     await vi.advanceTimersByTimeAsync(50 * MIN);
     expect(deleteBatch).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(20 * MIN);
@@ -51,7 +79,6 @@ describe('US-12 AC18: an abandoned batch is deleted by the sweep', () => {
   });
 
   it('tries again each sweep while the delete fails, and gives up a day after the upload', async () => {
-    deleteBatch.mockClear();
     deleteBatch.mockResolvedValue(false);
     await upload('batch_running');
     await vi.advanceTimersByTimeAsync(70 * MIN);

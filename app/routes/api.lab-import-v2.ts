@@ -51,18 +51,19 @@ function consumeQuota(ip: string, count: number): boolean {
 // required on every poll; without it, or with the wrong one, the batch does not
 // exist (404, the same answer as an id nobody created).
 const MAX_ACTIVE_BATCHES = 200;
-const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; days: DayFlags; refusedRows?: true }>();
+const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; days: DayFlags; refusedRows?: true; served?: true }>();
 // Batches Anthropic still holds for us, id → createdAt: each is deleted there
-// once ended (US-12 AC18). A results poll deletes its batch; the sweep deletes
-// one nobody polled to the end (the tab closed). deleteBatch cancels a batch
-// still running, so the next sweep can delete it. Every batch ends within 24 h,
-// so after 25 the sweep stops trying. Per machine and in memory, like
+// once ended (US-12 AC18). The sweep takes a batch whose results were served,
+// so a re-poll (a lost answer) still works until then, and one nobody polled
+// to the end (the tab closed) after an hour. deleteBatch cancels a batch still
+// running, so the next sweep can delete it. Every batch ends within 24 h, so
+// after 25 the sweep stops trying. Per machine and in memory, like
 // activeBatches: a restart forgets them, and Anthropic's 29 days apply.
 const undeletedBatches = new Map<string, number>();
 setInterval(async () => {
   const now = Date.now();
   for (const [id, b] of activeBatches) {
-    if (b.createdAt < now - 60 * 60_000) { activeBatches.delete(id); undeletedBatches.set(id, b.createdAt); }
+    if (b.served || b.createdAt < now - 60 * 60_000) { activeBatches.delete(id); undeletedBatches.set(id, b.createdAt); }
   }
   for (const [id, createdAt] of undeletedBatches) {
     if (await deleteBatch(id) || createdAt < now - 25 * 60 * 60_000) undeletedBatches.delete(id);
@@ -130,13 +131,10 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
   }
   try {
     const result = await pollBatch(batchId);
-    // Results read: forget the batch and delete it at Anthropic, best-effort; a
-    // failed delete is left to the sweep (US-12 AC18). So each stopped file is
-    // reported once (US-15 AC34), and a second poll 404s.
-    if (result.status === 'ended') {
-      activeBatches.delete(batchId);
-      undeletedBatches.set(batchId, batch.createdAt);
-      void deleteBatch(batchId).then(gone => { if (gone) undeletedBatches.delete(batchId); }, () => {});
+    // Served: the next sweep deletes it at Anthropic (US-12 AC18). Each stopped
+    // file is reported once, when the batch ends: it can be polled again (US-15 AC34).
+    if (result.status === 'ended' && !batch.served) {
+      batch.served = true;
       for (const stop of result.stops ?? []) reportExtractionStop(stop.code, stop.refusalCategory, 'batch');
     }
     return Response.json(
