@@ -72,7 +72,7 @@ Write the reference report schema (reference-writer-contract.md rule 6) with the
 - `"ask_brad": [{"item","why"}]`
 - `"positions_drift": [{"file","line_text","master_says"}]`
 
-After its first write the report is evidence: never edit it, not even to append (Brad 2026-10-20). Put each correction in a new `<handle>.addendum-<N>.json` beside it, N one higher than the last. The checker applies addenda in numeric order:
+After its first write the report is evidence: never edit it, not even to append (Brad 2026-10-20). Put each correction in a new `<handle>.addendum-<N>.json` beside it, N one higher than the last (1, 2, 3; a gap fails). The checker applies addenda in numeric order:
 
 ```json
 {"append": {"changed_tokens": [], "extra_raw": [], "current_view_basis": [], "deleted_sentences": [], "ask_brad": [], "needs_pubmed": [], "positions_drift": [], "notes": "text added to notes"},
@@ -80,8 +80,10 @@ After its first write the report is evidence: never edit it, not even to append 
  "set": {"proposed_summary_correction": "the new summary"}}
 ```
 
-- `append` adds entries. `void` retires one: `section` is changed_tokens, current_view_basis, deleted_sentences, extra_raw or ask_brad; `index` counts the array as merged before this addendum; `reason` is required.
-- `set` takes only `proposed_summary_correction`. Any other key fails the run.
+- `append` adds entries. `void` retires one: `section` is changed_tokens, current_view_basis, deleted_sentences, extra_raw or ask_brad; `index` counts the array as merged before this addendum; `reason` is required. One entry is voided once.
+- `set` takes only a non-empty `proposed_summary_correction`. Any other key fails the run.
+- An entry written `"void": true` inline must carry a non-empty `void_reason`. If the report itself fails that rule, do not rewrite it: an addendum that voids the same entry with a reason repairs it.
+- The batch report shows each void as section, index and a short hash of the reason, so a reason may be plain prose.
 - A stale `extra_raw` sha256 needs no void: append the same path with the current sha256. The old one shows as INFO "superseded sha".
 
 Final message, under 25 lines:

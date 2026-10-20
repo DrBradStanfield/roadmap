@@ -22,10 +22,12 @@
  *  - An unchanged (frozen) summary passes even with a proposed correction: the orchestrator applies
  *    corrections later under the paired-arm rule. A summary that changed must equal the proposal.
  *  - A changed_tokens entry may carry "void": true and a "void_reason". Reports are append-only, so a wrong entry is
- *    voided, not deleted: every AC2 check skips it, it never covers a token, and the report lists "VOID <i>: <reason>".
+ *    voided, not deleted: every AC2 check skips it, it never covers a token, and the run lists "VOID <section> <i>: <reason>"
+ *    (--out shows a 12-character sha256 of the reason, never its text). current_view_basis, deleted_sentences, extra_raw
+ *    and ask_brad entries void the same way.
  *  - After the first write a report is never edited, even to append (Brad 2026-10-20): a correction is a sibling
- *    <handle>.addendum-<N>.json, applied in numeric order (see applyAddenda). It appends entries, voids entries with a
- *    reason, or sets proposed_summary_correction; anything else fails. --out lists the addenda applied per handle.
+ *    <handle>.addendum-<N>.json, N = 1, 2, 3 with no gap (see applyAddenda). It appends entries, voids entries with a
+ *    reason, or sets proposed_summary_correction; anything else fails. --out prints each report file with its sha256.
  *  - Several extra_raw entries may name one path: any sha256 that matches accepts it; the rest are INFO "superseded sha".
  *  - AC6 allows the --out report path inside the repo: the batch report commits with the batch.
  *
@@ -72,17 +74,18 @@ export interface Report {
 }
 
 const ADDENDUM_APPEND = ["extra_raw", "changed_tokens", "current_view_basis", "deleted_sentences", "ask_brad", "needs_pubmed", "positions_drift"];
-const ADDENDUM_VOID = ["changed_tokens", "current_view_basis", "deleted_sentences", "extra_raw", "ask_brad"];
+export const ADDENDUM_VOID = ["changed_tokens", "current_view_basis", "deleted_sentences", "extra_raw", "ask_brad"];
 
 /**
  * Reports are append-only (US-42 AC2): a correction is a <handle>.addendum-<N>.json beside the report, applied in
  * numeric order. {append: {<section>: [...], notes: "..."}, void: [{section, index, reason}], set: {proposed_summary_correction}}.
- * A void's index counts the array merged before its addendum. Returns a merged copy; the input is never changed.
+ * A void's index counts the array merged before its addendum. A void may give a reason to a base void that has none (the
+ * repair path for a base report that fails validation). Returns a merged copy; the input is never changed.
  */
-export function applyAddenda(base: Record<string, unknown>, addenda: { name: string; data: unknown }[]): { report: Record<string, unknown>; errors: string[]; voids: string[] } {
-  if (!addenda.length) return { report: base, errors: [], voids: [] };
+export function applyAddenda(base: Record<string, unknown>, addenda: { name: string; data: unknown }[]): { report: Record<string, unknown>; errors: string[]; infos: string[] } {
+  if (!addenda.length) return { report: base, errors: [], infos: [] };
   const r: Record<string, unknown> = JSON.parse(JSON.stringify(base));
-  const errors: string[] = [], voids: string[] = [];
+  const errors: string[] = [], infos: string[] = [];
   const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === "object" && !Array.isArray(x);
   const unknown = (o: Record<string, unknown>, allowed: string[], at: string, err: (m: string) => void) => {
     for (const k of Object.keys(o)) if (!allowed.includes(k)) err(`${at}${k}: unknown key`);
@@ -101,8 +104,10 @@ export function applyAddenda(base: Record<string, unknown>, addenda: { name: str
     if (!isObj(set)) err("set: object expected");
     else {
       unknown(set, ["proposed_summary_correction"], "set.", err);
-      if (set.proposed_summary_correction !== undefined && typeof set.proposed_summary_correction !== "string") err("set.proposed_summary_correction: string expected");
+      const p = set.proposed_summary_correction;
+      if (p !== undefined && (typeof p !== "string" || !p.trim())) err("set.proposed_summary_correction: non-empty string expected");
     }
+    const seen = new Set<string>();
     if (!Array.isArray(vs)) err("void: array expected");
     else vs.forEach((v: unknown, i) => {
       if (!isObj(v)) return err(`void[${i}]: object expected`);
@@ -111,18 +116,17 @@ export function applyAddenda(base: Record<string, unknown>, addenda: { name: str
       if (!ADDENDUM_VOID.includes(v.section as string)) return err(`void[${i}].section: one of ${ADDENDUM_VOID.join("|")} expected`);
       const arr = r[v.section as string], e = Array.isArray(arr) && Number.isInteger(v.index) ? arr[v.index as number] : undefined;
       if (!isObj(e)) err(`void[${i}].index: no ${v.section} entry ${String(v.index)}`);
-      else if (e.void === true) err(`void[${i}]: ${v.section} entry ${v.index} is already void`);
+      else if (seen.has(`${v.section} ${v.index}`)) err(`void[${i}]: ${v.section} entry ${v.index} is voided twice`);
+      else if (e.void === true && typeof e.void_reason === "string" && e.void_reason.trim()) err(`void[${i}]: ${v.section} entry ${v.index} is already void`);
+      seen.add(`${v.section} ${v.index}`);
     });
     if (errs.length) { errors.push(...errs); continue; }
-    for (const v of vs as { section: string; index: number; reason: string }[]) {
-      Object.assign((r[v.section] as Record<string, unknown>[])[v.index], { void: true, void_reason: v.reason });
-      if (v.section !== "changed_tokens") voids.push(`VOID ${v.section} ${v.index}: ${v.reason}`); // AC2 lists changed_tokens voids itself
-    }
+    for (const v of vs as { section: string; index: number; reason: string }[]) Object.assign((r[v.section] as Record<string, unknown>[])[v.index], { void: true, void_reason: v.reason });
     for (const k of ADDENDUM_APPEND) if (Array.isArray(append[k])) r[k] = [...(Array.isArray(r[k]) ? r[k] as unknown[] : []), ...(append[k] as unknown[])];
     if (typeof append.notes === "string") r.notes = r.notes ? `${r.notes}\n${append.notes}` : append.notes;
-    if (typeof set.proposed_summary_correction === "string") r.proposed_summary_correction = set.proposed_summary_correction;
+    if (typeof set.proposed_summary_correction === "string") { r.proposed_summary_correction = set.proposed_summary_correction; infos.push(`proposed_summary_correction set by ${name}`); }
   }
-  return { report: r, errors, voids };
+  return { report: r, errors, infos };
 }
 
 export const REPORT_SCHEMA = {
@@ -218,10 +222,10 @@ export function validateReport(o: unknown): string[] {
   if (Array.isArray(r.deleted_sentences)) (r.deleted_sentences as { pattern?: unknown }[]).forEach((x, i) => {
     if (x && x.pattern !== undefined && typeof x.pattern !== "boolean") e.push(`deleted_sentences[${i}].pattern: boolean expected`);
   });
-  if (Array.isArray(r.changed_tokens)) (r.changed_tokens as { void?: unknown; void_reason?: unknown }[]).forEach((x, i) => {
+  for (const k of ADDENDUM_VOID) if (Array.isArray(r[k])) (r[k] as { void?: unknown; void_reason?: unknown }[]).forEach((x, i) => {
     if (!x || x.void === undefined) return;
-    if (typeof x.void !== "boolean") e.push(`changed_tokens[${i}].void: boolean expected`);
-    else if (x.void && (typeof x.void_reason !== "string" || !x.void_reason.trim())) e.push(`changed_tokens[${i}].void_reason: void entry without void_reason`);
+    if (x.void !== true) e.push(`${k}[${i}].void: true expected`);
+    else if (typeof x.void_reason !== "string" || !x.void_reason.trim()) e.push(`${k}[${i}].void_reason: void entry without void_reason`);
   });
   if (r.new !== undefined && typeof r.new !== "boolean") e.push("new: boolean expected");
   if (r.extra_raw !== undefined) {
@@ -577,8 +581,8 @@ export interface Options {
 export interface Row {
   handle: string; type: string; file: string; rawRel: string; rawSha: string; bodySha: string; tokensNew: number; quoted: number;
   deleted: number; hedgeBefore: number; hedgeAfter: number; productsBefore: number; productsAfter: number;
-  /** Addendum files applied to this handle's report, in order. */
-  addenda?: string[];
+  /** The diff report, then each addendum applied to it, in order, with the sha256 of each file. */
+  reportFiles?: { name: string; sha256: string }[];
 }
 
 const DIR_FOR: Record<string, string> = { pathway: "pathway", guideline: "guideline", reference: "blog", video: "blog" };
@@ -608,7 +612,7 @@ class Check {
 
 interface Ctx {
   handle: string; rep: Report | null; rel: string; newText: string | null; baseText: string | null;
-  newBody: string; baseBody: string; type: string | null; addenda: string[];
+  newBody: string; baseBody: string; type: string | null; reportFiles: { name: string; sha256: string }[];
 }
 
 const fmType = (text: string | null) => (text && /^type:\s*"?([A-Za-z]+)"?\s*$/m.exec(splitFrontmatter(text).front)?.[1]) || "video";
@@ -616,26 +620,39 @@ const fmType = (text: string | null) => (text && /^type:\s*"?([A-Za-z]+)"?\s*$/m
 function loadCtx(o: Options, base: string, handle: string, ac2: Check, index: Map<string, { type?: string }>): Ctx {
   const rp = join(o.reportsDir, `${handle}.json`);
   let rep: Report | null = null;
-  // Addenda: <handle>.addendum-<N>.json, numeric order. The report and its addenda are only ever read.
-  const prefix = `${handle}.addendum-`;
-  const addenda = (existsSync(o.reportsDir) ? readdirSync(o.reportsDir) : [])
-    .filter((f) => f.startsWith(prefix) && /^\d+\.json$/.test(f.slice(prefix.length)))
-    .map((f) => ({ name: f, n: parseInt(f.slice(prefix.length), 10) })).sort((a, b) => a.n - b.n);
-  for (let i = 1; i < addenda.length; i++) if (addenda[i].n === addenda[i - 1].n) ac2.fails.push(`${handle}: addenda ${addenda[i - 1].name} and ${addenda[i].name} share a number`);
+  // Addenda: <handle>.addendum-<N>.json, N = 1, 2, 3 ... with no gap. The report and its addenda are only ever read.
+  const prefix = `${handle}.addendum`, files: { name: string; sha256: string }[] = [];
+  const addenda: { name: string; n: number }[] = [];
+  for (const f of existsSync(o.reportsDir) ? readdirSync(o.reportsDir) : []) {
+    if (!f.startsWith(prefix)) continue;
+    const n = /^-([1-9]\d*)\.json$/.exec(f.slice(prefix.length))?.[1];
+    if (n) addenda.push({ name: f, n: Number(n) }); else ac2.warns.push(`${handle}: ${f} is not <handle>.addendum-<N>.json; ignored`);
+  }
+  addenda.sort((x, y) => x.n - y.n);
+  const gap = addenda.findIndex((x, i) => x.n !== i + 1);
+  if (gap >= 0) ac2.fails.push(`${handle}: addendum numbering gap: ${prefix}-${gap + 1}.json missing`);
   if (!existsSync(rp)) ac2.fails.push(`${handle}: diff report missing at ${rp}`);
   else {
     try {
+      const read = (name: string) => { const buf = readFileSync(join(o.reportsDir, name)); files.push({ name, sha256: sha256(buf) }); return buf.toString("utf8"); };
+      const base = JSON.parse(read(`${handle}.json`));
       const loaded: { name: string; data: unknown }[] = [];
       for (const { name } of addenda) {
-        try { loaded.push({ name, data: JSON.parse(readFileSync(join(o.reportsDir, name), "utf8")) }); } catch (e) { ac2.fails.push(`${handle}: ${name}: not JSON: ${(e as Error).message}`); }
+        const text = read(name);
+        try { loaded.push({ name, data: JSON.parse(text) }); } catch (e) { ac2.fails.push(`${handle}: ${name}: not JSON: ${(e as Error).message}`); }
       }
-      const base = JSON.parse(readFileSync(rp, "utf8"));
-      const merged = validateReport(base).length ? { report: base, errors: [], voids: [] } : applyAddenda(base, loaded);
+      // Addenda apply even to an invalid base report: a void may supply a missing void_reason (the repair path).
+      const merged = base && typeof base === "object" && !Array.isArray(base) ? applyAddenda(base, loaded) : { report: base, errors: [], infos: [] };
       const parsed = merged.report, errs = [...merged.errors, ...validateReport(parsed)];
       if (errs.length) ac2.fails.push(`${handle}: report invalid: ${errs.join("; ")}`);
       else if (loaded.length < addenda.length) { /* an unreadable addendum already failed */ }
       else if (parsed.handle !== handle) ac2.fails.push(`${handle}: report handle is "${parsed.handle}"`);
-      else { rep = parsed as unknown as Report; ac2.infos.push(...merged.voids.map((v) => `${handle}: ${v}`)); }
+      else {
+        rep = parsed as unknown as Report;
+        ac2.infos.push(...merged.infos.map((v) => `${handle}: ${v}`));
+        // Every void, inline or from an addendum; --out renders it without the reason text.
+        for (const k of ADDENDUM_VOID) ((parsed[k] ?? []) as { void?: boolean; void_reason?: string }[]).forEach((x, i) => { if (x.void) ac2.infos.push(`${handle}: VOID ${k} ${i}: ${x.void_reason}`); });
+      }
     } catch (e) { ac2.fails.push(`${handle}: report is not JSON: ${(e as Error).message}`); }
   }
   // The type comes from the index, never from the report; a handle absent from the index must say "new".
@@ -656,7 +673,7 @@ function loadCtx(o: Options, base: string, handle: string, ac2: Check, index: Ma
     else ac2.fails.push(`${handle}: not in docs/blog/index.json; declare "new": true in the report`);
   }
   if (rep && type && rep.type !== type) ac2.fails.push(`${handle}: report type "${rep.type}" does not match ${source} type "${type}"`);
-  return { handle, rep, rel, newText, baseText, type, addenda: addenda.map((a) => a.name),
+  return { handle, rep, rel, newText, baseText, type, reportFiles: files,
     newBody: splitFrontmatter(newText ?? "").body, baseBody: splitFrontmatter(baseText ?? "").body };
 }
 
@@ -1044,9 +1061,7 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     return ok;
   };
   const entries = rep.changed_tokens.flatMap((e, i) => {
-    if (!e.void) return [{ e, ok: verifyEntry(e, i) }];
-    ac2.infos.push(`${tag} VOID ${i}: ${e.void_reason ?? "(no reason)"} [body: ${e.body_line.replace(/\s+/g, " ").slice(0, 60)}]`);
-    return [];
+    return e.void ? [] : [{ e, ok: verifyEntry(e, i) }]; // loadCtx lists the voids
   });
   const valid = entries.filter((x) => x.ok).map((x) => ({ ...x.e, ok: x.ok! }));
   let quoted = 0;
@@ -1402,7 +1417,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     }
     rows.push({ handle: c.handle, type: c.type ?? "?", file: c.rel, rawRel: raw?.main?.rel ?? "-", rawSha: c.rep?.raw_sha256 ?? "-",
       bodySha: sha256(c.newBody), tokensNew: added.length, quoted, deleted, hedgeBefore, hedgeAfter,
-      productsBefore: productMentions(c.baseBody), productsAfter: productMentions(c.newBody), addenda: c.addenda });
+      productsBefore: productMentions(c.baseBody), productsAfter: productMentions(c.newBody), reportFiles: c.reportFiles });
   }
 
   if (o.checkIds) verifyIds(ids, o, ac7);
@@ -1484,16 +1499,18 @@ export function renderReport(batch: string, base: string, baseSha: string, resul
   }
   const cap = 100;
   L.push("", "## Handles", "",
-    "| handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products |",
-    "|---|---|---|---|---|---|---|---|---|---|");
+    "| handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products | diff report + addenda (sha256) |",
+    "|---|---|---|---|---|---|---|---|---|---|---|");
   for (const r of rows.slice(0, cap)) {
-    L.push(`| ${r.handle} | ${r.type} | ${r.rawRel} | ${r.rawSha} | ${r.bodySha.slice(0, 16)} | ${r.tokensNew} | ${r.quoted} | ${r.deleted} | ${r.hedgeBefore}>${r.hedgeAfter} | ${r.productsBefore}>${r.productsAfter} |`);
+    L.push(`| ${r.handle} | ${r.type} | ${r.rawRel} | ${r.rawSha} | ${r.bodySha.slice(0, 16)} | ${r.tokensNew} | ${r.quoted} | ${r.deleted} | ${r.hedgeBefore}>${r.hedgeAfter} | ${r.productsBefore}>${r.productsAfter} | ${(r.reportFiles ?? []).map((f) => `${f.name} ${f.sha256}`).join(" + ") || "-"} |`);
   }
   if (rows.length > cap) L.push("", `${rows.length - cap} more handles omitted to stay under the line cap.`);
-  const voids = results.flatMap((r) => r.evidence).filter((e) => /^\S+: VOID (\w+ )?\d+: /.test(e));
-  if (voids.length) L.push("", "## Voided entries", "", ...voids.map((v) => `- ${v.replace(/\|/g, "/")}`));
-  const addenda = rows.filter((r) => r.addenda?.length);
-  if (addenda.length) L.push("", "## Addenda applied", "", ...addenda.map((r) => `- ${r.handle}: ${r.addenda!.join(", ")}`));
+  // A void's reason is free text: the committed report carries only a short hash of it (review R2).
+  const voids = results.flatMap((r) => r.evidence).flatMap((e) => {
+    const m = /^(\S+): VOID (\w+) (\d+): ([\s\S]*)$/.exec(e);
+    return m ? [`- ${m[1]}: VOID ${m[2]} ${m[3]} (reason sha256 ${sha256(m[4]).slice(0, 12)})`] : [];
+  });
+  if (voids.length) L.push("", "## Voided entries", "", ...voids);
   const ex = results.flatMap((r) => r.excepted ?? []);
   if (ex.length) {
     L.push("", "## Accepted exceptions", "", "| check | handle | by | date | reason | match sha256 |", "|---|---|---|---|---|---|");

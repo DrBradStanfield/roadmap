@@ -31,7 +31,7 @@ Read this first after a compaction. Story: US-50 in docs/user-stories.md. Plan: 
    - Exceptions only for AC2, AC4, AC7 and PATHWAY, never with ConsumerLab quotes.
    - Keep fixtures and the sign-off sheet off the branch (AC6).
    - Merge origin/main into the branch before each run.
-   - Reports are append-only evidence: auto mode blocks any edit to them. After the first write, a correction (a stale extra_raw sha256, a new quote after a Brad-directed edit) goes in a new `<handle>.addendum-<N>.json`, never in the report (master-writer-contract.md § Report). The batch report lists the addenda applied.
+   - Reports are append-only evidence: auto mode blocks any edit to them. After the first write, a correction (a stale extra_raw sha256, a new quote after a Brad-directed edit) goes in a new `<handle>.addendum-<N>.json`, never in the report (master-writer-contract.md § Report). Number them 1, 2, 3 with no gap. A base report that fails validation (a void with no reason) is repaired by an addendum voiding that entry with a reason, never by a fresh report. The batch report prints every report file and addendum with its sha256.
    - `--check-ids` under `--masters` checks every DOI and PMID, one a second; `--check-ids-cap <n>` limits it.
 5. Review branch built fresh from origin/main with only the batch files (temp GIT_INDEX_FILE). Stage raws under refresh-2026-09-29/batch-masters-<n>/{cl,nih,pubmed}. Then, in parallel:
    - a fresh `adversary`;
