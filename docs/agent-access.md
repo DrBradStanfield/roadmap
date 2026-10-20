@@ -17,7 +17,7 @@ Tools that enforce this contract for you: `tools/get-plan.ts`, `tools/edit-recor
   `https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json`
 - Current `schemaVersion`: **1**
 - TypeScript source of truth: `packages/health-core/src/roadmap-file.ts`
-- Compute the plan from the file: `npx tsx tools/get-plan.ts <file>` (in this repo), see `--help`
+- Compute the plan from the file: `npx tsx tools/get-plan.ts <file>` (in this repo), see `--help`. No file yet? `get-plan.ts --from-values <values.json|->` builds one in memory from sex, height, age and values, and writes nothing.
 - Something wrong or missing? The MCP server's `report_feedback` tool reports it. On the
   hosted server it proposes the issue first and, once the user confirms, files it itself;
   the issue is public; a server with no GitHub token prepares a link the user submits instead. Tell the
