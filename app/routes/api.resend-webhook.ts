@@ -32,7 +32,7 @@ export async function action({ request }: ActionFunctionArgs) {
   // Raw body — the signature covers the exact bytes, so it must not be parsed
   // and re-serialised before verification. Capped first: anyone can reach this
   // route straight on Fly, signed or not (US-09 AC25).
-  const rawBody = await cappedBody(request);
+  const rawBody = await cappedBody(request, 256 * 1024);
   if (rawBody === null) return new Response('Payload too large', { status: 413 });
   const verdict = verifyResendSignature(
     rawBody,

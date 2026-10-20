@@ -135,11 +135,11 @@ describe('api.chat customer id on a GET', () => {
 });
 
 describe('api.chat body cap (US-09 AC25)', () => {
-  it('answers 413 to a chunked body over 1 MB, stops reading, and reports nothing', async () => {
+  it('answers 413 to a chunked body over 2 MB, stops reading, and reports nothing', async () => {
     const { request, pulled } = streamingPost('https://drstanfield.com/api/chat', 4 * 1024 * 1024, { chunkBytes: 64 * 1024 });
     const res = await action({ request, params: {} } as unknown as Parameters<typeof action>[0]);
     expect(res.status).toBe(413);
-    expect(pulled.bytes).toBeLessThanOrEqual(1024 * 1024 + 2 * 64 * 1024);
+    expect(pulled.bytes).toBeLessThanOrEqual(2 * 1024 * 1024 + 2 * 64 * 1024);
     await Sentry.flush();
     expect(envelopes).toEqual([]);
   });

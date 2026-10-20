@@ -20,6 +20,7 @@ import { action as googleToken } from './api.google-token';
 import { action as resendWebhook } from './api.resend-webhook';
 
 const SLACK = SMALL_BODY_CAP + 2 * 16 * 1024;
+const RESEND_SLACK = 256 * 1024 + 2 * 16 * 1024;
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -41,11 +42,11 @@ describe('body cap (US-09 AC25)', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('the Resend webhook answers 413 to an unsigned body over 64 KB before it checks a signature', async () => {
+  it('the Resend webhook answers 413 to an unsigned body over 256 KB before it checks a signature', async () => {
     const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/resend-webhook', 100 * SMALL_BODY_CAP);
     const res = await resendWebhook({ request } as never);
     expect(res.status).toBe(413);
-    expect(pulled.bytes).toBeLessThanOrEqual(SLACK);
+    expect(pulled.bytes).toBeLessThanOrEqual(RESEND_SLACK);
     expect(verifyResendSignature).not.toHaveBeenCalled();
   });
 
@@ -54,7 +55,7 @@ describe('body cap (US-09 AC25)', () => {
       headers: { 'content-length': '200' },
     });
     expect((await resendWebhook({ request } as never)).status).toBe(413);
-    expect(pulled.bytes).toBeLessThanOrEqual(SLACK);
+    expect(pulled.bytes).toBeLessThanOrEqual(RESEND_SLACK);
     expect(verifyResendSignature).not.toHaveBeenCalled();
   });
 });
