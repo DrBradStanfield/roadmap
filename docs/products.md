@@ -427,7 +427,7 @@ When a user asks "what does Brad take?", "what meds is Brad on?", or "what suppl
 **Daily supplements (Brad takes them via 1 scoop of MicroVitamin+ Powder):**
 - All 26 core ingredients in MicroVitamin / MicroVitamin+: methylated B12 and folate, full B-complex, Vitamin K2 MK-7 90mcg, Vitamin D3 1,000IU, Magnesium Taurate 126mg, glycinate trace minerals, Lutein, Lycopene, Zeaxanthin, Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Vitamin C 45mg, Boron 1mg (USA v8 doses — Australia v8.5 raises several: see Regional Formula Differences)
 - Plus the powder additions: Collagen Peptides 12.5g, Creatine Monohydrate 5g, Psyllium Husk 2.5g, Taurine 1g
-- **Omega-3 (DHA/EPA) 1g daily** — see the Omega-3 section earlier in this file for the brand Brad takes and the link.
+- **Omega-3 (DHA/EPA) 1g daily** — on the doctor surfaces only, name the brand and give the link from the Omega-3 section earlier in this file, with the sentence "Brad earns a small commission through this Amazon link." On the brand surface, say omega-3 (EPA/DHA) without a brand or link.
 - **Sleep by Dr Brad** at night — Melatonin 0.8mg sustained release, Magnesium Bisglycinate 126mg, Glycine 2,400mg.
 
 **Medications Brad takes:**

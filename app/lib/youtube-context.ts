@@ -59,11 +59,14 @@ export function loadedHandles(routerHandles: string[], matched: { skipped: strin
 export const MASTER_VIEWS_HEADING = "## Brad's current view and safety notes on this video's topics (added automatically for this video; not router-matched content)";
 
 /**
- * Cap on what the master views add. Every named master's current view goes in
- * first and is never dropped for size (a view runs about 1,600 to 2,100
- * characters on the six masters published 2026-10-20). Safety sections, with
- * the bibliography lines they cite, then fill what is left, in topics order;
- * one that would pass the cap is skipped and logged. One master's full block
+ * Caps on what the master views add. Every named master's current view goes in
+ * first (a view runs about 1,600 to 2,100 characters on the six masters
+ * published 2026-10-20); one over MAX_VIEW_CHARS is malformed and is dropped
+ * and logged. Safety sections, with the bibliography lines they cite, then fill
+ * what is left in topics order: first every master's Drug Interactions, then
+ * the Safety and Side Effects sections; one that would pass the cap is skipped
+ * and logged, and a master whose interactions were skipped adds no other
+ * safety section. One master's full block
  * runs about 6,900 (taurine) to 19,400 characters (vitamin C) with its cited
  * references, so 40,000 holds two or three masters in full; a post naming five
  * (the-only-three-supplements-doctor-brad-takes) gets all five views and three
@@ -71,16 +74,17 @@ export const MASTER_VIEWS_HEADING = "## Brad's current view and safety notes on 
  * (about 10,000 tokens at the cap) is paid on every comment.
  */
 export const MAX_MASTER_VIEW_CHARS = 40_000;
+export const MAX_VIEW_CHARS = 6_000;
 
 /** A master's "Current view" or "Current evidence position" section, heading to
- *  the next `## ` heading, demoted one level to sit under MASTER_VIEWS_HEADING.
+ *  the next `## ` heading or `---` line, demoted one level to sit under MASTER_VIEWS_HEADING.
  *  Null when the master has neither. */
 export function currentViewSection(md: string): string | null {
   const body = stripFrontmatter(md);
   const heading = body.match(/^## (?:Current view\b|Current evidence position\b).*$/m);
   if (!heading || heading.index === undefined) return null;
   const rest = body.slice(heading.index + heading[0].length);
-  const next = rest.search(/^## /m);
+  const next = rest.search(/^(?:## |---\s*$)/m);
   return `#${heading[0]}${next === -1 ? rest : rest.slice(0, next)}`.trim();
 }
 
@@ -88,6 +92,7 @@ export function currentViewSection(md: string): string | null {
  *  contraindications or who should not take it ("## 5. Safety and Side
  *  Effects", "## 6. Drug Interactions" on the published masters). */
 const SAFETY_HEADING = /^## .*\b(?:safety|side effects?|cautions?|interactions?|contraindications?|who should not)\b/i;
+const INTERACTIONS_HEADING = /^#+ .*\binteractions?\b/i;
 
 /** A master's bibliography from its References section, marker number to
  *  line: "[n] text" and "n. text" lines both come back as "[n] text". */
@@ -112,12 +117,14 @@ function citedNumbers(text: string): number[] {
 
 /** Each safety section of a master, heading to the next `## ` heading, every
  *  heading in it demoted one level, followed by the bibliography lines its
- *  [n] markers cite. Empty when the master has none. */
+ *  [n] markers cite. Interactions sections come first. Empty when the master
+ *  has none. */
 export function safetySections(md: string): string[] {
   const body = stripFrontmatter(md);
   const refs = bibliography(body);
   return body.split(/^(?=## )/m)
     .filter(s => SAFETY_HEADING.test(s))
+    .sort((a, b) => Number(INTERACTIONS_HEADING.test(b)) - Number(INTERACTIONS_HEADING.test(a)))
     .map(s => {
       const section = s.replace(/^(#+) /gm, '#$1 ').trim();
       const cited = citedNumbers(section).flatMap(n => refs.get(n) ?? []);
@@ -129,9 +136,9 @@ export function safetySections(md: string): string[] {
  * The master views for a comment: each reference named in the post's `topics`,
  * once, skipping masters already loaded as router-matched content (pass the
  * loaded handles, from loadedHandles(), never the router's raw picks). Every
- * master with a current view adds it; its safety sections follow while they
- * fit the cap, and one that does not is skipped and logged. Null when nothing
- * is added.
+ * master with a current view under MAX_VIEW_CHARS adds it; its safety sections
+ * follow while they fit the cap, interactions first, and one that does not is
+ * skipped and logged. Null when nothing is added.
  */
 export function masterViews(topics: string[] | undefined, loaded: string[]): string | null {
   const masters: { handle: string; view: string; safety: string[] }[] = [];
@@ -142,6 +149,10 @@ export function masterViews(topics: string[] | undefined, loaded: string[]): str
     const md = loadBlogArticle(handle);
     const section = md && currentViewSection(md);
     if (!section) continue;
+    if (section.length > MAX_VIEW_CHARS) {
+      console.warn(`YouTube master views: current view over ${MAX_VIEW_CHARS} characters, dropped: ${handle}`);
+      continue;
+    }
     masters.push({ handle, view: `${contentHeader(entry, parseFrontmatter(md) ?? {})}\n\n${section}`, safety: safetySections(md) });
   }
   if (masters.length === 0) return null;
@@ -149,10 +160,19 @@ export function masterViews(topics: string[] | undefined, loaded: string[]): str
   // section with its "\n\n" join.
   const SEPARATOR = '\n\n---\n\n';
   let total = masters.reduce((n, m) => n + m.view.length, SEPARATOR.length * (masters.length - 1));
-  const parts = masters.map(({ handle, view, safety }) => [view, ...safety.filter(s => {
-    if (total + s.length + 2 <= MAX_MASTER_VIEW_CHARS) { total += s.length + 2; return true; }
-    console.warn(`YouTube master views: safety section skipped for the cap: ${handle} "${s.split('\n')[0].slice(1)}"`);
-    return false;
-  })].join('\n\n'));
+  // Two passes in topics order: every master's interactions sections, then the
+  // other safety sections of each master whose interactions all went in.
+  const kept = new Set<string>();
+  const blocked = new Set<string>();
+  for (const pass of [true, false]) {
+    for (const { handle, safety } of masters) {
+      for (const s of safety.filter(s => INTERACTIONS_HEADING.test(s) === pass)) {
+        if (!blocked.has(handle) && total + s.length + 2 <= MAX_MASTER_VIEW_CHARS) { total += s.length + 2; kept.add(s); continue; }
+        if (pass) blocked.add(handle);
+        console.warn(`YouTube master views: safety section skipped for the cap: ${handle} "${s.split('\n')[0].slice(1)}"`);
+      }
+    }
+  }
+  const parts = masters.map(({ view, safety }) => [view, ...safety.filter(s => kept.has(s))].join('\n\n'));
   return `${MASTER_VIEWS_HEADING}\n\n${parts.join(SEPARATOR)}`;
 }

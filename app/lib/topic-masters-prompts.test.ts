@@ -121,6 +121,7 @@ describe('omega-3 brand (US-50 AC11)', () => {
     expect(products).toContain('**WHC UnoCardio 1000 Fish Oil**, available on Amazon: https://amzn.to/');
     expect(products).toContain(`On the doctor surfaces (education site, Health Roadmap app, YouTube, Discord), when a user asks which omega-3 Brad takes or which one to buy, share this recommendation with the link, note that it's the brand Brad takes personally, and say: "${DISCLOSURE}" On the brand surface (microvitamin.com), give the EPA/DHA criteria only, with no brand name or link.`);
     expect(products).not.toContain('When a user asks about omega-3, share this recommendation');
+    expect(products).toContain(`- **Omega-3 (DHA/EPA) 1g daily** — on the doctor surfaces only, name the brand and give the link from the Omega-3 section earlier in this file, with the sentence "${DISCLOSURE}" On the brand surface, say omega-3 (EPA/DHA) without a brand or link.`);
   });
 
   it('the assembled doctor prompt carries the exception and the disclosure in every layer; the brand prompt keeps criteria only', () => {
@@ -161,7 +162,7 @@ describe('topic-masters answer fixtures are registered (US-50 AC5)', () => {
   describe('collagen wrinkle patterns', () => {
     const wrinkleFixtures = all.filter(q => /collagen/i.test(q.query) && /wrinkle/i.test(q.query) && (q.must_not_match ?? []).some(r => r.startsWith('(?<!')));
     const forbids = (q: Fixture, text: string) => (q.must_not_match ?? []).some(r => new RegExp(r).test(text));
-    const AFFIRMATIVE = ['Collagen reduces wrinkles.', 'collagen peptides can reduce wrinkles', 'It reduces wrinkles in older adults.', 'Yes, it can reduce wrinkles.', 'Collagen will reduce wrinkles over time.'];
+    const AFFIRMATIVE = ['Collagen may reduce wrinkles.', 'Collagen supplements reduce wrinkles.', 'Collagen can reduce the appearance of wrinkles.', 'Collagen reduces fine lines and wrinkles.', 'Collagen improves wrinkles.', 'Collagen reduced wrinkles in trials.', 'Collagen is shown to reduce wrinkles.', 'Collagen helps reduce wrinkles.'];
     const NEGATED = [
       'There is no evidence that collagen reduces wrinkles.', 'There is no evidence collagen reduces wrinkles.',
       "There isn't good evidence that collagen reduces wrinkles.", "There isn't evidence collagen reduces wrinkles.",
@@ -169,11 +170,11 @@ describe('topic-masters answer fixtures are registered (US-50 AC5)', () => {
       'The trials did not show that collagen reduces wrinkles.', "The review didn't find collagen reduces wrinkles.",
       'The review did not find that it reduces wrinkles.', 'Collagen does not reduce wrinkles.', "It doesn't reduce wrinkles.",
     ];
-    it('covers the three master fixtures, and the brand one keeps a subject-less pattern', () => {
+    it('covers the three master fixtures, with no subject-less or "it" pattern (sunscreen and retinoid advice pass)', () => {
       expect(wrinkleFixtures).toHaveLength(3);
-      const brand = wrinkleFixtures.find(q => q.surface === 'brand')!;
-      expect(forbids(brand, 'MicroVitamin+ helps reduce wrinkles.')).toBe(true);
-      expect(forbids(brand, 'It may not reduce wrinkles.')).toBe(false);
+      for (const q of wrinkleFixtures) {
+        for (const text of ['Sunscreen may help reduce wrinkles.', 'Retinoids can reduce wrinkles.', 'It may help reduce wrinkles.']) expect(forbids(q, text), q.query).toBe(false);
+      }
     });
     it.each(AFFIRMATIVE)('every fixture forbids the affirmative "%s", in any case', (text) => {
       for (const q of wrinkleFixtures) {
