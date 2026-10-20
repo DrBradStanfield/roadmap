@@ -608,6 +608,12 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setMedications(result.medications);
       setScreenings(result.screenings);
       setDocumentHistory(result.documents);
+      // Another device erased the record (US-16 AC2 / US-09): a chat banner
+      // left standing would write pre-erase values into the empty record.
+      if (result.medications.length === 0) {
+        setMedUndo(null);
+        if (result.previousMeasurements.length === 0) setProfileProposal(null);
+      }
     }
   }, [reloadValues, longitudinalDebounce]);
 

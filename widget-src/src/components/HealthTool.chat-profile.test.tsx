@@ -12,9 +12,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@testing-library/react';
 import { parseProposedEdit, ROADMAP_FILE_NAME, type ProposedEdit, type RoadmapFile } from '@roadmap/health-core';
-import { RoadmapStore } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 
 const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void) }));
@@ -232,6 +232,22 @@ describe('US-16 AC2: the proposal banner, after review', () => {
     const profile = (await recordOnDisk()).profile;
     expect(profile).not.toHaveProperty('sex');
     expect(profile).not.toHaveProperty('heightCm');
+  });
+
+  // Another device erases the record; this tab re-reads it (US-34). A banner
+  // left standing would save the proposal into the empty record.
+  it('US-16 AC2 / US-09: a remote re-read of an emptied record clears the pending proposal', async () => {
+    localStorage.setItem('health_roadmap_unit_system', 'si');
+    await guestWithoutProfile({ sex: 'male' });
+    reply({ height: { value: 178, unit: 'cm' } });
+    // A re-read of a record that still holds values keeps the banner.
+    await act(async () => { await addMeasurement('weight', 83, '2026-09-02'); });
+    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await wait(600);
+    expect(banner()).not.toBeNull();
+    await act(async () => { await deleteUserData(); });
+    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await waitFor(() => expect(banner()).toBeNull());
   });
 
   it('US-09 AC8: the banner portals to <body>, outside the widget root, and is masked from Clarity', async () => {

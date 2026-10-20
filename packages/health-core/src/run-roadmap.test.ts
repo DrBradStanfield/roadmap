@@ -175,7 +175,7 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
   // US-16 AC2 (2026-10-20, Brad): a stated sex or height can now be saved from the chat, with the
   // user's confirmation, through propose_profile_edit; the measurements' field enum still holds neither.
   it('US-16 AC2: offers to save a stated sex or height with propose_profile_edit, or in the roadmap tool', () => {
-    expect(RUN_ROADMAP_TOOL.description).toContain('save a stated sex or height with propose_profile_edit (or they can enter them in the roadmap tool)');
+    expect(RUN_ROADMAP_TOOL.description).toContain('and, when you have that tool, to save a stated sex or height with propose_profile_edit (or they can enter them in the roadmap tool)');
     expect(RUN_ROADMAP_TOOL.description).not.toContain('never offer that for sex or height');
     expect(EDITABLE_FIELDS).not.toContain('sex');
     expect(EDITABLE_FIELDS).not.toContain('heightCm');

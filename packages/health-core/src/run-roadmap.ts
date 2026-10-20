@@ -47,7 +47,7 @@ export const RUN_ROADMAP_TOOL = {
     'ambiguous and the user did not state it, ASK which unit instead of calling this tool, and do not grade the ' +
     'value in any unit. Answer only from the result, as you would from the user data block: never grade a value ' +
     'yourself. Tell the user the values are not saved, and offer to pre-fill the measurements with propose_field_edit ' +
-    'and to save a stated sex or height with propose_profile_edit (or they can enter them in the roadmap tool).',
+    'and, when you have that tool, to save a stated sex or height with propose_profile_edit (or they can enter them in the roadmap tool).',
   input_schema: {
     type: 'object' as const,
     properties: {
