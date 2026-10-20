@@ -103,14 +103,19 @@ export function migrateChatHistoryFile(
 
   const rawMeta = isObject(raw.meta) ? raw.meta : {};
   const conversations: ChatFileConversation[] = asArray<unknown>(raw.conversations)
-    .filter((c): c is Record<string, unknown> => isObject(c) && typeof c.id === 'string')
+    .filter((c): c is Record<string, unknown> => isObject(c) && typeof c.id === 'string' && c.id.length > 0)
     .map((c) => ({
       ...c,
       id: c.id as string,
       title: typeof c.title === 'string' ? c.title : '',
       createdAt: typeof c.createdAt === 'string' ? c.createdAt : opts.now,
       updatedAt: typeof c.updatedAt === 'string' ? c.updatedAt : opts.now,
-      messages: asArray<ChatFileMessage>(c.messages),
+      // Keep valid turns whole (including future fields); malformed turns are
+      // omitted on a later save, not quarantined or given replacement IDs.
+      messages: asArray<unknown>(c.messages).filter((m): m is ChatFileMessage =>
+        isObject(m) && typeof m.id === 'string' && m.id.length > 0 &&
+        (m.role === 'user' || m.role === 'assistant') &&
+        typeof m.content === 'string' && typeof m.createdAt === 'string'),
     }));
 
   return {
