@@ -41,7 +41,7 @@ import { trackProductEvent } from '../src/lib/server-api';
  *  any (US-09 AC15) — kept apart from the backend so a load-time fallback
  *  cannot drop it. */
 async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: string }> {
-  // Cancel or Back at the provider (US-09 AC22): counted once, nothing connected.
+  // Cancel or Deny at the provider (US-09 AC22; browser Back never returns here): counted once, nothing connected.
   if (DropboxAdapter.claimCancelledRedirect()) trackProductEvent('cloud_connect_cancelled', { provider: 'dropbox' });
   if (GoogleDriveAdapter.claimCancelledRedirect()) trackProductEvent('cloud_connect_cancelled', { provider: 'google-drive' });
 

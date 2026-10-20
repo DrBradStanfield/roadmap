@@ -77,7 +77,7 @@ export function claimRedirectCode(pkceKey: string): { code: string; verifier: st
 }
 
 /**
- * The user pressed Cancel or Back at the provider: the redirect returns
+ * The user pressed Cancel or Deny at the provider: the redirect returns
  * `?error=access_denied&state=...` with no code (US-09 AC22). True only when THIS
  * flow started it (a PKCE entry under `pkceKey` whose state matches), so a
  * random `?error=` URL counts for nothing. The entry is consumed and the

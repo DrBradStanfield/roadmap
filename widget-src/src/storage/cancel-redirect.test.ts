@@ -1,5 +1,5 @@
 /**
- * US-09 AC22: Cancel or Back at Google or Dropbox returns `?error=access_denied`
+ * US-09 AC22: Cancel or Deny at Google or Dropbox returns `?error=access_denied`
  * with no code. It counts only for a flow THIS tab started, once, and the error
  * params leave the URL.
  */

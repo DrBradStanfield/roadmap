@@ -18,7 +18,7 @@ export const PRODUCT_EVENT_NAMES = [
   'cloud_connect_started',
   'cloud_connect_success',
   'cloud_connect_refused',
-  // US-09 AC22: Cancel or Back at Google or Dropbox (`error=access_denied`).
+  // US-09 AC22: Cancel or Deny at Google or Dropbox (`error=access_denied`).
   // Metadata `{ provider }` only.
   'cloud_connect_cancelled',
   'correction_made',
