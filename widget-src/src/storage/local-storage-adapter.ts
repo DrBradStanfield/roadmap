@@ -30,19 +30,29 @@ export const NAMED_FILE_PREFIX = 'health_roadmap_file_v2:';
 // Page-lifetime barrier: logout navigates away. Never reopen it in this page;
 // an async save may still hold pre-logout health data. Other named files are
 // separate stores and are deliberately outside this roadmap-only barrier.
-// Every other tab on this device latches too (US-09 AC2c): a content-free key
-// set and removed at once reaches them as `storage` events, leaving no residue.
+// Every other cloud-mode tab on this device latches too (US-09 AC2c): a
+// content-free key set and removed at once reaches them as `storage` events,
+// leaving no residue.
 const LOG_OFF_SIGNAL_KEY = 'health_roadmap_log_off_signal';
 let roadmapWritesStopped = false;
 export function stopRoadmapLocalWrites(): void {
   roadmapWritesStopped = true;
+  signalLogOff();
+}
+/** Tell the other tabs. A full localStorage drops the write silently, so
+ *  log-off sends it again once the device wipe has freed space (Codex R1). */
+export function signalLogOff(): void {
   safeSetItem(LOG_OFF_SIGNAL_KEY, '1');
   safeRemoveItem(LOG_OFF_SIGNAL_KEY);
 }
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (event) => {
-    if ((event as StorageEvent).key === LOG_OFF_SIGNAL_KEY) roadmapWritesStopped = true;
-  });
+function latchOnLogOffSignal(event: Event): void {
+  if ((event as StorageEvent).key === LOG_OFF_SIGNAL_KEY) roadmapWritesStopped = true;
+}
+/** Only a cloud-mode page listens: there the device copy is a mirror. A local
+ *  page's device copy is its only store, so latching would lose its edits.
+ *  Re-adding the same listener is a no-op. */
+export function latchOnOtherTabsLogOff(): void {
+  if (typeof window !== 'undefined') window.addEventListener('storage', latchOnLogOffSignal);
 }
 export function roadmapLocalWritesStopped(): boolean {
   return roadmapWritesStopped;

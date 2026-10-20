@@ -31,13 +31,14 @@ class ControlledCloud extends MemoryAdapter {
   }
 }
 
-function makeStorage(failKey?: string, onChange?: (key: string) => void): Storage {
+function makeStorage(failKey?: string | ((key: string) => boolean), onChange?: (key: string) => void): Storage {
   const values = Object.create(null) as Record<string, string>;
+  const fails = typeof failKey === 'function' ? failKey : (key: string) => key === failKey;
   Object.defineProperties(values, {
     length: { get() { return Object.keys(values).length; } },
     getItem: { value: (key: string) => values[key] ?? null },
     setItem: { value: (key: string, value: string) => {
-      if (key === failKey) throw new Error('synthetic quota failure');
+      if (fails(key)) throw new Error('synthetic quota failure');
       const changed = values[key] !== String(value);
       values[key] = String(value);
       if (changed) onChange?.(key); // a browser signals real changes only
@@ -339,35 +340,84 @@ describe('US-09 AC2c: each barrier guard is load-bearing', () => {
   });
 });
 
-// Adversary R2: another tab on this device latches too.
-describe('US-09 AC2c: log-off closes the barrier in every tab on the device', () => {
+// Adversary R2: another tab on this device latches too. Adversary re-check R2:
+// only a tab whose roadmap backend is a cloud; a local-mode tab keeps saving.
+describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the device', () => {
+  const SIGNAL_KEY = 'health_roadmap_log_off_signal';
   /** Deliver each change to the page's listeners, as a browser does to other tabs. */
-  function storageEventsReachOtherTabs() {
-    vi.stubGlobal('localStorage', makeStorage(undefined, (key) => {
+  function storageEventsReachOtherTabs(failKey?: (key: string) => boolean) {
+    vi.stubGlobal('localStorage', makeStorage(failKey, (key) => {
       window.dispatchEvent(Object.assign(new Event('storage'), { key }));
     }));
     localStorage.setItem(UNRELATED_KEY, 'keep');
   }
-
-  it('another tab cannot recreate the device file after this tab logs off, and no signal stays behind', async () => {
-    storageEventsReachOtherTabs();
-    // A second page: its own module graph, the same window and localStorage.
+  /** A second page: its own module graph, the same window and localStorage. */
+  async function otherTab() {
     vi.resetModules();
-    const otherStorage = await import('../src/storage/roadmap-store');
-    const otherLocal = await import('../src/storage/local-storage-adapter');
-    const other = await otherStorage.RoadmapStore.create(new otherLocal.LocalStorageAdapter());
-    expect(otherLocal.roadmapLocalWritesStopped()).toBe(false);
+    return {
+      storage: await import('../src/storage/roadmap-store'),
+      local: await import('../src/storage/local-storage-adapter'),
+    };
+  }
+  function expectDeviceWriteRefused(other: Awaited<ReturnType<typeof otherTab>>) {
+    expect(() => new other.local.LocalStorageAdapter().writeSync('health-roadmap.json', {}, null))
+      .toThrow('stopped for logout');
+    other.storage.markSyncPending();
+    expectDeviceEmpty();
+  }
+
+  it('a cloud-mode tab cannot recreate the device file after this tab logs off, and no signal stays behind', async () => {
+    storageEventsReachOtherTabs();
+    const other = await otherTab();
+    const cloud = new ControlledCloud();
+    const store = await other.storage.RoadmapStore.create(cloud);
+    expect(other.local.roadmapLocalWritesStopped()).toBe(false);
 
     await connect.logOff('local');
-    expect(otherLocal.roadmapLocalWritesStopped()).toBe(true);
+    expect(other.local.roadmapLocalWritesStopped()).toBe(true);
     expect(Object.keys(localStorage).filter((key) => key.includes('log_off'))).toEqual([]);
-    other.addMeasurement('weight', 81, '2026-01-01');
-    await expect(other.flush()).rejects.toThrow();
-    otherStorage.markSyncPending();
-    expectDeviceEmpty();
+    // Its failed cloud save does not mirror the record back on-device.
+    store.addMeasurement('weight', 81, '2026-01-01');
+    cloud.fail = true;
+    await expect(store.flush()).rejects.toThrow();
+    expectDeviceWriteRefused(other);
   });
 
-  it('an unrelated storage event leaves the other tab writing', async () => {
+  it('Codex re-check R1: a signal lost to a full localStorage is sent again after the wipe frees space', async () => {
+    // Full while the device file is there: the first signal write throws.
+    let refusedSignals = 0;
+    storageEventsReachOtherTabs((key) => {
+      const full = key === SIGNAL_KEY && localStorage.getItem(FILE_KEY) != null;
+      if (full) refusedSignals += 1;
+      return full;
+    });
+    await data.initRoadmapStore(new local.LocalStorageAdapter());
+    await data.addMeasurement('weight', 79, '2026-01-01');
+    await data.flushRoadmapStore();
+    const other = await otherTab();
+    await other.storage.RoadmapStore.create(new ControlledCloud());
+
+    await connect.logOff('local');
+    expect(refusedSignals).toBe(1);
+    expect(other.local.roadmapLocalWritesStopped()).toBe(true);
+    expect(reload).toHaveBeenCalledOnce();
+    expectDeviceWriteRefused(other);
+  });
+
+  it('a local-mode tab keeps saving after another tab logs off (its device copy is its only store)', async () => {
+    storageEventsReachOtherTabs();
+    const other = await otherTab();
+    const store = await other.storage.RoadmapStore.create(new other.local.LocalStorageAdapter());
+
+    await connect.logOff('local');
+    expect(other.local.roadmapLocalWritesStopped()).toBe(false);
+    store.addMeasurement('weight', 81, '2026-01-01');
+    await store.flush();
+    expect(localStorage.getItem(FILE_KEY)).not.toBeNull();
+  });
+
+  it('an unrelated storage event leaves a cloud-mode tab writing', async () => {
+    await storage.RoadmapStore.create(new ControlledCloud());
     window.dispatchEvent(Object.assign(new Event('storage'), { key: 'health_roadmap_backend' }));
     window.dispatchEvent(Object.assign(new Event('storage'), { key: null }));
     expect(local.roadmapLocalWritesStopped()).toBe(false);

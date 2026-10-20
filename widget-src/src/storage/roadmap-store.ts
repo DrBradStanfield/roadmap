@@ -72,7 +72,13 @@ import {
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
 import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core';
-import { LocalStorageAdapter, clearLocalNamedFiles, roadmapLocalWritesStopped, stopRoadmapLocalWrites } from './local-storage-adapter';
+import {
+  LocalStorageAdapter,
+  clearLocalNamedFiles,
+  latchOnOtherTabsLogOff,
+  roadmapLocalWritesStopped,
+  stopRoadmapLocalWrites,
+} from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { clearMatrixDrafts, clearOffFileHealthData, LPA_CHECK_KEPT_KEY, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
@@ -339,6 +345,7 @@ export class RoadmapStore {
     const revision = adapter instanceof LocalStorageAdapter ? adapter.revision(ROADMAP_FILE_NAME) : null;
     const store = new RoadmapStore(sync, adapter, await sync.load(), deviceId, cloudUnreachable);
     store.seenRevision = revision;
+    if (adapter.id !== 'local') latchOnOtherTabsLogOff();
     // A previous cloud session failed to save and mirrored its changes
     // on-device (see persist()'s catch). Merge them in now and schedule a save
     // to lift them up; the marker clears only once a cloud save succeeds.

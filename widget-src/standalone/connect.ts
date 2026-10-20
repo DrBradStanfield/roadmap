@@ -18,6 +18,7 @@ import {
   markSyncPending,
   ROADMAP_FILE_NAME,
   saveRoadmapFileInto,
+  signalLogOff,
   type StorageAdapter,
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
@@ -297,6 +298,8 @@ export async function logOff(backend: Backend): Promise<void> {
   clearLocalStorage();
   clearOffFileHealthData();
   forgetBackend();
+  // Again, now the wipe has freed space for it (Codex re-check R1).
+  signalLogOff();
   location.reload();
 }
 

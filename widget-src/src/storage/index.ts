@@ -23,7 +23,7 @@ export { saveRoadmapFileInto, copyCloudDownToDevice, markSyncPending, isSyncPend
 // version — surfaced here so UI can show "update the app", not a generic error.
 export { SchemaTooNewError } from '@roadmap/health-core';
 export { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
-export { LocalStorageAdapter } from './local-storage-adapter';
+export { LocalStorageAdapter, signalLogOff } from './local-storage-adapter';
 export { DropboxAdapter, type DropboxConfig } from './dropbox';
 export { GitHubAdapter, type GitHubConfig } from './github';
 export { WebDavAdapter, type WebDavConfig } from './webdav';
