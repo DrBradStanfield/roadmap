@@ -97,7 +97,7 @@ From 481 MicroVitamin customer reviews (4.84 average rating; analysis of reviews
 The next three answers apply to MicroVitamin+ Powder too (for it, say "where MicroVitamin+ is sold").
 
 **Why doesn't MicroVitamin contain lithium orotate?**
-Lithium isn't an established nutrient: there is no recommended daily intake for it anywhere, and no recognised deficiency. The interest in low-dose lithium comes mainly from animal studies and from population studies of lithium in drinking water, which can't show cause and effect. The human trials so far have been small, most used prescription lithium at doses far higher than a supplement contains, and all of them enrolled people who already had memory problems. Lithium orotate itself hasn't yet been tested in a completed human trial. Lithium is also not permitted in supplements in the UK or EU, and is restricted in Australia and Canada, where MicroVitamin is sold. We'll keep watching the research.
+Lithium isn't an established nutrient: there is no recommended daily intake for it anywhere, and no recognised deficiency. The interest in low-dose lithium comes mainly from animal studies and from population studies of lithium in drinking water, which can't show cause and effect. The human trials so far have been small, most used prescription lithium at doses far higher than a supplement contains, and all the dementia and memory trials enrolled people who already had memory problems. Lithium orotate itself hasn't yet been tested in a completed randomised human trial. Lithium is also not permitted in supplements in the UK or EU, and is restricted in Australia and Canada, where MicroVitamin is sold. We'll keep watching the research.
 
 **Why doesn't MicroVitamin contain astaxanthin?**
 Astaxanthin is a red pigment from algae. Most human trials are small, short and funded by the companies that make it, and they mostly measure blood markers rather than outcomes you would notice. A widely shared 2024 study from the Interventions Testing Program, a US National Institute on Aging research program, suggested it could help male mice live longer, but a second Interventions Testing Program study in 2026 did not repeat that result. If larger independent trials show a clear benefit, we'll look at it again.
@@ -123,7 +123,7 @@ Everything in MicroVitamin core + 4 premium additions. $100 one-time / $90/mo su
 "Plus" additions over MicroVitamin core:
 - Collagen Peptides 12.5g
 - Creatine Monohydrate 5g (strength & brain)
-- Psyllium Husk 2.5g (gut health & cholesterol)
+- Psyllium Husk 2.5g (gut health)
 - Extra Taurine 1g (metabolic health)
 - Value: $179.01/mo if buying the 30 v8 ingredients individually vs $90/mo subscription — saves $89.01/mo
 
@@ -133,7 +133,7 @@ Everything in MicroVitamin core + 4 premium additions. $100 one-time / $90/mo su
 Not yet (Brad, 2026-09-07). Do not write "third-party tested" on any surface or ad that covers MicroVitamin+ (for example the Amazon Sponsored Brands banner, which advertises all three products). MicroVitamin capsules and Sleep are third-party tested; see their sections.
 
 **What is the difference between MicroVitamin capsules and MicroVitamin+ Powder?**
-MicroVitamin+ Powder contains all 26 core ingredients from MicroVitamin capsules plus four premium additions: Collagen Peptides 12.5g, Creatine Monohydrate 5g (the most studied performance supplement, also supports brain function), Psyllium Husk 2.5g (soluble fiber for gut health and cholesterol management), and extra Taurine 1g (metabolic health and cardiovascular support). Total: 30 ingredients in one daily scoop vs 26 ingredients in 5 daily capsules.
+MicroVitamin+ Powder contains all 26 core ingredients from MicroVitamin capsules plus four premium additions: Collagen Peptides 12.5g, Creatine Monohydrate 5g (the most studied performance supplement, also supports brain function), Psyllium Husk 2.5g (soluble fiber for gut health), and extra Taurine 1g (metabolic health and cardiovascular support). Total: 30 ingredients in one daily scoop vs 26 ingredients in 5 daily capsules.
 
 **How much money does MicroVitamin+ Powder save compared to buying ingredients separately?**
 MicroVitamin+ Powder costs $90/month on subscription ($100 one-time). Buying the same 30 v8 ingredients individually from brands like Double Wood, Bronson, Life Extension, NOW, and Pure Encapsulations would cost approximately $179.01/month — saving you $89.01/month. This is the largest cost saving across all Dr Stanfield products because creatine at its clinical dose and 12.5g of collagen are expensive when purchased separately.
@@ -149,7 +149,7 @@ Each scoop contains 12.5g of collagen peptides. Collagen peptides may support sk
 **Collagen wording (the chatbot included):** collagen peptides may support skin hydration and elasticity (Batool 2026), and MicroVitamin+ contains 12.5g of them. For a concern about skin ageing, skin hydration or skin elasticity in an adult, the chatbot may suggest collagen peptides on that basis; never for a skin disease, rash, wound, ulcer or burn. Never say collagen reduces wrinkles or rebuilds skin or its structure, or that 12.5g is "within the range studied", and never cite Pu 2023, Kim 2022 or Myung 2025 as evidence that collagen helps skin. Whether a surface may name or link MicroVitamin+ is still set by that surface's product rules (the education site never pushes products). On the store, the non-US product blocks stay amount-only; store copy is governed by the store, not this file.
 
 **What does the psyllium husk do?**
-Psyllium Husk (2.5g) is a soluble fiber that supports gut health by feeding beneficial gut bacteria, promoting digestive regularity, and helping maintain healthy cholesterol levels. A Cochrane systematic review confirmed dietary fiber supplementation reduces cardiovascular disease risk factors (Hartley et al., Cochrane Database Syst Rev, 2016). Note: some users may experience initial gas during a gut adjustment period of 1-2 weeks, which typically resolves.
+Psyllium Husk (2.5g) is a soluble fiber that supports gut health by feeding beneficial gut bacteria and promoting digestive regularity. Note: some users may experience initial gas during a gut adjustment period of 1-2 weeks, which typically resolves.
 
 **Does psyllium husk affect vitamin and mineral absorption?**
 No. Three studies support this (cite all three together; see the Anderson note in Key References):
@@ -280,7 +280,7 @@ A lemon-lime drink powder, sold as a dietary supplement. **$70 a pouch of 60 sco
 
 Dr Stanfield does not currently sell an Omega-3 product. The brand he takes himself and recommends is **WHC UnoCardio 1000 Fish Oil**, available on Amazon: https://amzn.to/3DslHpb
 
-When a user asks about omega-3, share this recommendation alongside the link and note that it's the brand Brad takes personally. A Dr Stanfield omega-3 product is planned for the future.
+On the doctor surfaces (education site, Health Roadmap app, YouTube, Discord), when a user asks which omega-3 Brad takes or which one to buy, share this recommendation with the link, note that it's the brand Brad takes personally, and say: "Brad earns a small commission through this Amazon link." On the brand surface (microvitamin.com), give the EPA/DHA criteria only, with no brand name or link. A Dr Stanfield omega-3 product is planned for the future.
 
 ---
 
@@ -309,7 +309,7 @@ Use this guide to match a shopper's primary concern to the right product. Eviden
 | Bone density concerns | MicroVitamin or MicroVitamin+ Powder | K2 MK-7 90mcg (directs calcium to bones via osteocalcin activation) + D3 1,000IU (calcium absorption), both encapsulated in the USA, Australia and UK/EU (Canada v7: not encapsulated) + Boron (bone metabolism). Meta-analyses of K+D combination supplementation show increased BMD and improved bone turnover markers (Kuang 2020; Zhang 2025). Per-market forms and doses, and the rule that UK, EU and Canada attach no bone benefit to boron: Health concerns → Bone density |
 | Vision / macular health | MicroVitamin or MicroVitamin+ Powder | Lutein 10mg + Zeaxanthin 2mg as Lutemax® 2020 (encapsulated) — RCTs show this dose increases macular pigment optical density. No AMD claims (Health concerns → Vision) |
 | Heart health / cardiovascular risk | MicroVitamin or MicroVitamin+ Powder | Magnesium Taurate (USA; for Australian MicroVitamin capsules never give the magnesium form as a heart-health reason, see Regional Formula Differences), chosen specifically for cardiovascular benefit, plus encapsulated Lycopene 10mg (LycoBeads®): ≥12mg/day reduced SBP 5.66 mmHg, ≥25mg/day reduced LDL 7.55 mg/dL (Cheng 2017). Powder adds extra Taurine 1g — reduces FBG, lipids, and BP per 34-RCT meta-analysis (Nie 2025) |
-| Gut health / cholesterol | MicroVitamin+ Powder | Psyllium Husk 2.5g — soluble fiber that feeds gut bacteria and helps maintain healthy cholesterol. Cochrane review confirmed cardiovascular risk reduction |
+| Gut health | MicroVitamin+ Powder | Psyllium Husk 2.5g — soluble fiber that feeds gut bacteria |
 | Low energy / fatigue | MicroVitamin or MicroVitamin+ Powder | Full B-complex for energy metabolism + magnesium for cellular energy + bioavailable trace minerals. Not a stimulant — sustainable energy from filling nutrient gaps |
 | Can't fall asleep | Sleep by Dr Brad | Melatonin 0.8mg sustained release (circadian signal) + Magnesium Bisglycinate (evidence is modest: ~17 min faster sleep onset pooled from 2 small magnesium oxide trials, low to very low quality, Mah & Pitre 2021; a 250mg-a-day bisglycinate trial found a small improvement on a sleep-difficulty questionnaire, Schuster 2025; Sleep has 126mg, see the magnesium FAQ) + Glycine (3g improved rated sleep quality in small trials; core-temperature drop shown in rats) |
 | Poor sleep quality / waking at night | Sleep by Dr Brad | Glycine 2,400mg (3g trials: better rated sleep quality, faster sleep onset, less next-day tiredness; one trial reached slow-wave sleep sooner with no change in sleep architecture; no trial showed fewer wake-ups); 8-hour sustained-release melatonin keeps a low level later into the night. Magnesium: modest evidence, mostly magnesium oxide trials of low to very low quality (Mah & Pitre 2021) plus one 250mg bisglycinate trial with a small improvement on a sleep-difficulty questionnaire (Schuster 2025); Sleep has 126mg |
@@ -427,7 +427,7 @@ When a user asks "what does Brad take?", "what meds is Brad on?", or "what suppl
 **Daily supplements (Brad takes them via 1 scoop of MicroVitamin+ Powder):**
 - All 26 core ingredients in MicroVitamin / MicroVitamin+: methylated B12 and folate, full B-complex, Vitamin K2 MK-7 90mcg, Vitamin D3 1,000IU, Magnesium Taurate 126mg, glycinate trace minerals, Lutein, Lycopene, Zeaxanthin, Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Vitamin C 45mg, Boron 1mg (USA v8 doses — Australia v8.5 raises several: see Regional Formula Differences)
 - Plus the powder additions: Collagen Peptides 12.5g, Creatine Monohydrate 5g, Psyllium Husk 2.5g, Taurine 1g
-- **Omega-3 (DHA/EPA) 1g daily** — see the Omega-3 section earlier in this file for the brand Brad takes and the link.
+- **Omega-3 (DHA/EPA) 1g daily** — on the doctor surfaces only, name the brand and give the link from the Omega-3 section earlier in this file, with the sentence "Brad earns a small commission through this Amazon link." On the brand surface, say omega-3 (EPA/DHA) without a brand or link.
 - **Sleep by Dr Brad** at night — Melatonin 0.8mg sustained release, Magnesium Bisglycinate 126mg, Glycine 2,400mg.
 
 **Medications Brad takes:**
@@ -445,7 +445,7 @@ When a user asks "what does Brad take?", "what meds is Brad on?", or "what suppl
 
 **Stopped taking (with reasons):**
 - **NMN / NR** — interesting mice and single-cell data on NAD+ precursors, but human data showing a benefit is lacking. Brad focuses on the small dose of Nicotinamide in MicroVitamin plus exercise, diet, fasting, and sleep instead.
-- **Resveratrol / Pterostilbene** — sirtuin-1 activation evidence conflicting; a 2020 CRISPR study found resveratrol's effect on cell proliferation was independent of SIRT1 (Pezzuto, Molecules, 2020).
+- **Resveratrol / Pterostilbene** — sirtuin-1 activation evidence conflicting; a 2020 CRISPR study found resveratrol's effect on cell proliferation was independent of SIRT1 (Benslimane, Mol Cell, 2020).
 - **Metformin / Berberine** — ITP 2016 showed no lifespan benefit; a 21-year human RCT confirmed no benefit for death rates, heart disease, or cancer; Metformin also blunts positive exercise effects (Konopka et al., 2019). Brad still prescribes Metformin to his diabetic patients — it's a wonderful drug for diabetes, just not for healthy adults.
 - **Quercetin / Fisetin** — ITP trialed Fisetin and found no healthspan, lifespan, or senolytic activity.
 - **Ashwagandha** — Brad didn't notice the anxiety effect personally; dropped to reduce pill burden. More of a personal choice than evidence-based.
@@ -768,7 +768,6 @@ DOIs and links for the studies cited above (inline citations give author, journa
 - Creatine (performance): Kreider et al., 2017 — https://doi.org/10.1186/s12970-017-0173-z
 - Creatine (cognition, 16 RCTs meta-analysis): Xu et al., 2024 — https://doi.org/10.3389/fnut.2024.1424972 — memory SMD=0.31, greater benefit in people with diseases, those aged 18–60, and females
 - Collagen peptides and skin (2026 meta-analysis): Batool et al., J Cosmet Dermatol, 2026;25(7):e71041 — https://doi.org/10.1111/jocd.71041
-- Psyllium husk / fiber: Hartley et al., 2016 — https://doi.org/10.1002/14651858.CD011472
 - Psyllium safety / no effect on vitamin & mineral status: Anderson et al., 2000 — https://doi.org/10.1093/ajcn/71.2.472 (see Results, "Safety analyses", page 477). ⚠️ **Verified against the full text 2026-10-14:** this paper is an 8-trial cholesterol meta-analysis plus a pooled safety analysis of 19 Procter & Gamble-sponsored studies (966 psyllium-exposed subjects); the micronutrient finding is in the safety analysis, and its ABSTRACT contains no micronutrient data, so do NOT cite it alone for the absorption claim. The two papers that DO carry it are the next two entries — Pal 2022 (15 g/day, 3 months, micronutrient status) and Heaney & Weaver 1995 (calcium from the same meal). Cite all three together.
 - Psyllium / no effect on micronutrient status (3-month RCT): Pal et al., 2022 — https://pubmed.ncbi.nlm.nih.gov/35505399/
 - Psyllium / no effect on calcium absorption: Heaney & Weaver, 1995 — https://pubmed.ncbi.nlm.nih.gov/7884114/

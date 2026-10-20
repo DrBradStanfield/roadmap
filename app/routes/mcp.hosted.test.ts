@@ -2111,14 +2111,14 @@ describe('the OAuth funnel counts refusals, not only successes (US-32 AC34)', ()
   it('counts a client we do not recognise — the refusal OpenAI met', async () => {
     const res = await get(`/mcp/authorize?${authorizeQuery({ client_id: 'https://evil.test/client.json' })}`);
     expect(res.status).toBe(400);
-    expect(funnel()).toEqual([['mcp_authorize_refused', { client: 'other', reason: 'unknown-client' }]]);
+    expect(funnel()).toEqual([['mcp_authorize_refused', { client: 'other', reason: 'unknown-client', detail: 'cimd-fetch-failed' }]]);
   });
 
   it('counts a redirect the pinned client never published', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const res = await get(`/mcp/authorize?${authorizeQuery({ redirect_uri: 'https://evil.test/cb' })}`);
     expect(res.status).toBe(400);
-    expect(funnel()).toEqual([['mcp_authorize_refused', { client: 'claude', reason: 'redirect-uri' }]]);
+    expect(funnel()).toEqual([['mcp_authorize_refused', { client: 'claude', reason: 'redirect-uri', detail: 'unknown-host' }]]);
   });
 
   it('counts a redirectable refusal too, which answers the client rather than us', async () => {
@@ -2186,7 +2186,7 @@ describe('the OAuth funnel counts refusals, not only successes (US-32 AC34)', ()
   it('counts a callback that arrives with no cookie', async () => {
     const res = await get('/mcp/callback?code=dropbox-code&state=anything');
     expect(res.status).toBe(400);
-    expect(funnel()).toEqual([['mcp_connect_failed', { reason: 'no-cookie' }]]);
+    expect(funnel()).toEqual([['mcp_connect_failed', { reason: 'no-cookie', detail: 'missing' }]]);
   });
 
   it('counts a callback whose state is not the nonce we minted', async () => {
@@ -2257,7 +2257,7 @@ describe('the OAuth funnel counts refusals, not only successes (US-32 AC34)', ()
 
     it('counts a code that will not open — expired, tampered or never ours', async () => {
       expect((await form(codeGrant('nonsense'))).status).toBe(400);
-      expect(funnel()).toEqual([['mcp_connect_failed', { client: 'claude', reason: 'token-dead-code' }]]);
+      expect(funnel()).toEqual([['mcp_connect_failed', { client: 'claude', reason: 'token-dead-code', detail: 'unseal-failed' }]]);
     });
 
     it('counts a code redeemed by a client it was not minted for', async () => {
@@ -2288,7 +2288,7 @@ describe('the OAuth funnel counts refusals, not only successes (US-32 AC34)', ()
 
     it('counts a refresh token that will not open', async () => {
       expect((await form({ grant_type: 'refresh_token', refresh_token: 'nonsense', client_id: CLAUDE_CIMD })).status).toBe(400);
-      expect(funnel()).toEqual([['mcp_connect_failed', { client: 'claude', reason: 'token-dead-refresh' }]]);
+      expect(funnel()).toEqual([['mcp_connect_failed', { client: 'claude', reason: 'token-dead-refresh', detail: 'unseal-failed' }]]);
     });
   });
 
@@ -2313,5 +2313,123 @@ describe('the OAuth funnel counts refusals, not only successes (US-32 AC34)', ()
     expect(written).not.toContain('secret');
     expect(written).not.toContain('SSS');
     expect(written).not.toContain(CLAUDE_CIMD);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-32 AC48 — each refusal says which branch fired, in a closed word
+// ---------------------------------------------------------------------------
+
+/**
+ * Three organic refusals in 2026-10 could not be diagnosed: the row said
+ * `unknown-client` or `no-cookie`, and nothing said which check fired. Each
+ * case below drives one branch and asserts its `detail`. Each group also
+ * asserts every variant gets the SAME answer, because the detail is for the
+ * counter alone and must never change what the client is told.
+ */
+describe('a refusal names its branch in a closed word, and the answer does not change (US-32 AC48)', () => {
+  const rows = () => serverEvents((name) => name === 'mcp_authorize_refused' || name === 'mcp_connect_failed');
+  /** Status, Location and body: everything a client could read. */
+  const answer = async (res: Response) => [res.status, res.headers.get('location'), await res.text()];
+
+  beforeEach(() => {
+    vi.mocked(recordServerEvent).mockClear();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  it('says which way an unknown client failed', async () => {
+    const doc = (id: string, over: Record<string, unknown> = {}) => ({ client_id: id, client_name: 'X', redirect_uris: [REDIRECT], ...over });
+    serveClientMetadata({
+      'https://a.example/not-ours.json': doc('https://elsewhere.example/c.json'),
+      'https://a.example/bad-redirect.json': doc('https://a.example/bad-redirect.json', { redirect_uris: ['https://evil.test/cb'] }),
+    });
+    const cases: Array<[string, string]> = [
+      ['not-a-url', 'malformed'],
+      ['http://claude.ai/oauth/mcp-oauth-client-metadata', 'malformed'],
+      ['c.bm90.c2ln', 'dcr-invalid'],
+      ['https://user@a.example/c.json', 'cimd-refused-url'],
+      ['https://127.0.0.1/c.json', 'cimd-refused-url'],
+      ['https://a.example/missing.json', 'cimd-fetch-failed'],
+      ['https://a.example/not-ours.json', 'cimd-invalid'],
+      ['https://a.example/bad-redirect.json', 'cimd-redirect-refused'],
+    ];
+    const answers = [];
+    for (const [clientId] of cases) answers.push(await answer(await get(`/mcp/authorize?${authorizeQuery({ client_id: clientId })}`)));
+    expect(rows()).toEqual(cases.map(([, detail]) => ['mcp_authorize_refused', { client: 'other', reason: 'unknown-client', detail }]));
+    expect(answers[0][0]).toBe(400);
+    for (const a of answers) expect(a).toEqual(answers[0]);
+  });
+
+  it('says which way a redirect missed', async () => {
+    const CLAUDE_CODE = 'https://claude.ai/oauth/claude-code-client-metadata';
+    const cases: Array<[Record<string, string>, string, string]> = [
+      [{ redirect_uri: '' }, 'claude', 'missing'],
+      [{ redirect_uri: 'https://evil.test/cb' }, 'claude', 'unknown-host'],
+      [{ redirect_uri: 'https://claude.ai/api/mcp/elsewhere' }, 'claude', 'known-host-other-path'],
+      [{ redirect_uri: 'https://claude.ai/api/mcp/auth_callback?x=1' }, 'claude', 'known-host-other-path'],
+      [{ client_id: CLAUDE_CODE, redirect_uri: 'http://localhost:4567/elsewhere' }, 'claude_code', 'loopback-other-path'],
+      [{ client_id: CLAUDE_CODE, redirect_uri: 'http://[::1]:4567/callback' }, 'claude_code', 'unknown-host'],
+    ];
+    const answers = [];
+    for (const [over] of cases) answers.push(await answer(await get(`/mcp/authorize?${authorizeQuery(over)}`)));
+    expect(rows()).toEqual(cases.map(([, client, detail]) => ['mcp_authorize_refused', { client, reason: 'redirect-uri', detail }]));
+    expect(answers[0][0]).toBe(400);
+    for (const a of answers) expect(a).toEqual(answers[0]);
+  });
+
+  it('says whether a refused resource named another host or another path here', async () => {
+    const otherHost = await answer(await get(`/mcp/authorize?${authorizeQuery({ resource: 'https://evil.test/mcp' })}`));
+    const otherPath = await answer(await get(`/mcp/authorize?${authorizeQuery({ resource: `${ISSUER}/elsewhere` })}`));
+    // A non-default port is another host (URL.host carries it), per AC48.
+    const port = new URL(ISSUER); port.port = '8443';
+    await answer(await get(`/mcp/authorize?${authorizeQuery({ resource: `${port.origin}/mcp` })}`));
+    expect(rows()).toEqual([
+      ['mcp_authorize_refused', { client: 'claude', reason: 'resource', detail: 'other-host' }],
+      ['mcp_authorize_refused', { client: 'claude', reason: 'resource', detail: 'other-path' }],
+      ['mcp_authorize_refused', { client: 'claude', reason: 'resource', detail: 'other-host' }],
+    ]);
+    expect(otherHost[0]).toBe(302);
+    expect(new URL(String(otherHost[1])).searchParams.get('error')).toBe('invalid_target');
+    expect(otherPath).toEqual(otherHost);
+  });
+
+  it('says whether the callback cookie was absent or would not unseal', async () => {
+    const missing = await answer(await get('/mcp/callback?code=dropbox-code&state=anything'));
+    const garbled = await answer(await get('/mcp/callback?code=dropbox-code&state=anything', { cookie: '__Host-mcp-state=not-a-seal' }));
+    expect(rows()).toEqual([
+      ['mcp_connect_failed', { reason: 'no-cookie', detail: 'missing' }],
+      ['mcp_connect_failed', { reason: 'no-cookie', detail: 'unseal-failed' }],
+    ]);
+    expect(missing[0]).toBe(400);
+    expect(garbled).toEqual(missing);
+  });
+
+  it('says whether a dead code or refresh token was absent or would not unseal', async () => {
+    const form = (fields: Record<string, string>) =>
+      post('/mcp/token', { headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(fields) });
+    const code = { grant_type: 'authorization_code', redirect_uri: REDIRECT, code_verifier: VERIFIER, client_id: CLAUDE_CIMD };
+    const noCode = await answer(await form(code));
+    const badCode = await answer(await form({ ...code, code: 'nonsense' }));
+    const noRefresh = await answer(await form({ grant_type: 'refresh_token', client_id: CLAUDE_CIMD }));
+    const badRefresh = await answer(await form({ grant_type: 'refresh_token', refresh_token: 'nonsense', client_id: CLAUDE_CIMD }));
+    expect(rows()).toEqual([
+      ['mcp_connect_failed', { client: 'claude', reason: 'token-dead-code', detail: 'missing' }],
+      ['mcp_connect_failed', { client: 'claude', reason: 'token-dead-code', detail: 'unseal-failed' }],
+      ['mcp_connect_failed', { client: 'claude', reason: 'token-dead-refresh', detail: 'missing' }],
+      ['mcp_connect_failed', { client: 'claude', reason: 'token-dead-refresh', detail: 'unseal-failed' }],
+    ]);
+    expect(noCode[0]).toBe(400);
+    expect(badCode).toEqual(noCode);
+    expect(noRefresh[0]).toBe(400);
+    expect(badRefresh).toEqual(noRefresh);
+  });
+
+  it('leaves the reasons without a branch to name exactly as they were', async () => {
+    await get(`/mcp/authorize?${authorizeQuery({ response_type: 'token' })}`);
+    await get(`/mcp/authorize?${authorizeQuery({ code_challenge_method: 'plain' })}`);
+    expect(rows()).toEqual([
+      ['mcp_authorize_refused', { client: 'claude', reason: 'response-type' }],
+      ['mcp_authorize_refused', { client: 'claude', reason: 'pkce' }],
+    ]);
   });
 });

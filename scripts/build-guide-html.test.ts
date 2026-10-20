@@ -387,3 +387,32 @@ describe('tools.svg — the nine tools, and only the nine', () => {
     expect([...new Set(named)].sort()).toEqual([...MCP_TOOL_NAMES].sort());
   });
 });
+
+describe('build-guide-html.mjs — JSON-LD structured data', () => {
+  const ld = (html: string) => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+
+  it('emits one TechArticle block built from front matter, with "<" escaped', () => {
+    const { html } = build('---\ntitle: "A </script> guide"\ndescription: "Does <b>x</b>"\nslug: scratch\nupdated: "2026-10-20"\n---\n\nBody.\n');
+    const blocks = ld(html);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0][1]).not.toContain('<');
+    const j = JSON.parse(blocks[0][1]);
+    expect(j['@type']).toBe('TechArticle');
+    expect(j.headline).toBe('A </script> guide');
+    expect(j.description).toBe('Does <b>x</b>');
+    expect(j.dateModified).toBe('2026-10-20');
+    expect(j.author.name).toBe('Dr Brad, Inc');
+    expect(j.mainEntityOfPage).toBe('https://drstanfield.com/blogs/guides/scratch');
+    expect(j.about.url).toBe('https://drstanfield.com/pages/roadmap');
+  });
+
+  it('omits description and dateModified when front matter lacks them', () => {
+    const j = JSON.parse(ld(build(`${FRONT_MATTER}Body.\n`).html)[0][1]);
+    expect(j).not.toHaveProperty('description');
+    expect(j).not.toHaveProperty('dateModified');
+  });
+
+  it('every shipped guide carries exactly one parseable block', () => {
+    for (const n of SHIPPED) expect(ld(built.get(n)!)).toHaveLength(1);
+  });
+});

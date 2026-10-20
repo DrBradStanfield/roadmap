@@ -12,6 +12,7 @@ vi.mock('./supabase.server', () => ({ supabaseAdmin: null }));
 
 import { MASTER_VIEWS_HEADING } from './youtube-context';
 import { loadBlogIndex } from './blog-index.server';
+import { buildSystemBlocks, DOCTOR_POSTURE, BRAND_POSTURE } from './chat.server';
 
 const system = readFileSync('app/lib/chat-system-prompt.md', 'utf-8');
 const youtube = readFileSync('app/lib/chat-youtube-prompt.md', 'utf-8');
@@ -76,9 +77,59 @@ describe('YouTube prompt and the master views (US-50 AC6)', () => {
     expect(youtube).toContain('A Current evidence position is never Brad\'s view, so it never prompts a "view has changed" remark.');
   });
 
+  it('the safety sections are evidence summaries, never Brad\'s view (US-50 AC6)', () => {
+    expect(youtube).toContain("followed by that page's safety, side-effect and drug-interaction sections. Those safety sections are evidence summaries, never Brad's view; use them when a reply touches safety, side effects or interactions.");
+    expect(MASTER_VIEWS_HEADING).toContain('current view and safety notes');
+  });
+
   it('states the two-axis rule and allows a public "view has changed"', () => {
     expect(youtube).toContain("The video's content is the authority on what the video said; this section is the authority on Brad's view today.");
     expect(youtube).toContain("a reply may say publicly that Brad's view has changed since the video");
+  });
+});
+
+// US-50 AC11: Brad's omega-3 brand (products.md) on the doctor surfaces only,
+// with the affiliate disclosure (Brad 2026-10-20: "Disclose commission"); the
+// brand posture never presents Brad's routine as an endorsement.
+describe('omega-3 brand (US-50 AC11)', () => {
+  const DISCLOSURE = 'Brad earns a small commission through this Amazon link.';
+  const brand = readFileSync('app/lib/chat-posture-brand.md', 'utf-8');
+  const doctor = readFileSync('app/lib/chat-posture-doctor.md', 'utf-8');
+  const products = readFileSync('docs/products.md', 'utf-8');
+  const OMEGA_RULE = `On the doctor surfaces, when a user asks which omega-3 Brad takes or which one to buy, also say that the brand he takes himself and recommends is WHC UnoCardio 1000 Fish Oil, with its Amazon link from the PRODUCTS section, and say: "${DISCLOSURE}" On the brand surface, Brad's personal routine is never an endorsement: give the criteria only, with no brand name or link.`;
+  const DOCTOR_EXCEPTION = `- **One exception, omega-3:** Dr Stanfield sells no omega-3, so when a user asks which omega-3 Brad takes or which one to buy, follow the omega-3 rule above: give the EPA/DHA criteria, say he takes and recommends WHC UnoCardio 1000 Fish Oil, give the Amazon link from the PRODUCTS section, and say: "${DISCLOSURE}"`;
+
+  it('the system prompt shares WHC UnoCardio 1000, the link and the disclosure on the doctor surfaces; criteria only on the brand surface', () => {
+    expect(system).toContain(OMEGA_RULE);
+    expect(system).toContain('describe the ingredient criteria (a fish-oil providing meaningful EPA/DHA per serving)');
+    expect(system).toContain('Dr. Stanfield does not sell an Omega-3 product.');
+    expect(system).not.toContain('do not link a specific branded product');
+  });
+
+  it('the competitor-brands rule names the omega-3 exception', () => {
+    expect(system).toContain('- **Never suggest competitor multivitamin / supplement brands by name** (Thorne, NOW Foods, Pure Encapsulations, Athletic Greens, Ritual, Seed, Setria, Quicksilver Scientific, etc.) — even when answering "what else could I use?" The one exception is the omega-3 brand Brad takes, on the doctor surfaces only, under the omega-3 rule above.');
+  });
+
+  it('the doctor posture carries the omega-3 exception right after its "What does Brad take" rule', () => {
+    expect(doctor).toContain(DOCTOR_EXCEPTION);
+    expect(doctor.indexOf(DOCTOR_EXCEPTION)).toBeGreaterThan(doctor.indexOf('**"What does Brad take / what\'s in his routine?"**'));
+    expect(brand).toContain('do not present Brad\'s personal routine as an endorsement');
+    expect(brand).not.toContain('UnoCardio');
+  });
+
+  it('products.md scopes the recommendation to the doctor surfaces and the asked-for trigger, with the disclosure', () => {
+    expect(products).toContain('**WHC UnoCardio 1000 Fish Oil**, available on Amazon: https://amzn.to/');
+    expect(products).toContain(`On the doctor surfaces (education site, Health Roadmap app, YouTube, Discord), when a user asks which omega-3 Brad takes or which one to buy, share this recommendation with the link, note that it's the brand Brad takes personally, and say: "${DISCLOSURE}" On the brand surface (microvitamin.com), give the EPA/DHA criteria only, with no brand name or link.`);
+    expect(products).not.toContain('When a user asks about omega-3, share this recommendation');
+    expect(products).toContain(`- **Omega-3 (DHA/EPA) 1g daily** — on the doctor surfaces only, name the brand and give the link from the Omega-3 section earlier in this file, with the sentence "${DISCLOSURE}" On the brand surface, say omega-3 (EPA/DHA) without a brand or link.`);
+  });
+
+  it('the assembled doctor prompt carries the exception and the disclosure in every layer; the brand prompt keeps criteria only', () => {
+    const doctorPrompt = buildSystemBlocks('{}', { surfaceContext: DOCTOR_POSTURE }).map(b => b.text).join('\n\n');
+    for (const text of [OMEGA_RULE, DOCTOR_EXCEPTION, `say: "${DISCLOSURE}"`]) expect(doctorPrompt).toContain(text);
+    const brandPrompt = buildSystemBlocks('{}', { surfaceContext: BRAND_POSTURE }).map(b => b.text).join('\n\n');
+    expect(brandPrompt).not.toContain(DOCTOR_EXCEPTION);
+    expect(brandPrompt).toContain("On the brand surface, Brad's personal routine is never an endorsement: give the criteria only, with no brand name or link.");
   });
 });
 
@@ -103,6 +154,40 @@ describe('topic-masters answer fixtures are registered (US-50 AC5)', () => {
     expect(hits('Brad recommends saffron for low mood.')).toBe(true);
     expect(hits("Dr Stanfield's view is that saffron works.")).toBe(true);
     expect(hits('He recommends 30 mg a day.')).toBe(true);
+  });
+
+  // R4/R7: the harness compiles patterns with no i flag, so the affirmative
+  // wrinkle patterns are case-insensitive by construction, and the negation
+  // lookbehind lets negated sentences through.
+  describe('collagen wrinkle patterns', () => {
+    const wrinkleFixtures = all.filter(q => /collagen/i.test(q.query) && /wrinkle/i.test(q.query) && (q.must_not_match ?? []).some(r => r.startsWith('(?<!')));
+    const forbids = (q: Fixture, text: string) => (q.must_not_match ?? []).some(r => new RegExp(r).test(text));
+    const AFFIRMATIVE = ['Collagen may reduce wrinkles.', 'Collagen supplements reduce wrinkles.', 'Collagen can reduce the appearance of wrinkles.', 'Collagen reduces fine lines and wrinkles.', 'Collagen improves wrinkles.', 'Collagen reduced wrinkles in trials.', 'Collagen is shown to reduce wrinkles.', 'Collagen helps reduce wrinkles.'];
+    const NEGATED = [
+      'There is no evidence that collagen reduces wrinkles.', 'There is no evidence collagen reduces wrinkles.',
+      "There isn't good evidence that collagen reduces wrinkles.", "There isn't evidence collagen reduces wrinkles.",
+      "It's not true that collagen reduces wrinkles.", "The meta-analysis doesn't show collagen reduces wrinkles.",
+      'The trials did not show that collagen reduces wrinkles.', "The review didn't find collagen reduces wrinkles.",
+      'The review did not find that it reduces wrinkles.', 'Collagen does not reduce wrinkles.', "It doesn't reduce wrinkles.",
+    ];
+    it('covers the three master fixtures, with no subject-less or "it" pattern (sunscreen and retinoid advice pass)', () => {
+      expect(wrinkleFixtures).toHaveLength(3);
+      for (const q of wrinkleFixtures) {
+        for (const text of ['Sunscreen may help reduce wrinkles.', 'Retinoids can reduce wrinkles.', 'It may help reduce wrinkles.']) expect(forbids(q, text), q.query).toBe(false);
+      }
+    });
+    it.each(AFFIRMATIVE)('every fixture forbids the affirmative "%s", in any case', (text) => {
+      for (const q of wrinkleFixtures) {
+        expect(forbids(q, text), q.query).toBe(true);
+        expect(forbids(q, text.toLowerCase()), q.query).toBe(true);
+      }
+    });
+    it.each(NEGATED)('no fixture forbids the negated "%s"', (text) => {
+      for (const q of wrinkleFixtures) {
+        expect(forbids(q, text), q.query).toBe(false);
+        expect(forbids(q, text.toLowerCase()), q.query).toBe(false);
+      }
+    });
   });
 
   it('each is a fixed-handle answer check on real handles with answer rules that compile', () => {
