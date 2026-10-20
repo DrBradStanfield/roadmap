@@ -79,3 +79,47 @@ describe('api.chat unsigned request', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 });
+
+// US-09 AC24: a duplicated logged_in_customer_id never identifies a customer.
+// Shopify's own check keeps the LAST copy while the route read the FIRST, so a
+// signed query with another customer's id put in front passed as that
+// customer. A GET naming a customer still meets the framework check first
+// (Codex R1), so an unsigned one gets its 400; a duplicate that passes it is
+// the empty guest answer. A bare GET with no id stays US-15 AC9's guest list.
+describe('api.chat customer id on a GET', () => {
+  const get = (query: string) => loader({
+    request: new Request(`https://health-tool-app.fly.dev/api/chat${query}`),
+    params: {},
+  } as unknown as Parameters<typeof loader>[0]);
+  let saved: string | undefined;
+  beforeEach(async () => {
+    const { TEST_PROXY_SECRET } = await import('../lib/app-proxy.test-helpers');
+    saved = process.env.SHOPIFY_API_SECRET;
+    process.env.SHOPIFY_API_SECRET = TEST_PROXY_SECRET;
+  });
+  afterEach(() => { process.env.SHOPIFY_API_SECRET = saved; });
+
+  it('a forged first id passes the framework check and is still the empty guest list', async () => {
+    const { forgedQuery } = await import('../lib/app-proxy.test-helpers');
+    mocks.appProxy.mockResolvedValueOnce({});
+    const res = await get(forgedQuery('999', ''));
+    expect(await res.json()).toEqual({ success: true, conversations: [], isGuest: true });
+    expect(mocks.appProxy).toHaveBeenCalledTimes(1);
+  });
+
+  it('an unsigned id gets the framework 400, never a guest list', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const rejection = new Response(null, { status: 400 });
+    mocks.appProxy.mockRejectedValueOnce(rejection);
+    await expect(get('?logged_in_customer_id=999')).rejects.toBe(rejection);
+    await Sentry.flush();
+    expect(envelopes).toEqual([]);
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('a bare GET with no id is the empty guest list without the framework check (US-15 AC9)', async () => {
+    const res = await get('');
+    expect(await res.json()).toEqual({ success: true, conversations: [], isGuest: true });
+    expect(mocks.appProxy).not.toHaveBeenCalled();
+  });
+});

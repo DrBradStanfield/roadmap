@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import crypto from 'node:crypto';
 import { getClientIp, verifyAppProxySignature } from './local-first-route.server';
+import { forgedQuery, proxyPairs, signedQuery, TEST_PROXY_SECRET } from './app-proxy.test-helpers';
 
-const SECRET = 'test-shopify-secret';
+const SECRET = TEST_PROXY_SECRET;
 const NOW = 1_780_000_000; // fixed "current" time, seconds
 
 /** Build a request URL signed the way Shopify's app proxy signs it. */
@@ -61,6 +62,36 @@ describe('verifyAppProxySignature', () => {
   it('rejects a stale timestamp (replay outside the ±10-minute window)', () => {
     const req = new Request(signedUrl({ ...baseParams, timestamp: String(NOW - 11 * 60) }));
     expect(verifyAppProxySignature(req, NOW)).toBe(false);
+  });
+
+  // US-09 AC24: Shopify sends each of its own params once. A second copy is a
+  // forgery even when the signature covers the comma-joined values.
+  it.each(['logged_in_customer_id', 'path_prefix', 'shop', 'timestamp'])(
+    'rejects a duplicated %s even when the signature covers both copies',
+    (key) => {
+      const pairs: [string, string][] = [...proxyPairs('111', NOW)];
+      const value = pairs.find(([k]) => k === key)![1];
+      pairs.push([key, value]);
+      const req = new Request(`https://x.test/api${signedQuery(pairs)}`);
+      expect(verifyAppProxySignature(req, NOW)).toBe(false);
+    },
+  );
+
+  it('rejects a duplicated signature', () => {
+    const qs = signedQuery(proxyPairs('111', NOW));
+    const sig = new URLSearchParams(qs).get('signature');
+    expect(verifyAppProxySignature(new Request(`https://x.test/api${qs}`), NOW)).toBe(true);
+    expect(verifyAppProxySignature(new Request(`https://x.test/api${qs}&signature=${sig}`), NOW)).toBe(false);
+  });
+
+  it('rejects the prepended-customer forgery a last-copy verifier accepts', () => {
+    expect(verifyAppProxySignature(new Request(`https://x.test/api${forgedQuery('999', '111', NOW)}`), NOW)).toBe(false);
+    expect(verifyAppProxySignature(new Request(`https://x.test/api${forgedQuery('999', '', NOW)}`), NOW)).toBe(false);
+  });
+
+  it('still accepts a repeated app param (only Shopify params must be single)', () => {
+    const pairs: [string, string][] = [...proxyPairs('111', NOW), ['tag', 'a'], ['tag', 'b']];
+    expect(verifyAppProxySignature(new Request(`https://x.test/api${signedQuery(pairs)}`), NOW)).toBe(true);
   });
 
   it('rejects everything when the secret env is missing', () => {

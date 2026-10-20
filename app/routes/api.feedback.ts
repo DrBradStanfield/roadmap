@@ -5,6 +5,7 @@ import { authenticate } from '../shopify.server';
 import { sendFeedbackEmail } from '../lib/email.server';
 import { recordFeedbackSubmission } from '../lib/product-events.server';
 import { getClientIp } from '../lib/local-first-route.server';
+import { getCustomerId } from '../lib/route-helpers.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 
 // 3 submissions per hour per IP — the same limiter every other route uses.
@@ -40,9 +41,8 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ success: false, error: 'Invalid input' }, { status: 400 });
     }
 
-    // Extract optional customer ID for context
-    const url = new URL(request.url);
-    const customerId = url.searchParams.get('logged_in_customer_id') || null;
+    // Optional customer ID for context, only when Shopify vouched for it.
+    const customerId = getCustomerId(request);
 
     // Queryable mirror of the email (weekly product-health loop reads this).
     // Fire-and-forget: a DB failure must never block the feedback email.

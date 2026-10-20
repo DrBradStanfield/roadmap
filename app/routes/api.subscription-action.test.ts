@@ -11,8 +11,9 @@ const events = vi.hoisted(() => ({ record: vi.fn(async () => {}) }));
 vi.mock('../lib/product-events.server', () => ({ recordServerEvent: events.record }));
 
 import { action } from './api.subscription-action';
+import { forgedQuery, proxyPairs, signedQuery, TEST_PROXY_SECRET } from '../lib/app-proxy.test-helpers';
 
-const ENV = { CHAT_SUBSCRIPTION_ACTIONS: 'on', CHAT_SURFACE: 'brand', CS_GATEWAY_CHAT_URL: 'http://gateway.test:8081', CHAT_GATEWAY_SECRET: 'g'.repeat(40) };
+const ENV = { SHOPIFY_API_SECRET: TEST_PROXY_SECRET, CHAT_SUBSCRIPTION_ACTIONS: 'on', CHAT_SURFACE: 'brand', CS_GATEWAY_CHAT_URL: 'http://gateway.test:8081', CHAT_GATEWAY_SECRET: 'g'.repeat(40) };
 const TOKEN = 'tok-pause-S1-xxxxxxxxxxxxxxxx';
 let saved: Record<string, string | undefined>;
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -32,8 +33,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function post(body: unknown, { customer = `80${++n}`, type = 'application/json' } = {}) {
-  const q = customer ? `?shop=microvitamin.myshopify.com&logged_in_customer_id=${customer}&timestamp=1&signature=abc` : '?shop=microvitamin.myshopify.com&logged_in_customer_id=&timestamp=1&signature=abc';
+function post(body: unknown, { customer = `80${++n}`, type = 'application/json', q = signedQuery(proxyPairs(customer)) } = {}) {
   const request = new Request(`https://health-tool-app.fly.dev/api/subscription-action${q}`, { method: 'POST', headers: { 'content-type': type }, body: typeof body === 'string' ? body : JSON.stringify(body) });
   return action({ request, params: {} } as unknown as Parameters<typeof action>[0]);
 }
@@ -50,6 +50,19 @@ describe('US-49 AC5 — POST /api/subscription-action', () => {
     const rejection = new Response(null, { status: 400 });
     mocks.appProxy.mockRejectedValueOnce(rejection);
     await expect(post({ token: TOKEN })).rejects.toBe(rejection);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('refuses a duplicated logged_in_customer_id as not logged in (US-09 AC24)', async () => {
+    for (const own of ['111', '']) {
+      const res = await post({ token: TOKEN }, { q: forgedQuery('999', own) });
+      expect(res.status).toBe(401);
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('refuses an id the signature does not cover (US-09 AC24)', async () => {
+    expect((await post({ token: TOKEN }, { q: '?shop=microvitamin.myshopify.com&logged_in_customer_id=7001&timestamp=1&signature=abc' })).status).toBe(401);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -70,7 +83,10 @@ describe('US-49 AC5 — POST /api/subscription-action', () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('http://gateway.test:8081/chat/subscription-action');
     const body = JSON.parse(init.body);
-    expect(body).toEqual({ proxy: { shop: ['microvitamin.myshopify.com'], logged_in_customer_id: ['7001'], timestamp: ['1'], signature: ['abc'] }, token: TOKEN, reason: 'have_enough' });
+    expect(Object.keys(body.proxy).sort()).toEqual(['logged_in_customer_id', 'path_prefix', 'shop', 'signature', 'timestamp']);
+    expect(body.proxy.logged_in_customer_id).toEqual(['7001']);
+    expect(body.proxy.signature[0]).toMatch(/^[0-9a-f]{64}$/);
+    expect({ token: body.token, reason: body.reason }).toEqual({ token: TOKEN, reason: 'have_enough' });
     expect(init.headers['x-gateway-signature']).toMatch(/^[0-9a-f]{64}$/);
   });
 

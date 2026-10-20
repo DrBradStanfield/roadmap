@@ -8,8 +8,9 @@
  */
 import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
-import { getAuthenticatedUser, checkSubscriptionFromTags, getCustomerOrders, isValidUuid } from '../lib/route-helpers.server';
+import { getAuthenticatedUser, getCustomerId, checkSubscriptionFromTags, getCustomerOrders, isValidUuid } from '../lib/route-helpers.server';
 import { getClientIp } from '../lib/local-first-route.server';
+import { authenticate } from '../shopify.server';
 import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
   resolveChatContext,
@@ -195,8 +196,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     // Guest without a session token — return empty default (don't create a session just to list conversations)
     const sessionToken = url.searchParams.get('sessionToken');
-    const hasCustomerId = !!url.searchParams.get('logged_in_customer_id');
-    if (!hasCustomerId && !sessionToken) {
+    if (!getCustomerId(request) && !sessionToken) {
+      // A GET naming a customer meets the framework check first, so an
+      // unsigned one gets its 400; a duplicated id that passes it is still a
+      // guest (US-09 AC24). A bare GET skips it (US-15 AC9).
+      if (url.searchParams.get('logged_in_customer_id')) await authenticate.public.appProxy(request);
       return Response.json({
         success: true,
         conversations: [],
