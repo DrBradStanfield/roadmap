@@ -71,7 +71,7 @@
     "prettier": "^3.2.4",
     "tsx": "4.23.13",
     "typescript": "^5.2.2",
-    "vite": "^6.2.2"
+    "vite": "^6.4.4"
   },
   "workspaces": [
     "packages/*",
@@ -82,7 +82,7 @@
   ],
   "resolutions": {
     "minimatch": "9.0.9",
-    "vite": "^6.2.2"
+    "vite": "^6.4.4"
   },
   "overrides": {
     "minimatch": "9.0.9",
@@ -90,7 +90,7 @@
     "tsup": {
       "esbuild": "^0.28.1"
     },
-    "vite": "^6.2.2"
+    "vite": "^6.4.4"
   },
   "author": "bradstanfield"
 }
