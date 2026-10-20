@@ -1,5 +1,5 @@
 /**
- * OpenAI's app reviewer signs in on our own consent page (US-32 AC38): the
+ * OpenAI's and Anthropic's app reviewers sign in on our own consent page (US-32 AC38, AC49): the
  * reviewer SECRETS, and who may see the form. What a reviewer grant means once
  * minted is `mcp-grants.server.ts`'s.
  *
@@ -14,19 +14,28 @@
  * username, a password or the token.
  */
 import crypto from 'node:crypto';
-import { KNOWN_CLIENTS } from './mcp-clients.server';
+import { KNOWN_CLIENTS, type McpClientLabel } from './mcp-clients.server';
 import type { McpProvider } from './mcp-providers.server';
 import { createQuotaCounter } from './rate-limiter';
 
 /**
- * The only clients that see the form: the pinned ChatGPT and Codex entries,
- * since OpenAI tests "ChatGPT and Codex surfaces". Matched by exact id (a Map
- * key), never a lookalike: chatgpt.com echoes any query string into a CIMD
- * document, so `…client.json?x=1` resolves as a client named "ChatGPT".
+ * The only clients that see the form, and whose review it is: the pinned
+ * ChatGPT and Codex entries, since OpenAI tests "ChatGPT and Codex surfaces",
+ * and the pinned Claude and Claude Code entries for Anthropic's connector
+ * directory (US-32 AC49). Matched by exact id (a Map key), never a lookalike or
+ * a DCR client: chatgpt.com echoes any query string into a CIMD document, so
+ * `…client.json?x=1` resolves as a client named "ChatGPT".
  */
-export function reviewerClient(clientId: string) {
+const REVIEWS: Partial<Record<McpClientLabel, 'OpenAI' | 'Anthropic'>> = { chatgpt: 'OpenAI', codex: 'OpenAI', claude: 'Anthropic', claude_code: 'Anthropic' };
+
+/** Whose review this client's box is for, or undefined: no box. */
+export function reviewerReview(clientId: string): 'OpenAI' | 'Anthropic' | undefined {
   const client = KNOWN_CLIENTS.get(clientId);
-  return client?.label === 'chatgpt' || client?.label === 'codex' ? client : undefined;
+  return client && REVIEWS[client.label];
+}
+
+export function reviewerClient(clientId: string) {
+  return reviewerReview(clientId) ? KNOWN_CLIENTS.get(clientId) : undefined;
 }
 
 /** A noise brake, not a defence: the password is a ~130-bit random secret. Failures only, 20 per IP per 15 minutes, per machine. */

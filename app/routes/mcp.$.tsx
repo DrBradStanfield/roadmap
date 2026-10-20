@@ -48,7 +48,7 @@ import {
   providerTag,
 } from '../lib/mcp-providers.server';
 import { packSealed, unpackSealed } from '../lib/mcp-seal.server';
-import { reviewerClient, reviewerFailures, reviewerGeneration, reviewerLoginMatches, reviewerOffered, reviewerRefreshToken } from '../lib/mcp-reviewer.server';
+import { reviewerClient, reviewerFailures, reviewerGeneration, reviewerLoginMatches, reviewerOffered, reviewerRefreshToken, reviewerReview } from '../lib/mcp-reviewer.server';
 import type { McpOAuthDetail, McpOAuthReason } from '../../packages/health-core/src/product-events';
 import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
 
@@ -373,8 +373,8 @@ async function consentGiven(request: Request): Promise<Response> {
 }
 
 /**
- * OpenAI's reviewer pressed Sign in (US-32 AC38). The exact pinned ChatGPT or
- * Codex client, the Dropbox state, and the secrets set — or the page they came from
+ * An app reviewer pressed Sign in (US-32 AC38, AC49). The exact pinned ChatGPT,
+ * Codex, Claude or Claude Code client, the Dropbox state, and the secrets set — or the page they came from
  * could not have shown the form. The password is the only security boundary;
  * the limiter counts failures alone and only stops noise. Nothing here logs
  * or echoes what was typed.
@@ -646,15 +646,18 @@ function clientSource(client: McpClient): string {
 }
 
 /**
- * OpenAI's reviewer box (US-32 AC38): open, and above everything else on the
+ * The app reviewer box (US-32 AC38, AC49): open, and above everything else on the
  * page, because the reviewer pressed the first button inside two seconds. It
- * exists only for the exact pinned ChatGPT and Codex clients, only while the reviewer
+ * exists only for the exact pinned ChatGPT, Codex, Claude and Claude Code clients,
+ * worded for the review that client's vendor runs, only while the reviewer
  * secrets are set, and only with Dropbox on offer. `error` is our own
  * sentence; what was typed is never echoed.
  */
-function reviewerBox(state: string, error?: string): string {
-  return `<h2>OpenAI app reviewers: sign in here</h2>
-<p class="lede">For OpenAI’s app review only. This is not your Dropbox or Google password.</p>
+function reviewerBox(state: string, review: 'OpenAI' | 'Anthropic', error?: string): string {
+  const heading = review === 'OpenAI' ? 'OpenAI app reviewers' : 'Anthropic reviewers';
+  const scope = review === 'OpenAI' ? 'OpenAI’s app review' : 'Anthropic’s connector review';
+  return `<h2>${heading}: sign in here</h2>
+<p class="lede">For ${scope} only. This is not your Dropbox or Google password.</p>
 ${error ? `<p class="err" role="alert">${escapeHtml(error)}</p>` : ''}<form method="post" class="reviewer">
 <input type="hidden" name="state" value="${escapeHtml(state)}">
 <input type="hidden" name="reviewer" value="1">
@@ -672,7 +675,8 @@ ${error ? `<p class="err" role="alert">${escapeHtml(error)}</p>` : ''}<form meth
  */
 function consentPage(client: McpClient, offers: Array<{ provider: McpProvider; state: string }>, error?: string): string {
   const dropbox = offers.find(({ provider }) => provider === 'dropbox');
-  const reviewer = dropbox && reviewerOffered(client.clientId, dropbox.provider) ? reviewerBox(dropbox.state, error) : '';
+  const review = reviewerReview(client.clientId);
+  const reviewer = dropbox && review && reviewerOffered(client.clientId, dropbox.provider) ? reviewerBox(dropbox.state, review, error) : '';
   // The custody clause follows the TOKEN, not the whole feature: a token set
   // with a malformed password hash keeps the box off but still sits on this server.
   const reviewerTokenHeld = reviewerRefreshToken() !== '';
@@ -693,7 +697,7 @@ function consentPage(client: McpClient, offers: Array<{ provider: McpProvider; s
     'Where do you want to keep your health record?',
     `${reviewer ? '<h2>Everyone else: choose where your record is kept</h2>\n' : ''}<p class="lede"><span class="who">${escapeHtml(client.name)}</span> wants to connect to your health record.</p>
 <p class="lede">That name is the app’s own, not ours. What we can tell you about it: ${escapeHtml(clientSource(client))}.</p>
-<p class="lede">Your health record is yours, and yours alone. Keep it in your own ${escapeHtml(clouds)}. Your assistant reads and writes one file there, plus a temporary imports folder while an import is pending. Nothing is stored on our server${reviewerTokenHeld ? ', except, while an OpenAI app review is pending, the Dropbox credential of one invented reviewer account' : ''}.</p>
+<p class="lede">Your health record is yours, and yours alone. Keep it in your own ${escapeHtml(clouds)}. Your assistant reads and writes one file there, plus a temporary imports folder while an import is pending. Nothing is stored on our server${reviewerTokenHeld ? ', except, while an OpenAI or Anthropic app review is pending, the Dropbox credential of one invented reviewer account' : ''}.</p>
 <div class="pick">${buttons}</div>
 ${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Importing lab files: drop a file into the chat on either cloud, on any device, and your assistant reads it. With Dropbox you can also put files in the folder; with Google Drive the folder cannot be read, so the chat or the website’s upload are the ways in.</p>' : ''}
 <h2>What the assistant can do</h2>

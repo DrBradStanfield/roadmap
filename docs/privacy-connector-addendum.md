@@ -93,9 +93,9 @@ meet on our server during a normal call: it unseals the credential to open your 
 for that request, then discards both. A compromised server could capture them at that
 moment; encryption at rest does not protect against that, and we do not claim it does.
 
-One exception, for one invented account. While an OpenAI app review is pending, our
-server holds the Dropbox credential of a synthetic reviewer account we made, so OpenAI's
-reviewer can sign in on our consent page with a username and password we issued instead
+One exception, for one invented account. While an OpenAI or Anthropic app review is
+pending, our server holds the Dropbox credential of a synthetic reviewer account we made,
+so their reviewer can sign in on our consent page with a username and password we issued instead
 of a Dropbox login. The account belongs to no one and its record is invented. The
 reviewer's assistant holds no credential at all, only a marker that names the current
 reviewer secrets, so removing or changing those secrets ends every reviewer session. It
