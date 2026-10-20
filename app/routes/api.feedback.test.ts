@@ -11,6 +11,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 const sendFeedbackEmail = vi.fn(async () => true);
+const recordFeedbackSubmission = vi.hoisted(() => vi.fn(async () => {}));
 
 vi.mock('../shopify.server', () => ({
   authenticate: { public: { appProxy: vi.fn(async () => ({})) } },
@@ -21,15 +22,16 @@ vi.mock('../lib/email.server', async (importOriginal) => ({
 }));
 vi.mock('../lib/product-events.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  recordFeedbackSubmission: vi.fn(async () => {}),
+  recordFeedbackSubmission,
 }));
 
 import { action } from './api.feedback';
+import { forgedQuery, proxyPairs, signedQuery, TEST_PROXY_SECRET } from '../lib/app-proxy.test-helpers';
 
 let n = 0;
-function submit(headers: Record<string, string>, body?: Record<string, unknown>) {
+function submit(headers: Record<string, string>, body?: Record<string, unknown>, query = '') {
   return action({
-    request: new Request('https://drstanfield.com/api/feedback', {
+    request: new Request(`https://drstanfield.com/api/feedback${query}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...headers },
       body: JSON.stringify(body ?? { email: `f${n++}@example.com`, message: 'hello' }),
@@ -95,5 +97,25 @@ describe('api.feedback honeypot', () => {
       expect.anything(),
       expect.anything(),
     );
+  });
+});
+
+describe('api.feedback customer id (US-09 AC24)', () => {
+  it('records a customer id only from a single-value signed query', async () => {
+    const saved = process.env.SHOPIFY_API_SECRET;
+    process.env.SHOPIFY_API_SECRET = TEST_PROXY_SECRET;
+    try {
+      await submit(proxied('198.51.100.11', '6.6.6.1'), undefined, forgedQuery('999', '111'));
+      expect(recordFeedbackSubmission).toHaveBeenLastCalledWith(expect.any(String), 'hello', null);
+      expect(sendFeedbackEmail).toHaveBeenLastCalledWith(expect.any(String), 'hello', null);
+
+      await submit(proxied('198.51.100.11', '6.6.6.1'), undefined, '?logged_in_customer_id=999');
+      expect(recordFeedbackSubmission).toHaveBeenLastCalledWith(expect.any(String), 'hello', null);
+
+      await submit(proxied('198.51.100.11', '6.6.6.1'), undefined, signedQuery(proxyPairs('111')));
+      expect(recordFeedbackSubmission).toHaveBeenLastCalledWith(expect.any(String), 'hello', '111');
+    } finally {
+      process.env.SHOPIFY_API_SECRET = saved;
+    }
   });
 });

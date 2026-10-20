@@ -6,6 +6,7 @@
 import * as Sentry from '@sentry/react-router';
 import { authenticate } from '../shopify.server';
 import { getOrCreateSupabaseUser, createUserClient } from './supabase.server';
+import { verifyAppProxySignature } from './local-first-route.server';
 
 /** Customer IDs exempt from rate limits (env: comma-separated Shopify customer IDs). */
 export const EXEMPT_CUSTOMERS = new Set(
@@ -13,12 +14,16 @@ export const EXEMPT_CUSTOMERS = new Set(
 );
 
 /**
- * Extract and validate the Shopify customer ID from the app proxy request.
- * Returns null if missing or non-numeric (defense-in-depth against malformed IDs).
+ * The Shopify customer ID from the app proxy request — the ONE reader of
+ * `logged_in_customer_id` (US-09 AC24). Null unless the query passes our own
+ * signature check, which refuses a duplicated Shopify param; Shopify's
+ * `authenticate.public.appProxy` (shopify-api 15) passes a repeated
+ * `logged_in_customer_id` signed over both copies, so it alone cannot vouch
+ * for the id. Null too if missing or non-numeric.
  */
 export function getCustomerId(request: Request): string | null {
-  const url = new URL(request.url);
-  const id = url.searchParams.get('logged_in_customer_id');
+  if (!verifyAppProxySignature(request)) return null;
+  const id = new URL(request.url).searchParams.get('logged_in_customer_id');
   return id && /^\d+$/.test(id) ? id : null;
 }
 

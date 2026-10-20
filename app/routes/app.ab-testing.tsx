@@ -3,7 +3,7 @@ import { data, useLoaderData, useSubmit, useNavigation } from "react-router";
 import { useState } from "react";
 import { z } from "zod";
 
-import { authenticate } from "../shopify.server";
+import { authenticateAdmin } from "../lib/admin-shop.server";
 import {
   getABTests,
   getActiveABTests,
@@ -107,7 +107,7 @@ async function deleteABMetafield(admin: any, shopId: string): Promise<{ error: s
 // ---------------------------------------------------------------------------
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  await authenticateAdmin(request);
 
   try {
     const tests = await getABTests();
@@ -132,7 +132,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 // ---------------------------------------------------------------------------
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+  const { admin } = await authenticateAdmin(request);
   const formData = await request.formData();
   const intent = formData.get('intent') as string;
 

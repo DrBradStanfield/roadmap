@@ -4,10 +4,10 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { NavMenu } from "@shopify/app-bridge-react";
 
-import { authenticate } from "../shopify.server";
+import { authenticateAdmin } from "../lib/admin-shop.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  await authenticateAdmin(request);
 
   return { apiKey: process.env.SHOPIFY_API_KEY || "" };
 };
@@ -18,7 +18,7 @@ export default function App() {
   // The @shopify/shopify-app-react-router AppProvider initializes App Bridge, which registers the
   // Polaris web components (`s-*`) the admin routes render. No Polaris React context is needed.
   return (
-    <AppProvider embedded apiKey={apiKey}>
+    <AppProvider apiKey={apiKey}>
       <NavMenu>
         <Link to="/app" rel="home">
           Home

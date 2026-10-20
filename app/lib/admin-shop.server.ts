@@ -1,4 +1,18 @@
 import { authenticate } from '../shopify.server';
+import { refuseAppProxyRequest } from './local-first-route.server';
+
+/**
+ * The ONE admin authenticator (US-09 AC24): every admin loader and action
+ * calls this, never `authenticate.admin` directly (a test greps for it). It
+ * refuses an app-proxy request first, since `authenticate.admin`'s bounce page
+ * copies the query, `signature` included, into its Location. Each route needs
+ * it itself: react-router runs loaders in parallel, a child's redirect beats
+ * the parent's 404, and a POST runs only the child's action.
+ */
+export async function authenticateAdmin(request: Request) {
+  refuseAppProxyRequest(request);
+  return authenticate.admin(request);
+}
 
 /**
  * The gate for admin pages that DO something irreversible on request — send
@@ -11,7 +25,7 @@ import { authenticate } from '../shopify.server';
  * breaks before the variable is set.
  */
 export async function authenticateOwnerAdmin(request: Request): Promise<void> {
-  const { session } = await authenticate.admin(request);
+  const { session } = await authenticateAdmin(request);
   const owner = process.env.ADMIN_SHOP_DOMAIN;
   if (owner && session?.shop !== owner) {
     throw new Response('Forbidden', { status: 403 });

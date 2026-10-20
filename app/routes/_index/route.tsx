@@ -2,10 +2,12 @@ import type { LoaderFunctionArgs } from "react-router";
 import { redirect, Form, useLoaderData } from "react-router";
 
 import { login } from "../../shopify.server";
+import { refuseAppProxyRequest } from "../../lib/local-first-route.server";
 
 import styles from "./styles.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  refuseAppProxyRequest(request);
   const url = new URL(request.url);
 
   if (url.searchParams.get("shop")) {
