@@ -45,8 +45,11 @@ const PROXY_TIMESTAMP_WINDOW_SECONDS = 10 * 60;
  * HMAC-SHA256ing with the app secret.
  *
  * Shopify sends each of its own params once, so a second copy is a forgery
- * (US-09 AC24): Shopify's library verifies the LAST copy and
- * `searchParams.get` reads the FIRST, so the two disagree about who is asking.
+ * (US-09 AC24). `searchParams.get` reads the FIRST copy. @shopify/shopify-api
+ * 13 verified the LAST; 15 refuses a repeated `shop`, `signature` or
+ * `timestamp` but comma-joins a repeated `logged_in_customer_id` and passes it
+ * when Shopify signed both copies. Either way the library alone cannot vouch
+ * for the id (app/lib/app-proxy.real-library.test.ts).
  */
 const SHOPIFY_PROXY_PARAMS = ['logged_in_customer_id', 'path_prefix', 'shop', 'signature', 'timestamp'];
 

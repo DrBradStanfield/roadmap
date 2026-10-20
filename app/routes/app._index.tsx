@@ -1,8 +1,7 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { data, useLoaderData } from "react-router";
 
-import { authenticate } from "../shopify.server";
-import { refuseAppProxyRequest } from "../lib/local-first-route.server";
+import { authenticateAdmin } from "../lib/admin-shop.server";
 import { getDashboardStats } from "../lib/supabase.server";
 
 function formatRelativeDate(dateStr: string): string {
@@ -42,8 +41,7 @@ function trendLabel(dir: TrendDirection, pct: number): string {
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  refuseAppProxyRequest(request);
-  await authenticate.admin(request);
+  await authenticateAdmin(request);
 
   try {
     const stats = await getDashboardStats();

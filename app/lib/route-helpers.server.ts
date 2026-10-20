@@ -17,8 +17,9 @@ export const EXEMPT_CUSTOMERS = new Set(
  * The Shopify customer ID from the app proxy request — the ONE reader of
  * `logged_in_customer_id` (US-09 AC24). Null unless the query passes our own
  * signature check, which refuses a duplicated Shopify param; Shopify's
- * `authenticate.public.appProxy` verifies the LAST copy of a repeated key, so
- * it alone cannot vouch for the id. Null too if missing or non-numeric.
+ * `authenticate.public.appProxy` (shopify-api 15) passes a repeated
+ * `logged_in_customer_id` signed over both copies, so it alone cannot vouch
+ * for the id. Null too if missing or non-numeric.
  */
 export function getCustomerId(request: Request): string | null {
   if (!verifyAppProxySignature(request)) return null;

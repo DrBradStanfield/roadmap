@@ -81,7 +81,7 @@ describe('api.chat unsigned request', () => {
 });
 
 // US-09 AC24: a duplicated logged_in_customer_id never identifies a customer.
-// Shopify's own check keeps the LAST copy while the route read the FIRST, so a
+// Shopify's own check kept the LAST copy (shopify-api 13) while the route read the FIRST, so a
 // signed query with another customer's id put in front passed as that
 // customer. A GET naming a customer still meets the framework check first
 // (Codex R1), so an unsigned one gets its 400; a duplicate that passes it is
@@ -115,6 +115,15 @@ describe('api.chat customer id on a GET', () => {
     await Sentry.flush();
     expect(envelopes).toEqual([]);
     expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  // US-09 AC24 (Codex R2, adversary R2): presence, not the first value's
+  // truthiness. An empty first copy must not skip the check for a second one.
+  it('an unsigned empty-then-real id pair gets the framework 400, never a guest list', async () => {
+    const rejection = new Response(null, { status: 400 });
+    mocks.appProxy.mockRejectedValueOnce(rejection);
+    await expect(get('?logged_in_customer_id=&logged_in_customer_id=999')).rejects.toBe(rejection);
+    expect(mocks.appProxy).toHaveBeenCalledTimes(1);
   });
 
   it('a bare GET with no id is the empty guest list without the framework check (US-15 AC9)', async () => {

@@ -200,7 +200,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       // A GET naming a customer meets the framework check first, so an
       // unsigned one gets its 400; a duplicated id that passes it is still a
       // guest (US-09 AC24). A bare GET skips it (US-15 AC9).
-      if (url.searchParams.get('logged_in_customer_id')) await authenticate.public.appProxy(request);
+      if (url.searchParams.getAll('logged_in_customer_id').some((v) => v !== '')) await authenticate.public.appProxy(request);
       return Response.json({
         success: true,
         conversations: [],
