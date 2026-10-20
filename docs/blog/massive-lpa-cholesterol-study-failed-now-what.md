@@ -96,7 +96,7 @@ So here's my take on Lp(a).
 
 Still measure your Lp(a) once [5].
 
-If you have a high Lp(a), you still want to reduce your cardiovascular risk factors as much as possible [5]. Healthy weight, insulin sensitive, good diet and exercise, systolic blood pressure below 120 if you're not frail [43, 44]. In those trials, the lower target also brought more fainting. And in clinic, I aim for ApoB below 50 mg/dL (0.5 g/L). That's where I go further than the guidelines [5].
+If you have a high Lp(a), you still want to reduce your cardiovascular risk factors as much as possible [5]. Healthy weight, insulin sensitive, good diet and exercise, systolic blood pressure below 120 if you're not frail [43, 44]. And in clinic, I aim for ApoB below 50 mg/dL (0.5 g/L). That's where I go further than the guidelines [5].
 
 And on that point, for most patients we start with a low-dose statin and add ezetimibe if needed. But for someone with high Lp(a), I'm quicker to add a PCSK9 inhibitor, though it's not licensed to lower Lp(a) [5].
 
