@@ -16,9 +16,9 @@ The one page that says what is true about this supplement today, and what Brad t
 - SPEC: docs/supplement-wiki.md. STYLE: docs/writing-style.md (applies to every sentence you write or change).
 - TODAY: the date to put in `reviewed:`.
 
-## The three new sections
+## The new sections
 
-Insert them directly after the opening "Read the full article" line, before the first existing heading, in this order.
+Insert sections 1 to 3 directly after the opening "Read the full article" line, before the first existing heading, in this order.
 
 ### 1. `## Current view (reviewed <D Month YYYY>)` or `## Current evidence position`
 
@@ -30,11 +30,20 @@ Insert them directly after the opening "Read the full article" line, before the 
   - First sentence: "Brad has not made a video on this topic; this is a summary of the evidence, not his view."
   - Calibrated language throughout. Cite as the body does.
 
-### 2. `## Brad's videos on this topic`
+### 2. `## Key safety points`
+
+The YouTube bot loads this section with the view, instead of the whole safety sections (US-50 AC12). It goes directly after section 1.
+
+- 3 to 8 bullets, ranked by clinical weight: serious drug interactions first (warfarin and other anticoagulants), then who should not take it, then dose ceilings and toxicity, then common side effects.
+- Each bullet is one or two plain sentences and carries the [n] markers of this master's own References that support it.
+- No new claims: every point is already stated in the master's safety or interaction sections or its view. Keep their hedging ("may", "evidence suggests").
+- At most 1,500 characters, heading and body. The checker's `--key-safety-points` fails a section that breaks any of these rules.
+
+### 3. `## Brad's videos on this topic`
 
 One line per post, newest first: `- <D Mon YYYY>, [<title>](<url>): <one-line take, in plain words>.` Add `Superseded on <what>.` where a newer post or position changed it. Write "None yet." when POSTS is "none".
 
-### 3. The existing review, made to agree
+### 4. The existing review, made to agree
 
 - A sentence that contradicts the current view is corrected or placed in context ("A 2025 review found no benefit in high-quality trials; a larger 2026 meta-analysis later found…").
 - Never delete the older evidence just because Brad's view moved. Say what changed and why.

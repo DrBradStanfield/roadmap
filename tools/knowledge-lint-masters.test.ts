@@ -15,7 +15,8 @@ import {
 const SRC = (checked = '2026-10-20', name = 'nih-ods') => `[{"name":"${name}","url":"https://ods.od.nih.gov/x","checked":"${checked}","fingerprint":"abc"}]`;
 const entry = (handle: string, type: string, front: string[], body = '') =>
   entryFrom({ handle, type, title: handle }, `---\ntitle: "${handle}"\n${front.join('\n')}${front.length ? '\n' : ''}---\n${body}`);
-const master = (handle: string, front: string[] = [`reviewed: "2026-10-20"`, `sources: ${SRC()}`], body = '## Current view (reviewed 20 October 2026)\n\nShort [post-a].\n') =>
+const KEY = '## Key safety points\n\n- May interact with warfarin [1].\n- Not in pregnancy [1].\n- Mild bloating [1].\n';
+const master = (handle: string, front: string[] = [`reviewed: "2026-10-20"`, `sources: ${SRC()}`], body = `## Current view (reviewed 20 October 2026)\n\nShort [post-a].\n\n${KEY}\n## References\n\n[1] Smith.\n`) =>
   entry(handle, 'reference', front, body);
 const post = (handle: string, front: string[] = []) => entry(handle, 'video', [`publishedAt: "2026-03-01T00:00:00Z"`, ...front]);
 const CFG: MastersConfig = { productIngredients: [], places: [] };
@@ -79,7 +80,7 @@ describe('US-50 AC7 static: hidden post gate (warn only)', () => {
 
 describe('US-50 AC7 static: current-view DOI in products.md (warn only)', () => {
   const cfg: MastersConfig = { productIngredients: ['m'], places: [] };
-  const body = '## Current view (reviewed 20 October 2026)\n\nSee doi 10.1000/abc.123 and a trial [1].\n\n## References\n\n[1] Smith. https://doi.org/10.1000/DEF456\n';
+  const body = `## Current view (reviewed 20 October 2026)\n\nSee doi 10.1000/abc.123 and a trial [1].\n\n${KEY}\n## References\n\n[1] Smith. https://doi.org/10.1000/DEF456\n`;
   it('warns for each DOI missing from products.md, including one reached through a cited reference line', () => {
     const r = staticMasterFindings([master('m', undefined, body)], 'Only 10.1000/abc.123 here.', cfg);
     expect(r.warns.map((w) => `${w.rule}:${w.item}`)).toEqual(['master-doi:10.1000/def456']);
@@ -88,6 +89,31 @@ describe('US-50 AC7 static: current-view DOI in products.md (warn only)', () => 
   it('is silent when products.md has them all, or the master is not a product ingredient', () => {
     expect(staticMasterFindings([master('m', undefined, body)], '10.1000/abc.123 10.1000/DEF456', cfg).warns).toEqual([]);
     expect(staticMasterFindings([master('m', undefined, body)], '', CFG).warns).toEqual([]);
+  });
+});
+
+describe('US-50 AC12 static: key safety points after the view (warn only)', () => {
+  const warned = (body: string) => staticMasterFindings([master('m', undefined, body)], '', CFG);
+  const VIEW = '## Current view (reviewed 20 October 2026)\n\nShort.\n\n';
+  const REFS = '\n## References\n\n[1] Smith.\n2. Jones.\n';
+  it('is silent on sound key points, and on a reference with no view', () => {
+    expect(warned(`${VIEW}${KEY}${REFS}`).warns).toEqual([]);
+    expect(warned(`${VIEW}## Key safety points\n\n- One [1, 2].\n- Two\n  wrapped [2].\n- Three [1–2].\n${REFS}`).warns).toEqual([]);
+    expect(staticMasterFindings([entry('old', 'reference', [], '## Dosing\n\n1 g.\n')], '', CFG).warns).toEqual([]);
+  });
+  it.each([
+    ['missing', `${VIEW}${REFS}`, 'needs one "## Key safety points" section after the view (found 0)'],
+    ['not directly after the view', `${VIEW}## Brad's videos on this topic\n\nNone yet.\n\n${KEY}${REFS}`, 'must come directly after the view section'],
+    ['two bullets', `${VIEW}## Key safety points\n\n- One [1].\n- Two [1].\n${REFS}`, 'has 2 bullets (3 to 8)'],
+    ['nine bullets', `${VIEW}## Key safety points\n\n${'- A point [1].\n'.repeat(9)}${REFS}`, 'has 9 bullets (3 to 8)'],
+    ['over 1,500 characters', `${VIEW}## Key safety points\n\n- ${'x'.repeat(1_500)} [1].\n- Two [1].\n- Three [1].\n${REFS}`, 'characters (at most 1500)'],
+    ['a bullet with no marker', `${VIEW}## Key safety points\n\n- One [1].\n- Two.\n- Three [1].\n${REFS}`, 'cites no [n] marker: - Two.'],
+    ['a marker with no reference line', `${VIEW}## Key safety points\n\n- One [1].\n- Two [3].\n- Three [1].\n${REFS}`, 'cites [3] with no reference line'],
+  ])('warns, never fails, when the section is %s', (_, body, detail) => {
+    const r = warned(body);
+    expect(r.fails).toEqual([]);
+    expect(rules(r.warns)).toEqual(['master-key-points']);
+    expect(r.warns[0].detail).toContain(detail);
   });
 });
 

@@ -35,6 +35,8 @@
  *   reference the frontmatter may gain or change `reviewed: "YYYY-MM-DD"` and a one-line JSON `sources:`, and the
  *   summary may change to the proposed correction; on a post it may gain `topics:` (JSON string array) and
  *   `router: hidden`. Every other field stays protected. A reference with `reviewed` also gets the MASTER body check.
+ *   New master batches also pass --key-safety-points (after --masters): each master with a view then FAILS without a
+ *   sound "## Key safety points" section (US-50 AC12). Opt-in because the batch-1 and batch-2 masters predate the rule.
  *
  *   npx tsx tools/knowledge-batch-check.ts --print-schema
  *   npx tsx tools/knowledge-batch-check.ts --example <handle>
@@ -353,6 +355,48 @@ function classifyLines(body: string): { line: string; ref: boolean }[] {
   });
 }
 
+/** The writer contract's cap on a master's "## Key safety points" section, heading and body (US-50 AC12). */
+export const MAX_KEY_POINTS_CHARS = 1_500;
+/**
+ * What is wrong with a master's "## Key safety points" section (US-50 AC12), shared with knowledge-lint.ts: a body with
+ * a view section needs one directly after it, of 3 to 8 bullets and at most MAX_KEY_POINTS_CHARS, every bullet citing
+ * [n] markers that all resolve to reference lines. Empty when it is sound or the body has no view.
+ */
+export function keySafetyErrors(body: string): string[] {
+  const lines = body.split(/\r?\n/);
+  let fence = false;
+  const heads = lines.flatMap((l, i) => { if (/^\s*```/.test(l)) fence = !fence; return !fence && /^#{1,2}\s/.test(l) ? [i] : []; });
+  const v = heads.findIndex((i) => VIEW_HEADING.test(lines[i]));
+  if (v < 0) return [];
+  const k = heads.filter((i) => /^##\s+Key safety points\s*$/.test(lines[i]));
+  if (k.length !== 1) return [`needs one "## Key safety points" section after the view (found ${k.length})`];
+  if (heads[v + 1] !== k[0]) return ['"## Key safety points" must come directly after the view section'];
+  const end = heads.find((i) => i > k[0]) ?? lines.length;
+  const errors: string[] = [];
+  const size = lines.slice(k[0], end).join("\n").trim().length;
+  if (size > MAX_KEY_POINTS_CHARS) errors.push(`"Key safety points" runs ${size} characters (at most ${MAX_KEY_POINTS_CHARS})`);
+  const bullets: string[] = []; // a bullet with its continuation lines
+  for (const l of lines.slice(k[0] + 1, end)) {
+    if (/^\s*[-*]\s+\S/.test(l)) bullets.push(l.trim());
+    else if (l.trim() && bullets.length) bullets[bullets.length - 1] += ` ${l.trim()}`;
+  }
+  if (bullets.length < 3 || bullets.length > 8) errors.push(`"Key safety points" has ${bullets.length} bullets (3 to 8)`);
+  const refs = new Set(classifyLines(body).flatMap(({ line, ref }) => {
+    const m = ref ? /^\s*(?:\[(\d+)\]|(\d+)\.)\s+\S/.exec(line) : null;
+    return m ? [Number(m[1] ?? m[2])] : [];
+  }));
+  for (const b of bullets) {
+    const cited = [...b.matchAll(/\[(\d+(?:\s*[,–-]\s*\d+)*)\]/g)].flatMap(([, list]) => list.split(",").flatMap((part) => {
+      const [from, to = from] = part.split(/[–-]/).map(Number);
+      return Array.from({ length: Math.max(0, Math.min(to - from, 50)) + 1 }, (_, j) => from + j);
+    }));
+    if (!cited.length) errors.push(`a key safety point cites no [n] marker: ${clip(b, 100)}`);
+    const missing = cited.filter((n) => !refs.has(n));
+    if (missing.length) errors.push(`a key safety point cites [${missing.join(", ")}] with no reference line: ${clip(b, 100)}`);
+  }
+  return errors;
+}
+
 // Tokeniser: units, longest first; the lookahead stops "mg" matching inside "mgs" etc.
 // Compound units come first so "2 mg/kg" is not "2 mg", and "90 g/L" is not "90 g/dL".
 const UNIT = [
@@ -605,6 +649,8 @@ export interface Options {
   exclusionsPath?: string; exceptions?: Exception[]; noExclusions?: boolean;
   /** Topic-master batch (US-50 AC1): the master frontmatter keys are allowed and the MASTER body check runs. */
   masters?: boolean;
+  /** With masters: each master with a view must carry sound key safety points (US-50 AC12, keySafetyErrors). */
+  keySafetyPoints?: boolean;
   checkIds?: boolean; headStatus?: (url: string) => number; delayMs?: number; idCap?: number;
 }
 export interface Row {
@@ -739,8 +785,9 @@ function checkMasterFront(c: Ctx, bf: string, nf: string, corrections: Map<strin
  * Under --masters every batch reference is a master: reviewed and sources, one Current view or Current evidence position,
  * and a videos section. Each Current view sentence links a video post or a position file that is an extra_raw (US-50 AC1).
  */
-function checkMasterBody(c: Ctx, m: Check, raw: RawSet | null, isPost: (h: string) => boolean) {
+function checkMasterBody(c: Ctx, m: Check, raw: RawSet | null, isPost: (h: string) => boolean, keyPoints?: boolean) {
   if (c.type !== "reference" || c.newText === null) return;
+  if (keyPoints) for (const e of keySafetyErrors(c.newBody)) m.fails.push(`${c.handle}: ${e}`);
   const front = splitFrontmatter(c.newText).front;
   for (const k of ["reviewed", "sources"]) if (fmValue(front, k) === null) m.fails.push(`${c.handle}: a master needs ${k} in its frontmatter`);
   const secs: { line: string; text: string[] }[] = [];
@@ -1443,7 +1490,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     const raw = c.rep ? loadRaw(c.rep, o, `${c.handle}:`, ac2, isPost) : null;
     if (c.newText !== null) {
       if (c.rep && raw) quoted = checkAc2(c, added, ac2, raw, c.baseText !== null ? pairTokenChanges(c) : { pairs: new Map(), orphans: [] });
-      if (o.masters) checkMasterBody(c, master, raw, isPost);
+      if (o.masters) checkMasterBody(c, master, raw, isPost, o.keySafetyPoints);
       checkAc3(c, hedgeBefore, hedgeAfter, ac3);
       if (c.baseText !== null) deleted = checkAc4(c, ac4);
       checkAc7(c, ac7, pw, raw ? raw.abstracts : [], ids, o.masters ? isPost : undefined);
@@ -1586,9 +1633,10 @@ export function main(argv: string[], overrides: Partial<Options> = {}): number {
   const a = parseArgs(argv);
   if (a["print-schema"]) { console.log(JSON.stringify(REPORT_SCHEMA, null, 2)); return 0; }
   if (typeof a.example === "string") { console.log(JSON.stringify(exampleReport(a.example), null, 2)); return 0; }
-  const usage = (msg: string) => { console.error(`${msg}\nusage: knowledge-batch-check.ts --batch <name> --handles <file> --base <git ref> [--reports <dir>] [--out <file>] [--exceptions <file>] [--no-exclusions] [--check-ids [--check-ids-cap <n>]] [--masters]`); return 2; };
+  const usage = (msg: string) => { console.error(`${msg}\nusage: knowledge-batch-check.ts --batch <name> --handles <file> --base <git ref> [--reports <dir>] [--out <file>] [--exceptions <file>] [--no-exclusions] [--check-ids [--check-ids-cap <n>]] [--masters] [--key-safety-points]`); return 2; };
   if (typeof a.batch !== "string" || typeof a.handles !== "string") return usage("--batch and --handles are required");
   if (typeof a.base !== "string") return usage("--base is required (no default)");
+  if (a["key-safety-points"] !== undefined && a.masters === undefined) return usage("--key-safety-points needs --masters");
   const root = git(process.cwd(), ["rev-parse", "--show-toplevel"]).trim();
   const handles = readFileSync(a.handles, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
   const reportsDir = typeof a.reports === "string" ? resolve(a.reports) : join(homedir(), ".codex-review", "diff-reports", a.batch);
@@ -1614,7 +1662,7 @@ export function main(argv: string[], overrides: Partial<Options> = {}): number {
   const checkIds = a["check-ids"] === true, capArg = a["check-ids-cap"];
   if (capArg !== undefined && (typeof capArg !== "string" || !/^[1-9]\d*$/.test(capArg))) return usage("--check-ids-cap needs a positive integer");
   const { results, rows, baseSha } = runBatch({ root, batch: a.batch, handles, reportsDir, base: a.base, outRel, exceptions,
-    noExclusions: a["no-exclusions"] === true, checkIds, masters: a.masters !== undefined,
+    noExclusions: a["no-exclusions"] === true, checkIds, masters: a.masters !== undefined, keySafetyPoints: a["key-safety-points"] !== undefined,
     idCap: typeof capArg === "string" ? Number(capArg) : undefined, ...overrides });
   for (const r of results) {
     console.log(`${r.status} ${r.id} ${r.title}`);

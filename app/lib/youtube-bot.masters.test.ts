@@ -22,7 +22,8 @@ const fakes = vi.hoisted(() => {
     ref('tm-huge'),
     ref('tm-master-long', '2026-10-20'),
     ref('tm-safe'), ref('tm-mid1'), ref('tm-mid2'), ref('tm-cited'), ref('tm-numbered'), ref('tm-malformed'), ref('tm-rule'), ref('tm-ix'), ref('tm-dup1'), ref('tm-dup2'),
-    ...Array.from({ length: 10 }, (_, i) => ref(`tm-stack-${i}`, '2026-10-20')),
+    ref('tm-keyed'), ref('tm-keylong'),
+    ...Array.from({ length: 14 }, (_, i) => ref(`tm-stack-${i}`, '2026-10-20')),
     { title: 'An article', handle: 'tm-article', url: 'u', tags: [], publishedAt: '2025-01-01T00:00:00Z' },
   ];
 });
@@ -72,16 +73,20 @@ const files: Record<string, string> = {
   'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
   'tm-article': `---\ntitle: "An article"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNot a master.\n`,
 };
-// Ten synthetic masters mirroring the stack post's ten masters with a view once
-// batch 2 lands (knowledge-refresh/masters-2, measured 2026-10-21): views about
-// 1,500 characters, Drug Interactions 2,000 to 7,000, Safety and Side Effects
-// 2,300 to 22,500, in the post's topics order. The last stands in for vitamin K.
-const STACK_IX = [2_200, 4_600, 2_400, 7_000, 4_200, 2_400, 2_100, 2_100, 2_200, 6_700];
-const STACK_SAFETY = [8_000, 8_000, 4_900, 22_500, 3_600, 6_300, 7_500, 11_800, 2_300, 3_600];
-const stackIx = (i: number) => `### 6. Drug Interactions\n\n${i === 9 ? 'Warfarin: vitamin K lowers its effect. ' : ''}${String(i).repeat(STACK_IX[i])}`;
-STACK_IX.forEach((_, i) => {
-  files[`tm-stack-${i}`] = `---\ntitle: "Stack ${i}"\nreviewed: "2026-10-20"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'v'.repeat(1_500)}\n\n## 5. Safety and Side Effects\n\nStack ${i} safety. ${'s'.repeat(STACK_SAFETY[i])}\n\n${stackIx(i).replace(/^#/, '')}\n\n## 7. Dietary Sources\n\nFood.\n`;
-});
+const KEY_POINTS = '## Key safety points\n\n- May interact with warfarin [1].\n- Not for pregnant people [2].\n- Mild bloating is common [1, 2].';
+files['tm-keyed'] = `---\ntitle: "Keyed"\n---\n\n## Current view (reviewed 20 October 2026)\n\nKeyed view.\n\n${KEY_POINTS}\n\n## 5. Safety and Side Effects\n\nFull safety text.\n\n## 6. Drug Interactions\n\nFull interactions text [3].\n\n## 9. References\n\n[1] Ref one.\n[2] Ref two.\n[3] Ref three.\n`;
+files['tm-keylong'] = `---\ntitle: "Keylong"\n---\n\n## Current view (reviewed 20 October 2026)\n\nKeylong view.\n\n## Key safety points\n\n- ${'k'.repeat(1_500)} [1].\n\n## 6. Drug Interactions\n\nKeylong interactions.\n`;
+// Fourteen synthetic masters with a view and key points, as the stack post
+// (the-only-three-supplements-doctor-brad-takes) names once batch 3 lands, each
+// with whole safety sections far past the cap. The last stands in for vitamin K.
+// Sizes are below the real masters' (views 1,233 to 2,449 characters, mean
+// 1,823; reference lines median 258, measured 2026-10-21), so this pins the
+// rule, not the real total.
+const STACK = 14;
+const stackPoints = (i: number) => `## Key safety points\n\n- ${i === STACK - 1 ? 'Vitamin K may weaken warfarin; people on warfarin should ask their doctor first [1]. ' : ''}${String(i % 10).repeat(700)} [1].\n- Second point [1].\n- Third point [1].`;
+for (let i = 0; i < STACK; i++) {
+  files[`tm-stack-${i}`] = `---\ntitle: "Stack ${i}"\nreviewed: "2026-10-20"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'v'.repeat(1_400)}\n\n${stackPoints(i)}\n\n## 5. Safety and Side Effects\n\nStack ${i} safety. ${'s'.repeat(8_000)}\n\n## 6. Drug Interactions\n\nStack ${i} interactions. ${'i'.repeat(5_000)}\n\n## 7. Dietary Sources\n\nFood.\n\n## 9. References\n\n[1] Stack ref ${i}.\n`;
+}
 const realRead = fs.readFileSync;
 function fakeFiles() {
   vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
@@ -140,25 +145,50 @@ describe('masterViews on the published masters (US-50 AC6)', () => {
 
 });
 
-// The stack post (the-only-three-supplements-doctor-brad-takes) names ten
-// masters with a view once batch 2 lands. A synthetic fixture of the same sizes
-// keeps this deterministic as the real masters change: every view goes in,
-// every master's Drug Interactions section goes in whole, and only Safety and
-// Side Effects sections are skipped for the cap, each one logged.
-describe('masterViews on a stack post naming ten masters (US-50 AC6)', () => {
-  it('every view and every whole Drug Interactions section fit the cap; vitamin K keeps its warfarin warning', () => {
+// US-50 AC12: a master with key safety points adds its view and those points,
+// uncapped, and never its whole safety sections; the cap governs only masters
+// not yet retrofitted. With fourteen such masters, vitamin K's warfarin point
+// always goes in.
+describe('masterViews with key safety points (US-50 AC12)', () => {
+  it('a retrofitted master adds its view, its key points and the lines they cite, not its full safety sections', () => {
+    fakeFiles();
+    const block = masterViews(['tm-keyed'], [])!;
+    expect(block).toContain(`title: Keyed\n\n### Current view (reviewed 20 October 2026)\n\nKeyed view.\n\n${KEY_POINTS.replace(/^## /, '### ')}\n\nReferences cited above:\n\n[1] Ref one.\n[2] Ref two.`);
+    for (const text of ['Full safety text.', 'Full interactions text', 'Drug Interactions', 'Ref three.']) expect(block).not.toContain(text);
+  });
+
+  it('an un-retrofitted master beside it still adds its whole interactions and safety sections under the cap', () => {
+    fakeFiles();
+    const block = masterViews(['tm-keyed', 'tm-safe'], [])!;
+    expect(block).toContain('### Key safety points');
+    expect(block).not.toContain('Full interactions text');
+    const safe = block.slice(block.indexOf('title: Safe'));
+    expect(safe).toContain('### 6. Drug Interactions\n\nMay interact with warfarin.');
+    expect(safe.indexOf('### 6. Drug Interactions')).toBeLessThan(safe.indexOf('### 5. Safety and Side Effects'));
+  });
+
+  it('key points over 1,500 characters are dropped and logged, and the master falls back to its safety sections', () => {
     fakeFiles();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const block = masterViews(STACK_IX.map((_, i) => `tm-stack-${i}`), [])!;
-    expect(block.match(/^### Current view \(reviewed/gm)).toHaveLength(10);
-    STACK_IX.forEach((_, i) => expect(block).toContain(`title: Stack ${i}\n\n### Current view (reviewed 20 October 2026)\n\n${'v'.repeat(1_500)}\n\n${stackIx(i)}`));
-    expect(block.slice(block.indexOf('title: Stack 9'))).toContain('### 6. Drug Interactions\n\nWarfarin');
-    expect(block).toMatch(/^### 5\. Safety and Side Effects$/m);
-    expect(block).not.toContain('Food.');
-    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
-    const logged = warn.mock.calls.map(([m]) => String(m));
-    expect(logged.length).toBeGreaterThan(0);
-    for (const m of logged) expect(m).toMatch(/^YouTube master views: safety section skipped for the cap: tm-stack-\d "## 5\. Safety and Side Effects"$/);
+    const block = masterViews(['tm-keylong'], [])!;
+    expect(block).toContain('Keylong view.');
+    expect(block).not.toContain('Key safety points');
+    expect(block).toContain('### 6. Drug Interactions\n\nKeylong interactions.');
+    expect(warn.mock.calls.map(([m]) => String(m))).toContain('YouTube master views: key safety points over 1500 characters, dropped: tm-keylong');
+  });
+
+  it('the stack post: fourteen views with key points, vitamin K keeps its warfarin point, no whole safety section, under 40,000', () => {
+    fakeFiles();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const block = masterViews(Array.from({ length: STACK }, (_, i) => `tm-stack-${i}`), [])!;
+    expect(block.match(/^### Current view \(reviewed/gm)).toHaveLength(STACK);
+    expect(block.match(/^### Key safety points$/gm)).toHaveLength(STACK);
+    expect(block.slice(block.indexOf(`title: Stack ${STACK - 1}`))).toContain('Vitamin K may weaken warfarin');
+    for (const text of ['Drug Interactions', 'Safety and Side Effects', 'Food.']) expect(block).not.toContain(text);
+    expect(block.match(/^\[1\] Stack ref \d+\.$/gm)).toHaveLength(STACK);
+    expect(MAX_MASTER_VIEW_CHARS).toBe(40_000);
+    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS);
+    expect(warn).not.toHaveBeenCalled();
   });
 });
 
