@@ -178,17 +178,9 @@ export async function getOrCreateSupabaseUser(
       return retryProfile.id;
     }
 
-    // Otherwise another account holds this email. Email is never proof, so it
-    // is never adopted; its profile row (not listUsers, which fails live past
-    // ~300 users) only tells a refusal from a failed creation.
-    const { data: existingProfile, error: emailLookupError } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle();
-    if (emailLookupError) throw new Error('Profile email lookup failed');
-    if (!existingProfile) throw new Error('Failed to create Supabase user');
-    return refuseUnprovenLink(existingProfile.id);
+    // Otherwise another account holds this email (or creation failed). Email
+    // is never proof, so that account is never adopted: guest, never a 500.
+    return refuseUnprovenLink(null);
   }
   if (!authUser?.user) throw new Error('Failed to create Supabase user');
   const userId = authUser.user.id;
@@ -250,10 +242,10 @@ async function hasLinkProof(userId: string, shopifyCustomerId: string): Promise<
 }
 
 /** An unproven link: warn without the customer id, audit the profile, answer null. */
-function refuseUnprovenLink(userId: string): null {
+function refuseUnprovenLink(userId: string | null): null {
   console.warn('Shopify link without admin-written proof; treated as guest');
   Sentry.captureMessage('Shopify link without admin-written proof', { level: 'warning', tags: { feature: 'identity_link' } });
-  logAudit(userId, 'IDENTITY_LINK_UNPROVEN', 'user', userId);
+  logAudit(userId, 'IDENTITY_LINK_UNPROVEN', 'user', userId ?? undefined);
   return null;
 }
 

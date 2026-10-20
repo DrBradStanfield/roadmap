@@ -5,21 +5,17 @@ const sql = readFileSync('supabase/rls-policies.sql', 'utf8').replace(/--[^\n]*/
 // US-09 AC27. Static deployment contract only: actual permission enforcement
 // must also be exercised with the extracted grants and RLS in PostgreSQL.
 describe('profile grant deployment contract (static)', () => {
-  it('revokes every default table-wide privilege before granting editable columns', () => {
+  it('revokes every default privilege, then grants authenticated SELECT only (getProfile)', () => {
     const revoke = sql.indexOf('REVOKE ALL ON profiles FROM anon, authenticated;');
-    const grant = sql.indexOf('GRANT UPDATE (');
+    const select = sql.indexOf('GRANT SELECT ON profiles TO authenticated;');
     expect(revoke).toBeGreaterThanOrEqual(0);
-    expect(grant).toBeGreaterThan(revoke);
-    expect(sql).not.toMatch(/GRANT\s+[A-Z, ]*\b(UPDATE|INSERT|DELETE|TRUNCATE|ALL)\b[A-Z, ]*\s+ON\s+(TABLE\s+)?profiles\s+TO/i);
-    expect(sql).not.toMatch(/GRANT[^;]*ON\s+(TABLE\s+)?profiles\s+TO[^;]*\banon\b/i);
+    expect(select).toBeGreaterThan(revoke);
+    const grants = [...sql.matchAll(/GRANT\s+([^;]*?)\s+ON\s+(?:TABLE\s+)?profiles\s+TO\s+([^;]+);/gi)];
+    expect(grants.map(m => `${m[1].trim()} TO ${m[2].trim()}`)).toEqual(['SELECT TO authenticated']);
   });
-  it('allows demographic/name edits, never identity, credit or plan columns', () => {
-    const grants = [...sql.matchAll(/GRANT\s+UPDATE\s*\(([^)]+)\)\s+ON\s+profiles\s+TO\s+authenticated/gi)];
-    const columns = grants.flatMap(match => match[1].split(',').map(column => column.trim()));
-    expect(columns.sort()).toEqual(['sex', 'birth_year', 'birth_month', 'unit_system', 'first_name', 'last_name', 'height'].sort());
-    for (const column of ['id', 'shopify_customer_id', 'email', 'message_credits', 'subscription_plan', 'subscription_checked_at']) {
-      expect(columns).not.toContain(column);
-    }
+  it('no policy lets a session holder write a profile row', () => {
+    expect(sql).not.toMatch(/CREATE\s+POLICY[^;]*ON\s+profiles\s+FOR\s+(UPDATE|INSERT|DELETE|ALL)/i);
+    expect(sql).toContain('DROP POLICY IF EXISTS "Users can update own profile" ON profiles;');
   });
   it('the profile trigger takes the Shopify link from admin-written app metadata only', () => {
     const fn = sql.match(/CREATE OR REPLACE FUNCTION handle_new_user\(\)[\s\S]*?\$\$ LANGUAGE/)?.[0] ?? '';

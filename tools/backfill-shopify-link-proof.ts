@@ -4,35 +4,47 @@
  * id into its auth user's admin-written `app_metadata`, the only proof the
  * server now accepts. Without it every existing link answers as a guest.
  *
- * A link is copied only when the profile row (written by the server), the auth
- * user's `user_metadata` (written by `createUser`) and the account history
- * agree: the user never signed in (so never held a session that could edit its
- * own metadata), and no other user claims the same customer id. Everything else
- * is skipped and counted. Idempotent: a proven link is left alone.
+ * A link is copied only when all of these hold:
+ * - the auth user was made by our server: admin `createUser({ email_confirm: true })`
+ *   confirms the email in the same instant and sends no confirmation email,
+ *   while a public sign-up gets `confirmation_sent_at` and confirms later or never;
+ * - the profile row and the user's `user_metadata` name the same customer;
+ * - the user never signed in, so never held a session that could edit its own metadata;
+ * - no other auth user, linked or not, claims that customer id in either metadata.
+ * Everything else is skipped and counted. Idempotent: a proven link is left alone.
  *
- * Prints counts only: no ids, emails or customer ids.
+ * Reads auth.users through SESSION_DATABASE_URL in a READ ONLY transaction (the
+ * admin API exposes neither confirmation_sent_at nor every user: listUsers fails
+ * past ~300 rows); writes through the Supabase admin API. Prints counts only.
  *
  * Usage (dry run is the default; --execute writes):
  *   npx tsx --env-file=.env tools/backfill-shopify-link-proof.ts
  *   npx tsx --env-file=.env tools/backfill-shopify-link-proof.ts --execute
  */
 import { pathToFileURL } from 'url';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import pg from 'pg';
+import { createClient } from '@supabase/supabase-js';
 
-type Meta = Record<string, unknown> | undefined;
-export interface LinkRow {
-  userId: string;
-  customerId: string;
-  /** null when the auth user could not be read */
-  user: { app_metadata?: Meta; user_metadata?: Meta; last_sign_in_at?: string | null } | null;
+export interface AuthRow {
+  id: string;
+  createdAt: string;
+  emailConfirmedAt: string | null;
+  confirmationSentAt: string | null;
+  lastSignInAt: string | null;
+  userClaim: string | null;
+  appClaim: string | null;
+  appMetadata: Record<string, unknown>;
+  /** the profile's shopify_customer_id, null when unlinked */
+  profileCustomerId: string | null;
 }
 
 export interface Plan {
   counts: {
+    auth_users: number;
     linked_profiles: number;
     already_proven: number;
     to_write: number;
-    skipped_unreadable: number;
+    skipped_not_server_created: number;
     skipped_app_metadata_conflict: number;
     skipped_user_metadata_missing: number;
     skipped_user_metadata_differs: number;
@@ -42,78 +54,100 @@ export interface Plan {
   writes: Array<{ userId: string; customerId: string; appMetadata: Record<string, unknown> }>;
 }
 
-const idOf = (meta: Meta) => (meta?.shopify_customer_id == null ? null : String(meta.shopify_customer_id));
+/** createUser with email_confirm stamps the confirmation within milliseconds. */
+const SERVER_CONFIRM_WINDOW_MS = 5_000;
+const serverCreated = (u: AuthRow) => u.confirmationSentAt == null && u.emailConfirmedAt != null
+  && Math.abs(Date.parse(u.emailConfirmedAt) - Date.parse(u.createdAt)) <= SERVER_CONFIRM_WINDOW_MS;
 
 /** Decide, without side effects, which links get admin-written proof. */
-export function planBackfill(rows: LinkRow[]): Plan {
-  const counts: Plan['counts'] = {
-    linked_profiles: rows.length, already_proven: 0, to_write: 0, skipped_unreadable: 0,
-    skipped_app_metadata_conflict: 0, skipped_user_metadata_missing: 0, skipped_user_metadata_differs: 0,
-    skipped_signed_in: 0, skipped_duplicate_claim: 0,
-  };
-  const claims = new Map<string, number>();
-  for (const row of rows) {
-    const claim = idOf(row.user?.user_metadata);
-    if (claim) claims.set(claim, (claims.get(claim) ?? 0) + 1);
+export function planBackfill(users: AuthRow[]): Plan {
+  const claimants = new Map<string, Set<string>>();
+  for (const u of users) {
+    for (const claim of [u.userClaim, u.appClaim]) {
+      if (claim) claimants.set(claim, (claimants.get(claim) ?? new Set()).add(u.id));
+    }
   }
+  const linked = users.filter(u => u.profileCustomerId);
+  const counts: Plan['counts'] = {
+    auth_users: users.length, linked_profiles: linked.length, already_proven: 0, to_write: 0,
+    skipped_not_server_created: 0, skipped_app_metadata_conflict: 0, skipped_user_metadata_missing: 0,
+    skipped_user_metadata_differs: 0, skipped_signed_in: 0, skipped_duplicate_claim: 0,
+  };
   const writes: Plan['writes'] = [];
-  for (const { userId, customerId, user } of rows) {
-    if (!user) { counts.skipped_unreadable++; continue; }
-    const proven = idOf(user.app_metadata);
-    if (proven === customerId) { counts.already_proven++; continue; }
-    if (proven) { counts.skipped_app_metadata_conflict++; continue; }
-    const claimed = idOf(user.user_metadata);
-    if (!claimed) { counts.skipped_user_metadata_missing++; continue; }
-    if (claimed !== customerId) { counts.skipped_user_metadata_differs++; continue; }
-    if (user.last_sign_in_at) { counts.skipped_signed_in++; continue; }
-    if ((claims.get(claimed) ?? 0) > 1) { counts.skipped_duplicate_claim++; continue; }
+  for (const u of linked) {
+    const customerId = u.profileCustomerId!;
+    if (u.appClaim === customerId) { counts.already_proven++; continue; }
+    if (u.appClaim) { counts.skipped_app_metadata_conflict++; continue; }
+    if (!serverCreated(u)) { counts.skipped_not_server_created++; continue; }
+    if (!u.userClaim) { counts.skipped_user_metadata_missing++; continue; }
+    if (u.userClaim !== customerId) { counts.skipped_user_metadata_differs++; continue; }
+    if (u.lastSignInAt) { counts.skipped_signed_in++; continue; }
+    if (claimants.get(customerId)!.size > 1) { counts.skipped_duplicate_claim++; continue; }
     counts.to_write++;
-    writes.push({ userId, customerId, appMetadata: { ...(user.app_metadata ?? {}), shopify_customer_id: customerId } });
+    writes.push({ userId: u.id, customerId, appMetadata: { ...u.appMetadata, shopify_customer_id: customerId } });
   }
   return { counts, writes };
 }
 
-async function readRows(admin: SupabaseClient): Promise<LinkRow[]> {
-  const profiles: Array<{ id: string; shopify_customer_id: string }> = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await admin.from('profiles').select('id, shopify_customer_id')
-      .not('shopify_customer_id', 'is', null).order('id').range(from, from + 999);
-    if (error) throw new Error('Profile read failed');
-    profiles.push(...data);
-    if (data.length < 1000) break;
-  }
-  const rows: LinkRow[] = [];
-  for (const p of profiles) {
-    const { data, error } = await admin.auth.admin.getUserById(p.id);
-    rows.push({ userId: p.id, customerId: p.shopify_customer_id, user: error || !data?.user ? null : data.user });
-  }
-  return rows;
+export interface Deps {
+  readRows: () => Promise<AuthRow[]>;
+  update: (userId: string, appMetadata: Record<string, unknown>) => Promise<boolean>;
+  readAppClaim: (userId: string) => Promise<string | null>;
 }
 
 /** Dry run unless execute; returns the plan counts plus, on execute, written and verified counts. */
-export async function run(admin: SupabaseClient, execute: boolean) {
-  const plan = planBackfill(await readRows(admin));
+export async function run(deps: Deps, execute: boolean) {
+  const plan = planBackfill(await deps.readRows());
   const result = { mode: execute ? 'execute' : 'dry-run', ...plan.counts, written: 0, verified: 0, write_failed: 0 };
   if (!execute) return result;
   for (const w of plan.writes) {
-    const { error } = await admin.auth.admin.updateUserById(w.userId, { app_metadata: w.appMetadata });
-    if (error) { result.write_failed++; continue; }
+    if (!(await deps.update(w.userId, w.appMetadata))) { result.write_failed++; continue; }
     result.written++;
-    const { data } = await admin.auth.admin.getUserById(w.userId);
-    if (idOf(data?.user?.app_metadata) === w.customerId) result.verified++;
+    if ((await deps.readAppClaim(w.userId)) === w.customerId) result.verified++;
   }
   return result;
 }
 
+const iso = (d: Date | null) => (d ? d.toISOString() : null);
+
+async function readRows(databaseUrl: string): Promise<AuthRow[]> {
+  const db = new pg.Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } });
+  await db.connect();
+  try {
+    await db.query('BEGIN TRANSACTION READ ONLY');
+    const { rows } = await db.query(`
+      SELECT u.id, u.created_at, u.email_confirmed_at, u.confirmation_sent_at, u.last_sign_in_at,
+             u.raw_user_meta_data->>'shopify_customer_id' AS user_claim,
+             u.raw_app_meta_data->>'shopify_customer_id' AS app_claim,
+             coalesce(u.raw_app_meta_data, '{}'::jsonb) AS app_metadata,
+             p.shopify_customer_id AS profile_customer_id
+      FROM auth.users u LEFT JOIN public.profiles p ON p.id = u.id`);
+    await db.query('ROLLBACK');
+    return rows.map(r => ({
+      id: r.id, createdAt: iso(r.created_at)!, emailConfirmedAt: iso(r.email_confirmed_at),
+      confirmationSentAt: iso(r.confirmation_sent_at), lastSignInAt: iso(r.last_sign_in_at),
+      userClaim: r.user_claim, appClaim: r.app_claim, appMetadata: r.app_metadata, profileCustomerId: r.profile_customer_id,
+    }));
+  } finally {
+    await db.end();
+  }
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY;
-  if (!url || !key) {
-    console.error('SUPABASE_URL and SUPABASE_SERVICE_KEY are required (npx tsx --env-file=.env ...)');
+  const { SUPABASE_URL: url, SUPABASE_SERVICE_KEY: key, SESSION_DATABASE_URL: databaseUrl } = process.env;
+  if (!url || !key || !databaseUrl) {
+    console.error('SUPABASE_URL, SUPABASE_SERVICE_KEY and SESSION_DATABASE_URL are required (npx tsx --env-file=.env ...)');
     process.exit(1);
   }
-  const execute = process.argv.includes('--execute');
-  run(createClient(url, key, { auth: { persistSession: false } }), execute)
+  const admin = createClient(url, key, { auth: { persistSession: false } }).auth.admin;
+  run({
+    readRows: () => readRows(databaseUrl),
+    update: async (id, appMetadata) => !(await admin.updateUserById(id, { app_metadata: appMetadata })).error,
+    readAppClaim: async id => {
+      const claim = (await admin.getUserById(id)).data?.user?.app_metadata?.shopify_customer_id;
+      return claim == null ? null : String(claim);
+    },
+  }, process.argv.includes('--execute'))
     .then(result => console.log(JSON.stringify(result, null, 1)))
     .catch(error => { console.error(error instanceof Error ? error.message : 'Backfill failed'); process.exit(1); });
 }

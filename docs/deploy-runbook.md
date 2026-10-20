@@ -101,6 +101,12 @@ fly status -c fly.edu.toml  # health-tool-edu
 
 **Record schemaVersion 2 ships everywhere at once (US-09 AC23, 2026-10-20).** An erase now writes `schemaVersion` 2, and older bundles and CLIs refuse that file. Ship the storefront extension, both Fly apps (the hosted MCP runs on health-tool-edu) and the GitHub Pages build in the same deploy window, or a user who erases on a new surface locks themselves out of an old one until it updates.
 
+**Shopify account-link proof ships in a fixed order (US-09 AC27, 2026-10-21).** The new code accepts a link only when `app_metadata.shopify_customer_id` proves it, and no existing link has that yet. Deploy before step (c) and every linked customer chats as a guest until it runs. In order:
+(a) Turn off public sign-up: Supabase Dashboard → Authentication → "Allow new users to sign up" off, or Management API `PATCH /v1/projects/{ref}/config/auth` with `{"disable_signup": true}`. The server creates customers and guests with service-role `admin.createUser`, which this does not block.
+(b) Apply, as postgres in one transaction, the `handle_new_user` change and the profiles section of `supabase/rls-policies.sql` (trigger reads `raw_app_meta_data`; drop the "Users can update own profile" policy; `REVOKE ALL ON profiles FROM anon, authenticated`; `GRANT SELECT ON profiles TO authenticated`). Check that the trigger reads only `raw_app_meta_data` and that only `authenticated | SELECT` remains.
+(c) `npx tsx --env-file=.env tools/backfill-shopify-link-proof.ts` (dry run: expect `to_write` = `linked_profiles` and every skip 0; investigate any skip first), then the same with `--execute` (expect `verified` = `written`, `write_failed` 0). A second dry run shows `already_proven` = `linked_profiles`.
+(d) Deploy both Fly apps. Afterwards, Sentry should show no "Shopify link without admin-written proof" warnings.
+
 ### Local-first (v2) builds & build flags
 
 Two widget builds from the same source; behaviour differences come from vite

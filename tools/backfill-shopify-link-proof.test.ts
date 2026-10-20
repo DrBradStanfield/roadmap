@@ -1,67 +1,65 @@
 import { describe, expect, it, vi } from 'vitest';
-import { planBackfill, run, type LinkRow } from './backfill-shopify-link-proof';
+import { planBackfill, run, type AuthRow } from './backfill-shopify-link-proof';
 
 // US-09 AC27: the one-time copy of server-written links into app_metadata.
-const row = (userId: string, customerId: string, user: LinkRow['user']): LinkRow => ({ userId, customerId, user });
-const created = (customer: string | null, extra: Record<string, unknown> = {}) =>
-  ({ app_metadata: { provider: 'email' }, user_metadata: customer ? { shopify_customer_id: customer } : {}, last_sign_in_at: null, ...extra });
+const T = '2026-07-01T00:00:00.000Z';
+/** An auth user as admin createUser({ email_confirm: true }) leaves it, linked to `customer`. */
+const created = (id: string, customer: string | null, extra: Partial<AuthRow> = {}): AuthRow => ({
+  id, createdAt: T, emailConfirmedAt: '2026-07-01T00:00:00.004Z', confirmationSentAt: null, lastSignInAt: null,
+  userClaim: customer, appClaim: null, appMetadata: { provider: 'email' }, profileCustomerId: customer, ...extra,
+});
 
 describe('planBackfill', () => {
-  it('counts every category and writes only agreeing, never-signed-in, unique links', () => {
+  it('counts every category and writes only server-created, agreeing, never-signed-in, unique links', () => {
     const plan = planBackfill([
-      row('a', '1', created('1')),
-      row('b', '2', created('2')),
-      row('c', '3', { ...created('3'), app_metadata: { provider: 'email', shopify_customer_id: '3' } }),
-      row('d', '4', { ...created('4'), app_metadata: { shopify_customer_id: '99' } }),
-      row('e', '5', created(null)),
-      row('f', '6', created('7')),
-      row('g', '8', created('8', { last_sign_in_at: '2026-10-01T00:00:00Z' })),
-      row('h', '9', created('9')),
-      row('i', '10', created('9')),
-      row('j', '11', null),
+      created('a', '1'),
+      created('b', '2'),
+      created('c', '3', { appClaim: '3', appMetadata: { provider: 'email', shopify_customer_id: '3' } }),
+      created('d', '4', { appClaim: '99' }),
+      created('e', '5', { userClaim: null }),
+      created('f', '6', { userClaim: '7' }),
+      created('g', '8', { lastSignInAt: '2026-10-01T00:00:00Z' }),
+      created('h', '9'),
+      created('i', '9', { profileCustomerId: null }), // an unlinked second claimant of 9
+      created('j', '10'),
+      created('k', null, { appClaim: '10', profileCustomerId: null }), // an app_metadata claimant of 10
     ]);
     expect(plan.counts).toEqual({
-      linked_profiles: 10, already_proven: 1, to_write: 2, skipped_unreadable: 1,
-      skipped_app_metadata_conflict: 1, skipped_user_metadata_missing: 1, skipped_user_metadata_differs: 2,
-      skipped_signed_in: 1, skipped_duplicate_claim: 1,
+      auth_users: 11, linked_profiles: 9, already_proven: 1, to_write: 2,
+      skipped_not_server_created: 0, skipped_app_metadata_conflict: 1, skipped_user_metadata_missing: 1,
+      skipped_user_metadata_differs: 1, skipped_signed_in: 1, skipped_duplicate_claim: 2,
     });
     expect(plan.writes).toEqual([
       { userId: 'a', customerId: '1', appMetadata: { provider: 'email', shopify_customer_id: '1' } },
       { userId: 'b', customerId: '2', appMetadata: { provider: 'email', shopify_customer_id: '2' } },
     ]);
   });
-  it('compares numeric metadata as text', () => {
-    expect(planBackfill([row('a', '12', created(null, { user_metadata: { shopify_customer_id: 12 } }))]).counts.to_write).toBe(1);
+  it('skips a self sign-up with a forged claim: confirmation email sent, or confirmed long after creation, or never confirmed', () => {
+    const plan = planBackfill([
+      created('s1', '1', { confirmationSentAt: T, emailConfirmedAt: null }),
+      created('s2', '2', { confirmationSentAt: T, emailConfirmedAt: '2026-07-01T00:00:00.004Z' }),
+      created('s3', '3', { emailConfirmedAt: '2026-07-01T00:05:00.000Z' }),
+      created('s4', '4', { emailConfirmedAt: null }),
+    ]);
+    expect(plan.counts.skipped_not_server_created).toBe(4);
+    expect(plan.writes).toEqual([]);
   });
 });
 
-function fakeAdmin(users: Map<string, any>, profiles: Array<{ id: string; shopify_customer_id: string }>) {
-  const update = vi.fn(async (id: string, attrs: any) => {
-    users.set(id, { ...users.get(id), app_metadata: attrs.app_metadata });
-    return { data: {}, error: null };
-  });
-  const q: any = { select: () => q, not: () => q, order: () => q, range: async () => ({ data: profiles, error: null }) };
-  return {
-    update,
-    admin: {
-      from: () => q,
-      auth: { admin: {
-        getUserById: async (id: string) => (users.has(id) ? { data: { user: users.get(id) }, error: null } : { data: { user: null }, error: { message: 'x' } }),
-        updateUserById: update,
-      } },
-    } as any,
-  };
-}
-
 describe('run', () => {
   it('dry run writes nothing; execute writes and verifies; a second execute is a no-op', async () => {
-    const users = new Map<string, any>([['a', created('1')], ['b', created('2', { last_sign_in_at: 'x' })]]);
-    const { admin, update } = fakeAdmin(users, [{ id: 'a', shopify_customer_id: '1' }, { id: 'b', shopify_customer_id: '2' }]);
-    expect(await run(admin, false)).toMatchObject({ mode: 'dry-run', to_write: 1, skipped_signed_in: 1, written: 0 });
+    const rows = [created('a', '1'), created('b', '2', { lastSignInAt: 'x' })];
+    const update = vi.fn(async (id: string, appMetadata: Record<string, unknown>) => {
+      const row = rows.find(r => r.id === id)!;
+      row.appMetadata = appMetadata; row.appClaim = String(appMetadata.shopify_customer_id);
+      return true;
+    });
+    const deps = { readRows: async () => rows.map(r => ({ ...r })), update, readAppClaim: async (id: string) => rows.find(r => r.id === id)!.appClaim };
+    expect(await run(deps, false)).toMatchObject({ mode: 'dry-run', to_write: 1, skipped_signed_in: 1, written: 0 });
     expect(update).not.toHaveBeenCalled();
-    expect(await run(admin, true)).toMatchObject({ mode: 'execute', to_write: 1, written: 1, verified: 1, write_failed: 0 });
-    expect(users.get('a').app_metadata).toEqual({ provider: 'email', shopify_customer_id: '1' });
-    expect(await run(admin, true)).toMatchObject({ already_proven: 1, to_write: 0, written: 0 });
+    expect(await run(deps, true)).toMatchObject({ mode: 'execute', to_write: 1, written: 1, verified: 1, write_failed: 0 });
+    expect(rows[0].appMetadata).toEqual({ provider: 'email', shopify_customer_id: '1' });
+    expect(await run(deps, true)).toMatchObject({ already_proven: 1, to_write: 0, written: 0 });
     expect(update).toHaveBeenCalledTimes(1);
   });
 });

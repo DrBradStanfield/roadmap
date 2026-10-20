@@ -162,9 +162,12 @@ describe('Shopify principal reuse', () => {
     expect(await mapUser(customer, email, 'Synthetic', 'Person')).toBe('triggered');
     expect(profiles[0]).toMatchObject({ first_name: 'Synthetic', last_name: 'Person' });
   });
-  it('fails clearly when no account holds the email after a refused creation', async () => {
-    await expect(mapUser(identity(), email)).rejects.toThrow(/create/i);
+  it('treats an email held by an auth user with no profile row as unproven: guest and a warning, never a 500', async () => {
+    const customer = identity();
+    expect(await mapUser(customer, email)).toBeNull();
     expect(writes).toEqual([]);
+    expect(state.warn).toHaveBeenCalledTimes(1);
+    expect(audits).toEqual([expect.objectContaining({ user_id: null, action: 'IDENTITY_LINK_UNPROVEN' })]);
   });
   it('refuses a legacy stored mapping without admin-written proof: no 500, no writes, no cache, a value-free warning', async () => {
     const customer = identity();

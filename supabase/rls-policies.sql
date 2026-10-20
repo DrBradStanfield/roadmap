@@ -210,9 +210,8 @@ CREATE POLICY "Users can read own profile"
   ON profiles FOR SELECT
   USING (id = auth.uid());
 
-CREATE POLICY "Users can update own profile"
-  ON profiles FOR UPDATE
-  USING (id = auth.uid());
+-- No write policy: only the service role writes profiles (US-09 AC27). The
+-- DROP above removes the old "Users can update own profile" policy.
 
 -- ===== Health measurements policies =====
 -- No UPDATE policy — records are immutable (Apple Health model: delete + re-add).
@@ -235,13 +234,11 @@ CREATE POLICY "Users can delete own measurements"
 
 -- RLS scopes rows, not columns. Remove the table-wide privileges Supabase grants
 -- by default (live 2026-10-21: anon and authenticated held INSERT, UPDATE,
--- DELETE and TRUNCATE; TRUNCATE ignores RLS) before allowing profile edits;
--- identity links, email, credits and plan remain admin-owned (US-09 AC27).
--- No code writes profiles except through the service role.
+-- DELETE and TRUNCATE; TRUNCATE ignores RLS). Identity links, email, credits
+-- and plan are admin-owned (US-09 AC27): no code writes profiles except
+-- through the service role, so authenticated keeps SELECT only (getProfile).
 REVOKE ALL ON profiles FROM anon, authenticated;
 GRANT SELECT ON profiles TO authenticated;
-GRANT UPDATE (sex, birth_year, birth_month, unit_system, first_name, last_name, height)
-  ON profiles TO authenticated;
 GRANT SELECT, INSERT, DELETE ON health_measurements TO authenticated;
 
 -- ============================================================

@@ -39,8 +39,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     const userId = await getUserIdByCustomerId(customerId);
     if (!userId) {
-      // User hasn't signed up yet — return 500 so Shopify retries later
-      console.warn(`No Supabase user found for Shopify customer ${customerId}, will retry`);
+      // No proven principal yet (US-09 AC27) — return 500 so Shopify retries later;
+      // credits are idempotent per order. The log names no customer.
+      console.warn('orders/paid: no proven Supabase user for this customer, will retry');
       return new Response(null, { status: 500 });
     }
 
