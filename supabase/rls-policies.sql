@@ -122,7 +122,8 @@ BEGIN
   INSERT INTO public.profiles (id, shopify_customer_id, email)
   VALUES (
     NEW.id,
-    NEW.raw_user_meta_data->>'shopify_customer_id',
+    -- User metadata is editable by the account holder; only admins own this link.
+    NEW.raw_app_meta_data->>'shopify_customer_id',
     NEW.email
   )
   ON CONFLICT (id) DO NOTHING;
@@ -232,7 +233,12 @@ CREATE POLICY "Users can delete own measurements"
 -- Explicit grants ensure the authenticated role can access tables after DROP/CREATE.
 -- Without these, the anon key + custom JWT client silently fails.
 
-GRANT SELECT, UPDATE ON profiles TO authenticated;
+-- RLS scopes rows, not columns. Remove the old table-wide UPDATE privilege
+-- before allowing profile edits; identity links and email remain admin-owned.
+REVOKE UPDATE ON profiles FROM authenticated;
+GRANT SELECT ON profiles TO authenticated;
+GRANT UPDATE (sex, birth_year, birth_month, unit_system, first_name, last_name, height)
+  ON profiles TO authenticated;
 GRANT SELECT, INSERT, DELETE ON health_measurements TO authenticated;
 
 -- ============================================================
