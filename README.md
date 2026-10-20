@@ -1,5 +1,14 @@
 # Health by Dr Brad
 
+A free health roadmap. Enter your measurements and blood test results, and it
+shows which screening tests are due, with evidence-based suggestions and their
+citations. Use it at https://drstanfield.com/pages/roadmap, no account needed.
+Connect it to [Claude](https://drstanfield.com/blogs/guides/connect-claude) or
+[ChatGPT](https://drstanfield.com/blogs/guides/connect-chatgpt) with the connector
+URL `https://mcp.drstanfield.com/mcp`. Your record is one file,
+`health-roadmap.json`, in your own Dropbox or Google Drive or your browser; our
+server never keeps it.
+
 Health-metric tracking with personalized suggestions, delivered as a Shopify
 storefront theme extension and as a self-hosted page.
 
