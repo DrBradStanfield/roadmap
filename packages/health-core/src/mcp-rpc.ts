@@ -86,7 +86,11 @@ export async function dispatchRpc(incoming: unknown, surface: RpcSurface): Promi
     case 'tools/list':
       // `cost` (the hosted server's write-budget weight) and `run` (how the
       // loop dispatches the tool) are ours, not tool facts — never on the wire.
-      return rpcResult(id, { tools: (surface.tools ?? MCP_TOOLS).map(({ cost, run, ...tool }) => tool) });
+      // Anthropic's directory reads the title from `annotations` (ToolAnnotations.title),
+      // so it is copied there from the one display title (US-32 AC50).
+      return rpcResult(id, {
+        tools: (surface.tools ?? MCP_TOOLS).map(({ cost, run, ...tool }) => ({ ...tool, annotations: { ...tool.annotations, title: tool.title } })),
+      });
     case 'prompts/list':
       return rpcResult(id, { prompts: MCP_PROMPTS.map(({ name, title }) => ({ name, title })) });
     case 'prompts/get': {

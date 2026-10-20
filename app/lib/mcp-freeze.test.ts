@@ -6,12 +6,17 @@
  * the server info. A wording change in a RESULT moves none of them; a change
  * to what initialize, tools/list or prompts/list answers fails here until the
  * verdict, when the pins are re-taken on purpose.
+ *
+ * US-32 AC50 (2026-10-21): the definitions are not the wire. `tools/list` is
+ * hashed too, as the shared dispatch answers it, so a change made while
+ * serializing (annotations.title) moves a pin. Re-pinned on the held branch
+ * claude/mcp-annotation-title, merged only after OpenAI's 1.0.2 verdict.
  */
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
 import { INSTRUCTIONS } from './mcp.server';
 import { MCP_PROMPTS, MCP_TOOLS } from '../../packages/health-core/src/mcp-tools';
-import { SERVER_INFO } from '../../packages/health-core/src/mcp-rpc';
+import { dispatchRpc, SERVER_INFO } from '../../packages/health-core/src/mcp-rpc';
 
 const sha256 = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
@@ -23,5 +28,17 @@ describe('US-35 AC13 — the published connector text is frozen during the 1.0.2
     ['SERVER_INFO', SERVER_INFO, 'ce1110c13b5b005a4f14f0068138039eecd7fddc888032f08479060ad2da400f'],
   ] as const)('%s hashes to its value at cab5615a', (_name, value, pinned) => {
     expect(sha256(value)).toBe(pinned);
+  });
+});
+
+describe('US-32 AC50 — the tools/list answer itself is pinned', () => {
+  it('hashes the tools both servers publish, as the dispatch serializes them', async () => {
+    const answer = (await dispatchRpc({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, {
+      protocolVersion: (asked) => asked,
+      serverInfo: SERVER_INFO,
+      instructions: INSTRUCTIONS,
+      callTool: async () => ({ errorMessage: 'not called' }),
+    })) as { result: { tools: unknown } };
+    expect(sha256(answer.result.tools)).toBe('65adb4c8a72596466d2084b637584a5543660b1b3de09ee4eaf42be78795a6ab');
   });
 });

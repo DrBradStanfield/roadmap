@@ -10,18 +10,18 @@ Answers for each step of the submission form at **claude.ai/directory/manage →
 **Before you submit (in this order):**
 
 1. **Deploy PR #202.** Until it is live, Anthropic's reviewer sees no sign-in box and would have to log in to Dropbox, which is the challenge that got OpenAI's 1.0.1 rejected.
-2. **Decide the two add-tool labels (below).** The portal flags any tool that is neither read-only nor destructive.
+2. **Merge the held annotation-title PR after OpenAI's 1.0.2 verdict, and deploy it.** The form flagged all nine tools "Missing title annotation" on 2026-10-21 (below).
 3. **Turn the box on for Anthropic** just before you submit: `fly secrets set MCP_REVIEWER_VENDORS=openai,anthropic -a health-tool-edu`. Until then real Claude users never see the reviewer box. After Anthropic's verdict, set it back to `openai` (or to `anthropic` if OpenAI's verdict came first).
 4. **Do not mint new reviewer credentials.** OpenAI's 1.0.2 review uses the same ones. Running `--mint` or `--password` again ends OpenAI's reviewer sessions.
 
-## The open decision: two tool labels
+## The two add-tool labels (decided: unchanged)
 
-Anthropic's checklist asks every tool for a title plus `readOnlyHint: true` or `destructiveHint: true`. All nine tools have titles. Seven pass. `add_measurement` and `add_lab_values` are marked neither, because they only ever add a row and never change or remove one.
+Anthropic's checklist asks every tool for a title plus `readOnlyHint: true` or `destructiveHint: true`. Seven tools carry one of the two set true. `add_measurement` and `add_lab_values` carry explicit `readOnlyHint: false` and `destructiveHint: false`, because they only ever add a row and never change or remove one. Brad decided to keep them that way.
 
 - **Mark both destructive.** Claude then asks before every add. It is the conservative reading, and it passes the check. ChatGPT reads the same labels, so its approval prompt changes too, and OpenAI's tool scan would differ from the 1.0.2 submission while it is in review.
 - **Leave them.** The portal flags them. A reviewer may accept the explanation in the form (append-only, refused on a duplicate day), or may ask for the change.
 
-Recommendation: submit with them unchanged and the explanation below. Flip them after OpenAI's verdict if Anthropic asks.
+Decision: submit with them unchanged and the explanation below. Flip them after OpenAI's verdict only if Anthropic asks.
 
 ## 1. Connection
 
@@ -33,6 +33,8 @@ Checked live 2026-10-20: an unauthenticated request answers 401 with `WWW-Authen
 ## 2. Tools
 
 Synced from the server. Nine tools, all titled.
+
+The form reads the title from each tool's `annotations` (MCP `ToolAnnotations.title`), not the tool's top-level `title`, and on 2026-10-21 it flagged all nine "Missing title annotation". `tools/list` now copies each display title into `annotations.title` (US-32 AC50). That change waits on the held branch `claude/mcp-annotation-title` until OpenAI's 1.0.2 verdict, because it changes the published tool list. Refresh the form's tool sync after it deploys.
 
 | Tool | Read-only | Destructive |
 | --- | --- | --- |
@@ -46,7 +48,7 @@ Synced from the server. Nine tools, all titled.
 | `import_documents` | no | yes |
 | `file_results` | no | yes |
 
-If the form asks why the two add tools are neither: *"Both only append a new row to the user's own record file. They never change or remove an existing row, and a second value for the same test on the same day is refused, with a pointer to `correct_value`, which is marked destructive."*
+If the form asks why the two add tools are marked `readOnlyHint: false` and `destructiveHint: false`: *"Both only append a new row to the user's own record file. They never change or remove an existing row, and a second value for the same test on the same day is refused, with a pointer to `correct_value`, which is marked destructive."*
 
 ## 3. Listing
 

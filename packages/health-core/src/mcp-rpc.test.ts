@@ -44,6 +44,26 @@ describe('US-32 — the shared dispatch', () => {
     }
   });
 
+  // US-32 AC50 (2026-10-21): Anthropic's directory form flagged all nine tools
+  // "Missing title annotation" — it reads ToolAnnotations.title, not Tool.title.
+  it('puts every tool\'s display title in its annotations too, hints untouched (US-32 AC50)', async () => {
+    // A surface's own list (the hosted knowledge tools, US-41) is titled the same way.
+    const extra = { ...MCP_TOOLS[0], name: 'extra_tool', title: 'An extra tool' };
+    for (const tools of [undefined, [...MCP_TOOLS, extra]]) {
+      const answer = (await dispatchRpc({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, { ...surface, tools })) as
+        { result: { tools: Array<{ name: string; title: string; annotations: Record<string, unknown> }> } };
+      const source = tools ?? MCP_TOOLS;
+      expect(answer.result.tools).toHaveLength(source.length);
+      answer.result.tools.forEach((tool, i) => {
+        expect(tool.title.length, tool.name).toBeGreaterThan(0);
+        expect(tool.annotations, tool.name).toEqual({ ...source[i].annotations, title: tool.title });
+        expect(tool.title, tool.name).toBe(source[i].title);
+      });
+    }
+    // The definitions themselves stay as they were: the title is added on the wire only.
+    expect(MCP_TOOLS.every((t) => !('title' in t.annotations))).toBe(true);
+  });
+
   it('offers the four prompts by name, and hands back the words behind one', async () => {
     const listed = (await send('prompts/list'))!.result!.prompts as Array<{ name: string; title: string; text?: string }>;
     expect(listed.map((p) => p.name)).toEqual(['summarise_my_plan', 'add_todays_results', 'whats_missing', 'import_my_lab_files']);
