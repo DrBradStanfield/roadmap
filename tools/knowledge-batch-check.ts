@@ -371,7 +371,8 @@ export function keySafetyErrors(body: string): string[] {
   const k = heads.filter((i) => /^##\s+Key safety points\s*$/.test(lines[i]));
   if (k.length !== 1) return [`needs one "## Key safety points" section after the view (found ${k.length})`];
   if (heads[v + 1] !== k[0]) return ['"## Key safety points" must come directly after the view section'];
-  const end = heads.find((i) => i > k[0]) ?? lines.length;
+  const rule = lines.findIndex((l, i) => i > k[0] && /^---\s*$/.test(l)); // the runtime also ends the section at a rule
+  const end = Math.min(heads.find((i) => i > k[0]) ?? lines.length, rule < 0 ? lines.length : rule);
   const errors: string[] = [];
   const size = lines.slice(k[0], end).join("\n").trim().length;
   if (size > MAX_KEY_POINTS_CHARS) errors.push(`"Key safety points" runs ${size} characters (at most ${MAX_KEY_POINTS_CHARS})`);

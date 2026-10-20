@@ -59,26 +59,23 @@ export function loadedHandles(routerHandles: string[], matched: { skipped: strin
 export const MASTER_VIEWS_HEADING = "## Brad's current view and safety notes on this video's topics (added automatically for this video; not router-matched content)";
 
 /**
- * What the master views add (US-50 AC12). Each named master adds its current
- * view and, when it has one, its authored "Key safety points" section, with
- * the [n] markers stripped and no reference lines; these always go in, uncapped
- * (measured 2026-10-21: about 3,000 characters per master, 14 masters about
- * 42,000). A view
- * over MAX_VIEW_CHARS or key points over MAX_KEY_POINTS_CHARS (the writer
- * contract's limit, heading and body) is malformed: it is dropped and logged.
- * MAX_MASTER_VIEW_CHARS governs only the whole safety sections of masters
- * without key points, never views or key points. A master without key points
- * (not yet retrofitted, or dropped) adds its whole
- * safety sections instead, while they fit MAX_MASTER_VIEW_CHARS in topics
- * order: first every such master's Drug Interactions, then the Safety and Side
- * Effects sections, never for a master whose interactions were skipped. Those
- * sections go in whole, never trimmed; each skip is logged. The YouTube
+ * What the master views add (US-50 AC6, AC12). Each named master adds its
+ * current view and, when it has sound "Key safety points", those points with
+ * the [n] markers stripped and no reference lines (estimated 2026-10-21: about
+ * 3,000 characters per master, 14 masters about 42,000). A master without
+ * them adds its whole safety sections instead. MAX_MASTER_VIEW_CHARS caps the
+ * whole block, views included: masters without key points compete for what is
+ * left after every view and key-points section, interactions first, then Safety
+ * and Side Effects, in topics order; each skip is logged. Masters with key
+ * points never use the cap. A view over MAX_VIEW_CHARS, or key points over
+ * MAX_KEY_POINTS_CHARS or with fewer than 3 bullets, are malformed: dropped
+ * and logged, and the master falls back to its safety sections. The YouTube
  * context is uncached, so every character is paid on every comment.
  */
-export const MAX_MASTER_VIEW_CHARS = 40_000;
+export const MAX_MASTER_VIEW_CHARS = 80_000;
 export const MAX_VIEW_CHARS = 6_000;
 /** The writer contract's limit, kept equal to tools/knowledge-batch-check.ts. */
-const MAX_KEY_POINTS_CHARS = 1_500;
+export const MAX_KEY_POINTS_CHARS = 1_500;
 
 /** A body's `## ` section whose heading matches, to the next `## ` heading or `---` line. Null when absent. */
 function sectionOf(body: string, heading: RegExp): string | null {
@@ -101,7 +98,7 @@ export function currentViewSection(md: string): string | null {
  *  Effects", "## 6. Drug Interactions" on the published masters). */
 const SAFETY_HEADING = /^## .*\b(?:safety|side effects?|cautions?|interactions?|contraindications?|who should not)\b/i;
 const INTERACTIONS_HEADING = /^#+ .*\binteractions?\b/i;
-const KEY_POINTS_HEADING = /^## Key safety points\b.*$/m;
+const KEY_POINTS_HEADING = /^## Key safety points[ \t]*$/m;
 
 /** A master's bibliography from its References section, marker number to
  *  line: "[n] text" and "n. text" lines both come back as "[n] text". */
@@ -148,14 +145,15 @@ export function safetySections(md: string): string[] {
 
 /** A master's "Key safety points" section (US-50 AC12), demoted, with its [n]
  *  markers stripped and no reference lines (a marker with no line is noise in
- *  a comment reply). Null text when it has none, or when the section (heading and body)
- *  is over MAX_KEY_POINTS_CHARS, which sets `over`. */
-function keySafetyPoints(md: string): { text: string | null; over: boolean } {
-  const body = stripFrontmatter(md);
-  const section = sectionOf(body, KEY_POINTS_HEADING);
-  if (!section) return { text: null, over: false };
-  if (section.length > MAX_KEY_POINTS_CHARS) return { text: null, over: true };
-  return { text: demote(section).replace(/ ?\[\d+(?:\s*[,–-]\s*\d+)*\]/g, ''), over: false };
+ *  a comment reply). Null text when it has none, or `dropped` says why it is
+ *  malformed: over MAX_KEY_POINTS_CHARS (heading and body), or under 3 bullet
+ *  lines ("- ", "* " or "1. "). */
+function keySafetyPoints(md: string): { text: string | null; dropped?: string } {
+  const section = sectionOf(stripFrontmatter(md), KEY_POINTS_HEADING);
+  if (!section) return { text: null };
+  if (section.length > MAX_KEY_POINTS_CHARS) return { text: null, dropped: `over ${MAX_KEY_POINTS_CHARS} characters` };
+  if ((section.match(/^(?:[-*]|\d+\.) /gm) ?? []).length < 3) return { text: null, dropped: 'malformed' };
+  return { text: demote(section).replace(/ ?\[\d+(?:\s*[,–-]\s*\d+)*\]/g, '') };
 }
 
 /**
@@ -178,7 +176,7 @@ export function masterViews(topics: string[] | undefined, loaded: string[]): str
       continue;
     }
     const points = keySafetyPoints(md);
-    if (points.over) console.warn(`YouTube master views: key safety points over ${MAX_KEY_POINTS_CHARS} characters, dropped: ${handle}`);
+    if (points.dropped) console.warn(`YouTube master views: key safety points ${points.dropped}, dropped: ${handle}`);
     const view = [`${contentHeader(entry, parseFrontmatter(md) ?? {})}\n\n${section}`, ...(points.text ? [points.text] : [])].join('\n\n');
     masters.push({ handle, view, safety: points.text ? [] : safetySections(md) });
   }

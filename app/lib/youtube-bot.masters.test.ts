@@ -22,7 +22,7 @@ const fakes = vi.hoisted(() => {
     ref('tm-huge'),
     ref('tm-master-long', '2026-10-20'),
     ref('tm-safe'), ref('tm-mid1'), ref('tm-mid2'), ref('tm-cited'), ref('tm-numbered'), ref('tm-malformed'), ref('tm-rule'), ref('tm-ix'), ref('tm-dup1'), ref('tm-dup2'),
-    ref('tm-keyed'), ref('tm-keylong'),
+    ref('tm-keyed'), ref('tm-keylong'), ref('tm-kp-head'), ref('tm-kp-tbw'), ref('tm-kp-rule'), ref('tm-kp-two'),
     ...Array.from({ length: 14 }, (_, i) => ref(`tm-stack-${i}`, '2026-10-20')),
     { title: 'An article', handle: 'tm-article', url: 'u', tags: [], publishedAt: '2025-01-01T00:00:00Z' },
   ];
@@ -49,7 +49,8 @@ vi.mock('./chat.server', async (orig) => ({
 
 import { runPipeline } from './youtube-bot.server';
 import { platformChatCompletion } from './platform-chat.server';
-import { currentViewSection, safetySections, masterViews, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS } from './youtube-context';
+import { currentViewSection, safetySections, masterViews, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_KEY_POINTS_CHARS } from './youtube-context';
+import { MAX_KEY_POINTS_CHARS as CHECKER_MAX_KEY_POINTS_CHARS, keySafetyErrors } from '../../tools/knowledge-batch-check';
 import { getChatCompletion } from './chat.server';
 import { routeQuery } from './chat-router.server';
 
@@ -76,11 +77,16 @@ const files: Record<string, string> = {
 const KEY_POINTS = '## Key safety points\n\n- May interact with warfarin [1].\n- Not for pregnant people [2].\n- Mild bloating is common [1, 2].';
 files['tm-keyed'] = `---\ntitle: "Keyed"\n---\n\n## Current view (reviewed 20 October 2026)\n\nKeyed view.\n\n${KEY_POINTS}\n\n## 5. Safety and Side Effects\n\nFull safety text.\n\n## 6. Drug Interactions\n\nFull interactions text [3].\n\n## 9. References\n\n[1] Ref one.\n[2] Ref two.\n[3] Ref three.\n`;
 files['tm-keylong'] = `---\ntitle: "Keylong"\n---\n\n## Current view (reviewed 20 October 2026)\n\nKeylong view.\n\n## Key safety points\n\n- ${'k'.repeat(1_500)} [1].\n\n## 6. Drug Interactions\n\nKeylong interactions.\n`;
+const kpMaster = (name: string, kp: string) => `---\ntitle: "${name}"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${name} view.\n\n${kp}\n\n## 6. Drug Interactions\n\n${name} interactions text.\n`;
+files['tm-kp-head'] = kpMaster('KpHead', '## Key safety points');
+files['tm-kp-tbw'] = kpMaster('KpTbw', '## Key safety points\n\nTo be written.');
+files['tm-kp-rule'] = kpMaster('KpRule', '## Key safety points\n\n---\n\n- A bullet after the rule [1].');
+files['tm-kp-two'] = kpMaster('KpTwo', '## Key safety points\n\n- One [1].\n- Two [1].');
 // Fourteen synthetic masters at realistic sizes, as the stack post
 // (the-only-three-supplements-doctor-brad-takes) names once batch 3 lands: a
 // ~1,800-character view, ~1,000-character key points carrying [n] markers, long
 // reference lines, and whole safety sections far past the cap. The last stands
-// in for vitamin K. Measured 2026-10-21: views 1,233 to 2,449 characters (mean
+// in for vitamin K. Estimated 2026-10-21: views 1,233 to 2,449 characters (mean
 // 1,823), reference lines median 258.
 const STACK = 14;
 const stackPoints = (i: number) => `## Key safety points\n\n- ${i === STACK - 1 ? 'Vitamin K may weaken warfarin; people on warfarin should ask their doctor first [1]. ' : ''}${String(i % 10).repeat(500)} [1].\n- Second point ${'b'.repeat(200)} [1, 2].\n- Third point ${'c'.repeat(150)} [2].`;
@@ -188,10 +194,52 @@ describe('masterViews with key safety points (US-50 AC12)', () => {
     for (const text of ['Drug Interactions', 'Safety and Side Effects', 'Food.']) expect(block).not.toContain(text);
     expect(block).not.toMatch(/\[\d/);
     for (const text of ['Stack ref', 'References cited above']) expect(block).not.toContain(text);
-    expect(MAX_MASTER_VIEW_CHARS).toBe(40_000);
-    expect(block.length).toBeGreaterThan(MAX_MASTER_VIEW_CHARS - 10_000); // views and key points are not capped
+    expect(MAX_MASTER_VIEW_CHARS).toBe(80_000);
+    expect(block.length).toBeGreaterThan(35_000); // views and key points are not trimmed
     expect(block.length).toBeLessThan(50_000);
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it.each(['tm-kp-head', 'tm-kp-tbw', 'tm-kp-rule', 'tm-kp-two'])('%s: key points with fewer than 3 bullet lines are dropped, logged, and the master falls back to Drug Interactions (US-50 AC12)', (handle) => {
+    fakeFiles();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const block = masterViews([handle], [])!;
+    expect(block).toContain('### 6. Drug Interactions');
+    expect(block).not.toContain('Key safety points');
+    expect(warn.mock.calls.map(([m]) => String(m))).toContain(`YouTube master views: key safety points malformed, dropped: ${handle}`);
+  });
+
+  it('the runtime and the batch checker share the 1,500-character key-points limit, and the checker ends the section at a rule too', () => {
+    expect(MAX_KEY_POINTS_CHARS).toBe(CHECKER_MAX_KEY_POINTS_CHARS);
+    const body = (kp: string) => `## Current view (reviewed 20 October 2026)\n\nView.\n\n${kp}\n\n## 9. References\n\n[1] Ref one.\n`;
+    expect(keySafetyErrors(body('## Key safety points\n\n- A [1].\n- B [1].\n- C [1].'))).toEqual([]);
+    expect(keySafetyErrors(body('## Key safety points\n\n- A [1].\n- B [1].\n\n---\n\n- C [1].')).join()).toContain('2 bullets');
+  });
+});
+
+// US-50 AC6, AC12: the real stack post names fourteen real masters, none with key points yet, so
+// each competes under the cap with its whole safety sections. Every one of
+// their Drug Interactions sections must go in whole, vitamin K's warfarin line included.
+describe('masterViews on the real stack post and the real masters (US-50 AC6, AC12)', () => {
+  it('every named master with a view adds its whole Drug Interactions section; nothing is skipped for the cap', () => {
+    const post = fs.readFileSync('docs/blog/the-only-three-supplements-doctor-brad-takes.md', 'utf-8');
+    const topics: string[] = JSON.parse(post.match(/^topics: (\[.*\])$/m)![1]);
+    expect(topics.length).toBeGreaterThanOrEqual(14);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const block = masterViews(topics, [])!;
+    let withView = 0;
+    for (const handle of topics) {
+      const md = fs.readFileSync(`docs/blog/${handle}.md`, 'utf-8');
+      if (!currentViewSection(md)) continue;
+      withView++;
+      const ix = safetySections(md).filter(s => /^#+ .*\binteractions?\b/i.test(s));
+      expect(ix.length, handle).toBeGreaterThan(0);
+      for (const s of ix) expect(block, handle).toContain(s);
+    }
+    expect(withView).toBeGreaterThanOrEqual(8);
+    expect(block).toContain('Vitamin K may reduce the effectiveness of warfarin.');
+    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
+    expect(warn.mock.calls.map(([m]) => String(m)).filter(m => /interactions/i.test(m))).toEqual([]);
   });
 });
 

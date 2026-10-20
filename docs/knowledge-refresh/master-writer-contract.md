@@ -37,7 +37,9 @@ The YouTube bot loads this section with the view, instead of the whole safety se
 - 3 to 8 bullets, ranked by clinical weight: serious drug interactions first (warfarin and other anticoagulants), then who should not take it, then dose ceilings and toxicity, then common side effects.
 - Each bullet is one or two plain sentences and carries the [n] markers of this master's own References that support it.
 - No new claims: every point is already stated in the master's safety or interaction sections or its view. Keep their hedging ("may", "evidence suggests").
-- At most 1,500 characters, heading and body. The checker's `--key-safety-points` fails a section that breaks any of these rules.
+- At most 1,500 characters, heading and body. The section ends at the next `## ` heading or `---` line.
+- No bracketed numbers except citation markers: write dose ranges as "1 to 2 g", never "[1-2] g".
+- The checker's `--key-safety-points` enforces count, size, position and citation resolution. Ranking, sentence length, no new claims and hedging are checked by the adversary review.
 
 ### 3. `## Brad's videos on this topic`
 
