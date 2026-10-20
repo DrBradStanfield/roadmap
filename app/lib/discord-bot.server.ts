@@ -75,6 +75,7 @@ const PLATFORM_DISCORD = 'discord';
 let client: Client | null = null;
 let isRunning = false;
 let activeLlmCalls = 0;
+let waitingLlmCalls = 0;
 const checkUserRateLimit = createRateLimiter(
   USER_RATE_LIMIT_MAX,
   USER_RATE_LIMIT_WINDOW_MS,
@@ -233,12 +234,19 @@ async function handleMessage(message: GuildMessage): Promise<void> {
   }
 
   // ----- Concurrency gate -----
-  if (activeLlmCalls >= CONCURRENCY_LIMIT + QUEUE_MAX_DEPTH) {
-    await safeReply(message, 'Busy helping other people right now — try again in a moment.');
-    return;
-  }
-  while (activeLlmCalls >= CONCURRENCY_LIMIT) {
-    await sleep(200);
+  if (activeLlmCalls >= CONCURRENCY_LIMIT) {
+    if (waitingLlmCalls >= QUEUE_MAX_DEPTH) {
+      await safeReply(message, 'Busy helping other people right now — try again in a moment.');
+      return;
+    }
+    waitingLlmCalls++;
+    try {
+      while (activeLlmCalls >= CONCURRENCY_LIMIT) {
+        await sleep(200);
+      }
+    } finally {
+      waitingLlmCalls--;
+    }
   }
 
   // ----- Load conversation history if this is a reply to the bot -----
