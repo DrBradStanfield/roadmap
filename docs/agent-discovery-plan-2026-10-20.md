@@ -133,3 +133,38 @@ Rejected: an unauthenticated "preview plan" tool on the hosted MCP. It would put
 4. **Name: "Health by Dr Brad"** everywhere an agent reads. The cloud folders keep "Health Plan by Dr Brad": existing Dropbox folders cannot be renamed.
 5. **The CLI exists.** `get-plan` prints a plan and `edit-record` files a value ([command-line.md](guides/command-line.md)). The gap is narrower: both need a `health-roadmap.json` the web app already made with a cloud connection, and both need this repo cloned. Phase 2 option 1 means letting `get-plan` take values with no record file. Small, and nothing leaves the machine.
 6. **Third-party testing for MicroVitamin** is already in the works. Phase 3's ConsumerLab item waits on its result.
+
+## What we measured and shipped (2026-10-20, later the same day)
+
+### What ChatGPT says (logged out, one run per question, 11 questions)
+
+- It named us once, when asked "Is MicroVitamin any good?". That answer raised the ConsumerLab result and the Labdoor pass.
+- The tool came up in none of the 5 tool questions. Its places went to blood-test apps, Apple Health, Oura and WHOOP. For "MCP server for health records" it cited GitHub projects, not ours.
+- MicroVitamin came up in none of the unbranded supplement questions. Answers leaned on NZ retailers.
+- Perplexity blocked logged-out use after one question. Claude and Gemini were not tried.
+
+### What the warm audience does (90 days)
+
+- **The tool is almost invisible in search.** `/pages/roadmap` gets 7,670 impressions, all for the brand name.
+- **AI referrals are small but land on intent pages.** About 190 sessions to drstanfield.com, 13 of them to the tool. About 215 to microvitamin.com, almost all product pages.
+- **The connect funnels leak.** 92 people started a Google Drive connect: 48 succeeded and 18 were refused because they left Google's Drive box unticked. 29 of 86 Drive visitors reached no outcome at all. The hosted MCP connected 15 times. Its 9 refusals were protocol rejections, not users; review owed.
+- **The connect-chatgpt guide's searches are not ours.** "chatgpt failed to connect to health" most likely comes from people using OpenAI's own ChatGPT Health. Don't read it as demand for our connector.
+- **Questions people ask inside the tool:** lipid targets and statins (24 of 106 messages), supplement doses, and how-to: uploading a PDF, fixing a wrong value, finding the record file.
+- **A potassium search cluster sits at positions 7-10:** about 25,000 impressions, mostly on drstanfield.com articles. potassiumfiber.com is not in Search Console.
+
+Full reports: the session's scratchpad (warm-audience, connect-funnels, assistant-answers); not committed, as they hold chat paraphrases.
+
+### Shipped
+
+- **drstanfield.com agent files.** `llms.txt`, `llms-full.txt` and `agents.md` now point to `/pages/roadmap` as "Health by Dr Brad" and list the MCP, the guides, the CLI, agent-access.md and the schema. The Shopify-generated "shop at Dr Brad Stanfield's online store" text is gone. Source: claude_business `tools/shopify-llms-txt.js`.
+- **The GitHub repo** has a description, the tool as its homepage, and 11 topics (mcp, mcp-server, personal-health-record, local-first, fhir, …).
+- **PR #196, merged:** `get-plan --from-values` prints a plan from numbers with no record file (US-30 AC7).
+- **PR #197:** a hint under Google Drive to tick the Drive box (US-09 AC21), and a `cloud_connect_cancelled` count (AC22). Needs a deploy and a real-WebKit check of the hint.
+
+### Next, ranked by the warm data
+
+1. Deploy #197, then watch the Drive refused share against W42 (about 4 in 10 starts).
+2. Review the hosted MCP's protocol refusals: ChatGPT's `resource` and redirect-uri rejections.
+3. A guide on uploading a lab PDF and fixing a wrong value.
+4. Add potassiumfiber.com to Search Console. Then decide on a potassium-forms article there, nutrient content only.
+5. List the hosted MCP in the official MCP Registry. Its `io.github.DrBradStanfield` namespace needs Brad's GitHub sign-in.
