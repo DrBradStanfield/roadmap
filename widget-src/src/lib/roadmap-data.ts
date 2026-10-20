@@ -119,6 +119,9 @@ export function isKnownMinorNow(): boolean {
 
 // --- reads ---
 export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult | null> {
+  return loadLatestMeasurementsSync();
+}
+export function loadLatestMeasurementsSync(): LatestMeasurementsResult | null {
   return store ? store.loadLatestMeasurements() : null;
 }
 /** Whether a loaded record holds anything the form shows. One test, shared by
