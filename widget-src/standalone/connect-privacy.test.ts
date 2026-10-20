@@ -6,7 +6,7 @@ import {
 } from '@roadmap/health-core';
 import { LocalStorageAdapter } from '../src/storage';
 import { WebDavAdapter } from '../src/storage/webdav';
-import { liftLocalInto, logOff, migrateLocalInto, prepareSwitch, reportConnectFailure } from './connect';
+import { liftLocalInto, migrateLocalInto, prepareSwitch, reportConnectFailure } from './connect';
 import { Sentry, scrubEvent } from '../src/lib/sentry';
 import { ERROR_CLASS_TAGS, EXPECTED_NETWORK_ERRORS, failureTags, HTTP_STATUS_TAGS } from '../src/lib/error-diagnostics';
 
@@ -180,10 +180,15 @@ describe('US-09 AC6c: local console lines are fixed, never the raw error', () =>
 
   it('a failed disconnect at log-off', async () => {
     await seedDevice();
+    // A real log-off ends the page. Give its irreversible write barrier a
+    // fresh module graph, rather than carrying it into the next test's page.
+    vi.resetModules();
+    const { logOff: pageLogOff } = await import('./connect');
+    const { WebDavAdapter: PageWebDavAdapter } = await import('../src/storage/webdav');
     vi.stubGlobal('location', { reload: vi.fn() });
-    vi.spyOn(WebDavAdapter.prototype, 'disconnect').mockRejectedValue(new Error(privateText));
+    vi.spyOn(PageWebDavAdapter.prototype, 'disconnect').mockRejectedValue(new Error(privateText));
     const warn = warnSpy();
-    await logOff('self-host');
+    await pageLogOff('self-host');
     expect(warn.mock.calls).toContainEqual(['Cloud disconnect during log-off failed']);
     expect(JSON.stringify(warn.mock.calls)).not.toContain(privateText);
   });

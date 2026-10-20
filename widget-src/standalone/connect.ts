@@ -20,6 +20,7 @@ import {
   saveRoadmapFileInto,
   type StorageAdapter,
 } from '../src/storage';
+import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { dropboxConfig } from './dropbox-config';
 import { clearAutoEnrolBlock } from './reminders';
 import { googleDriveConfig } from './google-config';
@@ -271,6 +272,9 @@ export async function resolveRemembered(): Promise<ResolvedBackend> {
  * reload also discards all in-memory store state.
  */
 export async function logOff(backend: Backend): Promise<void> {
+  // Close the local-write barrier BEFORE any await: disconnect, an in-flight
+  // failed save, and the navigation lifecycle can all race the device wipe.
+  beginRoadmapLogOff();
   // Sign out of the active cloud (drops its tokens locally; the remote file is
   // left untouched — adapter.disconnect() issues no remote delete).
   try {
