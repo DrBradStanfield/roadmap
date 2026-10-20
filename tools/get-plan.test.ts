@@ -486,7 +486,10 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
     const fromValues = await captureRun(['--from-values', values, '--json']);
     expect(fromValues.code).toBe(0);
     expect(stable(fromValues.stdout)).toBe(stable(fromFile.stdout));
-    expect((await captureRun(['--from-values', values])).stdout).toBe((await captureRun([path])).stdout);
+    // Same report, except it says where the numbers came from.
+    const text = (await captureRun(['--from-values', values])).stdout;
+    expect(text).toContain('from the values you gave.');
+    expect(text.replace('the values you gave', 'your record file')).toBe((await captureRun([path])).stdout);
     rmSync(fileDir, { recursive: true, force: true });
   });
 
@@ -494,6 +497,12 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
     const mg = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 123.8, unit: 'mg/dL' }]), '--json']);
     const si = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 3.2, unit: 'mmol/L' }]), '--json']);
     expect(JSON.parse(mg.stdout).inputs.ldlC).toBeCloseTo(JSON.parse(si.stdout).inputs.ldlC, 2);
+  });
+
+  it('shows mg/dL when unitSystem is conventional', async () => {
+    const result = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 3.2, unit: 'mmol/L' }], { unitSystem: 'conventional' })]);
+    expect(result.code).toBe(0);
+    expect(result.stdout).toMatch(/LDL Cholesterol\s+124 mg\/dL/);
   });
 
   it('refuses a two-unit metric given without a unit, in one plain line', async () => {

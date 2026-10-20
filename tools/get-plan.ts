@@ -80,6 +80,7 @@ const valuesSpec = z.object({
   age: z.number().int().optional(),
   birthYear: z.number().int().optional(),
   birthMonth: z.number().int().optional(),
+  unitSystem: z.enum(['si', 'conventional']).optional(),
   values: z.array(z.object({
     metric: z.string().optional(),
     test: z.string().optional(),
@@ -113,6 +114,8 @@ export function recordFromValues(raw: string, now = new Date()): RoadmapFile {
   const profile = updateProfile(file, { sex: spec.sex, heightCm: spec.heightCm, birthYear, birthMonth: spec.birthMonth }, at);
   if (profile.status !== 'ok') throw new PlanError(oneLine(profile.text), VALUES_SHAPE);
   if (profile.file) file = profile.file;
+  // In memory only, so no profile timestamp to keep.
+  if (spec.unitSystem) file = { ...file, profile: { ...file.profile, unitSystem: spec.unitSystem } };
 
   for (const [i, row] of spec.values.entries()) {
     const where = `values[${i}]`;
@@ -176,11 +179,11 @@ function byPriority(suggestions: Suggestion[]): Array<{ priority: string; label:
 // Renderers
 // ---------------------------------------------------------------------------
 
-export function renderText(plan: Plan): string {
+export function renderText(plan: Plan, from = 'your record file'): string {
   const out: string[] = [];
   out.push('YOUR HEALTH PLAN');
   out.push(profileLine(plan));
-  out.push(`Computed ${plan.today} from your record file. Not medical advice — take it to your doctor.`);
+  out.push(`Computed ${plan.today} from ${from}. Not medical advice — take it to your doctor.`);
 
   const row = (r: DisplayRow) => `  ${r.label.padEnd(20)} ${String(r.value).padStart(6)} ${r.unit.padEnd(9)} ${r.date}${r.excluded ? '  (excluded — out of range)' : ''}`;
   const values = currentValues(plan);
@@ -340,7 +343,9 @@ memory by edit-record's own rules, and writes nothing. Works with --json/--html:
   {"sex":"male","age":52,"heightCm":178,
    "values":[{"metric":"ldl","value":3.2,"unit":"mmol/L"},
              {"test":"ferritin","value":210,"unit":"µg/L"}]}
-  sex, heightCm       required; give age or birthYear (+ optional birthMonth)
+  sex, heightCm       required; give age or birthYear (+ optional birthMonth);
+                      age alone may be a year off near a birthday
+  unitSystem          optional: si (default, mmol/L) or conventional (mg/dL)
   metric / test       a core metric, or any other blood test
   unit                required wherever the metric has two (ldl, hba1c, weight, …)
   date                YYYY-MM-DD, default today
@@ -426,7 +431,7 @@ export async function run(argv: string[]): Promise<number> {
     } else if (argv.includes('--json')) {
       process.stdout.write(`${renderJson(plan)}\n`);
     } else {
-      process.stdout.write(`${renderText(plan)}\n`);
+      process.stdout.write(`${renderText(plan, valuesFrom ? 'the values you gave' : undefined)}\n`);
     }
     return 0;
   } catch (error) {

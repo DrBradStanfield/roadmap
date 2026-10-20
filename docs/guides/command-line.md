@@ -62,7 +62,7 @@ echo '{"sex":"male","age":52,"heightCm":178,"values":[{"metric":"ldl","value":3.
 
 It prints the same plan as above (add `--json` or `--html <out>` as before). The record exists only in memory: nothing is written, nothing is sent, and the numbers are gone when the command ends.
 
-`sex` and `heightCm` are required. Give `age` or `birthYear`. Each value is a core `metric` (`ldl`, `hba1c`, `weight`, …) or any other blood `test`, with an optional `date` (default today). A metric with two units needs its `unit`: LDL without one stops with `ldl needs a unit (mmol/L or mg/dL)` rather than guess. Values go through the same range checks as `edit-record`. To keep the numbers, enter them in the app; no command here creates a record file.
+`sex` and `heightCm` are required. Give `age` or `birthYear` (age alone can be a year off near a birthday). Add `"unitSystem":"conventional"` to see mg/dL instead of mmol/L. Each value is a core `metric` (`ldl`, `hba1c`, `weight`, …) or any other blood `test`, with an optional `date` (default today). A metric with two units needs its `unit`: LDL without one stops with `ldl needs a unit (mmol/L or mg/dL)` rather than guess. Values go through the same range checks as `edit-record`. To keep the numbers, enter them in the app; no command here creates a record file.
 
 ## Add a value
 
