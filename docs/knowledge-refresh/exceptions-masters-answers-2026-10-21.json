@@ -14,5 +14,13 @@
   "reason": "Checker tokenisation: body \"more than 7 times\" equals the abstract's \">7-fold\". (carried over unchanged from exceptions-masters-1.json; the entry is untouched by the 2026-10-21 edits)",
   "by": "orchestrator",
   "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "product section changed: ### Protein Powder as Part of MicroVitamin+ Powder",
+  "reason": "Brad 2026-10-21: count corrected to products.md:136 (v8 powder = 26 core + 4 = 30); 25 was the v7 count",
+  "by": "orchestrator",
+  "date": "2026-10-21"
  }
 ]

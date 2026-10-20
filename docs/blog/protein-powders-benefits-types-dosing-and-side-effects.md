@@ -303,7 +303,7 @@ Plant proteins have a lower ratio of essential amino acids to total protein, so 
 
 ### Protein Powder as Part of MicroVitamin+ Powder
 
-Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 12.5 g of collagen peptides and 5 g of creatine monohydrate alongside 25 core micronutrient ingredients. Combining creatine with protein supports enhanced strength gains and muscle recovery. The creatine component provides an evidence-based complement to dietary protein intake for adults seeking to maintain muscle mass and physical performance.
+Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 12.5 g of collagen peptides and 5 g of creatine monohydrate alongside all 26 core ingredients of the MicroVitamin capsules, plus 2.5 g of psyllium husk and 1 g of extra taurine: 30 ingredients in total. Combining creatine with protein supports enhanced strength gains and muscle recovery. The creatine component provides an evidence-based complement to dietary protein intake for adults seeking to maintain muscle mass and physical performance.
 
 ### Mixing and Preparation
 
