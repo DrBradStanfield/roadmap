@@ -61,6 +61,9 @@ Read this first after a compaction. Story: US-50 in docs/user-stories.md. Plan: 
 - **Post fingerprints:** adding `topics:` to a post changes its sha256. After a merge that tags posts, append the current sha for each post through an addendum.
 - **Harness key:** `.env` does not source cleanly in zsh (line 66). Load `ANTHROPIC_MICROVITAMIN_API_KEY` with node or dotenv and pass it as `ANTHROPIC_TEST_API_KEY`. The 2026-10-20 run fell back to the production key ($4.85).
 - **Emergency wording on supplement pages:** "call your local emergency number or poison control centre". These pages are read worldwide, so don't use the NZ "111".
+- **Every "fix in review" note gets a fixer before the review.** Masters-2's review found a dozen such items still unapplied: the orchestrator had logged them but never dispatched a fixer.
+- **Title-check references with no ID.** The ID check covers only lines with a PMID or DOI. Run the no-ID sweep too (masters-1-noid-check pattern): many lines carry real works under invented titles, and a few are invented outright.
+- **Answer-fixture regexes:** the harness compiles patterns without the `i` flag. Make case-insensitivity explicit (`[Cc]ollagen`) and test with the harness's own compilation.
 - **Review branches** must have origin/main merged first. Otherwise Codex reports other sessions' work as deletions.
 
 ## Lessons from masters-1
