@@ -345,7 +345,7 @@ export const MCP_OAUTH_DETAILS = {
   /** No `redirect_uri`; a host none of the client's redirects uses; a known
    *  host (or loopback) with a different path, query, port or scheme; or a
    *  registered redirect the policy no longer allows. */
-  'redirect-uri': ['missing', 'unknown-host', 'known-host-other-path', 'loopback-other-path', 'not-allowed'],
+  'redirect-uri': ['missing', 'unknown-host', 'known-host-other-path', 'loopback-other-path'],
   /** Neither a DCR id nor an https URL; a DCR id that fails its HMAC or
    *  metadata; a CIMD URL refused before fetching; a fetch that failed; a
    *  document that is not ours to accept; one whose redirects we refuse. */

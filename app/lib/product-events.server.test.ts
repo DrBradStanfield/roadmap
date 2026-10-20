@@ -520,6 +520,11 @@ describe('recordServerEvent — the server path validates too', () => {
     expect(JSON.stringify(captureMessage.mock.calls)).not.toContain('evil');
   });
 
+  it('keeps a valid reason and detail when an unrelated key is dropped (US-32 AC48, Codex R3)', async () => {
+    await recordServerEvent('mcp_connect_failed', { client: 'not-a-client', reason: 'no-cookie', detail: 'missing' } as never);
+    expect(inserts.map((row) => row.metadata)).toEqual([{ reason: 'no-cookie', detail: 'missing' }]);
+  });
+
   // US-21 phase 3, the same pairing on the server path, where a bad key is
   // pruned rather than costing the row: the counter still counts.
   it('keeps the refused key and unit, and prunes them off any other event', async () => {

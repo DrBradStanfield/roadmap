@@ -99,11 +99,12 @@ export function isAllowedRedirect(uri: string): boolean {
 /** Which way a refused redirect missed, as the counter's closed word (US-32 AC48). Never the URL. */
 export function redirectMiss(registered: readonly string[], requested: string): McpOAuthDetail<'redirect-uri'> {
   if (!requested) return 'missing';
-  if (registered.some((r) => redirectMatches(r, requested))) return 'not-allowed';
   const host = (uri: string) => URL.canParse(uri) ? new URL(uri).hostname : null;
   const asked = host(requested);
-  if (!asked || !registered.some((r) => host(r) === asked)) return 'unknown-host';
-  return isLoopbackRedirect(requested) ? 'loopback-other-path' : 'known-host-other-path';
+  const sameHost = registered.filter((r) => host(r) === asked);
+  if (!asked || !sameHost.length) return 'unknown-host';
+  // Judged by the registered side: a wrong scheme on a loopback host is still a loopback miss.
+  return sameHost.some(isLoopbackRedirect) ? 'loopback-other-path' : 'known-host-other-path';
 }
 
 /**

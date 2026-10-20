@@ -229,7 +229,9 @@ function cleanMetadata(event: ServerProductEvent & { metadata: object }): { clea
   const dropped: string[] = [];
   for (const [key, value] of Object.entries(metadata)) {
     // The EVENT, one key at a time: `reason` is judged against its own event.
-    if (serverEventSchema.safeParse({ ...event, metadata: { [key]: value } }).success) clean[key] = value;
+    // A detail is judged beside its reason, so a valid pair survives an unrelated bad key.
+    const probe = key === 'detail' ? { reason: metadata.reason, detail: value } : { [key]: value };
+    if (serverEventSchema.safeParse({ ...event, metadata: probe }).success) clean[key] = value;
     else dropped.push(key);
   }
   return { clean: Object.keys(clean).length ? clean : undefined, dropped };

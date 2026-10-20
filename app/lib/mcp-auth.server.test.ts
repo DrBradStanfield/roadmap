@@ -899,9 +899,8 @@ describe('a refused redirect names how it missed (US-32 AC48)', () => {
     expect(redirectMiss(registered, 'https://evil.test/cb')).toBe('unknown-host');
     expect(redirectMiss(registered, 'https://claude.ai/elsewhere')).toBe('known-host-other-path');
     expect(redirectMiss(registered, 'http://localhost:4567/elsewhere')).toBe('loopback-other-path');
-    // A registered redirect the policy no longer allows: unreachable through
-    // today's pins and registrations, which must all pass the policy.
-    expect(redirectMiss(['https://old.example/cb'], 'https://old.example/cb')).toBe('not-allowed');
+    // Wrong scheme on a registered loopback host is still a loopback miss (Codex R2).
+    expect(redirectMiss(registered, 'https://localhost:4567/callback')).toBe('loopback-other-path');
   });
 });
 
