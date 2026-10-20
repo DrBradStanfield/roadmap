@@ -55,23 +55,27 @@ function tombstone(conv: ChatFileConversation, now?: string): void {
 }
 
 export class ChatHistoryStore {
+  /** Conversations a local erase removed under this store: an answer that
+   *  lands after the erase must not save them again (US-11 AC2). */
+  private readonly erasedIds = new Set<string>();
+
   private constructor(
-    private readonly sync: SyncManager<ChatHistoryFile>,
+    /** The device tier is written synchronously (see persist); a cloud through SyncManager. */
+    private readonly target: SyncManager<ChatHistoryFile> | LocalStorageAdapter,
     private file: ChatHistoryFile,
-    private readonly localAdapter?: LocalStorageAdapter,
     private localGeneration: string | null = null,
   ) {}
 
   /** Load chat history from the given backend and return a ready store. */
   static async create(adapter: StorageAdapter): Promise<ChatHistoryStore> {
-    const sync = new SyncManager(adapter, getDeviceId(), CHAT_HISTORY_DOC);
     if (adapter instanceof LocalStorageAdapter) {
       // Read a content-free cleanup fence with the local chat snapshot. It
       // survives roadmap removal and does not parse unrelated health data.
       const generation = localEraseGeneration();
       const file = migrateChatHistoryFile(adapter.readSync(CHAT_HISTORY_DOC.fileName).body, chatContext());
-      return new ChatHistoryStore(sync, file, adapter, generation);
+      return new ChatHistoryStore(adapter, file, generation);
     }
+    const sync = new SyncManager(adapter, getDeviceId(), CHAT_HISTORY_DOC);
     return new ChatHistoryStore(sync, await sync.load());
   }
 
@@ -110,6 +114,7 @@ export class ChatHistoryStore {
     isFallback?: boolean;
   }): Promise<void> {
     this.refreshLocalAfterErase();
+    if (this.erasedIds.has(opts.conversationId)) return; // erased while the answer was in flight
     const now = new Date().toISOString();
     const messages: ChatFileMessage[] = [
       { id: `u-${Date.now()}`, role: 'user', content: opts.userText, createdAt: now },
@@ -179,34 +184,35 @@ export class ChatHistoryStore {
   /** On local erase, replace the entire stale working copy before appending
    * new chat. Never merge pre-erase ids into the now-missing chat file. */
   private refreshLocalAfterErase(): void {
-    if (!this.localAdapter) return;
+    if (!(this.target instanceof LocalStorageAdapter)) return;
     const generation = localEraseGeneration();
     if (generation === this.localGeneration) return;
-    this.file = migrateChatHistoryFile(this.localAdapter.readSync(CHAT_HISTORY_DOC.fileName).body, chatContext());
+    for (const conv of this.file.conversations) this.erasedIds.add(conv.id);
+    this.file = migrateChatHistoryFile(this.target.readSync(CHAT_HISTORY_DOC.fileName).body, chatContext());
     this.localGeneration = generation;
   }
 
   private async persist(): Promise<void> {
-    if (this.localAdapter) {
-      // No await between checking the erase fence, merging and writing. This
-      // preserves the local adapter's existing best-effort CAS semantics and
-      // avoids an async continuation carrying a pre-erase snapshot back in.
-      for (let attempt = 0; attempt < 5; attempt++) {
-        this.refreshLocalAfterErase();
-        const { body, version } = this.localAdapter.readSync(CHAT_HISTORY_DOC.fileName);
-        const ctx = chatContext();
-        const merged = mergeChatHistoryFiles(this.file, migrateChatHistoryFile(body, ctx), ctx);
-        try {
-          this.localAdapter.writeSync(CHAT_HISTORY_DOC.fileName, merged, version);
-          this.file = merged;
-          return;
-        } catch (error) {
-          if (!(error instanceof ConflictError) || attempt === 4) throw error;
-        }
-      }
+    if (!(this.target instanceof LocalStorageAdapter)) {
+      this.file = (await this.target.save(this.file)).file;
       return;
     }
-    this.file = (await this.sync.save(this.file)).file;
+    // Not SyncManager.save: its read and write are awaited, and an erase that
+    // lands between them would let this pre-erase snapshot be written back.
+    // No await between checking the erase fence, merging and writing.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      this.refreshLocalAfterErase();
+      const { body, version } = this.target.readSync(CHAT_HISTORY_DOC.fileName);
+      const ctx = chatContext();
+      const merged = mergeChatHistoryFiles(this.file, migrateChatHistoryFile(body, ctx), ctx);
+      try {
+        this.target.writeSync(CHAT_HISTORY_DOC.fileName, merged, version);
+        this.file = merged;
+        return;
+      } catch (error) {
+        if (!(error instanceof ConflictError) || attempt === 4) throw error;
+      }
+    }
   }
 }
 

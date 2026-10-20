@@ -219,7 +219,7 @@ export function setPreEraseHook(fn: () => Promise<void>): void {
   preEraseHook = fn;
 }
 
-export async function deleteUserData(): Promise<{ success: boolean; error?: string; chatErased: boolean }> {
+export async function deleteUserData(): Promise<{ success: boolean; error?: string; warning?: string; chatErased: boolean }> {
   if (!store) return { success: false, error: 'Data store not initialised', chatErased: false };
   // Both steps below run only once the store has read the record it erases:
   // an erase that cannot read it is refused, and must have changed nothing

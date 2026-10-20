@@ -160,8 +160,9 @@ describe('US-11 local erase: a stale chat tab must not restore erased history', 
         original.call(this, key, value);
       });
       const result = await deleteUserData();
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Could not complete on-device history cleanup.');
+      // The record erase landed, so the caller still clears its screen: a
+      // warning, never a refusal (US-11 AC3b, Codex R2).
+      expect(result).toMatchObject({ success: true, warning: 'Could not complete on-device history cleanup.' });
       expect(localStorage.getItem(CHAT_KEY)).toBeNull();
       expect(localStorage.getItem(DOC_KEY)).toBeNull();
       const reopened = await RoadmapStore.create(adapter());
@@ -170,6 +171,59 @@ describe('US-11 local erase: a stale chat tab must not restore erased history', 
       expect((body as { meta: { eraseEpoch: number } }).meta.eraseEpoch).toBeGreaterThan(0);
     });
   }
+
+  // US-11 AC2 (Codex R1): byok-chat and chat-api save the exchange after
+  // awaiting the network, so the answer can land after the erase finished.
+  for (const tab of ['erasing', 'stale'] as const) {
+    it(`US-11 AC2: an answer landing after a local erase is not saved in the ${tab} tab; a new conversation still saves`, async () => {
+      await initRoadmapStore(new LocalStorageAdapter());
+      const erasingTab = (await getChatHistory())!;
+      await exchange(erasingTab, 'old', OLD_TEXT);
+      const chat = tab === 'erasing' ? erasingTab : await ChatHistoryStore.create(new LocalStorageAdapter());
+      // The question is in flight; the erase completes; then the answer arrives.
+      expect((await deleteUserData()).success).toBe(true);
+      await chat.recordExchange({
+        conversationId: 'old', isNew: false,
+        userText: 'SYNTHETIC_LATE_QUESTION', assistantText: 'SYNTHETIC_LATE_ANSWER',
+      });
+      expect(localStorage.getItem(CHAT_KEY) ?? '').not.toContain('SYNTHETIC_LATE');
+      expectOldAbsent(chat);
+      await exchange(chat, 'fresh', FRESH_TEXT);
+      expect(chat.listConversations().map(c => c.id)).toEqual(['fresh']);
+      expect(localFile().conversations.map(c => c.id)).toEqual(['fresh']);
+    });
+  }
+
+  // US-11 AC3b / US-09 AC23 (adversary R3): a refused erase rotates no fence.
+  describe('a refused erase leaves the erase-generation key unchanged', () => {
+    const GENERATION_KEY = 'health_roadmap_local_erase_generation';
+    it('cloud read unreachable (ERASE_UNREACHABLE)', async () => {
+      const adapter = new MemoryAdapter(new MemoryCloud());
+      await initRoadmapStore(adapter);
+      await addMeasurement('weight', 70, '2026-01-01');
+      await flushRoadmapStore();
+      localStorage.setItem(GENERATION_KEY, 'g0');
+      vi.spyOn(adapter, 'read').mockRejectedValueOnce(new Error('synthetic offline'));
+      expect((await deleteUserData()).success).toBe(false);
+      expect(localStorage.getItem(GENERATION_KEY)).toBe('g0');
+    });
+    for (const mode of ['local', 'cloud'] as const) {
+      it(`${mode}: the erase's flush fails`, async () => {
+        const adapter = mode === 'local' ? new LocalStorageAdapter() : new MemoryAdapter(new MemoryCloud());
+        await initRoadmapStore(adapter);
+        await addMeasurement('weight', 70, '2026-01-01');
+        await flushRoadmapStore();
+        localStorage.setItem(GENERATION_KEY, 'g0');
+        localStorage.setItem(CHAT_KEY, '{}');
+        if (mode === 'cloud') vi.spyOn(adapter, 'write').mockRejectedValue(new Error('synthetic offline'));
+        else vi.spyOn(adapter as LocalStorageAdapter, 'writeSync').mockImplementation(() => { throw new Error('synthetic quota'); });
+        expect((await deleteUserData()).success).toBe(false);
+        expect(localStorage.getItem(GENERATION_KEY)).toBe('g0');
+        expect(localStorage.getItem(CHAT_KEY)).toBe('{}');
+        vi.restoreAllMocks(); // let afterEach's flush land
+      });
+    }
+  });
 
   it('control: without an erase, normal local writes still union both tabs\' conversations', async () => {
     const first = await ChatHistoryStore.create(new LocalStorageAdapter());

@@ -16,6 +16,7 @@ import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
+import { MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
 
 const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void) }));
 
@@ -283,5 +284,35 @@ describe('US-16 AC2: the proposal banner, after review', () => {
     const after = await recordOnDisk();
     expect(after.medications).toEqual(before.medications);
     expect(after.profile).toEqual(before.profile);
+  });
+});
+
+// Codex R2 + adversary R1: once the record erase landed, a failed on-device
+// cleanup step must not leave the chat's copy of the record or the screen.
+describe('US-11 AC3b / AC8: an erase whose device cleanup fails still clears the chat copy and the screen', () => {
+  it('clears the mirror, mutes the embed, resets the form and says what is incomplete', async () => {
+    localStorage.setItem('health_roadmap_unit_system', 'si');
+    const view = await guestWithoutProfile({ sex: 'male', heightCm: 180 });
+    expect(planShown(view)).toBe(true);
+    localStorage.setItem(MIRROR_KEY, JSON.stringify({ inputs: { sex: 'male', heightCm: 180 } }));
+    const original = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === 'health_roadmap_local_erase_generation') throw new Error('synthetic quota failure');
+      original.call(this, key, value);
+    });
+    const embedNotified = vi.fn();
+    window.addEventListener(MIRROR_CHANGED_EVENT, embedNotified);
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await waitFor(() => expect(alert).toHaveBeenCalledOnce());
+    window.removeEventListener(MIRROR_CHANGED_EVENT, embedNotified);
+    expect(localStorage.getItem(MIRROR_KEY) ?? '').not.toContain('180');
+    expect(embedNotified).toHaveBeenCalled();
+    expect(alert.mock.calls[0][0]).toContain('deleted');
+    expect(alert.mock.calls[0][0]).toContain('Could not complete on-device history cleanup.');
+    await wait(600);
+    expect(planShown(view)).toBe(false);
   });
 });

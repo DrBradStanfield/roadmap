@@ -290,7 +290,7 @@ export async function logOff(backend: Backend): Promise<void> {
     await new LocalStorageAdapter().disconnect();
   } catch (error) {
     console.warn('Device wipe during log-off failed');
-    Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'log-off', backend: 'local' } });
+    Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'log-off-device', backend: 'local' } });
   }
   // Also clear the legacy v1 health blob + the authenticated flag (the shared
   // HealthTool source still writes these), so a shared device leaks nothing.

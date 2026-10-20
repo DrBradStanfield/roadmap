@@ -31,16 +31,22 @@ class ControlledCloud extends MemoryAdapter {
   }
 }
 
-function makeStorage(failKey?: string): Storage {
+function makeStorage(failKey?: string, onChange?: (key: string) => void): Storage {
   const values = Object.create(null) as Record<string, string>;
   Object.defineProperties(values, {
     length: { get() { return Object.keys(values).length; } },
     getItem: { value: (key: string) => values[key] ?? null },
     setItem: { value: (key: string, value: string) => {
       if (key === failKey) throw new Error('synthetic quota failure');
+      const changed = values[key] !== String(value);
       values[key] = String(value);
+      if (changed) onChange?.(key); // a browser signals real changes only
     } },
-    removeItem: { value: (key: string) => { delete values[key]; } },
+    removeItem: { value: (key: string) => {
+      const changed = key in values;
+      delete values[key];
+      if (changed) onChange?.(key);
+    } },
     clear: { value: () => { for (const key of Object.keys(values)) delete values[key]; } },
     key: { value: (index: number) => Object.keys(values)[index] ?? null },
   });
@@ -112,7 +118,7 @@ async function settleLifecycle() {
   for (let turn = 0; turn < 100; turn++) await Promise.resolve();
 }
 
-describe('logout is a barrier to late on-device roadmap persistence', () => {
+describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence', () => {
   it('does not recreate a mirror when an in-flight cloud write fails after logout', async () => {
     const cloud = new ControlledCloud();
     const store = await storage.RoadmapStore.create(cloud);
@@ -285,7 +291,7 @@ describe('logout is a barrier to late on-device roadmap persistence', () => {
       expect(localStorage.getItem(UNRELATED_KEY)).toBe('keep');
       expect(reload).toHaveBeenCalledOnce();
       expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), {
-        tags: { area: 'cloud-sync', op: 'log-off', backend: 'local' },
+        tags: { area: 'cloud-sync', op: 'log-off-device', backend: 'local' },
       });
     });
   }
@@ -299,5 +305,75 @@ describe('logout is a barrier to late on-device roadmap persistence', () => {
     await connect.logOff('local');
     await settleLifecycle();
     expectDeviceEmpty();
+  });
+});
+
+// Adversary R3: each guard has a test that fails on its own removal.
+describe('US-09 AC2c: each barrier guard is load-bearing', () => {
+  it('markSyncPending sets no marker once the barrier is closed', () => {
+    storage.markSyncPending();
+    expect(localStorage.getItem(PENDING_KEY)).not.toBeNull();
+    localStorage.removeItem(PENDING_KEY);
+    local.stopRoadmapLocalWrites();
+    storage.markSyncPending();
+    expect(localStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+
+  it('a failed cloud save after the barrier does not even try the device mirror', async () => {
+    const cloud = new ControlledCloud();
+    const store = await storage.RoadmapStore.create(cloud);
+    store.addMeasurement('weight', 80, '2026-01-01');
+    const mirrorRead = vi.spyOn(local.LocalStorageAdapter.prototype, 'read');
+    local.stopRoadmapLocalWrites();
+    cloud.fail = true;
+    await expect(store.flush()).rejects.toThrow();
+    expect(mirrorRead).not.toHaveBeenCalled();
+  });
+
+  it('device disconnect removes documents before the erase-fence write that can throw', async () => {
+    vi.stubGlobal('localStorage', makeStorage('health_roadmap_local_erase_generation'));
+    const DOC_KEY = 'health_roadmap_doc_v2:synthetic-ref';
+    localStorage.setItem(DOC_KEY, 'data:application/pdf;base64,AA==');
+    await expect(new local.LocalStorageAdapter().disconnect()).rejects.toThrow('history cleanup');
+    expect(localStorage.getItem(DOC_KEY)).toBeNull();
+  });
+});
+
+// Adversary R2: another tab on this device latches too.
+describe('US-09 AC2c: log-off closes the barrier in every tab on the device', () => {
+  /** Deliver each change to the page's listeners, as a browser does to other tabs. */
+  function storageEventsReachOtherTabs() {
+    vi.stubGlobal('localStorage', makeStorage(undefined, (key) => {
+      window.dispatchEvent(Object.assign(new Event('storage'), { key }));
+    }));
+    localStorage.setItem(UNRELATED_KEY, 'keep');
+  }
+
+  it('another tab cannot recreate the device file after this tab logs off, and no signal stays behind', async () => {
+    storageEventsReachOtherTabs();
+    // A second page: its own module graph, the same window and localStorage.
+    vi.resetModules();
+    const otherStorage = await import('../src/storage/roadmap-store');
+    const otherLocal = await import('../src/storage/local-storage-adapter');
+    const other = await otherStorage.RoadmapStore.create(new otherLocal.LocalStorageAdapter());
+    expect(otherLocal.roadmapLocalWritesStopped()).toBe(false);
+
+    await connect.logOff('local');
+    expect(otherLocal.roadmapLocalWritesStopped()).toBe(true);
+    expect(Object.keys(localStorage).filter((key) => key.includes('log_off'))).toEqual([]);
+    other.addMeasurement('weight', 81, '2026-01-01');
+    await expect(other.flush()).rejects.toThrow();
+    otherStorage.markSyncPending();
+    expectDeviceEmpty();
+  });
+
+  it('an unrelated storage event leaves the other tab writing', async () => {
+    window.dispatchEvent(Object.assign(new Event('storage'), { key: 'health_roadmap_backend' }));
+    window.dispatchEvent(Object.assign(new Event('storage'), { key: null }));
+    expect(local.roadmapLocalWritesStopped()).toBe(false);
+    const store = await storage.RoadmapStore.create(new local.LocalStorageAdapter());
+    store.addMeasurement('weight', 82, '2026-01-01');
+    await store.flush();
+    expect(localStorage.getItem(FILE_KEY)).not.toBeNull();
   });
 });
