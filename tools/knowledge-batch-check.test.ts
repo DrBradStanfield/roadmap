@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  type Report, type Result, REPORT_SCHEMA, exampleReport, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
+  type Report, type Result, REPORT_SCHEMA, applyAddenda, exampleReport, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
   sentences, sha256, tokenise, validateReport,
 } from "./knowledge-batch-check";
 
@@ -398,6 +398,18 @@ describe("US-42 AC7 identifiers", () => {
     expect(fails(run().AC7).join()).not.toContain("no abstract file");
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("[1] Smith A. Synthetic trial. 2019.\n\n[2] Jones B. Synthetic safety review. 2020.", `[1] Jones B. Synthetic safety review. 2020.\n\n${line(2)}`));
     expect(fails(run().AC7).join()).not.toContain("no abstract file");
+  });
+  it("under --masters, --check-ids resolves retained base citations too, not only new ones (Codex round 2)", () => {
+    const line = "[1] Smith A. Synthetic trial. PMID: 99999999 https://pubmed.ncbi.nlm.nih.gov/99999999/";
+    put("docs/blog/alpha.md", fx("alpha.base.md").replace("[1] Smith A. Synthetic trial. 2019.", line));
+    sh(["add", "docs/blog/alpha.md"]); sh(["commit", "-q", "-m", "pubmed base", "--", "docs/blog/alpha.md"]);
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("[1] Smith A. Synthetic trial. 2019.", line));
+    const seen: string[] = [];
+    const go = (masters: boolean) => { seen.length = 0; return run({ masters, checkIds: true, headStatus: (u) => { seen.push(u); return 404; }, delayMs: 0 }).AC7; };
+    expect(fails(go(false)).join()).not.toContain("99999999");
+    expect(seen).toEqual([]);
+    expect(fails(go(true)).join()).toContain("alpha: pmid 99999999 returned 404");
+    expect(fails(go(true)).join()).not.toContain("no abstract file"); // the new-reference abstract rule stays new-only
   });
   it("--check-ids is off by default, FAILs on 404, and caps at 60", () => {
     cited();
@@ -1443,19 +1455,19 @@ describe("US-42 AC2 void entries, number words, abbreviations (v3)", () => {
     reps.alpha.changed_tokens.push({ body_line: "No such line.", raw_quote: "nothing like this in raw", void: true, void_reason: "typo in first draft" });
     const ok = run().AC2;
     expect(fails(ok)).toEqual([]);
-    expect(ok.evidence.join("\n")).toContain("VOID 1: typo in first draft");
+    expect(ok.evidence.join("\n")).toContain("alpha: VOID changed_tokens 1 [base]: typo in first draft");
     reps.alpha.changed_tokens[0].void = true;
     reps.alpha.changed_tokens[0].void_reason = "retired";
     const bad = run().AC2;
     expect(fails(bad).join()).toContain('"300 mg"');
-    expect(bad.evidence.join("\n")).toContain("VOID 0: retired");
+    expect(bad.evidence.join("\n")).toContain("alpha: VOID changed_tokens 0 [base]: retired");
   });
-  it("lists every void entry in the --out markdown, without raw_quote text", () => {
+  it("lists every void entry in the --out markdown as section, index and a short reason hash: no free text (review R2)", () => {
     reps.alpha.changed_tokens.push({ body_line: "No such line, and a long one that runs past sixty characters for the clip.", raw_quote: "secret raw words here for the quote", void: true, void_reason: "typo | first draft" });
     const md = renderReport("t", "HEAD", "abc", [run().AC2], [], false);
     expect(md).toContain("## Voided entries");
-    expect(md).toContain("alpha: VOID 1: typo / first draft [body: No such line, and a long one that runs past sixty characters]");
-    expect(md).not.toContain("secret raw words");
+    expect(md).toContain(`- alpha: VOID changed_tokens 1 [base] (reason sha256 ${sha256("typo | first draft").slice(0, 12)})`);
+    for (const t of ["secret raw words", "typo", "No such line"]) expect(md).not.toContain(t);
   });
   it("validates void and void_reason, and documents them in the schema", () => {
     const r = { ...exampleReport("x"), changed_tokens: [{ body_line: "a", raw_quote: "b", void: "yes" }] };
@@ -1982,5 +1994,217 @@ describe("US-50 AC1 masters: Brad's posts and positions as raw, drstanfield.com 
     sh(["commit", "-q", "--allow-empty", "-m", "later"]);
     put("docs/knowledge-refresh/exceptions-t.json", "[ ]");
     expect(fails(run({ masters: true, base: "HEAD~2" }).AC6).join()).toContain("unexpected change: docs/knowledge-refresh/exceptions-t.json");
+  });
+});
+
+describe("US-42 AC2 report addenda: reports stay append-only, corrections go in <handle>.addendum-<N>.json", () => {
+  const add = (n: number | string, a: unknown, handle = "alpha") => writeFileSync(join(reports, `${handle}.addendum-${n}.json`), JSON.stringify(a));
+  const wrong = () => { reps.alpha.changed_tokens = [{ body_line: "Trials used 300 mg in adults [1].", raw_quote: "participants took 999 mg in adults" }]; };
+  const good = { body_line: "Trials used 300 mg in adults [1].", raw_quote: "participants took 300 mg in adults" };
+  const batch = (over: Partial<Parameters<typeof runBatch>[0]> = {}) => {
+    writeReports();
+    return runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports], ...over });
+  };
+
+  const fileSha = (n: string) => sha256(readFileSync(join(reports, n)));
+
+  it("appends entries and voids a wrong one with its reason; the base report file is never written", () => {
+    wrong();
+    expect(fails(run().AC2).join()).toContain("300 mg");
+    add(1, { append: { changed_tokens: [good] }, void: [{ section: "changed_tokens", index: 0, reason: "quoted the wrong dose" }] });
+    const before = readFileSync(join(reports, "alpha.json"), "utf8");
+    const { results, rows } = batch();
+    const ac2 = results.find((r) => r.id === "AC2")!;
+    expect(fails(ac2)).toEqual([]);
+    expect(ac2.evidence.join("\n")).toContain("alpha: VOID changed_tokens 0 [addendum-1]: quoted the wrong dose");
+    expect(readFileSync(join(reports, "alpha.json"), "utf8")).toBe(before);
+    expect(rows.find((r) => r.handle === "alpha")!.reportFiles).toEqual([
+      { name: "alpha.json", sha256: fileSha("alpha.json") }, { name: "alpha.addendum-1.json", sha256: fileSha("alpha.addendum-1.json") }]);
+    expect(rows.find((r) => r.handle === "beta")!.reportFiles).toEqual([{ name: "beta.json", sha256: fileSha("beta.json") }]);
+  });
+  it("voiding a changed_tokens entry without a replacement leaves its token uncovered (AC2 FAIL)", () => {
+    add(1, { void: [{ section: "changed_tokens", index: 0, reason: "retired" }] });
+    expect(fails(run().AC2).join()).toContain('"300 mg"');
+  });
+  it("sets proposed_summary_correction with an INFO naming the addendum, never empty, and nothing else (R5)", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace(/^summary:.*$/m, 'summary: "Alpha summary, 300 mg in adults."'));
+    expect(fails(run().AC1).join()).toContain("proposed_summary_correction");
+    add(1, { set: { proposed_summary_correction: "Alpha summary, 300 mg in adults." } });
+    const r = run();
+    expect(fails(r.AC1)).toEqual([]);
+    expect(r.AC2.evidence.join("\n")).toContain("alpha: proposed_summary_correction set by addendum-1");
+    expect(renderReport("t", "HEAD", "abc", [r.AC2], [], false)).toContain("- alpha: proposed_summary_correction set by addendum-1"); // N3
+    add(1, { set: { proposed_summary_correction: " " } });
+    expect(fails(run().AC2).join()).toContain("set.proposed_summary_correction: non-empty string expected");
+    add(1, { set: { notes: "x" } });
+    expect(fails(run().AC2).join()).toContain("alpha.addendum-1.json: set.notes: unknown key");
+  });
+  it("fails an unknown key at any level", () => {
+    add(1, { replace: {} });
+    expect(fails(run().AC2).join()).toContain("alpha.addendum-1.json: replace: unknown key");
+    add(1, { append: { headings_after: [] } });
+    expect(fails(run().AC2).join()).toContain("append.headings_after: unknown key");
+    add(1, { void: [{ section: "changed_tokens", index: 0, reason: "r", extra: 1 }] });
+    expect(fails(run().AC2).join()).toContain("void[0].extra: unknown key");
+  });
+  it("fails a void without a reason, out of range, twice, or on a section that cannot be voided (R6)", () => {
+    add(1, { void: [{ section: "changed_tokens", index: 0 }] });
+    expect(fails(run().AC2).join()).toContain("void[0].reason: non-empty string expected");
+    add(1, { void: [{ section: "changed_tokens", index: 0, reason: " " }] });
+    expect(fails(run().AC2).join()).toContain("void[0].reason: non-empty string expected");
+    add(1, { void: [{ section: "changed_tokens", index: 5, reason: "r" }] });
+    expect(fails(run().AC2).join()).toContain("void[0].index: no changed_tokens entry 5");
+    add(1, { void: [{ section: "needs_pubmed", index: 0, reason: "r" }] });
+    expect(fails(run().AC2).join()).toContain("void[0].section");
+    add(1, { void: [{ section: "deleted_sentences", index: 0, reason: "a" }, { section: "deleted_sentences", index: 0, reason: "b" }] });
+    expect(fails(run().AC2).join()).toContain("void[1]: deleted_sentences entry 0 is voided twice");
+    add(1, { void: [{ section: "deleted_sentences", index: 0, reason: "a" }] });
+    add(2, { void: [{ section: "deleted_sentences", index: 0, reason: "b" }] });
+    expect(fails(run().AC2).join()).toContain("alpha.addendum-2.json: void[0]: deleted_sentences entry 0 is already void");
+  });
+  it("validates void: true and a void_reason on every voidable section, inline or appended, and lists every void (R4)", () => {
+    const r = (o: Record<string, unknown>) => validateReport({ ...exampleReport("x"), ...o }).join();
+    expect(r({ ask_brad: [{ item: "a", void: true }] })).toContain("ask_brad[0].void_reason: void entry without void_reason");
+    expect(r({ extra_raw: [{ path: "p", sha256: "s", void: "yes" }] })).toContain("extra_raw[0].void: boolean expected");
+    expect(r({ current_view_basis: [{ sentence: "s", quote: "q", void: false }] })).toBe(""); // N1: false is absent
+    expect(r({ deleted_sentences: [{ sentence: "s", justification: "j", void: true, void_reason: "" }] })).toContain("deleted_sentences[0].void_reason");
+    expect(r({ needs_pubmed: [{ claim: "c", void: true }] })).toBe(""); // not a voidable section
+    add(1, { append: { current_view_basis: [{ sentence: "s", quote: "q", void: true }] } });
+    expect(fails(run().AC2).join()).toContain("current_view_basis[0].void_reason: void entry without void_reason");
+    add(1, { append: { current_view_basis: [{ sentence: "s", quote: "q", void: true, void_reason: "drafted then dropped" }] } });
+    const md = renderReport("t", "HEAD", "abc", [run().AC2], [], false);
+    expect(md).toContain(`- alpha: VOID current_view_basis 0 [addendum-1] (reason sha256 ${sha256("drafted then dropped").slice(0, 12)})`);
+    expect(JSON.stringify(REPORT_SCHEMA)).not.toContain("drafted");
+    for (const k of ["changed_tokens", "current_view_basis", "deleted_sentences", "extra_raw", "ask_brad"]) { // N4
+      expect(JSON.stringify((REPORT_SCHEMA.properties as Record<string, unknown>)[k]), k).toContain("void_reason");
+    }
+    (reps.alpha as unknown as Record<string, unknown>).ask_brad = [{ item: "a", why: "b", void: true, void_reason: "settled" }];
+    add(1, { void: [{ section: "deleted_sentences", index: 0, reason: "kept" }] });
+    const ev = run().AC2.evidence.join("\n");
+    expect(ev).toContain("alpha: VOID ask_brad 0 [base]: settled");
+    expect(ev).toContain("alpha: VOID deleted_sentences 0 [addendum-1]: kept");
+  });
+  it("an addendum may give a reason to a base void that has none, which makes the report valid again (R7)", () => {
+    (reps.alpha as unknown as Record<string, unknown>).ask_brad = [{ item: "a", why: "b", void: true }];
+    expect(fails(run().AC2).join()).toContain("ask_brad[0].void_reason: void entry without void_reason");
+    add(1, { void: [{ section: "ask_brad", index: 0, reason: "answered by Brad" }] });
+    const r = run().AC2;
+    expect(fails(r)).toEqual([]);
+    expect(r.evidence.join("\n")).toContain("alpha: VOID ask_brad 0 [addendum-1]: answered by Brad");
+  });
+  it("addenda never apply to a base report with any other error: that needs a fresh report (N2)", () => {
+    (reps.alpha as unknown as Record<string, unknown>).ask_brad = [{ item: "a", why: "b", void: true }];
+    (reps.alpha as unknown as Record<string, unknown>).notes = 5;
+    add(1, { void: [{ section: "ask_brad", index: 0, reason: "answered by Brad" }] });
+    const f = fails(run().AC2).join();
+    expect(f).toContain("notes: string expected");
+    expect(f).toContain("ask_brad[0].void_reason: void entry without void_reason");
+  });
+  it("applies addenda in numeric order (2 before 10), voids indexing the array merged so far", () => {
+    wrong();
+    add(1, {});
+    add(2, { append: { changed_tokens: [good, good] } });
+    for (let n = 3; n <= 9; n++) add(n, {});
+    add(10, { void: [{ section: "changed_tokens", index: 0, reason: "first draft" }, { section: "changed_tokens", index: 2, reason: "duplicate" }] });
+    const { results, rows } = batch();
+    const ac2 = results.find((r) => r.id === "AC2")!;
+    expect(fails(ac2)).toEqual([]);
+    expect(ac2.evidence.join("\n")).toContain("alpha: VOID changed_tokens 2 [addendum-10]: duplicate");
+    expect(rows[0].reportFiles!.map((f) => f.name)).toEqual(["alpha.json", ...Array.from({ length: 10 }, (_, i) => `alpha.addendum-${i + 1}.json`)]);
+    const md = renderReport("t", "HEAD", "abc", results, rows, false);
+    expect(md).toContain(`alpha.json ${fileSha("alpha.json")} + alpha.addendum-1.json ${fileSha("alpha.addendum-1.json")} + alpha.addendum-2.json`);
+    expect(md).toContain(`alpha.addendum-10.json ${fileSha("alpha.addendum-10.json")}`);
+  });
+  it("fails a numbering gap and WARNs on a file that looks like an addendum but does not match the pattern (R1, R8)", () => {
+    add(1, {}); add(3, {});
+    expect(fails(run().AC2).join()).toContain("alpha: addendum numbering gap: alpha.addendum-2.json missing");
+    rmSync(join(reports, "alpha.addendum-3.json"));
+    writeFileSync(join(reports, "alpha.addendum-02.json"), "{}");
+    writeFileSync(join(reports, "alpha.addendum.json"), "{}");
+    const r = run().AC2;
+    expect(fails(r)).toEqual([]);
+    const w = r.evidence.filter((e) => e.startsWith("WARN ")).join("\n");
+    expect(w).toContain("alpha: alpha.addendum-02.json is not <handle>.addendum-<N>.json; ignored");
+    expect(w).toContain("alpha: alpha.addendum.json is not <handle>.addendum-<N>.json; ignored");
+  });
+  it("applyAddenda appends notes, voids the other sections, and leaves a report without addenda unchanged", () => {
+    const r = { ...exampleReport("x"), notes: "base", ask_brad: [{ item: "a", why: "b" }] } as Record<string, unknown>;
+    const copy = JSON.stringify(r);
+    expect(applyAddenda(r, [])).toEqual({ report: r, errors: [], infos: [], sources: {} });
+    const out = applyAddenda(r, [{ name: "x.addendum-1.json", data: { append: { notes: "more", ask_brad: [{ item: "c", why: "d" }] },
+      void: [{ section: "ask_brad", index: 0, reason: "answered" }, { section: "deleted_sentences", index: 0, reason: "kept" }] } }]);
+    expect(out.errors).toEqual([]);
+    expect(out.report.notes).toBe("base\nmore");
+    expect(out.report.ask_brad).toEqual([{ item: "a", why: "b", void: true, void_reason: "answered" }, { item: "c", why: "d" }]);
+    expect((out.report.deleted_sentences as { void?: boolean }[])[0].void).toBe(true);
+    expect(JSON.stringify(r)).toBe(copy);
+  });
+  it("a voided deleted_sentences entry no longer justifies a removal", () => {
+    add(1, { void: [{ section: "deleted_sentences", index: 0, reason: "wrong sentence" }] });
+    expect(fails(run().AC4).join()).toContain("sentence removed and not in deleted_sentences");
+  });
+  it("fails an addendum that is not JSON", () => {
+    writeFileSync(join(reports, "alpha.addendum-1.json"), "{");
+    expect(fails(run().AC2).join()).toContain("alpha.addendum-1.json: not JSON");
+  });
+
+  describe("extra_raw: several entries for one path (US-50)", () => {
+    const POST = "---\ntitle: \"O\"\n---\n\nIn my view participants took 300 mg in adults and did well.\n";
+    beforeEach(() => {
+      put("docs/blog/other.md", POST);
+      sh(["add", "docs/blog/other.md"]); sh(["commit", "-q", "-m", "post", "--", "docs/blog/other.md"]);
+      reps.alpha.changed_tokens = [{ body_line: "Trials used 300 mg in adults [1].", raw_quote: "POST:other: participants took 300 mg in adults and did well" }];
+      reps.alpha.extra_raw = [{ path: "/elsewhere/docs/blog/other.md", sha256: sha256("stale frontmatter") }];
+    });
+    it("a stale sha alone FAILs; an addendum with the current sha passes and the stale one is INFO", () => {
+      expect(fails(run({ masters: true }).AC2).join()).toContain("sha256 mismatch");
+      add(1, { append: { extra_raw: [{ path: "/elsewhere/docs/blog/other.md", sha256: sha256(POST) }] } });
+      const ac2 = run({ masters: true }).AC2;
+      expect(fails(ac2)).toEqual([]);
+      expect(ac2.evidence.join("\n")).toContain(`alpha: extra_raw docs/blog/other.md: superseded sha ${sha256("stale frontmatter")}`);
+    });
+    it("works the same for a raw file outside the repo", () => {
+      reps.alpha.changed_tokens = [good];
+      const f = join(reports, "extra.txt");
+      writeFileSync(f, "anything");
+      reps.alpha.extra_raw = [{ path: f, sha256: sha256("old") }, { path: f, sha256: sha256("anything") }];
+      const ac2 = run().AC2;
+      expect(fails(ac2)).toEqual([]);
+      expect(ac2.evidence.join("\n")).toContain(`superseded sha ${sha256("old")}`);
+    });
+  });
+
+  describe("--check-ids-cap", () => {
+    const many = (n: number) => put("docs/blog/alpha.md", fx("alpha.new.md").trimEnd() + "\n\n" + Array.from({ length: n }, (_, i) => `[${i + 3}] R. T. PMID: ${10000000 + i}`).join("\n\n") + "\n");
+    it("defaults to 60 without --masters and to unlimited with it; the option overrides both", () => {
+      many(65);
+      const seen: string[] = [];
+      const go = (over: Partial<Parameters<typeof runBatch>[0]>) => { seen.length = 0; return run({ checkIds: true, headStatus: (u) => { seen.push(u); return 200; }, delayMs: 0, ...over }).AC7; };
+      go({});
+      expect(seen.length).toBe(60);
+      go({ masters: true });
+      expect(seen.length).toBe(65);
+      expect(go({ masters: true, idCap: 10 }).evidence.join()).toContain("55 identifiers not checked (cap 10)");
+      expect(seen.length).toBe(10);
+    });
+    it("the CLI takes a positive integer and rejects anything else", () => {
+      many(3);
+      writeReports();
+      writeFileSync(join(reports, "handles.txt"), "alpha\nbeta\n");
+      const cwd = process.cwd();
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      const err = vi.spyOn(console, "error").mockImplementation(() => {});
+      process.chdir(root);
+      try {
+        const seen: string[] = [];
+        const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--no-exclusions", "--base", "HEAD", "--check-ids"];
+        const ov = { rawRoots: [reports], headStatus: (u: string) => { seen.push(u); return 200; }, delayMs: 0 };
+        main([...args, "--check-ids-cap", "2"], ov);
+        expect(seen.length).toBe(2);
+        expect(main([...args, "--check-ids-cap", "0"], ov)).toBe(2);
+        expect(main([...args, "--check-ids-cap", "x"], ov)).toBe(2);
+        expect(main([...args, "--check-ids-cap"], ov)).toBe(2);
+      } finally { process.chdir(cwd); log.mockRestore(); err.mockRestore(); }
+    });
   });
 });

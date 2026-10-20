@@ -22,7 +22,13 @@
  *  - An unchanged (frozen) summary passes even with a proposed correction: the orchestrator applies
  *    corrections later under the paired-arm rule. A summary that changed must equal the proposal.
  *  - A changed_tokens entry may carry "void": true and a "void_reason". Reports are append-only, so a wrong entry is
- *    voided, not deleted: every AC2 check skips it, it never covers a token, and the report lists "VOID <i>: <reason>".
+ *    voided, not deleted: every AC2 check skips it, it never covers a token, and the run lists "VOID <section> <i>: <reason>"
+ *    (--out shows a 12-character sha256 of the reason, never its text). current_view_basis, deleted_sentences, extra_raw
+ *    and ask_brad entries void the same way.
+ *  - After the first write a report is never edited, even to append (Brad 2026-10-20): a correction is a sibling
+ *    <handle>.addendum-<N>.json, N = 1, 2, 3 with no gap (see applyAddenda). It appends entries, voids entries with a
+ *    reason, or sets proposed_summary_correction; anything else fails. --out prints each report file with its sha256.
+ *  - Several extra_raw entries may name one path: any sha256 that matches accepts it; the rest are INFO "superseded sha".
  *  - AC6 allows the --out report path inside the repo: the batch report commits with the batch.
  *
  *   Topic-master batches (US-50 AC1, US-42 AC1 amended) add --masters (put it last or before another flag): on a
@@ -35,7 +41,7 @@
  */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -52,7 +58,7 @@ export interface Report {
   old_raw_path: string | null;
   /** One entry per body line and its verbatim source quote; the checker derives the numbers. A `token` field is ignored. */
   changed_tokens: Entry[];
-  deleted_sentences: { sentence: string; justification: string; pattern?: boolean }[];
+  deleted_sentences: { sentence: string; justification: string; pattern?: boolean; void?: boolean }[];
   headings_before: string[];
   headings_after: string[];
   proposed_summary_correction: string | null;
@@ -62,10 +68,80 @@ export interface Report {
   /** True when the handle is not in docs/blog/index.json yet; the type then comes from the frontmatter. */
   new?: boolean;
   /** Optional further raw sources; a raw_quote prefixed "NIH: " or "EXTRA: " is matched in these. */
-  extra_raw?: { path: string; sha256: string }[];
+  extra_raw?: { path: string; sha256: string; void?: boolean }[];
   /** Topic masters (US-50): one entry per Current view sentence, its quote prefixed POST:<handle>: or POSITION:<path>:. */
-  current_view_basis?: { sentence: string; source?: string; quote: string }[];
+  current_view_basis?: { sentence: string; source?: string; quote: string; void?: boolean }[];
 }
+
+const ADDENDUM_APPEND = ["extra_raw", "changed_tokens", "current_view_basis", "deleted_sentences", "ask_brad", "needs_pubmed", "positions_drift"];
+export const ADDENDUM_VOID = ["changed_tokens", "current_view_basis", "deleted_sentences", "extra_raw", "ask_brad"];
+
+/**
+ * Reports are append-only (US-42 AC2): a correction is a <handle>.addendum-<N>.json beside the report, applied in
+ * numeric order. {append: {<section>: [...], notes: "..."}, void: [{section, index, reason}], set: {proposed_summary_correction}}.
+ * A void's index counts the array merged before its addendum. A void may give a reason to a base void that has none (the
+ * repair path for a base report that fails validation). Returns a merged copy; the input is never changed.
+ */
+export function applyAddenda(base: Record<string, unknown>, addenda: { name: string; data: unknown }[]): { report: Record<string, unknown>; errors: string[]; infos: string[]; sources: Record<string, string> } {
+  if (!addenda.length) return { report: base, errors: [], infos: [], sources: {} };
+  const r: Record<string, unknown> = JSON.parse(JSON.stringify(base));
+  const errors: string[] = [], infos: string[] = [], sources: Record<string, string> = {}; // "<section> <i>" -> the addendum that voided it
+  const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === "object" && !Array.isArray(x);
+  const unknown = (o: Record<string, unknown>, allowed: string[], at: string, err: (m: string) => void) => {
+    for (const k of Object.keys(o)) if (!allowed.includes(k)) err(`${at}${k}: unknown key`);
+  };
+  for (const { name, data } of addenda) {
+    const errs: string[] = [], err = (m: string) => errs.push(`${name}: ${m}`);
+    if (!isObj(data)) { errors.push(`${name}: not an object`); continue; }
+    unknown(data, ["append", "void", "set"], "", err);
+    const { append = {}, void: vs = [], set = {} } = data as { append?: Record<string, unknown>; void?: unknown; set?: Record<string, unknown> };
+    if (!isObj(append)) err("append: object expected");
+    else {
+      unknown(append, [...ADDENDUM_APPEND, "notes"], "append.", err);
+      for (const k of ADDENDUM_APPEND) if (append[k] !== undefined && !Array.isArray(append[k])) err(`append.${k}: array expected`);
+      if (append.notes !== undefined && typeof append.notes !== "string") err("append.notes: string expected");
+    }
+    if (!isObj(set)) err("set: object expected");
+    else {
+      unknown(set, ["proposed_summary_correction"], "set.", err);
+      const p = set.proposed_summary_correction;
+      if (p !== undefined && (typeof p !== "string" || !p.trim())) err("set.proposed_summary_correction: non-empty string expected");
+    }
+    const seen = new Set<string>();
+    if (!Array.isArray(vs)) err("void: array expected");
+    else vs.forEach((v: unknown, i) => {
+      if (!isObj(v)) return err(`void[${i}]: object expected`);
+      unknown(v, ["section", "index", "reason"], `void[${i}].`, err);
+      if (typeof v.reason !== "string" || !v.reason.trim()) err(`void[${i}].reason: non-empty string expected`);
+      if (!ADDENDUM_VOID.includes(v.section as string)) return err(`void[${i}].section: one of ${ADDENDUM_VOID.join("|")} expected`);
+      const arr = r[v.section as string], e = Array.isArray(arr) && Number.isInteger(v.index) ? arr[v.index as number] : undefined;
+      if (!isObj(e)) err(`void[${i}].index: no ${v.section} entry ${String(v.index)}`);
+      else if (seen.has(`${v.section} ${v.index}`)) err(`void[${i}]: ${v.section} entry ${v.index} is voided twice`);
+      else if (e.void === true && typeof e.void_reason === "string" && e.void_reason.trim()) err(`void[${i}]: ${v.section} entry ${v.index} is already void`);
+      seen.add(`${v.section} ${v.index}`);
+    });
+    if (errs.length) { errors.push(...errs); continue; }
+    const short = /(addendum-\d+)\.json$/.exec(name)?.[1] ?? name;
+    for (const v of vs as { section: string; index: number; reason: string }[]) {
+      Object.assign((r[v.section] as Record<string, unknown>[])[v.index], { void: true, void_reason: v.reason });
+      sources[`${v.section} ${v.index}`] = short;
+    }
+    for (const k of ADDENDUM_APPEND) if (Array.isArray(append[k])) {
+      const old = Array.isArray(r[k]) ? r[k] as unknown[] : [];
+      (append[k] as unknown[]).forEach((x, i) => { if (isObj(x) && x.void === true) sources[`${k} ${old.length + i}`] = short; });
+      r[k] = [...old, ...(append[k] as unknown[])];
+    }
+    if (typeof append.notes === "string") r.notes = r.notes ? `${r.notes}\n${append.notes}` : append.notes;
+    if (typeof set.proposed_summary_correction === "string") { r.proposed_summary_correction = set.proposed_summary_correction; infos.push(`proposed_summary_correction set by ${short}`); }
+  }
+  return { report: r, errors, infos, sources };
+}
+
+/** void and void_reason, allowed on every voidable section (ADDENDUM_VOID). */
+const VOID_PROPS = {
+  void: { type: "boolean", description: "true: the entry is retired: it counts in no check and is listed as a VOID line (reports are append-only); false is the same as absent" },
+  void_reason: { type: "string", description: "required, non-empty, when void is true" },
+};
 
 export const REPORT_SCHEMA = {
   $schema: "http://json-schema.org/draft-07/schema#",
@@ -89,8 +165,7 @@ export const REPORT_SCHEMA = {
           body_line: { type: "string", description: "an exact current line of the body" },
           raw_quote: { type: "string", description: "verbatim source text (6 words or 30 characters) sharing a number with body_line" },
           notes: { type: "string" },
-          void: { type: "boolean", description: "true: skip this entry in every AC2 check; it covers no token and is listed as a VOID line (reports are append-only)" },
-          void_reason: { type: "string", description: "required when void is true" },
+          ...VOID_PROPS,
         },
       },
     },
@@ -102,6 +177,7 @@ export const REPORT_SCHEMA = {
           sentence: { type: "string", description: "verbatim removed sentence, or a regex when pattern is true" },
           justification: { type: "string" },
           pattern: { type: "boolean", description: "true: `sentence` is a regex; every removed base sentence it matches counts as justified" },
+          ...VOID_PROPS,
         },
       },
     },
@@ -114,8 +190,13 @@ export const REPORT_SCHEMA = {
     new: { type: "boolean", description: "true for a handle absent from docs/blog/index.json" },
     extra_raw: {
       type: "array",
-      items: { type: "object", required: ["path", "sha256"], properties: { path: { type: "string" }, sha256: { type: "string" } } },
+      items: { type: "object", required: ["path", "sha256"], properties: { path: { type: "string" }, sha256: { type: "string" }, ...VOID_PROPS } },
     },
+    current_view_basis: {
+      type: "array",
+      items: { type: "object", required: ["sentence", "quote"], properties: { sentence: { type: "string" }, source: { type: "string" }, quote: { type: "string" }, ...VOID_PROPS } },
+    },
+    ask_brad: { type: "array", items: { type: "object", required: ["item", "why"], properties: { item: { type: "string" }, why: { type: "string" }, ...VOID_PROPS } } },
   },
 };
 
@@ -160,10 +241,10 @@ export function validateReport(o: unknown): string[] {
   if (Array.isArray(r.deleted_sentences)) (r.deleted_sentences as { pattern?: unknown }[]).forEach((x, i) => {
     if (x && x.pattern !== undefined && typeof x.pattern !== "boolean") e.push(`deleted_sentences[${i}].pattern: boolean expected`);
   });
-  if (Array.isArray(r.changed_tokens)) (r.changed_tokens as { void?: unknown; void_reason?: unknown }[]).forEach((x, i) => {
-    if (!x || x.void === undefined) return;
-    if (typeof x.void !== "boolean") e.push(`changed_tokens[${i}].void: boolean expected`);
-    else if (x.void && (typeof x.void_reason !== "string" || !x.void_reason.trim())) e.push(`changed_tokens[${i}].void_reason: void entry without void_reason`);
+  for (const k of ADDENDUM_VOID) if (Array.isArray(r[k])) (r[k] as { void?: unknown; void_reason?: unknown }[]).forEach((x, i) => {
+    if (!x || x.void === undefined || x.void === false) return; // false is the same as absent
+    if (x.void !== true) e.push(`${k}[${i}].void: boolean expected`);
+    else if (typeof x.void_reason !== "string" || !x.void_reason.trim()) e.push(`${k}[${i}].void_reason: void entry without void_reason`);
   });
   if (r.new !== undefined && typeof r.new !== "boolean") e.push("new: boolean expected");
   if (r.extra_raw !== undefined) {
@@ -514,11 +595,13 @@ export interface Options {
   exclusionsPath?: string; exceptions?: Exception[]; noExclusions?: boolean;
   /** Topic-master batch (US-50 AC1): the master frontmatter keys are allowed and the MASTER body check runs. */
   masters?: boolean;
-  checkIds?: boolean; headStatus?: (url: string) => number; delayMs?: number;
+  checkIds?: boolean; headStatus?: (url: string) => number; delayMs?: number; idCap?: number;
 }
 export interface Row {
   handle: string; type: string; file: string; rawRel: string; rawSha: string; bodySha: string; tokensNew: number; quoted: number;
   deleted: number; hedgeBefore: number; hedgeAfter: number; productsBefore: number; productsAfter: number;
+  /** The diff report, then each addendum applied to it, in order, with the sha256 of each file. */
+  reportFiles?: { name: string; sha256: string }[];
 }
 
 const DIR_FOR: Record<string, string> = { pathway: "pathway", guideline: "guideline", reference: "blog", video: "blog" };
@@ -548,7 +631,7 @@ class Check {
 
 interface Ctx {
   handle: string; rep: Report | null; rel: string; newText: string | null; baseText: string | null;
-  newBody: string; baseBody: string; type: string | null;
+  newBody: string; baseBody: string; type: string | null; reportFiles: { name: string; sha256: string }[];
 }
 
 const fmType = (text: string | null) => (text && /^type:\s*"?([A-Za-z]+)"?\s*$/m.exec(splitFrontmatter(text).front)?.[1]) || "video";
@@ -556,14 +639,41 @@ const fmType = (text: string | null) => (text && /^type:\s*"?([A-Za-z]+)"?\s*$/m
 function loadCtx(o: Options, base: string, handle: string, ac2: Check, index: Map<string, { type?: string }>): Ctx {
   const rp = join(o.reportsDir, `${handle}.json`);
   let rep: Report | null = null;
+  // Addenda: <handle>.addendum-<N>.json, N = 1, 2, 3 ... with no gap. The report and its addenda are only ever read.
+  const prefix = `${handle}.addendum`, files: { name: string; sha256: string }[] = [];
+  const addenda: { name: string; n: number }[] = [];
+  for (const f of existsSync(o.reportsDir) ? readdirSync(o.reportsDir) : []) {
+    if (!f.startsWith(prefix)) continue;
+    const n = /^-([1-9]\d*)\.json$/.exec(f.slice(prefix.length))?.[1];
+    if (n) addenda.push({ name: f, n: Number(n) }); else ac2.warns.push(`${handle}: ${f} is not <handle>.addendum-<N>.json; ignored`);
+  }
+  addenda.sort((x, y) => x.n - y.n);
+  const gap = addenda.findIndex((x, i) => x.n !== i + 1);
+  if (gap >= 0) ac2.fails.push(`${handle}: addendum numbering gap: ${prefix}-${gap + 1}.json missing`);
   if (!existsSync(rp)) ac2.fails.push(`${handle}: diff report missing at ${rp}`);
   else {
     try {
-      const parsed = JSON.parse(readFileSync(rp, "utf8"));
-      const errs = validateReport(parsed);
+      const read = (name: string) => { const buf = readFileSync(join(o.reportsDir, name)); files.push({ name, sha256: sha256(buf) }); return buf.toString("utf8"); };
+      const base = JSON.parse(read(`${handle}.json`));
+      const loaded: { name: string; data: unknown }[] = [];
+      for (const { name } of addenda) {
+        const text = read(name);
+        try { loaded.push({ name, data: JSON.parse(text) }); } catch (e) { ac2.fails.push(`${handle}: ${name}: not JSON: ${(e as Error).message}`); }
+      }
+      // Addenda apply even to an invalid base report: a void may supply a missing void_reason (the repair path).
+      // Addenda repair a base report only when its every error is a void with no reason; any other error needs a fresh report.
+      const baseErrs = validateReport(base), repairable = baseErrs.every((x) => /\.void_reason: void entry without void_reason$/.test(x));
+      const merged = repairable ? applyAddenda(base, loaded) : { report: base, errors: [], infos: [], sources: {} as Record<string, string> };
+      const parsed = merged.report, errs = [...merged.errors, ...validateReport(parsed)];
       if (errs.length) ac2.fails.push(`${handle}: report invalid: ${errs.join("; ")}`);
+      else if (loaded.length < addenda.length) { /* an unreadable addendum already failed */ }
       else if (parsed.handle !== handle) ac2.fails.push(`${handle}: report handle is "${parsed.handle}"`);
-      else rep = parsed as Report;
+      else {
+        rep = parsed as unknown as Report;
+        ac2.infos.push(...merged.infos.map((v) => `${handle}: ${v}`));
+        // Every void, inline or from an addendum; --out renders it without the reason text.
+        for (const k of ADDENDUM_VOID) ((parsed[k] ?? []) as { void?: boolean; void_reason?: string }[]).forEach((x, i) => { if (x.void) ac2.infos.push(`${handle}: VOID ${k} ${i} [${merged.sources[`${k} ${i}`] ?? "base"}]: ${x.void_reason}`); });
+      }
     } catch (e) { ac2.fails.push(`${handle}: report is not JSON: ${(e as Error).message}`); }
   }
   // The type comes from the index, never from the report; a handle absent from the index must say "new".
@@ -584,7 +694,7 @@ function loadCtx(o: Options, base: string, handle: string, ac2: Check, index: Ma
     else ac2.fails.push(`${handle}: not in docs/blog/index.json; declare "new": true in the report`);
   }
   if (rep && type && rep.type !== type) ac2.fails.push(`${handle}: report type "${rep.type}" does not match ${source} type "${type}"`);
-  return { handle, rep, rel, newText, baseText, type,
+  return { handle, rep, rel, newText, baseText, type, reportFiles: files,
     newBody: splitFrontmatter(newText ?? "").body, baseBody: splitFrontmatter(baseText ?? "").body };
 }
 
@@ -638,7 +748,7 @@ function checkMasterBody(c: Ctx, m: Check, raw: RawSet | null, isPost: (h: strin
   // Each Current view sentence has a current_view_basis entry for that exact sentence whose quote is verbatim, at base, in
   // the file it names: POST:<handle>: for a sentence linking that post, POSITION:<path>: for "(Brad's current guidance, …)".
   const postsIn = (sn: string) => [...sn.matchAll(/\]\(([^)\s]+)\)/g)].map(([, u]) => bradLink(u)?.[1]?.toLowerCase()).filter((h): h is string => !!h);
-  const verified = (sn: string) => (c.rep?.current_view_basis ?? []).flatMap((b) => {
+  const verified = (sn: string) => (c.rep?.current_view_basis ?? []).filter((b) => !b.void).flatMap((b) => {
     const named = cleanSentence(String(b.sentence ?? "")) === sn ? quoteSource(String(b.quote ?? "")) : null;
     const x = named && !(named.kind === "POSITION" && named.rel.startsWith("docs/blog/")) ? raw?.extras.find((e) => e.repoRel === named.rel) : undefined;
     const q = normQuote(named?.text ?? "");
@@ -738,37 +848,45 @@ const MASTER_RAW = /(?:^|\/)(docs\/blog\/[^/]+\.md|docs\/products\.md|docs\/guid
 function loadRaw(rep: Report, o: Options, tag: string, ac2: Check, isPost: (h: string) => boolean): RawSet {
   const roots = rootRegexes(o.rawRoots ?? defaultRawRoots());
   const repoReal = realpathSync(o.root);
-  const open = (path: string, sha: string, label: string) => {
+  // Several extra_raw entries may name one path (a correction appends the new sha): ANY match accepts it, the rest are INFO.
+  const superseded = (hash: string, shas: string[], label: string) => {
+    for (const s of shas) if (s !== hash) ac2.infos.push(`${tag} ${label}: superseded sha ${s}`);
+  };
+  const open = (path: string, shas: string[], label: string) => {
     if (!existsSync(path)) { ac2.fails.push(`${tag} ${label} file not found: ${path}`); return null; }
     const real = realpathSync(path);
     if (real === repoReal || real.startsWith(`${repoReal}/`)) { ac2.fails.push(`${tag} ${label} is inside the repo: ${path}`); return null; }
     const hit = roots.map((r) => r.exec(real)).find((m) => m);
     if (!hit) { ac2.fails.push(`${tag} ${label} is outside the allowed raw roots: ${path}`); return null; }
     const buf = readFileSync(real);
-    if (sha256(buf) !== sha) { ac2.fails.push(`${tag} ${label} sha256 mismatch for ${path} (file ${sha256(buf)}, report ${sha})`); return null; }
+    const hash = sha256(buf);
+    if (!shas.includes(hash)) { ac2.fails.push(`${tag} ${label} sha256 mismatch for ${path} (file ${hash}, report ${shas.join(", ")})`); return null; }
+    superseded(hash, shas, `${label} ${path}`);
     const text = buf.toString("utf8");
     const pmid = /\/pubmed\//.test(real) ? /^\s*#\s*PubMed\s+(\d+)/i.exec(text)?.[1] ?? null : null;
     return { norm: normQuote(text), rel: real.slice(hit[0].replace(/[^/]+\/$/, "").length), pmid };
   };
-  const main = open(rep.raw_path, rep.raw_sha256, "raw");
+  const main = open(rep.raw_path, [rep.raw_sha256], "raw");
   const extras: RawSet["extras"] = [];
   const abstracts: { pmid: string; norm: string }[] = [];
   if (main?.pmid) abstracts.push({ pmid: main.pmid, norm: main.norm });
-  for (const x of rep.extra_raw ?? []) {
-    const repoRel = o.masters && !x.path.split("/").includes("..") ? MASTER_RAW.exec(x.path)?.[1] : undefined;
+  const byPath = new Map<string, string[]>();
+  for (const x of rep.extra_raw ?? []) if (!x.void) byPath.set(x.path, [...(byPath.get(x.path) ?? []), x.sha256]);
+  for (const [path, shas] of byPath) {
+    const repoRel = o.masters && !path.split("/").includes("..") ? MASTER_RAW.exec(path)?.[1] : undefined;
     if (repoRel) {
       // A post is raw only when it is one of Brad's video posts outside this batch: never a reference, never a page the batch rewrites.
       const post = /^docs\/blog\/(.+)\.md$/.exec(repoRel)?.[1];
       if (post !== undefined && (!isPost(post) || o.handles.includes(post))) { ac2.fails.push(`${tag} extra_raw ${repoRel} is not a video post outside this batch`); continue; }
-      const text = gitShow(o.root, o.base, repoRel);
+      const text = gitShow(o.root, o.base, repoRel), hash = text === null ? "" : sha256(text);
       if (text === null) ac2.fails.push(`${tag} extra_raw ${repoRel} does not exist at ${o.base}`);
-      else if (sha256(text) !== x.sha256) ac2.fails.push(`${tag} extra_raw sha256 mismatch for ${repoRel} at ${o.base} (file ${sha256(text)}, report ${x.sha256})`);
-      else extras.push({ path: x.path, norm: normQuote(text), pmid: null, repoRel });
+      else if (!shas.includes(hash)) ac2.fails.push(`${tag} extra_raw sha256 mismatch for ${repoRel} at ${o.base} (file ${hash}, report ${shas.join(", ")})`);
+      else { superseded(hash, shas, `extra_raw ${repoRel}`); extras.push({ path, norm: normQuote(text), pmid: null, repoRel }); }
       continue;
     }
-    const e = open(x.path, x.sha256, "extra_raw");
+    const e = open(path, shas, "extra_raw");
     if (!e) continue;
-    extras.push({ path: x.path, norm: e.norm, pmid: e.pmid });
+    extras.push({ path, norm: e.norm, pmid: e.pmid });
     if (e.pmid) abstracts.push({ pmid: e.pmid, norm: e.norm });
   }
   return { main, extras, abstracts };
@@ -964,9 +1082,7 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     return ok;
   };
   const entries = rep.changed_tokens.flatMap((e, i) => {
-    if (!e.void) return [{ e, ok: verifyEntry(e, i) }];
-    ac2.infos.push(`${tag} VOID ${i}: ${e.void_reason ?? "(no reason)"} [body: ${e.body_line.replace(/\s+/g, " ").slice(0, 60)}]`);
-    return [];
+    return e.void ? [] : [{ e, ok: verifyEntry(e, i) }]; // loadCtx lists the voids
   });
   const valid = entries.filter((x) => x.ok).map((x) => ({ ...x.e, ok: x.ok! }));
   let quoted = 0;
@@ -1033,7 +1149,7 @@ function checkAc3(c: Ctx, hedgeBefore: number, hedgeAfter: number, ac3: Check) {
   const bs = sentences(c.baseBody), ns = sentences(c.newBody);
   const bset = new Set(bs), nset = new Set(ns);
   const baseOnly = [...bset].filter((x) => !nset.has(x)), newOnly = [...nset].filter((x) => !bset.has(x));
-  const entries = c.rep?.deleted_sentences ?? [];
+  const entries = (c.rep?.deleted_sentences ?? []).filter((d) => !d.void);
   const declared = (b: string) => entries.some((d) => {
     if (!d.pattern) return cleanSentence(d.sentence) === b;
     try { return new RegExp(d.sentence, "i").test(b); } catch { return false; }
@@ -1072,7 +1188,7 @@ function ac4Body(body: string, type: string | null): string {
 function checkAc4(c: Ctx, ac4: Check): number {
   const tag = `${c.handle}:`;
   const nowS = new Set(sentences(ac4Body(c.newBody, c.type)));
-  const entries = c.rep?.deleted_sentences ?? [];
+  const entries = (c.rep?.deleted_sentences ?? []).filter((d) => !d.void);
   const declared = new Map(entries.filter((d) => !d.pattern).map((d) => [cleanSentence(d.sentence), d.justification]));
   const patterns: { re: RegExp; justification: string }[] = [];
   for (const d of entries.filter((x) => x.pattern)) {
@@ -1238,6 +1354,8 @@ function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"],
     // "New" ignores the leading number, so a renumbered reference is not new.
     const unnumbered = (l: string) => l.replace(/^\s*(?:[-*]\s*)?(?:\[\d+\]|\d+[.)])\s*/, "").trim();
     const baseLines = new Set(refLines(c.baseBody).map(unnumbered));
+    // Under --masters (isPost is passed only then), --check-ids resolves every identifier, retained ones too.
+    if (isPost) for (const line of refLines(c.newBody)) for (const x of primaryIds(line)) idsOut.set(`${x.kind}:${x.id.toLowerCase()}`, { ...x, handle: c.handle });
     for (const line of refLines(c.newBody).filter((l) => !baseLines.has(unnumbered(l)))) {
       const ids = primaryIds(line);
       for (const x of ids) idsOut.set(`${x.kind}:${x.id.toLowerCase()}`, { ...x, handle: c.handle });
@@ -1269,19 +1387,19 @@ function curlHead(url: string): number {
   } catch { return 0; }
 }
 const sleepMs = (ms: number) => { if (ms > 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); };
-const ID_CAP = 60;
 
+/** One HEAD request a second; the cap is --check-ids-cap, default unlimited under --masters and 60 otherwise. */
 function verifyIds(ids: Map<string, PrimaryId & { handle: string }>, o: Options, ac7: Check) {
   const head = o.headStatus ?? curlHead;
-  const list = [...ids.values()];
-  list.slice(0, ID_CAP).forEach((x, i) => {
+  const list = [...ids.values()], cap = o.idCap ?? (o.masters ? Infinity : 60);
+  list.slice(0, cap).forEach((x, i) => {
     if (i) sleepMs(o.delayMs ?? 1000);
     const url = x.kind === "doi" ? `https://doi.org/${x.id}` : `https://pubmed.ncbi.nlm.nih.gov/${x.id}/`;
     const st = head(url);
     if (st === 404) ac7.fails.push(`${x.handle}: ${x.kind} ${x.id} returned 404`);
     else if (st === 0 || st >= 400) ac7.warns.push(`${x.handle}: ${x.kind} ${x.id} returned ${st || "no response"} (not verified)`);
   });
-  if (list.length > ID_CAP) ac7.warns.push(`${list.length - ID_CAP} identifiers not checked (cap ${ID_CAP})`);
+  if (list.length > cap) ac7.warns.push(`${list.length - cap} identifiers not checked (cap ${cap})`);
 }
 
 const EXCLUSIONS_PATH = "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/tools/healthpathways-exclusions.json";
@@ -1322,7 +1440,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     }
     rows.push({ handle: c.handle, type: c.type ?? "?", file: c.rel, rawRel: raw?.main?.rel ?? "-", rawSha: c.rep?.raw_sha256 ?? "-",
       bodySha: sha256(c.newBody), tokensNew: added.length, quoted, deleted, hedgeBefore, hedgeAfter,
-      productsBefore: productMentions(c.baseBody), productsAfter: productMentions(c.newBody) });
+      productsBefore: productMentions(c.baseBody), productsAfter: productMentions(c.newBody), reportFiles: c.reportFiles });
   }
 
   if (o.checkIds) verifyIds(ids, o, ac7);
@@ -1404,14 +1522,20 @@ export function renderReport(batch: string, base: string, baseSha: string, resul
   }
   const cap = 100;
   L.push("", "## Handles", "",
-    "| handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products |",
-    "|---|---|---|---|---|---|---|---|---|---|");
+    "| handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products | diff report + addenda (sha256) |",
+    "|---|---|---|---|---|---|---|---|---|---|---|");
   for (const r of rows.slice(0, cap)) {
-    L.push(`| ${r.handle} | ${r.type} | ${r.rawRel} | ${r.rawSha} | ${r.bodySha.slice(0, 16)} | ${r.tokensNew} | ${r.quoted} | ${r.deleted} | ${r.hedgeBefore}>${r.hedgeAfter} | ${r.productsBefore}>${r.productsAfter} |`);
+    L.push(`| ${r.handle} | ${r.type} | ${r.rawRel} | ${r.rawSha} | ${r.bodySha.slice(0, 16)} | ${r.tokensNew} | ${r.quoted} | ${r.deleted} | ${r.hedgeBefore}>${r.hedgeAfter} | ${r.productsBefore}>${r.productsAfter} | ${(r.reportFiles ?? []).map((f) => `${f.name} ${f.sha256}`).join(" + ") || "-"} |`);
   }
   if (rows.length > cap) L.push("", `${rows.length - cap} more handles omitted to stay under the line cap.`);
-  const voids = results.flatMap((r) => r.evidence).filter((e) => /^\S+: VOID \d+: /.test(e));
-  if (voids.length) L.push("", "## Voided entries", "", ...voids.map((v) => `- ${v.replace(/\|/g, "/")}`));
+  // A void's reason is free text: the committed report carries only a short hash of it (review R2).
+  const voids = results.flatMap((r) => r.evidence).flatMap((e) => {
+    const m = /^(\S+): VOID (\w+) (\d+) (\[[\w-]+\]): ([\s\S]*)$/.exec(e);
+    return m ? [`- ${m[1]}: VOID ${m[2]} ${m[3]} ${m[4]} (reason sha256 ${sha256(m[5]).slice(0, 12)})`] : [];
+  });
+  if (voids.length) L.push("", "## Voided entries", "", ...voids);
+  const sets = results.flatMap((r) => r.evidence).filter((e) => /^\S+: proposed_summary_correction set by addendum-\d+$/.test(e));
+  if (sets.length) L.push("", "## Summary corrections from addenda", "", ...sets.map((e) => `- ${e}`));
   const ex = results.flatMap((r) => r.excepted ?? []);
   if (ex.length) {
     L.push("", "## Accepted exceptions", "", "| check | handle | by | date | reason | match sha256 |", "|---|---|---|---|---|---|");
@@ -1420,7 +1544,7 @@ export function renderReport(batch: string, base: string, baseSha: string, resul
   L.push("", "Body hashes are the first 16 hex characters of sha256; raw hashes are in full.", "", "## Not covered by this script", "",
     "- AC5 answer checks (harness)",
     "- AC6 Shopify updated_at snapshot (separate tool)",
-    checkIds ? "- DOI/PMID resolution: checked with --check-ids (cap 60; see the run output)" : "- DOI/PMID resolution: NOT checked (run with --check-ids)",
+    checkIds ? "- DOI/PMID resolution: checked with --check-ids (see the run output for the cap)" : "- DOI/PMID resolution: NOT checked (run with --check-ids)",
     "- section placement of edits (R8)",
     "- primary-study abstract presence (only the WARN \"unverified primary\" lines)",
     "", "AC8 sign-off (Brad): PENDING");
@@ -1452,7 +1576,7 @@ export function main(argv: string[], overrides: Partial<Options> = {}): number {
   const a = parseArgs(argv);
   if (a["print-schema"]) { console.log(JSON.stringify(REPORT_SCHEMA, null, 2)); return 0; }
   if (typeof a.example === "string") { console.log(JSON.stringify(exampleReport(a.example), null, 2)); return 0; }
-  const usage = (msg: string) => { console.error(`${msg}\nusage: knowledge-batch-check.ts --batch <name> --handles <file> --base <git ref> [--reports <dir>] [--out <file>] [--exceptions <file>] [--no-exclusions] [--check-ids] [--masters]`); return 2; };
+  const usage = (msg: string) => { console.error(`${msg}\nusage: knowledge-batch-check.ts --batch <name> --handles <file> --base <git ref> [--reports <dir>] [--out <file>] [--exceptions <file>] [--no-exclusions] [--check-ids [--check-ids-cap <n>]] [--masters]`); return 2; };
   if (typeof a.batch !== "string" || typeof a.handles !== "string") return usage("--batch and --handles are required");
   if (typeof a.base !== "string") return usage("--base is required (no default)");
   const root = git(process.cwd(), ["rev-parse", "--show-toplevel"]).trim();
@@ -1477,9 +1601,11 @@ export function main(argv: string[], overrides: Partial<Options> = {}): number {
     if (errs.length) return usage(`--exceptions invalid: ${errs.join("; ")}`);
     exceptions = parsed as Exception[];
   }
-  const checkIds = a["check-ids"] === true;
+  const checkIds = a["check-ids"] === true, capArg = a["check-ids-cap"];
+  if (capArg !== undefined && (typeof capArg !== "string" || !/^[1-9]\d*$/.test(capArg))) return usage("--check-ids-cap needs a positive integer");
   const { results, rows, baseSha } = runBatch({ root, batch: a.batch, handles, reportsDir, base: a.base, outRel, exceptions,
-    noExclusions: a["no-exclusions"] === true, checkIds, masters: a.masters !== undefined, ...overrides });
+    noExclusions: a["no-exclusions"] === true, checkIds, masters: a.masters !== undefined,
+    idCap: typeof capArg === "string" ? Number(capArg) : undefined, ...overrides });
   for (const r of results) {
     console.log(`${r.status} ${r.id} ${r.title}`);
     for (const e of r.evidence) console.log(`    ${e}`);

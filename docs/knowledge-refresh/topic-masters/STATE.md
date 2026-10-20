@@ -31,6 +31,8 @@ Read this first after a compaction. Story: US-50 in docs/user-stories.md. Plan: 
    - Exceptions only for AC2, AC4, AC7 and PATHWAY, never with ConsumerLab quotes.
    - Keep fixtures and the sign-off sheet off the branch (AC6).
    - Merge origin/main into the branch before each run.
+   - Reports are append-only evidence: auto mode blocks any edit to them. After the first write, a correction (a stale extra_raw sha256, a new quote after a Brad-directed edit) goes in a new `<handle>.addendum-<N>.json`, never in the report (master-writer-contract.md § Report). Number them 1, 2, 3 with no gap. A base report whose only faults are voids with no reason is repaired by an addendum voiding each entry with a reason; a report with any other fault needs a fresh report. The batch report prints every report file and addendum with its sha256.
+   - `--check-ids` under `--masters` resolves every DOI and PMID in each batch file's references, retained ones too, one a second; `--check-ids-cap <n>` limits it.
 5. Review branch built fresh from origin/main with only the batch files (temp GIT_INDEX_FILE). Stage raws under refresh-2026-09-29/batch-masters-<n>/{cl,nih,pubmed}. Then, in parallel:
    - a fresh `adversary`;
    - Codex `--range origin/main..review/masters-<n> --include <staging> --include ~/.codex-review/diff-reports/masters-<n>`.
@@ -47,6 +49,19 @@ Read this first after a compaction. Story: US-50 in docs/user-stories.md. Plan: 
 7. Chatbot changelog (Brad 2026-10-20, same-commit rule): add an entry at the top of claude_business `docs/chat-knowledge-map-v2-changelog.md`. It covers which masters shipped and which were held, the hidden posts, the roadmap commit hashes, and what the loop should watch for regressions. Commit and push in claude_business (sweep rule). The masters-1 entry is the model.
 8. Sign-off sheet as an Artifact (docs/knowledge-refresh/signoff-masters-<n>.md, via tools/md-artifact.mjs), listing only the always-ask items and holds.
 9. After Brad's Deploy is verified, publish each master: `--update-by-handle --store edu` (dry run first), then the microvitamin.com copy.
+
+## Added 2026-10-20 (after masters-1 review): required steps for every batch
+
+- **Reference repair, before review.** The 2025 supplement-wiki pipeline put invented titles, DOIs and authors around ConsumerLab's short cites. A few references were invented outright. Run a reference sweep (PubMed and Crossref) on every master, then one `worker-opus` per master with ~/Documents/knowledge-refresh-recovery/runs/refrepair-brief.md:
+  - correct each reference to the real record, or remove it;
+  - re-cite or delete the claims that rested on a removed reference;
+  - turn a safety line whose only source was fake into a hedged house caution.
+- **Run the checker with `--check-ids`.** Under `--masters` it now checks every DOI and PMID, with no cap.
+- **Report corrections go only in addenda** (`<handle>.addendum-<N>.json`). Auto mode blocks any edit to a report, even an append. The checker merges the addenda and records each file's sha256.
+- **Post fingerprints:** adding `topics:` to a post changes its sha256. After a merge that tags posts, append the current sha for each post through an addendum.
+- **Harness key:** `.env` does not source cleanly in zsh (line 66). Load `ANTHROPIC_MICROVITAMIN_API_KEY` with node or dotenv and pass it as `ANTHROPIC_TEST_API_KEY`. The 2026-10-20 run fell back to the production key ($4.85).
+- **Emergency wording on supplement pages:** "call your local emergency number or poison control centre". These pages are read worldwide, so don't use the NZ "111".
+- **Review branches** must have origin/main merged first. Otherwise Codex reports other sessions' work as deletions.
 
 ## Lessons from masters-1
 
