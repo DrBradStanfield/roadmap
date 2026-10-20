@@ -1,6 +1,7 @@
 # iOS app — architecture and decisions
 
-Status: **planning, no code yet** (2026-10-21). This file records what we decided for the
+Status: **Phase 1 spike started** (2026-10-21): the shared engine runs in the app and
+matches Node byte for byte (US-25 AC1, AC2). This file records what we decided for the
 native iPhone app and why. It is the entry point for anyone, human or agent, working in
 `ios/`.
 
@@ -176,6 +177,27 @@ Any change to merge behaviour bumps the schema version, so an older app refuses 
 engine updates (D3) close most of this gap; the bump covers what they cannot reach.
 
 ## Build and test
+
+**Layout.**
+- `engine/entry.ts`: the one door Swift calls (`planJson`), JSON in and out.
+- `scripts/build-engine.mjs`: bundles health-core with esbuild (target Safari 17, iOS 17's
+  JavaScriptCore) into `HealthRoadmap/Engine/health-engine.js`, and writes the parity
+  goldens. Run it before any Xcode build: `node ios/scripts/build-engine.mjs`. Its outputs
+  are generated and ignored by git.
+- `HealthRoadmap.xcodeproj`: hand-written, using Xcode's synchronized folders, so a file
+  added to `HealthRoadmap/` or `HealthRoadmapTests/` joins its target with no project edit.
+  No project generator, so no new dependency.
+- `HealthRoadmap/`: the SwiftUI app. `HealthEngine.swift` loads the bundle into a
+  `JSContext`.
+- `HealthRoadmapTests/`: XCTest. `EngineParityTests` is US-25 AC1.
+
+**Bundle ID:** `com.drbrad.healthroadmap` is a placeholder until the Apple Developer
+account exists; it is permanent once the app is on the App Store.
+
+**Measured 2026-10-21 in macOS JavaScriptCore** (the same engine iOS ships): the bundle
+gives Node's plan byte for byte in UTC and Pacific/Auckland, at a pinned instant that
+falls on different calendar days in the two zones. First plan 10 ms (parse and warm-up),
+then about 1 ms each.
 
 - **Tools:** Xcode 26 (required for App Store uploads since 28 April 2026), the iOS
   Simulator, and a real iPhone. Claude Code builds with `xcodebuild`, drives simulators with
