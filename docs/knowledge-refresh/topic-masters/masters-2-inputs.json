@@ -1,0 +1,1087 @@
+[
+ {
+  "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-turmeric-curcumin-supplements-spice-review-turmeric.md",
+  "cl_raw_sha256": "c06afa4ed07157706681e1aa71268c974c0faf452b8604cc1826be5d3dd3ebcb",
+  "cl_url": "https://www.consumerlab.com/reviews/turmeric-curcumin-supplements-spice-review/turmeric/",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/turmeric-nih.md",
+  "nih_raw_sha256": "fd7ff36470df95b997bec4e7ccaafef31a8841bd02f3e882653c88411d5bb441",
+  "nih_url": "https://www.nccih.nih.gov/health/turmeric",
+  "positions": [],
+  "posts": [
+   {
+    "handle": "almost-all-turmeric-curcumin-brands-are-a-scam",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/almost-all-turmeric-curcumin-brands-are-a-scam.md",
+    "url": "https://drstanfield.com/blogs/articles/almost-all-turmeric-curcumin-brands-are-a-scam",
+    "publishedAt": "2026-02-09T23:57:17Z",
+    "title": "Almost All Turmeric (Curcumin) Brands Are a Scam",
+    "single_subject": true
+   },
+   {
+    "handle": "difference-between-curcumin-turmeric",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/difference-between-curcumin-turmeric.md",
+    "url": "https://drstanfield.com/blogs/articles/difference-between-curcumin-turmeric",
+    "publishedAt": "2024-09-13T20:30:03Z",
+    "title": "FAQ: What's the Difference Between Curcumin and Turmeric?",
+    "single_subject": true
+   }
+  ]
+ },
+ {
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-protein-powders-shakes-drinks-sports-nutritiondrinks.md",
+  "cl_raw_sha256": "d6c65b80cd69109c3c64c22194dc4204e039058a46683f09aa03cabd0fda14db",
+  "cl_url": "https://www.consumerlab.com/reviews/protein-powders-shakes-drinks-sports/nutritiondrinks/",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "nih_url": null,
+  "positions": [
+   {
+    "file": "roadmap_text.html",
+    "line": 56,
+    "line_text": "<li>Protein supplementation combined with resistance exercise improves strength and lean mass,[3] with muscle gains possible up to ~1.6g/kg/day.[4] However, a dose-response meta-analysis found the rate of benefit diminishes rapidly after 1.3g/kg/day.[85]</li>",
+    "note": "benefit + dose: protein supplementation with resistance exercise; gains to ~1.6 g/kg/day, diminishing after 1.3 g/kg/day",
+    "last_changed": "2026-07-31"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 81,
+    "line_text": "<p data-mce-fragment=\"1\">For those struggling to meet protein targets through whole foods alone, a pea protein powder can help — it's relatively low in methionine (an amino acid flagged in cancer research) and free of the saturated fat found in whey-based products. Be cautious of ultra-processed \"hi",
+    "note": "recommendation: pea protein powder when whole foods fall short (methionine, saturated fat)",
+    "last_changed": "2026-02-19"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 118,
+    "line_text": "**Source priority:** Prioritise plant-based proteins — legumes (lentils, chickpeas, beans), nuts, and pea protein. Brad personally uses pea protein powder because it's relatively low in methionine (the amino acid flagged by Longo's research as potentially promoting cancer growth). Fish is the best a",
+    "note": "source priority: plant protein / pea protein; Brad uses pea protein powder",
+    "last_changed": "2026-04-14"
+   },
+   {
+    "file": "docs/guideline/exercise.md",
+    "line": 248,
+    "line_text": "For strength specifically, the threshold is even lower — 81% of strength gains come from just 1-4 sets per exercise per week, and protein supplementation beyond ~1.2 g/kg shows minimal additional strength benefit.",
+    "note": "dose: protein supplementation beyond ~1.2 g/kg adds minimal strength benefit",
+    "last_changed": "2026-04-14"
+   },
+   {
+    "file": "docs/guideline/exercise.md",
+    "line": 258,
+    "line_text": "**Source:** Prioritise plant-based proteins — legumes, nuts, and pea protein powder (low in methionine, the amino acid Longo's research flags as promoting cancer growth). Fish is the best animal source. Limit red and processed meat.",
+    "note": "source: plant proteins incl. pea protein powder over animal protein",
+    "last_changed": "2026-04-14"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 421,
+    "line_text": "heavy metals in protein powders:",
+    "note": "answer-bank: heavy metals in protein powders (points to Brad video, no stated position)",
+    "last_changed": "2026-10-14"
+   }
+  ],
+  "posts": [
+   {
+    "handle": "what-they-re-hiding-about-lead-found-in-protein-powders",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/what-they-re-hiding-about-lead-found-in-protein-powders.md",
+    "url": "https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders",
+    "publishedAt": "2025-11-04T20:37:47Z",
+    "title": "What They’re HIDING About Lead Found in Protein Powders",
+    "single_subject": false
+   },
+   {
+    "handle": "only-supplements-work-2025",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/only-supplements-work-2025.md",
+    "url": "https://drstanfield.com/blogs/articles/only-supplements-work-2025",
+    "publishedAt": "2024-11-19T03:13:05Z",
+    "title": "The Only Supplements That ACTUALLY Work (2025)",
+    "single_subject": false
+   }
+  ]
+ },
+ {
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-multivitamin-review-comparisons-multivitamins.md",
+  "cl_raw_sha256": "4dd2494586d58f9a237a08756c83d8eb42b8782c31596fe6533c3b2a1ab5d905",
+  "cl_url": "https://www.consumerlab.com/reviews/multivitamin-review-comparisons/multivitamins/",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/multivitamins-nih.md",
+  "nih_raw_sha256": "a6d8510833f2d9926677cb0e0b23d6621eef1f415bbfac0b81019040e3ecb34c",
+  "nih_url": "https://ods.od.nih.gov/factsheets/MVMS-HealthProfessional/",
+  "positions": [
+   {
+    "file": "docs/products.md",
+    "line": 36,
+    "line_text": "MicroVitamin is a low-dose, evidence-based multivitamin formulated by Dr Brad Stanfield, a medical doctor (GP). Unlike most multivitamins that megadose nutrients at 500-1000% daily value, MicroVitamin uses measured doses based on randomized controlled trials. It deliberately excludes Vitamin A and V",
+    "note": "product position: low-dose, evidence-based multivitamin vs megadosed ones",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 45,
+    "line_text": "The COSMOS (COcoa Supplement and Multivitamin Outcomes Study) trial randomized 21,442 US adults aged 60+ to a daily multivitamin vs placebo. A meta-analysis of three COSMOS cognitive substudies (5,203 non-overlapping participants across COSMOS-Clinic, COSMOS-Mind, and COSMOS-Web) found multivitamin ",
+    "note": "benefit: COSMOS trial and cognition meta-analysis",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 111,
+    "line_text": "- Uses bioavailable mineral forms (glycinate / amino-acid chelates; Gandia 2007, above) rather than cheaper oxide forms found in Centrum and most drugstore multivitamins",
+    "note": "form: bioavailable mineral forms vs oxide forms in drugstore multivitamins",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 350,
+    "line_text": "The opposite — MicroVitamin is deliberately low-dose. In the US, most ingredients are at or below 100% of the Daily Value; vitamin B12 (absorption falls with age) and vitamin D are higher. Other markets' labels use different reference values (UK/EU %NRV: Regional Formula Differences). The formula is",
+    "note": "dose: deliberately low dose, most at or below 100% DV",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 754,
+    "line_text": "- **COSMOS (multivitamin + cognition) — CANONICAL REFERENCE, use this one whenever citing COSMOS** (Brad, 2026-07-27): Vyas CM et al., *Am J Clin Nutr* 2024;119(3):692–701 — clinic subcohort **plus the meta-analysis of all 3 COSMOS cognitive studies** (5,203 non-overlapping participants). https://do",
+    "note": "canonical COSMOS citation (Vyas 2024)",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 756,
+    "line_text": "- ⚠️ COSMOS tested an **ordinary** multivitamin, not MicroVitamin. Never let its cognition result read as a MicroVitamin benefit — cite it as the evidence that made the category worth taking seriously, not as this product's effect.",
+    "note": "caveat: COSMOS tested an ordinary multivitamin, not MicroVitamin",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 536,
+    "line_text": "reason: 'A comprehensive daily supplement can help fill nutritional gaps. A COSMOS trial sub-study found that daily multivitamin use improved cognitive function in older adults, suggesting broad micronutrient support may benefit brain health alongside physical health.',",
+    "note": "recommendation reason: multivitamin fills gaps; COSMOS cognition",
+    "last_changed": "2026-03-04"
+   },
+   {
+    "file": "packages/health-core/src/suggestions.ts",
+    "line": 1015,
+    "line_text": "description: 'A COSMOS trial sub-study (2023) found that a daily multivitamin improved cognitive function in older adults — evidence that broad micronutrient support may benefit brain health alongside filling common dietary gaps.',",
+    "note": "suggestion text: COSMOS sub-study, daily multivitamin and cognition",
+    "last_changed": "2026-06-19"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 1005,
+    "line_text": "| `supplement-micronutrient-base` | Micronutrient base | Methylated B-complex; vitamin D3 + K2; magnesium taurate; trace minerals (glycinate); lutein + zeaxanthin; TMG; lycopene | COSMOS trial (Baker 2023) |",
+    "note": "algorithm: supplement-micronutrient-base rationale (COSMOS, Baker 2023)",
+    "last_changed": "2026-06-14"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 730,
+    "line_text": "<li data-mce-fragment=\"1\">A low-dose multivitamin &amp; mineral can <meta charset=\"utf-8\"> <span data-mce-fragment=\"1\">complement a healthy diet, and f<meta charset=\"utf-8\">ill the gaps and support your nutritional needs when your diet falls short <meta charset=\"utf-8\">without mega-dosing.</span>",
+    "note": "roadmap text: low-dose multivitamin/mineral complements diet, fills gaps",
+    "last_changed": "2026-07-31"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 732,
+    "line_text": "<li data-mce-fragment=\"1\">In the COSMOS trial, adults over 60 who took a daily multivitamin-mineral for 3 years scored better on global cognition, episodic memory, and executive function than those taking placebo.[61]</li>",
+    "note": "roadmap text: COSMOS cognition result in over-60s",
+    "last_changed": "2026-07-31"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 235,
+    "line_text": "The AHA notes that a healthy dietary pattern meets nutrient requirements for most individuals and that there is no evidence of reduced CVD risk from supplement use. Brad agrees — there is no strong evidence that multivitamin supplementation reduces cardiovascular events.",
+    "note": "guideline: AHA finds no CVD benefit from supplements; Brad position on multivitamins",
+    "last_changed": "2026-04-13"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 242,
+    "line_text": "- **Multivitamin/mineral**: the COSMOS trial (Baker 2023) demonstrated that daily multivitamin/mineral supplementation (Centrum Silver vs placebo) improved cognitive function in older adults over 2-3 years — providing justification for broad micronutrient support beyond cardiovascular endpoints.",
+    "note": "guideline: COSMOS (Baker 2023) justifies multivitamin/mineral",
+    "last_changed": "2026-04-13"
+   },
+   {
+    "file": "docs/guideline/exercise.md",
+    "line": 214,
+    "line_text": "**Brad's position:** Aligns. This complements the COSMOS trial evidence for multivitamin/mineral supplementation and cognitive function. Exercise + adequate nutrition is the strongest non-pharmacological strategy for cognitive preservation.",
+    "note": "guideline: COSMOS multivitamin/mineral and cognition (Brad aligns)",
+    "last_changed": "2026-04-14"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 494,
+    "line_text": "MicroVitamin is a general multivitamin designed to fill nutritional gaps, not an eye supplement, so it isn't built to match the AREDS2 formula",
+    "note": "answer-bank: general multivitamin, not an eye supplement; AREDS2",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 611,
+    "line_text": "I agree that vitamin A, beta-carotene and vitamin E aren't needed in a multivitamin, which is why MicroVitamin leaves them out",
+    "note": "answer-bank: vitamin A, beta-carotene, E not needed in a multivitamin; folate and copper included",
+    "last_changed": "2026-10-14"
+   }
+  ],
+  "posts": [
+   {
+    "handle": "multivitamins-are-no-longer-expensive-urine",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/multivitamins-are-no-longer-expensive-urine.md",
+    "url": "https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine",
+    "publishedAt": "2026-08-19T00:00:00Z",
+    "title": "Multivitamins Are No Longer \"Expensive Urine\"",
+    "single_subject": false
+   },
+   {
+    "handle": "5-supplements-that-actually-work",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/5-supplements-that-actually-work.md",
+    "url": "https://drstanfield.com/blogs/articles/5-supplements-that-actually-work",
+    "publishedAt": "2025-10-05T20:31:48Z",
+    "title": "5 Supplements That ACTUALLY Work",
+    "single_subject": false
+   },
+   {
+    "handle": "the-only-three-supplements-doctor-brad-takes",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-only-three-supplements-doctor-brad-takes.md",
+    "url": "https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes",
+    "publishedAt": "2025-07-30T20:38:06Z",
+    "title": "The Only Three Supplements Doctor Brad Takes",
+    "single_subject": false
+   },
+   {
+    "handle": "trace-minerals-vitamins-fad",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/trace-minerals-vitamins-fad.md",
+    "url": "https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad",
+    "publishedAt": "2025-01-07T00:08:13Z",
+    "title": "Trace Minerals in Vitamins: What Are They and Is It a Fad?",
+    "single_subject": false
+   },
+   {
+    "handle": "methylated-multivitamin-regular-ones",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/methylated-multivitamin-regular-ones.md",
+    "url": "https://drstanfield.com/blogs/articles/methylated-multivitamin-regular-ones",
+    "publishedAt": "2024-11-28T07:00:07Z",
+    "title": "Methylated Multivitamin vs Regular Ones: Which is Better?",
+    "single_subject": false
+   },
+   {
+    "handle": "only-supplements-work-2025",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/only-supplements-work-2025.md",
+    "url": "https://drstanfield.com/blogs/articles/only-supplements-work-2025",
+    "publishedAt": "2024-11-19T03:13:05Z",
+    "title": "The Only Supplements That ACTUALLY Work (2025)",
+    "single_subject": false
+   },
+   {
+    "handle": "multivitamin-contains-enough-riboflavin",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/multivitamin-contains-enough-riboflavin.md",
+    "url": "https://drstanfield.com/blogs/articles/multivitamin-contains-enough-riboflavin",
+    "publishedAt": "2024-09-18T03:06:10Z",
+    "title": "How to Know If Your Multivitamin Contains Enough Riboflavin",
+    "single_subject": false
+   },
+   {
+    "handle": "controversial-supplement-cognitive-decline",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/controversial-supplement-cognitive-decline.md",
+    "url": "https://drstanfield.com/blogs/articles/controversial-supplement-cognitive-decline",
+    "publishedAt": "2024-08-09T04:19:30Z",
+    "title": "Controversial New Supplement: Can It Stop Cognitive Decline?",
+    "single_subject": true
+   }
+  ]
+ },
+ {
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-review-best-b-vitamins-and-complexes-energy-b6-b12-biotin-niacin-folic-acid-bvitamins.md",
+  "cl_raw_sha256": "55c06813a9b91698e9adbcf8fa858ce4aa2a8d42bd8730185de22430f741ff5b",
+  "cl_url": "https://www.consumerlab.com/reviews/review-best-b-vitamins-and-complexes-energy-b6-b12-biotin-niacin-folic-acid/bvitamins/",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/bvitamins-nih.md",
+  "nih_raw_sha256": "351f6d3c66805965aaeb68918451132fe0328e3698a08d0e625da1608ce8459a",
+  "nih_url": "https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/",
+  "positions": [
+   {
+    "file": "docs/products.md",
+    "line": 20,
+    "line_text": "- Cognition & Focus (COSMOS-aligned): Choline Bitartrate 181.5mg, Methylated B12 12mcg, Methylated Folate 200mcg DFE, full B-complex (B1 0.9mg, B2 0.975mg, Nicotinamide 16mg, B5 3.75mg, B6 1.275mg as P5P, Biotin 22.5mcg)",
+    "note": "product: methylated B12/folate and full B-complex for cognition (COSMOS-aligned); doses and forms",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 306,
+    "line_text": "| Cognitive decline / brain fog | MicroVitamin or MicroVitamin+ Powder | COSMOS trial-aligned: choline, B-complex, methylated folate/B12. 10 customer reviews across all products (9 of them MicroVitamin) report improved mental clarity or focus |",
+    "note": "product recommendation for cognitive decline: choline, B-complex, methylated folate/B12",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 313,
+    "line_text": "| Low energy / fatigue | MicroVitamin or MicroVitamin+ Powder | Full B-complex for energy metabolism + magnesium for cellular energy + bioavailable trace minerals. Not a stimulant — sustainable energy from filling nutrient gaps |",
+    "note": "product recommendation for fatigue: B-complex for energy metabolism",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 350,
+    "line_text": "The opposite — MicroVitamin is deliberately low-dose. In the US, most ingredients are at or below 100% of the Daily Value; vitamin B12 (absorption falls with age) and vitamin D are higher. Other markets' labels use different reference values (UK/EU %NRV: Regional Formula Differences). The formula is",
+    "note": "dose: B12 higher than DV, otherwise low dose",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 403,
+    "line_text": "MicroVitamin addresses fatigue through nutrient gap correction, not stimulation: full B-complex for energy metabolism, magnesium for cellular energy production (126mg in the USA, in an amino-acid chelate form called magnesium taurate: magnesium bound to taurine; Australia: see Regional Formula Diffe",
+    "note": "benefit: B-complex for energy metabolism, not stimulation",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 757,
+    "line_text": "- Homocysteine and cognition (International Consensus Statement): Smith et al., J Alzheimers Dis, 2018 — https://doi.org/10.3233/JAD-171042",
+    "note": "citation: homocysteine and cognition consensus (Smith 2018)",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 565,
+    "line_text": "{ label: 'Jernerén 2015 – B vitamins + omega-3 slow brain atrophy (Am J Clin Nutr)', url: 'https://doi.org/10.3945/ajcn.114.103283' },",
+    "note": "citation: B vitamins plus omega-3 slow brain atrophy (Jernere 2015)",
+    "last_changed": "2026-03-04"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 1005,
+    "line_text": "| `supplement-micronutrient-base` | Micronutrient base | Methylated B-complex; vitamin D3 + K2; magnesium taurate; trace minerals (glycinate); lutein + zeaxanthin; TMG; lycopene | COSMOS trial (Baker 2023) |",
+    "note": "algorithm: methylated B-complex in micronutrient base",
+    "last_changed": "2026-06-14"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 1008,
+    "line_text": "| `supplement-omega3` | Omega-3 | EPA/DHA | CV benefits (Bernasconi 2021) + cognitive synergy with B-complex (Jernerén 2015, Oulhaj 2016) |",
+    "note": "algorithm: omega-3 cognitive synergy with B-complex",
+    "last_changed": "2026-06-14"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 726,
+    "line_text": "<li>Omega-3 status also appears to matter for cognition. Randomised trials found that B vitamin supplementation slowed brain atrophy by 40% — but only in participants with adequate omega-3 levels, suggesting the two may work together.[101, 102]</li>",
+    "note": "roadmap text: B vitamins slowed brain atrophy only with adequate omega-3",
+    "last_changed": "2026-07-31"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 241,
+    "line_text": "- **Omega-3**: the VITAL trial showed a 28% reduction in myocardial infarction, and omega-3 is necessary for B-vitamins to exert their neuroprotective effect (Jerneren 2015, Oulhaj 2016). See Feature 4 divergence above.",
+    "note": "guideline: omega-3 needed for B-vitamin neuroprotection",
+    "last_changed": "2026-04-13"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 50,
+    "line_text": "If so, and you add MicroVitamin, you may consume higher than ideal doses",
+    "note": "answer-bank: high B12/folate on blood tests; stacking supplements",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 58,
+    "line_text": "MicroVitamin contains methylated folate and methylated B12",
+    "note": "answer-bank: MTHFR; methylated folate and B12",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 87,
+    "line_text": "MicroVitamin uses the bioactive form called methyl-folate",
+    "note": "answer-bank: methylfolate vs folic acid",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 208,
+    "line_text": "Megadoses of B6 are the issue",
+    "note": "safety: B6 megadoses cause neuropathy; MicroVitamin dose far lower",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 219,
+    "line_text": "In the latest version of MicroVitamin, I decreased the dose of Vitamin B3",
+    "note": "dose: niacin reduced to 16 mg",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 233,
+    "line_text": "Biotin, at the doses used in MicroVitamin, will not interfere with blood",
+    "note": "safety: biotin at these doses does not interfere with blood tests",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 508,
+    "line_text": "MicroVitamin doesn't megadose most vitamins, but a few are above the daily allowance, for example vitamin B12",
+    "note": "safety: B12 above daily allowance; history of B-vitamin overdose",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 642,
+    "line_text": "MicroVitamin uses the bioactive form of folate, methylfolate, and the amount is on your label",
+    "note": "answer-bank: higher-dose folic acid by a doctor; methylfolate",
+    "last_changed": "2026-10-14"
+   }
+  ],
+  "posts": [
+   {
+    "handle": "multivitamins-are-no-longer-expensive-urine",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/multivitamins-are-no-longer-expensive-urine.md",
+    "url": "https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine",
+    "publishedAt": "2026-08-19T00:00:00Z",
+    "title": "Multivitamins Are No Longer \"Expensive Urine\"",
+    "single_subject": false
+   },
+   {
+    "handle": "concerning-omega-3-brain-study",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/concerning-omega-3-brain-study.md",
+    "url": "https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study",
+    "publishedAt": "2026-05-20T12:00:00Z",
+    "title": "Concerning Omega-3 Brain Study",
+    "single_subject": false
+   },
+   {
+    "handle": "5-supplements-that-actually-work",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/5-supplements-that-actually-work.md",
+    "url": "https://drstanfield.com/blogs/articles/5-supplements-that-actually-work",
+    "publishedAt": "2025-10-05T20:31:48Z",
+    "title": "5 Supplements That ACTUALLY Work",
+    "single_subject": false
+   },
+   {
+    "handle": "the-only-three-supplements-doctor-brad-takes",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-only-three-supplements-doctor-brad-takes.md",
+    "url": "https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes",
+    "publishedAt": "2025-07-30T20:38:06Z",
+    "title": "The Only Three Supplements Doctor Brad Takes",
+    "single_subject": false
+   },
+   {
+    "handle": "zma-supplements-benefits-research",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/zma-supplements-benefits-research.md",
+    "url": "https://drstanfield.com/blogs/articles/zma-supplements-benefits-research",
+    "publishedAt": "2025-01-29T16:30:23Z",
+    "title": "ZMA Supplements: What Are the Benefits and Research?",
+    "single_subject": false
+   },
+   {
+    "handle": "methylated-multivitamin-regular-ones",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/methylated-multivitamin-regular-ones.md",
+    "url": "https://drstanfield.com/blogs/articles/methylated-multivitamin-regular-ones",
+    "publishedAt": "2024-11-28T07:00:07Z",
+    "title": "Methylated Multivitamin vs Regular Ones: Which is Better?",
+    "single_subject": false
+   },
+   {
+    "handle": "tmg-betaine-exploding-popularity",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/tmg-betaine-exploding-popularity.md",
+    "url": "https://drstanfield.com/blogs/articles/tmg-betaine-exploding-popularity",
+    "publishedAt": "2024-10-09T13:30:02Z",
+    "title": "Why TMG (Betaine) is Exploding in Popularity",
+    "single_subject": false
+   },
+   {
+    "handle": "brain-omega-3-discovery",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/brain-omega-3-discovery.md",
+    "url": "https://drstanfield.com/blogs/articles/brain-omega-3-discovery",
+    "publishedAt": "2024-09-26T00:17:19Z",
+    "title": "Your Brain on Omega-3, Tantalizing Discovery!",
+    "single_subject": false
+   },
+   {
+    "handle": "multivitamin-contains-enough-riboflavin",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/multivitamin-contains-enough-riboflavin.md",
+    "url": "https://drstanfield.com/blogs/articles/multivitamin-contains-enough-riboflavin",
+    "publishedAt": "2024-09-18T03:06:10Z",
+    "title": "How to Know If Your Multivitamin Contains Enough Riboflavin",
+    "single_subject": false
+   },
+   {
+    "handle": "popular-supplements-try-avoid",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/popular-supplements-try-avoid.md",
+    "url": "https://drstanfield.com/blogs/articles/popular-supplements-try-avoid",
+    "publishedAt": "2024-08-11T19:43:34Z",
+    "title": "Which Popular Supplements Should You Actually Try to Avoid?",
+    "single_subject": false
+   }
+  ]
+ },
+ {
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-potassium-supplements-review-potassium.md",
+  "cl_raw_sha256": "290d1341545e18ae9c4f46fe61eef07c0e95ebe2eaca45459733d7d4acdd9095",
+  "cl_url": "https://www.consumerlab.com/reviews/potassium-supplements-review/potassium/",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/potassium-nih.md",
+  "nih_raw_sha256": "984be3a8b4747e11aea6d8fed9620fa27038cc4ae3b2fafc5f9d10b01121f4cb",
+  "nih_url": "https://ods.od.nih.gov/factsheets/Potassium-HealthProfessional/",
+  "positions": [
+   {
+    "file": "docs/products.md",
+    "line": 265,
+    "line_text": "- **Potassium citrate**, 500 mg a scoop, more than the 99 mg typical of potassium pills. If asked why: two US drug rules draw a line at 100 mg of potassium per tablet (21 CFR 201.306 requires a small-bowel injury warning on some potassium salt tablets at that level; 21 CFR 216.24 lists solid potassi",
+    "note": "product: potassium citrate 500 mg a scoop vs 99 mg in pills; regulatory reasons",
+    "last_changed": "2026-10-06"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 267,
+    "line_text": "- **Warning (the store's wording; give it in full, never shortened):** Contains 500 mg of added potassium per serving (1,000 mg at the two-scoop daily maximum). Talk to your doctor before using this product if you have kidney disease, if you have been told to limit potassium, or if you take an angio",
+    "note": "safety warning wording for the potassium fiber drink (kidney disease, medicines)",
+    "last_changed": "2026-10-06"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 270,
+    "line_text": "- No health claims for this product, ever: no blood pressure, heart, cholesterol, gut, bowel-regularity, prebiotic or blood-sugar benefit tied to the drink or its doses. Nutrient-content statements are fine (\"high in fiber\": 29% DV; \"a good source of potassium\": 11% DV). Rules: `claude_business/docs",
+    "note": "claim rule: no health claims for the potassium fiber drink",
+    "last_changed": "2026-10-06"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 271,
+    "line_text": "- **Asked whether the drink lowers blood pressure, or helps the heart, cholesterol, the gut, regularity, blood sugar or any condition (both surfaces):** say it makes no health claims and is sold for its nutrient content, then give the per-scoop amounts (8 g of fiber, 29% DV; 500 mg of potassium, 11%",
+    "note": "chatbot rule: say no health claims when asked about the drink",
+    "last_changed": "2026-10-06"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 166,
+    "line_text": "reason: 'Potassium helps counteract the blood-pressure-raising effects of sodium. The ISH recommends 3,500–5,000mg/day from food sources. This recommendation only applies when kidney function is adequate (eGFR ≥45), as impaired kidneys may not excrete excess potassium safely.',",
+    "note": "recommendation reason: 3,500-5,000 mg/day from food, only with adequate kidney function",
+    "last_changed": "2026-03-04"
+   },
+   {
+    "file": "packages/health-core/src/suggestions.ts",
+    "line": 266,
+    "line_text": "description: 'Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.',",
+    "note": "suggestion text: potassium-rich foods 3,500-5,000 mg/day",
+    "last_changed": "2026-02-03"
+   },
+   {
+    "file": "packages/health-core/src/suggestions.ts",
+    "line": 659,
+    "line_text": "bpExtraParagraphs.push('Increase potassium-rich foods (3,500–5,000mg/day).');",
+    "note": "suggestion text: potassium-rich foods in the blood pressure card",
+    "last_changed": "2026-02-16"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 610,
+    "line_text": "| `high-potassium` | eGFR >= 45 (safe kidney function) | info | |",
+    "note": "algorithm: high-potassium shown only when eGFR >= 45",
+    "last_changed": "2026-03-04"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 672,
+    "line_text": "- If eGFR >= 45: potassium recommendation",
+    "note": "algorithm: eGFR >= 45 gate for potassium recommendation",
+    "last_changed": "2026-02-22"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 199,
+    "line_text": "- `high-potassium`: triggered when eGFR ≥ 45 (safe kidney function). The ISH recommends 3,500-5,000 mg/day from food sources. The algorithm correctly gates this behind adequate renal function.",
+    "note": "guideline: ISH 3,500-5,000 mg/day from food; eGFR gate",
+    "last_changed": "2026-04-12"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 201,
+    "line_text": "Both the AHA and Brad's algorithm recognise the sodium-potassium interplay and the need for renal function assessment before potassium supplementation.",
+    "note": "guideline: sodium-potassium interplay; renal assessment before potassium supplementation",
+    "last_changed": "2026-04-12"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 532,
+    "line_text": "With both heart and kidney disease, the right potassium, magnesium and protein intake depends on your blood tests and medicines",
+    "note": "answer-bank: heart and kidney disease balance; defer to doctor",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 539,
+    "line_text": "The potassium in MicroVitamin is small, at most 99mg, a tiny fraction of a normal diet (one banana has around 400mg)",
+    "note": "safety/dose: MicroVitamin potassium at most 99 mg; check with doctor if kidney disease",
+    "last_changed": "2026-10-14"
+   }
+  ],
+  "posts": [
+   {
+    "handle": "completely-wrong-about-salt-new-study",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/completely-wrong-about-salt-new-study.md",
+    "url": "https://drstanfield.com/blogs/articles/completely-wrong-about-salt-new-study",
+    "publishedAt": "2026-04-01T19:38:46Z",
+    "title": "Completely WRONG About Salt (New Study)",
+    "single_subject": false
+   },
+   {
+    "handle": "this-mineral-deficiency-is-causing-strokes",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/this-mineral-deficiency-is-causing-strokes.md",
+    "url": "https://drstanfield.com/blogs/articles/this-mineral-deficiency-is-causing-strokes",
+    "publishedAt": "2025-08-28T23:51:02Z",
+    "title": "This Mineral Deficiency Is Causing Strokes",
+    "single_subject": false
+   },
+   {
+    "handle": "salt-substitutes-can-slash-your-death-risk-by-12",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/salt-substitutes-can-slash-your-death-risk-by-12.md",
+    "url": "https://drstanfield.com/blogs/articles/salt-substitutes-can-slash-your-death-risk-by-12",
+    "publishedAt": "2025-04-02T06:44:05Z",
+    "title": "Salt-Substitutes Can Slash Your 5-Year Death Risk by 12%",
+    "single_subject": false
+   },
+   {
+    "handle": "best-diet-for-a-longer-healthier-life",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/best-diet-for-a-longer-healthier-life.md",
+    "url": "https://drstanfield.com/blogs/articles/best-diet-for-a-longer-healthier-life",
+    "publishedAt": "2025-03-11T22:57:23Z",
+    "title": "These 20 Studies Reveal The BEST Diet for a Longer, Healthier Life",
+    "single_subject": false
+   },
+   {
+    "handle": "the-fastest-way-to-lower-your-blood-pressure-naturally",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-fastest-way-to-lower-your-blood-pressure-naturally.md",
+    "url": "https://drstanfield.com/blogs/articles/the-fastest-way-to-lower-your-blood-pressure-naturally",
+    "publishedAt": "2025-02-23T23:47:06Z",
+    "title": "The Fastest Way to Lower Your Blood Pressure (Naturally!)",
+    "single_subject": false
+   },
+   {
+    "handle": "nutrient-deficiency-blood-pressure",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/nutrient-deficiency-blood-pressure.md",
+    "url": "https://drstanfield.com/blogs/articles/nutrient-deficiency-blood-pressure",
+    "publishedAt": "2024-12-07T00:41:36Z",
+    "title": "The #1 Nutrient Deficiency in High Blood Pressure",
+    "single_subject": false
+   }
+  ]
+ },
+ {
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-cholesterol-lowering-supplements-review-sterols-policosanol-cholesterol.md",
+  "cl_raw_sha256": "d2da43498f2ff35d42ca2af460ac1f0f5a050bf9ad37b853efc89bbf56922d47",
+  "cl_url": "https://www.consumerlab.com/reviews/cholesterol-lowering-supplements-review-sterols-policosanol/cholesterol/",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "nih_url": null,
+  "positions": [
+   {
+    "file": "docs/products.md",
+    "line": 152,
+    "line_text": "Psyllium Husk (2.5g) is a soluble fiber that supports gut health by feeding beneficial gut bacteria, promoting digestive regularity, and helping maintain healthy cholesterol levels. A Cochrane systematic review confirmed dietary fiber supplementation reduces cardiovascular disease risk factors (Hart",
+    "note": "benefit: psyllium husk 2.5 g supports healthy cholesterol (Cochrane)",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 312,
+    "line_text": "| Gut health / cholesterol | MicroVitamin+ Powder | Psyllium Husk 2.5g — soluble fiber that feeds gut bacteria and helps maintain healthy cholesterol. Cochrane review confirmed cardiovascular risk reduction |",
+    "note": "product recommendation: psyllium for gut health / cholesterol",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 172,
+    "line_text": "reason: 'These foods lower LDL cholesterol through complementary mechanisms: beta-glucan (oats) and soluble fibre (psyllium, flaxseed) bind bile acids, reducing cholesterol reabsorption. Nuts (walnuts, almonds) provide unsaturated fats that improve the LDL-to-HDL ratio. Replacing saturated fat (butt",
+    "note": "recommendation reason: psyllium and soluble fibre bind bile acids, lower LDL (Wei 2009)",
+    "last_changed": "2026-03-18"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 750,
+    "line_text": "<li>A 2016 Cochrane Review found that psyllium reduced total cholesterol and blood pressure.[71]</li>",
+    "note": "roadmap text: 2016 Cochrane review, psyllium reduced total cholesterol and blood pressure",
+    "last_changed": "2026-07-31"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 449,
+    "line_text": "- **Metformin / Berberine** — ITP 2016 showed no lifespan benefit; a 21-year human RCT confirmed no benefit for death rates, heart disease, or cancer; Metformin also blunts positive exercise effects (Konopka et al., 2019). Brad still prescribes Metformin to his diabetic patients — it's a wonderful d",
+    "note": "berberine: no lifespan benefit (ITP 2016, 21-year RCT); Brad position",
+    "last_changed": "2026-08-09"
+   }
+  ],
+  "posts": []
+ },
+ {
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-nitric-oxide-supplements-review-nitric-oxide.md",
+  "cl_raw_sha256": "42b92108820154eda2443bc4d37710fc762dd6bda37a901c6ad692c1c1d10f3c",
+  "cl_url": "https://www.consumerlab.com/reviews/nitric-oxide-supplements-review/nitric-oxide/",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "nih_url": null,
+  "positions": [
+   {
+    "file": "docs/products.md",
+    "line": 289,
+    "line_text": "Dr Stanfield does **not** recommend a nitric oxide supplement (L-arginine, L-citrulline, beetroot powder, or other NO boosters) and does **not** sell one. When a user asks \"what NO supplement should I take?\" or \"can you recommend a nitric oxide product?\", the answer is dietary, not supplemental:",
+    "note": "position: does not recommend or sell an NO supplement (arginine, citrulline, beetroot); eat nitrate-rich greens",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 291,
+    "line_text": "- **Rocket (arugula)** is the highest dietary-nitrate green per gram — a small handful in a daily salad provides more bioavailable nitrate than most NO supplements",
+    "note": "rocket (arugula) highest dietary nitrate per gram",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 292,
+    "line_text": "- **Beetroot, spinach, chard, lettuce** are also high-nitrate options",
+    "note": "beetroot, spinach, chard, lettuce also high-nitrate",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 295,
+    "line_text": "**Do not** suggest MicroVitamin or MicroVitamin+ Powder as a nitric oxide product — they aren't designed for that purpose, and pushing them here would be off-evidence. Stay product-quiet on this question; the right answer is \"eat rocket\".",
+    "note": "rule: do not suggest MicroVitamin products as nitric oxide products; stay product-quiet",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "app/lib/chat-system-prompt.md",
+    "line": 104,
+    "line_text": "- **Nitric oxide:** MicroVitamin and MicroVitamin+ are not nitric-oxide products — never present them as one. For nitric oxide the evidence is on dietary nitrate (rocket/arugula highest per gram, plus beetroot, spinach, chard, lettuce).",
+    "note": "chatbot rule: MicroVitamin/MicroVitamin+ are not NO products; evidence is on dietary nitrate",
+    "last_changed": "2026-06-21"
+   }
+  ],
+  "posts": [
+   {
+    "handle": "this-2-food-beats-every-nitric-oxide-supplement",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/this-2-food-beats-every-nitric-oxide-supplement.md",
+    "url": "https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement",
+    "publishedAt": "2026-03-18T06:11:43Z",
+    "title": "This $2 Food Beats Every Nitric Oxide Supplement",
+    "single_subject": false
+   },
+   {
+    "handle": "the-truth-about-nitric-oxide-supplements-nitralis",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-truth-about-nitric-oxide-supplements-nitralis.md",
+    "url": "https://drstanfield.com/blogs/articles/the-truth-about-nitric-oxide-supplements-nitralis",
+    "publishedAt": "2026-02-25T02:32:08Z",
+    "title": "The Truth About Nitric Oxide Supplements (Nitralis®)",
+    "single_subject": false
+   }
+  ]
+ },
+ {
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-fish-oil-supplements-review-omega3.md",
+  "cl_raw_sha256": "f6dc7d915c80dd52e0983c7345c5c89aa97c06bb6eddb69d2ca525d77f42f23e",
+  "cl_url": "https://www.consumerlab.com/reviews/fish-oil-supplements-review/omega3/",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/omega3-nih.md",
+  "nih_raw_sha256": "130f2ccabb5f47ec394c221492a2d917f765a9af13d06a925a4ef09fc72fa2a8",
+  "nih_url": "https://ods.od.nih.gov/factsheets/Omega3FattyAcids-HealthProfessional/",
+  "positions": [
+   {
+    "file": "docs/products.md",
+    "line": 281,
+    "line_text": "Dr Stanfield does not currently sell an Omega-3 product. The brand he takes himself and recommends is **WHC UnoCardio 1000 Fish Oil**, available on Amazon: https://amzn.to/3DslHpb",
+    "note": "product: no Brad omega-3 product; recommends WHC UnoCardio 1000 Fish Oil",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 283,
+    "line_text": "When a user asks about omega-3, share this recommendation alongside the link and note that it's the brand Brad takes personally. A Dr Stanfield omega-3 product is planned for the future.",
+    "note": "chatbot rule: share the brand and Amazon link for omega-3 questions",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 430,
+    "line_text": "- **Omega-3 (DHA/EPA) 1g daily** — see the Omega-3 section earlier in this file for the brand Brad takes and the link.",
+    "note": "dose: omega-3 (DHA/EPA) 1 g daily",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "app/lib/chat-system-prompt.md",
+    "line": 13,
+    "line_text": "- **For Omega-3 questions**: discuss EPA/DHA and the evidence for omega-3 supplementation generally. Dr. Stanfield does not sell an Omega-3 product. If a user asks what to look for, describe the ingredient criteria (a fish-oil providing meaningful EPA/DHA per serving); do not link a specific branded",
+    "note": "chatbot rule: omega-3 questions, discuss EPA/DHA evidence; no Brad product",
+    "last_changed": "2026-06-15"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 561,
+    "line_text": "reason: 'An updated meta-analysis of interventional trials found that omega-3 supplementation reduces cardiovascular events and cardiac death, with benefits increasing at higher doses. The effect appears strongest for EPA-rich formulations.\\n\\nOmega-3 also plays an important role in cognitive protec",
+    "note": "recommendation reason: omega-3 reduces CV events and cardiac death (Bernasconi 2021)",
+    "last_changed": "2026-03-04"
+   },
+   {
+    "file": "packages/health-core/src/suggestions.ts",
+    "line": 1045,
+    "line_text": "description: 'A meta-analysis of interventional trials found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death, with dose-dependent benefits strongest for EPA-rich formulations. Randomised trials also show omega-3 is needed for B vitamins to slow age-related brain atrophy.',",
+    "note": "suggestion text: omega-3 EPA/DHA, dose-dependent CV benefit",
+    "last_changed": "2026-06-19"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 1008,
+    "line_text": "| `supplement-omega3` | Omega-3 | EPA/DHA | CV benefits (Bernasconi 2021) + cognitive synergy with B-complex (Jernerén 2015, Oulhaj 2016) |",
+    "note": "algorithm: supplement-omega3 rationale",
+    "last_changed": "2026-06-14"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 725,
+    "line_text": "<li>A 2021 Mayo Clinic meta-analysis reported a 13% lower rate of heart attacks among people taking omega-3 supplements, with high GRADE certainty.[60]</li>",
+    "note": "roadmap text: 2021 Mayo Clinic meta-analysis, 13% fewer heart attacks",
+    "last_changed": "2026-07-31"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 726,
+    "line_text": "<li>Omega-3 status also appears to matter for cognition. Randomised trials found that B vitamin supplementation slowed brain atrophy by 40% — but only in participants with adequate omega-3 levels, suggesting the two may work together.[101, 102]</li>",
+    "note": "roadmap text: omega-3 status and B-vitamin cognitive protection",
+    "last_changed": "2026-07-31"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 132,
+    "line_text": "The AHA states fish oil supplementation \"has not been demonstrated to lower CVD risk in otherwise healthy adults\" and may increase AF risk [42-44]. Brad recommends omega-3 supplementation for all users (`supplement-omega3`) based on two lines of evidence: (1) The VITAL trial (Manson 2019, NEJM) show",
+    "note": "guideline: AHA does not support fish oil for healthy adults; Brad recommends omega-3 (divergence)",
+    "last_changed": "2026-04-14"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 241,
+    "line_text": "- **Omega-3**: the VITAL trial showed a 28% reduction in myocardial infarction, and omega-3 is necessary for B-vitamins to exert their neuroprotective effect (Jerneren 2015, Oulhaj 2016). See Feature 4 divergence above.",
+    "note": "guideline: VITAL 28% MI reduction; omega-3 needed for B-vitamin neuroprotection",
+    "last_changed": "2026-04-13"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 461,
+    "line_text": "about the recent study that raised concerns with Omega-3 and brain aging",
+    "note": "answer-bank: recent study on omega-3 and brain ageing, points to Brad video",
+    "last_changed": "2026-10-14"
+   }
+  ],
+  "posts": [
+   {
+    "handle": "multivitamins-are-no-longer-expensive-urine",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/multivitamins-are-no-longer-expensive-urine.md",
+    "url": "https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine",
+    "publishedAt": "2026-08-19T00:00:00Z",
+    "title": "Multivitamins Are No Longer \"Expensive Urine\"",
+    "single_subject": false
+   },
+   {
+    "handle": "concerning-omega-3-brain-study",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/concerning-omega-3-brain-study.md",
+    "url": "https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study",
+    "publishedAt": "2026-05-20T12:00:00Z",
+    "title": "Concerning Omega-3 Brain Study",
+    "single_subject": false
+   },
+   {
+    "handle": "omega-3-breakthrough-cuts-major-heart-events-by-43",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/omega-3-breakthrough-cuts-major-heart-events-by-43.md",
+    "url": "https://drstanfield.com/blogs/articles/omega-3-breakthrough-cuts-major-heart-events-by-43",
+    "publishedAt": "2025-12-10T00:17:45Z",
+    "title": "Omega-3 Breakthrough Cuts Major Heart Events by 43%",
+    "single_subject": false
+   },
+   {
+    "handle": "5-supplements-that-actually-work",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/5-supplements-that-actually-work.md",
+    "url": "https://drstanfield.com/blogs/articles/5-supplements-that-actually-work",
+    "publishedAt": "2025-10-05T20:31:48Z",
+    "title": "5 Supplements That ACTUALLY Work",
+    "single_subject": false
+   },
+   {
+    "handle": "the-only-three-supplements-doctor-brad-takes",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-only-three-supplements-doctor-brad-takes.md",
+    "url": "https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes",
+    "publishedAt": "2025-07-30T20:38:06Z",
+    "title": "The Only Three Supplements Doctor Brad Takes",
+    "single_subject": false
+   },
+   {
+    "handle": "only-supplements-work-2025",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/only-supplements-work-2025.md",
+    "url": "https://drstanfield.com/blogs/articles/only-supplements-work-2025",
+    "publishedAt": "2024-11-19T03:13:05Z",
+    "title": "The Only Supplements That ACTUALLY Work (2025)",
+    "single_subject": false
+   },
+   {
+    "handle": "brain-omega-3-discovery",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/brain-omega-3-discovery.md",
+    "url": "https://drstanfield.com/blogs/articles/brain-omega-3-discovery",
+    "publishedAt": "2024-09-26T00:17:19Z",
+    "title": "Your Brain on Omega-3, Tantalizing Discovery!",
+    "single_subject": false
+   },
+   {
+    "handle": "omega-3-heart-arrhythmia",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/omega-3-heart-arrhythmia.md",
+    "url": "https://drstanfield.com/blogs/articles/omega-3-heart-arrhythmia",
+    "publishedAt": "2024-07-11T21:04:17Z",
+    "title": "New Study Links Omega-3 to Increased Heart Arrhythmia Risk",
+    "single_subject": true
+   }
+  ]
+ },
+ {
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-electrolytes-sports-rehydration-electrolytes.md",
+  "cl_raw_sha256": "89228e38dbd31f35ceb271dc289200fba142ba9ca49f180ebe2847fe6c85e2d7",
+  "cl_url": "https://www.consumerlab.com/reviews/electrolytes-sports-rehydration/electrolytes/",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "nih_url": null,
+  "positions": [],
+  "posts": []
+ },
+ {
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-glycine-review-comparisons-glycine.md",
+  "cl_raw_sha256": "543460d8a111d5c295d12797b1e6da4a433673cff57aed9b5370315e2753842a",
+  "cl_url": "https://www.consumerlab.com/reviews/glycine-review-comparisons/glycine/",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "nih_url": null,
+  "positions": [
+   {
+    "file": "docs/products.md",
+    "line": 208,
+    "line_text": "- Glycine 2,400mg — calming neuromodulator (core-temperature drop shown in rats, Bannai & Kawai 2012). Three small trials of 3g before bed found better rated sleep quality, faster sleep onset, and less next-day tiredness or sleepiness. (Total includes the glycine delivered by the magnesium chelate.)",
+    "note": "product: 2,400 mg glycine in Sleep; three small trials of 3 g; mechanism",
+    "last_changed": "2026-10-03"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 236,
+    "line_text": "Sleep contains 2,400mg of glycine (the trials used 3g). Glycine is a calming neuromodulator. In rats it lowered core body temperature, which the researchers suggest may be one way it helps sleep, because body temperature drops as sleep begins (Bannai & Kawai, J Pharmacol Sci, 2012). In three small t",
+    "note": "chatbot FAQ: what glycine does for sleep; trials used 3 g",
+    "last_changed": "2026-10-03"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 315,
+    "line_text": "| Poor sleep quality / waking at night | Sleep by Dr Brad | Glycine 2,400mg (3g trials: better rated sleep quality, faster sleep onset, less next-day tiredness; one trial reached slow-wave sleep sooner with no change in sleep architecture; no trial showed fewer wake-ups); 8-hour sustained-release me",
+    "note": "product recommendation: poor sleep quality, glycine 2,400 mg",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 317,
+    "line_text": "| Morning fatigue / waking tired | Sleep by Dr Brad | In three small trials, 3g of glycine before bed reduced next-day tiredness or sleepiness (Sleep has 2,400mg). Sleep is designed not to cause morning grogginess; in one study, 3mg kept melatonin raised into daylight (Zhdanova 2001). |",
+    "note": "product recommendation: morning fatigue, 3 g glycine before bed reduced next-day tiredness",
+    "last_changed": "2026-10-04"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 440,
+    "line_text": "- **GlyNAC (Glycine + N-Acetylcysteine) 1g** — to support glutathione, which declines rapidly after 45. A human placebo-controlled trial found GlyNAC corrected glutathione deficiency in older adults and improved hand grip strength (Kumar et al., J Gerontol A, 2023).",
+    "note": "GlyNAC (glycine + NAC) 1 g for glutathione; Kumar trial",
+    "last_changed": "2026-08-09"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 339,
+    "line_text": "**Guideline position:** UpToDate lists glycine among dietary supplements \"marketed for insomnia\" with insufficient evidence but generally regarded as safe. No RCTs were large enough to be included in the broader herbal meta-analysis.",
+    "note": "guideline position: UpToDate lists glycine as insufficient evidence but generally safe",
+    "last_changed": "2026-04-17"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 341,
+    "line_text": "**Evidence:** Three small Japanese RCTs (Inagawa 2006; Yamadera 2007; Bannai 2012) tested glycine 3 g at bedtime:",
+    "note": "evidence: three small Japanese RCTs of glycine 3 g at bedtime",
+    "last_changed": "2026-04-17"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 348,
+    "line_text": "**Brad's position:** Includes 2,400 mg glycine in his Sleep product, targeting the 3 g threshold studied in the RCTs. (V1 stated 2,500 mg; the V2 label now counts the glycine carried in the magnesium bisglycinate chelate, and 2,400 mg is the most that fits in four capsules.) Brad cites the three RCT",
+    "note": "Brad's position: 2,400 mg glycine in Sleep, targeting the 3 g studied",
+    "last_changed": "2026-09-20"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 1009,
+    "line_text": "| `supplement-sleep` | Sleep support | Low-dose melatonin; glycine; magnesium glycinate | Melatonin (Low 2020) |",
+    "note": "algorithm: supplement-sleep includes glycine",
+    "last_changed": "2026-06-14"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 759,
+    "line_text": "<li>A human, placebo-controlled study found that supplementing with the glutathione precursors Glycine &amp; NAC corrected the glutathione deficiency in older adults and improved hand grip strength.[74]</li>",
+    "note": "roadmap text: GlyNAC corrected glutathione deficiency and grip strength",
+    "last_changed": "2026-07-31"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 760,
+    "line_text": "<li>Collagen supplements already contain significant quantities of Glycine, and Trimethylglycine (TMG) contributes further, so anyone already using those is likely to have sufficient glycine — leaving NAC as the only remaining component of the pairing.</li>",
+    "note": "roadmap text: collagen and TMG already supply glycine; NAC the remaining component",
+    "last_changed": "2026-07-31"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 572,
+    "line_text": "My Sleep supplement has three ingredients: melatonin 0.8mg (sustained release), magnesium 126mg (as bisglycinate) and glycine 2,400mg",
+    "note": "answer-bank: Sleep ingredients incl. glycine 2,400 mg",
+    "last_changed": "2026-10-14"
+   },
+   {
+    "file": "docs/chatbot/answer-bank.md",
+    "line": 11,
+    "line_text": "3mg glycine in MicroVitamin, which is a very small amount.",
+    "note": "safety: about 3 mg glycine in MicroVitamin; glycinate minerals",
+    "last_changed": "2026-10-14"
+   }
+  ],
+  "posts": [
+   {
+    "handle": "the-most-important-antioxidant-study-i-ve-ever-read",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-most-important-antioxidant-study-i-ve-ever-read.md",
+    "url": "https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read",
+    "publishedAt": "2026-02-03T00:32:28Z",
+    "title": "The Most Important Antioxidant Study I’ve Ever Read",
+    "single_subject": false
+   },
+   {
+    "handle": "this-amino-acid-was-accidentally-found-to-improve-our-sleep",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/this-amino-acid-was-accidentally-found-to-improve-our-sleep.md",
+    "url": "https://drstanfield.com/blogs/articles/this-amino-acid-was-accidentally-found-to-improve-our-sleep",
+    "publishedAt": "2025-08-20T02:05:05Z",
+    "title": "Glycine was Accidentally Found To Improve Our Sleep",
+    "single_subject": false
+   },
+   {
+    "handle": "the-only-three-supplements-doctor-brad-takes",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-only-three-supplements-doctor-brad-takes.md",
+    "url": "https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes",
+    "publishedAt": "2025-07-30T20:38:06Z",
+    "title": "The Only Three Supplements Doctor Brad Takes",
+    "single_subject": false
+   },
+   {
+    "handle": "doctor-reveals-why-he-takes-glycine-every-day",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/doctor-reveals-why-he-takes-glycine-every-day.md",
+    "url": "https://drstanfield.com/blogs/articles/doctor-reveals-why-he-takes-glycine-every-day",
+    "publishedAt": "2025-05-27T22:11:28Z",
+    "title": "Doctor Reveals Why He Takes Glycine Every Day",
+    "single_subject": true
+   }
+  ]
+ }
+]
