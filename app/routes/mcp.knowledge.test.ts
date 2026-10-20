@@ -17,7 +17,7 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { INSTRUCTIONS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
-import { callKnowledgeTool, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_RESULTS, NOTICE, safetyBlocks } from '../lib/mcp-knowledge.server';
+import { callKnowledgeTool, cutEntry, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_RESULTS, NOTICE, safetyBlocks } from '../lib/mcp-knowledge.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { parseFrontmatter } from '../lib/frontmatter';
 import { recordServerEvent } from '../lib/product-events.server';
@@ -350,17 +350,18 @@ describe('US-41 AC11/AC12 — rate-limited, tighter than the other tools; counte
   });
 });
 
-describe('US-41 AC11 — only Brad-authored content: articles, guidelines, topic masters (adversary R3)', () => {
+describe('US-41 AC11 — only what is public under Brad\'s name: video articles and topic masters (adversary R3, re-check F4)', () => {
   const index = loadBlogIndex();
   const notServed = index.filter((e) => !isServed(e));
 
-  it('serves the three sets and nothing else', () => {
+  it('serves the two sets and nothing else', () => {
     expect(notServed.filter((e) => e.type === 'pathway').length).toBeGreaterThan(700);
-    expect(notServed.every((e) => e.type === 'pathway' || (e.type === 'reference' && !e.reviewed))).toBe(true);
-    expect(index.filter(isServed).every((e) => (e.type ?? 'article') === 'article' || e.type === 'guideline' || !!e.reviewed)).toBe(true);
+    expect(notServed.filter((e) => e.type === 'guideline').map((e) => e.handle).sort()).toEqual(['diet', 'exercise', 'sleep']);
+    expect(notServed.every((e) => e.type === 'pathway' || e.type === 'guideline' || (e.type === 'reference' && !e.reviewed))).toBe(true);
+    expect(index.filter(isServed).every((e) => (e.type ?? 'article') === 'article' || (e.type === 'reference' && !!e.reviewed))).toBe(true);
   });
 
-  it('never returns a pathway or a non-master reference, searched by each one\'s own title', () => {
+  it('never returns a pathway, guideline or non-master reference, searched by each one\'s own title', () => {
     const banned = new Set(notServed.map((e) => e.handle));
     for (const e of notServed) {
       const results = (callKnowledgeTool('search_knowledge', { query: e.title.slice(0, 200) }).structured as { results: Array<{ handle: string }> }).results;
@@ -368,7 +369,7 @@ describe('US-41 AC11 — only Brad-authored content: articles, guidelines, topic
     }
   });
 
-  it('refuses to read any pathway or non-master reference', () => {
+  it('refuses to read any pathway, guideline or non-master reference', () => {
     for (const e of notServed) {
       const answer = callKnowledgeTool('get_article', { handle: e.handle });
       expect(answer.isError, e.handle).toBe(true);
@@ -378,18 +379,48 @@ describe('US-41 AC11 — only Brad-authored content: articles, guidelines, topic
 });
 
 describe('US-41 AC8 — a cut entry keeps every safety section (adversary R1)', () => {
-  it('a whole-entry read of every served entry holds each safety, side-effect, toxicity and interaction heading, inside the cap', () => {
+  /** The test's own risk words, wider than the implementation's on purpose (re-check F3). */
+  const RISK_HEADING = /^#{2,6} .*\b(?:safe|safety|unsafe|side[- ]effects?|adverse|toxic|toxicity|overdose|interact\w*|contraindicat\w*|precautions?|cautions?|warnings?|pregnan\w*|breastfeeding|lactation|special populations?|risks?|risk factors?|who should not|avoid)\b.*$/gim;
+
+  it('a whole-entry read of every served entry holds each risk heading, inside the cap', () => {
     let cut = 0;
     for (const e of loadBlogIndex().filter(isServed)) {
-      const raw = readFileSync(`${e.type === 'guideline' ? 'docs/guideline' : 'docs/blog'}/${e.handle}.md`, 'utf8');
+      const raw = readFileSync(`docs/blog/${e.handle}.md`, 'utf8');
       const s = callKnowledgeTool('get_article', { handle: e.handle }).structured as { body: string; truncated: boolean };
       expect(s.body.length, e.handle).toBeLessThanOrEqual(MAX_ARTICLE_CHARS);
       if (s.truncated) cut++;
-      for (const [heading] of raw.matchAll(/^#{2,6} .*\b(?:safety|side effects?|toxicity|interactions?)\b.*$/gim)) {
+      for (const [heading] of raw.matchAll(RISK_HEADING)) {
         expect(s.body, `${e.handle}: ${heading}`).toContain(heading);
       }
     }
     expect(cut).toBeGreaterThan(15);
+  });
+
+  it('with no safety section, the note says so and names the headings it cut (F1)', () => {
+    const body = `## Start\n${'a'.repeat(3_000)}\n## Middle\n${'b'.repeat(3_000)}\n## Late finding\n${'c'.repeat(3_000)}`;
+    const cut = cutEntry(body, 5_000);
+    expect(cut.length).toBeLessThanOrEqual(5_000);
+    expect(cut).toContain('No safety section was found in this entry; read the sections list.');
+    expect(cut).toContain('Late finding');
+    expect(cut).not.toContain('follow whole');
+  });
+
+  it('safety blocks that alone pass the budget are cut, and the note says so (F2)', () => {
+    const body = `## Current view\n${'v'.repeat(5_000)}\n## 5. Safety\n${'s'.repeat(20_000)}`;
+    const cut = cutEntry(body, 12_000);
+    expect(cut.length).toBeLessThanOrEqual(12_000);
+    expect(cut).toContain('too long to fit whole');
+    expect(cut).not.toContain('follow whole');
+    expect(cut.startsWith('## Current view')).toBe(true);
+    expect(cut.indexOf('## 5. Safety')).toBeGreaterThan(4_000);
+    // When they fit, the note says whole.
+    expect(cutEntry(`## Current view\n${'v'.repeat(20_000)}\n## 5. Safety\nshort`, 12_000)).toContain('follow whole');
+  });
+
+  it('widened headings count as safety: contraindications, precautions, adverse, cautions, warnings, pregnancy, special populations, risk factors (F1)', () => {
+    for (const h of ['Contraindications', 'Precautions', 'Adverse Events', 'Cautions', 'Warnings', 'Pregnancy and Breastfeeding', 'Special Populations', 'Risk Factors']) {
+      expect(safetyBlocks(`## Intro\nx\n## ${h}\ny\n## End\nz`), h).toEqual([`## ${h}\ny`]);
+    }
   });
 
   it('takes a nested safety block once, and stops at the next heading of its level', () => {
@@ -399,14 +430,14 @@ describe('US-41 AC8 — a cut entry keeps every safety section (adversary R1)', 
 });
 
 describe('US-41 AC7 — url is the file\'s own link, never the index\'s (adversary R2)', () => {
-  it('a guideline has none; an article has its frontmatter url', () => {
-    const guideline = callKnowledgeTool('get_article', { handle: 'sleep' }).structured as { type: string; url: string | null };
-    expect(guideline).toMatchObject({ type: 'guideline', url: null });
+  it('an article and a master carry their frontmatter url', () => {
+    for (const handle of [MAGNESIUM]) {
+      const own = parseFrontmatter(readFileSync(`docs/blog/${handle}.md`, 'utf8'))!.url;
+      expect((callKnowledgeTool('get_article', { handle }).structured as { url: string }).url).toBe(own);
+    }
     const article = loadBlogIndex().find((e) => (e.type ?? 'article') === 'article')!;
     const own = parseFrontmatter(readFileSync(`docs/blog/${article.handle}.md`, 'utf8'))!.url;
     expect(own).toMatch(/^https:\/\//);
     expect((callKnowledgeTool('get_article', { handle: article.handle }).structured as { url: string }).url).toBe(own);
-    const results = (callKnowledgeTool('search_knowledge', { query: 'sleep insomnia guidance' }).structured as { results: Array<{ type: string; url: string | null }> }).results;
-    expect(results.find((r) => r.type === 'guideline')?.url).toBeNull();
   });
 });

@@ -5,7 +5,7 @@
  * user's AI pays: nothing here calls a model, an embeddings API or any other
  * network service. It is the CLI's BM25 ranker (`tools/search-knowledge.ts`)
  * over the files bundled into the image (`docs/blog/index.json` and the
- * bodies under docs/blog, docs/pathway and docs/guideline), and the client's
+ * bodies under docs/blog), and the client's
  * model reads what comes back.
  *
  * Off unless `MCP_KNOWLEDGE_TOOLS=on`: while off, `tools/list`, `initialize`
@@ -73,7 +73,7 @@ const RESULT_SCHEMA = {
   type: 'object',
   properties: {
     handle: { type: 'string' },
-    type: { type: 'string', enum: ['reference', 'article', 'guideline'] },
+    type: { type: 'string', enum: ['reference', 'article'] },
     master: { type: 'boolean', description: 'A topic page carrying Dr Brad\'s current view.' },
     title: { type: 'string' },
     url: { type: ['string', 'null'] },
@@ -92,7 +92,7 @@ export const KNOWLEDGE_TOOLS: McpToolDefinition[] = [
     title: 'Search Dr Brad\'s education library',
     description:
       'Search Dr Brad Stanfield\'s education library: his topic pages on supplements, each with his current view, ' +
-      'his video articles, and his clinical guidelines on diet, exercise and sleep. Returns at most ' +
+      'and his video articles. Returns at most ' +
       `${MAX_RESULTS} entries, topic pages first when the query names their topic, each with a short excerpt, its ` +
       'handle and a public link; read one in full with get_article. This is a word search over files on this ' +
       'server and no model runs here, so query with topic words ("magnesium sleep"), never the user\'s values or ' +
@@ -132,7 +132,7 @@ export const KNOWLEDGE_TOOLS: McpToolDefinition[] = [
       'Read one entry of Dr Brad Stanfield\'s education library by the handle search_knowledge returned. An entry ' +
       `longer than ${MAX_ARTICLE_CHARS.toLocaleString('en-US')} characters is cut there; \`sections\` lists its headings, ` +
       'and `section` (words from one heading, e.g. "Safety" or "Drug Interactions") reads that section instead. A cut ' +
-      'entry always carries its safety, side-effect, toxicity and interaction sections whole, after the cut. ' +
+      'entry carries its safety, side-effect, interaction and caution sections after the cut, and its note says if any were cut or none were found. ' +
       'Before answering about a dose, side effects or interactions, read the entry\'s safety and interactions ' +
       'sections. No model runs here, and it reads nothing from the health record.' + RULES,
     inputSchema: {
@@ -180,11 +180,13 @@ export function isKnowledgeTool(name: string): boolean {
 const isMaster = (entry: BlogIndexEntry) => entry.type === 'reference' && /^\d{4}-\d{2}-\d{2}$/.test(entry.reviewed ?? '');
 
 /**
- * Brad's own writing only (AC11): his video articles, his guidelines and the
- * topic masters. Pathways (HealthPathways-derived) and the other references
- * (ConsumerLab-derived) stay with the chatbot and are never served here.
+ * What is already public under Brad's name (AC11): his video articles and the
+ * topic masters, each published at its drstanfield.com url. Pathways
+ * (HealthPathways-derived), the guidelines (which quote HealthPathways and
+ * UpToDate) and the other references (ConsumerLab-derived) stay with the
+ * chatbot and are never served here.
  */
-export const isServed = (entry: BlogIndexEntry) => (entry.type ?? 'article') === 'article' || entry.type === 'guideline' || isMaster(entry);
+export const isServed = (entry: BlogIndexEntry) => (entry.type ?? 'article') === 'article' || isMaster(entry);
 
 /** `url` is the file's own frontmatter link, as the chatbot cites it; never the index's synthesised one. */
 function describeEntry(entry: BlogIndexEntry, raw: string) {
@@ -213,8 +215,10 @@ function library() {
 /** The body as the model should read it: frontmatter off. */
 const bodyOf = (raw: string) => stripFrontmatter(raw).trim();
 
-/** A heading naming safety, side effects, toxicity or interactions, at any level from `##`. */
-const SAFETY_HEADING = /^(#{2,6}) .*\b(?:safety|side effects?|toxicity|interactions?)\b.*$/gim;
+/** A heading naming a risk (safety, side effects, toxicity, interactions, who should take care), at any level from `##`. */
+const SAFETY_HEADING = /^(#{2,6}) .*\b(?:safety|side effects?|toxicity|interactions?|contraindications?|precautions?|adverse|cautions?|warnings?|pregnancy|special populations?|risk factors?)\b.*$/gim;
+/** The body start a cut always keeps, whatever the safety blocks need: a master's Current view and Key safety points. */
+const MIN_START_CHARS = 4_000;
 
 /**
  * Every safety block of a body: a matching heading to the next heading of its
@@ -234,15 +238,27 @@ export function safetyBlocks(body: string): string[] {
 }
 
 /**
- * A whole entry over the cap: its start, a note, then every safety block
- * whole. The room for the blocks is reserved first, so the total stays inside
- * the cap and a cut never drops a safety, toxicity or interaction section.
+ * A whole entry over the cap: its start, a note, then its safety blocks. The
+ * room for the blocks is reserved first, so the total stays inside the cap.
+ * The note says what follows: the blocks whole, the blocks cut (when they
+ * alone pass the room left after MIN_START_CHARS), or that there are none,
+ * naming the headings the cut dropped.
  */
-function cutEntry(body: string): string {
-  const blocks = safetyBlocks(body).join('\n\n');
-  const note = `\n\n[Cut at the ${MAX_ARTICLE_CHARS.toLocaleString('en-US')}-character limit (the entry has ${body.length.toLocaleString('en-US')}). `
-    + `Its safety, side-effect, toxicity and interaction sections follow whole; read any other part with section.]\n\n`;
-  return `${body.slice(0, Math.max(0, MAX_ARTICLE_CHARS - note.length - blocks.length))}${note}${blocks}`.slice(0, MAX_ARTICLE_CHARS);
+export function cutEntry(body: string, cap = MAX_ARTICLE_CHARS): string {
+  const head = `\n\n[Cut at the ${cap.toLocaleString('en-US')}-character limit (the entry has ${body.length.toLocaleString('en-US')}). `;
+  let blocks = safetyBlocks(body).join('\n\n');
+  if (!blocks) {
+    const room = cap - head.length - 300;
+    const dropped = sectionsOf(body.slice(room)).map(headingOf).join(' | ');
+    const note = `${head}No safety section was found in this entry; read the sections list. Cut-off sections: ${dropped}`.slice(0, cap - room - 2) + ']';
+    return `${body.slice(0, room)}${note}`;
+  }
+  const whole = 'Its safety, side-effect, toxicity, interaction and caution sections follow whole; read any other part with section.]\n\n';
+  const over = 'Its safety, side-effect, toxicity, interaction and caution sections are too long to fit whole: they follow, cut at the limit. Read each with section.]\n\n';
+  const fits = head.length + whole.length + blocks.length <= cap - MIN_START_CHARS;
+  const note = head + (fits ? whole : over);
+  if (!fits) blocks = blocks.slice(0, cap - MIN_START_CHARS - note.length);
+  return `${body.slice(0, cap - note.length - blocks.length)}${note}${blocks}`;
 }
 
 /** The `## ` sections of a body, each from its heading to the next. */
