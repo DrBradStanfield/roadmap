@@ -1059,8 +1059,12 @@ As a user reading my plan or a reminder email, I can add any due item to my own 
 - AC4: Zero server-side storage change; zero new data crosses.
 - Tests: ✅ URL-building pinned (`plan-ready-email.test.ts`: TEMPLATE params, exclusive end date incl. year rollover, re-entry pointer); email placement pinned in the calendar-section suites.
 
-### US-25 · The mobile app — architectural destination (stub; this-year ambition once the web loop is proven)
+### US-25 · The mobile app — architectural destination (**native iOS build started 2026-10-21**; decisions: [ios/architecture.md](../ios/architecture.md))
 As the avatar's future self, I have an app that makes the whole thing automatic: **on-device notifications** (reminders with no server at all — the true serverless end-state), **HealthKit ingestion** (US labs push results into Apple Health; the app reads bloods, recomputes the plan, no typing), durable storage (no localStorage wipe anxiety). The enrolment/consent model built for US-17/US-23 transfers as-is; the server calendar shrinks toward zero as users migrate. Every near-term decision gets checked against the constitution's question: *does this move toward or away from the phone?*
+- **Usage signal (Brad, 2026-10-21):** App Store Connect analytics (installs, sessions, retention, crashes, opted-in users). The app sends no product events to our server; it cannot see "viewed a plan".
+- AC1 (spike, 2026-10-21): the app runs the same health-core engine as the web, in JavaScriptCore, with no WebView. For the sample record (`docs/examples/health-roadmap.sample.json`) at a pinned instant, the app's plan JSON equals Node's byte for byte, with the time zone pinned to UTC and to Pacific/Auckland. Tests: `ios/HealthRoadmapTests/EngineParityTests.swift`, goldens from `ios/scripts/build-engine.mjs`.
+- AC2 (spike): on launch the app shows that plan's suggestions, natively, and how long the engine took to load and to compute. Limits: plan under 100 ms, cold engine load under 300 ms (ios/architecture.md D2). Simulator only so far; a real iPhone is still owed.
+- Tests: 🟡 AC1 on the simulator; AC2 checked by screenshot, no UI test yet.
 
 ### US-26 · Action links — every reminder pairs the "what" with a "where" (stub)
 As a user told a lipid panel is due, the reminder also tells me where to get one — direct-to-consumer lab links (Quest/Ulta-style, US), supplement refills via Brad's store, later pharmacy integration. Start affiliate-grade (plain links, zero API work); the click-through data is the evidence needed before building any real integration. This is the monetization seam, honestly labeled — and it must never gate the reminder itself.
