@@ -28,7 +28,7 @@ vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
 }));
 
 import * as Sentry from '@sentry/react-router';
-import { ExtractionStopError } from '../lib/anthropic.server';
+import { BatchRefusedError, ExtractionStopError } from '../lib/anthropic.server';
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { machineFiles } from '../lib/rate-limiter';
 import { action, loader } from './api.lab-import-v2';
@@ -448,12 +448,32 @@ describe('US-12 AC17: a batch that never reaches Anthropic costs no quota', () =
     } finally { machineFiles.reset(); }
   });
 
-  it('createBatch throws: the IP and the machine are both refunded', async () => {
-    createBatch.mockRejectedValueOnce(new Error('Batch API error (status 500)'));
-    const machineBefore = machineFiles.remaining('machine');
-    const res = await action({ request: one('10.4.0.2') } as never);
-    expect(res.status).toBe(500);
-    expect(await remaining('10.4.0.2')).toBe(200);
-    expect(machineFiles.remaining('machine')).toBe(machineBefore);
+  it('Anthropic certainly refused the batch (a non-OK answer, or no key): the IP and the machine are both refunded', async () => {
+    for (const [i, message] of ['Batch API error (status 500)', 'ANTHROPIC_API_KEY not configured'].entries()) {
+      createBatch.mockRejectedValueOnce(new BatchRefusedError(message));
+      const machineBefore = machineFiles.remaining('machine');
+      const res = await action({ request: one(`10.4.0.${2 + i}`) } as never);
+      expect(res.status).toBe(500);
+      expect(await remaining(`10.4.0.${2 + i}`)).toBe(200);
+      expect(machineFiles.remaining('machine')).toBe(machineBefore);
+    }
+  });
+
+  // The batch may exist (Codex R2, adversary F1): a timeout, a network failure
+  // or an unreadable 200 keeps the charge.
+  it('a timeout, a network failure or an unreadable 200 keeps the charge', async () => {
+    const maybeMade = [
+      new DOMException('The operation was aborted due to timeout', 'TimeoutError'),
+      new TypeError('fetch failed'),
+      new SyntaxError('Unexpected end of JSON input'),
+    ];
+    for (const [i, err] of maybeMade.entries()) {
+      createBatch.mockRejectedValueOnce(err);
+      const machineBefore = machineFiles.remaining('machine');
+      const res = await action({ request: one(`10.4.1.${i}`) } as never);
+      expect(res.status).toBe(500);
+      expect(await remaining(`10.4.1.${i}`)).toBe(199);
+      expect(machineFiles.remaining('machine')).toBe(machineBefore - 1);
+    }
   });
 });

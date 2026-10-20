@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 
 import * as Sentry from '@sentry/react-router';
-import { createBatch, deleteBatch, pollBatch } from './anthropic.server';
+import { BatchRefusedError, createBatch, deleteBatch, pollBatch } from './anthropic.server';
 
 const letter = JSON.stringify({ classification: 'other', reportDate: null, values: [], additionalValues: [], document: null });
 const errorOf = (r: object) => ('errorCode' in r ? r.errorCode : undefined);
@@ -244,5 +244,33 @@ describe('US-12 AC18: deleteBatch', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('fetch failed'); }));
     expect(await deleteBatch('batch_synthetic')).toBe(false);
+  });
+});
+
+// US-12 AC17: the route refunds a batch's files only when Anthropic certainly
+// made no batch, so createBatch marks exactly those failures.
+describe('US-12 AC17: createBatch marks a certain refusal', () => {
+  const files = [{ pages: [{ type: 'text' as const, content: 'synthetic' }] }];
+
+  it('no key, or a non-OK answer: BatchRefusedError', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    await expect(createBatch(files)).rejects.toBeInstanceOf(BatchRefusedError);
+    vi.stubEnv('ANTHROPIC_API_KEY', 'synthetic-test-key');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 529 })));
+    await expect(createBatch(files)).rejects.toBeInstanceOf(BatchRefusedError);
+  });
+
+  it('a network failure, a timeout or an unreadable 200: any other error', async () => {
+    for (const fail of [
+      async () => { throw new TypeError('fetch failed'); },
+      async () => { throw new DOMException('timed out', 'TimeoutError'); },
+      async () => new Response('not json', { status: 200 }),
+    ]) {
+      vi.stubGlobal('fetch', vi.fn(fail));
+      const err = await createBatch(files).catch(e => e);
+      expect(err).toBeInstanceOf(Error);
+      expect(err).not.toBeInstanceOf(BatchRefusedError);
+    }
   });
 });

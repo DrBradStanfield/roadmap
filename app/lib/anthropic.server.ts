@@ -487,13 +487,17 @@ export async function streamAnthropicWithUsage(
 // Batch API — processes all files in a single batch request
 // ---------------------------------------------------------------------------
 
+/** A batch Anthropic certainly did not create: no key, or a non-OK answer. Any
+ *  other failure (timeout, network, unreadable 200) may have left one behind. */
+export class BatchRefusedError extends Error {}
+
 /** Create a batch of LLM requests — one per file, named by its index alone
  *  (`file-N`): the browser keeps the file names. Returns the batch ID. */
 export async function createBatch(
   files: Array<{ pages: PageContent[] }>,
 ): Promise<{ batchId: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
+  if (!apiKey) throw new BatchRefusedError('ANTHROPIC_API_KEY not configured');
 
   const requests = files.map((file, index) => ({
     custom_id: `file-${index}`,
@@ -518,7 +522,7 @@ export async function createBatch(
   if (!response.ok) {
     // Discard provider bodies: a 400 can echo the request, i.e. the user's lab pages.
     await response.body?.cancel();
-    const err = new Error(`Batch API error (status ${response.status})`);
+    const err = new BatchRefusedError(`Batch API error (status ${response.status})`);
     console.error(err.message);
     Sentry.captureException(err, { extra: { status: response.status } });
     throw err;

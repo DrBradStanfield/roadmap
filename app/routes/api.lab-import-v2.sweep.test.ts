@@ -39,6 +39,8 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
+  createBatch.mockReset(); // a busy answer leaves its queued id unused
+  createBatch.mockResolvedValue({ batchId: 'batch_left' });
   deleteBatch.mockReset();
   deleteBatch.mockResolvedValue(true);
   pollBatch.mockResolvedValue({ status: 'ended', completed: 1, total: 1, results: [{ index: 0 }] });
@@ -116,5 +118,19 @@ describe('US-12 AC18: the sweep deletes each batch at Anthropic', () => {
     const preflight = await loader({ request: new Request(URL, { headers: { 'fly-client-ip': '10.5.9.9' } }) } as never);
     expect((await preflight.json()).remaining).toBe(200);
     await vi.advanceTimersByTimeAsync(70 * MIN); // the sweep clears them
+  });
+
+  // Codex re-check R1: a batch first served just past its hour keeps 10 minutes.
+  it('a first answer just after the 1-hour mark still gets its 10 minutes', async () => {
+    await vi.advanceTimersByTimeAsync(toNextSweep()); // upload at a sweep
+    const token = await uploaded('batch_late');
+    await vi.advanceTimersByTimeAsync(60 * MIN + 1);
+    expect(deleteBatch).not.toHaveBeenCalled();
+    expect((await poll('batch_late', token)).status).toBe(200); // served at 1 h + 1 ms
+    await vi.advanceTimersByTimeAsync(10 * MIN - 1); // the 70-minute sweep
+    expect(deleteBatch).not.toHaveBeenCalled();
+    expect((await poll('batch_late', token)).status).toBe(200);
+    await vi.advanceTimersByTimeAsync(10 * MIN);
+    expect(deleteBatch).toHaveBeenCalledWith('batch_late');
   });
 });

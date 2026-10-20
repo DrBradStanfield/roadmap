@@ -3,7 +3,7 @@ import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
 import { UNDATED_PREVIOUS } from '../../packages/health-core/src/lab-extraction';
-import { extractOrClassify, createBatch, pollBatch, deleteBatch, ExtractionStopError, reportExtractionStop } from '../lib/anthropic.server';
+import { extractOrClassify, createBatch, pollBatch, deleteBatch, BatchRefusedError, ExtractionStopError, reportExtractionStop } from '../lib/anthropic.server';
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
@@ -44,7 +44,7 @@ function consumeQuota(ip: string, count: number): boolean {
   return false;
 }
 
-/** Hand back files charged for a batch that never reached Anthropic. */
+/** Hand back files charged for a batch Anthropic certainly did not create. */
 function refundQuota(ip: string, count: number): void {
   ipQuota.refund(ip, count);
   machineFiles.refund('machine', count);
@@ -75,7 +75,8 @@ const sweep = setInterval(async () => {
   try {
     const now = Date.now();
     for (const [id, b] of activeBatches) {
-      if ((b.servedAt ?? now) <= now - 10 * 60_000 || b.createdAt < now - 60 * 60_000) {
+      // A served batch keeps its 10 minutes, however old; an unserved one gets an hour.
+      if (b.servedAt ? b.servedAt <= now - 10 * 60_000 : b.createdAt < now - 60 * 60_000) {
         activeBatches.delete(id);
         undeletedBatches.set(id, b.createdAt);
       }
@@ -211,7 +212,11 @@ export async function action({ request }: ActionFunctionArgs) {
           { status: 429 },
         );
       }
-      const { batchId } = await createBatch(files).catch((err: unknown) => { refundQuota(ip, files.length); throw err; });
+      // A timeout or network failure may still have made the batch: it stays charged.
+      const { batchId } = await createBatch(files).catch((err: unknown) => {
+        if (err instanceof BatchRefusedError) refundQuota(ip, files.length);
+        throw err;
+      });
       const pollToken = newPollToken();
       activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken, days: { ownDates, undatedPrev }, refusedRows });
       return Response.json({ success: true, batchId, pollToken, totalFiles: files.length });
