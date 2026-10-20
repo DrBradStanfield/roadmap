@@ -21,7 +21,7 @@ const fakes = vi.hoisted(() => {
     ref('tm-big', '2026-10-20'),
     ref('tm-huge'),
     ref('tm-master-long', '2026-10-20'),
-    ref('tm-safe'), ref('tm-safe-big'), ref('tm-mid1'), ref('tm-mid2'),
+    ref('tm-safe'), ref('tm-mid1'), ref('tm-mid2'), ref('tm-cited'), ref('tm-numbered'),
     { title: 'An article', handle: 'tm-article', url: 'u', tags: [], publishedAt: '2025-01-01T00:00:00Z' },
   ];
 });
@@ -46,8 +46,9 @@ vi.mock('./chat.server', async (orig) => ({
 }));
 
 import { runPipeline } from './youtube-bot.server';
-import { currentViewSection, safetySections, masterViews, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_MASTER_BLOCK_CHARS } from './youtube-context';
+import { currentViewSection, safetySections, masterViews, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS } from './youtube-context';
 import { getChatCompletion } from './chat.server';
+import { loadBlogIndex } from './blog-index.server';
 import { routeQuery } from './chat-router.server';
 
 const VIEW = '## Current view (reviewed 20 October 2026)\n\nCollagen peptides may improve skin hydration [the-collagen-peptides-for-skin-story-is-changing].';
@@ -55,11 +56,12 @@ const files: Record<string, string> = {
   'tm-collagen': `---\ntitle: "Collagen"\nreviewed: "2026-10-20"\n---\n\n# Collagen\n\nIntro.\n\n${VIEW}\n\n## Brad's videos on this topic\n\n- 2025: old video.\n\n## Evidence review\n\nLong review.\n`,
   'tm-nad': `---\ntitle: "NAD"\n---\n\n# NAD\n\n## Current evidence position\n\nAn evidence summary, not Brad's view.\n\n## Evidence review\n\nMore.\n`,
   'tm-empty': `---\ntitle: "Empty"\n---\n\n# Empty\n\n## Evidence review\n\nOnly a review.\n`,
-  'tm-big': `---\ntitle: "Big"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'x'.repeat(MAX_MASTER_BLOCK_CHARS)}\n`,
+  'tm-big': `---\ntitle: "Big"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'x'.repeat(MAX_MASTER_VIEW_CHARS)}\n`,
   'tm-safe': `---\ntitle: "Safe"\n---\n\n## Current view (reviewed 20 October 2026)\n\nSafe view.\n\n## 3. Evidence for Benefits\n\nBenefits.\n\n## 5. Safety and Side Effects\n\n### Common Side Effects\n\nMild bloating.\n\n## 6. Drug Interactions\n\nMay interact with warfarin.\n\n## 7. Dietary Sources\n\nFood.\n\n## Cautions\n\nA caution.\n\n## Who Should Not Take It\n\nPregnant people.\n\n## Who Should Consider Taking It\n\nMost adults.\n`,
-  'tm-safe-big': `---\ntitle: "Safe big"\n---\n\n## Current view (reviewed 20 October 2026)\n\nA short view.\n\n## 5. Safety and Side Effects\n\n${'s'.repeat(MAX_MASTER_BLOCK_CHARS)}\n`,
-  'tm-mid1': `---\ntitle: "Mid1"\n---\n\n## Current view (reviewed 20 October 2026)\n\nMid one.\n\n## Safety\n\n${'1'.repeat(MAX_MASTER_BLOCK_CHARS - 200)}\n`,
-  'tm-mid2': `---\ntitle: "Mid2"\n---\n\n## Current view (reviewed 20 October 2026)\n\nMid two.\n\n## Safety\n\n${'2'.repeat(MAX_MASTER_BLOCK_CHARS - 200)}\n`,
+  'tm-mid1': `---\ntitle: "Mid1"\n---\n\n## Current view (reviewed 20 October 2026)\n\nMid one.\n\n## Safety\n\n${'1'.repeat(MAX_MASTER_VIEW_CHARS - 1_500)}\n`,
+  'tm-mid2': `---\ntitle: "Mid2"\n---\n\n## Current view (reviewed 20 October 2026)\n\nMid two.\n\n## Safety\n\n${'2'.repeat(2_000)}\n`,
+  'tm-cited': `---\ntitle: "Cited"\n---\n\n## Current view (reviewed 20 October 2026)\n\nCited view [1].\n\n## 3. Evidence\n\nBenefit [1].\n\n## 5. Safety and Side Effects\n\nRare rash [2]. Liver note [3, 5]. Range [6–7]. A DOI link [10.1000/xyz].\n\n## 9. References\n\n[1] Ref one.\n\n[2] Ref two.\n\n[3] Ref three.\n\n[4] Ref four.\n\n[5] Ref five.\n\n[6] Ref six.\n\n[7] Ref seven.\n`,
+  'tm-numbered': `---\ntitle: "Numbered"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNumbered view.\n\n## 6. Drug Interactions\n\nWarfarin [2].\n\n## 8. References\n\n1. Ref A.\n2. Ref B.\n`,
   'tm-huge': `---\ntitle: "Huge"\n---\n\n${'h'.repeat(110_000)}\n`,
   'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
   'tm-article': `---\ntitle: "An article"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNot a master.\n`,
@@ -116,7 +118,22 @@ describe('masterViews on the published masters (US-50 AC6)', () => {
     expect(interactions).toBeGreaterThan(safety);
     expect(block).not.toMatch(/^### \d+\. (?:References|Overview|Recommended Dosing)/m);
     expect(block).not.toContain("Brad's videos on this topic");
-    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_BLOCK_CHARS + MASTER_VIEWS_HEADING.length + 2);
+    expect(block).toMatch(/^\[\d+\] .+/m); // a cited bibliography line came with the safety text
+    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
+  });
+
+  // A post naming five reviewed masters (collagen, creatine, magnesium, taurine,
+  // vitamin K): every view goes in, safety sections fill the rest of the cap,
+  // and each one skipped for the cap is logged with its handle.
+  it('the-only-three-supplements-doctor-brad-takes: all five views, then safety within the total cap', () => {
+    const entry = loadBlogIndex().find(e => e.handle === 'the-only-three-supplements-doctor-brad-takes')!;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const block = masterViews(entry.topics, [])!;
+    const views = block.match(/^### Current view \(reviewed/gm) ?? [];
+    expect(views).toHaveLength(5);
+    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
+    expect(block).toMatch(/^### \d+\. Safety and Side Effects$/m);
+    for (const [msg] of warn.mock.calls) expect(String(msg)).toMatch(/^YouTube master views: safety section skipped for the cap: [a-z0-9-]+ /);
   });
 });
 
@@ -139,28 +156,32 @@ describe('masterViews (US-50 AC6)', () => {
     expect(block).not.toContain('Not a master');
   });
 
-  it('a master whose block would pass the per-master cap is skipped whole, never the rest', () => {
+  it('a view is never dropped for size (US-50 AC6)', () => {
     fakeFiles();
     const block = masterViews(['tm-big', 'tm-collagen'], [])!;
-    expect(block).not.toContain('xxxx');
+    expect(block).toContain('xxxx');
     expect(block).toContain('Collagen peptides');
   });
 
-  it('safety text that would pass the per-master cap drops the whole master, never the view alone (US-50 AC6)', () => {
+  it('every view goes in first; a safety section that would pass the total cap is skipped and logged (US-50 AC6)', () => {
     fakeFiles();
-    const block = masterViews(['tm-safe-big', 'tm-collagen'], [])!;
-    expect(block).not.toContain('A short view.');
-    expect(block).not.toContain('ssss');
-    expect(block).toContain('Collagen peptides');
-  });
-
-  it('a master that would pass the total cap is skipped, never the rest', () => {
-    fakeFiles();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const block = masterViews(['tm-mid1', 'tm-mid2', 'tm-collagen'], [])!;
-    expect(block).toContain('Mid one.');
-    expect(block).not.toContain('Mid two.');
-    expect(block).toContain('Collagen peptides');
-    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2 + 3 * 7);
+    for (const view of ['Mid one.', 'Mid two.', 'Collagen peptides']) expect(block).toContain(view);
+    expect(block).toContain('1111');
+    expect(block).not.toContain('2222');
+    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
+    const logged = warn.mock.calls.map(([m]) => String(m));
+    expect(logged).toContain('YouTube master views: safety section skipped for the cap: tm-mid2 "## Safety"');
+    expect(logged.some(m => m.includes('tm-mid1'))).toBe(false);
+  });
+
+  it('a safety section brings the bibliography lines its [n] markers cite, and only those (US-50 AC6)', () => {
+    fakeFiles();
+    const block = masterViews(['tm-cited', 'tm-numbered'], [])!;
+    for (const line of ['[2] Ref two.', '[3] Ref three.', '[5] Ref five.', '[6] Ref six.', '[7] Ref seven.', '[2] Ref B.']) expect(block).toContain(line);
+    for (const line of ['Ref one.', 'Ref four.', 'Ref A.']) expect(block).not.toContain(line);
+    expect(block.indexOf('[2] Ref two.')).toBeGreaterThan(block.indexOf('Rare rash [2].'));
   });
 
   it('adds the safety, side-effect, caution, interaction and who-should-not sections after the view (US-50 AC6)', () => {

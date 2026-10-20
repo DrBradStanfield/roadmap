@@ -59,17 +59,18 @@ export function loadedHandles(routerHandles: string[], matched: { skipped: strin
 export const MASTER_VIEWS_HEADING = "## Brad's current view and safety notes on this video's topics (added automatically for this video; not router-matched content)";
 
 /**
- * Caps on what the master views add. One master's block (header, current view,
- * safety sections) runs 4,900 (taurine) to 12,900 characters (vitamin C) on the
- * six masters published 2026-10-20, so 16,000 per master holds each with room,
- * while a malformed section (a missing next heading pulling in the whole 29K to
- * 83K reference) is skipped. A block over the cap is dropped whole: the view is
- * never sent without its safety text. The 30,000 total holds the two largest
- * masters together, or three typical ones; the YouTube context is uncached, so
- * every character (about 7,500 tokens at the total) is paid on every comment.
+ * Cap on what the master views add. Every named master's current view goes in
+ * first and is never dropped for size (a view runs about 1,600 to 2,100
+ * characters on the six masters published 2026-10-20). Safety sections, with
+ * the bibliography lines they cite, then fill what is left, in topics order;
+ * one that would pass the cap is skipped and logged. One master's full block
+ * runs about 6,900 (taurine) to 19,400 characters (vitamin C) with its cited
+ * references, so 40,000 holds two or three masters in full; a post naming five
+ * (the-only-three-supplements-doctor-brad-takes) gets all five views and three
+ * masters' safety text. The YouTube context is uncached, so every character
+ * (about 10,000 tokens at the cap) is paid on every comment.
  */
-export const MAX_MASTER_BLOCK_CHARS = 16_000;
-export const MAX_MASTER_VIEW_CHARS = 30_000;
+export const MAX_MASTER_VIEW_CHARS = 40_000;
 
 /** A master's "Current view" or "Current evidence position" section, heading to
  *  the next `## ` heading, demoted one level to sit under MASTER_VIEWS_HEADING.
@@ -88,25 +89,52 @@ export function currentViewSection(md: string): string | null {
  *  Effects", "## 6. Drug Interactions" on the published masters). */
 const SAFETY_HEADING = /^## .*\b(?:safety|side effects?|cautions?|interactions?|contraindications?|who should not)\b/i;
 
+/** A master's bibliography from its References section, marker number to
+ *  line: "[n] text" and "n. text" lines both come back as "[n] text". */
+function bibliography(body: string): Map<number, string> {
+  const refs = body.split(/^(?=## )/m).find(s => /^## .*\bReferences\b/.test(s)) ?? '';
+  return new Map([...refs.matchAll(/^(?:\[(\d+)\]|(\d+)\.) +(.+)$/gm)]
+    .map(m => [Number(m[1] ?? m[2]), `[${m[1] ?? m[2]}] ${m[3]}`]));
+}
+
+/** The marker numbers a section cites: [3], [3, 5] and [6–7]. A bracketed
+ *  DOI ("[10.1000/x]") is not a marker. */
+function citedNumbers(text: string): number[] {
+  const cited = new Set<number>();
+  for (const [, list] of text.matchAll(/\[(\d+(?:\s*[,–-]\s*\d+)*)\]/g)) {
+    for (const part of list.split(',')) {
+      const [from, to = from] = part.split(/[–-]/).map(Number);
+      for (let n = from; n <= Math.min(to, from + 50); n++) cited.add(n);
+    }
+  }
+  return [...cited].sort((a, b) => a - b);
+}
+
 /** Each safety section of a master, heading to the next `## ` heading, every
- *  heading in it demoted one level. Empty when the master has none. */
+ *  heading in it demoted one level, followed by the bibliography lines its
+ *  [n] markers cite. Empty when the master has none. */
 export function safetySections(md: string): string[] {
-  return stripFrontmatter(md).split(/^(?=## )/m)
+  const body = stripFrontmatter(md);
+  const refs = bibliography(body);
+  return body.split(/^(?=## )/m)
     .filter(s => SAFETY_HEADING.test(s))
-    .map(s => s.replace(/^(#+) /gm, '#$1 ').trim());
+    .map(s => {
+      const section = s.replace(/^(#+) /gm, '#$1 ').trim();
+      const cited = citedNumbers(section).flatMap(n => refs.get(n) ?? []);
+      return cited.length > 0 ? `${section}\n\nReferences cited above:\n\n${cited.join('\n')}` : section;
+    });
 }
 
 /**
  * The master views for a comment: each reference named in the post's `topics`,
  * once, skipping masters already loaded as router-matched content (pass the
- * loaded handles, from loadedHandles(), never the router's raw picks). A master
- * with a current view adds it, then its safety sections. A master whose block
- * would pass either cap is skipped whole, never the rest. Null when nothing is
- * added.
+ * loaded handles, from loadedHandles(), never the router's raw picks). Every
+ * master with a current view adds it; its safety sections follow while they
+ * fit the cap, and one that does not is skipped and logged. Null when nothing
+ * is added.
  */
 export function masterViews(topics: string[] | undefined, loaded: string[]): string | null {
-  const parts: string[] = [];
-  let total = 0;
+  const masters: { handle: string; view: string; safety: string[] }[] = [];
   for (const handle of new Set(topics ?? [])) {
     if (loaded.includes(handle)) continue;
     const entry = loadBlogIndex().find(e => e.handle === handle);
@@ -114,10 +142,17 @@ export function masterViews(topics: string[] | undefined, loaded: string[]): str
     const md = loadBlogArticle(handle);
     const section = md && currentViewSection(md);
     if (!section) continue;
-    const block = [contentHeader(entry, parseFrontmatter(md) ?? {}), section, ...safetySections(md)].join('\n\n');
-    if (block.length > MAX_MASTER_BLOCK_CHARS || total + block.length > MAX_MASTER_VIEW_CHARS) continue;
-    parts.push(block);
-    total += block.length;
+    masters.push({ handle, view: `${contentHeader(entry, parseFrontmatter(md) ?? {})}\n\n${section}`, safety: safetySections(md) });
   }
-  return parts.length > 0 ? `${MASTER_VIEWS_HEADING}\n\n${parts.join('\n\n---\n\n')}` : null;
+  if (masters.length === 0) return null;
+  // The length of the joined parts below: views, separators, then each safety
+  // section with its "\n\n" join.
+  const SEPARATOR = '\n\n---\n\n';
+  let total = masters.reduce((n, m) => n + m.view.length, SEPARATOR.length * (masters.length - 1));
+  const parts = masters.map(({ handle, view, safety }) => [view, ...safety.filter(s => {
+    if (total + s.length + 2 <= MAX_MASTER_VIEW_CHARS) { total += s.length + 2; return true; }
+    console.warn(`YouTube master views: safety section skipped for the cap: ${handle} "${s.split('\n')[0].slice(1)}"`);
+    return false;
+  })].join('\n\n'));
+  return `${MASTER_VIEWS_HEADING}\n\n${parts.join(SEPARATOR)}`;
 }

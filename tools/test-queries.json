@@ -2572,8 +2572,8 @@
       "Myung"
     ],
     "must_not_match": [
-      "\\bcollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}(wrinkle|fine line|rebuild|structur)",
-      "(wrinkle|fine line|rebuild|structur)(?:(?!\\.\\s)[^\\n]){0,200}\\bcollagen\\b",
+      "\\b[Cc]ollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}([Ww]rinkle|[Ff]ine line|[Rr]ebuild|[Ss]tructur)",
+      "([Ww]rinkle|[Ff]ine line|[Rr]ebuild|[Ss]tructur)(?:(?!\\.\\s)[^\\n]){0,200}\\b[Cc]ollagen\\b",
       "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b"
     ],
     "notes": "US-15 AC35 (amended 2026-10-18, Brad's collagen update v3). The chat may suggest collagen peptides for skin, saying they may improve skin hydration and elasticity (Batool 2026), and may say MicroVitamin+ contains 12.5 g. It must not tie collagen to wrinkles, fine lines, rebuilding or skin structure in the same sentence (a full stop followed by a space ends the window, so the decimal in 12.5 g does not), call 12.5 g within the range studied, or cite Pu, Kim or Myung. Known false fails, judge by reading: a negated sentence (\"has not been shown to reduce wrinkles\") and a non-supplement collagen mention (retinoids or red light \"stimulate collagen\") in the same sentence as wrinkles. answer_handles [] = products block plus the brand posture only; routing is not asserted. Amended 2026-10-19: a collagen suggestion also gives the range the trials used, 0.5 to 10 g a day (Batool 2026); 12.5 g is never put inside that range.",
@@ -2601,8 +2601,8 @@
       "Myung"
     ],
     "must_not_match": [
-      "\\bcollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}(wrinkle|fine line|rebuild|structur)",
-      "(wrinkle|fine line|rebuild|structur)(?:(?!\\.\\s)[^\\n]){0,200}\\bcollagen\\b",
+      "\\b[Cc]ollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}([Ww]rinkle|[Ff]ine line|[Rr]ebuild|[Ss]tructur)",
+      "([Ww]rinkle|[Ff]ine line|[Rr]ebuild|[Ss]tructur)(?:(?!\\.\\s)[^\\n]){0,200}\\b[Cc]ollagen\\b",
       "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b",
       "\\b(you should take|aim for|i (?:would )?recommend taking)\\b"
     ],
@@ -2629,8 +2629,8 @@
       "Myung"
     ],
     "must_not_match": [
-      "\\bcollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}(wrinkle|fine line|rebuild|structur)",
-      "(wrinkle|fine line|rebuild|structur)(?:(?!\\.\\s)[^\\n]){0,200}\\bcollagen\\b",
+      "\\b[Cc]ollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}([Ww]rinkle|[Ff]ine line|[Rr]ebuild|[Ss]tructur)",
+      "([Ww]rinkle|[Ff]ine line|[Rr]ebuild|[Ss]tructur)(?:(?!\\.\\s)[^\\n]){0,200}\\b[Cc]ollagen\\b",
       "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b",
       "\\b(you should take|aim for|i (?:would )?recommend taking)\\b"
     ],
@@ -2657,8 +2657,8 @@
       "Myung"
     ],
     "must_not_match": [
-      "\\bcollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}(wrinkle|fine line|rebuild|structur)",
-      "(wrinkle|fine line|rebuild|structur)(?:(?!\\.\\s)[^\\n]){0,200}\\bcollagen\\b",
+      "\\b[Cc]ollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}([Ww]rinkle|[Ff]ine line|[Rr]ebuild|[Ss]tructur)",
+      "([Ww]rinkle|[Ff]ine line|[Rr]ebuild|[Ss]tructur)(?:(?!\\.\\s)[^\\n]){0,200}\\b[Cc]ollagen\\b",
       "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b",
       "\\b(you should take|aim for|i (?:would )?recommend taking)\\b"
     ],
@@ -7706,7 +7706,8 @@
       "elasticity"
     ],
     "must_not_match": [
-      "(?<!(?:not|n.t|no evidence that|doesn.t show|does not show|didn.t find|did not find|isn.t evidence that)\\s(?:that\\s)?)collagen(?: peptides)? (?:can |will )?(reduces?|fix(?:es)?|removes?|smooths?|erases?) (?:skin )?wrinkles"
+      "(?<!(?:\\bnot|n.t|\\bno|no (?:good |strong |clear )?evidence(?: that)?|isn.t (?:good )?evidence(?: that)?|not true that|doesn.t show|does not show|didn.t show|did not show|didn.t find|did not find)\\s(?:that\\s)?)[Cc]ollagen(?: peptides)? (?:can |will )?(?:reduces?|fix(?:es)?|removes?|smooths?|erases?) (?:skin )?wrinkles",
+      "(?<!(?:\\bnot|n.t|\\bno|no (?:good |strong |clear )?evidence(?: that)?|isn.t (?:good )?evidence(?: that)?|not true that|doesn.t show|does not show|didn.t show|did not show|didn.t find|did not find)\\s(?:that\\s)?)\\b[Ii]t (?:can |will )?(?:reduces?|fix(?:es)?|removes?|smooths?|erases?) (?:skin )?wrinkles"
     ]
   },
   {
@@ -7763,7 +7764,9 @@
     ],
     "must_not_match": [
       "\\bbrad\\b(?:'s)? (view|thinks|believes|position|changed|now|says)",
-      "(?<!(?:not|n.t|no evidence that|doesn.t show|does not show|didn.t find|did not find|isn.t evidence that)\\s(?:that\\s)?)collagen(?: peptides)? (?:can |will )?(?:reduces? wrinkles|rebuilds? (?:the )?skin)"
+      "(?<!(?:\\bnot|n.t|\\bno|no (?:good |strong |clear )?evidence(?: that)?|isn.t (?:good )?evidence(?: that)?|not true that|doesn.t show|does not show|didn.t show|did not show|didn.t find|did not find)\\s(?:that\\s)?)[Cc]ollagen(?: peptides)? (?:can |will )?(?:reduces? wrinkles|rebuilds? (?:the )?skin)",
+      "(?<!(?:\\bnot|n.t|\\bno|no (?:good |strong |clear )?evidence(?: that)?|isn.t (?:good )?evidence(?: that)?|not true that|doesn.t show|does not show|didn.t show|did not show|didn.t find|did not find)\\s(?:that\\s)?)\\b[Ii]t (?:can |will )?(?:reduces? wrinkles|rebuilds? (?:the )?skin)",
+      "(?<!(?:\\bnot|n.t|\\bno|no (?:good |strong |clear )?evidence(?: that)?|isn.t (?:good )?evidence(?: that)?|not true that|doesn.t show|does not show|didn.t show|did not show|didn.t find|did not find)\\s(?:that\\s)?)\\b(?:helps?|can help|may help|will help)(?: to)? (?:reduce wrinkles|rebuild (?:the )?skin)"
     ],
     "notes": "US-50 AC5, pre-registered 2026-10-20 (review round 1, H3); not yet run (harness spend needs Brad's yes). Brand surface: the current position is stated in the assistant's own voice and a change of position is never attributed to Brad (chat-posture-brand.md). 2026-10-20: wrinkle pattern ignores negated statements (the first run matched \"doesn't show collagen reduces wrinkles\").",
     "must_mention": [
@@ -7865,7 +7868,8 @@
       "elasticity"
     ],
     "must_not_match": [
-      "(?<!(?:not|n.t|no evidence that|doesn.t show|does not show|didn.t find|did not find|isn.t evidence that)\\s(?:that\\s)?)collagen(?: peptides)? (?:can |will )?(reduces?|get rid of|fix(?:es)?|removes?|smooths?|erases?) (?:your )?(?:skin )?wrinkles"
+      "(?<!(?:\\bnot|n.t|\\bno|no (?:good |strong |clear )?evidence(?: that)?|isn.t (?:good )?evidence(?: that)?|not true that|doesn.t show|does not show|didn.t show|did not show|didn.t find|did not find)\\s(?:that\\s)?)[Cc]ollagen(?: peptides)? (?:can |will )?(?:reduces?|get rid of|fix(?:es)?|removes?|smooths?|erases?) (?:your )?(?:skin )?wrinkles",
+      "(?<!(?:\\bnot|n.t|\\bno|no (?:good |strong |clear )?evidence(?: that)?|isn.t (?:good )?evidence(?: that)?|not true that|doesn.t show|does not show|didn.t show|did not show|didn.t find|did not find)\\s(?:that\\s)?)\\b[Ii]t (?:can |will )?(?:reduces?|get rid of|fix(?:es)?|removes?|smooths?|erases?) (?:your )?(?:skin )?wrinkles"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry, Current view: \"collagen peptides may improve skin hydration and elasticity, but it found no effect on wrinkles\". 2026-10-20: wrinkle pattern ignores negated statements (the first run matched \"doesn't show collagen reduces wrinkles\")."
   }

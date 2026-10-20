@@ -280,7 +280,7 @@ A lemon-lime drink powder, sold as a dietary supplement. **$70 a pouch of 60 sco
 
 Dr Stanfield does not currently sell an Omega-3 product. The brand he takes himself and recommends is **WHC UnoCardio 1000 Fish Oil**, available on Amazon: https://amzn.to/3DslHpb
 
-When a user asks about omega-3, share this recommendation alongside the link and note that it's the brand Brad takes personally. A Dr Stanfield omega-3 product is planned for the future.
+On the doctor surfaces (education site, Health Roadmap app, YouTube, Discord), when a user asks which omega-3 Brad takes or which one to buy, share this recommendation with the link, note that it's the brand Brad takes personally, and say: "Brad earns a small commission through this Amazon link." On the brand surface (microvitamin.com), give the EPA/DHA criteria only, with no brand name or link. A Dr Stanfield omega-3 product is planned for the future.
 
 ---
 
