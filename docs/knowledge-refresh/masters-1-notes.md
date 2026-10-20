@@ -194,3 +194,38 @@ Follow-up (orchestrator, 2026-10-20; vitamin D addendum-6, resveratrol addendum-
 - Vitamin D summary (298 characters): restores "After a heart attack, TARGET-D hinted at more strokes", because a harm signal outranks other wording. It keeps "Talk to your doctor before exceeding the RDA." To fit, "Vitamin D: Brad says" became "Brad:" and "Testing optional after a heart attack" was dropped.
 - Resveratrol ~265: the PBAR cholesterol figures (+25.3 and +17.4 mg/dL) now cite ConsumerLab [1], which states them. The abstract [31] gives no cholesterol numbers.
 - Vitamin D ~415: the statin row now reads "Statin users had a 21.4% smaller rise in vitamin D levels than non-users", with no dosing implication.
+
+## No-ID reference repair (2026-10-21)
+Collagen (addendum-6): 22, 23 (Altern Ther 2019, PMID 31221944), 71 (Eastell NEJM 1998, PMID 9494151) corrected; 42 real but unindexed (URL added); 2 and 73 kept. NAD (6): 27, 35, 44 corrected. Resveratrol (7): 46, 47, 53, 54, 67 corrected. Vitamin D (7): 15, 19, 32, 34 corrected (none cited inline). Vitamin K (5): 22 authors/title, PMC link. Lithium (6): 13 kept. Reference lines only; no body text changed.
+**Review (orchestrator, attribution pattern):** NAD [27] abstract reports cognitive gains vs body (ConsumerLab) none; resveratrol [47] abstract reports lower 10-year fracture risk vs body no effect — state both readings, attributed.
+Vitamin C (addendum-6): 28 corrected ([107] He Z 2021; [113] Chen 2011; [40] Ran 2018 retracted 2023 — **mark retracted or drop in review**; [150] Sahud 1971 no abstract), 1 removed ([24] invented Carr 2013 pharmacokinetics; claim re-cited to NIH [12]; two divided/slow-release sentences deleted). Corrected to abstracts: [39] 7 vs 11 men reported a cold; [107] 250 mg/day; [110] US NHANES; [111] inadequate but not deficient; [128] kidney stones HR 1.19 versus no supplement use (always-ask).
+**Review (orchestrator):** warfarin [147] Tofler measured clotting markers, not bleeding: soften "did not increase bleeding risk"; the He line was reworded "to get past the checker" (ruling 10: check it reads as the abstract says); Dreher [36] modest protective effect vs "did not prevent"; Murray [34] vs vehicle not sunscreen; Goyal [67] plateau not in abstract; [53] 31 enrolled; [45] "aged 40+" not in abstract; [112] Conner low-vitamin-C participants.
+
+## Correction round pre-review fixes
+Applied 2026-10-21 by an Opus worker from the orchestrator's review items above. Report changes in new addenda only: NAD 7, resveratrol 8, vitamin C 7, vitamin D 8, collagen 7.
+- NAD [27] Szarvas: ConsumerLab's reading (no significant cognitive gain vs baseline) cites [1]; beside it, the authors report cognitive enhancement across multiple domains in an open-label pilot and call for controlled trials [27].
+- Resveratrol [47] Wong: ConsumerLab's reading (very slight slowing of bone loss; no effect on whole-body BMD or 10-year fracture risk) cites [1]; beside it, the authors report better lumbar spine and femoral neck density and a lower 10-year probability of major and hip fracture [47].
+- Vitamin C warfarin [147]: ConsumerLab's bleeding claim cites [6]; Tofler measured clotting and platelet markers, not bleeding, and found no striking effects [147].
+- Vitamin C [40] Ran: kept, cited as retracted (2023); "calculation errors" is ConsumerLab's reason [6], since the notice gives none.
+- Vitamin C [107] He: "250 mg/day, 1,000 or 2,000 mg" (worded for the checker) is back to "250, 1,000, or 2,000 mg ... daily". The checker cannot match "250" to the abstract's "250 mg/day": AC2 exception with the verbatim quote (ruling 10).
+- Vitamin C [36] Dreher and [34] Murray: the sunscreen claim is ConsumerLab's [6][33][35]; Murray compared the serum with its vehicle, not sunscreen [34]. The 5%-alone claim is ConsumerLab's [6]; Dreher reported a modest protective effect of each vitamin alone [36].
+- Vitamin C [67] Goyal: the plateau figures are ConsumerLab's [6]; the abstract reports a dose-response fall in cancer and overall mortality [67].
+- Vitamin C [53] Mason: 31 enrolled in a cross-over trial ("overweight or obese" dropped, not in the abstract); the HbA1c caveat is ConsumerLab's [6].
+- Vitamin C [45] Fogleman: "aged 40+" → "(average age 52)", per the abstract.
+- Vitamin C [112] Conner: the 128 and scale figures are ConsumerLab's [6]; the trial enrolled young adults with plasma vitamin C < 40 µmol/L and reports better well-being, and better mood and fatigue in those with consistently low levels [112].
+- Base moved: round 2 is on main (99932e7d), so the run checks only the six handles this round changes (lithium, taurine and creatine have no diff and fail AC6 "nothing to check"). Five Brad posts gained "router: hidden" on main and are re-hashed in the addenda. Abstracts saved and listed for the no-ID repair references (collagen 22, 23; NAD 27, 35, 44; resveratrol 46, 47, 53, 54, 67; vitamin D 15, 19, 32, 34).
+- Exceptions: 41 unused ones from earlier rounds removed; 7 added (tokenisation for 52, 250 and 18-35; collagen [42] university record; collagen [71] no PubMed abstract; NAD product count on the moved base; vitamin K PMC link). All carry "orchestrator to confirm".
+
+## Correction round review fixes
+
+Report changes are in addendum-8 for collagen, NAD and vitamin C.
+
+- R1 collagen hydroxyproline test caution: cites ConsumerLab [1], which states it. [71] now names the source ConsumerLab gives: Eastell R, Hannon RA, "Biochemical Markers of Bone Turnover", *Treatment of the Postmenopausal Woman*, Elsevier 2007, pp 337-349 (details checked on Crossref, DOI 10.1016/B978-012369443-0/50034-X; chapter text not read). The wrong NEJM 1998 reference and its "background only" exception are gone.
+- R2 NAD long-COVID trial: ConsumerLab's 32 adults and 2- to 3-fold are attributed and cite [1]. The paper [35] reports 58 participants and 2.6- to 3.1-fold after 5 to 10 weeks; Brad's account agrees. Heading drops "(n=32)".
+- R3 vitamin C [40] Ran: "retracted in 2023 because of a calculation error (the placebo group was double-counted)", citing the retraction notice, new reference [154] (PMID 37078007). PubMed has no abstract; its raw is the PMC10110384 notice text.
+- R4 vitamin C [105] Enderle: follows its abstract (40 adults aged 21 to 78 with high uric acid, 600 mg daily, two-week cross-over, larger effects at higher starting uric acid). ConsumerLab's 592 mg, one week and 0.48 vs 0.10 mg/dL are attributed to [6]. The untrue "not known whether this would benefit people with elevated uric acid" is gone.
+- R5 collagen cellulite line: ConsumerLab's 99 women and "very slightly" cite [1]; the paper's 114 women aged 20-50 and significant improvements cite [22].
+- R6 NAD Maric inline citation: *Biosens Bioelectron*, 2023, matching [44].
+- R7 vitamin C mood synthesis: "not consistently shown", citing [111] (attention, no mood change) and [112]; "not supported" became "not well supported".
+- Codex (KiwiC [112]): title corrected to the amended "Results of a Placebo-Controlled Trial" (correction PMID 36235871, raw saved from PMC9555711). The body now says allocation mixed random and non-random clinics because tablets arrived late.
+- Exceptions: the [71] NEJM one removed; three AC2 tokenisation ones added (collagen 20 and 50 from "20-50 years"; vitamin C "600 mg/day" from a per-drink dose). Checker exit 0 on the six changed handles.

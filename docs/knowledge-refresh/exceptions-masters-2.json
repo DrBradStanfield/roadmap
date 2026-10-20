@@ -1,0 +1,946 @@
+[
+ {
+  "check": "AC2",
+  "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"180 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Post-surgical:** In a study of patients after knee surgery, curcumin (180 mg/day as Theracurmin) for one year did n...\" | \"- **Theracurmin (180 mg/day):** Did not reduce soreness when taken for 7 days before exercise, but when taken for 7 d...\" | \"- **Theracurmin (180 mg/day):** In 40 older adults (normal cognition or mild cognitive impairment), 90 mg twice daily...\"",
+  "reason": "Checker tokenisation (\"mg d-1\" in the abstract is not read as per day); source states it: pubmed/30566760.md: \"ten other healthy men ingested 180 mg d-1 of CUR or PLA 7 days after exercise\". Report entry changed_tokens[14] (addendum-1) quotes this passage; the checker matches its other numbers but cannot read 180 mg/day in it.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \">6 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Prostate cancer:** In 44 men with metastatic castration-resistant prostate cancer on chemotherapy, 6,000 mg curcumi...\"",
+  "reason": "Checker tokenisation (\"over 6 months\" (duration) read as a \">\" comparison); the ConsumerLab raw gives the treatment period as six months (checked by hand; licensed text not quoted). Same class as the masters-1 \">20 week\" and \">3 month\" exceptions.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"1.9\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Age-related macular degeneration (AMD):** In a large observational study of nearly 1.9 million adults, turmeric/cur...\"",
+  "reason": "DERIVED (flag for review): reference repair (c990f80e) replaced \"nearly 181,000\" with the abstract total: pubmed/39446346.md gives \"66 804 patients\" taking curcuma supplements and \"1 809 440 patients\" not taking them, 1,876,244 in all, \"nearly 1.9 million\" in the body. No source prints 1.9.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1200 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"For people who struggle to meet their protein target from whole foods alone, Brad suggests a pea protein powder, beca...\"",
+  "reason": "Checker tokenisation (the HTML tag before the number is read as a \">\" comparator); source states it: POSITION:roadmap_text.html: \"1.2g per kilogram of ideal body weight\" (inside <strong>), already quoted in report entry changed_tokens[40].",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"360 mg/lb\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The Recommended Dietary Allowance (RDA) for adults is 0.8 g/kg (0.36 g/lb) of body weight, which is 54 g a day for a ...\" | \"Many older adults fail to meet even basic protein requirements. Analysis of NHANES data (2005–2014) found that among ...\"",
+  "reason": "Checker tokenisation (units spelled out in words in the source); the ConsumerLab raw gives the RDA as 0.8 g per kg (0.36 g per lb) and the ISSN 2007 position as 1.4 to 2.0 g per kg (0.64 to 0.91 g per lb), written as grams per kilogram and grams per pound (checked by hand; licensed text not quoted).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1400 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The Recommended Dietary Allowance (RDA) for adults is 0.8 g/kg (0.36 g/lb) of body weight, which is 54 g a day for a ...\"",
+  "reason": "Checker tokenisation (units spelled out in words in the source); the ConsumerLab raw gives the RDA as 0.8 g per kg (0.36 g per lb) and the ISSN 2007 position as 1.4 to 2.0 g per kg (0.64 to 0.91 g per lb), written as grams per kilogram and grams per pound (checked by hand; licensed text not quoted).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"2000 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The Recommended Dietary Allowance (RDA) for adults is 0.8 g/kg (0.36 g/lb) of body weight, which is 54 g a day for a ...\" | \"In adults without chronic kidney disease, a meta-analysis of 22 randomised trials found that high-protein diets (typi...\"",
+  "reason": "Checker tokenisation (units spelled out in words in the source); the ConsumerLab raw gives the RDA as 0.8 g per kg (0.36 g per lb) and the ISSN 2007 position as 1.4 to 2.0 g per kg (0.64 to 0.91 g per lb), written as grams per kilogram and grams per pound (checked by hand; licensed text not quoted).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"640 mg/lb\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The Recommended Dietary Allowance (RDA) for adults is 0.8 g/kg (0.36 g/lb) of body weight, which is 54 g a day for a ...\"",
+  "reason": "Checker tokenisation (units spelled out in words in the source); the ConsumerLab raw gives the RDA as 0.8 g per kg (0.36 g per lb) and the ISSN 2007 position as 1.4 to 2.0 g per kg (0.64 to 0.91 g per lb), written as grams per kilogram and grams per pound (checked by hand; licensed text not quoted).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"910 mg/lb\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The Recommended Dietary Allowance (RDA) for adults is 0.8 g/kg (0.36 g/lb) of body weight, which is 54 g a day for a ...\"",
+  "reason": "Checker tokenisation (units spelled out in words in the source); the ConsumerLab raw gives the RDA as 0.8 g per kg (0.36 g per lb) and the ISSN 2007 position as 1.4 to 2.0 g per kg (0.64 to 0.91 g per lb), written as grams per kilogram and grams per pound (checked by hand; licensed text not quoted).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1142 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Higher protein intake along with adequate calcium from foods may reduce fracture and fall risk in elderly adults. A s...\"",
+  "reason": "Checker tokenisation (the SD sits between the value and its unit); source states it: pubmed/34670754.md: \"1142 (353) mg calcium/day\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"0.36\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Adults (RDA) | 0.36 | 0.8 | 54 g/day |\"",
+  "reason": "Checker tokenisation (bare table cells under g/lb column headers; the source spells the units out); the ConsumerLab raw gives 0.36 g per lb (RDA), 0.64 to 0.91 g per lb (ISSN 2007) and 0.73 g per lb (49-study review) (checked by hand; licensed text not quoted).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"0.64\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Exercising people (ISSN, 2007) | 0.64–0.91 | 1.4–2.0 | – |\"",
+  "reason": "Checker tokenisation (bare table cells under g/lb column headers; the source spells the units out); the ConsumerLab raw gives 0.36 g per lb (RDA), 0.64 to 0.91 g per lb (ISSN 2007) and 0.73 g per lb (49-study review) (checked by hand; licensed text not quoted).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"0.91\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Exercising people (ISSN, 2007) | 0.64–0.91 | 1.4–2.0 | – |\"",
+  "reason": "Checker tokenisation (bare table cells under g/lb column headers; the source spells the units out); the ConsumerLab raw gives 0.36 g per lb (RDA), 0.64 to 0.91 g per lb (ISSN 2007) and 0.73 g per lb (49-study review) (checked by hand; licensed text not quoted).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"0.73\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Point beyond which a 49-study review found no added muscle benefit | 0.73 | 1.6 | 109.5 g/day |\"",
+  "reason": "Checker tokenisation (bare table cells under g/lb column headers; the source spells the units out); the ConsumerLab raw gives 0.36 g per lb (RDA), 0.64 to 0.91 g per lb (ISSN 2007) and 0.73 g per lb (49-study review) (checked by hand; licensed text not quoted).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1.6\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Point beyond which a 49-study review found no added muscle benefit | 0.73 | 1.6 | 109.5 g/day |\"",
+  "reason": "Checker tokenisation (bare table cell under a g/kg column header); Brad's post states it: POST:only-supplements-work-2025: \"A 2018 analysis that combined 49 studies found that a protein intake of **1.6 grams per kilogram of body weight per day** maximized the muscle-building response\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"24\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A study in 24 healthy elderly adults (average age 70) found that consuming protein evenly throughout the day resulted...\"",
+  "reason": "Checker tokenisation (number word before an adjective); source states it: pubmed/37086618.md: \"Twenty-four healthy elderly males and females were included in a randomized controlled trial\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"5 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Creatine:** Kidney function was normal in healthy athletes who had taken creatine for 10 months to 5 years [110]....\"",
+  "reason": "Checker tokenisation (\"yr\" is not read as a unit); source states it: pubmed/10449011.md: \"oral creatine consumers (10 months to 5 yr)\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1600 mg/kg\", \"1300 mg/kg\": For people who struggle to meet their protein target from whole foods alone, Brad suggests a pea protein powder, beca...",
+  "reason": "Checker tokenisation (units glued to the numbers in the source); source states it: POSITION:roadmap_text.html: \"with muscle gains possible up to ~1.6g/kg/day.[4] However, a dose-response meta-analysis found the rate of benefit diminishes rapidly after 1.3g/kg/day.\"",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"80\": Collagen is not a preferred protein source for building muscle [1]. A study among 22 women aged 60–80 who performed r...",
+  "reason": "PRE-EXISTING (flag for review): the line changed only in its citation (writer renumbering 71f82fc7; reference repair c990f80e corrected Oikawa 2019 to 2020). \"Aged 60-80\" is the ConsumerLab figure (checked by hand); the corrected abstract (pubmed/31919527.md) gives \"mean ± SD age: 69 ± 3 y\" and no range, so no quote in reach can carry it.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1600 mg/kg\": A study among 38 men (average age 26) compared soy protein supplementation with a plant-based diet and whey protein s...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 71f82fc7). Its \"1600 mg/kg\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3 hour\": Phytate concern: Pea protein powder may contain high concentrations of the antinutrient phytate, which can bind miner...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 71f82fc7). Its \"3 hour\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2\": A review of 22 studies in both young and older individuals found that after training 2–5 times per week for 6–24 week...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 71f82fc7). Its \"2\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"4\": Caloric restriction with exercise: A study among obese young men found that during 4 weeks of dieting (40% caloric re...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 71f82fc7). Its \"4\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"4\": A 12-week study of 133 overweight adults (average age 37) following a reduced-calorie diet (500 kcal/day below energy...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 71f82fc7). Its \"4\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3 hour\": Without dieting or exercise: A study of obese men found that a drink containing 30 g whey protein slowed stomach empt...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 71f82fc7). Its \"3 hour\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2\": Exercising people (ISSN, 2007) | 0.64–0.91 | 1.4–2.0 | – |",
+  "reason": "Checker tokenisation (units spelled out in words in the source); the ConsumerLab raw gives the ISSN 2007 range as 1.4 to 2.0 grams per kilogram (checked by hand; licensed text not quoted).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"18\": A study in 24 healthy elderly adults (average age 70) found that consuming protein evenly throughout the day resulted...",
+  "reason": "Checker tokenisation (\"aged 18–24\" vs the source's \"Age = 18-24 year\": unit glued to the range); source states it: pubmed/35684089.md: \"Healthy, untrained males (N = 42; Age = 18-24 year)\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "token \"0.9 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The subsequent AREDS2 study (4,203 participants aged 50-85) tested whether adding omega-3 fatty acids or lutein (10 m...\"",
+  "reason": "Checker tokenisation (\"per cent\" spelled out in the source); Brad's post states it: POST:multivitamins-are-no-longer-expensive-urine: \"Lung cancer occurred in 2.0 per cent of participants taking the older beta-carotene version, compared with 0.9 per cent on the newer formula\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2 year\": The scientific evidence on multivitamins is nuanced. MVMs reliably increase nutrient intakes and help people obtain r...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit c406d0f0). Its \"2 year\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10 %\": However, MVM users tend to already have higher micronutrient intakes from diet alone compared to nonusers [5]. Additi...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit c406d0f0). Its \"10 %\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"50\": Observational data: A large prospective study following 489,640 men and women aged 50-71 for 16 years found that men ...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit c406d0f0). Its \"50\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3 year\": COSMOS-Web: Another ancillary study included 3,562 participants (mean age 71 years) who completed computer-based cogn...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit c406d0f0). Its \"3 year\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2 year\": Meta-analysis of COSMOS substudies: A meta-analysis combining all three ancillary cognitive studies (more than 5,000 ...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit c406d0f0). Its \"2 year\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"50\", \"2 %\": The subsequent AREDS2 study (4,203 participants aged 50-85) tested whether adding omega-3 fatty acids or lutein (10 m...",
+  "reason": "Checker tokenisation: \"2.0%\" is spelled \"2.0 per cent\" in Brad's post (POST:multivitamins-are-no-longer-expensive-urine: \"Lung cancer occurred in 2.0 per cent of participants\"), and \"aged 50-85\" is \"age 50–85 years\" in NIH (nih/multivitamins-nih.md: \"4,203 participants age 50–85 years\"): unit glued to the range.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"13\": Pregnant adolescents: A meta-analysis of 13 RCTs (15,283 pregnant adolescents from low- and middle-income countries) ...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit c406d0f0). Its \"13\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"50\": Women's Health Initiative: The largest prospective study, evaluating 161,808 postmenopausal women aged 50-79 with 41....",
+  "reason": "Line unchanged from main except reference renumbering (writer commit c406d0f0). Its \"50\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"50\": Chromium: AI is 35 mcg for men 14-50 and 25 mcg for women 19-50. No UL has been established, but there are concerns a...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit c406d0f0). Its \"50\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"25 %\": Refining grains removes nutrients. White bread has approximately 25% of the magnesium found in whole wheat bread [14].",
+  "reason": "Line unchanged from main except reference renumbering (writer commit c406d0f0). Its \"25 %\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"400 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Benfotiamine** — a synthetic thiamine derivative that significantly increases blood and tissue levels of thiamine...\"",
+  "reason": "DERIVED (flag for review): reference repair (c990f80e) corrected benfotiamine 200 to 400 mg a day (always-ask item); pubmed/15726875.md: \"Twenty Patients received two 50 mg benfotiamine tablets four times daily\" (2 x 50 mg x 4 = 400 mg). The ConsumerLab raw states 400 mg (checked by hand), but the line cites the PubMed record, so only its abstract counts.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"400 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Several studies suggest very high-dose riboflavin (400 mg/day) may help reduce migraine frequency [111]. This dose fa...\" | \"**Benfotiamine for diabetic neuropathy:** The BEDIP trial used 400 mg/day (two 50 mg tablets four times daily) for 3 ...\" | \"**Riboflavin for migraine prevention:** 400 mg/day [111].\"",
+  "reason": "DERIVED (flag for review): same correction as the 400 mg token: pubmed/15726875.md: \"two 50 mg benfotiamine tablets four times daily\" = 400 mg a day, on the \"Benfotiamine for diabetic neuropathy\" dosing line. The riboflavin 400 mg/day lines are unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"20\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A 73-year-old man taking a multivitamin with just 6 mg B6 for 10 years developed peripheral neuropathy (blood B6: 2...\"",
+  "reason": "Checker tokenisation (unit only in the source); source states it: pubmed/38098895.md: \"(reference range: 20-125 nmol/L)\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥20 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Hip fracture risk:** In older adults with cardiovascular disease, 40 mg B6 daily for 1-3 years was associated with ...\"",
+  "reason": "Checker tokenisation (per-day unit in the source); source states it: pubmed/31074816.md: \"B12 ≥20 μg/d\".",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3 year\": Hip fracture risk: In older adults with cardiovascular disease, 40 mg B6 daily for 1-3 years was associated with a 42...",
+  "reason": "PRE-EXISTING (flag for review): the line was rewritten in review round 1 (2026-10-21) to say the 42% rise came in the extended follow-up, and now co-cites ConsumerLab [1]. \"1-3 years\" is the ConsumerLab figure (\"40 mg of vitamin B-6 ... daily for 1 to 3 years\"); the cited abstract (pubmed/28574605.md) gives \"median 3.3 years\" in-trial, so no abstract quote can carry it, and the checker requires the PubMed abstract for a sentence that cites [155]. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"40 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Potassium Acetate | ~40% | Well-absorbed. Less commonly available in over-the-counter supplements. | Specialty form...\" | \"A separate cluster-randomized trial in 48 elderly care facilities in China (1,612 residents aged 55 or older) found t...\"",
+  "reason": "DERIVED (flag for review): reference repair (93620208) corrected 34% to 40% from the real Yuan 2023 abstract: pubmed/37055566.md: \"resulted in fewer cardiovascular events (hazard ratio (HR) 0.60, 95% CI 0.38-0.96)\"; HR 0.60 is a 40% reduction. The ~40% potassium acetate table cell is unchanged. Re-matched after round 2 (2026-10-21): the Yuan sentence was rewritten to its abstract; 40% still derives from HR 0.60.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2346 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2017 meta-analysis of 25 randomized controlled trials in 1,163 participants with hypertension found significant red...\" | \"**Kidney stone prevention (potassium citrate):** Doses used in clinical trials range from 1,173-2,346 mg/day of potas...\" | \"**Bone health:** 2,346-4,340 mg/day (as potassium citrate or bicarbonate) in clinical trials [25][59][60]. These dose...\"",
+  "reason": "DERIVED (flag for review): kidney-stone dose corrected from the citrate salt weight to potassium (aff82c14, always-ask): 60 mEq x 39.1 mg = 2,346 mg; NIH uses the same conversion: nih/potassium-nih.md: \"60–65 mEq/day potassium [2,346–2,541 mg]\". The bone-health line converts pubmed/22991267.md \"potassium citrate 60 mmol/d\" the same way.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2150 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Dose-response meta-analysis:** A dose-response meta-analysis of 84 randomized controlled trials found that phytoste...\"",
+  "reason": "Checker tokenisation (\"daily\" placed before the number in the source); source states it: pubmed/19091798.md: \"for a mean daily dose of 2.15 g phytosterols\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \">1000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad still takes about 1 g of omega-3 a day, for its possible effects on the brain and for heart health, based on the...\"",
+  "reason": "Checker tokenisation (per-day unit in the source); source states it: POST:omega-3-breakthrough-cuts-major-heart-events-by-43: \"At **>1 g/day:**\" followed by \"**49% increased risk**\" (report entry added in addendum-2).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1000 mg/day\": 20 May 2026, [Concerning Omega-3 Brain Study](https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study):...",
+  "reason": "Checker tokenisation (\"1 gram\" vs \"1 g a day\"); source states it: POST:concerning-omega-3-brain-study: \"I still take omega-3 at around 1 gram for its potential cognitive effects\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "token \"0.75 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Magnesium is the fourth most abundant cation in the body and a cofactor for over 300 enzymatic reactions [14][15]. Ab...\"",
+  "reason": "Checker tokenisation (unit written \"millimoles/liter(mmol/L)\" in the source); source states it: nih/magnesium-nih.md: \"Normal serum magnesium concentrations range between 0.75 and 0.95 millimoles/liter(mmol/L)\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "token \"0.95 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Magnesium is the fourth most abundant cation in the body and a cofactor for over 300 enzymatic reactions [14][15]. Ab...\"",
+  "reason": "Checker tokenisation (unit written \"millimoles/liter(mmol/L)\" in the source); source states it: nih/magnesium-nih.md: \"Normal serum magnesium concentrations range between 0.75 and 0.95 millimoles/liter(mmol/L)\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "token \"79\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Magnesium:** An analysis of approximately 2,000 adults aged 70-79 found that meeting the RDA for magnesium was asso...\" | \"Chronic magnesium inadequacy has been linked to cognitive decline. A follow-up of more than 20 years of 6,473 women a...\"",
+  "reason": "Checker tokenisation (\"aged 65 to 79\" vs the source's \"aged 65-79 years\": unit glued to the range); source states it: pubmed/31685499.md: \"Postmenopausal women aged 65-79 years without dementia on enrolment\". The Ryder line's \"aged 70-79\" is unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "token \"365 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"However, a crossover RCT in 14 people with insulin-treated type 2 diabetes and low magnesium found that 15 mmol (abou...\"",
+  "reason": "DERIVED (flag for review): reference repair (97d1f4ec) replaced \"360 mg magnesium gluconate\" with the abstract dose: pubmed/37922013.md: \"oral magnesium supplementation (15 mmol/day) for 6 weeks\"; 15 mmol x 24.3 mg = 365 mg, written \"15 mmol (about 365 mg)\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "token \"65\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Chronic magnesium inadequacy has been linked to cognitive decline. A follow-up of more than 20 years of 6,473 women a...\"",
+  "reason": "Checker tokenisation (\"aged 65 to 79\" vs the source's \"aged 65-79 years\": unit glued to the range); source states it: pubmed/31685499.md: \"Postmenopausal women aged 65-79 years without dementia on enrolment\". The Ryder line's \"aged 70-79\" is unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1\": Exercise >90 minutes or in hot/humid conditions: Electrolyte-containing beverages become increasingly important. Swea...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 8e4b6c1e). Its \"1\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10\": Potassium losses in sweat are modest compared to sodium (approximately 200 mg/L) [4]. However, potassium plays a crit...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 8e4b6c1e). Its \"10\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1\": This composition provides approximately 75 mmol/L sodium, 20 mmol/L potassium, 65 mmol/L chloride, 10 mmol/L citrate,...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 8e4b6c1e). Its \"1\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10\": Prescription potassium (potassium chloride 10-40 mEq, equivalent to 750-3,000 mg) is used medically for documented hy...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 8e4b6c1e). Its \"10\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"50\": Hypercalcemia from supplementation can occur, particularly when combined with high-dose vitamin D. The UL for total c...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 8e4b6c1e). Its \"50\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \">55\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- 3 Feb 2026, [The Most Important Antioxidant Study I’ve Ever Read](https://drstanfield.com/blogs/articles/the-most-i...\"",
+  "reason": "Checker tokenisation (a word between the comparator and the number); source states it: POST:the-most-important-antioxidant-study-i-ve-ever-read: \"It compiled **39 randomized controlled trials** involving **1,714 participants over age 55**\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"8\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**GlyNAC supplementation:** GlyNAC combines glycine with N-acetylcysteine (NAC). In an open-label pilot trial, 8 olde...\" | \"## 8. References\"",
+  "reason": "Checker tokenisation (number spelled out in the source); source states it: pubmed/33783984.md: \"A 36-week open-label clinical trial was conducted in eight OAs and eight young adults (YAs)\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2\": Clinical trial 2 — Inagawa et al. (2006): A study conducted among 15 Ajinomoto employees who reported dissatisfaction...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 4dc9d1e0). Its \"2\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"80000 mg/day\": Heresco-Levy et al. (2004): A study among 17 people (average age 45) with schizophrenia being treated with the antips...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit 4dc9d1e0). Its \"80000 mg/day\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"80000 mg/day\": Duration: Sleep benefits have been observed within the first few nights in clinical trials. Doses used in clinical st...",
+  "reason": "Checker tokenisation (\"as high as 80 g per day\" vs the source's \"as high as 80 grams\" with no per-day unit); the ConsumerLab raw gives the clinical dose range ending at 80 grams (checked by hand; licensed text not quoted). Body line edited by the writer (4dc9d1e0) to add the 2-4 servings split.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "reference line has unknown host austinpublishinggroup.com: [6] Tsutsumi R, Tsutsumi YM. \"Peptides and proteins in whey and their benefits for human health.\"...",
+  "reason": "Real paper on the publisher's site (URL returned 200 on 2026-10-20), restored by the reference repair; the publisher (Austin Publishing Group) has a low-quality open-access reputation (flagged for review/Brad).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "product section changed: ### Protein Powder as Part of MicroVitamin+ Powder",
+  "reason": "OPEN BRAD ITEM (masters-2-notes.md protein-powders item 1): the writer removed only the Grokipedia \" [7]\" marker from the creatine sentence; keep the removal, restore, or source the claim. No other change in the section.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "reference line has unknown host newsroom.heart.org: [34] American Heart Association. \"Multivitamins do not promote cardiovascular health.\" July 10, 2...",
+  "reason": "American Heart Association newsroom statement: the organisation's own primary record of the statement.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "reference line has unknown host nei.nih.gov: [37] National Eye Institute. \"AREDS/AREDS2 clinical trials.\" 2020. [https://nei.nih.gov/research/...",
+  "reason": "National Eye Institute (NIH) page on the AREDS/AREDS2 trials: a legitimate US government primary source.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "reference line has unknown host heart.org: [57] American Heart Association. \"A patient's guide to taking warfarin.\" September 30, 2016. [htt...",
+  "reason": "American Heart Association patient guide: a legitimate primary source from the organisation.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "product mentions rose 2 -> 20",
+  "reason": "Checker counts every generic \"omega-3\" as the Omega-3 product (masters-2-notes.md b-vitamins checker note). Verified 2026-10-20: brand-name mentions (MicroVitamin, Sleep by Dr Brad, Potassium Fiber) are 2 before and 2 after; the 18 new matches are generic omega-3 in the current view, video lines and the VITACOG paragraph.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "report says product mentions 2 -> 2, recomputed 2 -> 20",
+  "reason": "Checker counts every generic \"omega-3\" as the Omega-3 product (masters-2-notes.md b-vitamins checker note). Verified 2026-10-20: brand-name mentions (MicroVitamin, Sleep by Dr Brad, Potassium Fiber) are 2 before and 2 after; the 18 new matches are generic omega-3 in the current view, video lines and the VITACOG paragraph.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host cdc.gov: [35] Centers for Disease Control and Prevention. *Second National Report on Biochemical Indicator...",
+  "reason": "CDC Second National Report on Biochemical Indicators: a legitimate US government primary source.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host psychiatrictimes.com: [65] Sethness S, Miller JJ. \"L-Methylfolate: Augmenting Agent May Contribute to Agitation and Man...",
+  "reason": "Clinical trade press (Psychiatric Times) article by Sethness and Miller, re-cited by the reference repair for the methylfolate mania line (ask_brad in the report); trade press, flagged for review/Brad.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host clinicaltrials.gov: [104] ClinicalTrials.gov. \"NAPS: Niacin for Parkinson's Disease\" (niacin or niacinamide 100 mg tw...",
+  "reason": "ClinicalTrials.gov registry record (NAPS trial): the primary registry source for a trial.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [50] Institute of Medicine (US) Standing Committee on the Scientific Evaluation of Dietary Reference Intakes. *Dietar...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [53] Kimoto K, Shibasaki B, Tamura N, et al. \"A Case of Vitamin B12 Deficiency With Various Psychiatric Symptoms and ...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [59] Bailey RL, Stover PJ. \"Muddy water: Additional observational data cannot aid in determining whether there is a p...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [79] Yasuda H, Hoshino Y, Ando J, et al. \"Vitamin B6 Deficiency Polyneuropathy and Dermatitis.\" *Am J Med*. 2023;136(...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [87] Krishnan D, Kiernan MC. \"Neurotoxic risks from over-the-counter vitamin supplements.\" *Med J Aust*. 2023;218(7):...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [106] Modica JS, Bonno D, Lizarraga KJ. \"Pearls and Oy-sters: Vitamin B6 deficiency presenting with new-onset epileps...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [107] Canissario R, Stanton M, Modica JS, et al. \"Neuropathy due to coexistent vitamin B12 and B6 deficiencies in pat...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [116] Shukla AG, Cioffi GA, John SWM, et al. \"American Glaucoma Society-American Academy of Ophthalmology Position St...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [147] Stone NJ, Robinson JG, Lichtenstein AH, et al. \"2013 ACC/AHA guideline on the treatment of blood cholesterol to...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [149] O'Connell C, Horwood K, Nadamuni M. \"Correction of refractory thrombocytopenia and anemia following withdrawal ...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [151] O'Sullivan F, Yu J, Wu B, et al. \"A case of burning feet.\" *Aust J Gen Pract*. 2025;54(1-2):70-72. doi: [10.311...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "reference line: PMID 25798039 differs from the pubmed URL id 30783195, 30783195: [9] Makunts T, Cohen IV, Awdishu L, Abagyan R. \"Analysis of postmarketing safety data for proton-...",
+  "reason": "Composite reference: PMID 25798039 belongs to the \"See also\" Veltri KT, Mason C, \"Medication-induced hypokalemia\" (P T 2015), verified by NCBI efetch 2026-10-20; the line's only URL is the main record 30783195 (Makunts 2019). The checker compares every PMID on the line with its URLs.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "reference line: PMID 4406351 differs from the pubmed URL id 14338797, 14338797: [27] Gee L. \"Letter: Enteric-coated potassium supplements.\" *JAMA*. 1974;228(8):975-6. PMID: 4406...",
+  "reason": "Composite reference: PMID 4406351 is the main record, Gee L, \"Letter: Enteric-coated potassium supplements\" (JAMA 1974), verified by NCBI efetch 2026-10-20; the line's only URL is the \"See also\" record 14338797 (Allen 1965). The checker compares every PMID on the line with its URLs.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [16] Levene DL. \"The absorption of potassium chloride--liquid vs. tablet.\" *Can Med Assoc J*. 1973;108(12):1480 passi...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [22] Chan RJ, Parikh N, Ahmed S, Ruzicka M, et al. \"Blood pressure control should focus on more potassium: controvers...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [27] Gee L. \"Letter: Enteric-coated potassium supplements.\" *JAMA*. 1974;228(8):975-6. PMID: 4406351. See also: Allen...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [82] Epstein M. \"Hyperkalemia as a constraint to therapy with combination renin-angiotensin system blockade: the elep...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "new PubMed reference has no abstract file in extra_raw: [85] Fang L, Karakiulakis G, Roth M. \"Are patients with hypertension and diabetes mellitus at increased risk for COVI...",
+  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "product mentions rose 64 -> 92",
+  "reason": "Checker counts every generic \"omega-3\" as the Omega-3 product. Verified 2026-10-20: no brand name (MicroVitamin, Sleep by Dr Brad, Potassium Fiber, \"Dr Brad\" beside omega-3) appears before or after; the 28 new matches are generic omega-3 in the current view, video lines and corrected references.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "report says product mentions 0 -> 0, recomputed 64 -> 92",
+  "reason": "Checker counts every generic \"omega-3\" as the Omega-3 product. Verified 2026-10-20: no brand name (MicroVitamin, Sleep by Dr Brad, Potassium Fiber, \"Dr Brad\" beside omega-3) appears before or after; the 28 new matches are generic omega-3 in the current view, video lines and corrected references.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "reference lines never cited: 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37",
+  "reason": "Pre-existing on main before masters-2 (references [12]-[37] are uncited at origin/main too, verified 2026-10-20; masters-2-notes.md omega-3 item 8); ruling 10 forbids dropping bibliographic detail to pass. Reference-hygiene backlog. Review round 1 (2026-10-21) now cites [25] (Song 2020, polyp sentence), so it left this list.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC7",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "product section changed: ### Electrolyte Product Types",
+  "reason": "Generic heading that contains \"Product\"; not a Brad product section. Verified 2026-10-20: changes are citation renumbering (8e4b6c1e) and one added ConsumerLab context sentence on coconut water (masters-2-notes.md electrolytes item 5).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "product section changed: ### Electrolyte Products and Unnecessary Use",
+  "reason": "Generic heading that contains \"Product\"; not a Brad product section. Verified 2026-10-20: the section equals main once citation numbers are masked (writer renumbering 8e4b6c1e).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"400 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- 18 Mar 2026, [This $2 Food Beats Every Nitric Oxide Supplement](https://drstanfield.com/blogs/articles/this-2-food-...\" | \"- 25 Feb 2026, [The Truth About Nitric Oxide Supplements (Nitralis®)](https://drstanfield.com/blogs/articles/the-trut...\" | \"| Beetroot juice (concentrated) | 70 mL shot | ~300-400 mg | Equivalent to approximately 5-6 mmol nitrate [8] |\"",
+  "reason": "ROUNDED (flag for review): video line written by the masters-2 writer as \"about 400 mg\"; the post gives POST:this-2-food-beats-every-nitric-oxide-supplement: \"a daily dose of beetroot juice containing about 397 mg of nitrate\" and \"378 mg of nitrate\". No source prints 400 mg.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"380 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- 25 Feb 2026, [The Truth About Nitric Oxide Supplements (Nitralis®)](https://drstanfield.com/blogs/articles/the-trut...\"",
+  "reason": "Checker tokenisation (\"380 mg a day\" is read as per day; the video line says \"380 to 400 mg of nitrate a day\"); source states it: POST:the-truth-about-nitric-oxide-supplements-nitralis: \"The older adults with heart failure, for instance, got 380 mg a day of nitrate\". The 400 mg end is the writer's rounding of \"around 397 mg\" (flag for review).",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Older adults:** A trial in elderly patients with heart failure used beetroot juice with 378 mg of nitrate a day f...\"",
+  "reason": "Checker tokenisation (\"a week\" vs \"one week\"); source states it: POST:this-2-food-beats-every-nitric-oxide-supplement: \"Another study found just a week of daily doses of beetroot juice containing 378 mg of nitrate\".",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"300 mg\": Typical effective doses provide 300-600 mg of nitrate (~5-10 mmol), with peak plasma nitrite levels occurring 2-3 hou...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit a4dd8973). Its \"300 mg\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"300 mg\": Studies on combined supplementation suggest potential synergistic effects. One study found that 3 g/day L-citrulline ...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit a4dd8973). Its \"300 mg\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"300 mg\": Dietary nitrate supplementation, typically provided as beetroot juice in doses of approximately 5-9 mmol (300-560 mg ...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit a4dd8973). Its \"300 mg\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"24\": A 2022 multicenter, double-blind, randomized, placebo-controlled trial examined high-dose L-arginine (6 g/day for 3 m...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit a4dd8973). Its \"24\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"24\": L-citrulline has shown promise due to its superior bioavailability compared to L-arginine, as it bypasses hepatic met...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit a4dd8973). Its \"24\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2\": General cardiovascular support / blood pressure: 3-6 g per day, divided into 2-3 doses [1][12]",
+  "reason": "Line unchanged from main except reference renumbering (writer commit a4dd8973). Its \"2\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"300 mg\": Endurance exercise performance: 300-560 mg nitrate (~5-9 mmol), taken 2-3 hours before exercise for acute benefit [8]...",
+  "reason": "Line unchanged from main except reference renumbering (writer commit a4dd8973). Its \"300 mg\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"300 mg\": Beetroot juice (concentrated) | 70 mL shot | ~300-400 mg | Equivalent to approximately 5-6 mmol nitrate [8] |",
+  "reason": "Line unchanged from main except reference renumbering (writer commit a4dd8973). Its \"300 mg\" became needed only because the batch added the same number on other lines; the line's numbers are pre-existing and unchanged.",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"8.2 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Mortality associations:** In a Dutch cohort of 5,571 men and women, higher blood B12 was linked to higher all-cause...\"",
+  "reason": "Checker tokenisation (\"8.2 (7.7-8.9) years\" puts the unit after the range); source states it: pubmed/31940038.md: \"During the median (interquartile range) of 8.2 (7.7-8.9) years of follow-up\". Review round 1 (adversary R10) rewrote the [166] line to this abstract. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥4\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Coffee and tea contain anti-thiamin factors (caffeic acid, chlorogenic acid, tannic acid) that can break down thiamin...\"",
+  "reason": "Checker tokenisation (\">or=4\" is PubMed's rendering of ≥4); source states it: pubmed/18606630.md: \"individuals drinking >or=4 cups/day had 11.7% (P < 0.001), 14.1% (P < 0.001), and 5.5% (P = 0.01) lower plasma concentrations\". The 11.7/14.1/5.5% and 10,601 tokens on the same line pass on the addendum-3 entries. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "electrolytes-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \">5 mmol/L\": Severe (>5.0 mmol/L): Respiratory paralysis, cardiac arrest [14][54]",
+  "reason": "Line changed only by citation renumbering ([16][56] -> [14][54], writer commit 8e4b6c1e; addendum-2 deleted_sentences records it). Its \">5.0 mmol/L\" (hypermagnesaemia) is unchanged from main; it became needed only because review round 1 added \">5.0 mmol/L\" elsewhere (the NIH hyperkalaemia threshold, adversary R11). [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"12\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a meta-analysis of eight trials, 6-8 g of citrulline malate taken 40-60 minutes before strength training increased...\"",
+  "reason": "Spelled number in the source: pubmed/30895562.md: \"Twelve studies, consisting of 13 total independent samples (n = 198 participants), met the inclusion criteria.\" Ruling 10: the body keeps the numeral. Review round 1 (Codex R5). [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6.4 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a meta-analysis of eight trials, 6-8 g of citrulline malate taken 40-60 minutes before strength training increased...\"",
+  "reason": "Checker tokenisation (\"6.4 ± 7.9%\" attaches the % to 7.9 only); source states it: pubmed/34010809.md: \"increased repetitions by 3 ± 5 (6.4 ± 7.9%) compared with placebo\". Review round 1 (Codex R5). [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1000 mg/day\", \"4000 mg/day\", \"1\": Depression (adjunctive therapy): Trials used 1,000-4,000 mg/day with an EPA:DHA ratio >2:1 alongside antidepressants....",
+  "reason": "Numbers unchanged from the base line; only the framing changed (adversary R7). Base text: \"Depression (adjunctive therapy): 1,000-4,000 mg/day with EPA:DHA ratio >2:1.\" The \"1\" token is the ratio \">2:1\". ConsumerLab gives the ISNPR 1 to 2 g/day guideline and a depression trial of 1,000, 2,000 or 4,000 mg EPA (Peet), but no single quote carries 1,000-4,000 mg/day. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<11.7 umol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"However, omega-3s may benefit Alzheimer's patients when combined with adequate B vitamins. In patients with mild to m...\"",
+  "reason": "Unit corrected on purpose (adversary R6; notes omega-3 item 8): ConsumerLab prints \"people with levels below 11.7 mmol/L\" for homocysteine, a unit error (homocysteine is measured in micromol/L). The number is verbatim; only the unit differs. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[55] number cited to a primary study without its abstract in reach: The American College of Cardiology (ACC) and American Heart Association (AHA) recommend that peop...",
+  "reason": "Review round 1 (adversary R4) gave [35] its real record (2025 AHA/ACC guideline, PMID 40811516). Its PubMed abstract (pubmed/40811516.md) is a structured summary with no potassium figures, so the 3,500-5,000, 1,173 and 3,128 mg numbers cannot be quoted from it. They are quoted from ConsumerLab in changed_tokens[16], re-entered as [55] after round 2 with [3] co-cited on the line, (ConsumerLab attributes them to the ACC and AHA); the next sentence ties 1,173/3,128 mg (30/80 mmol) to Filippini [36], whose abstract is in reach. FLAG: whether the guideline text itself states 1,173 and 3,128 mg is unverified (full text not in the raw). [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1100 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The Recommended Dietary Allowance (RDA) for adults is 0.8 g/kg (0.36 g/lb) of body weight, which is 54 g a day for a ...\"",
+  "reason": "Checker tokenisation (\"g · kg(-1) · d(-1)\" is g/kg/day); source states it: pubmed/27422521.md: \"The current Estimated Average Requirement and RDA recommendations of 0.88 and 1.1 g · kg(-1) · d(-1), respectively, are for all stages of pregnancy.\" Review round 1 (Codex R1): pregnancy RDA. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"72 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Age-related macular degeneration (AMD):** In a large observational study of nearly 1.9 million adults, turmeric/cur...\"",
+  "reason": "DERIVED (flag for review): 72% = 1 - RR 0.28 for exudative AMD; pubmed/39446346.md: \"exudative AMD (RR, 0.28; 95% CI, 0.24-0.32; P < .001)\". The 89% (RR 0.11) end of the range was already in the body. Review round 1 (adversary R13): ConsumerLab's 77-89% left out the exudative figure. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC4",
+  "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Allergies (Seasonal Rhinitis)",
+  "reason": "Heading renamed, not removed: now \"### Allergies (Perennial Allergic Rhinitis)\" to match its source. The section's trial, Wu & Xiao 2016 [108] (pubmed/27789120.md), is titled \"Effect of curcumin on nasal symptoms and airflow in patients with perennial allergic rhinitis\"; ConsumerLab's \"seasonal\" was wrong (adversary R13; orchestrator instruction 2026-10-21).",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ }
+]

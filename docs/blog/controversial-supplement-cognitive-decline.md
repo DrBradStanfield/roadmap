@@ -8,6 +8,7 @@ tags: ["Supplements"]
 keywords: ["aging","antioxidant","cardiovascular","cognitive","exercise","hyaluronic acid","magnesium","skin","sleep","tmg","vitamin a","vitamin e","vitamin k2"]
 summary: "Dr Brad's multivitamin post: COSMOS studies show multivitamin/mineral supplementation equivalent to 2 years less cognitive aging, but avoid beta-carotene and vitamin E. Covers brain health, memory, cognitive decline prevention, megadosing risks, supplement selection."
 topics: ["multivitamins-benefits-evidence-dosing-and-side-effects"]
+router: hidden
 ---
 
 One of my greatest fears as I get older is to have a family member patiently tell me that we've already had the same conversation earlier in the day but for me to have no recollection of it - and for my brain to not function correctly. Cognitive decline is a very real concern as we age, and it's an area of study that has been ongoing for decades.

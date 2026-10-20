@@ -66,14 +66,18 @@ export const MASTER_VIEWS_HEADING = "## Brad's current view and safety notes on 
  * what is left in topics order: first every master's Drug Interactions, then
  * the Safety and Side Effects sections; one that would pass the cap is skipped
  * and logged, and a master whose interactions were skipped adds no other
- * safety section. One master's full block
- * runs about 6,900 (taurine) to 19,400 characters (vitamin C) with its cited
- * references, so 40,000 holds two or three masters in full; a post naming five
- * (the-only-three-supplements-doctor-brad-takes) gets all five views and three
- * masters' safety text. The YouTube context is uncached, so every character
- * (about 10,000 tokens at the cap) is paid on every comment.
+ * safety section. Sections go in whole, never trimmed. A master's Drug
+ * Interactions section runs about 2,000 to 7,000 characters with its cited
+ * references; 80,000 lets the stack post
+ * (the-only-three-supplements-doctor-brad-takes), which names ten masters with
+ * a view once batch 2 lands, carry every view and every master's interactions
+ * (about 79,000 measured 2026-10-21); 40,000 dropped six masters' interactions,
+ * vitamin K's warfarin warning among them. An interim figure (orchestrator,
+ * 2026-10-21) until each master gains a short "Key safety points" section. The
+ * YouTube context is uncached, so every character (about 20,000 tokens at the
+ * cap) is paid on every comment.
  */
-export const MAX_MASTER_VIEW_CHARS = 40_000;
+export const MAX_MASTER_VIEW_CHARS = 80_000;
 export const MAX_VIEW_CHARS = 6_000;
 
 /** A master's "Current view" or "Current evidence position" section, heading to
@@ -162,17 +166,19 @@ export function masterViews(topics: string[] | undefined, loaded: string[]): str
   let total = masters.reduce((n, m) => n + m.view.length, SEPARATOR.length * (masters.length - 1));
   // Two passes in topics order: every master's interactions sections, then the
   // other safety sections of each master whose interactions all went in.
+  // Kept sections by identity, so two masters' identical texts count apart.
   const kept = new Set<string>();
   const blocked = new Set<string>();
   for (const pass of [true, false]) {
     for (const { handle, safety } of masters) {
-      for (const s of safety.filter(s => INTERACTIONS_HEADING.test(s) === pass)) {
-        if (!blocked.has(handle) && total + s.length + 2 <= MAX_MASTER_VIEW_CHARS) { total += s.length + 2; kept.add(s); continue; }
+      for (const [i, s] of safety.entries()) {
+        if (INTERACTIONS_HEADING.test(s) !== pass) continue;
+        if (!blocked.has(handle) && total + s.length + 2 <= MAX_MASTER_VIEW_CHARS) { total += s.length + 2; kept.add(`${handle}#${i}`); continue; }
         if (pass) blocked.add(handle);
         console.warn(`YouTube master views: safety section skipped for the cap: ${handle} "${s.split('\n')[0].slice(1)}"`);
       }
     }
   }
-  const parts = masters.map(({ view, safety }) => [view, ...safety.filter(s => kept.has(s))].join('\n\n'));
+  const parts = masters.map(({ handle, view, safety }) => [view, ...safety.filter((_, i) => kept.has(`${handle}#${i}`))].join('\n\n'));
   return `${MASTER_VIEWS_HEADING}\n\n${parts.join(SEPARATOR)}`;
 }

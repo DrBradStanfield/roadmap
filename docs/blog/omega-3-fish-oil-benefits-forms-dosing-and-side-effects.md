@@ -6,10 +6,27 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["omega-3", "fish oil", "epa", "dha", "cardiovascular", "triglycerides", "inflammation", "brain health", "heart attack", "stroke", "cholesterol", "ldl", "hdl", "blood pressure", "depression", "anxiety", "cognitive", "alzheimer", "dementia", "diabetes", "insulin resistance", "arthritis", "dry eye", "cancer", "pregnancy", "sleep", "migraine", "aging", "longevity", "muscle", "krill oil", "algal oil", "dpa"]
-summary: "Reference on omega-3 (fish oil): heart health, triglyceride reduction, brain and cognitive benefits, EPA vs DHA distinction, oily fish vs supplement dosing, and safety. Covers the major cardiovascular trials in detail — VITAL (28% MI reduction, NEJM 2018), REDUCE-IT (Vascepa / icosapent ethyl, 25% MACE reduction with mineral-oil placebo controversy), STRENGTH (null with corn-oil placebo), ASCEND, JELIS — plus dose-response, AF risk at high doses, and who benefits most (CVD, high triglycerides, low fish intake). Always discuss with your doctor."
+summary: "Reference on omega-3 fish oil. Brad takes about 1 g a day for heart and brain health (VITAL: 28% fewer heart attacks) and avoids higher doses linked to atrial fibrillation. Covers forms, major trials, triglycerides and safety. Talk to your doctor first, especially if you take blood thinners."
+reviewed: "2026-10-20"
+sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/fish-oil-supplements-review/omega3/","checked":"2026-09-29","fingerprint":"sha256:f6dc7d915c80dd52e0983c7345c5c89aa97c06bb6eddb69d2ca525d77f42f23e"},{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Omega3FattyAcids-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:130f2ccabb5f47ec394c221492a2d917f765a9af13d06a925a4ef09fc72fa2a8"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine","checked":"2026-10-20","fingerprint":"publishedAt:2026-08-19T00:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study","checked":"2026-10-20","fingerprint":"publishedAt:2026-05-20T12:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/omega-3-breakthrough-cuts-major-heart-events-by-43","checked":"2026-10-20","fingerprint":"publishedAt:2025-12-10T00:17:45Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-supplements-that-actually-work","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-05T20:31:48Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30T20:38:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-19T03:13:05Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/brain-omega-3-discovery","checked":"2026-10-20","fingerprint":"publishedAt:2024-09-26T00:17:19Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/omega-3-heart-arrhythmia","checked":"2026-10-20","fingerprint":"publishedAt:2024-07-11T21:04:17Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/omega-3-fish-oil-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/omega-3-fish-oil-benefits-forms-dosing-and-side-effects)*
+
+## Current view (reviewed 20 October 2026)
+
+Brad still takes about 1 g of omega-3 a day, for its possible effects on the brain and for heart health, based on the VITAL trial and a Mayo Clinic meta-analysis ([Brad, 20 May 2026](https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study)). In VITAL, which followed over 25,000 adults for five years, the risk of heart attack was 28% lower with omega-3 than with placebo, and the Mayo Clinic analysis of 40 studies linked supplements to a 13% reduction in heart attacks and a 35% reduction in fatal heart attacks ([Brad, 30 Jul 2025](https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes)). He stays at about 1 g because the risk of atrial fibrillation, a heart rhythm problem, appears to rise with dose: in one meta-analysis it was 12% higher at 1 g a day or less and 49% higher above 1 g ([Brad, 10 Dec 2025](https://drstanfield.com/blogs/articles/omega-3-breakthrough-cuts-major-heart-events-by-43)). In a recent trial in people on dialysis, 4 g a day cut major cardiovascular events by 43%; at that level of risk Brad thinks a small rise in atrial fibrillation is probably worth the trade-off, but for most people it may not be ([Brad, 10 Dec 2025](https://drstanfield.com/blogs/articles/omega-3-breakthrough-cuts-major-heart-events-by-43)). For the brain, he thinks omega-3 and B vitamins work as a pair, and a 2026 study that linked omega-3 use with faster cognitive decline did not change his view, because it measured neither oxidation of the oil nor B-vitamin status ([Brad, 20 May 2026](https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study)). He uses a third-party tested brand, but just because he takes it does not mean you should: discuss it with your doctor ([Brad, 20 May 2026](https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study)).
+
+## Brad's videos on this topic
+
+- 19 Aug 2026, [Multivitamins Are No Longer "Expensive Urine"](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine): B vitamins slowed brain shrinkage only in people with enough omega-3, a lead worth following; the July 2026 WHO dementia guideline advised against omega-3 for dementia risk without a diagnosed deficiency, but it did not reassess supplements.
+- 20 May 2026, [Concerning Omega-3 Brain Study](https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study): a 2026 study linked omega-3 use with faster cognitive decline, but it measured neither oil oxidation nor B-vitamin status; Brad still takes about 1 g a day.
+- 10 Dec 2025, [Omega-3 Breakthrough Cuts Major Heart Events by 43%](https://drstanfield.com/blogs/articles/omega-3-breakthrough-cuts-major-heart-events-by-43): 4 g a day cut major cardiovascular events by 43% in people on dialysis; Brad stays at 1 g a day because atrial fibrillation risk appears to rise with dose.
+- 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drstanfield.com/blogs/articles/5-supplements-that-actually-work): omega-3 at about 1 g a day is one of five picks, for heart and brain; high doses have been linked to atrial fibrillation.
+- 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes](https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes): omega-3 is one of the three supplements Brad takes, at about 1 g, for the heart benefit seen in VITAL without the atrial fibrillation risk seen at 4 g in STRENGTH.
+- 19 Nov 2024, [The Only Supplements That ACTUALLY Work (2025)](https://drstanfield.com/blogs/articles/only-supplements-work-2025): Brad takes about 1 g of mixed EPA and DHA for heart and brain, and warns that megadosing raises atrial fibrillation risk.
+- 26 Sep 2024, [Your Brain on Omega-3, Tantalizing Discovery!](https://drstanfield.com/blogs/articles/brain-omega-3-discovery): the brain benefit of omega-3 seems to depend on healthy B-vitamin status (low homocysteine); Brad takes 1 g a day of EPA and DHA.
+- 11 Jul 2024, [New Study Links Omega-3 to Increased Heart Arrhythmia Risk](https://drstanfield.com/blogs/articles/omega-3-heart-arrhythmia): a UK Biobank study linked omega-3 supplements to atrial fibrillation in the general population; Brad stays near the VITAL dose, about 1 g a day. Superseded on the size of the risk: the post said 133% higher, and Brad's 30 Jul 2025 post gives 13% higher.
 
 ## 1. Overview
 
@@ -21,7 +38,7 @@ EPA and DHA play critical structural roles as components of cell membrane phosph
 
 After ingestion, omega-3 fatty acids are hydrolyzed in the intestinal lumen. The hydrolysis products are incorporated into bile-salt-containing micelles and absorbed into enterocytes with an efficiency of approximately 95%, similar to other dietary fats [1]. Within intestinal cells, fatty acids are incorporated into chylomicrons and enter the circulation via the lymphatic system [1].
 
-The omega-3 index -- the content of EPA plus DHA in erythrocyte membranes expressed as a percentage of total erythrocyte fatty acids -- has been proposed as a biomarker for assessing omega-3 status [4][5]. An omega-3 index of approximately 8% or above is associated with lower risk of atherosclerotic cardiovascular disease, while an index below 4% is associated with the highest risk [4]. Approximately 89% of the US population is estimated to have an omega-3 index in the "high risk" category [6]. EPA and DHA typically comprise about 3-5% of erythrocyte fatty acids in Western populations with low fish intake, compared to approximately double that in Japan where fish consumption is high [1].
+The omega-3 index -- the content of EPA plus DHA in erythrocyte membranes expressed as a percentage of total erythrocyte fatty acids -- has been proposed as a biomarker for assessing omega-3 status [4][5]. An omega-3 index of approximately 8% or above is associated with lower risk of atherosclerotic cardiovascular disease, while an index below 4% is associated with the highest risk [4]. Approximately 89% of US adults are estimated to have an omega-3 index in the "high risk" category [6]. EPA and DHA typically comprise about 3-5% of erythrocyte fatty acids in Western populations with low fish intake, compared to approximately double that in Japan where fish consumption is high [1].
 
 The IOM has established Adequate Intakes (AIs) for total omega-3s: 1.6 g/day for adult men and 1.1 g/day for adult women (as ALA). No specific intake recommendations for EPA and DHA have been established [1][2]. However, the American Heart Association recommends at least 1-2 servings (3.5 oz per serving) of non-fried, preferably fatty fish per week [7], and various expert bodies recommend 250-500 mg/day of combined EPA and DHA for general cardiovascular health [1][7][8].
 
@@ -102,6 +119,8 @@ Increased consumption of fish oils from food and higher blood levels of omega-3s
 
 **Cochrane Review (162,796 participants, 86 RCTs):** A 2020 review found 0.5-5+ g/day long-chain omega-3s reduced serum triglycerides by about 15% and slightly decreased cardiovascular mortality and coronary heart disease events, but did not affect all-cause mortality, cardiovascular events, stroke, or arrhythmia (Abdelhamid, Cochrane Database Syst Rev 2018/2020) [10].
 
+**Mayo Clinic meta-analysis (135,267 participants, 40 studies):** Omega-3 supplementation cut heart attack risk by 13% and fatal heart attack risk by 35%. The authors concluded that EPA and DHA supplementation "is an effective lifestyle strategy for CVD prevention, and the protective effect probably increases with dosage" [38].
+
 #### Heart Failure
 
 Fish oil supplementation may benefit people with chronic heart failure. In 31 patients with chronic heart failure, 2,000 mg of concentrated fish oil (920 mg DHA + 760 mg EPA) daily for two months improved left ventricle ejection fraction by 3%, increased flow-mediated dilation by 33%, and reduced markers of cardiac inflammation and fibrosis compared to placebo. The greatest improvements were in those with lower baseline NT-proBNP levels (Oikonomou, Clin Nutr 2019) [3].
@@ -135,6 +154,7 @@ However, among patients with coronary artery disease on high-dose statin therapy
 - High-dose fish oil (>3 g/day EPA+DHA) effectively lowers triglycerides in people with severe hypertriglyceridemia [3][7][10]
 - Fish oil supplementation along with 3+ servings of fish per week may reduce venous thromboembolism risk [3]
 - Any cardiovascular benefit of supplementation may be limited to people who do not regularly consume fish and are not taking other heart medications [3]
+- Brad reads VITAL and the Mayo Clinic meta-analysis as showing real benefits and finds the evidence of heart protection compelling, but he avoids the higher doses linked to atrial fibrillation [38]
 
 ### Triglyceride Reduction
 
@@ -226,7 +246,7 @@ However, studies in New Zealand (1,491 mg DHA + 351 mg EPA for 1 year) and the U
 
 Fish oil alone has not shown benefit in treating or slowing Alzheimer's disease. In patients given 2 g/day DHA from algal oil for 18 months, there was no reduction in cognitive decline despite tripling plasma DHA and increasing cerebrospinal fluid DHA by 38% (Quinn, JAMA 2010). Additional analysis suggested some reduction in aggressive behavior, though not statistically significant (Perales-Puchalt, Alzheimer Dis Assoc Disord 2025) [3].
 
-However, omega-3s may benefit Alzheimer's patients when combined with adequate B vitamins. In patients with mild to moderate Alzheimer's, daily supplementation with 1,700 mg DHA + 600 mg EPA for 6 months benefited only those with adequate B vitamin status (homocysteine <11.7 mmol/L) -- these patients showed a 7.1% improvement in cognitive performance and 22.3% reduction on a dementia rating scale. The explanation: B vitamins are necessary to form phosphatidylcholine, which carries DHA and EPA across the blood-brain barrier (Jerneren, J Alz Dis 2019) [3].
+However, omega-3s may benefit Alzheimer's patients when combined with adequate B vitamins. In patients with mild to moderate Alzheimer's, daily supplementation with 1,700 mg DHA + 600 mg EPA for 6 months benefited only those with adequate B vitamin status (homocysteine <11.7 micromol/L) -- these patients showed a 7.1% improvement in cognitive performance and 22.3% reduction on a dementia rating scale. The explanation: B vitamins are necessary to form phosphatidylcholine, which carries DHA and EPA across the blood-brain barrier (Jerneren, J Alz Dis 2019) [3].
 
 Similarly, a pilot study found that alpha-lipoic acid (600 mg) plus fish oil (975 mg EPA + 675 mg DHA) slowed cognitive and functional decline over 1 year in mild-to-moderate Alzheimer's patients (Shinto, J Alzheimers Dis 2014) [3].
 
@@ -266,7 +286,7 @@ People consuming the highest amounts of DHA (410-2,000 mg/day) had a 77% lower r
 
 A 3-year study of 2,157 healthy people aged 70+ in five European countries found 1 g/day algal oil (167 mg EPA + 333 mg DHA) reduced invasive cancer risk by 30%, and by 48% when combined with regular strength training. Combined with vitamin D, the risk decreased by 47%, and with both vitamin D and strength training by 61%. Overall cancer incidence was 3.8% (81 total cases) (Bischoff-Ferrari, Front Nutr 2022) [3].
 
-The VITAL study found fish oil + vitamin D did not reduce overall cancer risk, but a subgroup analysis showed supplementation reduced precancerous colorectal growths by 41% in African Americans and by 24% in those with low baseline omega-3 levels (Song, JAMA Oncol 2019). People diagnosed with colorectal cancer who consume at least 300 mg/day omega-3 from fish/supplements have a 41% lower risk of dying from the disease (Song, Gut 2016). However, high-dose Lovaza for 6 months did not affect colorectal cell replication or cell death (Murff, Nutr Cancer 2021) [3].
+The VITAL study found fish oil + vitamin D did not reduce overall cancer risk [3]. In a VITAL substudy, fish oil did not lower the risk of precancerous colorectal growths overall. Secondary analyses suggested fewer adenomas in African American participants (odds ratio 0.59, 95% CI 0.35-1.00) and in those with low baseline omega-3 levels (odds ratio 0.76, 95% CI 0.57-1.02), but the authors say these possible benefits need further confirmation (Song, JAMA Oncol 2019) [25]. People diagnosed with colorectal cancer who consume at least 300 mg/day omega-3 from fish/supplements have a 41% lower risk of dying from the disease (Song, Gut 2016). However, high-dose Lovaza for 6 months did not affect colorectal cell replication or cell death (Murff, Nutr Cancer 2021) [3].
 
 For breast cancer, current use of fish oil supplements was associated with a 32% reduction in risk among postmenopausal women, with the greatest reduction in ductal carcinoma (Brasky, Canc Epidemiol Biomarkers Prev 2010). Women with early-stage breast cancer consuming >73 mg/day DHA+EPA from fish had a 25% lower recurrence risk (Patterson, J Nutr 2011). Higher tuna and baked/broiled fish consumption was associated with a 25-34% reduced risk of death from all causes in women with breast cancer over 15 years (Khankari, Cancer 2015) [3].
 
@@ -430,7 +450,7 @@ For first-episode schizophrenia, 1,320 mg EPA + 880 mg DHA daily for 26 weeks re
 
 ### General Population
 
-The American Heart Association recommends at least 1-2 servings (3.5 oz each) of non-fried, preferably fatty fish per week, providing approximately 250-500 mg/day of EPA+DHA [7]. For people who do not eat fish regularly, a supplement providing 500-1,000 mg of combined EPA+DHA daily is a reasonable approach.
+The American Heart Association recommends at least 1-2 servings (3.5 oz each) of non-fried, preferably fatty fish per week, providing approximately 250-500 mg/day of EPA+DHA [7]. For people who do not eat fish regularly, a supplement providing 500-1,000 mg of combined EPA+DHA daily is a reasonable approach. Brad takes about 1 g of omega-3 a day [39] and avoids higher doses because atrial fibrillation risk appears to rise with dose [38].
 
 ### Adequate Intakes (AIs) for Total Omega-3s
 
@@ -450,23 +470,23 @@ Note: These AIs are for ALA only (ages 1+). No specific DRIs for EPA or DHA have
 
 ### Dosing by Indication
 
-**General cardiovascular support:** 500-1,000 mg EPA+DHA per day from fish and/or supplements. This is the most commonly studied dose in the general population [3][7][10].
+The doses below are those used in trials or advised by expert groups for each condition. Atrial fibrillation risk appears to rise with dose (see Atrial Fibrillation below), so a dose above the general range is a decision to make with your doctor [38].
 
-**Triglyceride reduction:** 2,000-4,000 mg EPA+DHA per day, under physician supervision. The AHA recommends prescription omega-3s at 4 g/day as effective and safe for reducing triglycerides (Skulas-Ray, Circulation 2019) [7].
+**General cardiovascular support:** ConsumerLab gives a general daily dose of about 300-500 mg EPA+DHA, and 500-1,000 mg as a larger amount [3].
 
-**After heart attack or established coronary heart disease:** ~1 g/day EPA+DHA (AHA recommendation), preferably from fatty fish; supplements under physician direction [7].
+**Triglyceride reduction:** Trials used 2,000-4,000 mg EPA+DHA per day to lower triglycerides, under physician supervision. The AHA recommends prescription omega-3s at 4 g/day as effective and safe for reducing triglycerides (Skulas-Ray, Circulation 2019) [7].
 
-**Depression (adjunctive therapy):** 1,000-4,000 mg/day with EPA:DHA ratio >2:1. The International Society for Nutritional Psychiatry Research recommends 1-2 g/day for at least 8 weeks (Guu, Psychother Psychosom 2019) [3].
+**Depression (adjunctive therapy):** Trials used 1,000-4,000 mg/day with an EPA:DHA ratio >2:1 alongside antidepressants. The International Society for Nutritional Psychiatry Research recommends 1-2 g/day for at least 8 weeks (Guu, Psychother Psychosom 2019) [3].
 
-**Rheumatoid arthritis pain:** 2,000-3,500 mg/day EPA+DHA, with products having at least 50% more EPA than DHA [3].
+**Rheumatoid arthritis pain:** Trials used 2,000-3,500 mg/day EPA+DHA for rheumatoid arthritis pain, with products having at least 50% more EPA than DHA [3].
 
-**Pregnancy (preterm birth prevention):** At least 250 mg/day DHA+EPA plus an additional 100-200 mg/day DHA. Women at risk of preterm birth: 600-1,000 mg/day DHA+EPA, starting by 20 weeks gestation through 37 weeks. Consider discontinuation in the third trimester due to postpartum hemorrhage risk (Cetin, Am J Obstet Gynecol MFM 2024) [3].
+**Pregnancy (preterm birth prevention):** Experts in Europe recommend at least 250 mg/day DHA+EPA plus an additional 100-200 mg/day DHA in pregnancy, and 600-1,000 mg/day DHA+EPA for women at risk of preterm birth, starting by 20 weeks gestation through 37 weeks. Consider discontinuation in the third trimester due to postpartum hemorrhage risk (Cetin, Am J Obstet Gynecol MFM 2024) [3].
 
-**Cognitive function in older adults:** 900-2,000 mg/day DHA, particularly in people with low baseline levels and low fish intake [3].
+**Cognitive function in older adults:** Trials used 900-2,000 mg/day DHA for cognitive function, with benefit mainly in people with low baseline levels and low fish intake [3].
 
-**Migraine prevention:** 1,500 mg/day EPA+DHA from dietary fish, ideally with reduced omega-6 intake. From supplements: 750-1,800 mg/day EPA [3].
+**Migraine prevention:** Trials used 1,500 mg/day EPA+DHA from dietary fish, with reduced omega-6 intake, and 750-1,800 mg/day EPA from supplements [3].
 
-**Epilepsy:** ~1,080 mg EPA+DHA per day. Higher doses may not be effective [3].
+**Epilepsy:** A trial used ~1,080 mg EPA+DHA per day to reduce seizures; twice that dose was not effective [3].
 
 ### How to Take
 
@@ -616,9 +636,9 @@ Source: USDA FoodData Central [1][11].
 
 [4] Harris WS, Von Schacky C. "The Omega-3 Index: a new risk factor for death from coronary heart disease?" *Prev Med*. 2004;39(1):212-220. doi: [10.1016/j.ypmed.2004.02.030](https://doi.org/10.1016/j.ypmed.2004.02.030)
 
-[5] Harris WS, et al. "The Omega-3 Index and relative risk for coronary heart disease mortality." *Atherosclerosis*. 2017;262:21-27. doi: [10.1016/j.atherosclerosis.2017.04.015](https://doi.org/10.1016/j.atherosclerosis.2017.04.015)
+[5] Harris WS, Del Gobbo L, Tintle NL. "The Omega-3 Index and relative risk for coronary heart disease mortality: Estimation from 10 cohort studies." *Atherosclerosis*. 2017;262:51-54. doi: [10.1016/j.atherosclerosis.2017.05.007](https://doi.org/10.1016/j.atherosclerosis.2017.05.007). PMID: 28511049.
 
-[6] Murphy RA, et al. "Long-chain omega-3 fatty acid status in the general population." *BMJ Open*. 2021. doi: [10.1136/bmjopen-2020-044320](https://doi.org/10.1136/bmjopen-2020-044320)
+[6] Murphy RA, Devarshi PP, Ekimura S, et al. "Long-chain omega-3 fatty acid serum concentrations across life stages in the USA: an analysis of NHANES 2011-2012." *BMJ Open*. 2021;11(5):e043301. doi: [10.1136/bmjopen-2020-043301](https://doi.org/10.1136/bmjopen-2020-043301). PMID: 33972333.
 
 [7] Rimm EB, Appel LJ, Chiuve SE, et al. "Seafood Long-Chain n-3 Polyunsaturated Fatty Acids and Cardiovascular Disease: A Science Advisory From the American Heart Association." *Circulation*. 2018;138(1):e35-e47. doi: [10.1161/CIR.0000000000000574](https://doi.org/10.1161/CIR.0000000000000574)
 
@@ -640,7 +660,7 @@ Source: USDA FoodData Central [1][11].
 
 [16] Li ZH, Zhong WF, Liu S, et al. "Associations of habitual fish oil supplementation with cardiovascular outcomes and all cause mortality: evidence from a large population based cohort study." *BMJ*. 2020;368:m456. doi: [10.1136/bmj.m456](https://doi.org/10.1136/bmj.m456)
 
-[17] Lok CE, Bhatt DL, Engelen DJPE, et al. "Effect of Fish Oil on Major Cardiovascular Events in Adults on Hemodialysis." *N Engl J Med*. 2025. doi: [10.1056/NEJMoa2411254](https://doi.org/10.1056/NEJMoa2411254)
+[17] Lok CE, Farkouh M, Hemmelgarn BR, et al. "Fish-Oil Supplementation and Cardiovascular Events in Patients Receiving Hemodialysis." *N Engl J Med*. 2026;394(2):128-137. doi: [10.1056/NEJMoa2513032](https://doi.org/10.1056/NEJMoa2513032). PMID: 41201837.
 
 [18] Firth J, Teasdale SB, Allott K, et al. "The efficacy and safety of nutrient supplements in the treatment of mental disorders: a meta-review of meta-analyses of randomized controlled trials." *World Psychiatry*. 2019;18(3):308-324. doi: [10.1002/wps.20672](https://doi.org/10.1002/wps.20672)
 
@@ -654,9 +674,9 @@ Source: USDA FoodData Central [1][11].
 
 [23] Asbell PA, Maguire MG, Pistilli M, et al. "n-3 Fatty Acid Supplementation for the Treatment of Dry Eye Disease." *N Engl J Med*. 2018;378(18):1681-1690. doi: [10.1056/NEJMoa1709691](https://doi.org/10.1056/NEJMoa1709691)
 
-[24] Bischoff-Ferrari HA, Vellas B, Rizzoli R, et al. "Effect of Vitamin D Supplementation, Omega-3 Fatty Acid Supplementation, or a Strength-Training Exercise Program on Clinical Outcomes in Older Adults." *Front Nutr*. 2022. doi: [10.3389/fnut.2022.894273](https://doi.org/10.3389/fnut.2022.894273)
+[24] Bischoff-Ferrari HA, Willett WC, Manson JE, et al. "Combined Vitamin D, Omega-3 Fatty Acids, and a Simple Home Exercise Program May Reduce Cancer Risk Among Active Adults Aged 70 and Older: A Randomized Clinical Trial." *Front Aging*. 2022;3:852643. doi: [10.3389/fragi.2022.852643](https://doi.org/10.3389/fragi.2022.852643). PMID: 35821820.
 
-[25] Song M, Nishihara R, Wu K, et al. "Marine omega-3 polyunsaturated fatty acids and risk for colorectal cancer." *JAMA Oncol*. 2019. doi: [10.1001/jamaoncol.2019.3728](https://doi.org/10.1001/jamaoncol.2019.3728)
+[25] Song M, Lee IM, Manson JE, et al. "Effect of Supplementation With Marine ω-3 Fatty Acid on Risk of Colorectal Adenomas and Serrated Polyps in the US General Population: A Prespecified Ancillary Study of a Randomized Clinical Trial." *JAMA Oncol*. 2020;6(1):108-115. doi: [10.1001/jamaoncol.2019.4587](https://doi.org/10.1001/jamaoncol.2019.4587). PMID: 31750855.
 
 [26] Di Giuseppe D, Wallin A, Bottai M, et al. "Long-chain omega-3 fatty acids and risk of rheumatoid arthritis." *Ann Rheum Dis*. 2013;73(11):1949-1953. doi: [10.1136/annrheumdis-2013-203338](https://doi.org/10.1136/annrheumdis-2013-203338)
 
@@ -674,10 +694,14 @@ Source: USDA FoodData Central [1][11].
 
 [33] Jensen TK, Priskorn L, Holmboe SA, et al. "Associations of Fish Oil Supplement Use With Testicular Function in Young Men." *JAMA Netw Open*. 2020;3(1):e1919462. doi: [10.1001/jamanetworkopen.2019.19462](https://doi.org/10.1001/jamanetworkopen.2019.19462)
 
-[34] Daenen LG, Cirkel GA, Houthuijzen JM, et al. "Increased Plasma Levels of Chemoresistance-Inducing Fatty Acid 16:4(n-3) After Consumption of Fish and Fish Oil." *JAMA Oncol*. 2015;1(3):350-358. doi: [10.1001/jamaoncol.2015.0829](https://doi.org/10.1001/jamaoncol.2015.0829)
+[34] Daenen LG, Cirkel GA, Houthuijzen JM, et al. "Increased Plasma Levels of Chemoresistance-Inducing Fatty Acid 16:4(n-3) After Consumption of Fish and Fish Oil." *JAMA Oncol*. 2015;1(3):350-358. doi: [10.1001/jamaoncol.2015.0388](https://doi.org/10.1001/jamaoncol.2015.0388). PMID: 26181186.
 
 [35] Smith GI, Julliand S, Reeds DN, et al. "Fish oil-derived n-3 PUFA therapy increases muscle mass and function in healthy older adults." *Am J Clin Nutr*. 2015;102(1):115-122. doi: [10.3945/ajcn.114.105833](https://doi.org/10.3945/ajcn.114.105833)
 
 [36] Dyerberg J, Madsen P, Moller JM, et al. "Bioavailability of marine n-3 fatty acid formulations." *Prostaglandins Leukot Essent Fatty Acids*. 2010;83(3):137-141. doi: [10.1016/j.plefa.2010.06.007](https://doi.org/10.1016/j.plefa.2010.06.007)
 
 [37] Middleton P, Gomersall JC, Gould JF, et al. "Omega-3 fatty acid addition during pregnancy." *Cochrane Database Syst Rev*. 2018;11(11):CD003402. doi: [10.1002/14651858.CD003402.pub3](https://doi.org/10.1002/14651858.CD003402.pub3)
+
+[38] Stanfield B. "Omega-3 Breakthrough Cuts Major Heart Events by 43%." Dr Brad Stanfield, 10 Dec 2025. [https://drstanfield.com/blogs/articles/omega-3-breakthrough-cuts-major-heart-events-by-43](https://drstanfield.com/blogs/articles/omega-3-breakthrough-cuts-major-heart-events-by-43)
+
+[39] Stanfield B. "Concerning Omega-3 Brain Study." Dr Brad Stanfield, 20 May 2026. [https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study](https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study)

@@ -17,158 +17,6 @@
  },
  {
   "check": "AC2",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "token \">20 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Brain fog and fatigue (n=32):** A 24-week study among 32 adults (average age 47) with long COVID (particularly \"bra...\"",
-  "reason": "Checker tokenisation (\"over 20 weeks\" (duration) read as a \">\" comparison); source states it verbatim: nmn-nad-supplements-for-anti-aging-just-changed.md: \"NAD+ increased 2.6- to 3.1-fold after 5–10 weeks and remained elevated at 20 weeks\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "token \"125 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Healthy middle-aged adults (n=36):** Taking 125 mg NMN twice daily (250 mg/day) for 12 weeks raised serum nicotinam...\"",
-  "reason": "Checker tokenisation (\"125 mg NMN twice daily\" read as 125 mg per day); source states it verbatim: pubmed/36797393.md: \"A total of 36 healthy middle-aged participants received one capsule of either 125 mg NMN or placebo twice a day\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "token \"65 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Older men with diabetes (n=14):** In men aged 65 or over (average age 81.1) with diabetes and reduced grip strength...\"",
-  "reason": "Checker tokenisation (\"aged 65 or over\" vs the source's \"aged ≥65 years\": comparator placement); source states it verbatim: pubmed/36443648.md: \"male patients with diabetes aged ≥65 years with reduced grip strength\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "token \"≤300 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **European expert panel:** No side effects of NMN were reported in clinical studies using up to 900 mg/day for 2 mo...\"",
-  "reason": "Checker tokenisation (\"at a maximum of 300 mg per day\" read as a comparison the source words differently); source: reviews-nmn-nadh-nicotinamide-riboside-nmn-nadh-nicotinamide-riboside.md (ConsumerLab raw), changed_tokens[53] in the external report (voided there because the checker reads the comparison differently; this exception records it). No licensed text quoted here.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "token \"≥800 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Animal toxicology:** In a 91-day rat study, the highest dose with no observed adverse effect was 1,000 mg/kg/day ...\"",
-  "reason": "Checker tokenisation (\"no less than 800 mg/kg\" vs the source's \"NLT 800 mg NMN/kg\": abbreviation and word between unit parts); source states it verbatim: pubmed/38765763.md: \"the NOAEL was considered to be NLT 800 mg NMN/kg body weight in Wistar rats\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "body line has no entry quoting \"65\": Higher-dose trial: In 31 healthy adults aged 20 to 65, 1,250 mg NMN once daily for up to 4 weeks caused no changes be...",
-  "reason": "Checker tokenisation (range \"20 to 65\" vs the source's \"20-65 years\": unit glued to the range); source states it verbatim: pubmed/36002548.md: \"in 31 healthy adult men and women aged 20-65 years\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "token \"15\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review:** Some have suggested resveratrol might help with type 2 diabetes, but a Cochrane analysis found...\"",
-  "reason": "Checker tokenisation (number word in the source (\"fifteen\")); source states it verbatim: pubmed/36014469.md: \"studies were selected for the systematic review and fifteen were included in the meta-analysis\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "token \"250 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review:** Some have suggested resveratrol might help with type 2 diabetes, but a Cochrane analysis found...\" | \"**In older sedentary men:** Healthy men in their sixties who were not physically active were given 250 mg/day of tran...\" | \"| Exercise training | 150-250 mg/day | 4-8 weeks | May blunt exercise adaptations [60][61] |\"",
-  "reason": "Checker tokenisation (ranges and \"daily\" placement (\"250−500 mg/day\", \"250 mg ... daily\", \"100 mg or 250 mg\")); sources: pubmed/36014469.md: \"HbA1c improved in subjects aged 45−59 years with doses of 250−500 mg\"; and reviews-resveratrol-review-resveratrol-red-wine.md (ConsumerLab raw), changed_tokens[116] and [117] in the external report. No licensed text quoted here.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "token \"45\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review:** Some have suggested resveratrol might help with type 2 diabetes, but a Cochrane analysis found...\"",
-  "reason": "Checker tokenisation (range with a minus sign and glued unit (\"45−59 years\")); source states it verbatim: pubmed/36014469.md: \"HbA1c improved in subjects aged 45−59 years with doses of 250−500 mg\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "token \"59\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review:** Some have suggested resveratrol might help with type 2 diabetes, but a Cochrane analysis found...\"",
-  "reason": "Checker tokenisation (range with a minus sign and glued unit (\"45−59 years\")); source states it verbatim: pubmed/36014469.md: \"HbA1c improved in subjects aged 45−59 years with doses of 250−500 mg\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "token \">60\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review:** Some have suggested resveratrol might help with type 2 diabetes, but a Cochrane analysis found...\"",
-  "reason": "Checker tokenisation (\"over 60\" vs the source's \"older than 60 years\": unit glued to the comparison); source states it verbatim: pubmed/36014469.md: \"but not in subjects older than 60 years\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "token \"≤5000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In healthy volunteers, daily doses up to 5 g for 29 days were judged safe, although 2.5 g and 5 g caused mild to mode...\" | \"Short-term studies of resveratrol in healthy volunteers have shown no serious side effects. However, the long-term sa...\"",
-  "reason": "Checker tokenisation (\"up to 5 g\" read as a comparison; the source lists the doses); source states it verbatim: pubmed/20935227.md + pubmed/17548692.md: \"Forty healthy volunteers ingested resveratrol at 0.5, 1.0, 2.5, or 5.0 g daily for 29 days; single doses of 0.5, 1, 2.5, or 5 g\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "token \"1.2 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A clinical study in patients with multiple myeloma using SRT501 — a proprietary micronized resveratrol formulation wi...\"",
-  "reason": "Checker tokenisation (value and unit separated by the CI in the source); source states it verbatim: pubmed/40580309.md: \"BUN [weighted mean difference (WMD) =  - 1.20; 95% CI: - 1.89, - 0.51 mg/dL\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "token \">3 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Resveratrol demonstrates anti-platelet (blood-thinning) activity through peroxidase-mediated inactivation of cyclooxy...\"",
-  "reason": "Checker tokenisation (\"over 3 months\" (duration) read as a \">\" comparison); source states it verbatim: pubmed/22240353.md: \"One group received 10 mg RES capsule daily for 3 months\"",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "body line has no entry quoting \"10\": Hormetic dose-response: Resveratrol's pharmacodynamic effects often follow a hormetic dose-response curve, where low ...",
-  "reason": "Line unchanged from main except reference renumbering. Its \"10\" became a needed token only because review fix 7 added the Chachay 2014 trial (PMID 24582567: \"3000 mg resveratrol (n = 10) or placebo (n = 10) daily for 8 weeks\"), raising the body count of \"10\". The line's own number predates masters-1 and its raw is not in this batch.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "body line has no entry quoting \"10\": An analysis of data from 10 studies involving 698 participants found that taking resveratrol (dose range: 8 to 1,500 ...",
-  "reason": "Line unchanged from main except reference renumbering. Its \"10\" became a needed token only because review fix 7 added the Chachay 2014 trial (PMID 24582567: \"3000 mg resveratrol (n = 10) or placebo (n = 10) daily for 8 weeks\"), raising the body count of \"10\". The line's own number predates masters-1 and its raw is not in this batch.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Methylation Considerations",
-  "reason": "Brad 2026-10-20 deleted the subsection's only content (unsupported methylation concern and the TMG product sentence); an empty heading would be wrong.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "body line has no entry quoting \"150 mg/day\": Cognitive function in postmenopausal women | 150 mg/day (75 mg twice daily) | 12 months | Modest cognitive improvemen...",
-  "reason": "Checker tokenisation: 150 mg/day equals the abstract's \"75 mg twice daily\"; quote is in the report.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "body line has no entry quoting \"150 mg/day\": Menstrual migraine | 150 mg/day | 3 months | No benefit [49] |",
-  "reason": "Checker tokenisation: 150 mg/day equals the abstract's \"75 mg twice daily\"; quote is in the report.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
   "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
   "match": "changed_tokens[26] raw_quote shares no number with its body_line: - However, a study of 106 young male athletes in India with adequate blood vitamin C/E levels but...",
   "reason": "Checker tokenisation: the abstract spells the sample size \"Hundred six\" (106).",
@@ -186,177 +34,73 @@
  {
   "check": "AC2",
   "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "token \">7\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Liposomal hydrogel vitamin C | Liposomal vitamin C encased in a hydrogel matrix (e.g., galactomannan from fenugreek...\"",
-  "reason": "Checker tokenisation: body \"more than 7 times\" equals the abstract's \">7-fold\".",
+  "match": "token \"52\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A study of 98 adults (average age 52) with mild to moderate COVID-19 found that 1,000 mg/day of vitamin C for 14 da...\"",
+  "reason": "Checker tokenisation: the abstract writes the age with its unit ('52 years', token '52 year'); the body says 'average age 52'. Source states it verbatim: pubmed/35896462.md: \"Ninety Eight (98 out of 104 recruited; mean age = 52 years) patients completed the study\". Ruling 10: text left as it should read. Written by the correction-round Opus worker; orchestrator to confirm.",
   "by": "orchestrator",
-  "date": "2026-10-20"
+  "date": "2026-10-21"
  },
  {
   "check": "AC2",
   "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "token \"106\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- However, a study of 106 young male athletes in India with adequate blood vitamin C/E levels but low dietary intake ...\"",
-  "reason": "Checker tokenisation: the abstract spells the sample size \"Hundred six\" (106).",
+  "match": "token \"250\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Higher dietary vitamin C intake (>146 mg/day) has been associated with 29% lower odds of NAFLD compared to lower inta...\"",
+  "reason": "Checker tokenisation: the body lists '250, 1,000, or 2,000 mg ... daily' (token '250'); the abstract writes '250 mg/day'. Source states it verbatim: pubmed/34595203.md: \"low (250 mg/day, n = 26), medium (1,000 mg/day, n = 30), or high (2,000 mg/day, n = 28) doses of VC supplements\". Ruling 10: the earlier '250 mg/day,' wording existed only to pass the checker and is undone. Written by the correction-round Opus worker; orchestrator to confirm.",
   "by": "orchestrator",
-  "date": "2026-10-20"
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"18\": A small study of men aged 18-35 with low to adequate vitamin C levels found that 1 g/day (500 mg twice daily) for 2 m...",
+  "reason": "Checker tokenisation: the line's '18-35' age range is unchanged; it became 'needed' only because the warfarin row gained '18 healthy men'. The abstract writes the range with its unit ('18 year'): pubmed/25010554.md: \"Healthy non-smoking adult men (18-35 years; BMI < 34 kg/m2; plasma vitamin C < 45 µmol/L)\". Written by the correction-round Opus worker; orchestrator to confirm.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
  },
  {
   "check": "AC7",
   "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
-  "match": "reference line has unknown host academicjournals.org: [2] Cheng W, Yan-hua R, Fang-gang N, Guo-an Z. \"The content and ratio of type I and III collagen ...",
-  "reason": "Real paper on this publisher's site, cited by ConsumerLab; the publisher has a low-quality open-access reputation (flagged for review/Brad).",
+  "match": "reference line has unknown host avesis.uludag.edu.tr: [42] Eskiyurt N et al. \"Efficacy and Safety of Natural Eggshell Membrane (NEM) in Patients with G...",
+  "reason": "Real paper with no PubMed record (J Arthritis 2019, unindexed); the link is Bursa Uludag University's publication record, checked live 2026-10-21 (HTTP 200, title matches). No-ID reference repair, collagen addendum-6. Written by the correction-round Opus worker; orchestrator to confirm.",
   "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
-  "match": "reference line has unknown host nutraingredients.com: [13] Collagen Stewardship Alliance (CSA). \"Response to Myung et al. systematic review.\" 2025. Rep...",
-  "reason": "Industry body statement (Collagen Stewardship Alliance / GROW Coalition) as reported by NutraIngredients; the trade-press report is the primary record of the statement.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
-  "match": "reference line has unknown host nutraingredients.com: [14] GROW Coalition. \"Response to Myung et al. systematic review.\" 2025. Reported in NutraIngredi...",
-  "reason": "Industry body statement (Collagen Stewardship Alliance / GROW Coalition) as reported by NutraIngredients; the trade-press report is the primary record of the statement.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
-  "match": "reference line has unknown host law.cornell.edu: [69] FDA. 21 CFR 189.5, \"Prohibited cattle materials\" ([https://www.law.cornell.edu/cfr/text/21/1...",
-  "reason": "US regulation text (21 CFR) hosted by Cornell LII: a legitimate primary source.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
-  "match": "reference line has unknown host longdom.org: [73] Ruff KJ et al. \"Eggshell Membrane+Fish Oil Combination (Move3) Reduces Exercise-Induced Join...",
-  "reason": "Real paper on this publisher's site, cited by ConsumerLab; the publisher has a low-quality open-access reputation (flagged for review/Brad).",
-  "by": "orchestrator",
-  "date": "2026-10-20"
+  "date": "2026-10-21"
  },
  {
   "check": "AC7",
   "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "new PubMed reference has no abstract file in extra_raw: [8] Shade C. \"The Science Behind NMN — A Stable, Reliable NAD+ Activator and Anti-Aging Molecule.\" *Integr Med (Encin...",
-  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
+  "match": "report says product mentions 2 -> 0, recomputed 0 -> 0",
+  "reason": "The base moved: masters-1 round 2 (99932e7d) is merged, so origin/main already carries this master with 0 product mentions. The report's 2 -> 0 was counted against the pre-merge base; the correction round adds none (recomputed 0 -> 0). Written by the correction-round Opus worker; orchestrator to confirm.",
   "by": "orchestrator",
-  "date": "2026-10-20"
+  "date": "2026-10-21"
  },
  {
   "check": "AC7",
   "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
-  "match": "reference line has unknown host nobelprize.org: 2. Dam H. The discovery of vitamin K, its biological functions and therapeutical application. Nob...",
-  "reason": "Dam's Nobel lecture (1946), primary source on nobelprize.org.",
+  "match": "reference line has unknown host pmc.ncbi.nlm.nih.gov: 22. Orimo H, Fujita T, Onomura T, Inoue T, Kushida K, Shiraki M. Clinical evaluation of soft caps...",
+  "reason": "PMC is NCBI's full-text archive. Orimo 1992 is a Japanese-language report with no PubMed record; the PMC link is the open paper that cites it as the dose-finding study (Iwamoto, Nutrients 2014, PMC4042573), checked live 2026-10-21. No-ID reference repair, vitamin K addendum-5. Written by the correction-round Opus worker; orchestrator to confirm.",
   "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "lithium-benefits-forms-dosing-and-side-effects",
-  "match": "reference line has unknown host accessdata.fda.gov: [2] Lithium Prescribing Information. 2018. U.S. Food and Drug Administration. [https://www.access...",
-  "reason": "FDA lithium prescribing information: legitimate primary regulatory source.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "lithium-benefits-forms-dosing-and-side-effects",
-  "match": "new PubMed reference has no abstract file in extra_raw: [8] Hanlon LW, Romaine M 3rd, et al. \"Lithium chloride as a substitute for sodium chloride in the diet; observations ...",
-  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
-  "match": "reference line has unknown host patents.google.com: [15] GRAS Notice No. 931 (see [5]); Howard AN, Harris RC. \"Compositions containing creatine.\" US ...",
-  "reason": "US patent text (Google Patents): legitimate primary source.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "new PubMed reference has no abstract file in extra_raw: [42] Hemila H. \"The role of vitamin C in the treatment of the common cold.\" *Am Fam Physician*. 2007;76:1111. [https:...",
-  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "new PubMed reference has no abstract file in extra_raw: [48] Chaudhary SMD, Wright RM, Patarroyo-Aponte G. \"Role of vitamin C in critically ill patients with COVID-19: is it...",
-  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "new PubMed reference has no abstract file in extra_raw: [82] Shekelle P, Hardy ML, Coulter I, et al. \"Effect of the supplemental use of antioxidants vitamin C, vitamin E, an...",
-  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "new PubMed reference has no abstract file in extra_raw: [86] Levine M, Espey MG, Chen Q. \"Losing and finding a way at C: new promise for pharmacologic ascorbate in cancer tr...",
-  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "new PubMed reference has no abstract file in extra_raw: [140] Nikolac Gabaj N, Miler M, Unic A, et al. \"Ascorbic acid in urine still compromises urinalysis results.\" *Ann Cl...",
-  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "new PubMed reference has no abstract file in extra_raw: [146] Feetam CL, Leach RH, Meynell MJ. \"Lack of a clinically important interaction between warfarin and ascorbic acid...",
-  "reason": "No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC7",
-  "handle": "lithium-benefits-forms-dosing-and-side-effects",
-  "match": "reference line has unknown host townsendletter.com: [13] Greenblatt JM, Grossmann K. \"Lithium: The Magic Mineral.\" *Townsend Letter*. January 2015. h...",
-  "reason": "Round 2 fix 9 (orchestrator-accepted): the real Townsend Letter article (January 2015) that ConsumerLab cites as Greenblatt 2015; the URL returned 200 on 2026-10-20 and the page names Greenblatt and Grossmann. A practitioner magazine, not indexed in PubMed; the claim also cites ConsumerLab [1]. Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm.",
-  "by": "orchestrator",
-  "date": "2026-10-20"
+  "date": "2026-10-21"
  },
  {
   "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "body line has no entry quoting \"5\": Piceid: The predominant glycosylated form of resveratrol in grape skins and wine. In red wines, total stilbene levels...",
-  "reason": "Checker tokenisation: the bare digit 5 became a needed token only because round 2 fix 7 added 'month 5' (PBAR abstract) on other lines. The Piceid line's numbers (4-5 mg/L, 5- to 20-fold) are unchanged from origin/main; only its citation markers changed earlier in the batch. Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm.",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"50\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In 84 men and women (average age 50) with dry skin and crow's feet, 2 g/day of low-molecular-weight fish collagen p...\" | \"- ConsumerLab reports that in 99 women (average age 41), 1 g/day of fish collagen hydrolysate for 24 weeks very sligh...\" | \"- In 113 women (average age 50), two capsules daily (providing 600 mg hydrolyzed type II collagen, 200 mg chondroitin...\"",
+  "reason": "Checker tokenisation: the body says \"114 women aged 20-50\" (the file's own \"aged 45-65\" style); the abstract writes the range with its unit, which the checker reads as \"20 year\", so the bare 20 and 50 match nothing. pubmed/41788055.md: \"114 women aged 20-50 years with thigh cellulite and self-reported hair thinning\" (collagen addendum-8 quotes it). Written by the correction-round review-fix Opus worker; orchestrator to confirm.",
   "by": "orchestrator",
-  "date": "2026-10-20"
+  "date": "2026-10-21"
  },
  {
   "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "token \"71.7\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A 2-year trial involved 120 healthy older adults (average age 71.7) in three groups. In the group taking resveratro...\"",
-  "reason": "Checker tokenisation (body 'average age 71.7' vs the abstract's 'aged 71.7 ± 4.6 years': unit and spread around the number); source states it verbatim: pubmed/40922000.md: \"involved 120 healthy subjects aged 71.7 ± 4.6 years divided into 3 groups\". Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm.",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"20\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- ConsumerLab reports that in 99 women (average age 41), 1 g/day of fish collagen hydrolysate for 24 weeks very sligh...\" | \"- In 68 adults (average age 64) with mild-moderate knee osteoarthritis, 20 mg of UC-II plus 480 mg hydrolyzed collage...\" | \"- 500 mg/day of NEM for 12 weeks decreased knee pain by 3.14 points (0-20 scale) vs. placebo and improved physical fu...\"",
+  "reason": "Checker tokenisation: same line as the \"50\" exception; the abstract range \"20-50 years\" reads as \"20 year\". pubmed/41788055.md: \"114 women aged 20-50 years with thigh cellulite\". Written by the correction-round review-fix Opus worker; orchestrator to confirm.",
   "by": "orchestrator",
-  "date": "2026-10-20"
+  "date": "2026-10-21"
  },
  {
   "check": "AC2",
-  "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
-  "match": "token \"350 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A 2-year trial involved 120 healthy older adults (average age 71.7) in three groups. In the group taking resveratro...\"",
-  "reason": "Checker tokenisation ('350 mg twice daily' read as 350 mg per day; the abstract writes 'bid'); source states it verbatim: pubmed/40922000.md: \"B) resveratrol 350 mg bid + TA-65 100U\". Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm.",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"600 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A cross-over trial in 40 adults aged 21 to 78 with high serum uric acid found that a drink containing 600 mg vitamin ...\"",
+  "reason": "Checker tokenisation: the body says \"a drink containing 600 mg vitamin C daily\", which the checker reads as 600 mg/day; the abstract gives the dose per drink and the drink as daily in a separate clause: pubmed/41739218.md: \"four orange-flavored drinks (200 mL/d)\" and \"the others contained 600 mg vitamin C (VitC)\". Written by the correction-round review-fix Opus worker; orchestrator to confirm.",
   "by": "orchestrator",
-  "date": "2026-10-20"
+  "date": "2026-10-21"
  }
 ]

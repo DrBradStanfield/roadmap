@@ -6,10 +6,25 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["potassium", "potassium citrate", "potassium chloride", "potassium gluconate", "potassium bicarbonate", "blood pressure", "hypertension", "cardiovascular", "stroke", "heart attack", "kidney", "electrolytes", "muscle", "bone density", "osteoporosis", "diabetes", "insulin resistance", "blood sugar", "magnesium", "sodium", "calcium", "sleep", "hypokalemia", "hyperkalemia"]
-summary: "Reference on potassium: blood pressure, stroke risk, heart health, muscle cramps, electrolyte balance. Deficiency common in people eating processed foods or taking diuretics. Forms include citrate, gluconate, chloride; supplements typically capped at 99 mg/pill. Caution with kidney disease. Always discuss with your doctor."
+summary: "Reference on potassium. Brad's view: most people fall short; get 3,500 to 5,000 mg daily from food with healthy kidneys and use a potassium-enriched salt substitute; pills are optional. Talk to your doctor first if you have kidney disease or take ACE inhibitors, ARBs or potassium-sparing diuretics."
+reviewed: "2026-10-20"
+sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/potassium-supplements-review/potassium/","checked":"2026-09-29","fingerprint":"sha256:290d1341545e18ae9c4f46fe61eef07c0e95ebe2eaca45459733d7d4acdd9095"},{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Potassium-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:984be3a8b4747e11aea6d8fed9620fa27038cc4ae3b2fafc5f9d10b01121f4cb"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/completely-wrong-about-salt-new-study","checked":"2026-10-20","fingerprint":"publishedAt:2026-04-01T19:38:46Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/this-mineral-deficiency-is-causing-strokes","checked":"2026-10-20","fingerprint":"publishedAt:2025-08-28T23:51:02Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/salt-substitutes-can-slash-your-death-risk-by-12","checked":"2026-10-20","fingerprint":"publishedAt:2025-04-02T06:44:05Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/best-diet-for-a-longer-healthier-life","checked":"2026-10-20","fingerprint":"publishedAt:2025-03-11T22:57:23Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-fastest-way-to-lower-your-blood-pressure-naturally","checked":"2026-10-20","fingerprint":"publishedAt:2025-02-23T23:47:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/nutrient-deficiency-blood-pressure","checked":"2026-10-20","fingerprint":"publishedAt:2024-12-07T00:41:36Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/potassium-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/potassium-benefits-forms-dosing-and-side-effects)*
+
+## Current view (reviewed 20 October 2026)
+
+Most people do not get much potassium from their diet, so eating more is an easy win for blood pressure: in a meta-analysis, blood pressure fell by 7.16 mmHg when daily potassium intake reached 3,500 to 4,700 mg ([Brad, 1 Apr 2026](https://drstanfield.com/blogs/articles/completely-wrong-about-salt-new-study)). In a large trial in China, switching from regular salt to a substitute of 75% sodium chloride and 25% potassium chloride cut the risk of stroke by 14%, major heart problems and strokes combined by 13%, and the risk of death by 12% over almost 5 years, and a follow-up analysis found that most of the blood pressure fall came from the added potassium, not the lower sodium ([Brad, 1 Apr 2026](https://drstanfield.com/blogs/articles/completely-wrong-about-salt-new-study)). Brad's advice is to cut back on packaged foods, switch to a potassium-enriched salt substitute, and put natural food sources first, such as leafy greens, beans, lentils and bananas, but too much potassium carries risks for people with kidney disease ([Brad, 1 Apr 2026](https://drstanfield.com/blogs/articles/completely-wrong-about-salt-new-study)). Brad's guidance follows the International Society of Hypertension: 3,500 to 5,000 mg of potassium a day from food, but only when kidney function is adequate (an eGFR of 45 or more), because impaired kidneys may not excrete excess potassium safely (Brad's current guidance, 4 Mar 2026). Brad takes a small amount of potassium in his own supplement, but you do not need one if your diet includes potassium-rich foods, and fixing low intake does not mean loading up on potassium pills ([Brad, 28 Aug 2025](https://drstanfield.com/blogs/articles/this-mineral-deficiency-is-causing-strokes)). Talk to your doctor before taking added potassium if you have kidney disease, have been told to limit potassium, or take an ACE inhibitor, an angiotensin receptor blocker, a potassium-sparing diuretic or another potassium supplement (Brad's current guidance, 6 Oct 2026).
+
+## Brad's videos on this topic
+
+- 1 Apr 2026, [Completely WRONG About Salt (New Study)](https://drstanfield.com/blogs/articles/completely-wrong-about-salt-new-study): an umbrella review backs keeping sodium low and found no extra risk at low intakes; Brad recommends fewer packaged foods, a potassium-enriched salt substitute and more potassium-rich foods, with care for people with kidney disease.
+- 28 Aug 2025, [This Mineral Deficiency Is Causing Strokes](https://drstanfield.com/blogs/articles/this-mineral-deficiency-is-causing-strokes): high blood pressure is the main controllable stroke risk; more potassium lowers it, the lowest stroke risk came at about 3,500 mg a day, and the fix is food, not loading up on pills.
+- 2 Apr 2025, [Salt-Substitutes Can Slash Your 5-Year Death Risk by 12%](https://drstanfield.com/blogs/articles/salt-substitutes-can-slash-your-death-risk-by-12): in about 15,000 people over 60 with a past stroke, a salt substitute with 25% potassium chloride cut repeat stroke by 14%, hemorrhagic stroke by 30% and death by 12%; an analysis credited 61 to 88% of the blood pressure fall to the added potassium, and Brad pairs it with potassium-rich foods, fiber and lean protein.
+- 11 Mar 2025, [These 20 Studies Reveal The BEST Diet for a Longer, Healthier Life](https://drstanfield.com/blogs/articles/best-diet-for-a-longer-healthier-life): potassium is a nutrient of public health concern that most people fall short on; Brad puts legumes, vegetables and fruit first and takes potassium in his own supplements, though you do not have to. Superseded on the daily target: he gave 4,700 mg, the older 2005 intake value; his current guidance is 3,500 to 5,000 mg a day from food when kidney function is adequate.
+- 23 Feb 2025, [The Fastest Way to Lower Your Blood Pressure (Naturally!)](https://drstanfield.com/blogs/articles/the-fastest-way-to-lower-your-blood-pressure-naturally): potassium is one of four diet levers for blood pressure, with protein, fiber and less salt; Brad prefers potassium-rich foods over supplements, though he takes some potassium himself.
+- 7 Dec 2024, [The #1 Nutrient Deficiency in High Blood Pressure](https://drstanfield.com/blogs/articles/nutrient-deficiency-blood-pressure): low potassium raises blood pressure and more potassium lowers it; aim for the higher 3,500 to 5,000 mg target if preventing or treating high blood pressure, get enough magnesium, and check with your doctor first if you have kidney problems or take medicines that raise the risk of high potassium.
 
 ## 1. Overview
 
@@ -51,7 +66,7 @@ Hypokalemia is rarely caused by low dietary potassium intake alone. Common cause
 
 ### Magnesium and Potassium: A Critical Connection
 
-Approximately 50% of individuals with chronically low potassium levels also have magnesium deficiency, most often due to loop or thiazide diuretics, but also from diarrhea, alcoholism, kidney disease, or medication toxicity [11][12]. If magnesium deficiency is not addressed, it may be harder to correct potassium deficiency. This is because magnesium activates the "pump" that regulates potassium levels within cells — when magnesium levels are low, pump activity decreases, resulting in loss of potassium from skeletal muscle cells and increased urinary excretion of potassium [12][13]. In people with concurrent hypomagnesemia and hypokalemia, both should be treated simultaneously [1][11].
+Low potassium and low magnesium often occur together. The NIH notes that more than 50% of people with clinically significant hypokalemia might have magnesium deficiency [14]. One review found magnesium deficiency in 38% to 42% of potassium-depleted patients [12]. The combination is most often due to loop or thiazide diuretics, but also from diarrhea, alcoholism, kidney disease, or medication toxicity [11][12]. If magnesium deficiency is not addressed, it may be harder to correct potassium deficiency. This is because magnesium activates the "pump" that regulates potassium levels within cells — when magnesium levels are low, pump activity decreases, resulting in loss of potassium from skeletal muscle cells and increased urinary excretion of potassium [12][13]. In people with concurrent hypomagnesemia and hypokalemia, both should be treated simultaneously [1][11].
 
 ## 2. Forms and Bioavailability
 
@@ -107,13 +122,13 @@ A similar analysis by the NASEM committee including 16 trials found that potassi
 
 **Nuances and ceiling effects:**
 
-The American College of Cardiology (ACC) and American Heart Association (AHA) recommend that people with high blood pressure get 3,500-5,000 mg of potassium per day from foods. They note that the maximum blood pressure benefit from supplemental potassium appears to peak at approximately 1,173 mg/day, and that higher supplement doses (>3,128 mg/day) have been linked with an increase in blood pressure, particularly in people already taking antihypertensive medication [35][36].
+The American College of Cardiology (ACC) and American Heart Association (AHA) recommend that people with high blood pressure get 3,500-5,000 mg of potassium per day from foods. They note that the maximum blood pressure benefit from supplemental potassium appears to peak at approximately 1,173 mg/day, and that higher supplement doses (>3,128 mg/day) have been linked with an increase in blood pressure, particularly in people already taking antihypertensive medication [3][35]. These figures correspond to a 2020 dose-response meta-analysis of 32 trials: the blood pressure benefit weakened above a 30 mmol/day difference in potassium excretion between the supplement and control groups, blood pressure rose above a difference of about 80 mmol/day, and that rise appeared in people treated for high blood pressure but not in untreated people [36].
 
-A Cochrane Review of five clinical trials among 425 adults with primary hypertension found that potassium supplementation at 1,877-4,692 mg/day for 2-4 months did NOT significantly reduce blood pressure compared to baseline [37]. Furthermore, subsequent analysis found that high-dose potassium supplementation — enough to increase urinary potassium excretion by about 90 mmol/day (corresponding to 3,900-4,680 mg/day of supplemental potassium in addition to usual dietary intake) — may actually increase blood pressure [38].
+A Cochrane Review of five clinical trials among 425 adults with primary hypertension found that potassium supplementation at 1,877-4,692 mg/day for 2-4 months did NOT significantly reduce blood pressure compared to baseline [37]. Furthermore, subsequent analysis found that high-dose potassium supplementation — enough to increase urinary potassium excretion by about 90 mmol/day (corresponding to 3,900-4,680 mg/day of supplemental potassium in addition to usual dietary intake) — may actually increase blood pressure [3][36].
 
 **The role of sodium reduction:**
 
-The AHRQ systematic review found that reducing sodium intake decreased blood pressure, but adding potassium via food or supplements on top of sodium reduction did not reduce blood pressure further. This suggests that at least some of the beneficial effects attributed to potassium may be driven by the accompanying reduction in sodium intake [34]. Based on 13 RCTs, potassium-containing salt substitutes significantly reduced SBP by 5.58 mmHg and DBP by 2.88 mmHg [34].
+The AHRQ systematic review found that reducing sodium intake decreased blood pressure, but adding potassium via food or supplements on top of sodium reduction did not reduce blood pressure further. This suggests that at least some of the beneficial effects attributed to potassium may be driven by the accompanying reduction in sodium intake [34]. Based on 13 RCTs, potassium-containing salt substitutes significantly reduced SBP by 5.58 mmHg and DBP by 2.88 mmHg [34]. A later analysis of the salt substitute trial (SSaSS), which Brad covered, estimated that 61% to 88% of its blood pressure fall came from the added potassium rather than the lower sodium [92].
 
 **Expert consensus:**
 
@@ -141,7 +156,7 @@ A 5-year study in China among nearly 21,000 adults with a history of stroke or h
 
 **Elderly care facility study:**
 
-A separate study among 1,219 men and women living in an elderly care facility in China who tended to have high blood pressure (average 137.5/80.5 mmHg) found that a salt substitute (62.5% sodium chloride, 25% potassium chloride, 12.5% flavoring agents) over 2 years reduced the risk of cardiovascular events by 34% and heart disease-related death by 36% compared to usual salt. The risk of hyperkalemia was increased (7.0% vs 2.4% of participants), but there was no significant increase in kidney dysfunction [48].
+A separate cluster-randomized trial in 48 elderly care facilities in China (1,612 residents aged 55 or older) found that a salt substitute (62.5% sodium chloride, 25% potassium chloride) over 2 years lowered systolic blood pressure by 7.1 mmHg and reduced cardiovascular events by 40% (hazard ratio 0.60) compared to usual salt, but had no effect on total mortality [48]. The salt substitute raised blood potassium and led to more frequent biochemical hyperkalemia, but this was not associated with adverse clinical outcomes [48]. ConsumerLab reports a study of 1,219 men and women in an elderly care facility in China in which a salt substitute reduced the risk of cardiovascular events by 34% and of heart disease-related death by 36% [3].
 
 **Limitations:** None of these studies were conducted in the U.S., where home-use table salt is not the major contributor of sodium in the diet (most comes from processed foods) [3].
 
@@ -153,7 +168,7 @@ Taking certain forms of potassium may reduce the risk of kidney stones. The mech
 
 **Clinical trial evidence:**
 
-A clinical study found that patients who took 6,480 mg (60 mEq) of potassium citrate daily (divided into three doses after meals) had no stone recurrence after one year, compared to a 28.5% stone recurrence rate in patients who did not take potassium citrate [50].
+A randomized trial found that patients who were stone free after shockwave lithotripsy and then took 60 mEq of potassium citrate daily had no stone recurrence at 12 months, compared to a 28.5% stone recurrence rate in patients who did not take potassium citrate [18].
 
 In a clinical trial of 57 patients with at least two kidney stones over the prior 2 years and hypocitraturia (low urinary citrate), supplementation with 1,173-2,346 mg potassium (as potassium citrate) for 3 years significantly reduced kidney stone formation compared with placebo [51]. This was included in a 2015 Cochrane Review of 7 studies (477 participants) that found potassium citrate salts significantly reduced the risk of new stones and decreased stone size [17].
 
@@ -177,7 +192,7 @@ Observational studies suggest that increased potassium intake from fruits and ve
 
 **Observational evidence:**
 
-In the Framingham Heart Study, higher potassium intake was associated with significantly greater bone mineral density in 628 elderly men and women [57]. The DASH diet, which provides three times more potassium than the average American diet, significantly reduced biochemical markers of bone turnover [58]. However, DASH also increases magnesium and calcium intakes, so potassium's independent contribution cannot be determined.
+In the Framingham Heart Study, higher potassium intake was associated with significantly greater bone mineral density in 628 elderly men and women [24]. The DASH diet, which provides three times more potassium than the average American diet, significantly reduced biochemical markers of bone turnover [58]. However, DASH also increases magnesium and calcium intakes, so potassium's independent contribution cannot be determined.
 
 **Clinical trial evidence:**
 
@@ -185,7 +200,7 @@ A trial of 52 healthy men and women older than 55 found that potassium citrate s
 
 In 201 healthy adults aged 65 and older who received potassium citrate (2,346 mg potassium) plus calcium (500 mg/day) and vitamin D3 (400 IU/day) for 2 years, potassium supplementation significantly increased bone mineral density at the lumbar spine and improved bone microarchitecture compared to placebo [60].
 
-Supplemental potassium bicarbonate (mean doses of 2,893 or 4,340 mg/day potassium) for 84 days significantly reduced biochemical markers of bone turnover and urinary calcium excretion in healthy older adults [61].
+Supplemental potassium bicarbonate (mean doses of 2,893 or 4,340 mg/day potassium) for 84 days significantly reduced biochemical markers of bone turnover and urinary calcium excretion in healthy older adults [25].
 
 **Negative finding:** A trial in 276 postmenopausal women aged 55-65 found that potassium citrate at 723 mg or 2,170 mg potassium for 2 years did NOT significantly reduce bone turnover or increase bone mineral density at the hip or lumbar spine compared to placebo [62].
 
@@ -251,21 +266,21 @@ Tolerable Upper Intake Levels (ULs) have not been established for potassium beca
 
 ### Supplementation Dosing by Indication
 
-**Preventing potassium loss:** 200-400 mg (approximately 5-10 mEq) taken three to four times daily, for a total daily dose of 600-1,600 mg [3].
+**Preventing potassium loss:** ConsumerLab reports doses of 200-400 mg (approximately 5-10 mEq) taken three to four times daily, for a total daily dose of 600-1,600 mg [3]. Take potassium supplements only on your doctor's advice, especially if you have kidney disease or take blood-pressure medicines.
 
 **Treating potassium deficiency:** Approximately double the preventive dose, under physician guidance [3].
 
 **Blood pressure support (from food):** 3,500-5,000 mg/day total from dietary sources. The ACC/AHA recommend increasing potassium from foods rather than high-dose supplements, as supplemental doses above ~3,128 mg/day may paradoxically increase blood pressure [35][39].
 
-**Kidney stone prevention (potassium citrate):** Doses used in clinical trials range from 1,173-6,480 mg/day of potassium, typically as divided doses of potassium citrate. These are well above standard supplement amounts and require medical supervision [17][50][51].
+**Kidney stone prevention (potassium citrate):** Doses used in clinical trials range from 1,173-2,346 mg/day of potassium (30 to 60 mEq), typically as divided doses of potassium citrate. These are well above standard supplement amounts and require medical supervision [17][18][51].
 
-**Bone health:** 2,346-4,340 mg/day (as potassium citrate or bicarbonate) in clinical trials [59][60][61]. These doses are far above standard supplement levels.
+**Bone health:** 2,346-4,340 mg/day (as potassium citrate or bicarbonate) in clinical trials [25][59][60]. These doses are far above standard supplement levels.
 
 ### Practical Considerations
 
 Because most supplements contain only 99 mg of potassium per pill, reaching higher therapeutic doses requires taking many pills. Powder, liquid, or dissolving tablet forms may be more practical when higher doses are needed — and are likely safer because they avoid localized intestinal irritation [3].
 
-The most practical approach for most people is to increase potassium through dietary changes (fruits, vegetables, legumes, potatoes) and the use of potassium-enriched salt substitutes, with a modest supplement (99 mg) to help fill gaps.
+The most practical approach for most people is to increase potassium through dietary changes (fruits, vegetables, legumes, potatoes) and the use of potassium-enriched salt substitutes.
 
 Using potassium-containing dietary supplements does not significantly increase total potassium intakes in the U.S. population — supplement use adds a mean of only 87 mg to daily intakes [1].
 
@@ -318,7 +333,7 @@ Several classes of medications interact with potassium in potentially dangerous 
 | Drug Class | Examples | Mechanism | Clinical Concern |
 |-----------|---------|------|----------|
 | ACE inhibitors | Benazepril (Lotensin), captopril, enalapril, lisinopril | Reduce urinary potassium excretion | As many as 20% experience mild potassium elevations. Severe elevations affect ~0.8%. Life-threatening elevations are rare but documented [9][81][82]. |
-| Angiotensin receptor blockers (ARBs) | Losartan (Cozaar), irbesartan, olmesartan, valsartan | Reduce urinary potassium excretion | About 31% experience mild elevations; severe elevations in ~2.8%. A 58-year-old woman on losartan developed sudden chest pressure, lightheadedness, and potassium of 9.2 mmol/L [9][83]. |
+| Angiotensin receptor blockers (ARBs) | Losartan (Cozaar), irbesartan, olmesartan, valsartan | Reduce urinary potassium excretion | About 31% experience mild elevations; severe elevations in ~2.8%. A 58-year-old woman on losartan developed sudden chest pressure, lightheadedness, and potassium of 9.1 mmol/L [9][83]. |
 | Potassium-sparing diuretics | Amiloride (Midamor), spironolactone (Aldactone), triamterene | Reduce renal potassium excretion | Can cause hyperkalemia. Monitor potassium levels closely, especially with impaired kidney function [1][84]. |
 | Trimethoprim/sulfamethoxazole | Bactrim, Septra | Impairs potassium excretion | Do not take potassium supplements without medical supervision [9]. |
 
@@ -393,51 +408,51 @@ Other notable sources include coconut water, avocados, lima beans, cantaloupes, 
 
 [5] Bailey JL, Sands JM, Franch HA. "Water, electrolytes, and acid-based metabolism." In: Ross AC, et al., eds. *Modern Nutrition in Health and Disease*. 11th ed. Baltimore, MD: Lippincott Williams & Wilkins; 2014:102-32.
 
-[6] Sun H. "Potassium intake and potassium deficiency in the US population, NHANES 1999-2016." *J Am Coll Nutr*. 2020. [https://pubmed.ncbi.nlm.nih.gov/31855136/](https://pubmed.ncbi.nlm.nih.gov/31855136/)
+[6] Sun H, Weaver CM. "Rising trend of hypokalemia prevalence in the US population and possible food causes." *J Am Coll Nutr*. 2021;40(3):273-9 (published online 2020). PMID: 32401639. [https://pubmed.ncbi.nlm.nih.gov/32401639/](https://pubmed.ncbi.nlm.nih.gov/32401639/)
 
 [7] U.S. Department of Health and Human Services, U.S. Department of Agriculture. "2015-2020 Dietary Guidelines for Americans." 2015.
 
-[8] Paice BJ, Paterson KR, Onyanga-Omara F, et al. "Record linkage study of hypokalaemia in hospitalized patients." *Postgrad Med J*. 1986;62(725):187-91. [https://pubmed.ncbi.nlm.nih.gov/3714611/](https://pubmed.ncbi.nlm.nih.gov/3714611/)
+[8] Paice BJ, Paterson KR, Onyanga-Omara F, et al. "Record linkage study of hypokalaemia in hospitalized patients." *Postgrad Med J*. 1986;62(725):187-91. PMID: 3714603. [https://pubmed.ncbi.nlm.nih.gov/3714603/](https://pubmed.ncbi.nlm.nih.gov/3714603/)
 
-[9] Makunts T, et al. "Potassium-lowering effects of medications." *Sci Rep*. 2019. See also: Medrol Prescribing Information, Revised 3/2024; Cortef Prescribing Information, Revised 7/2016; Veltri KT. *P T*. 2015.
+[9] Makunts T, Cohen IV, Awdishu L, Abagyan R. "Analysis of postmarketing safety data for proton-pump inhibitors reveals increased propensity for renal injury, electrolyte abnormalities, and nephrolithiasis." *Sci Rep*. 2019;9(1):2282. PMID: 30783195. [https://pubmed.ncbi.nlm.nih.gov/30783195/](https://pubmed.ncbi.nlm.nih.gov/30783195/) See also: Medrol Prescribing Information, Revised 3/2024; Cortef Prescribing Information, Revised 7/2016; Veltri KT, Mason C. "Medication-induced hypokalemia." *P T*. 2015;40(3):185-90. PMID: 25798039.
 
-[10] Grennan Q, et al. "Hypokalemia associated with semaglutide." *Cureus*. 2025.
+[10] Grennan KN, Singh D, Chindris AM, Wilson JR. "Hypokalemia requiring hospitalization after taking semaglutide injections." *Cureus*. 2025;17(7):e87382. PMID: 40772190. [https://pubmed.ncbi.nlm.nih.gov/40772190/](https://pubmed.ncbi.nlm.nih.gov/40772190/)
 
 [11] Huang CL, Kuo E. "Mechanism of hypokalemia in magnesium deficiency." *J Am Soc Nephrol*. 2007;18(10):2649-52. [https://doi.org/10.1681/ASN.2007070792](https://doi.org/10.1681/ASN.2007070792)
 
-[12] Whang R, et al. "Magnesium and potassium interrelationships." *Arch Intern Med*. 1992;152(1):40-5. [https://pubmed.ncbi.nlm.nih.gov/1728927/](https://pubmed.ncbi.nlm.nih.gov/1728927/)
+[12] Whang R, Whang DD, Ryan MP. "Refractory potassium repletion. A consequence of magnesium deficiency." *Arch Intern Med*. 1992;152(1):40-5. PMID: 1728927. [https://pubmed.ncbi.nlm.nih.gov/1728927/](https://pubmed.ncbi.nlm.nih.gov/1728927/)
 
 [13] Rude RK. "Magnesium." In: Coates PM, et al., eds. *Encyclopedia of Dietary Supplements*. 2nd ed. London: Informa Healthcare; 2010:527-37.
 
 [14] NIH Office of Dietary Supplements. "Potassium — Health Professional Fact Sheet." Updated June 2, 2022. [https://ods.od.nih.gov/factsheets/Potassium-HealthProfessional/](https://ods.od.nih.gov/factsheets/Potassium-HealthProfessional/)
 
-[15] Macdonald-Clarke CJ, Martin BR, McCabe LD, et al. "Bioavailability of potassium from potatoes and potassium gluconate: a randomized dose response trial." *Am J Clin Nutr*. 2016;104(2):346-53. [https://pubmed.ncbi.nlm.nih.gov/27413130/](https://pubmed.ncbi.nlm.nih.gov/27413130/)
+[15] Macdonald-Clarke CJ, Martin BR, McCabe LD, et al. "Bioavailability of potassium from potatoes and potassium gluconate: a randomized dose response trial." *Am J Clin Nutr*. 2016;104(2):346-53. PMID: 27413123. [https://pubmed.ncbi.nlm.nih.gov/27413123/](https://pubmed.ncbi.nlm.nih.gov/27413123/)
 
-[16] Levene DL. "The absorption of potassium chloride — liquid vs. tablet." *Can Med Assoc J*. 1973;108(12):1480. [https://pubmed.ncbi.nlm.nih.gov/4712696/](https://pubmed.ncbi.nlm.nih.gov/4712696/)
+[16] Levene DL. "The absorption of potassium chloride--liquid vs. tablet." *Can Med Assoc J*. 1973;108(12):1480 passim. PMID: 4714871. [https://pubmed.ncbi.nlm.nih.gov/4714871/](https://pubmed.ncbi.nlm.nih.gov/4714871/)
 
 [17] Phillips R, Hanchanale VS, Myatt A, et al. "Citrate salts for preventing and treating calcium containing kidney stones in adults." *Cochrane Database Syst Rev*. 2015;(10):CD010057. [https://doi.org/10.1002/14651858.CD010057.pub2](https://doi.org/10.1002/14651858.CD010057.pub2)
 
-[18] Soygur T, et al. "Potassium citrate in preventing kidney stone recurrence." *J Endourol*. 2002;16(9):687-90. [https://pubmed.ncbi.nlm.nih.gov/12490024/](https://pubmed.ncbi.nlm.nih.gov/12490024/)
+[18] Soygür T, Akbay A, Küpeli S. "Effect of potassium citrate therapy on stone recurrence and residual fragments after shockwave lithotripsy in lower caliceal calcium oxalate urolithiasis: a randomized controlled trial." *J Endourol*. 2002;16(3):149-52. PMID: 12028622. [https://pubmed.ncbi.nlm.nih.gov/12028622/](https://pubmed.ncbi.nlm.nih.gov/12028622/)
 
-[19] Barbera M, et al. "Potassium bicarbonate and kidney stone dissolution." *Arch Ital Urol Androl*. 2016;88(3):236-8. [https://pubmed.ncbi.nlm.nih.gov/27711109/](https://pubmed.ncbi.nlm.nih.gov/27711109/)
+[19] Barbera M, Tsirgiotis A, Barbera M, Paola Q. "The importance of potassium citrate and potassium bicarbonate in the treatment of uric acid renal stones." *Arch Ital Urol Androl*. 2016;88(4):341-2. PMID: 28073209. [https://pubmed.ncbi.nlm.nih.gov/28073209/](https://pubmed.ncbi.nlm.nih.gov/28073209/)
 
-[20] Pak CYC, et al. "Potassium bicarbonate and kidney stones." *Kidney Int*. 1986;30(3):422-8.
+[20] Pak CY, Sakhaee K, Fuller C. "Successful management of uric acid nephrolithiasis with potassium citrate." *Kidney Int*. 1986;30(3):422-8. PMID: 3784284. [https://pubmed.ncbi.nlm.nih.gov/3784284/](https://pubmed.ncbi.nlm.nih.gov/3784284/)
 
-[21] Heller HJ, et al. "Potassium phosphate reduces urinary calcium in hypercalciuria." *J Urol*. 1998;159(5):1451-6. [https://pubmed.ncbi.nlm.nih.gov/9554332/](https://pubmed.ncbi.nlm.nih.gov/9554332/)
+[21] Heller HJ, Reza-Albarrán AA, Breslau NA, Pak CY. "Sustained reduction in urinary calcium during long-term treatment with slow release neutral potassium phosphate in absorptive hypercalciuria." *J Urol*. 1998;159(5):1451-5. PMID: 9554331. [https://pubmed.ncbi.nlm.nih.gov/9554331/](https://pubmed.ncbi.nlm.nih.gov/9554331/)
 
-[22] Chan Q, et al. "Potassium and blood pressure." *Hypertension*. 2023. [https://doi.org/10.1161/HYPERTENSIONAHA.122.20017](https://doi.org/10.1161/HYPERTENSIONAHA.122.20017)
+[22] Chan RJ, Parikh N, Ahmed S, Ruzicka M, et al. "Blood pressure control should focus on more potassium: controversies in hypertension." *Hypertension*. 2024;81(3):501-9 (published online 2023). PMID: 37641923. [https://pubmed.ncbi.nlm.nih.gov/37641923/](https://pubmed.ncbi.nlm.nih.gov/37641923/)
 
 [23] Neal B, Wu Y, Feng X, et al. "Effect of salt substitution on cardiovascular events and death." *N Engl J Med*. 2021;385(12):1067-77. [https://doi.org/10.1056/NEJMoa2105675](https://doi.org/10.1056/NEJMoa2105675)
 
 [24] Tucker KL, Hannan MT, Chen H, et al. "Potassium, magnesium, and fruit and vegetable intakes are associated with greater bone mineral density in elderly men and women." *Am J Clin Nutr*. 1999;69(4):727-36. [https://pubmed.ncbi.nlm.nih.gov/10197575/](https://pubmed.ncbi.nlm.nih.gov/10197575/)
 
-[25] Dawson-Hughes B, Harris SS, Palermo NJ, et al. "Potassium bicarbonate supplementation lowers bone turnover and calcium excretion in older men and women." *J Bone Miner Res*. 2015;30(11):2103-11. [https://pubmed.ncbi.nlm.nih.gov/25989378/](https://pubmed.ncbi.nlm.nih.gov/25989378/)
+[25] Dawson-Hughes B, Harris SS, Palermo NJ, et al. "Potassium bicarbonate supplementation lowers bone turnover and calcium excretion in older men and women: a randomized dose-finding trial." *J Bone Miner Res*. 2015;30(11):2103-11. PMID: 25990255. [https://pubmed.ncbi.nlm.nih.gov/25990255/](https://pubmed.ncbi.nlm.nih.gov/25990255/)
 
 [26] U.S. Food and Drug Administration. Code of Federal Regulations Title 21. 21CFR201.306. Potassium salt preparations intended for oral ingestion by man. 2017.
 
-[27] Gee D, et al. "Potassium-induced small bowel lesions." *JAMA*. 1974. See also: Allen AC, Boley SJ, Schultz L, Schwartz S. *JAMA*. 1965;193:1001-6. [https://pubmed.ncbi.nlm.nih.gov/14325113/](https://pubmed.ncbi.nlm.nih.gov/14325113/)
+[27] Gee L. "Letter: Enteric-coated potassium supplements." *JAMA*. 1974;228(8):975-6. PMID: 4406351. See also: Allen AC, Boley SJ, Schultz L, Schwartz S. "Potassium-induced lesions of the small bowel. II. Pathology and pathogenesis." *JAMA*. 1965;193:1001-6. PMID: 14338797. [https://pubmed.ncbi.nlm.nih.gov/14338797/](https://pubmed.ncbi.nlm.nih.gov/14338797/)
 
-[28] Suh A, et al. "Potassium and blood pressure in African Americans." *Kidney Int*. 2004.
+[28] Suh A, DeJesus E, Rosner K, et al. "Racial differences in potassium disposal." *Kidney Int*. 2004;66(3):1076-81. PMID: 15327401. [https://pubmed.ncbi.nlm.nih.gov/15327401/](https://pubmed.ncbi.nlm.nih.gov/15327401/)
 
 [29] Matlou SM, et al. "Potassium and blood pressure." *J Hypertens*. 1986;4(suppl 6):S61-S63.
 
@@ -449,19 +464,17 @@ Other notable sources include coconut water, avocados, lima beans, cantaloupes, 
 
 [33] Whelton PK, He J, Cutler JA, et al. "Effects of oral potassium on blood pressure. Meta-analysis of randomized controlled clinical trials." *JAMA*. 1997;277(20):1624-32. [https://pubmed.ncbi.nlm.nih.gov/9168293/](https://pubmed.ncbi.nlm.nih.gov/9168293/)
 
-[34] Agency for Healthcare Research and Quality. "Sodium and Potassium Intake: Effects on Chronic Disease Outcomes and Risks." Rockville, MD; 2018. See also: National Academies of Sciences. *DRIs for Sodium and Potassium*. 2019.
+[34] Agency for Healthcare Research and Quality (Newberry SJ, Chung M, Anderson CAM, et al.). "Sodium and Potassium Intake: Effects on Chronic Disease Outcomes and Risks." Comparative Effectiveness Review No. 206. Rockville, MD; 2018. PMID: 30125063. [https://pubmed.ncbi.nlm.nih.gov/30125063/](https://pubmed.ncbi.nlm.nih.gov/30125063/) See also: National Academies of Sciences. *DRIs for Sodium and Potassium*. 2019.
 
-[35] Jones DW, et al. "Potassium and blood pressure guidelines." *Hypertension*. 2025. See also: McEvoy JW, et al. *Eur Heart J*. 2024.
+[35] Jones DW, Ferdinand KC, Taler SJ, et al. "2025 AHA/ACC/AANP/AAPA/ABC/ACCP/ACPM/AGS/AMA/ASPC/NMA/PCNA/SGIM Guideline for the Prevention, Detection, Evaluation and Management of High Blood Pressure in Adults: A Report of the American College of Cardiology/American Heart Association Joint Committee on Clinical Practice Guidelines." *Hypertension*. 2025;82(10):e212-e316. PMID: 40811516. [https://doi.org/10.1161/HYP.0000000000000249](https://doi.org/10.1161/HYP.0000000000000249). See also: McEvoy JW, et al. *Eur Heart J*. 2024.
 
-[36] Azizi M, et al. "Salt substitution and blood pressure." *JAMA*. 2026.
+[36] Filippini T, Naska A, Kasdagli MI, et al. "Potassium intake and blood pressure: a dose-response meta-analysis of randomized controlled trials." *J Am Heart Assoc*. 2020;9(12):e015719. PMID: 32500831. [https://pubmed.ncbi.nlm.nih.gov/32500831/](https://pubmed.ncbi.nlm.nih.gov/32500831/)
 
-[37] Dickinson HO, Nicolson DJ, Campbell F, et al. "Potassium supplementation for the management of primary hypertension in adults." *Cochrane Database Syst Rev*. 2006;(3):CD004641. [https://pubmed.ncbi.nlm.nih.gov/16856051/](https://pubmed.ncbi.nlm.nih.gov/16856051/)
-
-[38] Filippini T, et al. "High-dose potassium supplementation and blood pressure." *J Am Heart Assoc*. 2020. [https://doi.org/10.1161/JAHA.119.015719](https://doi.org/10.1161/JAHA.119.015719)
+[37] Dickinson HO, Nicolson DJ, Campbell F, et al. "Potassium supplementation for the management of primary hypertension in adults." *Cochrane Database Syst Rev*. 2006;(3):CD004641. PMID: 16856053. [https://pubmed.ncbi.nlm.nih.gov/16856053/](https://pubmed.ncbi.nlm.nih.gov/16856053/)
 
 [39] Whelton PK, et al. "2017 ACC/AHA Guideline for the Prevention, Detection, Evaluation, and Management of High Blood Pressure in Adults." *Hypertension*. 2018;71(6):e13-e115. [https://doi.org/10.1161/HYP.0000000000000065](https://doi.org/10.1161/HYP.0000000000000065)
 
-[40] Xu J, et al. "Potassium-enriched salt substitutes for hypertension." *Hypertension*. 2024.
+[40] Xu X, Zeng L, Jha V, et al. "Potassium-enriched salt substitutes: a review of recommendations in clinical management guidelines." *Hypertension*. 2024;81(3):400-14. PMID: 38284271. [https://pubmed.ncbi.nlm.nih.gov/38284271/](https://pubmed.ncbi.nlm.nih.gov/38284271/)
 
 [41] Aaron KJ, Sanders PW. "Role of dietary salt and potassium intake in cardiovascular health and disease." *Mayo Clin Proc*. 2013;88(9):987-95. [https://pubmed.ncbi.nlm.nih.gov/24001491/](https://pubmed.ncbi.nlm.nih.gov/24001491/)
 
@@ -475,17 +488,15 @@ Other notable sources include coconut water, avocados, lima beans, cantaloupes, 
 
 [46] Raquel G, et al. "Salt substitutes and blood pressure: a meta-analysis." *Hypertension*. 2020.
 
-[47] Ding J, et al. "Salt substitute and stroke outcomes in patients with prior stroke." *JAMA Cardiol*. 2025. [https://doi.org/10.1001/jamacardio.2024.5264](https://doi.org/10.1001/jamacardio.2024.5264)
+[47] Ding X, Zhang X, Huang L, et al. "Salt substitution and recurrent stroke and death: a randomized clinical trial." *JAMA Cardiol*. 2025;10(4):343-50. PMID: 39908026. [https://pubmed.ncbi.nlm.nih.gov/39908026/](https://pubmed.ncbi.nlm.nih.gov/39908026/)
 
-[48] Yuan Y, et al. "Salt substitute and cardiovascular events in elderly care facility residents." *Nat Med*. 2023. [https://doi.org/10.1038/s41591-023-02435-x](https://doi.org/10.1038/s41591-023-02435-x)
+[48] Yuan Y, Jin A, Neal B, et al. "Salt substitution and salt-supply restriction for lowering blood pressure in elderly care facilities: a cluster-randomized trial." *Nat Med*. 2023;29(4):973-81. PMID: 37055566. [https://pubmed.ncbi.nlm.nih.gov/37055566/](https://pubmed.ncbi.nlm.nih.gov/37055566/)
 
-[49] Maalouf NM, Moe OW, Adams-Huet B, Sakhaee K. "Hypercalciuria associated with high dietary protein intake is not due to acid load." *J Clin Endocrinol Metab*. 2011;96(12):3733-40. [https://pubmed.ncbi.nlm.nih.gov/21937618/](https://pubmed.ncbi.nlm.nih.gov/21937618/)
-
-[50] Soygur T, et al. "Potassium citrate prevents kidney stone recurrence." *J Endourol*. 2002;16(9):687-90. [https://pubmed.ncbi.nlm.nih.gov/12490024/](https://pubmed.ncbi.nlm.nih.gov/12490024/)
+[49] Maalouf NM, Moe OW, Adams-Huet B, Sakhaee K. "Hypercalciuria associated with high dietary protein intake is not due to acid load." *J Clin Endocrinol Metab*. 2011;96(12):3733-40. PMID: 21976719. [https://pubmed.ncbi.nlm.nih.gov/21976719/](https://pubmed.ncbi.nlm.nih.gov/21976719/)
 
 [51] Barcelo P, Wuhl O, Servitge E, et al. "Randomized double-blind study of potassium citrate in idiopathic hypocitraturic calcium nephrolithiasis." *J Urol*. 1993;150(6):1761-4. [https://pubmed.ncbi.nlm.nih.gov/8230497/](https://pubmed.ncbi.nlm.nih.gov/8230497/)
 
-[52] Ettinger B, et al. "Potassium complex and kidney stone recurrence." *J Urol*. 1997;158(6):2069-73. [https://pubmed.ncbi.nlm.nih.gov/9366314/](https://pubmed.ncbi.nlm.nih.gov/9366314/)
+[52] Ettinger B, Pak CY, Citron JT, et al. "Potassium-magnesium citrate is an effective prophylaxis against recurrent calcium oxalate nephrolithiasis." *J Urol*. 1997;158(6):2069-73. PMID: 9366314. [https://pubmed.ncbi.nlm.nih.gov/9366314/](https://pubmed.ncbi.nlm.nih.gov/9366314/)
 
 [53] Curhan GC, Willett WC, Rimm EB, Stampfer MJ. "A prospective study of dietary calcium and other nutrients and the risk of symptomatic kidney stones." *N Engl J Med*. 1993;328(12):833-8. [https://pubmed.ncbi.nlm.nih.gov/8441427/](https://pubmed.ncbi.nlm.nih.gov/8441427/)
 
@@ -493,17 +504,13 @@ Other notable sources include coconut water, avocados, lima beans, cantaloupes, 
 
 [55] Weaver CM. "Potassium and health." *Adv Nutr*. 2013;4(3):368S-77S. [https://pubmed.ncbi.nlm.nih.gov/23674806/](https://pubmed.ncbi.nlm.nih.gov/23674806/)
 
-[56] Hanley DA, Whiting SJ. "Does a high dietary acid content cause bone loss, and can bone loss be prevented with an alkaline diet?" *J Clin Densitom*. 2013;16(4):420-5. [https://pubmed.ncbi.nlm.nih.gov/24063846/](https://pubmed.ncbi.nlm.nih.gov/24063846/)
-
-[57] Tucker KL, Hannan MT, Chen H, et al. "Potassium, magnesium, and fruit and vegetable intakes are associated with greater bone mineral density." *Am J Clin Nutr*. 1999;69(4):727-36. [https://pubmed.ncbi.nlm.nih.gov/10197575/](https://pubmed.ncbi.nlm.nih.gov/10197575/)
+[56] Hanley DA, Whiting SJ. "Does a high dietary acid content cause bone loss, and can bone loss be prevented with an alkaline diet?" *J Clin Densitom*. 2013;16(4):420-5. PMID: 24094472. [https://pubmed.ncbi.nlm.nih.gov/24094472/](https://pubmed.ncbi.nlm.nih.gov/24094472/)
 
 [58] Lin PH, Ginty F, Appel LJ, et al. "The DASH diet and sodium reduction improve markers of bone turnover and calcium metabolism in adults." *J Nutr*. 2003;133(10):3130-6. [https://pubmed.ncbi.nlm.nih.gov/14519796/](https://pubmed.ncbi.nlm.nih.gov/14519796/)
 
-[59] Moseley KF, Weaver CM, Appel L, et al. "Potassium citrate supplementation results in sustained improvement in calcium balance in older men and women." *J Bone Miner Res*. 2013;28(3):497-504. [https://pubmed.ncbi.nlm.nih.gov/23060044/](https://pubmed.ncbi.nlm.nih.gov/23060044/)
+[59] Moseley KF, Weaver CM, Appel L, et al. "Potassium citrate supplementation results in sustained improvement in calcium balance in older men and women." *J Bone Miner Res*. 2013;28(3):497-504. PMID: 22991267. [https://pubmed.ncbi.nlm.nih.gov/22991267/](https://pubmed.ncbi.nlm.nih.gov/22991267/)
 
 [60] Jehle S, Hulter HN, Krapf R. "Effect of potassium citrate on bone density, microarchitecture, and fracture risk in healthy older adults without osteoporosis: a randomized controlled trial." *J Clin Endocrinol Metab*. 2013;98(1):207-17. [https://pubmed.ncbi.nlm.nih.gov/23162100/](https://pubmed.ncbi.nlm.nih.gov/23162100/)
-
-[61] Dawson-Hughes B, Harris SS, Palermo NJ, et al. "Potassium bicarbonate supplementation lowers bone turnover and calcium excretion in older men and women: a randomized dose-finding trial." *J Bone Miner Res*. 2015;30(11):2103-11. [https://pubmed.ncbi.nlm.nih.gov/25989378/](https://pubmed.ncbi.nlm.nih.gov/25989378/)
 
 [62] Macdonald HM, Black AJ, Aucott L, et al. "Effect of potassium citrate supplementation or increased fruit and vegetable intake on bone metabolism in healthy postmenopausal women: a randomized controlled trial." *Am J Clin Nutr*. 2008;88(2):465-74. [https://pubmed.ncbi.nlm.nih.gov/18689384/](https://pubmed.ncbi.nlm.nih.gov/18689384/)
 
@@ -515,43 +522,43 @@ Other notable sources include coconut water, avocados, lima beans, cantaloupes, 
 
 [66] Chatterjee R, Yeh HC, Shafi T, et al. "Serum and dietary potassium and risk of incident type 2 diabetes mellitus: the ARIC study." *Arch Intern Med*. 2010;170(19):1745-51. [https://pubmed.ncbi.nlm.nih.gov/20975023/](https://pubmed.ncbi.nlm.nih.gov/20975023/)
 
-[67] Chatterjee R, Zelnick L, Mukamal KJ, et al. "Potassium measures and their associations with glucose and diabetes risk: the MESA study." *PLoS One*. 2016;11(7):e0157252. [https://pubmed.ncbi.nlm.nih.gov/27391103/](https://pubmed.ncbi.nlm.nih.gov/27391103/)
+[67] Chatterjee R, Zelnick L, Mukamal KJ, et al. "Potassium measures and their associations with glucose and diabetes risk: the Multi-Ethnic Study of Atherosclerosis (MESA)." *PLoS One*. 2016;11(6):e0157252. PMID: 27280455. [https://pubmed.ncbi.nlm.nih.gov/27280455/](https://pubmed.ncbi.nlm.nih.gov/27280455/)
 
-[68] Chatterjee R, Slentz C, Davenport CA, et al. "Effects of potassium supplements on glucose metabolism in African Americans with prediabetes: a pilot trial." *Am J Clin Nutr*. 2017;106(6):1431-8. [https://pubmed.ncbi.nlm.nih.gov/29070559/](https://pubmed.ncbi.nlm.nih.gov/29070559/)
+[68] Chatterjee R, Slentz C, Davenport CA, et al. "Effects of potassium supplements on glucose metabolism in African Americans with prediabetes: a pilot trial." *Am J Clin Nutr*. 2017;106(6):1431-8. PMID: 29092881. [https://pubmed.ncbi.nlm.nih.gov/29092881/](https://pubmed.ncbi.nlm.nih.gov/29092881/)
 
 [69] Nuki G, et al. "Potassium and rheumatoid arthritis." *Ann Rheum Dis*. 1975;34(suppl):52-3.
 
-[70] Toktam F, et al. "Potassium supplementation in rheumatoid arthritis." *medRxiv*. 2022. (Preprint — not yet peer-reviewed.)
+[70] Kianifard T, et al. "An adjunct role of potassium rich vegetarian diet and a novel potassium food supplement to improve pain in chronic rheumatoid arthritis on supervised standard care: a randomized controlled study." *medRxiv*. 2022. [https://doi.org/10.1101/2022.06.24.22276843](https://doi.org/10.1101/2022.06.24.22276843). Published as: Kianifard T, Saluja M, Sarmukaddam S, et al. *BMJ Nutr Prev Health*. 2024;7(1):14-25. PMID: 38966106. [https://pubmed.ncbi.nlm.nih.gov/38966106/](https://pubmed.ncbi.nlm.nih.gov/38966106/)
 
 [71] Allen RE, Kirby KA. "Nocturnal leg cramps." *Am Fam Physician*. 2012;86(4):350-5. [https://pubmed.ncbi.nlm.nih.gov/22963024/](https://pubmed.ncbi.nlm.nih.gov/22963024/)
 
-[72] Rauf M, et al. "Potassium citrate in restless legs syndrome." *Pharm Pharmacol Int J*. 2016.
+[72] Mizanur Rouf Choudhury. "Use of potassium citrate in restless leg syndrome (RLS)." *Pharm Pharmacol Int J*. 2016;4(4). [https://doi.org/10.15406/ppij.2016.04.00079](https://doi.org/10.15406/ppij.2016.04.00079)
 
 [73] Chen D, et al. "Hypokalemia and COVID-19." *medRxiv*. 2020. (Preprint — not yet peer-reviewed.)
 
-[74] Alfano G, et al. "Hypokalemia in COVID-19 patients in Italy." *medRxiv*. 2020. (Preprint — not yet peer-reviewed.)
+[74] Alfano G, Ferrari A, Fontana F, et al. "Hypokalemia in patients with COVID-19." *Clin Exp Nephrol*. 2021;25(4):401-9. PMID: 33398605. [https://pubmed.ncbi.nlm.nih.gov/33398605/](https://pubmed.ncbi.nlm.nih.gov/33398605/)
 
 [75] National Academies of Sciences. "Dietary Reference Intakes for Sodium and Potassium." Washington, DC: The National Academies Press; 2019. (Note: Previous AI for adults was 4,700 mg in 2005.)
 
 [76] Hey H, et al. "Potassium chloride and esophageal injury." *Br Med J (Clin Res Ed)*. 1982;285(6343):717-8.
 
-[77] Narasaki Y, et al. "Potassium intake and mortality in dialysis patients." *J Renal Nutr*. 2020. [https://pubmed.ncbi.nlm.nih.gov/31753764/](https://pubmed.ncbi.nlm.nih.gov/31753764/)
+[77] Narasaki Y, Okuda Y, Kalantar SS, et al. "Dietary potassium intake and mortality in a prospective hemodialysis cohort." *J Ren Nutr*. 2021;31(4):411-20. PMID: 33121888. [https://pubmed.ncbi.nlm.nih.gov/33121888/](https://pubmed.ncbi.nlm.nih.gov/33121888/)
 
 [78] Chocano-Bedoya PO, et al. "Potassium intake and premenstrual syndrome risk." *Am J Epidemiol*. 2013;177(10):1118-27. [https://doi.org/10.1093/aje/kws363](https://doi.org/10.1093/aje/kws363)
 
-[79] Kusunoki T, et al. "Salt substitute-induced hyperkalemia in chronic kidney disease." *Cureus*. 2025.
+[79] Kusunoki M, Fujihara T, Ishida R, Yamamori Y. "Hyperkalemia caused by potassium-enriched salt in a hospitalized patient." *Cureus*. 2025;17(6):e86704. PMID: 40718189. [https://pubmed.ncbi.nlm.nih.gov/40718189/](https://pubmed.ncbi.nlm.nih.gov/40718189/)
 
-[80] Abe T, et al. "Leg cramps associated with mango-induced hyperkalemia." *Case Rep Neurol Med*. 2012. [https://doi.org/10.1155/2012/926152](https://doi.org/10.1155/2012/926152)
+[80] Abe K. "A patient developed painful muscle cramps due to overeating mangos." *Case Rep Neurol Med*. 2012;2012:742125. PMID: 23091750. [https://pubmed.ncbi.nlm.nih.gov/23091750/](https://pubmed.ncbi.nlm.nih.gov/23091750/)
 
 [81] Raebel MA. "Hyperkalemia associated with use of ACE inhibitors and ARBs." *Cardiovasc Ther*. 2012;30(3):e156-66. [https://pubmed.ncbi.nlm.nih.gov/21883995/](https://pubmed.ncbi.nlm.nih.gov/21883995/)
 
-[82] Epstein M. "Hyperkalemia as a constraint to therapy with combination RAAS blockade." *J Clin Hypertens*. 2009;11(1):55-60. [https://pubmed.ncbi.nlm.nih.gov/19125861/](https://pubmed.ncbi.nlm.nih.gov/19125861/)
+[82] Epstein M. "Hyperkalemia as a constraint to therapy with combination renin-angiotensin system blockade: the elephant in the room." *J Clin Hypertens (Greenwich)*. 2009;11(2):55-60. PMID: 19222668. [https://pubmed.ncbi.nlm.nih.gov/19222668/](https://pubmed.ncbi.nlm.nih.gov/19222668/)
 
-[83] Dockery MA, et al. "Life-threatening hyperkalemia from losartan." *Mil Med*. 2022.
+[83] Dockery S, Dupré A, Deflorio P, Murray BP. "Emergency department presentation of life-threatening symptomatic hyperkalemia from an angiotensin receptor blocker in a low-risk individual." *Mil Med*. 2023;188(9-10):3242-7. PMID: 36454619. [https://pubmed.ncbi.nlm.nih.gov/36454619/](https://pubmed.ncbi.nlm.nih.gov/36454619/)
 
-[84] Sarafidis PA, Georgianos PI, Lasaridis AN. "Diuretics in clinical practice. Part II: electrolyte and acid-base disorders." *Expert Opin Drug Saf*. 2010;9(2):259-73. [https://pubmed.ncbi.nlm.nih.gov/20095753/](https://pubmed.ncbi.nlm.nih.gov/20095753/)
+[84] Sarafidis PA, Georgianos PI, Lasaridis AN. "Diuretics in clinical practice. Part II: electrolyte and acid-base disorders complicating diuretic therapy." *Expert Opin Drug Saf*. 2010;9(2):259-73. PMID: 20095916. [https://pubmed.ncbi.nlm.nih.gov/20095916/](https://pubmed.ncbi.nlm.nih.gov/20095916/)
 
-[85] Fang L, et al. "ACE inhibitors and COVID-19 risk." *Lancet Respir Med*. 2020;8(4):e21. [https://doi.org/10.1016/S2213-2600(20)30116-8](https://doi.org/10.1016/S2213-2600(20)30116-8)
+[85] Fang L, Karakiulakis G, Roth M. "Are patients with hypertension and diabetes mellitus at increased risk for COVID-19 infection?" *Lancet Respir Med*. 2020;8(4):e21. PMID: 32171062. [https://pubmed.ncbi.nlm.nih.gov/32171062/](https://pubmed.ncbi.nlm.nih.gov/32171062/)
 
 [86] Diaz JH. "ACE inhibitors, ARBs, and COVID-19." *J Travel Med*. 2020;27(3):taaa041. [https://doi.org/10.1093/jtm/taaa041](https://doi.org/10.1093/jtm/taaa041)
 
@@ -564,3 +571,5 @@ Other notable sources include coconut water, avocados, lima beans, cantaloupes, 
 [90] O'Neil CE, Keast DR, Fulgoni VL, Nicklas TA. "Food sources of energy and nutrients among adults in the US: NHANES 2003-2006." *Nutrients*. 2012;4(12):2097-120. [https://pubmed.ncbi.nlm.nih.gov/23363999/](https://pubmed.ncbi.nlm.nih.gov/23363999/)
 
 [91] Keast DR, Fulgoni VL 3rd, Nicklas TA, O'Neil CE. "Food sources of energy and nutrients among children in the United States: NHANES 2003-2006." *Nutrients*. 2013;5(1):283-301. [https://pubmed.ncbi.nlm.nih.gov/23340318/](https://pubmed.ncbi.nlm.nih.gov/23340318/)
+
+[92] Stanfield B. Salt-substitutes can slash your 5-year death risk by 12%. drstanfield.com. 2 April 2025. [https://drstanfield.com/blogs/articles/salt-substitutes-can-slash-your-death-risk-by-12](https://drstanfield.com/blogs/articles/salt-substitutes-can-slash-your-death-risk-by-12)

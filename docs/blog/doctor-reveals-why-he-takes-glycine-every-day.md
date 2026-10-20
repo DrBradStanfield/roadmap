@@ -9,6 +9,7 @@ keywords: ["aging","antioxidant","blood pressure","blood sugar","cholesterol","c
 product: "sleep"
 summary: "Dr Brad’s glycine post: he takes 3g/day for sleep quality (falls asleep faster, less groggy) with a strong safety profile. Covers metabolic health, blood sugar, inflammation, heart attack risk, longevity in mice, and brain function."
 topics: ["glycine-benefits-forms-dosing-and-side-effects"]
+router: hidden
 ---
 
 I choose the supplements I take after carefully considering their benefits and their safety. I wasn’t sure about glycine but there’s one impact we’ve seen in studies that convinced me to start taking it. We’ll walk through those studies plus look at a number of other promising health benefits of glycine.

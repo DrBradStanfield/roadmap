@@ -6,10 +6,29 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["vitamin b", "vitamin b1", "vitamin b2", "vitamin b3", "vitamin b5", "vitamin b6", "vitamin b7", "vitamin b12", "folate", "folic acid", "niacin", "biotin", "b complex", "thiamine", "riboflavin", "pantothenic acid", "pyridoxine", "cobalamin", "methylcobalamin", "methylfolate", "cognitive", "brain health", "depression", "energy", "homocysteine", "cardiovascular", "heart health", "neuropathy", "anemia", "neural tube defects", "cholesterol", "nad+", "nmn", "nicotinamide riboside", "choline", "inflammation", "diabetes", "metformin", "blood pressure", "migraine", "skin", "aging"]
-summary: "Reference on B vitamins: energy metabolism, brain health, depression, stroke prevention. At-risk groups include older adults, vegans, metformin users, and MTHFR carriers. Covers all eight B vitamins, active forms (methylfolate, methylcobalamin), and megadose risks. Always discuss with your doctor."
+summary: "Reference on B vitamins. Brad: diet first, reach the recommended intake, skip megadoses; Australia warns on B6 over 10 mg a day. B vitamins may slow brain shrinkage with high omega-3. Avoid high-dose niacin and folic acid (outside pregnancy). Talk to your doctor first if pregnant or on medicines."
+reviewed: "2026-10-20"
+sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/review-best-b-vitamins-and-complexes-energy-b6-b12-biotin-niacin-folic-acid/bvitamins/","checked":"2026-09-29","fingerprint":"sha256:55c06813a9b91698e9adbcf8fa858ce4aa2a8d42bd8730185de22430f741ff5b"},{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:351f6d3c66805965aaeb68918451132fe0328e3698a08d0e625da1608ce8459a"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine","checked":"2026-10-20","fingerprint":"publishedAt:2026-08-19T00:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study","checked":"2026-10-20","fingerprint":"publishedAt:2026-05-20T12:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-supplements-that-actually-work","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-05T20:31:48Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30T20:38:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/zma-supplements-benefits-research","checked":"2026-10-20","fingerprint":"publishedAt:2025-01-29T16:30:23Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/methylated-multivitamin-regular-ones","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-28T07:00:07Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/tmg-betaine-exploding-popularity","checked":"2026-10-20","fingerprint":"publishedAt:2024-10-09T13:30:02Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/brain-omega-3-discovery","checked":"2026-10-20","fingerprint":"publishedAt:2024-09-26T00:17:19Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/multivitamin-contains-enough-riboflavin","checked":"2026-10-20","fingerprint":"publishedAt:2024-09-18T03:06:10Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-supplements-try-avoid","checked":"2026-10-20","fingerprint":"publishedAt:2024-08-11T19:43:34Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/b-vitamins-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/b-vitamins-benefits-forms-dosing-and-side-effects)*
+
+## Current view (reviewed 20 October 2026)
+
+Brad's view is that a good diet comes first and that the dose decides whether a supplement helps: reaching the recommended intake is one thing, megadosing is an entirely different proposition, and plenty of B-complex products contain riboflavin doses orders of magnitude above the recommended 1.3 mg ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). Vitamin B6 shows that the wrong dose can harm: Australia has required a warning label on products supplying more than 10 mg of B6 a day since 2022 after reports of nerve damage, against a recommended intake of 1.7 mg; the symptoms of too much B6 look like the symptoms of too little, and he would not rely on switching to the P5P form to avoid the problem ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). For the brain, he points to the VITACOG trial: in older people with mild memory problems, two years of high-dose B vitamins slowed brain shrinkage by 40% compared with placebo in those with high omega-3 levels and gave no benefit in those with low omega-3, which he calls a lead worth following rather than a finished answer ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). The July 2026 WHO dementia guideline recommends against B vitamins for reducing dementia risk unless you have a diagnosed deficiency; Brad notes that it did not reassess supplements and never mentions the COSMOS trial, so it answers an older question rather than being wrong ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). He would avoid high-dose folic acid outside pregnancy, and high-dose niacin, which a 2018 meta-analysis linked to a 10% increase in all-cause death ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). He sees little evidence that methylated B vitamins beat standard forms, and says people with an MTHFR gene variant need testing by a doctor and a plan made with their healthcare team ([Brad, 28 Nov 2024](https://drstanfield.com/blogs/articles/methylated-multivitamin-regular-ones)).
+
+## Brad's videos on this topic
+
+- 19 Aug 2026, [Multivitamins Are No Longer "Expensive Urine"](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine): the dose decides; riboflavin megadoses are wasted, Australia requires a nerve-damage warning on products with more than 10 mg of B6 a day, B vitamins slowed brain shrinkage only in people with high omega-3, and the 2026 WHO guideline did not reassess supplements.
+- 20 May 2026, [Concerning Omega-3 Brain Study](https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study): a 2026 study linking omega-3 supplements to faster cognitive decline did not measure B-vitamin levels or homocysteine; on the VITACOG findings, B vitamins and omega-3 work as a pair.
+- 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drstanfield.com/blogs/articles/5-supplements-that-actually-work): in VITACOG, B vitamins (B6, B12, folic acid) reduced brain atrophy by 29.6%, by 40% in people with high omega-3, and not at all in people with low omega-3.
+- 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes](https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes): Brad aims to reach the recommended intake of every B vitamin, diet first, without megadoses; the omega-3 link is one dataset and needs more studies.
+- 29 Jan 2025, [ZMA Supplements: What Are the Benefits and Research?](https://drstanfield.com/blogs/articles/zma-supplements-benefits-research): ZMA products often carry 10 to 11 mg of B6, about 650% of the recommended intake; healthy diet first, supplements only for small gaps. Superseded on B6 safety: this post said too much B6 has no serious adverse effects; the August 2026 post warns of nerve damage.
+- 28 Nov 2024, [Methylated Multivitamin vs Regular Ones: Which is Better?](https://drstanfield.com/blogs/articles/methylated-multivitamin-regular-ones): there is little evidence that methylated B vitamins beat standard forms, many methylated products are megadoses, and people with an MTHFR variant need testing and a plan made with their doctor.
+- 9 Oct 2024, [Why TMG (Betaine) is Exploding in Popularity](https://drstanfield.com/blogs/articles/tmg-betaine-exploding-popularity): mainly about TMG; B vitamins also lower homocysteine, which is linked to Alzheimer's disease, and the COSMOS trials found a multivitamin with B vitamins improved cognition and memory.
+- 26 Sep 2024, [Your Brain on Omega-3, Tantalizing Discovery!](https://drstanfield.com/blogs/articles/brain-omega-3-discovery): B vitamins reduced brain shrinkage by 40% only in people with high omega-3, and omega-3 helped only people with healthy B-vitamin levels; Brad uses a low dose to reach the recommended intake, not a megadose.
+- 18 Sep 2024, [How to Know If Your Multivitamin Contains Enough Riboflavin](https://drstanfield.com/blogs/articles/multivitamin-contains-enough-riboflavin): riboflavin deficiency is rare, most riboflavin-only supplements give far more than you need, and studies of at least 400 mg a day reported no adverse effects; the usual sign of excess is bright yellow urine.
+- 11 Aug 2024, [Which Popular Supplements Should You Actually Try to Avoid?](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid): avoid high-dose folic acid outside pregnancy and high-dose niacin, which a 2018 meta-analysis linked to 10% more deaths from all causes.
 
 ## 1. Overview
 
@@ -48,7 +67,7 @@ Ensuring adequate intake of folate, choline, B12, B6, and riboflavin is importan
 
 - **Thiamine hydrochloride** — most common supplement form; adequate for general use
 - **Thiamine mononitrate** — equally effective standard form
-- **Benfotiamine** — a synthetic thiamine derivative that significantly increases blood and tissue levels of thiamine compared to hydrochloride and mononitrate forms [17][18]. A daily dose of 200 mg for 3 weeks significantly improved neuropathy scores and reduced pain in diabetic patients with polyneuropathy [19]. In people with kidney disease associated with type 2 diabetes, 900 mg/day for 3 months significantly improved thiamin status but did not improve kidney function measures [20]. Oral doses in studies range from 200-800 mg per day. No established UL; no reports of toxicity.
+- **Benfotiamine** — a synthetic thiamine derivative that significantly increases blood and tissue levels of thiamine compared to hydrochloride and mononitrate forms [17][18]. A daily dose of 400 mg for 3 weeks significantly improved neuropathy scores and reduced pain in diabetic patients with polyneuropathy [19]. In people with kidney disease associated with type 2 diabetes, 900 mg/day for 3 months significantly improved thiamin status but did not improve kidney function measures [20]. Oral doses in studies range from 200-800 mg per day. No established UL; no reports of toxicity.
 - **Thiamine tetrahydrofurfuryl disulfide (TTFD)** — another synthetic derivative that increases tissue levels more than standard forms. Approved outside the US as a drug for thiamine deficiency. Preliminary evidence for diabetic neuropathy, fatigue, and other conditions [21].
 
 ### Riboflavin (B2) Forms
@@ -58,7 +77,7 @@ Standard riboflavin and riboflavin 5'-phosphate (the active coenzyme form) are a
 ### Niacin (B3) Forms
 
 - **Nicotinic acid (niacin)** — causes flushing at doses above the UL (35 mg). Used at high doses (1,000-4,000 mg) for cholesterol management, though clinical trials have not shown cardiovascular benefit when added to statins [24][25].
-- **Niacinamide (nicotinamide)** — does not cause flushing and does not lower cholesterol. Better tolerated. The UK has set a UL of 500 mg and the EU 900 mg for adults. A review by a UK Food Standards Agency expert group concluded that 560 mg per day "would not be expected to result in any adverse effects" [26].
+- **Niacinamide (nicotinamide)** — does not cause flushing and does not lower cholesterol. Better tolerated. The UK has set a UL of 500 mg and the EU 900 mg for adults. A review by a UK Food Standards Agency expert group concluded that 560 mg per day "would not be expected to result in any adverse effects" [1][26].
 - **Inositol hexanicotinate (hexaniacinate)** — reportedly causes less flushing than regular niacin. About 85% niacin by weight. One small study found 4 g/day significantly reduced attacks in people with Raynaud's disease compared to placebo [27]. May reduce cholesterol levels based on limited data.
 - **Nicotinamide riboside (NR)** — a precursor to NAD+. Sold as Niagen. Several studies show it raises blood NAD+ levels: 100 mg, 300 mg, and 1,000 mg daily doses increased whole blood NAD+ by 22%, 51%, and 142% respectively within two weeks, with increases maintained through 8 weeks [28]. A study in 24 healthy older adults (ages 55-79) found 500 mg twice daily for six weeks increased NAD+ by 60% compared to placebo [29]. However, clinical benefits remain unproven — a study in 40 overweight men with insulin resistance found 1,000 mg twice daily for 3 months did not improve fasting blood sugar, HbA1c, or insulin sensitivity [30]. The National Advertising Division (NAD/BBB) recommended discontinuing broad "clinically proven" health benefit claims [1]. Theoretical concerns exist about promoting growth of existing cancers [31]. There are no long-term safety studies.
 - **Extended-release niacin** — may be more hepatotoxic than immediate-release forms at equivalent doses [32].
@@ -66,7 +85,7 @@ Standard riboflavin and riboflavin 5'-phosphate (the active coenzyme form) are a
 ### Vitamin B6 Forms
 
 - **Pyridoxine hydrochloride** — the most common supplement form. Must be converted to pyridoxal-5-phosphate (PLP, or P-5-P) in the body.
-- **Pyridoxal-5-phosphate (P-5-P)** — the active coenzyme form. Must still undergo conversion in the intestine to be absorbed, so bioavailability may be no better than pyridoxine for most people [33]. However, P-5-P may not cause the nerve damage associated with excessive pyridoxine. In-vitro research showed that pyridoxine was the most toxic form to nerve cells, and that it inhibits P-5-P, possibly explaining why high-dose pyridoxine supplementation sometimes causes neurological symptoms resembling B6 deficiency [34].
+- **Pyridoxal-5-phosphate (P-5-P)** — the active coenzyme form. Must still undergo conversion in the intestine to be absorbed, so bioavailability may be no better than pyridoxine for most people [33]. However, P-5-P may not cause the nerve damage associated with excessive pyridoxine. In-vitro research showed that pyridoxine was the most toxic form to nerve cells, and that it inhibits P-5-P, possibly explaining why high-dose pyridoxine supplementation sometimes causes neurological symptoms resembling B6 deficiency [34]. Brad would not rely on switching to P-5-P to avoid the nerve damage of high-dose B6 [182].
 - People with certain conditions that prevent conversion of pyridoxine to P-5-P (such as pyridoxal 5'-phosphate-dependent epilepsy) may be prescribed the P-5-P form specifically [33].
 
 Mild B6 deficiency is common (10.5% of the US population is deficient according to the CDC), particularly in the elderly and children [35]. Pyridoxine in amounts meeting the RDAs is easily available from the diet (fortified cereals, meats, starchy vegetables, chickpeas, bananas).
@@ -79,7 +98,7 @@ Standard biotin (d-biotin) is the only supplemental form. No significant bioavai
 
 - **Naturally-occurring dietary folate** — found in leafy greens, legumes, and certain fruits. Less stable and approximately 60% as bioavailable as synthetic folic acid [40].
 - **Folic acid** — synthetic form used in supplements and food fortification. More stable and approximately 1.7 times as bioavailable as natural folate (and twice as well if taken on an empty stomach). Mandatory fortification of enriched cereal grain products in the US since 1998 has reduced folate deficiency to less than 1% of Americans [40][41].
-- **L-5-methyltetrahydrofolate (methylfolate)** — the biologically active form. Sold as Metafolin (calcium salt) and Quatrefolic (glucosamine salt). Somewhat more bioavailable than folic acid in short-term use. A study in 75 Malaysian women found Metafolin achieved moderately higher serum folate levels (23 vs 17.7 ng/mL) than folic acid after 3 months, though both were equally effective at reducing homocysteine [42]. A potential advantage: methylfolate may not mask vitamin B12 deficiency (unlike folic acid) [43]. Both Metafolin and Quatrefolic contain a very small amount of D-5-methylfolate, which is not a natural compound and may hypothetically reduce bioavailability [44].
+- **L-5-methyltetrahydrofolate (methylfolate)** — the biologically active form. Sold as Metafolin (calcium salt) and Quatrefolic (glucosamine salt). Somewhat more bioavailable than folic acid in short-term use. A study in 142 Malaysian women found Metafolin achieved moderately higher serum folate levels (23 vs 17.7 ng/mL) than folic acid after 3 months, though both were equally effective at reducing homocysteine [42]. A potential advantage: methylfolate may not mask vitamin B12 deficiency (unlike folic acid) [43]. Both Metafolin and Quatrefolic contain a very small amount of D-5-methylfolate, which is not a natural compound and may hypothetically reduce bioavailability [44].
 - **Folinic acid (leucovorin)** — a reduced form also used in chemotherapy rescue. Surprisingly, a 4-week Australian study of 30 adults (87% with MTHFR mutations) found folinic acid was even more effective than methylfolate in raising serum folate levels (45% increase vs. 27%), irrespective of MTHFR status [45].
 
 Folate labeling uses "dietary folate equivalents" (DFE): 1 mcg DFE = 1 mcg natural folate = 0.6 mcg folic acid from supplements/fortified foods. If an older label says "Folic Acid 400 mcg, 100% DV" it actually provides the equivalent of about 667 mcg of natural folate [40].
@@ -93,13 +112,15 @@ Folate labeling uses "dietary folate equivalents" (DFE): 1 mcg DFE = 1 mcg natur
 
 Absorption of B12 is limited by intrinsic factor — only about 1.5 mcg can be actively absorbed from a single dose via intrinsic factor, with an additional approximately 1% absorbed passively through diffusion [50]. Whether you take 5 mcg or 50 mcg, about 1.5 mcg is absorbed. At 1,000 mcg, approximately 11.5 mcg total is absorbed (1.5 mcg via intrinsic factor + ~10 mcg by passive diffusion). To get the most B12 from a meal and a supplement, take them at different times of the day [50].
 
-Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes a full B-complex with methylated B12 (12 mcg) and methylated folate (200 mcg DFE) alongside B1 (0.6 mg), B2 (0.65 mg), B3 (8 mg), B5 (2.5 mg), B6 (0.85 mg), and biotin (15 mcg) — low, evidence-based doses designed to fill dietary gaps without megadosing.
+Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes a full B-complex with methylated B12 (12 mcg) and methylated folate (200 mcg DFE) alongside, in the USA formula, B1 (0.9 mg), B2 (0.975 mg), B3 as nicotinamide (16 mg), B5 (3.75 mg), B6 as P5P (1.275 mg), and biotin (22.5 mcg) — low, evidence-based doses designed to fill dietary gaps without megadosing.
 
 ## 3. Evidence for Health Benefits
 
 ### Cognitive Function and Dementia
 
 The relationship between B vitamins and cognitive health centers on homocysteine metabolism. Elevated homocysteine is an established risk factor for cognitive decline and dementia, and vitamins B6, B12, and folate are essential cofactors in homocysteine metabolism [4][51].
+
+**B vitamins and omega-3 (VITACOG):** A 2-year placebo-controlled study of people aged 70 or older with mild cognitive impairment found that daily folic acid (800 mcg), vitamin B12 (500 mcg) and vitamin B6 (20 mg) slowed cognitive decline, mainly in those who started with plasma homocysteine over 11.3 micromoles/L [1]. In a similar study, the same combination reduced shrinkage in brain regions affected by Alzheimer's disease, but only in people who started with high homocysteine [1]. Further analyses found larger benefits when blood omega-3 levels were in the upper range of normal, and people with low omega-3 did not benefit [1]. Brad's reading of these VITACOG analyses is that B vitamins slowed brain shrinkage by 40% in people with high omega-3 levels and gave no benefit with low omega-3; he calls this a lead worth following rather than a finished answer [182]. A 3-year study in the Netherlands among 791 cognitively healthy older people with high homocysteine found a different pattern: 800 mcg of folic acid a day improved global cognition and processing speed only in those with low omega-3 status [1]. The World Health Organization (July 2026) recommends against B vitamin complexes to reduce the risk of cognitive decline or dementia in people without a confirmed deficiency, as it judges that possible harms outweigh any benefit [1]; Brad notes that the guideline did not reassess supplements and does not mention the COSMOS trial [182].
 
 **Folic acid and cognitive function in low-folate populations:** A study among adults in China with low blood folate levels (~5.5 ng/mL) and mild to moderate Alzheimer's disease found that 1,250 mcg of folic acid plus standard medication (donepezil) daily for 6 months resulted in less inflammation and slightly better maintained cognitive function compared to medication alone [52]. However, participants achieved average blood folate levels similar to US adults (10-12 ng/mL), so it is uncertain whether supplementation would benefit people with already adequate levels.
 
@@ -115,7 +136,7 @@ The relationship between B vitamins and cognitive health centers on homocysteine
 
 **Methylfolate as antidepressant adjunct:** Very high-dose methylfolate (15 mg/day as Metafolin) for 60 days improved response rates in patients with major depressive disorder who did not respond to SSRI therapy alone: 32.3% response rate vs. 14.6% for placebo. A lower starting dose of 7.5 mg was not effective [63]. A subsequent one-year open-label study suggested sustained efficacy [64]. Agitation or manic symptoms have developed in some patients, resolving days after discontinuation — the mechanism may relate to methylfolate increasing brain levels of norepinephrine, dopamine, and serotonin [65].
 
-**B vitamins and stress/mood:** Supplementation with B-complex vitamins has been shown to improve mood, reduce perceived stress, and enhance neurocognitive function under demanding conditions, with benefits most notable in individuals experiencing high stress or with suboptimal B vitamin status. These effects typically become noticeable after consistent daily supplementation over 28-90 days [2][66].
+**B vitamins and stress/mood:** Supplementation with B-complex vitamins has been shown to improve mood, reduce perceived stress, and enhance neurocognitive function under demanding conditions, with benefits most notable in individuals experiencing high stress or with suboptimal B vitamin status. These effects typically become noticeable after consistent daily supplementation over 28-90 days [2][66]. However, supplementation with B6, B12 and/or folate, even in high doses, has generally not been found to reduce depression or improve mood, particularly in people who are not deficient [1].
 
 **Vitamin B6 and depression:** Deficiency in B6 can cause depression and confusion. B6 plays a key role in the biosynthesis of serotonin, dopamine, and GABA [4][67].
 
@@ -159,7 +180,7 @@ High-dose niacin is NOT recommended for use alongside statins or red yeast rice 
 
 ### Neural Tube Defects and Pregnancy
 
-Adequate folate intake before and during early pregnancy reduces the risk of neural tube defects (NTDs) including spina bifida. Mandatory folic acid fortification of grain products in the US since 1998 has reduced NTD prevalence by approximately 25-50% [88][89].
+Adequate folate intake before and during early pregnancy reduces the risk of neural tube defects (NTDs) including spina bifida. Mandatory folic acid fortification of grain products in the US since 1998 has reduced NTD prevalence by approximately 25-50% [89].
 
 - All women capable of becoming pregnant should consume 600 mcg DFE from approximately 400 mcg of folic acid from supplements or fortified foods in addition to dietary folate [40].
 - Folic acid supplementation around the time of conception was associated with 39% lower risk of autism spectrum disorder and 45% lower risk of severe language delay in offspring in a Norwegian study [90]. A study in Israel found folic acid/multivitamin use before pregnancy was associated with 61% lower ASD risk, and 73% lower risk when used during pregnancy [91].
@@ -257,19 +278,21 @@ A study in Taiwan among 28 older adults with hypertension and nighttime cramps f
 
 ### Dosing by Condition
 
+The doses below come from trials or from treating specific conditions, often under medical supervision; they are not everyday doses. Brad's view is to reach the recommended intake and avoid megadoses [182].
+
 **Thiamine deficiency/heart failure:** 100 mg twice daily to counter effects of diuretics [126].
 
-**Benfotiamine for diabetic neuropathy:** 200 mg/day (50 mg four times daily) for 3 weeks minimum [19].
+**Benfotiamine for diabetic neuropathy:** The BEDIP trial used 400 mg/day (two 50 mg tablets four times daily) for 3 weeks [19].
 
 **Riboflavin for migraine prevention:** 400 mg/day [111].
 
 **Riboflavin for MTHFR-related hypertension:** 1.6-10 mg/day [14][71].
 
-**Niacin for cholesterol (under medical supervision only):** 1,000-4,000 mg/day. Liver function monitoring required. NOT recommended alongside statins based on clinical trial data [24][25].
+**Niacin for cholesterol (under medical supervision only):** Effects on cholesterol are documented at 1,000-4,000 mg/day [1]. Liver function monitoring required. NOT recommended alongside statins based on clinical trial data [24][25]. Brad would avoid high-dose niacin [183]. A 2018 meta-analysis linked niacin taken with a statin to an increased risk of death from any cause [184].
 
 **Nicotinamide for skin cancer prevention (in those with history):** 500 mg twice daily [96][97].
 
-**Pyridoxine for morning sickness:** 30 mg/day [127].
+**Pyridoxine for morning sickness:** 30 mg/day [1][127].
 
 **Pyridoxine to counter levodopa-related B6 depletion:** 25 mg/day under physician supervision (only with carbidopa/levodopa, not levodopa alone) [107].
 
@@ -300,7 +323,7 @@ Be aware that Daily Value (DV) percentages on supplement labels changed in 2016 
 | Hazelnuts, chopped | 1 cup | 0.74 mg |
 | Sunflower seeds, toasted | 1 cup | 0.44 mg |
 
-Coffee and tea contain anti-thiamin factors (caffeic acid, chlorogenic acid, tannic acid) that can break down thiamin, though this is generally not an issue for people getting adequate dietary thiamin [132]. Coffee has not been shown to affect other B vitamins [133].
+Coffee and tea contain anti-thiamin factors (caffeic acid, chlorogenic acid, tannic acid) that can break down thiamin, though this is generally not an issue for people getting adequate dietary thiamin [132]. In a cohort of 10,601 Norwegian adults, drinking 4 or more cups of coffee a day was linked to 11.7%, 14.1% and 5.5% lower blood levels of folate, pyridoxal phosphate (active vitamin B6) and riboflavin than drinking none [133].
 
 ### Riboflavin (B2) — DV: 1.3 mg
 
@@ -389,7 +412,7 @@ Soaking dry beans for 12 hours can more than double folate content; boiling for 
 | Beef, top loin | 1 fillet | 4.82 mcg |
 | Yogurt, vanilla, non-fat | 1 cup | 1.30 mcg |
 
-Plant-based foods are generally not adequate sources of B12 unless fortified. The Academy of Nutrition and Dietetics states that non-fortified nutritional yeast, tempeh, nori, spirulina, and chlorella are not adequate or practical B12 sources [136]. Fortified nutritional yeast can provide substantial B12: a 5-gram portion of fortified nutritional yeast provides 7.5 mcg of B12 (310% DV) along with significant amounts of riboflavin, niacin, and B6 [137].
+Plant-based foods are generally not adequate sources of B12 unless fortified. The Academy of Nutrition and Dietetics states that non-fortified nutritional yeast, tempeh, nori, spirulina, and chlorella are not adequate or practical B12 sources [136]. Fortified nutritional yeast can provide substantial B12: a 5-gram portion of fortified nutritional yeast provides 7.5 mcg of B12 (310% DV) along with significant amounts of riboflavin, niacin, and B6 [1].
 
 ## 6. Safety and Side Effects
 
@@ -429,16 +452,18 @@ The most important safety concern among B vitamins. Excessive pyridoxine causes 
 
 - A woman consuming energy drinks with 40 mg B6/serving plus a B-complex had no symptom improvement one year after stopping [83].
 - A 54-year-old man experienced progressive numbness and neuropathy over several years of taking up to 30 mg/day plus high B6 energy drinks [84].
-- A 73-year-old man taking a multivitamin with just 6 mg B6 for 10 years developed peripheral neuropathy (blood B6: 260 nmol/L; normal: 2-125) [85].
+- A 73-year-old man taking a multivitamin with just 6 mg B6 for 10 years developed peripheral neuropathy (blood B6: 260 nmol/L; normal: 20-125) [85].
 - A 71-year-old man developed burning feet after just a few weeks of a multivitamin with 6 mg B6 (blood B6: 923 nmol/L; normal: 35-110). Symptoms improved but did not fully resolve after stopping [151].
 - A 40-year-old man taking 95 mg/day developed severe muscle twitching that progressed over 8 months to his legs, arms, trunk, neck, and face — completely resolving 4 months after stopping [87].
 - Joint pain and cognitive deficits from high B6 levels attributed to consuming large quantities of nuts daily [152].
 
-P-5-P (pyridoxal-5-phosphate) may be safer than pyridoxine at higher doses based on in-vitro data, as pyridoxine itself appears to inhibit the active P-5-P form [34].
+P-5-P (pyridoxal-5-phosphate) may be safer than pyridoxine at higher doses based on in-vitro data, as pyridoxine itself appears to inhibit the active P-5-P form [34]. Brad would not rely on switching forms to avoid the problem [182].
+
+**Regulation:** Australia and Canada require products with more than 10 mg of vitamin B6 to carry a warning about the risk of peripheral neuropathy [1][182]. In Australia, after 30 May 2027, products with more than 50 mg will be available only after consultation with a pharmacist, and products with more than 200 mg will need a prescription [1].
 
 **Cancer risk:** Men supplementing with >20 mg B6 daily for 10 years had 82% greater lung cancer risk (even greater among smokers). No increased risk in women [10]. Higher B6 intake was associated with 97% greater rectal cancer risk in one study of older women [153]. B6 intake >8.6 mg/day was associated with lower survival in nasopharyngeal carcinoma patients receiving radiation [154].
 
-**Hip fracture risk:** 40 mg B6 daily for 1-3 years was associated with 42% increased hip fracture risk in older adults with cardiovascular disease [155]. Postmenopausal nurses taking >35 mg B6 had 29% increased hip fracture risk, increasing to 47% when combined with high B12 (>30 mcg) [156].
+**Hip fracture risk:** In older adults with cardiovascular disease, 40 mg B6 daily for 1-3 years was associated with a 42% increased hip fracture risk over the extended follow-up, though not during the trials themselves [1][155]. Postmenopausal nurses taking >35 mg B6 had 29% increased hip fracture risk, increasing to 47% when combined with high B12 (≥20 mcg) [156].
 
 ### Biotin (B7)
 
@@ -468,7 +493,7 @@ No UL established. Generally very safe, but important associations at high level
 
 **Cancer associations:** 500 mcg B12 plus 400 mcg folic acid daily for 2-3 years in people 65+ was associated with 77% higher colorectal cancer risk (3.4% vs 2%) and 25% higher overall cancer rates [164]. Use of B12 supplements before/during chemotherapy was associated with 83-104% higher risk of poorer survival [165].
 
-**Mortality associations:** Middle-aged men with blood B12 >455 pg/mL had 85% higher death risk over 8 years vs. <339 pg/mL [166]. In type 2 diabetes, B12 levels 506-703 pg/mL: 79% higher cardiovascular death risk; ≥703.5 pg/mL: 132% higher risk, vs. 369-506 pg/mL. Those with the lowest levels (<369 pg/mL) also had 74% higher risk — suggesting moderate levels may be optimal [167].
+**Mortality associations:** In a Dutch cohort of 5,571 men and women, higher blood B12 was linked to higher all-cause mortality over a median of 8.2 years (hazard ratio 1.25 per standard deviation increase) [166]. In type 2 diabetes, B12 levels 506-703 pg/mL: 79% higher cardiovascular death risk; ≥703.5 pg/mL: 132% higher risk, vs. 369-506 pg/mL. Those with the lowest levels (<369 pg/mL) also had 74% higher risk — suggesting moderate levels may be optimal [167].
 
 **Acne:** B12 at 20 mcg/day or more (or 1,000 mcg injection) has caused acne outbreaks, primarily on face, upper back, chest, and shoulders, typically 1 week to 5 months after starting. The mechanism involves oversupply of B12 causing skin bacteria (P. acnes) to overproduce inflammatory proteins. Acne resolved within 3-6 weeks of stopping in reported cases [168][169].
 
@@ -485,7 +510,7 @@ No UL established. Generally very safe, but important associations at high level
 | Proton pump inhibitors (PPIs) | B12 | Long-term use reduces stomach acid needed for B12 absorption from food. 38-59% of PPI users may be B12 deficient depending on specific PPI. People taking PPIs daily for >3 years should be monitored [173][174]. |
 | Metformin | B12, B6 | Estimated 30% of long-term users develop B12 deficiency. Metformin may cause increased B12 uptake by gut bacteria, leaving less to absorb. Monitor B12 every 2-3 years even without symptoms [175][176]. |
 | Loop diuretics (furosemide) | B1 | Thiamine deficiency can adversely affect heart function in CHF patients [126]. |
-| Anticonvulsants (phenytoin, carbamazepine) | B6, B9 | Enzyme-inducing AEDs can cause B6 deficiency. Also reduce folate levels [177][178]. |
+| Anticonvulsants (phenytoin, carbamazepine) | B6 | Enzyme-inducing AEDs can cause B6 deficiency. |
 | High-dose aspirin (3,900 mg/day) | B9 | May increase folate excretion. Low-dose aspirin does not have this effect [141]. |
 | Levodopa (high-dose, >2 g/day) | B6, B12 | B6 depleted during dopamine conversion. B12 may also decline [107]. |
 | Cycloserine (Seromycin) | B6 | Increases B6 requirements [179]. |
@@ -519,11 +544,11 @@ No UL established. Generally very safe, but important associations at high level
 
 [6] Bell DS. "Metformin-induced vitamin B12 deficiency presenting as a peripheral neuropathy." *South Med J*. 2010;103(3):265-267. doi: [10.1097/SMJ.0b013e3181ce0e4d](https://doi.org/10.1097/SMJ.0b013e3181ce0e4d)
 
-[7] American Heart Association. "Homocysteine, Folic Acid and Cardiovascular Disease." *Circulation*. 2006.
+[7] American Heart Association Nutrition Committee; Lichtenstein AH, Appel LJ, Brands M, et al. "Diet and lifestyle recommendations revision 2006: a scientific statement from the American Heart Association Nutrition Committee." *Circulation*. 2006;114(1):82-96. doi: [10.1161/CIRCULATIONAHA.106.176158](https://doi.org/10.1161/CIRCULATIONAHA.106.176158). PMID: [16785338](https://pubmed.ncbi.nlm.nih.gov/16785338/)
 
 [8] Lukaski HC. "Vitamin and mineral status: effects on physical performance." *Nutrition*. 2004;20(7-8):632-644. doi: [10.1016/j.nut.2004.04.001](https://doi.org/10.1016/j.nut.2004.04.001)
 
-[9] Selin JZ, et al. "High-dose supplements of vitamins C and E, low-dose multivitamins, and the risk of age-related cataract." *Br J Nutr*. 2017;118(6):445-452.
+[9] Selin JZ, Lindblad BE, Bottai M, et al. "High-dose B-vitamin supplements and risk for age-related cataract: a population-based prospective study of men and women." *Br J Nutr*. 2017;118(2):154-160. doi: [10.1017/S0007114517001994](https://doi.org/10.1017/S0007114517001994). PMID: [28820082](https://pubmed.ncbi.nlm.nih.gov/28820082/)
 
 [10] Brasky TM, et al. "Long-Term, Supplemental, One-Carbon Metabolism-Related Vitamin B Use in Relation to Lung Cancer Risk." *J Clin Oncol*. 2017;35(30):3440-3448. doi: [10.1200/JCO.2017.72.7735](https://doi.org/10.1200/JCO.2017.72.7735)
 
@@ -533,7 +558,7 @@ No UL established. Generally very safe, but important associations at high level
 
 [13] Zittan E, et al. "MTHFR C677T and vitamin B-12." *Am J Physiol Heart Circ Physiol*. 2007.
 
-[14] Hughes CF, et al. "Riboflavin and blood pressure in MTHFR 677TT genotype." *Proc Nutr Soc*. 2018.
+[14] Hughes CF, Ward M, McMahon A, Strain JJ, et al. "A randomised controlled trial to investigate ambulatory blood pressure response to riboflavin supplementation in adults with the MTHFR 677TT genotype." *Proc Nutr Soc*. 2018;77(OCE3). doi: [10.1017/S0029665118000605](https://doi.org/10.1017/S0029665118000605)
 
 [15] Prinz-Langenohl R, et al. "Methylfolate increases plasma folate more effectively than folic acid in women with MTHFR polymorphism." *Br J Pharmacol*. 2009;158(8):2014-2021. doi: [10.1111/j.1476-5381.2009.00492.x](https://doi.org/10.1111/j.1476-5381.2009.00492.x)
 
@@ -543,21 +568,21 @@ No UL established. Generally very safe, but important associations at high level
 
 [18] Xie F, et al. "Pharmacokinetics of benfotiamine." *J Clin Pharmacol*. 2014.
 
-[19] Haupt E, et al. "Benfotiamine in diabetic polyneuropathy." *Int J Clin Pharmacol Ther*. 2005;43(2):71-77.
+[19] Haupt E, Ledermann H, Köpcke W. "Benfotiamine in the treatment of diabetic polyneuropathy--a three-week randomized, controlled pilot study (BEDIP study)." *Int J Clin Pharmacol Ther*. 2005;43(2):71-7. doi: [10.5414/cpp43071](https://doi.org/10.5414/cpp43071). PMID: [15726875](https://pubmed.ncbi.nlm.nih.gov/15726875/)
 
-[20] Alkhalaf A, et al. "Benfotiamine in diabetic nephropathy." *Diabetes Care*. 2010;33(7):1598-1601.
+[20] Alkhalaf A, Klooster A, van Oeveren W, et al. "A double-blind, randomized, placebo-controlled clinical trial on benfotiamine treatment in patients with diabetic nephropathy." *Diabetes Care*. 2010;33(7):1598-601. doi: [10.2337/dc09-2241](https://doi.org/10.2337/dc09-2241). PMID: [20413516](https://pubmed.ncbi.nlm.nih.gov/20413516/)
 
-[21] Lonsdale D. "A review of the biochemistry, metabolism and clinical benefits of thiamine derivatives." *Med Sci Monit*. 2004;10(4):RA258-267. PMID: [16617192](https://pubmed.ncbi.nlm.nih.gov/16617192/)
+[21] Lonsdale D. "A review of the biochemistry, metabolism and clinical benefits of thiamin(e) and its derivatives." *Evid Based Complement Alternat Med*. 2006;3(1):49-59. doi: [10.1093/ecam/nek009](https://doi.org/10.1093/ecam/nek009). PMID: [16550223](https://pubmed.ncbi.nlm.nih.gov/16550223/)
 
 [22] Danserau R, et al. "Riboflavin absorption." *Int J Pharmaceut*. 1997.
 
-[23] Zempleni J, et al. "Pharmacokinetics of orally administered riboflavin." *Am J Clin Nutr*. 1996;63(1):54-66.
+[23] Zempleni J, Galloway JR, McCormick DB. "Pharmacokinetics of orally and intravenously administered riboflavin in healthy humans." *Am J Clin Nutr*. 1996;63(1):54-66. doi: [10.1093/ajcn/63.1.54](https://doi.org/10.1093/ajcn/63.1.54). PMID: [8604671](https://pubmed.ncbi.nlm.nih.gov/8604671/)
 
 [24] Boden WE, et al. "Niacin in patients with low HDL cholesterol levels receiving intensive statin therapy." *N Engl J Med*. 2011;365(24):2255-2267. doi: [10.1056/NEJMoa1107579](https://doi.org/10.1056/NEJMoa1107579)
 
 [25] Landray MJ, et al. "Effects of extended-release niacin with laropiprant." *N Engl J Med*. 2014;371(3):203-212. doi: [10.1056/NEJMoa1300955](https://doi.org/10.1056/NEJMoa1300955)
 
-[26] UK Food Standards Agency Expert Group on Vitamins and Minerals. Safety review of nicotinamide.
+[26] Expert Group on Vitamins and Minerals. *Safe Upper Levels for Vitamins and Minerals*. London: Food Standards Agency; May 2003.
 
 [27] Sunderland GT, et al. "Hexopal in primary Raynaud's disease." *Clin Rheumatol*. 1988;7(1):46-49.
 
@@ -565,9 +590,9 @@ No UL established. Generally very safe, but important associations at high level
 
 [29] Martens CR, et al. "Chronic nicotinamide riboside supplementation elevates NAD+ in healthy older adults." *Nat Commun*. 2018;9(1):1286. doi: [10.1038/s41467-018-03421-7](https://doi.org/10.1038/s41467-018-03421-7)
 
-[30] Dollerup OL, et al. "Nicotinamide riboside does not alter insulin sensitivity in overweight men." *Am J Clin Nutr*. 2018.
+[30] Dollerup OL, Christensen B, Svart M, et al. "A randomized placebo-controlled clinical trial of nicotinamide riboside in obese men: safety, insulin-sensitivity, and lipid-mobilizing effects." *Am J Clin Nutr*. 2018;108(2):343-353. doi: [10.1093/ajcn/nqy132](https://doi.org/10.1093/ajcn/nqy132). PMID: [29992272](https://pubmed.ncbi.nlm.nih.gov/29992272/)
 
-[31] Poljsak B, et al. "Cancer etiology and NAD+ raising compounds." *J Clin Exp Oncol*. 2016.
+[31] Poljsak B. "NAD+ in Cancer Prevention and Treatment: Pros and Cons." *J Clin Exp Oncol*. 2016;5(4). doi: [10.4172/2324-9110.1000165](https://doi.org/10.4172/2324-9110.1000165)
 
 [32] Leung K, et al. "Fatal hepatotoxicity from extended-release niacin." *Hepatol Commun*. 2018.
 
@@ -575,7 +600,7 @@ No UL established. Generally very safe, but important associations at high level
 
 [34] Vrolijk MF, et al. "The vitamin B6 paradox: high-dose pyridoxine decreases vitamin B6 function." *Tox in Vitro*. 2017;44:206-212. doi: [10.1016/j.tiv.2017.07.009](https://doi.org/10.1016/j.tiv.2017.07.009)
 
-[35] CDC. NHANES data on vitamin B6 status.
+[35] Centers for Disease Control and Prevention. *Second National Report on Biochemical Indicators of Diet and Nutrition in the U.S. Population*. Atlanta, GA: CDC; 2012. Executive summary: [https://www.cdc.gov/nutrition-report/media/Second-Nutrition-Report-Exec-Summary.pdf](https://www.cdc.gov/nutrition-report/media/Second-Nutrition-Report-Exec-Summary.pdf)
 
 [36] FDA. "Biotin May Interfere with Lab Tests." 2017, updated 2022. [https://www.fda.gov/medical-devices/safety-communications/fda-warns-biotin-may-interfere-lab-tests](https://www.fda.gov/medical-devices/safety-communications/fda-warns-biotin-may-interfere-lab-tests)
 
@@ -585,15 +610,15 @@ No UL established. Generally very safe, but important associations at high level
 
 [39] Stieglitz HM, et al. "Biotin interference with hormone immunoassays." *J Endocr Soc*. 2018.
 
-[40] Institute of Medicine (US). Dietary Reference Intakes for Thiamin, Riboflavin, Niacin, Vitamin B6, Folate, Vitamin B12, Pantothenic Acid, Biotin, and Choline. National Academies Press; 1998.
+[40] Institute of Medicine (US) Standing Committee on the Scientific Evaluation of Dietary Reference Intakes. *Dietary Reference Intakes for Thiamin, Riboflavin, Niacin, Vitamin B6, Folate, Vitamin B12, Pantothenic Acid, Biotin, and Choline*. National Academies Press; 1998. doi: [10.17226/6015](https://doi.org/10.17226/6015)
 
-[41] CDC. Folate deficiency rates after mandatory fortification.
+[41] McDowell MA, Lacher DA, Pfeiffer CM, et al. "Blood folate levels: the latest NHANES results." *NCHS Data Brief*. 2008(6):1-8. PMID: [19389320](https://pubmed.ncbi.nlm.nih.gov/19389320/)
 
-[42] Henderson AM, et al. "L-5-Methyltetrahydrofolate is more effective than folic acid at increasing serum folate." *J Nutr*. 2018;148(5):698-705.
+[42] Henderson AM, Aleliunas RE, Loh SP, et al. "l-5-Methyltetrahydrofolate Supplementation Increases Blood Folate Concentrations to a Greater Extent than Folic Acid Supplementation in Malaysian Women." *J Nutr*. 2018;148(6):885-890. doi: [10.1093/jn/nxy057](https://doi.org/10.1093/jn/nxy057). PMID: [29878267](https://pubmed.ncbi.nlm.nih.gov/29878267/)
 
 [43] Morris MS, et al. "Folate and vitamin B-12 status in relation to cognitive impairment in older Americans." *Am J Clin Nutr*. 2007;85(1):193-200.
 
-[44] Willems FF, et al. "Pharmacokinetic study on the utilisation of 5-methyltetrahydrofolate vs folic acid." *Br J Pharmacol*. 2004;141(5):825-830.
+[44] Willems FF, Boers GH, Blom HJ, et al. "Pharmacokinetic study on the utilisation of 5-methyltetrahydrofolate and folic acid in patients with coronary artery disease." *Br J Pharmacol*. 2004;141(5):825-30. doi: [10.1038/sj.bjp.0705446](https://doi.org/10.1038/sj.bjp.0705446). PMID: [14769778](https://pubmed.ncbi.nlm.nih.gov/14769778/)
 
 [45] Bayes J, et al. "Comparing effectiveness of folinic acid, folic acid and methylfolate." *Adv Integ Med*. 2019.
 
@@ -601,41 +626,41 @@ No UL established. Generally very safe, but important associations at high level
 
 [47] Obeid R, et al. "Cobalamin coenzyme forms are not likely superior to cyano- and hydroxyl-cobalamin." *Mol Nutr Food Res*. 2015;59(7):1364-1372. doi: [10.1002/mnfr.201500019](https://doi.org/10.1002/mnfr.201500019)
 
-[48] Zugravu C, et al. "Vitamin B-12 status among Romanian vegans." *Exp Ther Med*. 2021;21(3):234. doi: [10.3892/etm.2021.9665](https://doi.org/10.3892/etm.2021.9665)
+[48] Zugravu CA, Macri A, Belc N, et al. "Efficacy of supplementation with methylcobalamin and cyancobalamin in maintaining the level of serum holotranscobalamin in a group of plant-based diet (vegan) adults." *Exp Ther Med*. 2021;22(3):993. doi: [10.3892/etm.2021.10425](https://doi.org/10.3892/etm.2021.10425). PMID: [34345275](https://pubmed.ncbi.nlm.nih.gov/34345275/)
 
-[49] Greibe E, et al. "Cyanocobalamin vs hydroxocobalamin." *Eur J Nutr*. 2017.
+[49] Greibe E, Mahalle N, Bhide V, et al. "Increase in circulating holotranscobalamin after oral administration of cyanocobalamin or hydroxocobalamin in healthy adults with low and normal cobalamin status." *Eur J Nutr*. 2018;57(8):2847-2855. doi: [10.1007/s00394-017-1553-5](https://doi.org/10.1007/s00394-017-1553-5). PMID: [29038891](https://pubmed.ncbi.nlm.nih.gov/29038891/)
 
-[50] Institute of Medicine (US) Food and Nutrition Board. DRIs for B12. 1998. Abels J, et al. *J Intern Med*. 1959.
+[50] Institute of Medicine (US) Standing Committee on the Scientific Evaluation of Dietary Reference Intakes. *Dietary Reference Intakes for Thiamin, Riboflavin, Niacin, Vitamin B6, Folate, Vitamin B12, Pantothenic Acid, Biotin, and Choline*. National Academies Press; 1998. doi: [10.17226/6015](https://doi.org/10.17226/6015); Abels J, VEGTER JJ, WOLDRING MG, et al. "The physiologic mechanism of vitamin B12 absorption." *Acta Med Scand*. 1959;165:105-13. doi: [10.1111/j.0954-6820.1959.tb14477.x](https://doi.org/10.1111/j.0954-6820.1959.tb14477.x). PMID: [13791463](https://pubmed.ncbi.nlm.nih.gov/13791463/)
 
 [51] Smith AD, Refsum H. "Homocysteine, B Vitamins, and Cognitive Impairment." *Annu Rev Nutr*. 2016;36:211-239. doi: [10.1146/annurev-nutr-071715-050947](https://doi.org/10.1146/annurev-nutr-071715-050947)
 
-[52] Chen H, et al. "Folic acid supplementation mitigates Alzheimer's disease." *Mediators Inflamm*. 2016.
+[52] Chen H, Liu S, Ji L, et al. "Folic Acid Supplementation Mitigates Alzheimer's Disease by Reducing Inflammation: A Randomized Controlled Trial." *Mediators Inflamm*. 2016;2016:5912146. doi: [10.1155/2016/5912146](https://doi.org/10.1155/2016/5912146). PMID: [27340344](https://pubmed.ncbi.nlm.nih.gov/27340344/)
 
-[53] Kimoto S, et al. "Psychiatric symptoms and cognitive impairment due to B-12 deficiency." *Prim Care Companion CNS Disord*. 2020.
+[53] Kimoto K, Shibasaki B, Tamura N, et al. "A Case of Vitamin B12 Deficiency With Various Psychiatric Symptoms and Cognitive Impairment." *Prim Care Companion CNS Disord*. 2020;22(1). doi: [10.4088/PCC.19l02490](https://doi.org/10.4088/PCC.19l02490). PMID: [32083818](https://pubmed.ncbi.nlm.nih.gov/32083818/)
 
 [54] Wong S, et al. "Reversible dementia due to B-12 deficiency." *BMJ Case Rep*. 2022.
 
-[55] Sahoo S, et al. "Psychotic episodes linked with B-12 deficiency." *Cureus*. 2024.
+[55] Sahoo M, R D, Sahu A. "Acute Psychosis as Presenting Symptoms of Vitamin B12 Deficiency: A Case Series." *Cureus*. 2024;16(11):e74844. doi: [10.7759/cureus.74844](https://doi.org/10.7759/cureus.74844). PMID: [39737289](https://pubmed.ncbi.nlm.nih.gov/39737289/)
 
-[56] Feldman ML, et al. "B-12 deficiency misdiagnosed as MS." *BMJ Case Rep*. 2019.
+[56] Feldman S, Aljarallah S, Saidha S. "Primary progressive multiple sclerosis to be treated with ocrelizumab: a mistaken case of cobalamin deficiency." *BMJ Case Rep*. 2019;12(5). doi: [10.1136/bcr-2018-229080](https://doi.org/10.1136/bcr-2018-229080). PMID: [31092497](https://pubmed.ncbi.nlm.nih.gov/31092497/)
 
-[57] Silva R, et al. "B-12 deficiency misdiagnosed as progressive dementia." *BMJ Case Rep*. 2019.
+[57] Silva B, Velosa A, Barahona-Corrêa JB. "Reversible dementia, psychotic symptoms and epilepsy in a patient with vitamin B12 deficiency." *BMJ Case Rep*. 2019;12(5). doi: [10.1136/bcr-2018-229044](https://doi.org/10.1136/bcr-2018-229044). PMID: [31092496](https://pubmed.ncbi.nlm.nih.gov/31092496/)
 
-[58] Ueno A, et al. "Correcting B-12 deficiency and cognitive improvement." *Nutrients*. 2022.
+[58] Ueno A, Hamano T, Enomoto S, et al. "Influences of Vitamin B12 Supplementation on Cognition and Homocysteine in Patients with Vitamin B12 Deficiency and Cognitive Impairment." *Nutrients*. 2022;14(7). doi: [10.3390/nu14071494](https://doi.org/10.3390/nu14071494). PMID: [35406106](https://pubmed.ncbi.nlm.nih.gov/35406106/)
 
-[59] Bailey RL, et al. "High folic acid with low B-12 and cognition." *Am J Clin Nutr*. 2022.
+[59] Bailey RL, Stover PJ. "Muddy water: Additional observational data cannot aid in determining whether there is a physiological interaction between low vitamin B12 and high folate in cognitive health." *Am J Clin Nutr*. 2022;116(1):5-6. doi: [10.1093/ajcn/nqac095](https://doi.org/10.1093/ajcn/nqac095). PMID: [35585669](https://pubmed.ncbi.nlm.nih.gov/35585669/)
 
 [60] Ling J, et al. "Folate/folic acid supplementation and dementia risk in UK Biobank." *J Gerontol A Biol Sci Med Sci*. 2023.
 
 [61] Liu D, et al. "Folic acid in cerebral small vessel disease." *J Prev Alzheimers Dis*. 2025.
 
-[62] Phelan MJ, et al. "Nicotinamide for mild to moderate Alzheimer's disease." *J Geriatr Med Gerontol*. 2017. Green KN, et al. *J Neurosci*. 2008.
+[62] Phelan MJ. "Phase II Clinical Trial of Nicotinamide for the Treatment of Mild to Moderate Alzheimer's Disease." *J Geriatr Med Gerontol*. 2017;3(1):021. doi: [10.23937/2469-5858/1510021](https://doi.org/10.23937/2469-5858/1510021); Green KN, Steffan JS, Martinez-Coria H, et al. "Nicotinamide restores cognition in Alzheimer's disease transgenic mice via a mechanism involving sirtuin inhibition and selective reduction of Thr231-phosphotau." *J Neurosci*. 2008;28(45):11500-10. doi: [10.1523/JNEUROSCI.3203-08.2008](https://doi.org/10.1523/JNEUROSCI.3203-08.2008). PMID: [18987186](https://pubmed.ncbi.nlm.nih.gov/18987186/)
 
 [63] Papakostas GI, et al. "L-methylfolate as adjunctive therapy for SSRI-resistant major depression." *Am J Psychiatry*. 2012;169(12):1267-1274. doi: [10.1176/appi.ajp.2012.11071114](https://doi.org/10.1176/appi.ajp.2012.11071114)
 
 [64] Shelton RC, et al. "Adjunctive L-methylfolate for major depressive disorder." *Prim Care Companion CNS Disord*. 2013.
 
-[65] Robinson D. "L-methylfolate and agitation in depression." *Psychiatr Times*. 2020.
+[65] Sethness S, Miller JJ. "L-Methylfolate: Augmenting Agent May Contribute to Agitation and Mania." *Psychiatric Times*. 17 March 2020. [https://www.psychiatrictimes.com/view/l-methylfolate-augmenting-agent-may-contribute-agitation-and-mania](https://www.psychiatrictimes.com/view/l-methylfolate-augmenting-agent-may-contribute-agitation-and-mania)
 
 [66] Stough C, et al. "High dose vitamin B-complex and work stress." *Hum Psychopharmacol*. 2011;26(7):470-476.
 
@@ -657,45 +682,43 @@ No UL established. Generally very safe, but important associations at high level
 
 [75] Lee J, et al. "Niacin maculopathy." *J Vitreoretin Dis*. 2019.
 
-[76] Pourshams A, et al. "SCD due to B-12 deficiency." *Cureus*. 2024.
+[76] Pourshams IA, Arora M, Nimkar S, et al. "Whip It Good: A Case of Vitamin B12 Deficiency and Subacute Combined Degeneration of the Spinal Cord." *Cureus*. 2024;16(11):e74620. doi: [10.7759/cureus.74620](https://doi.org/10.7759/cureus.74620). PMID: [39735103](https://pubmed.ncbi.nlm.nih.gov/39735103/)
 
-[77] Saeed M, et al. "SCD of spinal cord from B-12 deficiency in vegetarian." *Cureus*. 2024.
+[77] Saeed Z, Zehra SA, Muhammad A, et al. "Atypical Motor-Predominant Presentation of Subacute Combined Degeneration of Spinal Cord Due to Vitamin B12 Deficiency: A Case Report of Stroke Mimicry in the Absence of Classic Symptoms." *Cureus*. 2024;16(11):e74697. doi: [10.7759/cureus.74697](https://doi.org/10.7759/cureus.74697). PMID: [39618751](https://pubmed.ncbi.nlm.nih.gov/39618751/)
 
 [78] Chan P, et al. "B complex for nighttime leg cramps." *J Clin Pharmacol*. 1998. Anang J, et al. "B-12 for nighttime muscle spasms." *Neurology*. 2021.
 
-[79] Yasuda H, et al. "Recovery of walking ability after B-6 supplementation." *Am J Med*. 2022.
+[79] Yasuda H, Hoshino Y, Ando J, et al. "Vitamin B6 Deficiency Polyneuropathy and Dermatitis." *Am J Med*. 2023;136(1):e10-e11. doi: [10.1016/j.amjmed.2022.09.009](https://doi.org/10.1016/j.amjmed.2022.09.009). PMID: [36170934](https://pubmed.ncbi.nlm.nih.gov/36170934/)
 
-[80] Zhou Q, et al. "Metformin-related B-6 deficiency and muscle cramps." *Am J Med Sci*. 2020.
+[80] Zhou J, Effiong U. "Isolated Pyridoxine Deficiency Presenting as Muscle Spasms in a Patient With Type 2 Diabetes: A Case Report and Literature Review." *Am J Med Sci*. 2021;361(6):791-794. doi: [10.1016/j.amjms.2020.10.027](https://doi.org/10.1016/j.amjms.2020.10.027). PMID: [33958192](https://pubmed.ncbi.nlm.nih.gov/33958192/); Zhou J, Effiong U. "SAT-375 A 59 Year Old Female with Isolated Vitamin B6 Deficiency and Muscle Spasms." *J Endocr Soc*. 2020;4(Suppl 1). doi: [10.1210/jendso/bvaa046.746](https://doi.org/10.1210/jendso/bvaa046.746)
 
-[81] Didangelos T, et al. "B-12 supplementation in diabetic neuropathy." *Nutrients*. 2021.
+[81] Didangelos T, Karlafti E, Kotzakioulafi E, et al. "Vitamin B12 Supplementation in Diabetic Neuropathy: A 1-Year, Randomized, Double-Blind, Placebo-Controlled Trial." *Nutrients*. 2021;13(2). doi: [10.3390/nu13020395](https://doi.org/10.3390/nu13020395). PMID: [33513879](https://pubmed.ncbi.nlm.nih.gov/33513879/)
 
-[82] Mansour A, et al. "B-12 dose comparison for neuropathy." *J Nutr*. 2026.
+[82] Mansour A, Amrollahi Bioky A, Gerami H, et al. "Efficacy of Oral Vitamin B-12 at 1000 μg Compared with 2000 μg on Neuropathic Outcomes in Patients with Diabetic Peripheral Neuropathy and Low Serum Vitamin B-12: a Randomized Clinical Trial." *J Nutr*. 2026;156(3):101368. doi: [10.1016/j.tjnut.2026.101368](https://doi.org/10.1016/j.tjnut.2026.101368). PMID: [41548600](https://pubmed.ncbi.nlm.nih.gov/41548600/)
 
 [83] Bacharach R, et al. "Pyridoxine toxicity from energy drinks." *J Clin Neuromuscul Dis*. 2017.
 
 [84] Malek N, et al. "Pyridoxine neuropathy." *Acta Neurol Belg*. 2018.
 
-[85] Paluszny J, et al. "B-6 toxicity from 6 mg daily multivitamin." *Cureus*. 2023.
+[85] Paluszny A, Qiu S. "Vitamin B6 Toxicity Secondary to Daily Multivitamin Use: A Case Report." *Cureus*. 2023;15(11):e48792. doi: [10.7759/cureus.48792](https://doi.org/10.7759/cureus.48792). PMID: [38098895](https://pubmed.ncbi.nlm.nih.gov/38098895/)
 
-[86] European Food Safety Authority. "B-6 tolerable upper intake level." 2023.
+[86] EFSA Panel on Nutrition, Novel Foods and Food Allergens (NDA), Turck D, Bohn T, et al. "Scientific opinion on the tolerable upper intake level for vitamin B6." *EFSA J*. 2023;21(5):e08006. doi: [10.2903/j.efsa.2023.8006](https://doi.org/10.2903/j.efsa.2023.8006). PMID: [37207271](https://pubmed.ncbi.nlm.nih.gov/37207271/)
 
-[87] Krishnana J, et al. "B-6 related muscle twitching." *Med J Aust*. 2023.
+[87] Krishnan D, Kiernan MC. "Neurotoxic risks from over-the-counter vitamin supplements." *Med J Aust*. 2023;218(7):304-306. doi: [10.5694/mja2.51851](https://doi.org/10.5694/mja2.51851). PMID: [36780932](https://pubmed.ncbi.nlm.nih.gov/36780932/)
 
-[88] CDC. Neural tube defect surveillance data.
-
-[89] Williams J, et al. "NTDs prevented by mandatory folic acid fortification." *MMWR*. 2015.
+[89] Williams J, Mai CT, Mulinare J, et al. "Updated estimates of neural tube defects prevented by mandatory folic Acid fortification - United States, 1995-2011." *MMWR Morb Mortal Wkly Rep*. 2015;64(1):1-5. PMID: [25590678](https://pubmed.ncbi.nlm.nih.gov/25590678/)
 
 [90] Suren P, et al. "Maternal folic acid and autism spectrum disorder risk." *JAMA*. 2013;309(6):570-577. doi: [10.1001/jama.2012.155925](https://doi.org/10.1001/jama.2012.155925)
 
-[91] Levine SZ, et al. "Folic acid/multivitamin and autism risk in Israel." *JAMA Psychiatry*. 2018.
+[91] Levine SZ, Kodesh A, Viktorin A, et al. "Association of Maternal Use of Folic Acid and Multivitamin Supplements in the Periods Before and During Pregnancy With the Risk of Autism Spectrum Disorder in Offspring." *JAMA Psychiatry*. 2018;75(2):176-184. doi: [10.1001/jamapsychiatry.2017.4050](https://doi.org/10.1001/jamapsychiatry.2017.4050). PMID: [29299606](https://pubmed.ncbi.nlm.nih.gov/29299606/)
 
-[92] Bjork M, et al. "Folic acid and autistic traits in children of mothers on AEDs." *JAMA Neurol*. 2017.
+[92] Bjørk M, Riedel B, Spigset O, et al. "Association of Folic Acid Supplementation During Pregnancy With the Risk of Autistic Traits in Children Exposed to Antiepileptic Drugs In Utero." *JAMA Neurol*. 2018;75(2):160-168. doi: [10.1001/jamaneurol.2017.3897](https://doi.org/10.1001/jamaneurol.2017.3897). PMID: [29279889](https://pubmed.ncbi.nlm.nih.gov/29279889/)
 
-[93] Valera-Gran D, et al. "High-dose folic acid and child neuropsychological development." *Am J Clin Nutr*. 2017;106(4):1011-1019.
+[93] Valera-Gran D, Navarrete-Muñoz EM, Garcia de la Hera M, et al. "Effect of maternal high dosages of folic acid supplements on neurocognitive development in children at 4-5 y of age: the prospective birth cohort Infancia y Medio Ambiente (INMA) study." *Am J Clin Nutr*. 2017;106(3):878-887. doi: [10.3945/ajcn.117.152769](https://doi.org/10.3945/ajcn.117.152769). PMID: [28724645](https://pubmed.ncbi.nlm.nih.gov/28724645/)
 
 [94] Li Z, et al. "Folic acid and gestational hypertension." *Hypertension*. 2020.
 
-[95] Raghavan R, et al. "Maternal folate/B-12 levels and autism risk." International Meeting for Autism Research. 2016.
+[95] Raghavan R, Fallin MD, Wang X. "Maternal plasma folate, vitamin B12 levels and multivitamin supplementation during pregnancy and risk of Autism Spectrum Disorder in the Boston Birth Cohort." *FASEB J*. 2016;30(1 Suppl):151.6. doi: [10.1096/fasebj.30.1_supplement.151.6](https://doi.org/10.1096/fasebj.30.1_supplement.151.6)
 
 [96] Chen AC, et al. "Nicotinamide for skin-cancer chemoprevention." *N Engl J Med*. 2015;373(17):1618-1626. doi: [10.1056/NEJMoa1506197](https://doi.org/10.1056/NEJMoa1506197)
 
@@ -703,83 +726,81 @@ No UL established. Generally very safe, but important associations at high level
 
 [98] Wheless L, et al. "Nicotinamide and cardiovascular events." *JAMA Derm*. 2025.
 
-[99] Ying H, et al. "Dietary niacin and cancer-related death." *BMC Cancer*. 2022.
+[99] Ying H, Gao L, Liao N, et al. "Association between niacin and mortality among patients with cancer in the NHANES retrospective cohort." *BMC Cancer*. 2022;22(1):1173. doi: [10.1186/s12885-022-10265-4](https://doi.org/10.1186/s12885-022-10265-4). PMID: [36376861](https://pubmed.ncbi.nlm.nih.gov/36376861/)
 
 [100] Park SM, et al. "Niacin intake and skin cancer." *Int J Cancer*. 2017.
 
-[101] Wakade C, et al. "Niacin and Parkinson's disease quality of life." *J Neuroimmunol*. 2018.
+[101] Wakade C, Giri B, Malik A, et al. "Niacin modulates macrophage polarization in Parkinson's disease." *J Neuroimmunol*. 2018;320:76-79. doi: [10.1016/j.jneuroim.2018.05.002](https://doi.org/10.1016/j.jneuroim.2018.05.002). PMID: [29759143](https://pubmed.ncbi.nlm.nih.gov/29759143/)
 
 [102] Chong R, et al. "Niacin enhancement for Parkinson's disease." *Front Aging Neurosci*. 2021.
 
-[103] Alisky JM. "High-dose niacin and Parkinson's." *Nutr Neurosci*. 2005.
+[103] Alisky JM. "Niacin improved rigidity and bradykinesia in a Parkinson's disease patient but also caused unacceptable nightmares and skin rash--a case report." *Nutr Neurosci*. 2005;8(5-6):327-9. doi: [10.1080/10284150500484638](https://doi.org/10.1080/10284150500484638). PMID: [16669604](https://pubmed.ncbi.nlm.nih.gov/16669604/)
 
-[104] ClinicalTrials.gov. NCT number for niacin/niacinamide in Parkinson's. 2021.
+[104] ClinicalTrials.gov. "NAPS: Niacin for Parkinson's Disease" (niacin or niacinamide 100 mg twice daily vs placebo, 18 months). NCT03808961. [https://clinicaltrials.gov/study/NCT03808961](https://clinicaltrials.gov/study/NCT03808961)
 
 [105] McCarter SJ, et al. "Low B12 and Parkinson disease progression." *Mayo Clin Proc*. 2019.
 
-[106] Modica C, et al. "Levodopa-associated B-6 depletion and epilepsy." *Neurology*. 2020.
+[106] Modica JS, Bonno D, Lizarraga KJ. "Pearls and Oy-sters: Vitamin B6 deficiency presenting with new-onset epilepsy and status epilepticus in a patient with Parkinson disease." *Neurology*. 2020;94(24):e2605-e2607. doi: [10.1212/WNL.0000000000009647](https://doi.org/10.1212/WNL.0000000000009647). PMID: [32467131](https://pubmed.ncbi.nlm.nih.gov/32467131/)
 
-[107] Canissario R, et al. "B-6 and B-12 for levodopa-associated neuropathy." *J Neurol Sci*. 2021.
+[107] Canissario R, Stanton M, Modica JS, et al. "Neuropathy due to coexistent vitamin B12 and B6 deficiencies in patients with Parkinson's disease: A case series." *J Neurol Sci*. 2021;430:120028. doi: [10.1016/j.jns.2021.120028](https://doi.org/10.1016/j.jns.2021.120028). PMID: [34662813](https://pubmed.ncbi.nlm.nih.gov/34662813/)
 
 [108] Yang M, et al. "Pantothenic acid for facial acne." *Dermatol Ther (Heidelb)*. 2014;4(1):93-101. doi: [10.1007/s13555-014-0052-3](https://doi.org/10.1007/s13555-014-0052-3)
 
-[109] Reynolds RV, et al. "AAD guidelines for acne management." *J Am Acad Dermatol*. 2024.
+[109] Reynolds RV, Yeung H, Cheng CE, et al. "Guidelines of care for the management of acne vulgaris." *J Am Acad Dermatol*. 2024;90(5):1006.e1-1006.e30. doi: [10.1016/j.jaad.2023.12.017](https://doi.org/10.1016/j.jaad.2023.12.017). PMID: [38300170](https://pubmed.ncbi.nlm.nih.gov/38300170/)
 
 [110] "Calcium pantothenate in arthritic conditions." *Practitioner*. 1980;224:208-211.
 
-[111] Thompson DF, Saluja HS. "Prophylaxis of migraine with riboflavin." *J Clin Pharm Ther*. 2017;42(4):394-403.
+[111] Thompson DF, Saluja HS. "Prophylaxis of migraine headaches with riboflavin: A systematic review." *J Clin Pharm Ther*. 2017;42(4):394-403. doi: [10.1111/jcpt.12548](https://doi.org/10.1111/jcpt.12548). PMID: [28485121](https://pubmed.ncbi.nlm.nih.gov/28485121/)
 
 [112] Houston DK, et al. "Hearing loss, B-12, and folate in elderly women." *Am J Clin Nutr*. 1999;69(3):564-571.
 
-[113] Dadgarnia MH, et al. "B-12 and tinnitus." *Am J Otolaryngol*. 2023.
+[113] Dadgarnia M, Mandegari M, Zand V, et al. "The effect of vitamin B12 on idiopathic tinnitus." *Am J Otolaryngol*. 2024;45(1):104028. doi: [10.1016/j.amjoto.2023.104028](https://doi.org/10.1016/j.amjoto.2023.104028). PMID: [37647778](https://pubmed.ncbi.nlm.nih.gov/37647778/)
 
-[114] Hui F, et al. "Nicotinamide and inner retinal function in glaucoma." *Clin Exp Ophthalmol*. 2020.
+[114] Hui F, Tang J, Williams PA, et al. "Improvement in inner retinal function in glaucoma with nicotinamide (vitamin B3) supplementation: A crossover randomized clinical trial." *Clin Exp Ophthalmol*. 2020;48(7):903-914. doi: [10.1111/ceo.13818](https://doi.org/10.1111/ceo.13818). PMID: [32721104](https://pubmed.ncbi.nlm.nih.gov/32721104/)
 
-[115] De Moraes CG, et al. "Nicotinamide and pyruvate for glaucoma." *JAMA Ophthalmol*. 2022.
+[115] De Moraes CG, John SWM, Williams PA, et al. "Nicotinamide and Pyruvate for Neuroenhancement in Open-Angle Glaucoma: A Phase 2 Randomized Clinical Trial." *JAMA Ophthalmol*. 2022;140(1):11-18. doi: [10.1001/jamaophthalmol.2021.4576](https://doi.org/10.1001/jamaophthalmol.2021.4576). PMID: [34792559](https://pubmed.ncbi.nlm.nih.gov/34792559/)
 
-[116] Shukla R, et al. "AGS/AAO guidelines on nicotinamide for glaucoma." *Ophthalmol Glaucoma*. 2025.
+[116] Shukla AG, Cioffi GA, John SWM, et al. "American Glaucoma Society-American Academy of Ophthalmology Position Statement on Nicotinamide Use for Glaucoma Neuroprotection." *Ophthalmol Glaucoma*. 2025;8(2):112-116. doi: [10.1016/j.ogla.2025.01.002](https://doi.org/10.1016/j.ogla.2025.01.002). PMID: [39800263](https://pubmed.ncbi.nlm.nih.gov/39800263/)
 
 [117] Colombo VE, et al. "Biotin for brittle fingernails." *J Am Acad Dermatol*. 1990;23(6):1127-1132.
 
 [118] Garbers L, et al. "Biotin and nail growth rate." *Exp Dermatol*. 2021.
 
-[119] Trueb RM. "Biotin deficiency in women with hair loss." *Int J Trichology*. 2016;8(2):73-77.
+[119] Trüeb RM. "Serum Biotin Levels in Women Complaining of Hair Loss." *Int J Trichology*. 2016;8(2):73-7. doi: [10.4103/0974-7753.188040](https://doi.org/10.4103/0974-7753.188040). PMID: [27601860](https://pubmed.ncbi.nlm.nih.gov/27601860/)
 
-[120] Tourbah A, et al. "High-dose biotin for progressive MS." *Mult Scler*. 2016.
+[120] Tourbah A, Lebrun-Frenay C, Edan G, et al. "MD1003 (high-dose biotin) for the treatment of progressive multiple sclerosis: A randomised, double-blind, placebo-controlled study." *Mult Scler*. 2016;22(13):1719-1731. doi: [10.1177/1352458516667568](https://doi.org/10.1177/1352458516667568). PMID: [27589059](https://pubmed.ncbi.nlm.nih.gov/27589059/)
 
-[121] Cree BAC, et al. "High-dose biotin in progressive MS: negative results." *Lancet Neurol*. 2020.
+[121] Cree BAC, Cutter G, Wolinsky JS, et al. "Safety and efficacy of MD1003 (high-dose biotin) in patients with progressive multiple sclerosis (SPI2): a randomised, double-blind, placebo-controlled, phase 3 trial." *Lancet Neurol*. 2020;19(12):988-997. doi: [10.1016/S1474-4422(20)30347-1](https://doi.org/10.1016/S1474-4422(20)30347-1). PMID: [33222767](https://pubmed.ncbi.nlm.nih.gov/33222767/)
 
 [122] Costantini A, et al. "High-dose thiamine for fibromyalgia." *BMJ Case Rep*. 2013. doi: [10.1136/bcr-2013-009019](https://doi.org/10.1136/bcr-2013-009019)
 
-[123] Joustra ML, et al. "Vitamin status in chronic fatigue and fibromyalgia." *PLoS One*. 2017.
+[123] Joustra ML, Minovic I, Janssens KAM, et al. "Vitamin and mineral status in chronic fatigue syndrome and fibromyalgia syndrome: A systematic review and meta-analysis." *PLoS One*. 2017;12(4):e0176631. doi: [10.1371/journal.pone.0176631](https://doi.org/10.1371/journal.pone.0176631). PMID: [28453534](https://pubmed.ncbi.nlm.nih.gov/28453534/)
 
-[124] Blitshteyn S. "POTS and thiamine deficiency." *Neurol Res*. 2017.
+[124] Blitshteyn S. "Vitamin B1 deficiency in patients with postural tachycardia syndrome (POTS)." *Neurol Res*. 2017;39(8):685-688. doi: [10.1080/01616412.2017.1331895](https://doi.org/10.1080/01616412.2017.1331895). PMID: [28531358](https://pubmed.ncbi.nlm.nih.gov/28531358/)
 
 [125] Schisterman EF, et al. "Folic acid and zinc for semen quality." *JAMA*. 2019;323(1):35-48. doi: [10.1001/jama.2019.18714](https://doi.org/10.1001/jama.2019.18714)
 
-[126] Oudman E, et al. "Thiamine deficiency in IBD." *Nutrition*. 2021.
+[126] Oudman E, Wijnia JW, Oey MJ, et al. "Wernicke's encephalopathy in Crohn's disease and ulcerative colitis." *Nutrition*. 2021;86:111182. doi: [10.1016/j.nut.2021.111182](https://doi.org/10.1016/j.nut.2021.111182). PMID: [33611107](https://pubmed.ncbi.nlm.nih.gov/33611107/)
 
-[127] Institute of Medicine. DRIs for B6. Morning sickness dosing recommendation.
+[127] Institute of Medicine (US) Standing Committee on the Scientific Evaluation of Dietary Reference Intakes. *Dietary Reference Intakes for Thiamin, Riboflavin, Niacin, Vitamin B6, Folate, Vitamin B12, Pantothenic Acid, Biotin, and Choline*. National Academies Press; 1998. doi: [10.17226/6015](https://doi.org/10.17226/6015) (Vitamin B6 chapter)
 
-[128] Del Bo C, et al. "Restoring B-12 in vegans: 50 mcg daily vs 2,000 mcg weekly." *Clin Nutr*. 2019.
+[128] Del Bo' C, Riso P, Gardana C, et al. "Effect of two different sublingual dosages of vitamin B12 on cobalamin nutritional status in vegans and vegetarians with a marginal deficiency: A randomized controlled trial." *Clin Nutr*. 2019;38(2):575-583. doi: [10.1016/j.clnu.2018.02.008](https://doi.org/10.1016/j.clnu.2018.02.008). PMID: [29499976](https://pubmed.ncbi.nlm.nih.gov/29499976/)
 
-[129] Sanz-Cuesta T, et al. "Oral vs intramuscular B-12." *BMJ Open*. 2020.
+[129] Sanz-Cuesta T, Escortell-Mayor E, Cura-Gonzalez I, et al. "Oral versus intramuscular administration of vitamin B12 for vitamin B12 deficiency in primary care: a pragmatic, randomised, non-inferiority clinical trial (OB12)." *BMJ Open*. 2020;10(8):e033687. doi: [10.1136/bmjopen-2019-033687](https://doi.org/10.1136/bmjopen-2019-033687). PMID: [32819927](https://pubmed.ncbi.nlm.nih.gov/32819927/)
 
-[130] Lacombe V, et al. "Oral cyanocobalamin for pernicious anemia." *Am J Clin Nutr*. 2024.
+[130] Lacombe V, Vinatier E, Roquin G, et al. "Oral vitamin B12 supplementation in pernicious anemia: a prospective cohort study." *Am J Clin Nutr*. 2024;120(1):217-224. doi: [10.1016/j.ajcnut.2024.05.019](https://doi.org/10.1016/j.ajcnut.2024.05.019). PMID: [38797248](https://pubmed.ncbi.nlm.nih.gov/38797248/)
 
-[131] Storz MA, et al. "B-12 decline after stopping supplementation in a vegan." *Nutrition*. 2024.
+[131] Storz MA, Huber R, Hannibal L. "Impact of vitamin B12 supplement intake cessation on vitamin B12 status in a healthy vegan: A close interval monitoring case study." *Nutrition*. 2024;125:112498. doi: [10.1016/j.nut.2024.112498](https://doi.org/10.1016/j.nut.2024.112498). PMID: [38833779](https://pubmed.ncbi.nlm.nih.gov/38833779/)
 
 [132] Marrs C, Lonsdale D. "Modern thiamine deficiency." *Cells*. 2021;10(10):2595. doi: [10.3390/cells10102595](https://doi.org/10.3390/cells10102595)
 
-[133] Ulvik A, et al. *Clin Chem*. 2008. Urgert R, et al. *Am J Clin Nutr*. 2000.
+[133] Ulvik A, Vollset SE, Hoff G, et al. "Coffee consumption and circulating B-vitamins in healthy middle-aged men and women." *Clin Chem*. 2008;54(9):1489-96. doi: [10.1373/clinchem.2008.103465](https://doi.org/10.1373/clinchem.2008.103465). PMID: [18606630](https://pubmed.ncbi.nlm.nih.gov/18606630/); Urgert R, van Vliet T, Zock PL, et al. "Heavy coffee consumption and plasma homocysteine: a randomized controlled trial in healthy volunteers." *Am J Clin Nutr*. 2000;72(5):1107-10. doi: [10.1093/ajcn/72.5.1107](https://doi.org/10.1093/ajcn/72.5.1107). PMID: [11063436](https://pubmed.ncbi.nlm.nih.gov/11063436/)
 
-[134] Liang J, et al. "Soaking and boiling effects on legume folate." *J Food Compos Anal*. 2022.
+[134] Liang Q, Islam MS, Wang S, Wang L, et al. "Investigation of folate composition and influence of processing on folate stability in pulse accessions developed in China." *J Food Compos Anal*. 2022;114:104785. doi: [10.1016/j.jfca.2022.104785](https://doi.org/10.1016/j.jfca.2022.104785)
 
 [135] Weisshof R, et al. "Folate deficiency in Crohn's disease." *Curr Opin Clin Nutr Metab Care*. 2015.
 
 [136] Melina V, et al. "Position of the Academy of Nutrition and Dietetics: Vegetarian Diets." *J Acad Nutr Diet*. 2016;116(12):1970-1980. doi: [10.1016/j.jand.2016.09.025](https://doi.org/10.1016/j.jand.2016.09.025)
-
-[137] USDA FoodData Central. Nutritional yeast data. 2004.
 
 [138] Vig S, et al. "Thiamine deficiency after bariatric surgery in adolescents." *Eur J Paediatr Neurol*. 2024.
 
@@ -787,39 +808,39 @@ No UL established. Generally very safe, but important associations at high level
 
 [140] Hutcheaon ML, et al. "Thiamine depletion during fasting." *Nutr Clin Pract*. 2014.
 
-[141] Renaud B, et al. "Aspirin and thiamine/folate excretion." *Nutrients*. 2024.
+[141] Renaud D, Höller A, Michel M. "Potential Drug-Nutrient Interactions of 45 Vitamins, Minerals, Trace Elements, and Associated Dietary Compounds with Acetylsalicylic Acid and Warfarin-A Review of the Literature." *Nutrients*. 2024;16(7). doi: [10.3390/nu16070950](https://doi.org/10.3390/nu16070950). PMID: [38612984](https://pubmed.ncbi.nlm.nih.gov/38612984/)
 
 [142] Mahabadi N, et al. "Riboflavin deficiency." *StatPearls*. 2022.
 
-[143] Jaeger B, et al. "Severe riboflavin deficiency in neonate from vegan mother." *Neonatology*. 2022.
+[143] Jaeger B, Corpeleijn W, Dijsselhof M, et al. "Mind the B2: Life-Threatening Neonatal Complications of a Strict Vegan Diet during Pregnancy." *Neonatology*. 2022;119(6):777-780. doi: [10.1159/000526334](https://doi.org/10.1159/000526334). PMID: [36122554](https://pubmed.ncbi.nlm.nih.gov/36122554/)
 
 [144] Wong AW, et al. "Niacin-triggered severe skin reaction." *Ann Allergy Asthma Immunol*. 2021.
 
-[145] Duffy M, et al. "Liver failure from high-dose niacin." *Cureus*. 2024.
+[145] Duffy M, Zhang G, Ariyawansa C, et al. "Niacin (Vitamin B3)-Induced Acute Fulminant Hepatic Failure in a 24-Year-Old Female." *Cureus*. 2024;16(9):e69518. doi: [10.7759/cureus.69518](https://doi.org/10.7759/cureus.69518). PMID: [39416578](https://pubmed.ncbi.nlm.nih.gov/39416578/)
 
-[146] Harb JN, et al. "Acute hepatitis from niacin in energy drinks." *BMJ Case Rep*. 2016.
+[146] Harb JN, Taylor ZA, Khullar V, et al. "Rare cause of acute hepatitis: a common energy drink." *BMJ Case Rep*. 2016;2016. doi: [10.1136/bcr-2016-216612](https://doi.org/10.1136/bcr-2016-216612). PMID: [27803015](https://pubmed.ncbi.nlm.nih.gov/27803015/)
 
-[147] Stone NJ, et al. "Monitoring uric acid during niacin therapy." *J Am Coll Cardiol*. 2014.
+[147] Stone NJ, Robinson JG, Lichtenstein AH, et al. "2013 ACC/AHA guideline on the treatment of blood cholesterol to reduce atherosclerotic cardiovascular risk in adults: a report of the American College of Cardiology/American Heart Association Task Force on Practice Guidelines." *J Am Coll Cardiol*. 2014;63(25 Pt B):2889-934. doi: [10.1016/j.jacc.2013.11.002](https://doi.org/10.1016/j.jacc.2013.11.002). PMID: [24239923](https://pubmed.ncbi.nlm.nih.gov/24239923/)
 
-[148] Huang E, et al. "Syncope from high-dose niacin." *Cureus*. 2023.
+[148] Huang J, Ahmed I, Balogun A, et al. "Niacin-Induced Syncope in a Middle-Aged Male: When an Over-the-Counter Vitamin Goes Wrong." *Cureus*. 2023;15(12):e50454. doi: [10.7759/cureus.50454](https://doi.org/10.7759/cureus.50454). PMID: [38222212](https://pubmed.ncbi.nlm.nih.gov/38222212/)
 
-[149] O'Connell J, et al. "Thrombocytopenia from high-dose niacin." *Am J Hematol*. 2016. Christopher M, et al. "Niacin-warfarin INR interaction." *Ann Pharmacother*. 2011.
+[149] O'Connell C, Horwood K, Nadamuni M. "Correction of refractory thrombocytopenia and anemia following withdrawal of extended release niacin." *Am J Hematol*. 2016;91(7):E318. doi: [10.1002/ajh.24371](https://doi.org/10.1002/ajh.24371). PMID: [27012809](https://pubmed.ncbi.nlm.nih.gov/27012809/); Christopher A. "Critically elevated INR in a patient on warfarin after increase in extended-release niacin dose." *Ann Pharmacother*. 2011;45(11):e58. doi: [10.1345/aph.1Q242](https://doi.org/10.1345/aph.1Q242). PMID: [22010004](https://pubmed.ncbi.nlm.nih.gov/22010004/)
 
-[150] ConsumerLab. Pantothenic acid for cholesterol. B Vitamins Review. 2025.
+[150] ConsumerLab. "B Vitamins Review" (pantothenic acid section). Accessed 2025. https://www.consumerlab.com/reviews/review-best-b-vitamins-and-complexes-energy-b6-b12-biotin-niacin-folic-acid/bvitamins/
 
-[151] O'Sullivan P, et al. "B-6 neuropathy from 6 mg multivitamin." *AJGP*. 2025.
+[151] O'Sullivan F, Yu J, Wu B, et al. "A case of burning feet." *Aust J Gen Pract*. 2025;54(1-2):70-72. doi: [10.31128/AJGP-08-24-7384](https://doi.org/10.31128/AJGP-08-24-7384). PMID: [39909003](https://pubmed.ncbi.nlm.nih.gov/39909003/)
 
-[152] Koscinska-Shukla B, et al. "B-6 toxicity from dietary nuts." *Rheumatol Int*. 2025.
+[152] Kościńska-Shukla I, Jaskólska M, Grochowalska K, et al. "Underestimated pyridoxine consumption and neurotoxicity: a novel manifestation with rheumatologic relevance - a case-based review." *Rheumatol Int*. 2025;45(6):144. doi: [10.1007/s00296-025-05900-9](https://doi.org/10.1007/s00296-025-05900-9). PMID: [40418248](https://pubmed.ncbi.nlm.nih.gov/40418248/)
 
 [153] Harnack LJ, et al. "B-6 and rectal cancer." *Nutr Cancer*. 2009.
 
-[154] Li J, et al. "B-6 intake and nasopharyngeal carcinoma outcomes." *Clin J Nutr*. 2020.
+[154] Li H, Chen M, Liang S, et al. "Excessive vitamin B6 during treatment is related to poor prognosis of patients with nasopharyngeal carcinoma: A U-shaped distribution suggests low dose supplement." *Clin Nutr*. 2021;40(4):2293-2300. doi: [10.1016/j.clnu.2020.10.019](https://doi.org/10.1016/j.clnu.2020.10.019). PMID: [33873269](https://pubmed.ncbi.nlm.nih.gov/33873269/)
 
-[155] Lopez MG, et al. "B-6 and hip fracture risk." *J Bone Miner Res*. 2017.
+[155] Garcia Lopez M, Bønaa KH, Ebbing M, et al. "B Vitamins and Hip Fracture: Secondary Analyses and Extended Follow-Up of Two Large Randomized Controlled Trials." *J Bone Miner Res*. 2017;32(10):1981-1989. doi: [10.1002/jbmr.3189](https://doi.org/10.1002/jbmr.3189). PMID: [28574605](https://pubmed.ncbi.nlm.nih.gov/28574605/)
 
-[156] Meyer HE, et al. "B-6 and B-12 intake and hip fracture in nurses." *JAMA Netw Open*. 2019.
+[156] Meyer HE, Willett WC, Fung TT, et al. "Association of High Intakes of Vitamins B6 and B12 From Food and Supplements With Risk of Hip Fracture Among Postmenopausal Women in the Nurses' Health Study." *JAMA Netw Open*. 2019;2(5):e193591. doi: [10.1001/jamanetworkopen.2019.3591](https://doi.org/10.1001/jamanetworkopen.2019.3591). PMID: [31074816](https://pubmed.ncbi.nlm.nih.gov/31074816/)
 
-[157] Charles K, et al. "Biotin interference at low doses." *Nutrition*. 2019.
+[157] Charles S, Agrawal N, Blum M. "Erroneous thyroid diagnosis due to over-the-counter biotin." *Nutrition*. 2019;57:257-258. doi: [10.1016/j.nut.2018.05.005](https://doi.org/10.1016/j.nut.2018.05.005). PMID: [30199718](https://pubmed.ncbi.nlm.nih.gov/30199718/)
 
 [158] Sanosi N, et al. "High-dose biotin and migraine." *Int Med Case Rep J*. 2025.
 
@@ -829,42 +850,44 @@ No UL established. Generally very safe, but important associations at high level
 
 [161] Wang Y, et al. "Long-term folate and colorectal cancer." *Am J Clin Nutr*. 2021.
 
-[162] Sawaengsri H, et al. "Folate and TCN2 variant neuropathy risk." *Am J Clin Nutr*. 2016.
+[162] Sawaengsri H, Bergethon PR, Qiu WQ, et al. "Transcobalamin 776C→G polymorphism is associated with peripheral neuropathy in elderly individuals with high folate intake." *Am J Clin Nutr*. 2016;104(6):1665-1670. doi: [10.3945/ajcn.116.139030](https://doi.org/10.3945/ajcn.116.139030). PMID: [27733392](https://pubmed.ncbi.nlm.nih.gov/27733392/)
 
-[163] Kerr SM, et al. "Anaphylaxis to folic acid." *Allergy Asthma Clin Immunol*. 2014. Harper CE, et al. BSACI Abstracts. 2023. Lis K, et al. *Curr Issues Mol Biol*. 2025.
+[163] Kerr PE, Cunningham D. "Anaphylaxis associated with folic acid: domestic case review." *Allergy Asthma Clin Immunol*. 2014;10(Suppl 2):A23. doi: [10.1186/1710-1492-10-S2-A23](https://doi.org/10.1186/1710-1492-10-S2-A23); Lis K. "Hypersensitivity to Folic Acid and/or Folinic Acid-A Review of Clinical Cases, Potential Mechanism, Possible Cross-Allergies and Current Diagnostic Options." *Curr Issues Mol Biol*. 2025;47(8). doi: [10.3390/cimb47080654](https://doi.org/10.3390/cimb47080654). PMID: [40864808](https://pubmed.ncbi.nlm.nih.gov/40864808/)
 
-[164] Araghi SO, et al. "B-12 and folic acid and cancer risk." *Cancer Epidemiol Biomarkers Prev*. 2018.
+[164] Oliai Araghi S, Kiefte-de Jong JC, van Dijk SC, et al. "Folic Acid and Vitamin B12 Supplementation and the Risk of Cancer: Long-term Follow-up of the B Vitamins for the Prevention of Osteoporotic Fractures (B-PROOF) Trial." *Cancer Epidemiol Biomarkers Prev*. 2019;28(2):275-282. doi: [10.1158/1055-9965.EPI-17-1198](https://doi.org/10.1158/1055-9965.EPI-17-1198). PMID: [30341095](https://pubmed.ncbi.nlm.nih.gov/30341095/)
 
-[165] Ambrosone CB, et al. "Supplement use during chemotherapy and survival." *J Clin Oncol*. 2020;38(8):804-814. doi: [10.1200/JCO.19.01204](https://doi.org/10.1200/JCO.19.01204)
+[165] Ambrosone CB, Zirpoli GR, Hutson AD, et al. "Dietary Supplement Use During Chemotherapy and Survival Outcomes of Patients With Breast Cancer Enrolled in a Cooperative Group Clinical Trial (SWOG S0221)." *J Clin Oncol*. 2020;38(8):804-814. doi: [10.1200/JCO.19.01203](https://doi.org/10.1200/JCO.19.01203). PMID: [31855498](https://pubmed.ncbi.nlm.nih.gov/31855498/)
 
-[166] Flores-Guerrero JL, et al. "B-12 and mortality." *JAMA Netw Open*. 2020.
+[166] Flores-Guerrero JL, Minovic I, Groothof D, et al. "Association of Plasma Concentration of Vitamin B12 With All-Cause Mortality in the General Population in the Netherlands." *JAMA Netw Open*. 2020;3(1):e1919274. doi: [10.1001/jamanetworkopen.2019.19274](https://doi.org/10.1001/jamanetworkopen.2019.19274). PMID: [31940038](https://pubmed.ncbi.nlm.nih.gov/31940038/)
 
 [167] Liu X, et al. "B-12 and cardiovascular death in type 2 diabetes." *JAMA Netw Open*. 2022.
 
 [168] Kang D, et al. "B12 modulates skin microbiota in acne." *Sci Transl Med*. 2015;7(293):293ra103. doi: [10.1126/scitranslmed.aab2009](https://doi.org/10.1126/scitranslmed.aab2009)
 
-[169] Veraldi S, et al. "Acne from B-12 supplementation." *J Cosmet Dermatol*. 2017.
+[169] Veraldi S, Benardon S, Diani M, et al. "Acneiform eruptions caused by vitamin B12: A report of five cases and review of the literature." *J Cosmet Dermatol*. 2018;17(1):112-115. doi: [10.1111/jocd.12360](https://doi.org/10.1111/jocd.12360). PMID: [28594082](https://pubmed.ncbi.nlm.nih.gov/28594082/)
 
-[170] Xiong L, et al. "B-12 and insomnia in type 2 diabetes." *Nutr Diabetes*. 2022.
+[170] Xiong S, Liu Z, Yao N, et al. "The independent association between vitamin B12 and insomnia in Chinese patients with type 2 diabetes mellitus: a cross-sectional study." *Nutr Diabetes*. 2022;12(1):3. doi: [10.1038/s41387-022-00181-8](https://doi.org/10.1038/s41387-022-00181-8). PMID: [35039481](https://pubmed.ncbi.nlm.nih.gov/35039481/)
 
 [171] El Rhermoul FZ, et al. "Allergic reactions to vitamin B-12." *J Allergy Clin Immunol Pract*. 2023.
 
-[172] Ullah A, et al. "Anaphylaxis to B-12 injection." *Cureus*. 2018.
+[172] Wajih Ullah M, Amray A, Qaseem A, et al. "Anaphylactic Reaction to Cyanocobalamin: A Case Report." *Cureus*. 2018;10(5):e2582. doi: [10.7759/cureus.2582](https://doi.org/10.7759/cureus.2582). PMID: [29984124](https://pubmed.ncbi.nlm.nih.gov/29984124/)
 
 [173] Lam JR, et al. "PPI/H2 blocker use and B-12 deficiency." *JAMA*. 2013;310(22):2435-2442. doi: [10.1001/jama.2013.280490](https://doi.org/10.1001/jama.2013.280490)
 
-[174] Nafea OE, et al. "B-12 deficiency by PPI type." *Cureus*. 2026.
+[174] Nafea S, Iguh C, Waseem F, et al. "Association of Long-Term Proton Pump Inhibitor Use With Nutrient Deficiencies: A Retrospective Cross-Sectional Study." *Cureus*. 2026;18(3):e106137. doi: [10.7759/cureus.106137](https://doi.org/10.7759/cureus.106137). PMID: [42064495](https://pubmed.ncbi.nlm.nih.gov/42064495/)
 
 [175] Aroda VR, et al. "Long-term metformin and B-12 deficiency." *J Clin Endocrinol Metab*. 2016;101(4):1754-1761. doi: [10.1210/jc.2015-3754](https://doi.org/10.1210/jc.2015-3754)
 
-[176] Yao B, et al. "Metformin and B-12 via gut microbiota." *Commun Biol*. 2023.
-
-[177] Mintzer S, et al. "AEDs and B-6 deficiency." *Epilepsy Behav*. 2012.
-
-[178] Porter KM, et al. "AEDs and B vitamin status." *J Clin Endocrinol Metab*. 2019.
+[176] Yao L, Wang Y, Qin S, et al. "The antidiabetic drug metformin aids bacteria in hijacking vitamin B12 from the environment through RcdA." *Commun Biol*. 2023;6(1):96. doi: [10.1038/s42003-023-04475-0](https://doi.org/10.1038/s42003-023-04475-0). PMID: [36693976](https://pubmed.ncbi.nlm.nih.gov/36693976/)
 
 [179] Merck Manual. "Drug-nutrient interactions." 2018.
 
-[180] Lacassie HJ, et al. "Nitrous oxide and B-12 inactivation." *Br J Anaesth*. 2006.
+[180] Lacassie HJ, Nazar C, Yonish B, et al. "Reversible nitrous oxide myelopathy and a polymorphism in the gene encoding 5,10-methylenetetrahydrofolate reductase." *Br J Anaesth*. 2006;96(2):222-5. doi: [10.1093/bja/aei300](https://doi.org/10.1093/bja/aei300). PMID: [16361298](https://pubmed.ncbi.nlm.nih.gov/16361298/)
 
 [181] Hansson O, Sillanpaa M. "Pyridoxine and phenytoin." *Lancet*. 1976.
+
+[182] Stanfield B. Multivitamins are no longer "expensive urine". drstanfield.com. 19 August 2026. [https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)
+
+[183] Stanfield B. Which popular supplements should you actually try to avoid? drstanfield.com. 11 August 2024. [https://drstanfield.com/blogs/articles/popular-supplements-try-avoid](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)
+
+[184] Jenkins DJA, Spence JD, Giovannucci EL, et al. "Supplemental vitamins and minerals for CVD prevention and treatment." *J Am Coll Cardiol*. 2018;71(22):2570-2584. PMID: 29852980. [https://pubmed.ncbi.nlm.nih.gov/29852980/](https://pubmed.ncbi.nlm.nih.gov/29852980/)

@@ -7937,5 +7937,444 @@
       "(nicotinic acid|niacin|vitamin b3)"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry, Current view: \"Gut bacteria break both NMN and NR down to nicotinic acid, a cheap form of vitamin B3\" and \"The approach he recommends instead is regular exercise\". NAD boosters are held from publish."
+  },
+  {
+    "query": "Should I take a turmeric curcumin supplement for my knee arthritis?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "liver"
+    ],
+    "must_match": [
+      "\\b([Ll]abel|[Aa]bsorption|[Dd]isappointing)",
+      "([Tt]ends to encourage|[Ee]ncourages?|[Aa]dvises?|[Ss]teers?)[^.]{0,60}([Nn]ot|[Aa]way|[Aa]gainst)|([Nn]ot|n't) recommend|[Ww]ould not|[Ww]ouldn't"
+    ],
+    "must_not_match": [
+      "(?<!\\b(?:[Nn]ot|[Nn]o|n't)\\s)\\b[Bb]rad ([Rr]ecommends?|[Ss]uggests?|[Aa]dvises?|[Ee]ncourages?) ([Tt]aking |[Tt]hat you take )?(a |[Dd]aily )?([Cc]urcumin|[Tt]urmeric)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: \"Brad tends to encourage his patients not to take curcumin supplements, because of problems with labelling, absorption and disappointing human trials\"; names knee arthritis as a condition where it appears to work; \"liver injury has been reported with curcumin supplements\"."
+  },
+  {
+    "query": "What dose of curcumin should I take for ulcerative colitis?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "doctor"
+    ],
+    "must_match": [
+      "500[^.]{0,30}2,?000"
+    ],
+    "must_not_match": [
+      "500\\s*(?:[Tt]o|-|–|—)\\s*1,?500",
+      "\\b(?:[Yy]ou should take|i recommend|[Tt]he recommended dose is)\\b[^.]{0,30}\\d"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: \"Trials that found tentative benefit often used 500 to 2,000 mg of curcumin a day, and there is no standard guidance on the best dose for any condition\". The old summary range 500-1,500 mg/day is gone; dosing is trial doses, not advice."
+  },
+  {
+    "query": "I have stage 3 chronic kidney disease. How much protein powder can I have?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "protein-powders-benefits-types-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "doctor"
+    ],
+    "must_match": [
+      "[Kk]idney|\\bCKD\\b"
+    ],
+    "must_not_match": [
+      "\\b0\\.6\\s*(?:-|–|[Tt]o)\\s*0\\.8\\s*g",
+      "\\b(?:[Nn]o|[Nn]othing to) (?:[Ww]orry|[Cc]oncern)[^.]{0,30}kidney"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: \"people with chronic kidney disease (stages 3 to 5) should consult their doctor about protein intake\". The CKD 0.6-0.8 g/kg figure was removed (unsupported until the full KDOQI text is checked), so the reply must not state it as Brad's or the master's number."
+  },
+  {
+    "query": "How much protein does Dr Brad aim for each day, and is more better?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "protein-powders-benefits-types-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "ideal body weight"
+    ],
+    "must_match": [
+      "1\\.2\\s*g(?:[Rr]ams?)?(?:\\s*(?:/|[Pp]er)\\s*kg|[^.]{0,30}ideal body weight)",
+      "1\\.3\\s*g|1\\.6\\s*g|[Dd]iminish|[Mm]inimal additional"
+    ],
+    "must_not_match": [
+      "\\b[Bb]rad[^.]{0,60}\\b(?:1\\.6|2\\.0|2\\.2)\\s*g\\s*(?:/|[Pp]er)\\s*kg[^.]{0,30}(?:[Tt]arget|[Aa]ims?|[Ee]ats?)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: \"Brad's own daily target is 1.2 g of protein per kg of ideal body weight\"; benefit beyond about 1.2 g/kg is minimal for strength; the 2024 1.6 g/kg is superseded."
+  },
+  {
+    "query": "My toddler ate several of my multivitamin gummies that contain iron. What should I do?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "[Ll]ocal emergency|[Pp]oison (?:[Cc]ontrol|[Cc]entre|[Cc]enter)|[Ee]mergency (?:[Nn]umber|[Ss]ervices|[Dd]epartment)",
+      "[Ii]ron"
+    ],
+    "must_not_match": [
+      "\\b111\\b",
+      "(?:[Ww]ait and see|[Nn]othing to worry|[Pp]erfectly safe|[Hh]armless)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Restored Acute Overdose section [63][64]: iron overdose is a leading cause of fatal poisoning in children under 6; \"act immediately\". Orchestrator fix: say \"call your local emergency number or poison control centre\", not the NZ 111, because supplement pages are read worldwide."
+  },
+  {
+    "query": "Should I take a multivitamin to protect my memory? What is Dr Brad's view?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "COSMOS"
+    ],
+    "must_match": [
+      "\\b[Ss]mall\\b",
+      "[Cc]ommercial interest|[Pp]otential bias|\\b[Bb]ias\\b",
+      "WHO"
+    ],
+    "must_not_match": [
+      "(?<!\\b(?:[Nn]ot|[Nn]o|n't)\\s)multivitamins? (?:[Pp]revents?|[Rr]educes?|[Ll]owers?) (?:[Cc]ancer|[Hh]eart disease|[Dd]ementia)",
+      "\\b[Bb]rad (?:[Rr]ecommends?|[Aa]dvises?) (?:[Tt]hat )?(?:[Ee]veryone|[Aa]ll adults)\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: pooled COSMOS cognition analysis (5,203 people) showed a small benefit; July 2026 WHO guideline recommends against multivitamins for dementia unless deficient, but did not reassess COSMOS; trial found no cancer, heart disease or longevity benefit; \"Brad has a commercial interest in multivitamins, so readers should be aware of his potential bias\"."
+  },
+  {
+    "query": "Is it safe to take a B-complex with 50 mg of vitamin B6 every day?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "nerve"
+    ],
+    "must_match": [
+      "\\b10\\s*mg",
+      "P5P|[Pp]yridoxal"
+    ],
+    "must_not_match": [
+      "(?<!\\b(?:[Nn]ot|[Nn]o|n't)\\s)\\bB6\\b[^.]{0,60}\\b(?:[Ii]s|[Aa]re) (?:[Cc]ompletely |[Tt]otally |[Ee]ntirely )?(?:[Ss]afe|[Hh]armless)\\b",
+      "\\b[Bb]rad (?:[Rr]ecommends?|[Ss]uggests?) (?:[Tt]aking )?(?:[Hh]igh[- ]dose )?(?:B6|B-?complex)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: Australia has required a warning label above 10 mg B6 a day since 2022 after nerve damage reports, against a recommended 1.7 mg; symptoms of too much look like too little; Brad \"would not rely on switching to the P5P form to avoid the problem\". Master adds the Australian/Canadian label rule to Safety."
+  },
+  {
+    "query": "Do B vitamins help memory? The WHO says not to take them for dementia.",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "b-vitamins-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "VITACOG",
+      "deficiency"
+    ],
+    "must_match": [
+      "\\b40\\s?%",
+      "[Oo]mega-3"
+    ],
+    "must_not_match": [
+      "(?<!\\b(?:[Nn]ot|[Nn]o|n't)\\s)\\bB vitamins? (?:[Pp]revents?|[Rr]everses?|[Cc]ures?) (?:[Dd]ementia|[Aa]lzheimer)",
+      "\\b[Bb]rad (?:[Rr]ecommends?|[Tt]akes?) high[- ]dose folic acid"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: VITACOG slowed brain shrinkage by 40% only in people with high omega-3 levels, \"a lead worth following rather than a finished answer\"; WHO July 2026 guideline recommends against B vitamins for dementia unless deficient, \"it answers an older question rather than being wrong\"; Brad avoids high-dose folic acid outside pregnancy."
+  },
+  {
+    "query": "I take lisinopril. Can I use a potassium salt substitute and potassium pills?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "doctor"
+    ],
+    "must_match": [
+      "ACE inhibitor|[Ll]isinopril",
+      "[Kk]idney"
+    ],
+    "must_not_match": [
+      "(?<!\\b(?:[Nn]ot|[Nn]o|n't|[Uu]n)\\s)\\b(?:[Ss]afe|[Ff]ine|[Oo]k(?:[Aa]y)?)\\b[^.]{0,30}(?:[Ww]ith|[Oo]n|[Aa]longside) (?:[Ll]isinopril|[Aa]n? ACE|[Aa]ce inhibitors)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view (added 2026-10-07 safety line): \"Talk to your doctor before taking added potassium if you have kidney disease, have been told to limit potassium, or take an ACE inhibitor, an angiotensin receptor blocker, a potassium-sparing diuretic or another potassium supplement\"; Brad also favours food first and says potassium pills are not the fix."
+  },
+  {
+    "query": "How much potassium should I get a day? I read 4,700 mg.",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "3,?500[^.]{0,30}5,?000",
+      "eGFR|[Kk]idney"
+    ],
+    "must_not_match": [
+      "\\b[Bb]rad[^.]{0,40}recommends?[^.]{0,30}4,?700\\s*mg",
+      "(?:[Ss]hould|[Nn]eed to) take[^.]{0,20}potassium (?:[Pp]ills|[Ss]upplements|[Tt]ablets)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: 3,500 to 5,000 mg a day from food, only with adequate kidney function (eGFR 45 or more); the 4,700 mg figure (2005 AI) is superseded; \"fixing low intake does not mean loading up on potassium pills\"."
+  },
+  {
+    "query": "What supplement lowers LDL cholesterol the most?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "brand",
+    "answer_handles": [
+      "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "[Ss]terols?|[Ss]tanols?",
+      "(?:[Dd]o(?:[Ee]s)? not|[Dd]on.t) recommend any supplement|[Nn]o supplement|[Nn]ot recommend (?:[Aa]ny )?supplements?|[Tt]alk to your doctor"
+    ],
+    "must_not_mention": [
+      "Dr Brad",
+      "Brad's view",
+      "Brad thinks",
+      "Brad believes"
+    ],
+    "must_not_match": [
+      "\\b[Bb]rad(?:'s)? (?:[Rr]ecommends?|[Ss]uggests?|[Aa]dvises?|[Tt]hinks?|[Bb]elieves?|[Vv]iew|[Pp]osition|[Ss]ays|[Tt]akes?|[Uu]ses?|[Ff]avou?rs?|[Cc]hanged)",
+      "(?:[Ff]ish oil|[Oo]mega-3s?)[^.]{0,60}(?:[Bb]est|[Ss]trongest|[Mm]ost) (?:[Ee]vidence|[Ee]videnced|[Pp]roven)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Evidence-position master, no Brad post (psyllium and berberine positions aside). Entry: strongest evidence for plant sterols/stanols, red yeast rice, high-dose niacin; 2026 ACC/AHA guidelines recommend no supplement for LDL; fish oil is modest for LDL (summary no longer calls omega-3 best evidenced). The reply must not give Brad a view on this topic."
+  },
+  {
+    "query": "Can I take red yeast rice together with my atorvastatin?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "doctor"
+    ],
+    "must_match": [
+      "[Ss]tatin",
+      "(?:[Nn]ot be taken|[Ss]hould not|[Ss]houldn.t|[Aa]void|[Dd]on.t|[Dd]o not|[Nn]ot recommended)"
+    ],
+    "must_not_match": [
+      "\\b[Bb]rad(?:'s)? (?:[Rr]ecommends?|[Ss]uggests?|[Aa]dvises?|[Tt]hinks?|[Bb]elieves?|[Vv]iew|[Pp]osition|[Ss]ays|[Tt]akes?|[Uu]ses?|[Ff]avou?rs?|[Cc]hanged)",
+      "(?<!\\b(?:[Nn]ot|[Nn]o|n't)\\s)red yeast rice[^.]{0,40}(?:[Ii]s|[Aa]re) (?:[Cc]ompletely |[Tt]otally )?(?:[Ss]afe|[Hh]armless)[^.]{0,20}with (?:a )?statin"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Evidence position: \"Red yeast rice is thought to carry the same risks as statin drugs and should not be taken with statins, niacin or fibrates\"; reference repair added a liver caution house line. No Brad view on red yeast rice here."
+  },
+  {
+    "query": "Which nitric oxide supplement does Dr Brad recommend: L-arginine, citrulline or beetroot powder?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "rocket"
+    ],
+    "must_match": [
+      "(?:[Dd]oes not|[Dd]oesn.t|[Dd]on.t|[Dd]o not) recommend|[Rr]ecommends? (?:[Nn]o|[Nn]one)|[Nn]ot recommend|[Nn]one",
+      "300\\s*mg|[Nn]itrate"
+    ],
+    "must_not_match": [
+      "(?<!\\b(?:[Nn]ot|[Nn]o|n't)\\s)\\b[Bb]rad(?:'s)? (?:[Rr]ecommends?|[Tt]akes?|[Uu]ses?|[Ss]ells?|[Ff]avou?rs?)[^.]{0,40}(?:l-?arginine|l-?citrulline|[Bb]eetroot powder|[Nn]itric oxide (?:[Ss]upplement|[Bb]ooster|[Pp]ill))",
+      "\\b3\\s*(?:-|–|[Tt]o)\\s*8\\s*g\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: \"Brad does not recommend a nitric oxide supplement of any kind, including L-arginine, L-citrulline and beetroot powder, and does not sell one\"; eats rocket (arugula), about 63 g reaches 300 mg nitrate; a pill cannot carry that much. Old summary dose 3-8 g/day is gone."
+  },
+  {
+    "query": "I have had kidney stones. Can I drink beetroot juice every day for my blood pressure?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "doctor"
+    ],
+    "must_match": [
+      "[Oo]xalate|[Kk]idney stones?",
+      "[Rr]ocket|[Aa]rugula|[Ll]ow in oxalate"
+    ],
+    "must_not_match": [
+      "(?<!\\b(?:[Nn]ot|[Nn]o|n't)\\s)beetroot[^.]{0,40}(?:[Ii]s|[Aa]re) (?:[Ll]ow in oxalate|[Ss]afe for (?:[Kk]idney stone|[Ss]tone))",
+      "[Rr]ocket[^.]{0,30}(?:[Hh]igh in|[Rr]ich in) oxalate"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: \"Beetroot is one of the highest food sources of oxalate, which can lead to kidney stones in susceptible people, while rocket is low in oxalate\"; restored house caution: \"If you have had kidney stones or have kidney disease, check with your doctor before taking beetroot products.\""
+  },
+  {
+    "query": "How much fish oil does Dr Brad take, and is there a heart rhythm risk?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "doctor"
+    ],
+    "must_match": [
+      "[Aa]trial fibrillation|\\bAF\\b",
+      "\\b1\\s*g\\b",
+      "49\\s?%|12\\s?%|[Rr]ise with dose|[Dd]ose"
+    ],
+    "must_not_match": [
+      "\\b[Bb]rad[^.]{0,40}(?:[Tt]akes?|[Rr]ecommends?)[^.]{0,20}\\b(?:2|3|4)\\s*g\\b",
+      "(?:[Nn]o|[Zz]ero) (?:[Ii]ncreased )?(?:[Rr]isk|[Ll]ink)[^.]{0,30}atrial fibrillation"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: Brad takes about 1 g/day; AF risk \"appears to rise with dose: in one meta-analysis it was 12% higher at 1 g a day or less and 49% higher above 1 g\"; 4 g/day cut events 43% in dialysis patients but for most people the AF trade-off may not be worth it. The 133% (2024) figure is superseded."
+  },
+  {
+    "query": "I take warfarin. Is there any bleeding risk if I start fish oil?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "doctor"
+    ],
+    "must_match": [
+      "[Bb]leed|[Bb]lood thinner|[Aa]nticoagulant",
+      "[Ww]arfarin"
+    ],
+    "must_not_match": [
+      "(?:[Nn]o|[Zz]ero|[Ww]ithout any) (?:[Ii]ncreased )?(?:[Rr]isk of )?bleeding",
+      "(?<!\\b(?:[Nn]ot|[Nn]o|n't)\\s)\\b[Ff]ish oil[^.]{0,40}(?:[Ii]s|[Aa]re) (?:[Cc]ompletely |[Tt]otally )?safe with (?:[Ww]arfarin|[Bb]lood thinners)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Summary now ends \"Talk to your doctor first, especially if you take blood thinners\"; Safety and Interaction sections (bleeding, AF, pregnancy) kept byte for byte. Brad's posts do not mention bleeding, so the caution must come from the master body."
+  },
+  {
+    "query": "Do I need to take electrolyte powder every day?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "brand",
+    "answer_handles": [
+      "electrolytes-benefits-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "90 minutes|[Ss]trenuous|[Pp]rolonged|[Ss]weat",
+      "[Hh]yponatr|[Tt]oo much plain water|[Dd]ilute|[Ww]ater is enough"
+    ],
+    "must_not_mention": [
+      "Dr Brad",
+      "Brad's view",
+      "Brad thinks",
+      "Brad believes"
+    ],
+    "must_not_match": [
+      "\\b[Bb]rad(?:'s)? (?:[Rr]ecommends?|[Ss]uggests?|[Aa]dvises?|[Tt]hinks?|[Bb]elieves?|[Vv]iew|[Pp]osition|[Ss]ays|[Tt]akes?|[Uu]ses?|[Ff]avou?rs?|[Cc]hanged)",
+      "(?:[Ee]veryone|[Yy]ou|[Mm]ost people) (?:[Ss]hould|[Nn]eeds?|[Mm]ust) (?:[Tt]ake|[Uu]se|[Dd]rink) electrolytes? (?:[Dd]aily|[Ee]very day)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Evidence-position master, no Brad post: \"If you are fairly healthy, eat a balanced diet and exercise for about an hour, water is enough; replacing electrolytes, mainly sodium, matters mostly after strenuous exercise lasting 90 minutes or more\"; too much plain water can cause hyponatremia. No Brad view may be attributed."
+  },
+  {
+    "query": "I have high blood pressure and take an ACE inhibitor. Can I drink electrolyte drinks with potassium?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "electrolytes-benefits-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "doctor"
+    ],
+    "must_match": [
+      "ACE inhibitor",
+      "[Kk]idney|[Pp]otassium"
+    ],
+    "must_not_match": [
+      "\\b[Bb]rad(?:'s)? (?:[Rr]ecommends?|[Ss]uggests?|[Aa]dvises?|[Tt]hinks?|[Bb]elieves?|[Vv]iew|[Pp]osition|[Ss]ays|[Tt]akes?|[Uu]ses?|[Ff]avou?rs?|[Cc]hanged)",
+      "(?<!\\b(?:[Nn]ot|[Nn]o|n't|[Uu]n)\\s)\\b(?:[Ss]afe|[Ff]ine|[Oo]k(?:[Aa]y)?)\\b[^.]{0,30}(?:[Ww]ith|[Oo]n) (?:[Aa]n? )?ACE"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Evidence position: \"people with kidney disease or high blood pressure, or who take ACE inhibitors or potassium-sparing diuretics, should talk to their doctor before using electrolyte products\"; \"too much potassium can be dangerous\"."
+  },
+  {
+    "query": "Should I take glycine for sleep? How much?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "glycine-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "modest"
+    ],
+    "must_match": [
+      "\\b3\\s*g\\b",
+      "[Ss]leep"
+    ],
+    "must_not_match": [
+      "(?<!\\b(?:[Nn]ot|[Nn]o|n't)\\s)glycine[^.]{0,50}(?:[Rr]educes?|[Cc]uts?|[Ff]ewer) (?:[Nn]ight-?time )?(?:[Ww]ake|[Aa]wakenings|[Ww]aking)",
+      "\\b(?:5|10|15|20)\\s*g\\b[^.]{0,30}(?:[Rr]ecommend|[Ss]hould take|[Ii]s safe)",
+      "(?<!\\b(?:[Nn]ot|n't)\\s)(?:[Rr]ated|[Cc]lassified|[Cc]onsidered|[Ll]isted)[^.]{0,30}\\bGRAS\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: 3 g before bed helped fall asleep faster and reduced next-day sleepiness in three small trials; \"no trial reported fewer night-time wake-ups\"; Brad calls the effect \"real, though modest\"; \"his taking a supplement does not mean you should\". Brad's May 2025 FDA GRAS statement conflicts with the body and was left out, so the reply must not assert GRAS."
+  },
+  {
+    "query": "Does Dr Brad take GlyNAC, and should I?",
+    "category": "masters-2",
+    "source": "us-42-ac5-masters-2-2026-10-21",
+    "pending": "masters-2 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "glycine-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "45"
+    ],
+    "must_match": [
+      "[Oo]lder adults|[Aa]ge 45",
+      "[Gg]lutathione|[Gg]rip"
+    ],
+    "must_not_match": [
+      "\\b[Bb]rad (?:[Aa]lready |[Cc]urrently )?(?:[Tt]akes?|[Ii]s taking|[Hh]as started|[Ss]tarted) glynac",
+      "(?:[Ee]veryone|[Aa]ll adults|[Yy]ounger adults) (?:[Ss]hould|[Nn]eed to) (?:[Tt]ake|[Ss]tart) glynac"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: GlyNAC corrected glutathione deficiency and improved grip strength in older adults; the 2022 benefits appeared only in older adults, \"Brad plans to start GlyNAC at age 45\" (3 Feb 2026), future tense, not a current habit."
   }
 ]

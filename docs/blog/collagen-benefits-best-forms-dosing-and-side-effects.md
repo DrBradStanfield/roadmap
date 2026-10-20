@@ -121,7 +121,7 @@ The single trials below report wrinkle reductions. When wrinkle results were poo
 - In 36 postmenopausal women in Thailand, 5 g/day of fish collagen hydrolysate for 1 month improved cheek skin elasticity by 9-10% vs. placebo, with the benefit persisting 1 month after supplementation. There was no improvement in upper inner arm elasticity. The researchers noted that sun-exposed skin may benefit most because UV radiation activates collagen-degrading enzymes [19].
 - In 84 men and women (average age 50) with dry skin and crow's feet, 2 g/day of low-molecular-weight fish collagen peptides for 12 weeks modestly reduced eye wrinkle depth (-11.2% vs. -5.9% placebo) and wrinkle length (-7% vs. -3.4%), with slight improvement in hydration but no improvement in elasticity [20].
 - In 43 women (average age 52), 500 mg/day of hydrolyzed fish collagen (65% peptides, 25% chondroitin sulfate) for 3 months reduced eye wrinkles by 26% vs. baseline (significant vs. placebo) and improved deep skin hydration, according to ConsumerLab, which reads the placebo comparison as showing no reduction in smile lines or forehead wrinkles [1]. The study's authors report a significant reduction in wrinkles in the nasolabial region (between the nose and upper lip) compared with placebo and baseline [21].
-- In 99 women (average age 41), 1 g/day of fish collagen hydrolysate for 24 weeks very slightly reduced thigh cellulite compared to placebo, and modestly increased hair strand thickness [22].
+- ConsumerLab reports that in 99 women (average age 41), 1 g/day of fish collagen hydrolysate for 24 weeks very slightly reduced thigh cellulite compared to placebo, and modestly increased hair strand thickness [1]. The paper itself reports 114 women aged 20-50 and significant improvements in cellulite severity, skin elasticity and hair diameter [22].
 
 **BioCell Collagen (type II, chicken sternal cartilage):**
 
@@ -141,7 +141,7 @@ The single trials below report wrinkle reductions. When wrinkle results were poo
 
 Evidence for collagen's effects on hair and nails is limited and mixed.
 
-**Hair:** A study of 86 men and women (average age 53) found that 450 mg/day of chicken eggshell membrane hydrolysate for 3 months modestly increased hair density measured by computer analysis, but did not increase hair growth or decrease hair breakage compared to placebo, and did not improve nails or skin, according to ConsumerLab's reading of the placebo comparison [1]. The authors of this company-funded study report significant improvements in hair thickness, hair breakage, hair growth and facial skin appearance, with no improvement in nails [29]. A separate study found 1 g/day of fish collagen for 24 weeks modestly increased hair strand diameter compared to placebo [22].
+**Hair:** A study of 86 men and women (average age 53) found that 450 mg/day of chicken eggshell membrane hydrolysate for 3 months modestly increased hair density measured by computer analysis, but did not increase hair growth or decrease hair breakage compared to placebo, and did not improve nails or skin, according to ConsumerLab's reading of the placebo comparison [1]. The authors of this company-funded study report significant improvements in hair thickness, hair breakage, hair growth and facial skin appearance, with no improvement in nails [29]. A separate study found 1 g/day of fish collagen for 24 weeks increased hair strand diameter significantly compared to placebo, the authors report [22].
 
 **Nails:** A study of women taking 2.5 g/day of Verisol collagen peptides for 24 weeks reported that nail growth increased by 12% and broken nail frequency decreased by 42% compared to pre-supplementation. However, this study had no placebo control, making the findings uncertain [30].
 
@@ -339,7 +339,7 @@ Some websites claim collagen increases blood calcium levels, but this is not sup
 
 ### Interference with Laboratory Tests
 
-Collagen, gelatin, or collagen-rich foods should be avoided for at least 24 hours before blood or urine tests measuring hydroxyproline, a marker used to monitor bone resorption and Paget disease [71]. Collagen consumption does NOT affect newer bone turnover markers (CTX, NTX, s-PINP, DPD) used to monitor osteoporosis treatment, though CTX testing requires overnight fasting regardless [72].
+Collagen, gelatin, or collagen-rich foods should be avoided for at least 24 hours before blood or urine tests measuring hydroxyproline, a marker used to monitor bone resorption and Paget disease [1][71]. Collagen consumption does NOT affect newer bone turnover markers (CTX, NTX, s-PINP, DPD) used to monitor osteoporosis treatment, though CTX testing requires overnight fasting regardless [72].
 
 ## 7. Drug Interactions
 
@@ -426,9 +426,9 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [21] Maia Campos PMBG et al. "Oral Supplementation with Hydrolyzed Fish Cartilage Improves the Morphological and Structural Characteristics of the Skin: A Double-Blind, Placebo-Controlled Clinical Study." *Molecules*. 2021;26(16):4880. doi: [10.3390/molecules26164880](https://doi.org/10.3390/molecules26164880). PMID: [34443468](https://pubmed.ncbi.nlm.nih.gov/34443468/)
 
-[22] Hwang SB et al. "Oral Intake of Low-Molecular-Weight Collagen Peptide Improves Cellulite and Hair Thickness in Women." *J Med Food*. 2026.
+[22] Hwang S, Won J, Kim S, Kang W, Park M. "Low-Molecular-Weight Collagen Peptide Supplementation Improves Cellulite Severity, Skin Elasticity, and Hair Shaft Diameter: A Clinical Study with Pharmacokinetic Evaluation." *J Med Food*. 2026;29(4):187-195. doi: [10.1177/1096620X261428336](https://doi.org/10.1177/1096620X261428336). PMID: [41788055](https://pubmed.ncbi.nlm.nih.gov/41788055/)
 
-[23] Schwartz SR et al. "Ingestion of BioCell Collagen, a novel hydrolyzed chicken sternal cartilage extract; enhanced blood microcirculation and reduced facial aging signs." *Altern Ther Health Med*. 2019;25(S1):12-22.
+[23] Schwartz SR, Hammon KA, Gafner A, et al. "Novel Hydrolyzed Chicken Sternal Cartilage Extract Improves Facial Epidermis and Connective Tissue in Healthy Adult Females: A Randomized, Double-Blind, Placebo-Controlled Trial." *Altern Ther Health Med*. 2019;25(5):12-29. PMID: [31221944](https://pubmed.ncbi.nlm.nih.gov/31221944/)
 
 [24] Schwartz SR, Park J. "Ingestion of BioCell Collagen, a novel hydrolyzed chicken sternal cartilage extract." *Clin Interv Aging*. 2012;7:267-273. doi: [10.2147/CIA.S32836](https://doi.org/10.2147/CIA.S32836)
 
@@ -466,7 +466,7 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [41] Hewlings S et al. "A Randomized, Double-Blind, Placebo-Controlled, Prospective Clinical Trial Evaluating Water-Soluble Chicken Eggshell Membrane for Improvement in Joint Health in Adults with Knee Osteoarthritis." *J Med Food*. 2019;22(9):875-884. doi: [10.1089/jmf.2019.0068](https://doi.org/10.1089/jmf.2019.0068)
 
-[42] Eskiyurt N et al. "Efficacy and Safety of Natural Eggshell Membrane (NEM) in Patients with Grade 2/3 Knee Osteoarthritis: A Multi-Center, Randomized, Double-Blind, Placebo-Controlled, Single-Crossover Clinical Study." *J Arthritis*. 2019;8(4):285-291.
+[42] Eskiyurt N et al. "Efficacy and Safety of Natural Eggshell Membrane (NEM) in Patients with Grade 2/3 Knee Osteoarthritis: A Multi-Center, Randomized, Double-Blind, Placebo-Controlled, Single-Crossover Clinical Study." *J Arthritis*. 2019;8(4):285-291. [https://avesis.uludag.edu.tr/yayin/439dd338-66d6-4253-82af-118b80eec56e/efficacy-and-safety-of-natural-eggshell-membrane-nem-in-patients-with-grade-2-3-knee-osteoarthritis-a-multi-center-randomized-double-blind-placebo-controlled-single-crossover-clinical-study](https://avesis.uludag.edu.tr/yayin/439dd338-66d6-4253-82af-118b80eec56e/efficacy-and-safety-of-natural-eggshell-membrane-nem-in-patients-with-grade-2-3-knee-osteoarthritis-a-multi-center-randomized-double-blind-placebo-controlled-single-crossover-clinical-study)
 
 [43] Park S et al. "Efficacy of natural eggshell membrane for knee osteoarthritis: A randomized, double-blind, placebo-controlled clinical trial." *J Funct Foods*. 2024;121:106449. doi: [10.1016/j.jff.2024.106449](https://doi.org/10.1016/j.jff.2024.106449)
 
@@ -522,7 +522,7 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [70] Lu P, Weaver VM, Werb Z. "The extracellular matrix: A dynamic niche in cancer progression." *J Cell Biol*. 2012;196(4):395-406. doi: [10.1083/jcb.201102147](https://doi.org/10.1083/jcb.201102147). PMID: [22351925](https://pubmed.ncbi.nlm.nih.gov/22351925/)
 
-[71] Eastell R. "Treatment of Postmenopausal Osteoporosis." 2007.
+[71] Eastell R, Hannon RA. "Biochemical Markers of Bone Turnover." In: *Treatment of the Postmenopausal Woman*. Elsevier; 2007:337-349. doi: [10.1016/B978-012369443-0/50034-X](https://doi.org/10.1016/B978-012369443-0/50034-X)
 
 [72] Seibel MJ. "Biochemical markers of bone turnover. Part I: Biochemistry and variability." *Clin Biochem Rev*. 2005;26(4):97-122. PMID: [16648882](https://pubmed.ncbi.nlm.nih.gov/16648882/)
 
