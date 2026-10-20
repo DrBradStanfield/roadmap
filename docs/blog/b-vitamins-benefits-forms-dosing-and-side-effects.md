@@ -164,6 +164,7 @@ When taken in very high doses (1,000-4,000 mg/day), niacin can lower LDL cholest
 
 - Adding high-dose niacin (1,500-2,000 mg extended-release) to statin therapy did not reduce cardiovascular events despite improving lipid profiles in a large trial that was stopped early after 32 months, with a small increase in ischemic stroke noted [24].
 - A 4-year study using 2,000 mg of extended-release niacin plus laropiprant in patients already taking statins showed no benefit and was associated with increased diabetes control disturbances (3.7 percentage points higher), increased infections, new-onset diabetes, GI and musculoskeletal problems, bleeding, and skin problems [25].
+- A 2018 meta-analysis found about 10% higher all-cause mortality when extended-release niacin (1 to 3 g a day) was given alongside a statin, a borderline result from three trials (relative risk 1.10, p = 0.05) [184]. A 2017 Cochrane review of niacin trials found no significant increase in overall mortality (relative risk 1.05, 95% CI 0.97 to 1.12) [185]. The HPS2-THRIVE trial, the laropiprant study above, found excess serious side effects, including disturbed diabetes control, infections and bleeding [25].
 - Approximately 0.67% of patients treated with very high-dose niacin develop niacin maculopathy, impairing vision [75].
 
 High-dose niacin is NOT recommended for use alongside statins or red yeast rice (which contains natural statin compounds) based on clinical trial data.
@@ -891,3 +892,5 @@ No UL established. Generally very safe, but important associations at high level
 [183] Stanfield B. Which popular supplements should you actually try to avoid? drstanfield.com. 11 August 2024. [https://drstanfield.com/blogs/articles/popular-supplements-try-avoid](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)
 
 [184] Jenkins DJA, Spence JD, Giovannucci EL, et al. "Supplemental vitamins and minerals for CVD prevention and treatment." *J Am Coll Cardiol*. 2018;71(22):2570-2584. PMID: 29852980. [https://pubmed.ncbi.nlm.nih.gov/29852980/](https://pubmed.ncbi.nlm.nih.gov/29852980/)
+
+[185] Schandelmaier S, Briel M, Saccilotto R, et al. "Niacin for primary and secondary prevention of cardiovascular events." *Cochrane Database Syst Rev*. 2017;6(6):CD009744. doi: [10.1002/14651858.CD009744.pub2](https://doi.org/10.1002/14651858.CD009744.pub2). PMID: [28616955](https://pubmed.ncbi.nlm.nih.gov/28616955/)

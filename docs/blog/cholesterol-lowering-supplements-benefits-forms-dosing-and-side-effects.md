@@ -328,6 +328,7 @@ Laboratory research suggests beta-sitosterol may inhibit thrombin, potentially i
 | Omega-3 (high dose) | Warfarin, heparin, clopidogrel, aspirin | Increased bleeding | Monitor bleeding parameters |
 | Psyllium | Metformin, digoxin, carbamazepine, other oral meds | Reduced drug absorption | Separate by 1-2 hours |
 | Policosanol | Antiplatelet/anticoagulant drugs | Increased bleeding | Use cautiously |
+| Pantethine | Anticoagulants and antiplatelets (e.g., warfarin, aspirin, clopidogrel) | Possible added bleeding risk. This is theoretical: it rests on reduced platelet aggregation in small, old studies, and there are no data on bleeding events in people [9][58] | No dose threshold has been established, so the caution applies at any dose. Talk to your doctor before combining |
 | Beta-sitosterol | Dabigatran (thrombin inhibitors) | Theoretical bleeding risk | Unconfirmed in humans |
 | Niacin | Statins | Increased myopathy risk | Medical supervision required |
 
@@ -495,3 +496,5 @@ Beyond individual foods, overall dietary patterns have well-demonstrated cholest
 [56] Gogoi D, Pal A, Chattopadhyay P, et al. "First report of plant-derived beta-sitosterol with antithrombotic, in vivo anticoagulant, and thrombus-preventing activities in a mouse model." *J Nat Prod*. 2018;81(11):2521-2530. doi: [10.1021/acs.jnatprod.8b00574](https://doi.org/10.1021/acs.jnatprod.8b00574)
 
 [57] American Heart Association. "Top 5 lifestyle changes to improve your cholesterol." [https://www.heart.org/en/health-topics/cholesterol](https://www.heart.org/en/health-topics/cholesterol)
+
+[58] Hiramatsu K, Nozaki H, Arimori S. "Influence of pantethine on platelet volume, microviscosity, lipid composition and functions in diabetes mellitus with hyperlipidemia." *Tokai J Exp Clin Med*. 1981;6(1):49-57. PMID: [7256794](https://pubmed.ncbi.nlm.nih.gov/7256794/)
