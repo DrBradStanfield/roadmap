@@ -23,8 +23,8 @@
  *    corrections later under the paired-arm rule. A summary that changed must equal the proposal.
  *  - A changed_tokens entry may carry "void": true and a "void_reason". Reports are append-only, so a wrong entry is
  *    voided, not deleted: every AC2 check skips it, it never covers a token, and the run lists "VOID <section> <i>: <reason>"
- *    (--out shows a 12-character sha256 of the reason, never its text). current_view_basis, deleted_sentences, extra_raw
- *    and ask_brad entries void the same way.
+ *    (--out shows a 12-character sha256 of the reason, never its text). current_view_basis, deleted_sentences, extra_raw,
+ *    ask_brad, grokipedia_claims, needs_pubmed and positions_drift entries void the same way.
  *  - After the first write a report is never edited, even to append (Brad 2026-10-20): a correction is a sibling
  *    <handle>.addendum-<N>.json, N = 1, 2, 3 with no gap (see applyAddenda). It appends entries, voids entries with a
  *    reason, or sets proposed_summary_correction; anything else fails. --out prints each report file with its sha256.
@@ -74,7 +74,8 @@ export interface Report {
 }
 
 const ADDENDUM_APPEND = ["extra_raw", "changed_tokens", "current_view_basis", "deleted_sentences", "ask_brad", "needs_pubmed", "positions_drift"];
-export const ADDENDUM_VOID = ["changed_tokens", "current_view_basis", "deleted_sentences", "extra_raw", "ask_brad"];
+export const ADDENDUM_VOID = ["changed_tokens", "current_view_basis", "deleted_sentences", "extra_raw", "ask_brad",
+  "grokipedia_claims", "needs_pubmed", "positions_drift"]; // the last three are informational: no check reads them
 
 /**
  * Reports are append-only (US-42 AC2): a correction is a <handle>.addendum-<N>.json beside the report, applied in
@@ -147,7 +148,7 @@ export const REPORT_SCHEMA = {
   $schema: "http://json-schema.org/draft-07/schema#",
   title: "knowledge-batch diff report (one <handle>.json per article)",
   type: "object",
-  additionalProperties: true, // extra keys (grokipedia_claims, needs_pubmed, ...) are ignored
+  additionalProperties: true, // other extra keys are ignored
   required: ["handle", "type", "raw_path", "raw_sha256", "old_raw_path", "changed_tokens", "deleted_sentences",
     "headings_before", "headings_after", "proposed_summary_correction", "product_mentions_before",
     "product_mentions_after", "notes"],
@@ -197,6 +198,10 @@ export const REPORT_SCHEMA = {
       items: { type: "object", required: ["sentence", "quote"], properties: { sentence: { type: "string" }, source: { type: "string" }, quote: { type: "string" }, ...VOID_PROPS } },
     },
     ask_brad: { type: "array", items: { type: "object", required: ["item", "why"], properties: { item: { type: "string" }, why: { type: "string" }, ...VOID_PROPS } } },
+    // Informational: listed for the orchestrator, read by no check, so a void retires an entry and weakens nothing.
+    grokipedia_claims: { type: "array", items: { type: "object", additionalProperties: true, properties: { claim: { type: "string" }, outcome: { type: "string" }, ...VOID_PROPS } } },
+    needs_pubmed: { type: "array", items: { type: "object", additionalProperties: true, properties: { claim: { type: "string" }, study_as_named: { type: "string" }, ...VOID_PROPS } } },
+    positions_drift: { type: "array", items: { type: "object", additionalProperties: true, properties: { file: { type: "string" }, line_text: { type: "string" }, master_says: { type: "string" }, ...VOID_PROPS } } },
   },
 };
 

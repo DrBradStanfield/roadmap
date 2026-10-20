@@ -80,7 +80,7 @@ After its first write the report is evidence: never edit it, not even to append 
  "set": {"proposed_summary_correction": "the new summary"}}
 ```
 
-- `append` adds entries. `void` retires one: `section` is changed_tokens, current_view_basis, deleted_sentences, extra_raw or ask_brad; `index` counts the array as merged before this addendum; `reason` is required. One entry is voided once.
+- `append` adds entries. `void` retires one: `section` is changed_tokens, current_view_basis, deleted_sentences, extra_raw, ask_brad, grokipedia_claims, needs_pubmed or positions_drift; `index` counts the array as merged before this addendum; `reason` is required. One entry is voided once.
 - `set` takes only a non-empty `proposed_summary_correction`. Any other key fails the run.
 - An entry written `"void": true` inline must carry a non-empty `void_reason` (`"void": false` counts as absent). If that is the report's only fault, do not rewrite it: an addendum that voids the same entry with a reason repairs it. A report with any other fault gets no addenda applied; it needs a fresh report.
 - The batch report shows each void as section, index, source (`[base]` or `[addendum-N]`) and a short hash of the reason, so a reason may be plain prose.
