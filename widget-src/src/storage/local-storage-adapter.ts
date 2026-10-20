@@ -38,6 +38,25 @@ export function roadmapLocalWritesStopped(): boolean {
   return roadmapWritesStopped;
 }
 
+// Content-free invalidation only: no message ids, text, health values or times.
+// Keep it outside the wiped prefixes so a later log-off cannot reset the fence.
+const LOCAL_ERASE_GENERATION_KEY = 'health_roadmap_local_erase_generation';
+export function localEraseGeneration(): string | null {
+  return safeGetItem(LOCAL_ERASE_GENERATION_KEY);
+}
+export function clearLocalNamedFiles(): void {
+  // Shared stores also run without a browser; then there is no device copy.
+  if (typeof localStorage === 'undefined') return;
+  removeByPrefix(NAMED_FILE_PREFIX);
+  try {
+    localStorage.setItem(LOCAL_ERASE_GENERATION_KEY, crypto.randomUUID());
+  } catch (error) {
+    // A missing fence could let an old tab write erased content back. Do not
+    // report completed cleanup if invalidation could not be stored.
+    throw new StorageError('Could not complete on-device history cleanup.', undefined, error);
+  }
+}
+
 function fileKey(fileName: string): string {
   return fileName === ROADMAP_FILE_NAME ? FILE_KEY : NAMED_FILE_PREFIX + fileName;
 }
@@ -61,7 +80,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     // Named record files (chat-history.json, …) and stored documents live under
     // their prefixes — clear both so log-off leaves no health data behind on a
     // shared device.
-    removeByPrefix(NAMED_FILE_PREFIX);
+    clearLocalNamedFiles();
     removeByPrefix(DOC_KEY_PREFIX);
   }
 

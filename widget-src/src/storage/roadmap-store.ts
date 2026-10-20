@@ -72,10 +72,10 @@ import {
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
 import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core';
-import { LocalStorageAdapter, NAMED_FILE_PREFIX, roadmapLocalWritesStopped, stopRoadmapLocalWrites } from './local-storage-adapter';
+import { LocalStorageAdapter, clearLocalNamedFiles, roadmapLocalWritesStopped, stopRoadmapLocalWrites } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
-import { clearMatrixDrafts, clearOffFileHealthData, LPA_CHECK_KEPT_KEY, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { clearMatrixDrafts, clearOffFileHealthData, LPA_CHECK_KEPT_KEY, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { recordFailure, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -854,9 +854,10 @@ export class RoadmapStore {
         // The other record files (chat-history.json) sit under the adapter's
         // named-file prefix, which only disconnect() clears — and disconnect()
         // here would delete the erased record file we just wrote. Their
-        // contents are already tombstoned (roadmap-data.ts erases chat history
-        // BEFORE this), so removing the keys can resurrect nothing.
-        removeByPrefix(NAMED_FILE_PREFIX);
+        // contents are already tombstoned (roadmap-data.ts's beforeErase step
+        // erases chat history first). Also rotate the content-free fence
+        // so another tab cannot merge its old snapshot into the missing file.
+        clearLocalNamedFiles();
       } else {
         clearSyncPending();
         await new LocalStorageAdapter().disconnect();
