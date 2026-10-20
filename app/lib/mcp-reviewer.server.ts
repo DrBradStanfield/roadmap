@@ -28,10 +28,22 @@ import { createQuotaCounter } from './rate-limiter';
  */
 const REVIEWS: Partial<Record<McpClientLabel, 'OpenAI' | 'Anthropic'>> = { chatgpt: 'OpenAI', codex: 'OpenAI', claude: 'Anthropic', claude_code: 'Anthropic' };
 
-/** Whose review this client's box is for, or undefined: no box. */
+/**
+ * Which vendors' reviews are pending: `MCP_REVIEWER_VENDORS`, a comma list of
+ * `openai` and/or `anthropic` (US-32 AC49). Unset means `openai`, AC38's
+ * behaviour. Any other word turns every box off: a typo fails closed, so
+ * real users of the other vendor never see a box that is not for them.
+ */
+function pendingReviews(): Set<string> {
+  const words = (process.env.MCP_REVIEWER_VENDORS ?? 'openai').split(',').map((word) => word.trim());
+  return words.every((word) => word === 'openai' || word === 'anthropic') ? new Set(words) : new Set();
+}
+
+/** Whose review this client's box is for, while that review is pending; undefined is no box and no sign-in. */
 export function reviewerReview(clientId: string): 'OpenAI' | 'Anthropic' | undefined {
   const client = KNOWN_CLIENTS.get(clientId);
-  return client && REVIEWS[client.label];
+  const review = client && REVIEWS[client.label];
+  return review && pendingReviews().has(review.toLowerCase()) ? review : undefined;
 }
 
 export function reviewerClient(clientId: string) {

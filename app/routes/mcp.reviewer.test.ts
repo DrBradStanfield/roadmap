@@ -119,6 +119,7 @@ afterEach(() => {
   vi.resetAllMocks();
   vi.restoreAllMocks();
   clearReviewerSecrets();
+  delete process.env.MCP_REVIEWER_VENDORS;
   delete process.env.MCP_SEAL_KEYS;
   delete process.env.GOOGLE_DRIVE_CLIENT_ID;
   delete process.env.GOOGLE_DRIVE_SECRET;
@@ -656,7 +657,59 @@ describe('US-32 AC38 — the connection key', () => {
 
 const ANTHROPIC_HEADING = 'Anthropic reviewers: sign in here';
 
+describe('US-32 AC49 — MCP_REVIEWER_VENDORS decides whose review is pending; unset is OpenAI alone', () => {
+  const box = async (clientId: string, redirect: string) => hasReviewerForm(await consentHtml(clientId, redirect));
+
+  it('unset: ChatGPT and Codex get the box, Claude and Claude Code none, and a forged Claude sign-in is refused', async () => {
+    expect(await box(CHATGPT, CHATGPT_REDIRECT)).toBe(true);
+    expect(await box(CODEX, CODEX_REDIRECT)).toBe(true);
+    expect(await box(CLAUDE, CLAUDE_REDIRECT)).toBe(false);
+    expect(await box(CLAUDE_CODE, CLAUDE_CODE_REDIRECT)).toBe(false);
+    // The Dropbox button's own sealed state, posted with reviewer=1 as if the box had been there.
+    for (const [clientId, redirect] of [[CLAUDE, CLAUDE_REDIRECT], [CLAUDE_CODE, CLAUDE_CODE_REDIRECT]]) {
+      const res = await signIn(allStates(await consentHtml(clientId, redirect))[0], USERNAME, PASSWORD);
+      expect(res.status, clientId).toBe(400);
+      expect(res.headers.get('location'), clientId).toBeNull();
+    }
+    expect(events('mcp_connect')).toEqual([]);
+  });
+
+  it('anthropic alone: Claude and Claude Code get the box, ChatGPT and Codex none, and a forged ChatGPT sign-in is refused', async () => {
+    process.env.MCP_REVIEWER_VENDORS = 'anthropic';
+    expect(await box(CLAUDE, CLAUDE_REDIRECT)).toBe(true);
+    expect(await box(CLAUDE_CODE, CLAUDE_CODE_REDIRECT)).toBe(true);
+    expect(await box(CHATGPT, CHATGPT_REDIRECT)).toBe(false);
+    expect(await box(CODEX, CODEX_REDIRECT)).toBe(false);
+    const res = await signIn(allStates(await consentHtml())[0], USERNAME, PASSWORD);
+    expect(res.status).toBe(400);
+    expect(events('mcp_connect')).toEqual([]);
+  });
+
+  it('openai,anthropic (spaces forgiven): all four pinned clients get the box', async () => {
+    process.env.MCP_REVIEWER_VENDORS = 'openai, anthropic';
+    for (const [clientId, redirect] of [[CHATGPT, CHATGPT_REDIRECT], [CODEX, CODEX_REDIRECT], [CLAUDE, CLAUDE_REDIRECT], [CLAUDE_CODE, CLAUDE_CODE_REDIRECT]]) {
+      expect(await box(clientId, redirect), clientId).toBe(true);
+    }
+  });
+
+  it('a junk value fails closed: no box for anyone, and no sign-in', async () => {
+    for (const junk of ['', 'OpenAI', 'claude', 'openai,anthropc', 'openai;anthropic', 'all']) {
+      process.env.MCP_REVIEWER_VENDORS = junk;
+      for (const [clientId, redirect] of [[CHATGPT, CHATGPT_REDIRECT], [CLAUDE, CLAUDE_REDIRECT]]) {
+        expect(await box(clientId, redirect), `${junk} ${clientId}`).toBe(false);
+      }
+      const res = await signIn(allStates(await consentHtml())[0], USERNAME, PASSWORD);
+      expect(res.status, junk).toBe(400);
+    }
+    expect(events('mcp_connect')).toEqual([]);
+  });
+});
+
 describe('US-32 AC49 — the exact pinned Claude and Claude Code clients get the same box, for Anthropic', () => {
+  beforeEach(() => {
+    process.env.MCP_REVIEWER_VENDORS = 'openai,anthropic';
+  });
+
   it('shows the open box above the choice to the pinned Claude client, worded for Anthropic', async () => {
     const html = await consentHtml(CLAUDE, CLAUDE_REDIRECT);
     expect(html).toContain(ANTHROPIC_HEADING);

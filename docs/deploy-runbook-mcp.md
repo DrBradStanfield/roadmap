@@ -316,6 +316,22 @@ only while all three secrets below are set and well formed. **It is on only whil
 pending.** Both vendors' reviewers share the one account, password and record: a kill or a
 rotation for one ends the other's sessions too.
 
+**Whose review is pending: `MCP_REVIEWER_VENDORS`** (US-32 AC49). A comma list of `openai`
+and/or `anthropic`. Unset means `openai`. Any other word turns every box off. The box is
+visible to every user of a listed client, so list only the vendor actually reviewing:
+
+```bash
+# Submitting to Anthropic's Connectors Directory, with OpenAI's review still pending:
+fly secrets set MCP_REVIEWER_VENDORS=openai,anthropic -a health-tool-edu
+# After Anthropic's verdict: back to OpenAI alone (or unset, which means the same).
+fly secrets set MCP_REVIEWER_VENDORS=openai -a health-tool-edu
+# After OpenAI's verdict, with Anthropic still reviewing:
+fly secrets set MCP_REVIEWER_VENDORS=anthropic -a health-tool-edu
+```
+
+The list gates the box and new sign-ins only. A reviewer session already connected
+survives a change to it; the three secrets below remain the kill switch.
+
 **The three secrets, on `health-tool-edu` only.** All three valid, or the feature is off.
 
 | Secret | Shape | Made by |
