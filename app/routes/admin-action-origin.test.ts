@@ -43,13 +43,15 @@ function buildWith(allowedActionOrigins: string[] | undefined): ServerBuild {
 }
 
 // What react-router-serve hands react-router on Fly: http scheme, the app's own host.
-async function postFromOrigin(host: string, origin: string | null) {
+// `.data` is the single-fetch path a fetcher/Form uses; the bare path is a document POST
+// (no JS yet). react-router runs the same CSRF check on both.
+async function postFromOrigin(host: string, origin: string | null, path = "/app/trending-test.data") {
   const handler = createRequestHandler(buildWith(config.allowedActionOrigins), "production");
   const headers = new Headers({ "content-type": "application/x-www-form-urlencoded" });
   if (origin) headers.set("origin", origin);
   const before = actionRuns;
   const res = await handler(
-    new Request(`http://${host}/app/trending-test.data`, { method: "POST", headers, body: "" }),
+    new Request(`http://${host}${path}`, { method: "POST", headers, body: "" }),
   );
   return { status: res.status, ran: actionRuns > before };
 }
@@ -69,6 +71,26 @@ describe("US-51 AC1: admin actions behind Fly's TLS proxy", () => {
       expect(status).toBe(200);
     });
   }
+
+  it("a document POST (no .data suffix) from the app's https Origin runs the action", async () => {
+    const { status, ran } = await postFromOrigin(
+      "health-tool-app.fly.dev",
+      "https://health-tool-app.fly.dev",
+      "/app/trending-test",
+    );
+    expect(ran).toBe(true);
+    expect(status).not.toBe(400);
+  });
+
+  it("a document POST (no .data suffix) from a foreign Origin is refused 400 before the action", async () => {
+    const { status, ran } = await postFromOrigin(
+      "health-tool-app.fly.dev",
+      "https://evil.example",
+      "/app/trending-test",
+    );
+    expect(ran).toBe(false);
+    expect(status).toBe(400);
+  });
 
   it("a POST with no Origin still runs (same as before)", async () => {
     expect((await postFromOrigin("health-tool-app.fly.dev", null)).ran).toBe(true);
