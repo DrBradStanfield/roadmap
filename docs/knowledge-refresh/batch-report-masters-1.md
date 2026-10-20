@@ -1,7 +1,7 @@
 # Knowledge batch report: masters-1
 
-Base: origin/main (e517468b2542504e553196203501f56c586f70cc)
-Handles: 9
+Base: origin/main (5b9c874f34385b65828dc4315232484f6ce1cc3b)
+Handles: 6
 
 Counts and hashes only. Raw text never enters this repo.
 
@@ -10,11 +10,11 @@ Counts and hashes only. Raw text never enters this repo.
 | Check | Status | FAIL | WARN |
 |---|---|---|---|
 | AC1 index.json and categories.json unchanged (except approved summary corrections) | PASS | 0 | 0 |
-| AC2 raw fidelity of every new number token | WARN | 0 | 47 |
-| AC3 hedging held; hardening words listed | WARN | 0 | 59 |
-| AC4 deleted sentences justified; headings kept | WARN | 0 | 2 |
+| AC2 raw fidelity of every new number token | WARN | 0 | 12 |
+| AC3 hedging held; hardening words listed | WARN | 0 | 6 |
+| AC4 deleted sentences justified; headings kept | PASS | 0 | 0 |
 | AC6 diff touches only batch files | PASS | 0 | 0 |
-| AC7 grokipedia, products, references, banned phrases, exclusions | WARN | 0 | 16 |
+| AC7 grokipedia, products, references, banned phrases, exclusions | WARN | 0 | 2 |
 | PATHWAY source line, deferral blockquote, no NZ logistics | PASS | 0 | 0 |
 | MASTER topic-master sections (Current view or evidence position, Brad's videos) | PASS | 0 | 0 |
 
@@ -22,15 +22,12 @@ Counts and hashes only. Raw text never enters this repo.
 
 | handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products | diff report + addenda (sha256) |
 |---|---|---|---|---|---|---|---|---|---|---|
-| collagen-benefits-best-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-collagen-supplements-review-peptides-hydrolysate-collagen.md | b4a969b545cecb30c07a1fd839a84453ca3181e9dd18ea14cc1e36aff98b44c3 | 1f8b03d6424424b3 | 1 | 1 | 11 | 69>69 | 2>2 | collagen-benefits-best-forms-dosing-and-side-effects.json 7981e2a24a0536b7b832999108cf60405872f201cd4f4303d004fc00749d36a1 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-1.json 9dc6af92839c1da490f0922b92ef05971c89cc1b48676adc80b08f2ed28d38c4 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-2.json 3c933e4f597d22623f91a8987ab622cafda919bf8d38c23a684d56243a8b44eb + collagen-benefits-best-forms-dosing-and-side-effects.addendum-3.json fdfe1c9fd6a4640eb860a2db0320a1c9909bbb6a1d504fce184185ed5aae9e76 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-4.json 4af90714590190548ab24569acef1aff24213521e4a884b462a3852b0aa47842 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-5.json 1e88ea639235ed4d19370035ca094ec497b1bc55a3cfe94b4c49bb895e5ac09d |
-| nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-nmn-nadh-nicotinamide-riboside-nmn-nadh-nicotinamide-riboside.md | 472f8cbbf26b730fa360f85357235c49ea8b29fe814be59a2bcc96290269cb78 | c4f98effbf81333f | 55 | 50 | 159 | 44>48 | 2>0 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.json 3777750751369110f8e7ca6a13ba4ad4c9728dac6a1b243c202491c5f7f4e7d6 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-1.json 4340b907718e5db514649b182c391c6191274ccf68c1ffaa3aa67e74c927b873 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-2.json a91b48dba376929671b60b2f5481e1e911cf138ad8f974661b7b02a1c449739e + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-3.json e3160b2fb4e8cf24dfa5e58a4a79ad32d0e84d649e6913584a685b53d41dad01 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-4.json a523e82f7b5bc05e0b68fd4580b479b6b82a59258beec65e02663d925071a9b5 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-5.json 0fa4e8bac8cf936b4749fe9be8471bf8a9fbcfeea4d525c9f0fad92cd2f90e41 |
-| resveratrol-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-resveratrol-review-resveratrol-red-wine.md | ac039af43e391e14c42043b13d13ddfc0b3789676263fab4f9c117d66266401b | 407ea45dfe65dc3b | 46 | 36 | 216 | 77>83 | 0>0 | resveratrol-benefits-forms-dosing-and-side-effects.json 1744e94b408800a1baeda5160bed280a4eb16c6bc7bb7820805ae7b169593aa0 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-1.json 0b202baa3681ff7a89b19db0de6f4b565294495d6c28f1dd5f170a840d0b8b70 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-2.json d9aef2b0b2061b9d9ede9ead03c81c4bce821fd483512b0154471724b49dd2ed + resveratrol-benefits-forms-dosing-and-side-effects.addendum-3.json 7c31367f778071931b1992843572b3cc3785d472d252e38162683092ca78a130 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-4.json cbe6102f6f37cc3d58a611a31c4ebc640712fee42a4a1e15ae88e0527cdd868b + resveratrol-benefits-forms-dosing-and-side-effects.addendum-5.json 0bf2a87c0a88a23e797490c865d3aaf1f08e8809c840ece58718499ebc5b1343 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-6.json 56ceba34be06902e66d50e982140c0451f990d43ba9a55932f3d6e4b8360cc77 |
-| vitamin-d-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-d-supplements-review-vitamin-d.md | 5ae7d76b7ea7c30da383fc8b8c17fda462fe4babb3cd5e1040aa62f3252eb782 | c03f2ca186008137 | 44 | 44 | 15 | 104>108 | 3>3 | vitamin-d-benefits-forms-dosing-and-side-effects.json fb509e3f35045b500c4cec577de96e0b8724586636b495e6028be22e43a5b3eb + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-1.json 7e7fb808fc4d2de8dfd106a65bd88253d841cbc90447367b9fd9f45cca97630b + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-2.json b37aebef368324446a67bf5100e8d05eab2a684dd56548021adff2c4718d5862 + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-3.json e0bbf5340eeb129ba99af17c85775f5ad9bf1ddb26083d6a81c1ab5d8d1e0025 + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-4.json 05a538195d47b50cc752523eed9f00a82ddcc5dad99494a95bcec3c2e9550d5c + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-5.json 7272fe4818dfe326137bb25332796ec1b7bc986f9bbb57440ad4397a1c0d9b8c + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-6.json d5412cb0fc59a45c1e515e9f0046b3040ff9fd886a9bed7eaf1a35ee4ca3e03a |
-| vitamin-k-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-k-supplements-review-vitamin-k.md | 4df6c8fd2890b327679d282691233b18cc9bcc17681967103e051b83c596f8cd | 866a2bc12a23f36a | 0 | 0 | 1 | 88>88 | 3>3 | vitamin-k-benefits-forms-dosing-and-side-effects.json 2ccf5813a2063bd93bf83b00f42a1a04951159714834a6116d0524c519fc9f1a + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-1.json 43e07f27ead83b50d7d1826c49da431108ea922d62c7ef56bd4d87bdbee71b18 + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-2.json e06742dc049b5fa1afb812882a0f6ddfb1e1e1806c65e003561b3d223ceaa516 + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-3.json 67d48410556f94a769b4d8c095a1c1040b61046fc9d0c73889c3ace011b655bf + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-4.json a8ecfdefc52f26ca1dde660c4a3555cc18efa5958cce901b07d88b214810bea4 |
-| lithium-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-lithium-low-dose-supplements-lithium.md | e0e6d307c853f46829cde15abbfc43c979867adaad53f0491ca42c4bc7f85ecf | 501f178a40111c7e | 0 | 0 | 0 | 38>42 | 0>0 | lithium-benefits-forms-dosing-and-side-effects.json 0ec7586349a3c0e1b570635564e2c056726af44253d397130345e79da537eb7e + lithium-benefits-forms-dosing-and-side-effects.addendum-1.json 831fcc06f2967da1f4c5f67373baabe4a7a5eaa2e9add996cbc07bb621fe898b + lithium-benefits-forms-dosing-and-side-effects.addendum-2.json bcce313a1d6beabac934f5332bd8e8ce923a2b1801f2a1574eb0f245ed46a728 + lithium-benefits-forms-dosing-and-side-effects.addendum-3.json cb9ee8b4bc02697f315c67c3e56a0a409abfb8ea61ff4e1c025332438c5c50c2 + lithium-benefits-forms-dosing-and-side-effects.addendum-4.json eba0435e5e65969ff909934663eb5a1ed2981c47406650b430264371eaccb25f + lithium-benefits-forms-dosing-and-side-effects.addendum-5.json c20edaa985ade5a84e4fbd05222e29b006c2c21f836d775b83fff7f17dd76704 |
-| taurine-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-taurine-supplements-review-taurine.md | 34dd95389868356b5a2aa5ef4099ab49cc3b899c2c0bc3ea66a4918f5aceacb0 | 6a8fa4e7c2e8363a | 0 | 0 | 2 | 50>53 | 4>4 | taurine-benefits-forms-dosing-and-side-effects.json f155a0fce9f2ce5b5c1709caf7f8a51c3e984de8db09fc9568f9c9ddaaf3cb54 + taurine-benefits-forms-dosing-and-side-effects.addendum-1.json ac21b1eb2d913ee1749447d86a1f48cb04e74b29a867f9d952d52c0f33496bdd |
-| creatine-benefits-best-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-review-creatine-creatine.md | 2d8545d21a72a758f870c48d82107f53aa07bfbf4f033911cc0df320e33d6eb6 | b8402b58b4d0ea74 | 0 | 0 | 1 | 87>87 | 3>3 | creatine-benefits-best-forms-dosing-and-side-effects.json c6e5739af432cbcf5ef3687e43adbf9b3cb66c2e8a5868b8bb59590168650776 + creatine-benefits-best-forms-dosing-and-side-effects.addendum-1.json ce3e706e015244a97e50296c997c83efd49474f572bdb04ea8c61e89899efbde + creatine-benefits-best-forms-dosing-and-side-effects.addendum-2.json 02e8b8d3e8164e54138f5578e4ec0dc1dfaf43182ce636cd92ae23270ced53de + creatine-benefits-best-forms-dosing-and-side-effects.addendum-3.json b1b59883f1a31ca2635e191ff9b879d01a740582999781dbb39d9e9ad8c61d6b + creatine-benefits-best-forms-dosing-and-side-effects.addendum-4.json ebb69e806b1c18145a0e45cda796fc79d83944d168916c5a993ba26b365f2b96 + creatine-benefits-best-forms-dosing-and-side-effects.addendum-5.json ec74b357fab0e8c87ca318a9670c520e2caacdf9593898488f6f133ebcb4a252 |
-| vitamin-c-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-c-supplement-review-vitaminc.md | 0700978a6052f63e40fd6137b74b28a6a377b6911460c7fba73fa1e124242473 | c66f7c3e96b79dae | 5 | 3 | 12 | 125>127 | 3>3 | vitamin-c-benefits-forms-dosing-and-side-effects.json 6c7bcfd5cc2ba2839ad2c55e1d804060a304c4bf92368110d7eedaeafaca16c3 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-1.json cbdc6bb3a130252595f747bbb861de68dab3043881fb3d324216d07543761441 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-2.json bdf14323f5c574983fcc4be4e12c07f42eadab8fc8ba72f9e45f9d7b05184a73 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-3.json 6db042b7308839b6cabf9f83008248f9d85f3a9ba8b1c0b58b8b11e825a32fde + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-4.json e445d36402fbb1212ddf870fd77f76c55c2db0a13e31cdbfccc335494ff994bf + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-5.json aa84779184dad4df3e245d5e8e49af7d37ce3ea0a0f6351ed9ed8ed1d99cf1c5 |
+| collagen-benefits-best-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-collagen-supplements-review-peptides-hydrolysate-collagen.md | b4a969b545cecb30c07a1fd839a84453ca3181e9dd18ea14cc1e36aff98b44c3 | 9356d66b4e35ce0b | 3 | 1 | 3 | 69>69 | 2>2 | collagen-benefits-best-forms-dosing-and-side-effects.json 7981e2a24a0536b7b832999108cf60405872f201cd4f4303d004fc00749d36a1 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-1.json 9dc6af92839c1da490f0922b92ef05971c89cc1b48676adc80b08f2ed28d38c4 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-2.json 3c933e4f597d22623f91a8987ab622cafda919bf8d38c23a684d56243a8b44eb + collagen-benefits-best-forms-dosing-and-side-effects.addendum-3.json fdfe1c9fd6a4640eb860a2db0320a1c9909bbb6a1d504fce184185ed5aae9e76 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-4.json 4af90714590190548ab24569acef1aff24213521e4a884b462a3852b0aa47842 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-5.json 1e88ea639235ed4d19370035ca094ec497b1bc55a3cfe94b4c49bb895e5ac09d + collagen-benefits-best-forms-dosing-and-side-effects.addendum-6.json d9d4bc7d7d7cd7f94756c1e92a71eb9b7589527ead0ae71c678ff521d8ca1fbc + collagen-benefits-best-forms-dosing-and-side-effects.addendum-7.json 1e4868f75ccf0d72c112dfd041f47e9a30baf3f306208e861a31187a1ed11e5f + collagen-benefits-best-forms-dosing-and-side-effects.addendum-8.json 6807115ae5ad3c1477c2c399a71b6621a72bfd2668e4fb30ded2514e31324283 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-9.json 9a87c673e8f7b17c55af520adbf3618b785d1210c4c4f8054ee312072147742b |
+| nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-nmn-nadh-nicotinamide-riboside-nmn-nadh-nicotinamide-riboside.md | 472f8cbbf26b730fa360f85357235c49ea8b29fe814be59a2bcc96290269cb78 | 9cb30891e477c315 | 4 | 4 | 6 | 48>48 | 0>0 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.json 3777750751369110f8e7ca6a13ba4ad4c9728dac6a1b243c202491c5f7f4e7d6 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-1.json 4340b907718e5db514649b182c391c6191274ccf68c1ffaa3aa67e74c927b873 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-2.json a91b48dba376929671b60b2f5481e1e911cf138ad8f974661b7b02a1c449739e + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-3.json e3160b2fb4e8cf24dfa5e58a4a79ad32d0e84d649e6913584a685b53d41dad01 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-4.json a523e82f7b5bc05e0b68fd4580b479b6b82a59258beec65e02663d925071a9b5 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-5.json 0fa4e8bac8cf936b4749fe9be8471bf8a9fbcfeea4d525c9f0fad92cd2f90e41 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-6.json efb37c30997fb8a660493bbd8211fc856854cd8a5d51517cd96c0f5c8f344a2a + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-7.json 53e01abf2a336423161d8b7caa24cb0352727e75378926f4171a4cabe07968c6 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-8.json 2a21261d33c8274563b1a2047e4cfb5d0adaf10e0ed1b52ddb2191e110594aaa + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-9.json 8d84a9656658ab665f7268f61c80a1b1a4ca91d0ab95125b0b3331fd7786e7f0 |
+| resveratrol-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-resveratrol-review-resveratrol-red-wine.md | ac039af43e391e14c42043b13d13ddfc0b3789676263fab4f9c117d66266401b | bf582d67b40276c4 | 1 | 1 | 2 | 83>83 | 0>0 | resveratrol-benefits-forms-dosing-and-side-effects.json 1744e94b408800a1baeda5160bed280a4eb16c6bc7bb7820805ae7b169593aa0 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-1.json 0b202baa3681ff7a89b19db0de6f4b565294495d6c28f1dd5f170a840d0b8b70 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-2.json d9aef2b0b2061b9d9ede9ead03c81c4bce821fd483512b0154471724b49dd2ed + resveratrol-benefits-forms-dosing-and-side-effects.addendum-3.json 7c31367f778071931b1992843572b3cc3785d472d252e38162683092ca78a130 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-4.json cbe6102f6f37cc3d58a611a31c4ebc640712fee42a4a1e15ae88e0527cdd868b + resveratrol-benefits-forms-dosing-and-side-effects.addendum-5.json 0bf2a87c0a88a23e797490c865d3aaf1f08e8809c840ece58718499ebc5b1343 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-6.json 56ceba34be06902e66d50e982140c0451f990d43ba9a55932f3d6e4b8360cc77 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-7.json 2a7d702297966d49bf873ee2fd2d3d7f54bf2503abef7968db29cfa055c960ec + resveratrol-benefits-forms-dosing-and-side-effects.addendum-8.json 7447c98d2b5a4a91bd312e5c25ced12a3b608fd59cfb86130c15d17a951fb838 |
+| vitamin-c-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-c-supplement-review-vitaminc.md | 0700978a6052f63e40fd6137b74b28a6a377b6911460c7fba73fa1e124242473 | db05d8fd6d3e44bc | 11 | 8 | 25 | 127>129 | 3>3 | vitamin-c-benefits-forms-dosing-and-side-effects.json 6c7bcfd5cc2ba2839ad2c55e1d804060a304c4bf92368110d7eedaeafaca16c3 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-1.json cbdc6bb3a130252595f747bbb861de68dab3043881fb3d324216d07543761441 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-2.json bdf14323f5c574983fcc4be4e12c07f42eadab8fc8ba72f9e45f9d7b05184a73 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-3.json 6db042b7308839b6cabf9f83008248f9d85f3a9ba8b1c0b58b8b11e825a32fde + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-4.json e445d36402fbb1212ddf870fd77f76c55c2db0a13e31cdbfccc335494ff994bf + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-5.json aa84779184dad4df3e245d5e8e49af7d37ce3ea0a0f6351ed9ed8ed1d99cf1c5 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-6.json 8ff3968e3c48f3833709bd165e2a1d33891d0a6e4f99eb8f73f8a2fced8902ab + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-7.json 7f3e97f013b1ec07b49310441a66264885d00843b01cd3d786ad591892608850 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-8.json f9b1c90f9444c9129d413e98fd53e3d82d47fcce75cf40a38f52279240f558e8 |
+| vitamin-d-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-d-supplements-review-vitamin-d.md | 5ae7d76b7ea7c30da383fc8b8c17fda462fe4babb3cd5e1040aa62f3252eb782 | 6272c3911b7131d6 | 0 | 0 | 0 | 108>109 | 3>3 | vitamin-d-benefits-forms-dosing-and-side-effects.json fb509e3f35045b500c4cec577de96e0b8724586636b495e6028be22e43a5b3eb + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-1.json 7e7fb808fc4d2de8dfd106a65bd88253d841cbc90447367b9fd9f45cca97630b + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-2.json b37aebef368324446a67bf5100e8d05eab2a684dd56548021adff2c4718d5862 + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-3.json e0bbf5340eeb129ba99af17c85775f5ad9bf1ddb26083d6a81c1ab5d8d1e0025 + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-4.json 05a538195d47b50cc752523eed9f00a82ddcc5dad99494a95bcec3c2e9550d5c + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-5.json 7272fe4818dfe326137bb25332796ec1b7bc986f9bbb57440ad4397a1c0d9b8c + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-6.json d5412cb0fc59a45c1e515e9f0046b3040ff9fd886a9bed7eaf1a35ee4ca3e03a + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-7.json e24c1c3dca7d523ee1cc51385b3c2758d09d9f71c8449a779d1992c36dfa4404 + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-8.json 52ababd2edbc6de51b316b719a6792028f645c4a2eb906dad87416f51f2d2d3a |
+| vitamin-k-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-k-supplements-review-vitamin-k.md | 4df6c8fd2890b327679d282691233b18cc9bcc17681967103e051b83c596f8cd | 446e12b848bdb6ee | 0 | 0 | 0 | 88>88 | 3>3 | vitamin-k-benefits-forms-dosing-and-side-effects.json 2ccf5813a2063bd93bf83b00f42a1a04951159714834a6116d0524c519fc9f1a + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-1.json 43e07f27ead83b50d7d1826c49da431108ea922d62c7ef56bd4d87bdbee71b18 + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-2.json e06742dc049b5fa1afb812882a0f6ddfb1e1e1806c65e003561b3d223ceaa516 + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-3.json 67d48410556f94a769b4d8c095a1c1040b61046fc9d0c73889c3ace011b655bf + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-4.json a8ecfdefc52f26ca1dde660c4a3555cc18efa5958cce901b07d88b214810bea4 + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-5.json 01790758ae66dfbd714e6df63e88b74d8b9b6bc792a4df86d9505d19a489f98c |
 
 ## Voided entries
 
@@ -85,6 +82,8 @@ Counts and hashes only. Raw text never enters this repo.
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 21 [base] (reason sha256 e948e3b168f4)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 22 [base] (reason sha256 e948e3b168f4)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 26 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 33 [addendum-8] (reason sha256 484b131051b7)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 34 [addendum-8] (reason sha256 484b131051b7)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 35 [base] (reason sha256 e948e3b168f4)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 38 [base] (reason sha256 e948e3b168f4)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 41 [base] (reason sha256 e948e3b168f4)
@@ -119,6 +118,7 @@ Counts and hashes only. Raw text never enters this repo.
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 94 [addendum-1] (reason sha256 2276567cdaf7)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 96 [addendum-1] (reason sha256 5fb39c2cdcd2)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 98 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 99 [addendum-8] (reason sha256 484b131051b7)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 102 [base] (reason sha256 49e7f457fe7a)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 106 [base] (reason sha256 99c155f391d4)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 109 [base] (reason sha256 49e7f457fe7a)
@@ -144,6 +144,10 @@ Counts and hashes only. Raw text never enters this repo.
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 147 [addendum-3] (reason sha256 b16f7bd65fae)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 148 [addendum-3] (reason sha256 e59d7a863319)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 149 [addendum-4] (reason sha256 e4433c04590f)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 160 [addendum-9] (reason sha256 c04728bc15f6)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 161 [addendum-9] (reason sha256 c04728bc15f6)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 162 [addendum-9] (reason sha256 c04728bc15f6)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 163 [addendum-9] (reason sha256 c04728bc15f6)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 0b0dac138da5)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID current_view_basis 3 [addendum-4] (reason sha256 31f14159a308)
 - nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 81 [base] (reason sha256 4bee240ad67e)
@@ -453,6 +457,32 @@ Counts and hashes only. Raw text never enters this repo.
 - resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 237 [base] (reason sha256 fa58fe02e8cf)
 - resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 238 [base] (reason sha256 fa58fe02e8cf)
 - resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 240 [base] (reason sha256 817e5a1eb080)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 3 [base] (reason sha256 e948e3b168f4)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 5 [base] (reason sha256 e948e3b168f4)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 6 [base] (reason sha256 3909e4b5f597)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 7 [base] (reason sha256 3909e4b5f597)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 11 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 12 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 13 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 14 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 15 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 16 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 17 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 18 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 19 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 20 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 21 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 25 [addendum-4] (reason sha256 82d446c6c2a8)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 29 [addendum-4] (reason sha256 2ab6b489bb21)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 31 [addendum-7] (reason sha256 c93dcd7ff501)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 37 [addendum-7] (reason sha256 9a877a42bac3)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 46 [addendum-8] (reason sha256 3b24d0281ba9)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 0 [base] (reason sha256 d5771852bd86)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
 - vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 0 [base] (reason sha256 771f960daa26)
 - vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 2 [base] (reason sha256 818f1ebac33d)
 - vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 4 [base] (reason sha256 83d4ac52d596)
@@ -559,119 +589,6 @@ Counts and hashes only. Raw text never enters this repo.
 - vitamin-k-benefits-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
 - vitamin-k-benefits-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
 - vitamin-k-benefits-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
-- lithium-benefits-forms-dosing-and-side-effects: VOID changed_tokens 0 [base] (reason sha256 83d4ac52d596)
-- lithium-benefits-forms-dosing-and-side-effects: VOID changed_tokens 1 [base] (reason sha256 83d4ac52d596)
-- lithium-benefits-forms-dosing-and-side-effects: VOID changed_tokens 3 [base] (reason sha256 83d4ac52d596)
-- lithium-benefits-forms-dosing-and-side-effects: VOID changed_tokens 4 [base] (reason sha256 49e7f457fe7a)
-- lithium-benefits-forms-dosing-and-side-effects: VOID changed_tokens 5 [base] (reason sha256 49e7f457fe7a)
-- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 0 [base] (reason sha256 d5771852bd86)
-- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
-- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
-- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
-- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
-- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
-- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 11 [base] (reason sha256 06a484762a77)
-- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 14 [addendum-4] (reason sha256 a7d6f6cb106c)
-- lithium-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 0 [addendum-5] (reason sha256 a3db44050934)
-- lithium-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 1 [addendum-5] (reason sha256 a3db44050934)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 0 [base] (reason sha256 62a178f41244)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 1 [base] (reason sha256 62a178f41244)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 2 [base] (reason sha256 62a178f41244)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 3 [base] (reason sha256 62a178f41244)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 4 [base] (reason sha256 e948e3b168f4)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 5 [base] (reason sha256 e948e3b168f4)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 6 [base] (reason sha256 62a178f41244)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 7 [base] (reason sha256 e948e3b168f4)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 8 [base] (reason sha256 02fcc3189bf6)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 9 [base] (reason sha256 02fcc3189bf6)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 11 [base] (reason sha256 e948e3b168f4)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 12 [base] (reason sha256 62a178f41244)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 13 [base] (reason sha256 62a178f41244)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 14 [base] (reason sha256 e948e3b168f4)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 23 [base] (reason sha256 e948e3b168f4)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 27 [base] (reason sha256 e948e3b168f4)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 28 [base] (reason sha256 49e7f457fe7a)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 29 [base] (reason sha256 49e7f457fe7a)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 30 [base] (reason sha256 62a178f41244)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 31 [base] (reason sha256 62a178f41244)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 32 [base] (reason sha256 62a178f41244)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 33 [base] (reason sha256 49e7f457fe7a)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 37 [base] (reason sha256 49e7f457fe7a)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 38 [base] (reason sha256 49e7f457fe7a)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 39 [base] (reason sha256 49e7f457fe7a)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 40 [base] (reason sha256 62a178f41244)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 43 [base] (reason sha256 99ac7fb183cf)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 44 [base] (reason sha256 99ac7fb183cf)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 45 [base] (reason sha256 99ac7fb183cf)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 46 [base] (reason sha256 99ac7fb183cf)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 47 [base] (reason sha256 99ac7fb183cf)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 48 [base] (reason sha256 99ac7fb183cf)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 49 [base] (reason sha256 99ac7fb183cf)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 50 [base] (reason sha256 99ac7fb183cf)
-- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 54 [base] (reason sha256 99ac7fb183cf)
-- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 0 [base] (reason sha256 d5771852bd86)
-- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
-- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
-- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
-- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
-- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
-- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 27 [base] (reason sha256 01cb4ca86170)
-- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 28 [base] (reason sha256 01cb4ca86170)
-- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 29 [base] (reason sha256 01cb4ca86170)
-- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 30 [base] (reason sha256 01cb4ca86170)
-- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 31 [base] (reason sha256 7ed3f15097da)
-- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 32 [base] (reason sha256 7ed3f15097da)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 3 [base] (reason sha256 e948e3b168f4)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 4 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 5 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 6 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 7 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 8 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 9 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 10 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 12 [base] (reason sha256 e948e3b168f4)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 13 [base] (reason sha256 e948e3b168f4)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 15 [base] (reason sha256 e948e3b168f4)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 16 [base] (reason sha256 e948e3b168f4)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 17 [base] (reason sha256 e948e3b168f4)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 18 [base] (reason sha256 e948e3b168f4)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 27 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 28 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 29 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 30 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 31 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 32 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 33 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 34 [base] (reason sha256 49e7f457fe7a)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 0 [base] (reason sha256 d5771852bd86)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 3 [base] (reason sha256 e948e3b168f4)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 5 [base] (reason sha256 e948e3b168f4)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 6 [base] (reason sha256 3909e4b5f597)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 7 [base] (reason sha256 3909e4b5f597)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 11 [base] (reason sha256 49e7f457fe7a)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 12 [base] (reason sha256 49e7f457fe7a)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 13 [base] (reason sha256 49e7f457fe7a)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 14 [base] (reason sha256 49e7f457fe7a)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 15 [base] (reason sha256 49e7f457fe7a)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 16 [base] (reason sha256 49e7f457fe7a)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 17 [base] (reason sha256 49e7f457fe7a)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 18 [base] (reason sha256 49e7f457fe7a)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 19 [base] (reason sha256 49e7f457fe7a)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 20 [base] (reason sha256 49e7f457fe7a)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 21 [base] (reason sha256 49e7f457fe7a)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 25 [addendum-4] (reason sha256 82d446c6c2a8)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 29 [addendum-4] (reason sha256 2ab6b489bb21)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 0 [base] (reason sha256 d5771852bd86)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
 
 ## Summary corrections from addenda
 
@@ -685,60 +602,20 @@ Counts and hashes only. Raw text never enters this repo.
 
 | check | handle | by | date | reason | match sha256 |
 |---|---|---|---|---|---|
-| AC2 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("over 20 weeks" (duration) read as a ">" comparison); source states it verbatim: nmn-nad-supplements-for-anti-aging-just-changed.md: "NAD+ increased 2.6- to 3.1-fold after 5–10 weeks and remained elevated at 20 weeks" | cf8ec7b324c1e354 |
-| AC2 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("125 mg NMN twice daily" read as 125 mg per day); source states it verbatim: pubmed/36797393.md: "A total of 36 healthy middle-aged participants received one capsule of either 125 mg NMN or placebo twice a day" | 73b83a120d93e85b |
-| AC2 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("aged 65 or over" vs the source's "aged ≥65 years": comparator placement); source states it verbatim: pubmed/36443648.md: "male patients with diabetes aged ≥65 years with reduced grip strength" | c43f6f2a9e0b21d2 |
-| AC2 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("at a maximum of 300 mg per day" read as a comparison the source words differently); source: reviews-nmn-nadh-nicotinamide-riboside-nmn-nadh-nicotinamide-riboside.md (ConsumerLab raw), changed_tokens[53] in the external report (voided there because the checker reads the comparison differently; this exception records it). No licensed text quoted here. | 36c95590e312d918 |
-| AC2 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("no less than 800 mg/kg" vs the source's "NLT 800 mg NMN/kg": abbreviation and word between unit parts); source states it verbatim: pubmed/38765763.md: "the NOAEL was considered to be NLT 800 mg NMN/kg body weight in Wistar rats" | 3ec68cff3d8fa786 |
-| AC2 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (range "20 to 65" vs the source's "20-65 years": unit glued to the range); source states it verbatim: pubmed/36002548.md: "in 31 healthy adult men and women aged 20-65 years" | 2f715ce5938cfcf3 |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (body 'average age 71.7' vs the abstract's 'aged 71.7 ± 4.6 years': unit and spread around the number); source states it verbatim: pubmed/40922000.md: "involved 120 healthy subjects aged 71.7 ± 4.6 years divided into 3 groups". Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm. | fb7c394c400b5ac8 |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ('350 mg twice daily' read as 350 mg per day; the abstract writes 'bid'); source states it verbatim: pubmed/40922000.md: "B) resveratrol 350 mg bid + TA-65 100U". Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm. | fe2c539f53db824c |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (number word in the source ("fifteen")); source states it verbatim: pubmed/36014469.md: "studies were selected for the systematic review and fifteen were included in the meta-analysis" | a6d7eeee1b1d10e8 |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (ranges and "daily" placement ("250−500 mg/day", "250 mg ... daily", "100 mg or 250 mg")); sources: pubmed/36014469.md: "HbA1c improved in subjects aged 45−59 years with doses of 250−500 mg"; and reviews-resveratrol-review-resveratrol-red-wine.md (ConsumerLab raw), changed_tokens[116] and [117] in the external report. No licensed text quoted here. | 7b8366fa673408d9 |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (range with a minus sign and glued unit ("45−59 years")); source states it verbatim: pubmed/36014469.md: "HbA1c improved in subjects aged 45−59 years with doses of 250−500 mg" | d5d25d5311e52e0b |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (range with a minus sign and glued unit ("45−59 years")); source states it verbatim: pubmed/36014469.md: "HbA1c improved in subjects aged 45−59 years with doses of 250−500 mg" | 4493312e3529daca |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("over 60" vs the source's "older than 60 years": unit glued to the comparison); source states it verbatim: pubmed/36014469.md: "but not in subjects older than 60 years" | 8df928aaab42b448 |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("up to 5 g" read as a comparison; the source lists the doses); source states it verbatim: pubmed/20935227.md + pubmed/17548692.md: "Forty healthy volunteers ingested resveratrol at 0.5, 1.0, 2.5, or 5.0 g daily for 29 days; single doses of 0.5, 1, 2.5, or 5 g" | 08992f093451a44a |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (value and unit separated by the CI in the source); source states it verbatim: pubmed/40580309.md: "BUN [weighted mean difference (WMD) =  - 1.20; 95% CI: - 1.89, - 0.51 mg/dL" | f3dabe5ba1f0f0d4 |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("over 3 months" (duration) read as a ">" comparison); source states it verbatim: pubmed/22240353.md: "One group received 10 mg RES capsule daily for 3 months" | a859b62924e98232 |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: the bare digit 5 became a needed token only because round 2 fix 7 added 'month 5' (PBAR abstract) on other lines. The Piceid line's numbers (4-5 mg/L, 5- to 20-fold) are unchanged from origin/main; only its citation markers changed earlier in the batch. Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm. | 44d525eb1ab69ac9 |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Line unchanged from main except reference renumbering. Its "10" became a needed token only because review fix 7 added the Chachay 2014 trial (PMID 24582567: "3000 mg resveratrol (n = 10) or placebo (n = 10) daily for 8 weeks"), raising the body count of "10". The line's own number predates masters-1 and its raw is not in this batch. | 031ad6e4e43e8b8b |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Line unchanged from main except reference renumbering. Its "10" became a needed token only because review fix 7 added the Chachay 2014 trial (PMID 24582567: "3000 mg resveratrol (n = 10) or placebo (n = 10) daily for 8 weeks"), raising the body count of "10". The line's own number predates masters-1 and its raw is not in this batch. | 8f04019782d4c533 |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: 150 mg/day equals the abstract's "75 mg twice daily"; quote is in the report. | 8aecb84e72441de1 |
-| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: 150 mg/day equals the abstract's "75 mg twice daily"; quote is in the report. | f190fd297fa38e84 |
+| AC2 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-21 | Checker tokenisation: the body says "114 women aged 20-50" (the file's own "aged 45-65" style); the abstract writes the range with its unit, which the checker reads as "20 year", so the bare 20 and 50 match nothing. pubmed/41788055.md: "114 women aged 20-50 years with thigh cellulite and self-reported hair thinning" (collagen addendum-8 quotes it). Written by the correction-round review-fix Opus worker; orchestrator to confirm. | 11586a0119a21b47 |
+| AC2 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-21 | Checker tokenisation: same line as the "50" exception; the abstract range "20-50 years" reads as "20 year". pubmed/41788055.md: "114 women aged 20-50 years with thigh cellulite". Written by the correction-round review-fix Opus worker; orchestrator to confirm. | 97a50652ead06dae |
 | AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: the abstract spells the sample size "Hundred six" (106). | 7f01708b257a463f |
 | AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: body "more than 7 times" equals the abstract's ">7-fold". | 86e3d721b622d452 |
-| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: body "more than 7 times" equals the abstract's ">7-fold". | 7350aca7cfd352ea |
-| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: the abstract spells the sample size "Hundred six" (106). | 85667f73b4449e24 |
-| AC4 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | Brad 2026-10-20 deleted the subsection's only content (unsupported methylation concern and the TMG product sentence); an empty heading would be wrong. | 6aea0e4386d8ead4 |
+| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-21 | Checker tokenisation: the abstract writes the age with its unit ('52 years', token '52 year'); the body says 'average age 52'. Source states it verbatim: pubmed/35896462.md: "Ninety Eight (98 out of 104 recruited; mean age = 52 years) patients completed the study". Ruling 10: text left as it should read. Written by the correction-round Opus worker; orchestrator to confirm. | 60124f1aabf8af46 |
+| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-21 | Checker tokenisation: the body says "a drink containing 600 mg vitamin C daily", which the checker reads as 600 mg/day; the abstract gives the dose per drink and the drink as daily in a separate clause: pubmed/41739218.md: "four orange-flavored drinks (200 mL/d)" and "the others contained 600 mg vitamin C (VitC)". Written by the correction-round review-fix Opus worker; orchestrator to confirm. | 5bbe90a324a277ed |
+| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-21 | Checker tokenisation: the body lists '250, 1,000, or 2,000 mg ... daily' (token '250'); the abstract writes '250 mg/day'. Source states it verbatim: pubmed/34595203.md: "low (250 mg/day, n = 26), medium (1,000 mg/day, n = 30), or high (2,000 mg/day, n = 28) doses of VC supplements". Ruling 10: the earlier '250 mg/day,' wording existed only to pass the checker and is undone. Written by the correction-round Opus worker; orchestrator to confirm. | a6f0cf0296bf3b11 |
+| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-21 | Checker tokenisation: the line's '18-35' age range is unchanged; it became 'needed' only because the warfarin row gained '18 healthy men'. The abstract writes the range with its unit ('18 year'): pubmed/25010554.md: "Healthy non-smoking adult men (18-35 years; BMI < 34 kg/m2; plasma vitamin C < 45 µmol/L)". Written by the correction-round Opus worker; orchestrator to confirm. | e9bf63757602f1dd |
 | AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Pre-existing on main before masters-1 (writer report notes it); not introduced by the batch. Cleanup belongs to the reference-hygiene backlog. | f861a10c3d150329 |
-| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Real paper on this publisher's site, cited by ConsumerLab; the publisher has a low-quality open-access reputation (flagged for review/Brad). | a961d77abe57e365 |
-| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Real paper on this publisher's site, cited by ConsumerLab; the publisher has a low-quality open-access reputation (flagged for review/Brad). | a961d77abe57e365 |
-| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Industry body statement (Collagen Stewardship Alliance / GROW Coalition) as reported by NutraIngredients; the trade-press report is the primary record of the statement. | 7312c16f7cf020d4 |
-| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Industry body statement (Collagen Stewardship Alliance / GROW Coalition) as reported by NutraIngredients; the trade-press report is the primary record of the statement. | 7312c16f7cf020d4 |
-| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Industry body statement (Collagen Stewardship Alliance / GROW Coalition) as reported by NutraIngredients; the trade-press report is the primary record of the statement. | 055f46ffb73af010 |
-| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Industry body statement (Collagen Stewardship Alliance / GROW Coalition) as reported by NutraIngredients; the trade-press report is the primary record of the statement. | 055f46ffb73af010 |
-| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | US regulation text (21 CFR) hosted by Cornell LII: a legitimate primary source. | ad3bfd8d58db7395 |
-| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | US regulation text (21 CFR) hosted by Cornell LII: a legitimate primary source. | ad3bfd8d58db7395 |
-| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | US regulation text (21 CFR) hosted by Cornell LII: a legitimate primary source. | ad3bfd8d58db7395 |
-| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | US regulation text (21 CFR) hosted by Cornell LII: a legitimate primary source. | ad3bfd8d58db7395 |
-| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Real paper on this publisher's site, cited by ConsumerLab; the publisher has a low-quality open-access reputation (flagged for review/Brad). | c8fb46b91f7fc95f |
-| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Real paper on this publisher's site, cited by ConsumerLab; the publisher has a low-quality open-access reputation (flagged for review/Brad). | c8fb46b91f7fc95f |
-| AC7 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | 9ac14fd197390a97 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-21 | Real paper with no PubMed record (J Arthritis 2019, unindexed); the link is Bursa Uludag University's publication record, checked live 2026-10-21 (HTTP 200, title matches). No-ID reference repair, collagen addendum-6. Written by the correction-round Opus worker; orchestrator to confirm. | 54a29bb5ae358850 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-21 | Real paper with no PubMed record (J Arthritis 2019, unindexed); the link is Bursa Uludag University's publication record, checked live 2026-10-21 (HTTP 200, title matches). No-ID reference repair, collagen addendum-6. Written by the correction-round Opus worker; orchestrator to confirm. | 54a29bb5ae358850 |
+| AC7 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-21 | The base moved: masters-1 round 2 (99932e7d) is merged, so origin/main already carries this master with 0 product mentions. The report's 2 -> 0 was counted against the pre-merge base; the correction round adds none (recomputed 0 -> 0). Written by the correction-round Opus worker; orchestrator to confirm. | c36b7fc1d5bcda29 |
 | AC7 | vitamin-d-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Pre-existing on main before masters-1; ruling 10 forbids dropping bibliographic detail to pass. Reference-hygiene backlog. | 173c7d266060b040 |
-| AC7 | vitamin-k-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Dam's Nobel lecture (1946), primary source on nobelprize.org. | 07923cfa9e5e24d1 |
-| AC7 | lithium-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | FDA lithium prescribing information: legitimate primary regulatory source. | 126c6eb94828728a |
-| AC7 | lithium-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | FDA lithium prescribing information: legitimate primary regulatory source. | 126c6eb94828728a |
-| AC7 | lithium-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Round 2 fix 9 (orchestrator-accepted): the real Townsend Letter article (January 2015) that ConsumerLab cites as Greenblatt 2015; the URL returned 200 on 2026-10-20 and the page names Greenblatt and Grossmann. A practitioner magazine, not indexed in PubMed; the claim also cites ConsumerLab [1]. Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm. | 7022a3ad5c9c9267 |
-| AC7 | lithium-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | b2fa8c4a7e56c4fd |
-| AC7 | creatine-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | US patent text (Google Patents): legitimate primary source. | 96a320224cbf2974 |
-| AC7 | creatine-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | US patent text (Google Patents): legitimate primary source. | 96a320224cbf2974 |
-| AC7 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | 5af2a27eac3d08f5 |
-| AC7 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | 12605c0b5a2a516a |
-| AC7 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | 1348cdfe2ec561c1 |
-| AC7 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | cb7f4cf726431032 |
-| AC7 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | f17d6a688ff5ffb6 |
-| AC7 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | 2f82b023b538ff5a |
+| AC7 | vitamin-k-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-21 | PMC is NCBI's full-text archive. Orimo 1992 is a Japanese-language report with no PubMed record; the PMC link is the open paper that cites it as the dose-finding study (Iwamoto, Nutrients 2014, PMC4042573), checked live 2026-10-21. No-ID reference repair, vitamin K addendum-5. Written by the correction-round Opus worker; orchestrator to confirm. | 07456ea37bcc0875 |
 
 Body hashes are the first 16 hex characters of sha256; raw hashes are in full.
 

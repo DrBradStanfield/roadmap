@@ -164,7 +164,7 @@ Resveratrol has been found to either directly or indirectly activate the SIRT1 g
 
 An analysis of data from 10 studies involving 698 participants found that taking resveratrol (dose range: 8 to 1,500 mg daily) for 1-12 months did not significantly affect bone mineral density or blood levels of bone biomarkers compared to placebo, regardless of dose, duration, or health status at baseline [46].
 
-One of the included studies, involving 117 postmenopausal women with osteopenia in Australia, showed that 75 mg of resveratrol (Veri-te resveratrol by Evolva SA, which partially funded the study) twice daily for 12 months only very slightly reduced the decline in bone mineral density in the lumbar spine and femur compared to placebo. It did not affect whole-body bone mineral density or 10-year fracture risk [47].
+One of the included studies, involving 117 postmenopausal women with osteopenia in Australia, showed that 75 mg of resveratrol (Veri-te resveratrol by Evolva SA, which partially funded the study) twice daily for 12 months only very slightly reduced the decline in bone mineral density in the lumbar spine and femur compared to placebo, and did not affect whole-body bone mineral density or 10-year fracture risk, according to ConsumerLab's reading [1]. The study's authors report positive effects on bone density in the lumbar spine and neck of femur compared with placebo, and a reduction in the 10-year probability of major and hip fracture [47].
 
 ### Menopause Symptoms
 
@@ -449,9 +449,9 @@ Japanese knotweed (Polygonum cuspidatum / Fallopia japonica) is the primary comm
 
 [45] Calabrese EJ, Mattson MP, Calabrese V. "Resveratrol commonly displays hormesis: occurrence and biomedical significance." *Hum Exp Toxicol*. 2010;29(12):980-1015. [https://pubmed.ncbi.nlm.nih.gov/21115559/](https://pubmed.ncbi.nlm.nih.gov/21115559/)
 
-[46] Li J, Gong H, Liu R. "Effects of resveratrol on bone mineral density: a meta-analysis of randomized controlled trials." *BMC Complement Med Ther*. 2021;21:271.
+[46] Li Q, Yang G, Xu H, et al. "Effects of resveratrol supplementation on bone quality: a systematic review and meta-analysis of randomized controlled trials." *BMC Complement Med Ther*. 2021;21(1):214. doi: [10.1186/s12906-021-03381-4](https://doi.org/10.1186/s12906-021-03381-4). PMID: [34420523](https://pubmed.ncbi.nlm.nih.gov/34420523/)
 
-[47] Wong G, Mah K, Wong RH. "Effects of resveratrol on bone health in postmenopausal women with osteopenia." *J Bone Miner Res*. 2020;35(11):2139-2147.
+[47] Wong RH, Thaung Zaw JJ, Xian CJ, Howe PR. "Regular Supplementation With Resveratrol Improves Bone Mineral Density in Postmenopausal Women: A Randomized, Placebo-Controlled Trial." *J Bone Miner Res*. 2020;35(11):2121-2131. doi: [10.1002/jbmr.4115](https://doi.org/10.1002/jbmr.4115). PMID: [32564438](https://pubmed.ncbi.nlm.nih.gov/32564438/)
 
 [48] Thaung Zaw JJ, Howe PRC, Wong RHX. "Long-term resveratrol supplementation improves pain perception, menopausal symptoms, and overall well-being in postmenopausal women: findings from a 24-month randomized, controlled, crossover trial." *Menopause*. 2020;28(1):40-49. [https://pubmed.ncbi.nlm.nih.gov/32881835/](https://pubmed.ncbi.nlm.nih.gov/32881835/)
 
@@ -463,9 +463,9 @@ Japanese knotweed (Polygonum cuspidatum / Fallopia japonica) is the primary comm
 
 [52] Richer S, Stiles W, Ulanski L, et al. "Observation of human retinal remodeling in octogenarians with a resveratrol based nutritional supplement." *Nutrients*. 2013;5(6):1989-2005.
 
-[53] Richer S, Patel S, Engel-Britt S, et al. "Double-masked, placebo-controlled, randomized trial of lutein and antioxidant supplementation." *Nutrients*. 2014;6(3):1177-1201.
+[53] Richer S, Patel S, Sockanathan S, et al. "Resveratrol based oral nutritional supplement produces long-term beneficial effects on structure and visual function in human patients." *Nutrients*. 2014;6(10):4404-4420. doi: [10.3390/nu6104404](https://doi.org/10.3390/nu6104404). PMID: [25329968](https://pubmed.ncbi.nlm.nih.gov/25329968/)
 
-[54] Wang S, Wang B, Bhatt D, et al. "Effects of resveratrol on choroidal thickness." *Curr Eye Res*. 2016;41(12):1575-1578.
+[54] Wang S, Moonasar N, Xiao X, et al. "Effect of Resveratrol-Based Nutritional Supplement on Choroidal Thickness: A Pilot Study." *Curr Eye Res*. 2016;41(10):1339-1345. doi: [10.3109/02713683.2015.1119282](https://doi.org/10.3109/02713683.2015.1119282). PMID: [26863155](https://pubmed.ncbi.nlm.nih.gov/26863155/)
 
 [55] Abba Y, Hassim H, Hamzah H, et al. "Antiviral activity of resveratrol against human and animal viruses." *Adv Virol*. 2015;2015:184241.
 
@@ -491,7 +491,7 @@ Japanese knotweed (Polygonum cuspidatum / Fallopia japonica) is the primary comm
 
 [66] Li J, Wang S, Duan J, et al. "The protective mechanism of resveratrol against hepatic injury induced by iron overload in mice." *Toxicol Appl Pharmacol*. 2021;424:115596. [https://pubmed.ncbi.nlm.nih.gov/34044072/](https://pubmed.ncbi.nlm.nih.gov/34044072/)
 
-[67] Giuliani C, Bucci I, Di Santo S, et al. "Resveratrol and thyroid function." *Food Chem Toxicol*. 2017;107(Pt A):67-73.
+[67] Giuliani C, Iezzi M, Ciolli L, et al. "Resveratrol has anti-thyroid effects both in vitro and in vivo." *Food Chem Toxicol*. 2017;107(Pt A):237-247. doi: [10.1016/j.fct.2017.06.044](https://doi.org/10.1016/j.fct.2017.06.044). PMID: [28668442](https://pubmed.ncbi.nlm.nih.gov/28668442/)
 
 [68] Roberts VH, Pound LD, Thorn SR, et al. "Beneficial and cautionary outcomes of resveratrol supplementation in pregnant nonhuman primates." *FASEB J*. 2014;28(6):2466-2477.
 
