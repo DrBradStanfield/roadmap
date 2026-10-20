@@ -298,18 +298,21 @@ describe('US-17 AC8 — a credential-free optin creates or refreshes, never clob
   });
 
   it('US-23 AC7: the reply and the queries are the same for a verified row and an address-lane row', async () => {
-    const run = async () => {
+    const run = async (provider: string) => {
       calls.length = 0;
-      primedResults = [{ data: { id: 'row-1' }, error: null }, { data: null, error: null }];
+      primedResults = [{ data: { id: 'row-1', provider }, error: null }, { data: null, error: null }];
       const result = await enrolByEmail('victim@example.com', 'dropbox', [VALID_ITEM]);
-      return { result, methods: calls.map((c) => c.method) };
+      return { result, chain: calls.map((c) => ({ method: c.method, args: c.args })) };
     };
-    // The stub cannot tell the rows apart, and neither may the caller: the
-    // lookup selects no provider, so the code takes one path for both.
-    const first = await run();
-    expect(calls.find((c) => c.method === 'select')!.args[0]).toBe('id');
-    expect(await run()).toEqual(first);
-    expect(first.methods.filter((m) => m === 'update')).toHaveLength(1);
+    // The lookup returns the row's provider here, so a JS branch on it would
+    // change the reply or the chain. The provider filter lives in the UPDATE.
+    const verified = await run('google-drive');
+    const addressLane = await run('typed');
+    expect(verified.result).toEqual({ isNew: false });
+    expect(addressLane.result).toEqual({ isNew: false });
+    expect(verified.chain.filter((c) => c.method === 'update')).toHaveLength(1);
+    expect(addressLane.chain.filter((c) => c.method === 'update')).toHaveLength(1);
+    expect(verified.chain).toEqual(addressLane.chain);
   });
 
   it('the tombstone refill: a refresh against an unsubscribed row rewrites the schedule but is not a new enrolment', async () => {

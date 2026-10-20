@@ -41,8 +41,8 @@ export async function resizeImage(file: File, maxDim: number): Promise<string> {
   });
 }
 
-/** Returns true if file is a JPEG, PNG or HEIC photo. An allow-list, never
+/** Returns true if file is a JPEG, PNG, HEIC or HEIF photo. An allow-list, never
  *  `image/*`: an SVG can carry script and its original is archived (US-14 AC3). */
 export function isImage(file: File): boolean {
-  return /\.(jpe?g|png|heic)$/i.test(file.name) || ['image/jpeg', 'image/png', 'image/heic'].includes(file.type);
+  return /\.(jpe?g|png|heic|heif)$/i.test(file.name) || ['image/jpeg', 'image/png', 'image/heic', 'image/heif'].includes(file.type);
 }

@@ -18,6 +18,7 @@ describe('US-12: isImage', () => {
     expect(isImage(file('photo.jpeg', ''))).toBe(true);
     expect(isImage(file('photo.png', ''))).toBe(true);
     expect(isImage(file('photo.heic', ''))).toBe(true);
+    expect(isImage(file('photo.heif', ''))).toBe(true);
   });
 
   it('is case-insensitive on extension', () => {
@@ -28,6 +29,7 @@ describe('US-12: isImage', () => {
     expect(isImage(file('blob', 'image/jpeg'))).toBe(true);
     expect(isImage(file('blob', 'image/png'))).toBe(true);
     expect(isImage(file('blob', 'image/heic'))).toBe(true);
+    expect(isImage(file('blob', 'image/heif'))).toBe(true);
   });
 
   // US-14 AC3: an SVG can carry script, and its original would be archived as
