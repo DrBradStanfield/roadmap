@@ -115,6 +115,11 @@ describe('US-09 AC5 — the picker', () => {
     expect(hint?.textContent).not.toMatch(/—/);
   });
 
+  it('drops the Drive hint once Drive is the connected backend (US-09 AC21)', () => {
+    render(<BackendPickerModal current="google-drive" onClose={vi.fn()} />);
+    expect(document.querySelector('.hr-opt-hint')).toBeNull();
+  });
+
   it('names the browser-only option honestly', () => {
     const dialog = open();
     expect(dialog.textContent).toContain('This browser only');
