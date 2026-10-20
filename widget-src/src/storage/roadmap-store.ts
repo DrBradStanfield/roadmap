@@ -72,7 +72,7 @@ import {
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
 import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core';
-import { LocalStorageAdapter, NAMED_FILE_PREFIX } from './local-storage-adapter';
+import { LocalStorageAdapter, NAMED_FILE_PREFIX, roadmapLocalWritesStopped, stopRoadmapLocalWrites } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { clearMatrixDrafts, clearOffFileHealthData, LPA_CHECK_KEPT_KEY, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
@@ -120,8 +120,16 @@ function notify(name: string): void {
  *  far-future instant because an older bundle in another tab still reads it
  *  as "keep rows newer than this" past an erase: so it keeps nothing extra. */
 export function markSyncPending(): void {
+  if (roadmapLocalWritesStopped()) return;
   safeSetItem(PENDING_MIRROR_KEY, '9999-12-31T23:59:59.999Z');
   notify(SYNC_PENDING_EVENT);
+}
+
+/** Stop this page recreating the roadmap after logout, without erasing cloud
+ *  data or cancelling successful cloud saves (including lifecycle flushes). */
+export function beginRoadmapLogOff(): void {
+  stopRoadmapLocalWrites();
+  clearSyncPending();
 }
 
 function clearSyncPending(): void {
@@ -1164,7 +1172,7 @@ export class RoadmapStore {
       // so returning false (not rethrowing) keeps them from re-creating the
       // unhandled rejection Sentry's noise filters dropped; awaited callers
       // (flush) check the result.
-      if (this.adapter.id !== 'local') {
+      if (this.adapter.id !== 'local' && !roadmapLocalWritesStopped()) {
         markSyncPending();
         // Deliberately the merged transfer primitive, NOT a plain overwrite: the
         // local file may hold guest-era data this session never loaded (no

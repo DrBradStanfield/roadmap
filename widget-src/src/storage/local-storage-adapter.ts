@@ -27,6 +27,17 @@ const FILE_KEY = 'health_roadmap_file_v2';
  *  erase needs in local mode, where the file must survive to carry eraseEpoch. */
 export const NAMED_FILE_PREFIX = 'health_roadmap_file_v2:';
 
+// Page-lifetime barrier: logout navigates away. Never reopen it in this page;
+// an async save may still hold pre-logout health data. Other named files are
+// separate stores and are deliberately outside this roadmap-only barrier.
+let roadmapWritesStopped = false;
+export function stopRoadmapLocalWrites(): void {
+  roadmapWritesStopped = true;
+}
+export function roadmapLocalWritesStopped(): boolean {
+  return roadmapWritesStopped;
+}
+
 function fileKey(fileName: string): string {
   return fileName === ROADMAP_FILE_NAME ? FILE_KEY : NAMED_FILE_PREFIX + fileName;
 }
@@ -78,6 +89,11 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult {
+    // Check at the synchronous write boundary, including saves whose async
+    // read/merge began BEFORE logout. A catch-only guard is too early.
+    if (fileName === ROADMAP_FILE_NAME && roadmapLocalWritesStopped()) {
+      throw new StorageError('On-device roadmap persistence stopped for logout.');
+    }
     // `?? '0'` is defensive: localStorage is externally mutable, so tolerate a
     // present file with a missing version key (treat it as version 0).
     const current = safeGetItem(fileKey(fileName)) == null ? null : safeGetItem(versionKey(fileName)) ?? '0';
