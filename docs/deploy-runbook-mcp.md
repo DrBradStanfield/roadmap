@@ -318,7 +318,8 @@ rotation for one ends the other's sessions too.
 
 **Whose review is pending: `MCP_REVIEWER_VENDORS`** (US-32 AC49). A comma list of `openai`
 and/or `anthropic`. Unset means `openai`. Any other word turns every box off. The box is
-visible to every user of a listed client, so list only the vendor actually reviewing:
+visible to every user of a listed client, so list only the vendor actually reviewing. Unlike
+the three secrets above, this one is set without `--stage`: it takes effect at once and restarts the app.
 
 ```bash
 # Submitting to Anthropic's Connectors Directory, with OpenAI's review still pending:
