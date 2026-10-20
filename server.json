@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.DrBradStanfield/health-by-dr-brad",
+  "title": "Health by Dr Brad",
+  "description": "Read and add to your own health record, kept in your own cloud, and get a health plan from it.",
+  "version": "1.0.2",
+  "websiteUrl": "https://drstanfield.com/pages/roadmap",
+  "repository": {
+    "url": "https://github.com/DrBradStanfield/roadmap",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.drstanfield.com/mcp"
+    }
+  ]
+}
