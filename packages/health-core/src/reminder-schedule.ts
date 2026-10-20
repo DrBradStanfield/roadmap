@@ -267,7 +267,7 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
   // and scheduleSchema rejects the whole push. One bad row costs its own item.
   const valid = items.filter((item) => ISO_DATE.test(item.dueAt));
 
-  const horizon = addMonths(localDay(now), 12);
+  const horizon = addMonths(dayOf(now.toISOString()), 12);
   if (!valid.some((item) => item.dueAt <= horizon)) {
     valid.push({
       category: 'annual_checkin',
@@ -282,8 +282,8 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
 function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
   const { sex, birthYear, birthMonth } = file.profile;
   if (!sex || !birthYear) return []; // no demographics → no eligibility rules can run
-  let age = now.getFullYear() - birthYear;
-  if (birthMonth && now.getMonth() + 1 < birthMonth) age -= 1;
+  let age = now.getUTCFullYear() - birthYear;
+  if (birthMonth && now.getUTCMonth() + 1 < birthMonth) age -= 1;
 
   const measurementDates: MeasurementDates = {};
   for (const m of file.measurements) {

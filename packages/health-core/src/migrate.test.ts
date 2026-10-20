@@ -391,6 +391,22 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     const absent = migrateFile(rawFile({ medications: [{ id: 'm', medicationKey: 'statin', drugName: 'x', doseValue: null, doseUnit: null, lamport: 1 }] }), OPTS);
     expect('updatedAt' in absent.medications[0]).toBe(false);
   });
+
+  // US-23 AC6a (Codex R4, 2026-10-21): the future-clamp compared before it
+  // validated, and a string that is not a time compares as a string. So
+  // 'not-a-date' (which sorts after any ISO stamp) read as future and took the
+  // anchor, a real date the reminder schedule then used as a review date. A
+  // stamp that is not a real calendar date is an unknown time, the bottom.
+  it('reads a row updatedAt that is not a real calendar date as the bottom, never the anchor', () => {
+    for (const updatedAt of ['not-a-date', 'zzzz', '2026-02-30', '2026-02-30T00:00:00Z', '', null]) {
+      const f = migrateFile(rawFile({ medications: [medRow({ updatedAt })] }), OPTS);
+      expect(f.medications[0].updatedAt).toBe('');
+    }
+    const valid = migrateFile(rawFile({ medications: [medRow({ updatedAt: '2026-05-01T00:00:00+02:00' })] }), OPTS);
+    expect(valid.medications[0].updatedAt).toBe('2026-05-01T00:00:00+02:00');
+    const future = migrateFile(rawFile({ medications: [medRow({ updatedAt: '2099-01-01T00:00:00Z' })] }), OPTS);
+    expect(future.medications[0].updatedAt).toBe(META.updatedAt);
+  });
 });
 
 // ---------------------------------------------------------------------------

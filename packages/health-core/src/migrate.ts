@@ -121,12 +121,17 @@ function sanitizeStamp<T>(row: T, anchor: string): T {
   if (!isObject(row)) return row;
   const lamport = counterOf(row.lamport, 0);
   const clamped = 'lamport' in row && lamport !== row.lamport;
-  const future = typeof row.updatedAt === 'string' && after(row.updatedAt, anchor);
-  // A NON-string stamp (epoch millis from an agent, a null) is incomparable:
-  // `number > string` and `string > number` are both false, so with tied
-  // lamports neither row is newer either way round and the merge stops being
-  // symmetric. `""` sorts below every ISO string, restoring a total order.
-  const mistyped = 'updatedAt' in row && typeof row.updatedAt !== 'string';
+  // Validate before comparing: `after` orders a string that is not a time as a
+  // string, so 'not-a-date' read as future and took the anchor, a real date
+  // (US-23 AC6a).
+  const known = isClinicalDay(row.updatedAt);
+  const future = known && after(row.updatedAt as string, anchor);
+  // A stamp that is not a real calendar date (epoch millis from an agent, a
+  // null, 'not-a-date', 2026-02-30) is an unknown time. A non-string one is
+  // also incomparable: `number > string` and `string > number` are both false,
+  // so with tied lamports the merge stops being symmetric. `""` sorts below
+  // every ISO string, restoring a total order.
+  const mistyped = 'updatedAt' in row && !known && row.updatedAt !== '';
   if (!clamped && !future && !mistyped) return row;
   return {
     ...row,

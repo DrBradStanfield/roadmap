@@ -90,7 +90,7 @@ export interface MedicationRecord {
 function isOlderThanMonths(dateStr: string, months: number, now: Date = new Date()): boolean {
   const date = new Date(dateStr);
   const threshold = new Date(date);
-  threshold.setMonth(threshold.getMonth() + months);
+  threshold.setUTCMonth(threshold.getUTCMonth() + months);
   return now > threshold;
 }
 

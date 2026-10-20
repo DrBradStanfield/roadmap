@@ -16,7 +16,10 @@ function migrated(neighbor: unknown, includeValid = true) {
 // US-17 schedule contract / US-23 AC1, AC6: malformed neighbors must not
 // suppress the known review date; unknown review-time policy is unchanged.
 describe('medication review dates at the migrated-file boundary', () => {
-  for (const updatedAt of ['', '0000-00-00', '2024-02-30T00:00:00Z', '2024-13-01', '!not-a-date', undefined, null, 42]) {
+  // 'not-a-date' sorts AFTER the file's ISO anchor, so a clamp that compared
+  // before validating turned it into the anchor, a real-looking review date
+  // (Codex R4, 2026-10-21). '!not-a-date' sorts before and never caught it.
+  for (const updatedAt of ['', '0000-00-00', '2024-02-30T00:00:00Z', '2026-02-30', '2024-13-01', '!not-a-date', 'not-a-date', 'zzzz', undefined, null, 42]) {
     it(`retains the valid 12-month review alongside ${String(updatedAt)}`, () => {
       const { raw, bytes, file } = migrated({ ...valid, id: 'unknown', medicationKey: 'glp1', updatedAt });
       const before = JSON.stringify(file);
