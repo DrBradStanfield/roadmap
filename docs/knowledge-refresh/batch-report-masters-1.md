@@ -1,7 +1,7 @@
 # Knowledge batch report: masters-1
 
-Base: origin/main (088e7d64e83ede33adb806b253839e2a3c35dcac)
-Handles: 10
+Base: origin/main (e517468b2542504e553196203501f56c586f70cc)
+Handles: 9
 
 Counts and hashes only. Raw text never enters this repo.
 
@@ -10,355 +10,676 @@ Counts and hashes only. Raw text never enters this repo.
 | Check | Status | FAIL | WARN |
 |---|---|---|---|
 | AC1 index.json and categories.json unchanged (except approved summary corrections) | PASS | 0 | 0 |
-| AC2 raw fidelity of every new number token | WARN | 0 | 41 |
-| AC3 hedging held; hardening words listed | WARN | 0 | 71 |
+| AC2 raw fidelity of every new number token | WARN | 0 | 47 |
+| AC3 hedging held; hardening words listed | WARN | 0 | 59 |
 | AC4 deleted sentences justified; headings kept | WARN | 0 | 2 |
 | AC6 diff touches only batch files | PASS | 0 | 0 |
-| AC7 grokipedia, products, references, banned phrases, exclusions | WARN | 0 | 4 |
+| AC7 grokipedia, products, references, banned phrases, exclusions | WARN | 0 | 16 |
 | PATHWAY source line, deferral blockquote, no NZ logistics | PASS | 0 | 0 |
 | MASTER topic-master sections (Current view or evidence position, Brad's videos) | PASS | 0 | 0 |
 
 ## Handles
 
-| handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products |
-|---|---|---|---|---|---|---|---|---|---|
-| collagen-benefits-best-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-collagen-supplements-review-peptides-hydrolysate-collagen.md | b4a969b545cecb30c07a1fd839a84453ca3181e9dd18ea14cc1e36aff98b44c3 | 0558272f0f38d12f | 25 | 25 | 6 | 58>69 | 2>2 |
-| nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-nmn-nadh-nicotinamide-riboside-nmn-nadh-nicotinamide-riboside.md | 472f8cbbf26b730fa360f85357235c49ea8b29fe814be59a2bcc96290269cb78 | 1b10660e55713ab0 | 52 | 47 | 154 | 44>50 | 2>2 |
-| resveratrol-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-resveratrol-review-resveratrol-red-wine.md | ac039af43e391e14c42043b13d13ddfc0b3789676263fab4f9c117d66266401b | bdc4aa32b372a873 | 43 | 35 | 215 | 77>75 | 0>0 |
-| vitamin-d-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-d-supplements-review-vitamin-d.md | 5ae7d76b7ea7c30da383fc8b8c17fda462fe4babb3cd5e1040aa62f3252eb782 | daff8730277c3a6d | 38 | 38 | 6 | 104>108 | 3>3 |
-| vitamin-k-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-k-supplements-review-vitamin-k.md | 4df6c8fd2890b327679d282691233b18cc9bcc17681967103e051b83c596f8cd | c7d2eda4de8c8ba9 | 15 | 15 | 0 | 83>88 | 3>3 |
-| magnesium-benefits-best-forms-dosing | reference | refresh-2026-09-29/consumerlab/review/reviews-magnesium-supplement-review-magnesium.md | c697a6973e90202e5170e509b74b888e3ca1cea57e3e901e10217022e474c815 | 6574c31d6a62ef84 | 21 | 20 | 0 | 56>62 | 0>0 |
-| lithium-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-lithium-low-dose-supplements-lithium.md | e0e6d307c853f46829cde15abbfc43c979867adaad53f0491ca42c4bc7f85ecf | bfe826cd212a4d1b | 0 | 0 | 0 | 38>42 | 0>0 |
-| taurine-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-taurine-supplements-review-taurine.md | 34dd95389868356b5a2aa5ef4099ab49cc3b899c2c0bc3ea66a4918f5aceacb0 | 495e971bb111e51d | 17 | 16 | 2 | 45>50 | 4>4 |
-| creatine-benefits-best-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-review-creatine-creatine.md | 2d8545d21a72a758f870c48d82107f53aa07bfbf4f033911cc0df320e33d6eb6 | 4812da1dd25d10a7 | 8 | 7 | 0 | 83>87 | 3>3 |
-| vitamin-c-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-c-supplement-review-vitaminc.md | 0700978a6052f63e40fd6137b74b28a6a377b6911460c7fba73fa1e124242473 | 0f03d3dc01fc3add | 12 | 9 | 8 | 121>125 | 3>3 |
+| handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products | diff report + addenda (sha256) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| collagen-benefits-best-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-collagen-supplements-review-peptides-hydrolysate-collagen.md | b4a969b545cecb30c07a1fd839a84453ca3181e9dd18ea14cc1e36aff98b44c3 | 1f8b03d6424424b3 | 1 | 1 | 11 | 69>69 | 2>2 | collagen-benefits-best-forms-dosing-and-side-effects.json 7981e2a24a0536b7b832999108cf60405872f201cd4f4303d004fc00749d36a1 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-1.json 9dc6af92839c1da490f0922b92ef05971c89cc1b48676adc80b08f2ed28d38c4 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-2.json 3c933e4f597d22623f91a8987ab622cafda919bf8d38c23a684d56243a8b44eb + collagen-benefits-best-forms-dosing-and-side-effects.addendum-3.json fdfe1c9fd6a4640eb860a2db0320a1c9909bbb6a1d504fce184185ed5aae9e76 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-4.json 4af90714590190548ab24569acef1aff24213521e4a884b462a3852b0aa47842 + collagen-benefits-best-forms-dosing-and-side-effects.addendum-5.json 1e88ea639235ed4d19370035ca094ec497b1bc55a3cfe94b4c49bb895e5ac09d |
+| nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-nmn-nadh-nicotinamide-riboside-nmn-nadh-nicotinamide-riboside.md | 472f8cbbf26b730fa360f85357235c49ea8b29fe814be59a2bcc96290269cb78 | c4f98effbf81333f | 55 | 50 | 159 | 44>48 | 2>0 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.json 3777750751369110f8e7ca6a13ba4ad4c9728dac6a1b243c202491c5f7f4e7d6 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-1.json 4340b907718e5db514649b182c391c6191274ccf68c1ffaa3aa67e74c927b873 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-2.json a91b48dba376929671b60b2f5481e1e911cf138ad8f974661b7b02a1c449739e + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-3.json e3160b2fb4e8cf24dfa5e58a4a79ad32d0e84d649e6913584a685b53d41dad01 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-4.json a523e82f7b5bc05e0b68fd4580b479b6b82a59258beec65e02663d925071a9b5 + nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects.addendum-5.json 0fa4e8bac8cf936b4749fe9be8471bf8a9fbcfeea4d525c9f0fad92cd2f90e41 |
+| resveratrol-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-resveratrol-review-resveratrol-red-wine.md | ac039af43e391e14c42043b13d13ddfc0b3789676263fab4f9c117d66266401b | 407ea45dfe65dc3b | 46 | 36 | 216 | 77>83 | 0>0 | resveratrol-benefits-forms-dosing-and-side-effects.json 1744e94b408800a1baeda5160bed280a4eb16c6bc7bb7820805ae7b169593aa0 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-1.json 0b202baa3681ff7a89b19db0de6f4b565294495d6c28f1dd5f170a840d0b8b70 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-2.json d9aef2b0b2061b9d9ede9ead03c81c4bce821fd483512b0154471724b49dd2ed + resveratrol-benefits-forms-dosing-and-side-effects.addendum-3.json 7c31367f778071931b1992843572b3cc3785d472d252e38162683092ca78a130 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-4.json cbe6102f6f37cc3d58a611a31c4ebc640712fee42a4a1e15ae88e0527cdd868b + resveratrol-benefits-forms-dosing-and-side-effects.addendum-5.json 0bf2a87c0a88a23e797490c865d3aaf1f08e8809c840ece58718499ebc5b1343 + resveratrol-benefits-forms-dosing-and-side-effects.addendum-6.json 56ceba34be06902e66d50e982140c0451f990d43ba9a55932f3d6e4b8360cc77 |
+| vitamin-d-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-d-supplements-review-vitamin-d.md | 5ae7d76b7ea7c30da383fc8b8c17fda462fe4babb3cd5e1040aa62f3252eb782 | c03f2ca186008137 | 44 | 44 | 15 | 104>108 | 3>3 | vitamin-d-benefits-forms-dosing-and-side-effects.json fb509e3f35045b500c4cec577de96e0b8724586636b495e6028be22e43a5b3eb + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-1.json 7e7fb808fc4d2de8dfd106a65bd88253d841cbc90447367b9fd9f45cca97630b + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-2.json b37aebef368324446a67bf5100e8d05eab2a684dd56548021adff2c4718d5862 + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-3.json e0bbf5340eeb129ba99af17c85775f5ad9bf1ddb26083d6a81c1ab5d8d1e0025 + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-4.json 05a538195d47b50cc752523eed9f00a82ddcc5dad99494a95bcec3c2e9550d5c + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-5.json 7272fe4818dfe326137bb25332796ec1b7bc986f9bbb57440ad4397a1c0d9b8c + vitamin-d-benefits-forms-dosing-and-side-effects.addendum-6.json d5412cb0fc59a45c1e515e9f0046b3040ff9fd886a9bed7eaf1a35ee4ca3e03a |
+| vitamin-k-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-k-supplements-review-vitamin-k.md | 4df6c8fd2890b327679d282691233b18cc9bcc17681967103e051b83c596f8cd | 866a2bc12a23f36a | 0 | 0 | 1 | 88>88 | 3>3 | vitamin-k-benefits-forms-dosing-and-side-effects.json 2ccf5813a2063bd93bf83b00f42a1a04951159714834a6116d0524c519fc9f1a + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-1.json 43e07f27ead83b50d7d1826c49da431108ea922d62c7ef56bd4d87bdbee71b18 + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-2.json e06742dc049b5fa1afb812882a0f6ddfb1e1e1806c65e003561b3d223ceaa516 + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-3.json 67d48410556f94a769b4d8c095a1c1040b61046fc9d0c73889c3ace011b655bf + vitamin-k-benefits-forms-dosing-and-side-effects.addendum-4.json a8ecfdefc52f26ca1dde660c4a3555cc18efa5958cce901b07d88b214810bea4 |
+| lithium-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-lithium-low-dose-supplements-lithium.md | e0e6d307c853f46829cde15abbfc43c979867adaad53f0491ca42c4bc7f85ecf | 501f178a40111c7e | 0 | 0 | 0 | 38>42 | 0>0 | lithium-benefits-forms-dosing-and-side-effects.json 0ec7586349a3c0e1b570635564e2c056726af44253d397130345e79da537eb7e + lithium-benefits-forms-dosing-and-side-effects.addendum-1.json 831fcc06f2967da1f4c5f67373baabe4a7a5eaa2e9add996cbc07bb621fe898b + lithium-benefits-forms-dosing-and-side-effects.addendum-2.json bcce313a1d6beabac934f5332bd8e8ce923a2b1801f2a1574eb0f245ed46a728 + lithium-benefits-forms-dosing-and-side-effects.addendum-3.json cb9ee8b4bc02697f315c67c3e56a0a409abfb8ea61ff4e1c025332438c5c50c2 + lithium-benefits-forms-dosing-and-side-effects.addendum-4.json eba0435e5e65969ff909934663eb5a1ed2981c47406650b430264371eaccb25f + lithium-benefits-forms-dosing-and-side-effects.addendum-5.json c20edaa985ade5a84e4fbd05222e29b006c2c21f836d775b83fff7f17dd76704 |
+| taurine-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-taurine-supplements-review-taurine.md | 34dd95389868356b5a2aa5ef4099ab49cc3b899c2c0bc3ea66a4918f5aceacb0 | 6a8fa4e7c2e8363a | 0 | 0 | 2 | 50>53 | 4>4 | taurine-benefits-forms-dosing-and-side-effects.json f155a0fce9f2ce5b5c1709caf7f8a51c3e984de8db09fc9568f9c9ddaaf3cb54 + taurine-benefits-forms-dosing-and-side-effects.addendum-1.json ac21b1eb2d913ee1749447d86a1f48cb04e74b29a867f9d952d52c0f33496bdd |
+| creatine-benefits-best-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-review-creatine-creatine.md | 2d8545d21a72a758f870c48d82107f53aa07bfbf4f033911cc0df320e33d6eb6 | b8402b58b4d0ea74 | 0 | 0 | 1 | 87>87 | 3>3 | creatine-benefits-best-forms-dosing-and-side-effects.json c6e5739af432cbcf5ef3687e43adbf9b3cb66c2e8a5868b8bb59590168650776 + creatine-benefits-best-forms-dosing-and-side-effects.addendum-1.json ce3e706e015244a97e50296c997c83efd49474f572bdb04ea8c61e89899efbde + creatine-benefits-best-forms-dosing-and-side-effects.addendum-2.json 02e8b8d3e8164e54138f5578e4ec0dc1dfaf43182ce636cd92ae23270ced53de + creatine-benefits-best-forms-dosing-and-side-effects.addendum-3.json b1b59883f1a31ca2635e191ff9b879d01a740582999781dbb39d9e9ad8c61d6b + creatine-benefits-best-forms-dosing-and-side-effects.addendum-4.json ebb69e806b1c18145a0e45cda796fc79d83944d168916c5a993ba26b365f2b96 + creatine-benefits-best-forms-dosing-and-side-effects.addendum-5.json ec74b357fab0e8c87ca318a9670c520e2caacdf9593898488f6f133ebcb4a252 |
+| vitamin-c-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-c-supplement-review-vitaminc.md | 0700978a6052f63e40fd6137b74b28a6a377b6911460c7fba73fa1e124242473 | c66f7c3e96b79dae | 5 | 3 | 12 | 125>127 | 3>3 | vitamin-c-benefits-forms-dosing-and-side-effects.json 6c7bcfd5cc2ba2839ad2c55e1d804060a304c4bf92368110d7eedaeafaca16c3 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-1.json cbdc6bb3a130252595f747bbb861de68dab3043881fb3d324216d07543761441 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-2.json bdf14323f5c574983fcc4be4e12c07f42eadab8fc8ba72f9e45f9d7b05184a73 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-3.json 6db042b7308839b6cabf9f83008248f9d85f3a9ba8b1c0b58b8b11e825a32fde + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-4.json e445d36402fbb1212ddf870fd77f76c55c2db0a13e31cdbfccc335494ff994bf + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-5.json aa84779184dad4df3e245d5e8e49af7d37ce3ea0a0f6351ed9ed8ed1d99cf1c5 |
 
 ## Voided entries
 
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 1: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 15 Oct 2026, [The Collagen Peptides for Skin Story is Chan]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 4: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 7: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 31 Dec 2024, [Guide: Which Supplements Are Best for Skin T]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 17: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: / Skin hydration/elasticity / Hydrolyzed collagen peptides /]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 20: checker: raw_quote names app/lib/chat-system-prompt.md, which is not an extra_raw file; replaced by a corrected entry [body: [75] Batool et al. Oral collagen peptides and skin: meta-ana]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 22: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: [77] Stanfield B. "The Collagen Peptides for Skin Story is C]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 24: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: A 2026 meta-analysis of 35 trials and more than 2,500 people]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 26: checker: raw_quote names app/lib/chat-system-prompt.md, which is not an extra_raw file; replaced by a corrected entry [body: A 2026 meta-analysis of 35 trials and more than 2,500 people]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 28: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 7 Sep 2025, [An Evidence-Based Anti-Aging Skincare Routine]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 29: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 7 Sep 2025, [An Evidence-Based Anti-Aging Skincare Routine]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 30: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 27 Aug 2025, ["No Evidence to Support the Use of Collagen ]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 32: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 33: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 11 Jun 2025, [25% Reduction in Skin Wrinkles After 8 Weeks]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 35: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 12 Mar 2025, [New Study Proves That Collagen Peptides Can ]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 36: checker: raw_quote names app/lib/chat-system-prompt.md, which is not an extra_raw file; replaced by a corrected entry [body: - 12 Mar 2025, [New Study Proves That Collagen Peptides Can ]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 37: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 17 Dec 2024, [How To Reverse the Signs of Skin Aging (Late]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 39: checker: raw_quote names app/lib/chat-system-prompt.md, which is not an extra_raw file; replaced by a corrected entry [body: - 17 Dec 2024, [How To Reverse the Signs of Skin Aging (Late]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 40: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 19 Nov 2024, [The Only Supplements That ACTUALLY Work (202]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 41: checker: raw_quote names app/lib/chat-system-prompt.md, which is not an extra_raw file; replaced by a corrected entry [body: - 19 Nov 2024, [The Only Supplements That ACTUALLY Work (202]
-- collagen-benefits-best-forms-dosing-and-side-effects: VOID 45: checker: raw_quote names app/lib/chat-system-prompt.md, which is not an extra_raw file; replaced by a corrected entry [body: **Meta-analysis (2026):** Batool and colleagues pooled 35 tr]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 0: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: NMN and NR reliably raise blood NAD+, but after twenty years]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 1: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: NMN and NR reliably raise blood NAD+, but after twenty years]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 2: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: NMN and NR reliably raise blood NAD+, but after twenty years]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 3: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: NMN and NR reliably raise blood NAD+, but after twenty years]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 4: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: NMN and NR reliably raise blood NAD+, but after twenty years]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 5: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 9 Apr 2026, [New Study Says I Was Wrong About NMN and NR?]]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 6: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 9 Apr 2026, [The Anti-Aging Supplement Scam (New Evidence)]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 7: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 11 Jan 2026, [NMN & NAD Supplements for Anti-Aging Just Ch]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 8: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 20 Nov 2025, [Popular Longevity Treatment Makes You Sick](]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 9: checker: raw_quote names docs/blog/tmg-betaine-exploding-popularity.md, which is not an extra_raw file; replaced by a corrected entry [body: - 9 Oct 2024, [Why TMG (Betaine) is Exploding in Popularity]]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 10: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 7 Nov 2024, [Human Studies on NMN Supplements: Are There A]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 11: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 7 Nov 2024, [Human Studies on NMN Supplements: Are There A]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 12: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 7 Nov 2024, [Human Studies on NMN Supplements: Are There A]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 14: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 11 Aug 2024, [Which Popular Supplements Should You Actuall]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 16: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 11 Aug 2024, [Which Popular Supplements Should You Actuall]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 18: checker: raw_quote too short (need 6 words or 30 characters); replaced by a corrected entry [body: Interest in NAD-boosting supplements was sparked by prelimin]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 19: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Isotope-tracing and human gut-sample studies reviewed by Bra]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 20: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Isotope-tracing and human gut-sample studies reviewed by Bra]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 21: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Like NR, NMN is a precursor to NAD+ and can raise NAD+ level]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 22: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Like NR, NMN is a precursor to NAD+ and can raise NAD+ level]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 26: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: In a randomised study of 65 participants published in *Natur]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 35: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: **Brain fog and fatigue (n=32):** A 24-week study among 32 a]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 38: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: **Memory-predominant mild cognitive impairment (n=42):** A s]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 41: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: **Meta-analysis of 10 RCTs (NMN and NR, adults over 60):** A]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 43: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: The central claim driving NMN's popularity is that it counte]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 44: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - All the human NMN studies Brad reviewed in 2024 were short]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 45: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - All the human NMN studies Brad reviewed in 2024 were short]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 46: checker: raw_quote too short (need 6 words or 30 characters); replaced by a corrected entry [body: - The Interventions Testing Program, which tests compounds i]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 47: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad's reading of the evidence as of 2026: NAD+ levels can b]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 50: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - **General NAD+ boosting:** 250 mg daily [36][39]]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 51: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - **No harmful side effects** were seen in the 18 short-term]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 52: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - **No harmful side effects** were seen in the 18 short-term]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 53: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - **European expert panel:** No side effects of NMN were rep]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 57: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: All NAD boosters are sources of vitamin B3, which has an est]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 60: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Like NR, NMN is a precursor to NAD+ and can raise NAD+ level]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 61: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Like NR, NMN is a precursor to NAD+ and can raise NAD+ level]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 68: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: **Systematic review of 10 RCTs (NMN, 437 participants):** A ]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 69: 2026-10-20 cleanup: the abstract (PMID 36443648) gives the mean age as 81.1, not 81; line corrected to the source [body: **Older men with diabetes (n=14):** In men aged 65 or over (]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 70: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: **Older adults (n=60):** Another trial gave 250 mg NMN daily]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 74: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - **Pooled trials:** A 2026 meta-analysis of 10 randomised t]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 75: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - **Pooled trials:** A 2026 meta-analysis of 10 randomised t]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 76: 2026-10-20 fix: body line edited (abstract PMID 38765763 says "NLT 800 mg NMN/kg body weight", no per-day unit); re-entered below with the current line [body: - **Animal toxicology:** In a 91-day rat study, the highest ]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 77: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - **Animal toxicology:** In a 91-day rat study, the highest ]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 79: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: NMN and NR reliably raise blood NAD+, but after twenty years]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 80: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: NMN and NR reliably raise blood NAD+, but after twenty years]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 81: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: NMN and NR reliably raise blood NAD+, but after twenty years]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 82: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 9 Oct 2024, [Why TMG (Betaine) is Exploding in Popularity]]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 83: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Isotope-tracing and human gut-sample studies reviewed by Bra]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 85: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Like NR, NMN is a precursor to NAD+ and can raise NAD+ level]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 86: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: In a randomised study of 65 participants published in *Natur]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 88: checker: number cited to a primary study without its abstract in reach; replaced by a corrected entry [body: **Controlled trial with active comparator (n=20):** A study ]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 98: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: **Brain fog and fatigue (n=32):** A 24-week study among 32 a]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 102: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: **Meta-analysis of 10 RCTs (NMN and NR, adults over 60):** A]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 106: checker: number cited to a primary study without its abstract in reach; replaced by a corrected entry [body: **Older men with diabetes (n=14):** In men aged 65 or over (]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 109: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: The central claim driving NMN's popularity is that it counte]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 110: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - Human trials consistently show higher blood NAD+, but no b]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 111: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - The Interventions Testing Program, which tests compounds i]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 112: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: **Important caveat:** The more rigorous the studies became, ]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 113: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: The doses below are those used in studies, not a recommendat]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 118: checker: number cited to a primary study without its abstract in reach; replaced by a corrected entry [body: - **Higher-dose trial:** In 31 healthy adults aged 20 to 65,]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 119: checker: number cited to a primary study without its abstract in reach; replaced by a corrected entry [body: - **Higher-dose trial:** In 31 healthy adults aged 20 to 65,]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 121: 2026-10-20 fix: body line edited (abstract PMID 38765763 says "NLT 800 mg NMN/kg body weight", no per-day unit); re-entered below with the current line [body: - **Animal toxicology:** In a 91-day rat study, the highest ]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 122: 2026-10-20 fix: body line edited (abstract PMID 38765763 says "NLT 800 mg NMN/kg body weight", no per-day unit); re-entered below with the current line [body: - **Animal toxicology:** In a 91-day rat study, the highest ]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 123: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: All NAD boosters are sources of vitamin B3, which has an est]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 128: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: NMN and NR reliably raise blood NAD+, but after twenty years]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 129: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: NMN and NR reliably raise blood NAD+, but after twenty years]
-- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID 130: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: NMN and NR reliably raise blood NAD+, but after twenty years]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 2: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: **Alzheimer's disease:** A one-year study among men and wome]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 3: checker: body_line is not a current body line; replaced by a corrected entry [body: **Animal lifespan data:** In mice made obese with an extreme]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 6: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: In a 30-day study in obese men, 150 mg/day of trans-resverat]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 10: checker: number cited to a primary study without its abstract in reach; replaced by a corrected entry [body: High doses of resveratrol (2,500-5,000 mg/day) may cause mil]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 11: checker: body_line is not a current body line; replaced by a corrected entry [body: A clinical study in patients with multiple myeloma using SRT]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 14: checker: body_line is not a current body line; replaced by a corrected entry [body: Red wine contains approximately 1-2 mg of trans-resveratrol ]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 15: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad says taking resveratrol supplements isn't a good strate]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 16: 2026-10-20 fix: body line edited (abstract PMID 34666902 gives "MD=-0.41" with no % unit); re-entered below with the current line [body: **Systematic review:** Some have suggested resveratrol might]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 17: 2026-10-20 fix: body line edited (abstract PMID 34666902 gives "MD=-0.41" with no % unit); re-entered below with the current line [body: **Systematic review:** Some have suggested resveratrol might]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 18: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: **Cerebrovascular effects:** In a double-blind, placebo-cont]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 19: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: **Animal lifespan data:** In mice made obese with an extreme]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 20: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: **Animal lifespan data:** In mice made obese with an extreme]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 27: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: One small pilot crossover trial in 20 men with sexual dysfun]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 29: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: There is also some clinical evidence that resveratrol can re]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 31: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: A clinical study in patients with multiple myeloma using SRT]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 32: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: A clinical study in patients with multiple myeloma using SRT]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 34: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Short-term studies of resveratrol in healthy volunteers have]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 35: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Short-term studies of resveratrol in healthy volunteers have]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 36: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Short-term studies of resveratrol in healthy volunteers have]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 37: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Short-term studies of resveratrol in healthy volunteers have]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 39: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Short-term studies of resveratrol in healthy volunteers have]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 40: checker: raw_quote too short (need 6 words or 30 characters); replaced by a corrected entry [body: In 42 healthy volunteers, 1 g of resveratrol daily for 4 wee]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 41: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: In 42 healthy volunteers, 1 g of resveratrol daily for 4 wee]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 42: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: In 42 healthy volunteers, 1 g of resveratrol daily for 4 wee]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 43: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: / Warfarin (S-warfarin) / CYP2C9 / Increased systemic exposu]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 44: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: / Warfarin (S-warfarin) / CYP2C9 / Increased systemic exposu]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 45: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Resveratrol demonstrates anti-platelet (blood-thinning) acti]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 46: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Resveratrol demonstrates anti-platelet (blood-thinning) acti]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 48: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Resveratrol demonstrates anti-platelet (blood-thinning) acti]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 49: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Red wine contains approximately 1-2 mg of trans-resveratrol ]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 50: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Red wine contains approximately 1-2 mg of trans-resveratrol ]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 51: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad says taking resveratrol supplements isn't a good strate]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 52: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad says taking resveratrol supplements isn't a good strate]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 53: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad says taking resveratrol supplements isn't a good strate]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 54: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 9 Apr 2026, [The Anti-Aging Supplement Scam (New Evidence)]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 55: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 15 May 2025, [This Incredibly Popular Supplement DAMAGES Y]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 56: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 24 Feb 2025, [Stop These Longevity Supplements (Dangerous ]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 57: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 11 Aug 2024, [Which Popular Supplements Should You Actuall]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 59: checker: number cited to a primary study without its abstract in reach; replaced by a corrected entry [body: However, the initial excitement has been tempered by subsequ]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 60: 2026-10-20 fix: the quote is about a 70% yeast lifespan claim, not 70-80% absorption; the number matches but the claim does not. The absorption figure rests on Walle 2004, whose abstract is not in the raw (needs PubMed) [body: **Absorption:** Resveratrol is rapidly absorbed from the gas]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 71: checker: number cited to a primary study without its abstract in reach; replaced by a corrected entry [body: **Systematic review:** Some have suggested resveratrol might]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 72: checker: number cited to a primary study without its abstract in reach; replaced by a corrected entry [body: **Systematic review:** Some have suggested resveratrol might]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 73: checker: number cited to a primary study without its abstract in reach; replaced by a corrected entry [body: **Systematic review:** Some have suggested resveratrol might]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 74: checker: number cited to a primary study without its abstract in reach; replaced by a corrected entry [body: **Systematic review:** Some have suggested resveratrol might]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 75: 2026-10-20 fix: body line edited (abstract PMID 34666902 gives "MD=-0.41" with no % unit); re-entered below with the current line [body: **Systematic review:** Some have suggested resveratrol might]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 90: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 1,000 mg/day increased total and LDL cholesterol and worse]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 97: checker: number cited to a primary study without its abstract in reach; replaced by a corrected entry [body: Resveratrol demonstrates anti-platelet (blood-thinning) acti]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 98: checker: number cited to a primary study without its abstract in reach; replaced by a corrected entry [body: Resveratrol demonstrates anti-platelet (blood-thinning) acti]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 100: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 1,000 mg/day increased total and LDL cholesterol and worse]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 102: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 1,000 mg/day increased total and LDL cholesterol and worse]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 103: checker: raw_quote shares no number with its body_line (list item inherits a comparator the source does not carry); no verbatim support found [body: - 1,000 mg/day increased total and LDL cholesterol and worse]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 105: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad says taking resveratrol supplements isn't a good strate]
-- resveratrol-benefits-forms-dosing-and-side-effects: VOID 106: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad says taking resveratrol supplements isn't a good strate]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 0: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 2: checker: raw_quote too short (need 6 words or 30 characters); replaced by a corrected entry [body: - 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drs]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 4: checker: raw_quote is not in the raw file; replaced by a corrected entry [body: - 14 Jun 2025, [When Dosed Correctly, Vitamin D Cuts Sick Da]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 5: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: - 18 Apr 2025, [This Study Proved We Were WRONG About Vitami]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 6: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 14 Oct 2024, [How to Include More Calcium-Rich Foods in Yo]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 9: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: **Mortality:** Three meta-analyses of clinical trials found ]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 11: checker: raw_quote is not in the raw file; replaced by a corrected entry [body: **TARGET-D trial:** In people with acute coronary artery blo]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 13: checker: raw_quote is not in the raw file; replaced by a corrected entry [body: **Older adults (75+):** The Endocrine Society recommends rou]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 15: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 16: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 17: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 18: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 19: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 20: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 21: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 22: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 23: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 24: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 25: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 26: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 3 Dec 2025, [This Vitamin D Study Forced Me to Change My V]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 27: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 16 Oct 2025, [New Vitamin D Study on Telomeres and Aging](]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 28: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drs]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 29: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drs]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 32: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 33: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 3 Jul 2025, [Do This Daily to STOP Bone Loss After 40](htt]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 35: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 14 Jun 2025, [When Dosed Correctly, Vitamin D Cuts Sick Da]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 36: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 14 Jun 2025, [When Dosed Correctly, Vitamin D Cuts Sick Da]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 40: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: - 18 Apr 2025, [This Study Proved We Were WRONG About Vitami]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 41: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: - 18 Apr 2025, [This Study Proved We Were WRONG About Vitami]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 42: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: - 18 Apr 2025, [This Study Proved We Were WRONG About Vitami]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 43: 2026-10-20 fix: body line edited (orchestrator rulings: product mention removed / citation form / ruling 14); re-entered below with the current line [body: - 18 Apr 2025, [This Study Proved We Were WRONG About Vitami]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 44: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 25 Nov 2024, [Should You Take Vitamin K2 and Vitamin D3 To]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 45: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 14 Oct 2024, [How to Include More Calcium-Rich Foods in Yo]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 47: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 20 Jun 2024, [Vitamin D3 and K2: The Benefits, Differences]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 48: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 20 Jun 2024, [Vitamin D3 and K2: The Benefits, Differences]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 49: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad's view is that the evidence does not support the idea t]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 51: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: **High-dose harm to bone:** In a Canadian trial, 4,000 IU an]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 54: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: **Mortality:** Three meta-analyses of clinical trials found ]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 57: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: **Overall mortality from all causes:** A study of over 300,0]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 58: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: **Synthesis:** Vitamin D supplementation does not appear to ]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 59: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: **TARGET-D trial:** In people with acute coronary artery blo]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 60: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: **TARGET-D trial:** In people with acute coronary artery blo]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 61: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: **TARGET-D trial:** In people with acute coronary artery blo]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 62: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: **Synthesis:** Despite strong observational associations bet]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 63: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad notes a meta-analysis in which supplements improved sym]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 64: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: **Respiratory infections:** A meta-analysis of 25 studies fo]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 70: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: **Pregnancy:** 600-1,000 IU D3 daily. Higher doses (up to 4,]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 72: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: The 2024 Endocrine Society guideline found that optimal bloo]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 73: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: The 2024 Endocrine Society guideline found that optimal bloo]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 74: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 75: 2026-10-20 fix: the MicroVitamin 2,000 to 1,000 IU clause was removed from this video line (orchestrator ruling, US-42 AC7); the quote no longer backs any body number [body: - 18 Apr 2025, [This Study Proved We Were WRONG About Vitami]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 76: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 77: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 78: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 79: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 80: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 81: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 82: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 83: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 84: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 85: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 86: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad's view is that most adults gain little from vitamin D s]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 87: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 18 Apr 2025, [This Study Proved We Were WRONG About Vitami]
-- vitamin-d-benefits-forms-dosing-and-side-effects: VOID 88: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 18 Apr 2025, [This Study Proved We Were WRONG About Vitami]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 0: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Two trials found that high-dose vitamin K2 as MK-7 (360 to 7]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 7: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 3 Sep 2026, [Why Aren't Cardiologists Prescribing Vitamin ]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 9: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 29 Jun 2026, [Does Vitamin K2 Actually Protect Your Heart?]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 10: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 29 Jun 2026, [Does Vitamin K2 Actually Protect Your Heart?]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 13: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 3 Jul 2025, [Do This Daily to STOP Bone Loss After 40](htt]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 14: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: - 25 Nov 2024, [Should You Take Vitamin K2 and Vitamin D3 To]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 16: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Brad advises against taking more than about 90 to 120 mcg a ]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 17: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Brad advises against taking more than about 90 to 120 mcg a ]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 18: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: 55. Stanfield B. Why aren't cardiologists prescribing vitami]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 22: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Two trials found that high-dose vitamin K2 as MK-7 (360 to 7]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 23: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Two trials found that high-dose vitamin K2 as MK-7 (360 to 7]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 25: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 3 Sep 2026, [Why Aren't Cardiologists Prescribing Vitamin ]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 26: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: - 3 Sep 2026, [Why Aren't Cardiologists Prescribing Vitamin ]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 27: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: - 3 Sep 2026, [Why Aren't Cardiologists Prescribing Vitamin ]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 28: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 29 Jun 2026, [Does Vitamin K2 Actually Protect Your Heart?]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 31: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drs]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 32: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 33: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 3 Jul 2025, [Do This Daily to STOP Bone Loss After 40](htt]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 35: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 25 Nov 2024, [Should You Take Vitamin K2 and Vitamin D3 To]
-- vitamin-k-benefits-forms-dosing-and-side-effects: VOID 36: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 20 Jun 2024, [Vitamin D3 and K2: The Benefits, Differences]
-- magnesium-benefits-best-forms-dosing: VOID 0: 2026-10-20 cleanup: the cited 1 Jul 2025 post says 126 mg per product ('I include 126 mg of magnesium in my Sleep supplement and in MicroVitamin'), not 126 mg a day; line corrected to the source [body: Many people do not get enough magnesium, and a normal blood ]
-- magnesium-benefits-best-forms-dosing: VOID 1: 2026-10-20 cleanup: the cited 1 Jul 2025 post says 126 mg per product ('I include 126 mg of magnesium in my Sleep supplement and in MicroVitamin'), not 126 mg a day; line corrected to the source [body: Many people do not get enough magnesium, and a normal blood ]
-- magnesium-benefits-best-forms-dosing: VOID 2: 2026-10-20 cleanup: the cited 1 Jul 2025 post says 126 mg per product ('I include 126 mg of magnesium in my Sleep supplement and in MicroVitamin'), not 126 mg a day; line corrected to the source [body: Many people do not get enough magnesium, and a normal blood ]
-- magnesium-benefits-best-forms-dosing: VOID 3: 2026-10-20 cleanup: the cited 1 Jul 2025 post says 126 mg per product ('I include 126 mg of magnesium in my Sleep supplement and in MicroVitamin'), not 126 mg a day; line corrected to the source [body: Many people do not get enough magnesium, and a normal blood ]
-- magnesium-benefits-best-forms-dosing: VOID 4: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Many people do not get enough magnesium, and a normal blood ]
-- magnesium-benefits-best-forms-dosing: VOID 5: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Many people do not get enough magnesium, and a normal blood ]
-- magnesium-benefits-best-forms-dosing: VOID 6: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Many people do not get enough magnesium, and a normal blood ]
-- magnesium-benefits-best-forms-dosing: VOID 8: checker: raw_quote is not in the raw file; replaced by a corrected entry [body: - 3 Oct 2025, [Supplement (Not Melatonin) Improved Sleep in ]
-- magnesium-benefits-best-forms-dosing: VOID 11: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 3 Jul 2025, [Do This Daily to STOP Bone Loss After 40](htt]
-- magnesium-benefits-best-forms-dosing: VOID 14: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 2 Dec 2024, [What Are the Best and Worst Forms of Magnesiu]
-- magnesium-benefits-best-forms-dosing: VOID 15: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 9 Jul 2024, [Which Mistakes Do Most People Make with Magne]
-- magnesium-benefits-best-forms-dosing: VOID 17: 2026-10-20 cleanup: the cited 1 Jul 2025 post says 126 mg per product ('I include 126 mg of magnesium in my Sleep supplement and in MicroVitamin'), not 126 mg a day; line corrected to the source [body: **General supplementation (to fill dietary gaps):** A dose o]
-- magnesium-benefits-best-forms-dosing: VOID 18: checker: raw_quote too short (need 6 words or 30 characters); replaced by a corrected entry [body: [45] Stanfield B. What is the best magnesium dose & form? (1]
-- magnesium-benefits-best-forms-dosing: VOID 19: checker: raw_quote too short (need 6 words or 30 characters); replaced by a corrected entry [body: [46] Stanfield B. 5 supplements that actually work. drstanfi]
-- magnesium-benefits-best-forms-dosing: VOID 20: checker: raw_quote too short (need 6 words or 30 characters); replaced by a corrected entry [body: [47] Stanfield B. Magnesium L-threonate and its effects on s]
-- magnesium-benefits-best-forms-dosing: VOID 21: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Many people do not get enough magnesium, and a normal blood ]
-- magnesium-benefits-best-forms-dosing: VOID 22: 2026-10-20 cleanup: the cited 1 Jul 2025 post says 126 mg per product ('I include 126 mg of magnesium in my Sleep supplement and in MicroVitamin'), not 126 mg a day; line corrected to the source [body: Many people do not get enough magnesium, and a normal blood ]
-- magnesium-benefits-best-forms-dosing: VOID 23: 2026-10-20 cleanup: the cited 1 Jul 2025 post says 126 mg per product ('I include 126 mg of magnesium in my Sleep supplement and in MicroVitamin'), not 126 mg a day; line corrected to the source [body: Many people do not get enough magnesium, and a normal blood ]
-- magnesium-benefits-best-forms-dosing: VOID 24: 2026-10-20 cleanup: the cited 1 Jul 2025 post says 126 mg per product ('I include 126 mg of magnesium in my Sleep supplement and in MicroVitamin'), not 126 mg a day; line corrected to the source [body: Many people do not get enough magnesium, and a normal blood ]
-- magnesium-benefits-best-forms-dosing: VOID 25: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drs]
-- magnesium-benefits-best-forms-dosing: VOID 27: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 3 Oct 2025, [Supplement (Not Melatonin) Improved Sleep in ]
-- magnesium-benefits-best-forms-dosing: VOID 29: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 20 Aug 2025, [Glycine was Accidentally Found To Improve Ou]
-- magnesium-benefits-best-forms-dosing: VOID 30: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes]
-- magnesium-benefits-best-forms-dosing: VOID 31: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 3 Jul 2025, [Do This Daily to STOP Bone Loss After 40](htt]
-- magnesium-benefits-best-forms-dosing: VOID 33: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 1 Jul 2025, [What is the Best Magnesium Dose & Form? (14 S]
-- magnesium-benefits-best-forms-dosing: VOID 36: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 29 Jan 2025, [ZMA Supplements: What Are the Benefits and R]
-- magnesium-benefits-best-forms-dosing: VOID 38: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 2 Dec 2024, [What Are the Best and Worst Forms of Magnesiu]
-- magnesium-benefits-best-forms-dosing: VOID 39: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 6 Oct 2024, [What Is the Difference Between Magnesium Oxid]
-- magnesium-benefits-best-forms-dosing: VOID 40: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 9 Jul 2024, [Which Mistakes Do Most People Make with Magne]
-- magnesium-benefits-best-forms-dosing: VOID 41: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 12 Jun 2024, [Magnesium L-Threonate and Its Effects on Sle]
-- magnesium-benefits-best-forms-dosing: VOID 52: body line reworded (ciprofloxacin named, Codex re-check R1); re-added with the current line [body: Two hours is not enough for every medicine: quinolone antibi]
-- magnesium-benefits-best-forms-dosing: VOID 53: body line reworded (ciprofloxacin named, Codex re-check R1); re-added with the current line [body: Two hours is not enough for every medicine: quinolone antibi]
-- lithium-benefits-forms-dosing-and-side-effects: VOID 0: checker: raw_quote is not in the raw file; replaced by a corrected entry [body: Brad says better clinical evidence is needed before making s]
-- lithium-benefits-forms-dosing-and-side-effects: VOID 1: checker: raw_quote is not in the raw file; replaced by a corrected entry [body: - 9 Sep 2025, [Low-Dose Lithium CRUSHES Dementia & Brain Agi]
-- lithium-benefits-forms-dosing-and-side-effects: VOID 3: checker: raw_quote is not in the raw file; replaced by a corrected entry [body: [28] Stanfield B. "Low-Dose Lithium CRUSHES Dementia & Brain]
-- lithium-benefits-forms-dosing-and-side-effects: VOID 4: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad says better clinical evidence is needed before making s]
-- lithium-benefits-forms-dosing-and-side-effects: VOID 5: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 9 Sep 2025, [Low-Dose Lithium CRUSHES Dementia & Brain Agi]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 0: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 1: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 2: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 3: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 4: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 5: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 6: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 7: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 8: checker: raw_quote names docs/products.md, which is not an extra_raw file; replaced by a corrected entry [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 9: checker: raw_quote names docs/products.md, which is not an extra_raw file; replaced by a corrected entry [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 11: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 12 Feb 2026, [1,394 Person Study on Taurine Proves What We]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 12: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: - 8 Jul 2025, [Taurine.. Time to Throw it Away? Two New Stud]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 13: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: - 8 Jul 2025, [Taurine.. Time to Throw it Away? Two New Stud]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 14: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 8 Jul 2025, [Taurine.. Time to Throw it Away? Two New Stud]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 23: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: **Human evidence:** The 2024 meta-analysis by Tzang et al. f]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 27: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: **Human healthspan markers:** While no human lifespan data e]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 28: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 29: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 30: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 31: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 32: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: Brad still takes taurine, as magnesium taurate plus extra ta]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 33: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 12 Feb 2026, [1,394 Person Study on Taurine Proves What We]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 37: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 20 Nov 2025, [Popular Longevity Treatment Makes You Sick](]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 38: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 39: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 8 Jul 2025, [Taurine.. Time to Throw it Away? Two New Stud]
-- taurine-benefits-forms-dosing-and-side-effects: VOID 40: masters-1 review round 1: body line rewritten; entry re-recorded against the new line below. [body: - 8 Jul 2025, [Taurine.. Time to Throw it Away? Two New Stud]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 3: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Brad sees creatine as worth considering for both body and br]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 4: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 15 Oct 2025, [Ashwagandha Supplement Fails in New Study!](]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 5: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drs]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 6: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 7: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 2 Apr 2025, [Creatine “FAILS” in New Study - Don’t Be Misl]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 8: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 26 Mar 2025, [Why Creatine Is The ONE Supplement All Longe]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 9: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 19 Nov 2024, [The Only Supplements That ACTUALLY Work (202]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 10: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 1 Jul 2024, [Can Older Adults and Seniors Still Take Creat]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 12: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 2 Apr 2025, [Creatine “FAILS” in New Study - Don’t Be Misl]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 13: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 26 Mar 2025, [Why Creatine Is The ONE Supplement All Longe]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 15: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 19 Nov 2024, [The Only Supplements That ACTUALLY Work (202]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 16: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 19 Nov 2024, [The Only Supplements That ACTUALLY Work (202]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 17: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 1 Jul 2024, [Can Older Adults and Seniors Still Take Creat]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 18: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: - 1 Jul 2024, [Can Older Adults and Seniors Still Take Creat]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 27: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: [91] Stanfield B. "Ashwagandha Supplement Fails in New Study]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 28: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: [92] Stanfield B. "5 Supplements That ACTUALLY Work." drstan]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 29: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: [93] Stanfield B. "Why Creatine Is The ONE Supplement All Lo]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 30: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: [94] Stanfield B. "Creatine “FAILS” in New Study - Don’t Be ]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 31: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad sees creatine as worth considering for both body and br]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 32: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad sees creatine as worth considering for both body and br]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 33: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad sees creatine as worth considering for both body and br]
-- creatine-benefits-best-forms-dosing-and-side-effects: VOID 34: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Brad sees creatine as worth considering for both body and br]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 3: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Most adults need 75 to 90 mg of vitamin C a day, and Brad ad]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 5: checker: raw_quote shares no number with its body_line; replaced by a corrected entry [body: Most adults need 75 to 90 mg of vitamin C a day, and Brad ad]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 6: checker: body_line is not a current body line; replaced by a corrected entry [body: summary: "Reference on vitamin C. Brad's view: adults need 7]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 7: checker: body_line is not a current body line; replaced by a corrected entry [body: summary: "Reference on vitamin C. Brad's view: adults need 7]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 11: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: [151] Stanfield B. "They Had to Stop This Vitamin C Trial Ea]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 12: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: [152] Stanfield B. "Popular Longevity Treatment Makes You Si]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 13: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: [153] Stanfield B. "Stop These Longevity Supplements (Danger]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 14: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Most adults need 75 to 90 mg of vitamin C a day, and Brad ad]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 15: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Most adults need 75 to 90 mg of vitamin C a day, and Brad ad]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 16: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: Most adults need 75 to 90 mg of vitamin C a day, and Brad ad]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 17: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 8 Jul 2026, [They Had to Stop This Vitamin C Trial Early](]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 18: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 20 Nov 2025, [Popular Longevity Treatment Makes You Sick](]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 19: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 24 Feb 2025, [Stop These Longevity Supplements (Dangerous ]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 20: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 9 Dec 2024, [Is Liposomal Vitamin C Worth the Money or a U]
-- vitamin-c-benefits-forms-dosing-and-side-effects: VOID 21: 2026-10-20 fix: publishedAt quote was written to cover a citation date; the checker now strips master dates, so it supports no number [body: - 11 Aug 2024, [Which Popular Supplements Should You Actuall]
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 1 [base] (reason sha256 49e7f457fe7a)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 4 [base] (reason sha256 e948e3b168f4)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 7 [base] (reason sha256 49e7f457fe7a)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 10 [addendum-5] (reason sha256 f476eaeafdd2)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 17 [base] (reason sha256 e948e3b168f4)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 20 [base] (reason sha256 6b4ce24e6ca6)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 22 [base] (reason sha256 49e7f457fe7a)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 23 [addendum-4] (reason sha256 6ed898c90479)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 24 [base] (reason sha256 49e7f457fe7a)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 26 [base] (reason sha256 6b4ce24e6ca6)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 28 [base] (reason sha256 49e7f457fe7a)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 29 [base] (reason sha256 49e7f457fe7a)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 30 [base] (reason sha256 49e7f457fe7a)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 32 [base] (reason sha256 49e7f457fe7a)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 33 [base] (reason sha256 49e7f457fe7a)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 35 [base] (reason sha256 49e7f457fe7a)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 36 [base] (reason sha256 6b4ce24e6ca6)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 37 [base] (reason sha256 49e7f457fe7a)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 39 [base] (reason sha256 6b4ce24e6ca6)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 40 [base] (reason sha256 49e7f457fe7a)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 41 [base] (reason sha256 6b4ce24e6ca6)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 45 [base] (reason sha256 6b4ce24e6ca6)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 60 [addendum-4] (reason sha256 3d2300804bda)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 61 [addendum-4] (reason sha256 d86000152810)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 0 [base] (reason sha256 d5771852bd86)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
+- collagen-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 0 [base] (reason sha256 771f960daa26)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 1 [base] (reason sha256 771f960daa26)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 2 [base] (reason sha256 771f960daa26)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 3 [base] (reason sha256 771f960daa26)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 4 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 5 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 6 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 7 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 8 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 9 [base] (reason sha256 c6238ba003a0)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 10 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 11 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 12 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 14 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 16 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 18 [base] (reason sha256 818f1ebac33d)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 19 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 20 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 21 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 22 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 26 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 35 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 38 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 41 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 43 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 44 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 45 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 46 [base] (reason sha256 818f1ebac33d)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 47 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 49 [base] (reason sha256 4b088c9693a6)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 50 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 51 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 52 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 53 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 57 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 60 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 61 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 68 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 69 [base] (reason sha256 5e2933bb0c62)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 70 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 74 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 75 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 76 [base] (reason sha256 3455f4cdf213)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 77 [base] (reason sha256 e948e3b168f4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 79 [base] (reason sha256 771f960daa26)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 80 [base] (reason sha256 771f960daa26)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 81 [base] (reason sha256 771f960daa26)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 82 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 83 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 85 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 86 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 88 [base] (reason sha256 99c155f391d4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 94 [addendum-1] (reason sha256 2276567cdaf7)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 96 [addendum-1] (reason sha256 5fb39c2cdcd2)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 98 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 102 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 106 [base] (reason sha256 99c155f391d4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 109 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 110 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 111 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 112 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 113 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 118 [base] (reason sha256 99c155f391d4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 119 [base] (reason sha256 99c155f391d4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 121 [base] (reason sha256 3455f4cdf213)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 122 [base] (reason sha256 3455f4cdf213)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 123 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 124 [addendum-4] (reason sha256 31f14159a308)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 125 [addendum-4] (reason sha256 31f14159a308)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 126 [addendum-4] (reason sha256 31f14159a308)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 127 [addendum-4] (reason sha256 598094ca07de)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 128 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 129 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 130 [base] (reason sha256 49e7f457fe7a)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 136 [addendum-4] (reason sha256 e4433c04590f)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 141 [base] (reason sha256 cff1e1f1a545)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 143 [addendum-1] (reason sha256 09831763a4dc)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 147 [addendum-3] (reason sha256 b16f7bd65fae)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 148 [addendum-3] (reason sha256 e59d7a863319)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID changed_tokens 149 [addendum-4] (reason sha256 e4433c04590f)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 0b0dac138da5)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID current_view_basis 3 [addendum-4] (reason sha256 31f14159a308)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 81 [base] (reason sha256 4bee240ad67e)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 82 [base] (reason sha256 992ec7cd769e)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 83 [base] (reason sha256 5ae5c1ca98a7)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 84 [base] (reason sha256 6f9c2ea8d979)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 85 [base] (reason sha256 af4fa651b3c2)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 86 [base] (reason sha256 80d26c3f68cc)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 87 [base] (reason sha256 80d26c3f68cc)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 88 [base] (reason sha256 80d26c3f68cc)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 89 [base] (reason sha256 960d42729304)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 90 [base] (reason sha256 7a32c0254ba3)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 91 [base] (reason sha256 bef18791dc67)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 92 [base] (reason sha256 6d370ae45ddb)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 93 [base] (reason sha256 6cb08cb89542)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 94 [base] (reason sha256 5b44cd18ff08)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 95 [base] (reason sha256 9fd0790f8667)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 96 [base] (reason sha256 0d445882855c)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 97 [base] (reason sha256 c1cc9aff6013)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 98 [base] (reason sha256 edcabc95d274)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 99 [base] (reason sha256 7411e0529894)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 100 [base] (reason sha256 ffbf22dc11ba)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 101 [base] (reason sha256 e4f158002165)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 102 [base] (reason sha256 46cfe98ec959)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 103 [base] (reason sha256 337955b8b519)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 104 [base] (reason sha256 550771bc7d1b)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 105 [base] (reason sha256 46b9b217ff4f)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 106 [base] (reason sha256 77cc1e0af2b6)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 107 [base] (reason sha256 c2fc92347516)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 108 [base] (reason sha256 566db5097f69)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 109 [base] (reason sha256 5bc3c323e5b1)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 110 [base] (reason sha256 089ac236e2d2)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 111 [base] (reason sha256 8c0db52ba183)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 112 [base] (reason sha256 e806aed5a314)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 113 [base] (reason sha256 199ff993634f)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 114 [base] (reason sha256 31c05942cb41)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 115 [base] (reason sha256 ad058d1028b5)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 117 [base] (reason sha256 18d0099dac18)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 118 [base] (reason sha256 18d0099dac18)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 119 [base] (reason sha256 c32dc6403ab7)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 120 [base] (reason sha256 247b69ac4350)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 121 [base] (reason sha256 e3b0b1424a47)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 122 [base] (reason sha256 a5cb674f4cd7)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 123 [base] (reason sha256 6b0c5239b296)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 124 [base] (reason sha256 c7637a056b29)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 125 [base] (reason sha256 093cdfe436b6)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 126 [base] (reason sha256 8f37f4932581)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 127 [base] (reason sha256 96c313ab670b)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 128 [base] (reason sha256 54e1b9b0b5af)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 130 [base] (reason sha256 b690fda75805)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 131 [base] (reason sha256 dd21d3e30850)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 132 [base] (reason sha256 6056ea8d1340)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 133 [base] (reason sha256 687fb80db2fb)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 134 [base] (reason sha256 b254a2b21a33)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 135 [base] (reason sha256 af53b2103c37)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 136 [base] (reason sha256 0b3a2c28b653)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 137 [base] (reason sha256 e633db4adb56)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 138 [base] (reason sha256 da622379bc69)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 139 [base] (reason sha256 da622379bc69)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 140 [base] (reason sha256 1eacb9fbf7d1)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 141 [base] (reason sha256 a1f55cb35b14)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 142 [base] (reason sha256 a1f55cb35b14)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 143 [base] (reason sha256 9a37df77dda1)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 144 [base] (reason sha256 6e05c563899b)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 145 [base] (reason sha256 593f1a8f8251)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 146 [base] (reason sha256 e8e7e7e06e58)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 147 [base] (reason sha256 e91ff39406c4)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 148 [base] (reason sha256 fa58fe02e8cf)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 149 [base] (reason sha256 fa58fe02e8cf)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 150 [base] (reason sha256 fa58fe02e8cf)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 151 [base] (reason sha256 fa58fe02e8cf)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 152 [base] (reason sha256 fa58fe02e8cf)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 153 [base] (reason sha256 fa58fe02e8cf)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 154 [base] (reason sha256 fa58fe02e8cf)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID deleted_sentences 155 [base] (reason sha256 23b7059c8778)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID ask_brad 1 [base] (reason sha256 337f04777a22)
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: VOID ask_brad 3 [base] (reason sha256 92bf7118862a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 2 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 3 [base] (reason sha256 3909e4b5f597)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 5 [addendum-4] (reason sha256 5db651d1bbe0)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 6 [base] (reason sha256 62a178f41244)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 8 [addendum-4] (reason sha256 6116212c9ff1)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 10 [base] (reason sha256 99c155f391d4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 11 [base] (reason sha256 3909e4b5f597)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 14 [base] (reason sha256 3909e4b5f597)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 15 [base] (reason sha256 771f960daa26)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 16 [base] (reason sha256 81f4f2f16e95)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 17 [base] (reason sha256 81f4f2f16e95)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 18 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 19 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 20 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 27 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 29 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 31 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 32 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 34 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 35 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 36 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 37 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 39 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 40 [base] (reason sha256 818f1ebac33d)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 41 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 42 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 43 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 44 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 45 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 46 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 48 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 49 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 50 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 51 [base] (reason sha256 771f960daa26)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 52 [base] (reason sha256 771f960daa26)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 53 [base] (reason sha256 771f960daa26)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 54 [base] (reason sha256 49e7f457fe7a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 55 [base] (reason sha256 49e7f457fe7a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 56 [base] (reason sha256 49e7f457fe7a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 57 [base] (reason sha256 49e7f457fe7a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 59 [base] (reason sha256 99c155f391d4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 60 [base] (reason sha256 3548c9a70d94)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 67 [addendum-4] (reason sha256 5db651d1bbe0)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 69 [addendum-3] (reason sha256 df4eb9040b2a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 71 [base] (reason sha256 99c155f391d4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 72 [base] (reason sha256 99c155f391d4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 73 [base] (reason sha256 99c155f391d4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 74 [base] (reason sha256 99c155f391d4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 75 [base] (reason sha256 81f4f2f16e95)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 80 [addendum-3] (reason sha256 c2ed6f4c1d7d)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 84 [addendum-3] (reason sha256 221c0c0a32ce)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 86 [addendum-3] (reason sha256 96b36bd1394f)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 87 [addendum-3] (reason sha256 8fa16b07f4ab)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 88 [addendum-4] (reason sha256 6116212c9ff1)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 90 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 97 [base] (reason sha256 99c155f391d4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 98 [base] (reason sha256 99c155f391d4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 100 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 102 [base] (reason sha256 e948e3b168f4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 103 [base] (reason sha256 89f0ffb4c2c1)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 104 [addendum-1] (reason sha256 554b9c029bd2)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 105 [base] (reason sha256 49e7f457fe7a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 106 [base] (reason sha256 49e7f457fe7a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID changed_tokens 107 [addendum-1] (reason sha256 554b9c029bd2)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID current_view_basis 0 [base] (reason sha256 d5771852bd86)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 62 [base] (reason sha256 d83303ae04c1)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 63 [base] (reason sha256 926bfb22e40d)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 64 [base] (reason sha256 926bfb22e40d)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 65 [base] (reason sha256 926bfb22e40d)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 66 [base] (reason sha256 0fef76ad0b5a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 73 [base] (reason sha256 2b3068b57298)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 74 [base] (reason sha256 2b3068b57298)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 75 [base] (reason sha256 a9df1b26038f)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 76 [base] (reason sha256 4cccb2549434)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 77 [base] (reason sha256 5a2aec375b94)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 78 [base] (reason sha256 db1d1e97c5a6)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 79 [base] (reason sha256 cd4bba0be80c)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 80 [base] (reason sha256 cd4bba0be80c)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 81 [base] (reason sha256 42d179195673)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 82 [base] (reason sha256 c108a5c4a0dd)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 83 [base] (reason sha256 b823c05d9a58)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 84 [base] (reason sha256 0a6847799f56)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 85 [base] (reason sha256 7dab1d6a245f)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 86 [base] (reason sha256 82432aee3488)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 87 [base] (reason sha256 18054b6aa91d)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 88 [base] (reason sha256 e6ba4d26130c)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 89 [base] (reason sha256 e6ba4d26130c)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 90 [base] (reason sha256 dbc537c4d80e)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 91 [base] (reason sha256 b77347f2859e)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 92 [base] (reason sha256 5bad2c08e8b0)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 93 [base] (reason sha256 3c1dcf913784)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 94 [base] (reason sha256 8436527af5d7)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 95 [base] (reason sha256 8436527af5d7)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 96 [base] (reason sha256 47871a1d9326)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 97 [base] (reason sha256 1bc2bf6addc2)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 98 [base] (reason sha256 1bc2bf6addc2)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 99 [base] (reason sha256 1bc2bf6addc2)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 100 [base] (reason sha256 c1dc34282b8e)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 101 [base] (reason sha256 c1dc34282b8e)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 102 [base] (reason sha256 4e19bb471cef)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 103 [base] (reason sha256 b484232cbd55)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 104 [base] (reason sha256 76d8e19486ff)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 105 [base] (reason sha256 5b97442743f9)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 106 [base] (reason sha256 a2b75fc36d08)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 107 [base] (reason sha256 4312a366c1ad)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 108 [base] (reason sha256 7b42afd974fd)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 109 [base] (reason sha256 4b703a82a2c5)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 110 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 111 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 112 [base] (reason sha256 2137448d7f49)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 113 [base] (reason sha256 4e19bb471cef)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 114 [base] (reason sha256 ca46aa4fadc1)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 115 [base] (reason sha256 c52895f3bd2f)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 116 [base] (reason sha256 1b15921fc9ba)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 117 [base] (reason sha256 957582a88034)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 119 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 120 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 121 [base] (reason sha256 db7eda2d0d79)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 122 [base] (reason sha256 db7eda2d0d79)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 124 [base] (reason sha256 190aad4d50f6)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 125 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 126 [base] (reason sha256 89a1aebde083)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 127 [base] (reason sha256 576c98f9d46d)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 128 [base] (reason sha256 760b156cba95)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 129 [base] (reason sha256 b13376f956d5)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 130 [base] (reason sha256 a254477175ac)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 131 [base] (reason sha256 a254477175ac)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 132 [base] (reason sha256 089f9dffcaa1)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 133 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 134 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 135 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 136 [base] (reason sha256 a46cd4786334)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 137 [base] (reason sha256 a46cd4786334)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 138 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 140 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 142 [base] (reason sha256 338a44dcc4b3)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 143 [base] (reason sha256 865c10e4a7eb)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 144 [base] (reason sha256 16c41661ca0a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 146 [base] (reason sha256 4140b96a64ec)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 147 [base] (reason sha256 521c416e0204)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 148 [base] (reason sha256 a8c1575b9c45)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 149 [base] (reason sha256 40c4e735f3f9)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 150 [base] (reason sha256 6061057bc148)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 151 [base] (reason sha256 4e5715e0c654)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 152 [base] (reason sha256 50913c1060b9)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 153 [base] (reason sha256 50913c1060b9)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 154 [base] (reason sha256 288e04c73bde)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 155 [base] (reason sha256 288e04c73bde)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 156 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 157 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 159 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 160 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 161 [base] (reason sha256 d14722269d46)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 162 [base] (reason sha256 54a4b6117318)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 163 [base] (reason sha256 46175683dbb3)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 164 [base] (reason sha256 b7ba2b6fafb3)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 165 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 166 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 167 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 168 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 169 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 170 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 171 [base] (reason sha256 83d58fe22ead)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 172 [base] (reason sha256 5a4c69745b80)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 173 [base] (reason sha256 e4c96e31c3eb)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 174 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 175 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 176 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 177 [base] (reason sha256 2b15b44e4bce)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 178 [base] (reason sha256 66ef38ff15d4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 179 [base] (reason sha256 38426ee45884)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 180 [base] (reason sha256 ffd612a69ff1)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 181 [base] (reason sha256 2845b1718b05)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 182 [base] (reason sha256 398e5ec1eb39)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 183 [base] (reason sha256 a600e0b1718e)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 184 [base] (reason sha256 fa749505530c)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 185 [base] (reason sha256 2542072b620f)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 186 [base] (reason sha256 32349829a53e)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 187 [base] (reason sha256 0dbdd73d2d66)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 188 [base] (reason sha256 37c2f5a24c74)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 189 [base] (reason sha256 845397070e13)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 190 [base] (reason sha256 9ef1301e47cc)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 191 [base] (reason sha256 2b2cd85636d0)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 192 [base] (reason sha256 eb7c3412af4a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 193 [base] (reason sha256 5b041ebf7038)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 194 [base] (reason sha256 a70c5c89032f)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 195 [base] (reason sha256 85b2c0de68a9)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 196 [base] (reason sha256 320c3e4362f9)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 197 [base] (reason sha256 2ccfa3263fc6)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 198 [base] (reason sha256 f3fdbf9597de)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 199 [base] (reason sha256 6b22fc4693c0)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 200 [base] (reason sha256 d7f5c235819a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 201 [base] (reason sha256 4e7d81755d07)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 202 [base] (reason sha256 316ccc79909c)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 203 [base] (reason sha256 316ccc79909c)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 204 [base] (reason sha256 316ccc79909c)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 205 [base] (reason sha256 41fceffeadaf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 206 [base] (reason sha256 2fff9a95a8a7)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 207 [base] (reason sha256 fd622267a6f0)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 208 [base] (reason sha256 959f678af519)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 209 [base] (reason sha256 e1ad835afadb)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 211 [base] (reason sha256 b763850da366)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 212 [base] (reason sha256 23b551bdf8d1)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 215 [base] (reason sha256 39a4d7528d14)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 216 [base] (reason sha256 5aed6e6cd499)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 217 [base] (reason sha256 16d18174a8a3)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 218 [base] (reason sha256 3e7f1b546843)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 219 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 220 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 221 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 222 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 223 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 224 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 225 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 226 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 227 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 228 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 229 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 230 [base] (reason sha256 6e8bba47fdd4)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 231 [base] (reason sha256 a0542c4ebf89)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 232 [base] (reason sha256 0fef76ad0b5a)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 233 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 234 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 235 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 237 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 238 [base] (reason sha256 fa58fe02e8cf)
+- resveratrol-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 240 [base] (reason sha256 817e5a1eb080)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 0 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 2 [base] (reason sha256 818f1ebac33d)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 4 [base] (reason sha256 83d4ac52d596)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 5 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 6 [base] (reason sha256 e948e3b168f4)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 9 [base] (reason sha256 e948e3b168f4)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 11 [base] (reason sha256 83d4ac52d596)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 13 [base] (reason sha256 83d4ac52d596)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 14 [base] (reason sha256 295de7231f4f)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 15 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 16 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 17 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 18 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 19 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 20 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 21 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 22 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 23 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 24 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 25 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 26 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 27 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 28 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 29 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 32 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 33 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 35 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 36 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 40 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 41 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 42 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 43 [base] (reason sha256 771f960daa26)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 44 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 45 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 47 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 48 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 49 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 51 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 54 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 57 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 58 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 59 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 60 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 61 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 62 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 63 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 64 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 70 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 71 [base] (reason sha256 295de7231f4f)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 72 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 73 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 74 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 75 [base] (reason sha256 197478e8c3a6)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 76 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 77 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 78 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 79 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 80 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 81 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 82 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 83 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 84 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 85 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 86 [base] (reason sha256 62a178f41244)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 87 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 88 [base] (reason sha256 49e7f457fe7a)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 108 [base] (reason sha256 295de7231f4f)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 110 [base] (reason sha256 8f55390dc2fd)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 113 [base] (reason sha256 f3b200376fb3)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 114 [base] (reason sha256 f3b200376fb3)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID changed_tokens 118 [addendum-4] (reason sha256 d444b8bf9dfb)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 0b0dac138da5)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID current_view_basis 10 [base] (reason sha256 06a484762a77)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID current_view_basis 11 [base] (reason sha256 06a484762a77)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID current_view_basis 12 [base] (reason sha256 06a484762a77)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID current_view_basis 13 [base] (reason sha256 06a484762a77)
+- vitamin-d-benefits-forms-dosing-and-side-effects: VOID current_view_basis 14 [base] (reason sha256 06a484762a77)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 0 [base] (reason sha256 e948e3b168f4)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 7 [base] (reason sha256 e948e3b168f4)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 9 [base] (reason sha256 e948e3b168f4)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 10 [base] (reason sha256 e948e3b168f4)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 13 [base] (reason sha256 e948e3b168f4)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 14 [base] (reason sha256 62a178f41244)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 16 [base] (reason sha256 e948e3b168f4)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 17 [base] (reason sha256 e948e3b168f4)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 18 [base] (reason sha256 49e7f457fe7a)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 22 [base] (reason sha256 49e7f457fe7a)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 23 [base] (reason sha256 49e7f457fe7a)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 25 [base] (reason sha256 49e7f457fe7a)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 26 [base] (reason sha256 62a178f41244)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 27 [base] (reason sha256 62a178f41244)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 28 [base] (reason sha256 49e7f457fe7a)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 31 [base] (reason sha256 49e7f457fe7a)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 32 [base] (reason sha256 49e7f457fe7a)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 33 [base] (reason sha256 49e7f457fe7a)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 35 [base] (reason sha256 49e7f457fe7a)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID changed_tokens 36 [base] (reason sha256 49e7f457fe7a)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID current_view_basis 0 [base] (reason sha256 d5771852bd86)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
+- vitamin-k-benefits-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
+- lithium-benefits-forms-dosing-and-side-effects: VOID changed_tokens 0 [base] (reason sha256 83d4ac52d596)
+- lithium-benefits-forms-dosing-and-side-effects: VOID changed_tokens 1 [base] (reason sha256 83d4ac52d596)
+- lithium-benefits-forms-dosing-and-side-effects: VOID changed_tokens 3 [base] (reason sha256 83d4ac52d596)
+- lithium-benefits-forms-dosing-and-side-effects: VOID changed_tokens 4 [base] (reason sha256 49e7f457fe7a)
+- lithium-benefits-forms-dosing-and-side-effects: VOID changed_tokens 5 [base] (reason sha256 49e7f457fe7a)
+- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 0 [base] (reason sha256 d5771852bd86)
+- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
+- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
+- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
+- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
+- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
+- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 11 [base] (reason sha256 06a484762a77)
+- lithium-benefits-forms-dosing-and-side-effects: VOID current_view_basis 14 [addendum-4] (reason sha256 a7d6f6cb106c)
+- lithium-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 0 [addendum-5] (reason sha256 a3db44050934)
+- lithium-benefits-forms-dosing-and-side-effects: VOID deleted_sentences 1 [addendum-5] (reason sha256 a3db44050934)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 0 [base] (reason sha256 62a178f41244)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 1 [base] (reason sha256 62a178f41244)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 2 [base] (reason sha256 62a178f41244)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 3 [base] (reason sha256 62a178f41244)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 4 [base] (reason sha256 e948e3b168f4)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 5 [base] (reason sha256 e948e3b168f4)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 6 [base] (reason sha256 62a178f41244)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 7 [base] (reason sha256 e948e3b168f4)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 8 [base] (reason sha256 02fcc3189bf6)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 9 [base] (reason sha256 02fcc3189bf6)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 11 [base] (reason sha256 e948e3b168f4)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 12 [base] (reason sha256 62a178f41244)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 13 [base] (reason sha256 62a178f41244)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 14 [base] (reason sha256 e948e3b168f4)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 23 [base] (reason sha256 e948e3b168f4)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 27 [base] (reason sha256 e948e3b168f4)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 28 [base] (reason sha256 49e7f457fe7a)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 29 [base] (reason sha256 49e7f457fe7a)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 30 [base] (reason sha256 62a178f41244)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 31 [base] (reason sha256 62a178f41244)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 32 [base] (reason sha256 62a178f41244)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 33 [base] (reason sha256 49e7f457fe7a)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 37 [base] (reason sha256 49e7f457fe7a)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 38 [base] (reason sha256 49e7f457fe7a)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 39 [base] (reason sha256 49e7f457fe7a)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 40 [base] (reason sha256 62a178f41244)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 43 [base] (reason sha256 99ac7fb183cf)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 44 [base] (reason sha256 99ac7fb183cf)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 45 [base] (reason sha256 99ac7fb183cf)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 46 [base] (reason sha256 99ac7fb183cf)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 47 [base] (reason sha256 99ac7fb183cf)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 48 [base] (reason sha256 99ac7fb183cf)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 49 [base] (reason sha256 99ac7fb183cf)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 50 [base] (reason sha256 99ac7fb183cf)
+- taurine-benefits-forms-dosing-and-side-effects: VOID changed_tokens 54 [base] (reason sha256 99ac7fb183cf)
+- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 0 [base] (reason sha256 d5771852bd86)
+- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
+- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
+- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
+- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
+- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
+- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 27 [base] (reason sha256 01cb4ca86170)
+- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 28 [base] (reason sha256 01cb4ca86170)
+- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 29 [base] (reason sha256 01cb4ca86170)
+- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 30 [base] (reason sha256 01cb4ca86170)
+- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 31 [base] (reason sha256 7ed3f15097da)
+- taurine-benefits-forms-dosing-and-side-effects: VOID current_view_basis 32 [base] (reason sha256 7ed3f15097da)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 3 [base] (reason sha256 e948e3b168f4)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 4 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 5 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 6 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 7 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 8 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 9 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 10 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 12 [base] (reason sha256 e948e3b168f4)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 13 [base] (reason sha256 e948e3b168f4)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 15 [base] (reason sha256 e948e3b168f4)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 16 [base] (reason sha256 e948e3b168f4)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 17 [base] (reason sha256 e948e3b168f4)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 18 [base] (reason sha256 e948e3b168f4)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 27 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 28 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 29 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 30 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 31 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 32 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 33 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID changed_tokens 34 [base] (reason sha256 49e7f457fe7a)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 0 [base] (reason sha256 d5771852bd86)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
+- creatine-benefits-best-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 3 [base] (reason sha256 e948e3b168f4)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 5 [base] (reason sha256 e948e3b168f4)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 6 [base] (reason sha256 3909e4b5f597)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 7 [base] (reason sha256 3909e4b5f597)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 11 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 12 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 13 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 14 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 15 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 16 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 17 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 18 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 19 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 20 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 21 [base] (reason sha256 49e7f457fe7a)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 25 [addendum-4] (reason sha256 82d446c6c2a8)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID changed_tokens 29 [addendum-4] (reason sha256 2ab6b489bb21)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 0 [base] (reason sha256 d5771852bd86)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 1 [base] (reason sha256 d5771852bd86)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 2 [base] (reason sha256 d5771852bd86)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
+- vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
+
+## Summary corrections from addenda
+
+- nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects: proposed_summary_correction set by addendum-5
+- resveratrol-benefits-forms-dosing-and-side-effects: proposed_summary_correction set by addendum-4
+- resveratrol-benefits-forms-dosing-and-side-effects: proposed_summary_correction set by addendum-6
+- vitamin-d-benefits-forms-dosing-and-side-effects: proposed_summary_correction set by addendum-5
+- vitamin-d-benefits-forms-dosing-and-side-effects: proposed_summary_correction set by addendum-6
 
 ## Accepted exceptions
 
@@ -370,6 +691,8 @@ Counts and hashes only. Raw text never enters this repo.
 | AC2 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("at a maximum of 300 mg per day" read as a comparison the source words differently); source: reviews-nmn-nadh-nicotinamide-riboside-nmn-nadh-nicotinamide-riboside.md (ConsumerLab raw), changed_tokens[53] in the external report (voided there because the checker reads the comparison differently; this exception records it). No licensed text quoted here. | 36c95590e312d918 |
 | AC2 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("no less than 800 mg/kg" vs the source's "NLT 800 mg NMN/kg": abbreviation and word between unit parts); source states it verbatim: pubmed/38765763.md: "the NOAEL was considered to be NLT 800 mg NMN/kg body weight in Wistar rats" | 3ec68cff3d8fa786 |
 | AC2 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (range "20 to 65" vs the source's "20-65 years": unit glued to the range); source states it verbatim: pubmed/36002548.md: "in 31 healthy adult men and women aged 20-65 years" | 2f715ce5938cfcf3 |
+| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (body 'average age 71.7' vs the abstract's 'aged 71.7 ± 4.6 years': unit and spread around the number); source states it verbatim: pubmed/40922000.md: "involved 120 healthy subjects aged 71.7 ± 4.6 years divided into 3 groups". Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm. | fb7c394c400b5ac8 |
+| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ('350 mg twice daily' read as 350 mg per day; the abstract writes 'bid'); source states it verbatim: pubmed/40922000.md: "B) resveratrol 350 mg bid + TA-65 100U". Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm. | fe2c539f53db824c |
 | AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (number word in the source ("fifteen")); source states it verbatim: pubmed/36014469.md: "studies were selected for the systematic review and fifteen were included in the meta-analysis" | a6d7eeee1b1d10e8 |
 | AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (ranges and "daily" placement ("250−500 mg/day", "250 mg ... daily", "100 mg or 250 mg")); sources: pubmed/36014469.md: "HbA1c improved in subjects aged 45−59 years with doses of 250−500 mg"; and reviews-resveratrol-review-resveratrol-red-wine.md (ConsumerLab raw), changed_tokens[116] and [117] in the external report. No licensed text quoted here. | 7b8366fa673408d9 |
 | AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (range with a minus sign and glued unit ("45−59 years")); source states it verbatim: pubmed/36014469.md: "HbA1c improved in subjects aged 45−59 years with doses of 250−500 mg" | d5d25d5311e52e0b |
@@ -378,16 +701,44 @@ Counts and hashes only. Raw text never enters this repo.
 | AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("up to 5 g" read as a comparison; the source lists the doses); source states it verbatim: pubmed/20935227.md + pubmed/17548692.md: "Forty healthy volunteers ingested resveratrol at 0.5, 1.0, 2.5, or 5.0 g daily for 29 days; single doses of 0.5, 1, 2.5, or 5 g" | 08992f093451a44a |
 | AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (value and unit separated by the CI in the source); source states it verbatim: pubmed/40580309.md: "BUN [weighted mean difference (WMD) =  - 1.20; 95% CI: - 1.89, - 0.51 mg/dL" | f3dabe5ba1f0f0d4 |
 | AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("over 3 months" (duration) read as a ">" comparison); source states it verbatim: pubmed/22240353.md: "One group received 10 mg RES capsule daily for 3 months" | a859b62924e98232 |
+| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: the bare digit 5 became a needed token only because round 2 fix 7 added 'month 5' (PBAR abstract) on other lines. The Piceid line's numbers (4-5 mg/L, 5- to 20-fold) are unchanged from origin/main; only its citation markers changed earlier in the batch. Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm. | 44d525eb1ab69ac9 |
 | AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Line unchanged from main except reference renumbering. Its "10" became a needed token only because review fix 7 added the Chachay 2014 trial (PMID 24582567: "3000 mg resveratrol (n = 10) or placebo (n = 10) daily for 8 weeks"), raising the body count of "10". The line's own number predates masters-1 and its raw is not in this batch. | 031ad6e4e43e8b8b |
 | AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Line unchanged from main except reference renumbering. Its "10" became a needed token only because review fix 7 added the Chachay 2014 trial (PMID 24582567: "3000 mg resveratrol (n = 10) or placebo (n = 10) daily for 8 weeks"), raising the body count of "10". The line's own number predates masters-1 and its raw is not in this batch. | 8f04019782d4c533 |
-| AC2 | magnesium-benefits-best-forms-dosing | orchestrator | 2026-10-20 | Checker tokenisation ("126 mg of magnesium each day": words between the unit and "each day"); source states it verbatim: mistakes-people-make-magnesium.md: "I take an added 126 mg of magnesium each day, which is about 30% of the RDI" | 20bb48a48712152f |
-| AC2 | taurine-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (unit glued to the number ("6g") and a range ("1 and 6 g")); source states it verbatim: 1-394-person-study-on-taurine-proves-what-we-suspected.md + taurine-time-to-throw-it-away-two-new-studies.md: "The doses used in the studies varied between 0.5g and 6g per day; varied between 1 and 6 g per day" | bd0a9a1f73b0c026 |
-| AC2 | creatine-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation ("over 12 weeks" (duration) read as a ">" comparison); source states it verbatim: creatine-fails-in-new-study-don-t-be-misled.md: "any benefit in terms of lean body mass gains during the 12 weeks of exercise compared to the control group" | da680e14f105e9dc |
-| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (units spelled out in the source ("milligrams per kilogram")); source states it verbatim: more-vitamins-worse-health-new-trial.md: "50 milligrams per kilogram, every six hours, for four days" | 3d396146b6d369db |
-| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (units spelled out in the source ("grams ... a day") and a range); source states it verbatim: more-vitamins-worse-health-new-trial.md: "that works out to roughly 14 to 16 grams of vitamin C a day" | 0c14ec7784f6d357 |
-| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation (units spelled out in the source ("grams ... a day") and a range); source states it verbatim: more-vitamins-worse-health-new-trial.md: "that works out to roughly 14 to 16 grams of vitamin C a day" | 2decd3c26d1293bc |
+| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: 150 mg/day equals the abstract's "75 mg twice daily"; quote is in the report. | 8aecb84e72441de1 |
+| AC2 | resveratrol-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: 150 mg/day equals the abstract's "75 mg twice daily"; quote is in the report. | f190fd297fa38e84 |
+| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: the abstract spells the sample size "Hundred six" (106). | 7f01708b257a463f |
+| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: body "more than 7 times" equals the abstract's ">7-fold". | 86e3d721b622d452 |
+| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: body "more than 7 times" equals the abstract's ">7-fold". | 7350aca7cfd352ea |
+| AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: the abstract spells the sample size "Hundred six" (106). | 85667f73b4449e24 |
+| AC4 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | Brad 2026-10-20 deleted the subsection's only content (unsupported methylation concern and the TMG product sentence); an empty heading would be wrong. | 6aea0e4386d8ead4 |
 | AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Pre-existing on main before masters-1 (writer report notes it); not introduced by the batch. Cleanup belongs to the reference-hygiene backlog. | f861a10c3d150329 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Real paper on this publisher's site, cited by ConsumerLab; the publisher has a low-quality open-access reputation (flagged for review/Brad). | a961d77abe57e365 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Real paper on this publisher's site, cited by ConsumerLab; the publisher has a low-quality open-access reputation (flagged for review/Brad). | a961d77abe57e365 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Industry body statement (Collagen Stewardship Alliance / GROW Coalition) as reported by NutraIngredients; the trade-press report is the primary record of the statement. | 7312c16f7cf020d4 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Industry body statement (Collagen Stewardship Alliance / GROW Coalition) as reported by NutraIngredients; the trade-press report is the primary record of the statement. | 7312c16f7cf020d4 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Industry body statement (Collagen Stewardship Alliance / GROW Coalition) as reported by NutraIngredients; the trade-press report is the primary record of the statement. | 055f46ffb73af010 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Industry body statement (Collagen Stewardship Alliance / GROW Coalition) as reported by NutraIngredients; the trade-press report is the primary record of the statement. | 055f46ffb73af010 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | US regulation text (21 CFR) hosted by Cornell LII: a legitimate primary source. | ad3bfd8d58db7395 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | US regulation text (21 CFR) hosted by Cornell LII: a legitimate primary source. | ad3bfd8d58db7395 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | US regulation text (21 CFR) hosted by Cornell LII: a legitimate primary source. | ad3bfd8d58db7395 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | US regulation text (21 CFR) hosted by Cornell LII: a legitimate primary source. | ad3bfd8d58db7395 |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Real paper on this publisher's site, cited by ConsumerLab; the publisher has a low-quality open-access reputation (flagged for review/Brad). | c8fb46b91f7fc95f |
+| AC7 | collagen-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Real paper on this publisher's site, cited by ConsumerLab; the publisher has a low-quality open-access reputation (flagged for review/Brad). | c8fb46b91f7fc95f |
+| AC7 | nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | 9ac14fd197390a97 |
 | AC7 | vitamin-d-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Pre-existing on main before masters-1; ruling 10 forbids dropping bibliographic detail to pass. Reference-hygiene backlog. | 173c7d266060b040 |
+| AC7 | vitamin-k-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Dam's Nobel lecture (1946), primary source on nobelprize.org. | 07923cfa9e5e24d1 |
+| AC7 | lithium-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | FDA lithium prescribing information: legitimate primary regulatory source. | 126c6eb94828728a |
+| AC7 | lithium-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | FDA lithium prescribing information: legitimate primary regulatory source. | 126c6eb94828728a |
+| AC7 | lithium-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Round 2 fix 9 (orchestrator-accepted): the real Townsend Letter article (January 2015) that ConsumerLab cites as Greenblatt 2015; the URL returned 200 on 2026-10-20 and the page names Greenblatt and Grossmann. A practitioner magazine, not indexed in PubMed; the claim also cites ConsumerLab [1]. Written by the round 2 Opus worker under the orchestrator's brief; orchestrator to confirm. | 7022a3ad5c9c9267 |
+| AC7 | lithium-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | b2fa8c4a7e56c4fd |
+| AC7 | creatine-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | US patent text (Google Patents): legitimate primary source. | 96a320224cbf2974 |
+| AC7 | creatine-benefits-best-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | US patent text (Google Patents): legitimate primary source. | 96a320224cbf2974 |
+| AC7 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | 5af2a27eac3d08f5 |
+| AC7 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | 12605c0b5a2a516a |
+| AC7 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | 1348cdfe2ec561c1 |
+| AC7 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | cb7f4cf726431032 |
+| AC7 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | f17d6a688ff5ffb6 |
+| AC7 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | No abstract exists in PubMed for this record (verified by NCBI efetch 2026-10-20); the reference is real. | 2f82b023b538ff5a |
 
 Body hashes are the first 16 hex characters of sha256; raw hashes are in full.
 

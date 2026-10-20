@@ -211,7 +211,7 @@ Higher dietary K2 intake has been associated with less coronary calcification an
 
 A placebo-controlled trial by Tan et al. (2024) studied 199 older adults in China who took 180 mcg of MK-7 every night for eight weeks. Compared with placebo, those given MK-7 had fewer nocturnal leg cramps: down to about 1 per week from 2.6 per week at baseline, with reductions in cramp severity and duration (down to under 10 seconds from over 1 minute at baseline). Reductions were apparent within one week, with further improvements over the first four weeks that continued for the rest of the study [3]. No adverse events related to vitamin K2 were identified [3][31].
 
-Vitamin K may relieve muscle cramps by affecting calcium channels in cells and reducing muscular contractions [3][32].
+Vitamin K may relieve muscle cramps by affecting calcium channels in cells and reducing muscular contractions [3]; one study showed this effect in animal tissue [32].
 
 ### Cancer
 
@@ -430,7 +430,7 @@ Substantial quantities of long-chain menaquinones made by gut bacteria are prese
 ## 8. References
 
 1. National Institutes of Health, Office of Dietary Supplements. Vitamin K: Health Professional Fact Sheet. Updated March 29, 2021. [NIH ODS](https://ods.od.nih.gov/factsheets/VitaminK-HealthProfessional/)
-2. Dam H. The discovery of vitamin K, its biological functions and therapeutical application. Nobel Lecture, 1943.
+2. Dam H. The discovery of vitamin K, its biological functions and therapeutical application. Nobel Lecture, 12 December 1946 (Nobel Prize in Physiology or Medicine 1943). [Nobel Prize](https://www.nobelprize.org/prizes/medicine/1943/dam/lecture/)
 3. ConsumerLab.com. Vitamin K Supplements Review. Medically reviewed by Tod Cooperman, MD. Updated August 31, 2026. [ConsumerLab](https://www.consumerlab.com/reviews/vitamin-k-supplements-review/vitamin-k/)
 4. Stafford DW. The vitamin K cycle. *J Thromb Haemost*. 2005;3(8):1873-1878. [PubMed](https://pubmed.ncbi.nlm.nih.gov/16102054/)
 5. Li T, Chang CY, Jin DY, et al. Identification of the gene for vitamin K epoxide reductase. *Nature*. 2004;427(6974):541-544. [PubMed](https://pubmed.ncbi.nlm.nih.gov/14765195/)
@@ -438,7 +438,7 @@ Substantial quantities of long-chain menaquinones made by gut bacteria are prese
 7. Gundberg CM, Lian JB, Booth SL. Vitamin K-dependent carboxylation of osteocalcin: friend or foe? *Adv Nutr*. 2012;3(2):149-157. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22516722/)
 8. Schurgers LJ. Vitamin K: key vitamin in controlling vascular calcification in chronic kidney disease. *Kidney Int*. 2013;83(5):782-784. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23633049/)
 9. Shearer MJ, Fu X, Booth SL. Vitamin K nutrition, metabolism, and requirements: current concepts and future research. *Adv Nutr*. 2012;3(2):182-195. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22516726/)
-10. Ferland G. Vitamin K. In: Erdman JW, Macdonald IA, Zeisel SH, eds. *Present Knowledge in Nutrition*. 10th ed. Washington, DC: Wiley-Blackwell; 2012:230-247.
+10. Ferland G. Vitamin K. In: Erdman JW, Macdonald IA, Zeisel SH, eds. *Present Knowledge in Nutrition*. 10th ed. Washington, DC: Wiley-Blackwell; 2012:230-247. [https://doi.org/10.1002/9781119946045.ch15](https://doi.org/10.1002/9781119946045.ch15)
 11. Shearer MJ, Newman P. Metabolism and cell biology of vitamin K. *Thromb Haemost*. 2008;100(4):530-547. [PubMed](https://pubmed.ncbi.nlm.nih.gov/18841274/)
 12. Sadowski JA, Hood SJ, Dallal GE, et al. Phylloquinone in plasma from elderly and young adults: factors influencing its concentration. *Am J Clin Nutr*. 1989;50(1):100-108. [PubMed](https://pubmed.ncbi.nlm.nih.gov/2750682/)
 13. Nakagawa K, et al. Identification of UBIAD1 as a novel human menaquinone-4 biosynthetic enzyme. *Nature*. 2010;468(7320):117-121. PMID: 20953171. https://pubmed.ncbi.nlm.nih.gov/20953171/
@@ -460,14 +460,14 @@ Substantial quantities of long-chain menaquinones made by gut bacteria are prese
 29. Diederichsen ACP, Lindholt JS, Möller S, et al. Vitamin K2 and D in patients with aortic valve calcification: a randomized double-blinded clinical trial. *Circulation*. 2022;145(18):1387-1397. PMID: 35465686. https://pubmed.ncbi.nlm.nih.gov/35465686/
 30. Shea MK, O'Donnell CJ, Hoffmann U, et al. Vitamin K supplementation and progression of coronary artery calcium in older men and women. *Am J Clin Nutr*. 2009;89(6):1799-1807. [PubMed](https://pubmed.ncbi.nlm.nih.gov/19386744/)
 31. Tan J, Zhu R, Li Y, et al. Vitamin K2 in managing nocturnal leg cramps: a randomized clinical trial. *JAMA Intern Med*. 2024;184(12):1443-1447. PMID: 39466236. https://pubmed.ncbi.nlm.nih.gov/39466236/
-32. Zhang YS, Li Q, He BS, et al. Inhibitory effects of vitamin K on calcium signaling. *Biochem Biophys Res Commun*. 2016;474(2):341-345.
+32. Zhang XX, Lu LM, Wang L. Vitamin K3 inhibits mouse uterine contraction in vitro via interference with the calcium transfer and the potassium channels. *Biochem Biophys Res Commun*. 2016;476(4):393-399. PMID: 27237971. https://pubmed.ncbi.nlm.nih.gov/27237971/
 33. Nimptsch K, Rohrmann S, Kaaks R, et al. Dietary vitamin K intake in relation to cancer incidence and mortality: results from the Heidelberg cohort of the European Prospective Investigation into Cancer and Nutrition (EPIC-Heidelberg). *Am J Clin Nutr*. 2010;91(5):1348-1358. [PubMed](https://pubmed.ncbi.nlm.nih.gov/20335553/)
 34. Wang K, Wu Q, Li Z, et al. Vitamin K intake and breast cancer incidence and death: results from a prospective cohort study. *Clin Nutr*. 2021;40(5):3370-3378. PMID: 33277073. https://pubmed.ncbi.nlm.nih.gov/33277073/
 35. Linneberg A, Kampmann FB, Israelsen SB, et al. The association of low vitamin K status with mortality in a cohort of 138 hospitalized patients with COVID-19. *medRxiv*. 2020 (preprint). Published in *Nutrients*. 2021;13(6):1985. PMID: 34207745. https://pubmed.ncbi.nlm.nih.gov/34207745/
-36. Ansell J, Hirsh J, Hylek E, et al. Pharmacology and management of the vitamin K antagonists. *Chest*. 2008;133(6 Suppl):160S-198S. PMID: 18574265. https://pubmed.ncbi.nlm.nih.gov/18574265/
-37. Holbrook A, et al. Evidence-based management of anticoagulant therapy. *Chest*. 2012;141(2 Suppl):e152S-e184S. PMID: 22315259. https://pubmed.ncbi.nlm.nih.gov/22315259/
+36. Ansell J, Hirsh J, Hylek E, et al. Pharmacology and management of the vitamin K antagonists: American College of Chest Physicians Evidence-Based Clinical Practice Guidelines (8th Edition). *Chest*. 2008;133(6 Suppl):160S-198S. PMID: 18574265. https://pubmed.ncbi.nlm.nih.gov/18574265/
+37. Holbrook A, et al. Evidence-based management of anticoagulant therapy: Antithrombotic Therapy and Prevention of Thrombosis, 9th ed: American College of Chest Physicians Evidence-Based Clinical Practice Guidelines. *Chest*. 2012;141(2 Suppl):e152S-e184S. PMID: 22315259. https://pubmed.ncbi.nlm.nih.gov/22315259/
 38. Witt DM, Clark NP, Kaatz S, et al. Guidance for the practical management of warfarin therapy. *J Thromb Thrombolysis*. 2016;41(1):187-205. PMID: 26780746. https://pubmed.ncbi.nlm.nih.gov/26780746/
-39. Institute of Medicine, Food and Nutrition Board. *Dietary Reference Intakes for Vitamin A, Vitamin K, Arsenic, Boron, Chromium, Copper, Iodine, Iron, Manganese, Molybdenum, Nickel, Silicon, Vanadium, and Zinc*. Washington, DC: National Academy Press; 2001.
+39. Institute of Medicine, Food and Nutrition Board. *Dietary Reference Intakes for Vitamin A, Vitamin K, Arsenic, Boron, Chromium, Copper, Iodine, Iron, Manganese, Molybdenum, Nickel, Silicon, Vanadium, and Zinc*. Washington, DC: National Academy Press; 2001. [https://pubmed.ncbi.nlm.nih.gov/25057538/](https://pubmed.ncbi.nlm.nih.gov/25057538/)
 40. European Food Safety Authority. Dietary reference values for vitamin K. *EFSA Journal*. 2017;15(5):4780.
 41. Deutsche Gesellschaft fur Ernahrung (DGE). Vitamin K recommendations. [DGE](https://www.dge.de/)
 42. Ikonte CJ, Mun JG, Reider CA, et al. Micronutrient inadequacy in short sleep: analysis of the NHANES 2005-2016. *Nutrients*. 2019;11(10):2335. PMID: 31581561. https://pubmed.ncbi.nlm.nih.gov/31581561/

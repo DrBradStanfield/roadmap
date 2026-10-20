@@ -43,7 +43,7 @@ There are at least 28 identified types of collagen, but the predominant types in
 
 Collagen supplements are typically derived from animal sources: bovine (cow) hides and bones, porcine (pig) skin, chicken sternal cartilage, fish skin and scales, or eggshell membranes [1]. No plant-based organism produces collagen, although "vegan collagen alternatives" made from fermented amino acids in ratios mimicking human collagen have recently been developed [1].
 
-Several placebo-controlled clinical studies suggest that supplemental collagen -- particularly hydrolyzed collagen peptides -- may modestly improve the appearance of aging skin, reduce joint pain and stiffness in osteoarthritis, increase bone mineral density, and aid in wound healing [1][2]. However, the evidence base is predominantly composed of small, manufacturer-funded studies with modest effect sizes, and a recent systematic review found that benefits on skin hydration and elasticity were no longer statistically significant when only high-quality, independent studies were analyzed [4]. A larger 2026 meta-analysis of 35 trials later found that collagen peptides may improve skin hydration and elasticity, but found no effect on wrinkles [75]. The following sections review this evidence in detail.
+Several placebo-controlled clinical studies suggest that supplemental collagen -- particularly hydrolyzed collagen peptides -- may modestly improve the appearance of aging skin, reduce joint pain and stiffness in osteoarthritis, increase bone mineral density, and aid in wound healing [1]. However, the evidence base is predominantly composed of small, manufacturer-funded studies with modest effect sizes, and a recent systematic review found that benefits on skin hydration and elasticity were no longer statistically significant when only high-quality, independent studies were analyzed [4]. A larger 2026 meta-analysis of 35 trials later found that collagen peptides may improve skin hydration and elasticity, but found no effect on wrinkles [75]. The following sections review this evidence in detail.
 
 ## 2. Forms and Bioavailability
 
@@ -120,7 +120,7 @@ The single trials below report wrinkle reductions. When wrinkle results were poo
 
 - In 36 postmenopausal women in Thailand, 5 g/day of fish collagen hydrolysate for 1 month improved cheek skin elasticity by 9-10% vs. placebo, with the benefit persisting 1 month after supplementation. There was no improvement in upper inner arm elasticity. The researchers noted that sun-exposed skin may benefit most because UV radiation activates collagen-degrading enzymes [19].
 - In 84 men and women (average age 50) with dry skin and crow's feet, 2 g/day of low-molecular-weight fish collagen peptides for 12 weeks modestly reduced eye wrinkle depth (-11.2% vs. -5.9% placebo) and wrinkle length (-7% vs. -3.4%), with slight improvement in hydration but no improvement in elasticity [20].
-- In 43 women (average age 52), 500 mg/day of hydrolyzed fish collagen (65% peptides, 25% chondroitin sulfate) for 3 months reduced eye wrinkles by 26% vs. baseline (significant vs. placebo) and improved deep skin hydration. However, there was no reduction in smile lines or forehead wrinkles [21].
+- In 43 women (average age 52), 500 mg/day of hydrolyzed fish collagen (65% peptides, 25% chondroitin sulfate) for 3 months reduced eye wrinkles by 26% vs. baseline (significant vs. placebo) and improved deep skin hydration, according to ConsumerLab, which reads the placebo comparison as showing no reduction in smile lines or forehead wrinkles [1]. The study's authors report a significant reduction in wrinkles in the nasolabial region (between the nose and upper lip) compared with placebo and baseline [21].
 - In 99 women (average age 41), 1 g/day of fish collagen hydrolysate for 24 weeks very slightly reduced thigh cellulite compared to placebo, and modestly increased hair strand thickness [22].
 
 **BioCell Collagen (type II, chicken sternal cartilage):**
@@ -141,7 +141,7 @@ The single trials below report wrinkle reductions. When wrinkle results were poo
 
 Evidence for collagen's effects on hair and nails is limited and mixed.
 
-**Hair:** A study of 86 men and women (average age 53) found that 450 mg/day of chicken eggshell membrane hydrolysate for 3 months modestly increased hair density measured by computer analysis, but did not increase hair growth or decrease hair breakage compared to placebo. There were no improvements in nails or skin [29]. A separate study found 1 g/day of fish collagen for 24 weeks modestly increased hair strand diameter compared to placebo [22].
+**Hair:** A study of 86 men and women (average age 53) found that 450 mg/day of chicken eggshell membrane hydrolysate for 3 months modestly increased hair density measured by computer analysis, but did not increase hair growth or decrease hair breakage compared to placebo, and did not improve nails or skin, according to ConsumerLab's reading of the placebo comparison [1]. The authors of this company-funded study report significant improvements in hair thickness, hair breakage, hair growth and facial skin appearance, with no improvement in nails [29]. A separate study found 1 g/day of fish collagen for 24 weeks modestly increased hair strand diameter compared to placebo [22].
 
 **Nails:** A study of women taking 2.5 g/day of Verisol collagen peptides for 24 weeks reported that nail growth increased by 12% and broken nail frequency decreased by 42% compared to pre-supplementation. However, this study had no placebo control, making the findings uncertain [30].
 
@@ -165,7 +165,7 @@ Collagen supplementation for at least 3-6 months may modestly reduce joint stiff
 - 1,200 mg/day of collagen hydrolysate (Genacol) for 6 months reduced pain in 51.6% of participants vs. 36.5% of placebo -- a statistically significant difference. After only 3 months, the difference was not yet significant [36].
 - 5,000 mg of collagen hydrolysate twice daily for 13 weeks significantly improved osteoarthritis symptoms vs. placebo [37].
 - 10 g/day of collagen hydrolysate for 13 weeks showed greater benefit than glucosamine sulfate for osteoarthritis, though this study lacked a placebo control [38].
-- 2.5 g/day of hydrolyzed chicken collagen type II for 2 months modestly reduced joint stiffness but did NOT reduce pain or improve activity levels compared to placebo. Overall WOMAC scores were not significantly improved [39].
+- 2.5 g/day of hydrolyzed chicken collagen type II for 2 months modestly reduced joint stiffness but did NOT reduce pain or improve activity levels compared to placebo, and overall WOMAC scores were not significantly improved, according to ConsumerLab's reading [1]. The authors of this company-funded study report significantly greater reductions in joint discomfort than placebo in the WOMAC stiffness and physical activity domains and in the overall WOMAC score [39].
 - A manufacturer-conducted study of Type J bovine collagen (enriched in bioactive dipeptides) found that 2.5 g/day for 3 months reduced osteoarthritis severity by 26.30 points (0-96 scale) vs. 5.67 for placebo and reduced the collagen degradation marker CTX-II by 22.8% vs. 3.1%. Higher doses (5 g and 10 g) showed greater benefits. Improvements with 2.5 g of Type J collagen were similar to 10 g of conventional collagen peptides [10].
 - 10 g/day of collagen peptides (Peptan B2000) for 3 months did NOT reduce knee pain or improve knee function, nor did it reduce inflammation or cartilage breakdown markers compared to placebo in 167 people with self-reported knee pain [40].
 
@@ -182,13 +182,13 @@ Collagen supplementation for at least 3-6 months may modestly reduce joint stiff
 
 **Bone mineral density:** In 131 postmenopausal women (average age 64) with reduced bone mineral density, 5 g/day of collagen peptides (Fortibone by Gelita AG) for 12 months increased bone mineral density in the spine and femoral neck by 3.0% and 6.7% respectively, compared to decreases of -1.3% and -1.0% in the placebo group. Participants in both groups were encouraged to take calcium (500-800 mg) and vitamin D (400-800 IU) daily, though compliance was not monitored [46].
 
-**4-year follow-up:** A follow-up of 23 women from the above study showed that continuing 5 g/day of Fortibone for 4 years improved spine and neck bone mineral density by approximately 7%, and none experienced a fracture. However, this follow-up did not include a control group, limiting the strength of conclusions [47].
+**4-year follow-up:** A follow-up of 31 women from the above study showed that continuing 5 g/day of Fortibone for 4 years improved spine and neck bone mineral density by approximately 7%, and none experienced a fracture. However, this follow-up did not include a control group, limiting the strength of conclusions [47].
 
 ### Diabetes and Blood Sugar
 
 Small studies suggest that fish collagen peptides may lower blood sugar and improve insulin resistance in people with type 2 diabetes.
 
-- In 61 people with type 2 diabetes, 5 g/day of fish collagen peptide for 3 months lowered fasting blood glucose by 78 mg/dL, reduced HbA1c from 8.1% to 5.9%, and reduced insulin resistance (HOMA-IR) from 7.9 to 4.7. A lower dose of 2.5 g/day did NOT improve these outcomes [48].
+- In 61 people with type 2 diabetes, 5 g/day of fish collagen peptide for 3 months lowered fasting blood glucose by 78 mg/dL, reduced HbA1c from 8.1% to 5.9%, and reduced insulin resistance (HOMA-IR) from 7.9 to 4.7. A lower dose of 2.5 g/day did NOT improve these outcomes [1].
 - In 100 people with type 2 diabetes, 6.5 g of fish collagen peptides twice daily along with diabetes medication for 3 months reduced fasting blood glucose by 26 mg/dL, HbA1c by 0.48%, and fasting insulin by 0.24 mU/L compared to a control group [49].
 
 The proposed mechanism involves collagen peptides blocking the enzyme dipeptidyl peptidase 4 (DPP-4), similar to the mechanism of prescription DPP-4 inhibitor diabetes medications, which lower blood sugar by increasing post-meal insulin levels [50].
@@ -319,7 +319,7 @@ Collagen contains the amino acid hydroxyproline, which is converted in the body 
 
 ### Blood Sugar Effects
 
-Because collagen peptides may lower blood sugar through DPP-4 inhibition, they should be used with caution in people taking blood sugar-lowering medications (insulin, metformin, glyburide), especially at doses above 2.5 g/day [48][49].
+Because collagen peptides may lower blood sugar through DPP-4 inhibition, they should be used with caution in people taking blood sugar-lowering medications (insulin, metformin, glyburide), especially at doses above 2.5 g/day [1][49].
 
 ### Tryptophan Depletion
 
@@ -347,7 +347,7 @@ Collagen supplements have relatively few documented drug interactions compared t
 
 ### Blood Sugar-Lowering Medications
 
-Collagen peptides may lower blood sugar through DPP-4 inhibition. Combined use with insulin, metformin, sulfonylureas (glyburide, glipizide), or other antidiabetic medications could theoretically increase the risk of hypoglycemia, particularly at collagen doses above 2.5 g/day [48][49][50]. Blood sugar should be monitored if collagen is added to an existing diabetes medication regimen.
+Collagen peptides may lower blood sugar through DPP-4 inhibition. Combined use with insulin, metformin, sulfonylureas (glyburide, glipizide), or other antidiabetic medications could theoretically increase the risk of hypoglycemia, particularly at collagen doses above 2.5 g/day [1][49][50]. Blood sugar should be monitored if collagen is added to an existing diabetes medication regimen.
 
 ### Calcium-Containing Medications
 
@@ -387,36 +387,36 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [1] ConsumerLab. "Collagen Supplements Review." Accessed 2025. [https://www.consumerlab.com/reviews/collagen-supplements-review-peptides-hydrolysate/collagen/](https://www.consumerlab.com/reviews/collagen-supplements-review-peptides-hydrolysate/collagen/)
 
-[2] Cheng W et al. "The content and ratio of type I and III collagen in skin differ with age and injury." *African J Biotechnol*. 2011;10(13):2524-2529.
+[2] Cheng W, Yan-hua R, Fang-gang N, Guo-an Z. "The content and ratio of type I and III collagen in skin differ with age and injury." *African J Biotechnol*. 2011;10(13):2524-2529. [https://academicjournals.org/journal/AJB/article-abstract/D84A6BD34177](https://academicjournals.org/journal/AJB/article-abstract/D84A6BD34177)
 
 [3] Shuster S et al. "The influence of age and sex on skin thickness, skin collagen and density." *Br J Dermatol*. 1975;93(6):639-643. doi: [10.1111/j.1365-2133.1975.tb05113.x](https://doi.org/10.1111/j.1365-2133.1975.tb05113.x)
 
 [4] Myung SK et al. "Effects of Collagen Supplements on Skin Aging: A Systematic Review and Meta-Analysis of Randomized Controlled Trials." *Am J Med*. 2025;138(9):1264-1277. doi: [10.1016/j.amjmed.2025.04.034](https://doi.org/10.1016/j.amjmed.2025.04.034)
 
-[5] Alcock RD et al. "Bone Broth Unlikely to Provide Reliable Concentrations of Collagen Precursors Compared with Supplemental Sources of Collagen Used in Collagen Research." *Front Nutr*. 2019;6:67. doi: [10.3389/fnut.2019.00067](https://doi.org/10.3389/fnut.2019.00067)
+[5] Alcock RD, Shaw GC, Tee N, Burke LM. "Plasma Amino Acid Concentrations After the Ingestion of Dairy and Collagen Proteins, in Healthy Active Males." *Front Nutr*. 2019;6:163. doi: [10.3389/fnut.2019.00163](https://doi.org/10.3389/fnut.2019.00163). PMID: [31681789](https://pubmed.ncbi.nlm.nih.gov/31681789/)
 
 [6] Lin Y et al. "Oral supplementation of vegan collagen biomimetic has beneficial effects on human skin physiology: A double-blind, placebo-controlled study." *J Funct Foods*. 2024;112:105955. doi: [10.1016/j.jff.2023.105955](https://doi.org/10.1016/j.jff.2023.105955)
 
-[7] Virgilio N et al. "Comparison of Fish, Porcine, and Bovine Collagen Hydrolysate Absorption: A Randomized Crossover Study." *Front Nutr*. 2024. doi: [10.3389/fnut.2024.1307596](https://doi.org/10.3389/fnut.2024.1307596)
+[7] Virgilio N et al. "Absorption of bioactive peptides following collagen hydrolysate intake: a randomized, double-blind crossover study in healthy individuals." *Front Nutr*. 2024;11:1416643. doi: [10.3389/fnut.2024.1416643](https://doi.org/10.3389/fnut.2024.1416643). PMID: [39149544](https://pubmed.ncbi.nlm.nih.gov/39149544/)
 
 [8] Iwai K et al. "Identification of food-derived collagen peptides in human blood after oral ingestion of gelatin hydrolysates." *J Agric Food Chem*. 2005;53(16):6531-6536. doi: [10.1021/jf050206p](https://doi.org/10.1021/jf050206p)
 
 [9] Oesser S et al. "Oral administration of (14)C labeled gelatin hydrolysate leads to an accumulation of radioactivity in cartilage of mice." *J Nutr*. 1999;129(10):1891-1895. doi: [10.1093/jn/129.10.1891](https://doi.org/10.1093/jn/129.10.1891)
 
-[10] Devasia S et al. "Double-Blind, Randomized, Controlled Study on the Effect of Oral Collagen Peptide Supplementation on Knee Joint Comfort in Symptomatic Knee Osteoarthritis." *Cartilage*. 2024. doi: [10.1177/19476035231222251](https://doi.org/10.1177/19476035231222251)
+[10] Devasia S et al. "Management and Amelioration of Knee Joint Osteoarthritis in Adults Using a Novel High-Functional Bovine Collagen Peptide as a Nutritional Therapy: A Double-Blind, Prospective, Multicentric, Randomized, Active and Placebo Controlled, Five-Arm, Clinical Study to Evaluate the Efficacy, Safety, and Tolerability." *Cartilage*. 2024;15(4):363-374. doi: [10.1177/19476035231221211](https://doi.org/10.1177/19476035231221211). PMID: [38235711](https://pubmed.ncbi.nlm.nih.gov/38235711/)
 
-[11] Aussieker T et al. "Collagen Protein Ingestion Does Not Stimulate Myofibrillar or Connective Tissue Protein Synthesis Rates Following Exercise." *Med Sci Sports Exerc*. 2025. doi: [10.1249/MSS.0000000000003492](https://doi.org/10.1249/MSS.0000000000003492)
+[11] Aussieker T et al. "Collagen Protein Ingestion during Recovery from Exercise Does Not Increase Muscle Connective Protein Synthesis Rates." *Med Sci Sports Exerc*. 2023;55(10):1792-1802. doi: [10.1249/MSS.0000000000003214](https://doi.org/10.1249/MSS.0000000000003214). PMID: [37202878](https://pubmed.ncbi.nlm.nih.gov/37202878/)
 
 
-[13] Collagen Stewardship Alliance (CSA). "Response to Myung et al. systematic review." 2025.
+[13] Collagen Stewardship Alliance (CSA). "Response to Myung et al. systematic review." 2025. Reported in NutraIngredients, 26 August 2025: [https://www.nutraingredients.com/Article/2025/08/26/industry-reacts-to-meta-analysis-concluding-collagen-supplements-show-no-proven-benefit-for-skin-aging](https://www.nutraingredients.com/Article/2025/08/26/industry-reacts-to-meta-analysis-concluding-collagen-supplements-show-no-proven-benefit-for-skin-aging)
 
-[14] GROW Coalition. "Response to Myung et al. systematic review." 2025.
+[14] GROW Coalition. "Response to Myung et al. systematic review." 2025. Reported in NutraIngredients, 26 August 2025: [https://www.nutraingredients.com/Article/2025/08/26/industry-reacts-to-meta-analysis-concluding-collagen-supplements-show-no-proven-benefit-for-skin-aging](https://www.nutraingredients.com/Article/2025/08/26/industry-reacts-to-meta-analysis-concluding-collagen-supplements-show-no-proven-benefit-for-skin-aging)
 
 [15] Proksch E et al. "Oral supplementation of specific collagen peptides has beneficial effects on human skin physiology: a double-blind, placebo-controlled study." *Skin Pharmacol Physiol*. 2014;27(1):47-55. doi: [10.1159/000351376](https://doi.org/10.1159/000351376)
 
 [16] Proksch E, Segger D et al. "Oral intake of specific bioactive collagen peptides reduces skin wrinkles and increases dermal matrix synthesis." *Skin Pharmacol Physiol*. 2014;27(3):113-119. doi: [10.1159/000355523](https://doi.org/10.1159/000355523)
 
-[17] Proksch E et al. "Oral Supplementation of Specific Bioactive Collagen Peptides Improves Skin Hydration and Reduces Wrinkles: A Randomized, Placebo-Controlled Study." *Cosmetics*. 2025. doi: [10.3390/cosmetics12010023](https://doi.org/10.3390/cosmetics12010023)
+[17] Proksch E, Zdzieblik D, Oesser S. "The Oral Intake of Specific Bovine-Derived Bioactive Collagen Peptides Has a Stimulatory Effect on Dermal Matrix Synthesis and Improves Various Clinical Skin Parameters." *Cosmetics*. 2025;12(2):79. doi: [10.3390/cosmetics12020079](https://doi.org/10.3390/cosmetics12020079)
 
 [18] Schunck M et al. "Dietary supplementation with specific collagen peptides has a body mass index-dependent beneficial effect on cellulite morphology." *J Med Food*. 2015;18(12):1340-1348. doi: [10.1089/jmf.2015.0022](https://doi.org/10.1089/jmf.2015.0022)
 
@@ -424,7 +424,7 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [20] Kim J et al. "Oral Supplementation of Low-Molecular-Weight Collagen Peptides Reduces Skin Wrinkles and Improves Biophysical Properties of Skin: A Randomized, Double-Blinded, Placebo-Controlled Study." *J Med Food*. 2022;25(12):1146-1154. doi: [10.1089/jmf.2022.k.0097](https://doi.org/10.1089/jmf.2022.k.0097)
 
-[21] Campos PMM et al. "Oral Supplementation with Hydrolyzed Fish Cartilage Improves the Morphological and Structural Characteristics of the Skin." *Molecules*. 2021;26(16):4832. doi: [10.3390/molecules26164832](https://doi.org/10.3390/molecules26164832)
+[21] Maia Campos PMBG et al. "Oral Supplementation with Hydrolyzed Fish Cartilage Improves the Morphological and Structural Characteristics of the Skin: A Double-Blind, Placebo-Controlled Clinical Study." *Molecules*. 2021;26(16):4880. doi: [10.3390/molecules26164880](https://doi.org/10.3390/molecules26164880). PMID: [34443468](https://pubmed.ncbi.nlm.nih.gov/34443468/)
 
 [22] Hwang SB et al. "Oral Intake of Low-Molecular-Weight Collagen Peptide Improves Cellulite and Hair Thickness in Women." *J Med Food*. 2026.
 
@@ -436,65 +436,63 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [26] Pogačnik T et al. "The effect of a 12-week dietary intake of food supplements containing collagen and MSM on dermis density and other skin parameters: A double-blind, placebo-controlled, randomised four-way study comparing the efficacy of three test products." *J Funct Foods*. 2023;110:105838. doi: [10.1016/j.jff.2023.105838](https://doi.org/10.1016/j.jff.2023.105838)
 
-[27] Vleminckx H et al. "Effects of Oral Collagen Supplementation on Skin Properties: A Randomized, Double-Blind, Placebo-Controlled Study." *J Cosmet Dermatol*. 2024. doi: [10.1111/jocd.16313](https://doi.org/10.1111/jocd.16313)
+[27] Vleminckx S et al. "Influence of collagen peptide supplementation on visible signs of skin and nail health and -aging in an East Asian population: A double blind, randomized, placebo-controlled trial." *J Cosmet Dermatol*. 2024;23(11):3645-3653. doi: [10.1111/jocd.16458](https://doi.org/10.1111/jocd.16458). PMID: [39143887](https://pubmed.ncbi.nlm.nih.gov/39143887/)
 
-[28] Nomoto T et al. "A Randomized Controlled Trial to Evaluate the Effects of a Collagen Supplement on Skin and Body in Elderly Adults." *Adv Skin Wound Care*. 2020;33(10):1-6.
+[28] Nomoto T, Iizaka S. "Effect of an Oral Nutrition Supplement Containing Collagen Peptides on Stratum Corneum Hydration and Skin Elasticity in Hospitalized Older Adults: A Multicenter Open-label Randomized Controlled Study." *Adv Skin Wound Care*. 2020;33(4):186-191. doi: [10.1097/01.ASW.0000655492.40898.55](https://doi.org/10.1097/01.ASW.0000655492.40898.55). PMID: [32195722](https://pubmed.ncbi.nlm.nih.gov/32195722/)
 
-[29] Kalman DS et al. "A Randomized Double-Blind Placebo-Controlled Study of Eggshell Membrane Hydrolysate on Skin, Hair, and Nail Quality." *J Cosmet Dermatol*. 2020;19(6):1463-1472. doi: [10.1111/jocd.13154](https://doi.org/10.1111/jocd.13154)
+[29] Kalman DS, Hewlings S. "The effect of oral hydrolyzed eggshell membrane on the appearance of hair, skin, and nails in healthy middle-aged adults: A randomized double-blind placebo-controlled clinical trial." *J Cosmet Dermatol*. 2020;19(6):1463-1472. doi: [10.1111/jocd.13275](https://doi.org/10.1111/jocd.13275). PMID: [31904175](https://pubmed.ncbi.nlm.nih.gov/31904175/)
 
 [30] Hexsel D et al. "Oral supplementation with specific bioactive collagen peptides improves nail growth and reduces symptoms of brittle nails." *J Cosmet Dermatol*. 2017;16(4):520-526. doi: [10.1111/jocd.12393](https://doi.org/10.1111/jocd.12393)
 
-[31] Lugo JP et al. "Efficacy and tolerability of an undenatured type II collagen supplement in modulating knee osteoarthritis symptoms: a multicenter randomized, double-blind, placebo-controlled study." *J Int Soc Sports Nutr*. 2013;10:53. doi: [10.1186/1550-2783-10-53](https://doi.org/10.1186/1550-2783-10-53)
+[31] Lugo JP et al. "Undenatured type II collagen (UC-II) for joint support: a randomized, double-blind, placebo-controlled study in healthy volunteers." *J Int Soc Sports Nutr*. 2013;10:48. doi: [10.1186/1550-2783-10-48](https://doi.org/10.1186/1550-2783-10-48). PMID: [24153020](https://pubmed.ncbi.nlm.nih.gov/24153020/)
 
 [32] Crowley DC et al. "Safety and efficacy of undenatured type II collagen in the treatment of osteoarthritis of the knee: a clinical trial." *Int J Med Sci*. 2009;6(6):312-321. doi: [10.7150/ijms.6.312](https://doi.org/10.7150/ijms.6.312)
 
-[33] Lugo JP et al. "Undenatured type II collagen (UC-II) for joint support: a randomized, double-blind, placebo-controlled study in healthy volunteers." *Nutr J*. 2016;15:14. doi: [10.1186/s12937-016-0130-8](https://doi.org/10.1186/s12937-016-0130-8)
+[33] Lugo JP, Saiyed ZM, Lane NE. "Efficacy and tolerability of an undenatured type II collagen supplement in modulating knee osteoarthritis symptoms: a multicenter randomized, double-blind, placebo-controlled study." *Nutr J*. 2016;15:14. doi: [10.1186/s12937-016-0130-8](https://doi.org/10.1186/s12937-016-0130-8). PMID: [26822714](https://pubmed.ncbi.nlm.nih.gov/26822714/)
 
-[34] Yuenyongviwat V et al. "Efficacy and Safety of Undenatured Type II Collagen Combined with Hydrolyzed Collagen for Knee Osteoarthritis: A Randomized Double-Blind Placebo-Controlled Trial." *Sci Rep*. 2025. doi: [10.1038/s41598-025-87521-3](https://doi.org/10.1038/s41598-025-87521-3)
+[34] Yuenyongviwat V et al. "Efficacy of combined undenatured type II collagen and hydrolysed collagen supplementation in knee osteoarthritis: a randomised controlled trial." *Sci Rep*. 2025;15:32313. doi: [10.1038/s41598-025-17505-0](https://doi.org/10.1038/s41598-025-17505-0). PMID: [40897777](https://pubmed.ncbi.nlm.nih.gov/40897777/)
 
-[35] Shiojima Y et al. "Effects of Undenatured Type II Collagen on Joint Health in Adults with Knee Discomfort." *J Am Nutr Assoc*. 2022;41(8):796-803. doi: [10.1080/07315724.2021.1955230](https://doi.org/10.1080/07315724.2021.1955230)
+[35] Shiojima Y et al. "Efficacy and Safety of Dietary Undenatured Type II Collagen on Joint and Motor Function in Healthy Volunteers: A Randomized, Double-Blind, Placebo-Controlled, Parallel-Group Study." *J Am Nutr Assoc*. 2023;42(3):224-241 (online 2022). doi: [10.1080/07315724.2021.2024466](https://doi.org/10.1080/07315724.2021.2024466). PMID: [35512781](https://pubmed.ncbi.nlm.nih.gov/35512781/)
 
 [36] Bruyere O et al. "Effect of collagen hydrolysate in articular pain: A 6-month randomized, double-blind, placebo controlled study." *Comp Ther Med*. 2012;20(3):124-130. doi: [10.1016/j.ctim.2011.12.007](https://doi.org/10.1016/j.ctim.2011.12.007)
 
-[37] Kumar S et al. "Effectiveness of collagen peptide in the treatment of knee osteoarthritis: A randomized double-blind placebo-controlled trial." *J Sci Food Agric*. 2014. doi: [10.1002/jsfa.6974](https://doi.org/10.1002/jsfa.6974)
+[37] Kumar S et al. "A double-blind, placebo-controlled, randomised, clinical study on the effectiveness of collagen peptide on osteoarthritis." *J Sci Food Agric*. 2015;95(4):702-707. doi: [10.1002/jsfa.6752](https://doi.org/10.1002/jsfa.6752). PMID: [24852756](https://pubmed.ncbi.nlm.nih.gov/24852756/)
 
 [38] Trc T, Bohmova J. "Efficacy and tolerance of enzymatic hydrolysed collagen (EHC) vs. glucosamine sulphate (GS) in the treatment of knee osteoarthritis (KOA)." *Int Orthop*. 2011;35(3):341-348. doi: [10.1007/s00264-010-1010-z](https://doi.org/10.1007/s00264-010-1010-z)
 
-[39] Mohammed AT et al. "A Double-Blind, Randomized, Placebo-Controlled Study Evaluating the Impact of Hydrolyzed Type II Collagen Supplement on Joint Comfort." *Nutrients*. 2021;13(9):3021. doi: [10.3390/nu13093021](https://doi.org/10.3390/nu13093021)
+[39] Mohammed A, He S. "A Double-Blind, Randomized, Placebo-Controlled Trial to Evaluate the Efficacy of a Hydrolyzed Chicken Collagen Type II Supplement in Alleviating Joint Discomfort." *Nutrients*. 2021;13(7):2454. doi: [10.3390/nu13072454](https://doi.org/10.3390/nu13072454). PMID: [34371963](https://pubmed.ncbi.nlm.nih.gov/34371963/)
 
-[40] Bongers C et al. "Collagen peptide supplementation does not reduce knee pain or improve knee function in adults with self-reported knee pain." *Appl Physiol Nutr Metab*. 2020;45(6):669-674. doi: [10.1139/apnm-2019-0730](https://doi.org/10.1139/apnm-2019-0730)
+[40] Bongers CCWG et al. "Effectiveness of collagen supplementation on pain scores in healthy individuals with self-reported knee pain: a randomized controlled trial." *Appl Physiol Nutr Metab*. 2020;45(7):793-800. doi: [10.1139/apnm-2019-0654](https://doi.org/10.1139/apnm-2019-0654). PMID: [31990581](https://pubmed.ncbi.nlm.nih.gov/31990581/)
 
 [41] Hewlings S et al. "A Randomized, Double-Blind, Placebo-Controlled, Prospective Clinical Trial Evaluating Water-Soluble Chicken Eggshell Membrane for Improvement in Joint Health in Adults with Knee Osteoarthritis." *J Med Food*. 2019;22(9):875-884. doi: [10.1089/jmf.2019.0068](https://doi.org/10.1089/jmf.2019.0068)
 
-[42] Eskiyurt N et al. "Efficacy and Safety of Natural Eggshell Membrane (NEM) in Patients with Grade I/II Knee Osteoarthritis." *J Arthritis*. 2019;8(4):1000282.
+[42] Eskiyurt N et al. "Efficacy and Safety of Natural Eggshell Membrane (NEM) in Patients with Grade 2/3 Knee Osteoarthritis: A Multi-Center, Randomized, Double-Blind, Placebo-Controlled, Single-Crossover Clinical Study." *J Arthritis*. 2019;8(4):285-291.
 
-[43] Park SJ et al. "Eggshell membrane supplementation for knee osteoarthritis: A randomized, double-blind, placebo-controlled study." *J Funct Food*. 2024. doi: [10.1016/j.jff.2024.106176](https://doi.org/10.1016/j.jff.2024.106176)
+[43] Park S et al. "Efficacy of natural eggshell membrane for knee osteoarthritis: A randomized, double-blind, placebo-controlled clinical trial." *J Funct Foods*. 2024;121:106449. doi: [10.1016/j.jff.2024.106449](https://doi.org/10.1016/j.jff.2024.106449)
 
-[44] Canovas A et al. "Eggshell Membrane as a Joint Health Nutraceutical." *Nutrients*. 2022;14(6):1236. doi: [10.3390/nu14061236](https://doi.org/10.3390/nu14061236)
+[44] Cánovas F et al. "Randomised Clinical Trial to Analyse the Efficacy of Eggshell Membrane to Improve Joint Functionality in Knee Osteoarthritis." *Nutrients*. 2022;14(11):2340. doi: [10.3390/nu14112340](https://doi.org/10.3390/nu14112340). PMID: [35684140](https://pubmed.ncbi.nlm.nih.gov/35684140/)
 
-[45] Yoon J et al. "Efficacy of Non-Hydrolyzed Eggshell Membrane for Knee Osteoarthritis." *J Funct Foods*. 2026.
+[45] Yoon HR et al. "Eggshell membrane supplementation improves joint symptoms and function in osteoarthritis: A randomized, double-blind, placebo-controlled trial." *J Funct Foods*. 2026;139:107229. doi: [10.1016/j.jff.2026.107229](https://doi.org/10.1016/j.jff.2026.107229)
 
 [46] König D et al. "Specific Collagen Peptides Improve Bone Mineral Density and Bone Markers in Postmenopausal Women -- A Randomized Controlled Study." *Nutrients*. 2018;10(1):97. doi: [10.3390/nu10010097](https://doi.org/10.3390/nu10010097)
 
-[47] Zdzieblik D et al. "Improvement of activity-related knee joint discomfort following supplementation of specific collagen peptides." *J Bone Metab*. 2021. doi: [10.11005/jbm.2021.28.2.101](https://doi.org/10.11005/jbm.2021.28.2.101)
+[47] Zdzieblik D, Oesser S, König D. "Specific Bioactive Collagen Peptides in Osteopenia and Osteoporosis: Long-Term Observation in Postmenopausal Women." *J Bone Metab*. 2021;28(3):207-213. doi: [10.11005/jbm.2021.28.3.207](https://doi.org/10.11005/jbm.2021.28.3.207). PMID: [34520654](https://pubmed.ncbi.nlm.nih.gov/34520654/)
 
-[48] Devasia S et al. "Fish-derived collagen peptides for type 2 diabetes: A randomized controlled trial." *J Diabetes Metab*. 2020. doi: [10.35248/2155-6156.20.11.853](https://doi.org/10.35248/2155-6156.20.11.853)
+[49] Zhu CF et al. "Therapeutic Effects of Marine Collagen Peptides on Chinese Patients With Type 2 Diabetes Mellitus and Primary Hypertension." *Am J Med Sci*. 2010;340(5):360-366. doi: [10.1097/MAJ.0b013e3181edfcf2](https://doi.org/10.1097/MAJ.0b013e3181edfcf2). PMID: [20739874](https://pubmed.ncbi.nlm.nih.gov/20739874/)
 
-[49] Zhu CF et al. "Treatment with Marine Collagen Peptides Modulates Glucose and Lipid Metabolism in Chinese Patients with Type 2 Diabetes Mellitus." *Am J Med Sci*. 2010;340(5):360-366. doi: [10.1097/MAJ.0b013e3181eaaf4e](https://doi.org/10.1097/MAJ.0b013e3181eaaf4e)
-
-[50] Hatanaka T et al. "Identification of Dipeptidyl Peptidase-IV Inhibitory Activity in Hydrolyzed Collagen." *J Enzyme Inhib Med Chem*. 2014;29(6):780-785. doi: [10.3109/14756366.2013.855207](https://doi.org/10.3109/14756366.2013.855207)
+[50] Hatanaka T, Kawakami K, Uraji M. "Inhibitory effect of collagen-derived tripeptides on dipeptidylpeptidase-IV activity." *J Enzyme Inhib Med Chem*. 2014;29(6):823-828. doi: [10.3109/14756366.2013.858143](https://doi.org/10.3109/14756366.2013.858143). PMID: [24650211](https://pubmed.ncbi.nlm.nih.gov/24650211/)
 
 [51] Zdzieblik D et al. "Collagen peptide supplementation in combination with resistance training improves body composition and increases muscle strength in elderly sarcopenic men: a randomised controlled trial." *Br J Nutr*. 2015;114(8):1237-1245. doi: [10.1017/S0007114515002810](https://doi.org/10.1017/S0007114515002810)
 
-[52] Nulty C et al. "Effects of Hydrolyzed Collagen Supplementation on Muscle Strength and Tendon Properties in Recreationally Active Men." *Eur J Sport Sci*. 2025. doi: [10.1002/ejsc.12237](https://doi.org/10.1002/ejsc.12237)
+[52] Nulty CD, Phelan K, Erskine RM. "Hydrolysed Collagen Supplementation Enhances Patellar Tendon Adaptations to 12 Weeks' Resistance Training in Middle-Aged Men." *Eur J Sport Sci*. 2025;25(4):e12281. doi: [10.1002/ejsc.12281](https://doi.org/10.1002/ejsc.12281). PMID: [40100255](https://pubmed.ncbi.nlm.nih.gov/40100255/)
 
 [53] Lee SK et al. "Pressure ulcer healing with a concentrated, fortified, collagen protein hydrolysate supplement: a randomized, controlled trial." *Adv Skin Wound Care*. 2006;19(2):92-96. doi: [10.1097/00129334-200603000-00011](https://doi.org/10.1097/00129334-200603000-00011)
 
-[54] Sugihara F et al. "Clinical Effects of Ingesting Collagen Hydrolysate on Facial Skin Properties -- A Randomized, Placebo-controlled, Double-blind Trial." *Sci Rep*. 2018.
+[54] Sugihara F et al. "Ingestion of bioactive collagen hydrolysates enhanced pressure ulcer healing in a randomized double-blind placebo-controlled clinical study." *Sci Rep*. 2018;8:11403. doi: [10.1038/s41598-018-29831-7](https://doi.org/10.1038/s41598-018-29831-7). PMID: [30061579](https://pubmed.ncbi.nlm.nih.gov/30061579/)
 
-[55] Yamanaka H et al. "Effects of collagen peptide supplementation on the healing of pressure ulcers." *J Nutr Intermed Metab*. 2017;8:51-57.
+[55] Yamanaka H, Okada S, Sanada H. "A multicenter, randomized, controlled study of the use of nutritional supplements containing collagen peptides to facilitate the healing of pressure ulcers." *J Nutr Intermed Metab*. 2017;8:51-59. doi: [10.1016/j.jnim.2017.05.001](https://doi.org/10.1016/j.jnim.2017.05.001)
 
-[56] Miyab MF et al. "Effect of a Nutritional Supplement Containing Collagen Peptides on Burn Wound Healing." *Burns*. 2020. doi: [10.1016/j.burns.2020.04.026](https://doi.org/10.1016/j.burns.2020.04.026)
+[56] Bagheri Miyab K et al. "The effect of a hydrolyzed collagen-based supplement on wound healing in patients with burn: A randomized double-blind pilot clinical trial." *Burns*. 2020;46(1):156-163. doi: [10.1016/j.burns.2019.02.015](https://doi.org/10.1016/j.burns.2019.02.015). PMID: [31859087](https://pubmed.ncbi.nlm.nih.gov/31859087/)
 
 [57] Choi SY et al. "Effect of high advanced-collagen tripeptide on wound healing and skin recovery after fractional photothermolysis treatment." *Clin Exp Dermatol*. 2014;39(8):874-880. doi: [10.1111/ced.12405](https://doi.org/10.1111/ced.12405)
 
@@ -502,40 +500,40 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [59] Praet SF et al. "Oral Supplementation of Specific Collagen Peptides Combined with Calf-Strengthening Exercises Enhances Function and Reduces Pain in Achilles Tendinopathy Patients." *Nutrients*. 2019;11(1):76. doi: [10.3390/nu11010076](https://doi.org/10.3390/nu11010076)
 
-[60] Jockel-Schneider Y et al. "Nutritional Supplementation with Specific Collagen Peptides and Oral Health: A Randomized, Double-Blind, Placebo-Controlled Clinical Trial." *Nutrients*. 2022;14(2):3142. doi: [10.3390/nu14153142](https://doi.org/10.3390/nu14153142)
+[60] Jockel-Schneider Y et al. "Impact of a Specific Collagen Peptide Food Supplement on Periodontal Inflammation in Aftercare Patients -- A Randomised Controlled Trial." *Nutrients*. 2022;14(21):4473. doi: [10.3390/nu14214473](https://doi.org/10.3390/nu14214473). PMID: [36364735](https://pubmed.ncbi.nlm.nih.gov/36364735/)
 
-[61] Kuwaba K et al. "Fish-Derived Collagen Peptides Improve Fatigue and Mood States: A Randomized, Double-Blind, Placebo-Controlled Study." *J Diet Suppl*. 2024. doi: [10.1080/19390211.2024.2306488](https://doi.org/10.1080/19390211.2024.2306488)
+[61] Kuwaba K et al. "Dietary Collagen Peptides Ameliorate the Mood Status of Fatigue and Vigor: A Randomized, Double-Blinded, Placebo-Controlled, Parallel-Group Comparative Trial." *J Diet Suppl*. 2024;21(6):791-807. doi: [10.1080/19390211.2024.2399343](https://doi.org/10.1080/19390211.2024.2399343). PMID: [39291817](https://pubmed.ncbi.nlm.nih.gov/39291817/)
 
 [62] Vijven JPJ et al. "Symptomatic and chondroprotective treatment with collagen derivatives in osteoarthritis: a systematic review." *Osteoarthritis Cartilage*. 2012;20(8):809-821. doi: [10.1016/j.joca.2012.04.008](https://doi.org/10.1016/j.joca.2012.04.008)
 
-[63] Zhang Y et al. "Oral administration of type II collagen suppresses inflammatory arthritis in mice and rheumatoid arthritis in humans." *Arthritis Rheum*. 2008. PMID: [18240258](https://pubmed.ncbi.nlm.nih.gov/18240258/)
+[63] Zhang LL et al. "A randomized, double-blind, multicenter, controlled clinical trial of chicken type II collagen in patients with rheumatoid arthritis." *Arthritis Rheum (Arthritis Care Res)*. 2008;59(7):905-910. doi: [10.1002/art.23824](https://doi.org/10.1002/art.23824). PMID: [18576295](https://pubmed.ncbi.nlm.nih.gov/18576295/)
 
-[64] Barnett ML et al. "Treatment of rheumatoid arthritis with oral type II collagen." *Arthritis Rheum*. 1998;41(2):290-297. doi: [10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-R](https://doi.org/10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-R)
+[64] Barnett ML et al. "Treatment of rheumatoid arthritis with oral type II collagen." *Arthritis Rheum*. 1998;41(2):290-297. doi: [10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-R](https://doi.org/10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-R) PMID: [9485087](https://pubmed.ncbi.nlm.nih.gov/9485087/)
 
 [65] Kalic T et al. "Collagen -- An Important Fish Allergen for Improved Diagnosis." *J Allergy Clin Immunol*. 2020;8(9):3084-3092. doi: [10.1016/j.jaip.2020.04.063](https://doi.org/10.1016/j.jaip.2020.04.063)
 
-[66] Knight J et al. "Hydroxyproline ingestion and urinary oxalate and glycolate excretion." *Kidney Int*. 2008;70(11):1929-1934. doi: [10.1038/sj.ki.5001906](https://doi.org/10.1038/sj.ki.5001906)
+[66] Knight J et al. "Hydroxyproline ingestion and urinary oxalate and glycolate excretion." *Kidney Int*. 2006;70(11):1929-1934. doi: [10.1038/sj.ki.5001906](https://doi.org/10.1038/sj.ki.5001906)
 
 [67] Delgado PL et al. "Serotonin function and the mechanism of antidepressant action. Reversal of antidepressant-induced remission by rapid depletion of plasma tryptophan." *Arch Gen Psychiatry*. 1990;47(5):411-418.
 
 [68] Paul C et al. "Significant Amounts of Functional Collagen Peptides Can Be Incorporated in the Diet While Maintaining Indispensable Amino Acid Balance." *Nutrients*. 2019;11(5):1079. doi: [10.3390/nu11051079](https://doi.org/10.3390/nu11051079)
 
-[69] FDA. 21 CFR Parts 189 and 700. Bovine-derived materials; safety requirements.
+[69] FDA. 21 CFR 189.5, "Prohibited cattle materials" ([https://www.law.cornell.edu/cfr/text/21/189.5](https://www.law.cornell.edu/cfr/text/21/189.5)), and 21 CFR 700.27, "Use of prohibited cattle materials in cosmetic products" ([https://www.law.cornell.edu/cfr/text/21/700.27](https://www.law.cornell.edu/cfr/text/21/700.27)).
 
-[70] Lu P et al. "Extracellular Matrix Degradation and Remodeling in Development and Disease." *J Cell Biol*. 2012;196(4):395-406. doi: [10.1083/jcb.201109110](https://doi.org/10.1083/jcb.201109110)
+[70] Lu P, Weaver VM, Werb Z. "The extracellular matrix: A dynamic niche in cancer progression." *J Cell Biol*. 2012;196(4):395-406. doi: [10.1083/jcb.201102147](https://doi.org/10.1083/jcb.201102147). PMID: [22351925](https://pubmed.ncbi.nlm.nih.gov/22351925/)
 
 [71] Eastell R. "Treatment of Postmenopausal Osteoporosis." 2007.
 
 [72] Seibel MJ. "Biochemical markers of bone turnover. Part I: Biochemistry and variability." *Clin Biochem Rev*. 2005;26(4):97-122. PMID: [16648882](https://pubmed.ncbi.nlm.nih.gov/16648882/)
 
-[73] Ruff KJ et al. "Eggshell membrane and fish oil for exercise-induced joint pain." *Int J Phys Med Rehabil*. 2020.
+[73] Ruff KJ et al. "Eggshell Membrane+Fish Oil Combination (Move3) Reduces Exercise-Induced Joint Pain, Stiffness and Cartilage Turnover in Healthy Adults." *Int J Phys Med Rehabil*. 2020;8:551. [https://www.longdom.org/open-access/eggshell-membranefish-oil-combination-move3-reduces-exerciseinduced-joint-pain-stiffness-and-cartilage-turnover-in-healthy-adults--53885.html](https://www.longdom.org/open-access/eggshell-membranefish-oil-combination-move3-reduces-exerciseinduced-joint-pain-stiffness-and-cartilage-turnover-in-healthy-adults--53885.html)
 
 [74] Hsu TF et al. "Oral Hyaluronan Relieves Wrinkles and Improves Dry Skin." *Nutrients*. 2021;13(7):2220. doi: [10.3390/nu13072220](https://doi.org/10.3390/nu13072220)
 
-[75] Batool et al. Oral collagen peptides and skin: meta-analysis. *J Cosmet Dermatol*. 2026. doi: [10.1111/jocd.71041](https://doi.org/10.1111/jocd.71041)
+[75] Batool A et al. "Oral Collagen Peptides and Skin Rejuvenation: A Systematic Review and an Updated Meta-Analysis of Randomized Controlled Trials." *J Cosmet Dermatol*. 2026;25(7):e71041. doi: [10.1111/jocd.71041](https://doi.org/10.1111/jocd.71041)
 
 [76] Grimes DR, Mahto A. Re-analysis of collagen supplement meta-analyses for skin aging. 2026. doi: [10.1111/jocd.71208](https://doi.org/10.1111/jocd.71208)
 
 [77] Stanfield B. "The Collagen Peptides for Skin Story is Changing." 15 October 2026. [https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)
 
-[78] 2026 umbrella review of collagen meta-analyses. doi: [10.1093/asjof/ojag018](https://doi.org/10.1093/asjof/ojag018)
+[78] Ravindran R et al. "Collagen Supplementation for Skin and Musculoskeletal Health: An Umbrella Review of Meta-Analyses on Elasticity, Hydration, and Structural Outcomes." *Aesthet Surg J Open Forum*. 2026;8:ojag018. doi: [10.1093/asjof/ojag018](https://doi.org/10.1093/asjof/ojag018). PMID: [41809116](https://pubmed.ncbi.nlm.nih.gov/41809116/)

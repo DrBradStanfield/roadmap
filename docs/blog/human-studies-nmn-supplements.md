@@ -8,6 +8,7 @@ tags: ["Supplements"]
 keywords: ["aging","blood pressure","cardiovascular","cholesterol","diabetes","exercise","hba1c","healthspan","hypertension","inflammation","ldl","lifespan","muscle","nad","niacin","nmn","sleep","vitamin b3"]
 summary: "Dr Brad's review of 12+ human NMN studies: what NAD+ boosting does, what NMN human trials actually show (energy, metabolism, muscle), Brad's 4 key takeaways, and his current recommendation on NMN supplementation. Covers: NMN, NAD+, aging, longevity. Always discuss with your doctor."
 topics: ["nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"]
+router: hidden
 ---
 
 Aging is one of the greatest challenges we face as a species, and uncountable amounts of time and money have been spent and will continue to be spent, in seeking ways to combat the aging process. Many different avenues have presented themselves as potential ways to smooth out and slow the aging process, including the subject of today's post: NMN supplements.

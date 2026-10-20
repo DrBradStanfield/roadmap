@@ -7869,5 +7869,73 @@
       "(?<!(?:\\bnot|n.t|\\bno|no (?:good |strong |clear )?evidence(?: that)?|isn.t (?:good )?evidence(?: that)?|not true that|doesn.t show|does not show|didn.t show|did not show|didn.t find|did not find)\\s(?:that\\s)?)[Cc]ollagen(?: peptides| supplements)? (?:(?:may|can|will|does|is shown to|has been shown to) )?(?:helps? )?(?:reduces?|reduced|improves?|improved|smooths?|erases?|removes?|fix(?:es)?|get rid of|gets rid of) (?:the appearance of |fine lines and )?wrinkles"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry, Current view: \"collagen peptides may improve skin hydration and elasticity, but it found no effect on wrinkles\". 2026-10-20: wrinkle pattern ignores negated statements (the first run matched \"doesn't show collagen reduces wrinkles\")."
+  },
+  {
+    "query": "Should I take low-dose lithium orotate to protect my memory?",
+    "category": "masters-1",
+    "source": "us-42-ac5-masters-1-2026-10-20",
+    "pending": "masters-1 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "lithium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "doctor"
+    ],
+    "must_match": [
+      "(not (yet )?been tested|no completed|untested|has(n't| not) been (properly )?tested)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry, Current view: \"lithium orotate itself has not yet been tested in a completed randomised human trial\"; summary: \"Talk to your doctor first, especially if pregnant or taking diuretics or anti-inflammatories.\""
+  },
+  {
+    "query": "I had a heart attack last year. Should I get my vitamin D levels tested?",
+    "category": "masters-1",
+    "source": "us-42-ac5-masters-1-2026-10-20",
+    "pending": "masters-1 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "stroke"
+    ],
+    "must_match": [
+      "(option|optional|not essential|not a must|not required)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry, Current view: \"he offers testing after a heart attack as an option, not a must, though the stroke and heart-failure results leaned the wrong way\"; summary: \"TARGET-D also hinted at more strokes.\""
+  },
+  {
+    "query": "Does resveratrol help with fatty liver disease?",
+    "category": "masters-1",
+    "source": "us-42-ac5-masters-1-2026-10-20",
+    "pending": "masters-1 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "resveratrol-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "(liver enzymes|\\balt\\b|aminotransferase)"
+    ],
+    "must_not_match": [
+      "no (human )?trials"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry: \"resveratrol did not reduce insulin resistance, liver fat or abdominal fat, and liver enzymes (ALT and AST) rose significantly until week 6 compared with placebo\". Resveratrol is held from publish."
+  },
+  {
+    "query": "Should I take NMN to boost my NAD levels?",
+    "category": "masters-1",
+    "source": "us-42-ac5-masters-1-2026-10-20",
+    "pending": "masters-1 not deployed",
+    "surface": "doctor",
+    "answer_handles": [
+      "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "exercise"
+    ],
+    "must_match": [
+      "(nicotinic acid|niacin|vitamin b3)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry, Current view: \"Gut bacteria break both NMN and NR down to nicotinic acid, a cheap form of vitamin B3\" and \"The approach he recommends instead is regular exercise\". NAD boosters are held from publish."
   }
 ]
