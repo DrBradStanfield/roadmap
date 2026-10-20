@@ -276,13 +276,12 @@ function activeOnly<T extends { status: string }>(rows: T[]): T[] {
 }
 
 /** The record minus its write clocks, but including erase identity: an erase
- *  invalidates pending UI proposals even when both records are empty. The
- *  erase list and the version it raises stay out: a change to them alone is
- *  nothing a person sees (US-09 AC23). Keys are sorted, as everywhere else
- *  content is compared: a merge rebuilds the objects it touches, and a
- *  reordered key is not a change anyone made. */
+ *  invalidates pending UI proposals even when both records are empty. Keep
+ *  the erase list and schema version so remote bookkeeping is adopted;
+ *  visibleContentOf separately decides whether to announce it (US-09 AC23).
+ *  Keys are sorted: a reordered key is not a change anyone made. */
 function contentOf(file: RoadmapFile): string {
-  const { meta: _clocks, erasedRows: _list, schemaVersion: _version, ...rest } = file;
+  const { meta: _clocks, ...rest } = file;
   return stableStringify([file.meta.eraseEpoch ?? 0, file.meta.erasedAt ?? null, rest]);
 }
 

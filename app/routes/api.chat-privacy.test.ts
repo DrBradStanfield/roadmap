@@ -52,6 +52,9 @@ beforeEach(() => {
     let operation = `${table}:select`;
     const query: any = {};
     for (const method of ['select', 'eq', 'order', 'limit', 'single']) query[method] = () => query;
+    // US-15 AC6a: stored-history cases have an owned parent; keep the real
+    // maybeSingle boundary in the mock rather than bypassing the route guard.
+    query.maybeSingle = () => Promise.resolve({ data: { id }, error: null });
     query.insert = (data: { role?: string }) => { operation = `${table}:insert:${data.role ?? ''}`; return query; };
     query.update = () => { operation = `${table}:update`; return query; };
     query.delete = () => { operation = `${table}:delete`; return query; };
