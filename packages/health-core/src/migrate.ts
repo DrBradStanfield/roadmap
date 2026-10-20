@@ -208,6 +208,9 @@ export function migrateFile(
       ? base.meta.eraseEpoch
       : counterOf(rawMeta.eraseEpoch, 0),
   };
+  // Not a timestamp: dropped, so the erase reads as one from before erasedAt
+  // existed and the gate keeps none of the losing side (US-09 AC20).
+  if ('erasedAt' in meta && !isoOr(meta.erasedAt, '')) delete meta.erasedAt;
   // The file's own last write — the anchor every row clock is clamped to. Every
   // file at rest is merge output, and merge stamps meta.updatedAt last, so no
   // legitimate row post-dates it.

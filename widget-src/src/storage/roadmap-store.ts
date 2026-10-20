@@ -343,7 +343,8 @@ export class RoadmapStore {
         // a fallback session runs on a file at epoch 0, so an erased cloud
         // would otherwise take the file wholesale and discard them (US-09
         // AC13). The on-device copy goes in as `local` — the argument the
-        // option speaks about, and the one it has always meant.
+        // option speaks about, and the one it has always meant. Only an erase
+        // from before `erasedAt` needs it; one that carries it decides (AC20).
         const ctx: SyncContext = { deviceId, now: new Date().toISOString(), keepNewerThan: since };
         const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
         if (body != null) {
@@ -771,8 +772,12 @@ export class RoadmapStore {
     // save them either. Carry the decision, never the identity: no token, no
     // email address.
     const priorProvider = this.file.reminderOptIn?.provider ?? null;
-    this.file = migrateFile(null, this.ctx());
+    const ctx = this.ctx();
+    this.file = migrateFile(null, ctx);
+    // WHEN, beside THAT: a copy that missed the erase keeps the rows it writes
+    // from now on, and only those (US-09 AC20).
     this.file.meta.eraseEpoch = eraseEpoch;
+    this.file.meta.erasedAt = ctx.now;
     if (priorProvider) {
       this.file.reminderOptIn = {
         status: 'cancelled', token: '', email: '', provider: priorProvider,

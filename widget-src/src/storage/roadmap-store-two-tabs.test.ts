@@ -114,18 +114,18 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     expect(stored().measurements).toEqual([]);
   });
 
-  it('an erase made in the other tab stands when a tab with an unsaved edit closes, and the edit goes with it', async () => {
+  it('an erase made in the other tab stands when a tab with an unsaved edit closes, and only the edit typed after it survives', async () => {
     const [a, b] = await twoTabs();
     expect((await b.deleteUserData()).success).toBe(true);
+    vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
     a.addMeasurement('hdl', 1.4, TODAY); // typed in A, which has not heard of the erase
 
     a.flushSync();
 
-    // mergeFiles' epoch gate: the higher eraseEpoch wins WHOLESALE. A's copy,
-    // its old weight and its unsaved row alike, goes, just as A's next
-    // debounced save would have sent it.
+    // mergeFiles' epoch gate: the higher eraseEpoch wins. A's old weight
+    // predates the erase and goes; the row typed after it stays (US-09 AC20).
     expect(stored().meta.eraseEpoch).toBe(1);
-    expect(stored().measurements).toEqual([]);
+    expect(rows()).toEqual(['hdl 1.4 active']);
   });
 
   it('never writes over a record a newer app saved, and the refusal is reported', async () => {
@@ -166,6 +166,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
   it('a hide that merges the other tab\'s erase takes it in: the drafts go, the page is told, a later edit survives', async () => {
     const [a, b] = await twoTabs();
     a.addMeasurement('hdl', 1.4, TODAY); // unsaved when B erases
+    vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
     expect((await b.deleteUserData()).success).toBe(true);
     // A's matrix, still open on the old record, typed on after B's erase.
     localStorage.setItem(BT_TIMELINE_DRAFT_KEY, '{"draft":{"date":"2026-09-25","values":{"ldl":"3.2"}}}');
@@ -197,6 +198,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     a.flushSync(); // A hides, and takes B's erase in
     b.addMeasurement('weight', 83, TODAY); // B starts again
     await b.flush();
+    vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
 
     expect((await a.deleteUserData()).success).toBe(true);
 
@@ -346,6 +348,7 @@ describe('US-11 AC7 — an erase beats what it has not seen, and says so only on
     expect((await b.deleteUserData()).success).toBe(true);
     b.addMeasurement('weight', 83, TODAY); // B starts again
     await b.flush();
+    vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
 
     // A still holds the record from before B's erase, at the old epoch.
     expect((await a.deleteUserData()).success).toBe(true);
@@ -363,6 +366,7 @@ describe('US-11 AC7 — an erase beats what it has not seen, and says so only on
     expect((await phone.deleteUserData()).success).toBe(true);
     phone.addMeasurement('weight', 83, TODAY); // the phone starts again
     await phone.flush();
+    vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
 
     expect((await laptop.deleteUserData()).success).toBe(true);
 

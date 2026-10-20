@@ -1112,6 +1112,135 @@ describe('mergeFiles — keepNewerThan (the on-device fallback, US-09 AC13)', ()
   });
 });
 
+describe('mergeFiles — erasedAt keeps rows written after the erase (US-09 AC20)', () => {
+  const ERASED_AT = '2026-05-10T00:00:00Z';
+  const AFTER = '2026-05-11T09:00:00Z';
+  const BEFORE = '2026-05-01T09:00:00Z';
+
+  /** A file erased at ERASED_AT, one epoch above the stale copies below. */
+  function erased(epoch = 1): RoadmapFile {
+    const file = emptyFile();
+    file.meta.eraseEpoch = epoch;
+    file.meta.erasedAt = ERASED_AT;
+    return file;
+  }
+
+  /** A copy that never saw the erase: one row from before it, one from after. */
+  function stale(): RoadmapFile {
+    const file = emptyFile();
+    file.measurements = [
+      measurement({ id: 'after', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: AFTER }),
+      measurement({ id: 'before', metricType: 'weight', value: 95, recordedAt: '2026-05-01', createdAt: BEFORE }),
+    ];
+    file.labValues = [
+      { id: 'lvAfter', metricName: 'ferritin', value: 90, unit: 'ng/mL', referenceLow: null, referenceHigh: null, recordedAt: '2026-05-11', createdAt: AFTER, source: 'manual', status: 'active', correctsId: null },
+      { id: 'lvBefore', metricName: 'ferritin', value: 70, unit: 'ng/mL', referenceLow: null, referenceHigh: null, recordedAt: '2026-05-01', createdAt: BEFORE, source: 'manual', status: 'active', correctsId: null },
+    ];
+    file.documents = [
+      { id: 'dAfter', title: 'Labs', type: 'pathology_report', date: '2026-05-11', fileRef: '', contentHash: '', mimeType: '', extractedText: 'x', addedAt: AFTER },
+      { id: 'dBefore', title: 'Old', type: 'pathology_report', date: '2026-05-01', fileRef: '', contentHash: '', mimeType: '', extractedText: 'y', addedAt: BEFORE },
+    ];
+    return file;
+  }
+
+  it('US-09 AC20: a losing LOCAL copy keeps its post-erase rows and drops the pre-erase ones', () => {
+    const merged = mergeFiles(stale(), erased(), OPTS);
+    expect(merged.measurements.map((m) => m.id)).toEqual(['after']);
+    expect(merged.labValues.map((r) => r.id)).toEqual(['lvAfter']);
+    expect(merged.documents.map((r) => r.id)).toEqual(['dAfter']);
+    expect(merged.meta.eraseEpoch).toBe(1);
+    expect(merged.meta.erasedAt).toBe(ERASED_AT);
+  });
+
+  it('US-09 AC20: a losing REMOTE copy keeps its post-erase rows too (either side of the gate)', () => {
+    const merged = mergeFiles(erased(), stale(), OPTS);
+    expect(merged.measurements.map((m) => m.id)).toEqual(['after']);
+    expect(merged.labValues.map((r) => r.id)).toEqual(['lvAfter']);
+    expect(merged.documents.map((r) => r.id)).toEqual(['dAfter']);
+    expect(merged.meta.erasedAt).toBe(ERASED_AT);
+  });
+
+  it('US-09 AC20: the merge is symmetric across the gate', () => {
+    const a = stableStringify({ ...mergeFiles(stale(), erased(), OPTS) });
+    const b = stableStringify({ ...mergeFiles(erased(), stale(), OPTS) });
+    expect(a).toBe(b);
+  });
+
+  it('US-09 AC20: a row created at exactly the erase instant is kept', () => {
+    const device = emptyFile();
+    device.measurements = [measurement({ id: 'onTheDot', metricType: 'weight', value: 80, createdAt: ERASED_AT })];
+    expect(mergeFiles(device, erased(), OPTS).measurements.map((m) => m.id)).toEqual(['onTheDot']);
+  });
+
+  it('US-09 AC20: a winner from before erasedAt existed still drops every losing row (legacy)', () => {
+    const legacy = erased();
+    delete legacy.meta.erasedAt;
+    expect(mergeFiles(stale(), legacy, OPTS).measurements).toEqual([]);
+    expect(mergeFiles(legacy, stale(), OPTS).measurements).toEqual([]);
+    expect(mergeFiles(legacy, stale(), OPTS).meta.erasedAt).toBeUndefined();
+  });
+
+  it('US-09 AC20: erasedAt outranks the fallback marker — rows typed before the erase go', () => {
+    const merged = mergeFiles(stale(), erased(), { ...OPTS, keepNewerThan: '2026-04-01T00:00:00Z' });
+    expect(merged.measurements.map((m) => m.id)).toEqual(['after']);
+  });
+
+  it('US-09 AC20: equal epochs keep the later erasedAt, and the one present when only one has it', () => {
+    const a = erased();
+    const b = erased();
+    b.meta.erasedAt = '2026-05-12T00:00:00Z';
+    expect(mergeFiles(a, b, OPTS).meta.erasedAt).toBe('2026-05-12T00:00:00Z');
+    expect(mergeFiles(b, a, OPTS).meta.erasedAt).toBe('2026-05-12T00:00:00Z');
+    delete a.meta.erasedAt;
+    expect(mergeFiles(a, b, OPTS).meta.erasedAt).toBe('2026-05-12T00:00:00Z');
+    expect(mergeFiles(b, a, OPTS).meta.erasedAt).toBe('2026-05-12T00:00:00Z');
+    delete b.meta.erasedAt;
+    expect('erasedAt' in mergeFiles(a, b, OPTS).meta).toBe(false);
+  });
+
+  it('US-09 AC20: a later erase wins over an earlier one, and its erasedAt with it', () => {
+    const older = erased(1);
+    older.measurements = [measurement({ id: 'between', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: AFTER })];
+    const newer = erased(2);
+    newer.meta.erasedAt = '2026-05-20T00:00:00Z';
+    const merged = mergeFiles(older, newer, OPTS);
+    expect(merged.measurements).toEqual([]); // written after the first erase, before the second
+    expect(merged.meta).toMatchObject({ eraseEpoch: 2, erasedAt: '2026-05-20T00:00:00Z' });
+  });
+
+  it('US-09 AC20: entered-in-error stays sticky across the gate', () => {
+    const cloud = erased();
+    cloud.measurements = [measurement({ id: 'x', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: AFTER })];
+    const device = emptyFile();
+    device.measurements = [
+      measurement({ id: 'x', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: AFTER, status: 'entered-in-error' }),
+      measurement({ id: 'x2', metricType: 'weight', value: 81, recordedAt: '2026-05-11', createdAt: '2026-05-11T10:00:00Z', correctsId: 'x' }),
+    ];
+    for (const merged of [mergeFiles(device, cloud, OPTS), mergeFiles(cloud, device, OPTS)]) {
+      expect(merged.measurements.find((m) => m.id === 'x')!.status).toBe('entered-in-error');
+      expect(activeMeasurements(merged).map((m) => m.id)).toEqual(['x2']);
+    }
+  });
+
+  it('US-09 AC20: a kept row meets the slot rule — one active row per (metric, day)', () => {
+    const cloud = erased();
+    cloud.measurements = [measurement({ id: 'cloudDay', metricType: 'weight', value: 79, recordedAt: '2026-05-11', createdAt: '2026-05-11T08:00:00Z' })];
+    const merged = mergeFiles(stale(), cloud, OPTS);
+    const day = merged.measurements.filter((m) => m.recordedAt === '2026-05-11');
+    expect(day.map((m) => m.id).sort()).toEqual(['after', 'cloudDay']);
+    expect(day.filter((m) => m.status === 'active').map((m) => m.id)).toEqual(['after']); // newest createdAt
+  });
+
+  it('US-09 AC20: no stale singleton rides in with the kept rows', () => {
+    const device = stale();
+    device.profile = { updatedAt: '2030-01-01T00:00:00Z', lamport: 99, heightCm: 150 };
+    const cloud = erased();
+    const merged = mergeFiles(device, cloud, OPTS);
+    expect(merged.profile.heightCm).toBeUndefined();
+    expect(merged.measurements.map((m) => m.id)).toEqual(['after']);
+  });
+});
+
 // US-21 phase 3 — migrate.ts writes the converted row under `<id>#si`, and it
 // groups on its OWN id: stripped here, the conversion would collapse into its
 // parent's group and one of the two contents would be quarantined instead.

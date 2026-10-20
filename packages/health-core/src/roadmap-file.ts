@@ -52,6 +52,13 @@ export interface RoadmapFileMeta {
    * (pre-epoch files) reads as 0.
    */
   eraseEpoch?: number;
+  /**
+   * ISO 8601 — when the latest erase happened, by the eraser's clock (US-09
+   * AC20). Stamped with every `eraseEpoch` bump. A losing copy's rows created
+   * at or after it survive the gate; absent (an erase from before it existed)
+   * the gate drops them all.
+   */
+  erasedAt?: string;
 }
 
 /**

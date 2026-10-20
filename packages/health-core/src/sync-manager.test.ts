@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createEmptyFile, createMeasurement } from './roadmap-file';
 import type { RoadmapFile } from './roadmap-file';
 import { SyncManager } from './sync-manager';
 import { ROADMAP_FILE_NAME, StorageError } from './adapter';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ROADMAP_DOC } from './roadmap-doc';
+import { FileAdapter } from './file-adapter';
 
 // US-10 · Cross-device convergence — highest-risk gap flagged in
 // docs/user-stories.md ("SyncManager load→merge→push loop... untested").
@@ -113,6 +117,43 @@ describe('SyncManager.save — eraseEpoch wholesale win (US-10 / US-11)', () => 
     const final = await syncA.load();
     expect(final.measurements).toEqual([]);
     expect(final.meta.eraseEpoch).toBe(1);
+  });
+});
+
+describe('SyncManager.save — a non-browser writer keeps what it wrote after an erase (US-09 AC20)', () => {
+  // The CLI and the stdio MCP write through FileAdapter. Their copy predates an
+  // erase another device made; the row they add after it must survive the gate,
+  // and the rows from before it must not.
+  it('an offline CLI copy adds a row after another device erased: the row lands, the old rows stay erased', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'erased-at-'));
+    const path = join(dir, ROADMAP_FILE_NAME);
+    try {
+      writeFileSync(path, JSON.stringify(makeFile('device-a')));
+      const cli = new SyncManager(new FileAdapter(path), 'cli', ROADMAP_DOC, { now: () => '2024-03-01T00:00:00.000Z' });
+      const offline = await cli.load();
+      offline.measurements.push(createMeasurement({
+        id: 'pre-erase', metricType: 'weight', value: 90,
+        recordedAt: '2024-01-15T00:00:00.000Z', createdAt: '2024-01-15T00:00:00.000Z',
+      }));
+
+      // Another device erases: the file on disk is replaced by the erased copy.
+      const erased = makeFile('device-a');
+      erased.meta = { ...erased.meta, updatedAt: '2024-02-01T00:00:00.000Z', eraseEpoch: 1, erasedAt: '2024-02-01T00:00:00.000Z' };
+      writeFileSync(path, JSON.stringify(erased));
+
+      // The CLI, still holding its pre-erase copy, records a new value and saves.
+      offline.measurements.push(createMeasurement({
+        id: 'post-erase', metricType: 'weight', value: 80,
+        recordedAt: '2024-03-01T00:00:00.000Z', createdAt: '2024-03-01T00:00:00.000Z',
+      }));
+      const { file } = await cli.save(offline);
+      expect(file.measurements.map((m) => m.id)).toEqual(['post-erase']);
+      const onDisk = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
+      expect(onDisk.measurements.map((m) => m.id)).toEqual(['post-erase']);
+      expect(onDisk.meta).toMatchObject({ eraseEpoch: 1, erasedAt: '2024-02-01T00:00:00.000Z' });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

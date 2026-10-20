@@ -285,6 +285,16 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
     }
   });
 
+  it('US-09 AC20: an erased record carries erasedAt through merge + migrate, as a string', () => {
+    const erased = createEmptyFile(OPTS);
+    erased.meta.eraseEpoch = 1;
+    erased.meta.erasedAt = '2026-09-01T10:00:00Z';
+    const file = migrateFile(JSON.parse(JSON.stringify(mergeFiles(representativeFile(), erased, OPTS))), OPTS);
+    expect(file.meta).toMatchObject({ eraseEpoch: 1, erasedAt: '2026-09-01T10:00:00Z' });
+    expect(check(file).errors).toBe('No errors');
+    expect(check({ ...file, meta: { ...file.meta, erasedAt: 5 } }).ok).toBe(false);
+  });
+
   it('preserves unknown fields, so a newer app version still validates', () => {
     const file = { ...representativeFile(), brandNewSection: [1, 2, 3] };
     expect(check(file).ok).toBe(true);

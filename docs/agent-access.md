@@ -105,10 +105,11 @@ someone's medical history, or lose their data at the next device sync.
    using the same clock as your rows' `createdAt`/`updatedAt`.** It is the anchor of the
    clamp below: leave it stale and every row you just wrote is rewound to it on the next
    load, and can lose its slot or its record to an older entry. Never touch
-   `meta.lamport`, `meta.eraseEpoch`, or `meta.lastDeviceId`, they are the sync engine's
-   clocks. Garbage there is clamped or reset to 0 on read, and a reset `eraseEpoch` makes
-   the next merge discard your whole copy wholesale (`eraseEpoch` is what makes "delete
-   all my data" stick).
+   `meta.lamport`, `meta.eraseEpoch`, `meta.erasedAt`, or `meta.lastDeviceId`, they are
+   the sync engine's clocks. Garbage there is clamped or reset to 0 on read, and a reset
+   `eraseEpoch` makes the next merge discard your copy, keeping only rows created at or
+   after the other copy's `erasedAt` (`eraseEpoch` is what makes "delete all my data"
+   stick).
 7. **Touch only the rows you added.** Do not reformat, re-sort, or normalise other rows.
    Updating a current-state row you legitimately own (a medication, supplement, or
    reminder preference) means setting that row's `updatedAt` to now and leaving its

@@ -78,7 +78,7 @@
   "$defs": {
     "RoadmapFileMeta": {
       "type": "object",
-      "description": "Top-level sync state for the whole file. An agent writing the file sets `updatedAt` and nothing else here — `lamport`, `eraseEpoch` and `lastDeviceId` belong to the sync engine. Unrecognised keys added here are dropped by mergeFiles, which rebuilds meta from these five fields. `updatedAt` also anchors the clock clamp on read — a stale value rewinds rows written after it.",
+      "description": "Top-level sync state for the whole file. An agent writing the file sets `updatedAt` and nothing else here — `lamport`, `eraseEpoch`, `erasedAt` and `lastDeviceId` belong to the sync engine. Unrecognised keys added here are dropped by mergeFiles, which rebuilds meta from these six fields. `updatedAt` also anchors the clock clamp on read — a stale value rewinds rows written after it.",
       "required": ["createdAt", "updatedAt", "lastDeviceId", "lamport"],
       "properties": {
         "createdAt": { "type": "string", "description": "ISO 8601 — earliest creation across devices." },
@@ -87,7 +87,11 @@
         "lamport": { "type": "number", "description": "File-level logical clock, monotonic per device." },
         "eraseEpoch": {
           "type": "number",
-          "description": "\"Delete All My Data\" counter. A file with a higher epoch wins a merge wholesale. Absent reads as 0."
+          "description": "\"Delete All My Data\" counter. A file with a higher epoch wins a merge; the other copy keeps only its rows created at or after the winner's `erasedAt`. Absent reads as 0."
+        },
+        "erasedAt": {
+          "type": "string",
+          "description": "ISO 8601 — when the latest erase happened, stamped with every `eraseEpoch` bump. Absent on a record erased before it existed: then a losing copy keeps no rows."
         }
       }
     },

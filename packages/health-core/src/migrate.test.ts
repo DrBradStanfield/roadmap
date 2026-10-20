@@ -101,6 +101,19 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     expect(Number.isSafeInteger(inf.meta.eraseEpoch!)).toBe(true);
   });
 
+  // US-09 AC20: erasedAt round-trips; one that is not a timestamp is dropped,
+  // which reads as an erase from before erasedAt existed — the gate then
+  // drops every losing row, the side that never resurrects erased data.
+  it('US-09 AC20: keeps a well-formed meta.erasedAt and drops a malformed one', () => {
+    const at = '2026-05-10T00:00:00Z';
+    expect(migrateFile(rawFile({ meta: { ...META, eraseEpoch: 1, erasedAt: at } }), OPTS).meta.erasedAt).toBe(at);
+    for (const bad of [5, null, '', 'yesterday', {}]) {
+      const meta = migrateFile(rawFile({ meta: { ...META, eraseEpoch: 1, erasedAt: bad } }), OPTS).meta;
+      expect('erasedAt' in meta, String(bad)).toBe(false);
+    }
+    expect('erasedAt' in migrateFile(rawFile(), OPTS).meta).toBe(false);
+  });
+
   // Defect 2 (cont.): a saturated meta.lamport breaks the file clock forever —
   // max(local, remote) + 1 stops advancing, so nothing can order writes again.
   it('clamps meta.lamport to a value the +1 increment can still advance', () => {

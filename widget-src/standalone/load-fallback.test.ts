@@ -142,6 +142,34 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     expect(recovered.loadAllHistory().map((m) => m.value)).toEqual([80]);
   });
 
+  it('US-09 AC20: a cloud erase stamped with erasedAt decides, not the marker — a row typed before it goes', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const t0 = new Date('2026-06-01T10:00:00.000Z');
+    vi.setSystemTime(t0);
+    class SaveFails extends MemoryAdapter {
+      async write(): Promise<never> {
+        throw new StorageError('cloud down');
+      }
+    }
+    const store = await RoadmapStore.create(new SaveFails());
+    store.addMeasurement('weight', 80, '2026-06-01'); // typed at t0
+    await expect(store.flush()).rejects.toThrow();
+    vi.setSystemTime(new Date(t0.getTime() + 2_000));
+    store.addMeasurement('weight', 81, '2026-06-02'); // typed after the erase below
+    await expect(store.flush()).rejects.toThrow();
+    expect(syncPendingSince()).toBe(t0.toISOString());
+    vi.useRealTimers();
+
+    // Another device erased the record one second after t0.
+    const cloud = new MemoryAdapter();
+    const erased = createEmptyFile({ deviceId: 'other-device', now: '2026-06-01T10:00:01.000Z' });
+    erased.meta.eraseEpoch = 1;
+    erased.meta.erasedAt = '2026-06-01T10:00:01.000Z';
+    await cloud.write(ROADMAP_FILE_NAME, erased, null);
+    const recovered = await RoadmapStore.create(cloud);
+    expect(recovered.loadAllHistory().map((m) => m.value)).toEqual([81]);
+  });
+
   it('US-09 AC13: an erased cloud still wins, but the edits made on-device survive', async () => {
     const started = await startOnBackend({ adapter: new RefusingCloud(), backend: 'dropbox' }, init);
     const onDevice = await RoadmapStore.create(started.adapter);
