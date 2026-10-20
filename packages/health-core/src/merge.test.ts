@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { baseIdOf, mergeFiles, stampFields } from './merge';
+import { baseIdOf, mergeFiles, rootIdOf, rowRootIds, stampFields } from './merge';
 import { migrateFile } from './migrate';
 import {
   createEmptyFile,
@@ -1002,116 +1002,6 @@ describe('mergeFiles — append-only logs and documents quarantine a reused id (
   });
 });
 
-describe('mergeFiles — keepNewerThan (the on-device fallback, US-09 AC13)', () => {
-  const SINCE = '2026-05-10T00:00:00Z';
-  const FALLBACK = { ...OPTS, keepNewerThan: SINCE };
-
-  /** The cloud copy a device that fell back comes back to: erased once already. */
-  function erasedCloud(): RoadmapFile {
-    const cloud = emptyFile();
-    cloud.meta.eraseEpoch = 1;
-    return cloud;
-  }
-
-  it('US-09 AC13: keeps the fallback session\'s own rows and drops the stale ones, epoch stays the winner\'s', () => {
-    const device = emptyFile(); // epoch 0 — the empty file the fallback started on
-    device.measurements = [
-      measurement({ id: 'during', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: '2026-05-11T09:00:00Z' }),
-      measurement({ id: 'before', metricType: 'weight', value: 95, recordedAt: '2026-05-01', createdAt: '2026-05-01T09:00:00Z' }),
-    ];
-    const merged = mergeFiles(device, erasedCloud(), FALLBACK);
-    expect(merged.measurements.map((m) => m.id)).toEqual(['during']);
-    expect(merged.meta.eraseEpoch).toBe(1);
-  });
-
-  it('US-09 AC13: carries the session\'s lab values, supplements and documents too', () => {
-    const device = emptyFile();
-    device.labValues = [
-      { id: 'lv1', metricName: 'ferritin', value: 90, unit: 'ng/mL', referenceLow: null, referenceHigh: null, recordedAt: '2026-05-11', createdAt: '2026-05-11T09:00:00Z', source: 'manual', status: 'active', correctsId: null },
-    ];
-    device.supplements = [
-      { id: 's1', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: null, doseUnit: null, status: 'active', startedAt: '2026-05-11', updatedAt: '2026-05-11T09:00:00Z', lamport: 1 },
-    ];
-    device.documents = [
-      { id: 'd1', title: 'Labs', type: 'pathology_report', date: '2026-05-11', fileRef: '', contentHash: '', mimeType: '', extractedText: 'x', addedAt: '2026-05-11T09:00:00Z' },
-    ];
-    const merged = mergeFiles(device, erasedCloud(), FALLBACK);
-    expect(merged.labValues.map((r) => r.id)).toEqual(['lv1']);
-    expect(merged.supplements.map((r) => r.id)).toEqual(['s1']);
-    expect(merged.documents.map((r) => r.id)).toEqual(['d1']);
-  });
-
-  it('US-09 AC13: when the device erased and the cloud is stale, the gate is untouched', () => {
-    const device = emptyFile();
-    device.meta.eraseEpoch = 2;
-    const stale = emptyFile();
-    stale.meta.eraseEpoch = 1;
-    stale.measurements = [measurement({ id: 'cloud1', metricType: 'weight', value: 95, createdAt: '2026-05-11T09:00:00Z' })];
-    const merged = mergeFiles(device, stale, FALLBACK);
-    expect(merged.measurements).toEqual([]);
-    expect(merged.meta.eraseEpoch).toBe(2);
-  });
-
-  it('US-09 AC13: a row stamped at exactly the fallback instant is kept', () => {
-    const device = emptyFile();
-    device.measurements = [measurement({ id: 'onTheDot', metricType: 'weight', value: 80, createdAt: SINCE })];
-    expect(mergeFiles(device, erasedCloud(), FALLBACK).measurements.map((m) => m.id)).toEqual(['onTheDot']);
-  });
-
-  it('US-09 AC13: the merged clock never sits behind a row it just kept', () => {
-    const device = emptyFile();
-    device.measurements = [measurement({ id: 'late', metricType: 'weight', value: 80, createdAt: '2027-01-01T00:00:00Z' })];
-    const merged = mergeFiles(device, erasedCloud(), FALLBACK);
-    // migrate.ts clamps any row that post-dates meta.updatedAt back to it — a
-    // meta behind the kept row would rewrite it on the next load.
-    expect(merged.meta.updatedAt >= '2027-01-01T00:00:00Z').toBe(true);
-  });
-
-  it('US-09 AC13: a stale device profile never rides back in with the kept rows', () => {
-    const device = emptyFile();
-    // A device copy that predates the erase, with a clock and a clock count that
-    // would win an ordinary last-write-wins contest.
-    device.profile = { updatedAt: '2030-01-01T00:00:00Z', lamport: 99, heightCm: 150 };
-    device.screenings = { updatedAt: '2030-01-01T00:00:00Z', lamport: 99 };
-    device.measurements = [measurement({ id: 'during', metricType: 'weight', value: 80, createdAt: '2026-05-11T09:00:00Z' })];
-    const cloud = erasedCloud();
-    cloud.profile = { updatedAt: '2026-05-09T00:00:00Z', lamport: 1, heightCm: 180 };
-    const merged = mergeFiles(device, cloud, FALLBACK);
-    // The cloud's profile, its field now stamped at the cloud's own stamp.
-    expect(merged.profile).toEqual({ ...cloud.profile, fieldStamps: { heightCm: at(1, '2026-05-09T00:00:00Z') } });
-    expect(merged.screenings).toEqual(cloud.screenings);
-    expect(merged.measurements.map((m) => m.id)).toEqual(['during']); // the rows still travel
-  });
-
-  it('US-09 AC14: field stamps carry no singleton past an erase, with the option or without it', () => {
-    const device = emptyFile();
-    // Field-stamped edits made during the fallback, on the pre-erase copy.
-    device.profile = stampFields<RoadmapProfile>({ updatedAt: '2026-05-01T00:00:00Z', lamport: 3, heightCm: 150 }, { birthYear: 1970 }, '2026-05-11T09:00:00Z');
-    device.screenings = stampFields(device.screenings, { colorectalMethod: 'fit_annual' }, '2026-05-11T09:00:00Z');
-    device.measurements = [measurement({ id: 'during', metricType: 'weight', value: 80, createdAt: '2026-05-11T09:00:00Z' })];
-    const cloud = erasedCloud();
-    cloud.profile = stampFields(cloud.profile, { heightCm: 180 }, '2026-05-09T00:00:00Z');
-
-    const kept = mergeFiles(device, cloud, FALLBACK);
-    expect(kept.profile).toEqual(cloud.profile);
-    expect(kept.screenings).toEqual(cloud.screenings);
-    expect(kept.measurements.map((m) => m.id)).toEqual(['during']); // the rows still travel
-
-    const gated = mergeFiles(device, cloud, OPTS);
-    expect(gated.profile).toEqual(cloud.profile);
-    expect(gated.screenings).toEqual(cloud.screenings);
-    expect(gated.measurements).toEqual([]);
-  });
-
-  it('US-09 AC13: without the option the epoch gate is exactly what it was', () => {
-    const device = emptyFile();
-    device.measurements = [measurement({ id: 'during', metricType: 'weight', value: 80, createdAt: '2026-05-11T09:00:00Z' })];
-    const merged = mergeFiles(device, erasedCloud(), OPTS);
-    expect(merged.measurements).toEqual([]);
-    expect(merged.meta.eraseEpoch).toBe(1);
-  });
-});
-
 describe('mergeFiles — erasedAt keeps rows written after the erase (US-09 AC20)', () => {
   const ERASED_AT = '2026-05-10T00:00:00Z';
   const AFTER = '2026-05-11T09:00:00Z';
@@ -1178,44 +1068,6 @@ describe('mergeFiles — erasedAt keeps rows written after the erase (US-09 AC20
     expect(mergeFiles(stale(), legacy, OPTS).measurements).toEqual([]);
     expect(mergeFiles(legacy, stale(), OPTS).measurements).toEqual([]);
     expect(mergeFiles(legacy, stale(), OPTS).meta.erasedAt).toBeUndefined();
-  });
-
-  // Review fix (N1): the marker speaks beside erasedAt, not under it. Every
-  // row the device stamped at or after it travels, even one before the erase
-  // (AC14's stated residual a); without the marker, erasedAt alone decides.
-  it('US-09 AC14 + AC20: with the marker, the device copy keeps the union of both windows', () => {
-    const merged = mergeFiles(stale(), erased(), { ...OPTS, keepNewerThan: '2026-04-01T00:00:00Z' });
-    expect(merged.measurements.map((m) => m.id).sort()).toEqual(['after', 'before']);
-    // A marker after both rows admits neither; erasedAt still keeps the post-erase one.
-    const late = mergeFiles(stale(), erased(), { ...OPTS, keepNewerThan: '2026-06-01T00:00:00Z' });
-    expect(late.measurements.map((m) => m.id)).toEqual(['after']);
-    // The marker speaks for the device copy only: a losing remote keeps erasedAt's rows alone.
-    const remote = mergeFiles(erased(), stale(), { ...OPTS, keepNewerThan: '2026-04-01T00:00:00Z' });
-    expect(remote.measurements.map((m) => m.id)).toEqual(['after']);
-  });
-
-  it('US-09 AC14 + AC20: a failed lift after an erase keeps the medication, supplement and weight typed since, with their histories', () => {
-    const MARKER = '2026-05-11T08:00:00Z'; // after ERASED_AT: the guest session started then
-    const device = emptyFile();
-    device.measurements = [measurement({ id: 'w', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: AFTER })];
-    device.medications = [{ id: 'med_statin', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', updatedAt: AFTER, lamport: 1 }];
-    device.medicationHistory = [{ ...device.medications[0], id: 'mh1' }];
-    const omega = { id: 's1', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: null, doseUnit: null, status: 'active' as const, startedAt: '2026-05-11', updatedAt: AFTER, lamport: 1 };
-    device.supplements = [omega];
-    device.supplementHistory = [{ ...omega, id: 'sh1', changeType: 'started' }];
-    const merged = mergeFiles(device, erased(), { ...OPTS, keepNewerThan: MARKER });
-    expect(merged.measurements.map((m) => m.id)).toEqual(['w']);
-    expect(merged.medications.map((m) => m.id)).toEqual(['med_statin']);
-    expect(merged.medicationHistory.map((m) => m.id)).toEqual(['mh1']);
-    expect(merged.supplements.map((m) => m.id)).toEqual(['s1']);
-    expect(merged.supplementHistory.map((m) => m.id)).toEqual(['sh1']);
-    expect(merged.meta).toMatchObject({ eraseEpoch: 1, erasedAt: ERASED_AT });
-
-    // Without the marker, a pre-erase supplement re-stamped on a stale device stays gone.
-    const restamped = { ...omega, startedAt: '2026-05-01', status: 'stopped' as const };
-    const staleDevice = emptyFile();
-    staleDevice.supplements = [restamped];
-    expect(mergeFiles(staleDevice, erased(), OPTS).supplements).toEqual([]);
   });
 
   // Review fix (N3): a stamp with no zone designator is UTC, as a date-only
@@ -1355,6 +1207,271 @@ describe('mergeFiles — erasedAt keeps rows written after the erase (US-09 AC20
     cloud.meta.lamport = 3;
     expect(mergeFiles(device, cloud, OPTS).meta.lamport).toBe(51);
     expect(mergeFiles(cloud, device, OPTS).meta.lamport).toBe(51);
+  });
+});
+
+describe('mergeFiles — erasedRows: an erase decides by the rows it listed (US-09 AC23)', () => {
+  const STAMP = { updatedAt: '2026-05-01T09:00:00Z', lamport: 1 };
+  const lab = (id: string, recordedAt = '2026-05-01'): FileLabValue => ({
+    id, metricName: 'ferritin', value: 90, unit: 'µg/L', referenceLow: null, referenceHigh: null,
+    recordedAt, createdAt: `${recordedAt}T09:00:00Z`, source: 'manual', status: 'active', correctsId: null,
+  });
+  const doc = (id: string): FileDocument => ({
+    id, title: 'Labs', type: 'pathology_report', date: '2026-05-01', fileRef: '', contentHash: '', mimeType: '', extractedText: 'x', addedAt: '2026-05-01T09:00:00Z',
+  });
+  const med = (id: string, medicationKey = 'statin'): FileMedication => ({ id, medicationKey, drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', ...STAMP });
+  const supp = (id: string, supplementKey = 'omega3'): FileSupplement => ({
+    id, supplementKey, supplementName: 'Omega-3', doseValue: null, doseUnit: null, status: 'active', startedAt: '2026-05-01', ...STAMP,
+  });
+
+  /** One row in every array that carries ids, each under `${prefix}<array>`. */
+  function everyArray(prefix: string, file = emptyFile()): RoadmapFile {
+    file.measurements.push(measurement({ id: `${prefix}m`, metricType: 'weight', value: 80, recordedAt: prefix === 'old' ? '2026-04-01' : '2026-05-01' }));
+    file.labValues.push(lab(`${prefix}l`, prefix === 'old' ? '2026-04-01' : '2026-05-01'));
+    file.documents.push({ ...doc(`${prefix}d`), addedAt: prefix === 'old' ? '2026-04-01T09:00:00Z' : '2026-05-01T09:00:00Z' });
+    file.medications.push(med(`${prefix}med`, `${prefix}-statin`));
+    file.medicationHistory.push({ ...med(`${prefix}mh`), changeType: 'started' });
+    file.supplements.push(supp(`${prefix}s`, `${prefix}-omega3`));
+    file.supplementHistory.push({ ...supp(`${prefix}sh`), changeType: 'started' });
+    return file;
+  }
+  const ARRAYS = ['measurements', 'labValues', 'documents', 'medications', 'medicationHistory', 'supplements', 'supplementHistory'] as const;
+  const idsIn = (file: RoadmapFile) => ARRAYS.flatMap((key) => (file[key] as Array<{ id: string }>).map((r) => r.id)).sort();
+
+  /** A file erased at `epoch` that listed `ids`, claiming every erase from `fromEpoch` on. */
+  function listed(ids: string[], epoch = 1, fromEpoch = epoch): RoadmapFile {
+    const file = emptyFile();
+    file.schemaVersion = 2;
+    file.meta.eraseEpoch = epoch;
+    file.erasedRows = { fromEpoch, ids };
+    return file;
+  }
+  /** The ids `everyArray(prefix)` writes. */
+  const rowsOf = (prefix: string) => idsIn(everyArray(prefix));
+
+  it('US-09 AC23: a listed row goes, on both sides of the gate and at equal epochs', () => {
+    const stale = everyArray('old'); // epoch 0, never heard of the erase
+    const erased = listed(rowsOf('old'));
+    for (const merged of [mergeFiles(stale, erased, OPTS), mergeFiles(erased, stale, OPTS)]) {
+      expect(idsIn(merged)).toEqual([]);
+      expect(merged.meta.eraseEpoch).toBe(1);
+    }
+    // Equal epochs: a copy at the erase's epoch that still holds a listed row.
+    const same = everyArray('old', emptyFile());
+    same.meta.eraseEpoch = 1;
+    for (const merged of [mergeFiles(same, erased, OPTS), mergeFiles(erased, same, OPTS)]) expect(idsIn(merged)).toEqual([]);
+  });
+
+  it('US-09 AC23: a row no erase listed survives the gate, in every array, from either side', () => {
+    const stale = everyArray('new', everyArray('old')); // typed before AND after the erase, neither seen by it
+    const erased = listed(rowsOf('old'));
+    for (const merged of [mergeFiles(stale, erased, OPTS), mergeFiles(erased, stale, OPTS)]) {
+      expect(idsIn(merged)).toEqual(rowsOf('new'));
+      expect(merged.erasedRows).toEqual({ fromEpoch: 1, ids: rowsOf('old') });
+      expect(merged.meta.eraseEpoch).toBe(1);
+      expect(merged.schemaVersion).toBe(2);
+    }
+  });
+
+  it('US-09 AC23: a quarantined copy and a unit conversion of a listed row go with it', () => {
+    const stale = emptyFile();
+    stale.labValues = [
+      { ...lab('x'), status: 'entered-in-error' },
+      { ...lab('x#si'), correctsId: 'x' },
+      { ...lab('x#dup-0badf00d'), value: 91 },
+      { ...lab('x#dup-0badf00d#si'), value: 9.1 },
+      lab('y', '2026-05-02'),
+    ];
+    const erased = listed(['x']);
+    for (const merged of [mergeFiles(stale, erased, OPTS), mergeFiles(erased, stale, OPTS)]) {
+      expect(merged.labValues.map((r) => r.id)).toEqual(['y']);
+    }
+    expect(rootIdOf('x#si#dup-0badf00d')).toBe('x');
+    expect(rootIdOf('x#dup-0badf00d#si')).toBe('x');
+    expect(rootIdOf('xsi')).toBe('xsi');
+  });
+
+  it('US-09 AC23: the legacy rule decides when fromEpoch leaves a gap: only erasedAt\'s created rows cross', () => {
+    // Epoch 3, listing only from 3: the erase at 2 listed nothing, and the
+    // copy at 0 missed it.
+    const erased = listed(rowsOf('old'), 3, 3);
+    erased.meta.erasedAt = '2026-04-15T00:00:00Z';
+    const stale = everyArray('new', everyArray('old'));
+    for (const merged of [mergeFiles(stale, erased, OPTS), mergeFiles(erased, stale, OPTS)]) {
+      // Created after erasedAt: the new measurement, lab value and document. The
+      // medications and supplements carry no creation time, so they go.
+      expect(idsIn(merged)).toEqual(['newd', 'newl', 'newm']);
+    }
+    // A copy at 2 missed only listed erases, so every unlisted row crosses.
+    stale.meta.eraseEpoch = 2;
+    expect(idsIn(mergeFiles(stale, erased, OPTS))).toEqual(rowsOf('new'));
+  });
+
+  it('US-09 AC23: the legacy rule decides when the winner has no list, and its listed rows still go', () => {
+    const legacy = emptyFile();
+    legacy.meta.eraseEpoch = 2;
+    legacy.meta.erasedAt = '2026-04-15T00:00:00Z';
+    const listing = everyArray('new', everyArray('old'));
+    listing.schemaVersion = 2;
+    listing.meta.eraseEpoch = 1;
+    listing.erasedRows = { fromEpoch: 1, ids: ['oldm'] };
+    for (const merged of [mergeFiles(listing, legacy, OPTS), mergeFiles(legacy, listing, OPTS)]) {
+      // AC20's window over created rows; the old lab value and document
+      // predate erasedAt and go; the listed weight goes whatever its clock.
+      expect(idsIn(merged)).toEqual(['newd', 'newl', 'newm']);
+      // The ids stay; a winner with no list claims nothing.
+      expect(merged.erasedRows).toEqual({ fromEpoch: 3, ids: ['oldm'] });
+      expect(merged.meta.eraseEpoch).toBe(2);
+    }
+    // No erasedAt either: none of the losing copy crosses.
+    delete legacy.meta.erasedAt;
+    expect(idsIn(mergeFiles(listing, legacy, OPTS))).toEqual([]);
+  });
+
+  it('US-09 AC23: a malformed list is dropped on read, and the legacy rule decides', () => {
+    const erased = migrateFile({ ...listed(rowsOf('old')), erasedRows: { fromEpoch: 1, ids: ['oldm', 7] } }, OPTS);
+    expect(erased.erasedRows).toBeUndefined();
+    expect(idsIn(mergeFiles(everyArray('new', everyArray('old')), erased, OPTS))).toEqual([]);
+  });
+
+  it('US-09 AC23: ids union; at equal epochs an absent list claims nothing, and of two the larger fromEpoch stands', () => {
+    const a = listed(['b-row', 'a-row'], 2, 1);
+    const b = listed(['c-row', 'a-row'], 2, 2);
+    for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
+      expect(merged.erasedRows).toEqual({ fromEpoch: 2, ids: ['a-row', 'b-row', 'c-row'] });
+    }
+    // The absent side may be its own erase at this epoch that listed nothing,
+    // so the merged list keeps the ids and claims no erase at all.
+    const absent = emptyFile();
+    absent.meta.eraseEpoch = 2;
+    for (const merged of [mergeFiles(a, absent, OPTS), mergeFiles(absent, a, OPTS)]) {
+      expect(merged.erasedRows).toEqual({ fromEpoch: 3, ids: ['a-row', 'b-row'] });
+      expect(merged.schemaVersion).toBe(2);
+    }
+    // Across the gate the winner's fromEpoch stands, and the loser's ids join.
+    const older = listed(['z-row'], 1, 1);
+    const newer = listed(['a-row'], 3, 2);
+    for (const merged of [mergeFiles(older, newer, OPTS), mergeFiles(newer, older, OPTS)]) {
+      expect(merged.erasedRows).toEqual({ fromEpoch: 2, ids: ['a-row', 'z-row'] });
+    }
+    // Neither has one: none appears, and the version stays where it was.
+    const plain = mergeFiles(emptyFile(), emptyFile(), OPTS);
+    expect('erasedRows' in plain).toBe(false);
+    expect(plain.schemaVersion).toBe(1);
+  });
+
+  it('US-09 AC23: an old-app erase and a listing erase at one epoch still keep a stale copy\'s pre-erase row out (adversary R1)', () => {
+    // The cloud: erased by an old bundle at epoch 1 on 1 September, no list.
+    const drive = emptyFile();
+    drive.meta.eraseEpoch = 1;
+    drive.meta.erasedAt = '2026-09-01T00:00:00.001Z';
+    // A laptop that never took that erase in: epoch 0, an August LDL.
+    const laptop = emptyFile();
+    laptop.measurements = [measurement({ id: 'pre-erase-ldl', metricType: 'ldl', value: 3, recordedAt: '2026-08-01', createdAt: '2026-08-01T00:00:00Z' })];
+    // This browser: a guest copy erased by the new app at epoch 1, then lifted into the cloud.
+    const guest = listed(['guest-row']);
+    guest.meta.erasedAt = '2026-10-19T00:00:00.001Z';
+    const lifted = mergeFiles(guest, drive, OPTS);
+    expect(lifted.erasedRows).toEqual({ fromEpoch: 2, ids: ['guest-row'] });
+    for (const merged of [mergeFiles(laptop, lifted, OPTS), mergeFiles(lifted, laptop, OPTS)]) {
+      expect(merged.measurements.map((r) => r.id)).toEqual([]);
+    }
+  });
+
+  it('US-09 AC23: at one epoch, a listing erase takes the unlisted erase\'s erasedAt, so a stale copy keeps a row typed between them (adversary re-check R2)', () => {
+    // The cloud: erased by an old app at epoch 1 on 1 September, no list.
+    const drive = emptyFile();
+    drive.meta.eraseEpoch = 1;
+    drive.meta.erasedAt = '2026-09-01T00:00:00.001Z';
+    // A guest copy erased by the new app at epoch 1 on 21 October, listing its rows.
+    const guest = listed(['guest-row']);
+    guest.meta.erasedAt = '2026-10-21T00:00:00.001Z';
+    // A laptop at epoch 0: an LDL from before the cloud erase, an HDL typed after it.
+    const laptop = emptyFile();
+    laptop.measurements = [
+      measurement({ id: 'pre', metricType: 'ldl', value: 3, recordedAt: '2026-08-01', createdAt: '2026-08-01T00:00:00Z' }),
+      measurement({ id: 'mid', metricType: 'hdl', value: 1.4, recordedAt: '2026-09-15', createdAt: '2026-09-15T00:00:00Z' }),
+    ];
+    for (const lifted of [mergeFiles(guest, drive, OPTS), mergeFiles(drive, guest, OPTS)]) {
+      expect(lifted.meta.erasedAt).toBe('2026-09-01T00:00:00.001Z');
+      for (const merged of [mergeFiles(laptop, lifted, OPTS), mergeFiles(lifted, laptop, OPTS)]) {
+        expect(merged.measurements.map((r) => r.id)).toEqual(['mid']);
+      }
+      // The lifted list claims nothing (fromEpoch 2 at epoch 1), so meeting a
+      // stale copy of the guest file again keeps the unlisted erase's time.
+      for (const again of [mergeFiles(lifted, guest, OPTS), mergeFiles(guest, lifted, OPTS)]) {
+        expect(again.meta.erasedAt).toBe('2026-09-01T00:00:00.001Z');
+        expect(mergeFiles(laptop, again, OPTS).measurements.map((r) => r.id)).toEqual(['mid']);
+      }
+    }
+    // Both listing, or neither: the later erase time, as before.
+    const other = listed(['other-row']);
+    other.meta.erasedAt = '2026-09-01T00:00:00.001Z';
+    for (const merged of [mergeFiles(guest, other, OPTS), mergeFiles(other, guest, OPTS)]) {
+      expect(merged.meta.erasedAt).toBe('2026-10-21T00:00:00.001Z');
+    }
+    const plain = emptyFile();
+    plain.meta.eraseEpoch = 1;
+    plain.meta.erasedAt = '2026-10-21T00:00:00.001Z';
+    for (const merged of [mergeFiles(drive, plain, OPTS), mergeFiles(plain, drive, OPTS)]) {
+      expect(merged.meta.erasedAt).toBe('2026-10-21T00:00:00.001Z');
+    }
+  });
+
+  it('US-09 AC23: a guest erase listing a copied-down row removes it from a cloud connected later, keeps the cloud\'s unseen rows, and resets its profile (Codex re-check R1, adversary re-check R1)', () => {
+    // The cloud: r1 was copied down to this browser on a provider switch; r2 came later.
+    const drive = emptyFile();
+    drive.measurements = [
+      measurement({ id: 'r1', metricType: 'ldl', value: 3, recordedAt: '2026-09-01', createdAt: '2026-09-01T00:00:00Z' }),
+      measurement({ id: 'r2', metricType: 'hdl', value: 1.4, recordedAt: '2026-10-10', createdAt: '2026-10-10T00:00:00Z' }),
+    ];
+    drive.profile = { updatedAt: '2026-10-10T00:00:00Z', lamport: 5, heightCm: 180 };
+    drive.screenings = { colorectalMethod: 'fit_annual', updatedAt: '2026-10-10T00:00:00Z', lamport: 5 };
+    // The guest erase, with no cloud connected, listed what this browser held: r1.
+    const guest = listed(['r1']);
+    guest.meta.erasedAt = '2026-10-21T00:00:00.001Z';
+    for (const merged of [mergeFiles(guest, drive, OPTS), mergeFiles(drive, guest, OPTS)]) {
+      expect(merged.measurements.map((r) => r.id)).toEqual(['r2']);
+      expect(merged.profile.heightCm).toBeUndefined();
+      expect(merged.screenings.colorectalMethod).toBeUndefined();
+    }
+  });
+
+  it('US-09 AC23: a losing row whose id is not a string is skipped, not thrown on (adversary R4)', () => {
+    const stale = everyArray('new');
+    stale.measurements.push({ ...measurement({ id: 'x', metricType: 'ldl', value: 3 }), id: 7 as unknown as string });
+    const erased = listed([]);
+    for (const merged of [mergeFiles(stale, erased, OPTS), mergeFiles(erased, stale, OPTS)]) {
+      expect(idsIn(merged)).toEqual(rowsOf('new'));
+    }
+  });
+
+  it('US-09 AC23: the merge is symmetric and deterministic across the gate', () => {
+    const stale = everyArray('new', everyArray('old'));
+    stale.meta.lamport = 7;
+    const erased = listed(rowsOf('old'));
+    erased.meta.lamport = 3;
+    expect(stableStringify(mergeFiles(stale, erased, OPTS))).toBe(stableStringify(mergeFiles(erased, stale, OPTS)));
+    expect(mergeFiles(stale, erased, OPTS).meta.lamport).toBe(8);
+  });
+
+  it('US-09 AC23: no stale singleton or reminder setting rides in with the kept rows, and the clock covers them', () => {
+    const stale = everyArray('new');
+    stale.profile = { updatedAt: '2030-01-01T00:00:00Z', lamport: 99, heightCm: 150 };
+    stale.reminderPreferences = [{ category: 'lipids', enabled: false, ...STAMP }];
+    stale.measurements.push(measurement({ id: 'late', metricType: 'ldl', value: 2, createdAt: '2027-01-01T00:00:00Z' }));
+    const erased = listed([]);
+    const merged = mergeFiles(stale, erased, OPTS);
+    expect(merged.profile.heightCm).toBeUndefined();
+    expect(merged.reminderPreferences).toEqual([]);
+    expect(merged.measurements.map((m) => m.id).sort()).toEqual(['late', 'newm']);
+    expect(merged.meta.updatedAt >= '2027-01-01T00:00:00Z').toBe(true);
+  });
+
+  it('US-09 AC23: rowRootIds names every row an erase made now would list', () => {
+    const file = everyArray('old');
+    file.labValues.push({ ...lab('oldl#si'), correctsId: 'oldl' });
+    expect([...new Set(rowRootIds(file))].sort()).toEqual(rowsOf('old'));
   });
 });
 

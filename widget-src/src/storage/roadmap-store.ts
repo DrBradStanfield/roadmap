@@ -34,9 +34,11 @@ import {
   computeReminderSchedule,
   correctValue as correctRecordValue,
   createMeasurement,
+  CURRENT_SCHEMA_VERSION,
   dayOf,
   diffInputsToMeasurements,
-  earliestRowStamp,
+  mergeErasedRows,
+  rowRootIds,
   stampInstant,
   fileProfileToApi,
   fileScreeningRows,
@@ -113,14 +115,12 @@ function notify(name: string): void {
 }
 
 /** Record that on-device data is ahead of the cloud (see PENDING_MIRROR_KEY).
- *  The stamp is WHEN it went ahead — the LAST moment the two were in step, not
- *  the moment the failure surfaced: rows typed during the debounce, or while
- *  the doomed request was in flight, predate the failure and must still count
- *  as unsynced. It only ever moves EARLIER while it stands, so a second failure
- *  cannot orphan the first one's edits (US-09 AC13). */
-export function markSyncPending(since = new Date().toISOString()): void {
-  const existing = syncPendingSince();
-  if (existing == null || stampInstant(since) < stampInstant(existing)) safeSetItem(PENDING_MIRROR_KEY, since);
+ *  A yes or no: which rows travel is the erase list's call, not a time's
+ *  (US-09 AC23). isSyncPending checks only that it is there. The value is a
+ *  far-future instant because an older bundle in another tab still reads it
+ *  as "keep rows newer than this" past an erase: so it keeps nothing extra. */
+export function markSyncPending(): void {
+  safeSetItem(PENDING_MIRROR_KEY, '9999-12-31T23:59:59.999Z');
   notify(SYNC_PENDING_EVENT);
 }
 
@@ -129,16 +129,14 @@ function clearSyncPending(): void {
   notify(SYNC_PENDING_EVENT);
 }
 
-/** Since when on-device data has been waiting to reach the cloud (null: it
- *  isn't). The merge-up reads it — see `mergeFiles`' `keepNewerThan`. */
-export function syncPendingSince(): string | null {
-  return safeGetItem(PENDING_MIRROR_KEY);
-}
-
 /** True while on-device data is still waiting to reach the cloud. */
 export function isSyncPending(): boolean {
-  return syncPendingSince() != null;
+  return safeGetItem(PENDING_MIRROR_KEY) != null;
 }
+
+/** What an erase that cannot read the cloud record says. It cannot list what
+ *  it removes, so it removes nothing (US-09 AC23). */
+export const ERASE_UNREACHABLE = 'Your cloud storage could not be reached, so nothing was deleted. Try again once it answers.';
 
 // --- App-facing shapes (moved here from api.ts; the data ones come from health-core) ---
 
@@ -276,7 +274,9 @@ function contentOf(file: RoadmapFile): string {
  * lamport behind the cloud's, and the next profile edit would lose the merge.
  */
 function visibleContentOf(file: RoadmapFile): string {
-  const { meta: _clocks, ...rest } = file;
+  // The erase list is bookkeeping too, and so is the version it raises: a
+  // change to them alone is nothing a person sees (US-09 AC23).
+  const { meta: _clocks, erasedRows: _list, schemaVersion: _version, ...rest } = file;
   const seen: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(rest)) {
     seen[key] = Array.isArray(value) ? value.map((row) => stableStringify(row, CLOCK_KEYS)).sort() : value;
@@ -305,10 +305,6 @@ export class RoadmapStore {
    *  a refused save, and meets the same refusal (US-10 AC5). */
   private readonly refusalsReported = new Set<string>();
   private readonly deviceId: string;
-  /** The last moment this device's copy and the cloud were known to agree: the
-   *  load, then every successful save. A failed save marks the pending mirror
-   *  from HERE, so everything typed since it survives the merge back up. */
-  private lastSyncedAt = new Date().toISOString();
   /** Local tier: the stored revision this tab last took in, by a load, a
    *  re-read or its own write. Never a read it did not merge in, such as a
    *  save's verify-after-write (US-34 AC6). */
@@ -319,35 +315,33 @@ export class RoadmapStore {
     private readonly adapter: StorageAdapter,
     file: RoadmapFile,
     deviceId: string,
+    /** The user chose a cloud this session cannot reach, and runs on-device
+     *  meanwhile (US-09 AC13): an erase here is refused (AC23). */
+    private readonly cloudUnreachable: boolean,
   ) {
     this.file = file;
     this.deviceId = deviceId;
   }
 
   /** Load the user's record from the given backend and return a ready store. */
-  static async create(adapter: StorageAdapter): Promise<RoadmapStore> {
+  static async create(adapter: StorageAdapter, cloudUnreachable = false): Promise<RoadmapStore> {
     const deviceId = getDeviceId();
     const sync = new SyncManager(adapter, deviceId, ROADMAP_DOC);
     const revision = adapter instanceof LocalStorageAdapter ? adapter.revision(ROADMAP_FILE_NAME) : null;
-    const store = new RoadmapStore(sync, adapter, await sync.load(), deviceId);
+    const store = new RoadmapStore(sync, adapter, await sync.load(), deviceId, cloudUnreachable);
     store.seenRevision = revision;
     // A previous cloud session failed to save and mirrored its changes
     // on-device (see persist()'s catch). Merge them in now and schedule a save
     // to lift them up; the marker clears only once a cloud save succeeds.
-    const since = syncPendingSince();
-    if (adapter.id !== 'local' && since != null) {
+    if (adapter.id !== 'local' && isSyncPending()) {
       // Fault-tolerant like the mirror-WRITE side: an unreadable mirror must
       // not brick the load — continue on the cloud file. What happens to the
-      // marker depends on WHY it was unreadable (see the catch below).
+      // marker depends on WHY it was unreadable (see the catch below). A plain
+      // merge: a fallback session runs on a file at epoch 0, and against an
+      // erased cloud its rows survive because no erase listed them (US-09
+      // AC23).
       try {
-        // `keepNewerThan` makes the epoch gate spare this device's own edits:
-        // a fallback session runs on a file at epoch 0, so an erased cloud
-        // would otherwise take the file wholesale and discard them (US-09
-        // AC13). The on-device copy goes in as `local` — the argument the
-        // option speaks about, and the one it has always meant. It speaks
-        // beside an erase's `erasedAt`, which alone would drop a medication or
-        // supplement typed here (AC20 rescues created rows only).
-        const ctx: SyncContext = { deviceId, now: new Date().toISOString(), keepNewerThan: since };
+        const ctx: SyncContext = { deviceId, now: new Date().toISOString() };
         const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
         if (body != null) {
           store.file = ROADMAP_DOC.merge(ROADMAP_DOC.migrate(body, ctx), store.file, ctx);
@@ -750,52 +744,93 @@ export class RoadmapStore {
     return computeReminderSchedule(this.file, new Date());
   }
 
-  async deleteUserData(): Promise<{ success: boolean; error?: string }> {
-    // Bump the erase epoch so the empty file BEATS the merge — persist goes
-    // through read-merge-write, whose never-lose-data semantics would otherwise
-    // resurrect every record from the stored copy (and any other device's).
-    // Bump past the STORED epoch as well, read now: another tab or device may
-    // have erased and started again since this copy was read, and an erase at
-    // an equal epoch unions with that record instead of beating it (US-11
-    // AC7). An unreadable record leaves this copy's epoch, as before. A change
-    // still on the debounce is one the erase throws away: saving it during
-    // the read would only send a pre-erase copy up ahead of the erase.
+  /**
+   * Erase the record. `beforeErase` runs once the stored record has been read,
+   * and only then: it is the irreversible part the caller owns (the reminders
+   * teardown on Brad's server, the chat-history tombstones), so an erase
+   * refused here has changed nothing anywhere (US-09 AC23).
+   */
+  async deleteUserData(beforeErase?: () => Promise<void>): Promise<{ success: boolean; error?: string }> {
+    // An erase lists the rows it removes, so it must read the record it
+    // removes them from. A session on-device because the cloud could not be
+    // read cannot, and refuses before anything moves.
+    if (this.cloudUnreachable) return { success: false, error: ERASE_UNREACHABLE };
+    // A change still on the debounce is one the erase throws away: saving it
+    // during the read would only send a pre-erase copy up ahead of the erase.
+    const debounced = this.persistTimer !== null;
     this.cancelDebounce();
-    const stored = await this.sync.load().then((file) => file.meta, () => null);
-    const eraseEpoch = Math.max(stored?.eraseEpoch ?? 0, this.file.meta.eraseEpoch ?? 0) + 1;
-    // An erase must not silently re-consent the user. Under US-17's default-on
-    // model the empty file reads as "never decided", so the next app load would
-    // enrol them again — undoing an explicit opt-out (AC4), and for an ENROLLED
-    // user refilling the server row the pre-erase hook just tore down, with no
-    // token left here to cancel it. So anyone who HAD an opt-in, active or
-    // cancelled, comes out of the erase with reminders off; the manual toggle
-    // still re-enrols, because that is the user asking. A higher eraseEpoch
-    // wins the merge, and a losing copy keeps only rows it created after the
-    // erase (US-09 AC20), never its opt-in, so the record on their other
-    // devices can't save them either. Carry the decision, never the identity:
-    // no token, no email address.
-    const priorProvider = this.file.reminderOptIn?.provider ?? null;
-    const ctx = this.ctx();
-    // WHEN, beside THAT: a copy that missed the erase keeps the rows it creates
-    // from now on, and only those (US-09 AC20). Floored 1 ms past the last
-    // write this eraser has seen, so a slow clock here cannot let through a
-    // row it already erased. A clock more than a day past now is broken, not
-    // slow: it reads as now, so it cannot push the erase out over later rows.
-    const now = stampInstant(ctx.now);
-    const seen = [stored?.updatedAt, this.file.meta.updatedAt].map(stampInstant);
-    const floor = seen.filter((t) => t <= now + 86_400_000); // NaN fails too
-    const erasedAt = new Date(Math.max(now, ...floor) + 1).toISOString();
-    this.file = migrateFile(null, ctx);
-    this.file.meta.eraseEpoch = eraseEpoch;
-    this.file.meta.erasedAt = erasedAt;
-    if (priorProvider) {
-      this.file.reminderOptIn = {
-        status: 'cancelled', token: '', email: '', provider: priorProvider,
-        updatedAt: new Date().toISOString(), lamport: 1,
-      };
+    // The WHOLE stored record, read now: another tab or device may have erased
+    // and started again since this copy was read, and an erase at an equal
+    // epoch unions with that record instead of beating it (US-11 AC7). On a
+    // cloud an unreadable record refuses the erase, and the change on the
+    // debounce goes back on it. On this device an unreadable record leaves
+    // this copy's epoch, as before: there is no other copy to list.
+    const stored = await this.sync.load().catch(() => null);
+    if (!stored && this.adapter.id !== 'local') {
+      if (debounced) this.touch();
+      return { success: false, error: ERASE_UNREACHABLE };
     }
-    this.touch(); // a change like any other: a failed flush leaves it for a hide to retry
+    await beforeErase?.();
+    // From here every failure comes back as a refusal, never a rejection: the
+    // caller's step has run, and its page must leave its deleting state.
     try {
+      this.cancelDebounce();
+      // Bump the erase epoch so the empty file BEATS the merge — persist goes
+      // through read-merge-write, whose never-lose-data semantics would otherwise
+      // resurrect every record from the stored copy (and any other device's).
+      // Bump past the stored epoch as well (US-11 AC7).
+      const eraseEpoch = Math.max(stored?.meta.eraseEpoch ?? 0, this.file.meta.eraseEpoch ?? 0) + 1;
+      // WHICH rows, so the merge drops them on every copy and keeps every row no
+      // erase saw (US-09 AC23): the stored record's, this copy's and, on a
+      // cloud, this browser's device file, where other tabs' failed saves wait.
+      // A device file that cannot be read, or read into a record, lists
+      // nothing; a successful erase removes it below.
+      const device = this.adapter.id === 'local'
+        ? null
+        : await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)
+          .then(({ body }) => (body == null ? null : ROADMAP_DOC.migrate(body, this.ctx())))
+          .catch(() => null);
+      const copies = [stored, this.file, device].filter((file): file is RoadmapFile => file !== null);
+      // The list keeps the claim the merge of the stored and own copies makes:
+      // every erase from `fromEpoch` on listed its ids. With no list there, this
+      // erase is the first to list.
+      const before = stored ? mergeErasedRows(this.file, stored) : this.file.erasedRows;
+      const ids = new Set(copies.flatMap((file) => [...rowRootIds(file), ...(file.erasedRows?.ids ?? [])]));
+      const erasedRows = { fromEpoch: before?.fromEpoch ?? eraseEpoch, ids: [...ids].sort() };
+      // An erase must not silently re-consent the user. Under US-17's default-on
+      // model the empty file reads as "never decided", so the next app load would
+      // enrol them again — undoing an explicit opt-out (AC4), and for an ENROLLED
+      // user refilling the server row the pre-erase hook just tore down, with no
+      // token left here to cancel it. So anyone who HAD an opt-in, active or
+      // cancelled, comes out of the erase with reminders off; the manual toggle
+      // still re-enrols, because that is the user asking. A higher eraseEpoch
+      // wins the merge, and a losing copy keeps only rows the erase did not list
+      // (US-09 AC23), never its opt-in, so the record on their other devices
+      // can't save them either. Carry the decision, never the identity: no
+      // token, no email address.
+      const priorProvider = this.file.reminderOptIn?.provider ?? null;
+      const ctx = this.ctx();
+      // WHEN, beside WHICH: read only by a copy that missed an earlier erase
+      // that listed nothing (US-09 AC20, AC23). Floored 1 ms past the last
+      // write this eraser has seen, so a slow clock here cannot let through a
+      // row it already erased. A clock more than a day past now is broken, not
+      // slow: it reads as now, so it cannot push the erase out over later rows.
+      const now = stampInstant(ctx.now);
+      const seen = [stored?.meta.updatedAt, this.file.meta.updatedAt].map(stampInstant);
+      const floor = seen.filter((t) => t <= now + 86_400_000); // NaN fails too
+      const erasedAt = new Date(Math.max(now, ...floor) + 1).toISOString();
+      this.file = migrateFile(null, ctx);
+      this.file.schemaVersion = CURRENT_SCHEMA_VERSION;
+      this.file.erasedRows = erasedRows;
+      this.file.meta.eraseEpoch = eraseEpoch;
+      this.file.meta.erasedAt = erasedAt;
+      if (priorProvider) {
+        this.file.reminderOptIn = {
+          status: 'cancelled', token: '', email: '', provider: priorProvider,
+          updatedAt: new Date().toISOString(), lamport: 1,
+        };
+      }
+      this.touch(); // a change like any other: a failed flush leaves it for a hide to retry
       await this.flush();
       // The erase reached the cloud — wipe the on-device residue too (failure
       // mirror + marker + named files/documents), so no pre-erase copy outlives
@@ -1113,7 +1148,6 @@ export class RoadmapStore {
       // new save, instead of joining this finished one.
       this.running = null;
       if (remoteFolded) notify(REMOTE_CHANGED_EVENT);
-      this.lastSyncedAt = new Date().toISOString();
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
       if (this.adapter.id !== 'local' && !this.mirrorSkipped) clearSyncPending();
@@ -1131,7 +1165,7 @@ export class RoadmapStore {
       // unhandled rejection Sentry's noise filters dropped; awaited callers
       // (flush) check the result.
       if (this.adapter.id !== 'local') {
-        markSyncPending(this.lastSyncedAt);
+        markSyncPending();
         // Deliberately the merged transfer primitive, NOT a plain overwrite: the
         // local file may hold guest-era data this session never loaded (no
         // marker set), and an overwrite would destroy its only copy. The merge
@@ -1172,47 +1206,22 @@ export class RoadmapStore {
  * pre-switch copy-down (standalone/connect.ts) both delegate here, so
  * DocumentSpec/SyncManager knowledge stays in this schema-owning module.
  */
-export async function saveRoadmapFileInto(
-  target: StorageAdapter,
-  body: unknown,
-  /** Set ONLY when `body` is this device's own copy and the target is the cloud
-   *  (the connect-time lift): it spares the rows written since that moment from
-   *  the erase-epoch gate (US-09 AC13). The copy-down runs the other way round,
-   *  so it must never pass it. */
-  keepNewerThan?: string,
-): Promise<void> {
+export async function saveRoadmapFileInto(target: StorageAdapter, body: unknown): Promise<void> {
   const deviceId = getDeviceId();
-  const ctx = { deviceId, now: new Date().toISOString(), keepNewerThan };
-  await new SyncManager(target, deviceId, ROADMAP_DOC, { keepNewerThan }).save(ROADMAP_DOC.migrate(body, ctx));
+  const ctx = { deviceId, now: new Date().toISOString() };
+  await new SyncManager(target, deviceId, ROADMAP_DOC).save(ROADMAP_DOC.migrate(body, ctx));
 }
 
 /**
- * Copy a cloud body DOWN onto this device, merged. The DEVICE file is the
- * `local` side, which is the side `keepNewerThan` speaks about: an erased cloud
- * file wins the epoch gate, so without it a copy-down before a backend switch
- * would wipe the very rows a fallback session is still holding (US-09 AC13).
+ * Copy a cloud body DOWN onto this device, merged. A plain merge: against an
+ * erased cloud file, the rows a fallback session is still holding survive
+ * because no erase listed them (US-09 AC23).
  */
-export async function copyCloudDownToDevice(body: unknown, keepNewerThan?: string): Promise<void> {
+export async function copyCloudDownToDevice(body: unknown): Promise<void> {
   const deviceId = getDeviceId();
-  const ctx: SyncContext = { deviceId, now: new Date().toISOString(), keepNewerThan };
-  const sync = new SyncManager(new LocalStorageAdapter(), deviceId, ROADMAP_DOC, { keepNewerThan });
+  const ctx: SyncContext = { deviceId, now: new Date().toISOString() };
+  const sync = new SyncManager(new LocalStorageAdapter(), deviceId, ROADMAP_DOC);
   await sync.save(ROADMAP_DOC.merge(await sync.load(), ROADMAP_DOC.migrate(body, ctx), ctx));
-}
-
-/**
- * The oldest row this device holds. A first lift that fails has synced NOTHING,
- * so that is the moment from which its data is unsynced (US-09 AC13). Undefined
- * when the file is empty or unreadable — the caller then falls back to now.
- */
-export async function localUnsyncedSince(): Promise<string | undefined> {
-  try {
-    const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
-    if (body == null) return undefined;
-    const ctx = { deviceId: getDeviceId(), now: new Date().toISOString() };
-    return earliestRowStamp(ROADMAP_DOC.migrate(body, ctx)) ?? undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 function toApiDocument(d: FileDocument): ApiDocument {

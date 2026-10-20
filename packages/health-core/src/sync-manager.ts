@@ -42,9 +42,6 @@ export interface SyncedFile {
 export interface SyncContext {
   deviceId: string;
   now: string;
-  /** Merge policy carried through to `doc.merge` — see `mergeFiles`' own
-   *  `keepNewerThan` (the on-device fallback, US-09 AC13). */
-  keepNewerThan?: string;
 }
 
 /**
@@ -76,8 +73,6 @@ export interface SaveResult<T> {
 export interface SyncOptions {
   /** Injectable clock so tests/harness are deterministic. */
   now?: () => string;
-  /** Passed to every merge this manager runs (see SyncContext). */
-  keepNewerThan?: string;
 }
 
 export class SyncManager<T extends SyncedFile> {
@@ -94,7 +89,7 @@ export class SyncManager<T extends SyncedFile> {
 
   private ctx(): SyncContext {
     const now = this.opts.now?.() ?? new Date().toISOString();
-    return { deviceId: this.deviceId, now, keepNewerThan: this.opts.keepNewerThan };
+    return { deviceId: this.deviceId, now };
   }
 
   /** Load the document, normalising whatever is in the cloud (or empty). */

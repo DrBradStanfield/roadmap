@@ -15,7 +15,8 @@ Tools that enforce this contract for you: `tools/get-plan.ts`, `tools/edit-recor
   [`docs/health-roadmap-file.schema.json`](health-roadmap-file.schema.json),
   published at
   `https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json`
-- Current `schemaVersion`: **1**
+- Current `schemaVersion`: **2**, the highest the app reads. A file stays at **1** until an
+  erase lists what it removed (`erasedRows`, rule 6); only then is it stamped 2 (US-09 AC23).
 - TypeScript source of truth: `packages/health-core/src/roadmap-file.ts`
 - Compute the plan from the file: `npx tsx tools/get-plan.ts <file>` (in this repo), see `--help`. No file yet? `get-plan.ts --from-values <values.json|->` builds one in memory from sex, height, age and values, and writes nothing.
 - Something wrong or missing? The MCP server's `report_feedback` tool reports it. On the
@@ -46,8 +47,9 @@ document has `fileRef: ""`.
 ## How to read
 
 1. Parse the JSON.
-2. Check `schemaVersion`. If it is greater than 1, stop, a newer app wrote this file and
-   you may not understand every field. Read if you like; do not write.
+2. Check `schemaVersion`. If it is greater than 2, stop, a newer app wrote this file and
+   you may not understand every field. Read if you like; do not write. A file at 2 carries
+   `erasedRows` (rule 6): if your tool predates it, do not write that file either.
 3. Current values live in the arrays, not in a separate "current" object.
    - `measurements` (core metrics) and `labValues` (everything else) are **append-only
      history**. A row's slot is `(metric, calendar day of recordedAt)`, `metricType` for
@@ -107,9 +109,15 @@ someone's medical history, or lose their data at the next device sync.
    load, and can lose its slot or its record to an older entry. Never touch
    `meta.lamport`, `meta.eraseEpoch`, `meta.erasedAt`, or `meta.lastDeviceId`, they are
    the sync engine's clocks. Garbage there is clamped, reset to 0 or dropped on read, and
-   a reset `eraseEpoch` makes the next merge discard your copy, keeping only the
-   measurements, lab values and documents created at or after the other copy's
-   `erasedAt` (`eraseEpoch` is what makes "delete all my data" stick).
+   a reset `eraseEpoch` makes the next merge discard your copy's rows that an erase listed,
+   and, past an erase that listed nothing, every row but the measurements, lab values and
+   documents created at or after the other copy's `erasedAt` (`eraseEpoch` is what makes
+   "delete all my data" stick). **Leave the top-level `erasedRows` alone too** (US-09
+   AC23): it holds the root ids of the rows each erase removed (an id without its `#dup-…`
+   or `#si` suffix) and the epoch its claim starts from. Every reader and every merge drops
+   a row whose root id is listed, so a listed row never comes back, whoever writes it. A
+   malformed list is dropped on read, which only makes the next merge stricter. Never
+   reuse a listed id. `read_record` leaves the field out.
 7. **Touch only the rows you added.** Do not reformat, re-sort, or normalise other rows.
    Updating a current-state row you legitimately own (a medication, supplement, or
    reminder preference) means setting that row's `updatedAt` to now and leaving its

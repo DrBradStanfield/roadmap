@@ -22,7 +22,7 @@ import { latestActivePerMetric } from './measurement-history';
 import { cmpStr, localDay } from './merge';
 import { refLineFor } from './reference-hints';
 import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-schedule';
-import { CURRENT_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
+import { BASE_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import {
   UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
@@ -254,7 +254,7 @@ export function planPayload(plan: Plan) {
   const adult = plan.results.knownMinor ? null : plan.results;
   return {
     instruction: PLAN_INSTRUCTION,
-    schemaVersion: CURRENT_SCHEMA_VERSION,
+    schemaVersion: BASE_SCHEMA_VERSION,
     generatedAt: plan.generatedAt,
     today: plan.today,
     unitSystem: plan.unitSystem,

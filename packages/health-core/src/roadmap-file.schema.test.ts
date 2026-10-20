@@ -295,6 +295,17 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
     expect(check({ ...file, meta: { ...file.meta, erasedAt: 5 } }).ok).toBe(false);
   });
 
+  it('US-09 AC23: a listed erase carries erasedRows through merge + migrate, at version 2', () => {
+    const erased = createEmptyFile(OPTS);
+    erased.schemaVersion = 2;
+    erased.meta.eraseEpoch = 1;
+    erased.erasedRows = { fromEpoch: 1, ids: ['m1'] };
+    const file = migrateFile(JSON.parse(JSON.stringify(mergeFiles(representativeFile(), erased, OPTS))), OPTS);
+    expect(file.schemaVersion).toBe(2);
+    expect(file.erasedRows).toEqual({ fromEpoch: 1, ids: ['m1'] });
+    expect(check(file).errors).toBe('No errors');
+  });
+
   it('preserves unknown fields, so a newer app version still validates', () => {
     const file = { ...representativeFile(), brandNewSection: [1, 2, 3] };
     expect(check(file).ok).toBe(true);
@@ -317,7 +328,10 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
 
   it('rejects each individual invariant break', () => {
     const cases: Array<[string, (f: RoadmapFile) => void]> = [
-      ['schemaVersion 2', (f) => { (f as { schemaVersion: number }).schemaVersion = 2; }],
+      ['schemaVersion 3', (f) => { (f as { schemaVersion: number }).schemaVersion = 3; }],
+      ['an erase list on a version-1 file', (f) => { f.erasedRows = { fromEpoch: 1, ids: ['m1'] }; }],
+      ['an erase list without ids', (f) => { f.schemaVersion = 2; (f as unknown as Record<string, unknown>).erasedRows = { fromEpoch: 1 }; }],
+      ['an erase list naming a number', (f) => { f.schemaVersion = 2; (f as unknown as Record<string, unknown>).erasedRows = { fromEpoch: 1, ids: [7] }; }],
       ['missing meta.lamport', (f) => { delete (f.meta as { lamport?: number }).lamport; }],
       ['unknown measurement source', (f) => { f.measurements[0].source = 'guessed' as never; }],
       ['typo\'d metricType', (f) => { f.measurements[0].metricType = 'ldl_c'; }],

@@ -99,6 +99,8 @@ fly status -c fly.edu.toml  # health-tool-edu
 
 **Single-app shortcut for a chatbot-knowledge-only change** (most common — e.g. a prompt or blog edit, no Dockerfile/dep change): commit the content change, run step 5a, then steps 6a → 6b. You do NOT need the Shopify-extension steps (1-4) unless the widget itself changed.
 
+**Record schemaVersion 2 ships everywhere at once (US-09 AC23, 2026-10-20).** An erase now writes `schemaVersion` 2, and older bundles and CLIs refuse that file. Ship the storefront extension, both Fly apps (the hosted MCP runs on health-tool-edu) and the GitHub Pages build in the same deploy window, or a user who erases on a new surface locks themselves out of an old one until it updates.
+
 ### Local-first (v2) builds & build flags
 
 Two widget builds from the same source; behaviour differences come from vite

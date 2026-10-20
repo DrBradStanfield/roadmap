@@ -31,10 +31,12 @@
  */
 import { canonicalLabRow, resolveLabCatalogEntry } from './lab-catalog';
 import { isCalendarDay } from './measurement-history';
-import { stampInstant } from './merge';
+import { stampInstant, withoutListed } from './merge';
 import {
+  BASE_SCHEMA_VERSION,
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
+  type ErasedRows,
   type FileLabValue,
   type RoadmapFile,
 } from './roadmap-file';
@@ -177,6 +179,19 @@ function withSiCorrections(rows: FileLabValue[]): FileLabValue[] {
 }
 
 /**
+ * The erase list, kept only when it is whole: `ids` strings, and `fromEpoch`
+ * an integer from 1 to `eraseEpoch + 1`. Anything else is dropped whole,
+ * which reads as an erase that listed nothing, the stricter rule (US-09 AC23).
+ */
+function erasedRowsOf(value: unknown, eraseEpoch: number): ErasedRows | undefined {
+  if (!isObject(value) || !Array.isArray(value.ids) || !value.ids.every((id) => typeof id === 'string')) return undefined;
+  const { fromEpoch } = value;
+  return Number.isInteger(fromEpoch) && (fromEpoch as number) >= 1 && (fromEpoch as number) <= eraseEpoch + 1
+    ? { fromEpoch: fromEpoch as number, ids: value.ids as string[] }
+    : undefined;
+}
+
+/**
  * Normalise raw parsed JSON into a complete RoadmapFile.
  *
  * @param raw    The result of JSON.parse on the file bytes (or null/garbage).
@@ -192,7 +207,7 @@ export function migrateFile(
     return createEmptyFile(opts);
   }
 
-  const version = typeof raw.schemaVersion === 'number' ? raw.schemaVersion : CURRENT_SCHEMA_VERSION;
+  const version = typeof raw.schemaVersion === 'number' ? raw.schemaVersion : BASE_SCHEMA_VERSION;
 
   // Refuse to downgrade a newer file (forward-compat rule 2).
   if (version > CURRENT_SCHEMA_VERSION) {
@@ -258,9 +273,14 @@ export function migrateFile(
     };
   };
 
-  return {
-    ...(raw as Record<string, unknown>),
-    schemaVersion: CURRENT_SCHEMA_VERSION,
+  // A listed file is stamped the version that carries the list, so a reader
+  // from before it refuses the file; any other keeps its own (US-09 AC23).
+  const erasedRows = erasedRowsOf(raw.erasedRows, meta.eraseEpoch ?? 0);
+  const { erasedRows: _unchecked, ...rest } = raw;
+  const file = {
+    ...rest,
+    schemaVersion: erasedRows || version >= CURRENT_SCHEMA_VERSION ? CURRENT_SCHEMA_VERSION : BASE_SCHEMA_VERSION,
+    ...(erasedRows ? { erasedRows } : null),
     meta,
     profile: singleton(raw.profile),
     measurements: dated(raw.measurements),
@@ -276,4 +296,7 @@ export function migrateFile(
     // Absent stays absent — present-beats-absent is how a cancellation wins.
     ...(isObject(raw.reminderOptIn) ? { reminderOptIn: sanitizeStamp(raw.reminderOptIn, anchor) } : null),
   } as RoadmapFile;
+  // Every reader drops the listed rows, so the widget, `read_record` and the
+  // CLI agree on what the record holds.
+  return withoutListed(file, new Set(erasedRows?.ids));
 }

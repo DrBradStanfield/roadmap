@@ -21,6 +21,7 @@
  *  - medicationHistory / supplementHistory / documents → append-only logs, union
  *    by (id, content); documents also OR the `deleted` tombstone.
  *  - recommendationSnapshots → deduped by date.
+ *  - erasedRows → ids union; every listed row goes from both sides first.
  *  - meta.lamport → max(local, remote) + 1.
  *
  * SECOND-WRITER THREAT MODEL: local-first means the user can open and hand-edit
@@ -44,7 +45,10 @@
  * quarantined row can take the base id a chain points at.
  */
 import {
+  BASE_SCHEMA_VERSION,
+  CURRENT_SCHEMA_VERSION,
   stableStringify,
+  type ErasedRows,
   type RoadmapFile,
   type FileMeasurement,
   type FileLabValue,
@@ -67,15 +71,6 @@ export interface MergeOptions {
   deviceId: string;
   /** ISO 8601 wall-clock for the merged file's meta.updatedAt. */
   now: string;
-  /**
-   * The instant this device started working on its own copy, because the cloud
-   * could not be read (US-09 AC13). The epoch gate reads it only when `local`
-   * is the device copy and `remote` wins: then `local` also keeps every
-   * stamped row at or after it, beside what the winner's `erasedAt` keeps
-   * (US-09 AC14, AC20). Absent, as in every other caller, `erasedAt` alone
-   * decides, and a winner without one keeps none of `local`.
-   */
-  keepNewerThan?: string;
 }
 
 /** A row that participates in append-only slot resolution. */
@@ -177,6 +172,15 @@ function shortHash(text: string): string {
  */
 export function baseIdOf(id: string): string {
   return id.replace(/(?:#dup-[0-9a-f]{8})+$/, '');
+}
+
+/**
+ * The id a row's original was written under: `baseIdOf` with the `#si`
+ * conversion suffix stripped too, so an erase that lists a row takes its
+ * quarantined copies and its unit conversion with it (US-09 AC23).
+ */
+export function rootIdOf(id: string): string {
+  return id.replace(/(?:#dup-[0-9a-f]{8}|#si)+$/, '');
 }
 
 /**
@@ -501,10 +505,11 @@ export function stampFields<T extends FieldStamped>(obj: T, changes: Partial<T>,
 }
 
 /**
- * The stamp that says WHEN each append-only row was written, per array. One
- * table, so a new array is added here and nowhere else. `recommendationSnapshots`
- * is absent on purpose: its entries carry no stamp and are regenerated, never
- * appended to.
+ * The arrays whose rows carry an id, and the stamp that says when each row was
+ * written. One table, so a new array is added here and nowhere else: an erase
+ * lists these rows, and the merge drops them by it (US-09 AC23).
+ * `reminderPreferences` and `recommendationSnapshots` are absent on purpose:
+ * they carry no id, and the epoch gate gives them to the winner whole.
  */
 const ROW_STAMPS = {
   measurements: (r: FileMeasurement) => r.createdAt,
@@ -514,16 +519,16 @@ const ROW_STAMPS = {
   medicationHistory: (r: FileMedication) => r.updatedAt,
   supplements: (r: FileSupplement) => r.updatedAt,
   supplementHistory: (r: FileSupplement) => r.updatedAt,
-  reminderPreferences: (r: FileReminderPreference) => r.updatedAt,
 } as const;
 
 type StampedArray = keyof typeof ROW_STAMPS;
 
 /**
  * The arrays whose stamp is a true creation time, the only ones `erasedAt`
- * rescues (US-09 AC20). The rest are stamped by `updatedAt`, which a stale
- * copy bumps on a row that predates the erase (a removed supplement, a statin
- * cascade), so their stamp is no proof the row was created after it.
+ * rescues past an erase that listed nothing (US-09 AC20, AC23). The rest are
+ * stamped by `updatedAt`, which a stale copy bumps on a row that predates the
+ * erase (a removed supplement, a statin cascade), so their stamp is no proof
+ * the row was created after it.
  */
 const CREATED_STAMPS: readonly StampedArray[] = ['measurements', 'labValues', 'documents'];
 
@@ -533,35 +538,71 @@ const CREATED_STAMPS: readonly StampedArray[] = ['measurements', 'labValues', 'd
 export const stampInstant = (iso: unknown): number =>
   typeof iso === 'string' ? Date.parse(/T[\d:.]+$/.test(iso) ? `${iso}Z` : iso) : NaN;
 
+/** The root id of every row in the file: what an erase made now would list
+ *  (US-09 AC23). A row whose id is not a string has no root, and is skipped. */
+export function rowRootIds(file: RoadmapFile): string[] {
+  return (Object.keys(ROW_STAMPS) as StampedArray[]).flatMap((key) =>
+    (file[key] as Array<{ id: unknown }>).flatMap((row) => (typeof row.id === 'string' ? [rootIdOf(row.id)] : [])));
+}
+
+/** `file` without the rows `listed` names, from every array that carries ids;
+ *  the same object when it names none (US-09 AC23). */
+export function withoutListed(file: RoadmapFile, listed: ReadonlySet<string>): RoadmapFile {
+  if (listed.size === 0) return file;
+  const out: Record<string, unknown> = { ...file };
+  for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
+    out[key] = (file[key] as Array<{ id: unknown }>).filter((row) => typeof row.id !== 'string' || !listed.has(rootIdOf(row.id)));
+  }
+  return out as unknown as RoadmapFile;
+}
+
 /**
- * What the losing side of the epoch gate may bring to the winner: its rows that
- * some window admits — in that window's `keys`, stamped at or after its `since`
- * (the winner's `erasedAt`, US-09 AC20, or the fallback marker, AC14) — and
- * nothing else. The result is the winner's file plus those rows. The caller
- * then runs the ordinary equal-epoch merge, which puts them through the same
- * slot, key and union rules as any other row: no slot ends with two active
- * rows, no id lands twice, and the erase itself still stands.
+ * The merged erase list (US-09 AC23). The ids always union. Across the gate
+ * the winner's `fromEpoch` stands, and a winner with no list gives
+ * `eraseEpoch + 1`: the ids stay, and the list claims nothing. At equal
+ * epochs an absent list may be a separate erase at that epoch that listed
+ * nothing, so it claims nothing there either; of two lists the larger
+ * `fromEpoch` stands, because it claims less.
+ */
+/** Whether the file's list claims its own epoch's erase (`fromEpoch` at or
+ *  below `eraseEpoch`); `eraseEpoch + 1` claims nothing (US-09 AC23). */
+function listsThisEpoch(file: RoadmapFile): boolean {
+  return file.erasedRows !== undefined && file.erasedRows.fromEpoch <= (file.meta.eraseEpoch ?? 0);
+}
+
+export function mergeErasedRows(local: RoadmapFile, remote: RoadmapFile): ErasedRows | undefined {
+  const [a, b] = [local.erasedRows, remote.erasedRows];
+  if (!a && !b) return undefined;
+  const ids = [...new Set([...(a?.ids ?? []), ...(b?.ids ?? [])])].sort(cmpStr);
+  const [epochA, epochB] = [local.meta.eraseEpoch ?? 0, remote.meta.eraseEpoch ?? 0];
+  if (epochA === epochB) return { fromEpoch: a && b ? Math.max(a.fromEpoch, b.fromEpoch) : epochA + 1, ids };
+  const [winner, epoch] = epochA > epochB ? [a, epochA] : [b, epochB];
+  return { fromEpoch: winner ? winner.fromEpoch : epoch + 1, ids };
+}
+
+/**
+ * What the losing side of the epoch gate may bring to the winner: its rows
+ * that `admit` passes, and nothing else. The result is the winner's file plus
+ * those rows. The caller then runs the ordinary equal-epoch merge, which puts
+ * them through the same slot, key and union rules as any other row: no slot
+ * ends with two active rows, no id lands twice, and the erase itself still
+ * stands.
  *
  * Taking the non-row fields from the winner is what makes this safe. `profile`,
  * `screenings` and `reminderOptIn` are single last-write-wins objects, so a
  * copy that predates the erase could otherwise win one of them on its stale
- * clock and resurrect it; `recommendationSnapshots` has no stamp to judge by;
- * `meta` (epoch, lamport, clocks) is the winner's by definition. None of them
- * travel — an edit to the profile or the screening answers on the losing copy
- * is still lost to the gate.
+ * clock and resurrect it; `reminderPreferences` and `recommendationSnapshots`
+ * carry no id an erase could list; `meta` (epoch, lamport, clocks) is the
+ * winner's by definition. None of them travel — an edit to the profile or the
+ * screening answers on the losing copy is still lost to the gate.
  *
- * Returns null when the loser wrote nothing since, so the gate returns the
- * winner untouched.
+ * Returns null when nothing passes, so the gate returns the winner untouched.
  */
 function rowsSince(
   loser: RoadmapFile,
   winner: RoadmapFile,
-  windows: readonly { since: string; keys: readonly StampedArray[] }[],
+  admit: (key: StampedArray, stamp: string) => boolean,
 ): RoadmapFile | null {
-  // `>=`, not `>`: a row can share the erase's (or the marker's) millisecond.
-  // Keeping one row too many is recoverable; dropping one is not. Compared as
-  // instants, so an offset or a different precision cannot reorder them; a
-  // stamp that does not parse is dropped.
   const kept: Record<string, unknown[]> = {};
   let wrote = false;
   // The file's clock must stay at or ahead of every row in it: `migrate.ts`
@@ -570,9 +611,8 @@ function rowsSince(
   let latest = winner.meta.updatedAt;
   for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
     const stamp = ROW_STAMPS[key] as (row: unknown) => string;
-    const rows = (loser[key] as unknown[]).filter((row) =>
-      windows.some((w) => w.keys.includes(key) && stampInstant(stamp(row)) >= stampInstant(w.since)),
-    );
+    // A row with no string id has no identity to merge on (US-09 AC23).
+    const rows = (loser[key] as Array<{ id: unknown }>).filter((row) => typeof row.id === 'string' && admit(key, stamp(row)));
     for (const row of rows) if (stampInstant(stamp(row)) > stampInstant(latest)) latest = stamp(row);
     if (rows.length > 0) wrote = true;
     kept[key] = rows;
@@ -582,26 +622,6 @@ function rowsSince(
   return wrote
     ? ({ ...winner, ...kept, meta: { ...winner.meta, updatedAt: latest, lamport } } as RoadmapFile)
     : null;
-}
-
-/**
- * The oldest stamp on any row in the file (null when it holds none). A device
- * whose data has never reached the cloud is unsynced from here on, which is the
- * `keepNewerThan` a failed first lift marks (US-09 AC13).
- */
-export function earliestRowStamp(file: RoadmapFile): string | null {
-  let earliest: string | null = null;
-  for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
-    const stamp = ROW_STAMPS[key] as (row: unknown) => string;
-    for (const row of file[key] as unknown[]) {
-      // As instants, the way the marker is read; a stamp that does not parse
-      // is skipped, as the merge drops it.
-      const at = stamp(row);
-      if (Number.isNaN(stampInstant(at))) continue;
-      if (earliest === null || stampInstant(at) < stampInstant(earliest)) earliest = at;
-    }
-  }
-  return earliest;
 }
 
 /** The later of two erase times, as instants, as a meta fragment; empty when
@@ -619,15 +639,26 @@ function laterErase(a: string | undefined, b: string | undefined): { erasedAt?: 
  * copy), producing the file to write back. Deterministic and symmetric.
  */
 export function mergeFiles(
-  local: RoadmapFile,
-  remote: RoadmapFile,
+  localCopy: RoadmapFile,
+  remoteCopy: RoadmapFile,
   opts: MergeOptions,
 ): RoadmapFile {
+  // An erased row never comes back, whichever copy holds it and whatever its
+  // clocks say: the listed rows go first, from both sides (US-09 AC23).
+  const erasedRows = mergeErasedRows(localCopy, remoteCopy);
+  const listed = new Set(erasedRows?.ids);
+  const local = withoutListed(localCopy, listed);
+  const remote = withoutListed(remoteCopy, listed);
+  // A listed file is one a reader from before the list must refuse.
+  const listing = {
+    schemaVersion: Math.max(local.schemaVersion, remote.schemaVersion, erasedRows ? CURRENT_SCHEMA_VERSION : BASE_SCHEMA_VERSION),
+    ...(erasedRows ? { erasedRows } : null),
+  };
   // "Delete All My Data" gate: a higher eraseEpoch wins. The union semantics
   // below deliberately never lose data — which is exactly wrong for deletion:
   // without this gate, any other copy would resurrect the erased records on
-  // its next sync. The losing side never saw the erase, so only the rows it
-  // created at or after the winner's `erasedAt` survive (US-09 AC20).
+  // its next sync. The losing side never saw the erase; which of its rows
+  // survive is decided below.
   const localEpoch = local.meta.eraseEpoch ?? 0;
   const remoteEpoch = remote.meta.eraseEpoch ?? 0;
   // The file's clock only ever moves forward. `migrate.ts` clamps every row
@@ -639,20 +670,24 @@ export function mergeFiles(
   );
   if (localEpoch !== remoteEpoch) {
     const localWins = localEpoch > remoteEpoch;
-    const [winner, loser] = localWins ? [local, remote] : [remote, local];
-    // Re-merge the loser's post-erase rows — on the winner's file, at the
+    const [top, loser] = localWins ? [local, remote] : [remote, local];
+    const winner = { ...top, ...listing };
+    // Re-merge what the loser may keep — on the winner's file, at the
     // winner's epoch — through the ordinary path below, which for those two
-    // inputs is an equal-epoch merge. `erasedAt` rescues created rows only.
-    // The device's fallback marker, when the device copy lost, also keeps
-    // every stamped array from the marker on, so a medication or supplement
-    // typed on-device is not lost (AC14); a row passes if either admits it.
+    // inputs is an equal-epoch merge. When every erase the loser missed listed
+    // its ids, a row none of them listed is one no erase saw, so all its
+    // unlisted rows stay (US-09 AC23). Past an erase that listed nothing, only
+    // the rows it created at or after the winner's `erasedAt` (AC20): `>=`
+    // keeps a row that shares the erase's millisecond, and a stamp that does
+    // not parse is dropped.
+    const list = top.erasedRows;
     const erasedAt = winner.meta.erasedAt;
-    const marker = localWins ? undefined : opts.keepNewerThan;
-    const windows = [
-      ...(erasedAt !== undefined ? [{ since: erasedAt, keys: CREATED_STAMPS }] : []),
-      ...(marker !== undefined ? [{ since: marker, keys: Object.keys(ROW_STAMPS) as StampedArray[] }] : []),
-    ];
-    const kept = windows.length > 0 ? rowsSince(loser, winner, windows) : null;
+    const admit = list && Math.min(localEpoch, remoteEpoch) >= list.fromEpoch - 1
+      ? () => true
+      : erasedAt === undefined
+        ? null
+        : (key: StampedArray, stamp: string) => CREATED_STAMPS.includes(key) && stampInstant(stamp) >= stampInstant(erasedAt);
+    const kept = admit ? rowsSince(loser, winner, admit) : null;
     if (kept) {
       // `now: updatedAt` carries the max over BOTH metas into the re-merge —
       // the pruned copy wears the winner's meta, so the loser's own clock
@@ -678,7 +713,7 @@ export function mergeFiles(
     ...remote,
     ...local,
 
-    schemaVersion: Math.max(local.schemaVersion, remote.schemaVersion),
+    ...listing,
     meta: {
       createdAt:
         local.meta.createdAt < remote.meta.createdAt ? local.meta.createdAt : remote.meta.createdAt,
@@ -686,7 +721,14 @@ export function mergeFiles(
       lastDeviceId: opts.deviceId,
       lamport: Math.max(local.meta.lamport, remote.meta.lamport) + 1,
       eraseEpoch: localEpoch, // equal on both sides in this branch
-      ...laterErase(local.meta.erasedAt, remote.meta.erasedAt),
+      // When one side's list covers this epoch and the other's does not, the
+      // listing erase's rows go by id; the time that still decides is the
+      // unlisted erase's, or a copy that missed it would lose rows typed
+      // between the two (US-09 AC23). A list that claims nothing counts as
+      // no list.
+      ...(listsThisEpoch(local) === listsThisEpoch(remote)
+        ? laterErase(local.meta.erasedAt, remote.meta.erasedAt)
+        : laterErase((listsThisEpoch(local) ? remote : local).meta.erasedAt, undefined)),
     },
 
     profile: mergeFields<RoadmapProfile>(local.profile, remote.profile),

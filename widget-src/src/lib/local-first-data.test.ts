@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME } from '@roadmap/health-core';
-import { RoadmapStore } from '../storage/roadmap-store';
+import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
 import { initRoadmapStore, flushRoadmapStore } from './roadmap-data';
 import * as data from './roadmap-data';
 import { getChatHistory } from './chat-history-access';
@@ -126,6 +126,25 @@ describe('explicit local-first data path', () => {
     try {
       expect(await data.deleteUserData()).toEqual({ success: true, chatErased: true });
       expect(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json).meta.eraseEpoch).toBe(1);
+    } finally {
+      data.setPreEraseHook(async () => {});
+    }
+  });
+
+  // US-09 AC23: an erase that cannot read the record cannot list what it
+  // removes, so it refuses before the two irreversible steps run.
+  it('US-09 AC23: a failed cloud read refuses before the reminders hook and the chat erase', async () => {
+    const chat = await getChatHistory();
+    await chat!.recordExchange({ conversationId: 'c1', isNew: true, userText: 'hello', assistantText: 'ok' });
+    const eraseAll = vi.spyOn(chat!, 'eraseAll');
+    const hook = vi.fn(async () => {});
+    data.setPreEraseHook(hook);
+    vi.spyOn(MemoryAdapter.prototype, 'read').mockRejectedValueOnce(new Error('cloud unreachable'));
+    try {
+      expect(await data.deleteUserData()).toEqual({ success: false, error: ERASE_UNREACHABLE, chatErased: false });
+      expect(hook).not.toHaveBeenCalled();
+      expect(eraseAll).not.toHaveBeenCalled();
+      expect(chat!.listConversations()).toHaveLength(1);
     } finally {
       data.setPreEraseHook(async () => {});
     }

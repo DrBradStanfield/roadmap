@@ -15,9 +15,7 @@ import {
   WebDavAdapter,
   LocalStorageAdapter,
   copyCloudDownToDevice,
-  localUnsyncedSince,
   markSyncPending,
-  syncPendingSince,
   ROADMAP_FILE_NAME,
   saveRoadmapFileInto,
   type StorageAdapter,
@@ -54,10 +52,10 @@ export function connectRefusal(error: unknown): string | null {
   return error.message;
 }
 
-/** The on-device session a cloud backend falls back to. The marker records
- *  WHEN, so the next good cloud session merges this session's edits up even
- *  against an erased cloud file (US-09 AC13), whether the user clicks Reconnect
- *  or the next load simply succeeds. */
+/** The on-device session a cloud backend falls back to. The marker makes the
+ *  next good cloud session merge this session's edits up (US-09 AC13), whether
+ *  the user clicks Reconnect or the next load simply succeeds; against an
+ *  erased cloud file they survive because no erase listed them (AC23). */
 export function onDeviceFallback(backend: Exclude<Backend, 'local'>): ResolvedBackend {
   markSyncPending();
   return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect: backend };
@@ -72,10 +70,10 @@ export function onDeviceFallback(backend: Exclude<Backend, 'local'>): ResolvedBa
  */
 export async function startOnBackend(
   resolved: ResolvedBackend,
-  init: (adapter: StorageAdapter) => Promise<void>,
+  init: (adapter: StorageAdapter, cloudUnreachable: boolean) => Promise<void>,
 ): Promise<ResolvedBackend> {
   try {
-    await init(resolved.adapter);
+    await init(resolved.adapter, resolved.reconnect !== undefined);
     return resolved;
   } catch (error) {
     if (resolved.backend === 'local' || !isStorageFailure(error)) throw error;
@@ -83,7 +81,7 @@ export async function startOnBackend(
     console.warn(failure.message);
     Sentry.captureException(failure, { tags: { area: 'cloud-sync', op: 'load', backend: resolved.backend } });
     const fallback = onDeviceFallback(resolved.backend);
-    await init(fallback.adapter);
+    await init(fallback.adapter, true);
     return fallback;
   }
 }
@@ -122,11 +120,10 @@ export async function migrateLocalInto(adapter: StorageAdapter): Promise<void> {
     return;
   }
   if (body == null) return;
-  // saveRoadmapFileInto merges with whatever is already in the cloud. The
-  // pending marker's timestamp travels with it: an erased cloud file wins the
-  // merge wholesale, and without it this device's fallback edits would go with
-  // the rest (US-09 AC13).
-  await saveRoadmapFileInto(adapter, body, syncPendingSince() ?? undefined);
+  // saveRoadmapFileInto merges with whatever is already in the cloud. Against
+  // an erased cloud file this device's rows survive because no erase listed
+  // them (US-09 AC23).
+  await saveRoadmapFileInto(adapter, body);
 }
 
 /**
@@ -148,10 +145,7 @@ export async function liftLocalInto(adapter: StorageAdapter, backend: Backend): 
     await migrateLocalInto(adapter);
   } catch (error) {
     console.warn('Guest-data lift on connect failed');
-    // Nothing on this device has reached the cloud, so it is unsynced from its
-    // OLDEST row: marking from "now" would let the next merge drop everything
-    // the user typed before this connect (US-09 AC13).
-    markSyncPending(await localUnsyncedSince());
+    markSyncPending();
     Sentry.captureException(recordFailure(error, 'Cloud sync failed'), {
       tags: { area: 'cloud-sync', op: 'migrate-up', backend, ...failureTags(error) },
     });
@@ -319,11 +313,9 @@ export async function prepareSwitch(current: Backend): Promise<void> {
   await adapter.disconnect();
 }
 
-/** The adapter-level copy-down (exported for tests; policy/catch stays above).
- *  The pending marker rides along: an erased cloud file wins the epoch gate, so
- *  without it this would wipe the rows a fallback session is still holding. */
+/** The adapter-level copy-down (exported for tests; policy/catch stays above). */
 export async function copyDownFrom(adapter: StorageAdapter): Promise<void> {
   const { body } = await adapter.read(ROADMAP_FILE_NAME);
   if (body == null) return;
-  await copyCloudDownToDevice(body, syncPendingSince() ?? undefined);
+  await copyCloudDownToDevice(body);
 }

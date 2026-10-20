@@ -25,8 +25,15 @@ import type { Suggestion, ScreeningInputs } from './types';
 import type { MeasurementSource, MeasurementStatus, DocumentType } from './validation';
 import type { LpaUnit } from './units';
 
-/** Bump only when the on-disk shape changes in a way `migrate.ts` must handle. */
-export const CURRENT_SCHEMA_VERSION = 1;
+/** A file no erase has listed rows in. New files start here, and stay here
+ *  until an erase lists what it removed (US-09 AC23). */
+export const BASE_SCHEMA_VERSION = 1;
+
+/** The highest version this app reads. A file carrying `erasedRows` is
+ *  stamped with it, so a reader from before the list refuses the file and can
+ *  neither shrink the list nor erase without listing (US-09 AC23). Bump only
+ *  when the on-disk shape changes in a way `migrate.ts` must handle. */
+export const CURRENT_SCHEMA_VERSION = 2;
 
 /** Sync bookkeeping carried on every mutable record so merge can pick a winner. */
 export interface SyncStamp {
@@ -47,18 +54,21 @@ export interface RoadmapFileMeta {
   lamport: number;        // file-level logical clock (monotonic per device)
   /**
    * "Delete All My Data" counter. A file with a HIGHER epoch wins a merge;
-   * the losing copy keeps only the measurements, lab values and documents it
-   * created at or after the winner's `erasedAt` (US-09 AC20) — without the
-   * gate, the merge's never-lose-data union semantics would resurrect deleted
-   * records from any other copy. Optional: absent (pre-epoch files) reads as 0.
+   * the losing copy keeps the rows no erase listed (`erasedRows`, US-09 AC23),
+   * or, past an erase that listed nothing, only the measurements, lab values
+   * and documents it created at or after the winner's `erasedAt` (AC20) —
+   * without the gate, the merge's never-lose-data union semantics would
+   * resurrect deleted records from any other copy. Optional: absent
+   * (pre-epoch files) reads as 0.
    */
   eraseEpoch?: number;
   /**
    * ISO 8601, UTC — when the latest erase happened, by the eraser's clock
    * floored 1 ms past the last write it saw (US-09 AC20). Stamped with every
-   * `eraseEpoch` bump and compared as an instant. A losing copy's
-   * measurements, lab values and documents created at or after it survive the
-   * gate; absent (an erase from before it existed) the gate drops them all.
+   * `eraseEpoch` bump and compared as an instant. Read only past an erase that
+   * listed nothing (US-09 AC23): a losing copy's measurements, lab values and
+   * documents created at or after it survive the gate; absent (an erase from
+   * before it existed) the gate drops them all.
    */
   erasedAt?: string;
 }
@@ -179,6 +189,19 @@ export interface FileReminderOptIn extends SyncStamp {
   provider: 'google-drive' | 'dropbox' | 'github';
 }
 
+/**
+ * What the erases removed, by row (US-09 AC23). The merge and `migrate` drop
+ * every row whose root id (`rootIdOf`, merge.ts) is listed, so an erased row
+ * never comes back, whatever its clocks say.
+ */
+export interface ErasedRows {
+  /** Every erase from this epoch up to `meta.eraseEpoch` listed its ids;
+   *  `eraseEpoch + 1` claims nothing. */
+  fromEpoch: number;
+  /** The root id of every row an erase removed, sorted and unique. */
+  ids: string[];
+}
+
 /** Metadata for an uploaded document; the bytes live next to the JSON in `documents/`. */
 export interface FileDocument {
   id: string;
@@ -223,12 +246,14 @@ export interface RoadmapFile {
   recommendationSnapshots: RecommendationSnapshot[];
   /** Email-reminder opt-in (optional — absent until the user opts in). */
   reminderOptIn?: FileReminderOptIn;
+  /** The rows the erases removed (optional — absent until an erase lists them). */
+  erasedRows?: ErasedRows;
 }
 
 /** Create a brand-new, empty record for a first-time user. */
 export function createEmptyFile(opts: { deviceId: string; now: string }): RoadmapFile {
   return {
-    schemaVersion: CURRENT_SCHEMA_VERSION,
+    schemaVersion: BASE_SCHEMA_VERSION,
     meta: {
       createdAt: opts.now,
       updatedAt: opts.now,
