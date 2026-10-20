@@ -14,6 +14,7 @@
  *
  * Usage:
  *   npx tsx tools/get-plan.ts <health-roadmap.json>
+ *   npx tsx tools/get-plan.ts --from-values <values.json | ->
  *   npx tsx tools/get-plan.ts <file> --json
  *   npx tsx tools/get-plan.ts <file> --html plan.html
  *
@@ -22,10 +23,13 @@
  * gitignored and built by nobody — the package-name import would silently run
  * a stale engine on a fresh clone.
  */
-import { chmodSync, realpathSync, writeFileSync } from 'node:fs';
+import { chmodSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { z } from 'zod';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
 import { FIELD_METRIC_MAP } from '../packages/health-core/src/mappings';
+import { updateProfile } from '../packages/health-core/src/mcp-tools';
+import { appendLabValue, appendMeasurement } from '../packages/health-core/src/record-edits';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
 import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
 import {
@@ -33,6 +37,7 @@ import {
   currentValues,
   dueSplit,
   PlanError,
+  oneLine,
   planPayload,
   printable,
   renderJson,
@@ -40,9 +45,9 @@ import {
   type DisplayRow,
   type Plan,
 } from '../packages/health-core/src/plan';
-import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '../packages/health-core/src/roadmap-file';
+import { createEmptyFile, CURRENT_SCHEMA_VERSION, type RoadmapFile } from '../packages/health-core/src/roadmap-file';
 import type { Suggestion } from '../packages/health-core/src/types';
-import { formatDisplayValue, getDisplayLabel } from '../packages/health-core/src/units';
+import { formatDisplayValue, getDisplayLabel, UNIT_DEFS, type MetricType } from '../packages/health-core/src/units';
 
 // ---------------------------------------------------------------------------
 // Load — the untrusted-bytes boundary
@@ -60,6 +65,78 @@ export async function loadRecord(path: string, now = new Date()): Promise<Roadma
     if (!isStorageFailure(error)) throw error;
     const failed = describeStorageFailure(error, path);
     throw new PlanError(failed.message, failed.hint);
+  }
+}
+
+/**
+ * Start from numbers (US-30 AC7): build the record in memory, through the same
+ * writers `edit-record` uses — `updateProfile`, `appendMeasurement`,
+ * `appendLabValue` — so ranges, unit conversion and the one-value-per-day rule
+ * are theirs, not a second copy. Nothing is saved.
+ */
+const valuesSpec = z.object({
+  sex: z.enum(['male', 'female']),
+  heightCm: z.number(),
+  age: z.number().int().optional(),
+  birthYear: z.number().int().optional(),
+  birthMonth: z.number().int().optional(),
+  values: z.array(z.object({
+    metric: z.string().optional(),
+    test: z.string().optional(),
+    value: z.number(),
+    unit: z.string().optional(),
+    date: z.string().optional(),
+  }).strict()).max(100),
+}).strict();
+
+const VALUES_SHAPE = 'Shape: {"sex":"male","age":52,"heightCm":178,"values":[{"metric":"ldl","value":3.2,"unit":"mmol/L"}]}. See --help.';
+
+export function recordFromValues(raw: string, now = new Date()): RoadmapFile {
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    throw new PlanError('The values are not valid JSON', VALUES_SHAPE);
+  }
+  const parsed = valuesSpec.safeParse(json);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    throw new PlanError(`Values: ${oneLine([...issue.path, issue.message].join(' '))}`, VALUES_SHAPE);
+  }
+  const spec = parsed.data;
+  if (spec.age !== undefined && spec.birthYear !== undefined) {
+    throw new PlanError('Give age or birthYear, not both', VALUES_SHAPE);
+  }
+  const at = now.toISOString();
+  let file = createEmptyFile({ deviceId: 'get-plan-values', now: at });
+  const birthYear = spec.birthYear ?? (spec.age === undefined ? undefined : now.getFullYear() - spec.age);
+  const profile = updateProfile(file, { sex: spec.sex, heightCm: spec.heightCm, birthYear, birthMonth: spec.birthMonth }, at);
+  if (profile.status !== 'ok') throw new PlanError(oneLine(profile.text), VALUES_SHAPE);
+  if (profile.file) file = profile.file;
+
+  for (const [i, row] of spec.values.entries()) {
+    const where = `values[${i}]`;
+    if (!row.metric === !row.test) throw new PlanError(`${where}: give either metric (a core metric) or test (any other blood test)`, VALUES_SHAPE);
+    const def = UNIT_DEFS[row.metric as MetricType];
+    // A metric with two unit labels (LDL mmol/L or mg/dL) never guesses.
+    if (!row.unit && (row.test || (def && def.label.si !== def.label.conventional))) {
+      const options = def ? `${def.label.si} or ${def.label.conventional}` : 'the unit the lab reported';
+      throw new PlanError(`${where}: ${oneLine(row.metric ?? row.test!)} needs a unit (${options})`, 'Add "unit", e.g. {"metric":"ldl","value":3.2,"unit":"mmol/L"}.');
+    }
+    const result = row.metric
+      ? appendMeasurement(file, { metricType: row.metric, value: row.value, unit: row.unit, recordedAt: row.date, now: at })
+      : appendLabValue(file, { metricName: row.test!, value: row.value, unit: row.unit!, recordedAt: row.date, now: at });
+    if (!result.ok) throw new PlanError(`${where}: ${oneLine(result.message)}`, 'Nothing was computed. Run with --help for the options.');
+    file = result.file;
+  }
+  return file;
+}
+
+function readValues(source: string): string {
+  try {
+    return readFileSync(source === '-' ? 0 : source, 'utf8');
+  } catch {
+    throw new PlanError(`Cannot read the values from ${oneLine(source)}`, 'Give a JSON file, or `-` to read it from stdin.');
   }
 }
 
@@ -253,9 +330,20 @@ export const HELP = `get_plan — compute your health plan from your own record 
   npx tsx tools/get-plan.ts <health-roadmap.json>          readable report
   npx tsx tools/get-plan.ts <file> --json                  machine-readable
   npx tsx tools/get-plan.ts <file> --html <out.html>       self-contained page
+  npx tsx tools/get-plan.ts --from-values <values.json|->  no record file: numbers in, plan out
 
 Reads the file and nothing else: no network, no model, no telemetry, and the
 record is never written back.
+
+--from-values takes JSON (a file, or \`-\` for stdin), builds the record in
+memory by edit-record's own rules, and writes nothing. Works with --json/--html:
+  {"sex":"male","age":52,"heightCm":178,
+   "values":[{"metric":"ldl","value":3.2,"unit":"mmol/L"},
+             {"test":"ferritin","value":210,"unit":"µg/L"}]}
+  sex, heightCm       required; give age or birthYear (+ optional birthMonth)
+  metric / test       a core metric, or any other blood test
+  unit                required wherever the metric has two (ldl, hba1c, weight, …)
+  date                YYYY-MM-DD, default today
 
 --json emits:
   instruction    how to present this plan: keep the hedging, keep the citations
@@ -289,13 +377,13 @@ Schema: ${SCHEMA_URL}
  * Overwriting any OTHER existing file is normal `-o` behaviour and stays
  * allowed.
  */
-function assertWritableTarget(htmlOut: string, recordPath: string): void {
+function assertWritableTarget(htmlOut: string, recordPath: string | undefined): void {
   if (htmlOut.startsWith('--')) {
     throw new PlanError(`--html needs an output path, not ${htmlOut}`, 'Try `--html plan.html`.');
   }
   let sameFile = false;
   try {
-    sameFile = realpathSync.native(htmlOut) === realpathSync.native(recordPath);
+    sameFile = recordPath !== undefined && realpathSync.native(htmlOut) === realpathSync.native(recordPath);
   } catch {
     // No such file yet — nothing to overwrite.
   }
@@ -311,16 +399,20 @@ export async function run(argv: string[]): Promise<number> {
   }
   const htmlAt = argv.indexOf('--html');
   const htmlOut = htmlAt >= 0 ? argv[htmlAt + 1] : null;
-  const path = argv.find((a) => !a.startsWith('--') && a !== htmlOut);
-  const unknown = argv.find((a) => a.startsWith('--') && a !== '--json' && a !== '--html' && a !== htmlOut);
+  const valuesAt = argv.indexOf('--from-values');
+  const valuesFrom = valuesAt >= 0 ? argv[valuesAt + 1] : null;
+  const path = argv.find((a) => !a.startsWith('--') && a !== htmlOut && a !== valuesFrom);
+  const unknown = argv.find((a) => a.startsWith('--') && !['--json', '--html', '--from-values'].includes(a) && a !== htmlOut && a !== valuesFrom);
 
   try {
-    if (!path) throw new PlanError('No record file given', 'Run `npx tsx tools/get-plan.ts --help` for usage.');
+    if (valuesAt >= 0 && (!valuesFrom || valuesFrom.startsWith('--'))) throw new PlanError('--from-values needs a JSON file, or `-` for stdin', 'Try `--from-values values.json`.');
+    if (valuesFrom && path) throw new PlanError('Give a record file or --from-values, not both', 'Run with --help for the options.');
+    if (!path && !valuesFrom) throw new PlanError('No record file given', 'Run `npx tsx tools/get-plan.ts --help` for usage.');
     if (htmlAt >= 0 && !htmlOut) throw new PlanError('--html needs an output path', 'Try `--html plan.html`.');
     if (unknown) throw new PlanError(`Unknown option ${unknown}`, 'Run with --help for the options.');
     if (htmlOut) assertWritableTarget(htmlOut, path);
 
-    const plan = computePlan(await loadRecord(path));
+    const plan = computePlan(valuesFrom ? recordFromValues(readValues(valuesFrom)) : await loadRecord(path!));
     if (htmlOut) {
       try {
         // As private as the record it summarises: the report carries the same

@@ -8,7 +8,8 @@
  * a user's plan.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { readFileSync, mkdtempSync, writeFileSync, rmSync, realpathSync, existsSync, statSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { readFileSync, mkdtempSync, writeFileSync, rmSync, realpathSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -336,7 +337,7 @@ describe('US-30 AC1 — nothing that could reach the network is imported', () =>
     const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.length).toBeGreaterThan(5);
     for (const spec of specifiers) {
-      expect(spec).toMatch(/^(node:(fs|os|path|url|crypto)|\.\.\/packages\/health-core\/src\/[a-z-]+)$/);
+      expect(spec).toMatch(/^(zod|node:(fs|os|path|url|crypto)|\.\.\/packages\/health-core\/src\/[a-z-]+)$/);
     }
     expect(source).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket|https?:\/\/[^\s'"]*\/(api|v1))\b/);
   });
@@ -455,4 +456,91 @@ describe('US-30 follow-up — an ignored value is never shown as a plan input', 
     expect(() => renderHtml(undated)).not.toThrow();
     expect(JSON.parse(renderJson(undated)).currentValues[0].date).toBe('');
   });
+});
+
+describe('US-30 AC7 — a plan from numbers, with no record file', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'get-plan-values-'));
+  const spec = (values: object[], extra: object = {}) => {
+    const path = join(dir, `v${Math.random().toString(36).slice(2)}.json`);
+    writeFileSync(path, JSON.stringify({ sex: 'male', age: 52, heightCm: 178, values, ...extra }));
+    return path;
+  };
+  /** The plan with the per-run noise (row ids, clock) removed. */
+  const stable = (json: string) => JSON.stringify(JSON.parse(json), (k, v) => k === 'id' || k === 'generatedAt' ? undefined : v);
+
+  it('prints the plan an equivalent record file prints (text and --json)', async () => {
+    const rows = [['ldl', 3.2], ['hba1c', 41], ['systolic_bp', 130]] as const;
+    const file = createEmptyFile(CTX);
+    Object.assign(file.profile, { sex: 'male', birthYear: new Date().getFullYear() - 52, heightCm: 178, updatedAt: CTX.now, lamport: 1 });
+    rows.forEach(([metricType, value], i) => file.measurements.push(createMeasurement({
+      id: `eq${i}`, metricType, value, recordedAt: '2026-08-20', createdAt: '2026-08-20T08:00:00Z',
+    })));
+    const { dir: fileDir, path } = writeFixture(file);
+    const values = spec([
+      { metric: 'ldl', value: 3.2, unit: 'mmol/L', date: '2026-08-20' },
+      { metric: 'hba1c', value: 41, unit: 'mmol/mol', date: '2026-08-20' },
+      { metric: 'systolic_bp', value: 130, date: '2026-08-20' },
+    ]);
+
+    const fromFile = await captureRun([path, '--json']);
+    const fromValues = await captureRun(['--from-values', values, '--json']);
+    expect(fromValues.code).toBe(0);
+    expect(stable(fromValues.stdout)).toBe(stable(fromFile.stdout));
+    expect((await captureRun(['--from-values', values])).stdout).toBe((await captureRun([path])).stdout);
+    rmSync(fileDir, { recursive: true, force: true });
+  });
+
+  it("converts a conventional unit by edit-record's rules (LDL 123.8 mg/dL is 3.2 mmol/L)", async () => {
+    const mg = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 123.8, unit: 'mg/dL' }]), '--json']);
+    const si = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 3.2, unit: 'mmol/L' }]), '--json']);
+    expect(JSON.parse(mg.stdout).inputs.ldlC).toBeCloseTo(JSON.parse(si.stdout).inputs.ldlC, 2);
+  });
+
+  it('refuses a two-unit metric given without a unit, in one plain line', async () => {
+    const result = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 3.2 }])]);
+    expect(result.code).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('ldl needs a unit (mmol/L or mg/dL)');
+    expect(result.stderr).not.toContain('This is a bug');
+    expect(result.stderr.trim().split('\n')).toHaveLength(2);
+  });
+
+  it('refuses an out-of-range value and a missing or out-of-range height or sex', async () => {
+    const range = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 300, unit: 'mmol/L' }])]);
+    expect(range.code).toBe(1);
+    expect(range.stderr).toMatch(/values\[0\].*at most 12.9 mmol\/L/);
+    const noFile = await captureRun(['--from-values', join(dir, 'none.json')]);
+    expect(noFile.code).toBe(1);
+    const bare = join(dir, 'bare.json');
+    writeFileSync(bare, JSON.stringify({ age: 52, values: [] }));
+    const missing = await captureRun(['--from-values', bare]);
+    expect(missing.code).toBe(1);
+    expect(missing.stderr).not.toContain('This is a bug');
+    const tall = await captureRun(['--from-values', spec([], { heightCm: 900 })]);
+    expect(tall.code).toBe(1);
+    expect(tall.stderr).toContain('heightCm');
+  });
+
+  it('refuses a record file beside --from-values, and a second value for the same day', async () => {
+    const both = await captureRun([join(dir, 'x.json'), '--from-values', spec([])]);
+    expect(both.stderr).toContain('not both');
+    const twice = await captureRun(['--from-values', spec([
+      { metric: 'weight', value: 80, unit: 'kg' }, { metric: 'weight', value: 81, unit: 'kg' },
+    ])]);
+    expect(twice.code).toBe(1);
+    expect(twice.stderr).toContain('already has a value');
+  });
+
+  it('reads stdin for `-` and writes no file anywhere', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'get-plan-cwd-'));
+    const script = join(dirname(fileURLToPath(import.meta.url)), 'get-plan.ts');
+    const result = spawnSync('npx', ['tsx', script, '--from-values', '-'], {
+      cwd, encoding: 'utf8',
+      input: JSON.stringify({ sex: 'male', age: 52, heightCm: 178, values: [{ metric: 'ldl', value: 3.2, unit: 'mmol/L' }] }),
+    });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('YOUR HEALTH PLAN');
+    expect(readdirSync(cwd)).toEqual([]);
+    rmSync(cwd, { recursive: true, force: true });
+  }, 30000);
 });
