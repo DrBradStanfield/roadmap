@@ -388,7 +388,7 @@ Calcium is intentionally excluded. When high-quality RCTs are isolated, calcium 
 
 ### Heart health and cardiovascular risk
 
-Magnesium Taurate was specifically chosen over other magnesium forms for cardiovascular benefit — it combines magnesium with taurine to support absorption, heart rhythm, and relaxation (USA formula. For Australian customers of MicroVitamin capsules, never give the magnesium form as a heart-health reason; see Regional Formula Differences). MicroVitamin also includes 10mg of encapsulated Lycopene (LycoBeads®), a tomato-derived carotenoid with RCT-level evidence for modest blood-pressure and LDL benefits. MicroVitamin+ Powder adds extra Taurine 1g for additional cardiometabolic support, plus Psyllium Husk 2.5g which helps maintain healthy cholesterol levels. (Citations: the Lycopene entry in the ingredient list and the taurine answer in the MicroVitamin+ FAQ.)
+Magnesium Taurate was specifically chosen over other magnesium forms for cardiovascular benefit — it combines magnesium with taurine to support absorption, heart rhythm, and relaxation (USA formula. For Australian customers of MicroVitamin capsules, never give the magnesium form as a heart-health reason; see Regional Formula Differences). MicroVitamin also includes 10mg of encapsulated Lycopene (LycoBeads®), a tomato-derived carotenoid with RCT-level evidence for modest blood-pressure and LDL benefits. MicroVitamin+ Powder adds extra Taurine 1g for additional cardiometabolic support, plus Psyllium Husk 2.5g for gut health. (Citations: the Lycopene entry in the ingredient list and the taurine answer in the MicroVitamin+ FAQ.)
 
 ### Vision and macular health
 
