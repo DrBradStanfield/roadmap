@@ -50,6 +50,19 @@ Read this first after a compaction. Story: US-50 in docs/user-stories.md. Plan: 
 8. Sign-off sheet as an Artifact (docs/knowledge-refresh/signoff-masters-<n>.md, via tools/md-artifact.mjs), listing only the always-ask items and holds.
 9. After Brad's Deploy is verified, publish each master: `--update-by-handle --store edu` (dry run first), then the microvitamin.com copy.
 
+## Added 2026-10-20 (after masters-1 review): required steps for every batch
+
+- **Reference repair, before review.** The 2025 supplement-wiki pipeline put invented titles, DOIs and authors around ConsumerLab's short cites. A few references were invented outright. Run a reference sweep (PubMed and Crossref) on every master, then one `worker-opus` per master with ~/Documents/knowledge-refresh-recovery/runs/refrepair-brief.md:
+  - correct each reference to the real record, or remove it;
+  - re-cite or delete the claims that rested on a removed reference;
+  - turn a safety line whose only source was fake into a hedged house caution.
+- **Run the checker with `--check-ids`.** Under `--masters` it now checks every DOI and PMID, with no cap.
+- **Report corrections go only in addenda** (`<handle>.addendum-<N>.json`). Auto mode blocks any edit to a report, even an append. The checker merges the addenda and records each file's sha256.
+- **Post fingerprints:** adding `topics:` to a post changes its sha256. After a merge that tags posts, append the current sha for each post through an addendum.
+- **Harness key:** `.env` does not source cleanly in zsh (line 66). Load `ANTHROPIC_MICROVITAMIN_API_KEY` with node or dotenv and pass it as `ANTHROPIC_TEST_API_KEY`. The 2026-10-20 run fell back to the production key ($4.85).
+- **Emergency wording on supplement pages:** "call your local emergency number or poison control centre". These pages are read worldwide, so don't use the NZ "111".
+- **Review branches** must have origin/main merged first. Otherwise Codex reports other sessions' work as deletions.
+
 ## Lessons from masters-1
 
 - Most references were never re-sourced. Expect Grokipedia-only claims, removed safety lines, and a PubMed pass for every such master.
