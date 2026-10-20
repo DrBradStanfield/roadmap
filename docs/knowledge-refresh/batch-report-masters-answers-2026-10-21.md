@@ -1,7 +1,7 @@
 # Knowledge batch report: masters-answers-2026-10-21
 
 Base: 3841166c (3841166c79e2b9f84a0ed05bf188031c2f8a9c8d)
-Handles: 4
+Handles: 5
 
 Counts and hashes only. Raw text never enters this repo.
 
@@ -10,7 +10,7 @@ Counts and hashes only. Raw text never enters this repo.
 | Check | Status | FAIL | WARN |
 |---|---|---|---|
 | AC1 index.json and categories.json unchanged (except approved summary corrections) | PASS | 0 | 0 |
-| AC2 raw fidelity of every new number token | WARN | 0 | 7 |
+| AC2 raw fidelity of every new number token | WARN | 0 | 16 |
 | AC3 hedging held; hardening words listed | PASS | 0 | 0 |
 | AC4 deleted sentences justified; headings kept | PASS | 0 | 0 |
 | AC6 diff touches only batch files | PASS | 0 | 0 |
@@ -26,6 +26,7 @@ Counts and hashes only. Raw text never enters this repo.
 | cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-cholesterol-lowering-supplements-review-sterols-policosanol-cholesterol.md | d2da43498f2ff35d42ca2af460ac1f0f5a050bf9ad37b853efc89bbf56922d47 | bd01a979d9caaf38 | 0 | 0 | 0 | 56>56 | 8>8 | cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects.json 55ff870a2411e236f35bfc0a957015c7c119818e2315927e178d467677853646 + cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects.addendum-1.json 5b73c37b349efbc5357855ec10590b3dd213dcb27317ab9e8c7f084b2b6a766e + cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects.addendum-2.json 2bd9a85118e2343050051785958e4b3a81ca7657463f5302c0f1709e942f6681 + cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects.addendum-3.json 9af5c491c9cb0a686ba939a80268c1d7dfb7369014993c9610676a233b54e6de + cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects.addendum-4.json 9a3d61d93f44d40e1e6f7e0b438261cd82e12672e1d926cb4e9ce355fcfd5025 |
 | b-vitamins-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-review-best-b-vitamins-and-complexes-energy-b6-b12-biotin-niacin-folic-acid-bvitamins.md | 55c06813a9b91698e9adbcf8fa858ce4aa2a8d42bd8730185de22430f741ff5b | 749322bcbaf5ad42 | 9 | 9 | 0 | 151>151 | 20>20 | b-vitamins-benefits-forms-dosing-and-side-effects.json 8e1a5640adf97587c6d0a936d48056059957a2823c5922379b147e674a38fed3 + b-vitamins-benefits-forms-dosing-and-side-effects.addendum-1.json 4b720e88350c66c5b20f9bf88a0f2de4abfa4cd93b1437311f99ad515de7b7d4 + b-vitamins-benefits-forms-dosing-and-side-effects.addendum-2.json ce9e8702709efbfda7be5a73626e3ae1b08f6da543a1d4bbbdbcf0963a257633 + b-vitamins-benefits-forms-dosing-and-side-effects.addendum-3.json 722b53725700723a91e3e923413a92b9c1462e5af4028b2b4bd81e05592d2a1c + b-vitamins-benefits-forms-dosing-and-side-effects.addendum-4.json af8104349008f41116cc455a0d0b95b9a7e0c4181663a392b1b5d22411fe0f4f + b-vitamins-benefits-forms-dosing-and-side-effects.addendum-5.json 1d64f02d896880a7b69602889b2226a752c1fb973bd6faf1156ef9b37667afe8 + b-vitamins-benefits-forms-dosing-and-side-effects.addendum-6.json 2c70a839d3cc8142463f9171a51f395a7e030e20c92cf07f29985110535893f4 |
 | vitamin-c-benefits-forms-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-vitamin-c-supplement-review-vitaminc.md | 0700978a6052f63e40fd6137b74b28a6a377b6911460c7fba73fa1e124242473 | 7ffc7d161f273e5c | 0 | 0 | 3 | 129>131 | 3>3 | vitamin-c-benefits-forms-dosing-and-side-effects.json 6c7bcfd5cc2ba2839ad2c55e1d804060a304c4bf92368110d7eedaeafaca16c3 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-1.json cbdc6bb3a130252595f747bbb861de68dab3043881fb3d324216d07543761441 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-2.json bdf14323f5c574983fcc4be4e12c07f42eadab8fc8ba72f9e45f9d7b05184a73 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-3.json 6db042b7308839b6cabf9f83008248f9d85f3a9ba8b1c0b58b8b11e825a32fde + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-4.json e445d36402fbb1212ddf870fd77f76c55c2db0a13e31cdbfccc335494ff994bf + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-5.json aa84779184dad4df3e245d5e8e49af7d37ce3ea0a0f6351ed9ed8ed1d99cf1c5 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-6.json 8ff3968e3c48f3833709bd165e2a1d33891d0a6e4f99eb8f73f8a2fced8902ab + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-7.json 7f3e97f013b1ec07b49310441a66264885d00843b01cd3d786ad591892608850 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-8.json f9b1c90f9444c9129d413e98fd53e3d82d47fcce75cf40a38f52279240f558e8 + vitamin-c-benefits-forms-dosing-and-side-effects.addendum-9.json 353078a31cc1a3a1f3d97bfcb06a33dcb8ce487f82d14bd0fe95e80beec0602b |
+| protein-powders-benefits-types-dosing-and-side-effects | reference | refresh-2026-09-29/consumerlab/review/reviews-protein-powders-shakes-drinks-sports-nutritiondrinks.md | d6c65b80cd69109c3c64c22194dc4204e039058a46683f09aa03cabd0fda14db | f55507f2ff93bb87 | 4 | 4 | 1 | 100>100 | 3>4 | protein-powders-benefits-types-dosing-and-side-effects.json b63a25e3a80ab26fefa5cc46add173732012af34bfa482b59dfa11b719821f87 + protein-powders-benefits-types-dosing-and-side-effects.addendum-1.json 8a5e77a978389439e1b09ba43d8fbab00468e368058d168355f4067ec2b9a691 + protein-powders-benefits-types-dosing-and-side-effects.addendum-2.json 92e92d4c933852f37c3c36329ea08a0e501182746bf55ee56bf203adee6704bb + protein-powders-benefits-types-dosing-and-side-effects.addendum-3.json 30027a6ede4b4ab52760682122c1cbba0cdaa3f2d538c3f4b81c245b6ec31e22 + protein-powders-benefits-types-dosing-and-side-effects.addendum-4.json 2dec7dea538d32357740a7b32cf1651485be2cc963c9102d8704e5ce4601d4cf + protein-powders-benefits-types-dosing-and-side-effects.addendum-5.json 590aadfa218a17082a642d366eae2e3083f64b22640dcc48a91753d137fdd1e0 + protein-powders-benefits-types-dosing-and-side-effects.addendum-6.json b44e3a1c01f53dd1020dd8e56d61a9a371a7804abea7427a326f11a4eb8253a1 |
 
 ## Voided entries
 
@@ -80,10 +81,45 @@ Counts and hashes only. Raw text never enters this repo.
 - vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 3 [base] (reason sha256 d5771852bd86)
 - vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 4 [base] (reason sha256 d5771852bd86)
 - vitamin-c-benefits-forms-dosing-and-side-effects: VOID current_view_basis 5 [base] (reason sha256 d5771852bd86)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 0 [base] (reason sha256 a8e0c36eb20d)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 1 [base] (reason sha256 a8e0c36eb20d)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 3 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 4 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 6 [addendum-3] (reason sha256 7c2dc3b13966)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 7 [addendum-3] (reason sha256 4096f5af752a)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 8 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 9 [addendum-3] (reason sha256 4096f5af752a)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 17 [addendum-3] (reason sha256 5c5fa1ade346)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 18 [addendum-3] (reason sha256 5c5fa1ade346)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 19 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 20 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 22 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 24 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 28 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 32 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 38 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 45 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 47 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 48 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 51 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 52 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 58 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 59 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 62 [addendum-2] (reason sha256 cbcdab163256)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 63 [addendum-2] (reason sha256 ad2c76e5c4bf)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 64 [addendum-2] (reason sha256 ad2c76e5c4bf)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 70 [addendum-3] (reason sha256 47f749387fd8)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 76 [addendum-3] (reason sha256 f664c0b56ced)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 87 [addendum-3] (reason sha256 5c5fa1ade346)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 88 [addendum-3] (reason sha256 5c5fa1ade346)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 113 [addendum-5] (reason sha256 d5fc623a5ebd)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID changed_tokens 114 [addendum-5] (reason sha256 d5fc623a5ebd)
+- protein-powders-benefits-types-dosing-and-side-effects: VOID ask_brad 2 [base] (reason sha256 7d16b8b14b5d)
 
 ## Summary corrections from addenda
 
 - cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects: proposed_summary_correction set by addendum-3
+- protein-powders-benefits-types-dosing-and-side-effects: proposed_summary_correction set by addendum-3
 
 ## Accepted exceptions
 
@@ -91,6 +127,9 @@ Counts and hashes only. Raw text never enters this repo.
 |---|---|---|---|---|---|
 | AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: the abstract spells the sample size "Hundred six" (106). (carried over unchanged from exceptions-masters-1.json; the entry is untouched by the 2026-10-21 edits) | 7f01708b257a463f |
 | AC2 | vitamin-c-benefits-forms-dosing-and-side-effects | orchestrator | 2026-10-20 | Checker tokenisation: body "more than 7 times" equals the abstract's ">7-fold". (carried over unchanged from exceptions-masters-1.json; the entry is untouched by the 2026-10-21 edits) | 86e3d721b622d452 |
+| AC7 | protein-powders-benefits-types-dosing-and-side-effects | orchestrator | 2026-10-21 | Brad 2026-10-21: the MicroVitamin+ Powder section now names the MicroVitamin capsules once, to state the corrected 26 + 4 = 30 ingredient count (products.md:136); a correction, not new promotion. | 5f07fb574bfa4dab |
+| AC7 | protein-powders-benefits-types-dosing-and-side-effects | orchestrator | 2026-10-21 | Brad 2026-10-21: the report is append-only and its count (2 -> 2) predates the corrected ingredient-count sentence; the recount is 3 -> 4, covered by the 'rose' exception above. | fba53e788491570b |
+| AC7 | protein-powders-benefits-types-dosing-and-side-effects | orchestrator | 2026-10-21 | Brad 2026-10-21: count corrected to products.md:136 (v8 powder = 26 core + 4 = 30); 25 was the v7 count | 704aa31908d40b18 |
 
 Body hashes are the first 16 hex characters of sha256; raw hashes are in full.
 
