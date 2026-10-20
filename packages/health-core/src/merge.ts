@@ -642,7 +642,10 @@ export function mergeFiles(
   const local = withoutListed(localCopy, listed);
   const remote = withoutListed(remoteCopy, listed);
   // A listed file is one a reader from before the list must refuse.
-  const schemaVersion = Math.max(local.schemaVersion, remote.schemaVersion, erasedRows ? CURRENT_SCHEMA_VERSION : BASE_SCHEMA_VERSION);
+  const listing = {
+    schemaVersion: Math.max(local.schemaVersion, remote.schemaVersion, erasedRows ? CURRENT_SCHEMA_VERSION : BASE_SCHEMA_VERSION),
+    ...(erasedRows ? { erasedRows } : null),
+  };
   // "Delete All My Data" gate: a higher eraseEpoch wins. The union semantics
   // below deliberately never lose data — which is exactly wrong for deletion:
   // without this gate, any other copy would resurrect the erased records on
@@ -660,7 +663,7 @@ export function mergeFiles(
   if (localEpoch !== remoteEpoch) {
     const localWins = localEpoch > remoteEpoch;
     const [top, loser] = localWins ? [local, remote] : [remote, local];
-    const winner = { ...top, schemaVersion, ...(erasedRows ? { erasedRows } : null) };
+    const winner = { ...top, ...listing };
     // Re-merge what the loser may keep — on the winner's file, at the
     // winner's epoch — through the ordinary path below, which for those two
     // inputs is an equal-epoch merge. When every erase the loser missed listed
@@ -702,8 +705,7 @@ export function mergeFiles(
     ...remote,
     ...local,
 
-    schemaVersion,
-    ...(erasedRows ? { erasedRows } : null),
+    ...listing,
     meta: {
       createdAt:
         local.meta.createdAt < remote.meta.createdAt ? local.meta.createdAt : remote.meta.createdAt,
