@@ -82,10 +82,10 @@ export const ADDENDUM_VOID = ["changed_tokens", "current_view_basis", "deleted_s
  * A void's index counts the array merged before its addendum. A void may give a reason to a base void that has none (the
  * repair path for a base report that fails validation). Returns a merged copy; the input is never changed.
  */
-export function applyAddenda(base: Record<string, unknown>, addenda: { name: string; data: unknown }[]): { report: Record<string, unknown>; errors: string[]; infos: string[] } {
-  if (!addenda.length) return { report: base, errors: [], infos: [] };
+export function applyAddenda(base: Record<string, unknown>, addenda: { name: string; data: unknown }[]): { report: Record<string, unknown>; errors: string[]; infos: string[]; sources: Record<string, string> } {
+  if (!addenda.length) return { report: base, errors: [], infos: [], sources: {} };
   const r: Record<string, unknown> = JSON.parse(JSON.stringify(base));
-  const errors: string[] = [], infos: string[] = [];
+  const errors: string[] = [], infos: string[] = [], sources: Record<string, string> = {}; // "<section> <i>" -> the addendum that voided it
   const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === "object" && !Array.isArray(x);
   const unknown = (o: Record<string, unknown>, allowed: string[], at: string, err: (m: string) => void) => {
     for (const k of Object.keys(o)) if (!allowed.includes(k)) err(`${at}${k}: unknown key`);
@@ -121,13 +121,27 @@ export function applyAddenda(base: Record<string, unknown>, addenda: { name: str
       seen.add(`${v.section} ${v.index}`);
     });
     if (errs.length) { errors.push(...errs); continue; }
-    for (const v of vs as { section: string; index: number; reason: string }[]) Object.assign((r[v.section] as Record<string, unknown>[])[v.index], { void: true, void_reason: v.reason });
-    for (const k of ADDENDUM_APPEND) if (Array.isArray(append[k])) r[k] = [...(Array.isArray(r[k]) ? r[k] as unknown[] : []), ...(append[k] as unknown[])];
+    const short = /(addendum-\d+)\.json$/.exec(name)?.[1] ?? name;
+    for (const v of vs as { section: string; index: number; reason: string }[]) {
+      Object.assign((r[v.section] as Record<string, unknown>[])[v.index], { void: true, void_reason: v.reason });
+      sources[`${v.section} ${v.index}`] = short;
+    }
+    for (const k of ADDENDUM_APPEND) if (Array.isArray(append[k])) {
+      const old = Array.isArray(r[k]) ? r[k] as unknown[] : [];
+      (append[k] as unknown[]).forEach((x, i) => { if (isObj(x) && x.void === true) sources[`${k} ${old.length + i}`] = short; });
+      r[k] = [...old, ...(append[k] as unknown[])];
+    }
     if (typeof append.notes === "string") r.notes = r.notes ? `${r.notes}\n${append.notes}` : append.notes;
-    if (typeof set.proposed_summary_correction === "string") { r.proposed_summary_correction = set.proposed_summary_correction; infos.push(`proposed_summary_correction set by ${name}`); }
+    if (typeof set.proposed_summary_correction === "string") { r.proposed_summary_correction = set.proposed_summary_correction; infos.push(`proposed_summary_correction set by ${short}`); }
   }
-  return { report: r, errors, infos };
+  return { report: r, errors, infos, sources };
 }
+
+/** void and void_reason, allowed on every voidable section (ADDENDUM_VOID). */
+const VOID_PROPS = {
+  void: { type: "boolean", description: "true: the entry is retired: it counts in no check and is listed as a VOID line (reports are append-only); false is the same as absent" },
+  void_reason: { type: "string", description: "required, non-empty, when void is true" },
+};
 
 export const REPORT_SCHEMA = {
   $schema: "http://json-schema.org/draft-07/schema#",
@@ -151,8 +165,7 @@ export const REPORT_SCHEMA = {
           body_line: { type: "string", description: "an exact current line of the body" },
           raw_quote: { type: "string", description: "verbatim source text (6 words or 30 characters) sharing a number with body_line" },
           notes: { type: "string" },
-          void: { type: "boolean", description: "true: skip this entry in every AC2 check; it covers no token and is listed as a VOID line (reports are append-only)" },
-          void_reason: { type: "string", description: "required when void is true" },
+          ...VOID_PROPS,
         },
       },
     },
@@ -164,6 +177,7 @@ export const REPORT_SCHEMA = {
           sentence: { type: "string", description: "verbatim removed sentence, or a regex when pattern is true" },
           justification: { type: "string" },
           pattern: { type: "boolean", description: "true: `sentence` is a regex; every removed base sentence it matches counts as justified" },
+          ...VOID_PROPS,
         },
       },
     },
@@ -176,8 +190,13 @@ export const REPORT_SCHEMA = {
     new: { type: "boolean", description: "true for a handle absent from docs/blog/index.json" },
     extra_raw: {
       type: "array",
-      items: { type: "object", required: ["path", "sha256"], properties: { path: { type: "string" }, sha256: { type: "string" } } },
+      items: { type: "object", required: ["path", "sha256"], properties: { path: { type: "string" }, sha256: { type: "string" }, ...VOID_PROPS } },
     },
+    current_view_basis: {
+      type: "array",
+      items: { type: "object", required: ["sentence", "quote"], properties: { sentence: { type: "string" }, source: { type: "string" }, quote: { type: "string" }, ...VOID_PROPS } },
+    },
+    ask_brad: { type: "array", items: { type: "object", required: ["item", "why"], properties: { item: { type: "string" }, why: { type: "string" }, ...VOID_PROPS } } },
   },
 };
 
@@ -223,8 +242,8 @@ export function validateReport(o: unknown): string[] {
     if (x && x.pattern !== undefined && typeof x.pattern !== "boolean") e.push(`deleted_sentences[${i}].pattern: boolean expected`);
   });
   for (const k of ADDENDUM_VOID) if (Array.isArray(r[k])) (r[k] as { void?: unknown; void_reason?: unknown }[]).forEach((x, i) => {
-    if (!x || x.void === undefined) return;
-    if (x.void !== true) e.push(`${k}[${i}].void: true expected`);
+    if (!x || x.void === undefined || x.void === false) return; // false is the same as absent
+    if (x.void !== true) e.push(`${k}[${i}].void: boolean expected`);
     else if (typeof x.void_reason !== "string" || !x.void_reason.trim()) e.push(`${k}[${i}].void_reason: void entry without void_reason`);
   });
   if (r.new !== undefined && typeof r.new !== "boolean") e.push("new: boolean expected");
@@ -642,7 +661,9 @@ function loadCtx(o: Options, base: string, handle: string, ac2: Check, index: Ma
         try { loaded.push({ name, data: JSON.parse(text) }); } catch (e) { ac2.fails.push(`${handle}: ${name}: not JSON: ${(e as Error).message}`); }
       }
       // Addenda apply even to an invalid base report: a void may supply a missing void_reason (the repair path).
-      const merged = base && typeof base === "object" && !Array.isArray(base) ? applyAddenda(base, loaded) : { report: base, errors: [], infos: [] };
+      // Addenda repair a base report only when its every error is a void with no reason; any other error needs a fresh report.
+      const baseErrs = validateReport(base), repairable = baseErrs.every((x) => /\.void_reason: void entry without void_reason$/.test(x));
+      const merged = repairable ? applyAddenda(base, loaded) : { report: base, errors: [], infos: [], sources: {} as Record<string, string> };
       const parsed = merged.report, errs = [...merged.errors, ...validateReport(parsed)];
       if (errs.length) ac2.fails.push(`${handle}: report invalid: ${errs.join("; ")}`);
       else if (loaded.length < addenda.length) { /* an unreadable addendum already failed */ }
@@ -651,7 +672,7 @@ function loadCtx(o: Options, base: string, handle: string, ac2: Check, index: Ma
         rep = parsed as unknown as Report;
         ac2.infos.push(...merged.infos.map((v) => `${handle}: ${v}`));
         // Every void, inline or from an addendum; --out renders it without the reason text.
-        for (const k of ADDENDUM_VOID) ((parsed[k] ?? []) as { void?: boolean; void_reason?: string }[]).forEach((x, i) => { if (x.void) ac2.infos.push(`${handle}: VOID ${k} ${i}: ${x.void_reason}`); });
+        for (const k of ADDENDUM_VOID) ((parsed[k] ?? []) as { void?: boolean; void_reason?: string }[]).forEach((x, i) => { if (x.void) ac2.infos.push(`${handle}: VOID ${k} ${i} [${merged.sources[`${k} ${i}`] ?? "base"}]: ${x.void_reason}`); });
       }
     } catch (e) { ac2.fails.push(`${handle}: report is not JSON: ${(e as Error).message}`); }
   }
@@ -1333,6 +1354,8 @@ function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"],
     // "New" ignores the leading number, so a renumbered reference is not new.
     const unnumbered = (l: string) => l.replace(/^\s*(?:[-*]\s*)?(?:\[\d+\]|\d+[.)])\s*/, "").trim();
     const baseLines = new Set(refLines(c.baseBody).map(unnumbered));
+    // Under --masters (isPost is passed only then), --check-ids resolves every identifier, retained ones too.
+    if (isPost) for (const line of refLines(c.newBody)) for (const x of primaryIds(line)) idsOut.set(`${x.kind}:${x.id.toLowerCase()}`, { ...x, handle: c.handle });
     for (const line of refLines(c.newBody).filter((l) => !baseLines.has(unnumbered(l)))) {
       const ids = primaryIds(line);
       for (const x of ids) idsOut.set(`${x.kind}:${x.id.toLowerCase()}`, { ...x, handle: c.handle });
@@ -1507,10 +1530,12 @@ export function renderReport(batch: string, base: string, baseSha: string, resul
   if (rows.length > cap) L.push("", `${rows.length - cap} more handles omitted to stay under the line cap.`);
   // A void's reason is free text: the committed report carries only a short hash of it (review R2).
   const voids = results.flatMap((r) => r.evidence).flatMap((e) => {
-    const m = /^(\S+): VOID (\w+) (\d+): ([\s\S]*)$/.exec(e);
-    return m ? [`- ${m[1]}: VOID ${m[2]} ${m[3]} (reason sha256 ${sha256(m[4]).slice(0, 12)})`] : [];
+    const m = /^(\S+): VOID (\w+) (\d+) (\[[\w-]+\]): ([\s\S]*)$/.exec(e);
+    return m ? [`- ${m[1]}: VOID ${m[2]} ${m[3]} ${m[4]} (reason sha256 ${sha256(m[5]).slice(0, 12)})`] : [];
   });
   if (voids.length) L.push("", "## Voided entries", "", ...voids);
+  const sets = results.flatMap((r) => r.evidence).filter((e) => /^\S+: proposed_summary_correction set by addendum-\d+$/.test(e));
+  if (sets.length) L.push("", "## Summary corrections from addenda", "", ...sets.map((e) => `- ${e}`));
   const ex = results.flatMap((r) => r.excepted ?? []);
   if (ex.length) {
     L.push("", "## Accepted exceptions", "", "| check | handle | by | date | reason | match sha256 |", "|---|---|---|---|---|---|");
