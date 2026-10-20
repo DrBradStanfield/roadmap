@@ -2,24 +2,26 @@
 
 Read this first after a compaction. Story: US-50 in docs/user-stories.md. Plan: docs/chat-topic-masters-plan-2026-10-20.md (decisions D1–D20). Writer contract: docs/knowledge-refresh/master-writer-contract.md. Rulings 1–15: docs/knowledge-refresh/rulings-since-contract.md (14 and 15 came from this work).
 
-## Status (2026-10-20)
+## Status (2026-10-21)
 
 | Piece | State |
 |---|---|
 | Chat code (router view, frontmatter strip, block headers, precedence prompt, YouTube master views) | On main a625b55d. Not deployed. |
-| Checker `--masters` and master lint | On main ae587f50 plus post-review fixes 58dd1629. The last fixes are unreviewed. |
-| Post tags | docs/knowledge-refresh/topic-masters/tags-checked.json (Opus-checked). 82 posts carry `topics:` on main; `router: hidden` is set only for the single-subject posts of published masters (17 so far). |
-| masters-1 | 6 merged to main 58e22cad: collagen, vitamin K, magnesium, taurine, creatine, vitamin C. 4 held for Brad: lithium, vitamin D, NAD boosters, resveratrol. Sheet: docs/knowledge-refresh/signoff-masters-1.md. Held bodies sit on branch knowledge-refresh/masters-1 (worktree .claude/worktrees/kr-masters-1). |
+| YouTube master context | Whole-section cap of 80,000 characters (interim) plus render-once fix: main ef4f73b7. Reviewed. |
+| Checker `--masters`, addenda and master lint | On main ae587f50, 145d82dd, fa7fa237. Reviewed. |
+| Post tags | docs/knowledge-refresh/topic-masters/tags-checked.json (Opus-checked). `router: hidden` is set only on the single-subject posts of published masters: 51 so far (23 batch 1, 28 batch 2). |
+| masters-1 | All 10 on main: 99932e7d, correction round 80851663, follow-up 12af0752. Sheet: docs/knowledge-refresh/signoff-masters-1.md. |
+| masters-2 | All 10 on main 0c7a5673: turmeric, potassium, cholesterol supplements, protein powders, multivitamins, B vitamins, omega-3, nitric oxide, electrolytes, glycine. 20 answer fixtures in tools/test-queries.json. Sheet: docs/knowledge-refresh/signoff-masters-2.md. |
 | Publishing tool | claude_business a59f20cd: `tools/shopify-article-create.js --update-by-handle <h> --store edu|commerce`, with `--dry-run`, backups and `--restore`. |
 | Web pages | Not yet updated. They go out after Brad's Deploy is verified (US-50 AC9). |
 
 ## Not built yet
 
+- **Before batch 3: a "Key safety points" section per master** (contract change plus a retrofit of the 20). Batch 3 gives current views to the four viewless masters on the stack video (melatonin, vitamins E and A, psyllium). The 80K cap would then drop vitamin K's warfarin lines again. Authored safety points, ranked by clinical weight, replace the cap's whole-section order.
 - The `/blog-post` trigger in claude_business (US-50 AC2 writer keys, AC10 compare with masters).
 - The monthly ConsumerLab/NIH check session (AC10).
-- The YouTube body-cautions follow-up (ruling 15 correction), if Brad wants it.
-- Answer checks: 6 pending fixtures (category masters-1) and 4 topic-masters fixtures. Run them after deploy with the brad@microvitamin.com API key, once Brad says where it is.
-- Batches 2–12: 103 references, about 10 per batch. Order: changed-view topics first, then 90-day chat traffic (counts come from chat_match_events).
+- Answer checks after deploy, on `ANTHROPIC_MICROVITAMIN_API_KEY` loaded with node or dotenv. The .env does not source in zsh; a shell load once fell back to the production key.
+- Batches 3–12: 93 references, about 10 per batch. Order: changed-view topics first, then 90-day chat traffic (counts from chat_match_events).
 
 ## Batch recipe (as run for masters-1)
 
