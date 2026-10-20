@@ -1,0 +1,210 @@
+# iOS app — architecture and decisions
+
+Status: **planning, no code yet** (2026-10-21). This file records what we decided for the
+native iPhone app and why. It is the entry point for anyone, human or agent, working in
+`ios/`.
+
+**Keep it current (HARD).** Any change to an architectural decision below updates this file
+in the same commit: the decision, the date, who made it and why. A decision reversed stays
+here, struck through, with the reason it fell. The story behind the app is US-25 in
+[docs/user-stories.md](../docs/user-stories.md); the web's system map is
+[docs/architecture-v2.md](../docs/architecture-v2.md).
+
+The repo is open source under the MIT license, and so is this app.
+
+## What the app is
+
+The Health Roadmap tool on the iPhone, built native for speed. It is the constitution's
+"architectural destination" (US-25): reminders with no server, Apple Health instead of
+typing, storage that a browser cannot wipe. It reads and writes the same
+`health-roadmap.json` the website, the CLI and the hosted MCP use, so a user can move
+between phone and web on one record.
+
+## Decisions
+
+### D1 · Native SwiftUI for everything the user touches (Brad, 2026-10-21)
+
+Every screen, gesture, Apple Health call, notification, Keychain item, file write and
+network call is Swift. No web view and no web UI. Brad's requirement: native, fast.
+
+### D2 · One clinical and merge engine: health-core, run in JavaScriptCore (Brad, 2026-10-21)
+
+The pure computation (plan, suggestions, evidence, units, validation, lab catalogue, merge,
+migrate, schema) stays the TypeScript in `packages/health-core`. The app bundles it and
+runs it in-process in Apple's JavaScriptCore. No WebView.
+
+Why not a Swift rewrite:
+- **The phone and the website write the same file.** Two merge implementations that differ
+  in one tie-break lose rows silently between devices, the bug class US-10 spent months
+  closing.
+- **Advice must match.** A threshold fixed in TypeScript and missed in Swift would give a
+  phone user different advice from the web. The three-file clinical sync rule would become
+  four files.
+- **Clinical fixes can ship over the air** (D3). Compiled Swift cannot.
+
+Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
+padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
+JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs 4.6 ms.
+Bundle 368 KB. A frame is 16 ms, so the cost is invisible. Re-measure on a real iPhone in
+the spike; the limit is 100 ms for plan plus merge, 300 ms for a cold engine load.
+
+The runtime needs a bridge for what a bare JSContext lacks: `fetch`, `Response`, `Headers`,
+`URL`, `AbortController` with `AbortSignal.timeout`/`any`, `Blob`, `TextEncoder`/`Decoder`,
+`crypto.getRandomValues`/`randomUUID`, `setTimeout` (adapter.ts, drive-rest.ts,
+dropbox-rest.ts use them). The spike picks one of two shapes: a polyfill over URLSession,
+or a Swift `StorageAdapter` that keeps `SyncManager` and merge in JavaScript. The second is
+preferred: less bridge, and the merge stays single. JavaScriptCore is single-threaded, so
+every callback returns on one serial queue.
+
+### D3 · Clinical fixes ship over the air, signed (Brad, 2026-10-21)
+
+The engine bundle can be updated without an App Store release. Apple's developer agreement
+allows an app to download interpreted code if it does not change the app's advertised
+purpose; Expo Updates and CodePush rely on the same rule. Conditions we hold ourselves to:
+
+- **Signed.** Each bundle is signed with an offline key; the app checks the signature
+  (CryptoKit) before it runs a byte. An unsigned or mismatched bundle is refused.
+- **Engine only.** An update changes computation and text, never what the app can reach:
+  the native bridge is fixed in the binary.
+- **Safe fallback.** The app ships with a bundled engine and keeps the last good update. A
+  bundle that fails its self-test on load is dropped and the previous one runs.
+- **Versioned.** A bundle declares the minimum app version it needs. An app too old for a
+  required fix says "update the app".
+- **Disclosed.** The update check is a request to a static host and carries no health data.
+  The privacy text says it exists.
+
+This is security work: its design gets a fresh adversary and a Codex review before it is
+built.
+
+### D4 · Shared store logic moves into health-core (proposed, Brad to confirm)
+
+Part of the sync logic is not in health-core. It lives in the web widget's
+`widget-src/src/storage/roadmap-store.ts`: the erase-epoch arithmetic, the erased-rows
+list (US-09 AC23), adopting another device's erase, saves that never overlap, and merging a
+guest's data on cloud connect. Some clinical hint text sits in `InputPanel.tsx`. The app
+needs all of it.
+
+Proposal: move the parts with no browser in them into health-core, so both clients run the
+same code and both get the over-the-air fixes. The web's speed does not change: it is the
+same TypeScript in another folder. The alternative, a Swift copy, brings back the two-engine
+problem D2 exists to avoid. Brad objected on performance grounds before this was explained;
+confirm or reject here.
+
+### D5 · Storage: on the phone by default, Dropbox or Google Drive optional (Brad, 2026-10-21)
+
+- **Default: a file in the app's container**, with iOS Data Protection.
+- **Dropbox:** OAuth with PKCE through `ASWebAuthenticationSession`, the same Dropbox app as
+  the web (the `/Apps/Health Plan by Dr Brad` app folder), so the phone sees the web's file.
+  The Dropbox app need not be installed. Tokens live in the Keychain, this-device-only.
+- **Google Drive:** PKCE with an iOS client in the **same** Google Cloud project as the web,
+  because `drive.file` only shows files the project created. No server token exchange.
+- **Not the iOS Files picker.** File Provider writes have no version check, which breaks
+  US-10 AC4 (two overlapping saves must keep both rows).
+- **iCloud: open.** A website cannot read iCloud Drive, so an iCloud user could not use the
+  web app (CloudKit JS would need its own sign-in and work). App Review has also restricted
+  health data in iCloud (guideline 5.1.3). Brad is checking. Same question for iOS device
+  backups of the app's file.
+- **Erase (US-11)** runs as on the web, and also deletes the samples this app wrote to
+  Apple Health and cancels its notifications. A phone that takes in an erase made on another
+  device does the same.
+
+### D6 · Apple Health (Brad, 2026-10-21, import deletions ignored)
+
+**Reading.** Vitals HealthKit models (weight, height, waist, blood pressure, glucose; the
+exact list matched to `types.ts` in the spike).
+
+- Each sample becomes an appended row with `source: apple_health` and its HealthKit UUID as
+  `externalId` (the field exists, roadmap-file.ts). Dedup checks ALL rows, entered-in-error
+  included, so a sample is never imported twice.
+- The importer only fills an empty (metric, day) slot or corrects a slot whose active row
+  came from Apple Health. It never supersedes a value a person typed or corrected.
+  Otherwise a scale re-sync would undo a user's correction every time.
+- **A sample deleted in the Health app is ignored.** The row stays. The record is
+  append-only (FHIR; Brad 2026-09-24): we never remove or retract a value.
+- After taking in an erase, the importer skips samples older than the erase. The import
+  anchor is kept outside the record.
+- Merge orders rows by when they were written, not when they were measured. Rules such as
+  "the latest reading of the day wins across devices" would need the sample time in the
+  record and a merge change: merge-class work, adversary plus Codex.
+
+**Blood tests** mostly are not HealthKit quantity types. They arrive as Health Records
+(`HKClinicalRecord`), which needs Apple's entitlement and, to our knowledge, works only in
+the US, UK and Canada (verify). Records come in FHIR DSTU2 or R4: decode by version, with
+fixtures for both, and refuse others visibly. Lab rows have no `externalId`, so dedup stays
+on (metric, recorded_at). The LOINC-to-catalogue map is clinical-adjacent code.
+
+**Writing.** Values typed in the app go to Apple Health. The sync identifier is the root id
+of the correction chain, with a rising version, so a correction replaces our sample instead
+of adding a second. Only the active row of a slot is written, and rows that came from Apple
+Health are never written back.
+
+**Background.** Observer queries recompute the plan and reschedule reminders when data
+lands. HealthKit is unreadable while the phone is locked, and a background import must not
+race a foreground save: both are handled, not assumed.
+
+### D7 · Reminders: on-device notifications only (Brad, 2026-10-21)
+
+App users get local notifications computed from `reminder-schedule.ts`, with no server and
+no email. iOS holds at most 64 pending notifications, so the app schedules the next batch
+and refills on launch and on new data. What a lock-screen notification says ("Colonoscopy
+due") is visible to anyone holding the phone: the wording is a decision for the build.
+
+### D8 · Chat: wanted; no user sign-in, but the app proves itself (proposed)
+
+Brad wants chat in the app. Chat runs on Brad's server, because it calls Anthropic with a
+key the phone must never hold. The user does not sign in. But "it runs on iOS" does not
+secure the server: the endpoint is on the public internet, and anyone who copies its address
+could spend the Anthropic budget. The web stops that with Shopify's app-proxy signature,
+which the app cannot have.
+
+Proposed: Apple's **App Attest**. The phone proves each request comes from a genuine copy of
+this app on a real Apple device, with no account. Add a per-device rate limit on the server.
+Before the first message, a consent screen names Anthropic and what is sent (App Review
+5.1.2(i), November 2025). This is security design: written up, then adversary plus Codex,
+before code. Lab upload follows the same path, later.
+
+### D9 · No server telemetry (Brad, 2026-10-21)
+
+The app sends no product events to Brad's server. The usage signal is App Store Connect
+analytics (installs, sessions, retention, crashes, from users who opt in). Stated limit: it
+cannot see "viewed a plan". Health values never enter any telemetry.
+
+### D10 · Old app versions stay safe
+
+Any change to merge behaviour bumps the schema version, so an older app refuses the file
+(`SchemaTooNewError`) and asks for an update instead of merging the old way. Over-the-air
+engine updates (D3) close most of this gap; the bump covers what they cannot reach.
+
+## Build and test
+
+- **Tools:** Xcode 26 (required for App Store uploads since 28 April 2026), the iOS
+  Simulator, and a real iPhone. Claude Code builds with `xcodebuild`, drives simulators with
+  `simctl`, and runs XCTest and XCUITest. Signing, App Store Connect, background HealthKit
+  delivery and real performance need the phone and Brad's account.
+- **Conformance tests:** the same fixtures run through Node (vitest) and through the app's
+  JavaScriptCore, with `now` and the time zone pinned; outputs must match byte for byte.
+- **Stories first:** each feature gets a US-id with acceptance criteria before code (Lane
+  B). Tests cite the id.
+- **CI:** a macOS runner job. Workflow files are Brad-only.
+- **Minimum iOS:** 17 (proposed).
+
+## Phases
+
+0. **Readiness (Brad, in progress 2026-10-21):** macOS upgrade, Xcode 26, Apple Developer
+   Program as the company (D-U-N-S), a test iPhone.
+1. **Spike, go/no-go:** engine in JavaScriptCore on the phone; Dropbox and Drive sync
+   against the scratch record; Apple Health read and write; the over-the-air update path.
+2. **TestFlight:** entry, plan, corrections, units, sync, erase, notifications, Apple
+   Health, then chat behind App Attest.
+3. **Health Records labs and camera lab upload.**
+4. **App Store submission.**
+
+## Open questions and risks
+
+- **Regulatory: we don't know.** Personalised medication and screening suggestions may count
+  as software as a medical device in some markets (FDA, MHRA, EU MDR, NZ). Get advice before
+  submission. App Review 1.4.1 asks medical apps to disclose their method.
+- **D4** awaits Brad. **iCloud** (D5) awaits the guideline check.
+- **Hardware:** the build Mac is Intel. macOS 26 is the last Intel release, so a later
+  required Xcode may need Apple silicon.
+- **Two release paths:** binary changes still go through App Review; plan for it.
