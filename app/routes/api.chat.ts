@@ -183,6 +183,21 @@ async function refreshSubscriptionIfStale(
   return plan;
 }
 
+async function checkConversationParent(auth: AuthResult, conversationId: string): Promise<Response | null> {
+  const { data: parent, error } = await auth.client
+    .from('chat_conversations')
+    .select('id')
+    .eq('id', conversationId)
+    .eq('user_id', auth.userId)
+    .maybeSingle();
+  if (error) {
+    reportChatError('Chat: Failed to check conversation');
+    return Response.json({ success: false, error: 'Failed to check conversation' }, { status: 500 });
+  }
+  return parent ? null : Response.json({ success: false, error: 'Conversation not found' }, { status: 404 });
+}
+
+// ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // GET — list conversations or load conversation messages
 // ---------------------------------------------------------------------------
@@ -195,9 +210,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return Response.json({ success: false, error: 'Invalid conversationId' }, { status: 400 });
     }
 
-    // Guest without a session token — return empty default (don't create a session just to list conversations)
+    // Guest without a session token — return empty default (don't create a session just to list conversations).
+    // A named transcript is not a list. It still needs a principal and a parent check.
     const sessionToken = url.searchParams.get('sessionToken');
-    if (!getCustomerId(request) && !sessionToken) {
+    if (!conversationId && !getCustomerId(request) && !sessionToken) {
       // A GET naming a customer meets the framework check first, so an
       // unsigned one gets its 400; a duplicated id that passes it is still a
       // guest (US-09 AC24). A bare GET skips it (US-15 AC9).
@@ -212,6 +228,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const auth = await getAuthOrGuest(request, sessionToken, url.searchParams.get('localFirst') === '1');
 
     if (conversationId) {
+      const parentFailure = await checkConversationParent(auth, conversationId);
+      if (parentFailure) return parentFailure;
       const { data, error } = await auth.client
         .from('chat_messages')
         .select('id, role, content, created_at')
@@ -325,10 +343,13 @@ export async function action({ request }: ActionFunctionArgs) {
     // ----- DELETE -----
     if (request.method === 'DELETE') {
       const { conversationId } = body;
+      const parentFailure = await checkConversationParent(auth, conversationId);
+      if (parentFailure) return parentFailure;
       const { error } = await auth.client
         .from('chat_conversations')
         .delete()
-        .eq('id', conversationId);
+        .eq('id', conversationId)
+        .eq('user_id', auth.userId);
 
       if (error) {
         reportChatError('Chat: Failed to delete conversation');
@@ -358,6 +379,10 @@ export async function action({ request }: ActionFunctionArgs) {
     // transcripts server-side and load them here; is_fallback is needed for
     // the dedup check below, created_at for the time window.
     const widget = body.localFirst === true;
+    if (conversationId && !widget) {
+      const parentFailure = await checkConversationParent(auth, conversationId);
+      if (parentFailure) return parentFailure;
+    }
     let history: Turn[] = widget ? readClientHistory(body.history) : [];
     let storedHistory: DedupHistoryItem[] = [];
     if (conversationId && !widget) {
