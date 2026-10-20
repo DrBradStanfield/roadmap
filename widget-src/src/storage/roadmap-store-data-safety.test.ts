@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core';
-import { RoadmapStore, PENDING_MIRROR_KEY } from './roadmap-store';
+import { ERASE_UNREACHABLE, RoadmapStore, PENDING_MIRROR_KEY } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
@@ -1155,5 +1155,131 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     expect(otherPage.loadAllHistory().map((m) => m.value)).toEqual([81]);
     expect(localStorage.getItem(KEPT_KEY)).toBeNull();
     for (const [k, v] of Object.entries(KEEP)) expect(localStorage.getItem(k)).toBe(v);
+  });
+});
+
+// US-09 AC23 · an erase records WHICH rows it removed, read from the whole
+// stored record before anything irreversible, and refuses when it cannot read.
+describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', () => {
+  beforeEach(() => {
+    const backing = new Map<string, string>();
+    const store = {
+      getItem: (k: string) => (backing.has(k) ? backing.get(k)! : null),
+      setItem: (k: string, v: string) => void backing.set(k, v),
+      removeItem: (k: string) => void backing.delete(k),
+    };
+    Object.defineProperty(globalThis, 'localStorage', { value: store, writable: true, configurable: true });
+  });
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, 'localStorage');
+    vi.restoreAllMocks();
+  });
+
+  class SaveFails extends MemoryAdapter {
+    async write(): Promise<never> {
+      throw new StorageError('cloud down');
+    }
+  }
+  const fileOf = (store: RoadmapStore) => (store as unknown as { file: RoadmapFile }).file;
+  const idOf = (store: RoadmapStore, metric: string) => fileOf(store).measurements.find((m) => m.metricType === metric)!.id;
+
+  it('lists the stored record\'s rows, its own copy\'s and the device file\'s, ids only', async () => {
+    const cloud = new MemoryCloud();
+    const other = await RoadmapStore.create(new MemoryAdapter(cloud));
+    other.addMeasurement('weight', 80, '2026-06-01');
+    other.saveMedication('statin', 'atorvastatin', 20, 'mg');
+    await other.flush(); // in the stored record
+    const eraser = await RoadmapStore.create(new MemoryAdapter(cloud));
+    other.addMeasurement('ldl', 3.1, '2026-06-02');
+    await other.flush(); // stored after the eraser loaded: only the read at erase time sees it
+    eraser.addMeasurement('hdl', 1.4, '2026-06-03'); // its own copy, still on the debounce
+    const tab = await RoadmapStore.create(new SaveFails(cloud));
+    tab.addMeasurement('waist', 90, '2026-06-04');
+    await expect(tab.flush()).rejects.toThrow(); // another tab's failed save, mirrored on this device
+    const { medications, medicationHistory } = fileOf(other);
+    const expected = [
+      idOf(other, 'weight'), idOf(other, 'ldl'), idOf(eraser, 'hdl'), idOf(tab, 'waist'), medications[0].id, medicationHistory[0].id,
+    ].sort();
+
+    expect((await eraser.deleteUserData()).success).toBe(true);
+
+    const file = readCloudFile(cloud);
+    expect(file.erasedRows).toEqual({ fromEpoch: 1, ids: expected });
+    expect(file.schemaVersion).toBe(2);
+    expect(file.meta.eraseEpoch).toBe(1);
+    expect(file.meta.erasedAt).toBeTypeOf('string'); // still stamped, for the legacy rule
+    // Ids only: no value, metric, date or name rides in the list.
+    expect(JSON.stringify(file.erasedRows)).not.toMatch(/weight|ldl|hdl|waist|statin|atorvastatin|2026/);
+  });
+
+  it('a failed cloud read refuses before the caller\'s irreversible step, and changes nothing', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const store = await RoadmapStore.create(adapter);
+    store.addMeasurement('weight', 80, '2026-06-01');
+    await store.flush();
+    store.addMeasurement('ldl', 3.1, '2026-06-02'); // on the debounce
+    const before = cloud.files.get(ROADMAP_FILE_NAME)!.json;
+    vi.spyOn(adapter, 'read').mockRejectedValueOnce(new StorageError('Dropbox did not answer'));
+    const beforeErase = vi.fn(async () => {});
+
+    expect(await store.deleteUserData(beforeErase)).toEqual({ success: false, error: ERASE_UNREACHABLE });
+
+    expect(beforeErase).not.toHaveBeenCalled();
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.json).toBe(before);
+    expect(store.loadAllHistory().map((m) => m.value).sort()).toEqual([3.1, 80]);
+    await store.flush(); // the edit the erase held back still saves
+    expect(readCloudFile(cloud).measurements).toHaveLength(2);
+  });
+
+  it('a session on-device because its cloud could not be read refuses, and its device file is untouched', async () => {
+    const store = await RoadmapStore.create(new LocalStorageAdapter(), true);
+    store.addMeasurement('weight', 80, '2026-06-01');
+    await store.flush();
+    const before = localStorage.getItem('health_roadmap_file_v2');
+    const beforeErase = vi.fn(async () => {});
+
+    expect(await store.deleteUserData(beforeErase)).toEqual({ success: false, error: ERASE_UNREACHABLE });
+    expect(beforeErase).not.toHaveBeenCalled();
+    expect(localStorage.getItem('health_roadmap_file_v2')).toBe(before);
+  });
+
+  it('a guest whose device record cannot be read still erases its own copy, and lists it', async () => {
+    const store = await RoadmapStore.create(new LocalStorageAdapter());
+    store.addMeasurement('weight', 80, '2026-06-01');
+    await store.flush();
+    const id = idOf(store, 'weight');
+    localStorage.setItem('health_roadmap_file_v2', '{not valid json');
+    const beforeErase = vi.fn(async () => {});
+
+    // The write reads the same bytes, so it fails as before; the erase went ahead.
+    expect((await store.deleteUserData(beforeErase)).success).toBe(false);
+    expect(beforeErase).toHaveBeenCalledTimes(1);
+    expect(fileOf(store).erasedRows).toEqual({ fromEpoch: 1, ids: [id] });
+  });
+
+  it('a second erase keeps the first list and its fromEpoch; one over an erase that listed nothing claims from its own epoch', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.addMeasurement('weight', 80, '2026-06-01');
+    const first = idOf(store, 'weight');
+    expect((await store.deleteUserData()).success).toBe(true);
+    store.addMeasurement('ldl', 3.1, '2026-06-02');
+    const second = idOf(store, 'ldl');
+    expect((await store.deleteUserData()).success).toBe(true);
+    expect(readCloudFile(cloud).erasedRows).toEqual({ fromEpoch: 1, ids: [first, second].sort() });
+    expect(readCloudFile(cloud).meta.eraseEpoch).toBe(2);
+
+    // A record erased before the list existed: epoch 3, nothing listed.
+    const legacyCloud = new MemoryCloud();
+    const legacy = createEmptyFile({ deviceId: 'old-app', now: '2026-06-01T00:00:00.000Z' });
+    legacy.meta.eraseEpoch = 3;
+    await new MemoryAdapter(legacyCloud).write(ROADMAP_FILE_NAME, legacy, null);
+    const later = await RoadmapStore.create(new MemoryAdapter(legacyCloud));
+    later.addMeasurement('weight', 81, '2026-06-03');
+    const third = idOf(later, 'weight');
+    expect((await later.deleteUserData()).success).toBe(true);
+    expect(readCloudFile(legacyCloud).erasedRows).toEqual({ fromEpoch: 4, ids: [third] });
+    expect(readCloudFile(legacyCloud).meta.eraseEpoch).toBe(4);
   });
 });

@@ -163,14 +163,19 @@ describe('US-32 AC41 — read_record hands an assistant what the record says, no
     );
     Object.assign(file.profile, stamp, { reportEmailCaptured: true });
     Object.assign(file.screenings, stamp);
+    // US-09 AC23: an erase's list of the rows it removed.
+    file.schemaVersion = 2;
+    file.meta.eraseEpoch = 1;
+    file.erasedRows = { fromEpoch: 1, ids: ['ERASED-ROW-ID'] };
     return file;
   }
 
-  it('leaves out the meta clocks, the reminder settings, the snapshots and every per-row clock', () => {
+  it('leaves out the meta clocks, the reminder settings, the snapshots, the erase list and every per-row clock (US-09 AC23)', () => {
     const text = ok(readRecord(busy(), {})).text;
     const parsed = JSON.parse(text);
 
-    for (const key of ['meta', 'reminderOptIn', 'reminderPreferences', 'recommendationSnapshots']) expect(parsed, key).not.toHaveProperty(key);
+    for (const key of ['meta', 'reminderOptIn', 'reminderPreferences', 'recommendationSnapshots', 'erasedRows']) expect(parsed, key).not.toHaveProperty(key);
+    expect(text).not.toContain('ERASED-ROW-ID');
     // History rows keep `updatedAt` (their change date); nothing else does.
     const { medicationHistory: _mh, supplementHistory: _sh, ...withoutHistory } = parsed;
     expect(JSON.stringify(withoutHistory)).not.toContain('"updatedAt"');

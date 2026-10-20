@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json",
   "title": "Health Roadmap record file",
-  "description": "The complete health record for one user: a single JSON document named health-roadmap.json, stored in the user's own cloud (Google Drive, Dropbox, GitHub, WebDAV) or in browser localStorage. Never on our server. Derived from packages/health-core/src/roadmap-file.ts at schemaVersion 1. Unknown properties are preserved on read and write (forward-compatibility rule 1 in migrate.ts), so every object here allows extra keys. Timestamps are ISO 8601 strings. `meta.createdAt`/`meta.updatedAt` are shape-checked on read (a malformed value is replaced with the load time); row timestamps are compared as strings and clamped, not format-validated — so this schema does not require a format. Agents: see docs/agent-access.md for the read/write rules.",
+  "description": "The complete health record for one user: a single JSON document named health-roadmap.json, stored in the user's own cloud (Google Drive, Dropbox, GitHub, WebDAV) or in browser localStorage. Never on our server. Derived from packages/health-core/src/roadmap-file.ts at schemaVersion 2. Unknown properties are preserved on read and write (forward-compatibility rule 1 in migrate.ts), so every object here allows extra keys. Timestamps are ISO 8601 strings. `meta.createdAt`/`meta.updatedAt` are shape-checked on read (a malformed value is replaced with the load time); row timestamps are compared as strings and clamped, not format-validated — so this schema does not require a format. Agents: see docs/agent-access.md for the read/write rules.",
   "type": "object",
   "required": [
     "schemaVersion",
@@ -22,8 +22,8 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "const": 1,
-      "description": "On-disk shape version. A file with a HIGHER version than the reading app understands must not be rewritten — migrate.ts throws SchemaTooNewError rather than downgrade it."
+      "enum": [1, 2],
+      "description": "On-disk shape version. A file with a HIGHER version than the reading app understands must not be rewritten — migrate.ts throws SchemaTooNewError rather than downgrade it. 2 marks a file that carries `erasedRows`; every other file is 1 (US-09 AC23)."
     },
     "meta": { "$ref": "#/$defs/RoadmapFileMeta" },
     "profile": { "$ref": "#/$defs/RoadmapProfile" },
@@ -73,8 +73,11 @@
       "description": "Point-in-time record of what the tool advised, deduped by date.",
       "items": { "$ref": "#/$defs/RecommendationSnapshot" }
     },
-    "reminderOptIn": { "$ref": "#/$defs/FileReminderOptIn" }
+    "reminderOptIn": { "$ref": "#/$defs/FileReminderOptIn" },
+    "erasedRows": { "$ref": "#/$defs/ErasedRows" }
   },
+  "if": { "required": ["erasedRows"] },
+  "then": { "properties": { "schemaVersion": { "const": 2 } } },
   "$defs": {
     "RoadmapFileMeta": {
       "type": "object",
@@ -87,12 +90,22 @@
         "lamport": { "type": "number", "description": "File-level logical clock, monotonic per device." },
         "eraseEpoch": {
           "type": "number",
-          "description": "\"Delete All My Data\" counter. A file with a higher epoch wins a merge; the other copy keeps only the measurements, lab values and documents it created at or after the winner's `erasedAt`. Absent reads as 0."
+          "description": "\"Delete All My Data\" counter. A file with a higher epoch wins a merge; the other copy keeps the rows no erase listed in `erasedRows`, or, past an erase that listed nothing, only the measurements, lab values and documents it created at or after the winner's `erasedAt`. Absent reads as 0."
         },
         "erasedAt": {
           "type": "string",
-          "description": "ISO 8601 — when the latest erase happened, stamped with every `eraseEpoch` bump. Absent on a record erased before it existed: then a losing copy keeps no rows."
+          "description": "ISO 8601 — when the latest erase happened, stamped with every `eraseEpoch` bump. Read only past an erase that listed nothing in `erasedRows`. Absent on a record erased before it existed: then a losing copy keeps no rows."
         }
+      }
+    },
+
+    "ErasedRows": {
+      "type": "object",
+      "description": "Which rows the erases removed (US-09 AC23). Sync bookkeeping: never write or edit it. Every reader drops a row whose root id is listed (the id without any `#dup-…` or `#si` suffix), from every array that carries ids, so an erased row never comes back. A malformed list is dropped whole on read. A file that carries it is schemaVersion 2.",
+      "required": ["fromEpoch", "ids"],
+      "properties": {
+        "fromEpoch": { "type": "integer", "minimum": 1, "description": "Every erase from this epoch up to `meta.eraseEpoch` listed its ids; `eraseEpoch + 1` claims nothing. Read only if at most `eraseEpoch + 1`." },
+        "ids": { "type": "array", "items": { "type": "string" }, "description": "The root id of every row an erase removed, sorted and unique." }
       }
     },
 

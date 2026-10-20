@@ -9,8 +9,9 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryAdapter, ROADMAP_FILE_NAME, StorageError, createEmptyFile, type RoadmapFile, type StorageAdapter } from '@roadmap/health-core';
-import { LocalStorageAdapter, isSyncPending, syncPendingSince } from '../src/storage';
-import { RoadmapStore } from '../src/storage/roadmap-store';
+import { LocalStorageAdapter, isSyncPending } from '../src/storage';
+import { ERASE_UNREACHABLE, RoadmapStore } from '../src/storage/roadmap-store';
+import * as data from '../src/lib/roadmap-data';
 import { startOnBackend, type ResolvedBackend } from './connect';
 
 const captureException = vi.fn();
@@ -102,125 +103,109 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     vi.restoreAllMocks();
   });
 
-  it('US-09 AC13: the marker records WHEN the session went on-device, and keeps the earliest', async () => {
-    const before = new Date().toISOString();
-    await startOnBackend({ adapter: new RefusingCloud(), backend: 'dropbox' }, init);
-    const since = syncPendingSince();
-    expect(since).not.toBeNull();
-    expect(since! >= before).toBe(true);
-    // A second failure in the same session must not move the start time forward
-    // — everything written since the FIRST one is still waiting.
-    await startOnBackend({ adapter: new RefusingCloud(), backend: 'dropbox' }, init);
-    expect(syncPendingSince()).toBe(since);
-  });
-
-  it('US-09 AC13: a row typed before the save that failed is still unsynced, not stale', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    const t0 = new Date('2026-06-01T10:00:00.000Z');
-    vi.setSystemTime(t0);
-
-    class SaveFails extends MemoryAdapter {
-      async write(): Promise<never> {
-        throw new StorageError('cloud down');
-      }
+  class SaveFails extends MemoryAdapter {
+    async write(): Promise<never> {
+      throw new StorageError('cloud down');
     }
-    const store = await RoadmapStore.create(new SaveFails());
-    store.addMeasurement('weight', 80); // typed at t0, while the two were in step
-    vi.setSystemTime(new Date(t0.getTime() + 500)); // the debounce, then the doomed request
-    await expect(store.flush()).rejects.toThrow();
+  }
 
-    // The marker names the last moment device and cloud agreed (t0), NOT the
-    // failure (t0+500ms) — the row was typed in between and must still travel.
-    expect(syncPendingSince()).toBe(t0.toISOString());
-    vi.useRealTimers();
-
-    const cloud = new MemoryAdapter();
-    const erased = createEmptyFile({ deviceId: 'other-device', now: '2026-01-01T00:00:00Z' });
-    erased.meta.eraseEpoch = 1;
-    await cloud.write(ROADMAP_FILE_NAME, erased, null);
-    const recovered = await RoadmapStore.create(cloud);
-    expect(recovered.loadAllHistory().map((m) => m.value)).toEqual([80]);
-  });
-
-  // Review fix (N1): the marker speaks beside erasedAt. A row the session
-  // typed before the erase travels too: AC14's stated residual (a).
-  it('US-09 AC14 + AC20: beside erasedAt the marker still keeps what the session typed before the erase', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    const t0 = new Date('2026-06-01T10:00:00.000Z');
-    vi.setSystemTime(t0);
-    class SaveFails extends MemoryAdapter {
-      async write(): Promise<never> {
-        throw new StorageError('cloud down');
-      }
-    }
-    const store = await RoadmapStore.create(new SaveFails());
-    store.addMeasurement('weight', 80, '2026-06-01'); // typed at t0
-    await expect(store.flush()).rejects.toThrow();
-    vi.setSystemTime(new Date(t0.getTime() + 2_000));
-    store.addMeasurement('weight', 81, '2026-06-02'); // typed after the erase below
-    await expect(store.flush()).rejects.toThrow();
-    expect(syncPendingSince()).toBe(t0.toISOString());
-    vi.useRealTimers();
-
-    // Another device erased the record one second after t0.
+  /** A cloud another device erased under US-09 AC23: it listed the rows it
+   *  removed, none of them this device's. */
+  async function listedCloud(): Promise<MemoryAdapter> {
     const cloud = new MemoryAdapter();
     const erased = createEmptyFile({ deviceId: 'other-device', now: '2026-06-01T10:00:01.000Z' });
+    erased.schemaVersion = 2;
     erased.meta.eraseEpoch = 1;
     erased.meta.erasedAt = '2026-06-01T10:00:01.000Z';
+    erased.erasedRows = { fromEpoch: 1, ids: ['row-the-other-device-erased'] };
     await cloud.write(ROADMAP_FILE_NAME, erased, null);
-    const recovered = await RoadmapStore.create(cloud);
-    expect(recovered.loadAllHistory().map((m) => m.value).sort()).toEqual([80, 81]);
-  });
+    return cloud;
+  }
 
-  it('US-09 AC14 + AC20: a failed lift after an erase keeps the statin, omega-3 and weight typed since, with their histories', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-06-01T10:00:05.000Z')); // after the erase below
-    class SaveFails extends MemoryAdapter {
-      async write(): Promise<never> {
-        throw new StorageError('cloud down');
-      }
-    }
+  it('US-09 AC23: a weight, a medication and a supplement typed against an erased cloud survive, with their histories', async () => {
     const guest = await RoadmapStore.create(new SaveFails());
     guest.saveMedication('statin', 'atorvastatin', 20, 'mg');
     guest.saveSupplement('omega3', 'Omega-3');
     guest.addMeasurement('weight', 80, '2026-06-01');
     await expect(guest.flush()).rejects.toThrow();
-    expect(syncPendingSince()).toBe('2026-06-01T10:00:05.000Z');
-    vi.useRealTimers();
+    expect(isSyncPending()).toBe(true);
 
-    const cloud = new MemoryAdapter();
-    const erased = createEmptyFile({ deviceId: 'other-device', now: '2026-06-01T10:00:01.000Z' });
-    erased.meta.eraseEpoch = 1;
-    erased.meta.erasedAt = '2026-06-01T10:00:01.000Z';
-    await cloud.write(ROADMAP_FILE_NAME, erased, null);
+    const cloud = await listedCloud();
     const { file } = (await RoadmapStore.create(cloud)) as unknown as { file: RoadmapFile };
     expect(file.medications.map((m) => m.medicationKey)).toEqual(['statin']);
     expect(file.medicationHistory.map((m) => m.medicationKey)).toEqual(['statin']);
     expect(file.supplements.map((m) => m.supplementKey)).toEqual(['omega3']);
     expect(file.supplementHistory.map((m) => m.supplementKey)).toEqual(['omega3']);
     expect(file.measurements.map((m) => m.value)).toEqual([80]);
-    expect(file.meta).toMatchObject({ eraseEpoch: 1, erasedAt: '2026-06-01T10:00:01.000Z' });
+    expect(file.meta.eraseEpoch).toBe(1); // the erase itself still stands
+    expect(file.erasedRows).toEqual({ fromEpoch: 1, ids: ['row-the-other-device-erased'] });
   });
 
-  it('US-09 AC13: an erased cloud still wins, but the edits made on-device survive', async () => {
+  // AC23 residual (b): typed BEFORE the erase on a device that had not sent
+  // it. No erase saw it, so it is kept, as the AC14 marker kept it before.
+  it('US-09 AC23: a row the session typed before another device\'s erase survives it too', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-06-01T10:00:00.000Z')); // a second before the erase
+    const store = await RoadmapStore.create(new SaveFails());
+    store.addMeasurement('weight', 80, '2026-06-01');
+    await expect(store.flush()).rejects.toThrow();
+    vi.useRealTimers();
+
+    const recovered = await RoadmapStore.create(await listedCloud());
+    expect(recovered.loadAllHistory().map((m) => m.value)).toEqual([80]);
+  });
+
+  it('US-09 AC23: an erased cloud still wins, but the edits made on-device survive', async () => {
     const started = await startOnBackend({ adapter: new RefusingCloud(), backend: 'dropbox' }, init);
     const onDevice = await RoadmapStore.create(started.adapter);
     onDevice.addMeasurement('weight', 80);
     await onDevice.flush();
 
-    // The cloud comes back — and another device erased the record at some point,
-    // so its eraseEpoch outranks the empty file this session started from.
-    const cloud = new MemoryAdapter();
-    const erased = createEmptyFile({ deviceId: 'other-device', now: '2026-01-01T00:00:00Z' });
-    erased.meta.eraseEpoch = 1;
-    await cloud.write(ROADMAP_FILE_NAME, erased, null);
-
+    // The cloud comes back, and another device erased the record meanwhile.
+    const cloud = await listedCloud();
     const store = await RoadmapStore.create(cloud);
     expect(store.loadAllHistory().map((m) => m.value)).toEqual([80]);
     await store.flush();
     expect(isSyncPending()).toBe(false); // lifted up, so the marker clears
-    const { body } = (await cloud.read(ROADMAP_FILE_NAME)) as { body: { measurements: unknown[]; meta: { eraseEpoch: number } } };
+    const { body } = (await cloud.read(ROADMAP_FILE_NAME)) as { body: RoadmapFile };
     expect(body.measurements).toHaveLength(1);
     expect(body.meta.eraseEpoch).toBe(1); // the erase itself still stands
+  });
+
+  // Stated in AC23: an erase made before the list existed listed nothing, so
+  // only AC20's window speaks, and it rescues created rows alone.
+  it('US-09 AC23: against a cloud erased before the list existed, a fallback medication is lost and a later weight is kept', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-06-01T10:00:05.000Z'));
+    const guest = await RoadmapStore.create(new SaveFails());
+    guest.saveMedication('statin', 'atorvastatin', 20, 'mg');
+    guest.addMeasurement('weight', 80, '2026-06-01');
+    await expect(guest.flush()).rejects.toThrow();
+    vi.useRealTimers();
+
+    const cloud = new MemoryAdapter();
+    const legacy = createEmptyFile({ deviceId: 'other-device', now: '2026-06-01T10:00:01.000Z' });
+    legacy.meta.eraseEpoch = 1;
+    legacy.meta.erasedAt = '2026-06-01T10:00:01.000Z';
+    await cloud.write(ROADMAP_FILE_NAME, legacy, null);
+    const { file } = (await RoadmapStore.create(cloud)) as unknown as { file: RoadmapFile };
+    expect(file.medications).toEqual([]);
+    expect(file.measurements.map((m) => m.value)).toEqual([80]);
+  });
+
+  it('US-09 AC23: an erase in a fallback session is refused before the reminders hook and the chat erase, and changes nothing', async () => {
+    vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});
+    const started = await startOnBackend({ adapter: new RefusingCloud(), backend: 'google-drive' }, data.initRoadmapStore);
+    expect(started.reconnect).toBe('google-drive');
+    await data.addMeasurement('weight', 80, '2026-06-01');
+    await data.flushRoadmapStore();
+    const before = localStorage.getItem('health_roadmap_file_v2');
+    const hook = vi.fn(async () => {});
+    data.setPreEraseHook(hook);
+
+    expect(await data.deleteUserData()).toEqual({ success: false, error: ERASE_UNREACHABLE, chatErased: false });
+    expect(hook).not.toHaveBeenCalled();
+    expect(localStorage.getItem('health_roadmap_file_v2')).toBe(before);
+    expect((await data.loadAllHistory()).map((m) => m.value)).toEqual([80]);
   });
 });

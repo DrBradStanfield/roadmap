@@ -531,8 +531,9 @@ function plain<T extends object>(row: T): Plain<T> {
  * The record an assistant reads (US-32 AC41): what it says, and nothing it
  * needs only to sync. `meta` is clocks and a device id; the reminder opt-in
  * holds a capability token that can cancel someone's reminders (agent-access
- * rule 12) and an email address; reminder settings and recommendation
- * snapshots are the app's own, and so is `profile.reportEmailCaptured`. Row
+ * rule 12) and an email address; reminder settings, recommendation
+ * snapshots and the erase list (`erasedRows`, US-09 AC23) are the app's own,
+ * and so is `profile.reportEmailCaptured`. Row
  * ids stay, because `correct_value` takes them. Each measurement and lab row
  * says whether it is `current`: the row the plan counts for its metric, by the
  * plan's own rule, so two active rows in one slot never leave a reader guessing
@@ -541,7 +542,7 @@ function plain<T extends object>(row: T): Plain<T> {
  */
 export function redactRecord(file: RoadmapFile) {
   const {
-    meta: _meta, reminderOptIn: _optIn, reminderPreferences: _prefs, recommendationSnapshots: _snapshots,
+    meta: _meta, reminderOptIn: _optIn, reminderPreferences: _prefs, recommendationSnapshots: _snapshots, erasedRows: _erased,
     profile, screenings, measurements, labValues, medications, medicationHistory, supplements, supplementHistory, documents, ...rest
   } = file;
   const { reportEmailCaptured: _emailFlag, ...shownProfile } = plain(profile);

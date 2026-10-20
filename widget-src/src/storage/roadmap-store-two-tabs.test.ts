@@ -15,7 +15,7 @@
  * until a test saves it.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ConflictError, createEmptyFile, createMeasurement, MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { ConflictError, createEmptyFile, createMeasurement, MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, StorageError, type RoadmapFile } from '@roadmap/health-core';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from './roadmap-store';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT, VITALS_DRAFT_KEY } from '../lib/storage';
@@ -123,9 +123,34 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     a.flushSync();
 
     // mergeFiles' epoch gate: the higher eraseEpoch wins. A's old weight
-    // predates the erase and goes; the row typed after it stays (US-09 AC20).
+    // was listed by the erase and goes; the row typed after it stays (US-09 AC23).
     expect(stored().meta.eraseEpoch).toBe(1);
     expect(rows()).toEqual(['hdl 1.4 active']);
+    // And it stays gone once A reloads: every reader drops a listed row.
+    expect((await RoadmapStore.create(new LocalStorageAdapter())).loadAllHistory().map((m) => m.metricType)).toEqual(['hdl']);
+  });
+
+  it('US-09 AC23: a failed save\'s mirror lifted after another tab\'s erase keeps only the rows the erase did not list', async () => {
+    const cloud = new MemoryCloud();
+    const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    seeded.addMeasurement('weight', 82, '2026-09-18T00:00:00.000Z');
+    await seeded.flush();
+    class SaveFails extends MemoryAdapter {
+      async write(): Promise<never> {
+        throw new StorageError('cloud down');
+      }
+    }
+    const a = await RoadmapStore.create(new SaveFails(cloud)); // holds the weight
+    const b = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect((await b.deleteUserData()).success).toBe(true);
+    a.addMeasurement('hdl', 1.4, TODAY); // after B's erase, which never saw it
+    await expect(a.flush()).rejects.toThrow(); // mirrors the weight AND the hdl on this device
+
+    const next = await RoadmapStore.create(new MemoryAdapter(cloud)); // the next load lifts the mirror
+    await next.flush();
+    const file = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
+    expect(file.measurements.map((m) => m.metricType)).toEqual(['hdl']);
+    expect(file.meta.eraseEpoch).toBe(1);
   });
 
   it('never writes over a record a newer app saved, and the refusal is reported', async () => {
@@ -163,7 +188,9 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     expect(rows()).toEqual(['hdl 1.4 active', 'weight 82 active']);
   });
 
-  it('a hide that merges the other tab\'s erase takes it in: the drafts go, the page is told, a later edit survives', async () => {
+  // US-09 AC23 flipped this from gone to kept: B's erase never saw A's
+  // unsaved hdl, so it did not list it (residual b).
+  it('a hide that merges the other tab\'s erase takes it in: the drafts go, the page is told, the unsaved edit and a later one survive', async () => {
     const [a, b] = await twoTabs();
     a.addMeasurement('hdl', 1.4, TODAY); // unsaved when B erases
     vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
@@ -182,13 +209,29 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
     expect(cleared).toHaveBeenCalledTimes(1);
     expect(changed).toHaveBeenCalledTimes(1);
-    expect(a.loadAllHistory()).toEqual([]);
+    expect(a.loadAllHistory().map((m) => m.metricType)).toEqual(['hdl']); // the seeded weight was listed
     // A now works at the erase's epoch, so its next edit is kept.
     a.addMeasurement('ldl', 3.1, TODAY);
     await a.flush();
-    expect(rows()).toEqual(['ldl 3.1 active']);
+    expect(rows()).toEqual(['hdl 1.4 active', 'ldl 3.1 active']);
     window.removeEventListener(DRAFTS_CLEARED_EVENT, cleared);
     window.removeEventListener(REMOTE_CHANGED_EVENT, changed);
+  });
+
+  it('US-09 AC23: a change to the erase list alone is taken in and announced to nobody', async () => {
+    const [a] = await twoTabs();
+    const file = stored();
+    file.schemaVersion = 2;
+    file.erasedRows = { fromEpoch: 1, ids: ['a-row-nobody-here-holds'] };
+    await new LocalStorageAdapter().write(ROADMAP_FILE_NAME, file, localStorage.getItem(REV_KEY));
+    const heard = vi.fn();
+    window.addEventListener(REMOTE_CHANGED_EVENT, heard);
+
+    expect(await a.refreshFromRemote()).toBe(true);
+
+    expect(heard).not.toHaveBeenCalled();
+    expect((a as unknown as { file: RoadmapFile }).file.erasedRows?.ids).toEqual(['a-row-nobody-here-holds']);
+    window.removeEventListener(REMOTE_CHANGED_EVENT, heard);
   });
 
   it('after that hide, an erase in this tab removes what the other tab saved since', async () => {

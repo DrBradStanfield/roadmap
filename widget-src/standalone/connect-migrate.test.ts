@@ -18,11 +18,21 @@ import { MemoryAdapter, MemoryCloud, LocalStorageAdapter } from '../src/storage'
 import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
 import { RoadmapStore, PENDING_MIRROR_KEY } from '../src/storage/roadmap-store';
 import { migrateLocalInto, copyDownFrom, liftLocalInto } from './connect';
-import { markSyncPending } from '../src/storage';
 import { createEmptyFile } from '@roadmap/health-core';
 
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {
   return JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
+}
+
+/** A cloud another device erased under US-09 AC23, listing only its own rows. */
+async function erasedCloud(): Promise<MemoryCloud> {
+  const cloud = new MemoryCloud();
+  const erased = createEmptyFile({ deviceId: 'other-device', now: '2026-01-01T00:00:00.000Z' });
+  erased.schemaVersion = 2;
+  erased.meta.eraseEpoch = 1;
+  erased.erasedRows = { fromEpoch: 1, ids: ['row-the-other-device-erased'] };
+  await new MemoryAdapter(cloud).write(ROADMAP_FILE_NAME, erased, null);
+  return cloud;
 }
 
 describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
@@ -119,14 +129,27 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
     expect(rows).toEqual([['ldl', 3.2], ['weight', 80]]);
   });
 
-  // Codex re-check R2: the marker's earliest row was picked as text while the
-  // merge reads it as an instant. Text puts 21:00Z first; the +13:00 row is
-  // an hour earlier, fell before that marker, and was dropped.
-  it('US-09 AC14: a failed lift keeps every unsynced document when their stamps mix offsets', async () => {
+  it('US-09 AC23: a guest\'s rows survive connecting to an erased cloud', async () => {
+    const local = await RoadmapStore.create(new LocalStorageAdapter());
+    local.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    local.saveMedication('statin', 'atorvastatin', 20, 'mg');
+    await local.flush();
+
+    const cloud = await erasedCloud();
+    await migrateLocalInto(new MemoryAdapter(cloud));
+
+    const file = readCloudFile(cloud);
+    expect(file.measurements.map((m) => m.value)).toEqual([80]);
+    expect(file.medications.map((m) => m.medicationKey)).toEqual(['statin']);
+    expect(file.meta.eraseEpoch).toBe(1); // the erase itself still stands
+    expect(file.erasedRows?.ids).toEqual(['row-the-other-device-erased']);
+  });
+
+  it('US-09 AC23: a failed lift keeps every unsynced document for the next session, against an erased cloud', async () => {
     const doc = { title: 'Labs', type: 'pathology_report', date: '2026-05-10', fileRef: '', contentHash: '', mimeType: '', extractedText: 'x' };
     const device = createEmptyFile({ deviceId: 'this-device', now: '2026-05-12T00:00:00.000Z' });
     device.documents = [
-      { ...doc, id: 'plus13', addedAt: '2026-05-11T09:00:00+13:00' }, // 2026-05-10T20:00Z
+      { ...doc, id: 'plus13', addedAt: '2026-05-11T09:00:00+13:00' },
       { ...doc, id: 'utc', addedAt: '2026-05-10T21:00:00Z' },
     ] as RoadmapFile['documents'];
     await new LocalStorageAdapter().write(ROADMAP_FILE_NAME, device, null);
@@ -137,37 +160,28 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
       }
     }
     await liftLocalInto(new WriteFailsAdapter(), 'google-drive');
-    expect(Date.parse(localStorage.getItem(PENDING_MIRROR_KEY)!)).toBe(Date.parse('2026-05-10T20:00:00Z'));
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
 
-    // The cloud was erased before erasedAt existed, so only the marker speaks.
-    const cloud = new MemoryCloud();
-    const erased = createEmptyFile({ deviceId: 'other-device', now: '2026-01-01T00:00:00.000Z' });
-    erased.meta.eraseEpoch = 1;
-    await new MemoryAdapter(cloud).write(ROADMAP_FILE_NAME, erased, null);
+    const cloud = await erasedCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     await store.flush();
     expect(readCloudFile(cloud).documents.map((d) => d.id).sort()).toEqual(['plus13', 'utc']);
   });
 
-  it('US-09 AC13: a copy-down from an ERASED cloud keeps the rows this device has not synced', async () => {
+  it('US-09 AC23: a copy-down from an ERASED cloud keeps the rows this device holds', async () => {
     // Another device erased the record; this one has been on its own copy since.
-    const cloud = new MemoryCloud();
-    const adapter = new MemoryAdapter(cloud);
-    const erased = createEmptyFile({ deviceId: 'other-device', now: '2026-01-01T00:00:00.000Z' });
-    erased.meta.eraseEpoch = 1;
-    await adapter.write(ROADMAP_FILE_NAME, erased, null);
-
+    const cloud = await erasedCloud();
     const local = await RoadmapStore.create(new LocalStorageAdapter());
     local.addMeasurement('weight', 80, '2026-05-11T00:00:00.000Z');
     await local.flush();
-    markSyncPending('2026-01-01T00:00:00.000Z');
 
     // The user opens the picker to switch away: the copy-down runs first.
-    await copyDownFrom(adapter);
+    await copyDownFrom(new MemoryAdapter(cloud));
 
     const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
     const file = body as RoadmapFile;
     expect(file.measurements.map((m) => m.value)).toEqual([80]); // not wiped by the erased copy
     expect(file.meta.eraseEpoch).toBe(1); // and the erase still came down
+    expect(file.schemaVersion).toBe(2);
   });
 });

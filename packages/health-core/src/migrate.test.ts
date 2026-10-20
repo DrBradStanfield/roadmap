@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { migrateFile, SchemaTooNewError } from './migrate';
 import { mergeFiles } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { labSlotKey } from './lab-catalog';
-import { CURRENT_SCHEMA_VERSION, createEmptyFile, createMeasurement, stableStringify, type FileLabValue, type FileMeasurement } from './roadmap-file';
+import { BASE_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION, createEmptyFile, createMeasurement, stableStringify, type FileLabValue, type FileMeasurement } from './roadmap-file';
 
 const OPTS = { deviceId: 'dev_x', now: '2026-06-08T00:00:00Z' };
 
@@ -11,7 +11,7 @@ describe('migrateFile', () => {
   it('returns a fresh empty file for null / non-object input', () => {
     for (const bad of [null, undefined, 42, 'nope', []]) {
       const f = migrateFile(bad, OPTS);
-      expect(f.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+      expect(f.schemaVersion).toBe(BASE_SCHEMA_VERSION);
       expect(f.measurements).toEqual([]);
       expect(f.meta.lastDeviceId).toBe('dev_x');
     }
@@ -58,8 +58,77 @@ describe('migrateFile', () => {
     }
   });
 
-  it('treats a missing schemaVersion as the current version', () => {
-    expect(migrateFile({ profile: {} }, OPTS).schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+  // US-09 AC23: version 2 means "carries an erase list"; nothing else moves.
+  it('treats a missing schemaVersion as the version of a file no erase has listed rows in', () => {
+    expect(migrateFile({ profile: {} }, OPTS).schemaVersion).toBe(BASE_SCHEMA_VERSION);
+  });
+});
+
+describe('migrateFile — the erase list (US-09 AC23)', () => {
+  const row = (id: string, recordedAt = '2026-05-01') => createMeasurement({ id, metricType: 'weight', value: 80, recordedAt, createdAt: `${recordedAt}T08:00:00Z` });
+  const lab = (id: string, unit = 'mg/dL'): FileLabValue => ({
+    id, metricName: 'glucose', value: 90, unit, referenceLow: null, referenceHigh: null,
+    recordedAt: '2026-05-01', createdAt: '2026-05-01T08:00:00Z', source: 'manual', status: 'active', correctsId: null,
+  });
+  const STAMP = { updatedAt: '2026-05-01T08:00:00Z', lamport: 1 };
+  /** A raw file at erase epoch 1 that listed `ids`, holding one row per array under `x`, plus `keep`. */
+  function raw(erasedRows: unknown): Record<string, unknown> {
+    const file = createEmptyFile({ deviceId: 'dev_y', now: '2026-05-02T00:00:00Z' }) as unknown as Record<string, unknown>;
+    (file.meta as Record<string, unknown>).eraseEpoch = 1;
+    file.measurements = [row('xm'), row('keep', '2026-05-02')];
+    file.labValues = [lab('xl')]; // converted on load to `xl#si`, which goes too
+    file.documents = [{ id: 'xd', title: 'Labs', type: 'pathology_report', date: null, fileRef: '', contentHash: '', mimeType: '', extractedText: '', addedAt: '2026-05-01T08:00:00Z' }];
+    file.medications = [{ id: 'xmed', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', ...STAMP }];
+    file.medicationHistory = [{ id: 'xmh', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', changeType: 'started', ...STAMP }];
+    const supplement = { supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: null, doseUnit: null, status: 'active', startedAt: '2026-05-01', ...STAMP };
+    file.supplements = [{ id: 'xs', ...supplement }];
+    file.supplementHistory = [{ id: 'xsh', ...supplement, changeType: 'started' }];
+    return { ...file, erasedRows };
+  }
+  const LIST = { fromEpoch: 1, ids: ['xd', 'xl', 'xm', 'xmed', 'xmh', 'xs', 'xsh'] };
+
+  it('US-09 AC23: drops every listed row on load, a conversion included, and stamps the file version 2', () => {
+    const f = migrateFile(raw(LIST), OPTS);
+    expect(f.measurements.map((m) => m.id)).toEqual(['keep']);
+    for (const key of ['labValues', 'documents', 'medications', 'medicationHistory', 'supplements', 'supplementHistory'] as const) {
+      expect(f[key], key).toEqual([]);
+    }
+    expect(f.erasedRows).toEqual(LIST);
+    expect(f.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(CURRENT_SCHEMA_VERSION).toBe(2);
+    // Through the document spec too: what read_record and the CLI read.
+    expect(ROADMAP_DOC.migrate(raw(LIST), OPTS).measurements.map((m) => m.id)).toEqual(['keep']);
+  });
+
+  it('US-09 AC23: a malformed list is dropped whole and lists nothing; the file keeps its version', () => {
+    for (const bad of [
+      'x', [], { ids: ['xm'] }, { fromEpoch: 1 }, { fromEpoch: 1, ids: 'xm' }, { fromEpoch: 1, ids: ['xm', 7] },
+      { fromEpoch: 0, ids: ['xm'] }, { fromEpoch: 3, ids: ['xm'] }, { fromEpoch: 1.5, ids: ['xm'] }, { fromEpoch: '1', ids: ['xm'] },
+    ]) {
+      const f = migrateFile(raw(bad), OPTS);
+      expect('erasedRows' in f, JSON.stringify(bad)).toBe(false);
+      expect(f.measurements.map((m) => m.id).sort(), JSON.stringify(bad)).toEqual(['keep', 'xm']);
+      expect(f.schemaVersion).toBe(BASE_SCHEMA_VERSION);
+    }
+    // fromEpoch may be eraseEpoch + 1, which claims nothing.
+    expect(migrateFile(raw({ fromEpoch: 2, ids: ['xm'] }), OPTS).erasedRows).toEqual({ fromEpoch: 2, ids: ['xm'] });
+    // A version-2 file whose list went stays at 2: an older reader still refuses it.
+    expect(migrateFile({ ...raw('x'), schemaVersion: 2 }, OPTS).schemaVersion).toBe(2);
+  });
+
+  it('US-09 AC23: a version-1 reader refuses a listed file, so it can neither shrink the list nor erase unlisted', async () => {
+    vi.resetModules();
+    vi.doMock('./roadmap-file', async (original) => ({ ...(await original<typeof import('./roadmap-file')>()), CURRENT_SCHEMA_VERSION: 1 }));
+    try {
+      const old = await import('./migrate');
+      const listed = JSON.parse(JSON.stringify(migrateFile(raw(LIST), OPTS)));
+      expect(() => old.migrateFile(listed, OPTS)).toThrow(old.SchemaTooNewError);
+      // A file never erased under the list stays readable to it.
+      expect(old.migrateFile(JSON.parse(JSON.stringify(migrateFile(raw(undefined), OPTS))), OPTS).measurements).toHaveLength(2);
+    } finally {
+      vi.doUnmock('./roadmap-file');
+      vi.resetModules();
+    }
   });
 });
 

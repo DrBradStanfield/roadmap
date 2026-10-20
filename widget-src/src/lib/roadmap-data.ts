@@ -32,9 +32,11 @@ import type {
 
 let store: RoadmapStore | null = null;
 
-/** Initialise the data layer with a backend. Call once before rendering the app. */
-export async function initRoadmapStore(adapter: StorageAdapter): Promise<void> {
-  store = await RoadmapStore.create(adapter);
+/** Initialise the data layer with a backend. Call once before rendering the app.
+ *  `cloudUnreachable`: the session runs on-device because the cloud the user
+ *  chose could not be read (US-09 AC13). */
+export async function initRoadmapStore(adapter: StorageAdapter, cloudUnreachable = false): Promise<void> {
+  store = await RoadmapStore.create(adapter, cloudUnreachable);
   // Both surfaces init here, so this is the one place the live re-read starts
   // (US-34). It runs for the life of the page; nothing unmounts the data layer.
   store.startLiveRefresh();
@@ -219,32 +221,37 @@ export function setPreEraseHook(fn: () => Promise<void>): void {
 
 export async function deleteUserData(): Promise<{ success: boolean; error?: string; chatErased: boolean }> {
   if (!store) return { success: false, error: 'Data store not initialised', chatErased: false };
-  try {
-    await preEraseHook?.();
-  } catch (error) {
-    // Best-effort: an unreachable server must never block a user from erasing
-    // their own device. The orphaned row is reported, not silently swallowed.
-    console.warn('Pre-erase teardown failed', error);
-    Sentry.captureException(error, { tags: { area: 'reminders', op: 'pre-erase' } });
-  }
-  // Chat history is a SEPARATE file the record erase never touches, and its
-  // merge is append-only — so every conversation is tombstoned. Through the
-  // singleton, so an open chat panel's instance is the one erased, and BEFORE
-  // the record erase, which then clears the local-mode keys underneath it.
-  // Best-effort, like the hook above: a cloud that won't answer must not trap
-  // the user's data on their device.
-  // Reported, not just swallowed: the caller's post-erase notice must not claim
-  // a deletion that did not happen. The tombstones are already in the singleton,
-  // so the next recordExchange carries them through sync.save.
-  let chatErased = true;
-  try {
-    await (await getChatHistory())?.eraseAll();
-  } catch (error) {
-    chatErased = false;
-    console.warn('Chat-history erase failed', error);
-    Sentry.captureException(error, { tags: { area: 'chat-history', op: 'erase' } });
-  }
-  return { ...(await store.deleteUserData()), chatErased };
+  // Both steps below run only once the store has read the record it erases:
+  // an erase that cannot read it is refused, and must have changed nothing
+  // here either (US-09 AC23).
+  let chatErased = false;
+  const result = await store.deleteUserData(async () => {
+    try {
+      await preEraseHook?.();
+    } catch (error) {
+      // Best-effort: an unreachable server must never block a user from erasing
+      // their own device. The orphaned row is reported, not silently swallowed.
+      console.warn('Pre-erase teardown failed', error);
+      Sentry.captureException(error, { tags: { area: 'reminders', op: 'pre-erase' } });
+    }
+    // Chat history is a SEPARATE file the record erase never touches, and its
+    // merge is append-only — so every conversation is tombstoned. Through the
+    // singleton, so an open chat panel's instance is the one erased, and BEFORE
+    // the record erase, which then clears the local-mode keys underneath it.
+    // Best-effort, like the hook above: a cloud that won't answer must not trap
+    // the user's data on their device.
+    // Reported, not just swallowed: the caller's post-erase notice must not claim
+    // a deletion that did not happen. The tombstones are already in the singleton,
+    // so the next recordExchange carries them through sync.save.
+    try {
+      await (await getChatHistory())?.eraseAll();
+      chatErased = true;
+    } catch (error) {
+      console.warn('Chat-history erase failed', error);
+      Sentry.captureException(error, { tags: { area: 'chat-history', op: 'erase' } });
+    }
+  });
+  return { ...result, chatErased };
 }
 
 // ---------------------------------------------------------------------------
