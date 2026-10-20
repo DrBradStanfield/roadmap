@@ -35,6 +35,23 @@ export function generateState(): string {
   return base64UrlEncode(randomBytes(16));
 }
 
+/** Read and clear this flow's sessionStorage PKCE entry (null when none). */
+function takePkce(pkceKey: string): { verifier: string; state: string } | null {
+  let stored: { verifier: string; state: string } | null = null;
+  try {
+    stored = JSON.parse(sessionStorage.getItem(pkceKey) || 'null');
+  } catch {
+    stored = null;
+  }
+  if (!stored) return null;
+  try {
+    sessionStorage.removeItem(pkceKey);
+  } catch {
+    /* ignore */
+  }
+  return stored;
+}
+
 /**
  * Claim the OAuth `?code` on a redirect-return page — but only if THIS flow
  * (identified by its sessionStorage PKCE entry) initiated it. Multiple OAuth
@@ -53,18 +70,25 @@ export function claimRedirectCode(pkceKey: string): { code: string; verifier: st
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
   if (!code) return null;
-  let stored: { verifier: string; state: string } | null = null;
-  try {
-    stored = JSON.parse(sessionStorage.getItem(pkceKey) || 'null');
-  } catch {
-    stored = null;
-  }
+  const stored = takePkce(pkceKey); // one-shot — consumed on any outcome
   if (!stored) return null; // not our flow (another adapter's return)
-  try {
-    sessionStorage.removeItem(pkceKey); // one-shot — consumed on any outcome
-  } catch {
-    /* ignore */
-  }
   if (stored.state !== params.get('state')) return null; // stale entry or CSRF — don't exchange
   return { code, verifier: stored.verifier, scope: params.get('scope') ?? undefined };
+}
+
+/**
+ * The user pressed Cancel or Deny at the provider: the redirect returns
+ * `?error=access_denied&state=...` with no code (US-09 AC22). True only when THIS
+ * flow started it (a PKCE entry under `pkceKey` whose state matches), so a
+ * random `?error=` URL counts for nothing. The entry is consumed and the
+ * error params stripped, so a refresh cannot count it twice.
+ */
+export function claimRedirectCancel(pkceKey: string): boolean {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('error') !== 'access_denied' || params.get('code')) return false;
+  if (takePkce(pkceKey)?.state !== params.get('state')) return false;
+  for (const k of ['error', 'error_description', 'error_uri', 'state']) params.delete(k);
+  const rest = params.toString();
+  window.history.replaceState({}, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash);
+  return true;
 }

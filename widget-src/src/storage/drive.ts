@@ -45,7 +45,7 @@ import {
   type WriteResult,
 } from '@roadmap/health-core';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
-import { claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
+import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
 export interface GoogleDriveConfig {
   clientId: string;
@@ -266,6 +266,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
     return new Promise<void>(() => {
       /* navigation in progress */
     });
+  }
+
+  /** True once if the URL is OUR flow's Cancel/Back return (US-09 AC22). */
+  static claimCancelledRedirect(): boolean {
+    return claimRedirectCancel(PKCE_KEY);
   }
 
   /**

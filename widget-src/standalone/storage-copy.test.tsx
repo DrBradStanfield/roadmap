@@ -106,6 +106,20 @@ describe('US-09 AC5 — the picker', () => {
     expect(dialog.getAttribute('aria-label')).toBe(PLAN_STORAGE_CTA);
   });
 
+  it('warns before Google that the Drive box must be ticked (US-09 AC21)', () => {
+    const dialog = open();
+    const hint = dialog.querySelector('.hr-opt-hint');
+    expect(hint?.textContent).toBe("On Google's screen, tick the Google Drive box. Without it we cannot save your file.");
+    expect(hint?.closest('button')?.textContent).toContain('Google Drive');
+    expect(dialog.querySelectorAll('.hr-opt-hint')).toHaveLength(1); // Drive only
+    expect(hint?.textContent).not.toMatch(/—/);
+  });
+
+  it('drops the Drive hint once Drive is the connected backend (US-09 AC21)', () => {
+    render(<BackendPickerModal current="google-drive" onClose={vi.fn()} />);
+    expect(document.querySelector('.hr-opt-hint')).toBeNull();
+  });
+
   it('names the browser-only option honestly', () => {
     const dialog = open();
     expect(dialog.textContent).toContain('This browser only');

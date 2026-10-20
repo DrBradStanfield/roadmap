@@ -176,3 +176,8 @@ duplicates.
 - **2026-10-18 [instrumentation]** `upload_started`/`upload_saved` fire once per TAB
   (server-api.ts:164-171); only `upload_outcome` (live 10-13) counts runs. Unit refusals with no
   nearby start/save are a tab's later runs (W41's "untraced path"); started vs saved hides those runs.
+- **2026-10-20 [instrumentation]** From the PR #197 deploy, `cloud_connect_*` events throttle once per
+  TAB per PROVIDER (was per tab): a tab trying Dropbox then Drive now sends both starts. New
+  `cloud_connect_cancelled` counts only the provider's Cancel/Deny (redirect path); browser Back and
+  GIS-popup cancels stay silent. Read the funnel per visitor, never starts minus outcomes (US-09 AC22).
+  Baseline before the break: 29 of 86 Drive visitors reached no outcome (07-22..10-18).

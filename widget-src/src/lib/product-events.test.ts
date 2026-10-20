@@ -56,6 +56,14 @@ describe('trackProductEvent on the Shopify surface', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it('US-09 AC22 — counts a cloud-connect outcome once per provider per tab, so a second provider is not dropped', async () => {
+    const { trackProductEvent } = await import('./server-api');
+    trackProductEvent('cloud_connect_cancelled', { provider: 'dropbox' });
+    trackProductEvent('cloud_connect_cancelled', { provider: 'dropbox' });
+    trackProductEvent('cloud_connect_cancelled', { provider: 'google-drive' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('sends every upload outcome, so a second upload in the tab still counts (US-12 AC10)', async () => {
     const { trackProductEvent } = await import('./server-api');
     trackProductEvent('upload_outcome', { picked: 2, withValues: 2 });
