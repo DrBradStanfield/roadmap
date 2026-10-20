@@ -24,6 +24,8 @@ vi.mock('../lib/supabase.server', () => ({
 }));
 
 import { action } from './api.ab';
+import { SMALL_BODY_CAP } from '../lib/capped-body.server';
+import { streamingPost } from '../lib/capped-body.test-helpers';
 
 const SHOPIFY_EGRESS = '35.1.2.3';
 const proxied = (shopper: string) => ({
@@ -73,5 +75,15 @@ describe('api.ab', () => {
     const res = await impression('198.51.100.32');
     expect(res.status).toBe(200);
     expect(recordABEvent).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('api.ab body cap (US-09 AC25)', () => {
+  it('answers 413 to a chunked body over 64 KB and stops reading', async () => {
+    const { request, pulled } = streamingPost('https://drstanfield.com/api/ab', 100 * SMALL_BODY_CAP, { headers: proxied('198.51.100.33') });
+    const res = await action({ request, params: {} } as unknown as Parameters<typeof action>[0]);
+    expect(res.status).toBe(413);
+    expect(pulled.bytes).toBeLessThanOrEqual(SMALL_BODY_CAP + 2 * 16 * 1024);
+    expect(recordABEvent).not.toHaveBeenCalled();
   });
 });

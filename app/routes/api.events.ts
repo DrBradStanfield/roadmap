@@ -2,7 +2,7 @@ import { type ActionFunctionArgs } from "react-router";
 import { authenticate } from '../shopify.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { isBotUA } from '../lib/bot-detect';
-import { getClientIp } from '../lib/local-first-route.server';
+import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 import { parseProductEvent, recordProductEvent } from '../lib/product-events.server';
 
 // 20 events per minute per visitor — a full session emits well under this.
@@ -18,12 +18,8 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ success: false, error: 'bot' });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ success: false, error: 'Invalid JSON' }, { status: 400 });
-  }
+  const body = await parseSimpleRequestJson(request);
+  if (body === BODY_TOO_LARGE) return Response.json({ success: false, error: 'Request too large' }, { status: 413 });
 
   const event = parseProductEvent(body);
   if (!event) {

@@ -6,7 +6,7 @@ import { UNDATED_PREVIOUS } from '../../packages/health-core/src/lab-extraction'
 import { extractOrClassify, createBatch, pollBatch, BatchRefusedError, ExtractionStopError, reportExtractionStop } from '../lib/anthropic.server';
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
-import { getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
+import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
 import { activeBatches, armSweep, MAX_ACTIVE_BATCHES, type BatchPollResult, type DayFlags } from '../lib/lab-batches.server';
 
 /**
@@ -158,12 +158,10 @@ export async function action({ request }: ActionFunctionArgs) {
   const ip = getClientIp(request, 'shopify');
 
   try {
-    const contentLength = Number(request.headers.get('content-length') || 0);
-    if (contentLength > 200 * 1024 * 1024) {
+    const body = await parseSimpleRequestJson(request, 200 * 1024 * 1024);
+    if (body === BODY_TOO_LARGE) {
       return Response.json({ success: false, error: 'Request too large' }, { status: 413 });
     }
-
-    const body = await parseSimpleRequestJson(request);
 
     // --- Batch poll --- (costs no quota; it reads a batch already paid for)
     const poll = body as { batchId?: unknown; pollToken?: unknown } | null;

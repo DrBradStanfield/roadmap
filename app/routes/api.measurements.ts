@@ -6,7 +6,7 @@ import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 import { sendPlanReadyEmail } from '../lib/email.server';
 import { buildUnsubscribeUrl, emailLimiterKey, enrolByEmail, scheduleSchema, type Enrolment } from '../lib/reminder-v2.server';
 import { recordServerEvent } from '../lib/product-events.server';
-import { getClientIp } from '../lib/local-first-route.server';
+import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 
 const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000); // 5/day per email
@@ -116,8 +116,9 @@ async function handleKlaviyoCapture(data: unknown, clientIp: string) {
 // reach Klaviyo.
 export async function action({ request }: ActionFunctionArgs) {
   await authenticate.public.appProxy(request);
-  const body = await request.json();
-  if (body.klaviyoCapture) {
+  const body = await parseSimpleRequestJson(request) as { klaviyoCapture?: unknown } | typeof BODY_TOO_LARGE | null;
+  if (body === BODY_TOO_LARGE) return Response.json({ success: false, error: 'Request too large' }, { status: 413 });
+  if (body?.klaviyoCapture) {
     return handleKlaviyoCapture(body.klaviyoCapture, getClientIp(request, 'shopify'));
   }
   return Response.json({ success: false, error: 'Unsupported request' }, { status: 400 });

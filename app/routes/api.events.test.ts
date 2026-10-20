@@ -15,6 +15,8 @@ vi.mock('../lib/product-events.server', async (importOriginal) => ({
 }));
 
 import { action } from './api.events';
+import { SMALL_BODY_CAP } from '../lib/capped-body.server';
+import { streamingPost } from '../lib/capped-body.test-helpers';
 
 const SHOPIFY_EGRESS = '35.1.2.3';
 
@@ -41,5 +43,14 @@ describe('api.events', () => {
     }
     expect((await emit(shopper)).status).toBe(429);
     expect((await emit('198.51.100.41')).status).toBe(200);
+  });
+});
+
+describe('api.events body cap (US-09 AC25)', () => {
+  it('answers 413 to a chunked body over 64 KB and stops reading', async () => {
+    const { request, pulled } = streamingPost('https://drstanfield.com/api/events', 100 * SMALL_BODY_CAP);
+    const res = await action({ request, params: {} } as unknown as Parameters<typeof action>[0]);
+    expect(res.status).toBe(413);
+    expect(pulled.bytes).toBeLessThanOrEqual(SMALL_BODY_CAP + 2 * 16 * 1024);
   });
 });
