@@ -49,7 +49,7 @@ connector holds cannot see files dropped into the folder.
 - 30 files per connection per day (`importFiles` in `mcp-grants.server.ts`);
   the machine day cap `machineFiles` in `app/lib/rate-limiter.ts` is shared
   with the website's `api.lab-import-v2`, so the dollar ceiling is one number
-  (`AI_DAILY_FILE_CAP`, default 500, per machine, × 2 Fly apps).
+  (`AI_DAILY_FILE_CAP`, default 2000, per machine, × 2 Fly apps).
 - 40 s per call (`MCP_IMPORT_BUDGET_MS`; ChatGPT cuts tool calls at 60 s).
   `runImport` starts the clock before the record is read and hands one
   `deadline` to every phase. Every I/O carries a `deadlineSignal` and is

@@ -28,7 +28,7 @@ import { activeBatches, armSweep, MAX_ACTIVE_BATCHES, type BatchPollResult, type
  *    so any batch it takes fits a fresh day (US-12 AC17)
  *  - a HARD per-machine daily file cap as the $-cap guardrail, shared with the
  *    connector's import (`machineFiles` in rate-limiter.ts, US-35 AC10). Tune
- *    via AI_DAILY_FILE_CAP (default 500/day/machine ≈ low tens of $ worst case).
+ *    via AI_DAILY_FILE_CAP (default 2000/day/machine, raised from 500 on 2026-10-21: 4x the old worst-case cost).
  */
 
 const PER_IP_DAILY_LIMIT = IMPORT_LIMITS.websiteFiles;

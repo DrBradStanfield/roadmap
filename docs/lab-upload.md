@@ -264,12 +264,12 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 |---------|-------|-------|
 | App-proxy HMAC | Every extraction call is signed by Shopify | `verifyAppProxySignature` in `local-first-route.server.ts`; no login exists in v2, the signature is the anti-abuse front door |
 | Per-IP quota | 200 files/day (`IMPORT_LIMITS.websiteFiles`, the upload cap), weighted by file count | `createQuotaCounter` in `rate-limiter.ts` (in-memory, resets on deploy) |
-| Machine cap | `AI_DAILY_FILE_CAP` (default 500/day/machine), SHARED with the connector's `import_documents` | `machineFiles` in `rate-limiter.ts`; the true ceiling is cap × machines × 2 Fly apps |
+| Machine cap | `AI_DAILY_FILE_CAP` (default 2000/day/machine), SHARED with the connector's `import_documents` | `machineFiles` in `rate-limiter.ts`; the true ceiling is cap × machines × 2 Fly apps |
 | Max files | 200 per upload session (client) | `UploadModal.tsx` |
 | Max pages | 20 per PDF (client); 100 page blocks per request (`labImportRequestSchema`) | `pdf-extract.ts`, `validation.ts` |
 | Max file size | 10 MB per file (client only); server rejects bodies over 200 MB | `UploadModal.tsx`, `api.lab-import-v2.ts` |
 | Max tokens | 10000 (`'full'`, one file), 12288 (batch, BYOK), 3072 (`'metadata'`) | `anthropic.server.ts`, `lab-extraction.ts` |
-| Worst-case cost | bounded by the machine cap, not the per-IP limit: about 500 files a day per machine (`AI_DAILY_FILE_CAP`) ≈ low tens of $ worst case, per machine and per Fly app (the figure the cap's comment in `api.lab-import-v2.ts` gives). Since the per-IP limit rose to 200, three IPs can reach the cap in a day. | |
+| Worst-case cost | bounded by the machine cap, not the per-IP limit: about 2000 files a day per machine (`AI_DAILY_FILE_CAP`), 4x the old 500 cap and its worst-case cost, per machine and per Fly app (the figure the cap's comment in `api.lab-import-v2.ts` gives). Since the per-IP limit rose to 200, ten IPs can reach the cap in a day (three could reach the old 500). | |
 | Sentry | `feature: 'lab_import_v2'`, page count and types only, never values | `api.lab-import-v2.ts` |
 
 ---

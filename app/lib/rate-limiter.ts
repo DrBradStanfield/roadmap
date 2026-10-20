@@ -81,4 +81,4 @@ export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: n
  * `AI_DAILY_FILE_CAP × machines × 2 apps` and it resets on deploy — an
  * accepted approximation until a shared counter is worth its DDL.
  */
-export const machineFiles = createQuotaCounter(Number(process.env.AI_DAILY_FILE_CAP || 500), DAY_MS, 30 * 60_000);
+export const machineFiles = createQuotaCounter(Number(process.env.AI_DAILY_FILE_CAP || 2000), DAY_MS, 30 * 60_000);
