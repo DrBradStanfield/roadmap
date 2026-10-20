@@ -1,3 +1,7 @@
+---
+artifact: https://claude.ai/artifact/58tF7PLzpsWjAE3HsS1UQv
+---
+
 # Batch 1 topic masters: your sheet
 
 20 October 2026. The batch is ten supplement reference pages, rewritten as topic masters (US-50). Each was written by Opus and passed the checker. Each then had two review rounds by a fresh Opus adversary and Codex.
