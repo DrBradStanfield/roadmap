@@ -208,13 +208,16 @@ function bloodTestSchedule(measurementDates: MeasurementDates, items: ReminderSc
 function medicationSchedule(medications: MedicationRecord[], items: ReminderScheduleItem[]): void {
   const active = medications.filter(isActiveMedication);
   if (active.length === 0) return;
-  // Review is due 12 months after the LEAST recently updated active medication
-  const oldest = active.map((m) => m.updatedAt).sort()[0];
+  // Review is due 12 months after the oldest usable active review day.
+  // Unknown dates contribute no candidate; never infer or persist a review.
+  const oldest = active.map((m) => typeof m.updatedAt === 'string' ? dayOf(m.updatedAt) : '')
+    .filter(isCalendarDay).sort()[0];
+  if (!oldest) return;
   items.push({
     category: 'medication_review',
     group: 'medication_review',
     label: 'Medication review',
-    dueAt: addMonths(dayOf(oldest), MEDICATION_REVIEW_STALE_MONTHS),
+    dueAt: addMonths(oldest, MEDICATION_REVIEW_STALE_MONTHS),
   });
 }
 

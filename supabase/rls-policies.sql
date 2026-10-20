@@ -121,7 +121,8 @@ BEGIN
   INSERT INTO public.profiles (id, shopify_customer_id, email)
   VALUES (
     NEW.id,
-    NEW.raw_user_meta_data->>'shopify_customer_id',
+    -- User metadata is editable by the account holder; only admins own this link.
+    NEW.raw_app_meta_data->>'shopify_customer_id',
     NEW.email
   )
   ON CONFLICT (id) DO NOTHING;
@@ -231,7 +232,12 @@ CREATE POLICY "Users can delete own measurements"
 -- Explicit grants ensure the authenticated role can access tables after DROP/CREATE.
 -- Without these, the anon key + custom JWT client silently fails.
 
-GRANT SELECT, UPDATE ON profiles TO authenticated;
+-- RLS scopes rows, not columns. Remove the old table-wide UPDATE privilege
+-- before allowing profile edits; identity links and email remain admin-owned.
+REVOKE UPDATE ON profiles FROM authenticated;
+GRANT SELECT ON profiles TO authenticated;
+GRANT UPDATE (sex, birth_year, birth_month, unit_system, first_name, last_name, height)
+  ON profiles TO authenticated;
 GRANT SELECT, INSERT, DELETE ON health_measurements TO authenticated;
 
 -- ============================================================
@@ -885,13 +891,34 @@ CREATE POLICY "Users can delete own conversations"
 
 DROP POLICY IF EXISTS "Users can view own messages" ON chat_messages;
 CREATE POLICY "Users can view own messages"
-  ON chat_messages FOR SELECT USING (user_id = auth.uid());
+  ON chat_messages FOR SELECT USING (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM chat_conversations
+      WHERE chat_conversations.id = chat_messages.conversation_id
+        AND chat_conversations.user_id = auth.uid()
+    )
+  );
 DROP POLICY IF EXISTS "Users can create own messages" ON chat_messages;
 CREATE POLICY "Users can create own messages"
-  ON chat_messages FOR INSERT WITH CHECK (user_id = auth.uid());
+  ON chat_messages FOR INSERT WITH CHECK (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM chat_conversations
+      WHERE chat_conversations.id = chat_messages.conversation_id
+        AND chat_conversations.user_id = auth.uid()
+    )
+  );
 DROP POLICY IF EXISTS "Users can delete own messages" ON chat_messages;
 CREATE POLICY "Users can delete own messages"
-  ON chat_messages FOR DELETE USING (user_id = auth.uid());
+  ON chat_messages FOR DELETE USING (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM chat_conversations
+      WHERE chat_conversations.id = chat_messages.conversation_id
+        AND chat_conversations.user_id = auth.uid()
+    )
+  );
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON chat_conversations TO authenticated;
 GRANT SELECT, INSERT, DELETE ON chat_messages TO authenticated;

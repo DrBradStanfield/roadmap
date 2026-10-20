@@ -11,14 +11,45 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@testing-library/react';
-import { parseProposedEdit, ROADMAP_FILE_NAME, type ProposedEdit, type RoadmapFile } from '@roadmap/health-core';
+import { parseProposedEdit, ROADMAP_FILE_NAME, migrateFile, type ProposedEdit, type RoadmapFile } from '@roadmap/health-core';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, setAfterSnapshotReturn, setBeforeSnapshotIdentity } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
 
-const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void) }));
+const chat = vi.hoisted(() => ({
+  proposeEdit: null as null | ((edits: ProposedEdit[]) => void),
+  context: null as null | (() => unknown),
+}));
+const reload = vi.hoisted(() => ({
+  complete: null as null | (() => Promise<void>),
+  history: null as unknown,
+}));
+vi.mock('../lib/roadmap-data', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/roadmap-data')>();
+  return { ...actual };
+});
+
+/** Hold inside the synchronous snapshot, before it returns the captured store
+ *  token and erase identity. The hold is not wrapped in act: React's act
+ *  flushes a pending promise before the test can erase. */
+async function pauseReload() {
+  let release!: () => void;
+  let entered!: () => void;
+  const waiting = new Promise<void>(resolve => { entered = resolve; });
+  const held = new Promise<void>(resolve => { release = resolve; });
+  setBeforeSnapshotIdentity(async () => {
+    entered();
+    await held;
+  });
+  const pending = reload.complete!();
+  await waiting;
+  return async () => {
+    release();
+    await act(async () => { await pending; });
+  };
+}
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -29,13 +60,18 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ onProposeEdit }: { onProposeEdit: (edits: ProposedEdit[]) => void }) => {
+  ChatEmbed: ({ onProposeEdit, guestInputs }: { onProposeEdit: (edits: ProposedEdit[]) => void; guestInputs: () => unknown }) => {
     chat.proposeEdit = onProposeEdit;
+    chat.context = guestInputs;
     return null;
   },
 }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
+vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete, history }: { onComplete: () => Promise<void>; history: unknown }) => {
+  reload.complete = onComplete;
+  reload.history = history;
+  return null;
+} }));
 
 import { HealthTool } from './HealthTool';
 
@@ -81,6 +117,9 @@ beforeEach(() => {
   }));
   Element.prototype.scrollIntoView ??= () => {};
   chat.proposeEdit = null;
+  reload.complete = null;
+  setBeforeSnapshotIdentity(null);
+  setAfterSnapshotReturn(null);
 });
 afterEach(async () => {
   cleanup();
@@ -285,6 +324,340 @@ describe('US-16 AC2: the proposal banner, after review', () => {
     expect(after.medications).toEqual(before.medications);
     expect(after.profile).toEqual(before.profile);
   });
+});
+
+// US-16 AC2 / US-34: a refresh is not an erase.
+it('keeps an empty guest proposal through unchanged refresh until Save', async () => {
+  await initRoadmapStore(new LocalStorageAdapter());
+  render(<HealthTool />);
+  await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+  await wait(600);
+  const before = (await recordOnDisk()).meta;
+  chatProposes({ sex: 'female', height: { value: 165, unit: 'cm' } });
+  act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+  await wait(600);
+  expect((await recordOnDisk()).meta.eraseEpoch).toBe(before.eraseEpoch);
+  expect(banner()).not.toBeNull();
+  expect((await recordOnDisk()).profile).not.toHaveProperty('sex');
+  pressButton('Save');
+  await wait(1500);
+  expect((await recordOnDisk()).profile).toMatchObject({ sex: 'female', heightCm: 165 });
+});
+
+
+// Real adapter writes and public store refresh: no invented getFile API.
+for (const sameEpoch of [false, true]) {
+  it(`clears a pending proposal for a ${sameEpoch ? 'same-epoch later' : 'higher-epoch'} erase with concurrent new rows`, async () => {
+    const created = vi.spyOn(RoadmapStore, 'create');
+    await initRoadmapStore(new LocalStorageAdapter());
+    const current = await created.mock.results[0].value;
+    if (sameEpoch) await deleteUserData();
+    render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    await wait(600);
+    chatProposes({ sex: 'female', height: { value: 165, unit: 'cm' } });
+    const adapter = new LocalStorageAdapter();
+    const prior = await recordOnDisk();
+    const remote = await RoadmapStore.create(adapter);
+    await remote.deleteUserData();
+    await remote.addMeasurement('weight', 82, '2026-09-01');
+    await remote.flush();
+    if (sameEpoch) {
+      const read = await adapter.read(ROADMAP_FILE_NAME);
+      const body = read.body as RoadmapFile;
+      body.meta.eraseEpoch = prior.meta.eraseEpoch;
+      await adapter.write(ROADMAP_FILE_NAME, body, read.version);
+    }
+    await act(async () => { await current.refreshFromRemote(); });
+    // The UI relay runs asynchronously after the store announces the change.
+    await wait(600);
+    expect((await loadLatestMeasurements())?.previousMeasurements).toHaveLength(1);
+    expect(banner()).toBeNull();
+  });
+}
+
+it('clears a proposal on a store switch, even when both records are empty at the same erase identity', async () => {
+  await initRoadmapStore(new LocalStorageAdapter());
+  render(<HealthTool />);
+  await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+  await wait(600);
+  chatProposes({ sex: 'female' });
+  await act(async () => { await initRoadmapStore(new LocalStorageAdapter()); });
+  act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+  await wait(600);
+  expect(banner()).toBeNull();
+});
+
+it('keeps medication Undo through an unchanged refresh and restores the prior medication', async () => {
+  await guestWithoutProfile();
+  act(() => chat.proposeEdit!([
+    { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
+  ]));
+  await wait(1500);
+  act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+  await wait(600);
+  const undo = Array.from(document.body.querySelectorAll('.chat-banners button')).find(b => b.textContent === 'Undo');
+  expect(undo).toBeTruthy();
+  fireEvent.click(undo!);
+  await wait(1500);
+  expect((await loadLatestMeasurements())?.medications.find(m => m.medicationKey === 'statin')?.drugName).toBe('none');
+});
+
+
+it('clears an empty guest proposal when a real remote erase is re-read', async () => {
+  const created = vi.spyOn(RoadmapStore, 'create');
+  await initRoadmapStore(new LocalStorageAdapter());
+  const current = await created.mock.results[0].value;
+  render(<HealthTool />);
+  await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+  await wait(600);
+  chatProposes({ sex: 'female' });
+  const remote = await RoadmapStore.create(new LocalStorageAdapter());
+  await remote.deleteUserData();
+  await act(async () => { await current.refreshFromRemote(); });
+  await wait(600);
+  expect(banner()).toBeNull();
+});
+
+
+async function seedLists(store: RoadmapStore) {
+  store.bulkSaveLabValues([{ metricName: 'Ferritin', value: 75, unit: 'µg/L', recordedAt: '2026-09-01' }]);
+  await store.saveMedication('statin', 'atorvastatin', 20, 'mg');
+  await store.bulkSaveDocuments([{
+    documentType: 'lab_report', title: 'Synthetic prior report', documentDate: '2026-09-01',
+    contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'synthetic-prior.pdf',
+  }]);
+}
+
+it('US-09 / US-34: a pre-erase reload cannot restore its snapshot or clear a fresh proposal', async () => {
+  const created = vi.spyOn(RoadmapStore, 'create');
+  const view = await guestWithoutProfile({ sex: 'male', heightCm: 175 });
+  await act(async () => { await seedLists(await created.mock.results[0].value); await reload.complete!(); });
+  expect(JSON.stringify(reload.history)).toContain('Synthetic prior report');
+  const release = await pauseReload();
+  vi.stubGlobal('confirm', () => true);
+  vi.stubGlobal('alert', () => {});
+  fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+  await waitFor(() => expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value ?? '').toBe(''));
+  await wait(1500);
+  expect(localStorage.getItem('health_roadmap_data')).toBeNull();
+  chatProposes({ sex: 'female' });
+  expect(banner()).not.toBeNull();
+  await release();
+  expect(banner()).not.toBeNull();
+  expect(reload.history).toEqual({ measurements: [], labValues: [], documents: [] });
+  expect(JSON.stringify(chat.context!())).not.toContain('atorvastatin');
+  expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value ?? '').toBe('');
+  expect(JSON.parse(localStorage.getItem('health_roadmap_data') ?? '{}').inputs?.heightCm).toBeUndefined();
+  act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+  await wait(600);
+  expect(banner()).not.toBeNull();
+});
+
+for (const change of ['erase', 'replace'] as const) {
+  for (const newerFirst of [false, true]) {
+  it(`US-34: discards a paused snapshot after ${change}, ${newerFirst ? 'after' : 'before'} a newer reload`, async () => {
+    const created = vi.spyOn(RoadmapStore, 'create');
+    const view = await guestWithoutProfile({ sex: 'male', heightCm: 175 });
+    const current = await created.mock.results[0].value;
+    await act(async () => { await seedLists(current); await reload.complete!(); });
+    chatProposes({ sex: 'female' });
+    const release = await pauseReload();
+    await act(async () => {
+      if (change === 'erase') await deleteUserData();
+      else await initRoadmapStore(new LocalStorageAdapter());
+      await saveChangedMeasurements({ sex: 'female', heightCm: 181 }, {});
+      await addMeasurement('weight', 84, '2026-09-02');
+    });
+    // The obsolete completion must publish nothing, not label old values with
+    // the new store identity. Detect even transient mirror writes.
+    if (newerFirst) {
+      await act(async () => { await reload.complete!(); });
+      expect(banner()).toBeNull();
+      chatProposes({ sex: 'male' });
+    }
+    const mirrored = vi.fn();
+    window.addEventListener('hr:inputs-changed', mirrored);
+    try {
+      await release();
+      expect(mirrored).not.toHaveBeenCalled();
+      if (!newerFirst) await act(async () => { await reload.complete!(); });
+      expect(banner() === null).toBe(!newerFirst);
+      expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value).toBe('181');
+      const mirror = JSON.parse(localStorage.getItem('health_roadmap_data')!);
+      expect(mirror.inputs.heightCm).toBe(181);
+      expect(mirror.previousMeasurements.find((r: { metricType: string }) => r.metricType === 'weight').value).toBe(84);
+      if (change === 'erase') {
+        expect(mirror.medications).toEqual([]);
+        expect(reload.history).toMatchObject({ documents: [] });
+        expect(JSON.stringify(chat.context!())).not.toContain('atorvastatin');
+      }
+    } finally {
+      window.removeEventListener('hr:inputs-changed', mirrored);
+    }
+  });
+  }
+}
+
+it('US-34: a snapshot paused before it returns publishes nothing if the same store restores that erase identity', async () => {
+  vi.setSystemTime(new Date('2026-10-20T18:45:00.000Z'));
+  const created = vi.spyOn(RoadmapStore, 'create');
+  const view = await guestWithoutProfile({ sex: 'male', heightCm: 175 });
+  const current = await created.mock.results[0].value as RoadmapStore;
+  await act(async () => { await seedLists(current); await reload.complete!(); });
+  await act(async () => { await current.deleteUserData(); });
+  const identityBefore = current.eraseIdentity;
+  const [, epoch, erasedAt] = JSON.parse(identityBefore) as [number, number, string];
+  await act(async () => {
+    await saveChangedMeasurements({ sex: 'male', heightCm: 175 }, {});
+    await seedLists(current);
+    await addMeasurement('weight', 90, '2026-09-03');
+    await current.flush();
+    await reload.complete!();
+  });
+  chatProposes({ sex: 'female' });
+  const release = await pauseReload();
+  const heightBefore = view.container.querySelector<HTMLInputElement>('#heightCm')?.value;
+  await act(async () => {
+    await current.deleteUserData();
+    expect(current.eraseIdentity).not.toBe(identityBefore);
+    const restored = migrateFile({
+      profile: { sex: 'male', heightCm: 190 },
+      measurements: [{
+        id: 'restored-weight', metricType: 'weight', value: 82, recordedAt: '2026-09-01',
+        status: 'active', createdAt: '2026-09-01T00:00:00.000Z', updatedAt: '2026-09-01T00:00:00.000Z', lamport: 1,
+      }],
+    }, { deviceId: 'restore-probe', now: '2026-10-20T18:45:00.000Z' });
+    restored.meta.eraseEpoch = epoch;
+    restored.meta.erasedAt = erasedAt;
+    (current as unknown as { file: RoadmapFile }).file = restored;
+    const restoredIdentity = JSON.parse(current.eraseIdentity) as [number, number, string];
+    expect(restoredIdentity[0]).toBeGreaterThan(JSON.parse(identityBefore)[0] as number);
+    expect(restoredIdentity[1]).toBe(epoch);
+    expect(restoredIdentity[2]).toBe(erasedAt);
+    expect(current.loadLatestMeasurements().previousMeasurements.some(row => row.value === 82)).toBe(true);
+  });
+  const historyAfterErase = reload.history;
+  const contextAfterErase = chat.context!();
+  const mirrorAfterErase = localStorage.getItem('health_roadmap_data');
+  const mirrored = vi.fn();
+  window.addEventListener('hr:inputs-changed', mirrored);
+  try {
+    await release();
+    expect(mirrored).not.toHaveBeenCalled();
+    expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value).toBe(heightBefore);
+    expect(localStorage.getItem('health_roadmap_data')).toBe(mirrorAfterErase);
+    expect(reload.history).toEqual(historyAfterErase);
+    expect(chat.context!()).toEqual(contextAfterErase);
+    expect(banner()).not.toBeNull();
+    expect(JSON.stringify(reload.history)).not.toContain('atorvastatin');
+    expect(JSON.stringify(chat.context!())).not.toContain('"value":82');
+    expect(JSON.stringify(reload.history)).not.toContain('Ferritin');
+    expect(JSON.stringify(chat.context!())).not.toContain('atorvastatin');
+    expect(view.container.textContent).not.toContain('190');
+  } finally {
+    window.removeEventListener('hr:inputs-changed', mirrored);
+  }
+});
+/** Hold on the caller's await immediately after loadRecordSnapshot resolves.
+ *  Not wrapped in act: act would flush the pending reload before the erase. */
+async function pauseAfterSnapshotReturned() {
+  let release!: () => void;
+  let entered!: () => void;
+  const waiting = new Promise<void>(resolve => { entered = resolve; });
+  const held = new Promise<void>(resolve => { release = resolve; });
+  setAfterSnapshotReturn(async () => {
+    entered();
+    await held;
+  });
+  const pending = reload.complete!();
+  await waiting;
+  return async () => {
+    release();
+    await act(async () => { await pending; });
+  };
+}
+
+for (const change of ['erase', 'replace'] as const) {
+  it(`US-34: a snapshot that already returned publishes nothing if ${change} begins before the next await`, async () => {
+    const created = vi.spyOn(RoadmapStore, 'create');
+    const view = await guestWithoutProfile({ sex: 'male', heightCm: 175 });
+    const current = await created.mock.results[0].value;
+    await act(async () => { await seedLists(current); await reload.complete!(); });
+    chatProposes({ sex: 'female' });
+    const release = await pauseAfterSnapshotReturned();
+    await act(async () => {
+      if (change === 'erase') await deleteUserData();
+      else await initRoadmapStore(new LocalStorageAdapter());
+      await saveChangedMeasurements({ sex: 'female', heightCm: 181 }, {});
+      await addMeasurement('weight', 84, '2026-09-02');
+    });
+    const heightAfterBoundary = view.container.querySelector<HTMLInputElement>('#heightCm')?.value;
+    const mirrorAfterBoundary = localStorage.getItem('health_roadmap_data');
+    const historyAfterBoundary = reload.history;
+    const contextAfterBoundary = chat.context!();
+    const mirrored = vi.fn();
+    window.addEventListener('hr:inputs-changed', mirrored);
+    try {
+      await release();
+      expect(mirrored).not.toHaveBeenCalled();
+      expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value).toBe(heightAfterBoundary);
+      expect(localStorage.getItem('health_roadmap_data')).toBe(mirrorAfterBoundary);
+      expect(reload.history).toEqual(historyAfterBoundary);
+      expect(chat.context!()).toEqual(contextAfterBoundary);
+      expect(banner()).not.toBeNull();
+      expect(JSON.stringify(reload.history)).not.toContain('"value":84');
+      expect(JSON.stringify(chat.context!())).not.toContain('"value":84');
+      if (change === 'erase') {
+        expect(localStorage.getItem('health_roadmap_data')).toBeNull();
+      }
+    } finally {
+      window.removeEventListener('hr:inputs-changed', mirrored);
+    }
+  });
+}
+
+it('US-34: two overlapping reloads of the same identity publish only the newest snapshot', async () => {
+  const created = vi.spyOn(RoadmapStore, 'create');
+  const view = await guestWithoutProfile({ sex: 'male', heightCm: 175 });
+  const current = await created.mock.results[0].value;
+  await act(async () => { await seedLists(current); await reload.complete!(); });
+  chatProposes({ sex: 'female' });
+  const release = await pauseReload();
+  await act(async () => {
+    await saveChangedMeasurements({ heightCm: 181 }, { heightCm: 175 });
+    await current.saveMedication('statin', 'rosuvastatin', 10, 'mg');
+    await current.bulkSaveDocuments([{
+      documentType: 'lab_report', title: 'Synthetic newest report', documentDate: '2026-09-02',
+      contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'synthetic-newest.pdf',
+    }]);
+    await addMeasurement('weight', 84, '2026-09-02');
+    await reload.complete!();
+  });
+  const mirror = localStorage.getItem('health_roadmap_data');
+  const history = reload.history;
+  const context = chat.context!();
+  await release();
+  expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value).toBe('181');
+  expect(localStorage.getItem('health_roadmap_data')).toBe(mirror);
+  expect(reload.history).toEqual(history);
+  expect(JSON.stringify(reload.history)).toContain('Synthetic newest report');
+  expect(chat.context!()).toEqual(context);
+  expect(JSON.stringify(context)).toContain('rosuvastatin');
+  expect(banner()).not.toBeNull();
+});
+
+it('keeps a new proposal after local erase through an unchanged refresh', async () => {
+  const view = await guestWithoutProfile({ sex: 'male', heightCm: 175 });
+  vi.stubGlobal('confirm', () => true);
+  vi.stubGlobal('alert', () => {});
+  fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+  await wait(1500);
+  chatProposes({ sex: 'female' });
+  expect(banner()).not.toBeNull();
+  act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+  await wait(600);
+  expect(banner()).not.toBeNull();
 });
 
 // Codex R2 + adversary R1: once the record erase landed, a failed on-device
