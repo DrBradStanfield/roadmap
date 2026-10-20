@@ -68,7 +68,7 @@ flowchart LR
   end
   subgraph BE["REMIX BACKEND (Fly.io)"]
     direction TB
-    S1["api.lab-import-v2<br/>app-proxy HMAC · 60 files/day per IP · machine cap"]
+    S1["api.lab-import-v2<br/>app-proxy HMAC · 200 files/day per IP · machine cap"]
     S2["Claude Haiku 5.5, thinking off<br/>prompt from lab-extraction.ts, never client-supplied"]
     S3["resolveLabValues()<br/>lab-extraction.ts · unit lookup + range fallback"]
     S1 --> S2 --> S3

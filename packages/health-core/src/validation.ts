@@ -364,7 +364,7 @@ export const batchImportRequestSchema = z.object({
   batch: z.literal(true),
   files: z.array(z.object({
     pages: z.array(labImportPageSchema).min(1).max(100),
-  })).min(1).max(200),
+  })).min(1).max(IMPORT_LIMITS.websiteFiles),
   /** As on a single file (US-12 AC12, AC14, AC15). */
   ownDates: z.literal(true).optional(),
   undatedPrev: z.literal(true).optional(),

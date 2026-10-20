@@ -12,6 +12,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const createBatch = vi.fn(async () => ({ batchId: 'batch_abc' }));
 const pollBatch = vi.fn(async () => ({ status: 'ended' as const, completed: 1, total: 1, results: [{ fileName: 'a.pdf' }] }));
 const extractOrClassify = vi.fn();
+const deleteBatch = vi.fn(async () => true);
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('../lib/anthropic.server', async (importOriginal) => ({
@@ -19,6 +20,7 @@ vi.mock('../lib/anthropic.server', async (importOriginal) => ({
   createBatch: (...a: unknown[]) => createBatch(...(a as [])),
   pollBatch: (...a: unknown[]) => pollBatch(...(a as [])),
   extractOrClassify: (...a: unknown[]) => extractOrClassify(...(a as [])),
+  deleteBatch: (...a: unknown[]) => deleteBatch(...(a as [])),
 }));
 vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -26,7 +28,9 @@ vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
 }));
 
 import * as Sentry from '@sentry/react-router';
-import { ExtractionStopError } from '../lib/anthropic.server';
+import { BatchRefusedError, ExtractionStopError } from '../lib/anthropic.server';
+import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
+import { machineFiles } from '../lib/rate-limiter';
 import { action, loader } from './api.lab-import-v2';
 
 const FILES = [{ fileName: 'a.pdf', pages: [{ type: 'image', content: 'AAAA', mimeType: 'image/png' }] }];
@@ -59,6 +63,8 @@ async function newBatch(): Promise<{ batchId: string; pollToken: string }> {
 beforeEach(() => {
   vi.clearAllMocks();
   createBatch.mockResolvedValue({ batchId: 'batch_abc' });
+  deleteBatch.mockResolvedValue(true);
+  pollBatch.mockResolvedValue({ status: 'ended', completed: 1, total: 1, results: [{ fileName: 'a.pdf' }] });
 });
 
 describe('the batch poll needs the token the upload was given', () => {
@@ -135,10 +141,48 @@ describe('the batch poll needs the token the upload was given', () => {
   });
 
   it('a poll costs no quota — only the upload does', async () => {
+    pollBatch.mockResolvedValue({ status: 'processing', completed: 0, total: 1 } as never);
     const { batchId, pollToken } = await newBatch();
     for (let i = 0; i < 5; i++) await action({ request: poll({ batchId, pollToken }) } as never);
     expect(pollBatch).toHaveBeenCalledTimes(5);
     expect(createBatch).toHaveBeenCalledTimes(1);
+  });
+});
+
+// US-12 AC18: the poll never deletes. A lost answer must not lose the batch:
+// a re-poll gets the same results until the sweep deletes it
+// (api.lab-import-v2.sweep.test.ts).
+describe('US-12 AC18: the poll answers an ended batch again and deletes nothing', () => {
+  it('serves the results to a second poll, with no delete', async () => {
+    const { batchId, pollToken } = await newBatch();
+    const first = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
+    const again = await action({ request: poll({ batchId, pollToken }) } as never);
+    expect(again.status).toBe(200);
+    expect(await again.json()).toEqual(first);
+    expect(deleteBatch).not.toHaveBeenCalled();
+  });
+});
+
+// US-12 AC17: the per-IP daily limit is the upload window's own file cap, so
+// any batch the window takes fits a fresh day.
+describe('US-12 AC17: one IP may send as many files a day as one upload takes', () => {
+  const many = (n: number, ip: string) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST', headers: { 'fly-client-ip': ip },
+    body: JSON.stringify({ batch: true, files: Array.from({ length: n }, () => FILES[0]) }),
+  });
+
+  it('is 200 files, the website upload cap', async () => {
+    expect(IMPORT_LIMITS.websiteFiles).toBe(200);
+    const preflight = await loader({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', { headers: { 'fly-client-ip': '10.2.0.1' } }) } as never);
+    expect(await preflight.json()).toEqual({ allowed: true, remaining: 200 });
+  });
+
+  it('takes a 200-file batch from a fresh IP, then refuses the next file with the daily-limit answer', async () => {
+    const full = await action({ request: many(200, '10.2.0.2') } as never);
+    expect(full.status).toBe(200);
+    const over = await action({ request: many(1, '10.2.0.2') } as never);
+    expect(over.status).toBe(429);
+    expect(await over.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' });
   });
 });
 
@@ -383,5 +427,53 @@ describe('US-12 AC15: a refused value reaches an old widget as a value that coul
   it('refusedRows is `true` or absent', async () => {
     expect((await action({ request: single({ refusedRows: 1 }) } as never)).status).toBe(400);
     expect((await action({ request: batch({ refusedRows: 'yes' }) } as never)).status).toBe(400);
+  });
+});
+
+// PR #201 review R2: a file is charged only if it reaches Anthropic. Busy is
+// covered in api.lab-import-v2.sweep.test.ts (it fills the batch table).
+describe('US-12 AC17: a batch that never reaches Anthropic costs no quota', () => {
+  const remaining = async (ip: string) =>
+    (await (await loader({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', { headers: { 'fly-client-ip': ip } }) } as never)).json()).remaining;
+  const one = (ip: string) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST', headers: { 'fly-client-ip': ip }, body: JSON.stringify({ batch: true, files: FILES }),
+  });
+
+  it('the machine cap refuses: the IP is not charged', async () => {
+    machineFiles.take('machine', machineFiles.remaining('machine'));
+    try {
+      const res = await action({ request: one('10.4.0.1') } as never);
+      expect(res.status).toBe(429);
+      expect(await remaining('10.4.0.1')).toBe(200);
+    } finally { machineFiles.reset(); }
+  });
+
+  it('Anthropic certainly refused the batch (a non-OK answer, or no key): the IP and the machine are both refunded', async () => {
+    for (const [i, message] of ['Batch API error (status 500)', 'ANTHROPIC_API_KEY not configured'].entries()) {
+      createBatch.mockRejectedValueOnce(new BatchRefusedError(message));
+      const machineBefore = machineFiles.remaining('machine');
+      const res = await action({ request: one(`10.4.0.${2 + i}`) } as never);
+      expect(res.status).toBe(500);
+      expect(await remaining(`10.4.0.${2 + i}`)).toBe(200);
+      expect(machineFiles.remaining('machine')).toBe(machineBefore);
+    }
+  });
+
+  // The batch may exist (Codex R2, adversary F1): a timeout, a network failure
+  // or an unreadable 200 keeps the charge.
+  it('a timeout, a network failure or an unreadable 200 keeps the charge', async () => {
+    const maybeMade = [
+      new DOMException('The operation was aborted due to timeout', 'TimeoutError'),
+      new TypeError('fetch failed'),
+      new SyntaxError('Unexpected end of JSON input'),
+    ];
+    for (const [i, err] of maybeMade.entries()) {
+      createBatch.mockRejectedValueOnce(err);
+      const machineBefore = machineFiles.remaining('machine');
+      const res = await action({ request: one(`10.4.1.${i}`) } as never);
+      expect(res.status).toBe(500);
+      expect(await remaining(`10.4.1.${i}`)).toBe(199);
+      expect(machineFiles.remaining('machine')).toBe(machineBefore - 1);
+    }
   });
 });

@@ -54,7 +54,8 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   `feedback_submissions`; `product_events` by `event_name` — the funnel:
   results_viewed → upload_started/saved/extract_failed (started and saved fire once per TAB) →
   upload_outcome (one per RUN, US-12 AC10: sum its integer keys `picked`, `withValues`,
-  `documentOnly`, `noValues`, `openFailed`, `tooLarge`, `truncated`, `serverError`, `limitError`,
+  `documentOnly`, `noValues`, `openFailed`, `tooLarge`, `truncated`, `serverError`, `limitError` (the daily
+  limit, and since US-12 AC17 also files past the 200-file cap of one upload),
   `refused`, `tooLong`, `valuesDropped`, `docx`, `picturesOnly` (US-12 AC13; `docx` overlaps the
   others), `undatedPrevious` (US-12 AC14: values from an undated previous column, not files); a key not sent is 0 (zero counts are omitted); an unpaired start is located by its outcome row) →
   cloud_connect_started/success → chat_opened → correction_made →

@@ -21,6 +21,8 @@ export const IMPORT_LIMITS = {
   websitePdfPages: 20,
   /** Characters in one text page the website sends; the server refuses more (US-12 AC13). */
   websiteTextPageChars: 100_000,
+  /** Files one website upload takes, one batch holds, and one IP may send a day (US-12 AC17). */
+  websiteFiles: 200,
 } as const;
 
 /** The Dropbox app folder a NEW connection gets (older ones keep `Health Roadmap by Dr Brad`; agent-access.md). */

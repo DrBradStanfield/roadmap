@@ -10,7 +10,7 @@ You can add blood test results to [the tool](https://drstanfield.com/pages/roadm
 
 ## What you can upload
 
-A PDF from your lab, a photo of a printed report (JPG or PNG), a Word file (.docx), or a ZIP holding any of these. Each file can be up to 10 MB. You can upload about 60 files a day, and each file inside a ZIP counts. A bigger batch is refused as a whole, so split a large set across days.
+A PDF from your lab, a photo of a printed report (JPG or PNG), a Word file (.docx), or a ZIP holding any of these. Each file can be up to 10 MB. You can upload up to 200 files a day, and each file inside a ZIP counts. A batch that would take you past that is refused as a whole, so split a larger set across days.
 
 Some files will not read. An old Word .doc file cannot be opened, so save it as a PDF or .docx first. A PDF with a password will not open either. A Word file that holds only pictures of the page needs to be saved as a PDF, or photographed.
 
@@ -81,7 +81,7 @@ The tool names each file it could not read, with the reason.
 
 ## Where your file goes
 
-Your browser reads the file first. From a PDF or Word file it takes the text. From a photo it takes a smaller copy, and from a scanned page a picture of the page. That goes to our server, which passes it to Anthropic's API, from the company that makes Claude, to pick out the test names, numbers, units and dates. The results come back to your browser for you to check. Our server does not store the file, its text or the values. When you upload 20 files or more at once, they go to Anthropic as one batch, and Anthropic keeps that batch, both what we sent and what came back, in our API account for up to 29 days.
+Your browser reads the file first. From a PDF or Word file it takes the text. From a photo it takes a smaller copy, and from a scanned page a picture of the page. That goes to our server, which passes it to Anthropic's API, from the company that makes Claude, to pick out the test names, numbers, units and dates. The results come back to your browser for you to check. Our server does not store the file, its text or the values. When you upload 20 files or more at once, they go to Anthropic as one batch. Our server deletes that batch from our Anthropic account within about twenty minutes of the results reaching your browser. If you close the page first, it deletes the batch within about an hour of the upload. If our server restarts or is stopped while idle before then, it can lose track of the batch, and Anthropic keeps it in our account for up to 29 days.
 
 Anthropic's terms say they do not train models on customer content, and their privacy centre says API inputs and outputs are deleted within 30 days unless they need to keep them to enforce their usage policy or comply with the law ([their policy](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)).
 
