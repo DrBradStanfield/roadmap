@@ -205,7 +205,9 @@ Validate your result against the schema before you write it back.
   normalises an untrusted file on every read, a non-array where an array belongs becomes
   an empty array, out-of-range counters and future write-stamps are clamped (see the
   timestamps rule), and a row missing fields the UI needs simply will not render. Beyond
-  those clamps it does not repair rows, and it does not warn.
+  those clamps it does not repair rows, and it does not warn. A measurement or lab row
+  whose `recordedAt` does not start with a real calendar day (`YYYY-MM-DD`) is removed
+  at the next sync.
 - **Unknown fields survive at the top level and inside rows**: migrate and merge both
   spread what they do not recognise, so an older app will not strip something a newer
   one added. **`meta` is the exception:** `mergeFiles` rebuilds it from its five known

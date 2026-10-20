@@ -932,6 +932,16 @@ describe('RoadmapStore.addMeasurement date semantics (US-03)', () => {
     expect(insertedRow(store.addMeasurement('weight', 80, explicit)).recordedAt).toBe(explicit);
   });
 
+  // US-29 AC4a: the reader drops a row whose recordedAt is not a real day, so
+  // storing one made every later save in the session fail its readback.
+  it.each(['2026-02-30T00:00:00.000Z', 'T00:00:00.000Z', ' 2026-10-18', '+002026-10-18'])(
+    'US-29 AC4a — refuses recordedAt %s, and the next save still lands', async (bad) => {
+      const store = await RoadmapStore.create(new MemoryAdapter());
+      expect(store.addMeasurement('weight', 80, bad)).toEqual({ status: 'error' });
+      expect(store.loadAllHistory()).toEqual([]);
+      expect(store.addMeasurement('weight', 80, '2026-10-18T08:00:00+1300').status).toBe('inserted');
+    });
+
   it('defaults recordedAt to the LOCAL calendar day at midnight when omitted', async () => {
     vi.setSystemTime(new Date('2026-08-07T12:34:56.000Z'));
     const store = await RoadmapStore.create(new MemoryAdapter());

@@ -304,6 +304,7 @@ export {
 export {
   buildMeasurementHistory,
   isCalendarDay,
+  isClinicalDay,
   latestActivePerMetric,
   latestFromHistory,
   HISTORY_CAP_PER_METRIC,

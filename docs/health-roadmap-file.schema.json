@@ -207,6 +207,7 @@
         "value": { "type": "number", "description": "SI canonical unit: kg, cm, mmHg, mmol/mol (HbA1c), mmol/L (lipids), g/L (ApoB), µmol/L (creatinine), ng/mL (PSA), nmol/L (Lp(a))." },
         "recordedAt": {
           "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}",
           "description": "ISO 8601. Only the calendar day matters: (metricType, day) is the slot key, and at most one active row exists per slot. Both 'YYYY-MM-DD' and a full timestamp occur in real files."
         },
         "createdAt": { "type": "string", "description": "ISO 8601 write time. Within a slot, the newest createdAt is the active row (id breaks ties)." },
@@ -249,7 +250,7 @@
         "unit": { "type": "string", "description": "The unit the value is STORED in. For a catalogued test this is the catalogue's canonical SI unit, not necessarily the one the lab printed; the conversion factors are in health_roadmap_algorithm.md section 2. A spelling the catalogue does not know for that test is refused on write, never rescaled by guess." },
         "referenceLow": { "type": ["number", "null"], "description": "Lab reference range low, in the same unit as value (converted by the same factor), or null." },
         "referenceHigh": { "type": ["number", "null"], "description": "Lab reference range high, in the same unit as value (converted by the same factor), or null." },
-        "recordedAt": { "type": "string" },
+        "recordedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}" },
         "createdAt": { "type": "string" },
         "source": { "$ref": "#/$defs/MeasurementSource" },
         "status": { "$ref": "#/$defs/MeasurementStatus" },

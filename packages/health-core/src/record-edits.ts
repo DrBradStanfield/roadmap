@@ -35,7 +35,7 @@ import {
 import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, localDay } from './merge';
-import { isCalendarDay } from './measurement-history';
+import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES } from './validation';
@@ -550,6 +550,8 @@ export interface BulkAppendResult {
  * `recordedAt`; a correction keeps the old row's date, as `correctValue` does.
  */
 export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string): BulkAppendResult {
+  // US-29 AC4a: the reader drops such a row, so the save's readback would miss it and every later save fail.
+  if (!rows.every((r) => isClinicalDay(r.recordedAt))) throw new Error('bulkAppendValues: every recordedAt must start with a real calendar day (YYYY-MM-DD)');
   // Each array copied once; rows are pushed and flipped in place after — O(rows + N).
   const measurements = [...file.measurements];
   const labValues = [...file.labValues];
