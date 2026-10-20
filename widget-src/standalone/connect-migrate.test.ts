@@ -119,6 +119,36 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
     expect(rows).toEqual([['ldl', 3.2], ['weight', 80]]);
   });
 
+  // Codex re-check R2: the marker's earliest row was picked as text while the
+  // merge reads it as an instant. Text puts 21:00Z first; the +13:00 row is
+  // an hour earlier, fell before that marker, and was dropped.
+  it('US-09 AC14: a failed lift keeps every unsynced document when their stamps mix offsets', async () => {
+    const doc = { title: 'Labs', type: 'pathology_report', date: '2026-05-10', fileRef: '', contentHash: '', mimeType: '', extractedText: 'x' };
+    const device = createEmptyFile({ deviceId: 'this-device', now: '2026-05-12T00:00:00.000Z' });
+    device.documents = [
+      { ...doc, id: 'plus13', addedAt: '2026-05-11T09:00:00+13:00' }, // 2026-05-10T20:00Z
+      { ...doc, id: 'utc', addedAt: '2026-05-10T21:00:00Z' },
+    ] as RoadmapFile['documents'];
+    await new LocalStorageAdapter().write(ROADMAP_FILE_NAME, device, null);
+
+    class WriteFailsAdapter extends MemoryAdapter {
+      async write(): Promise<never> {
+        throw new StorageError('cloud down');
+      }
+    }
+    await liftLocalInto(new WriteFailsAdapter(), 'google-drive');
+    expect(Date.parse(localStorage.getItem(PENDING_MIRROR_KEY)!)).toBe(Date.parse('2026-05-10T20:00:00Z'));
+
+    // The cloud was erased before erasedAt existed, so only the marker speaks.
+    const cloud = new MemoryCloud();
+    const erased = createEmptyFile({ deviceId: 'other-device', now: '2026-01-01T00:00:00.000Z' });
+    erased.meta.eraseEpoch = 1;
+    await new MemoryAdapter(cloud).write(ROADMAP_FILE_NAME, erased, null);
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    await store.flush();
+    expect(readCloudFile(cloud).documents.map((d) => d.id).sort()).toEqual(['plus13', 'utc']);
+  });
+
   it('US-09 AC13: a copy-down from an ERASED cloud keeps the rows this device has not synced', async () => {
     // Another device erased the record; this one has been on its own copy since.
     const cloud = new MemoryCloud();

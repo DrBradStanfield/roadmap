@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { migrateFile, SchemaTooNewError } from './migrate';
 import { mergeFiles } from './merge';
+import { ROADMAP_DOC } from './roadmap-doc';
 import { labSlotKey } from './lab-catalog';
 import { CURRENT_SCHEMA_VERSION, createEmptyFile, createMeasurement, stableStringify, type FileLabValue, type FileMeasurement } from './roadmap-file';
 
@@ -99,6 +100,48 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     // 1e400 parses out of JSON as Infinity; it must not win an erase forever.
     const inf = migrateFile(rawFile({ meta: { ...META, eraseEpoch: Infinity } }), OPTS);
     expect(Number.isSafeInteger(inf.meta.eraseEpoch!)).toBe(true);
+  });
+
+  // US-09 AC20: erasedAt round-trips; one that is not a timestamp is dropped,
+  // which reads as an erase from before erasedAt existed — the gate then
+  // drops every losing row, the side that never resurrects erased data.
+  it('US-09 AC20: keeps a well-formed meta.erasedAt, in UTC, and drops a malformed one', () => {
+    const erasedAt = (at: unknown) => migrateFile(rawFile({ meta: { ...META, eraseEpoch: 1, erasedAt: at } }), OPTS).meta.erasedAt;
+    expect(erasedAt('2026-05-10T00:00:00Z')).toBe('2026-05-10T00:00:00.000Z');
+    expect(erasedAt('2026-05-10T13:00+13:00')).toBe('2026-05-10T00:00:00.000Z');
+    // Strict (Codex R2): a prefix, an impossible date, trailing junk, no zone.
+    for (const bad of [5, null, '', 'yesterday', {}, '2026-05-10T', '2026-13-40T00:00:00Z', '2026-05-10T12:00:00Zjunk', '2026-05-10T12:00:00']) {
+      const meta = migrateFile(rawFile({ meta: { ...META, eraseEpoch: 1, erasedAt: bad } }), OPTS).meta;
+      expect('erasedAt' in meta, String(bad)).toBe(false);
+    }
+    expect('erasedAt' in migrateFile(rawFile(), OPTS).meta).toBe(false);
+  });
+
+  // Codex re-check R3: Date.parse rolls an impossible day over (02-30 is
+  // March 2), so the calendar date is checked on its own.
+  it('US-09 AC20: drops an erasedAt on a day the calendar does not have, keeps a leap day', () => {
+    const erasedAt = (at: unknown) => migrateFile(rawFile({ meta: { ...META, eraseEpoch: 1, erasedAt: at } }), OPTS).meta.erasedAt;
+    expect(erasedAt('2026-02-29T00:00:00Z')).toBeUndefined();
+    expect(erasedAt('2026-04-31T00:00:00Z')).toBeUndefined();
+    expect(erasedAt('2026-02-30T00:00:00Z')).toBeUndefined();
+    expect(erasedAt('2028-02-29T00:00:00Z')).toBe('2028-02-29T00:00:00.000Z');
+  });
+
+  // Codex re-check R1: the createdAt clamp compared strings. A pre-erase row
+  // stamped +13:00 sorts after the file clock as text, was clamped up to it,
+  // and then outlived the erase.
+  it('US-09 AC20: the createdAt clamp compares instants, so an offset row before the erase still goes', () => {
+    const ctx = { deviceId: 'dev_x', now: '2026-05-10T01:00:00Z' };
+    const before = { ...MEAS, id: 'plus13', createdAt: '2026-05-10T09:00:00+13:00' }; // 2026-05-09T20:00Z
+    const stale = ROADMAP_DOC.migrate(rawFile({ meta: { ...META, updatedAt: '2026-05-10T01:00:00Z' }, measurements: [before] }), ctx);
+    expect(stale.measurements[0].createdAt).toBe('2026-05-10T09:00:00+13:00'); // not clamped
+    const erased = ROADMAP_DOC.migrate(rawFile({ meta: { ...META, updatedAt: '2026-05-10T00:00:00Z', eraseEpoch: 1, erasedAt: '2026-05-10T00:00:00Z' } }), ctx);
+    expect(mergeFiles(stale, erased, ctx).measurements).toEqual([]);
+    expect(mergeFiles(erased, stale, ctx).measurements).toEqual([]);
+    // A row past the clock as an instant is still clamped.
+    const ahead = { ...MEAS, id: 'ahead', createdAt: '2026-05-10T02:00:00Z' };
+    expect(migrateFile(rawFile({ meta: { ...META, updatedAt: '2026-05-10T14:00:00+13:00' }, measurements: [ahead] }), ctx).measurements[0].createdAt)
+      .toBe('2026-05-10T14:00:00+13:00');
   });
 
   // Defect 2 (cont.): a saturated meta.lamport breaks the file clock forever —

@@ -46,12 +46,21 @@ export interface RoadmapFileMeta {
   lastDeviceId: string;   // device that produced this revision
   lamport: number;        // file-level logical clock (monotonic per device)
   /**
-   * "Delete All My Data" counter. A file with a HIGHER epoch wins a merge
-   * WHOLESALE — without it, the merge's never-lose-data union semantics would
-   * resurrect deleted records from any other copy. Optional: absent
-   * (pre-epoch files) reads as 0.
+   * "Delete All My Data" counter. A file with a HIGHER epoch wins a merge;
+   * the losing copy keeps only the measurements, lab values and documents it
+   * created at or after the winner's `erasedAt` (US-09 AC20) — without the
+   * gate, the merge's never-lose-data union semantics would resurrect deleted
+   * records from any other copy. Optional: absent (pre-epoch files) reads as 0.
    */
   eraseEpoch?: number;
+  /**
+   * ISO 8601, UTC — when the latest erase happened, by the eraser's clock
+   * floored 1 ms past the last write it saw (US-09 AC20). Stamped with every
+   * `eraseEpoch` bump and compared as an instant. A losing copy's
+   * measurements, lab values and documents created at or after it survive the
+   * gate; absent (an erase from before it existed) the gate drops them all.
+   */
+  erasedAt?: string;
 }
 
 /**

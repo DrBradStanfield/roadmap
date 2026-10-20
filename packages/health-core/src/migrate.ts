@@ -30,6 +30,8 @@
  * move.
  */
 import { canonicalLabRow, resolveLabCatalogEntry } from './lab-catalog';
+import { isCalendarDay } from './measurement-history';
+import { stampInstant } from './merge';
 import {
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
@@ -87,6 +89,16 @@ function isoOr(value: unknown, fallback: string): string {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) ? value : fallback;
 }
 
+/** `a` is later than `b`: as instants when both parse, so an offset or a
+ *  precision cannot reorder them (US-09 AC20); as strings otherwise, the order
+ *  a value that is not a time always sorted in. */
+function after(a: string, b: string): boolean {
+  const [ta, tb] = [stampInstant(a), stampInstant(b)];
+  return Number.isNaN(ta) || Number.isNaN(tb) ? a > b : ta > tb;
+}
+
+const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
+
 /** A counter from an untrusted writer: finite, non-negative, integral, bounded. */
 function counterOf(value: unknown, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return fallback;
@@ -107,7 +119,7 @@ function sanitizeStamp<T>(row: T, anchor: string): T {
   if (!isObject(row)) return row;
   const lamport = counterOf(row.lamport, 0);
   const clamped = 'lamport' in row && lamport !== row.lamport;
-  const future = typeof row.updatedAt === 'string' && row.updatedAt > anchor;
+  const future = typeof row.updatedAt === 'string' && after(row.updatedAt, anchor);
   // A NON-string stamp (epoch millis from an agent, a null) is incomparable:
   // `number > string` and `string > number` are both false, so with tied
   // lamports neither row is newer either way round and the merge stops being
@@ -129,7 +141,7 @@ function sanitizeStamp<T>(row: T, anchor: string): T {
  * value, and moving it would move the row into a different day slot.
  */
 function sanitizeCreatedAt<T>(row: T, anchor: string): T {
-  if (!isObject(row) || typeof row.createdAt !== 'string' || row.createdAt <= anchor) return row;
+  if (!isObject(row) || typeof row.createdAt !== 'string' || !after(row.createdAt, anchor)) return row;
   return { ...row, createdAt: anchor } as T;
 }
 
@@ -208,10 +220,21 @@ export function migrateFile(
       ? base.meta.eraseEpoch
       : counterOf(rawMeta.eraseEpoch, 0),
   };
+  // A complete ISO date-time (a real calendar date, time to at least the minute, Z or an
+  // offset) that parses, rewritten in UTC; anything else is dropped, so the
+  // erase reads as one from before erasedAt existed and the gate keeps none of
+  // the losing side (US-09 AC20).
+  if ('erasedAt' in meta) {
+    const at = meta.erasedAt;
+    // `isCalendarDay`: Date.parse rolls 2026-02-30 over to March 2.
+    const ok = typeof at === 'string' && ISO_DATE_TIME.test(at) && isCalendarDay(at.slice(0, 10)) && !Number.isNaN(Date.parse(at));
+    if (ok) meta.erasedAt = new Date(at).toISOString();
+    else delete meta.erasedAt;
+  }
   // The file's own last write — the anchor every row clock is clamped to. Every
   // file at rest is merge output, and merge stamps meta.updatedAt last, so no
   // legitimate row post-dates it.
-  const anchor = meta.createdAt > meta.updatedAt ? meta.createdAt : meta.updatedAt;
+  const anchor = after(meta.createdAt, meta.updatedAt) ? meta.createdAt : meta.updatedAt;
   // Non-object entries are dropped, not passed through: every consumer reads
   // `.id` off a row, so one `null` in an array made every SAVE throw — the
   // localStorage mirror the failure path falls back to included, leaving no

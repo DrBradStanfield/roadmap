@@ -69,14 +69,11 @@ export interface MergeOptions {
   now: string;
   /**
    * The instant this device started working on its own copy, because the cloud
-   * could not be read (US-09 AC13). Only the epoch gate below reads it, and
-   * only when `local` is the device copy and `remote` wins: the ROWS `local`
-   * stamped at or after it (the arrays in `ROW_STAMPS`) are re-merged onto the
-   * winner instead of going with the rest. Nothing else travels — `profile`,
-   * `screenings` and `reminderOptIn` are last-write-wins singletons a stale
-   * device clock could resurrect, `recommendationSnapshots` carries no stamp to
-   * judge by, and `meta` (epoch, lamport, clocks) is the winner's by
-   * definition. Absent, as in every other caller, the merge is what it was.
+   * could not be read (US-09 AC13). The epoch gate reads it only when `local`
+   * is the device copy and `remote` wins: then `local` also keeps every
+   * stamped row at or after it, beside what the winner's `erasedAt` keeps
+   * (US-09 AC14, AC20). Absent, as in every other caller, `erasedAt` alone
+   * decides, and a winner without one keeps none of `local`.
    */
   keepNewerThan?: string;
 }
@@ -523,33 +520,48 @@ const ROW_STAMPS = {
 type StampedArray = keyof typeof ROW_STAMPS;
 
 /**
- * What a device that was cut off from the cloud (US-09 AC13) may bring back to
- * the file that just won the epoch gate: its own rows, and nothing else.
- *
- * A fallback session works on the LAST local copy — or, more often, an empty one
- * at epoch 0. If the cloud has ever been erased its epoch is higher, so the gate
- * hands it the whole file and everything the user typed meanwhile goes without a
- * word. This keeps the rows stamped at or after `since` and takes EVERY other
- * field from the winner, so the result is the winner's file plus those rows. The
- * caller then runs the ordinary equal-epoch merge, which puts them through the
- * same slot, key and union rules as any other row: no slot ends with two active
+ * The arrays whose stamp is a true creation time, the only ones `erasedAt`
+ * rescues (US-09 AC20). The rest are stamped by `updatedAt`, which a stale
+ * copy bumps on a row that predates the erase (a removed supplement, a statin
+ * cascade), so their stamp is no proof the row was created after it.
+ */
+const CREATED_STAMPS: readonly StampedArray[] = ['measurements', 'labValues', 'documents'];
+
+/** An ISO stamp as an instant; NaN when it is not a string or does not parse,
+ *  and NaN compares false. A date-time with no zone reads as UTC, as a
+ *  date-only string already does, never as this machine's local time. */
+export const stampInstant = (iso: unknown): number =>
+  typeof iso === 'string' ? Date.parse(/T[\d:.]+$/.test(iso) ? `${iso}Z` : iso) : NaN;
+
+/**
+ * What the losing side of the epoch gate may bring to the winner: its rows that
+ * some window admits — in that window's `keys`, stamped at or after its `since`
+ * (the winner's `erasedAt`, US-09 AC20, or the fallback marker, AC14) — and
+ * nothing else. The result is the winner's file plus those rows. The caller
+ * then runs the ordinary equal-epoch merge, which puts them through the same
+ * slot, key and union rules as any other row: no slot ends with two active
  * rows, no id lands twice, and the erase itself still stands.
  *
  * Taking the non-row fields from the winner is what makes this safe. `profile`,
  * `screenings` and `reminderOptIn` are single last-write-wins objects, so a
- * device copy that predates the erase could otherwise win one of them on its
- * stale clock and resurrect it; `recommendationSnapshots` has no stamp to judge
- * by; `meta` (epoch, lamport, clocks) is the winner's by definition. None of
- * them can travel — a fallback edit to the profile or the screening answers is
- * still lost to the gate.
+ * copy that predates the erase could otherwise win one of them on its stale
+ * clock and resurrect it; `recommendationSnapshots` has no stamp to judge by;
+ * `meta` (epoch, lamport, clocks) is the winner's by definition. None of them
+ * travel — an edit to the profile or the screening answers on the losing copy
+ * is still lost to the gate.
  *
- * Returns null when the session wrote nothing, so the gate returns the winner
- * untouched.
+ * Returns null when the loser wrote nothing since, so the gate returns the
+ * winner untouched.
  */
-function pruneToFallbackRows(device: RoadmapFile, winner: RoadmapFile, since: string): RoadmapFile | null {
-  // `>=`, not `>`: the marker is stamped at the moment the fallback starts, so
-  // the session's first row can share its millisecond. Keeping one row too many
-  // is recoverable; dropping one is not.
+function rowsSince(
+  loser: RoadmapFile,
+  winner: RoadmapFile,
+  windows: readonly { since: string; keys: readonly StampedArray[] }[],
+): RoadmapFile | null {
+  // `>=`, not `>`: a row can share the erase's (or the marker's) millisecond.
+  // Keeping one row too many is recoverable; dropping one is not. Compared as
+  // instants, so an offset or a different precision cannot reorder them; a
+  // stamp that does not parse is dropped.
   const kept: Record<string, unknown[]> = {};
   let wrote = false;
   // The file's clock must stay at or ahead of every row in it: `migrate.ts`
@@ -558,13 +570,17 @@ function pruneToFallbackRows(device: RoadmapFile, winner: RoadmapFile, since: st
   let latest = winner.meta.updatedAt;
   for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
     const stamp = ROW_STAMPS[key] as (row: unknown) => string;
-    const rows = (device[key] as unknown[]).filter((row) => stamp(row) >= since);
-    for (const row of rows) if (stamp(row) > latest) latest = stamp(row);
+    const rows = (loser[key] as unknown[]).filter((row) =>
+      windows.some((w) => w.keys.includes(key) && stampInstant(stamp(row)) >= stampInstant(w.since)),
+    );
+    for (const row of rows) if (stampInstant(stamp(row)) > stampInstant(latest)) latest = stamp(row);
     if (rows.length > 0) wrote = true;
     kept[key] = rows;
   }
+  // The higher lamport rides along, so the re-merge's max + 1 is over BOTH copies.
+  const lamport = Math.max(loser.meta.lamport, winner.meta.lamport);
   return wrote
-    ? ({ ...winner, ...kept, meta: { ...winner.meta, updatedAt: latest } } as RoadmapFile)
+    ? ({ ...winner, ...kept, meta: { ...winner.meta, updatedAt: latest, lamport } } as RoadmapFile)
     : null;
 }
 
@@ -578,11 +594,24 @@ export function earliestRowStamp(file: RoadmapFile): string | null {
   for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
     const stamp = ROW_STAMPS[key] as (row: unknown) => string;
     for (const row of file[key] as unknown[]) {
+      // As instants, the way the marker is read; a stamp that does not parse
+      // is skipped, as the merge drops it.
       const at = stamp(row);
-      if (earliest === null || at < earliest) earliest = at;
+      if (Number.isNaN(stampInstant(at))) continue;
+      if (earliest === null || stampInstant(at) < stampInstant(earliest)) earliest = at;
     }
   }
   return earliest;
+}
+
+/** The later of two erase times, as instants, as a meta fragment; empty when
+ *  neither has one. A tie between two spellings of one instant takes the
+ *  larger string, so the merge stays symmetric. */
+function laterErase(a: string | undefined, b: string | undefined): { erasedAt?: string } {
+  const [ta, tb] = [a, b].map((s) => (Number.isNaN(stampInstant(s)) ? -Infinity : stampInstant(s)));
+  const bLater = a === undefined || (b !== undefined && (tb > ta || (tb === ta && b > a)));
+  const at = bLater ? b : a;
+  return at === undefined ? {} : { erasedAt: at };
 }
 
 /**
@@ -594,11 +623,11 @@ export function mergeFiles(
   remote: RoadmapFile,
   opts: MergeOptions,
 ): RoadmapFile {
-  // "Delete All My Data" gate: a higher eraseEpoch wins WHOLESALE. The union
-  // semantics below deliberately never lose data — which is exactly wrong for
-  // deletion: without this gate, any other copy would resurrect the erased
-  // records on its next sync. The losing side's content predates the erase,
-  // so discarding it is the intended outcome on every device.
+  // "Delete All My Data" gate: a higher eraseEpoch wins. The union semantics
+  // below deliberately never lose data — which is exactly wrong for deletion:
+  // without this gate, any other copy would resurrect the erased records on
+  // its next sync. The losing side never saw the erase, so only the rows it
+  // created at or after the winner's `erasedAt` survive (US-09 AC20).
   const localEpoch = local.meta.eraseEpoch ?? 0;
   const remoteEpoch = remote.meta.eraseEpoch ?? 0;
   // The file's clock only ever moves forward. `migrate.ts` clamps every row
@@ -610,16 +639,26 @@ export function mergeFiles(
   );
   if (localEpoch !== remoteEpoch) {
     const localWins = localEpoch > remoteEpoch;
-    const winner = localWins ? local : remote;
-    // The device fell back, wrote, and lost the gate: re-merge its own rows —
-    // on the winner's file, at the winner's epoch — through the ordinary path
-    // below, which for those two inputs is an equal-epoch merge.
-    if (!localWins && opts.keepNewerThan) {
-      const pruned = pruneToFallbackRows(local, winner, opts.keepNewerThan);
+    const [winner, loser] = localWins ? [local, remote] : [remote, local];
+    // Re-merge the loser's post-erase rows — on the winner's file, at the
+    // winner's epoch — through the ordinary path below, which for those two
+    // inputs is an equal-epoch merge. `erasedAt` rescues created rows only.
+    // The device's fallback marker, when the device copy lost, also keeps
+    // every stamped array from the marker on, so a medication or supplement
+    // typed on-device is not lost (AC14); a row passes if either admits it.
+    const erasedAt = winner.meta.erasedAt;
+    const marker = localWins ? undefined : opts.keepNewerThan;
+    const windows = [
+      ...(erasedAt !== undefined ? [{ since: erasedAt, keys: CREATED_STAMPS }] : []),
+      ...(marker !== undefined ? [{ since: marker, keys: Object.keys(ROW_STAMPS) as StampedArray[] }] : []),
+    ];
+    const kept = windows.length > 0 ? rowsSince(loser, winner, windows) : null;
+    if (kept) {
       // `now: updatedAt` carries the max over BOTH metas into the re-merge —
-      // the pruned copy wears the winner's meta, so the device's own clock
+      // the pruned copy wears the winner's meta, so the loser's own clock
       // would otherwise be dropped here (the never-rewind guard above).
-      if (pruned) return mergeFiles(pruned, winner, { ...opts, now: updatedAt });
+      const next = { ...opts, now: updatedAt };
+      return localWins ? mergeFiles(winner, kept, next) : mergeFiles(kept, winner, next);
     }
     return {
       ...winner,
@@ -647,6 +686,7 @@ export function mergeFiles(
       lastDeviceId: opts.deviceId,
       lamport: Math.max(local.meta.lamport, remote.meta.lamport) + 1,
       eraseEpoch: localEpoch, // equal on both sides in this branch
+      ...laterErase(local.meta.erasedAt, remote.meta.erasedAt),
     },
 
     profile: mergeFields<RoadmapProfile>(local.profile, remote.profile),

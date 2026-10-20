@@ -1112,6 +1112,252 @@ describe('mergeFiles — keepNewerThan (the on-device fallback, US-09 AC13)', ()
   });
 });
 
+describe('mergeFiles — erasedAt keeps rows written after the erase (US-09 AC20)', () => {
+  const ERASED_AT = '2026-05-10T00:00:00Z';
+  const AFTER = '2026-05-11T09:00:00Z';
+  const BEFORE = '2026-05-01T09:00:00Z';
+
+  /** A file erased at ERASED_AT, one epoch above the stale copies below. */
+  function erased(epoch = 1): RoadmapFile {
+    const file = emptyFile();
+    file.meta.eraseEpoch = epoch;
+    file.meta.erasedAt = ERASED_AT;
+    return file;
+  }
+
+  /** A copy that never saw the erase: one row from before it, one from after. */
+  function stale(): RoadmapFile {
+    const file = emptyFile();
+    file.measurements = [
+      measurement({ id: 'after', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: AFTER }),
+      measurement({ id: 'before', metricType: 'weight', value: 95, recordedAt: '2026-05-01', createdAt: BEFORE }),
+    ];
+    file.labValues = [
+      { id: 'lvAfter', metricName: 'ferritin', value: 90, unit: 'ng/mL', referenceLow: null, referenceHigh: null, recordedAt: '2026-05-11', createdAt: AFTER, source: 'manual', status: 'active', correctsId: null },
+      { id: 'lvBefore', metricName: 'ferritin', value: 70, unit: 'ng/mL', referenceLow: null, referenceHigh: null, recordedAt: '2026-05-01', createdAt: BEFORE, source: 'manual', status: 'active', correctsId: null },
+    ];
+    file.documents = [
+      { id: 'dAfter', title: 'Labs', type: 'pathology_report', date: '2026-05-11', fileRef: '', contentHash: '', mimeType: '', extractedText: 'x', addedAt: AFTER },
+      { id: 'dBefore', title: 'Old', type: 'pathology_report', date: '2026-05-01', fileRef: '', contentHash: '', mimeType: '', extractedText: 'y', addedAt: BEFORE },
+    ];
+    return file;
+  }
+
+  it('US-09 AC20: a losing LOCAL copy keeps its post-erase rows and drops the pre-erase ones', () => {
+    const merged = mergeFiles(stale(), erased(), OPTS);
+    expect(merged.measurements.map((m) => m.id)).toEqual(['after']);
+    expect(merged.labValues.map((r) => r.id)).toEqual(['lvAfter']);
+    expect(merged.documents.map((r) => r.id)).toEqual(['dAfter']);
+    expect(merged.meta.eraseEpoch).toBe(1);
+    expect(merged.meta.erasedAt).toBe(ERASED_AT);
+  });
+
+  it('US-09 AC20: a losing REMOTE copy keeps its post-erase rows too (either side of the gate)', () => {
+    const merged = mergeFiles(erased(), stale(), OPTS);
+    expect(merged.measurements.map((m) => m.id)).toEqual(['after']);
+    expect(merged.labValues.map((r) => r.id)).toEqual(['lvAfter']);
+    expect(merged.documents.map((r) => r.id)).toEqual(['dAfter']);
+    expect(merged.meta.erasedAt).toBe(ERASED_AT);
+  });
+
+  it('US-09 AC20: the merge is symmetric across the gate', () => {
+    const a = stableStringify({ ...mergeFiles(stale(), erased(), OPTS) });
+    const b = stableStringify({ ...mergeFiles(erased(), stale(), OPTS) });
+    expect(a).toBe(b);
+  });
+
+  it('US-09 AC20: a row created at exactly the erase instant is kept', () => {
+    const device = emptyFile();
+    device.measurements = [measurement({ id: 'onTheDot', metricType: 'weight', value: 80, createdAt: ERASED_AT })];
+    expect(mergeFiles(device, erased(), OPTS).measurements.map((m) => m.id)).toEqual(['onTheDot']);
+  });
+
+  it('US-09 AC20: a winner from before erasedAt existed still drops every losing row (legacy)', () => {
+    const legacy = erased();
+    delete legacy.meta.erasedAt;
+    expect(mergeFiles(stale(), legacy, OPTS).measurements).toEqual([]);
+    expect(mergeFiles(legacy, stale(), OPTS).measurements).toEqual([]);
+    expect(mergeFiles(legacy, stale(), OPTS).meta.erasedAt).toBeUndefined();
+  });
+
+  // Review fix (N1): the marker speaks beside erasedAt, not under it. Every
+  // row the device stamped at or after it travels, even one before the erase
+  // (AC14's stated residual a); without the marker, erasedAt alone decides.
+  it('US-09 AC14 + AC20: with the marker, the device copy keeps the union of both windows', () => {
+    const merged = mergeFiles(stale(), erased(), { ...OPTS, keepNewerThan: '2026-04-01T00:00:00Z' });
+    expect(merged.measurements.map((m) => m.id).sort()).toEqual(['after', 'before']);
+    // A marker after both rows admits neither; erasedAt still keeps the post-erase one.
+    const late = mergeFiles(stale(), erased(), { ...OPTS, keepNewerThan: '2026-06-01T00:00:00Z' });
+    expect(late.measurements.map((m) => m.id)).toEqual(['after']);
+    // The marker speaks for the device copy only: a losing remote keeps erasedAt's rows alone.
+    const remote = mergeFiles(erased(), stale(), { ...OPTS, keepNewerThan: '2026-04-01T00:00:00Z' });
+    expect(remote.measurements.map((m) => m.id)).toEqual(['after']);
+  });
+
+  it('US-09 AC14 + AC20: a failed lift after an erase keeps the medication, supplement and weight typed since, with their histories', () => {
+    const MARKER = '2026-05-11T08:00:00Z'; // after ERASED_AT: the guest session started then
+    const device = emptyFile();
+    device.measurements = [measurement({ id: 'w', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: AFTER })];
+    device.medications = [{ id: 'med_statin', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', updatedAt: AFTER, lamport: 1 }];
+    device.medicationHistory = [{ ...device.medications[0], id: 'mh1' }];
+    const omega = { id: 's1', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: null, doseUnit: null, status: 'active' as const, startedAt: '2026-05-11', updatedAt: AFTER, lamport: 1 };
+    device.supplements = [omega];
+    device.supplementHistory = [{ ...omega, id: 'sh1', changeType: 'started' }];
+    const merged = mergeFiles(device, erased(), { ...OPTS, keepNewerThan: MARKER });
+    expect(merged.measurements.map((m) => m.id)).toEqual(['w']);
+    expect(merged.medications.map((m) => m.id)).toEqual(['med_statin']);
+    expect(merged.medicationHistory.map((m) => m.id)).toEqual(['mh1']);
+    expect(merged.supplements.map((m) => m.id)).toEqual(['s1']);
+    expect(merged.supplementHistory.map((m) => m.id)).toEqual(['sh1']);
+    expect(merged.meta).toMatchObject({ eraseEpoch: 1, erasedAt: ERASED_AT });
+
+    // Without the marker, a pre-erase supplement re-stamped on a stale device stays gone.
+    const restamped = { ...omega, startedAt: '2026-05-01', status: 'stopped' as const };
+    const staleDevice = emptyFile();
+    staleDevice.supplements = [restamped];
+    expect(mergeFiles(staleDevice, erased(), OPTS).supplements).toEqual([]);
+  });
+
+  // Review fix (N3): a stamp with no zone designator is UTC, as a date-only
+  // stamp already is, never this machine's local time.
+  it('US-09 AC20: a stamp with no zone reads as UTC', () => {
+    const device = emptyFile();
+    device.measurements = [
+      measurement({ id: 'early', metricType: 'weight', value: 90, recordedAt: '2026-05-09', createdAt: '2026-05-09T23:59:59' }),
+      measurement({ id: 'late', metricType: 'weight', value: 80, recordedAt: '2026-05-10', createdAt: '2026-05-10T00:00:00.000' }),
+    ];
+    const tz = process.env.TZ;
+    try {
+      for (const zone of ['Pacific/Auckland', 'America/New_York']) {
+        process.env.TZ = zone; // Node re-reads it on the next Date call
+        expect(mergeFiles(device, erased(), OPTS).measurements.map((m) => m.id)).toEqual(['late']);
+      }
+    } finally {
+      if (tz === undefined) delete process.env.TZ;
+      else process.env.TZ = tz;
+    }
+  });
+
+  it('US-09 AC20: equal epochs keep the later erasedAt, and the one present when only one has it', () => {
+    const a = erased();
+    const b = erased();
+    b.meta.erasedAt = '2026-05-12T00:00:00Z';
+    expect(mergeFiles(a, b, OPTS).meta.erasedAt).toBe('2026-05-12T00:00:00Z');
+    expect(mergeFiles(b, a, OPTS).meta.erasedAt).toBe('2026-05-12T00:00:00Z');
+    delete a.meta.erasedAt;
+    expect(mergeFiles(a, b, OPTS).meta.erasedAt).toBe('2026-05-12T00:00:00Z');
+    expect(mergeFiles(b, a, OPTS).meta.erasedAt).toBe('2026-05-12T00:00:00Z');
+    delete b.meta.erasedAt;
+    expect('erasedAt' in mergeFiles(a, b, OPTS).meta).toBe(false);
+  });
+
+  it('US-09 AC20: a later erase wins over an earlier one, and its erasedAt with it', () => {
+    const older = erased(1);
+    older.measurements = [measurement({ id: 'between', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: AFTER })];
+    const newer = erased(2);
+    newer.meta.erasedAt = '2026-05-20T00:00:00Z';
+    const merged = mergeFiles(older, newer, OPTS);
+    expect(merged.measurements).toEqual([]); // written after the first erase, before the second
+    expect(merged.meta).toMatchObject({ eraseEpoch: 2, erasedAt: '2026-05-20T00:00:00Z' });
+  });
+
+  it('US-09 AC20: entered-in-error stays sticky across the gate', () => {
+    const cloud = erased();
+    cloud.measurements = [measurement({ id: 'x', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: AFTER })];
+    const device = emptyFile();
+    device.measurements = [
+      measurement({ id: 'x', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: AFTER, status: 'entered-in-error' }),
+      measurement({ id: 'x2', metricType: 'weight', value: 81, recordedAt: '2026-05-11', createdAt: '2026-05-11T10:00:00Z', correctsId: 'x' }),
+    ];
+    for (const merged of [mergeFiles(device, cloud, OPTS), mergeFiles(cloud, device, OPTS)]) {
+      expect(merged.measurements.find((m) => m.id === 'x')!.status).toBe('entered-in-error');
+      expect(activeMeasurements(merged).map((m) => m.id)).toEqual(['x2']);
+    }
+  });
+
+  it('US-09 AC20: a kept row meets the slot rule — one active row per (metric, day)', () => {
+    const cloud = erased();
+    cloud.measurements = [measurement({ id: 'cloudDay', metricType: 'weight', value: 79, recordedAt: '2026-05-11', createdAt: '2026-05-11T08:00:00Z' })];
+    const merged = mergeFiles(stale(), cloud, OPTS);
+    const day = merged.measurements.filter((m) => m.recordedAt === '2026-05-11');
+    expect(day.map((m) => m.id).sort()).toEqual(['after', 'cloudDay']);
+    expect(day.filter((m) => m.status === 'active').map((m) => m.id)).toEqual(['after']); // newest createdAt
+  });
+
+  it('US-09 AC20: no stale singleton rides in with the kept rows', () => {
+    const device = stale();
+    device.profile = { updatedAt: '2030-01-01T00:00:00Z', lamport: 99, heightCm: 150 };
+    const cloud = erased();
+    const merged = mergeFiles(device, cloud, OPTS);
+    expect(merged.profile.heightCm).toBeUndefined();
+    expect(merged.measurements.map((m) => m.id)).toEqual(['after']);
+  });
+
+  // Review fixes (Codex R1, adversary R1): stamps compare as instants, not
+  // strings, so an offset or a different precision cannot reorder them.
+  it('US-09 AC20: a +13:00 row before the erase goes and a -04:00 row after it stays', () => {
+    const device = emptyFile();
+    device.measurements = [
+      // 2026-05-09T20:00Z, before the erase; as a string it sorts after it
+      measurement({ id: 'plus13', metricType: 'weight', value: 90, recordedAt: '2026-05-09', createdAt: '2026-05-10T09:00:00+13:00' }),
+      // 2026-05-10T01:00Z, after the erase; as a string it sorts before it
+      measurement({ id: 'minus4', metricType: 'weight', value: 80, recordedAt: '2026-05-10', createdAt: '2026-05-09T21:00:00-04:00' }),
+    ];
+    for (const merged of [mergeFiles(device, erased(), OPTS), mergeFiles(erased(), device, OPTS)]) {
+      expect(merged.measurements.map((m) => m.id)).toEqual(['minus4']);
+    }
+  });
+
+  it('US-09 AC20: fractional precision does not reorder a row against the erase', () => {
+    const cloud = erased();
+    cloud.meta.erasedAt = '2026-05-10T00:00:00.500Z';
+    const device = emptyFile();
+    device.measurements = [
+      measurement({ id: 'early', metricType: 'weight', value: 90, recordedAt: '2026-05-09', createdAt: '2026-05-10T00:00:00Z' }),
+      measurement({ id: 'same', metricType: 'weight', value: 80, recordedAt: '2026-05-10', createdAt: '2026-05-10T00:00:00.5000Z' }),
+      measurement({ id: 'late', metricType: 'weight', value: 81, recordedAt: '2026-05-11', createdAt: '2026-05-10T00:00:01Z' }),
+    ];
+    expect(mergeFiles(device, cloud, OPTS).measurements.map((m) => m.id).sort()).toEqual(['late', 'same']);
+  });
+
+  it('US-09 AC20: equal epochs keep the later erase as an instant, across offsets', () => {
+    const a = erased();
+    a.meta.erasedAt = '2026-05-12T10:00:00+13:00'; // 2026-05-11T21:00Z
+    const b = erased();
+    b.meta.erasedAt = '2026-05-11T22:00:00Z';
+    expect(mergeFiles(a, b, OPTS).meta.erasedAt).toBe('2026-05-11T22:00:00Z');
+    expect(mergeFiles(b, a, OPTS).meta.erasedAt).toBe('2026-05-11T22:00:00Z');
+  });
+
+  // Review fix (adversary R2): an updatedAt stamp is no proof of creation. A
+  // stale copy re-stamps a pre-erase row when it stops a supplement or a
+  // statin cascade rewrites a medication, so those arrays never cross.
+  it('US-09 AC20: a pre-erase supplement or medication re-stamped after the erase does not return', () => {
+    const device = stale();
+    const supplement = { id: 's1', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: null, doseUnit: null, status: 'stopped' as const, startedAt: '2026-05-01', updatedAt: AFTER, lamport: 2 };
+    device.supplements = [supplement];
+    device.supplementHistory = [{ ...supplement, id: 'sh1', changeType: 'stopped' }];
+    device.medications = [{ id: 'med_statin', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 40, doseUnit: 'mg', updatedAt: AFTER, lamport: 3 }];
+    for (const merged of [mergeFiles(device, erased(), OPTS), mergeFiles(erased(), device, OPTS)]) {
+      expect(merged.supplements).toEqual([]);
+      expect(merged.supplementHistory).toEqual([]);
+      expect(merged.medications).toEqual([]);
+      expect(merged.measurements.map((m) => m.id)).toEqual(['after']); // a post-erase measurement still survives
+    }
+  });
+
+  // Review fix (adversary R5): the kept-rows path keeps the header's clock
+  // contract, lamport = max(local, remote) + 1.
+  it('US-09 AC20: the kept-rows merge advances lamport past both copies', () => {
+    const device = stale();
+    device.meta.lamport = 50;
+    const cloud = erased();
+    cloud.meta.lamport = 3;
+    expect(mergeFiles(device, cloud, OPTS).meta.lamport).toBe(51);
+    expect(mergeFiles(cloud, device, OPTS).meta.lamport).toBe(51);
+  });
+});
+
 // US-21 phase 3 — migrate.ts writes the converted row under `<id>#si`, and it
 // groups on its OWN id: stripped here, the conversion would collapse into its
 // parent's group and one of the two contents would be quarantined instead.

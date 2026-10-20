@@ -8,7 +8,7 @@
  * a MemoryAdapter that refuses the way Drive did (StorageError, status 403).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { MemoryAdapter, ROADMAP_FILE_NAME, StorageError, createEmptyFile, type StorageAdapter } from '@roadmap/health-core';
+import { MemoryAdapter, ROADMAP_FILE_NAME, StorageError, createEmptyFile, type RoadmapFile, type StorageAdapter } from '@roadmap/health-core';
 import { LocalStorageAdapter, isSyncPending, syncPendingSince } from '../src/storage';
 import { RoadmapStore } from '../src/storage/roadmap-store';
 import { startOnBackend, type ResolvedBackend } from './connect';
@@ -140,6 +140,66 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     await cloud.write(ROADMAP_FILE_NAME, erased, null);
     const recovered = await RoadmapStore.create(cloud);
     expect(recovered.loadAllHistory().map((m) => m.value)).toEqual([80]);
+  });
+
+  // Review fix (N1): the marker speaks beside erasedAt. A row the session
+  // typed before the erase travels too: AC14's stated residual (a).
+  it('US-09 AC14 + AC20: beside erasedAt the marker still keeps what the session typed before the erase', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const t0 = new Date('2026-06-01T10:00:00.000Z');
+    vi.setSystemTime(t0);
+    class SaveFails extends MemoryAdapter {
+      async write(): Promise<never> {
+        throw new StorageError('cloud down');
+      }
+    }
+    const store = await RoadmapStore.create(new SaveFails());
+    store.addMeasurement('weight', 80, '2026-06-01'); // typed at t0
+    await expect(store.flush()).rejects.toThrow();
+    vi.setSystemTime(new Date(t0.getTime() + 2_000));
+    store.addMeasurement('weight', 81, '2026-06-02'); // typed after the erase below
+    await expect(store.flush()).rejects.toThrow();
+    expect(syncPendingSince()).toBe(t0.toISOString());
+    vi.useRealTimers();
+
+    // Another device erased the record one second after t0.
+    const cloud = new MemoryAdapter();
+    const erased = createEmptyFile({ deviceId: 'other-device', now: '2026-06-01T10:00:01.000Z' });
+    erased.meta.eraseEpoch = 1;
+    erased.meta.erasedAt = '2026-06-01T10:00:01.000Z';
+    await cloud.write(ROADMAP_FILE_NAME, erased, null);
+    const recovered = await RoadmapStore.create(cloud);
+    expect(recovered.loadAllHistory().map((m) => m.value).sort()).toEqual([80, 81]);
+  });
+
+  it('US-09 AC14 + AC20: a failed lift after an erase keeps the statin, omega-3 and weight typed since, with their histories', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-06-01T10:00:05.000Z')); // after the erase below
+    class SaveFails extends MemoryAdapter {
+      async write(): Promise<never> {
+        throw new StorageError('cloud down');
+      }
+    }
+    const guest = await RoadmapStore.create(new SaveFails());
+    guest.saveMedication('statin', 'atorvastatin', 20, 'mg');
+    guest.saveSupplement('omega3', 'Omega-3');
+    guest.addMeasurement('weight', 80, '2026-06-01');
+    await expect(guest.flush()).rejects.toThrow();
+    expect(syncPendingSince()).toBe('2026-06-01T10:00:05.000Z');
+    vi.useRealTimers();
+
+    const cloud = new MemoryAdapter();
+    const erased = createEmptyFile({ deviceId: 'other-device', now: '2026-06-01T10:00:01.000Z' });
+    erased.meta.eraseEpoch = 1;
+    erased.meta.erasedAt = '2026-06-01T10:00:01.000Z';
+    await cloud.write(ROADMAP_FILE_NAME, erased, null);
+    const { file } = (await RoadmapStore.create(cloud)) as unknown as { file: RoadmapFile };
+    expect(file.medications.map((m) => m.medicationKey)).toEqual(['statin']);
+    expect(file.medicationHistory.map((m) => m.medicationKey)).toEqual(['statin']);
+    expect(file.supplements.map((m) => m.supplementKey)).toEqual(['omega3']);
+    expect(file.supplementHistory.map((m) => m.supplementKey)).toEqual(['omega3']);
+    expect(file.measurements.map((m) => m.value)).toEqual([80]);
+    expect(file.meta).toMatchObject({ eraseEpoch: 1, erasedAt: '2026-06-01T10:00:01.000Z' });
   });
 
   it('US-09 AC13: an erased cloud still wins, but the edits made on-device survive', async () => {

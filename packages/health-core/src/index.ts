@@ -276,7 +276,7 @@ export {
   type HistoryChangeType,
 } from './roadmap-file';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
-export { mergeFiles, stampFields, CLOCK_KEYS, earliestRowStamp, dayOf, localDay, type MergeOptions } from './merge';
+export { mergeFiles, stampFields, CLOCK_KEYS, earliestRowStamp, stampInstant, dayOf, localDay, type MergeOptions } from './merge';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 
