@@ -96,8 +96,11 @@ import { createRemoteChangeRelay } from '../lib/remote-replay';
 // never touches sit in the user's own cloud folder.
 export const ERASE_CONFIRM =
   'Delete all your data?\n\n' +
-  'Your health record and your chat history are erased, on this device and in your cloud file. ' +
-  'This cannot be undone.\n\n' +
+  'Your health record and your chat history are erased, in this browser and in your connected cloud file. ' +
+  'This cannot be undone. ' +
+  // The erase lists the rows it can see (US-09 AC23), and keeps the rest.
+  'A value another device has not saved yet, or saves while the erase runs, is kept and arrives later. ' +
+  "With no cloud connected, only this browser's copy is erased, not a cloud you connect afterwards.\n\n" +
   `${SHOPIFY_SURFACE ? 'Six' : 'Four'} things this cannot reach:\n` +
   '1. Documents you uploaded that are already in your cloud folder. They stay.\n' +
   '2. Candidate files from a connector import (imports/pending-*.json). They stay until your next import.\n' +
@@ -118,6 +121,7 @@ export const ERASE_CONFIRM =
   'Cancelling from a Google sign-in deletes that row.';
 
 const ERASE_DONE_TAIL =
+  '\n\nA value another device had not saved yet, or saved during the erase, is kept and arrives later.' +
   '\n\nStill in your cloud folder: the documents you uploaded, any pending import files, ' +
   'your provider\'s version history, and any command-line backups until that tool next writes the file. ' +
   'Delete those in your cloud account if you want them gone.' +

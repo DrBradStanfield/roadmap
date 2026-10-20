@@ -245,6 +245,27 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
   });
 });
 
+// US-09 AC23 (adversary R6): an erase makes the record schemaVersion 2. The
+// text and HTML name the record's own version; the JSON plan keeps its shape's.
+describe('US-09 AC23 — the report names the record\'s real schemaVersion', () => {
+  it('prints schemaVersion 2 for a listed record, and the JSON plan stays at 1', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'get-plan-'));
+    const path = join(dir, 'health-roadmap.json');
+    writeFileSync(path, JSON.stringify({ ...fixture(), schemaVersion: 2, erasedRows: { fromEpoch: 1, ids: ['gone'] }, meta: { ...fixture().meta, eraseEpoch: 1 } }));
+    const html = join(dir, 'plan.html');
+    try {
+      expect((await captureRun([path])).stdout).toContain('Record: schemaVersion 2 ·');
+      expect((await captureRun([path, '--html', html])).code).toBe(0);
+      expect(readFileSync(html, 'utf8')).toContain('record schemaVersion 2.');
+      expect(JSON.parse((await captureRun([path, '--json'])).stdout).schemaVersion).toBe(1);
+      writeFileSync(path, JSON.stringify(fixture()));
+      expect((await captureRun([path])).stdout).toContain('Record: schemaVersion 1 ·');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', () => {
   it('reports a missing file', async () => {
     await expect(loadRecord('/nope/health-roadmap.json')).rejects.toThrow(PlanError);

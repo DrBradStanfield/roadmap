@@ -560,7 +560,8 @@ export function withoutListed(file: RoadmapFile, listed: ReadonlySet<string>): R
  * The merged erase list (US-09 AC23). The ids always union. Across the gate
  * the winner's `fromEpoch` stands, and a winner with no list gives
  * `eraseEpoch + 1`: the ids stay, and the list claims nothing. At equal
- * epochs a present list beats an absent one, and of two the larger
+ * epochs an absent list may be a separate erase at that epoch that listed
+ * nothing, so it claims nothing there either; of two lists the larger
  * `fromEpoch` stands, because it claims less.
  */
 export function mergeErasedRows(local: RoadmapFile, remote: RoadmapFile): ErasedRows | undefined {
@@ -568,7 +569,7 @@ export function mergeErasedRows(local: RoadmapFile, remote: RoadmapFile): Erased
   if (!a && !b) return undefined;
   const ids = [...new Set([...(a?.ids ?? []), ...(b?.ids ?? [])])].sort(cmpStr);
   const [epochA, epochB] = [local.meta.eraseEpoch ?? 0, remote.meta.eraseEpoch ?? 0];
-  if (epochA === epochB) return { fromEpoch: Math.max(a?.fromEpoch ?? 0, b?.fromEpoch ?? 0), ids };
+  if (epochA === epochB) return { fromEpoch: a && b ? Math.max(a.fromEpoch, b.fromEpoch) : epochA + 1, ids };
   const [winner, epoch] = epochA > epochB ? [a, epochA] : [b, epochB];
   return { fromEpoch: winner ? winner.fromEpoch : epoch + 1, ids };
 }
@@ -604,7 +605,8 @@ function rowsSince(
   let latest = winner.meta.updatedAt;
   for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
     const stamp = ROW_STAMPS[key] as (row: unknown) => string;
-    const rows = (loser[key] as unknown[]).filter((row) => admit(key, stamp(row)));
+    // A row with no string id has no identity to merge on (US-09 AC23).
+    const rows = (loser[key] as Array<{ id: unknown }>).filter((row) => typeof row.id === 'string' && admit(key, stamp(row)));
     for (const row of rows) if (stampInstant(stamp(row)) > stampInstant(latest)) latest = stamp(row);
     if (rows.length > 0) wrote = true;
     kept[key] = rows;

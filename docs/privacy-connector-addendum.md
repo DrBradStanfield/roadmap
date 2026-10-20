@@ -274,7 +274,10 @@ retention.
 folder: your health record and your chat history. The chat file cannot simply be emptied,
 because the merge that keeps your devices in step would put the conversations back from
 any other copy, so each one is tombstoned instead: no messages, no title, and marked
-deleted for good. Six copies the button cannot reach, and the confirm dialog now names
+deleted for good. The erase removes every value it can see in this browser and in your
+connected cloud file. A value another device has not saved yet, or saves while the erase
+runs, is kept and arrives later. Erasing with no cloud connected erases only this
+browser's copy, not a cloud you connect afterwards. Six copies the button cannot reach, and the confirm dialog now names
 them before you click: documents you uploaded that are already in your folder stay;
 candidate files from a connector import (`imports/pending-*.json`) stay until your next
 import; your cloud provider keeps its own version history, and GitHub keeps every past

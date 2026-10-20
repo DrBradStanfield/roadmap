@@ -1334,16 +1334,18 @@ describe('mergeFiles — erasedRows: an erase decides by the rows it listed (US-
     expect(idsIn(mergeFiles(everyArray('new', everyArray('old')), erased, OPTS))).toEqual([]);
   });
 
-  it('US-09 AC23: ids union; a present list beats an absent one; the larger fromEpoch stands at equal epochs', () => {
+  it('US-09 AC23: ids union; at equal epochs an absent list claims nothing, and of two the larger fromEpoch stands', () => {
     const a = listed(['b-row', 'a-row'], 2, 1);
     const b = listed(['c-row', 'a-row'], 2, 2);
     for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
       expect(merged.erasedRows).toEqual({ fromEpoch: 2, ids: ['a-row', 'b-row', 'c-row'] });
     }
+    // The absent side may be its own erase at this epoch that listed nothing,
+    // so the merged list keeps the ids and claims no erase at all.
     const absent = emptyFile();
     absent.meta.eraseEpoch = 2;
     for (const merged of [mergeFiles(a, absent, OPTS), mergeFiles(absent, a, OPTS)]) {
-      expect(merged.erasedRows).toEqual({ fromEpoch: 1, ids: ['a-row', 'b-row'] });
+      expect(merged.erasedRows).toEqual({ fromEpoch: 3, ids: ['a-row', 'b-row'] });
       expect(merged.schemaVersion).toBe(2);
     }
     // Across the gate the winner's fromEpoch stands, and the loser's ids join.
@@ -1356,6 +1358,33 @@ describe('mergeFiles — erasedRows: an erase decides by the rows it listed (US-
     const plain = mergeFiles(emptyFile(), emptyFile(), OPTS);
     expect('erasedRows' in plain).toBe(false);
     expect(plain.schemaVersion).toBe(1);
+  });
+
+  it('US-09 AC23: an old-app erase and a listing erase at one epoch still keep a stale copy\'s pre-erase row out (adversary R1)', () => {
+    // The cloud: erased by an old bundle at epoch 1 on 1 September, no list.
+    const drive = emptyFile();
+    drive.meta.eraseEpoch = 1;
+    drive.meta.erasedAt = '2026-09-01T00:00:00.001Z';
+    // A laptop that never took that erase in: epoch 0, an August LDL.
+    const laptop = emptyFile();
+    laptop.measurements = [measurement({ id: 'pre-erase-ldl', metricType: 'ldl', value: 3, recordedAt: '2026-08-01', createdAt: '2026-08-01T00:00:00Z' })];
+    // This browser: a guest copy erased by the new app at epoch 1, then lifted into the cloud.
+    const guest = listed(['guest-row']);
+    guest.meta.erasedAt = '2026-10-19T00:00:00.001Z';
+    const lifted = mergeFiles(guest, drive, OPTS);
+    expect(lifted.erasedRows).toEqual({ fromEpoch: 2, ids: ['guest-row'] });
+    for (const merged of [mergeFiles(laptop, lifted, OPTS), mergeFiles(lifted, laptop, OPTS)]) {
+      expect(merged.measurements.map((r) => r.id)).toEqual([]);
+    }
+  });
+
+  it('US-09 AC23: a losing row whose id is not a string is skipped, not thrown on (adversary R4)', () => {
+    const stale = everyArray('new');
+    stale.measurements.push({ ...measurement({ id: 'x', metricType: 'ldl', value: 3 }), id: 7 as unknown as string });
+    const erased = listed([]);
+    for (const merged of [mergeFiles(stale, erased, OPTS), mergeFiles(erased, stale, OPTS)]) {
+      expect(idsIn(merged)).toEqual(rowsOf('new'));
+    }
   });
 
   it('US-09 AC23: the merge is symmetric and deterministic across the gate', () => {

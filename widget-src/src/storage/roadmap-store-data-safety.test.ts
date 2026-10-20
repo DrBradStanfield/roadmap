@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core';
-import { ERASE_UNREACHABLE, RoadmapStore, PENDING_MIRROR_KEY } from './roadmap-store';
+import { ERASE_UNREACHABLE, RoadmapStore, PENDING_MIRROR_KEY, markSyncPending, isSyncPending } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
@@ -1256,6 +1256,41 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
     expect((await store.deleteUserData(beforeErase)).success).toBe(false);
     expect(beforeErase).toHaveBeenCalledTimes(1);
     expect(fileOf(store).erasedRows).toEqual({ fromEpoch: 1, ids: [id] });
+  });
+
+  it('a device file of valid JSON in a shape migrate refuses lists nothing, and the erase still succeeds (Codex R1)', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.addMeasurement('weight', 80, '2026-06-01');
+    await store.flush();
+    const id = idOf(store, 'weight');
+    const bad = { ...createEmptyFile({ deviceId: 'tab', now: '2026-06-01T00:00:00.000Z' }), measurements: 'not an array' };
+    localStorage.setItem('health_roadmap_file_v2', JSON.stringify(bad));
+
+    expect(await store.deleteUserData()).toEqual({ success: true });
+    expect(readCloudFile(cloud).erasedRows).toEqual({ fromEpoch: 1, ids: [id] });
+  });
+
+  it('over a stored erase at its own epoch that listed nothing, the list claims only this erase (adversary R1)', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.addMeasurement('weight', 80, '2026-06-01');
+    expect((await store.deleteUserData()).success).toBe(true); // this copy: epoch 1, listed from 1
+    // Meanwhile an old bundle erased the cloud at epoch 1 too, listing nothing.
+    const legacy = createEmptyFile({ deviceId: 'old-app', now: '2026-06-02T00:00:00.000Z' });
+    legacy.meta.eraseEpoch = 1;
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(legacy), version: cloud.files.get(ROADMAP_FILE_NAME)!.version + 1 });
+
+    expect((await store.deleteUserData()).success).toBe(true);
+    expect(readCloudFile(cloud).meta.eraseEpoch).toBe(2);
+    expect(readCloudFile(cloud).erasedRows?.fromEpoch).toBe(2);
+  });
+
+  it('the pending marker is a far-future instant, so an older bundle that reads it as a keep-newer-than time keeps nothing extra (adversary R5)', () => {
+    markSyncPending();
+    expect(isSyncPending()).toBe(true);
+    const value = localStorage.getItem(PENDING_MIRROR_KEY)!;
+    expect(Date.parse(value)).toBe(Date.parse('9999-12-31T23:59:59.999Z'));
   });
 
   it('a second erase keeps the first list and its fromEpoch; one over an erase that listed nothing claims from its own epoch', async () => {
