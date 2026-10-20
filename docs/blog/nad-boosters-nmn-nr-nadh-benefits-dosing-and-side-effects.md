@@ -133,7 +133,7 @@ The maker of Niagen (ChromaDex, now Niagen Bioscience) previously claimed that N
 
 **Walking distance (n=90):** A study among 90 adults (average age 71) with lower extremity peripheral artery disease (PAD) found that 500 mg NR (from ChromaDex) twice daily for 6 months increased 6-minute walking distance by an average of 7 meters, while walking distance decreased by 10.6 meters in the placebo group. This between-group difference was statistically significant — although largely driven by the decline in the placebo group rather than improvement with NR. NR did NOT improve maximum treadmill walking time, degree of difficulty when walking, or overall physical activity compared to placebo (McDermott et al., *Nat Commun*, 2024) [26].
 
-**Cognitive function in PAD (n=8):** A small study among 8 older adults (average age 67) with PAD found that 1,000 mg NR daily for 4 weeks did NOT significantly improve executive function, attention, language, processing speed, or episodic memory compared to baseline (Szarvas et al., *J Pharmacol Exp Ther*, 2025) [27].
+**Cognitive function in PAD (n=8):** A small study among 8 older adults (average age 67) with PAD found that 1,000 mg NR daily for 4 weeks did NOT significantly improve executive function, attention, language, processing speed, or episodic memory compared to baseline (Szarvas et al., *J Pharmacol Exp Ther*, 2025), according to ConsumerLab's reading [1]. The study's authors report cognitive enhancement across multiple domains after supplementation in this open-label pilot, and call for controlled trials in larger groups to verify it [27].
 
 ### Alzheimer's Disease — Nicotinamide Riboside
 
@@ -157,7 +157,7 @@ NR has been promoted for lowering cholesterol levels in the liver, although this
 
 ### Long COVID — Nicotinamide Riboside
 
-**Brain fog and fatigue (n=32):** A 24-week study among 32 adults (average age 47) with long COVID (particularly "brain fog" and at least two other symptoms) found that 1,000 mg NR twice daily significantly increased NAD+ levels 2- to 3-fold, but there were NO significant improvements in cognitive function, fatigue severity, sleep quality, anxiety symptoms, or depression compared to placebo. Side effects possibly related to NR included muscle and leg cramps, nausea, bruising, worsening of headaches, flushing, rash, and vertigo. This study was funded by Niagen Bioscience (Wu et al., *eClinicalMedicine*, 2025) [35]. Brad's account of the same trial reports 58 participants and a 2.6- to 3.1-fold rise in NAD+ over 20 weeks ([Brad, 11 Jan 2026](https://drstanfield.com/blogs/articles/nmn-nad-supplements-for-anti-aging-just-changed)).
+**Brain fog and fatigue:** In a 24-week study of adults with long COVID (particularly "brain fog" and at least two other symptoms), 1,000 mg NR twice daily raised NAD+ levels, but there were NO significant improvements in cognitive function, fatigue severity, sleep quality, anxiety symptoms, or depression compared to placebo (Wu et al., *eClinicalMedicine*, 2025) [35]. According to ConsumerLab, the study had 32 adults (average age 47) and NAD+ rose about 2- to 3-fold [1]. Side effects possibly related to NR included muscle and leg cramps, nausea, bruising, worsening of headaches, flushing, rash, and vertigo [1]. This study was funded by Niagen Bioscience [1]. The paper itself reports 58 participants and a 2.6- to 3.1-fold rise in NAD+ after 5 to 10 weeks of NR [35]. Brad's account of the same trial agrees: 58 participants and a 2.6- to 3.1-fold rise in NAD+ over 20 weeks ([Brad, 11 Jan 2026](https://drstanfield.com/blogs/articles/nmn-nad-supplements-for-anti-aging-just-changed)).
 
 Note: The FDA sent a warning letter to ChromaDex in November 2020 for promoting Niagen as preventing or treating COVID-19, including claims that low NAD+ levels can worsen COVID-19 [1].
 
@@ -295,7 +295,7 @@ On the liver specifically: high doses of niacin (nicotinic acid) can cause mild 
 
 There is a theoretical concern, based on animal research, that compounds that raise NAD+ levels — including NR, NADH, and possibly NMN — may increase the risk of cancer development, promote the growth of existing cancers, and increase the risk of metastasis [1][44][45].
 
-**Mouse study on breast cancer:** A laboratory study in mice found that 70% of those consuming a nicotinamide riboside-enriched diet for 2 weeks prior to being implanted with triple-negative breast cancer (a highly aggressive type with high NR uptake) developed detectable tumors, compared to 55% of control mice. Metastases to the brain were also more common among mice given NR (82% vs. 25%) (Maric et al., *Biosens Bioelectrol*, 2022) [44]. It is unknown whether NR affects less aggressive cancers — some animal research suggests it may not (Hamity et al., *Pain*, 2020; Acklin et al., *Neurooncol Adv*, 2022) [46][47].
+**Mouse study on breast cancer:** A laboratory study in mice found that 70% of those consuming a nicotinamide riboside-enriched diet for 2 weeks prior to being implanted with triple-negative breast cancer (a highly aggressive type with high NR uptake) developed detectable tumors, compared to 55% of control mice. Metastases to the brain were also more common among mice given NR (82% vs. 25%) (Maric et al., *Biosens Bioelectron*, 2023) [44]. It is unknown whether NR affects less aggressive cancers — some animal research suggests it may not (Hamity et al., *Pain*, 2020; Acklin et al., *Neurooncol Adv*, 2022) [46][47].
 
 **Proposed alternative approach:** One group of researchers has suggested that reducing NAD+ levels — rather than raising them — may be a promising cancer treatment approach (Gujar et al., *PNAS*, 2016) [48].
 
@@ -413,7 +413,7 @@ NR is found naturally in cow's milk (approximately 3.9 micromol/L) and trace amo
 
 [26] McDermott MM, Martens CR, Domanchuk KJ, et al. "Nicotinamide riboside for peripheral artery disease: the NICE randomized clinical trial." *Nat Commun*. 2024;15(1):5046. doi: [10.1038/s41467-024-49092-5](https://doi.org/10.1038/s41467-024-49092-5)
 
-[27] Szarvas Z, et al. "Nicotinamide riboside supplementation and cognitive function in peripheral artery disease." *J Pharmacol Exp Ther*. 2025.
+[27] Szarvas Z, Reyff ZA, Peterfi A, et al. "Effects of NAD(+) supplementation with oral nicotinamide riboside on vascular health and cognitive function in older adults with peripheral artery disease: Results from a pilot 4-week open-label clinical trial." *J Pharmacol Exp Ther*. 2025;392(7):103607. doi: [10.1016/j.jpet.2025.103607](https://doi.org/10.1016/j.jpet.2025.103607). PMID: [40479886](https://pubmed.ncbi.nlm.nih.gov/40479886/)
 
 [28] Gong B, Pan Y, Vempati P, et al. "Nicotinamide riboside restores cognition through an upregulation of proliferator-activated receptor-gamma coactivator 1alpha regulated beta-secretase 1 degradation and mitochondrial gene expression in Alzheimer's mouse models." *Neurobiol Aging*. 2013;34(6):1581-1588. doi: [10.1016/j.neurobiolaging.2012.12.005](https://doi.org/10.1016/j.neurobiolaging.2012.12.005)
 
@@ -429,7 +429,7 @@ NR is found naturally in cow's milk (approximately 3.9 micromol/L) and trace amo
 
 [34] Dollerup OL, Christensen B, Svart M, et al. "A randomized placebo-controlled clinical trial of nicotinamide riboside in obese men: safety, insulin-sensitivity, and lipid-mobilizing effects." *Am J Clin Nutr*. 2018;108(2):343-353. doi: [10.1093/ajcn/nqy132](https://doi.org/10.1093/ajcn/nqy132)
 
-[35] Wu J, et al. "Nicotinamide riboside supplementation in long COVID: a randomized placebo-controlled trial." *eClinicalMedicine*. 2025.
+[35] Wu CY, Reynolds WC, Abril I, et al. "Effects of nicotinamide riboside on NAD+ levels, cognition, and symptom recovery in long-COVID: a randomized controlled trial." *eClinicalMedicine*. 2025;89:103633. doi: [10.1016/j.eclinm.2025.103633](https://doi.org/10.1016/j.eclinm.2025.103633). PMID: [41357333](https://pubmed.ncbi.nlm.nih.gov/41357333/)
 
 [36] Yoshino M, Yoshino J, Kayser BD, et al. "Nicotinamide mononucleotide increases muscle insulin sensitivity in prediabetic women." *Science*. 2021;372(6547):1224-1229. doi: [10.1126/science.abe9985](https://doi.org/10.1126/science.abe9985)
 
@@ -447,7 +447,7 @@ NR is found naturally in cow's milk (approximately 3.9 micromol/L) and trace amo
 
 [43] Berven H, Kverneng S, Sheard E, et al. "NR-SAFE: a randomized, double-blind safety trial of high dose nicotinamide riboside in Parkinson's disease." *Nat Commun*. 2023;14(1):7793. doi: [10.1038/s41467-023-43514-6](https://doi.org/10.1038/s41467-023-43514-6)
 
-[44] Maric T, Basheer A, Friber E, et al. "Nicotinamide riboside supplementation reduces tumor growth and metastasis in a murine model of triple-negative breast cancer." *Biosens Bioelectrol*. 2022. (As cited in ConsumerLab)
+[44] Maric T, Bazhin A, Khodakivskyi P, et al. "A bioluminescent-based probe for in vivo non-invasive monitoring of nicotinamide riboside uptake reveals a link between metastasis and NAD(+) metabolism." *Biosens Bioelectron*. 2023;220:114826. doi: [10.1016/j.bios.2022.114826](https://doi.org/10.1016/j.bios.2022.114826). PMID: [36371959](https://pubmed.ncbi.nlm.nih.gov/36371959/)
 
 [45] Poljsak B. "NAD+ in Cancer Prevention and Treatment: Pros and Cons." *J Clin Exp Oncol*. 2016;5(4). doi: [10.4172/2324-9110.1000165](https://doi.org/10.4172/2324-9110.1000165)
 

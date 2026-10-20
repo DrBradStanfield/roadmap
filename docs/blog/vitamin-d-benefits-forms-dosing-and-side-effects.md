@@ -497,7 +497,7 @@ Exercise can temporarily raise vitamin D levels. Moderate-intensity exercise (jo
 
 [14] Bolland MJ, Grey A, Avenell A. "Effects of vitamin D supplementation on musculoskeletal health." *Lancet Diabetes Endocrinol*. 2018;6:847-58. [https://pubmed.ncbi.nlm.nih.gov/30293909/](https://pubmed.ncbi.nlm.nih.gov/30293909/)
 
-[15] Manson JE, et al. "Vitamin D, calcium supplementation, and hip fracture in postmenopausal women." *JAMA*. 2024.
+[15] Manson JE, Crandall CJ, Rossouw JE, et al. "The Women's Health Initiative Randomized Trials and Clinical Practice: A Review." *JAMA*. 2024;331(20):1748-1760. doi: [10.1001/jama.2024.6542](https://doi.org/10.1001/jama.2024.6542). PMID: [38691368](https://pubmed.ncbi.nlm.nih.gov/38691368/)
 
 [16] Yao P, Bennett D, Mafham M, et al. "Vitamin D and calcium for the prevention of fracture." *JAMA Network Open*. 2019;2(12):e1917789. [https://doi.org/10.1001/jamanetworkopen.2019.17789](https://doi.org/10.1001/jamanetworkopen.2019.17789)
 
@@ -505,7 +505,7 @@ Exercise can temporarily raise vitamin D levels. Moderate-intensity exercise (jo
 
 [18] Chandler PD, Chen WY, Ajala ON, et al. "Effect of vitamin D3 supplements on development of advanced cancer." *JAMA Netw Open*. 2020;3(11):e2025850. [https://doi.org/10.1001/jamanetworkopen.2020.25850](https://doi.org/10.1001/jamanetworkopen.2020.25850)
 
-[19] Bischoff-Ferrari HA, Vellas B, Rizzoli R, et al. "Effect of vitamin D, omega-3 fatty acids, and strength training on clinical outcomes in older adults: DO-HEALTH trial." *Front Nutr*. 2022.
+[19] Bischoff-Ferrari HA, Willett WC, Manson JE, et al. "Combined Vitamin D, Omega-3 Fatty Acids, and a Simple Home Exercise Program May Reduce Cancer Risk Among Active Adults Aged 70 and Older: A Randomized Clinical Trial." *Front Aging*. 2022;3:852643. doi: [10.3389/fragi.2022.852643](https://doi.org/10.3389/fragi.2022.852643). PMID: [35821820](https://pubmed.ncbi.nlm.nih.gov/35821820/)
 
 [20] Chowdhury R, Kunutsor S, Vitezova A, et al. "Vitamin D and risk of cause specific death." *BMJ*. 2014;348:g1903. [https://doi.org/10.1136/bmj.g1903](https://doi.org/10.1136/bmj.g1903)
 
@@ -531,11 +531,11 @@ Exercise can temporarily raise vitamin D levels. Moderate-intensity exercise (jo
 
 [31] Fan X, Wang J, Song M, et al. "Vitamin D status and risk of all-cause and cause-specific mortality in a large cohort." *J Clin Endocrinol Metab*. 2020;105(10):e3606-e3620.
 
-[32] Sutherland JP, Zhou A, Leach MJ, Hypponen E. "Differences and determinants of vitamin D deficiency among UK biobank participants." *Ann Intern Med*. 2022.
+[32] Sutherland JP, Zhou A, Hyppönen E. "Vitamin D Deficiency Increases Mortality Risk in the UK Biobank: A Nonlinear Mendelian Randomization Study." *Ann Intern Med*. 2022;175(11):1552-1559. doi: [10.7326/M21-3324](https://doi.org/10.7326/M21-3324). PMID: [36279545](https://pubmed.ncbi.nlm.nih.gov/36279545/)
 
 [33] Littlejohns TJ, Henley WE, Lang IA, et al. "Vitamin D and the risk of dementia and Alzheimer disease." *Neurology*. 2014;83(10):920-928. [https://pubmed.ncbi.nlm.nih.gov/25098535/](https://pubmed.ncbi.nlm.nih.gov/25098535/)
 
-[34] McCullough ML, Zoltick ES, Weinstein SJ, et al. "Circulating vitamin D and colorectal cancer risk." *J Natl Cancer Inst*. 2018.
+[34] McCullough ML, Zoltick ES, Weinstein SJ, et al. "Circulating Vitamin D and Colorectal Cancer Risk: An International Pooling Project of 17 Cohorts." *J Natl Cancer Inst*. 2019;111(2):158-169. doi: [10.1093/jnci/djy087](https://doi.org/10.1093/jnci/djy087). PMID: [29912394](https://pubmed.ncbi.nlm.nih.gov/29912394/)
 
 [35] Kristal AR, Till C, Song X, et al. "Plasma vitamin D and prostate cancer risk: results from the Selenium and Vitamin E Cancer Prevention Trial." *Cancer Epidemiol Biomarkers Prev*. 2014;23(8):1494-504. [https://pubmed.ncbi.nlm.nih.gov/24732629/](https://pubmed.ncbi.nlm.nih.gov/24732629/)
 
