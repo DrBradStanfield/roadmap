@@ -43,11 +43,18 @@ const PROXY_TIMESTAMP_WINDOW_SECONDS = 10 * 60;
  * proxied requests by sorting the query params (minus `signature`), joining
  * the `key=value` pairs with no separator (multi-values comma-joined), and
  * HMAC-SHA256ing with the app secret.
+ *
+ * Shopify sends each of its own params once, so a second copy is a forgery
+ * (US-09 AC24): Shopify's library verifies the LAST copy and
+ * `searchParams.get` reads the FIRST, so the two disagree about who is asking.
  */
+const SHOPIFY_PROXY_PARAMS = ['logged_in_customer_id', 'path_prefix', 'shop', 'signature', 'timestamp'];
+
 export function verifyAppProxySignature(request: Request, nowSeconds = Date.now() / 1000): boolean {
   const secret = process.env.SHOPIFY_API_SECRET;
   if (!secret) return false;
   const url = new URL(request.url);
+  if (SHOPIFY_PROXY_PARAMS.some((k) => url.searchParams.getAll(k).length > 1)) return false;
   const signature = url.searchParams.get('signature');
   if (!signature || !/^[0-9a-f]{64}$/.test(signature)) return false;
 

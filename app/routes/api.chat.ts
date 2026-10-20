@@ -8,7 +8,7 @@
  */
 import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
-import { getAuthenticatedUser, checkSubscriptionFromTags, getCustomerOrders, isValidUuid } from '../lib/route-helpers.server';
+import { getAuthenticatedUser, getCustomerId, checkSubscriptionFromTags, getCustomerOrders, isValidUuid } from '../lib/route-helpers.server';
 import { getClientIp } from '../lib/local-first-route.server';
 import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
@@ -195,7 +195,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     // Guest without a session token — return empty default (don't create a session just to list conversations)
     const sessionToken = url.searchParams.get('sessionToken');
-    const hasCustomerId = !!url.searchParams.get('logged_in_customer_id');
+    const hasCustomerId = !!getCustomerId(request);
     if (!hasCustomerId && !sessionToken) {
       return Response.json({
         success: true,

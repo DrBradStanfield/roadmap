@@ -29,6 +29,9 @@ vi.mock('../lib/chat-router.server', () => ({ sanitizeForRouter: (text: string) 
 vi.mock('../lib/chat-classifier.server', () => ({ classifyMessage: async () => ({ routerSkipped: true, classification: 'SKIP', latencyMs: 0 }), shouldFireRouter: () => false }));
 
 import { action, loader } from './api.chat';
+import { proxyPairs, signedQuery, TEST_PROXY_SECRET } from '../lib/app-proxy.test-helpers';
+
+process.env.SHOPIFY_API_SECRET = TEST_PROXY_SECRET;
 
 const id = '12345678-1234-4234-8234-123456789abc';
 const marker = 'PHI_SENTINEL synthetic LDL 4.2';
@@ -76,7 +79,9 @@ beforeEach(() => {
 afterEach(async () => { await Sentry.close(); vi.resetAllMocks(); vi.restoreAllMocks(); });
 
 async function request(method: string, body: unknown, query = '') {
-  const request = new Request(`https://drstanfield.com/api/chat?logged_in_customer_id=123${query}`, {
+  // A signed proxy query (US-09 AC24): the route reads the customer only from one.
+  const signed = signedQuery([...proxyPairs('123'), ...new URLSearchParams(query.slice(1))]);
+  const request = new Request(`https://drstanfield.com/api/chat${signed}`, {
     method, ...(method === 'GET' ? {} : { body: JSON.stringify(body), headers: { 'content-type': 'application/json' } }),
   });
   return method === 'GET'

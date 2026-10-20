@@ -245,7 +245,8 @@ same commit).
   only breaks at deploy.
 - **Storefront theme `div:empty{display:none}`** collapses empty widget cells
   — hold space with an NBSP.
-- **Never dedup on LLM-generated text** (titles drift between runs) — stable IDs only.
+- **Shopify's `appProxy` check verifies the LAST copy of a repeated query key; `searchParams.get` reads the FIRST.** Read
+  `logged_in_customer_id` only through `getCustomerId` (our verifier refuses repeated Shopify params); never echo a signed query.
 - **Lab-import auto-retries server-side** (retry counts: docs/reference.md), so
   failures self-heal: never add client retries.
 - **react-router 7.17 exports resolve everything to dist/development** — a

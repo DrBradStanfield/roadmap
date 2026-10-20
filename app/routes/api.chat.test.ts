@@ -79,3 +79,25 @@ describe('api.chat unsigned request', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 });
+
+// US-09 AC24: a duplicated logged_in_customer_id never identifies a customer.
+// Shopify's own check keeps the LAST copy while the route read the FIRST, so a
+// signed query with another customer's id put in front passed as that
+// customer. Without a session token it is now the empty guest answer.
+describe('api.chat duplicated customer id', () => {
+  it('GET with a forged first id is the empty guest list', async () => {
+    const { forgedQuery, TEST_PROXY_SECRET } = await import('../lib/app-proxy.test-helpers');
+    const saved = process.env.SHOPIFY_API_SECRET;
+    process.env.SHOPIFY_API_SECRET = TEST_PROXY_SECRET;
+    try {
+      const res = await loader({
+        request: new Request(`https://health-tool-app.fly.dev/api/chat${forgedQuery('999', '')}`),
+        params: {},
+      } as unknown as Parameters<typeof loader>[0]);
+      expect(await res.json()).toEqual({ success: true, conversations: [], isGuest: true });
+      expect(mocks.appProxy).not.toHaveBeenCalled();
+    } finally {
+      process.env.SHOPIFY_API_SECRET = saved;
+    }
+  });
+});
