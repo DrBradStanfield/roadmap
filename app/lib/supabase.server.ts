@@ -278,7 +278,7 @@ async function authUserById(userId: string): Promise<{ app_metadata?: { shopify_
     const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
     if (error || !data) throw new Error('Failed to list users');
     const found = data.users.find((u) => u.id === userId);
-    if (found) return found;
+    if (found) return { app_metadata: { shopify_customer_id: found.app_metadata?.shopify_customer_id } };
     if (data.users.length < perPage) break;
     if (page === maxPages) throw new Error('Account lookup page limit reached');
   }
