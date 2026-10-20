@@ -31,6 +31,7 @@ import {
   redirectMatches,
   registerClient,
   resolveClient,
+  type ClientMiss,
   type McpClient,
   type McpClientLabel,
 } from '../lib/mcp-clients.server';
@@ -48,7 +49,7 @@ import {
 } from '../lib/mcp-providers.server';
 import { packSealed, unpackSealed } from '../lib/mcp-seal.server';
 import { reviewerClient, reviewerFailures, reviewerGeneration, reviewerLoginMatches, reviewerOffered, reviewerRefreshToken } from '../lib/mcp-reviewer.server';
-import type { McpOAuthReason } from '../../packages/health-core/src/product-events';
+import type { McpOAuthDetail, McpOAuthReason } from '../../packages/health-core/src/product-events';
 import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
 
 /**
@@ -73,8 +74,8 @@ const AUTH_BODY_CAP = 64 * 1024;
  * caller-chosen text: what reaches a row is the client's LABEL, the provider
  * as the counter spells it, and the name of the check that failed.
  */
-function authorizeRefused(reason: McpOAuthReason, client: McpClientLabel): void {
-  void recordServerEvent('mcp_authorize_refused', { client, reason });
+function authorizeRefused(reason: McpOAuthReason, client: McpClientLabel, detail?: McpOAuthDetail): void {
+  void recordServerEvent('mcp_authorize_refused', { client, reason, detail });
 }
 
 /**
@@ -84,13 +85,17 @@ function authorizeRefused(reason: McpOAuthReason, client: McpClientLabel): void 
  * guards the provider key, because the seal is ours but the counter's
  * vocabulary is closed and this is the one word that could come from outside it.
  */
-function connectFailed(reason: McpOAuthReason, grant?: { clientId: string; provider?: string }): void {
+function connectFailed(reason: McpOAuthReason, grant?: { clientId: string; provider?: string }, detail?: McpOAuthDetail): void {
   void recordServerEvent('mcp_connect_failed', {
     ...(grant ? { client: mcpClientLabel(grant.clientId) } : {}),
     ...(grant && isProvider(grant.provider) ? { provider: providerTag(grant.provider) } : {}),
     reason,
+    detail,
   });
 }
+
+/** Why a sealed blob did not open, as the counter's word: nothing sent, or it would not unseal (US-32 AC48). */
+const sealMiss = (sent: string | null | undefined) => (sent ? 'unseal-failed' : 'missing') satisfies McpOAuthDetail;
 
 
 
@@ -196,17 +201,18 @@ async function authorizeScreen(request: Request, url: URL): Promise<Response> {
     return oauthError('temporarily_unavailable', 'No storage provider is configured', 503);
   }
 
-  const client = await resolveClient(url.searchParams.get('client_id') ?? '');
+  const miss: ClientMiss = {};
+  const client = await resolveClient(url.searchParams.get('client_id') ?? '', Date.now(), miss);
   // An unknown client can never be answered by redirecting — that would make
   // this an open redirector.
   if (!client) {
-    authorizeRefused('unknown-client', who);
+    authorizeRefused('unknown-client', who, miss.detail);
     return htmlError('We do not recognise the app that sent you here.');
   }
 
   const checked = checkAuthorize(url.searchParams, client);
   if (!checked.ok) {
-    authorizeRefused(checked.reason, who);
+    authorizeRefused(checked.reason, who, checked.detail);
     if (!checked.redirectable) return htmlError('That sign-in link is malformed.');
     const back = new URL(url.searchParams.get('redirect_uri') ?? '');
     back.searchParams.set('error', checked.error);
@@ -246,7 +252,7 @@ async function providerCallback(request: Request, url: URL): Promise<Response> {
   const held = readCookie(request, STATE_COOKIE);
   const state = held ? unpackSealed<StatePayload>('state', held) : null;
   if (!state) {
-    connectFailed('no-cookie');
+    connectFailed('no-cookie', undefined, sealMiss(held));
     return htmlError('That sign-in did not start here, or it took too long. Please start again from your assistant.');
   }
   const clear = { 'Set-Cookie': CLEAR_STATE_COOKIE };
@@ -433,11 +439,12 @@ async function tokenEndpoint(request: Request): Promise<Response> {
     const from = { clientId, provider: code?.provider };
     // One sentence for every dead code, and one word each to the counter: the
     // client is told nothing about WHICH check it failed, on purpose.
-    const dead = (reason: McpOAuthReason) => {
-      connectFailed(reason, from);
+    const dead = (reason: McpOAuthReason, detail?: McpOAuthDetail) => {
+      connectFailed(reason, from, detail);
       return oauthError('invalid_grant', 'That code is not usable');
     };
-    if (!code || code.clientId !== clientId) return dead(code ? 'token-client' : 'token-dead-code');
+    if (!code) return dead('token-dead-code', sealMiss(form.get('code')));
+    if (code.clientId !== clientId) return dead('token-client');
     if (!redirectMatches(code.redirectUri, form.get('redirect_uri') ?? '')) return dead('token-redirect');
     if (!verifyPkce(form.get('code_verifier') ?? '', code.codeChallenge)) return dead('token-pkce');
     // Best-effort, per machine: OAuth 2.1 wants single-use codes and stateless
@@ -452,11 +459,12 @@ async function tokenEndpoint(request: Request): Promise<Response> {
 
   if (grant === 'refresh_token') {
     const refresh = unpackSealed<RefreshPayload>('refresh', form.get('refresh_token') ?? '');
-    const dead = (reason: McpOAuthReason) => {
-      connectFailed(reason, { clientId, provider: refresh?.provider });
+    const dead = (reason: McpOAuthReason, detail?: McpOAuthDetail) => {
+      connectFailed(reason, { clientId, provider: refresh?.provider }, detail);
       return oauthError('invalid_grant', 'Please reconnect');
     };
-    if (!refresh || refresh.clientId !== clientId) return dead(refresh ? 'token-client' : 'token-dead-refresh');
+    if (!refresh) return dead('token-dead-refresh', sealMiss(form.get('refresh_token')));
+    if (refresh.clientId !== clientId) return dead('token-client');
     if (!grantLive(refresh)) return dead('reviewer-generation');
     // The original expiry travels through, so 90 days runs from consent.
     return Response.json(issueTokens(clientId, refresh.provider, refresh, Date.now(), refresh.exp), {

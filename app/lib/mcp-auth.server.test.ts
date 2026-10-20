@@ -26,7 +26,7 @@ vi.mock('node:dns', async (importOriginal) => {
   return { ...real, default: { ...real, lookup } };
 });
 import { checkAuthorize, MAX_STATE_LENGTH, sealState, verifyPkce } from './mcp-authorize.server';
-import { ALLOWED_REDIRECTS, isAllowedRedirect, isLoopbackRedirect, isPublicAddress, KNOWN_CLIENTS, redirectMatches, registerClient, resolveClient } from './mcp-clients.server';
+import { ALLOWED_REDIRECTS, isAllowedRedirect, isLoopbackRedirect, isPublicAddress, KNOWN_CLIENTS, redirectMatches, redirectMiss, registerClient, resolveClient } from './mcp-clients.server';
 import { isMcpEnabled } from './mcp-config.server';
 import { ACCESS_LIFETIME_SECONDS, connectionKey, issueTokens, resetMcpMemory, spendWrites, STATE_LIFETIME_SECONDS, type AccessPayload, type RefreshPayload, type StatePayload, WRITE_COST, WRITES_PER_HOUR } from './mcp-grants.server';
 import { packSealed, seal, typeKey, unpackSealed, unseal } from './mcp-seal.server';
@@ -888,6 +888,20 @@ describe('a refusal names the check that failed (US-32 AC34)', () => {
    */
   it('takes an empty `resource=` as absent, not as a foreign audience', () => {
     expect(checkAuthorize(authorizeParams({ resource: '' }), KNOWN_CLIENTS.get(CLAUDE)!).ok).toBe(true);
+  });
+});
+
+describe('a refused redirect names how it missed (US-32 AC48)', () => {
+  it('names each branch, and never the URL', () => {
+    const registered = ['https://claude.ai/api/mcp/auth_callback', 'http://localhost/callback'];
+    expect(redirectMiss(registered, '')).toBe('missing');
+    expect(redirectMiss(registered, 'not a url')).toBe('unknown-host');
+    expect(redirectMiss(registered, 'https://evil.test/cb')).toBe('unknown-host');
+    expect(redirectMiss(registered, 'https://claude.ai/elsewhere')).toBe('known-host-other-path');
+    expect(redirectMiss(registered, 'http://localhost:4567/elsewhere')).toBe('loopback-other-path');
+    // A registered redirect the policy no longer allows: unreachable through
+    // today's pins and registrations, which must all pass the policy.
+    expect(redirectMiss(['https://old.example/cb'], 'https://old.example/cb')).toBe('not-allowed');
   });
 });
 

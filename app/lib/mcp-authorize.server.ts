@@ -7,9 +7,9 @@
  * travel back to the client and which the route must render itself.
  */
 import crypto from 'node:crypto';
-import type { McpOAuthReason } from '../../packages/health-core/src/product-events';
+import type { McpOAuthDetail, McpOAuthReason } from '../../packages/health-core/src/product-events';
 import { issuer, resourceUrl } from './mcp-config.server';
-import { isAllowedRedirect, redirectMatches, type McpClient } from './mcp-clients.server';
+import { isAllowedRedirect, redirectMatches, redirectMiss, type McpClient } from './mcp-clients.server';
 import { nowSeconds, STATE_LIFETIME_SECONDS, type StatePayload } from './mcp-grants.server';
 import type { McpProvider } from './mcp-providers.server';
 import { packSealed } from './mcp-seal.server';
@@ -64,7 +64,7 @@ function clientHost(clientId: string): string {
 
 export type AuthorizeCheck =
   | { ok: true; request: AuthorizeRequest }
-  | { ok: false; error: string; description: string; redirectable: boolean; reason: McpOAuthReason };
+  | { ok: false; error: string; description: string; redirectable: boolean; reason: McpOAuthReason; detail?: McpOAuthDetail };
 
 /**
  * The OAuth answer for each refusal word. One table, so the `error` code the
@@ -80,9 +80,9 @@ const OAUTH_FAILURES = {
   resource: ['invalid_target', 'This server is not that resource'],
 } as const satisfies Record<string, readonly [string, string]>;
 
-function fail(reason: keyof typeof OAUTH_FAILURES, redirectable = true): AuthorizeCheck {
+function fail(reason: keyof typeof OAUTH_FAILURES, redirectable = true, detail?: McpOAuthDetail): AuthorizeCheck {
   const [error, description] = OAUTH_FAILURES[reason];
-  return { ok: false, error, description, redirectable, reason };
+  return { ok: false, error, description, redirectable, reason, detail };
 }
 
 /**
@@ -98,7 +98,7 @@ export function checkAuthorize(params: URLSearchParams, client: McpClient): Auth
     // A vendor quietly changing its callback shows up in Sentry as this line
     // with its own hostname; anything else is someone probing us.
     console.error(`[mcp] authorize refused: redirect_uri not allowed for client host ${clientHost(client.clientId)}`);
-    return fail('redirect-uri', false);
+    return fail('redirect-uri', false, redirectMiss(client.redirectUris, redirectUri));
   }
   if (params.get('response_type') !== 'code') return fail('response-type');
   if (params.get('code_challenge_method') !== 'S256') return fail('pkce');
@@ -112,7 +112,10 @@ export function checkAuthorize(params: URLSearchParams, client: McpClient): Auth
   // client that serialises every parameter it knows sends the key with nothing
   // in it, and refusing that is refusing a connection over punctuation.
   const resource = params.get('resource');
-  if (resource && !isThisResource(resource)) return fail('resource');
+  if (resource && !isThisResource(resource)) {
+    const sameHost = URL.canParse(resource) && new URL(resource).host === new URL(resourceUrl()).host;
+    return fail('resource', true, sameHost ? 'other-path' : 'other-host');
+  }
   return {
     ok: true,
     request: {

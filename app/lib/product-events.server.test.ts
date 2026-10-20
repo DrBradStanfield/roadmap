@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest';
-import { isLabUnitWord, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
+import { isLabUnitWord, MCP_OAUTH_DETAILS, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
 import { acceptedLabUnits, CATALOG_UNITS, LAB_CATALOG } from '../../packages/health-core/src/lab-catalog';
 import { UNIT_DEFS } from '../../packages/health-core/src/units';
 import { parseProductEvent, productEventSchema, SERVER_VISITOR_ID } from './product-events.server';
@@ -489,6 +489,35 @@ describe('recordServerEvent — the server path validates too', () => {
     expect(inserts.map((row) => (row.metadata as { reason?: string }).reason)).toEqual([
       'reviewer-credentials', 'reviewer-rate-limited', 'reviewer-generation',
     ]);
+  });
+
+  it('keeps every closed detail word on its own OAuth reason (US-32 AC48)', async () => {
+    const pairs = Object.entries(MCP_OAUTH_DETAILS).flatMap(([reason, details]) => details.map((detail) => [reason, detail]));
+    for (const [reason, detail] of pairs) {
+      await recordServerEvent('mcp_connect_failed', { reason: reason as never, detail: detail as never });
+    }
+    expect(inserts.map((row) => row.metadata)).toEqual(pairs.map(([reason, detail]) => ({ reason, detail })));
+    expect(captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('drops a detail that is not a closed word, or not its reason\'s, and keeps the row (US-32 AC48)', async () => {
+    const bad = [
+      ['unknown-client', 'https://evil.test/client.json'], // a URL
+      ['unknown-client', 'evil.test'], // a host
+      ['redirect-uri', 'something-else'], // a word no list names
+      ['no-cookie', 'other-host'], // another reason's word
+      ['pkce', 'missing'], // a reason that carries no detail
+      ['unknown-client', 'toString'], // an inherited key is not a word
+    ];
+    for (const [reason, detail] of bad) {
+      await recordServerEvent('mcp_authorize_refused', { client: 'other', reason: reason as never, detail: detail as never });
+    }
+    expect(inserts.map((row) => row.metadata)).toEqual(bad.map(([reason]) => ({ client: 'other', reason })));
+    // Alone, with no reason to belong to, and on any other event.
+    await recordServerEvent('mcp_connect_failed', { detail: 'missing' });
+    await recordServerEvent('mcp_connect', { client: 'claude', provider: 'dropbox', detail: 'missing' } as never);
+    expect(inserts.slice(-2).map((row) => row.metadata)).toEqual([null, { client: 'claude', provider: 'dropbox' }]);
+    expect(JSON.stringify(captureMessage.mock.calls)).not.toContain('evil');
   });
 
   // US-21 phase 3, the same pairing on the server path, where a bad key is

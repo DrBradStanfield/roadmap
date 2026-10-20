@@ -334,6 +334,32 @@ export const MCP_OAUTH_REASONS = [
 export type McpOAuthReason = (typeof MCP_OAUTH_REASONS)[number];
 
 /**
+ * Which branch of a refusal fired (US-32 AC48): one closed word per reason,
+ * named only where the code already knows the branch. Three organic refusals
+ * in 2026-10 could not be diagnosed from `reason` alone. Never a URL, host,
+ * client id or any other caller-chosen text.
+ */
+export const MCP_OAUTH_DETAILS = {
+  /** `resource` names another host, or this host with another path. */
+  resource: ['other-host', 'other-path'],
+  /** No `redirect_uri`; a host none of the client's redirects uses; a known
+   *  host (or loopback) with a different path, query, port or scheme; or a
+   *  registered redirect the policy no longer allows. */
+  'redirect-uri': ['missing', 'unknown-host', 'known-host-other-path', 'loopback-other-path', 'not-allowed'],
+  /** Neither a DCR id nor an https URL; a DCR id that fails its HMAC or
+   *  metadata; a CIMD URL refused before fetching; a fetch that failed; a
+   *  document that is not ours to accept; one whose redirects we refuse. */
+  'unknown-client': ['malformed', 'dcr-invalid', 'cimd-refused-url', 'cimd-fetch-failed', 'cimd-invalid', 'cimd-redirect-refused'],
+  /** Nothing was sent, or what was sent would not unseal (expired or tampered). */
+  'no-cookie': ['missing', 'unseal-failed'],
+  'token-dead-code': ['missing', 'unseal-failed'],
+  'token-dead-refresh': ['missing', 'unseal-failed'],
+} as const satisfies Partial<Record<McpOAuthReason, readonly string[]>>;
+
+export type McpOAuthDetail<R extends keyof typeof MCP_OAUTH_DETAILS = keyof typeof MCP_OAUTH_DETAILS> =
+  (typeof MCP_OAUTH_DETAILS)[R][number];
+
+/**
  * Which events may carry which `reason` words. The two vocabularies share one
  * `reason` column, and nothing before this said WHICH list an event draws
  * from: a tool-refusal word on an OAuth row, or the reverse, would have

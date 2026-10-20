@@ -10,6 +10,7 @@ import https from 'node:https';
 import { isIP, type LookupFunction } from 'node:net';
 import { pipeline, type Transform } from 'node:stream';
 import zlib from 'node:zlib';
+import type { McpOAuthDetail } from '../../packages/health-core/src/product-events';
 import { clientHmacKey } from './mcp-config.server';
 import { b64url } from './mcp-seal.server';
 
@@ -93,6 +94,16 @@ export function redirectMatches(registered: string, requested: string): boolean 
 
 export function isAllowedRedirect(uri: string): boolean {
   return ALLOWED_REDIRECTS.includes(uri) || isLoopbackRedirect(uri);
+}
+
+/** Which way a refused redirect missed, as the counter's closed word (US-32 AC48). Never the URL. */
+export function redirectMiss(registered: readonly string[], requested: string): McpOAuthDetail<'redirect-uri'> {
+  if (!requested) return 'missing';
+  if (registered.some((r) => redirectMatches(r, requested))) return 'not-allowed';
+  const host = (uri: string) => URL.canParse(uri) ? new URL(uri).hostname : null;
+  const asked = host(requested);
+  if (!asked || !registered.some((r) => host(r) === asked)) return 'unknown-host';
+  return isLoopbackRedirect(requested) ? 'loopback-other-path' : 'known-host-other-path';
 }
 
 /**
@@ -379,36 +390,40 @@ function isPublicIpv6(address: string): boolean {
   return true;
 }
 
-async function fetchClientMetadata(clientId: string, nowMs = Date.now()): Promise<McpClient | null> {
+async function fetchClientMetadata(clientId: string, nowMs: number, miss: ClientMiss): Promise<McpClient | null> {
   const cached = cimdCache.get(clientId);
   if (cached && cached.until > nowMs) return cached.client;
+  const refuse = (detail: ClientMiss['detail']) => {
+    miss.detail = detail;
+    return null;
+  };
 
   let url: URL;
   try {
     url = new URL(clientId);
   } catch {
-    return null;
+    return refuse('cimd-refused-url');
   }
   // `node:https` would send userinfo as an Authorization header.
-  if (url.protocol !== 'https:' || url.username || url.password || BAD_PORTS.has(url.port)) return null;
+  if (url.protocol !== 'https:' || url.username || url.password || BAD_PORTS.has(url.port)) return refuse('cimd-refused-url');
   const literal = url.hostname.replace(/^\[(.*)\]$/, '$1');
-  if (isIP(literal) && !isPublicAddress(literal, isIP(literal))) return null;
+  if (isIP(literal) && !isPublicAddress(literal, isIP(literal))) return refuse('cimd-refused-url');
 
   const fetched = await getCimdDocument(url).catch(() => null);
-  if (!fetched) return null;
+  if (!fetched) return refuse('cimd-fetch-failed');
   const { text, cacheControl } = fetched;
   let doc: Record<string, unknown>;
   try {
     doc = JSON.parse(text) as Record<string, unknown>;
   } catch {
-    return null;
+    return refuse('cimd-invalid');
   }
   // A MUST in draft-ietf-oauth-client-id-metadata-document-00 §4: the document
   // has to claim the very URL we fetched it from, or a client could point us at
   // someone else's metadata and inherit their identity.
-  if (doc?.client_id !== clientId) return null;
+  if (doc?.client_id !== clientId) return refuse('cimd-invalid');
   const metadata = canonicalMetadata(doc);
-  if (!metadata) return null;
+  if (!metadata) return refuse(Array.isArray(doc.redirect_uris) && doc.redirect_uris.length ? 'cimd-redirect-refused' : 'cimd-invalid');
 
   const client: McpClient = { clientId, name: metadata.client_name, redirectUris: metadata.redirect_uris };
   const ttl = Math.min(cacheTtlMs(cacheControl), CIMD_MAX_TTL_MS);
@@ -489,14 +504,23 @@ export async function readCapped(
  * touching the network; any other URL is a CIMD document we fetch. Nothing
  * else is a client.
  */
-export async function resolveClient(clientId: string, nowMs = Date.now()): Promise<McpClient | null> {
+export async function resolveClient(clientId: string, nowMs = Date.now(), miss: ClientMiss = {}): Promise<McpClient | null> {
+  miss.detail = 'malformed';
   if (!clientId || clientId.length > 4096) return null;
-  if (clientId.startsWith('c.')) return verifySelfContainedClient(clientId);
+  if (clientId.startsWith('c.')) {
+    miss.detail = 'dcr-invalid';
+    return verifySelfContainedClient(clientId);
+  }
   // Exact string only: a lookalike id falls through to the fetch path below.
   const known = KNOWN_CLIENTS.get(clientId);
   if (known) return known;
-  if (clientId.startsWith('https://')) return fetchClientMetadata(clientId, nowMs);
+  if (clientId.startsWith('https://')) return fetchClientMetadata(clientId, nowMs, miss);
   return null;
+}
+
+/** Where `resolveClient` writes why it found no client: the counter's word, never the id (US-32 AC48). */
+export interface ClientMiss {
+  detail?: McpOAuthDetail<'unknown-client'>;
 }
 
 /** Test seam — the CIMD cache is process-global. */
