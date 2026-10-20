@@ -564,6 +564,12 @@ export function withoutListed(file: RoadmapFile, listed: ReadonlySet<string>): R
  * nothing, so it claims nothing there either; of two lists the larger
  * `fromEpoch` stands, because it claims less.
  */
+/** Whether the file's list claims its own epoch's erase (`fromEpoch` at or
+ *  below `eraseEpoch`); `eraseEpoch + 1` claims nothing (US-09 AC23). */
+function listsThisEpoch(file: RoadmapFile): boolean {
+  return file.erasedRows !== undefined && file.erasedRows.fromEpoch <= (file.meta.eraseEpoch ?? 0);
+}
+
 export function mergeErasedRows(local: RoadmapFile, remote: RoadmapFile): ErasedRows | undefined {
   const [a, b] = [local.erasedRows, remote.erasedRows];
   if (!a && !b) return undefined;
@@ -715,13 +721,14 @@ export function mergeFiles(
       lastDeviceId: opts.deviceId,
       lamport: Math.max(local.meta.lamport, remote.meta.lamport) + 1,
       eraseEpoch: localEpoch, // equal on both sides in this branch
-      // When one side listed its rows and the other did not, the listing
-      // erase's rows go by id; the time that still decides is the unlisted
-      // erase's, or a copy that missed it would lose rows typed between the
-      // two (US-09 AC23).
-      ...(!local.erasedRows === !remote.erasedRows
+      // When one side's list covers this epoch and the other's does not, the
+      // listing erase's rows go by id; the time that still decides is the
+      // unlisted erase's, or a copy that missed it would lose rows typed
+      // between the two (US-09 AC23). A list that claims nothing counts as
+      // no list.
+      ...(listsThisEpoch(local) === listsThisEpoch(remote)
         ? laterErase(local.meta.erasedAt, remote.meta.erasedAt)
-        : laterErase((local.erasedRows ? remote : local).meta.erasedAt, undefined)),
+        : laterErase((listsThisEpoch(local) ? remote : local).meta.erasedAt, undefined)),
     },
 
     profile: mergeFields<RoadmapProfile>(local.profile, remote.profile),

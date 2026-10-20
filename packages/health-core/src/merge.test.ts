@@ -1397,6 +1397,12 @@ describe('mergeFiles — erasedRows: an erase decides by the rows it listed (US-
       for (const merged of [mergeFiles(laptop, lifted, OPTS), mergeFiles(lifted, laptop, OPTS)]) {
         expect(merged.measurements.map((r) => r.id)).toEqual(['mid']);
       }
+      // The lifted list claims nothing (fromEpoch 2 at epoch 1), so meeting a
+      // stale copy of the guest file again keeps the unlisted erase's time.
+      for (const again of [mergeFiles(lifted, guest, OPTS), mergeFiles(guest, lifted, OPTS)]) {
+        expect(again.meta.erasedAt).toBe('2026-09-01T00:00:00.001Z');
+        expect(mergeFiles(laptop, again, OPTS).measurements.map((r) => r.id)).toEqual(['mid']);
+      }
     }
     // Both listing, or neither: the later erase time, as before.
     const other = listed(['other-row']);
