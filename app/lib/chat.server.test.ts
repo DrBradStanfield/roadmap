@@ -13,7 +13,7 @@ import {
 } from './chat.server';
 import { chatContextOf, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE } from '../../packages/health-core/src/chat-context';
 import { MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
-import { EDITABLE_FIELDS } from '../../packages/health-core/src/chat-edits';
+import { CHAT_EDIT_TOOLS, EDITABLE_FIELDS } from '../../packages/health-core/src/chat-edits';
 import { loadBlogIndex } from './blog-index.server';
 
 describe('buildConversationMessages', () => {
@@ -112,7 +112,8 @@ describe('buildSystemBlocks', () => {
       expect(text).toContain(NO_PLAN_CHAT_RULE);
     }
     expect(NO_PLAN_CHAT_RULE).toMatch(/without grading them/);
-    expect(NO_PLAN_CHAT_RULE).toMatch(/ask them to enter the missing sex or height in the roadmap tool \(this chat cannot save them\)/);
+    expect(NO_PLAN_CHAT_RULE).toMatch(/ask them for the missing sex or height/);
+    expect(NO_PLAN_CHAT_RULE).not.toContain('cannot save');
     expect(NO_PLAN_CHAT_RULE).toMatch(/one plain sentence why: the roadmap needs height and sex to work out the plan/);
     // Review R2 (2026-10-20): a plan computed this turn from stated values wins (AC33), without naming the tool.
     expect(NO_PLAN_CHAT_RULE).toMatch(/and no tool result this turn holds a plan/);
@@ -122,10 +123,12 @@ describe('buildSystemBlocks', () => {
     expect(NO_PLAN_CHAT_RULE).not.toMatch(/\u2014/);
   });
 
-  // US-15 AC36 (2026-10-20, Brad): the rule sends the user to the tool because the chat has no
-  // way to save sex or height: the form tool's fields are measurements only. If this fails, a
-  // save path exists, and the rule should offer it instead.
-  it('US-15 AC36: the chat cannot propose sex or height, so the no-plan rule points to the tool', () => {
+  // US-16 AC2 (2026-10-20, Brad: "the chatbot should be asking the user to input the missing values,
+  // which it can do either in the chat or in the tool itself"): the rule offers the profile tool,
+  // which the widget's chat is sent, and the roadmap tool beside it.
+  it('US-16 AC2: the no-plan rule offers to save a stated sex or height with the tool the widget chat has', () => {
+    expect(NO_PLAN_CHAT_RULE).toContain('Once they state them, propose saving them with `propose_profile_edit` when you have that tool (they confirm before anything is saved); they can also enter them in the roadmap tool.');
+    expect(CHAT_EDIT_TOOLS.map(t => t.name)).toContain('propose_profile_edit');
     expect(EDITABLE_FIELDS).not.toContain('sex');
     expect(EDITABLE_FIELDS).not.toContain('heightCm');
   });

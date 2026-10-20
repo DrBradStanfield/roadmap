@@ -53,8 +53,8 @@ describe('US-15 AC19: tools only where a client can apply them', () => {
     await getChatCompletion([], [{ role: 'user', content: 'hi' }], true);
     await getChatCompletion([], [{ role: 'user', content: 'LDL 4.1 mmol/L, how is that?' }], true);
     const names = (i: number) => JSON.parse(fetchMock.mock.calls[i][1].body).tools.map((t: { name: string }) => t.name);
-    expect(names(0)).toEqual(['propose_field_edit', 'propose_medication_edit']);
-    expect(names(1)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+    expect(names(0)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit']);
+    expect(names(1)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap']);
   });
 
   it('canApplyEdits: false sends no tools', async () => {

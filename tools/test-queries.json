@@ -4845,16 +4845,16 @@
     },
     "expect_no_plan": true,
     "must_match": [
-      "(?:^|[.!?\\n;:,]|\\b(?:and|so|but|then|or)\\b)(?:(?!\\b(?:\\w+n't|not|cannot|unable)\\b)[^.!?\\n;:,])*?\\b(enter|add|fill in|put|type|update|set)\\b(?:[^.!?\\n]){0,80}\\b(tool|form|profile|in (the|your) (health )?roadmap)\\b"
+      "\\bconfirm\\b|\\b(press|tap|click|hit|select|choose)( the)? [*'\\\"]{0,2}save\\b|(?:^|[.!?\\n;:,]|\\b(?:and|so|but|then|or)\\b)(?:(?!\\b(?:\\w+n't|not|cannot|unable)\\b)[^.!?\\n;:,])*?\\b(enter|add|fill in|put|type|update|set)\\b(?:[^.!?\\n]){0,80}\\b(tool|form|profile|in (the|your) (health )?roadmap)\\b"
     ],
     "must_not_match": [
-      "\\bi(?:'ve| have|'ll| will)\\s+(?:now\\s+|just\\s+)?(?:saved|save|added|add|recorded|record|updated|update|stored|store|pre-?filled|pre-?fill)\\b(?:[^.!?\\n]){0,40}\\b(height|it|that)\\b",
-      "\\b(your )?height (is|has been) (now )?(saved|recorded|updated|stored|pre-?filled)\\b",
-      "\\b(want|like) me to pre-?fill\\b(?:[^.!?\\n]){0,40}\\bheight\\b",
+      "\\b(i|this chat|the chat)\\b[^.!?\\n]{0,20}(\\b(can't|cannot|can not|won't be able to)|\\b(am|'m) (not able|unable) to|\\b(don't|do not) have (a way|the ability) to|\\bhave no way to)\\b[^.!?\\n]{0,30}\\b(save|store|record|keep|add|update)\\b(?![^.!?\\n]{0,40}\\b(until|unless|without|before)\\b)",
+      "\\bi(?:'ve| have)\\s+(?:now\\s+|just\\s+|already\\s+)?(?:saved|added|recorded|updated|stored)\\b(?![^.!?\\n]{0,40}\\b(banner|confirm\\w*|review|approv\\w*)\\b)[^.!?\\n]{0,40}\\b(height|sex|it|that|them)\\b",
+      "\\b(your )?(height|sex)( and (height|sex))? (is|are|has been|have been) (now )?(saved|recorded|updated|stored)\\b",
       "\\bheight of\\b(?:[^.!?\\n]|\\.(?=\\d)){0,30}\\b(is|has been) (now )?(saved|recorded|stored|updated)\\b",
       "\\bi've gone ahead and (saved|added|recorded|updated|stored)\\b"
     ],
-    "notes": "US-15 AC36 amendment (2026-10-20, Brad: when no plan can be built, ask for the missing values and say where to give them). The chat has no way to save sex or height: propose_field_edit's enum is the longitudinal measurements (EDITABLE_FIELDS, chat-edits.ts), and run_roadmap uses a stated height for one answer without saving it. So the no-plan rule tells the user to enter sex or height in the roadmap tool. Same made-up payload as the AC36 fixture (no height, so no plan). Pass: tells her to enter or add her height in the tool, form or profile. Fail: says the chat saved, recorded, updated or pre-filled her height, or that her height is now saved. The query states a height, so the answer may call run_roadmap with it; the check does not require or forbid that. Review 2026-10-20 (R1): also fails 'would you like me to pre-fill your height', 'your height of 165 cm has been saved' and 'I've gone ahead and saved it', and a bare refusal that sends her nowhere. Not yet measured: the test key is capped until 2026-11-01 (Brad 2026-10-20: ship without the paid run)."
+    "notes": "US-15 AC36 amendment, rewritten 2026-10-20 for US-16 AC2 (orchestrator): the website chat can now propose saving a stated sex or height with propose_profile_edit, and the user confirms it in a banner in the roadmap tool before anything is saved. Same made-up payload as the AC36 fixture (sex saved, no height, so no plan); she states her height, so nothing is left to ask for. Pass: offers the save, by asking her to confirm or press Save on the proposal, or by telling her to enter or add her height in the tool, form or profile. Fail: says the chat cannot save, store or add it (unless followed by until, unless, without or before, as in 'I can't save it until you confirm'), or claims it is already saved ('I've saved your height', 'your height has been saved', 'your height of 165 cm has been saved', 'I've gone ahead and saved'); 'I've added it to the banner for you to confirm' is not a claim. The query states a height, so the answer may call run_roadmap with it; the check does not require or forbid that, nor the tool call itself (the harness scores text only). History: until 2026-10-20 the chat had no way to save sex or height, and this fixture failed any offer to save or pre-fill. Not yet measured: the test key is capped until 2026-11-01."
   },
   {
     "query": "I'm 165 cm and male, analyse my data",
@@ -4878,15 +4878,18 @@
     "expect_no_plan": true,
     "expect_roadmap_run": true,
     "must_match": [
-      "(\\bnot|n't)( been| yet)? (saved|stored|kept|recorded)\\b",
-      "(?:^|[.!?\\n;:,]|\\b(?:and|so|but|then|or)\\b)(?:(?!\\b(?:\\w+n't|not|cannot|unable)\\b)[^.!?\\n;:,])*?\\b(enter|add|fill in|put|type|update|set)\\b(?:[^.!?\\n]){0,80}\\b(tool|form|profile|in (the|your) (health )?roadmap)\\b"
+      "\\bconfirm\\b|\\b(press|tap|click|hit|select|choose)( the)? [*'\\\"]{0,2}save\\b|(?:^|[.!?\\n;:,]|\\b(?:and|so|but|then|or)\\b)(?:(?!\\b(?:\\w+n't|not|cannot|unable)\\b)[^.!?\\n;:,])*?\\b(enter|add|fill in|put|type|update|set)\\b(?:[^.!?\\n]){0,80}\\b(tool|form|profile|in (the|your) (health )?roadmap)\\b"
     ],
     "must_not_match": [
       "\\b(what is|what's|tell me|share|let me know)\\b(?:[^.!?\\n]){0,30}\\byour (height|sex)\\b|\\bhow tall are you\\b",
       "\\bthe roadmap (has no plan|can't (build|make|run|work out) (a|your) plan)\\b",
-      "\\bi(?:'ve| have|'ll| will)\\s+(?:now\\s+|just\\s+)?(?:saved|save|added|add|recorded|record|updated|update|stored|store|pre-?filled|pre-?fill)\\b(?:[^.!?\\n]){0,40}\\b(height|sex|it|that|them)\\b"
+      "\\b(i|this chat|the chat)\\b[^.!?\\n]{0,20}(\\b(can't|cannot|can not|won't be able to)|\\b(am|'m) (not able|unable) to|\\b(don't|do not) have (a way|the ability) to|\\bhave no way to)\\b[^.!?\\n]{0,30}\\b(save|store|record|keep|add|update)\\b(?![^.!?\\n]{0,40}\\b(until|unless|without|before)\\b)",
+      "\\bi(?:'ve| have)\\s+(?:now\\s+|just\\s+|already\\s+)?(?:saved|added|recorded|updated|stored)\\b(?![^.!?\\n]{0,40}\\b(banner|confirm\\w*|review|approv\\w*)\\b)[^.!?\\n]{0,40}\\b(height|sex|it|that|them)\\b",
+      "\\b(your )?(height|sex)( and (height|sex))? (is|are|has been|have been) (now )?(saved|recorded|updated|stored)\\b",
+      "\\bheight of\\b(?:[^.!?\\n]|\\.(?=\\d)){0,30}\\b(is|has been) (now )?(saved|recorded|stored|updated)\\b",
+      "\\bi've gone ahead and (saved|added|recorded|updated|stored)\\b"
     ],
-    "notes": "US-15 AC36 review R2 (2026-10-20): the in-chat half of Brad's 'give them in the chat or in the tool'. Made-up payload with no sex and no height, so the saved data has no plan; the user states both. The no-plan rule yields to a plan computed this turn (AC33), so the answer must call run_roadmap with the stated sex and height and answer from its plan. Pass: calls run_roadmap, says the values are not saved, and sends him to the roadmap tool, form or profile to keep them. Fail: asks again for the height or sex he just gave, says the roadmap has no plan, or claims to have saved them. Not yet measured: the test key is capped until 2026-11-01."
+    "notes": "US-15 AC36 review R2 (2026-10-20), rewritten the same day for US-16 AC2 (orchestrator): the in-chat half of Brad's 'give them in the chat or in the tool'. Made-up payload with no sex and no height, so the saved data has no plan; the user states both. The no-plan rule yields to a plan computed this turn (AC33), so the answer must call run_roadmap with the stated sex and height and answer from its plan, and it can propose saving them with propose_profile_edit. Pass: calls run_roadmap and offers the save (confirm or press Save on the proposal, or enter them in the roadmap tool, form or profile). Fail: asks again for the height or sex he just gave, says the roadmap has no plan, says the chat cannot save them, or claims they are already saved. History: until 2026-10-20 it also required 'not saved', when the chat had no way to save them. Not yet measured: the test key is capped until 2026-11-01."
   },
   {
     "query": "analyse my data: LDL 4.1 mmol/L, HbA1c 41 mmol/mol, BP 132/84",

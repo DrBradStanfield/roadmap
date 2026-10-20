@@ -38,6 +38,8 @@ import {
   type ProposedEdit,
   type ProposedFieldEdit,
   type ProposedMedicationEdit,
+  type ProposedProfileEdit,
+  formatHeightDisplay,
 } from '@roadmap/health-core';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
@@ -142,6 +144,12 @@ const countedCorrection: CorrectFn = async (id, newValue) => {
   if (status === 'ok') trackProductEvent('correction_made');
   return status;
 };
+
+/** The profile fields a chat proposal carries: the names its counter may send (US-16 AC2). */
+const profileFields = (p: ProposedProfileEdit) =>
+  [...(p.sex ? ['sex' as const] : []), ...(p.heightCm !== null ? ['heightCm' as const] : [])];
+
+const sexLabel = (sex: 'male' | 'female') => (sex === 'male' ? 'Male' : 'Female');
 
 /** After a medication or screening save, failed or not, the chat copy takes
  *  the lists the store holds (US-15 AC10). Never the form's: a failed save
@@ -892,6 +900,17 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     return undo;
   }, [handleMedicationChange]);
 
+  // US-16 AC2: a sex or height the chat proposed, waiting for the user's Save.
+  // The form writes these on change, so nothing reaches the form until then.
+  const [profileProposal, setProfileProposal] = useState<ProposedProfileEdit | null>(null);
+  const answerProfileProposal = (save: boolean) => {
+    if (!profileProposal) return;
+    if (save && profileProposal.sex) handleInputChange('sex', profileProposal.sex);
+    if (save && profileProposal.heightCm !== null) handleInputChange('heightCm', profileProposal.heightCm);
+    for (const field of profileFields(profileProposal)) trackProductEvent('chat_profile_edit', { field, choice: save ? 'saved' : 'declined' });
+    setProfileProposal(null);
+  };
+
   const handleProposeEdit = useCallback((edits: ProposedEdit[]) => {
     let hasFieldEdit = false;
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
@@ -900,6 +919,22 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     const undo: NonNullable<typeof medUndo> = [];
     for (const edit of edits) {
       if (edit.kind === 'field') { applyFieldEdit(edit); hasFieldEdit = true; }
+      else if (edit.kind === 'profile') {
+        // A field already saved with the same value (as the user sees it) needs no Save.
+        const saved = inputsRef.current;
+        const changed: ProposedProfileEdit = {
+          kind: 'profile',
+          sex: edit.sex !== saved.sex ? edit.sex : null,
+          heightCm: edit.heightCm !== null && (saved.heightCm == null
+            || formatHeightDisplay(saved.heightCm, unitSystem) !== formatHeightDisplay(edit.heightCm, unitSystem)) ? edit.heightCm : null,
+        };
+        if (profileFields(changed).length === 0) continue;
+        // Several in one reply merge, the later value winning for each field.
+        setProfileProposal(prev => ({
+          kind: 'profile', sex: changed.sex ?? prev?.sex ?? null, heightCm: changed.heightCm ?? prev?.heightCm ?? null,
+        }));
+        for (const field of profileFields(changed)) trackProductEvent('chat_profile_edit', { field, choice: 'shown' });
+      }
       else undo.unshift(...applyMedicationEdit(edit, stated));
     }
     if (undo.length > 0) setMedUndo(undo);
@@ -909,7 +944,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setActiveTab('input');
       liveSwiper()?.slideTo(0);
     }
-  }, [applyFieldEdit, applyMedicationEdit]);
+  }, [applyFieldEdit, applyMedicationEdit, unitSystem]);
 
   const undoMedEdit = useCallback(() => {
     if (!medUndo) return;
@@ -1113,6 +1148,25 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
             aria-label="Dismiss"
             onClick={() => setMedUndo(null)}
           >✕</button>
+        </div>,
+        document.body,
+      )}
+
+      {/* US-16 AC2: a sex or height the chat proposed. Nothing is written
+          until the user presses Save; Not now writes nothing. */}
+      {profileProposal && createPortal(
+        <div className="chat-med-undo no-print" role="status">
+          <span className="chat-med-undo-text">
+            Save to your profile: {[
+              profileProposal.sex && sexLabel(profileProposal.sex)
+                + (inputs.sex ? ` (replaces ${sexLabel(inputs.sex)})` : ''),
+              profileProposal.heightCm !== null && (inputs.heightCm != null
+                ? `height ${formatHeightDisplay(profileProposal.heightCm, unitSystem)} (replaces ${formatHeightDisplay(inputs.heightCm, unitSystem)})`
+                : formatHeightDisplay(profileProposal.heightCm, unitSystem)),
+            ].filter(Boolean).join(', ')}?
+          </span>
+          <button type="button" className="chat-med-undo-btn" onClick={() => answerProfileProposal(true)}>Save</button>
+          <button type="button" className="chat-med-undo-dismiss" onClick={() => answerProfileProposal(false)}>Not now</button>
         </div>,
         document.body,
       )}

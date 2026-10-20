@@ -7,6 +7,8 @@ import {
   EDITABLE_FIELDS,
   PROPOSE_FIELD_EDIT_TOOL,
   PROPOSE_MEDICATION_EDIT_TOOL,
+  PROPOSE_PROFILE_EDIT_TOOL,
+  CHAT_EDIT_TOOLS,
   type ProposedFieldEdit,
   type ProposedMedicationEdit,
 } from './chat-edits';
@@ -18,6 +20,7 @@ const systemOf = (metric: MetricType, unit: string): UnitSystem | null => lookup
 
 const FIELD = PROPOSE_FIELD_EDIT_TOOL.name;
 const MED = PROPOSE_MEDICATION_EDIT_TOOL.name;
+const PROFILE = PROPOSE_PROFILE_EDIT_TOOL.name;
 
 /** Pick the SI unit label for a field's metric. */
 function siUnitFor(field: string): string {
@@ -182,7 +185,7 @@ describe('tools/test-tool-edits.json fixture is self-consistent', () => {
     name: string;
     query: string;
     expect: {
-      edits: Array<Record<string, unknown> & { kind: 'field' | 'medication' }>;
+      edits: Array<Record<string, unknown> & { kind: 'field' | 'medication' | 'profile' }>;
       mustAskClarifying?: boolean;
     };
   }>;
@@ -212,6 +215,13 @@ describe('tools/test-tool-edits.json fixture is self-consistent', () => {
           expect(parsed!.field).toBe(e.field);
           expect(parsed!.unitSystem).toBe(e.unitSystem);
           expect(parsed!.displayValue).toBe(e.displayValue);
+        } else if (e.kind === 'profile') {
+          const parsed = parseProposedEdit(PROFILE, {
+            ...(e.sex ? { sex: e.sex } : {}),
+            ...(e.heightCm !== undefined ? { height: { value: e.heightCm, unit: 'cm' } } : {}),
+          });
+          expect(parsed, `${c.name}: profile edit ${JSON.stringify(e)} must round-trip`)
+            .toEqual({ kind: 'profile', sex: e.sex ?? null, heightCm: e.heightCm ?? null });
         } else {
           const parsed = parseProposedEdit(MED, {
             medicationKey: e.medicationKey, drugName: e.drugName,
@@ -240,5 +250,45 @@ describe('toolOnlyAck', () => {
     const line = toolOnlyAck([field, med]);
     expect(line).toContain('press Save');
     expect(line).toContain('undo');
+  });
+});
+
+// US-16 AC2 (2026-10-20, Brad): the chat proposes a stated sex or height; the
+// widget writes it only when the user confirms. The parser holds the height to
+// the schema's range, since the profile has no Save step that would.
+describe('US-16 AC2: parseProposedEdit — profile edits', () => {
+  it('the form tools include propose_profile_edit', () => {
+    expect(CHAT_EDIT_TOOLS.map((t) => t.name)).toContain(PROFILE);
+  });
+  it('parses a sex and a height in cm', () => {
+    expect(parseProposedEdit(PROFILE, { sex: 'male', height: { value: 178, unit: 'cm' } }))
+      .toEqual({ kind: 'profile', sex: 'male', heightCm: 178 });
+  });
+  it('converts a height in inches (5 ft 10 in as 70 in) to cm', () => {
+    expect(parseProposedEdit(PROFILE, { height: { value: 70, unit: 'in' } }))
+      .toEqual({ kind: 'profile', sex: null, heightCm: toCanonicalValue('height', 70, 'conventional') });
+  });
+  it('parses a sex alone', () => {
+    expect(parseProposedEdit(PROFILE, { sex: 'female' })).toEqual({ kind: 'profile', sex: 'female', heightCm: null });
+  });
+  it('refuses a height out of range in either unit, and the sex beside it', () => {
+    expect(parseProposedEdit(PROFILE, { sex: 'male', height: { value: 17.8, unit: 'cm' } })).toBeNull();
+    expect(parseProposedEdit(PROFILE, { height: { value: 251, unit: 'cm' } })).toBeNull();
+    expect(parseProposedEdit(PROFILE, { height: { value: 178, unit: 'in' } })).toBeNull(); // 452 cm
+    expect(parseProposedEdit(PROFILE, { height: { value: 50, unit: 'cm' } })).not.toBeNull(); // the floor itself
+  });
+  it('refuses a sex outside the enum, an unknown unit, an unknown key, or nothing at all', () => {
+    expect(parseProposedEdit(PROFILE, { sex: 'man' })).toBeNull();
+    expect(parseProposedEdit(PROFILE, { sex: 'other' })).toBeNull();
+    expect(parseProposedEdit(PROFILE, { height: { value: 5.8, unit: 'ft' } })).toBeNull();
+    expect(parseProposedEdit(PROFILE, { height: { value: '178', unit: 'cm' } })).toBeNull();
+    expect(parseProposedEdit(PROFILE, { sex: 'male', birthYear: 1974 })).toBeNull();
+    expect(parseProposedEdit(PROFILE, {})).toBeNull();
+  });
+  it('a profile-only turn asks the user to confirm, never claims a save', () => {
+    const profile = parseProposedEdit(PROFILE, { sex: 'male' })!;
+    const line = toolOnlyAck([profile]);
+    expect(line).toContain('press Save');
+    expect(line).not.toMatch(/saved|updated|pre-filled/i);
   });
 });

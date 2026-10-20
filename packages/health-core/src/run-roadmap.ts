@@ -7,7 +7,8 @@
  * `buildChatContextJson`'s output for the result, so the tool's answer passes
  * the same anti-injection boundary as the prompt's user data block. Nothing is
  * saved: a stated value stands in for the saved one for this answer only.
- * Saving stays the user's job (propose_field_edit pre-fills, they press Save).
+ * Saving stays the user's job (propose_field_edit pre-fills, they press Save;
+ * propose_profile_edit asks them to confirm a sex or height, US-16 AC2).
  *
  * `withRoadmapRound` is the bounded loop every transport shares (the website
  * chat, the Pages BYOK chat and the answer-check harness): at most one
@@ -25,7 +26,7 @@ import { resolveRecordedAt } from './record-edits';
 import { knownMinorOf } from './calculations';
 import { buildChatContextJson } from './chat-context';
 import {
-  CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_MEDICATION_EDIT_TOOL, parseProposedEdit, parseProposedEdits,
+  CHAT_EDIT_TOOLS, EDITABLE_FIELDS, parseProposedEdit, parseProposedEdits,
   type EditableField, type ProposedEdit,
 } from './chat-edits';
 
@@ -45,8 +46,8 @@ export const RUN_ROADMAP_TOOL = {
     '(feet and inches as total inches: 5 ft 5 in is 65 in). If a unit is ' +
     'ambiguous and the user did not state it, ASK which unit instead of calling this tool, and do not grade the ' +
     'value in any unit. Answer only from the result, as you would from the user data block: never grade a value ' +
-    'yourself. Tell the user the values are not saved, and offer to pre-fill the measurements with propose_field_edit; ' +
-    'never offer that for sex or height: tell them to enter those in the roadmap tool.',
+    'yourself. Tell the user the values are not saved, and offer to pre-fill the measurements with propose_field_edit ' +
+    'and to save a stated sex or height with propose_profile_edit (or they can enter them in the roadmap tool).',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -341,13 +342,14 @@ export type ToolResultFor = (b: ChatContentBlock, blocks: readonly ChatContentBl
 /** Stub results for a form tool called beside run_roadmap: the client applies a valid one after the answer. */
 const FORM_TOOL_STUB = 'Pre-filled for the user to review and Save.';
 const MEDICATION_STUB = 'Sent to the user\'s form; medications save at once and the user can undo.';
+const PROFILE_STUB = 'Shown to the user to confirm; nothing is saved until they press Save.';
 const NOT_APPLIED = 'Not applied: the edit did not pass the form\'s checks, so nothing was pre-filled or saved.';
 const NOT_RUN = 'Not run: one run_roadmap per turn; use the first result.';
 
 /** The tool_result for a form tool: pre-filled or saved only when the client will apply it (parseProposedEdit accepts it). */
 function formToolStub(b: ChatContentBlock): string {
   const edit = b.name ? parseProposedEdit(b.name, b.input) : null;
-  return !edit ? NOT_APPLIED : b.name === PROPOSE_MEDICATION_EDIT_TOOL.name ? MEDICATION_STUB : FORM_TOOL_STUB;
+  return !edit ? NOT_APPLIED : edit.kind === 'medication' ? MEDICATION_STUB : edit.kind === 'profile' ? PROFILE_STUB : FORM_TOOL_STUB;
 }
 
 /** Every run_roadmap call of one reply as one input: the values in order, each profile field from the first call that gives it. */

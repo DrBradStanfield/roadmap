@@ -217,7 +217,7 @@ describe('US-49 + US-15 AC33: a run_roadmap round with the subscription tool', (
     );
     const result = await getChatCompletion([], digits, true, undefined, opts);
     const [first, second] = bodies();
-    expect(first.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap', 'propose_subscription_change']);
+    expect(first.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap', 'propose_subscription_change']);
     const [runResult, subResult] = second.messages[2].content;
     expect(runResult.tool_use_id).toBe('toolu_run');
     expect(subResult.tool_use_id).toBe('toolu_sub');

@@ -12,17 +12,20 @@
  * transport (chat.server.ts). Keeping it here means the two surfaces can never
  * drift on the tool name, the field enum, or the unit-resolution rules.
  *
- * Two tools:
+ * Three tools:
  *  - propose_field_edit       — longitudinal measurements (weight, LDL, BP, …).
  *                               Pre-fills the real form cell; the user Saves.
  *  - propose_medication_edit  — medications (statin, ezetimibe, …). These
  *                               auto-save today, so the chat states the change
  *                               + offers Undo.
+ *  - propose_profile_edit     — sex and height (US-16 AC2). The form saves
+ *                               these on change, so the widget asks the user
+ *                               to confirm before it writes anything.
  */
 import { z } from 'zod';
-import { lookupUnit, type MetricType, type UnitSystem } from './units';
+import { lookupUnit, reportedToCanonical, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC, LONGITUDINAL_FIELDS } from './mappings';
-import { MEDICATION_KEYS } from './validation';
+import { MEDICATION_KEYS, sanitizeInputs } from './validation';
 import type { HealthInputs } from './types';
 
 // ---------------------------------------------------------------------------
@@ -138,8 +141,36 @@ export const PROPOSE_MEDICATION_EDIT_TOOL = {
   },
 } as const;
 
-/** Both tools, ready to drop into an Anthropic request body's `tools` array. */
-export const CHAT_EDIT_TOOLS = [PROPOSE_FIELD_EDIT_TOOL, PROPOSE_MEDICATION_EDIT_TOOL];
+/**
+ * Tool: propose saving the user's sex and/or height (US-16 AC2). Nothing is
+ * saved until the user confirms it in the roadmap tool. Height is the stated
+ * number in cm or in (feet and inches as total inches), never converted by
+ * the model.
+ */
+export const PROPOSE_PROFILE_EDIT_TOOL = {
+  name: 'propose_profile_edit',
+  description:
+    "Propose saving the user's own sex and/or height to their roadmap profile. Use it ONLY when the user " +
+    "clearly states their own sex or height (e.g. \"I'm a 52 year old man, 178 cm\"), not a family member's. " +
+    'Pass the height exactly as stated, in cm or in (feet and inches as total inches: 5 ft 10 in is 70 in); ' +
+    'do NOT convert. You are NOT saving it: the user confirms it in the roadmap tool before anything is ' +
+    'saved, so say you have proposed it and ask them to confirm.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      sex: { type: 'string' as const, enum: ['male', 'female'], description: 'Only if the user stated it.' },
+      height: {
+        type: 'object' as const,
+        description: 'Only if the user stated it.',
+        properties: { value: { type: 'number' as const }, unit: { type: 'string' as const, enum: ['cm', 'in'] } },
+        required: ['value', 'unit'],
+      },
+    },
+  },
+} as const;
+
+/** The form tools, ready to drop into an Anthropic request body's `tools` array. */
+export const CHAT_EDIT_TOOLS = [PROPOSE_FIELD_EDIT_TOOL, PROPOSE_MEDICATION_EDIT_TOOL, PROPOSE_PROFILE_EDIT_TOOL];
 
 /**
  * Shown in the chat thread when the model proposed a form edit but returned no
@@ -147,6 +178,7 @@ export const CHAT_EDIT_TOOLS = [PROPOSE_FIELD_EDIT_TOOL, PROPOSE_MEDICATION_EDIT
  * measurement waits for Save; a medication saves at once with an undo banner.
  */
 export function toolOnlyAck(edits: ProposedEdit[]): string {
+  if (edits.length > 0 && edits.every((e) => e.kind === 'profile')) return 'Please check the details shown and press Save to add them to your profile.';
   const fields = edits.some((e) => e.kind === 'field');
   const meds = edits.some((e) => e.kind === 'medication');
   if (meds && !fields) return "Done — I've updated your medications. You can undo this from the banner.";
@@ -178,7 +210,15 @@ export interface ProposedMedicationEdit {
   doseUnit: string | null;
 }
 
-export type ProposedEdit = ProposedFieldEdit | ProposedMedicationEdit;
+/** Sex and/or height to save to the profile once the user confirms (US-16 AC2).
+ *  Height is canonical cm, converted by the parser from the stated unit. */
+export interface ProposedProfileEdit {
+  kind: 'profile';
+  sex: 'male' | 'female' | null;
+  heightCm: number | null;
+}
+
+export type ProposedEdit = ProposedFieldEdit | ProposedMedicationEdit | ProposedProfileEdit;
 
 // ---------------------------------------------------------------------------
 // Zod validators
@@ -200,6 +240,11 @@ const rawMedicationEditSchema = z.object({
   doseUnit: z.string().max(16).optional().nullable(),
 });
 
+const rawProfileEditSchema = z.object({
+  sex: z.enum(['male', 'female']).optional(),
+  height: z.object({ value: z.number().finite(), unit: z.enum(['cm', 'in']) }).optional(),
+}).strict();
+
 /**
  * Validate + normalise a single tool_use block into a ProposedEdit.
  *
@@ -211,9 +256,12 @@ const rawMedicationEditSchema = z.object({
  *    (so we never silently store a wrong-unit value — the model should have
  *    asked instead).
  *
- * Range validation is deliberately NOT done here — the value flows through the
- * real form Save, which runs the canonical Zod range check. A pre-fill of an
- * out-of-range value is allowed; the Save blocks it (consistent with manual entry).
+ * Range validation is deliberately NOT done here for measurements — the value
+ * flows through the real form Save, which runs the canonical Zod range check. A
+ * pre-fill of an out-of-range value is allowed; the Save blocks it (consistent
+ * with manual entry). A profile edit has no such Save (the form writes sex and
+ * height on change), so its height is held to the schema's range here, and an
+ * out-of-range height, an unknown sex or an unknown key drops the whole edit.
  */
 export function parseProposedEdit(toolName: string, rawInput: unknown): ProposedEdit | null {
   if (toolName === PROPOSE_FIELD_EDIT_TOOL.name) {
@@ -238,6 +286,16 @@ export function parseProposedEdit(toolName: string, rawInput: unknown): Proposed
       doseValue: doseValue ?? null,
       doseUnit: doseUnit ?? null,
     };
+  }
+
+  if (toolName === PROPOSE_PROFILE_EDIT_TOOL.name) {
+    const parsed = rawProfileEditSchema.safeParse(rawInput);
+    if (!parsed.success) return null;
+    const { sex, height } = parsed.data;
+    const heightCm = height ? reportedToCanonical('height', height.value, height.unit)?.valueSI : undefined;
+    if (height && !(heightCm !== undefined && 'heightCm' in sanitizeInputs({ heightCm }))) return null;
+    if (!sex && heightCm === undefined) return null;
+    return { kind: 'profile', sex: sex ?? null, heightCm: heightCm ?? null };
   }
 
   return null;

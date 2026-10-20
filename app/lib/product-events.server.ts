@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
+import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
 import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { METRIC_TYPES } from '../../packages/health-core/src/validation';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
@@ -50,6 +50,9 @@ const metadataSchema = z
     /** US-35 AC17: why a core value was refused, and for an invalid value only, its metric (checkEventKeys). Closed words. */
     metric: z.enum(METRIC_TYPES).optional(),
     refusal: z.enum(MEASUREMENT_REFUSAL_REASONS).optional(),
+    /** US-16 AC2: which profile field the chat proposed, and what the user did. Closed words, never a value. */
+    field: z.enum(CHAT_PROFILE_FIELDS).optional(),
+    choice: z.enum(CHAT_PROFILE_CHOICES).optional(),
     ...(Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, uploadOutcomeCount])) as Record<UploadOutcomeKey, typeof uploadOutcomeCount>),
   })
   .strict();
@@ -88,6 +91,8 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   via: ['mcp_connect'],
   step: ['mcp_tool_call'],
   rejected: ['chat_run_roadmap'],
+  field: ['chat_profile_edit'],
+  choice: ['chat_profile_edit'],
   ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, ['upload_outcome']])),
 };
 
@@ -99,6 +104,7 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   lpa_check_answered: ['answer'],
   measurement_refused: ['metric', 'refusal'],
   chat_run_roadmap: ['count', 'rejected'],
+  chat_profile_edit: ['field', 'choice'],
 };
 
 /**

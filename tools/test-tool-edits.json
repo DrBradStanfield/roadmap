@@ -85,5 +85,16 @@
       "edits": [],
       "mustAskClarifying": true
     }
+  },
+  {
+    "name": "profile-sex-height",
+    "query": "I'm a 52 year old man, 178 cm",
+    "category": "profile-edit",
+    "notes": "US-16 AC2: no saved sex or height (the harness sends no user data). The model proposes saving both with propose_profile_edit; the widget asks the user to confirm before anything is written.",
+    "expect": {
+      "edits": [
+        { "kind": "profile", "sex": "male", "heightCm": 178 }
+      ]
+    }
   }
 ]

@@ -108,7 +108,15 @@ export const PRODUCT_EVENT_NAMES = [
   // (run_roadmap). Server-originated. Metadata `{ count, rejected }`: how many
   // stated values the plan used and how many it refused. Never a value or a field.
   'chat_run_roadmap',
+  // US-16 AC2: the chat proposed saving a sex or height, and the user saw,
+  // saved or declined it. Metadata `{ field, choice }` (CHAT_PROFILE_FIELDS,
+  // CHAT_PROFILE_CHOICES): the field's name, never its value.
+  'chat_profile_edit',
 ] as const;
+
+/** The `chat_profile_edit` counter's words (US-16 AC2): which profile field, and what the user did. */
+export const CHAT_PROFILE_FIELDS = ['sex', 'heightCm'] as const;
+export const CHAT_PROFILE_CHOICES = ['shown', 'saved', 'declined'] as const;
 
 /** US-35 AC17: why the record refused a core value. `MeasurementRefusal.reason`
  *  (record-edits.ts) is typed from this list, so the two cannot drift. */

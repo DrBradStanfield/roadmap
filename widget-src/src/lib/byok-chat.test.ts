@@ -89,7 +89,9 @@ describe('BYOK chat context — per-field sanitizing', () => {
     expect(context.excludedFields).toEqual(['heightCm']);
     expect(context.missingInputs).toContain('heightCm');
     expect(context).not.toHaveProperty('currentSuggestions');
-    expect(state.sent!.system).toMatch(/no `currentSuggestions`.*ask them to enter the missing sex or height in the roadmap tool/i);
+    expect(state.sent!.system).toMatch(/no `currentSuggestions`.*ask them for the missing sex or height/i);
+    // US-16 AC2: once stated, the chat proposes saving them; the tool stays an option.
+    expect(state.sent!.system).toMatch(/propose saving them with `propose_profile_edit`.*enter them in the roadmap tool/);
     expect(state.sent!.system).toMatch(/needs height and sex to work out the plan/);
   });
 
@@ -182,9 +184,9 @@ describe('US-15 AC33: run_roadmap in the Pages chat', () => {
   it('offers run_roadmap with the form tools only when the message has a digit; its guidance is in the tool, not the prompt', async () => {
     await sendMessage('hi', null, SNAPSHOT);
     await sendMessage('my LDL is 4.1 mmol/L', null, SNAPSHOT);
-    expect(state.bodies[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
-    expect(state.bodies[1].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
-    expect(state.bodies[1].tools[2].description).toContain('Answer only from the result');
+    expect(state.bodies[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit']);
+    expect(state.bodies[1].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap']);
+    expect(state.bodies[1].tools[3].description).toContain('Answer only from the result');
     expect(state.bodies[1].system).not.toContain('run_roadmap');
     // C10: the form-tools rule names the form tools, so it does not forbid run_roadmap.
     expect(state.bodies[1].system).not.toMatch(/Use tools only|without any tool/);

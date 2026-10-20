@@ -97,7 +97,13 @@ interface ExpectedMedicationEdit {
   doseValue?: number;
   doseUnit?: string;
 }
-type ExpectedEdit = ExpectedFieldEdit | ExpectedMedicationEdit;
+/** US-16 AC2: height in canonical cm, as the parser converts it. */
+interface ExpectedProfileEdit {
+  kind: 'profile';
+  sex?: 'male' | 'female';
+  heightCm?: number;
+}
+type ExpectedEdit = ExpectedFieldEdit | ExpectedMedicationEdit | ExpectedProfileEdit;
 
 interface TestCase {
   name: string;
@@ -208,6 +214,9 @@ function editMatches(actual: ProposedEdit, expected: ExpectedEdit): boolean {
       (expected.doseUnit === undefined ||
         (actual.doseUnit ?? '').toLowerCase() === expected.doseUnit.toLowerCase())
     );
+  }
+  if (actual.kind === 'profile' && expected.kind === 'profile') {
+    return actual.sex === (expected.sex ?? null) && actual.heightCm === (expected.heightCm ?? null);
   }
   return false;
 }

@@ -232,6 +232,7 @@ export {
   type ProposedEdit,
   type ProposedFieldEdit,
   type ProposedMedicationEdit,
+  type ProposedProfileEdit,
 } from './chat-edits';
 
 // Evidence (stat card clinical detail)
