@@ -10,7 +10,7 @@
  *
  * Nothing here reads the clock, the filesystem or the network.
  */
-import { MCP_PROMPTS, MCP_TOOLS, SERVER_VERSION, toolContent, type ToolAnswer } from './mcp-tools';
+import { MCP_PROMPTS, MCP_TOOLS, SERVER_VERSION, toolContent, type McpToolDefinition, type ToolAnswer } from './mcp-tools';
 
 /** The revision both servers speak. The hosted one also accepts older ones. */
 export const PROTOCOL_VERSION = '2025-11-25';
@@ -47,6 +47,8 @@ export interface RpcSurface {
   protocolVersion(asked: string): string;
   serverInfo: { name: string; title: string; version: string };
   instructions: string;
+  /** The tools to list; absent, `MCP_TOOLS`. The hosted server adds its knowledge tools behind a switch (US-41 AC6). */
+  tools?: readonly McpToolDefinition[];
   callTool(name: string, args: unknown): Promise<RpcToolOutcome>;
 }
 
@@ -84,7 +86,7 @@ export async function dispatchRpc(incoming: unknown, surface: RpcSurface): Promi
     case 'tools/list':
       // `cost` (the hosted server's write-budget weight) and `run` (how the
       // loop dispatches the tool) are ours, not tool facts — never on the wire.
-      return rpcResult(id, { tools: MCP_TOOLS.map(({ cost, run, ...tool }) => tool) });
+      return rpcResult(id, { tools: (surface.tools ?? MCP_TOOLS).map(({ cost, run, ...tool }) => tool) });
     case 'prompts/list':
       return rpcResult(id, { prompts: MCP_PROMPTS.map(({ name, title }) => ({ name, title })) });
     case 'prompts/get': {

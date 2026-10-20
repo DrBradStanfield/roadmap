@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
+import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
 import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { METRIC_TYPES } from '../../packages/health-core/src/validation';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
@@ -21,7 +21,7 @@ const metadataSchema = z
   .object({
     provider: z.enum(['google-drive', 'dropbox', 'github', 'webdav', 'local', 'typed']).optional(),
     count: z.number().int().min(0).max(1000).optional(),
-    tool: z.enum(MCP_TOOL_NAMES).optional(),
+    tool: z.enum([...MCP_TOOL_NAMES, ...MCP_KNOWLEDGE_TOOL_NAMES]).optional(),
     client: z.enum(MCP_CLIENT_LABELS).optional(),
     outcome: z.enum(['ok', 'refused', 'error']).optional(),
     route: z.enum(MCP_IMPORT_ROUTES).optional(),

@@ -23,10 +23,11 @@ import { StorageError, type StorageAdapter, type StoredFile } from '../../packag
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
 import { folderNudge, type GuardRefusal, isToolName, MAX_APPROVAL_LENGTH, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
-import { importFilesBucket, isRefusalReason, MCP_TOOL_NAMES, type McpRefusalReason, type McpToolName } from '../../packages/health-core/src/product-events';
+import { importFilesBucket, isRefusalReason, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, type McpRefusalReason, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, type McpClientLabel } from './mcp-clients.server';
 import { cappedBody } from './capped-body.server';
 import { hostedImporter } from './mcp-import.server';
+import { callKnowledgeTool, isKnowledgeTool, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, knowledgeToolsEnabled } from './mcp-knowledge.server';
 import { recordServerEvent } from './product-events.server';
 import { type FileLabValue, type FileMeasurement, type RoadmapFile, stableStringify } from '../../packages/health-core/src/roadmap-file';
 import { githubFiler } from './github-issues.server';
@@ -451,8 +452,10 @@ function countToolCall(
   step?: 'propose' | 'confirm',
 ): void {
   // A name that is not a published tool was never a tool call, and free text
-  // in a counter is how a counter becomes a log.
-  if (!(MCP_TOOL_NAMES as readonly string[]).includes(tool)) return;
+  // in a counter is how a counter becomes a log. The knowledge tools are
+  // published only while their switch is on (US-41 AC12).
+  const published: readonly string[] = knowledgeToolsEnabled() ? [...MCP_TOOL_NAMES, ...MCP_KNOWLEDGE_TOOL_NAMES] : MCP_TOOL_NAMES;
+  if (!published.includes(tool)) return;
   // Only a refusal has a reason, and only a word the closed vocabulary names:
   // anything else counts as `other` rather than reaching the row (US-32 AC29).
   const why = outcome === 'refused' ? { reason: isRefusalReason(reason) ? reason : 'other' } : null;
@@ -481,10 +484,13 @@ function stepOf(name: string, args: unknown): 'propose' | 'confirm' | undefined 
  * runs, so the two cannot answer differently.
  */
 function hostedSurface(token: AccessPayload, now: string) {
+  // Off, the surface is exactly what it was before the knowledge tools (US-41 AC6).
+  const knowledge = knowledgeToolsEnabled();
   return {
     protocolVersion: (asked: string) => (SUPPORTED_PROTOCOLS.has(asked) ? asked : PROTOCOL_VERSION),
     serverInfo: SERVER_INFO,
-    instructions: INSTRUCTIONS,
+    instructions: knowledge ? INSTRUCTIONS + KNOWLEDGE_NOTE : INSTRUCTIONS,
+    tools: knowledge ? [...MCP_TOOLS, ...KNOWLEDGE_TOOLS] : undefined,
     async callTool(name: string, args: unknown): Promise<RpcToolOutcome> {
       // Per connection: every tool call refreshes a provider access token under
       // our one shared app identity, so a loop here is a loop at the provider.
@@ -503,7 +509,8 @@ function hostedSurface(token: AccessPayload, now: string) {
       // server has answered this way since phase 0. Storage failures are
       // already words by here; what lands in this catch is ours.
       try {
-        const answer = await callHostedTool(token, name, args, now);
+        // The knowledge tools open no record and mint no provider token: bundled files only.
+        const answer = knowledge && isKnowledgeTool(name) ? callKnowledgeTool(name, args) : await callHostedTool(token, name, args, now);
         countToolCall(token.clientId, name, answer.isError ? 'refused' : 'ok', answer.reason, stepOf(name, args));
         return { answer };
       } catch {

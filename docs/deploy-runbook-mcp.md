@@ -304,6 +304,17 @@ serves it at `/.well-known/openai-apps-challenge` as bare `text/plain`, `no-stor
 404s while unset. It answers independently of `isMcpEnabled()`, so ownership can be
 proved before the connector is switched on. Rotate by setting the secret again.
 
+**The knowledge tools: `MCP_KNOWLEDGE_TOOLS`** (US-41 AC6). `on` adds `search_knowledge` and
+`get_article` to `tools/list` on `health-tool-edu`; unset or any other value leaves the list
+byte-identical to 1.0.2. Not before OpenAI's verdict on 1.0.2: a changed tool list is a new
+submission (1.1). The tools read only bundled files and call no model, so the switch costs
+nothing per call. Set without `--stage` (it restarts the app); unset to turn them off.
+
+```bash
+fly secrets set MCP_KNOWLEDGE_TOOLS=on -a health-tool-edu
+fly secrets unset MCP_KNOWLEDGE_TOOLS -a health-tool-edu
+```
+
 ### The OpenAI reviewer sign-in (US-32 AC38)
 
 Why it exists, and Brad's exception: [mcp-architecture.md](mcp-architecture.md) §1 and

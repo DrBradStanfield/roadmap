@@ -148,8 +148,8 @@ function queryTerms(query: string): string[] {
 const K1 = 1.2;
 const B = 0.75;
 
-/** BM25 over the weighted fields; only entries sharing a term with the query come back. */
-export function search(index: Index, query: string, k = DEFAULT_K): Hit[] {
+/** BM25 over the weighted fields; only entries sharing a term with the query come back. `max` is the CLI's cap; the hosted tool reads a wider pool. */
+export function search(index: Index, query: string, k = DEFAULT_K, max = MAX_K): Hit[] {
   const terms = queryTerms(query);
   const n = index.docs.length;
   const scored: { doc: Doc; score: number }[] = [];
@@ -166,7 +166,7 @@ export function search(index: Index, query: string, k = DEFAULT_K): Hit[] {
   }
   return scored
     .sort((a, b) => b.score - a.score)
-    .slice(0, Math.min(Math.max(k, 1), MAX_K))
+    .slice(0, Math.min(Math.max(k, 1), max))
     .map(({ doc: { entry }, score }) => ({
       handle: entry.handle,
       type: entry.type ?? 'article',

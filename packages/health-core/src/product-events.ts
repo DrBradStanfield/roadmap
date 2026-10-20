@@ -188,7 +188,10 @@ export const MCP_TOOL_NAMES = [
   'file_results',
 ] as const;
 
-export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
+/** The hosted server's knowledge tools (US-41 AC12), counted only while their switch is on. Not in `MCP_TOOLS`. */
+export const MCP_KNOWLEDGE_TOOL_NAMES = ['search_knowledge', 'get_article'] as const;
+
+export type McpToolName = (typeof MCP_TOOL_NAMES)[number] | (typeof MCP_KNOWLEDGE_TOOL_NAMES)[number];
 
 /** The `mcp_import` counter's three closed vocabularies (US-35 usage signal). */
 export const MCP_IMPORT_ROUTES = ['dropbox', 'drive_refused', 'assistant'] as const;
