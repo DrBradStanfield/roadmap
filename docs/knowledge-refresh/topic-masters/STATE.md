@@ -44,8 +44,9 @@ Read this first after a compaction. Story: US-50 in docs/user-stories.md. Plan: 
    - Run `npx tsx scripts/rebuild-blog-index.ts`, then `npx tsx tools/knowledge-lint.ts --write-master-hashes`.
    - Run test:all. Known worktree-only failures: build-user-stories-html 7, codex-review 8. Link packages/health-core/node_modules if ajv is missing.
    - Push. Never merge the batch branch itself.
-7. Sign-off sheet as an Artifact (docs/knowledge-refresh/signoff-masters-<n>.md, via tools/md-artifact.mjs), listing only the always-ask items and holds.
-8. After Brad's Deploy is verified, publish each master: `--update-by-handle --store edu` (dry run first), then the microvitamin.com copy.
+7. Chatbot changelog (Brad 2026-10-20, same-commit rule): add an entry at the top of claude_business `docs/chat-knowledge-map-v2-changelog.md`. It covers which masters shipped and which were held, the hidden posts, the roadmap commit hashes, and what the loop should watch for regressions. Commit and push in claude_business (sweep rule). The masters-1 entry is the model.
+8. Sign-off sheet as an Artifact (docs/knowledge-refresh/signoff-masters-<n>.md, via tools/md-artifact.mjs), listing only the always-ask items and holds.
+9. After Brad's Deploy is verified, publish each master: `--update-by-handle --store edu` (dry run first), then the microvitamin.com copy.
 
 ## Lessons from masters-1
 
