@@ -737,6 +737,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setMedications([]);
       setScreenings([]);
       setProfileProposal(null);
+      setMedUndo(null);
       previousInputsRef.current = {};
       window.alert(result.chatErased ? ERASE_DONE : ERASE_DONE_CHAT_PENDING);
     } else {
