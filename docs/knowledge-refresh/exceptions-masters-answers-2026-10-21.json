@@ -38,5 +38,21 @@
   "reason": "Brad 2026-10-21: the report is append-only and its count (2 -> 2) predates the corrected ingredient-count sentence; the recount is 3 -> 4, covered by the 'rose' exception above.",
   "by": "orchestrator",
   "date": "2026-10-21"
+ },
+ {
+  "check": "AC4",
+  "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Orchestrator 2026-10-21 (R6): the Current view gained Brad's liver-test sentence on 2026-10-21, so its heading and reviewed: are re-dated 21 October 2026; the section itself is kept.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC7",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "product section changed: ### Product Mention — MicroVitamin",
+  "reason": "Orchestrator 2026-10-21 (R7): the MicroVitamin+ Powder count corrected to products.md:136 (v8 powder = 26 core + 4 = 30; 25 was the v7 count), with the v9 label from products.md:121, :733, :734; a correction, not new promotion.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
  }
 ]
