@@ -284,7 +284,14 @@ export async function logOff(backend: Backend): Promise<void> {
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'log-off', backend } });
   }
   // Wipe the on-device copy (RoadmapFile + version + named files + documents).
-  await new LocalStorageAdapter().disconnect();
+  // Only its content-free erase-fence write can throw, after the health keys
+  // are gone; log-off still finishes (US-09 AC2c).
+  try {
+    await new LocalStorageAdapter().disconnect();
+  } catch (error) {
+    console.warn('Device wipe during log-off failed');
+    Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'log-off', backend: 'local' } });
+  }
   // Also clear the legacy v1 health blob + the authenticated flag (the shared
   // HealthTool source still writes these), so a shared device leaks nothing.
   clearLocalStorage();

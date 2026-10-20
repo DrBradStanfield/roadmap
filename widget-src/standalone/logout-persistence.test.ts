@@ -31,12 +31,15 @@ class ControlledCloud extends MemoryAdapter {
   }
 }
 
-function makeStorage(): Storage {
+function makeStorage(failKey?: string): Storage {
   const values = Object.create(null) as Record<string, string>;
   Object.defineProperties(values, {
     length: { get() { return Object.keys(values).length; } },
     getItem: { value: (key: string) => values[key] ?? null },
-    setItem: { value: (key: string, value: string) => { values[key] = String(value); } },
+    setItem: { value: (key: string, value: string) => {
+      if (key === failKey) throw new Error('synthetic quota failure');
+      values[key] = String(value);
+    } },
     removeItem: { value: (key: string) => { delete values[key]; } },
     clear: { value: () => { for (const key of Object.keys(values)) delete values[key]; } },
     key: { value: (index: number) => Object.keys(values)[index] ?? null },
@@ -259,6 +262,31 @@ describe('logout is a barrier to late on-device roadmap persistence', () => {
       await connect.logOff('local');
       await settleLifecycle();
       expectDeviceEmpty();
+    });
+  }
+
+  // US-09 AC2/AC2c, US-11 AC3b: a failed erase-fence write never stops log-off.
+  for (const backend of ['github', 'local'] as const) {
+    it(`${backend}: a failed erase-fence write still clears every key and reloads`, async () => {
+      const seeded = {
+        [FILE_KEY]: '{}', [REV_KEY]: '1', [PENDING_KEY]: '1',
+        'health_roadmap_file_v2:chat-history.json': '{}',
+        'health_roadmap_doc_v2:synthetic-ref': 'data:application/pdf;base64,AA==',
+        health_roadmap_data: '{}', health_roadmap_authenticated: 'true',
+      };
+      vi.stubGlobal('localStorage', makeStorage('health_roadmap_local_erase_generation'));
+      localStorage.setItem(UNRELATED_KEY, 'keep');
+      for (const [key, value] of Object.entries(seeded)) localStorage.setItem(key, value);
+      connect.rememberBackend(backend);
+      const { Sentry } = await import('../src/lib/sentry');
+      await connect.logOff(backend);
+      for (const key of Object.keys(seeded)) expect(localStorage.getItem(key)).toBeNull();
+      expect(connect.rememberedBackend()).toBeNull();
+      expect(localStorage.getItem(UNRELATED_KEY)).toBe('keep');
+      expect(reload).toHaveBeenCalledOnce();
+      expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), {
+        tags: { area: 'cloud-sync', op: 'log-off', backend: 'local' },
+      });
     });
   }
 

@@ -4,7 +4,7 @@ import { MemoryAdapter, MemoryCloud, type ChatHistoryFile } from '@roadmap/healt
 import { ChatHistoryStore } from './chat-history-store';
 import { LocalStorageAdapter, NAMED_FILE_PREFIX } from './local-storage-adapter';
 import { RoadmapStore } from './roadmap-store';
-import { initRoadmapStore, deleteUserData, flushRoadmapStore } from '../lib/roadmap-data';
+import { initRoadmapStore, deleteUserData, flushRoadmapStore, addMeasurement } from '../lib/roadmap-data';
 import { getChatHistory, setChatHistoryFactory } from '../lib/chat-history-access';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -143,20 +143,33 @@ describe('US-11 local erase: a stale chat tab must not restore erased history', 
     expect(chat.getMessages('fresh').map(m => m.content)).toContain(FRESH_TEXT);
   });
 
-  it('reports incomplete cleanup when the content-free erase fence cannot be stored', async () => {
-    await initRoadmapStore(new LocalStorageAdapter());
-    const chat = (await getChatHistory())!;
-    await exchange(chat, 'old', OLD_TEXT);
-    const original = Storage.prototype.setItem;
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
-      if (key === 'health_roadmap_local_erase_generation') throw new Error('synthetic quota failure');
-      original.call(this, key, value);
+  // US-11 AC3b: the record is still erased; only the cleanup report fails.
+  for (const mode of ['local', 'cloud'] as const) {
+    it(`${mode}: reports incomplete cleanup when the content-free erase fence cannot be stored`, async () => {
+      const cloud = new MemoryCloud();
+      const adapter = () => (mode === 'local' ? new LocalStorageAdapter() : new MemoryAdapter(cloud));
+      await initRoadmapStore(adapter());
+      await addMeasurement('weight', 70, '2026-01-01');
+      const chat = (await getChatHistory())!;
+      await exchange(chat, 'old', OLD_TEXT);
+      const DOC_KEY = 'health_roadmap_doc_v2:synthetic-ref';
+      localStorage.setItem(DOC_KEY, 'data:application/pdf;base64,AA==');
+      const original = Storage.prototype.setItem;
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+        if (key === 'health_roadmap_local_erase_generation') throw new Error('synthetic quota failure');
+        original.call(this, key, value);
+      });
+      const result = await deleteUserData();
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Could not complete on-device history cleanup.');
+      expect(localStorage.getItem(CHAT_KEY)).toBeNull();
+      expect(localStorage.getItem(DOC_KEY)).toBeNull();
+      const reopened = await RoadmapStore.create(adapter());
+      expect(reopened.loadAllHistory()).toEqual([]);
+      const { body } = await adapter().read('health-roadmap.json');
+      expect((body as { meta: { eraseEpoch: number } }).meta.eraseEpoch).toBeGreaterThan(0);
     });
-    const result = await deleteUserData();
-    expect(result.success).toBe(false);
-    expect(result.error).toBe('Could not complete on-device history cleanup.');
-    expect(localStorage.getItem(CHAT_KEY)).toBeNull();
-  });
+  }
 
   it('control: without an erase, normal local writes still union both tabs\' conversations', async () => {
     const first = await ChatHistoryStore.create(new LocalStorageAdapter());

@@ -79,9 +79,9 @@ export class LocalStorageAdapter implements StorageAdapter {
     safeRemoveItem(versionKey(ROADMAP_FILE_NAME));
     // Named record files (chat-history.json, …) and stored documents live under
     // their prefixes — clear both so log-off leaves no health data behind on a
-    // shared device.
-    clearLocalNamedFiles();
+    // shared device. Documents go first: the named-file fence write can throw.
     removeByPrefix(DOC_KEY_PREFIX);
+    clearLocalNamedFiles();
   }
 
   // localStorage is synchronous, so read and write wrap readSync and writeSync.
