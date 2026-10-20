@@ -263,13 +263,13 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 | Control | Value | Where |
 |---------|-------|-------|
 | App-proxy HMAC | Every extraction call is signed by Shopify | `verifyAppProxySignature` in `local-first-route.server.ts`; no login exists in v2, the signature is the anti-abuse front door |
-| Per-IP quota | 60 files/day, weighted by file count | `createQuotaCounter` in `rate-limiter.ts` (in-memory, resets on deploy) |
+| Per-IP quota | 200 files/day (`IMPORT_LIMITS.websiteFiles`, the upload cap), weighted by file count | `createQuotaCounter` in `rate-limiter.ts` (in-memory, resets on deploy) |
 | Machine cap | `AI_DAILY_FILE_CAP` (default 500/day/machine), SHARED with the connector's `import_documents` | `machineFiles` in `rate-limiter.ts`; the true ceiling is cap × machines × 2 Fly apps |
 | Max files | 200 per upload session (client) | `UploadModal.tsx` |
 | Max pages | 20 per PDF (client); 100 page blocks per request (`labImportRequestSchema`) | `pdf-extract.ts`, `validation.ts` |
 | Max file size | 10 MB per file (client only); server rejects bodies over 200 MB | `UploadModal.tsx`, `api.lab-import-v2.ts` |
 | Max tokens | 10000 (`'full'`, one file), 12288 (batch, BYOK), 3072 (`'metadata'`) | `anthropic.server.ts`, `lab-extraction.ts` |
-| Worst-case cost | bounded by the quotas, not the file cap: 60 files × ~$0.005 ≈ $0.30 per IP per day | |
+| Worst-case cost | bounded by the quotas, not the file cap: 200 files × ~$0.005 ≈ $1 per IP per day | |
 | Sentry | `feature: 'lab_import_v2'`, page count and types only, never values | `api.lab-import-v2.ts` |
 
 ---
@@ -282,11 +282,12 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 - App-proxy HMAC on both methods; Zod validation (`labImportRequestSchema` `{ pages[1..100], unitSystem? }`, `batchImportRequestSchema` `{ batch: true, files: [{ pages }] }`); quota consumed before the model call. No file name reaches the server (it can hold a patient's name): a batch result comes back by request index (`custom_id` `file-N`) and the browser maps it to its file; a name an older widget sends is stripped by the schema. The widget sends `fileName: "file-N"` on each batch file, a compatibility label that names nothing, because CI ships the widget before the server and a server older than 2026-10-13 requires the field; drop it once every live server strips it.
 - Calls `extractOrClassify(pages)` and returns `{ success, data, remaining }`. `unitSystem` is accepted and ignored; display units are resolved from the record's profile client-side.
 - Batch state (`activeBatches`, max 200) is per machine: a poll landing on the other Fly machine 404s and the client falls back. Accepted.
+- An ended batch is deleted at Anthropic once its results are read (`deleteBatch`, US-12 AC18); the poll forgets it, so a second poll 404s. The 10-minute sweep deletes a batch nobody polled to the end after an hour, cancelling one still running and deleting it on a later sweep, for up to 25 h. In memory: a restart forgets them, and Anthropic's 29-day retention applies.
 - The v1 `api.lab-import.ts` and the `bulkMeasurements` branch of `api.measurements.ts` were deleted in the 2026-06-12 teardown; there is no server save path.
 
 ### `app/lib/anthropic.server.ts`
 
-Thin wrapper around the Anthropic API using direct `fetch` (no SDK). `extractOrClassify(pages, opts)` builds the body from `lab-extraction.ts` constants, applies the retry shape above, and returns `toUnifiedResult(parsed)` — lab values with `valueSI` + `displayValue`/`displayUnit`, or a document with markdown + metadata. `createBatch` / `pollBatch` wrap the Message Batches API.
+Thin wrapper around the Anthropic API using direct `fetch` (no SDK). `extractOrClassify(pages, opts)` builds the body from `lab-extraction.ts` constants, applies the retry shape above, and returns `toUnifiedResult(parsed)` — lab values with `valueSI` + `displayValue`/`displayUnit`, or a document with markdown + metadata. `createBatch` / `pollBatch` / `deleteBatch` wrap the Message Batches API.
 
 **Note**: server code deep-imports `../../packages/health-core/src/…`, never `@roadmap/health-core` — no workspace symlink in the Fly Docker build.
 

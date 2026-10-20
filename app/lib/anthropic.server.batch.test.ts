@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 
 import * as Sentry from '@sentry/react-router';
-import { createBatch, pollBatch } from './anthropic.server';
+import { createBatch, deleteBatch, pollBatch } from './anthropic.server';
 
 const letter = JSON.stringify({ classification: 'other', reportDate: null, values: [], additionalValues: [], document: null });
 const errorOf = (r: object) => ('errorCode' in r ? r.errorCode : undefined);
@@ -202,5 +202,47 @@ describe('US-15 AC34: a batch request that stopped short is its own error, not a
     expect(stops!.map(s => [s.code, s.refusalCategory])).toEqual([['refused', 'bio'], ['too_long', undefined]]);
     expect(JSON.stringify(stops)).not.toContain('free text');
     expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+});
+
+// US-12 AC18: Anthropic keeps a batch for up to 29 days unless we delete it,
+// and only an ended batch can be deleted (platform.claude.com/docs/en/api/messages/batches/delete).
+describe('US-12 AC18: deleteBatch', () => {
+  const calls = () => vi.mocked(fetch).mock.calls.map(([url, init]) => [(init as RequestInit)?.method ?? 'GET', url]);
+
+  it('sends DELETE /v1/messages/batches/{id} with the key and version, and reports success', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ id: 'batch_synthetic', type: 'message_batch_deleted' })));
+    expect(await deleteBatch('batch_synthetic')).toBe(true);
+    expect(calls()).toEqual([['DELETE', 'https://api.anthropic.com/v1/messages/batches/batch_synthetic']]);
+    const headers = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).headers as Record<string, string>;
+    expect(headers).toMatchObject({ 'x-api-key': 'synthetic-test-key', 'anthropic-version': '2023-06-01' });
+  });
+
+  it('counts a batch already gone (404) as deleted', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 404 })));
+    expect(await deleteBatch('batch_synthetic')).toBe(true);
+    expect(calls()).toHaveLength(1);
+  });
+
+  it('cancels a batch it could not delete, so a later delete can, and logs the status alone', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => (init?.method === 'DELETE'
+      ? new Response('{"error":{"message":"echo of something private"}}', { status: 409 })
+      : Response.json({ processing_status: 'canceling' }))));
+    expect(await deleteBatch('batch_synthetic')).toBe(false);
+    expect(calls()).toEqual([
+      ['DELETE', 'https://api.anthropic.com/v1/messages/batches/batch_synthetic'],
+      ['POST', 'https://api.anthropic.com/v1/messages/batches/batch_synthetic/cancel'],
+    ]);
+    expect(JSON.stringify(error.mock.calls)).not.toContain('private');
+    expect(JSON.stringify(vi.mocked(Sentry.captureMessage).mock.calls)).not.toContain('private');
+    expect(vi.mocked(Sentry.captureMessage)).toHaveBeenCalledWith('Lab import: batch delete failed', expect.objectContaining({ tags: expect.objectContaining({ status: '409' }) }));
+    error.mockRestore();
+  });
+
+  it('never throws: a network failure is a false', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('fetch failed'); }));
+    expect(await deleteBatch('batch_synthetic')).toBe(false);
   });
 });

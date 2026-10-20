@@ -3,7 +3,8 @@ import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
 import { UNDATED_PREVIOUS } from '../../packages/health-core/src/lab-extraction';
-import { extractOrClassify, createBatch, pollBatch, ExtractionStopError, reportExtractionStop } from '../lib/anthropic.server';
+import { extractOrClassify, createBatch, pollBatch, deleteBatch, ExtractionStopError, reportExtractionStop } from '../lib/anthropic.server';
+import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
 
@@ -22,13 +23,14 @@ import { getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '..
  * route. (Decision record §10 threat model.)
  *
  * Cost control (no identity to meter per-user):
- *  - per-IP daily file limit (anti-abuse, mirrors v1's per-customer limit)
+ *  - per-IP daily file limit (anti-abuse): the upload window's own file cap,
+ *    so any batch it takes fits a fresh day (US-12 AC17)
  *  - a HARD per-machine daily file cap as the $-cap guardrail, shared with the
  *    connector's import (`machineFiles` in rate-limiter.ts, US-35 AC10). Tune
  *    via AI_DAILY_FILE_CAP (default 500/day/machine ≈ low tens of $ worst case).
  */
 
-const PER_IP_DAILY_LIMIT = 60;
+const PER_IP_DAILY_LIMIT = IMPORT_LIMITS.websiteFiles;
 
 // Per-IP daily file quota — same shared counter machinery the sibling
 // local-first routes use (rate-limiter.ts), weighted by file count.
@@ -49,10 +51,22 @@ function consumeQuota(ip: string, count: number): boolean {
 // required on every poll; without it, or with the wrong one, the batch does not
 // exist (404, the same answer as an id nobody created).
 const MAX_ACTIVE_BATCHES = 200;
-const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; days: DayFlags; refusedRows?: true; reported?: boolean }>();
-setInterval(() => {
-  const cutoff = Date.now() - 60 * 60_000;
-  for (const [id, b] of activeBatches) if (b.createdAt < cutoff) activeBatches.delete(id);
+const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; days: DayFlags; refusedRows?: true }>();
+// Batches Anthropic still holds for us, id → createdAt: each is deleted there
+// once ended (US-12 AC18). A results poll deletes its batch; the sweep deletes
+// one nobody polled to the end (the tab closed). deleteBatch cancels a batch
+// still running, so the next sweep can delete it. Every batch ends within 24 h,
+// so after 25 the sweep stops trying. Per machine and in memory, like
+// activeBatches: a restart forgets them, and Anthropic's 29 days apply.
+const undeletedBatches = new Map<string, number>();
+setInterval(async () => {
+  const now = Date.now();
+  for (const [id, b] of activeBatches) {
+    if (b.createdAt < now - 60 * 60_000) { activeBatches.delete(id); undeletedBatches.set(id, b.createdAt); }
+  }
+  for (const [id, createdAt] of undeletedBatches) {
+    if (await deleteBatch(id) || createdAt < now - 25 * 60 * 60_000) undeletedBatches.delete(id);
+  }
 }, 10 * 60_000);
 
 /** The flags a widget sends to say which own days it reads. */
@@ -116,9 +130,13 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
   }
   try {
     const result = await pollBatch(batchId);
-    // Each stopped file once, when the batch ends: an ended batch can be polled again (US-15 AC34).
-    if (result.status === 'ended' && !batch.reported) {
-      batch.reported = true;
+    // Results read: forget the batch and delete it at Anthropic, best-effort; a
+    // failed delete is left to the sweep (US-12 AC18). So each stopped file is
+    // reported once (US-15 AC34), and a second poll 404s.
+    if (result.status === 'ended') {
+      activeBatches.delete(batchId);
+      undeletedBatches.set(batchId, batch.createdAt);
+      void deleteBatch(batchId).then(gone => { if (gone) undeletedBatches.delete(batchId); }, () => {});
       for (const stop of result.stops ?? []) reportExtractionStop(stop.code, stop.refusalCategory, 'batch');
     }
     return Response.json(

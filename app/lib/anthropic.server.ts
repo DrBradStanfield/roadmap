@@ -655,3 +655,27 @@ export async function pollBatch(
 
   return { status: 'ended', completed, total, results, stops };
 }
+
+/**
+ * Delete a batch at Anthropic, which otherwise keeps what we sent and what came
+ * back for up to 29 days (US-12 AC18). Only an ended batch can be deleted, so
+ * one that is not is cancelled, for a later call to delete. Never throws: true
+ * once the batch is gone (now, or already), false otherwise. A failure logs its
+ * status alone; a provider body can echo the request, i.e. the user's pages.
+ */
+export async function deleteBatch(batchId: string): Promise<boolean> {
+  const url = `https://api.anthropic.com/v1/messages/batches/${batchId}`;
+  const headers = { 'x-api-key': process.env.ANTHROPIC_API_KEY ?? '', 'anthropic-version': '2023-06-01' };
+  try {
+    const response = await fetch(url, { method: 'DELETE', headers, signal: AbortSignal.timeout(10_000) });
+    await response.body?.cancel();
+    if (response.ok || response.status === 404) return true;
+    console.error(`Batch delete error (status ${response.status})`);
+    Sentry.captureMessage('Lab import: batch delete failed', { level: 'warning', tags: { feature: 'lab_import_v2', status: String(response.status) } });
+    const cancel = await fetch(`${url}/cancel`, { method: 'POST', headers, signal: AbortSignal.timeout(10_000) });
+    await cancel.body?.cancel();
+  } catch (err) {
+    console.error(`Batch delete error (${(err as Error)?.name ?? 'unknown'})`);
+  }
+  return false;
+}

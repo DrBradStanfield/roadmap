@@ -102,7 +102,7 @@ Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed.
 | Route | Auth | Does |
 | --- | --- | --- |
 | `api.chat.ts` | app-proxy HMAC, optional guest session | GET list/load, POST send (Claude Sonnet 5.5 (`packages/health-core/src/models.ts`) via `chat.server.ts`, `CHAT_EDIT_TOOLS` tool-use), DELETE conversation |
-| `api.lab-import-v2.ts` | app-proxy HMAC, 60 files/day/IP, `machineFiles` $-cap | extracts values from browser-extracted page text or page images (Claude Haiku 5.5, `extractOrClassify`); stores nothing |
+| `api.lab-import-v2.ts` | app-proxy HMAC, 200 files/day/IP (= the upload cap), `machineFiles` $-cap | extracts values from browser-extracted page text or page images (Claude Haiku 5.5, `extractOrClassify`); stores nothing |
 | `api.measurements.ts` | app-proxy HMAC | Klaviyo guest email capture ONLY (`{ klaviyoCapture: { email } }`, 5/day/email); v1 CRUD torn down, no deletion endpoint |
 | `api.feedback.ts` | app-proxy HMAC, honeypot, 3/hour/IP | feedback form to email |
 | `api.ab.ts` · `api.events.ts` | app-proxy HMAC, rate-limited (events 20/min/visitor, bot-filtered) | A/B impressions/conversions · product-events sink |
@@ -226,7 +226,7 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. On mobil
 **Storefront (Shopify app proxy `/apps/health-tool-1/...`, HMAC-verified):**
 - `POST api/chat` send (Claude Sonnet 5.5 answer and router, Haiku 5.5 classifier, all pinned in `packages/health-core/src/models.ts`; every cached block on the 1-hour TTL, `PROMPT_CACHE`; tool-use form edits) · `GET api/chat` list/load · `DELETE api/chat` delete a conversation.
 - `POST api/chat` with `stream: true` answers `application/x-ndjson`, opened before the classifier: `{"type":"status","text":"Reading your question"}`, `"Finding relevant articles"` only when the router fires, `{"type":"sources","titles":[…]}` naming the loaded articles by index title, less those US-15 AC25 hides (every crisis pathway, and a children, pregnancy or palliative one without that signal; `app/lib/chat-router-guard.ts`), and omitted when none remain, `"Writing the answer"`, then one `{"type":"thinking"|"text","text"}` line per delta, then a `done` line carrying the unstreamed JSON reply (`isFallback: true` on a fallback or refusal; `{success: false, error}` on a failure). The client decides by the body's first line, not the header; `CHAT_STREAMING=false` turns streaming off (US-15 AC16, AC20).
-- `GET api/lab-import-v2` quota preflight · `POST api/lab-import-v2` extract from page text or page images sent by the browser (pdf.js runs client-side; Claude Haiku 5.5 server-side; returns values, stores nothing; 60 files/day/IP + per-machine cap).
+- `GET api/lab-import-v2` quota preflight · `POST api/lab-import-v2` extract from page text or page images sent by the browser (pdf.js runs client-side; Claude Haiku 5.5 server-side; returns values, stores nothing; 200 files/day/IP + per-machine cap; an ended batch is deleted at Anthropic).
 - `POST api/measurements`: `{ klaviyoCapture: { email } }` only (guest report-email capture, 5/day/email).
 - `POST api/feedback` (honeypot, 3/hour/IP) · `POST api/ab` (A/B events) · `POST api/events` (product events, bot-filtered, 20/min/visitor).
 

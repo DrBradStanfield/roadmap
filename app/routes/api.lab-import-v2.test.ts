@@ -12,6 +12,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const createBatch = vi.fn(async () => ({ batchId: 'batch_abc' }));
 const pollBatch = vi.fn(async () => ({ status: 'ended' as const, completed: 1, total: 1, results: [{ fileName: 'a.pdf' }] }));
 const extractOrClassify = vi.fn();
+const deleteBatch = vi.fn(async () => true);
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('../lib/anthropic.server', async (importOriginal) => ({
@@ -19,6 +20,7 @@ vi.mock('../lib/anthropic.server', async (importOriginal) => ({
   createBatch: (...a: unknown[]) => createBatch(...(a as [])),
   pollBatch: (...a: unknown[]) => pollBatch(...(a as [])),
   extractOrClassify: (...a: unknown[]) => extractOrClassify(...(a as [])),
+  deleteBatch: (...a: unknown[]) => deleteBatch(...(a as [])),
 }));
 vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -27,6 +29,7 @@ vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
 
 import * as Sentry from '@sentry/react-router';
 import { ExtractionStopError } from '../lib/anthropic.server';
+import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { action, loader } from './api.lab-import-v2';
 
 const FILES = [{ fileName: 'a.pdf', pages: [{ type: 'image', content: 'AAAA', mimeType: 'image/png' }] }];
@@ -59,6 +62,8 @@ async function newBatch(): Promise<{ batchId: string; pollToken: string }> {
 beforeEach(() => {
   vi.clearAllMocks();
   createBatch.mockResolvedValue({ batchId: 'batch_abc' });
+  deleteBatch.mockResolvedValue(true);
+  pollBatch.mockResolvedValue({ status: 'ended', completed: 1, total: 1, results: [{ fileName: 'a.pdf' }] });
 });
 
 describe('the batch poll needs the token the upload was given', () => {
@@ -115,18 +120,16 @@ describe('the batch poll needs the token the upload was given', () => {
     expect(await answer.json()).toEqual({ allowed: true, remaining: expect.any(Number) });
   });
 
-  // US-15 AC34: one Sentry message per stopped file, sent when the batch ends,
-  // never again when the same ended batch is polled once more.
-  it('reports each stopped file once, with its category, however often the ended batch is polled', async () => {
-    const ended = {
+  // US-15 AC34: one Sentry message per stopped file, sent when the batch ends.
+  // The ended batch is then forgotten (US-12 AC18), so it cannot be reported twice.
+  it('reports each stopped file once, with its category, when the batch ends', async () => {
+    pollBatch.mockResolvedValueOnce({
       status: 'ended', completed: 2, total: 2,
       results: [{ index: 0, errorCode: 'refused' }, { index: 1, errorCode: 'too_long' }],
       stops: [new ExtractionStopError('refused', 'bio'), new ExtractionStopError('too_long')],
-    } as never;
-    pollBatch.mockResolvedValueOnce(ended).mockResolvedValueOnce(ended);
+    } as never);
     const { batchId, pollToken } = await newBatch();
     const answer = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
-    await action({ request: poll({ batchId, pollToken }) } as never);
     expect(answer).not.toHaveProperty('stops');
     expect(vi.mocked(Sentry.captureMessage).mock.calls).toEqual([
       ['Lab import: extraction refused', expect.objectContaining({ tags: expect.objectContaining({ path: 'batch', refusalCategory: 'bio' }) })],
@@ -135,10 +138,74 @@ describe('the batch poll needs the token the upload was given', () => {
   });
 
   it('a poll costs no quota — only the upload does', async () => {
+    pollBatch.mockResolvedValue({ status: 'processing', completed: 0, total: 1 } as never);
     const { batchId, pollToken } = await newBatch();
     for (let i = 0; i < 5; i++) await action({ request: poll({ batchId, pollToken }) } as never);
     expect(pollBatch).toHaveBeenCalledTimes(5);
     expect(createBatch).toHaveBeenCalledTimes(1);
+  });
+});
+
+// US-12 AC18: Anthropic keeps a batch, what we sent and what came back, for up
+// to 29 days unless we delete it. We delete it once its results are back.
+describe('US-12 AC18: an ended batch is deleted at Anthropic once its results are read', () => {
+  it('deletes the batch after answering its results, and forgets it', async () => {
+    const { batchId, pollToken } = await newBatch();
+    const answer = await action({ request: poll({ batchId, pollToken }) } as never);
+    expect(await answer.json()).toMatchObject({ status: 'ended' });
+    expect(deleteBatch).toHaveBeenCalledWith(batchId);
+    // Its results are gone at Anthropic, so a second poll answers like an unknown batch.
+    const again = await action({ request: poll({ batchId, pollToken }) } as never);
+    expect(again.status).toBe(404);
+    expect(pollBatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('deletes nothing while the batch is still processing', async () => {
+    pollBatch.mockResolvedValueOnce({ status: 'processing', completed: 0, total: 1 } as never);
+    const { batchId, pollToken } = await newBatch();
+    await action({ request: poll({ batchId, pollToken }) } as never);
+    expect(deleteBatch).not.toHaveBeenCalled();
+  });
+
+  it('deletes nothing when the results could not be fetched', async () => {
+    pollBatch.mockRejectedValueOnce(new Error('Batch results error (500)'));
+    const { batchId, pollToken } = await newBatch();
+    const answer = await action({ request: poll({ batchId, pollToken }) } as never);
+    expect(await answer.json()).toMatchObject({ status: 'processing' });
+    expect(deleteBatch).not.toHaveBeenCalled();
+  });
+
+  it('a failed delete does not touch the answer', async () => {
+    for (const failure of [() => deleteBatch.mockResolvedValueOnce(false), () => deleteBatch.mockRejectedValueOnce(new Error('boom'))]) {
+      failure();
+      const { batchId, pollToken } = await newBatch();
+      const answer = await action({ request: poll({ batchId, pollToken }) } as never);
+      expect(answer.status).toBe(200);
+      expect(await answer.json()).toMatchObject({ status: 'ended', completed: 1, total: 1 });
+    }
+  });
+});
+
+// US-12 AC17: the per-IP daily limit is the upload window's own file cap, so
+// any batch the window takes fits a fresh day.
+describe('US-12 AC17: one IP may send as many files a day as one upload takes', () => {
+  const many = (n: number, ip: string) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST', headers: { 'fly-client-ip': ip },
+    body: JSON.stringify({ batch: true, files: Array.from({ length: n }, () => FILES[0]) }),
+  });
+
+  it('is 200 files, the website upload cap', async () => {
+    expect(IMPORT_LIMITS.websiteFiles).toBe(200);
+    const preflight = await loader({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', { headers: { 'fly-client-ip': '10.2.0.1' } }) } as never);
+    expect(await preflight.json()).toEqual({ allowed: true, remaining: 200 });
+  });
+
+  it('takes a 200-file batch from a fresh IP, then refuses the next file with the daily-limit answer', async () => {
+    const full = await action({ request: many(200, '10.2.0.2') } as never);
+    expect(full.status).toBe(200);
+    const over = await action({ request: many(1, '10.2.0.2') } as never);
+    expect(over.status).toBe(429);
+    expect(await over.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' });
   });
 });
 
