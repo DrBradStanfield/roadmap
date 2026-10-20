@@ -31,24 +31,11 @@ import type {
 
 
 let store: RoadmapStore | null = null;
-/** Bumped when this module's store is replaced or a local erase begins.
- *  A pending reload captured the previous token and must not publish. */
-let recordGeneration = 0;
-
-function invalidatePendingSnapshots(): void {
-  recordGeneration += 1;
-}
-
-/** A local erase or store replacement began. Pending snapshots must not publish. */
-export function noteLocalRecordBoundary(): void {
-  invalidatePendingSnapshots();
-}
 
 /** Initialise the data layer with a backend. Call once before rendering the app.
  *  `cloudUnreachable`: the session runs on-device because the cloud the user
  *  chose could not be read (US-09 AC13). */
 export async function initRoadmapStore(adapter: StorageAdapter, cloudUnreachable = false): Promise<void> {
-  invalidatePendingSnapshots();
   store = await RoadmapStore.create(adapter, cloudUnreachable);
   // Both surfaces init here, so this is the one place the live re-read starts
   // (US-34). It runs for the life of the page; nothing unmounts the data layer.
@@ -77,85 +64,10 @@ export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' 
   return getBackendKind() === 'cloud' ? 'cloud' : 'device-only';
 }
 
-/** Identity captured with the reads: store token, erase token, and the
- *  generation of the last local erase or store replacement. Callers keep this
- *  value; restoring epoch and erasedAt does not restore the erase token. */
-export interface RecordSnapshot {
-  readonly store: object | null;
-  readonly eraseToken: number;
-  readonly generation: number;
-}
-
-export function getRecordIdentitySync(): RecordSnapshot {
-  return {
-    store,
-    eraseToken: store?.eraseToken ?? 0,
-    generation: recordGeneration,
-  };
-}
-
-/** Optional hold inside the synchronous snapshot, before the store token and
- *  erase identity are read. Tests install it; production leaves it unset. */
-let beforeSnapshotIdentity: (() => Promise<void>) | null = null;
-
-/** Test seam: pause before identity capture. Passing null removes the hold. */
-export function setBeforeSnapshotIdentity(hold: (() => Promise<void>) | null): void {
-  beforeSnapshotIdentity = hold;
-}
-
-/** One-shot hold. A caller awaits it only after `await loadRecordSnapshot()`
- *  has bound the captured identity. Tests install it; production leaves it unset. */
-let afterSnapshotReturn: (() => Promise<void>) | null = null;
-
-/** Test seam: the next afterSnapshotPause consumes this hold. */
-export function setAfterSnapshotReturn(hold: (() => Promise<void>) | null): void {
-  afterSnapshotReturn = hold;
-}
-
-/** The caller's next await after the snapshot is bound. A boundary during this
- *  await begins after the snapshot returned. */
-export function afterSnapshotPause(): Promise<void> {
-  const after = afterSnapshotReturn;
-  afterSnapshotReturn = null;
-  return after ? after() : Promise.resolve();
-}
-
-/** One synchronous snapshot. The pause runs before this function reads the
- *  store token, erase identity, or any rows, and before it returns. An erase
- *  during the pause therefore cannot be paired with rows read beforehand. */
-export function loadRecordSnapshotSync(): {
-  identity: RecordSnapshot;
-  result: LatestMeasurementsResult | null;
-  rows: ApiLabValue[] | null;
-  savedHistory: ApiMeasurement[];
-} {
-  const identity = getRecordIdentitySync();
-  return {
-    identity,
-    result: store ? store.loadLatestMeasurements() : null,
-    rows: store ? store.loadLabValues() : null,
-    savedHistory: store ? store.loadAllHistory() : [],
-  };
-}
-
-/** Await the test pause, then take the synchronous snapshot. The pause is
- *  before the store token, erase token, and rows are read. A boundary during
- *  the pause makes this completion empty, so it cannot publish the new store.
- *  A boundary that begins after this function returns is the caller's check:
- *  this function does not hold after it has captured identity. */
-export async function loadRecordSnapshot(): Promise<ReturnType<typeof loadRecordSnapshotSync>> {
-  const hold = beforeSnapshotIdentity;
-  beforeSnapshotIdentity = null;
-  const generation = recordGeneration;
-  if (hold) await hold();
-  if (generation !== recordGeneration) {
-    return { identity: getRecordIdentitySync(), result: null, rows: null, savedHistory: [] };
-  }
-  const snapshot = loadRecordSnapshotSync();
-  if (snapshot.identity.generation !== recordGeneration || snapshot.identity.store !== store || snapshot.identity.eraseToken !== (store?.eraseToken ?? 0)) {
-    return { identity: getRecordIdentitySync(), result: null, rows: null, savedHistory: [] };
-  }
-  return snapshot;
+/** Which erase the record is at; it moves with every erase, this tab's or
+ *  another device's once re-read (US-16 AC2a). */
+export function getEraseIdentity(): string {
+  return store?.eraseIdentity ?? '';
 }
 
 /** Where the record lives, as the usage counters name it (US-34). */
@@ -315,11 +227,6 @@ export function setPreEraseHook(fn: () => Promise<void>): void {
 
 export async function deleteUserData(): Promise<{ success: boolean; error?: string; warning?: string; chatErased: boolean }> {
   if (!store) return { success: false, error: 'Data store not initialised', chatErased: false };
-  // Invalidate before the first await. An erase that starts after a reload
-  // entered its snapshot must not let that snapshot publish, even if the
-  // epoch and erasedAt are later restored on this same store. The store still
-  // refuses an unreadable cloud erase before it changes the record (US-09 AC23).
-  invalidatePendingSnapshots();
   // Both steps below run only once the store has read the record it erases:
   // an erase that cannot read it is refused, and must have changed nothing
   // here either (US-09 AC23).

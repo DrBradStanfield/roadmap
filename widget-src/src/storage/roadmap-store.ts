@@ -22,7 +22,6 @@
  *  - Medication-history chart annotations use explicit change types saved at write time.
  */
 import { sha256Blob } from '../lib/archive-payloads';
-import { noteLocalRecordBoundary } from '../lib/roadmap-data';
 import {
   buildDocumentRef,
   type BulkRow,
@@ -113,8 +112,6 @@ export const SYNC_PENDING_EVENT = 'hr:sync-pending-changed';
  * without a reload.
  */
 export const REMOTE_CHANGED_EVENT = 'hr:remote-changed';
-/** A local erase began. Pending page state must drop before the erase returns. */
-export const LOCAL_ERASE_EVENT = 'hr:local-erase';
 
 function notify(name: string): void {
   try {
@@ -275,14 +272,19 @@ function activeOnly<T extends { status: string }>(rows: T[]): T[] {
   return rows.filter((r) => r.status === 'active');
 }
 
-/** The record minus its write clocks, but including erase identity: an erase
- *  invalidates pending UI proposals even when both records are empty. Keep
- *  the erase list and schema version so remote bookkeeping is adopted;
- *  visibleContentOf separately decides whether to announce it (US-09 AC23).
- *  Keys are sorted: a reordered key is not a change anyone made. */
+/** Which erase the record is at. It lives in `meta` beside the clocks but is
+ *  not one: an erase that leaves the record as empty as it was is still a
+ *  change, and the page drops the chat's banners for it (US-16 AC2a). */
+function eraseOf(file: RoadmapFile): [number, string | null] {
+  return [file.meta.eraseEpoch ?? 0, file.meta.erasedAt ?? null];
+}
+
+/** The record minus its own clocks — what a person would call a change. Keys
+ *  are sorted, as everywhere else content is compared: a merge rebuilds the
+ *  objects it touches, and a reordered key is not a change anyone made. */
 function contentOf(file: RoadmapFile): string {
   const { meta: _clocks, ...rest } = file;
-  return stableStringify([file.meta.eraseEpoch ?? 0, file.meta.erasedAt ?? null, rest]);
+  return stableStringify([eraseOf(file), rest]);
 }
 
 /**
@@ -296,14 +298,14 @@ function contentOf(file: RoadmapFile): string {
  */
 function visibleContentOf(file: RoadmapFile): string {
   // The erase list is bookkeeping too, and so is the version it raises: a
-  // change to them alone is nothing a person sees (US-09 AC23). Epoch and
-  // erasedAt stay in, so an empty-to-empty erase is still announced.
+  // change to them alone is nothing a person sees (US-09 AC23). The erase
+  // itself is: it drops the chat's banners (US-16 AC2a).
   const { meta: _clocks, erasedRows: _list, schemaVersion: _version, ...rest } = file;
   const seen: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(rest)) {
     seen[key] = Array.isArray(value) ? value.map((row) => stableStringify(row, CLOCK_KEYS)).sort() : value;
   }
-  return stableStringify([file.meta.eraseEpoch ?? 0, file.meta.erasedAt ?? null, seen], CLOCK_KEYS);
+  return stableStringify([eraseOf(file), seen], CLOCK_KEYS);
 }
 
 export class RoadmapStore {
@@ -331,14 +333,6 @@ export class RoadmapStore {
    *  re-read or its own write. Never a read it did not merge in, such as a
    *  save's verify-after-write (US-34 AC6). */
   private seenRevision: string | null = null;
-  /** Changes when a local erase begins, before its first await. Restoring
-   *  epoch and erasedAt does not restore this token. */
-  private eraseTokenValue = 0;
-  /** The erase token captured with a snapshot. Not part of the epoch string,
-   *  so restoring epoch and erasedAt cannot make a stale snapshot current. */
-  get eraseToken(): number {
-    return this.eraseTokenValue;
-  }
 
   private constructor(
     private readonly sync: SyncManager<RoadmapFile>,
@@ -355,7 +349,6 @@ export class RoadmapStore {
 
   /** Load the user's record from the given backend and return a ready store. */
   static async create(adapter: StorageAdapter, cloudUnreachable = false): Promise<RoadmapStore> {
-    noteLocalRecordBoundary();
     const deviceId = getDeviceId();
     const sync = new SyncManager(adapter, deviceId, ROADMAP_DOC);
     const revision = adapter instanceof LocalStorageAdapter ? adapter.revision(ROADMAP_FILE_NAME) : null;
@@ -402,10 +395,9 @@ export class RoadmapStore {
     return this.sync.backendId;
   }
 
-  /** Erase identity only; callers need not read or retain the health file.
-   *  The token changes when an erase begins, even if epoch and erasedAt return. */
+  /** Which erase this copy is at, as one comparable string (US-16 AC2a). */
   get eraseIdentity(): string {
-    return JSON.stringify([this.eraseTokenValue, this.file.meta.eraseEpoch ?? 0, this.file.meta.erasedAt ?? null]);
+    return JSON.stringify(eraseOf(this.file));
   }
 
   // ===================================================================== reads
@@ -795,11 +787,6 @@ export class RoadmapStore {
     // removes them from. A session on-device because the cloud could not be
     // read cannot, and refuses before anything moves.
     if (this.cloudUnreachable) return { success: false, error: ERASE_UNREACHABLE };
-    // Before the stored-record read. A reload that already sampled this store
-    // must not publish if this erase's epoch and erasedAt are later restored.
-    this.eraseTokenValue += 1;
-    noteLocalRecordBoundary();
-    notify(LOCAL_ERASE_EVENT);
     // A change still on the debounce is one the erase throws away: saving it
     // during the read would only send a pre-erase copy up ahead of the erase.
     const debounced = this.persistTimer !== null;

@@ -67,13 +67,12 @@ import {
   safeRemoveItem,
 } from '../lib/storage';
 import {
+  loadLatestMeasurements,
   hasSavedRecord,
   getInitialInputsSync,
-  getRecordIdentitySync,
-  loadRecordSnapshot,
-  afterSnapshotPause,
-  type RecordSnapshot,
+  getEraseIdentity,
   loadAllHistory,
+  loadLabValues,
   saveChangedMeasurements,
   addMeasurement,
   correctValue,
@@ -89,7 +88,7 @@ import { activeRowIndex, routeTasksToSaves, slotOf, type CorrectFn, type Refused
 import type { Grading } from '../lib/blood-test-cell';
 import type { ApiDocument } from '../lib/api-types';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
-import { REMOTE_CHANGED_EVENT, LOCAL_ERASE_EVENT } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
 
 // What "Delete all my data" does, said BEFORE the click. The caveats used to
@@ -159,13 +158,6 @@ const profileFields = (p: ProposedProfileEdit) =>
 
 const sexLabel = (sex: 'male' | 'female') => (sex === 'male' ? 'Male' : 'Female');
 
-function sameRecord(identity: RecordSnapshot): boolean {
-  const current = getRecordIdentitySync();
-  return identity.store === current.store
-    && identity.eraseToken === current.eraseToken
-    && identity.generation === current.generation;
-}
-
 /** The fields of a proposal the profile does not already hold, as the user
  *  sees them; null when none, so no banner (US-16 AC2). */
 function unsavedProfile(p: ProposedProfileEdit, saved: Partial<HealthInputs>, units: UnitSystem): ProposedProfileEdit | null {
@@ -180,13 +172,8 @@ function unsavedProfile(p: ProposedProfileEdit, saved: Partial<HealthInputs>, un
  *  would leave a row the record lacks, and a re-read inside the debounce
  *  would put the old list back with nothing to undo it. */
 async function mirrorSavedLists(): Promise<void> {
-  const { identity, result } = await loadRecordSnapshot();
-  await afterSnapshotPause();
-  if (!result) return;
-  // Re-check immediately before the write. A boundary may begin after the
-  // snapshot returned, including during the caller-side pause above.
-  if (!sameRecord(identity)) return;
-  patchMirror({ medications: result.medications, screenings: result.screenings });
+  const result = await loadLatestMeasurements();
+  if (result) patchMirror({ medications: result.medications, screenings: result.screenings });
 }
 
 export function HealthTool({ syncControl, remindersSection }: { syncControl?: (ctx: { hasData: boolean; attention: boolean }) => ReactNode; remindersSection?: ReactNode } = {}) {
@@ -275,7 +262,6 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
   // Track previously saved inputs to only save changed fields (demographics + height only)
   const previousInputsRef = useRef<Partial<HealthInputs>>({});
-  const recordIdentityRef = useRef(getRecordIdentitySync());
 
   // Get auth state once on mount
 
@@ -288,14 +274,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const labValuesFetchGen = useRef(0);
   const refreshLabValues = useCallback(() => {
     const myGen = ++labValuesFetchGen.current;
-    return loadRecordSnapshot().then(async ({ identity, rows }) => {
-      await afterSnapshotPause();
-      // Skip null (API error), replaced stores and erased snapshots.
-      if (!rows || myGen !== labValuesFetchGen.current) return;
-      // Re-check immediately before publish: a boundary may begin after the
-      // snapshot returned and before this continuation runs.
-      if (!sameRecord(identity)) return;
-      setLabValueHistory(rows);
+    return loadLabValues().then(rows => {
+      // Skip null (API error) so we don't blank cached history.
+      if (rows && myGen === labValuesFetchGen.current) setLabValueHistory(rows);
     }).catch(() => {});
   }, []);
   useEffect(() => {
@@ -328,39 +309,22 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     safeRemoveItem('health_roadmap_unit_overrides');
   }, []);
 
+  const loadHistory = () => loadAllHistory().then(setHistory);
+
   // Re-read every value the page shows from the store: the plan's latest
   // values, both matrices, the lab rows and so the chat context. Every save
   // and correction ends here, so nothing reads a patched copy that could
   // disagree with the record. Hands back what it read.
-  const valuesFetchGen = useRef(0);
   const reloadValues = useCallback(async () => {
-    const generation = ++valuesFetchGen.current;
-    const labGeneration = ++labValuesFetchGen.current;
-    // Identity is captured inside the snapshot, after its pause and in the
-    // same turn as the reads. A prior sample can be restored by epoch/erasedAt.
-    const { identity, result, rows, savedHistory } = await loadRecordSnapshot();
-    await afterSnapshotPause();
-    const isCurrent = () => generation === valuesFetchGen.current && sameRecord(identity);
-    // Re-check immediately before each publish. A local erase or store
-    // replacement can begin after the snapshot returned, including one the
-    // caller started before this continuation's next await.
-    if (!isCurrent()) return null;
+    const result = await loadLatestMeasurements();
     if (result) {
-      if (!isCurrent()) return null;
       setPreviousMeasurements(result.previousMeasurements);
-      if (!isCurrent()) return null;
+      // The storefront chat embed reads this mirror; keep it in step too.
       saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
     }
-    if (rows) {
-      if (!isCurrent() || labGeneration !== labValuesFetchGen.current) return null;
-      setLabValueHistory(rows);
-    }
-    if (!isCurrent()) return null;
-    setHistory(savedHistory);
-    if (!isCurrent()) return null;
-    setHasApiResponse(true);
-    return { result, identity, isCurrent };
-  }, []);
+    await Promise.all([refreshLabValues(), loadHistory()]);
+    return result;
+  }, [refreshLabValues]);
 
   // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel.
   // Lp(a) has its own three-unit control (US-05 AC2): an old build's two-way
@@ -377,49 +341,40 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // The RoadmapStore is authoritative. Never replay the retired v1 cache into it.
   useEffect(() => {
     async function loadData() {
-      const loaded = await reloadValues();
-      if (!loaded?.isCurrent()) return;
-      const { result, identity } = loaded;
-      if (!loaded.isCurrent()) return;
-      recordIdentityRef.current = identity;
+      const result = await loadLatestMeasurements();
 
       if (hasSavedRecord(result)) {
         // Apply saved unit preference
         const unitPref = result.inputs.unitSystem;
         if (unitPref === 'si' || unitPref === 'conventional') {
-          if (!loaded.isCurrent()) return;
           setUnitSystem(unitPref);
           saveUnitPreference(unitPref);
         }
-        if (!loaded.isCurrent()) return;
         setInputs(result.inputs);
-        if (!loaded.isCurrent()) return;
         previousInputsRef.current = { ...result.inputs };
-        if (!loaded.isCurrent()) return;
         setPreviousMeasurements(result.previousMeasurements);
         if (result.previousMeasurements.length > 0) {
           isFirstSaveRef.current = false;
         }
-        if (!loaded.isCurrent()) return;
         setMedications(result.medications);
-        if (!loaded.isCurrent()) return;
         setScreenings(result.screenings);
-        if (result.supplements) {
-          if (!loaded.isCurrent()) return;
-          setSupplements(result.supplements);
-        }
-        if (!loaded.isCurrent()) return;
+        if (result.supplements) setSupplements(result.supplements);
         setDocumentHistory(result.documents);
+        // Every measurement, for both matrices (fire-and-forget, so it
+        // doesn't block the first render).
+        loadHistory();
+        // Keep the legacy mirror available to the separate storefront chat embed.
+        saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
       } else {
         // Nothing on record: a new visitor, or another device erased it. The
         // bubble and the embed must not keep sending the old copy (US-11).
-        if (!loaded.isCurrent()) return;
         saveToLocalStorage({}, [], [], []);
       }
+      setHasApiResponse(true);
     }
 
     void loadData();
-  }, [reloadValues]);
+  }, []);
 
   // Fire A/B impression once on mount
   useEffect(() => { trackABImpression(); }, []);
@@ -635,52 +590,51 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     await handleSaveLongitudinal();
   }, [handleSaveLongitudinal]);
 
+  // The chat's banners (a profile proposal, a medication Undo) stand for the
+  // erase the record was at when they were made. A re-read that brings no
+  // erase keeps them, an empty record's too; an erase, this tab's or another
+  // device's, drops them, even with post-erase rows (US-16 AC2a). Answers
+  // whether it dropped them.
+  const bannerEraseRef = useRef(getEraseIdentity());
+  const dropStaleBanners = useCallback(() => {
+    const now = getEraseIdentity();
+    if (now === bannerEraseRef.current) return false;
+    bannerEraseRef.current = now;
+    setMedUndo(null);
+    setProfileProposal(null);
+    return true;
+  }, []);
+
   // Refresh state after upload bulk save (lab values + documents): the values,
   // lab rows and both matrices, then the profile and the rest.
   const handleUploadComplete = useCallback(async () => {
     // A field the user left has its save waiting (500 ms): it lands first.
     longitudinalDebounce.flush();
-    const loaded = await reloadValues();
-    if (!loaded?.isCurrent() || !loaded.result) return;
-    const { result, identity } = loaded;
-    // Re-check immediately before each publish. reloadValues returned before
-    // this continuation, and a boundary may have begun in that gap.
-    if (!loaded.isCurrent()) return;
-    // The record holds the profile and every saved value. A first-time
-    // field's value gets none of a draft's checks: it names the row it
-    // replaces only as it saves (still open), and nothing stops it standing
-    // in once another writer fills its slot. Carried through a re-read, it
-    // would outrank that writer's value in the plan, then correct it. So
-    // only the field the user is typing in rides through, since losing
-    // keystrokes is worse (US-34 AC4). The journey redesign moves these
-    // fields onto the draft model. What the matrices' drafts lend is kept
-    // apart (`lent`): it rides through, and each draft is judged again
-    // against the record read (US-03 AC6).
-    const typing = document.activeElement?.id as keyof HealthInputs | undefined;
-    if (!loaded.isCurrent()) return;
-    setInputs(prev => (typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
-      ? { ...result.inputs, [typing]: prev[typing] }
-      : result.inputs));
-    if (!loaded.isCurrent()) return;
-    previousInputsRef.current = { ...result.inputs };
-    if (!loaded.isCurrent()) return;
-    setMedications(result.medications);
-    if (!loaded.isCurrent()) return;
-    setScreenings(result.screenings);
-    if (!loaded.isCurrent()) return;
-    setDocumentHistory(result.documents);
-    if (!loaded.isCurrent()) return;
-    // Empty does not mean erased. An erase (even with new rows already
-    // merged in) or a store switch invalidates pre-existing chat banners.
-    if (identity.store !== recordIdentityRef.current.store || identity.eraseToken !== recordIdentityRef.current.eraseToken || identity.generation !== recordIdentityRef.current.generation) {
-      setMedUndo(null);
-      setProfileProposal(null);
-    } else if (result.medications.length === 0) {
-      setMedUndo(null);
+    const result = await reloadValues();
+    if (result) {
+      // The record holds the profile and every saved value. A first-time
+      // field's value gets none of a draft's checks: it names the row it
+      // replaces only as it saves (still open), and nothing stops it standing
+      // in once another writer fills its slot. Carried through a re-read, it
+      // would outrank that writer's value in the plan, then correct it. So
+      // only the field the user is typing in rides through, since losing
+      // keystrokes is worse (US-34 AC4). The journey redesign moves these
+      // fields onto the draft model. What the matrices' drafts lend is kept
+      // apart (`lent`): it rides through, and each draft is judged again
+      // against the record read (US-03 AC6).
+      const typing = document.activeElement?.id as keyof HealthInputs | undefined;
+      setInputs(prev => (typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
+        ? { ...result.inputs, [typing]: prev[typing] }
+        : result.inputs));
+      previousInputsRef.current = { ...result.inputs };
+      setMedications(result.medications);
+      setScreenings(result.screenings);
+      setDocumentHistory(result.documents);
     }
-    if (!loaded.isCurrent()) return;
-    recordIdentityRef.current = identity;
-  }, [reloadValues, longitudinalDebounce]);
+    // Another device erased the record (US-16 AC2a / US-09): a chat banner
+    // left standing would write pre-erase values into the erased record.
+    dropStaleBanners();
+  }, [reloadValues, longitudinalDebounce, dropStaleBanners]);
 
   // Something wrote to the record under us — another device, or an AI
   // connector through MCP (US-34). The store has already re-read and merged;
@@ -698,21 +652,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     const onRemoteChange = () =>
       remoteRelay.arrived(hasUnsavedProfileEdits(inputsRef.current, previousInputsRef.current));
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
-    const onLocalErase = () => {
-      ++valuesFetchGen.current;
-      ++labValuesFetchGen.current;
-      setHistory([]);
-      setLabValueHistory([]);
-      setDocumentHistory([]);
-      setMedications([]);
-      setScreenings([]);
-      clearLocalStorage();
-    };
-    window.addEventListener(LOCAL_ERASE_EVENT, onLocalErase);
-    return () => {
-      window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
-      window.removeEventListener(LOCAL_ERASE_EVENT, onLocalErase);
-    };
+    return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
   }, [remoteRelay, handleUploadComplete]);
 
   // Calculate results using effective inputs (form + fallback to previous)
@@ -810,8 +750,6 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     const confirmed = window.confirm(ERASE_CONFIRM);
     if (!confirmed) return false;
 
-    ++valuesFetchGen.current;
-    ++labValuesFetchGen.current;
     setIsDeleting(true);
     const result = await deleteUserData();
     setIsDeleting(false);
@@ -825,9 +763,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setDocumentHistory([]);
       setMedications([]);
       setScreenings([]);
-      setProfileProposal(null);
-      setMedUndo(null);
-      recordIdentityRef.current = getRecordIdentitySync();
+      dropStaleBanners(); // the erase moved the epoch: always true here
       previousInputsRef.current = {};
       const done = result.chatErased ? ERASE_DONE : ERASE_DONE_CHAT_PENDING;
       window.alert(result.warning ? `${done}\n\n${result.warning}` : done);
@@ -835,7 +771,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }
     return result.success;
-  }, []);
+  }, [dropStaleBanners]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
@@ -1011,7 +947,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // Only what the profile does not already hold shows, however it changed since.
   const pendingProfile = profileProposal && unsavedProfile(profileProposal, inputs, unitSystem);
   const answerProfileProposal = (save: boolean) => {
-    if (!pendingProfile) return;
+    // Made before an erase the page has not shown yet: Save refuses (US-16 AC2a).
+    if (!pendingProfile || dropStaleBanners()) return;
     if (save && pendingProfile.sex) handleInputChange('sex', pendingProfile.sex);
     if (save && pendingProfile.heightCm !== null) handleInputChange('heightCm', pendingProfile.heightCm);
     for (const field of profileFields(pendingProfile)) trackProductEvent('chat_profile_edit', { field, choice: save ? 'saved' : 'declined' });
@@ -1019,6 +956,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   };
 
   const handleProposeEdit = useCallback((edits: ProposedEdit[]) => {
+    // A banner from before an erase goes; this reply's stand for this erase.
+    dropStaleBanners();
     let hasFieldEdit = false;
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
     // Undo restores every medication row the reply changed, the last edit
@@ -1050,13 +989,13 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setActiveTab('input');
       liveSwiper()?.slideTo(0);
     }
-  }, [applyFieldEdit, applyMedicationEdit, unitSystem]);
+  }, [applyFieldEdit, applyMedicationEdit, unitSystem, dropStaleBanners]);
 
   const undoMedEdit = useCallback(() => {
-    if (!medUndo) return;
+    if (!medUndo || dropStaleBanners()) return;
     for (const m of medUndo) handleMedicationChange(m.key, m.drugName, m.doseValue, m.doseUnit);
     setMedUndo(null);
-  }, [medUndo, handleMedicationChange]);
+  }, [medUndo, handleMedicationChange, dropStaleBanners]);
 
   // Email capture and US-23 reminder enrolment require the Shopify server.
   const emailCaptureActive = SHOPIFY_SURFACE;
