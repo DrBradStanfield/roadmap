@@ -43,6 +43,7 @@ import {
   stampInstant,
   fileProfileToApi,
   fileScreeningRows,
+  isClinicalDay,
   latestActivePerMetric,
   localDay,
   measurementsToInputs,
@@ -469,6 +470,8 @@ export class RoadmapStore {
     // the picked-date path already stores — otherwise an evening entry lands on
     // the previous UTC day and the two paths fight over one slot.
     const when = recordedAt ?? ensureIsoDatetime(localDay(new Date()));
+    // US-29 AC4a: the reader drops a row without a real day; storing one fails every later save.
+    if (!isClinicalDay(when)) return { status: 'error' };
     // Slot rule: one active value per (metric, day) — mirrors the server 409.
     const exists = activeOnly(this.file.measurements).some(
       (m) => m.metricType === metricType && dayOf(m.recordedAt) === dayOf(when),

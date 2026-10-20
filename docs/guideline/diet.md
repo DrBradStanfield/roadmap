@@ -238,8 +238,8 @@ However, Brad's position is that while a healthy diet is foundational, specific 
 
 - **Vitamin D** (1000 IU): most people are insufficient, especially at higher latitudes. Supplementation corrects deficiency safely.
 - **Magnesium**: intakes are commonly below the RDA. Magnesium taurate in MicroVitamin supports cardiovascular and metabolic health.
-- **Omega-3**: the VITAL trial showed a 28% reduction in myocardial infarction, and omega-3 is necessary for B-vitamins to exert their neuroprotective effect (Jerneren 2015, Oulhaj 2016). See Feature 4 divergence above.
-- **Multivitamin/mineral**: the COSMOS trial (Baker 2023) demonstrated that daily multivitamin/mineral supplementation (Centrum Silver vs placebo) improved cognitive function in older adults over 2-3 years — providing justification for broad micronutrient support beyond cardiovascular endpoints.
+- **Omega-3**: the VITAL trial showed a 28% reduction in myocardial infarction, and in one trial (VITACOG) B vitamins slowed brain atrophy only in people with good omega-3 levels (Jerneren 2015, Oulhaj 2016). See Feature 4 divergence above.
+- **Multivitamin/mineral**: a meta-analysis of three COSMOS cognition sub-studies (Vyas 2024) found that daily multivitamin/mineral supplementation (Centrum Silver vs placebo) improved global cognition and episodic memory in older adults, equivalent to about 2 years less cognitive ageing. Executive function improved in COSMOS-Mind only (Baker 2023). WHO 2026 recommends against these supplements for dementia risk reduction without a diagnosed deficiency; it did not reassess supplements or cite COSMOS.
 - **Collagen**: Collagen peptides may improve skin hydration and elasticity (Batool 2026). Trials used 0.5 to 10 g a day (Batool 2026).
 - **Creatine**: evidence supports muscle preservation, cognitive function, and exercise performance — difficult to obtain in adequate amounts from diet alone without high red meat intake.
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generateSuggestions, weightMedicationTrigger, lipidMarkerFor, joinWithAnd } from './suggestions';
+import { SUGGESTION_EVIDENCE } from './evidence';
 import { LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import {
@@ -2925,6 +2926,53 @@ describe('Evidence attachment', () => {
 
   // US-07 AC1 (amended 2026-10-15, Brad): the exercise card states the guideline
   // as roadmap_text.html does [107]: 150 moderate, or 75 vigorous, or a mix.
+  // US-07 AC1 (amended 2026-10-21, Brad): the multivitamin card cites the COSMOS
+  // meta-analysis (Vyas 2024) for global cognition and episodic memory only, and
+  // states the WHO 2026 dementia guideline's position and that it did not consider
+  // COSMOS; the omega-3 card gives about 1 g a day and the AF caution (Gencer 2021),
+  // as roadmap_text.html does [110]-[112].
+  it('US-07 AC1: multivitamin cites the COSMOS meta-analysis and WHO 2026; omega-3 gives ~1 g/day and the AF caution', () => {
+    const { inputs, results } = createTestData({}, { bmi: 22 });
+    const suggestions = generateSuggestions(inputs, results, 'si');
+
+    const base = suggestions.find(s => s.id === 'supplement-micronutrient-base')!;
+    expect(base.description).toMatch(/meta-analysis of three COSMOS/);
+    expect(base.description).toContain('global cognition and episodic memory');
+    expect(base.description).not.toMatch(/executive/i);
+    expect(base.description).toContain('did not cite the COSMOS trials');
+    // US-07 AC1 (2026-10-21): the card is the only text users see, so it names
+    // every supplement WHO advises against, the deficiency caveat, and that WHO
+    // did not reassess supplements.
+    expect(base.description).toContain('WHO\'s 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements');
+    expect(base.description).toContain('without a diagnosed deficiency');
+    expect(base.description).toContain('without reassessing supplements');
+    // Supplement cards show only description + references; the reason feeds the chatbot.
+    const baseReason = SUGGESTION_EVIDENCE['supplement-micronutrient-base'].reason;
+    expect(baseReason).toContain('global cognition and episodic memory');
+    expect(baseReason).toContain('about 2 years less cognitive ageing');
+    expect(baseReason).not.toMatch(/executive/i);
+    expect(baseReason).toContain('WHO 2026');
+    expect(baseReason).toContain('did not cite the COSMOS trials');
+    expect(baseReason).toContain('strong recommendation based on moderate-certainty evidence');
+    expect(baseReason).toContain('unexpected harmful effects that outweigh any potential benefits');
+    const baseUrls = base.references!.map(r => r.url);
+    expect(baseUrls[0]).toBe('https://doi.org/10.1016/j.ajcnut.2023.12.011');
+    expect(baseUrls).toContain('https://www.who.int/publications/i/item/9789240123557');
+
+    const omega3 = suggestions.find(s => s.id === 'supplement-omega3')!;
+    expect(omega3.description).toContain('Dr Stanfield suggests about 1 g a day of EPA and DHA combined');
+    expect(omega3.description).toContain('atrial fibrillation at 1 g a day or less, and more so above 1 g');
+    // Jernerén 2015 analysed VITACOG by omega-3 status; omega-3 was not randomised.
+    expect(omega3.description).toContain('In one trial (VITACOG)');
+    expect(omega3.description).not.toMatch(/Randomised trials also show/);
+    const omega3Reason = SUGGESTION_EVIDENCE['supplement-omega3'].reason;
+    expect(omega3Reason).toContain('Dr Stanfield suggests about 1 g a day of EPA and DHA combined');
+    expect(omega3Reason).toContain('In one trial (VITACOG)');
+    expect(omega3Reason).toContain('atrial fibrillation');
+    expect(omega3Reason).toContain('1.49');
+    expect(omega3.references!.map(r => r.url)).toContain('https://doi.org/10.1161/CIRCULATIONAHA.121.055654');
+  });
+
   it('US-07 AC1: the exercise card and its reason give the 150 moderate / 75 vigorous / mix rule, citing WHO 2020', () => {
     const { inputs, results } = createTestData({}, { bmi: 22 });
     const exercise = generateSuggestions(inputs, results, 'si').find(s => s.id === 'exercise')!;

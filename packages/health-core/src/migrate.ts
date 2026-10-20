@@ -30,7 +30,7 @@
  * move.
  */
 import { canonicalLabRow, resolveLabCatalogEntry } from './lab-catalog';
-import { isCalendarDay } from './measurement-history';
+import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { stampInstant, withoutListed } from './merge';
 import {
   BASE_SCHEMA_VERSION,
@@ -265,7 +265,7 @@ export function migrateFile(
   // US-29 AC4: omit malformed clinical days; never invent a date or move a
   // valid observation to another slot. Keep the original timestamp and zone.
   const dated = <T extends { recordedAt: string }>(rows: unknown): T[] => idRowsOf<T>(rows)
-    .filter((r) => typeof r.recordedAt === 'string' && isCalendarDay(r.recordedAt.slice(0, 10)))
+    .filter((r) => isClinicalDay(r.recordedAt))
     .map((r) => sanitizeCreatedAt(r, anchor));
   // Profile and screenings: the object's own stamp, and each field's (US-10
   // AC6). A field stamp that is not a stamp is dropped, so its field reads the

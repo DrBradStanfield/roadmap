@@ -10,7 +10,8 @@
  *   dose-mismatch       a number plus unit in index.json's summary the body never states (AC2 tokeniser)
  *   product-rise        product mentions above the stored baseline (AC7)
  *   Topic masters (US-50 AC7). Static, in test:all (tools/knowledge-lint-masters.test.ts): topic-no-master, master-front
- *   fail; master-gate, master-doi warn; lint-allowlist.json waives them as it does every rule. Weekly only, dated:
+ *   fail; master-gate, master-doi warn; master-key-points warns on a master with a view and no sound "## Key safety
+ *   points" section (US-50 AC12; the batch checker's --key-safety-points fails it). lint-allowlist.json waives them as it does every rule. Weekly only, dated:
  *   master-stale, source-stale, master-places, master-overlap (masters sharing a DOI: the pair goes to adversary review).
  * The selector picks what the model half (knowledge-lint-compare.ts) reads this
  * week: entries changed since the last run, entries whose algorithm topic
@@ -38,7 +39,7 @@ import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { getArg } from '../packages/health-core/src/models';
-import { VIEW_HEADING, duplicateKeys, fmValue, masterKeyError, sentences, validDate } from './knowledge-batch-check';
+import { VIEW_HEADING, duplicateKeys, fmValue, keySafetyErrors, masterKeyError, sentences, validDate } from './knowledge-batch-check';
 
 export const SLICE_WEEKS = 13;
 const LOOP_DIR = 'docs/loops/chat-health';
@@ -57,7 +58,7 @@ export interface Entry { handle: string; type: EntryType; title: string; summary
 export type RuleId =
   | 'unresolved-marker' | 'uncited-reference' | 'uncited-list' | 'doi-shape' | 'pmid-shape' | 'id-mismatch'
   | 'link-dead' | 'grokipedia' | 'dose-mismatch' | 'product-rise'
-  | 'topic-no-master' | 'master-front' | 'master-gate' | 'master-doi' | 'master-stale' | 'source-stale' | 'master-places' | 'master-overlap'
+  | 'topic-no-master' | 'master-front' | 'master-gate' | 'master-doi' | 'master-key-points' | 'master-stale' | 'source-stale' | 'master-places' | 'master-overlap'
   | 'entry-vs-algorithm' | 'pathway-vs-reference' | 'reference-vs-reference';
 /** `view` (master-places only): the current-view hash the finding was raised against; a waiver covers that view only. */
 export interface Finding { rule: RuleId; handle: string; pair?: [string, string]; item: string; detail?: string; view?: string }
@@ -517,6 +518,8 @@ export function staticMasterFindings(entries: Entry[], products: string, cfg: Ma
       if (err) fails.push({ rule: 'master-front', handle: e.handle, item: k, detail: err });
     }
     for (const k of duplicateKeys(frontOf(e))) fails.push({ rule: 'master-front', handle: e.handle, item: k, detail: 'appears more than once' });
+    const keyErrors = keySafetyErrors(e.body);
+    if (keyErrors.length) warns.push({ rule: 'master-key-points', handle: e.handle, item: 'key safety points', detail: keyErrors.join('; ') });
     const sec = cfg.productIngredients.includes(e.handle) ? viewSection(e.body) : null;
     if (!sec) continue;
     const lines = splitReferences(e.body).refs;
@@ -696,7 +699,7 @@ export async function runLint(root: string, opts: { checkLinks?: { cap: number; 
 }
 
 const RULE_ORDER: RuleId[] = ['unresolved-marker', 'uncited-reference', 'uncited-list', 'doi-shape', 'pmid-shape', 'id-mismatch', 'link-dead', 'grokipedia', 'dose-mismatch', 'product-rise',
-  'topic-no-master', 'master-front', 'master-gate', 'master-doi', 'master-stale', 'source-stale', 'master-places', 'master-overlap'];
+  'topic-no-master', 'master-front', 'master-gate', 'master-doi', 'master-key-points', 'master-stale', 'source-stale', 'master-places', 'master-overlap'];
 
 export function dueSummary(r: Pick<LintResult, 'due' | 'cursor' | 'stateMissing'>): string {
   const n = (why: string) => r.due.filter(d => d.reasons.some(x => x.startsWith(why))).length;

@@ -45,8 +45,8 @@ export function buildYouTubePlatformContext(videoId: string, entry: BlogIndexEnt
 }
 
 // ---------------------------------------------------------------------------
-// Topic masters (US-50 AC6): the current-view section of each master the
-// video's post names, then its safety sections, in their own labelled block. chat-youtube-prompt.md names
+// Topic masters (US-50 AC6, AC12): the current-view section of each master the
+// video's post names, then its key safety points, in their own labelled block. chat-youtube-prompt.md names
 // this heading and tells the model to ignore the block for reply-or-skip.
 // ---------------------------------------------------------------------------
 
@@ -59,37 +59,40 @@ export function loadedHandles(routerHandles: string[], matched: { skipped: strin
 export const MASTER_VIEWS_HEADING = "## Brad's current view and safety notes on this video's topics (added automatically for this video; not router-matched content)";
 
 /**
- * Caps on what the master views add. Every named master's current view goes in
- * first (a view runs about 1,600 to 2,100 characters on the six masters
- * published 2026-10-20); one over MAX_VIEW_CHARS is malformed and is dropped
- * and logged. Safety sections, with the bibliography lines they cite, then fill
- * what is left in topics order: first every master's Drug Interactions, then
- * the Safety and Side Effects sections; one that would pass the cap is skipped
- * and logged, and a master whose interactions were skipped adds no other
- * safety section. Sections go in whole, never trimmed. A master's Drug
- * Interactions section runs about 2,000 to 7,000 characters with its cited
- * references; 80,000 lets the stack post
- * (the-only-three-supplements-doctor-brad-takes), which names ten masters with
- * a view once batch 2 lands, carry every view and every master's interactions
- * (about 79,000 measured 2026-10-21); 40,000 dropped six masters' interactions,
- * vitamin K's warfarin warning among them. An interim figure (orchestrator,
- * 2026-10-21) until each master gains a short "Key safety points" section. The
- * YouTube context is uncached, so every character (about 20,000 tokens at the
- * cap) is paid on every comment.
+ * What the master views add (US-50 AC6, AC12). Each named master adds its
+ * current view and, when it has sound "Key safety points", those points with
+ * the [n] markers stripped and no reference lines (estimated 2026-10-21: about
+ * 3,000 characters per master, 14 masters about 42,000). A master without
+ * them adds its whole safety sections instead. MAX_MASTER_VIEW_CHARS caps the
+ * total. Views and key points count toward it but are never cut; only whole
+ * safety sections of masters without key points are skipped when the total
+ * would pass it, interactions first, then Safety and Side Effects, in topics
+ * order; each skip is logged. A view over MAX_VIEW_CHARS, or key points over
+ * MAX_KEY_POINTS_CHARS or with fewer than 3 bullets, are malformed: dropped
+ * and logged, and the master falls back to its safety sections. The YouTube
+ * context is uncached, so every character is paid on every comment.
  */
 export const MAX_MASTER_VIEW_CHARS = 80_000;
 export const MAX_VIEW_CHARS = 6_000;
+/** The writer contract's limit, kept equal to tools/knowledge-batch-check.ts. */
+export const MAX_KEY_POINTS_CHARS = 1_500;
+/** A bullet line, kept identical to tools/knowledge-batch-check.ts. */
+export const BULLET_LINE = /^[ \t]*(?:[-*]|\d+\.)[ \t]+\S/;
 
-/** A master's "Current view" or "Current evidence position" section, heading to
- *  the next `## ` heading or `---` line, demoted one level to sit under MASTER_VIEWS_HEADING.
- *  Null when the master has neither. */
-export function currentViewSection(md: string): string | null {
-  const body = stripFrontmatter(md);
-  const heading = body.match(/^## (?:Current view\b|Current evidence position\b).*$/m);
-  if (!heading || heading.index === undefined) return null;
-  const rest = body.slice(heading.index + heading[0].length);
+/** A body's `## ` section whose heading matches, to the next `## ` heading or `---` line. Null when absent. */
+function sectionOf(body: string, heading: RegExp): string | null {
+  const m = body.match(heading);
+  if (!m || m.index === undefined) return null;
+  const rest = body.slice(m.index + m[0].length);
   const next = rest.search(/^(?:## |---\s*$)/m);
-  return `#${heading[0]}${next === -1 ? rest : rest.slice(0, next)}`.trim();
+  return `${m[0]}${next === -1 ? rest : rest.slice(0, next)}`.trim();
+}
+
+/** A master's "Current view" or "Current evidence position" section, demoted
+ *  one level to sit under MASTER_VIEWS_HEADING. Null when the master has neither. */
+export function currentViewSection(md: string): string | null {
+  const section = sectionOf(stripFrontmatter(md), /^## (?:Current view\b|Current evidence position\b).*$/m);
+  return section && `#${section}`;
 }
 
 /** A body heading that names safety, side effects, cautions, interactions,
@@ -97,6 +100,7 @@ export function currentViewSection(md: string): string | null {
  *  Effects", "## 6. Drug Interactions" on the published masters). */
 const SAFETY_HEADING = /^## .*\b(?:safety|side effects?|cautions?|interactions?|contraindications?|who should not)\b/i;
 const INTERACTIONS_HEADING = /^#+ .*\binteractions?\b/i;
+const KEY_POINTS_HEADING = /^## Key safety points[ \t]*$/m;
 
 /** A master's bibliography from its References section, marker number to
  *  line: "[n] text" and "n. text" lines both come back as "[n] text". */
@@ -119,30 +123,46 @@ function citedNumbers(text: string): number[] {
   return [...cited].sort((a, b) => a - b);
 }
 
-/** Each safety section of a master, heading to the next `## ` heading, every
- *  heading in it demoted one level, followed by the bibliography lines its
- *  [n] markers cite. Interactions sections come first. Empty when the master
- *  has none. */
+/** A section with every heading in it demoted one level. */
+const demote = (section: string): string => section.replace(/^(#+) /gm, '#$1 ').trim();
+
+/** A section demoted, followed by the bibliography lines its [n] markers cite. */
+function withCitations(section: string, refs: Map<number, string>): string {
+  const demoted = demote(section);
+  const cited = citedNumbers(demoted).flatMap(n => refs.get(n) ?? []);
+  return cited.length > 0 ? `${demoted}\n\nReferences cited above:\n\n${cited.join('\n')}` : demoted;
+}
+
+/** Each safety section of a master except its key safety points, heading to
+ *  the next `## ` heading, with the lines it cites. Interactions sections come
+ *  first. Empty when the master has none. */
 export function safetySections(md: string): string[] {
   const body = stripFrontmatter(md);
   const refs = bibliography(body);
   return body.split(/^(?=## )/m)
-    .filter(s => SAFETY_HEADING.test(s))
+    .filter(s => SAFETY_HEADING.test(s) && !KEY_POINTS_HEADING.test(s))
     .sort((a, b) => Number(INTERACTIONS_HEADING.test(b)) - Number(INTERACTIONS_HEADING.test(a)))
-    .map(s => {
-      const section = s.replace(/^(#+) /gm, '#$1 ').trim();
-      const cited = citedNumbers(section).flatMap(n => refs.get(n) ?? []);
-      return cited.length > 0 ? `${section}\n\nReferences cited above:\n\n${cited.join('\n')}` : section;
-    });
+    .map(s => withCitations(s, refs));
+}
+
+/** A master's "Key safety points" section (US-50 AC12), demoted, with its [n]
+ *  markers stripped and no reference lines (a marker with no line is noise in
+ *  a comment reply). Null text when it has none, or `dropped` says why it is
+ *  malformed: over MAX_KEY_POINTS_CHARS (heading and body), or under 3 bullet
+ *  lines ("- ", "* " or "1. "). */
+function keySafetyPoints(md: string): { text: string | null; dropped?: string } {
+  const section = sectionOf(stripFrontmatter(md), KEY_POINTS_HEADING);
+  if (!section) return { text: null };
+  if (section.length > MAX_KEY_POINTS_CHARS) return { text: null, dropped: `over ${MAX_KEY_POINTS_CHARS} characters` };
+  if (section.split('\n').filter(l => BULLET_LINE.test(l)).length < 3) return { text: null, dropped: 'malformed' };
+  return { text: demote(section).replace(/ ?\[\d+(?:\s*[,–-]\s*\d+)*\]/g, '') };
 }
 
 /**
  * The master views for a comment: each reference named in the post's `topics`,
  * once, skipping masters already loaded as router-matched content (pass the
- * loaded handles, from loadedHandles(), never the router's raw picks). Every
- * master with a current view under MAX_VIEW_CHARS adds it; its safety sections
- * follow while they fit the cap, interactions first, and one that does not is
- * skipped and logged. Null when nothing is added.
+ * loaded handles, from loadedHandles(), never the router's raw picks). What
+ * each master adds: see MAX_MASTER_VIEW_CHARS. Null when nothing is added.
  */
 export function masterViews(topics: string[] | undefined, loaded: string[]): string | null {
   const masters: { handle: string; view: string; safety: string[] }[] = [];
@@ -157,7 +177,10 @@ export function masterViews(topics: string[] | undefined, loaded: string[]): str
       console.warn(`YouTube master views: current view over ${MAX_VIEW_CHARS} characters, dropped: ${handle}`);
       continue;
     }
-    masters.push({ handle, view: `${contentHeader(entry, parseFrontmatter(md) ?? {})}\n\n${section}`, safety: safetySections(md) });
+    const points = keySafetyPoints(md);
+    if (points.dropped) console.warn(`YouTube master views: key safety points ${points.dropped}, dropped: ${handle}`);
+    const view = [`${contentHeader(entry, parseFrontmatter(md) ?? {})}\n\n${section}`, ...(points.text ? [points.text] : [])].join('\n\n');
+    masters.push({ handle, view, safety: points.text ? [] : safetySections(md) });
   }
   if (masters.length === 0) return null;
   // The length of the joined parts below: views, separators, then each safety

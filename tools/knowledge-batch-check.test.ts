@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  type Report, type Result, REPORT_SCHEMA, applyAddenda, exampleReport, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
+  type Report, type Result, REPORT_SCHEMA, applyAddenda, exampleReport, keySafetyErrors, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
   sentences, sha256, tokenise, validateReport,
 } from "./knowledge-batch-check";
 
@@ -1634,6 +1634,28 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
     expect(f1(mrun())).toContain("sources");
   });
 
+  describe("US-50 AC12: --key-safety-points", () => {
+    const KEYPTS = "## Key safety points\n\n- Large doses may upset the stomach [2].\n- Ask a doctor first if pregnant [2].\n- Take it with food [1].\n";
+    const keyRun = () => run({ masters: true, keySafetyPoints: true });
+    it("fails a master whose view has no key safety points, only with the flag", () => {
+      master(GOOD);
+      expect(fails(keyRun().MASTER).join()).toContain('alpha: needs one "## Key safety points" section after the view (found 0)');
+      expect(fails(mrun().MASTER)).toEqual([]);
+    });
+    it("passes sound key points, and fails a marker with no reference line", () => {
+      master(GOOD, sections(`${VIEW}\n${KEYPTS}`));
+      expect(fails(keyRun().MASTER)).toEqual([]);
+      master(GOOD, sections(`${VIEW}\n${KEYPTS.replace("food [1]", "food [7]")}`));
+      expect(fails(keyRun().MASTER).join()).toContain("alpha: a key safety point cites [7] with no reference line");
+    });
+    it("the CLI takes --key-safety-points only with --masters", () => {
+      const err = vi.spyOn(console, "error").mockImplementation(() => {});
+      expect(main(["--batch", "t", "--handles", "h", "--base", "HEAD", "--key-safety-points"])).toBe(2);
+      expect(String(err.mock.calls[0][0])).toContain("--key-safety-points needs --masters");
+      err.mockRestore();
+    });
+  });
+
   describe("posts", () => {
     const post = (extra: string[]) => `---\ntitle: "O"\n${extra.join("\n")}${extra.length ? "\n" : ""}---\n\nBody.\n`;
     const only = (extra: string[]) => {
@@ -2256,5 +2278,27 @@ describe("US-42 AC2 report addenda: reports stay append-only, corrections go in 
         expect(main([...args, "--check-ids-cap"], ov)).toBe(2);
       } finally { process.chdir(cwd); log.mockRestore(); err.mockRestore(); }
     });
+  });
+});
+
+describe("US-50 AC12 keySafetyErrors", () => {
+  const VIEW = "## Current view (reviewed 20 October 2026)\n\nView.\n\n";
+  const REFS = "\n## References\n\n[1] One.\n\n2. Two.\n";
+  const KEY = (bullets: string[]) => `## Key safety points\n\n${bullets.map((b) => `- ${b}`).join("\n")}\n`;
+  it("passes 3 to 8 cited bullets directly after the view; a body with no view needs none", () => {
+    expect(keySafetyErrors(`${VIEW}${KEY(["A [1].", "B [2].", "C [1, 2]."])}${REFS}`)).toEqual([]);
+    expect(keySafetyErrors(`${VIEW}${KEY(Array(8).fill("A [1–2]."))}${REFS}`)).toEqual([]);
+    expect(keySafetyErrors(`## Dosing\n\n1 g.\n${REFS}`)).toEqual([]);
+  });
+  it("fails a missing, misplaced, short, long, oversize or uncited section", () => {
+    const one = (body: string) => keySafetyErrors(body).join("\n");
+    expect(one(`${VIEW}${REFS}`)).toContain("(found 0)");
+    expect(one(`${VIEW}${KEY(["A [1].", "B [1].", "C [1]."])}${KEY(["A [1].", "B [1].", "C [1]."])}${REFS}`)).toContain("(found 2)");
+    expect(one(`${VIEW}## Other\n\nX.\n\n${KEY(["A [1].", "B [1].", "C [1]."])}${REFS}`)).toContain("directly after the view");
+    expect(one(`${VIEW}${KEY(["A [1].", "B [1]."])}${REFS}`)).toContain("has 2 bullets (3 to 8)");
+    expect(one(`${VIEW}${KEY(Array(9).fill("A [1]."))}${REFS}`)).toContain("has 9 bullets (3 to 8)");
+    expect(one(`${VIEW}${KEY([`${"x".repeat(1_500)} [1].`, "B [1].", "C [1]."])}${REFS}`)).toMatch(/runs \d+ characters \(at most 1500\)/);
+    expect(one(`${VIEW}${KEY(["A [1].", "B.", "C [1]."])}${REFS}`)).toContain("cites no [n] marker: - B.");
+    expect(one(`${VIEW}${KEY(["A [1].", "B [3].", "C [1]."])}${REFS}`)).toContain("cites [3] with no reference line");
   });
 });
