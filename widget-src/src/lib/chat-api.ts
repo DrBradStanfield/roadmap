@@ -387,8 +387,9 @@ export async function sendMessage(
 
     // A guest is its token plus its IP, so a new IP is a new guest who does
     // not own the stored thread (US-15 AC6a). The server refused before any
-    // work, so the message goes once into a new conversation.
-    if (response.status === 404 && conversationId && data?.error === 'Conversation not found') {
+    // chat write or model call and handed back the session saved above, so
+    // the message goes once into a new conversation on it. A customer's 404 is shown.
+    if (response.status === 404 && conversationId && data?.error === 'Conversation not found' && data.isGuest === true) {
       return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits);
     }
 

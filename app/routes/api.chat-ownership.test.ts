@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   auth: vi.fn(),
   audit: vi.fn(),
-  guestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
+  guestSession: vi.fn(),
+  GuestRateLimitError: class extends Error {},
   buildConversationMessages: vi.fn(() => []),
   classify: vi.fn(async (..._args: unknown[]) => ({ routerSkipped: true, classification: 'SKIP', latencyMs: 0 })),
   complete: vi.fn(),
@@ -30,7 +31,7 @@ vi.mock('../lib/supabase.server', () => ({
   logAudit: mocks.audit, getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
   createUserClient: vi.fn(() => ({ from: mocks.from })),
   getOrCreateGuestSession: mocks.guestSession,
-  GuestRateLimitError: class extends Error {},
+  GuestRateLimitError: mocks.GuestRateLimitError,
 }));
 // MAX_MESSAGE_LENGTH is the real one, so the length tests below pin the route
 // to the shipped cap (US-15 AC26).
@@ -67,7 +68,8 @@ beforeEach(() => {
   principal = owner; dbError = false; reads = []; writes = []; messages = []; queries = [];
   parents = [{ id: owner, user_id: owner }, { id: guest, user_id: guest }, { id: foreign, user_id: foreign }];
   mocks.classify.mockClear(); mocks.complete.mockClear();
-  mocks.audit.mockClear(); mocks.guestSession.mockClear();
+  mocks.audit.mockClear();
+  mocks.guestSession.mockReset().mockImplementation(async () => ({ sessionId: guest, sessionToken: 'tok' }));
   mocks.auth.mockImplementation(async () => principal === guest ? null : ({ client: { from: mocks.from }, userId: principal, customerId: '123', admin: null }));
   mocks.from.mockImplementation((table: string) => {
     const filters: Array<[string, unknown]> = [];
@@ -115,6 +117,9 @@ async function get(conversationId?: string, extra: Record<string, string> = {}) 
   if (conversationId) params.set('conversationId', conversationId);
   return loader({ request: new Request(`https://example.invalid/api/chat?${params}`), params: {} } as Parameters<typeof loader>[0]);
 }
+// A guest's 404 carries its own session token, so the client keeps one session
+// when it resends (US-15 AC6a); a customer's carries nothing extra.
+const notFound = (userId: string) => ({ success: false, error: 'Conversation not found', ...(userId === guest ? { sessionToken: 'tok', isGuest: true } : {}) });
 function expectScopedParent(id: string) {
   expect(queries[0]).toEqual({ table: 'chat_conversations', operation: 'select', filters: [['id', id], ['user_id', principal]] });
 }
@@ -126,7 +131,7 @@ describe('stored parent ownership', () => {
     principal = userId;
     const res = await post(id, { stream: true });
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ success: false, error: 'Conversation not found' });
+    expect(await res.json()).toEqual(notFound(userId));
     expect(reads).toEqual(['chat_conversations']); expect(writes).toEqual([]);
     expectScopedParent(id);
     expect(mocks.classify).not.toHaveBeenCalled(); expect(mocks.complete).not.toHaveBeenCalled();
@@ -159,14 +164,14 @@ describe('stored parent ownership', () => {
     messages.push({ id: missing, conversation_id: foreign, user_id: userId, role: 'user', content: 'Synthetic historic child', created_at: '2026-01-01' });
     const res = await get(foreign, userId === guest ? { localFirst: '1' } : {});
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ success: false, error: 'Conversation not found' });
+    expect(await res.json()).toEqual(notFound(userId));
     expect(reads).toEqual(['chat_conversations']); expect(writes).toEqual([]);
     expectScopedParent(foreign);
   });
   it.each([owner, guest])('returns the same 404 for a missing GET parent: %s', async userId => {
     principal = userId; const res = await get(missing);
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ success: false, error: 'Conversation not found' });
+    expect(await res.json()).toEqual(notFound(userId));
     expect(reads).toEqual(['chat_conversations']); expectScopedParent(missing);
   });
   it.each([owner, guest])('loads an owned transcript after the scoped parent check: %s', async userId => {
@@ -188,7 +193,7 @@ describe('stored parent ownership', () => {
     const before = [...parents];
     const res = await remove(id, userId === guest ? { localFirst: true } : {});
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ success: false, error: 'Conversation not found' });
+    expect(await res.json()).toEqual(notFound(userId));
     expect(reads).toEqual(['chat_conversations']); expect(writes).toEqual([]);
     expect(parents).toEqual(before); expect(mocks.audit).not.toHaveBeenCalled();
     expectScopedParent(id);
@@ -226,6 +231,57 @@ describe('stored parent ownership', () => {
     expect(await res.json()).toEqual({ success: false, error: 'Conversation not found' });
     expect(mocks.guestSession).not.toHaveBeenCalled();
     expect(queries).toEqual([]);
+  });
+  // US-15 AC6a: a guest is its token plus its IP. Mirrors getOrCreateGuestSession:
+  // a token counts only from its own IP; otherwise a new guest is minted, at
+  // most GUEST_IP_RATE_MAX (10) per IP per hour.
+  describe('a guest whose IP changed', () => {
+    const oldIp = '198.51.100.1'; const newIp = '203.0.113.9';
+    const newGuest = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+    function guestSessions(alreadyMinted: number) {
+      const sessions = new Map([['old-tok', { id: guest, ip: oldIp }]]);
+      const minted = { [newIp]: alreadyMinted } as Record<string, number>;
+      mocks.auth.mockImplementation(async () => null);
+      mocks.guestSession.mockImplementation(async (ip: string, token?: string) => {
+        const known = token ? sessions.get(token) : undefined;
+        if (known && known.ip === ip) { principal = known.id; return { sessionId: known.id, sessionToken: token }; }
+        if ((minted[ip] ?? 0) >= 10) throw new mocks.GuestRateLimitError('Too many requests');
+        minted[ip] = (minted[ip] ?? 0) + 1;
+        const sessionToken = `tok-${minted[ip]}`;
+        sessions.set(sessionToken, { id: newGuest, ip });
+        principal = newGuest;
+        return { sessionId: newGuest, sessionToken };
+      });
+      return minted;
+    }
+    const send = (body: Record<string, unknown>) => action({ request: new Request('https://example.invalid/api/chat', {
+      method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': newIp }, body: JSON.stringify({ message: 'hello', ...body }),
+    }), params: {} } as Parameters<typeof action>[0]);
+
+    it.each([0, 9])('the 404 hands back the new session, so the resend mints nothing more (%s minted before)', async (before) => {
+      principal = guest;
+      const minted = guestSessions(before);
+      const first = await send({ conversationId: guest, sessionToken: 'old-tok' });
+      expect(first.status).toBe(404);
+      const refused = await first.json();
+      expect(refused).toEqual({ success: false, error: 'Conversation not found', sessionToken: `tok-${before + 1}`, isGuest: true });
+      expect(writes).toEqual([]); expect(mocks.complete).not.toHaveBeenCalled();
+
+      const resent = await send({ sessionToken: refused.sessionToken });
+      expect(resent.status).toBe(200);
+      expect(await resent.json()).toMatchObject({ conversationId: missing, sessionToken: refused.sessionToken });
+      expect(minted[newIp]).toBe(before + 1);
+      expect(mocks.guestSession.mock.calls.map(([, token]) => token)).toEqual(['old-tok', refused.sessionToken]);
+      expect(mocks.complete).toHaveBeenCalledTimes(1);
+      expect(messages.every(m => m.user_id === newGuest && m.conversation_id === missing)).toBe(true);
+    });
+
+    it('at the hourly cap, a resend that dropped the handed-back token would be refused', async () => {
+      principal = guest;
+      guestSessions(9);
+      expect((await send({ conversationId: guest, sessionToken: 'old-tok' })).status).toBe(404);
+      expect((await send({})).status).toBe(429);
+    });
   });
   it('keeps the sessionless list GET empty without database access', async () => {
     const res = await loader({ request: new Request('https://example.invalid/api/chat'), params: {} } as Parameters<typeof loader>[0]);

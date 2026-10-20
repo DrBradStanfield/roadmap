@@ -183,7 +183,12 @@ async function refreshSubscriptionIfStale(
   return plan;
 }
 
-const conversationNotFound = () => Response.json({ success: false, error: 'Conversation not found' }, { status: 404 });
+// A guest's 404 hands back its session, which a changed IP may just have
+// minted, so the client's one resend reuses it (US-15 AC6a).
+const conversationNotFound = (auth?: AuthResult) => Response.json({
+  success: false, error: 'Conversation not found',
+  ...(auth?.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
+}, { status: 404 });
 
 async function checkConversationParent(auth: AuthResult, conversationId: string): Promise<Response | null> {
   const { data: parent, error } = await auth.client
@@ -196,7 +201,7 @@ async function checkConversationParent(auth: AuthResult, conversationId: string)
     reportChatError('Chat: Failed to check conversation');
     return Response.json({ success: false, error: 'Failed to check conversation' }, { status: 500 });
   }
-  return parent ? null : conversationNotFound();
+  return parent ? null : conversationNotFound(auth);
 }
 
 // ---------------------------------------------------------------------------

@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 // US-15 AC6a: visibility and deletion require the child and its parent to belong
 // to auth.uid(). This checks the checked-in policy text only. It does not prove
-// PostgreSQL enforcement; that receipt is the ephemeral database run.
+// PostgreSQL enforcement: no test runs this SQL against a database, so the
+// live policies are applied and recorded by hand after merge.
 const SQL_PATH = 'supabase/rls-policies.sql';
 
 function chatSection(sql: string): string {

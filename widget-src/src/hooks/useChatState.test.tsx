@@ -270,9 +270,10 @@ describe('US-15 AC26 — a cut paste is announced', () => {
 // US-15 AC6a: when the server answers in a different conversation than the one
 // the message was sent in (chat-api restarted a thread it no longer
 // recognizes), the hook follows it: the new thread is active and listed, and
-// it shows that thread's exchange, not the old thread's turns.
+// it shows that thread's exchange, not the old thread's turns. The old thread
+// is no longer reachable, so it leaves the list (opening it would 404).
 describe('US-15 AC6a — the reply came back in a new conversation', () => {
-  it('US-15 AC6a: the new conversation becomes active, is listed first and shows only its own turns', async () => {
+  it('US-15 AC6a: the new conversation becomes active, replaces the old one in the list and shows only its own turns', async () => {
     const old = { id: 'c1', title: 'Old thread', updatedAt: 'x', createdAt: 'x' };
     const oldTurn = { id: 'o1', role: 'user' as const, content: 'Earlier question', createdAt: 'x' };
     const hook = renderHook(() => useChatState({
@@ -285,7 +286,7 @@ describe('US-15 AC6a — the reply came back in a new conversation', () => {
     await act(async () => { send.resolve!({ result: { conversationId: 'c2', messageId: 'm2', content: 'ApoB counts.' }, error: null }); await sending; });
     const { state } = hook.result.current;
     expect(state.activeConversationId).toBe('c2');
-    expect(state.conversations.map(c => c.id)).toEqual(['c2', 'c1']);
+    expect(state.conversations.map(c => c.id)).toEqual(['c2']);
     expect(state.conversations[0].title).toBe('What about ApoB?');
     expect(state.messages.map(m => m.content)).toEqual(['What about ApoB?', 'ApoB counts.']);
     expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'c2' });
