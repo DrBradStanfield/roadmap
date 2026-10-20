@@ -22,7 +22,7 @@ const fakes = vi.hoisted(() => {
     ref('tm-huge'),
     ref('tm-master-long', '2026-10-20'),
     ref('tm-safe'), ref('tm-mid1'), ref('tm-mid2'), ref('tm-cited'), ref('tm-numbered'), ref('tm-malformed'), ref('tm-rule'), ref('tm-ix'), ref('tm-dup1'), ref('tm-dup2'),
-    ref('tm-keyed'), ref('tm-keylong'), ref('tm-kp-head'), ref('tm-kp-tbw'), ref('tm-kp-rule'), ref('tm-kp-two'),
+    ref('tm-keyed'), ref('tm-keylong'), ref('tm-kp-head'), ref('tm-kp-tbw'), ref('tm-kp-rule'), ref('tm-kp-two'), ref('tm-kp-indent'), ref('tm-kp-summary'),
     ...Array.from({ length: 14 }, (_, i) => ref(`tm-stack-${i}`, '2026-10-20')),
     { title: 'An article', handle: 'tm-article', url: 'u', tags: [], publishedAt: '2025-01-01T00:00:00Z' },
   ];
@@ -49,8 +49,8 @@ vi.mock('./chat.server', async (orig) => ({
 
 import { runPipeline } from './youtube-bot.server';
 import { platformChatCompletion } from './platform-chat.server';
-import { currentViewSection, safetySections, masterViews, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_KEY_POINTS_CHARS } from './youtube-context';
-import { MAX_KEY_POINTS_CHARS as CHECKER_MAX_KEY_POINTS_CHARS, keySafetyErrors } from '../../tools/knowledge-batch-check';
+import { currentViewSection, safetySections, masterViews, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_KEY_POINTS_CHARS, BULLET_LINE } from './youtube-context';
+import { MAX_KEY_POINTS_CHARS as CHECKER_MAX_KEY_POINTS_CHARS, BULLET_LINE as CHECKER_BULLET_LINE, keySafetyErrors } from '../../tools/knowledge-batch-check';
 import { getChatCompletion } from './chat.server';
 import { routeQuery } from './chat-router.server';
 
@@ -81,6 +81,8 @@ const kpMaster = (name: string, kp: string) => `---\ntitle: "${name}"\n---\n\n##
 files['tm-kp-head'] = kpMaster('KpHead', '## Key safety points');
 files['tm-kp-tbw'] = kpMaster('KpTbw', '## Key safety points\n\nTo be written.');
 files['tm-kp-rule'] = kpMaster('KpRule', '## Key safety points\n\n---\n\n- A bullet after the rule [1].');
+files['tm-kp-indent'] = kpMaster('KpIndent', '## Key safety points\n\n  - One [1].\n\t* Two [1].\n   3. Three [1].');
+files['tm-kp-summary'] = kpMaster('KpSummary', '## Key safety points (summary)\n\n- One [1].\n- Two [1].\n- Three [1].');
 files['tm-kp-two'] = kpMaster('KpTwo', '## Key safety points\n\n- One [1].\n- Two [1].');
 // Fourteen synthetic masters at realistic sizes, as the stack post
 // (the-only-three-supplements-doctor-brad-takes) names once batch 3 lands: a
@@ -209,10 +211,29 @@ describe('masterViews with key safety points (US-50 AC12)', () => {
     expect(warn.mock.calls.map(([m]) => String(m))).toContain(`YouTube master views: key safety points malformed, dropped: ${handle}`);
   });
 
+  it('indented and numbered bullets count at runtime, as in the checker', () => {
+    fakeFiles();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const block = masterViews(['tm-kp-indent'], [])!;
+    expect(block).toContain('### Key safety points');
+    expect(block).not.toContain('Drug Interactions');
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('the exact heading only: "## Key safety points (summary)" is not key points and the master falls back', () => {
+    fakeFiles();
+    const block = masterViews(['tm-kp-summary'], [])!;
+    expect(block).not.toMatch(/^### Key safety points$/m);
+    expect(block).toContain('### 6. Drug Interactions\n\nKpSummary interactions text.');
+  });
+
   it('the runtime and the batch checker share the 1,500-character key-points limit, and the checker ends the section at a rule too', () => {
     expect(MAX_KEY_POINTS_CHARS).toBe(CHECKER_MAX_KEY_POINTS_CHARS);
+    expect(BULLET_LINE.source).toBe(CHECKER_BULLET_LINE.source);
+    expect(BULLET_LINE.flags).toBe(CHECKER_BULLET_LINE.flags);
     const body = (kp: string) => `## Current view (reviewed 20 October 2026)\n\nView.\n\n${kp}\n\n## 9. References\n\n[1] Ref one.\n`;
     expect(keySafetyErrors(body('## Key safety points\n\n- A [1].\n- B [1].\n- C [1].'))).toEqual([]);
+    expect(keySafetyErrors(body('## Key safety points\n\n  - A [1].\n\t* B [1].\n   3. C [1].'))).toEqual([]);
     expect(keySafetyErrors(body('## Key safety points\n\n- A [1].\n- B [1].\n\n---\n\n- C [1].')).join()).toContain('2 bullets');
   });
 });
@@ -221,23 +242,37 @@ describe('masterViews with key safety points (US-50 AC12)', () => {
 // each competes under the cap with its whole safety sections. Every one of
 // their Drug Interactions sections must go in whole, vitamin K's warfarin line included.
 describe('masterViews on the real stack post and the real masters (US-50 AC6, AC12)', () => {
-  it('every named master with a view adds its whole Drug Interactions section; nothing is skipped for the cap', () => {
+  it('each named master adds its key points when they are sound, else its whole Drug Interactions section; nothing is skipped for the cap', () => {
     const post = fs.readFileSync('docs/blog/the-only-three-supplements-doctor-brad-takes.md', 'utf-8');
     const topics: string[] = JSON.parse(post.match(/^topics: (\[.*\])$/m)![1]);
     expect(topics.length).toBeGreaterThanOrEqual(14);
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const block = masterViews(topics, [])!;
+    const soundPoints = (md: string) => {
+      const kp = md.match(/^## Key safety points[ \t]*$[\s\S]*?(?=^## |^---\s*$|(?![\s\S]))/m)?.[0].trim();
+      return kp && kp.length <= MAX_KEY_POINTS_CHARS && kp.split('\n').filter(l => BULLET_LINE.test(l)).length >= 3 ? kp : null;
+    };
     let withView = 0;
     for (const handle of topics) {
       const md = fs.readFileSync(`docs/blog/${handle}.md`, 'utf-8');
       if (!currentViewSection(md)) continue;
       withView++;
+      const kp = soundPoints(md);
       const ix = safetySections(md).filter(s => /^#+ .*\binteractions?\b/i.test(s));
-      expect(ix.length, handle).toBeGreaterThan(0);
-      for (const s of ix) expect(block, handle).toContain(s);
+      if (kp) {
+        expect(block, handle).toContain(kp.replace(/^## /, '### ').replace(/ ?\[\d+(?:\s*[,–-]\s*\d+)*\]/g, ''));
+        for (const s of ix) expect(block, handle).not.toContain(s);
+      } else {
+        expect(ix.length, handle).toBeGreaterThan(0);
+        for (const s of ix) expect(block, handle).toContain(s);
+      }
     }
     expect(withView).toBeGreaterThanOrEqual(8);
-    expect(block).toContain('Vitamin K may reduce the effectiveness of warfarin.');
+    // Vitamin K's warfarin warning, through whichever path applies to it.
+    const vitK = fs.readFileSync('docs/blog/vitamin-k-benefits-forms-dosing-and-side-effects.md', 'utf-8');
+    const vitKPoints = soundPoints(vitK);
+    if (vitKPoints) expect(vitKPoints).toMatch(/warfarin/i);
+    else expect(block).toContain('Vitamin K may reduce the effectiveness of warfarin.');
     expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
     expect(warn.mock.calls.map(([m]) => String(m)).filter(m => /interactions/i.test(m))).toEqual([]);
   });

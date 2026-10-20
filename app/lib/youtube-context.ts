@@ -64,10 +64,10 @@ export const MASTER_VIEWS_HEADING = "## Brad's current view and safety notes on 
  * the [n] markers stripped and no reference lines (estimated 2026-10-21: about
  * 3,000 characters per master, 14 masters about 42,000). A master without
  * them adds its whole safety sections instead. MAX_MASTER_VIEW_CHARS caps the
- * whole block, views included: masters without key points compete for what is
- * left after every view and key-points section, interactions first, then Safety
- * and Side Effects, in topics order; each skip is logged. Masters with key
- * points never use the cap. A view over MAX_VIEW_CHARS, or key points over
+ * total. Views and key points count toward it but are never cut; only whole
+ * safety sections of masters without key points are skipped when the total
+ * would pass it, interactions first, then Safety and Side Effects, in topics
+ * order; each skip is logged. A view over MAX_VIEW_CHARS, or key points over
  * MAX_KEY_POINTS_CHARS or with fewer than 3 bullets, are malformed: dropped
  * and logged, and the master falls back to its safety sections. The YouTube
  * context is uncached, so every character is paid on every comment.
@@ -76,6 +76,8 @@ export const MAX_MASTER_VIEW_CHARS = 80_000;
 export const MAX_VIEW_CHARS = 6_000;
 /** The writer contract's limit, kept equal to tools/knowledge-batch-check.ts. */
 export const MAX_KEY_POINTS_CHARS = 1_500;
+/** A bullet line, kept identical to tools/knowledge-batch-check.ts. */
+export const BULLET_LINE = /^[ \t]*(?:[-*]|\d+\.)[ \t]+\S/;
 
 /** A body's `## ` section whose heading matches, to the next `## ` heading or `---` line. Null when absent. */
 function sectionOf(body: string, heading: RegExp): string | null {
@@ -152,7 +154,7 @@ function keySafetyPoints(md: string): { text: string | null; dropped?: string } 
   const section = sectionOf(stripFrontmatter(md), KEY_POINTS_HEADING);
   if (!section) return { text: null };
   if (section.length > MAX_KEY_POINTS_CHARS) return { text: null, dropped: `over ${MAX_KEY_POINTS_CHARS} characters` };
-  if ((section.match(/^(?:[-*]|\d+\.) /gm) ?? []).length < 3) return { text: null, dropped: 'malformed' };
+  if (section.split('\n').filter(l => BULLET_LINE.test(l)).length < 3) return { text: null, dropped: 'malformed' };
   return { text: demote(section).replace(/ ?\[\d+(?:\s*[,–-]\s*\d+)*\]/g, '') };
 }
 

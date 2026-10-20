@@ -357,6 +357,8 @@ function classifyLines(body: string): { line: string; ref: boolean }[] {
 
 /** The writer contract's cap on a master's "## Key safety points" section, heading and body (US-50 AC12). */
 export const MAX_KEY_POINTS_CHARS = 1_500;
+/** A bullet line, kept identical to app/lib/youtube-context.ts. */
+export const BULLET_LINE = /^[ \t]*(?:[-*]|\d+\.)[ \t]+\S/;
 /**
  * What is wrong with a master's "## Key safety points" section (US-50 AC12), shared with knowledge-lint.ts: a body with
  * a view section needs one directly after it, of 3 to 8 bullets and at most MAX_KEY_POINTS_CHARS, every bullet citing
@@ -378,7 +380,7 @@ export function keySafetyErrors(body: string): string[] {
   if (size > MAX_KEY_POINTS_CHARS) errors.push(`"Key safety points" runs ${size} characters (at most ${MAX_KEY_POINTS_CHARS})`);
   const bullets: string[] = []; // a bullet with its continuation lines
   for (const l of lines.slice(k[0] + 1, end)) {
-    if (/^\s*[-*]\s+\S/.test(l)) bullets.push(l.trim());
+    if (BULLET_LINE.test(l)) bullets.push(l.trim());
     else if (l.trim() && bullets.length) bullets[bullets.length - 1] += ` ${l.trim()}`;
   }
   if (bullets.length < 3 || bullets.length > 8) errors.push(`"Key safety points" has ${bullets.length} bullets (3 to 8)`);
