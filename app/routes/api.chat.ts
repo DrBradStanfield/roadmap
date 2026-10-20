@@ -299,7 +299,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
     }
 
-    // 1 MB: 20 prior turns at their longest plus the plan context come to
+    // 2 MB: 20 prior turns at their longest plus the plan context come to
     // well under half of it (US-09 AC25).
     const text = await cappedBody(request, 2 * 1024 * 1024);
     if (text === null) return Response.json({ success: false, error: 'Request too large' }, { status: 413 });

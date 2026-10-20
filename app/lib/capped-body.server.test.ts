@@ -38,4 +38,17 @@ describe('cappedBody (US-09 AC25)', () => {
     const { request } = streamingPost(URL, 2 * SMALL_BODY_CAP);
     expect((await cappedBody(request, 4 * SMALL_BODY_CAP))?.length).toBe(2 * SMALL_BODY_CAP);
   });
+
+  it('decodes a multi-byte character split across two chunks', async () => {
+    const bytes = new TextEncoder().encode('a😀b');
+    const body = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(bytes.subarray(0, 3));
+        c.enqueue(bytes.subarray(3));
+        c.close();
+      },
+    });
+    const request = new Request(URL, { method: 'POST', body, duplex: 'half' } as RequestInit);
+    expect(await cappedBody(request)).toBe('a😀b');
+  });
 });

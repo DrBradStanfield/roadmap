@@ -11,9 +11,13 @@ import * as Sentry from '@sentry/react-router';
 import { authenticate } from '../shopify.server';
 import { addMessageCredits, getUserIdByCustomerId, logAudit } from '../lib/supabase.server';
 import { VARIANT_CREDIT_MAP } from '../lib/message-packs';
+import { cappedRequest, WEBHOOK_BODY_CAP } from '../lib/capped-body.server';
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { payload, topic, shop } = await authenticate.webhook(request);
+  // The library reads the whole body before its HMAC check (US-09 AC25).
+  const capped = await cappedRequest(request, WEBHOOK_BODY_CAP);
+  if (!capped) return new Response(null, { status: 413 });
+  const { payload, topic, shop } = await authenticate.webhook(capped);
 
   console.log(`Received ${topic} webhook for ${shop}`);
 
