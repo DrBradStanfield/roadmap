@@ -1042,7 +1042,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Omega-3',
-      description: 'A meta-analysis of interventional trials found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death, with dose-dependent benefits strongest for EPA-rich formulations. In trials, omega-3 slightly raised the risk of atrial fibrillation at 1 g a day or less, and more so above 1 g. Dr Stanfield suggests about 1 g a day of EPA and DHA combined: benefit may rise with dose, but so may the risk of atrial fibrillation. In one trial (VITACOG), B vitamins slowed brain atrophy only in people with good omega-3 levels.',
+      description: 'A meta-analysis of interventional trials found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death, with dose-dependent benefits strongest for EPA-rich formulations. In trials, omega-3 slightly raised the risk of atrial fibrillation at 1 g a day or less, and more so above 1 g. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined: benefit may rise with dose, but so may the risk of atrial fibrillation. In one trial (VITACOG), B vitamins slowed brain atrophy only in people with good omega-3 levels. Another trial (FACIT) found the reverse: folic acid helped cognition only in people with lower omega-3 levels. The WHO\'s 2026 dementia guideline recommends against omega-3, vitamin B, vitamin E and multivitamin-mineral supplements for dementia risk reduction in people without a diagnosed deficiency. It kept its earlier recommendation without reassessing supplements, and did not cite VITACOG or FACIT.',
     },
     {
       id: 'supplement-sleep',

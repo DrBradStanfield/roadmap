@@ -2960,17 +2960,45 @@ describe('Evidence attachment', () => {
     expect(baseUrls).toContain('https://www.who.int/publications/i/item/9789240123557');
 
     const omega3 = suggestions.find(s => s.id === 'supplement-omega3')!;
-    expect(omega3.description).toContain('Dr Stanfield suggests about 1 g a day of EPA and DHA combined');
+    expect(omega3.description).toContain('reasonable for everyone to consider up to 1 g a day of EPA and DHA combined');
     expect(omega3.description).toContain('atrial fibrillation at 1 g a day or less, and more so above 1 g');
     // Jernerén 2015 analysed VITACOG by omega-3 status; omega-3 was not randomised.
     expect(omega3.description).toContain('In one trial (VITACOG)');
     expect(omega3.description).not.toMatch(/Randomised trials also show/);
     const omega3Reason = SUGGESTION_EVIDENCE['supplement-omega3'].reason;
-    expect(omega3Reason).toContain('Dr Stanfield suggests about 1 g a day of EPA and DHA combined');
+    expect(omega3Reason).toContain('reasonable for everyone to consider up to 1 g a day of EPA and DHA combined');
     expect(omega3Reason).toContain('In one trial (VITACOG)');
     expect(omega3Reason).toContain('atrial fibrillation');
     expect(omega3Reason).toContain('1.49');
     expect(omega3.references!.map(r => r.url)).toContain('https://doi.org/10.1161/CIRCULATIONAHA.121.055654');
+  });
+
+  // US-07 AC1 (amended 2026-10-21, Brad): B vitamins' cognitive benefit may depend
+  // on good omega-3 levels (VITACOG), but FACIT found the reverse (van Soest 2021);
+  // the omega-3 card carries the WHO 2026 note, and the reason drops the unhedged
+  // "important role in cognitive protection".
+  it('US-07 AC1: omega-3 card and reason give VITACOG and the reverse FACIT finding, and the WHO 2026 note', () => {
+    const { inputs, results } = createTestData({}, { bmi: 22 });
+    const omega3 = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-omega3')!;
+
+    expect(omega3.description).toContain('FACIT');
+    expect(omega3.description).toContain('only in people with lower omega-3 levels');
+    expect(omega3.description).toContain('WHO\'s 2026 dementia guideline recommends against omega-3');
+    expect(omega3.description).toContain('without a diagnosed deficiency');
+    expect(omega3.description).toContain('without reassessing supplements');
+    expect(omega3.description).toContain('did not cite VITACOG or FACIT');
+    expect(omega3.description).not.toContain('\u2014');
+
+    const reason = SUGGESTION_EVIDENCE['supplement-omega3'].reason;
+    expect(reason).not.toContain('important role in cognitive protection');
+    expect(reason).toContain('may depend on good omega-3 levels');
+    expect(reason).toContain('800 mcg of folic acid');
+    expect(reason).toContain('strong recommendation based on moderate-certainty evidence');
+    expect(reason).toContain('did not cite VITACOG or FACIT');
+
+    const urls = omega3.references!.map(r => r.url);
+    expect(urls).toContain('https://doi.org/10.1093/ajcn/nqaa373');
+    expect(urls).toContain('https://www.who.int/publications/i/item/9789240123557');
   });
 
   it('US-07 AC1: the exercise card and its reason give the 150 moderate / 75 vigorous / mix rule, citing WHO 2020', () => {
