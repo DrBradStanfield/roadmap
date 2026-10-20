@@ -1,1 +1,18 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[26] raw_quote shares no number with its body_line: - However, a study of 106 young male athletes in India with adequate blood vitamin C/E levels but...",
+  "reason": "Checker tokenisation: the abstract spells the sample size \"Hundred six\" (106). (carried over unchanged from exceptions-masters-1.json; the entry is untouched by the 2026-10-21 edits)",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[27] raw_quote shares no number with its body_line: | Liposomal hydrogel vitamin C | Liposomal vitamin C encased in a hydrogel matrix (e.g., galactom...",
+  "reason": "Checker tokenisation: body \"more than 7 times\" equals the abstract's \">7-fold\". (carried over unchanged from exceptions-masters-1.json; the entry is untouched by the 2026-10-21 edits)",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ }
+]
