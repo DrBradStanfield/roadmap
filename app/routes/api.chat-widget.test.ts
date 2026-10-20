@@ -68,7 +68,7 @@ beforeEach(() => {
   mocks.auth.mockResolvedValue({ client: { from: mocks.from }, userId: id, customerId: null, admin: null });
   mocks.from.mockReset().mockImplementation((table: string) => {
     const query: any = {};
-    for (const method of ['select', 'eq', 'order', 'limit', 'single', 'update', 'delete']) query[method] = () => query;
+    for (const method of ['select', 'eq', 'order', 'limit', 'single', 'maybeSingle', 'update', 'delete']) query[method] = () => query;
     query.insert = (row: Record<string, unknown>) => { inserts.push({ table, row }); return query; };
     query.then = (resolve: any, reject: any) =>
       Promise.resolve({ data: table === 'chat_conversations' ? { id } : [], error: null }).then(resolve, reject);

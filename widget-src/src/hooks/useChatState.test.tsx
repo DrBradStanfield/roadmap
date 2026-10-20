@@ -266,3 +266,55 @@ describe('US-15 AC26 — a cut paste is announced', () => {
     expect(hook.result.current.state.inputText).toBe('x'.repeat(7999));
   });
 });
+
+// US-15 AC6a: when the server answers in a different conversation than the one
+// the message was sent in (chat-api restarted a thread it no longer
+// recognizes), the hook follows it: the new thread is active and listed, and
+// it shows that thread's exchange, not the old thread's turns. The old thread
+// is no longer reachable, so it leaves the list (opening it would 404).
+describe('US-15 AC6a — the reply came back in a new conversation', () => {
+  it('US-15 AC6a: the new conversation becomes active, replaces the old one in the list and shows only its own turns', async () => {
+    const old = { id: 'c1', title: 'Old thread', updatedAt: 'x', createdAt: 'x' };
+    const oldTurn = { id: 'o1', role: 'user' as const, content: 'Earlier question', createdAt: 'x' };
+    const hook = renderHook(() => useChatState({
+      isLoggedIn: false,
+      prefetchedData: { conversations: [old], messages: [oldTurn], activeConversationId: 'c1' },
+    }));
+    act(() => hook.result.current.actions.handleInputChange('What about ApoB?'));
+    let sending!: Promise<void>;
+    act(() => { sending = hook.result.current.actions.handleSend(); });
+    await act(async () => { send.resolve!({ result: { conversationId: 'c2', messageId: 'm2', content: 'ApoB counts.' }, error: null }); await sending; });
+    const { state } = hook.result.current;
+    expect(state.activeConversationId).toBe('c2');
+    expect(state.conversations.map(c => c.id)).toEqual(['c2']);
+    expect(state.conversations[0].title).toBe('What about ApoB?');
+    expect(state.messages.map(m => m.content)).toEqual(['What about ApoB?', 'ApoB counts.']);
+    expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'c2' });
+  });
+
+  it('US-15 AC6a: opening a thread the server no longer recognizes drops it from the list', async () => {
+    const { loadConversation } = await import('../lib/chat-api');
+    vi.mocked(loadConversation).mockResolvedValueOnce(null);
+    const gone = { id: 'c1', title: 'Old thread', updatedAt: 'x', createdAt: 'x' };
+    const kept = { id: 'c3', title: 'Other', updatedAt: 'x', createdAt: 'x' };
+    const hook = renderHook(() => useChatState({
+      isLoggedIn: false,
+      prefetchedData: { conversations: [gone, kept], messages: [], activeConversationId: null },
+    }));
+    await act(async () => { await hook.result.current.actions.selectConversation('c1'); });
+    const { state } = hook.result.current;
+    expect(state.conversations.map(c => c.id)).toEqual(['c3']);
+    expect(state.activeConversationId).toBeNull();
+    expect(state.messages).toEqual([]);
+  });
+
+  it('US-15 AC6a: a guest\'s latest thread that 404s on first load is dropped, not left open', async () => {
+    const { listConversations, loadConversation } = await import('../lib/chat-api');
+    vi.mocked(listConversations).mockResolvedValueOnce({ conversations: [{ id: 'c1', title: 'Old', updatedAt: 'x', createdAt: 'x' }] });
+    vi.mocked(loadConversation).mockResolvedValueOnce(null);
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    await act(async () => { await hook.result.current.actions.loadConversationsIfNeeded(); });
+    expect(hook.result.current.state.conversations).toEqual([]);
+    expect(hook.result.current.state.activeConversationId).toBeNull();
+  });
+});

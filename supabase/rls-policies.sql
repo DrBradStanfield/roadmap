@@ -889,13 +889,34 @@ CREATE POLICY "Users can delete own conversations"
 
 DROP POLICY IF EXISTS "Users can view own messages" ON chat_messages;
 CREATE POLICY "Users can view own messages"
-  ON chat_messages FOR SELECT USING (user_id = auth.uid());
+  ON chat_messages FOR SELECT USING (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM chat_conversations
+      WHERE chat_conversations.id = chat_messages.conversation_id
+        AND chat_conversations.user_id = auth.uid()
+    )
+  );
 DROP POLICY IF EXISTS "Users can create own messages" ON chat_messages;
 CREATE POLICY "Users can create own messages"
-  ON chat_messages FOR INSERT WITH CHECK (user_id = auth.uid());
+  ON chat_messages FOR INSERT WITH CHECK (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM chat_conversations
+      WHERE chat_conversations.id = chat_messages.conversation_id
+        AND chat_conversations.user_id = auth.uid()
+    )
+  );
 DROP POLICY IF EXISTS "Users can delete own messages" ON chat_messages;
 CREATE POLICY "Users can delete own messages"
-  ON chat_messages FOR DELETE USING (user_id = auth.uid());
+  ON chat_messages FOR DELETE USING (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM chat_conversations
+      WHERE chat_conversations.id = chat_messages.conversation_id
+        AND chat_conversations.user_id = auth.uid()
+    )
+  );
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON chat_conversations TO authenticated;
 GRANT SELECT, INSERT, DELETE ON chat_messages TO authenticated;

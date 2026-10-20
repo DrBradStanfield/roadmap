@@ -175,6 +175,14 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     });
   }, [instanceId, onRemoteConversationSelected]);
 
+  const dropThread = useCallback((id: string) => {
+    setConversations(prev => prev.filter(c => c.id !== id));
+    if (activeConversationIdRef.current === id) {
+      setActiveConversationId(null);
+      setMessages([]);
+    }
+  }, []);
+
   const loadConversationsIfNeeded = useCallback(async () => {
     if (hasLoadedRef.current || isLoadingConvsRef.current) return;
     hasLoadedRef.current = true;
@@ -185,17 +193,22 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       setConversations(result.conversations);
       if (!isLoggedIn && result.conversations.length > 0) {
         const latest = result.conversations[0];
+        activeConversationIdRef.current = latest.id; // dropThread reads it after the await
         setActiveConversationId(latest.id);
         const msgs = await loadConversation(latest.id);
-        setMessages(msgs);
+        if (msgs) setMessages(msgs); else dropThread(latest.id);
       }
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, dropThread]);
 
   const selectConversation = useCallback(async (id: string) => {
+    // Set now, not after render: dropThread below reads it after the await.
+    activeConversationIdRef.current = id;
     setActiveConversationId(id);
     setError(null);
     const msgs = await loadConversation(id);
+    // The server no longer recognizes this guest thread (US-15 AC6a).
+    if (!msgs) { dropThread(id); return; }
     setMessages(msgs);
     postSync({
       instanceId,
@@ -209,7 +222,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       },
       ts: Date.now(),
     });
-  }, [instanceId]);
+  }, [instanceId, dropThread]);
 
   const startNewChat = useCallback(() => {
     setActiveConversationId(null);
@@ -302,7 +315,11 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         createdAt: new Date().toISOString(),
         ...(result.isFallback ? { isFallback: true } : {}),
       };
-      const finalMessages = [...optimisticMessages, assistantMsg];
+      // chat-api moved the message to a new thread when the server no longer
+      // recognized this one (US-15 AC6a): show that thread, not the old turns,
+      // and drop the old thread from the list, since opening it would 404.
+      const restarted = currentConvId !== null && result.conversationId !== currentConvId;
+      const finalMessages = [...(restarted ? [optimisticMsg] : optimisticMessages), assistantMsg];
       setMessages(finalMessages);
       if ((approach.thinking || approach.sources.length > 0) && !result.isFallback) {
         setApproachById(prev => ({ ...prev, [assistantMsg.id]: approach }));
@@ -321,7 +338,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
       let finalConversations = currentConvs;
       let finalConvId = currentConvId;
-      if (!currentConvId) {
+      if (!currentConvId || restarted) {
         finalConvId = result.conversationId;
         setActiveConversationId(finalConvId);
         finalConversations = [{
@@ -329,7 +346,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
           title: trimmed.slice(0, 80),
           updatedAt: new Date().toISOString(),
           createdAt: new Date().toISOString(),
-        }, ...currentConvs];
+        }, ...currentConvs.filter(c => c.id !== currentConvId)];
         setConversations(finalConversations);
       }
 
@@ -354,14 +371,10 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     e.stopPropagation();
     const ok = await deleteConversation(id);
     if (ok) {
-      setConversations(prev => prev.filter(c => c.id !== id));
-      if (activeConversationIdRef.current === id) {
-        setActiveConversationId(null);
-        setMessages([]);
-      }
+      dropThread(id);
       postSync({ instanceId, type: 'thread-deleted', payload: { id }, ts: Date.now() });
     }
-  }, [instanceId]);
+  }, [instanceId, dropThread]);
 
   /** The customer pressed Confirm (US-49): the one request that makes the change. */
   const cardsRef = useRef(cardsById);
