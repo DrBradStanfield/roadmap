@@ -2961,7 +2961,7 @@ describe('Evidence attachment', () => {
 
     const omega3 = suggestions.find(s => s.id === 'supplement-omega3')!;
     expect(omega3.description).toContain('reasonable for everyone to consider up to 1 g a day of EPA and DHA combined');
-    expect(omega3.description).toContain('atrial fibrillation at 1 g a day or less, and more so above 1 g');
+    expect(omega3.description).toContain('atrial fibrillation risk rises further above that');
     // Jernerén 2015 analysed VITACOG by omega-3 status; omega-3 was not randomised.
     expect(omega3.description).toContain('In one trial (VITACOG)');
     expect(omega3.description).not.toMatch(/Randomised trials also show/);
@@ -2981,12 +2981,14 @@ describe('Evidence attachment', () => {
     const { inputs, results } = createTestData({}, { bmi: 22 });
     const omega3 = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-omega3')!;
 
-    expect(omega3.description).toContain('FACIT');
-    expect(omega3.description).toContain('only in people with lower omega-3 levels');
-    expect(omega3.description).toContain('WHO\'s 2026 dementia guideline recommends against omega-3');
-    expect(omega3.description).toContain('without a diagnosed deficiency');
-    expect(omega3.description).toContain('without reassessing supplements');
-    expect(omega3.description).toContain('did not cite VITACOG or FACIT');
+    expect(omega3.description).toContain('another (FACIT) found the reverse');
+    expect(omega3.description).toContain('WHO\'s 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia');
+    // Codex: the only text users see must carry WHO's strength and certainty.
+    expect(omega3.description).toContain('a strong recommendation based on moderate-certainty evidence');
+    expect(omega3.description).toContain('did not consider the omega-3 analyses of VITACOG or FACIT');
+    expect(omega3.description).toContain('It does not address omega-3 for heart health.');
+    expect(omega3.description).toContain('If you have atrial fibrillation or take a blood thinner, check with your doctor first.');
+    expect(omega3.description).not.toContain('dementia risk only');
     expect(omega3.description).not.toContain('\u2014');
 
     const reason = SUGGESTION_EVIDENCE['supplement-omega3'].reason;
@@ -2994,7 +2996,12 @@ describe('Evidence attachment', () => {
     expect(reason).toContain('may depend on good omega-3 levels');
     expect(reason).toContain('800 mcg of folic acid');
     expect(reason).toContain('strong recommendation based on moderate-certainty evidence');
-    expect(reason).toContain('did not cite VITACOG or FACIT');
+    expect(reason).toContain('unexpected harmful effects that outweigh any potential benefits');
+    expect(reason).toContain('reducing the risk of cognitive decline and dementia');
+    expect(reason).toContain('did not consider the omega-3 analyses of VITACOG or FACIT');
+    expect(reason).toContain('It does not address omega-3 for heart health.');
+    expect(reason).toContain('If you have atrial fibrillation or take a blood thinner, check with your doctor first.');
+    expect(reason).not.toContain('dementia risk only');
 
     const urls = omega3.references!.map(r => r.url);
     expect(urls).toContain('https://doi.org/10.1093/ajcn/nqaa373');
