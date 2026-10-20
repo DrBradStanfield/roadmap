@@ -342,9 +342,9 @@ export type McpOAuthReason = (typeof MCP_OAUTH_REASONS)[number];
 export const MCP_OAUTH_DETAILS = {
   /** `resource` names another host, or this host with another path. */
   resource: ['other-host', 'other-path'],
-  /** No `redirect_uri`; a host none of the client's redirects uses; a known
-   *  host (or loopback) with a different path, query, port or scheme; or a
-   *  registered redirect the policy no longer allows. */
+  /** No `redirect_uri`; a host none of the client's redirects uses; or a
+   *  known host differing in anything else, loopback when the registered
+   *  redirect on that host is a loopback one. */
   'redirect-uri': ['missing', 'unknown-host', 'known-host-other-path', 'loopback-other-path'],
   /** Neither a DCR id nor an https URL; a DCR id that fails its HMAC or
    *  metadata; a CIMD URL refused before fetching; a fetch that failed; a
