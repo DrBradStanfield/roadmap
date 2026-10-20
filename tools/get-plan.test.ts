@@ -471,7 +471,7 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
   it('prints the plan an equivalent record file prints (text and --json)', async () => {
     const rows = [['ldl', 3.2], ['hba1c', 41], ['systolic_bp', 130]] as const;
     const file = createEmptyFile(CTX);
-    Object.assign(file.profile, { sex: 'male', birthYear: new Date().getFullYear() - 52, heightCm: 178, updatedAt: CTX.now, lamport: 1 });
+    Object.assign(file.profile, { sex: 'male', birthYear: new Date().getFullYear() - 52, birthMonth: 1, heightCm: 178, updatedAt: CTX.now, lamport: 1 });
     rows.forEach(([metricType, value], i) => file.measurements.push(createMeasurement({
       id: `eq${i}`, metricType, value, recordedAt: '2026-08-20', createdAt: '2026-08-20T08:00:00Z',
     })));

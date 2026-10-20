@@ -47,7 +47,7 @@ import {
 } from '../packages/health-core/src/plan';
 import { createEmptyFile, CURRENT_SCHEMA_VERSION, type RoadmapFile } from '../packages/health-core/src/roadmap-file';
 import type { Suggestion } from '../packages/health-core/src/types';
-import { formatDisplayValue, getDisplayLabel, UNIT_DEFS, type MetricType } from '../packages/health-core/src/units';
+import { formatDisplayValue, getDisplayLabel, hasUnitChoice, UNIT_DEFS, type MetricType } from '../packages/health-core/src/units';
 
 // ---------------------------------------------------------------------------
 // Load — the untrusted-bytes boundary
@@ -110,8 +110,11 @@ export function recordFromValues(raw: string, now = new Date()): RoadmapFile {
   }
   const at = now.toISOString();
   let file = createEmptyFile({ deviceId: 'get-plan-values', now: at });
-  const birthYear = spec.birthYear ?? (spec.age === undefined ? undefined : now.getFullYear() - spec.age);
-  const profile = updateProfile(file, { sex: spec.sex, heightCm: spec.heightCm, birthYear, birthMonth: spec.birthMonth }, at);
+  // An age alone sets January, as run-roadmap does for the chatbot.
+  const fromAge = spec.age !== undefined;
+  const birthYear = fromAge ? now.getFullYear() - spec.age! : spec.birthYear;
+  const birthMonth = fromAge ? 1 : spec.birthMonth;
+  const profile = updateProfile(file, { sex: spec.sex, heightCm: spec.heightCm, birthYear, birthMonth }, at);
   if (profile.status !== 'ok') throw new PlanError(oneLine(profile.text), VALUES_SHAPE);
   if (profile.file) file = profile.file;
   // In memory only, so no profile timestamp to keep.
@@ -120,15 +123,16 @@ export function recordFromValues(raw: string, now = new Date()): RoadmapFile {
   for (const [i, row] of spec.values.entries()) {
     const where = `values[${i}]`;
     if (!row.metric === !row.test) throw new PlanError(`${where}: give either metric (a core metric) or test (any other blood test)`, VALUES_SHAPE);
-    const def = UNIT_DEFS[row.metric as MetricType];
-    // A metric with two unit labels (LDL mmol/L or mg/dL) never guesses.
-    if (!row.unit && (row.test || (def && def.label.si !== def.label.conventional))) {
-      const options = def ? `${def.label.si} or ${def.label.conventional}` : 'the unit the lab reported';
-      throw new PlanError(`${where}: ${oneLine(row.metric ?? row.test!)} needs a unit (${options})`, 'Add "unit", e.g. {"metric":"ldl","value":3.2,"unit":"mmol/L"}.');
+    // A metric with two unit labels (LDL mmol/L or mg/dL) never guesses; a lab
+    // value with no unit is refused by appendLabValue itself.
+    const metric = row.metric as MetricType;
+    if (!row.unit && row.metric && UNIT_DEFS[metric] && hasUnitChoice(metric)) {
+      const { si, conventional } = UNIT_DEFS[metric].label;
+      throw new PlanError(`${where}: ${oneLine(row.metric)} needs a unit (${si} or ${conventional})`, 'Add "unit", e.g. {"metric":"ldl","value":3.2,"unit":"mmol/L"}.');
     }
     const result = row.metric
       ? appendMeasurement(file, { metricType: row.metric, value: row.value, unit: row.unit, recordedAt: row.date, now: at })
-      : appendLabValue(file, { metricName: row.test!, value: row.value, unit: row.unit!, recordedAt: row.date, now: at });
+      : appendLabValue(file, { metricName: row.test!, value: row.value, unit: row.unit ?? '', recordedAt: row.date, now: at });
     if (!result.ok) throw new PlanError(`${where}: ${oneLine(result.message)}`, 'Nothing was computed. Run with --help for the options.');
     file = result.file;
   }
