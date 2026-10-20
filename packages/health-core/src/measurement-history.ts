@@ -39,6 +39,11 @@ export function isCalendarDay(day: string): boolean {
   return ISO_DATE.test(day) && !Number.isNaN(Date.parse(day)) && new Date(day).toISOString().slice(0, 10) === day;
 }
 
+/** A stored row's `recordedAt` the reader keeps: it starts with a real calendar day (US-29 AC4a). */
+export function isClinicalDay(recordedAt: unknown): recordedAt is string {
+  return typeof recordedAt === 'string' && isCalendarDay(recordedAt.slice(0, 10));
+}
+
 /**
  * Group raw measurement records into the chat-context history map: keyed by
  * metricType, sorted oldest→newest, capped at the newest `cap` points per

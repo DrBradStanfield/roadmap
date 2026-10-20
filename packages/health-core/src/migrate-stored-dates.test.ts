@@ -5,6 +5,7 @@ import { migrateFile } from './migrate';
 import { mergeFiles } from './merge';
 import { ROADMAP_DOC, recordSync } from './roadmap-doc';
 import { SyncManager } from './sync-manager';
+import { bulkAppendValues, type BulkRow } from './record-edits';
 import { createEmptyFile, createMeasurement, type FileDocument, type FileLabValue } from './roadmap-file';
 
 const CTX = { deviceId: 'synthetic', now: '2026-10-19T12:00:00.000Z' };
@@ -80,6 +81,34 @@ describe('US-29 AC4 — stored clinical dates at migration', () => {
     expect(out.labValues[1]).toMatchObject({ id: 'printed#si', correctsId: 'printed', status: 'active', recordedAt: clinical, newerField: true });
     expect(migrateFile(JSON.parse(JSON.stringify(out)), LATER)).toEqual(out);
   });
+});
+
+// US-29 AC4a: a writer that stored what the reader drops would make the save's
+// readback miss the row, so every save after it reads as a lost update.
+describe('US-29 AC4a — the app\'s writers refuse a recordedAt the reader drops', () => {
+  const rows = (recordedAt: string): BulkRow[] => [
+    { kind: 'measurement', metricType: 'ldl', value: 2, recordedAt, source: 'manual' },
+    { kind: 'lab', metricName: 'synthetic_unknown_test', value: 1, unit: 'u', recordedAt, source: 'manual' },
+  ];
+
+  it.each(['2026-02-30T00:00:00.000Z', 'T00:00:00.000Z', ' 2026-10-18', '+002026-10-18'])(
+    'bulkAppendValues refuses %s up front, and the next SyncManager save still lands', async (bad) => {
+      const cloud = new MemoryCloud();
+      const sync = recordSync(new MemoryAdapter(cloud), CTX.deviceId, CTX.now);
+      const file = await sync.load();
+      expect(() => bulkAppendValues(file, rows(bad), CTX.now)).toThrow(/real calendar day/);
+      const saved = await sync.save(bulkAppendValues(file, rows('2026-10-18'), CTX.now).file);
+      expect(saved.file.measurements).toHaveLength(1);
+      expect((await sync.load()).labValues).toHaveLength(1);
+    });
+
+  it.each(['2026-10-18', '2026-10-18T00:00:00.000Z', '2026-10-18T08:00:00+1300'])(
+    'bulkAppendValues saves %s through SyncManager exactly as given', async (good) => {
+      const sync = recordSync(new MemoryAdapter(new MemoryCloud()), CTX.deviceId, CTX.now);
+      const saved = await sync.save(bulkAppendValues(await sync.load(), rows(good), CTX.now).file);
+      expect(saved.file.measurements.map((r) => r.recordedAt)).toEqual([good]);
+      expect((await sync.load()).labValues.map((r) => r.recordedAt)).toEqual([good]);
+    });
 });
 
 function document(id: string, addedAt: string): FileDocument {

@@ -341,6 +341,8 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
       ['screening enum typo', (f) => { f.screenings.colorectalResult = 'fine' as never; }],
       ['reminderOptIn without a token', (f) => { delete (f.reminderOptIn as { token?: string }).token; }],
       ['lab value missing its unit', (f) => { delete (f.labValues[0] as { unit?: string }).unit; }],
+      ['measurement recordedAt without its day (US-29 AC4a)', (f) => { f.measurements[0].recordedAt = 'T00:00:00.000Z'; }],
+      ['lab recordedAt not starting with its day (US-29 AC4a)', (f) => { f.labValues[0].recordedAt = ' 2026-05-01'; }],
       ['field stamp without its time', (f) => { delete (f.profile.fieldStamps!.heightCm as { updatedAt?: string }).updatedAt; }],
       ['field stamp that is not a stamp', (f) => { (f.screenings.fieldStamps as Record<string, unknown>).breastLastDate = '2026-05-03'; }],
     ];
