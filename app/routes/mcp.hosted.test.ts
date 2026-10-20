@@ -2380,9 +2380,13 @@ describe('a refusal names its branch in a closed word, and the answer does not c
   it('says whether a refused resource named another host or another path here', async () => {
     const otherHost = await answer(await get(`/mcp/authorize?${authorizeQuery({ resource: 'https://evil.test/mcp' })}`));
     const otherPath = await answer(await get(`/mcp/authorize?${authorizeQuery({ resource: `${ISSUER}/elsewhere` })}`));
+    // A non-default port is another host (URL.host carries it), per AC48.
+    const port = new URL(ISSUER); port.port = '8443';
+    await answer(await get(`/mcp/authorize?${authorizeQuery({ resource: `${port.origin}/mcp` })}`));
     expect(rows()).toEqual([
       ['mcp_authorize_refused', { client: 'claude', reason: 'resource', detail: 'other-host' }],
       ['mcp_authorize_refused', { client: 'claude', reason: 'resource', detail: 'other-path' }],
+      ['mcp_authorize_refused', { client: 'claude', reason: 'resource', detail: 'other-host' }],
     ]);
     expect(otherHost[0]).toBe(302);
     expect(new URL(String(otherHost[1])).searchParams.get('error')).toBe('invalid_target');

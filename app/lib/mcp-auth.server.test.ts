@@ -901,6 +901,9 @@ describe('a refused redirect names how it missed (US-32 AC48)', () => {
     expect(redirectMiss(registered, 'http://localhost:4567/elsewhere')).toBe('loopback-other-path');
     // Wrong scheme on a registered loopback host is still a loopback miss (Codex R2).
     expect(redirectMiss(registered, 'https://localhost:4567/callback')).toBe('loopback-other-path');
+    // Judged by the registered side, so a fragment or userinfo on a loopback host reads the same.
+    expect(redirectMiss(registered, 'http://localhost/callback#f')).toBe('loopback-other-path');
+    expect(redirectMiss(registered, 'http://user@localhost/callback')).toBe('loopback-other-path');
   });
 });
 
