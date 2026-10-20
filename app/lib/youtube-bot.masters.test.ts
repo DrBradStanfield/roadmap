@@ -21,7 +21,7 @@ const fakes = vi.hoisted(() => {
     ref('tm-big', '2026-10-20'),
     ref('tm-huge'),
     ref('tm-master-long', '2026-10-20'),
-    ref('tm-safe'), ref('tm-mid1'), ref('tm-mid2'), ref('tm-cited'), ref('tm-numbered'), ref('tm-malformed'), ref('tm-rule'), ref('tm-ix'),
+    ref('tm-safe'), ref('tm-mid1'), ref('tm-mid2'), ref('tm-cited'), ref('tm-numbered'), ref('tm-malformed'), ref('tm-rule'), ref('tm-ix'), ref('tm-dup1'), ref('tm-dup2'),
     ...Array.from({ length: 10 }, (_, i) => ref(`tm-stack-${i}`, '2026-10-20')),
     { title: 'An article', handle: 'tm-article', url: 'u', tags: [], publishedAt: '2025-01-01T00:00:00Z' },
   ];
@@ -64,7 +64,9 @@ const files: Record<string, string> = {
   'tm-malformed': `---\ntitle: "Malformed"\n---\n\n## Current view (reviewed 20 October 2026)\n\nMalformed view.\n\n${'m'.repeat(7_000)}\n`,
   'tm-rule': `---\ntitle: "Rule"\n---\n\n## Current view (reviewed 20 October 2026)\n\nRule view.\n\n---\n\nText after the rule.\n`,
   'tm-ix': `---\ntitle: "Ix"\n---\n\n## Current view (reviewed 20 October 2026)\n\nIx view.\n\n## 5. Safety and Side Effects\n\nIx small safety.\n\n## 6. Drug Interactions\n\n${'i'.repeat(MAX_MASTER_VIEW_CHARS)}\n`,
-  'tm-cited': `---\ntitle: "Cited"\n---\n\n## Current view (reviewed 20 October 2026)\n\nCited view [1].\n\n## 3. Evidence\n\nBenefit [1].\n\n## 5. Safety and Side Effects\n\nRare rash [2]. Liver note [3, 5]. Range [6–7]. A DOI link [10.1000/xyz].\n\n## 9. References\n\n[1] Ref one.\n\n[2] Ref two.\n\n[3] Ref three.\n\n[4] Ref four.\n\n[5] Ref five.\n\n[6] Ref six.\n\n[7] Ref seven.\n`,
+  'tm-dup1': `---\ntitle: "Dup1"\n---\n\n## Current view (reviewed 20 October 2026)\n\nDup one.\n\n## Safety\n\n${'d'.repeat(MAX_MASTER_VIEW_CHARS * 0.6)}\n`,
+  'tm-dup2': `---\ntitle: "Dup2"\n---\n\n## Current view (reviewed 20 October 2026)\n\nDup two.\n\n## Safety\n\n${'d'.repeat(MAX_MASTER_VIEW_CHARS * 0.6)}\n`,
+  'tm-cited':`---\ntitle: "Cited"\n---\n\n## Current view (reviewed 20 October 2026)\n\nCited view [1].\n\n## 3. Evidence\n\nBenefit [1].\n\n## 5. Safety and Side Effects\n\nRare rash [2]. Liver note [3, 5]. Range [6–7]. A DOI link [10.1000/xyz].\n\n## 9. References\n\n[1] Ref one.\n\n[2] Ref two.\n\n[3] Ref three.\n\n[4] Ref four.\n\n[5] Ref five.\n\n[6] Ref six.\n\n[7] Ref seven.\n`,
   'tm-numbered': `---\ntitle: "Numbered"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNumbered view.\n\n## 6. Drug Interactions\n\nWarfarin [2].\n\n## 8. References\n\n1. Ref A.\n2. Ref B.\n`,
   'tm-huge': `---\ntitle: "Huge"\n---\n\n${'h'.repeat(110_000)}\n`,
   'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
@@ -218,6 +220,15 @@ describe('masterViews (US-50 AC6)', () => {
     const logged = warn.mock.calls.map(([m]) => String(m));
     expect(logged).toContain('YouTube master views: safety section skipped for the cap: tm-mid2 "## Safety"');
     expect(logged.some(m => m.includes('tm-mid1'))).toBe(false);
+  });
+
+  it('two masters with identical safety text: each section is counted as rendered, so the block stays within the cap (US-50 AC6)', () => {
+    fakeFiles();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const block = masterViews(['tm-dup1', 'tm-dup2'], [])!;
+    expect(block.match(/^### Safety$/gm)).toHaveLength(1);
+    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
+    expect(warn.mock.calls.map(([m]) => String(m))).toContain('YouTube master views: safety section skipped for the cap: tm-dup2 "## Safety"');
   });
 
   it('a safety section brings the bibliography lines its [n] markers cite, and only those (US-50 AC6)', () => {

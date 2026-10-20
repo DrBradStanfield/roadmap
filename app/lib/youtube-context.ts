@@ -166,17 +166,19 @@ export function masterViews(topics: string[] | undefined, loaded: string[]): str
   let total = masters.reduce((n, m) => n + m.view.length, SEPARATOR.length * (masters.length - 1));
   // Two passes in topics order: every master's interactions sections, then the
   // other safety sections of each master whose interactions all went in.
+  // Kept sections by identity, so two masters' identical texts count apart.
   const kept = new Set<string>();
   const blocked = new Set<string>();
   for (const pass of [true, false]) {
     for (const { handle, safety } of masters) {
-      for (const s of safety.filter(s => INTERACTIONS_HEADING.test(s) === pass)) {
-        if (!blocked.has(handle) && total + s.length + 2 <= MAX_MASTER_VIEW_CHARS) { total += s.length + 2; kept.add(s); continue; }
+      for (const [i, s] of safety.entries()) {
+        if (INTERACTIONS_HEADING.test(s) !== pass) continue;
+        if (!blocked.has(handle) && total + s.length + 2 <= MAX_MASTER_VIEW_CHARS) { total += s.length + 2; kept.add(`${handle}#${i}`); continue; }
         if (pass) blocked.add(handle);
         console.warn(`YouTube master views: safety section skipped for the cap: ${handle} "${s.split('\n')[0].slice(1)}"`);
       }
     }
   }
-  const parts = masters.map(({ view, safety }) => [view, ...safety.filter(s => kept.has(s))].join('\n\n'));
+  const parts = masters.map(({ handle, view, safety }) => [view, ...safety.filter((_, i) => kept.has(`${handle}#${i}`))].join('\n\n'));
   return `${MASTER_VIEWS_HEADING}\n\n${parts.join(SEPARATOR)}`;
 }
