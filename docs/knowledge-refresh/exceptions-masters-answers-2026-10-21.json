@@ -24,14 +24,6 @@
   "date": "2026-10-21"
  },
  {
-  "check": "AC6",
-  "handle": "",
-  "match": "unexpected change: docs/loops/chat-health/lint-state.json",
-  "reason": "Expected: the master-hash write (knowledge-lint --write-master-hashes) in 6bad0d8c rewrote the turmeric master hash in lint-state.json.",
-  "by": "orchestrator",
-  "date": "2026-10-21"
- },
- {
   "check": "AC7",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "product mentions rose 3 -> 4",
