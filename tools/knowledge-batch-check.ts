@@ -24,7 +24,7 @@
  *  - A changed_tokens entry may carry "void": true and a "void_reason". Reports are append-only, so a wrong entry is
  *    voided, not deleted: every AC2 check skips it, it never covers a token, and the run lists "VOID <section> <i>: <reason>"
  *    (--out shows a 12-character sha256 of the reason, never its text). current_view_basis, deleted_sentences, extra_raw,
- *    ask_brad, grokipedia_claims, needs_pubmed and positions_drift entries void the same way.
+ *    ask_brad, grokipedia_claims and positions_drift entries void the same way; needs_pubmed entries never do.
  *  - After the first write a report is never edited, even to append (Brad 2026-10-20): a correction is a sibling
  *    <handle>.addendum-<N>.json, N = 1, 2, 3 with no gap (see applyAddenda). It appends entries, voids entries with a
  *    reason, or sets proposed_summary_correction; anything else fails. --out prints each report file with its sha256.
@@ -73,9 +73,9 @@ export interface Report {
   current_view_basis?: { sentence: string; source?: string; quote: string; void?: boolean }[];
 }
 
-const ADDENDUM_APPEND = ["extra_raw", "changed_tokens", "current_view_basis", "deleted_sentences", "ask_brad", "needs_pubmed", "positions_drift"];
-export const ADDENDUM_VOID = ["changed_tokens", "current_view_basis", "deleted_sentences", "extra_raw", "ask_brad",
-  "grokipedia_claims", "needs_pubmed", "positions_drift"]; // the last three are informational: no check reads them
+const ADDENDUM_APPEND = ["extra_raw", "changed_tokens", "current_view_basis", "deleted_sentences", "ask_brad", "needs_pubmed", "positions_drift", "grokipedia_claims"];
+// grokipedia_claims and positions_drift are informational: no check reads them. needs_pubmed is not voidable: it carries safety work items.
+export const ADDENDUM_VOID = ["changed_tokens", "current_view_basis", "deleted_sentences", "extra_raw", "ask_brad", "grokipedia_claims", "positions_drift"];
 
 /**
  * Reports are append-only (US-42 AC2): a correction is a <handle>.addendum-<N>.json beside the report, applied in
@@ -198,10 +198,10 @@ export const REPORT_SCHEMA = {
       items: { type: "object", required: ["sentence", "quote"], properties: { sentence: { type: "string" }, source: { type: "string" }, quote: { type: "string" }, ...VOID_PROPS } },
     },
     ask_brad: { type: "array", items: { type: "object", required: ["item", "why"], properties: { item: { type: "string" }, why: { type: "string" }, ...VOID_PROPS } } },
-    // Informational: listed for the orchestrator, read by no check, so a void retires an entry and weakens nothing.
-    grokipedia_claims: { type: "array", items: { type: "object", additionalProperties: true, properties: { claim: { type: "string" }, outcome: { type: "string" }, ...VOID_PROPS } } },
-    needs_pubmed: { type: "array", items: { type: "object", additionalProperties: true, properties: { claim: { type: "string" }, study_as_named: { type: "string" }, ...VOID_PROPS } } },
-    positions_drift: { type: "array", items: { type: "object", additionalProperties: true, properties: { file: { type: "string" }, line_text: { type: "string" }, master_says: { type: "string" }, ...VOID_PROPS } } },
+    // Read by no check. Entries are strings or objects; only an object entry can be voided.
+    grokipedia_claims: { type: "array", items: { anyOf: [{ type: "string" }, { type: "object", additionalProperties: true, properties: { claim: { type: "string" }, outcome: { type: "string" }, ...VOID_PROPS } }] } },
+    needs_pubmed: { type: "array", items: { anyOf: [{ type: "string" }, { type: "object", additionalProperties: true, properties: { claim: { type: "string" }, study_as_named: { type: "string" } } }] } },
+    positions_drift: { type: "array", items: { anyOf: [{ type: "string" }, { type: "object", additionalProperties: true, properties: { file: { type: "string" }, line_text: { type: "string" }, master_says: { type: "string" }, ...VOID_PROPS } }] } },
   },
 };
 
@@ -246,6 +246,11 @@ export function validateReport(o: unknown): string[] {
   if (Array.isArray(r.deleted_sentences)) (r.deleted_sentences as { pattern?: unknown }[]).forEach((x, i) => {
     if (x && x.pattern !== undefined && typeof x.pattern !== "boolean") e.push(`deleted_sentences[${i}].pattern: boolean expected`);
   });
+  for (const k of ["grokipedia_claims", "needs_pubmed", "positions_drift"]) {
+    if (r[k] === undefined) continue;
+    if (!Array.isArray(r[k])) e.push(`${k} must be an array`);
+    else (r[k] as unknown[]).forEach((x, i) => { if (typeof x !== "string" && (!x || typeof x !== "object" || Array.isArray(x))) e.push(`${k}[${i}]: string or object expected`); });
+  }
   for (const k of ADDENDUM_VOID) if (Array.isArray(r[k])) (r[k] as { void?: unknown; void_reason?: unknown }[]).forEach((x, i) => {
     if (!x || x.void === undefined || x.void === false) return; // false is the same as absent
     if (x.void !== true) e.push(`${k}[${i}].void: boolean expected`);

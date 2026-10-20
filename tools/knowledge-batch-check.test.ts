@@ -2054,7 +2054,7 @@ describe("US-42 AC2 report addenda: reports stay append-only, corrections go in 
     expect(fails(run().AC2).join()).toContain("void[0].reason: non-empty string expected");
     add(1, { void: [{ section: "changed_tokens", index: 5, reason: "r" }] });
     expect(fails(run().AC2).join()).toContain("void[0].index: no changed_tokens entry 5");
-    add(1, { void: [{ section: "headings_after", index: 0, reason: "r" }] });
+    add(1, { void: [{ section: "needs_pubmed", index: 0, reason: "r" }] });
     expect(fails(run().AC2).join()).toContain("void[0].section");
     add(1, { void: [{ section: "deleted_sentences", index: 0, reason: "a" }, { section: "deleted_sentences", index: 0, reason: "b" }] });
     expect(fails(run().AC2).join()).toContain("void[1]: deleted_sentences entry 0 is voided twice");
@@ -2068,14 +2068,14 @@ describe("US-42 AC2 report addenda: reports stay append-only, corrections go in 
     expect(r({ extra_raw: [{ path: "p", sha256: "s", void: "yes" }] })).toContain("extra_raw[0].void: boolean expected");
     expect(r({ current_view_basis: [{ sentence: "s", quote: "q", void: false }] })).toBe(""); // N1: false is absent
     expect(r({ deleted_sentences: [{ sentence: "s", justification: "j", void: true, void_reason: "" }] })).toContain("deleted_sentences[0].void_reason");
-    expect(r({ sources_seen: [{ claim: "c", void: true }] })).toBe(""); // not a voidable section
+    expect(r({ needs_pubmed: [{ claim: "c", void: true }] })).toBe(""); // not a voidable section: it carries safety work items
     add(1, { append: { current_view_basis: [{ sentence: "s", quote: "q", void: true }] } });
     expect(fails(run().AC2).join()).toContain("current_view_basis[0].void_reason: void entry without void_reason");
     add(1, { append: { current_view_basis: [{ sentence: "s", quote: "q", void: true, void_reason: "drafted then dropped" }] } });
     const md = renderReport("t", "HEAD", "abc", [run().AC2], [], false);
     expect(md).toContain(`- alpha: VOID current_view_basis 0 [addendum-1] (reason sha256 ${sha256("drafted then dropped").slice(0, 12)})`);
     expect(JSON.stringify(REPORT_SCHEMA)).not.toContain("drafted");
-    for (const k of ["changed_tokens", "current_view_basis", "deleted_sentences", "extra_raw", "ask_brad", "grokipedia_claims", "needs_pubmed", "positions_drift"]) { // N4
+    for (const k of ["changed_tokens", "current_view_basis", "deleted_sentences", "extra_raw", "ask_brad", "grokipedia_claims", "positions_drift"]) { // N4
       expect(JSON.stringify((REPORT_SCHEMA.properties as Record<string, unknown>)[k]), k).toContain("void_reason");
     }
     (reps.alpha as unknown as Record<string, unknown>).ask_brad = [{ item: "a", why: "b", void: true, void_reason: "settled" }];
@@ -2084,13 +2084,14 @@ describe("US-42 AC2 report addenda: reports stay append-only, corrections go in 
     expect(ev).toContain("alpha: VOID ask_brad 0 [base]: settled");
     expect(ev).toContain("alpha: VOID deleted_sentences 0 [addendum-1]: kept");
   });
-  it("voids informational grokipedia_claims, needs_pubmed and positions_drift entries with a reason, inline or by addendum (US-42 AC2)", () => {
-    const base = { grokipedia_claims: [{ claim: "c", outcome: "kept on [7]" }], needs_pubmed: [{ claim: "c", study_as_named: "s" }],
-      positions_drift: [{ file: "f", line_text: "l", master_says: "m" }] };
-    for (const k of ["grokipedia_claims", "needs_pubmed", "positions_drift"]) {
+  it("voids informational grokipedia_claims and positions_drift entries with a reason, inline or by addendum (US-42 AC2)", () => {
+    const base = { grokipedia_claims: [{ claim: "c", outcome: "kept on [7]" }], positions_drift: [{ file: "f", line_text: "l", master_says: "m" }] };
+    for (const k of ["grokipedia_claims", "positions_drift"]) {
       Object.assign(reps.alpha, base);
       add(1, { void: [{ section: k, index: 0 }] });
       expect(fails(run().AC2).join(), k).toContain("void[0].reason: non-empty string expected");
+      add(1, { void: [{ section: k, index: 5, reason: "r" }] });
+      expect(fails(run().AC2).join(), k).toContain(`void[0].index: no ${k} entry 5`);
       add(1, { void: [{ section: k, index: 0, reason: "reference [7] removed" }] });
       const ac2 = run().AC2;
       expect(fails(ac2), k).toEqual([]);
@@ -2103,6 +2104,35 @@ describe("US-42 AC2 report addenda: reports stay append-only, corrections go in 
       expect(fails(run().AC2), k).toEqual([]);
       expect(run().AC2.evidence.join("\n"), k).toContain(`alpha: VOID ${k} 0 [base]: settled`);
     }
+  });
+  it("needs_pubmed carries safety work items: an addendum cannot void one (US-42 AC2)", () => {
+    Object.assign(reps.alpha, { needs_pubmed: [{ claim: "c", study_as_named: "s" }] });
+    add(1, { void: [{ section: "needs_pubmed", index: 0, reason: "r" }] });
+    expect(fails(run().AC2).join()).toContain("void[0].section: one of");
+  });
+  it("a void pairs with a corrected grokipedia_claims outcome appended by the same addendum (US-42 AC2)", () => {
+    Object.assign(reps.alpha, { grokipedia_claims: [{ claim: "c", outcome: "kept on [7]" }] });
+    add(1, { append: { grokipedia_claims: [{ claim: "c", outcome: "deleted with [7]" }] }, void: [{ section: "grokipedia_claims", index: 0, reason: "[7] removed" }] });
+    expect(fails(run().AC2)).toEqual([]);
+    const out = applyAddenda(reps.alpha as unknown as Record<string, unknown>, [{ name: "alpha.addendum-1.json", data: JSON.parse(readFileSync(join(reports, "alpha.addendum-1.json"), "utf8")) }]);
+    expect(out.report.grokipedia_claims).toEqual([{ claim: "c", outcome: "kept on [7]", void: true, void_reason: "[7] removed" }, { claim: "c", outcome: "deleted with [7]" }]);
+  });
+  it("grokipedia_claims, needs_pubmed and positions_drift are arrays of strings or objects: a FAIL, never a throw; a string entry cannot be voided (US-42 AC2)", () => {
+    for (const k of ["grokipedia_claims", "needs_pubmed", "positions_drift"]) {
+      Object.assign(reps.alpha, { [k]: "oops" });
+      expect(fails(run().AC2).join(), k).toContain(`${k} must be an array`);
+      Object.assign(reps.alpha, { [k]: [7] });
+      expect(fails(run().AC2).join(), k).toContain(`${k}[0]: string or object expected`);
+      Object.assign(reps.alpha, { [k]: ["a string entry"] });
+      expect(fails(run().AC2), k).toEqual([]);
+      if (k !== "needs_pubmed") {
+        add(1, { void: [{ section: k, index: 0, reason: "r" }] });
+        expect(fails(run().AC2).join(), k).toContain(`void[0].index: no ${k} entry 0`);
+        rmSync(join(reports, "alpha.addendum-1.json"));
+      }
+      Object.assign(reps.alpha, { [k]: [] });
+    }
+    expect(fails(run().AC2)).toEqual([]);
   });
   it("an addendum may give a reason to a base void that has none, which makes the report valid again (R7)", () => {
     (reps.alpha as unknown as Record<string, unknown>).ask_brad = [{ item: "a", why: "b", void: true }];
