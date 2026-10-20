@@ -64,11 +64,26 @@ describe('US-21 AC21: a row past its test\'s ceiling says so in the review, befo
 
   it('free T 312.6 "nmol/L" with range 163–473 shows the refusal line and never the converted 312,600', () => {
     const { container, getByRole } = renderReview(freeT('nmol/L'));
-    const line = 'Free testosterone above 10,000 pmol/L is not a measured value, so the printed unit is probably wrong (nmol/L vs pmol/L). Check the report, then type it in.';
+    const line = 'Free testosterone above 10,000 pmol/L is not a measured value, so the printed unit is probably wrong (nmol/L vs pmol/L). Check the report, then add it in pmol/L with + Add a blood test.';
     expect(container.querySelector('.bt-cell-refused')?.textContent).toBe(line);
     expect(getByRole('textbox', { name: 'Free testosterone value from 10 Mar 2026', description: line })).toBeTruthy();
     expect(container.querySelector('.bt-cell-si')).toBeNull();
     expect(container.textContent).not.toMatch(/312[,.\s]?600/);
+  });
+
+  it('a conflict cell edited to the value an older build already recorded (312,600 pmol/L) drops the line (adversary R2)', () => {
+    const held = { id: 'held-ft', metricName: 'free_testosterone', value: 312600, unit: 'pmol/L', referenceLow: 163000, referenceHigh: 473000,
+      recordedAt: DAY, source: 'lab_import', createdAt: '2026-03-11T00:00:00.000Z' };
+    const upload: FileResult[] = [{ fileName: 'labs.pdf', reportDate: DAY, values: [],
+      additionalValues: [{ name: 'Free Testosterone', value: 300, unit: 'nmol/L', referenceLow: 163, referenceHigh: 473 }] }];
+    const { container } = render(
+      <ReviewTable grading={{}} results={upload} history={{ measurements: [], labValues: [held], documents: [] }}
+        unitSystem="si" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />,
+    );
+    expect(container.querySelector('.bt-cell-conflict .bt-cell-refused')).not.toBeNull();
+    fireEvent.change(container.querySelector<HTMLInputElement>('.bt-cell-conflict input[type="text"], .bt-cell-conflict input:not([type="checkbox"])')!, { target: { value: '312.6' } });
+    expect(container.querySelector('.bt-cell-conflict-replace')).toBeNull();
+    expect(container.querySelector('.bt-cell-refused')).toBeNull();
   });
 
   it('the same row printed in pmol/L shows no note', () => {

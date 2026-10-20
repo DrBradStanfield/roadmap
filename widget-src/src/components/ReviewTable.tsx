@@ -1482,7 +1482,7 @@ const MatrixCellView = memo(function MatrixCellView({
       : { value: typed, unit: cell.lab.unit, referenceLow: cell.referenceLow, referenceHigh: cell.referenceHigh };
     const row = entry && printed ? canonicalLabRow(entry, printed) : null;
     if (row && row.factor !== 1) storedText = `${row.stored.value} ${row.stored.unit}`;
-    else if (entry && printed && labCountFault(entry, printed) === 'ceiling') refusedText = labUnitRefusalLine(entry.key, cell.lab.unit, 'ceiling');
+    else if (!alreadySaved && entry && printed && labCountFault(entry, printed) === 'ceiling') refusedText = labUnitRefusalLine(entry.key, cell.lab.unit, 'ceiling');
   }
   const label = `${rowName(row)} value from ${columnWords}`;
   const newUnitShown = showUnit(cell.displayUnit);

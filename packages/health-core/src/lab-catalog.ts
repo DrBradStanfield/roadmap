@@ -437,7 +437,7 @@ export function labUnitRefusal(entry: LabCatalogEntry, unit: string, fault?: Cou
  *  website's upload summary shows it under its own words. */
 export function labUnitRefusalNote(entry: LabCatalogEntry | undefined, unit: string, fault?: CountFault | null): string | undefined {
   if (fault === 'scale') return SCALE_NOTE;
-  if (entry && fault === 'ceiling') return `${ceilingNote(entry, unit)}. Check the report, then type it in`;
+  if (entry && fault === 'ceiling') return `${ceilingNote(entry, unit)}. Check the report, then add it in ${entry.unit} with + Add a blood test`;
   return labUnitTaken(entry, unit) ? WHOLE_COUNT_NOTE : entry?.refusalNotes?.[normalizeLabUnit(unit).toLowerCase()]?.note;
 }
 

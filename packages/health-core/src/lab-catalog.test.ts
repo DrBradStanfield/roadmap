@@ -1116,7 +1116,7 @@ describe('US-21 AC19/AC20 — review round: osmolality and reverse T3 spellings,
 // ---------------------------------------------------------------------------
 describe('US-21 AC21 — a per-test ceiling refuses a mislabelled prefix', () => {
   const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
-  const NOTE = 'Free testosterone above 10,000 pmol/L is not a measured value, so the printed unit is probably wrong (nmol/L vs pmol/L). Check the report, then type it in';
+  const NOTE = 'Free testosterone above 10,000 pmol/L is not a measured value, so the printed unit is probably wrong (nmol/L vs pmol/L). Check the report, then add it in pmol/L with + Add a blood test';
 
   it('US-21 AC21 — free T 312.6 nmol/L with range 163–473 nmol/L is refused, never rescaled', () => {
     const row = { value: 312.6, unit: 'nmol/L', referenceLow: 163, referenceHigh: 473 };
