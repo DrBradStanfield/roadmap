@@ -144,7 +144,7 @@ describe('the batch poll needs the token the upload was given', () => {
     pollBatch.mockResolvedValue({ status: 'processing', completed: 0, total: 1 } as never);
     const { batchId, pollToken } = await newBatch();
     for (let i = 0; i < 5; i++) await action({ request: poll({ batchId, pollToken }) } as never);
-    expect(pollBatch).toHaveBeenCalledTimes(5);
+    expect(pollBatch).toHaveBeenCalledTimes(1);
     expect(createBatch).toHaveBeenCalledTimes(1);
   });
 });

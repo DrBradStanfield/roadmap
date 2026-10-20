@@ -27,14 +27,15 @@ vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
 const MIN = 60_000;
 const URL = 'https://health-tool-app.fly.dev/api/lab-import-v2';
 let action: typeof import('./api.lab-import-v2').action;
-let loadedAt = 0;
-/** Time until the next sweep: they run every 10 minutes from module load. */
-const toNextSweep = () => 10 * MIN - ((Date.now() - loadedAt) % (10 * MIN));
+let sweepStartedAt = 0;
+let sweepTimerCount: () => number;
+/** Time until the next sweep: every 10 minutes from the first successful upload. */
+const toNextSweep = () => 10 * MIN - ((Date.now() - sweepStartedAt) % (10 * MIN));
 
 beforeAll(async () => {
-  // The sweep is armed when the module loads: fake the clock first.
   vi.useFakeTimers({ toFake: ['setInterval', 'Date'] });
-  loadedAt = Date.now();
+  const intervals = vi.spyOn(globalThis, 'setInterval');
+  sweepTimerCount = () => intervals.mock.calls.filter(([, delay]) => delay === 10 * MIN).length;
   ({ action } = await import('./api.lab-import-v2'));
 });
 
@@ -64,6 +65,23 @@ const poll = (batchId: string, pollToken: string) =>
   action({ request: new Request(URL, { method: 'POST', body: JSON.stringify({ batchId, pollToken }) }) } as never);
 
 describe('US-12 AC18: the sweep deletes each batch at Anthropic', () => {
+  it('arms once on the first upload after an idle start, and cleans uploads never polled', async () => {
+    await vi.advanceTimersByTimeAsync(7 * MIN + 1234);
+    expect(sweepTimerCount()).toBe(0);
+    sweepStartedAt = Date.now();
+    await uploaded('batch_idle_first');
+    expect(sweepTimerCount()).toBe(1);
+    await vi.advanceTimersByTimeAsync(3 * MIN);
+    await uploaded('batch_idle_second');
+    expect(sweepTimerCount()).toBe(1);
+    await vi.advanceTimersByTimeAsync(57 * MIN);
+    expect(deleteBatch).not.toHaveBeenCalled(); // exactly one hour is not older than an hour
+    await vi.advanceTimersByTimeAsync(10 * MIN);
+    expect(deleteBatch.mock.calls).toEqual([['batch_idle_first'], ['batch_idle_second']]);
+    expect(pollBatch).not.toHaveBeenCalled();
+    expect(sweepTimerCount()).toBe(1);
+  });
+
   it('a sweep right after the first answer keeps a served batch; the first sweep 10 minutes on deletes it', async () => {
     const token = await uploaded('batch_served');
     await vi.advanceTimersByTimeAsync(toNextSweep() - 1);

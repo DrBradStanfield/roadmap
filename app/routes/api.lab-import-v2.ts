@@ -59,7 +59,14 @@ function refundQuota(ip: string, count: number): void {
 // required on every poll; without it, or with the wrong one, the batch does not
 // exist (404, the same answer as an id nobody created).
 const MAX_ACTIVE_BATCHES = 200;
-const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; days: DayFlags; refusedRows?: true; servedAt?: number }>();
+const PROCESSING_POLL_MS = 2000;
+type BatchPollResult = Awaited<ReturnType<typeof pollBatch>>;
+const activeBatches = new Map<string, {
+  totalFiles: number; createdAt: number; pollToken: string; days: DayFlags;
+  refusedRows?: true; servedAt?: number;
+  pollResult?: { status: 'processing'; completed: number; total: number };
+  pollInFlight?: Promise<BatchPollResult>; pollAfter?: number;
+}>();
 // Batches Anthropic still holds for us, id → createdAt: each is deleted there
 // once ended (US-12 AC18). The sweep takes a batch whose results were served
 // at least 10 minutes ago, so a re-poll after a lost answer has that long, and
@@ -69,27 +76,32 @@ const activeBatches = new Map<string, { totalFiles: number; createdAt: number; p
 // memory, like activeBatches: a restart forgets them, and Anthropic's 29 days apply.
 const undeletedBatches = new Map<string, number>();
 let sweeping = false;
-const sweep = setInterval(async () => {
-  if (sweeping) return; // a slow sweep (up to 200 deletes) never overlaps the next
-  sweeping = true;
-  try {
-    const now = Date.now();
-    for (const [id, b] of activeBatches) {
-      // A served batch keeps its 10 minutes, however old; an unserved one gets an hour.
-      if (b.servedAt ? b.servedAt <= now - 10 * 60_000 : b.createdAt < now - 60 * 60_000) {
-        activeBatches.delete(id);
-        undeletedBatches.set(id, b.createdAt);
+let sweep: ReturnType<typeof setInterval> | undefined;
+/** Arm once after a batch exists, only from the server action (US-12 AC18). */
+function ensureBatchSweep(): void {
+  if (sweep) return;
+  sweep = setInterval(async () => {
+    if (sweeping) return; // a slow sweep (up to 200 deletes) never overlaps the next
+    sweeping = true;
+    try {
+      const now = Date.now();
+      for (const [id, b] of activeBatches) {
+        // A served batch keeps its 10 minutes, however old; an unserved one gets an hour.
+        if (b.servedAt ? b.servedAt <= now - 10 * 60_000 : b.createdAt < now - 60 * 60_000) {
+          activeBatches.delete(id);
+          undeletedBatches.set(id, b.createdAt);
+        }
       }
+      for (const [id, createdAt] of undeletedBatches) {
+        if (await deleteBatch(id) || createdAt < now - 25 * 60 * 60_000) undeletedBatches.delete(id);
+      }
+    } finally {
+      sweeping = false;
     }
-    for (const [id, createdAt] of undeletedBatches) {
-      if (await deleteBatch(id) || createdAt < now - 25 * 60 * 60_000) undeletedBatches.delete(id);
-    }
-  } finally {
-    sweeping = false;
-  }
-}, 10 * 60_000);
-// Never hold the process open just to sweep, as rate-limiter.ts does.
-sweep.unref?.();
+  }, 10 * 60_000);
+  // Never hold the process open just to sweep, as rate-limiter.ts does.
+  sweep.unref?.();
+}
 
 /** The flags a widget sends to say which own days it reads. */
 type DayFlags = { ownDates?: true; undatedPrev?: true };
@@ -151,7 +163,20 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
     return Response.json({ error: 'Batch not found' }, { status: 404 });
   }
   try {
-    const result = await pollBatch(batchId);
+    // Retain only value-free progress between polls. Terminal payloads serve
+    // current waiters only; check the capability before sharing either state.
+    const cached = batch.pollResult;
+    const result: BatchPollResult = cached && Date.now() < (batch.pollAfter ?? 0)
+      ? cached
+      : await (batch.pollInFlight ??= pollBatch(batchId)
+        .then(result => {
+          batch.pollResult = result.status === 'processing'
+            ? { status: 'processing', completed: result.completed, total: result.total }
+            : undefined;
+          batch.pollAfter = result.status === 'processing' ? Date.now() + PROCESSING_POLL_MS : undefined;
+          return result;
+        })
+        .finally(() => { batch.pollInFlight = undefined; }));
     // Served: a sweep at least 10 minutes on deletes it at Anthropic (US-12 AC18). Each stopped
     // file is reported once, when the batch ends: it can be polled again (US-15 AC34).
     if (result.status === 'ended' && !batch.servedAt) {
@@ -219,6 +244,7 @@ export async function action({ request }: ActionFunctionArgs) {
       });
       const pollToken = newPollToken();
       activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken, days: { ownDates, undatedPrev }, refusedRows });
+      ensureBatchSweep();
       return Response.json({ success: true, batchId, pollToken, totalFiles: files.length });
     }
 
