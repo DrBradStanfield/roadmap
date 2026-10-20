@@ -203,7 +203,23 @@ const mdLink = repoPublic
   ? `<p class="rmg-md">This guide is also published as plain Markdown for AI agents: <a href="https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/${mdFile}">${mdFile}</a>. The Markdown is the master; this page is built from it.</p>`
   : `<p class="rmg-md">This page is built from ${mdFile}, which is not public while the project’s GitHub is not. The published guide is <a href="https://drstanfield.com/blogs/guides/${meta.slug}">drstanfield.com/blogs/guides/${meta.slug}</a>.</p>`;
 
-const html = `${style}\n<div class="rmguide">\n${rendered}\n${mdLink}\n</div>${script}\n`;
+// Structured data for AI and search crawlers, from front matter only. "<" is
+// escaped so no value can close the script tag. Dropped by --no-script, whose
+// hosts strip <script>.
+const org = { '@type': 'Organization', name: 'Dr Brad, Inc', url: 'https://drstanfield.com' };
+const jsonLd = noScript ? '' : `\n<script type="application/ld+json">${JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: meta.title,
+  ...(meta.description && { description: meta.description }),
+  ...(meta.updated && { dateModified: meta.updated }),
+  author: org,
+  publisher: org,
+  mainEntityOfPage: `https://drstanfield.com/blogs/guides/${meta.slug}`,
+  about: { '@type': 'SoftwareApplication', name: 'Health by Dr Brad', url: 'https://drstanfield.com/pages/roadmap' },
+}).replace(/</g, '\\u003c')}</script>`;
+
+const html = `${style}\n<div class="rmguide">\n${rendered}\n${mdLink}\n</div>${script}${jsonLd}\n`;
 
 if (outPath) {
   mkdirSync(dirname(resolve(outPath)), { recursive: true });
