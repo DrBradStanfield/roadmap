@@ -291,4 +291,30 @@ describe('US-15 AC6a — the reply came back in a new conversation', () => {
     expect(state.messages.map(m => m.content)).toEqual(['What about ApoB?', 'ApoB counts.']);
     expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'c2' });
   });
+
+  it('US-15 AC6a: opening a thread the server no longer recognizes drops it from the list', async () => {
+    const { loadConversation } = await import('../lib/chat-api');
+    vi.mocked(loadConversation).mockResolvedValueOnce(null);
+    const gone = { id: 'c1', title: 'Old thread', updatedAt: 'x', createdAt: 'x' };
+    const kept = { id: 'c3', title: 'Other', updatedAt: 'x', createdAt: 'x' };
+    const hook = renderHook(() => useChatState({
+      isLoggedIn: false,
+      prefetchedData: { conversations: [gone, kept], messages: [], activeConversationId: null },
+    }));
+    await act(async () => { await hook.result.current.actions.selectConversation('c1'); });
+    const { state } = hook.result.current;
+    expect(state.conversations.map(c => c.id)).toEqual(['c3']);
+    expect(state.activeConversationId).toBeNull();
+    expect(state.messages).toEqual([]);
+  });
+
+  it('US-15 AC6a: a guest\'s latest thread that 404s on first load is dropped, not left open', async () => {
+    const { listConversations, loadConversation } = await import('../lib/chat-api');
+    vi.mocked(listConversations).mockResolvedValueOnce({ conversations: [{ id: 'c1', title: 'Old', updatedAt: 'x', createdAt: 'x' }] });
+    vi.mocked(loadConversation).mockResolvedValueOnce(null);
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    await act(async () => { await hook.result.current.actions.loadConversationsIfNeeded(); });
+    expect(hook.result.current.state.conversations).toEqual([]);
+    expect(hook.result.current.state.activeConversationId).toBeNull();
+  });
 });

@@ -228,7 +228,9 @@ describe('stored parent ownership', () => {
     principal = guest;
     const res = await loader({ request: new Request(`https://example.invalid/api/chat?conversationId=${foreign}`), params: {} } as Parameters<typeof loader>[0]);
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ success: false, error: 'Conversation not found' });
+    const body = await res.json();
+    expect(body).toEqual({ success: false, error: 'Conversation not found' });
+    expect(body).not.toHaveProperty('sessionToken');
     expect(mocks.guestSession).not.toHaveBeenCalled();
     expect(queries).toEqual([]);
   });

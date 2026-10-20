@@ -192,8 +192,7 @@ function chatQueryParts(): string[] {
  *  chatQueryParts(). localFirst tells the server to use the client-supplied
  *  context even if the visitor happens to be a logged-in Shopify customer
  *  (local-first builds have no DB record to read). Brad still pays. */
-function chatBodyParts(): Record<string, unknown> {
-  const sessionToken = getGuestSessionToken();
+function chatBodyParts(sessionToken = getGuestSessionToken()): Record<string, unknown> {
   return {
     ...(sessionToken ? { sessionToken } : {}),
     ...(LOCAL_FIRST ? { localFirst: true } : {}),
@@ -247,7 +246,18 @@ export async function listConversations(): Promise<ChatListResult | null> {
   }
 }
 
-export async function loadConversation(conversationId: string): Promise<ChatMessage[]> {
+/**
+ * A guest's 404 for a thread it no longer owns (US-15 AC6a): its IP changed,
+ * so it is a new guest. Keep the session the server handed back.
+ */
+function guestThreadGone(status: number, data: any): boolean {
+  if (status !== 404 || data?.error !== 'Conversation not found' || data.isGuest !== true) return false;
+  if (data.sessionToken) setGuestSessionToken(data.sessionToken);
+  return true;
+}
+
+/** null: the server no longer recognizes this guest thread (US-15 AC6a). */
+export async function loadConversation(conversationId: string): Promise<ChatMessage[] | null> {
   const store = await cloudHistory();
   if (store) return store.getMessages(conversationId);
   try {
@@ -256,6 +266,7 @@ export async function loadConversation(conversationId: string): Promise<ChatMess
       `${PROXY_PATH}/api/chat?${params}`,
     );
     if (!response.ok) {
+      if (guestThreadGone(response.status, await parseJsonResponse<any>(response).catch(() => null))) return null;
       Sentry.captureMessage('Chat loadConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },
@@ -345,6 +356,7 @@ export async function sendMessage(
   onDelta: (delta: ChatDelta) => void = () => {},
   // Only the widget's own chat applies form edits, so only it asks for the tools (US-15 AC19).
   canApplyEdits = false,
+  sessionToken = getGuestSessionToken(),
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
   if (LOCAL_FIRST && conversationId) {
     const [prevUser, prevAssistant] = history.slice(-2);
@@ -364,7 +376,7 @@ export async function sendMessage(
           conversationId: conversationId || undefined,
           ...(guestInputs ? { guestInputs } : {}),
           ...(LOCAL_FIRST ? { history: history.slice(-MAX_HISTORY_MESSAGES).map(({ role, content }) => ({ role, content })) } : {}),
-          ...chatBodyParts(),
+          ...chatBodyParts(sessionToken),
           stream: true,
           // US-16 AC2: this build applies a profile edit, so the server may propose one.
           ...(canApplyEdits ? { canApplyEdits: true, canApplyProfileEdits: true } : {}),
@@ -387,10 +399,11 @@ export async function sendMessage(
 
     // A guest is its token plus its IP, so a new IP is a new guest who does
     // not own the stored thread (US-15 AC6a). The server refused before any
-    // chat write or model call and handed back the session saved above, so
-    // the message goes once into a new conversation on it. A customer's 404 is shown.
-    if (response.status === 404 && conversationId && data?.error === 'Conversation not found' && data.isGuest === true) {
-      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits);
+    // chat write or model call and handed back a session, so the message goes
+    // once into a new conversation on it, passed directly in case storage
+    // refused the save above. A customer's 404 is shown.
+    if (conversationId && guestThreadGone(response.status, data)) {
+      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, data.sessionToken ?? sessionToken);
     }
 
     if (response.status === 429) {
@@ -481,6 +494,7 @@ async function deleteServerConversation(conversationId: string): Promise<boolean
       }),
     });
     if (!response.ok) {
+      if (guestThreadGone(response.status, await parseJsonResponse<any>(response).catch(() => null))) return true;
       Sentry.captureMessage('Chat deleteConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },

@@ -15,7 +15,7 @@ vi.mock('./chat-history-access', () => ({
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: false }));
 
 import * as Sentry from '@sentry/react';
-import { listConversations, sendMessage } from './chat-api';
+import { deleteConversation, listConversations, loadConversation, sendMessage } from './chat-api';
 
 // US-15 AC3: a transient upstream failure — a 5xx whose body is not our
 // handler's JSON (the Shopify proxy / Fly edge answered, not our route) — is
@@ -213,5 +213,43 @@ describe('chat-api: a thread the server no longer recognizes (US-15 AC6a)', () =
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result).toBeNull();
     expect(error?.error).toBe('Conversation not found');
+  });
+
+  it('US-15 AC6a: the resend carries the handed-back token even when storage refuses the write', async () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => 'old-tok',
+      setItem: () => { throw new Error('QuotaExceededError'); },
+      removeItem: () => {},
+    });
+    fetchMock
+      .mockResolvedValueOnce(guestNotFound('new-tok'))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true, conversationId: 'c2', messageId: 'm2', content: 'hi', sessionToken: 'new-tok', isGuest: true }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      }));
+
+    const { result } = await sendMessage('my message', 'c1', null);
+
+    expect(result?.conversationId).toBe('c2');
+    expect(bodyOf(1)).toMatchObject({ message: 'my message', sessionToken: 'new-tok' });
+  });
+
+  it('US-15 AC6a: loading a guest thread that 404s keeps the handed-back session and reports the thread gone', async () => {
+    fetchMock.mockResolvedValueOnce(guestNotFound('new-tok'));
+
+    expect(await loadConversation('c1')).toBeNull();
+    expect(localStorage.getItem('health_roadmap_guest_session')).toBe('new-tok');
+  });
+
+  it('US-15 AC6a: a customer\'s 404 on load stays an empty thread', async () => {
+    fetchMock.mockResolvedValueOnce(jsonError(404, 'Conversation not found'));
+
+    expect(await loadConversation('c1')).toEqual([]);
+  });
+
+  it('US-15 AC6a: deleting a guest thread that 404s keeps the handed-back session and counts as gone', async () => {
+    fetchMock.mockResolvedValueOnce(guestNotFound('new-tok'));
+
+    expect(await deleteConversation('c1')).toBe(true);
+    expect(localStorage.getItem('health_roadmap_guest_session')).toBe('new-tok');
   });
 });
