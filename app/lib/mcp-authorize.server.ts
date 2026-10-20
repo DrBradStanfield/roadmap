@@ -46,12 +46,16 @@ export interface AuthorizeRequest {
  * means this server — we are both. Anything else is refused, so this widens
  * the spelling and never the audience.
  */
-function isThisResource(resource: string): boolean {
+/** null when `resource` names this server; otherwise which way it missed (US-32 AC48). */
+function resourceMiss(resource: string): McpOAuthDetail<'resource'> | null {
   const bare = (url: string) => url.replace(/\/$/, '');
   const named = bare(resource);
   // Both sides: MCP_ISSUER is a secret we do not control the spelling of, and a
   // trailing slash on it would otherwise make the server refuse its own issuer.
-  return named === bare(resourceUrl()) || named === bare(issuer());
+  const ours = [resourceUrl(), issuer()];
+  if (ours.some((u) => named === bare(u))) return null;
+  const host = URL.canParse(resource) ? new URL(resource).host : null;
+  return ours.some((u) => new URL(u).host === host) ? 'other-path' : 'other-host';
 }
 
 function clientHost(clientId: string): string {
@@ -112,10 +116,8 @@ export function checkAuthorize(params: URLSearchParams, client: McpClient): Auth
   // client that serialises every parameter it knows sends the key with nothing
   // in it, and refusing that is refusing a connection over punctuation.
   const resource = params.get('resource');
-  if (resource && !isThisResource(resource)) {
-    const sameHost = URL.canParse(resource) && new URL(resource).host === new URL(resourceUrl()).host;
-    return fail('resource', true, sameHost ? 'other-path' : 'other-host');
-  }
+  const missed = resource ? resourceMiss(resource) : null;
+  if (missed) return fail('resource', true, missed);
   return {
     ok: true,
     request: {
