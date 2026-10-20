@@ -37,6 +37,7 @@ import {
   dayOf,
   diffInputsToMeasurements,
   earliestRowStamp,
+  stampInstant,
   fileProfileToApi,
   fileScreeningRows,
   latestActivePerMetric,
@@ -119,7 +120,7 @@ function notify(name: string): void {
  *  cannot orphan the first one's edits (US-09 AC13). */
 export function markSyncPending(since = new Date().toISOString()): void {
   const existing = syncPendingSince();
-  if (existing == null || since < existing) safeSetItem(PENDING_MIRROR_KEY, since);
+  if (existing == null || stampInstant(since) < stampInstant(existing)) safeSetItem(PENDING_MIRROR_KEY, since);
   notify(SYNC_PENDING_EVENT);
 }
 
@@ -343,8 +344,9 @@ export class RoadmapStore {
         // a fallback session runs on a file at epoch 0, so an erased cloud
         // would otherwise take the file wholesale and discard them (US-09
         // AC13). The on-device copy goes in as `local` — the argument the
-        // option speaks about, and the one it has always meant. Only an erase
-        // from before `erasedAt` needs it; one that carries it decides (AC20).
+        // option speaks about, and the one it has always meant. It speaks
+        // beside an erase's `erasedAt`, which alone would drop a medication or
+        // supplement typed here (AC20 rescues created rows only).
         const ctx: SyncContext = { deviceId, now: new Date().toISOString(), keepNewerThan: since };
         const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
         if (body != null) {
@@ -777,9 +779,12 @@ export class RoadmapStore {
     // WHEN, beside THAT: a copy that missed the erase keeps the rows it creates
     // from now on, and only those (US-09 AC20). Floored 1 ms past the last
     // write this eraser has seen, so a slow clock here cannot let through a
-    // row it already erased.
-    const seen = [ctx.now, stored?.updatedAt, this.file.meta.updatedAt].map((at) => Date.parse(at ?? ''));
-    const erasedAt = new Date(Math.max(...seen.filter((t) => !Number.isNaN(t))) + 1).toISOString();
+    // row it already erased. A clock more than a day past now is broken, not
+    // slow: it reads as now, so it cannot push the erase out over later rows.
+    const now = stampInstant(ctx.now);
+    const seen = [stored?.updatedAt, this.file.meta.updatedAt].map(stampInstant);
+    const floor = seen.filter((t) => t <= now + 86_400_000); // NaN fails too
+    const erasedAt = new Date(Math.max(now, ...floor) + 1).toISOString();
     this.file = migrateFile(null, ctx);
     this.file.meta.eraseEpoch = eraseEpoch;
     this.file.meta.erasedAt = erasedAt;

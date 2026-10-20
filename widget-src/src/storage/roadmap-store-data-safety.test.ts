@@ -247,6 +247,27 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
     }
   });
 
+  // Review fix (N2): a broken clock, not a slow one. A stored updatedAt years
+  // ahead must not push erasedAt out past every row written after the erase.
+  it('US-09 AC20: a stored updatedAt more than a day past now does not move erasedAt', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2099-01-01T00:00:00.000Z')); // device B, clock broken
+      const cloud = new MemoryCloud();
+      const deviceB = await RoadmapStore.create(new MemoryAdapter(cloud));
+      deviceB.addMeasurement('weight', 95, '2026-06-01');
+      await deviceB.flush();
+      expect(readCloudFile(cloud).meta.updatedAt.startsWith('2099')).toBe(true);
+
+      vi.setSystemTime(new Date('2026-06-01T10:00:00.000Z')); // device A, right clock
+      const deviceA = await RoadmapStore.create(new MemoryAdapter(cloud));
+      await deviceA.deleteUserData();
+      expect(readCloudFile(cloud).meta.erasedAt).toBe('2026-06-01T10:00:00.001Z');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('US-09 AC20: a stale device that writes AFTER another device erased keeps that write, and only that', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {

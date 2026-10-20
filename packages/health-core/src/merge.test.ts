@@ -1180,9 +1180,62 @@ describe('mergeFiles — erasedAt keeps rows written after the erase (US-09 AC20
     expect(mergeFiles(legacy, stale(), OPTS).meta.erasedAt).toBeUndefined();
   });
 
-  it('US-09 AC20: erasedAt outranks the fallback marker — rows typed before the erase go', () => {
+  // Review fix (N1): the marker speaks beside erasedAt, not under it. Every
+  // row the device stamped at or after it travels, even one before the erase
+  // (AC14's stated residual a); without the marker, erasedAt alone decides.
+  it('US-09 AC14 + AC20: with the marker, the device copy keeps the union of both windows', () => {
     const merged = mergeFiles(stale(), erased(), { ...OPTS, keepNewerThan: '2026-04-01T00:00:00Z' });
-    expect(merged.measurements.map((m) => m.id)).toEqual(['after']);
+    expect(merged.measurements.map((m) => m.id).sort()).toEqual(['after', 'before']);
+    // A marker after both rows admits neither; erasedAt still keeps the post-erase one.
+    const late = mergeFiles(stale(), erased(), { ...OPTS, keepNewerThan: '2026-06-01T00:00:00Z' });
+    expect(late.measurements.map((m) => m.id)).toEqual(['after']);
+    // The marker speaks for the device copy only: a losing remote keeps erasedAt's rows alone.
+    const remote = mergeFiles(erased(), stale(), { ...OPTS, keepNewerThan: '2026-04-01T00:00:00Z' });
+    expect(remote.measurements.map((m) => m.id)).toEqual(['after']);
+  });
+
+  it('US-09 AC14 + AC20: a failed lift after an erase keeps the medication, supplement and weight typed since, with their histories', () => {
+    const MARKER = '2026-05-11T08:00:00Z'; // after ERASED_AT: the guest session started then
+    const device = emptyFile();
+    device.measurements = [measurement({ id: 'w', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: AFTER })];
+    device.medications = [{ id: 'med_statin', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', updatedAt: AFTER, lamport: 1 }];
+    device.medicationHistory = [{ ...device.medications[0], id: 'mh1' }];
+    const omega = { id: 's1', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: null, doseUnit: null, status: 'active' as const, startedAt: '2026-05-11', updatedAt: AFTER, lamport: 1 };
+    device.supplements = [omega];
+    device.supplementHistory = [{ ...omega, id: 'sh1', changeType: 'started' }];
+    const merged = mergeFiles(device, erased(), { ...OPTS, keepNewerThan: MARKER });
+    expect(merged.measurements.map((m) => m.id)).toEqual(['w']);
+    expect(merged.medications.map((m) => m.id)).toEqual(['med_statin']);
+    expect(merged.medicationHistory.map((m) => m.id)).toEqual(['mh1']);
+    expect(merged.supplements.map((m) => m.id)).toEqual(['s1']);
+    expect(merged.supplementHistory.map((m) => m.id)).toEqual(['sh1']);
+    expect(merged.meta).toMatchObject({ eraseEpoch: 1, erasedAt: ERASED_AT });
+
+    // Without the marker, a pre-erase supplement re-stamped on a stale device stays gone.
+    const restamped = { ...omega, startedAt: '2026-05-01', status: 'stopped' as const };
+    const staleDevice = emptyFile();
+    staleDevice.supplements = [restamped];
+    expect(mergeFiles(staleDevice, erased(), OPTS).supplements).toEqual([]);
+  });
+
+  // Review fix (N3): a stamp with no zone designator is UTC, as a date-only
+  // stamp already is, never this machine's local time.
+  it('US-09 AC20: a stamp with no zone reads as UTC', () => {
+    const device = emptyFile();
+    device.measurements = [
+      measurement({ id: 'early', metricType: 'weight', value: 90, recordedAt: '2026-05-09', createdAt: '2026-05-09T23:59:59' }),
+      measurement({ id: 'late', metricType: 'weight', value: 80, recordedAt: '2026-05-10', createdAt: '2026-05-10T00:00:00.000' }),
+    ];
+    const tz = process.env.TZ;
+    try {
+      for (const zone of ['Pacific/Auckland', 'America/New_York']) {
+        process.env.TZ = zone; // Node re-reads it on the next Date call
+        expect(mergeFiles(device, erased(), OPTS).measurements.map((m) => m.id)).toEqual(['late']);
+      }
+    } finally {
+      if (tz === undefined) delete process.env.TZ;
+      else process.env.TZ = tz;
+    }
   });
 
   it('US-09 AC20: equal epochs keep the later erasedAt, and the one present when only one has it', () => {
