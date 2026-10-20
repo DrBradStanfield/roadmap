@@ -2946,6 +2946,8 @@ describe('Evidence attachment', () => {
     expect(base.description).toContain('WHO\'s 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements');
     expect(base.description).toContain('without a diagnosed deficiency');
     expect(base.description).toContain('without reassessing supplements');
+    expect(base.description).toContain('a strong recommendation based on moderate-certainty evidence');
+    expect(base.description).toContain('to reduce the risk of cognitive decline and dementia');
     // Supplement cards show only description + references; the reason feeds the chatbot.
     const baseReason = SUGGESTION_EVIDENCE['supplement-micronutrient-base'].reason;
     expect(baseReason).toContain('global cognition and episodic memory');
@@ -2961,7 +2963,7 @@ describe('Evidence attachment', () => {
 
     const omega3 = suggestions.find(s => s.id === 'supplement-omega3')!;
     expect(omega3.description).toContain('reasonable for everyone to consider up to 1 g a day of EPA and DHA combined');
-    expect(omega3.description).toContain('atrial fibrillation risk rises further above that');
+    expect(omega3.description).toContain('atrial fibrillation risk rises slightly at that dose and more above it');
     // Jernerén 2015 analysed VITACOG by omega-3 status; omega-3 was not randomised.
     expect(omega3.description).toContain('In one trial (VITACOG)');
     expect(omega3.description).not.toMatch(/Randomised trials also show/);
