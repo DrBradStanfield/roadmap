@@ -519,9 +519,21 @@ const ROW_STAMPS = {
 type StampedArray = keyof typeof ROW_STAMPS;
 
 /**
- * What the losing side of the epoch gate may bring to the winner: its rows
- * stamped at or after `since` (the winner's `erasedAt`, US-09 AC20), and
- * nothing else. The result is the winner's file plus those rows. The caller
+ * The arrays whose stamp is a true creation time, the only ones `erasedAt`
+ * rescues (US-09 AC20). The rest are stamped by `updatedAt`, which a stale
+ * copy bumps on a row that predates the erase (a removed supplement, a statin
+ * cascade), so their stamp is no proof the row was created after it.
+ */
+const CREATED_STAMPS: readonly StampedArray[] = ['measurements', 'labValues', 'documents'];
+
+/** An ISO stamp as an instant; NaN when it is not a string or does not parse,
+ *  and NaN compares false. */
+const instant = (iso: unknown): number => (typeof iso === 'string' ? Date.parse(iso) : NaN);
+
+/**
+ * What the losing side of the epoch gate may bring to the winner: its rows in
+ * `keys` stamped at or after `since` (the winner's `erasedAt`, US-09 AC20, or
+ * the fallback marker), and nothing else. The result is the winner's file plus those rows. The caller
  * then runs the ordinary equal-epoch merge, which puts them through the same
  * slot, key and union rules as any other row: no slot ends with two active
  * rows, no id lands twice, and the erase itself still stands.
@@ -537,9 +549,17 @@ type StampedArray = keyof typeof ROW_STAMPS;
  * Returns null when the loser wrote nothing since, so the gate returns the
  * winner untouched.
  */
-function rowsSince(loser: RoadmapFile, winner: RoadmapFile, since: string): RoadmapFile | null {
+function rowsSince(
+  loser: RoadmapFile,
+  winner: RoadmapFile,
+  since: string,
+  keys: readonly StampedArray[],
+): RoadmapFile | null {
   // `>=`, not `>`: a row can share the erase's (or the marker's) millisecond.
-  // Keeping one row too many is recoverable; dropping one is not.
+  // Keeping one row too many is recoverable; dropping one is not. Compared as
+  // instants, so an offset or a different precision cannot reorder them; a
+  // stamp that does not parse is dropped.
+  const from = instant(since);
   const kept: Record<string, unknown[]> = {};
   let wrote = false;
   // The file's clock must stay at or ahead of every row in it: `migrate.ts`
@@ -548,13 +568,17 @@ function rowsSince(loser: RoadmapFile, winner: RoadmapFile, since: string): Road
   let latest = winner.meta.updatedAt;
   for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
     const stamp = ROW_STAMPS[key] as (row: unknown) => string;
-    const rows = (loser[key] as unknown[]).filter((row) => stamp(row) >= since);
+    const rows = keys.includes(key)
+      ? (loser[key] as unknown[]).filter((row) => instant(stamp(row)) >= from)
+      : [];
     for (const row of rows) if (stamp(row) > latest) latest = stamp(row);
     if (rows.length > 0) wrote = true;
     kept[key] = rows;
   }
+  // The higher lamport rides along, so the re-merge's max + 1 is over BOTH copies.
+  const lamport = Math.max(loser.meta.lamport, winner.meta.lamport);
   return wrote
-    ? ({ ...winner, ...kept, meta: { ...winner.meta, updatedAt: latest } } as RoadmapFile)
+    ? ({ ...winner, ...kept, meta: { ...winner.meta, updatedAt: latest, lamport } } as RoadmapFile)
     : null;
 }
 
@@ -575,9 +599,13 @@ export function earliestRowStamp(file: RoadmapFile): string | null {
   return earliest;
 }
 
-/** The later of two erase times, as a meta fragment; empty when neither has one. */
+/** The later of two erase times, as instants, as a meta fragment; empty when
+ *  neither has one. A tie between two spellings of one instant takes the
+ *  larger string, so the merge stays symmetric. */
 function laterErase(a: string | undefined, b: string | undefined): { erasedAt?: string } {
-  const at = a === undefined || (b !== undefined && b > a) ? b : a;
+  const [ta, tb] = [a, b].map((s) => (Number.isNaN(instant(s)) ? -Infinity : instant(s)));
+  const bLater = a === undefined || (b !== undefined && (tb > ta || (tb === ta && b > a)));
+  const at = bLater ? b : a;
   return at === undefined ? {} : { erasedAt: at };
 }
 
@@ -593,7 +621,7 @@ export function mergeFiles(
   // "Delete All My Data" gate: a higher eraseEpoch wins. The union semantics
   // below deliberately never lose data — which is exactly wrong for deletion:
   // without this gate, any other copy would resurrect the erased records on
-  // its next sync. The losing side never saw the erase, so only its rows
+  // its next sync. The losing side never saw the erase, so only the rows it
   // created at or after the winner's `erasedAt` survive (US-09 AC20).
   const localEpoch = local.meta.eraseEpoch ?? 0;
   const remoteEpoch = remote.meta.eraseEpoch ?? 0;
@@ -609,10 +637,17 @@ export function mergeFiles(
     const [winner, loser] = localWins ? [local, remote] : [remote, local];
     // Re-merge the loser's post-erase rows — on the winner's file, at the
     // winner's epoch — through the ordinary path below, which for those two
-    // inputs is an equal-epoch merge. A winner erased before `erasedAt`
-    // existed keeps none, unless the device's fallback marker speaks for it.
-    const since = winner.meta.erasedAt ?? (localWins ? undefined : opts.keepNewerThan);
-    const kept = since === undefined ? null : rowsSince(loser, winner, since);
+    // inputs is an equal-epoch merge. `erasedAt` rescues created rows only; a
+    // winner erased before it existed keeps none, unless the device's fallback
+    // marker speaks for it, which keeps every stamped array, as it always has.
+    const erasedAt = winner.meta.erasedAt;
+    const marker = localWins ? undefined : opts.keepNewerThan;
+    const kept =
+      erasedAt !== undefined
+        ? rowsSince(loser, winner, erasedAt, CREATED_STAMPS)
+        : marker !== undefined
+          ? rowsSince(loser, winner, marker, Object.keys(ROW_STAMPS) as StampedArray[])
+          : null;
     if (kept) {
       // `now: updatedAt` carries the max over BOTH metas into the re-merge —
       // the pruned copy wears the winner's meta, so the loser's own clock

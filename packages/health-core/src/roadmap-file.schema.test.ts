@@ -290,7 +290,7 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
     erased.meta.eraseEpoch = 1;
     erased.meta.erasedAt = '2026-09-01T10:00:00Z';
     const file = migrateFile(JSON.parse(JSON.stringify(mergeFiles(representativeFile(), erased, OPTS))), OPTS);
-    expect(file.meta).toMatchObject({ eraseEpoch: 1, erasedAt: '2026-09-01T10:00:00Z' });
+    expect(file.meta).toMatchObject({ eraseEpoch: 1, erasedAt: '2026-09-01T10:00:00.000Z' }); // migrate writes UTC
     expect(check(file).errors).toBe('No errors');
     expect(check({ ...file, meta: { ...file.meta, erasedAt: 5 } }).ok).toBe(false);
   });

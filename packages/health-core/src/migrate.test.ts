@@ -104,10 +104,12 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
   // US-09 AC20: erasedAt round-trips; one that is not a timestamp is dropped,
   // which reads as an erase from before erasedAt existed — the gate then
   // drops every losing row, the side that never resurrects erased data.
-  it('US-09 AC20: keeps a well-formed meta.erasedAt and drops a malformed one', () => {
-    const at = '2026-05-10T00:00:00Z';
-    expect(migrateFile(rawFile({ meta: { ...META, eraseEpoch: 1, erasedAt: at } }), OPTS).meta.erasedAt).toBe(at);
-    for (const bad of [5, null, '', 'yesterday', {}]) {
+  it('US-09 AC20: keeps a well-formed meta.erasedAt, in UTC, and drops a malformed one', () => {
+    const erasedAt = (at: unknown) => migrateFile(rawFile({ meta: { ...META, eraseEpoch: 1, erasedAt: at } }), OPTS).meta.erasedAt;
+    expect(erasedAt('2026-05-10T00:00:00Z')).toBe('2026-05-10T00:00:00.000Z');
+    expect(erasedAt('2026-05-10T13:00+13:00')).toBe('2026-05-10T00:00:00.000Z');
+    // Strict (Codex R2): a prefix, an impossible date, trailing junk, no zone.
+    for (const bad of [5, null, '', 'yesterday', {}, '2026-05-10T', '2026-13-40T00:00:00Z', '2026-05-10T12:00:00Zjunk', '2026-05-10T12:00:00']) {
       const meta = migrateFile(rawFile({ meta: { ...META, eraseEpoch: 1, erasedAt: bad } }), OPTS).meta;
       expect('erasedAt' in meta, String(bad)).toBe(false);
     }

@@ -759,8 +759,8 @@ export class RoadmapStore {
     // still on the debounce is one the erase throws away: saving it during
     // the read would only send a pre-erase copy up ahead of the erase.
     this.cancelDebounce();
-    const stored = await this.sync.load().then((file) => file.meta.eraseEpoch ?? 0, () => 0);
-    const eraseEpoch = Math.max(stored, this.file.meta.eraseEpoch ?? 0) + 1;
+    const stored = await this.sync.load().then((file) => file.meta, () => null);
+    const eraseEpoch = Math.max(stored?.eraseEpoch ?? 0, this.file.meta.eraseEpoch ?? 0) + 1;
     // An erase must not silently re-consent the user. Under US-17's default-on
     // model the empty file reads as "never decided", so the next app load would
     // enrol them again — undoing an explicit opt-out (AC4), and for an ENROLLED
@@ -768,16 +768,21 @@ export class RoadmapStore {
     // token left here to cancel it. So anyone who HAD an opt-in, active or
     // cancelled, comes out of the erase with reminders off; the manual toggle
     // still re-enrols, because that is the user asking. A higher eraseEpoch
-    // wins the merge WHOLESALE, so the record on their other devices can't
-    // save them either. Carry the decision, never the identity: no token, no
-    // email address.
+    // wins the merge, and a losing copy keeps only rows it created after the
+    // erase (US-09 AC20), never its opt-in, so the record on their other
+    // devices can't save them either. Carry the decision, never the identity:
+    // no token, no email address.
     const priorProvider = this.file.reminderOptIn?.provider ?? null;
     const ctx = this.ctx();
+    // WHEN, beside THAT: a copy that missed the erase keeps the rows it creates
+    // from now on, and only those (US-09 AC20). Floored 1 ms past the last
+    // write this eraser has seen, so a slow clock here cannot let through a
+    // row it already erased.
+    const seen = [ctx.now, stored?.updatedAt, this.file.meta.updatedAt].map((at) => Date.parse(at ?? ''));
+    const erasedAt = new Date(Math.max(...seen.filter((t) => !Number.isNaN(t))) + 1).toISOString();
     this.file = migrateFile(null, ctx);
-    // WHEN, beside THAT: a copy that missed the erase keeps the rows it writes
-    // from now on, and only those (US-09 AC20).
     this.file.meta.eraseEpoch = eraseEpoch;
-    this.file.meta.erasedAt = ctx.now;
+    this.file.meta.erasedAt = erasedAt;
     if (priorProvider) {
       this.file.reminderOptIn = {
         status: 'cancelled', token: '', email: '', provider: priorProvider,

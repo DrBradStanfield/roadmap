@@ -87,7 +87,7 @@
         "lamport": { "type": "number", "description": "File-level logical clock, monotonic per device." },
         "eraseEpoch": {
           "type": "number",
-          "description": "\"Delete All My Data\" counter. A file with a higher epoch wins a merge; the other copy keeps only its rows created at or after the winner's `erasedAt`. Absent reads as 0."
+          "description": "\"Delete All My Data\" counter. A file with a higher epoch wins a merge; the other copy keeps only the measurements, lab values and documents it created at or after the winner's `erasedAt`. Absent reads as 0."
         },
         "erasedAt": {
           "type": "string",

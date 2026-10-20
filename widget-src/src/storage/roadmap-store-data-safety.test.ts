@@ -205,15 +205,43 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
     expect(deviceB.loadAllHistory()).toEqual([]);
   });
 
-  it('US-09 AC20: stamps meta.erasedAt with the moment of the erase', async () => {
+  it('US-09 AC20: stamps meta.erasedAt 1 ms past the moment of the erase', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
+      vi.setSystemTime(new Date('2026-06-01T09:00:00.000Z'));
       const cloud = new MemoryCloud();
       const store = await RoadmapStore.create(new MemoryAdapter(cloud));
       vi.setSystemTime(new Date('2026-06-01T10:00:00.000Z'));
       await store.deleteUserData();
-      expect(readCloudFile(cloud).meta).toMatchObject({ eraseEpoch: 1, erasedAt: '2026-06-01T10:00:00.000Z' });
-      expect((store as unknown as { file: RoadmapFile }).file.meta.erasedAt).toBe('2026-06-01T10:00:00.000Z');
+      expect(readCloudFile(cloud).meta).toMatchObject({ eraseEpoch: 1, erasedAt: '2026-06-01T10:00:00.001Z' });
+      expect((store as unknown as { file: RoadmapFile }).file.meta.erasedAt).toBe('2026-06-01T10:00:00.001Z');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Review fix (adversary R4): the eraser's clock runs behind the device that
+  // wrote the row it erased. erasedAt is floored past the last write it read,
+  // so that row cannot come back when the stale device saves again.
+  it('US-09 AC20: a slow eraser clock still drops a row the eraser had already seen', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2026-06-01T10:00:00.000Z')); // device B, clock ahead
+      const cloud = new MemoryCloud();
+      const deviceB = await RoadmapStore.create(new MemoryAdapter(cloud));
+      deviceB.addMeasurement('weight', 95, '2026-06-01');
+      await deviceB.flush();
+
+      vi.setSystemTime(new Date('2026-06-01T09:00:00.000Z')); // device A, clock an hour behind
+      const deviceA = await RoadmapStore.create(new MemoryAdapter(cloud));
+      expect(deviceA.loadAllHistory().map((m) => m.value)).toEqual([95]); // A has seen the row
+      await deviceA.deleteUserData();
+      expect(Date.parse(readCloudFile(cloud).meta.erasedAt!)).toBeGreaterThan(Date.parse('2026-06-01T10:00:00.000Z'));
+
+      vi.setSystemTime(new Date('2026-06-01T10:05:00.000Z')); // B, never reloaded, saves again
+      deviceB.addMeasurement('weight', 80, '2026-06-02');
+      await deviceB.flush();
+      expect(readCloudFile(cloud).measurements.map((m) => m.value)).toEqual([80]);
     } finally {
       vi.useRealTimers();
     }

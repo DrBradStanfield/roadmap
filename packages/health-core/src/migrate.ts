@@ -87,6 +87,8 @@ function isoOr(value: unknown, fallback: string): string {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) ? value : fallback;
 }
 
+const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
+
 /** A counter from an untrusted writer: finite, non-negative, integral, bounded. */
 function counterOf(value: unknown, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return fallback;
@@ -208,9 +210,16 @@ export function migrateFile(
       ? base.meta.eraseEpoch
       : counterOf(rawMeta.eraseEpoch, 0),
   };
-  // Not a timestamp: dropped, so the erase reads as one from before erasedAt
-  // existed and the gate keeps none of the losing side (US-09 AC20).
-  if ('erasedAt' in meta && !isoOr(meta.erasedAt, '')) delete meta.erasedAt;
+  // A complete ISO date-time (date, time to at least the minute, Z or an
+  // offset) that parses, rewritten in UTC; anything else is dropped, so the
+  // erase reads as one from before erasedAt existed and the gate keeps none of
+  // the losing side (US-09 AC20).
+  if ('erasedAt' in meta) {
+    const at = meta.erasedAt;
+    const ok = typeof at === 'string' && ISO_DATE_TIME.test(at) && !Number.isNaN(Date.parse(at));
+    if (ok) meta.erasedAt = new Date(at).toISOString();
+    else delete meta.erasedAt;
+  }
   // The file's own last write — the anchor every row clock is clamped to. Every
   // file at rest is merge output, and merge stamps meta.updatedAt last, so no
   // legitimate row post-dates it.

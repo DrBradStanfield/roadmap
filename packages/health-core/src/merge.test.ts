@@ -1239,6 +1239,70 @@ describe('mergeFiles — erasedAt keeps rows written after the erase (US-09 AC20
     expect(merged.profile.heightCm).toBeUndefined();
     expect(merged.measurements.map((m) => m.id)).toEqual(['after']);
   });
+
+  // Review fixes (Codex R1, adversary R1): stamps compare as instants, not
+  // strings, so an offset or a different precision cannot reorder them.
+  it('US-09 AC20: a +13:00 row before the erase goes and a -04:00 row after it stays', () => {
+    const device = emptyFile();
+    device.measurements = [
+      // 2026-05-09T20:00Z, before the erase; as a string it sorts after it
+      measurement({ id: 'plus13', metricType: 'weight', value: 90, recordedAt: '2026-05-09', createdAt: '2026-05-10T09:00:00+13:00' }),
+      // 2026-05-10T01:00Z, after the erase; as a string it sorts before it
+      measurement({ id: 'minus4', metricType: 'weight', value: 80, recordedAt: '2026-05-10', createdAt: '2026-05-09T21:00:00-04:00' }),
+    ];
+    for (const merged of [mergeFiles(device, erased(), OPTS), mergeFiles(erased(), device, OPTS)]) {
+      expect(merged.measurements.map((m) => m.id)).toEqual(['minus4']);
+    }
+  });
+
+  it('US-09 AC20: fractional precision does not reorder a row against the erase', () => {
+    const cloud = erased();
+    cloud.meta.erasedAt = '2026-05-10T00:00:00.500Z';
+    const device = emptyFile();
+    device.measurements = [
+      measurement({ id: 'early', metricType: 'weight', value: 90, recordedAt: '2026-05-09', createdAt: '2026-05-10T00:00:00Z' }),
+      measurement({ id: 'same', metricType: 'weight', value: 80, recordedAt: '2026-05-10', createdAt: '2026-05-10T00:00:00.5000Z' }),
+      measurement({ id: 'late', metricType: 'weight', value: 81, recordedAt: '2026-05-11', createdAt: '2026-05-10T00:00:01Z' }),
+    ];
+    expect(mergeFiles(device, cloud, OPTS).measurements.map((m) => m.id).sort()).toEqual(['late', 'same']);
+  });
+
+  it('US-09 AC20: equal epochs keep the later erase as an instant, across offsets', () => {
+    const a = erased();
+    a.meta.erasedAt = '2026-05-12T10:00:00+13:00'; // 2026-05-11T21:00Z
+    const b = erased();
+    b.meta.erasedAt = '2026-05-11T22:00:00Z';
+    expect(mergeFiles(a, b, OPTS).meta.erasedAt).toBe('2026-05-11T22:00:00Z');
+    expect(mergeFiles(b, a, OPTS).meta.erasedAt).toBe('2026-05-11T22:00:00Z');
+  });
+
+  // Review fix (adversary R2): an updatedAt stamp is no proof of creation. A
+  // stale copy re-stamps a pre-erase row when it stops a supplement or a
+  // statin cascade rewrites a medication, so those arrays never cross.
+  it('US-09 AC20: a pre-erase supplement or medication re-stamped after the erase does not return', () => {
+    const device = stale();
+    const supplement = { id: 's1', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: null, doseUnit: null, status: 'stopped' as const, startedAt: '2026-05-01', updatedAt: AFTER, lamport: 2 };
+    device.supplements = [supplement];
+    device.supplementHistory = [{ ...supplement, id: 'sh1', changeType: 'stopped' }];
+    device.medications = [{ id: 'med_statin', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 40, doseUnit: 'mg', updatedAt: AFTER, lamport: 3 }];
+    for (const merged of [mergeFiles(device, erased(), OPTS), mergeFiles(erased(), device, OPTS)]) {
+      expect(merged.supplements).toEqual([]);
+      expect(merged.supplementHistory).toEqual([]);
+      expect(merged.medications).toEqual([]);
+      expect(merged.measurements.map((m) => m.id)).toEqual(['after']); // a post-erase measurement still survives
+    }
+  });
+
+  // Review fix (adversary R5): the kept-rows path keeps the header's clock
+  // contract, lamport = max(local, remote) + 1.
+  it('US-09 AC20: the kept-rows merge advances lamport past both copies', () => {
+    const device = stale();
+    device.meta.lamport = 50;
+    const cloud = erased();
+    cloud.meta.lamport = 3;
+    expect(mergeFiles(device, cloud, OPTS).meta.lamport).toBe(51);
+    expect(mergeFiles(cloud, device, OPTS).meta.lamport).toBe(51);
+  });
 });
 
 // US-21 phase 3 — migrate.ts writes the converted row under `<id>#si`, and it
