@@ -4837,7 +4837,9 @@
       "diastolicBp": 88
     },
     "expect_no_plan": true,
-    "expect_profile_edit": { "heightCm": 165 },
+    "expect_profile_edit": {
+      "heightCm": 165
+    },
     "must_match": [
       "\\bconfirm\\b(?![^.!?\\n]*\\?)[^.!?\\n]{0,60}\\b(save|banner|proposal|tool)\\b|\\b(save|saving|banner|proposal|proposed)\\b[^.!?\\n]{0,60}\\bconfirm\\b(?![^.!?\\n]*\\?)|\\b(press|tap|click|hit|select|choose)( the)? [*'\\\"]{0,2}save\\b|(?:^|[.!?\\n;:,]|\\b(?:and|so|but|then|or)\\b)(?:(?!\\b(?:\\w+n't|not|cannot|unable)\\b)[^.!?\\n;:,])*?\\b(enter|add|fill in|put|type|update|set)\\b(?:[^.!?\\n]){0,80}\\b(tool|form|profile|in (the|your) (health )?roadmap)\\b"
     ],
@@ -4871,7 +4873,10 @@
     },
     "expect_no_plan": true,
     "expect_roadmap_run": true,
-    "expect_profile_edit": { "sex": "male", "heightCm": 165 },
+    "expect_profile_edit": {
+      "sex": "male",
+      "heightCm": 165
+    },
     "must_match": [
       "\\bconfirm\\b(?![^.!?\\n]*\\?)[^.!?\\n]{0,60}\\b(save|banner|proposal|tool)\\b|\\b(save|saving|banner|proposal|proposed)\\b[^.!?\\n]{0,60}\\bconfirm\\b(?![^.!?\\n]*\\?)|\\b(press|tap|click|hit|select|choose)( the)? [*'\\\"]{0,2}save\\b|(?:^|[.!?\\n;:,]|\\b(?:and|so|but|then|or)\\b)(?:(?!\\b(?:\\w+n't|not|cannot|unable)\\b)[^.!?\\n;:,])*?\\b(enter|add|fill in|put|type|update|set)\\b(?:[^.!?\\n]){0,80}\\b(tool|form|profile|in (the|your) (health )?roadmap)\\b"
     ],
@@ -7695,13 +7700,13 @@
       "collagen-benefits-best-forms-dosing-and-side-effects",
       "collagen-peptides-can-fix-skin-wrinkles"
     ],
-    "notes": "US-50 AC5, pre-registered 2026-10-20 (review round 1, H3); not yet run (harness spend needs Brad's yes). Master vs older post: once the collagen master carries reviewed: and a Current view (AC1), its view outranks the 2025-03-12 post: the reply gives the current position (hydration and elasticity) and no affirmative wrinkle claim. Before the rewrite this scores the current reference.",
+    "notes": "US-50 AC5, pre-registered 2026-10-20 (review round 1, H3); not yet run (harness spend needs Brad's yes). Master vs older post: once the collagen master carries reviewed: and a Current view (AC1), its view outranks the 2025-03-12 post: the reply gives the current position (hydration and elasticity) and no affirmative wrinkle claim. Before the rewrite this scores the current reference. 2026-10-20: wrinkle pattern ignores negated statements (the first run matched \"doesn't show collagen reduces wrinkles\").",
     "must_mention": [
       "hydration",
       "elasticity"
     ],
     "must_not_match": [
-      "collagen(?: peptides)? (?:can )?(reduces?|fix(?:es)?|removes?|smooths?|erases?) (?:skin )?wrinkles"
+      "(?<!(?:not|n.t|no evidence that|doesn.t show|does not show|didn.t find|did not find|isn.t evidence that)\\s(?:that\\s)?)collagen(?: peptides)? (?:can |will )?(reduces?|fix(?:es)?|removes?|smooths?|erases?) (?:skin )?wrinkles"
     ]
   },
   {
@@ -7758,9 +7763,9 @@
     ],
     "must_not_match": [
       "\\bbrad\\b(?:'s)? (view|thinks|believes|position|changed|now|says)",
-      "reduces wrinkles|rebuilds (the )?skin"
+      "(?<!(?:not|n.t|no evidence that|doesn.t show|does not show|didn.t find|did not find|isn.t evidence that)\\s(?:that\\s)?)collagen(?: peptides)? (?:can |will )?(?:reduces? wrinkles|rebuilds? (?:the )?skin)"
     ],
-    "notes": "US-50 AC5, pre-registered 2026-10-20 (review round 1, H3); not yet run (harness spend needs Brad's yes). Brand surface: the current position is stated in the assistant's own voice and a change of position is never attributed to Brad (chat-posture-brand.md).",
+    "notes": "US-50 AC5, pre-registered 2026-10-20 (review round 1, H3); not yet run (harness spend needs Brad's yes). Brand surface: the current position is stated in the assistant's own voice and a change of position is never attributed to Brad (chat-posture-brand.md). 2026-10-20: wrinkle pattern ignores negated statements (the first run matched \"doesn't show collagen reduces wrinkles\").",
     "must_mention": [
       "hydration"
     ]
@@ -7823,16 +7828,13 @@
     "answer_handles": [
       "taurine-benefits-forms-dosing-and-side-effects"
     ],
-    "must_mention": [
-      "doctor"
-    ],
     "must_match": [
       "(mice|mouse|animal)"
     ],
     "must_not_match": [
       "only (in )?cells in a (petri )?dish"
     ],
-    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry: \"In mouse models, taurine supplements accelerated myeloid leukaemia\"; summary: \"Talk to your doctor first if you take blood-pressure medicines or have a blood cancer.\" The dish dismissal is gone from the entry."
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry: \"In mouse models, taurine supplements accelerated myeloid leukaemia\"; summary: \"Talk to your doctor first if you take blood-pressure medicines or have a blood cancer.\" The dish dismissal is gone from the entry. Brad 2026-10-20: no blood-cancer doctor line; the answer follows his taurine post (no must_mention doctor)."
   },
   {
     "query": "Do I need a loading phase when I start creatine?",
@@ -7863,8 +7865,8 @@
       "elasticity"
     ],
     "must_not_match": [
-      "collagen(?: peptides)? (?:can |will )?(reduces?|get rid of|fix(?:es)?|removes?|smooths?|erases?) (?:your )?(?:skin )?wrinkles"
+      "(?<!(?:not|n.t|no evidence that|doesn.t show|does not show|didn.t find|did not find|isn.t evidence that)\\s(?:that\\s)?)collagen(?: peptides)? (?:can |will )?(reduces?|get rid of|fix(?:es)?|removes?|smooths?|erases?) (?:your )?(?:skin )?wrinkles"
     ],
-    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry, Current view: \"collagen peptides may improve skin hydration and elasticity, but it found no effect on wrinkles\"."
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry, Current view: \"collagen peptides may improve skin hydration and elasticity, but it found no effect on wrinkles\". 2026-10-20: wrinkle pattern ignores negated statements (the first run matched \"doesn't show collagen reduces wrinkles\")."
   }
 ]

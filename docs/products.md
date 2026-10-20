@@ -445,7 +445,7 @@ When a user asks "what does Brad take?", "what meds is Brad on?", or "what suppl
 
 **Stopped taking (with reasons):**
 - **NMN / NR** — interesting mice and single-cell data on NAD+ precursors, but human data showing a benefit is lacking. Brad focuses on the small dose of Nicotinamide in MicroVitamin plus exercise, diet, fasting, and sleep instead.
-- **Resveratrol / Pterostilbene** — sirtuin-1 activation evidence conflicting; a 2020 CRISPR study found resveratrol's effect on cell proliferation was independent of SIRT1 (Pezzuto, Molecules, 2020).
+- **Resveratrol / Pterostilbene** — sirtuin-1 activation evidence conflicting; a 2020 CRISPR study found resveratrol's effect on cell proliferation was independent of SIRT1 (Benslimane, Mol Cell, 2020).
 - **Metformin / Berberine** — ITP 2016 showed no lifespan benefit; a 21-year human RCT confirmed no benefit for death rates, heart disease, or cancer; Metformin also blunts positive exercise effects (Konopka et al., 2019). Brad still prescribes Metformin to his diabetic patients — it's a wonderful drug for diabetes, just not for healthy adults.
 - **Quercetin / Fisetin** — ITP trialed Fisetin and found no healthspan, lifespan, or senolytic activity.
 - **Ashwagandha** — Brad didn't notice the anxiety effect personally; dropped to reduce pill burden. More of a personal choice than evidence-based.
