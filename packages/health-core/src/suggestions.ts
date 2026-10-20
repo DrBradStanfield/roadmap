@@ -1012,7 +1012,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Micronutrient base',
-      description: 'A COSMOS trial sub-study (2023) found that a daily multivitamin improved cognitive function in older adults — evidence that broad micronutrient support may benefit brain health alongside filling common dietary gaps.',
+      description: 'A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults — evidence that broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO\'s 2026 dementia guideline recommends against multivitamins for dementia risk reduction in people without a deficiency; it did not cite the COSMOS trials.',
       ingredients: [
         'Methylated B-complex',
         'Vitamin D3 with K2',
@@ -1042,7 +1042,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Omega-3',
-      description: 'A meta-analysis of interventional trials found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death, with dose-dependent benefits strongest for EPA-rich formulations. Randomised trials also show omega-3 is needed for B vitamins to slow age-related brain atrophy.',
+      description: 'A meta-analysis of interventional trials found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death, with dose-dependent benefits strongest for EPA-rich formulations. About 1 g a day may capture much of that benefit while limiting the risk of atrial fibrillation, which was higher in trials testing more than 1 g a day. Randomised trials also show omega-3 is needed for B vitamins to slow age-related brain atrophy.',
     },
     {
       id: 'supplement-sleep',

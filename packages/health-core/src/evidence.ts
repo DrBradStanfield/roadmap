@@ -533,10 +533,12 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Supplements ────────────────────────────────────────────
 
   'supplement-micronutrient-base': {
-    reason: 'A comprehensive daily supplement can help fill nutritional gaps. A COSMOS trial sub-study found that daily multivitamin use improved cognitive function in older adults, suggesting broad micronutrient support may benefit brain health alongside physical health.',
+    reason: 'A comprehensive daily supplement can help fill nutritional gaps. The COSMOS trial enrolled men aged 60 and over and women aged 65 and over. A meta-analysis of its three cognition sub-studies (about 5,200 people) found that a daily multivitamin-mineral improved global cognition and episodic memory compared with placebo. The effect on global cognition was equivalent to about 2 years less cognitive ageing. This suggests broad micronutrient support may benefit brain health alongside physical health.\n\nThe WHO 2026 guideline on dementia risk reduction recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements for that purpose in people without a diagnosed deficiency. It kept its 2019 recommendation without reassessing supplements, and it did not cite the COSMOS trials.',
     guidelines: [],
     references: [
-      { label: 'Baker 2023 – Multivitamin & cognitive function: COSMOS trial (Alzheimers Dement)', url: 'https://doi.org/10.1002/alz.12767' },
+      { label: 'Vyas 2024 – Multivitamin & cognition: COSMOS-Clinic + meta-analysis of 3 COSMOS sub-studies (Am J Clin Nutr)', url: 'https://doi.org/10.1016/j.ajcnut.2023.12.011' },
+      { label: 'Baker 2023 – Multivitamin & cognitive function: COSMOS-Mind trial (Alzheimers Dement)', url: 'https://doi.org/10.1002/alz.12767' },
+      { label: 'WHO 2026 – Risk reduction of cognitive decline and dementia: guidelines, 2nd edition', url: 'https://www.who.int/publications/i/item/9789240123557' },
     ],
   },
 
@@ -558,10 +560,11 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'supplement-omega3': {
-    reason: 'An updated meta-analysis of interventional trials found that omega-3 supplementation reduces cardiovascular events and cardiac death, with benefits increasing at higher doses. The effect appears strongest for EPA-rich formulations.\n\nOmega-3 also plays an important role in cognitive protection. Randomised trials found that B vitamin supplementation slowed brain atrophy by 40% — but only in participants with adequate omega-3 levels. When omega-3 was low, B vitamins had no effect. This suggests that combining omega-3 with a B-complex supplement may provide synergistic neuroprotective benefits.',
+    reason: 'An updated meta-analysis of interventional trials found that omega-3 supplementation reduces cardiovascular events and cardiac death, with benefits increasing at higher doses. The effect appears strongest for EPA-rich formulations.\n\nHigher doses carry a cost. A meta-analysis of seven large cardiovascular trials found that omega-3 supplements raised the risk of atrial fibrillation, an irregular heart rhythm. The risk was greater in trials testing more than 1 g a day (hazard ratio 1.49) than in trials testing 1 g a day or less (1.12). About 1 g a day of EPA and DHA combined may capture much of the potential cardiovascular benefit while keeping that risk lower.\n\nOmega-3 also plays an important role in cognitive protection. Randomised trials found that B vitamin supplementation slowed brain atrophy by 40% — but only in participants with adequate omega-3 levels. When omega-3 was low, B vitamins had no effect. This suggests that combining omega-3 with a B-complex supplement may provide synergistic neuroprotective benefits.',
     guidelines: [],
     references: [
       { label: 'Bernasconi 2021 – Omega-3 dose & cardiovascular outcomes (Mayo Clin Proc)', url: 'https://doi.org/10.1016/j.mayocp.2020.08.034' },
+      { label: 'Gencer 2021 – Omega-3 dose & atrial fibrillation: meta-analysis of RCTs (Circulation)', url: 'https://doi.org/10.1161/CIRCULATIONAHA.121.055654' },
       { label: 'Jernerén 2015 – B vitamins + omega-3 slow brain atrophy (Am J Clin Nutr)', url: 'https://doi.org/10.3945/ajcn.114.103283' },
       { label: 'Oulhaj 2016 – Omega-3 enhances B vitamin cognitive protection (J Alzheimers Dis)', url: 'https://doi.org/10.3233/JAD-150777' },
     ],

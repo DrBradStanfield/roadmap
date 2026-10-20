@@ -1002,10 +1002,10 @@ naming/linking a branded product is advertising a therapeutic good).
 
 | ID | Title | Ingredients / notes | Evidence |
 |----|-------|---------------------|----------|
-| `supplement-micronutrient-base` | Micronutrient base | Methylated B-complex; vitamin D3 + K2; magnesium taurate; trace minerals (glycinate); lutein + zeaxanthin; TMG; lycopene | COSMOS trial (Baker 2023) |
+| `supplement-micronutrient-base` | Micronutrient base | Methylated B-complex; vitamin D3 + K2; magnesium taurate; trace minerals (glycinate); lutein + zeaxanthin; TMG; lycopene | COSMOS meta-analysis of 3 cognition sub-studies, men 60+ and women 65+ (Vyas 2024): global cognition and episodic memory, about 2 years less cognitive ageing. Executive function improved in COSMOS-Mind only (Baker 2023), so it is not a headline claim. WHO 2026 dementia guideline recommends against B, E, omega-3 and multivitamin-mineral supplements for dementia risk reduction without a deficiency; it validated its 2019 advice without reassessing supplements and did not cite COSMOS |
 | `supplement-creatine` | Creatine | Creatine monohydrate, 3–5 g/day | Strength/lean mass (Kreider 2017); cognition (Avgerinos 2018) |
 | `supplement-collagen` | Collagen peptides | Hydrolyzed collagen peptides; may improve skin hydration and elasticity | Skin hydration/elasticity meta-analysis (Batool 2026) |
-| `supplement-omega3` | Omega-3 | EPA/DHA | CV benefits (Bernasconi 2021) + cognitive synergy with B-complex (Jernerén 2015, Oulhaj 2016) |
+| `supplement-omega3` | Omega-3 | EPA/DHA, about 1 g/day combined | CV benefits (Bernasconi 2021) + cognitive synergy with B-complex (Jernerén 2015, Oulhaj 2016). About 1 g/day balances CV benefit against atrial fibrillation: AF HR 1.49 in trials testing >1 g/day vs 1.12 at ≤1 g/day (Gencer 2021). Text only: the card is always shown and no dose is recorded or checked |
 | `supplement-sleep` | Sleep support | Low-dose melatonin; glycine; magnesium glycinate | Melatonin (Low 2020) |
 
 ---
