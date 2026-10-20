@@ -1,10 +1,11 @@
-import { deleteBatch } from './anthropic.server';
+import { deleteBatch, type pollBatch } from './anthropic.server';
 
 /**
  * The website's lab-import batches (api.lab-import-v2.ts) and the sweep that
  * deletes them at Anthropic (US-12 AC18). A `.server` module, not the route,
- * because the sweep is a module-level side effect: in a route file it keeps
- * anthropic.server in the client bundle and fails the server build.
+ * so the route keeps no deleteBatch reference for the client build to trip on.
+ * Importing it starts nothing: the action arms the sweep after the first
+ * successful batch upload (`armSweep`).
  */
 
 /** The flags a widget sends to say which own days it reads. */
@@ -19,7 +20,14 @@ export type DayFlags = { ownDates?: true; undatedPrev?: true };
 // required on every poll; without it, or with the wrong one, the batch does not
 // exist (404, the same answer as an id nobody created).
 export const MAX_ACTIVE_BATCHES = 200;
-export const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; days: DayFlags; refusedRows?: true; servedAt?: number }>();
+export type BatchPollResult = Awaited<ReturnType<typeof pollBatch>>;
+export const activeBatches = new Map<string, {
+  totalFiles: number; createdAt: number; pollToken: string; days: DayFlags;
+  refusedRows?: true; servedAt?: number;
+  // Shared poll work (US-12 AC18): value-free progress only, never results.
+  pollResult?: { status: 'processing'; completed: number; total: number };
+  pollInFlight?: Promise<BatchPollResult>; pollAfter?: number;
+}>();
 // Batches Anthropic still holds for us, id → createdAt: each is deleted there
 // once ended (US-12 AC18). The sweep takes a batch whose results were served
 // at least 10 minutes ago, so a re-poll after a lost answer has that long, and
@@ -29,24 +37,29 @@ export const activeBatches = new Map<string, { totalFiles: number; createdAt: nu
 // memory, like activeBatches: a restart forgets them, and Anthropic's 29 days apply.
 const undeletedBatches = new Map<string, number>();
 let sweeping = false;
-const sweep = setInterval(async () => {
-  if (sweeping) return; // a slow sweep (up to 200 deletes) never overlaps the next
-  sweeping = true;
-  try {
-    const now = Date.now();
-    for (const [id, b] of activeBatches) {
-      // A served batch keeps its 10 minutes, however old; an unserved one gets an hour.
-      if (b.servedAt ? b.servedAt <= now - 10 * 60_000 : b.createdAt < now - 60 * 60_000) {
-        activeBatches.delete(id);
-        undeletedBatches.set(id, b.createdAt);
+let sweep: ReturnType<typeof setInterval> | undefined;
+/** Arm the sweep once, from the action after a batch upload; later calls do nothing. */
+export function armSweep(): void {
+  if (sweep) return;
+  sweep = setInterval(async () => {
+    if (sweeping) return; // a slow sweep (up to 200 deletes) never overlaps the next
+    sweeping = true;
+    try {
+      const now = Date.now();
+      for (const [id, b] of activeBatches) {
+        // A served batch keeps its 10 minutes, however old; an unserved one gets an hour.
+        if (b.servedAt ? b.servedAt <= now - 10 * 60_000 : b.createdAt < now - 60 * 60_000) {
+          activeBatches.delete(id);
+          undeletedBatches.set(id, b.createdAt);
+        }
       }
+      for (const [id, createdAt] of undeletedBatches) {
+        if (await deleteBatch(id) || createdAt < now - 25 * 60 * 60_000) undeletedBatches.delete(id);
+      }
+    } finally {
+      sweeping = false;
     }
-    for (const [id, createdAt] of undeletedBatches) {
-      if (await deleteBatch(id) || createdAt < now - 25 * 60 * 60_000) undeletedBatches.delete(id);
-    }
-  } finally {
-    sweeping = false;
-  }
-}, 10 * 60_000);
-// Never hold the process open just to sweep, as rate-limiter.ts does.
-sweep.unref?.();
+  }, 10 * 60_000);
+  // Never hold the process open just to sweep, as rate-limiter.ts does.
+  sweep.unref?.();
+}
