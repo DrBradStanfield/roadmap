@@ -240,6 +240,7 @@ export function resetMcpMemory(): void {
   allowRateLimitEvent.reset();
   allowToken.reset();
   allowToolCall.reset();
+  allowKnowledgeCall.reset();
 }
 
 /** Per-IP, before any CIMD fetch — the fetch is the expensive, abusable half. */
@@ -264,3 +265,5 @@ export const allowRateLimitEvent = createRateLimiter(1, 60_000, 10 * 60_000);
  */
 export const allowToken = createRateLimiter(300, 60_000, 10 * 60_000);
 export const allowToolCall = createRateLimiter(120, 60_000, 10 * 60_000);
+/** search_knowledge and get_article on top of that (US-41 AC11): reads of public text, so a tighter brake on bulk copying. */
+export const allowKnowledgeCall = createRateLimiter(30, 60_000, 10 * 60_000);
