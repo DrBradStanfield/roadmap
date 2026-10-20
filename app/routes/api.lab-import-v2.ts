@@ -7,7 +7,7 @@ import { extractOrClassify, createBatch, pollBatch, BatchRefusedError, Extractio
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
-import { activeBatches, MAX_ACTIVE_BATCHES, type DayFlags } from '../lib/lab-batches.server';
+import { activeBatches, armSweep, MAX_ACTIVE_BATCHES, type BatchPollResult, type DayFlags } from '../lib/lab-batches.server';
 
 /**
  * Lab extraction for the LOCAL-FIRST storefront page (Phase 4 "thin server
@@ -95,6 +95,9 @@ function matchesPollToken(expected: string, supplied: string | null): boolean {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+/** How long a processing count is reused before the next provider read. */
+const PROCESSING_POLL_MS = 2000;
+
 /**
  * Answer one batch poll. Lives on the POST side, not the GET side, because
  * `@react-router/serve` logs every request URL (morgan "tiny") to stdout and
@@ -108,7 +111,20 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
     return Response.json({ error: 'Batch not found' }, { status: 404 });
   }
   try {
-    const result = await pollBatch(batchId);
+    // Retain only value-free progress between polls. Terminal payloads serve
+    // current waiters only; check the capability before sharing either state.
+    const cached = batch.pollResult;
+    const result: BatchPollResult = cached && Date.now() < (batch.pollAfter ?? 0)
+      ? cached
+      : await (batch.pollInFlight ??= pollBatch(batchId)
+        .then(result => {
+          batch.pollResult = result.status === 'processing'
+            ? { status: 'processing', completed: result.completed, total: result.total }
+            : undefined;
+          batch.pollAfter = result.status === 'processing' ? Date.now() + PROCESSING_POLL_MS : undefined;
+          return result;
+        })
+        .finally(() => { batch.pollInFlight = undefined; }));
     // Served: a sweep at least 10 minutes on deletes it at Anthropic (US-12 AC18). Each stopped
     // file is reported once, when the batch ends: it can be polled again (US-15 AC34).
     if (result.status === 'ended' && !batch.servedAt) {
@@ -176,6 +192,7 @@ export async function action({ request }: ActionFunctionArgs) {
       });
       const pollToken = newPollToken();
       activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken, days: { ownDates, undatedPrev }, refusedRows });
+      armSweep();
       return Response.json({ success: true, batchId, pollToken, totalFiles: files.length });
     }
 
