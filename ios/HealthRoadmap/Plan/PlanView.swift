@@ -6,27 +6,27 @@ import SwiftUI
 struct PlanView: View {
     private enum LoadState {
         case loading
-        case loaded(today: String, sections: [PlanSection], planMs: Double)
+        case loaded(sections: [PlanSection], planMs: Double)
         case failed(String)
     }
 
     @State private var state = LoadState.loading
 
     var body: some View {
-        NavigationStack {
-            Group {
-                switch state {
-                case .loading:
-                    ProgressView()
-                case .failed(let message):
-                    ContentUnavailableView("No plan", systemImage: "exclamationmark.triangle", description: Text(message))
-                case .loaded(let today, let sections, let planMs):
-                    PlanList(today: today, sections: sections, planMs: planMs)
-                }
+        // No title bar: the cards start at the top (Brad 2026-10-21). The
+        // disclaimer at the end says to consult a healthcare provider.
+        Group {
+            switch state {
+            case .loading:
+                ProgressView()
+            case .failed(let message):
+                ContentUnavailableView("No plan", systemImage: "exclamationmark.triangle", description: Text(message))
+            case .loaded(let sections, let planMs):
+                PlanList(sections: sections, planMs: planMs)
             }
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("Your plan")
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemGroupedBackground))
         .task { state = Self.load() }
     }
 
@@ -41,10 +41,9 @@ struct PlanView: View {
             let start = clock.now
             let json = try engine.plan(recordJSON: record, now: .now, deviceId: "ios-spike")
             let elapsed = clock.now - start
-            let plan = try JSONDecoder().decode(Plan.self, from: Data(json.utf8))
             let sections = try engine.sections(planJSON: json)
             let ms = Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15
-            return .loaded(today: plan.today, sections: sections, planMs: ms)
+            return .loaded(sections: sections, planMs: ms)
         } catch {
             return .failed(error.localizedDescription)
         }
@@ -54,7 +53,6 @@ struct PlanView: View {
 /// The plan's sections, which float in one after another, then the disclaimer
 /// and the privacy line.
 private struct PlanList: View {
-    let today: String
     let sections: [PlanSection]
     let planMs: Double
     @State private var appeared = false
@@ -62,12 +60,6 @@ private struct PlanList: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 28) {
-                // The web titles this column "Your plan to discuss with your doctor".
-                Text("To discuss with your doctor · \(Self.dateLine(today))")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
-
                 ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
                     VStack(alignment: .leading, spacing: 12) {
                         Text(section.title)
@@ -98,18 +90,9 @@ private struct PlanList: View {
                 .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 16)
+            .padding(.top, 8)
             .padding(.bottom, 32)
         }
         .onAppear { appeared = true }
-    }
-
-    /// "Wednesday 21 October" from the plan's YYYY-MM-DD.
-    private static func dateLine(_ day: String) -> String {
-        let parser = DateFormatter()
-        parser.calendar = Calendar(identifier: .gregorian)
-        parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.dateFormat = "yyyy-MM-dd"
-        guard let date = parser.date(from: day) else { return day }
-        return date.formatted(.dateTime.weekday(.wide).day().month(.wide))
     }
 }
