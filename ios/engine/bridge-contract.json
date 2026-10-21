@@ -40,6 +40,8 @@
     "labReviewJson": { "args": ["extractionJson", "nowIso"], "returns": "lab review JSON" },
     "labSaveSummaryJson": { "args": ["recordJson", "extractionJson", "refsJson", "reportDay", "nowIso", "deviceId"], "returns": "summary JSON" },
     "mergeJson": { "args": ["localJson", "remoteJson", "nowIso", "deviceId"], "returns": "merged record JSON" },
+    "labFile": { "args": ["id"], "returns": "{name, bytes} of a file the fresh listing offers as a lab file, or throws {refused} (US-52 AC11)" },
+    "labFilesJson": { "args": [], "returns": "lab files in the Dropbox app folder, newest first (US-52 AC10)" },
     "myDataJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "MyData JSON" },
     "newRecordJson": { "args": ["nowIso", "deviceId", "locale", "timeZone"], "returns": "record JSON" },
     "numberJson": { "args": ["text"], "returns": "number or null JSON" },

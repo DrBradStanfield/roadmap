@@ -15,6 +15,18 @@ enum SyncStatusText {
         }
     }
 
+    /// The SF Symbol for the state: a phone when nothing is connected (never a
+    /// struck-out iCloud, which read as "iCloud is off"), else a cloud that shows it.
+    static func symbol(_ status: CloudSync.Status, provider: CloudProvider?) -> String {
+        guard provider != nil else { return "iphone" }
+        return switch status {
+        case .onPhone: "iphone"
+        case .connecting, .saving: "arrow.triangle.2.circlepath.icloud"
+        case .synced: "checkmark.icloud.fill"
+        case .problem: "exclamationmark.icloud.fill"
+        }
+    }
+
     /// The sentence under the headline; nil when the headline says it all.
     /// The synced time is drawn by the view, which keeps it current.
     static func detail(_ status: CloudSync.Status, provider: CloudProvider?) -> String? {

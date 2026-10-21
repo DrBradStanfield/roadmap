@@ -47,13 +47,6 @@ struct MyDataView: View {
             .sheet(isPresented: $showSync) { SyncView(sync: sync) }
     }
 
-    /// The toolbar's sync icon: a phone, or a cloud that shows the sync's state.
-    private var syncSymbol: String {
-        guard sync.provider != nil else { return "icloud.slash" }
-        if case .problem = sync.status { return "exclamationmark.icloud" }
-        return "icloud"
-    }
-
     private var content: some View {
         Group {
             if let data = store.myData {
@@ -120,7 +113,7 @@ struct MyDataView: View {
             header("About you") {
                 LabUploadButton(engine: engine, store: store, sync: sync)
                 Button { showSync = true } label: {
-                    Label("Sync", systemImage: syncSymbol)
+                    Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
                 }
             }
         }

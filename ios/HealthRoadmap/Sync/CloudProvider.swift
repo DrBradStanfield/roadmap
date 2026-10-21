@@ -16,6 +16,15 @@ enum CloudProvider: String, CaseIterable, Codable, Identifiable, Sendable {
         }
     }
 
+    /// Where the record is kept, as the user finds it: the app folder each
+    /// provider gives the app, which is all the app can see there.
+    var folder: String {
+        switch self {
+        case .dropbox: "Dropbox › Apps › Health Plan by Dr Brad"
+        case .googleDrive: "Google Drive › Health Plan by Dr Brad"
+        }
+    }
+
     /// The web's own Dropbox app ("App folder" access, /Apps/Health Plan by Dr Brad),
     /// so the phone and the website see one file. A PKCE client id: public by design
     /// (widget-src/standalone/dropbox-config.ts holds the same key).

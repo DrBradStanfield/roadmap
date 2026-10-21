@@ -82,6 +82,8 @@ interface Engine {
   cloudRefresh(): Promise<string>;
   cloudClose(copyDown: boolean): Promise<string>;
   cloudErase(historyText: string | null, now: string, keepChat?: (text: string) => string): Promise<string>;
+  labFilesJson(): Promise<string>;
+  labFile(id: string): Promise<{ name: string; bytes: ArrayBuffer }>;
 }
 
 const opened: Engine[] = [];
@@ -718,3 +720,133 @@ class FakeDrive implements Server {
     throw new Error(`FakeDrive has no ${method} ${url}`);
   }
 }
+
+/** The Dropbox app folder's root as the "+" lists it: list_folder and download by id. */
+class FakeLabFolder implements Server {
+  online = true;
+  listed: Array<{ path: string }> = [];
+  downloads: string[] = [];
+  /** Answers 401 to this many calls first (an access token Dropbox refused). */
+  refuse = 0;
+  /** A download's body in place of the default one, when it gives one. */
+  bodyFor: (id: string) => string | null = () => null;
+  entries: Array<Record<string, unknown>> = [
+    { '.tag': 'file', id: 'id:record', name: 'health-roadmap.json', size: 900, server_modified: '2026-10-22T01:00:00Z' },
+    { '.tag': 'folder', id: 'id:imports', name: 'imports' },
+    { '.tag': 'file', id: 'id:old', name: 'Lipids 2025.pdf', size: 2000, server_modified: '2025-03-01T00:00:00Z' },
+    { '.tag': 'file', id: 'id:new', name: 'Bloods October.PDF', size: 3000, server_modified: '2026-10-20T00:00:00Z' },
+    { '.tag': 'file', id: 'id:zip', name: 'Portal export.zip', size: 4000, server_modified: '2026-06-01T00:00:00Z' },
+    { '.tag': 'file', id: 'id:photo', name: 'report.jpg', size: 5000, server_modified: '2026-09-01T00:00:00Z' },
+    { '.tag': 'file', id: 'id:ds', name: '.DS_Store', size: 10, server_modified: '2026-10-21T00:00:00Z' },
+    { '.tag': 'file', id: 'id:notes', name: 'notes.txt', size: 10, server_modified: '2026-10-21T00:00:00Z' },
+    { '.tag': 'file', id: 'id:backup', name: 'health-roadmap.json.bak', size: 900, server_modified: '2026-10-21T00:00:00Z' },
+  ];
+
+  answer(url: string, headers: Record<string, string>, body: string | null): { status: number; headers: Record<string, string>; body: string } {
+    if (this.refuse > 0) {
+      this.refuse -= 1;
+      return { status: 401, headers: {}, body: 'expired_access_token' };
+    }
+    if (headers.authorization !== 'Bearer token-1') return { status: 401, headers: {}, body: 'expired' };
+    if (url.endsWith('/files/list_folder')) {
+      this.listed.push(JSON.parse(body!) as { path: string });
+      return { status: 200, headers: {}, body: JSON.stringify({ entries: this.entries, has_more: false }) };
+    }
+    if (url.endsWith('/files/download')) {
+      const { path } = JSON.parse(headers['dropbox-api-arg']) as { path: string };
+      this.downloads.push(path);
+      return { status: 200, headers: {}, body: this.bodyFor(path) ?? `%PDF bytes of ${path}` };
+    }
+    throw new Error(`FakeLabFolder has no ${url}`);
+  }
+}
+
+describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
+  it('lists the lab files at the folder root, newest first, and never the record, folders or other files', async () => {
+    const folder = new FakeLabFolder();
+    const { engine } = await phone(folder);
+    const files = JSON.parse(await engine.labFilesJson()) as Array<{ id: string; name: string; size: number; modified: string }>;
+    expect(files.map((f) => f.name)).toEqual(['Bloods October.PDF', 'report.jpg', 'Portal export.zip', 'Lipids 2025.pdf']);
+    expect(files[0]).toEqual({ id: 'id:new', name: 'Bloods October.PDF', size: 3000, modified: '2026-10-20T00:00:00Z' });
+    expect(folder.listed).toEqual([expect.objectContaining({ path: '' })]);
+  });
+
+  it('downloads a listed file by its id and answers its bytes', async () => {
+    const folder = new FakeLabFolder();
+    const { engine } = await phone(folder);
+    const file = await engine.labFile('id:new');
+    expect(file.name).toBe('Bloods October.PDF'); // the fresh listing's name, which Swift reads it under (re-check R3)
+    expect(Buffer.from(new Uint8Array(file.bytes)).toString('utf8')).toBe('%PDF bytes of id:new');
+    expect(folder.downloads).toEqual(['id:new']);
+  });
+
+  it('downloads only by a listing id, never by a path', async () => {
+    const folder = new FakeLabFolder();
+    const { engine } = await phone(folder);
+    await expect(engine.labFile('health-roadmap.json')).rejects.toThrow();
+    await expect(engine.labFile('/Other/thing.pdf')).rejects.toThrow();
+    expect(folder.downloads).toEqual([]);
+  });
+
+  it('R3: downloads only an id a fresh listing offers as a lab file, never the record or an unlisted id', async () => {
+    const folder = new FakeLabFolder();
+    const { engine } = await phone(folder);
+    // A refusal is marked as one, so Swift never reads a name like "{scan}.pdf" as a failure's JSON (re-check R1).
+    const refusal = await engine.labFile('id:record').catch((error: Error) => JSON.parse(error.message) as { refused?: string });
+    expect(refusal.refused).toContain('not a lab file in the folder');
+    await expect(engine.labFile('id:backup')).rejects.toThrow('not a lab file in the folder');
+    await expect(engine.labFile('id:chat-history')).rejects.toThrow('not a lab file in the folder');
+    expect(folder.downloads).toEqual([]);
+    expect(folder.listed).toHaveLength(3); // each read lists the folder afresh
+  });
+
+  it('R5: a file over the size limit, or with no size, is refused before it downloads; a body over it after', async () => {
+    const folder = new FakeLabFolder();
+    folder.entries.push(
+      { '.tag': 'file', id: 'id:big', name: 'Big.pdf', size: 10 * 1024 * 1024 + 1, server_modified: '2026-10-19T00:00:00Z' },
+      { '.tag': 'file', id: 'id:bigzip', name: 'Big.zip', size: 20 * 1024 * 1024 + 1, server_modified: '2026-10-19T00:00:00Z' },
+      { '.tag': 'file', id: 'id:nosize', name: 'Nosize.pdf', server_modified: '2026-10-19T00:00:00Z' },
+      { '.tag': 'file', id: 'id:liar', name: 'Liar.pdf', size: 10, server_modified: '2026-10-19T00:00:00Z' },
+    );
+    folder.bodyFor = (id) => (id === 'id:liar' ? 'x'.repeat(10 * 1024 * 1024 + 1) : null);
+    const { engine } = await phone(folder);
+    for (const id of ['id:big', 'id:bigzip']) await expect(engine.labFile(id)).rejects.toThrow('larger than');
+    // No size reads as 0 (dropboxListFolder), so it is refused as empty, never downloaded.
+    await expect(engine.labFile('id:nosize')).rejects.toThrow('Nosize.pdf is empty.');
+    expect(folder.downloads).toEqual([]);
+    await expect(engine.labFile('id:liar')).rejects.toThrow('larger than');
+  });
+
+  it('re-check R2: an empty file is called empty, not too large, before and after the download', async () => {
+    const folder = new FakeLabFolder();
+    folder.entries.push(
+      { '.tag': 'file', id: 'id:empty', name: '{scan}.pdf', size: 0, server_modified: '2026-10-19T00:00:00Z' },
+      { '.tag': 'file', id: 'id:hollow', name: 'Hollow.pdf', size: 10, server_modified: '2026-10-19T00:00:00Z' },
+    );
+    folder.bodyFor = (id) => (id === 'id:hollow' ? '' : null);
+    const { engine } = await phone(folder);
+    const empty = await engine.labFile('id:empty').catch((error: Error) => JSON.parse(error.message) as { refused?: string });
+    expect(empty.refused).toBe('{scan}.pdf is empty.');
+    expect(folder.downloads).toEqual([]);
+    await expect(engine.labFile('id:hollow')).rejects.toThrow('Hollow.pdf is empty.');
+  });
+
+  it('a refused token is refreshed once and the listing repeated', async () => {
+    const folder = new FakeLabFolder();
+    folder.refuse = 1;
+    const { engine, state } = await phone(folder);
+    expect(JSON.parse(await engine.labFilesJson())).toHaveLength(4);
+    expect(state.tokenRefreshes).toBe(1);
+  });
+
+  it('a failure rejects with its kind, for Swift to word: sign-in or unreachable', async () => {
+    const folder = new FakeLabFolder();
+    const signedOut = await phone(folder);
+    signedOut.state.signedOut = true;
+    await expect(signedOut.engine.labFilesJson()).rejects.toThrow('"kind":"sign-in"');
+    folder.online = false;
+    const offline = await phone(folder);
+    await expect(offline.engine.labFilesJson()).rejects.toThrow('"kind":"unreachable"');
+    await expect(offline.engine.labFile('id:new')).rejects.toThrow('"kind":"unreachable"');
+  });
+});

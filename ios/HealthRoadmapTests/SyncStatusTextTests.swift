@@ -26,6 +26,17 @@ final class SyncStatusTextTests: XCTestCase {
         XCTAssertFalse(SyncProblem(kind: .storageFull).words(.googleDrive).contains("sign in"))
     }
 
+    /// US-25 AC11e (2026-10-22): not connected is a phone, never a struck-out
+    /// iCloud, which read as "iCloud is off"; each connected state has its own symbol.
+    func testTheSymbolSaysPhoneOrCloudState() {
+        XCTAssertEqual(SyncStatusText.symbol(.onPhone, provider: nil), "iphone")
+        XCTAssertEqual(SyncStatusText.symbol(.synced(.now), provider: nil), "iphone")
+        let connected = [CloudSync.Status.connecting, .saving, .synced(.now), .problem(SyncProblem(kind: .unreachable))]
+            .map { SyncStatusText.symbol($0, provider: .dropbox) }
+        XCTAssertEqual(Set(connected).count, 3, "connecting and saving share one symbol")
+        for symbol in connected + ["iphone"] { XCTAssertFalse(symbol.contains("slash"), symbol) }
+    }
+
     /// Adversary A3: after Disconnect the record is still in the cloud, so the
     /// words must not say it never left the phone.
     func testAfterDisconnectNothingClaimsTheDataNeverLeft() {

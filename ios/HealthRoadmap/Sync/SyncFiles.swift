@@ -9,6 +9,9 @@ struct SyncFiles {
     let provider: URL
     /// The connected account's id, so "Sign in again" as someone else is refused.
     let account: URL
+    /// That account's email, which Sync shows; absent when the provider gave none.
+    /// Removed on Disconnect and on "Delete all my data".
+    let email: URL
     /// The last cloud the record was synced with. Kept after Disconnect: the
     /// copy there stays, and the app's words say so (review A3).
     let history: URL
@@ -18,6 +21,7 @@ struct SyncFiles {
     init(folder: URL) {
         provider = folder.appending(path: "sync-provider")
         account = folder.appending(path: "sync-account")
+        email = folder.appending(path: "sync-account-email")
         history = folder.appending(path: "sync-history")
         pending = folder.appending(path: "sync-pending")
     }

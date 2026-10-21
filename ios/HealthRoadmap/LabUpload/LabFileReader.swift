@@ -42,12 +42,18 @@ enum LabFileReader {
     /// A page with fewer characters than this is a scan (pdf-extract.ts TEXT_THRESHOLD).
     static let textThreshold = 50
 
+    /// False when a file of this size is over the web's limit, so a cloud file
+    /// is refused before it downloads: 20 MB for a ZIP (IMPORT_LIMITS.zipMb), 10 MB otherwise.
+    static func fits(name: String, bytes: Int) -> Bool {
+        bytes <= ((name as NSString).pathExtension.lowercased() == "zip" ? 20 * 1024 * 1024 : maxFileBytes)
+    }
+
     /// The documents in one picked file: one, or one per report inside a ZIP.
     static func documents(from data: Data, name: String) throws -> [Document] {
         let ext = (name as NSString).pathExtension.lowercased()
         if ext == "zip" {
-            // The web's ZIP limits: 20 MB as downloaded, 200 files (IMPORT_LIMITS.zipMb, the folder's file cap).
-            guard data.count <= 20 * 1024 * 1024 else { throw Failure.tooLarge(name) }
+            // The web's ZIP limits: 20 MB as downloaded, 200 files (the folder's file cap).
+            guard fits(name: name, bytes: data.count) else { throw Failure.tooLarge(name) }
             let members = try ZipReader.members(of: data, maxMemberBytes: maxFileBytes, maxMembers: 200, maxTotalBytes: 200 * 1024 * 1024) { member in
                 let leaf = (member as NSString).lastPathComponent
                 return !leaf.hasPrefix(".") && !member.contains("__MACOSX") && ["pdf", "jpg", "jpeg", "png"].contains((member as NSString).pathExtension.lowercased())
@@ -59,8 +65,17 @@ enum LabFileReader {
         return [try document(from: data, name: name)]
     }
 
+    /// Pictures of one paper report, from the photo library or the document
+    /// camera: a JPEG page each, as the web sends a picked image (US-52 AC10).
+    /// Its 20-page limit holds. A photo is resized, so a camera's file size is no limit.
+    static func pictures(_ images: [UIImage], name: String) throws -> Document {
+        let pages = images.prefix(maxPages).compactMap(jpegPage)
+        guard !pages.isEmpty else { throw Failure.unreadable(name) }
+        return Document(name: name, pages: pages, truncated: images.count > maxPages)
+    }
+
     private static func document(from data: Data, name: String) throws -> Document {
-        guard data.count <= maxFileBytes else { throw Failure.tooLarge(name) }
+        guard fits(name: name, bytes: data.count) else { throw Failure.tooLarge(name) }
         switch (name as NSString).pathExtension.lowercased() {
         case "pdf": return try pdf(data, name: name)
         case "jpg", "jpeg", "png", "heic":

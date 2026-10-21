@@ -1,15 +1,12 @@
-import AuthenticationServices
 import SwiftUI
 
-/// The Sync screen (US-25 AC11e), opened from My data's About you line: where the record
-/// is, its state in plain words, Connect Dropbox or Google Drive, Sync now, and
-/// Disconnect. Every action is CloudSync's; this view only draws and asks.
+/// The Sync screen (US-25 AC11e), opened from My data's About you line: what sync does,
+/// where the record is, its state in plain words, Connect Dropbox or Google
+/// Drive, Sync now, and Disconnect. Every action is CloudSync's; this view only
+/// draws and asks.
 struct SyncView: View {
     let sync: CloudSync
-    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @Environment(\.dismiss) private var dismiss
-    /// The provider whose sign-in is under way.
-    @State private var signingIn: CloudProvider?
     @State private var message: String?
     @State private var confirmDisconnect = false
 
@@ -41,27 +38,24 @@ struct SyncView: View {
 
     // MARK: Not connected
 
+    @ViewBuilder
     private var connect: some View {
+        Section("What sync does") {
+            Text("Sync keeps your record in your own Dropbox or Google Drive. The website and a new phone open the same file. Dr Brad's server never sees it.")
+        }
         Section {
             ForEach(CloudProvider.allCases) { provider in
-                Button {
-                    Task { await signIn(provider) }
-                } label: {
-                    HStack {
-                        Label("Connect \(provider.label)", systemImage: "link.icloud")
-                        Spacer()
-                        if signingIn == provider { ProgressView() }
+                ConnectCloudButton(sync: sync, provider: provider, connected: {}) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Connect \(provider.label)")
+                        Text(provider.isConfigured ? "Saves to \(provider.folder)" : "Not set up in this version of the app yet")
+                            .font(.footnote)
+                            .foregroundStyle(Color.secondary)
                     }
                 }
-                .disabled(signingIn != nil || !provider.isConfigured || sync.erasing)
             }
         } footer: {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("The app talks to your cloud directly. Dr Brad's server never sees your record. It sits in the app's own folder: Apps › Health Plan by Dr Brad in Dropbox, Health Plan by Dr Brad in Google Drive.")
-                if !CloudProvider.googleDrive.isConfigured {
-                    Text("Google Drive sign-in is not set up in this build yet.")
-                }
-            }
+            Text("You sign in on Dropbox's or Google's own page. The app sees only its own folder there. In Dropbox, that folder also takes lab reports: put a PDF or photo in it, then add it with +.")
         }
     }
 
@@ -70,13 +64,17 @@ struct SyncView: View {
     @ViewBuilder
     private func connected(_ provider: CloudProvider) -> some View {
         Section {
+            LabeledContent("Connected to", value: sync.accountEmail ?? provider.label)
+            LabeledContent("Folder", value: provider.folder)
+        } footer: {
+            Text("The website and your other devices use this same file. Dr Brad's server never sees it.")
+        }
+
+        Section {
             if case .problem(let problem) = sync.status, problem.kind == .signIn {
-                Button {
-                    Task { await signIn(provider) }
-                } label: {
+                ConnectCloudButton(sync: sync, provider: provider, connected: {}) {
                     Label("Sign in to \(provider.label) again", systemImage: "person.badge.key")
                 }
-                .disabled(signingIn != nil)
             }
             Button {
                 Task { await sync.syncNow() }
@@ -101,20 +99,6 @@ struct SyncView: View {
 
     // MARK: Actions
 
-    private func signIn(_ provider: CloudProvider) async {
-        signingIn = provider
-        defer { signingIn = nil }
-        do {
-            try await sync.connect(provider) { url, scheme in
-                try await webAuthenticationSession.authenticate(using: url, callbackURLScheme: scheme)
-            }
-        } catch OAuthClient.Failure.cancelled {
-            // The user closed the sign-in sheet: nothing to say.
-        } catch {
-            message = error.localizedDescription
-        }
-    }
-
     private func disconnect(_ provider: CloudProvider) async {
         guard !sync.erasing else { return } // refused, not unreachable (re-check N3)
         if !(await sync.disconnect()) {
@@ -130,13 +114,14 @@ private struct SyncStatusCard: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            Image(systemName: symbol)
+            Image(systemName: SyncStatusText.symbol(status, provider: provider))
                 .font(.title)
                 .foregroundStyle(tint)
                 .frame(width: 52, height: 52)
                 .background(tint.opacity(0.15), in: Circle())
                 .symbolEffect(.pulse, isActive: busy)
                 .contentTransition(.symbolEffect(.replace))
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(SyncStatusText.headline(status, provider: provider))
                     .font(.headline)
@@ -160,16 +145,6 @@ private struct SyncStatusCard: View {
 
     private var busy: Bool {
         status == .connecting || status == .saving
-    }
-
-    private var symbol: String {
-        guard provider != nil else { return "iphone" }
-        return switch status {
-        case .onPhone: "iphone"
-        case .connecting, .saving: "arrow.triangle.2.circlepath.icloud"
-        case .synced: "checkmark.icloud.fill"
-        case .problem: "exclamationmark.icloud.fill"
-        }
     }
 
     private var tint: Color {

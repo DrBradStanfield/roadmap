@@ -818,6 +818,48 @@ for confirmation and writes the ticked ones itself, through health-core's
 `bulkAppendValues` in the engine. Chat history is the web's `chat-history.json`, written
 by health-core's `ChatSession` in the engine, kept beside the record.
 
+**Where a report comes from (2026-10-22, US-52 AC10 to AC12).** Brad could not find how to
+connect Dropbox from "+". "+" now opens a chooser: From Dropbox, From Google Drive, From
+Files, From Photos, and Scan a paper report (VisionKit's document camera, real phones only).
+- *One connection, two jobs.* Connect Dropbox under "+" is Sync's own sign-in
+  (`ConnectCloudButton` → `CloudSync.connect`), so connecting to upload also syncs the
+  record. The screen says so in one sentence before the sign-in. A second OAuth flow, or a
+  token that reads files but does not sync, would be two Dropbox grants for one app key.
+- *The app folder is the inbox.* The Dropbox app is an App folder app, so the app lists
+  only `Apps/Health Plan by Dr Brad`, the root the hosted connector imports from too. The
+  listing and download are health-core's `dropboxListFolder` and `dropboxDownload`, run in
+  the engine (`labFilesJson`, `labFile` in cloud.ts), filtered by the connector's name
+  rule (`isImportableEntryName`, `FOLDER_IMPORT_EXTENSIONS`), so the record and the app's
+  own files never list. Download is by listing id only, never a path, and only an id a
+  fresh listing still offers as a lab file (review R3): any Dropbox id the phone could
+  learn, the record's included, is otherwise refused. A file over the web's size limit
+  is refused before it downloads, an empty one (or one listed with no size) is called empty, and the bytes are checked again
+  (R5). The bridge's fetch holds the whole answer in Swift before JavaScript sees its
+  headers, so a header check would guard nothing more; a true cap would sit in
+  `EngineNatives.http`.
+- *Google Drive cannot list.* `drive.file` sees only the files the app made, so Drive
+  reports come in through the Files picker (the Google Drive app's file provider). "From
+  Google Drive" offers Connect (for the record) and says that plainly.
+- *Consent moved to the send.* The AI consent now comes after a file is picked and read on
+  the phone, before anything goes to the server. Choosing a source and signing in to
+  Dropbox are not AI steps, so asking first got in the way.
+- *Bytes across the bridge.* `labFile` answers `{ name, bytes }`: the fresh listing's name, which
+  the phone reads the file under (re-check R3), and an ArrayBuffer that `HealthEngine.callAsync(_:_:read:)` turns into `Data` (the shim's own `EngineNatives.data`), so no base64 detour. Refusals are `{"refused": "…"}`, told from a cloud failure by that marker (re-check R1).
+- *Sync screen.* It says what sync does before a connect, names the cloud and folder once
+  connected, and draws "not connected" as a phone (`SyncStatusText.symbol`): a struck-out
+  iCloud symbol read as "iCloud is off".
+- *The account's email (orchestrator, 2026-10-22).* Sync says "Connected to <email>", so a
+  person with two Dropbox accounts can see which one is linked. Dropbox's token answer has
+  no email, so connect makes one `users/get_current_account` call, as the web's
+  `accountEmail` does (verified only, lower-cased); Drive's `about` call, already made for
+  the account id, also asks for `emailAddress`; that it answers under `drive.file` alone is
+  unverified until a real Google sign-in, so the cloud's name stays the fallback. No new
+  scope. The lookup times out after 5 seconds (review R9). A missing email never fails a
+  connect. It is kept only in `sync-account-email`, beside `sync-account` in the Record
+  folder that backups leave out, never logged, and removed on Disconnect and on "Delete
+  all my data". The web's code lives in the widget's adapter, not health-core, so the
+  phone repeats the one call in OAuthClient beside Drive's `about`.
+
 ### D9 · No server telemetry (Brad, 2026-10-21)
 
 The app sends no product events to Brad's server. The usage signal is App Store Connect
