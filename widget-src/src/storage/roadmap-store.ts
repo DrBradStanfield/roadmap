@@ -31,7 +31,7 @@ import {
   RecordSession,
   bulkAppendValues,
   splitDocumentRef,
-  classifyMedicationChange,
+  upsertMedication,
   classifySupplementChange,
   isEscalationKey,
   computeReminderSchedule,
@@ -335,24 +335,11 @@ export class RoadmapStore {
 
   saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): boolean {
     if (this.refuses(erase)) return false;
-    // Classify against the current record BEFORE the upsert mutates it; a
-    // non-null result appends one append-only history row (never edited or
-    // deleted — merges across devices by id union). Identical re-saves and
-    // non-taking ↔ non-taking flips classify null, so no duplicate rows.
-    const prev = this.file.medications.find((m) => m.medicationKey === medicationKey);
-    const changeType = classifyMedicationChange(prev, { medicationKey, drugName, doseValue, doseUnit });
+    // health-core's one rule, shared with the iPhone app: the keyed row with
+    // its sync clock, and a history row only when the change classifies.
     // One edit, one save: state + history in one atomic file write.
-    return this.session.edit((file) => {
-      this.upsertByKey(file.medications, 'medicationKey', medicationKey, () => ({
-        id: newId(), medicationKey, drugName, doseValue, doseUnit,
-      }), (existing) => { existing.drugName = drugName; existing.doseValue = doseValue; existing.doseUnit = doseUnit; });
-      if (changeType) {
-        file.medicationHistory.push({
-          id: newId(), medicationKey, drugName, doseValue, doseUnit,
-          changeType, updatedAt: new Date().toISOString(),
-        });
-      }
-    }, erase);
+    const save = { medicationKey, drugName, doseValue, doseUnit };
+    return this.session.edit((file) => upsertMedication(file, save, new Date().toISOString()).file, erase);
   }
 
   saveSupplement(supplementKey: string, supplementName: string, doseValue: number | null = null, doseUnit: string | null = null, status = 'active', startedAt?: string, erase?: string): boolean {
