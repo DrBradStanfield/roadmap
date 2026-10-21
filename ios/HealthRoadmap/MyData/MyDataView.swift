@@ -31,6 +31,9 @@ struct MyDataView: View {
                     units(data)
                     metrics("Vitals", data.vitals)
                     metrics("Blood tests", data.bloodTests)
+                    MedicationsSection(store: store, data: data, saved: saved)
+                    ScreeningsSection(store: store, data: data, saved: saved)
+                    SupplementsSection(store: store, supplements: data.supplements, saved: saved)
                     Section {
                     } footer: {
                         Label("Saved on this iPhone and in its backups. The app sends it nowhere.", systemImage: "lock.shield")
@@ -113,11 +116,7 @@ struct MyDataView: View {
                 saved(store.apply(.profile(height: value)))
             }
         case .metric(let row):
-            ValueEntrySheet(title: row.label, unit: row.unit, current: row.latest?.value, asksForDay: true, read: store.number) { value, day in
-                saved(store.apply(.add(metric: row.metric, value: value, day: day)))
-            } replace: { existingId, value in
-                saved(store.apply(.correct(id: existingId, value: value)))
-            }
+            MetricSheet(store: store, row: row, saved: saved)
         }
     }
 

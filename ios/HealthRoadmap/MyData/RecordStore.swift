@@ -62,6 +62,12 @@ final class RecordStore {
         (try? engine.number(from: text)) ?? nil
     }
 
+    /// Every value recorded for one metric (US-25 AC9); nil while the record cannot be read.
+    func history(for metric: String) -> MetricHistory? {
+        guard problem == nil else { return nil }
+        return try? engine.history(recordJSON: recordJSON, metric: metric, now: .now, deviceId: deviceId)
+    }
+
     func apply(_ edit: RecordEdit) -> ApplyResult {
         if let problem { return .refused(message: problem, existingId: nil) }
         do {

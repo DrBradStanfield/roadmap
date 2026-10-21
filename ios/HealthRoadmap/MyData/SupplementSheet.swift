@@ -1,0 +1,147 @@
+import SwiftUI
+
+/// One supplement taken now: its dose and unit, or stop taking it (US-25 AC8).
+/// Stopping keeps the supplement in the record as stopped; nothing is removed.
+/// The web twin is a supplement row in InputPanel.tsx renderSupplements.
+struct SupplementSheet: View {
+    let row: SupplementsView.Row
+    /// The units health-core offers; the row's own unit stays pickable even if not listed.
+    let units: [String]
+    let read: (String) -> Double?
+    let save: (FormEdit) -> RecordStore.ApplyResult
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var dose = ""
+    @State private var unit = ""
+    @State private var message: String?
+    @State private var confirmingStop = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    HStack {
+                        TextField("Dose", text: $dose)
+                            .keyboardType(.decimalPad)
+                            .font(.title2.weight(.semibold))
+                            .monospacedDigit()
+                        Picker("Unit", selection: $unit) {
+                            Text("Unit").tag("")
+                            ForEach(unitChoices, id: \.self) { Text($0).tag($0) }
+                        }
+                        .labelsHidden()
+                    }
+                } footer: {
+                    if let message { Text(message).foregroundStyle(.red) } else { Text("Since \(DayText.short(row.startedDay))") }
+                }
+                Section {
+                    Button("Stop taking \(row.name)") { confirmingStop = true }
+                } footer: {
+                    Text("It stays in your record as stopped, and you can take it again.")
+                }
+            }
+            .navigationTitle(row.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Save", action: saveDose).disabled(!doseReadable) }
+            }
+            .confirmationDialog("Stop taking \(row.name)?", isPresented: $confirmingStop, titleVisibility: .visible) {
+                Button("Stop taking") {
+                    finish(save(.supplement(key: row.key, name: row.name, dose: row.dose, unit: row.unit, stopped: true)))
+                }
+            }
+            .onAppear {
+                dose = row.dose.map(Self.doseText) ?? ""
+                unit = row.unit ?? ""
+            }
+        }
+    }
+
+    /// The listed units, plus the row's own if the list lacks it (a featured default such as "serving").
+    private var unitChoices: [String] {
+        guard let own = row.unit, !own.isEmpty, !units.contains(own) else { return units }
+        return [own] + units
+    }
+
+    /// An empty dose is "no dose"; anything else must read as a number.
+    private var doseReadable: Bool { dose.trimmingCharacters(in: .whitespaces).isEmpty || read(dose) != nil }
+
+    private func saveDose() {
+        let value = dose.trimmingCharacters(in: .whitespaces).isEmpty ? nil : read(dose)
+        finish(save(.supplement(key: row.key, name: row.name, dose: value, unit: unit.isEmpty ? nil : unit, stopped: false)))
+    }
+
+    private func finish(_ result: RecordStore.ApplyResult) {
+        switch result {
+        case .saved: dismiss()
+        case .refused(let why, _): message = why
+        }
+    }
+
+    /// "5" for a whole dose, "2.5" otherwise.
+    static func doseText(_ dose: Double) -> String {
+        dose.rounded() == dose ? String(Int(dose)) : String(dose)
+    }
+}
+
+/// Add a supplement: search health-core's list, or add the typed name as your own.
+struct AddSupplementSheet: View {
+    let choices: [SupplementsView.Choice]
+    let save: (FormEdit) -> RecordStore.ApplyResult
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var search = ""
+    @State private var message: String?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if let message {
+                    Text(message).foregroundStyle(.red)
+                }
+                if canAddTyped {
+                    Button { finish(save(.customSupplement(name: typed))) } label: {
+                        Label("Add \u{201C}\(typed)\u{201D}", systemImage: "plus.circle.fill")
+                    }
+                }
+                ForEach(matches) { choice in
+                    Button {
+                        finish(save(.supplement(key: choice.key, name: choice.name, dose: choice.dose, unit: choice.unit, stopped: false)))
+                    } label: {
+                        HStack {
+                            Text(choice.name)
+                            if choice.featured {
+                                Spacer()
+                                Image(systemName: "star.fill").foregroundStyle(.yellow).accessibilityLabel("Featured")
+                            }
+                        }
+                    }
+                    .tint(.primary)
+                }
+            }
+            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search or type a name")
+            .navigationTitle("Add a supplement")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+        }
+    }
+
+    private var typed: String { String(search.trimmingCharacters(in: .whitespaces).prefix(100)) }
+
+    private var matches: [SupplementsView.Choice] {
+        typed.isEmpty ? choices : choices.filter { $0.name.localizedCaseInsensitiveContains(typed) }
+    }
+
+    /// A typed name with no exact match on the list can always be added (the web's rule).
+    private var canAddTyped: Bool {
+        !typed.isEmpty && !choices.contains { $0.name.caseInsensitiveCompare(typed) == .orderedSame }
+    }
+
+    private func finish(_ result: RecordStore.ApplyResult) {
+        switch result {
+        case .saved: dismiss()
+        case .refused(let why, _): message = why
+        }
+    }
+}
