@@ -13,14 +13,18 @@ const INVALID_STAMPS: unknown[] = [
   'not-a-date', 'zzzz', '2026-02-30', '2026-02-30T00:00:00Z', '', null, 1780000000000,
   '2099-01-01T99:00:00Z', '2026-05-01 junk', '2026-05-01Tjunk', '2026-05-01T10:60:00Z',
   '2026-05-01T10:00:00+99:00', '2026-05-01T10:00:00+13', '2026-05-01T10:00:00Zjunk',
+  '2025-01-15 03:00:00+99', '2025-01-15  03:00:00Z', '2025-01-15 junk+00',
 ];
 /** Every shape a real writer emits, all before the fixtures' anchor: toISOString,
  *  a date-only day, offsets (+13:00, compact +0530), fractional seconds,
- *  lowercase t/z, and a zone-less time, which the merge reads as UTC. */
+ *  lowercase t/z, a zone-less time, which the merge reads as UTC, and
+ *  Postgres's text style (a space for the T, an hour-only offset). */
 const VALID_STAMPS = [
   '2026-05-01T10:00:00.000Z', '2026-05-01', '2026-05-01T10:00:00+13:00', '2026-05-01T10:00:00-08:00',
   '2026-05-01T10:00:00+0530', '2026-05-01T10:00:00.123456Z', '2026-05-01t10:00:00z',
   '2026-05-01T10:00:00', '2026-05-01T10:00Z',
+  // Postgres text style, which files imported from v1 may hold.
+  '2025-01-15 03:00:00+00', '2025-01-15 03:00:00.123+13', '2025-01-15 03:00:00+05:30', '2025-01-15 03:00:00Z',
 ];
 
 describe('migrateFile', () => {
@@ -412,8 +416,10 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
   // validated, and a string that is not a time compares as a string. So
   // 'not-a-date' (which sorts after any ISO stamp) read as future and took the
   // anchor, a real date the reminder schedule then used as a review date. A
-  // stamp that is not a real calendar date is an unknown time, the bottom.
-  it('reads a row updatedAt that is not a real calendar date as the bottom, never the anchor', () => {
+  // stamp that is not a time is an unknown time, the bottom. Codex R1: the
+  // whole stamp is checked, not only its day, so a real day with a broken time
+  // or offset, or trailing junk, is not a time either.
+  it('reads a row updatedAt that is not a complete stamp as the bottom, never the anchor', () => {
     for (const updatedAt of INVALID_STAMPS) {
       const f = migrateFile(rawFile({ medications: [medRow({ updatedAt })] }), OPTS);
       expect(f.medications[0].updatedAt, String(updatedAt)).toBe('');
@@ -424,23 +430,6 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     }
     const future = migrateFile(rawFile({ medications: [medRow({ updatedAt: '2099-01-01T00:00:00Z' })] }), OPTS);
     expect(future.medications[0].updatedAt).toBe(META.updatedAt);
-  });
-
-  // US-23 AC6a, Codex R1 (2026-10-21): the whole stamp is checked, not only
-  // its day: a valid day with a broken time or offset, or trailing junk, is
-  // not a time either, and must not reach the clamp or the day extraction.
-  // And createdAt gets the same validate-first rule as updatedAt.
-  it('reads a row createdAt that is not a complete stamp as the bottom, never the anchor', () => {
-    for (const createdAt of INVALID_STAMPS) {
-      const f = migrateFile(rawFile({ measurements: [{ ...MEAS, createdAt }] }), OPTS);
-      expect(f.measurements[0].createdAt, String(createdAt)).toBe('');
-    }
-    for (const createdAt of VALID_STAMPS) {
-      const f = migrateFile(rawFile({ measurements: [{ ...MEAS, createdAt }] }), OPTS);
-      expect(f.measurements[0].createdAt).toBe(createdAt);
-    }
-    const future = migrateFile(rawFile({ measurements: [{ ...MEAS, createdAt: '2099-01-01T00:00:00Z' }] }), OPTS);
-    expect(future.measurements[0].createdAt).toBe(META.updatedAt);
   });
 });
 

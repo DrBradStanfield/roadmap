@@ -101,8 +101,10 @@ function after(a: string, b: string): boolean {
 
 const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
 
-/** Every shape a writer stamps with: a day alone, or with a time and an optional zone. */
-const STAMP = /^\d{4}-\d{2}-\d{2}([Tt]\d{2}:\d{2}(:\d{2}(\.\d+)?)?([Zz]|[+-]\d{2}:?\d{2})?)?$/;
+/** Every shape a writer stamps with: a day alone, or with a time and an
+ *  optional zone. A space for the T, and an hour-only offset, are Postgres's
+ *  text style, which files imported from v1 may hold. */
+const STAMP = /^\d{4}-\d{2}-\d{2}([Tt ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?([Zz]|[+-](0\d|1[0-4])(:?[0-5]\d)?)?)?$/;
 
 /** A complete stamp (US-23 AC6a): a real calendar day, alone or with a time,
  *  that parses. A real day followed by a broken time or offset, or by junk,
@@ -162,11 +164,8 @@ function sanitizeStamp<T>(row: T, anchor: string): T {
  * anchor splits one document's content identity and can revive a deletion.
  */
 function sanitizeCreatedAt<T>(row: T, anchor: string): T {
-  if (!isObject(row) || !('createdAt' in row) || row.createdAt === '') return row;
-  // Validated first, as `updatedAt` is (US-23 AC6a): a stamp that is not a
-  // time is an unknown time, never the anchor.
-  if (!isStamp(row.createdAt)) return { ...row, createdAt: '' } as T;
-  return after(row.createdAt, anchor) ? { ...row, createdAt: anchor } as T : row;
+  if (!isObject(row) || typeof row.createdAt !== 'string' || !after(row.createdAt, anchor)) return row;
+  return { ...row, createdAt: anchor } as T;
 }
 
 /** The printed row's id plus this suffix, so every device computes the SAME id
