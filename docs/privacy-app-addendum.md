@@ -119,19 +119,25 @@ software development kit, and it does not follow you across other apps or websit
 choose to share analytics with app developers in your iPhone's settings, Apple may send us
 crash reports and usage counts.
 
+The App Store privacy label lists what the app sends. Health data and what you type or
+upload are listed as linked to you: a lab report carries your name, and Anthropic may keep
+what we send for a time. The App Attest key id and the daily count of chat questions and
+uploads are listed as not linked. None of it is used for tracking.
+
 ## Deleting your data
 
 **Delete all my data**, in the app, deletes your record, your chat history and your
 reminders on this iPhone, and deletes the readings this app wrote to Apple Health. Readings
 from other apps and devices stay in Apple Health. With a cloud connected, it also erases your
 record there: the file stays, with your values erased, so your other devices erase their
-copies when they next sync. A value another device has not synced yet is kept, and arrives
-later.
+copies when they next sync. It also deletes the chat history the website saved there, when
+it can reach it. If it cannot reach it, the app says so, and you can try again. If it cannot
+read it, the app says so too: delete it on the website, or delete `chat-history.json` in your
+Dropbox or Google Drive. A value another device has not synced yet is kept, and arrives later.
 
-It cannot reach copies you exported or shared, your cloud provider's version history, a chat
-history the website saved in your Dropbox or Google Drive, or chat questions already sent.
-Our server keeps none of those questions, but Anthropic may keep them for a limited time, as
-described above. The App Attest row stays; it holds nothing about you or your health.
+It cannot reach copies you exported or shared, your cloud provider's version history, or
+chat questions already sent. Our server keeps none of the questions sent from this app, but
+Anthropic may keep them for a limited time, as described above. The App Attest row stays; it holds nothing about you or your health.
 
 An erase made on the website reaches this iPhone's record and reminders when the app next
 syncs, but not the chat history on it. Delete that in the app.
@@ -157,9 +163,6 @@ time.
 - [VERIFY] Engine updates (D3) are not in the code at b3a4789f. The paragraph states what
   the orchestrator specified. When D3 merges, check the host, that the request carries no
   record data or device id, and what headers it sends.
-- [VERIFY] `ios/HealthRoadmap/PrivacyInfo.xcprivacy` still has an empty
-  `NSPrivacyCollectedDataTypes`, though chat and lab upload send health data and user
-  content off the phone. It must match this page and the App Store Connect answers.
 - [VERIFY] The chat consent screen (`AIConsent.swift`) lists the record summary but does not
   name Apple Health. architecture.md calls this a 5.1.3 disclosure question.
 - [VERIFY] `ServerConfig.swift` still points at the placeholder host

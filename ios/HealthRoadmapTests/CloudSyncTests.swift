@@ -40,6 +40,7 @@ final class CloudSyncTests: XCTestCase {
             if !online { return .init(offline: true) }
             guard request.headers["authorization"] == "Bearer token-1" else { return .init(status: 401) }
             let arg = try! JSONSerialization.jsonObject(with: Data(request.headers["dropbox-api-arg"]!.utf8)) as! [String: Any]
+            if arg["path"] as? String == "/chat-history.json" { return answerChat(request, arg) }
             if request.url.path.hasSuffix("/files/download") {
                 if let hook = onDownload { DispatchQueue.main.async { MainActor.assumeIsolated { hook() } } }
                 guard let file else { return .init(status: 409, body: Data(#"{"error_summary":"path/not_found/"}"#.utf8), delay: downloadDelay) }
@@ -55,6 +56,21 @@ final class CloudSyncTests: XCTestCase {
             uploads += 1
             file = (String(decoding: request.body, as: UTF8.self), (file?.rev ?? 0) + 1)
             return .init(body: Data(#"{"rev":"r\#(file!.rev)"}"#.utf8))
+        }
+
+        /// `/chat-history.json`, which only the website writes (US-25 AC16).
+        var chat: (text: String, rev: Int)?
+
+        private func answerChat(_ request: StubHTTP.Request, _ arg: [String: Any]) -> StubHTTP.Answer {
+            if request.url.path.hasSuffix("/files/download") {
+                guard let chat else { return .init(status: 409, body: Data(#"{"error_summary":"path/not_found/"}"#.utf8)) }
+                return .init(headers: ["Dropbox-API-Result": #"{"rev":"r\#(chat.rev)"}"#], body: Data(chat.text.utf8))
+            }
+            let mode = arg["mode"] as? [String: Any]
+            let expected = mode?[".tag"] as? String == "update" ? mode?["update"] as? String : nil
+            guard expected == chat.map({ "r\($0.rev)" }) else { return .init(status: 409, body: Data(#"{"error_summary":"path/conflict/"}"#.utf8)) }
+            chat = (String(decoding: request.body, as: UTF8.self), (chat?.rev ?? 0) + 1)
+            return .init(body: Data(#"{"rev":"r\#(chat!.rev)"}"#.utf8))
         }
     }
 

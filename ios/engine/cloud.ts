@@ -6,6 +6,7 @@
 // connect and the copy-down on leaving. This file only builds the RecordHost
 // the phone stands behind, out of the natives Swift supplies.
 import { ROADMAP_FILE_NAME, StorageError, ConflictError, UNREACHABLE_HINT, type ReadResult, type StorageAdapter, type WriteResult } from '../../packages/health-core/src/adapter';
+import { ChatSession } from '../../packages/health-core/src/chat-session';
 import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { LiveRefresh } from '../../packages/health-core/src/live-refresh';
@@ -90,9 +91,11 @@ class PhoneCloudAdapter implements StorageAdapter {
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
-    __native.notify('saving', '', this.session);
+    // Sync status is the record's: the chat file's writes say nothing (adversary R3).
+    const record = fileName === ROADMAP_FILE_NAME;
+    if (record) __native.notify('saving', '', this.session);
     const written = await this.run((cloud) => cloud.write(fileName, body, expectedVersion, signal));
-    __native.notify('saved', '', this.session);
+    if (record) __native.notify('saved', '', this.session);
     return written;
   }
 
@@ -400,9 +403,10 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
  * "Delete all my data" with a cloud open (US-25 AC16, US-11): health-core's
  * RecordSession.deleteAllData, the web's order and guard. The cloud record is
  * read first; one that cannot be read refuses, and nothing changes anywhere,
- * the chat history included. Then the chat tombstones, written by Swift's
- * `keepChat` inside that step (the phone's own file; it answers '' or why not),
- * so they land before the record goes up (Codex R3). Then the erased record, by a
+ * the chat history included. Then the chat tombstones, in that step so they
+ * land before the record goes up (Codex R3): the chat-history.json the website
+ * saved in the cloud (`cloudChatErased`), then the phone's own file, written by
+ * Swift's `keepChat` (`chatErased`; it answers '' or why not). Then the erased record, by a
  * higher eraseEpoch: the file stays in the cloud with the erase in it, so other
  * devices take it in (US-11 AC6). The app's reminders have no server to tear
  * down: they follow the epoch (ReminderScheduler).
@@ -415,12 +419,26 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
  */
 export async function cloudErase(historyText: string | null, nowIso: string, keepChat?: (text: string) => string): Promise<string> {
   const at = open;
-  if (!at) return JSON.stringify({ success: false, error: ERASE_UNREACHABLE, chatErased: false, chatHistory: null, erased: false, view: null });
+  if (!at) return JSON.stringify({ success: false, error: ERASE_UNREACHABLE, chatErased: false, cloudChatErased: false, cloudChatProblem: null, chatHistory: null, erased: false, view: null });
   const before = at.session.eraseIdentity;
   let chatHistory: string | null = null;
+  let cloudChatErased = false;
+  let cloudChatProblem: 'unreachable' | 'unreadable' | null = null;
   const result = await at.session.deleteAllData({
     chat: async () => ({
       eraseAll: async () => {
+        // The cloud's chat-history.json, as the web erases it: through ChatSession
+        // on the same host. Best effort and reported on its own: a file the app
+        // cannot read (corrupt, or a newer website's schema) must never block the
+        // phone's chat erase, on this try or a retry (adversary R1).
+        try {
+          await (await ChatSession.open(at.host)).eraseAll();
+          cloudChatErased = true;
+        } catch (error) {
+          // Why, so the words fit (adversary M1): a file the app cannot read will
+          // not mend on a retry; a provider that did not answer may.
+          cloudChatProblem = unreadable(error) ? 'unreadable' : 'unreachable';
+        }
         chatHistory = await eraseChatText(historyText, nowIso, at.host.deviceId());
         const refused = chatHistory === null ? '' : keepChat?.(chatHistory);
         if (refused) throw new Error(refused);
@@ -434,7 +452,12 @@ export async function cloudErase(historyText: string | null, nowIso: string, kee
   } else if (erased) {
     at.unflushed += 1; // the background flush retries it
   }
-  return JSON.stringify({ ...result, chatHistory, erased, view: erased ? JSON.parse(view(at)) : null });
+  return JSON.stringify({ ...result, cloudChatErased, cloudChatProblem, chatHistory, erased, view: erased ? JSON.parse(view(at)) : null });
+}
+
+/** A file read but not understood: not JSON, or a newer schema than this engine's. */
+function unreadable(error: unknown): boolean {
+  return error instanceof SchemaTooNewError || (error instanceof StorageError && error.cause instanceof SyntaxError);
 }
 
 /** The app came to the foreground: re-read (US-34), and retry a refused save. */

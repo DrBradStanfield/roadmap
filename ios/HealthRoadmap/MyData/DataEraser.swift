@@ -80,7 +80,7 @@ final class DataEraser {
         } catch {
             return .refused(EraseText.notWritten(error.localizedDescription, chatErased: chatErased))
         }
-        return .erased(EraseText.done(provider: nil, chatErased: chatErased))
+        return .erased(EraseText.done(provider: nil, chatErased: chatErased, cloudChat: nil))
     }
 
     private func eraseInCloud(_ provider: CloudProvider) async -> Outcome {
@@ -93,18 +93,23 @@ final class DataEraser {
                 return chatWritten
             }
         } catch {
-            return .refused(EraseText.failed(error.localizedDescription, chatErased: chatWritten))
+            // The engine answered nothing, so whether the cloud chat went is unknown; a
+            // rejection after its chat step does not happen (RecordSession refuses instead).
+            return .refused(EraseText.failed(error.localizedDescription, chatErased: chatWritten, cloudChatErased: false, provider: provider))
         }
         guard let result = answer, result.erased else {
-            // The engine refuses before the chat step, so chatWritten is false here but
-            // in a failure after it (re-check N2), which the words then name.
-            let words = chatWritten ? EraseText.failed(answer?.error ?? "", chatErased: true) : EraseText.refusal(answer?.error, provider: provider)
+            // The engine refuses before the chat step, so neither chat file is erased here
+            // but in a failure after it (re-check N2, L1), which the words then name.
+            let cloudChatErased = answer?.cloudChatErased ?? false
+            let words = chatWritten || cloudChatErased
+                ? EraseText.failed(answer?.error ?? "", chatErased: chatWritten, cloudChatErased: cloudChatErased, provider: provider)
+                : EraseText.refusal(answer?.error, provider: provider)
             return .refused(words)
         }
         let chatErased = chatReadable && result.chatErased
         return result.success
-            ? .erased(EraseText.done(provider: provider, chatErased: chatErased))
-            : .notSent(EraseText.notSent(provider: provider, chatErased: chatErased))
+            ? .erased(EraseText.done(provider: provider, chatErased: chatErased, cloudChat: result.cloudChat))
+            : .notSent(EraseText.notSent(provider: provider, chatErased: chatErased, cloudChat: result.cloudChat))
     }
 
     /// The chat file's text, and whether it could be read: one that is there but
