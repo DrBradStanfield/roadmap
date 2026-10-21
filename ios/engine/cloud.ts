@@ -34,7 +34,6 @@ export interface CloudNatives {
   phoneRead(): string;
   /** Writes the phone's record file atomically; answers the error, or '' when it landed. */
   phoneWrite(text: string): string;
-  phoneRemove(): void;
   /** The marker that says the phone holds changes the cloud lacks (US-09 AC4). */
   pending(op: 'get' | 'set' | 'clear'): boolean;
   /** Tells Swift what happened in session `session`: 'saving', 'saved',
@@ -239,9 +238,10 @@ function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, 
       // The phone never logs off underneath an open session: Disconnect closes
       // the session first (cloudClose).
       writesStopped: () => false,
-      wipe: async () => __native.phoneRemove(),
       opened: () => {},
     },
+    // The chat history on the phone is Swift's own file, erased through keepChat.
+    clearNamedFiles: () => {},
     // The app keeps no health data outside the record yet. Apple Health
     // samples and notifications join here when they land (D5, D6, D7).
     clearOffFileData: () => {},
@@ -410,8 +410,8 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
  * `erased`: the working copy is now the erased record, written or not. When
  * the write failed, the session mirrored it onto the phone, marked pending,
  * and the next flush or open sends it: the screen shows it, and the app says
- * the cloud still has to take it. On success the session wiped the pre-erase
- * mirror; the erased record goes in its place, so an offline launch opens on it.
+ * the cloud still has to take it. On success the session merged the erased
+ * record into the phone's copy (US-11 AC9), so an offline launch opens on it.
  */
 export async function cloudErase(historyText: string | null, nowIso: string, keepChat?: (text: string) => string): Promise<string> {
   const at = open;
@@ -429,7 +429,6 @@ export async function cloudErase(historyText: string | null, nowIso: string, kee
   });
   const erased = at.session.eraseIdentity !== before;
   if (result.success) {
-    await saveRecordInto(at.phone, at.session.file, { deviceId: at.host.deviceId(), now: nowIso }).catch(() => {});
     at.unflushed = 0;
   } else if (erased) {
     at.unflushed += 1; // the background flush retries it

@@ -150,10 +150,6 @@ final class RecordStore {
         try Self.write(text, to: file)
     }
 
-    func removePhone() {
-        try? FileManager.default.removeItem(at: file)
-    }
-
     /// The folder the app keeps the record in, made on first use and marked for iOS
     /// to leave out of iCloud and computer backups (Brad 2026-10-21). The mark is on the folder, not the file: every save
     /// replaces the file, and a mark on it would go with the old copy.

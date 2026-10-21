@@ -91,6 +91,10 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     // The localStorage record: a guest or on-device fallback tab keeps its
     // documents there, whatever record the erase came in on (US-09 AC23).
     deviceRecord: () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body,
+    // The other record files (chat-history.json) sit under the adapter's
+    // named-file prefix, which only disconnect() clears — and disconnect()
+    // after an erase would delete the erased record file just written.
+    clearNamedFiles: clearLocalNamedFiles,
     ...(store.watch ? {
       watch(onChange: () => void) {
         const watching = new AbortController();
@@ -127,20 +131,15 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     },
   };
   if (store instanceof LocalStorageAdapter) {
-    // The other record files (chat-history.json) sit under the adapter's
-    // named-file prefix, which only disconnect() clears — and disconnect()
-    // after an erase would delete the erased record file just written.
-    return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles, eraseFence: localEraseGeneration };
+    return { ...base, tier: 'device', sync: store, eraseFence: localEraseGeneration };
   }
-  const device = new LocalStorageAdapter();
   return {
     ...base,
     tier: 'cloud',
     mirror: {
-      adapter: device,
+      adapter: new LocalStorageAdapter(),
       pending: { get: isSyncPending, set: markSyncPending, clear: clearSyncPending },
       writesStopped: roadmapLocalWritesStopped,
-      wipe: () => device.disconnect(),
       opened: latchOnOtherTabsLogOff,
     },
   };

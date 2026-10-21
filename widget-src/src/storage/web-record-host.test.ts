@@ -35,9 +35,12 @@ describe('webRecordHost', () => {
     host.mirror.pending.clear();
     expect(host.mirror.pending.get()).toBe(false);
 
-    // The wipe removes the device copy (US-11).
+    // An erase keeps the device copy, rewritten as the erased record, and
+    // clears only the other record files beside it (US-11 AC3, AC9).
     await host.mirror.adapter.write(ROADMAP_FILE_NAME, { schemaVersion: 1 }, null);
-    await host.mirror.wipe();
-    expect((await host.mirror.adapter.read(ROADMAP_FILE_NAME)).body).toBeNull();
+    localStorage.setItem('health_roadmap_file_v2:chat-history.json', '{}');
+    host.clearNamedFiles();
+    expect(localStorage.getItem('health_roadmap_file_v2:chat-history.json')).toBeNull();
+    expect((await host.mirror.adapter.read(ROADMAP_FILE_NAME)).body).toEqual({ schemaVersion: 1 });
   });
 });

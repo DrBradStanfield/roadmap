@@ -692,7 +692,7 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull();
   });
 
-  it('a successful erase also wipes the on-device mirror + marker (no pre-erase copy outlives it)', async () => {
+  it('a successful erase makes the on-device copy the erased record and clears the marker (no pre-erase copy outlives it)', async () => {
     // Session with an earlier failure's residue on-device, then a healthy erase.
     const cloud = new MemoryCloud();
     const failing = await RoadmapStore.create(new TokenExpiredAdapter(cloud));
@@ -702,11 +702,34 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
 
     const healthy = await RoadmapStore.create(new MemoryAdapter(cloud));
     const result = await healthy.deleteAllData();
-    expect(result.success).toBe(true);
+    expect(result).toMatchObject({ success: true });
+    expect(result.warning).toBeUndefined();
 
-    expect(readMirror()).toBeNull();
+    // US-11 AC9: rewritten as the erased record, never deleted.
+    expect(readMirror()!.meta.eraseEpoch).toBe(1);
+    expect(readMirror()!.measurements).toEqual([]);
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull();
     expect(readCloudFile(cloud).meta.eraseEpoch).toBe(1);
+  });
+
+  it('after a cloud erase, a stale cloud copy that reaches this device never puts its rows into the device copy (US-11 AC9)', async () => {
+    const cloud = new MemoryCloud();
+    const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    seeded.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    await seeded.flush();
+    const stale = { ...cloud.files.get(ROADMAP_FILE_NAME)! };
+
+    expect((await seeded.deleteAllData()).success).toBe(true);
+    // The provider answers with the copy from before the erase.
+    cloud.files.set(ROADMAP_FILE_NAME, stale);
+    const reopened = await RoadmapStore.create(new TokenExpiredAdapter(cloud));
+    reopened.saveScreening('colorectal_method', 'fit');
+    await expect(reopened.flush()).rejects.toThrow();
+
+    // Its failed save merged into the erased device copy: the erase wins there.
+    const device = readMirror()!;
+    expect(device.meta.eraseEpoch).toBe(1);
+    expect(device.measurements).toEqual([]);
   });
 
   it('an erase during a cloud outage mirrors the ERASED file, so the erase itself survives a tab close', async () => {
@@ -1277,7 +1300,9 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
     const bad = { ...createEmptyFile({ deviceId: 'tab', now: '2026-06-01T00:00:00.000Z' }), measurements: 'not an array' };
     localStorage.setItem('health_roadmap_file_v2', JSON.stringify(bad));
 
-    expect(await store.deleteAllData()).toEqual({ success: true, chatErased: true });
+    // The erased record cannot be merged into bytes no record reads, so they
+    // stay, and the erase says so as a warning (US-11 AC9, AC3b).
+    expect(await store.deleteAllData()).toEqual({ success: true, chatErased: true, warning: expect.any(String) });
     expect(readCloudFile(cloud).erasedRows).toEqual({ fromEpoch: 1, ids: [id] });
   });
 
@@ -1315,7 +1340,9 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
     expect(readCloudFile(cloud).erasedRows).toEqual({ fromEpoch: 1, ids: [first, second].sort() });
     expect(readCloudFile(cloud).meta.eraseEpoch).toBe(2);
 
-    // A record erased before the list existed: epoch 3, nothing listed.
+    // A record erased before the list existed: epoch 3, nothing listed. In
+    // another browser: this one's device copy now holds the first erase (US-11 AC9).
+    localStorage.removeItem('health_roadmap_file_v2');
     const legacyCloud = new MemoryCloud();
     const legacy = createEmptyFile({ deviceId: 'old-app', now: '2026-06-01T00:00:00.000Z' });
     legacy.meta.eraseEpoch = 3;

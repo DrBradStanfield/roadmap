@@ -244,10 +244,6 @@ final class CloudSync: CloudPort {
         try store.writePhone(text)
     }
 
-    func phoneRemove() {
-        store.removePhone()
-    }
-
     func pending(_ op: String) -> Bool {
         switch op {
         case "set": try? files.write("", to: files.pending)

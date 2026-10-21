@@ -302,30 +302,33 @@ export class RecordSession {
         this.erasing = false;
       }
       erased = true;
-      // The erase reached the cloud — wipe the on-device residue too (failure
-      // mirror + marker + named files/documents), so no pre-erase copy outlives
-      // the erase on this device (US-11). On a failed flush we keep the mirror
-      // instead: it now holds the ERASED file, whose bumped eraseEpoch wins the
-      // merge and carries the erase to the cloud next session.
-      // Document blobs and the unsaved drafts sit outside the record file, so
-      // the erased file alone doesn't reach them. They go in every mode — a
-      // device-tier user gets no wipe below (it would delete the erased file
-      // just written), and used to keep them — except the originals of
-      // documents the erase did not remove (another tab's, saved meanwhile).
-      this.clearOffFileData();
-      if (host.tier === 'device') {
-        // The other record files (chat history): their contents are already
-        // tombstoned (the caller's beforeErase erases chat history first).
-        // Also rotate the content-free fence so another tab cannot merge its
-        // old snapshot into the missing file.
-        host.clearNamedFiles();
-      } else {
-        // The wipe takes the whole device copy, every stored original with
-        // it: a row a device-tier tab saved after the erase read that copy
-        // goes too (the residual US-11 AC6 names).
+      // The erase reached the cloud. On a cloud the device copy becomes the
+      // erased record too, merged, never deleted: its bumped eraseEpoch beats
+      // a stale cloud copy that later reaches this device, and a row a
+      // device-tier tab saved after the erase read that copy survives,
+      // because no erase listed it (US-11 AC9, US-09 AC23). The marker
+      // clears: the cloud holds the erase. On a failed flush the session
+      // mirrored the ERASED file under the marker instead, and the next
+      // session carries it up. A device copy no record reads cannot take the
+      // merge: the cleanup below still runs, and the erase warns.
+      let deviceFailure: unknown = null;
+      if (host.tier === 'cloud') {
         host.mirror.pending.clear();
-        await host.mirror.wipe();
+        if (!host.mirror.writesStopped()) {
+          await saveRecordInto(host.mirror.adapter, this.current, this.ctx()).catch((e) => { deviceFailure = e; });
+        }
       }
+      // Document blobs and the unsaved drafts sit outside the record file, so
+      // the erased file alone doesn't reach them. They go in every mode,
+      // except the originals of documents the erase did not remove (another
+      // tab's, saved meanwhile), read from the device copy just written.
+      this.clearOffFileData();
+      // The other record files (chat history): their contents are already
+      // tombstoned (the caller's beforeErase erases chat history first).
+      // Also rotate the content-free fence so another tab cannot merge its
+      // old snapshot into the missing file.
+      host.clearNamedFiles();
+      if (deviceFailure) throw deviceFailure;
       return { success: true };
     } catch (e) {
       const message = (e as Error).message;
