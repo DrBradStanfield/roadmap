@@ -344,6 +344,16 @@ describe('US-12 AC4–6 upload session ownership', () => {
   });
 });
 
+// US-14 AC4: an original the cloud would not store, behind a row it already
+// holds, is settled, never a silent checkmark.
+it('US-14 AC4: the done screen says when an original could not be stored', async () => {
+  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0, unstored: 1 });
+  vi.mocked(synthesizeLabArchiveEntries).mockReturnValue([{ documentType: 'pathology_report', title: 'Blood test results', documentDate: null, contentMd: '', metadata: {}, sourceFileName: 'test.pdf' }]);
+  render(<Harness />); await ready();
+  fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+  expect(await screen.findByText("The original file couldn't be stored; its details are saved.")).toBeTruthy();
+});
+
 // Based on Austin Bell's PR #152 (robertaustinbell).
 describe('US-13 AC6: the archive-only path files what the review shows', () => {
   it('an unselected connector letter carries the reviewed title and date, not the extracted ones', async () => {

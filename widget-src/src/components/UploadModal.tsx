@@ -294,6 +294,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const [saveErrorCount, setSaveErrorCount] = useState(0);
   const [savedDocCount, setSavedDocCount] = useState(0);
   const [savedLabCount, setSavedLabCount] = useState(0);
+  // Originals the cloud would not store behind details it already holds (US-14 AC4).
+  const [unstoredCount, setUnstoredCount] = useState(0);
   // US-21 phase 3: lab rows the record would not store because it does not know
   // that unit for that test. Shown by name — a dropped value must never be silent.
   const [refusedLabUnits, setRefusedLabUnits] = useState<LabUnitRefusal[]>([]);
@@ -322,6 +324,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     setSaveErrorCount(0);
     setSavedDocCount(0);
     setSavedLabCount(0);
+    setUnstoredCount(0);
     setRefusedLabUnits([]);
     setRefusedMeasurements([]);
   }, []);
@@ -768,7 +771,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       };
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
         measurements.length > 0 ? bulkSaveMeasurements(measurements).catch(failed('measurements', { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
-        docPayloads.length > 0 ? bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length })) : Promise.resolve({ saved: [], errorCount: 0 }),
+        docPayloads.length > 0 ? bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length, unstored: 0 })) : Promise.resolve({ saved: [], errorCount: 0, unstored: 0 }),
         labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
       ]);
 
@@ -780,6 +783,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       const saveErrors = savedValues.errorCount + savedLabValues.errorCount + savedDocs.errorCount;
       setSaveErrorCount(saveErrors);
       setSavedDocCount(savedDocs.saved.length);
+      setUnstoredCount(savedDocs.unstored ?? 0);
       setSavedLabCount(savedLabValues.saved.length);
       // A save error is the only failure: it keeps the review open so a second
       // Save retries that branch (US-12 AC6). A duplicate and a refused unit or number
@@ -949,7 +953,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 {savedDocCount > 0 && `${savedDocCount} document${savedDocCount !== 1 ? 's' : ''}`}
                 {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0
                   && skippedMeasurements === 0 && skippedLabValues === 0 && saveErrorCount === 0
-                  && refusedLabUnits.length === 0 && refusedMeasurements.length === 0 && 'No items saved'}
+                  && unstoredCount === 0 && refusedLabUnits.length === 0 && refusedMeasurements.length === 0 && 'No items saved'}
               </p>
               {skippedMeasurements > 0 && (
                 <p className="upload-done-skipped">
@@ -962,6 +966,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 </p>
               )}
               {refusalLines}
+              {unstoredCount > 0 && <p className="upload-done-skipped">The original file couldn't be stored; its details are saved.</p>}
               {saveErrorCount > 0 && (
                 <p className="upload-done-skipped">
                   {saveErrorCount} item{saveErrorCount !== 1 ? 's' : ''} could not be saved. Please try again.

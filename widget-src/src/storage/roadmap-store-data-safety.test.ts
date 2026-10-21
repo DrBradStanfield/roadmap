@@ -547,7 +547,7 @@ describe('RoadmapStore document archive (US-14)', () => {
     expect((await store.bulkSaveDocuments([payload])).saved).toHaveLength(0);
   });
 
-  it('a failed archive behind a connector row files NO second row: the connector row stays live and the failure is counted (US-13 AC1, US-35 AC8)', async () => {
+  it('a failed archive behind a connector row files NO second row: the connector row stays live and the failure is settled, counted unstored (US-13 AC1, US-35 AC8, US-14 AC4)', async () => {
     // Sentry 7715862604: the em dash in this title broke the Dropbox header, and
     // the old "degrade to metadata-only" branch then filed a plain row BESIDE the
     // connector's — the Documents list showed the letter twice, and every
@@ -568,7 +568,7 @@ describe('RoadmapStore document archive (US-14)', () => {
     const store = await RoadmapStore.create(adapter);
     const payload = { documentType: 'clinic_letter', title, documentDate: '2026-08-25', contentMd: 'md', metadata: {}, sourceFileName: 'clinic-letter.pdf', file: blob };
 
-    expect(await store.bulkSaveDocuments([payload])).toEqual({ saved: [], errorCount: 1 });
+    expect(await store.bulkSaveDocuments([payload])).toEqual({ saved: [], errorCount: 0, unstored: 1 });
     await store.flush();
     const file = readCloudFile(cloud);
     const live = file.documents.filter((d) => !d.deleted);

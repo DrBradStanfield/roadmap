@@ -48,10 +48,10 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     expect(file.documents.find(d => !d.deleted)?.fileRef).toBeTruthy();
     expect((await retry.bulkSaveDocuments([doc])).saved).toHaveLength(0);
   });
-  // An original that can never be stored (a size cap, GitHub's public-repo
-  // guard) must not trap the user in "Failed to save": a repeat failure behind
-  // the website's own failed row is settled, the row stays, no error.
-  it('a retry that fails again leaves the first metadata row intact, settled with no error', async () => {
+  // An original that can never be stored (a size cap) must not trap the user
+  // in "Failed to save": a repeat failure is settled, no error, and `unstored`
+  // tells the done screen to say so.
+  it('a retry that fails again, details unchanged, leaves the first row intact: settled, counted unstored', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
@@ -62,11 +62,29 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     await store.flush();
     const result = await store.bulkSaveDocuments([doc]);
     await store.flush();
-    expect(result).toEqual({ saved: [], errorCount: 0 });
+    expect(result).toEqual({ saved: [], errorCount: 0, unstored: 1 });
     expect(read(cloud).documents.filter(d => !d.deleted).map(d => d.id)).toEqual([original.id]);
   });
 
-  it('a repeat failure behind a connector row still reports the failure for a retry', async () => {
+  it('a retry that fails again with a reviewed title or date files a new row with them and replaces the held one', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    adapter.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
+    const store = await RoadmapStore.create(adapter);
+    const original = (await store.bulkSaveDocuments([payload()])).saved[0];
+    await store.flush();
+    for (const change of [{ title: 'Reviewed title' }, { documentDate: '2025-02-03' }]) {
+      const result = await store.bulkSaveDocuments([{ ...payload(), ...change }]);
+      await store.flush();
+      expect(result).toMatchObject({ errorCount: 0, unstored: 1, saved: [expect.objectContaining({ fileRef: null, contentHash: original.contentHash })] });
+    }
+    const live = read(cloud).documents.filter(d => !d.deleted);
+    expect(live).toHaveLength(1);
+    expect(live[0]).toMatchObject({ title: 'Synthetic letter', date: '2025-02-03', contentHash: original.contentHash, fileRef: '' });
+  });
+
+  it('a repeat failure behind a connector row settles the same way, whatever its metadata says', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
@@ -75,7 +93,29 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     const doc = { ...payload(), metadata: { importedVia: 'connector' } };
     await store.bulkSaveDocuments([doc]);
     await store.flush();
-    expect(await store.bulkSaveDocuments([payload()])).toEqual({ saved: [], errorCount: 1 });
+    expect(await store.bulkSaveDocuments([payload()])).toEqual({ saved: [], errorCount: 0, unstored: 1 });
+  });
+
+  it('a row of the same bytes merged in during the upload is replaced too', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const cloud = new MemoryCloud();
+    const failing = new MemoryAdapter(cloud);
+    failing.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
+    const first = await RoadmapStore.create(failing);
+    const original = (await first.bulkSaveDocuments([payload()])).saved[0];
+    await first.flush();
+    const adapter = new MemoryAdapter(cloud);
+    const retry = await RoadmapStore.create(adapter);
+    const write = adapter.writeDocument.bind(adapter);
+    adapter.writeDocument = async (ref, file) => {
+      // Another device's same-hash row, folded in while the blob uploads.
+      retry['session'].edit(f => { f.documents.push({ ...f.documents.find(d => d.id === original.id)!, id: 'merged-in' }); });
+      return write(ref, file);
+    };
+    expect((await retry.bulkSaveDocuments([payload()])).saved).toHaveLength(1);
+    await retry.flush();
+    const after = read(cloud).documents;
+    expect(after.filter(d => d.deleted).map(d => d.id).sort()).toEqual([original.id, 'merged-in'].sort());
   });
 
   it('a stored blob supersedes every metadata-only row of its kind for those bytes', async () => {

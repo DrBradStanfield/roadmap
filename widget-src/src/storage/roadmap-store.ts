@@ -384,9 +384,9 @@ export class RoadmapStore {
    * interrupted save leaves a harmless orphan blob, never a dangling ref.
    * A failed blob write (e.g. GitHub's ~1 MB cap, localStorage quota) degrades
    * to metadata-only: the extracted values are never lost with the file. Except
-   * behind a connector row (below): there the metadata already exists, so the
-   * upload files nothing and reports the failure in `errorCount` for a retry
-   * (behind only the website's own failed rows, a settled outcome: no error).
+   * behind a held metadata-only row (below): there the details already exist,
+   * so the failure is settled, counted in `unstored`, and only a changed title
+   * or date files a new row.
    *
    * `contentHash` is ONE key for the website and the connector (US-35 AC6): a
    * live row that carries the hash AND a `fileRef` is the archived original,
@@ -398,7 +398,7 @@ export class RoadmapStore {
    */
   async bulkSaveDocuments(
     documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,
-  ): Promise<{ saved: ApiDocument[]; errorCount: number }> {
+  ): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
     // The batch stands for the erase the page showed as it started: refused
     // before any upload if that is not this copy's, and again at the commit,
     // since an erase can land while the uploads run.
@@ -419,7 +419,7 @@ export class RoadmapStore {
 
     // Phase 1 (serial, order-dependent): dedup by hash, assign collision-safe
     // refs, build the metadata rows.
-    const writes: Array<{ doc: FileDocument; ref: string; file: Blob; supersedes: ApiDocument[]; failed?: boolean }> = [];
+    const writes: Array<{ doc: FileDocument; ref: string; file: Blob; lab: boolean; held?: ApiDocument; failed?: boolean }> = [];
     for (const d of documents) {
       const hash = d.file ? await sha256Blob(d.file) : null;
       if (hash) {
@@ -442,9 +442,11 @@ export class RoadmapStore {
           existingRefs,
         });
         existingRefs.add(ref);
-        // The connector's metadata-only row for these bytes is tombstoned only
-        // once the blob lands: a failed write must not lose the hash key.
-        writes.push({ doc, ref, file: d.file, supersedes: pendingRowsFor(metadataOnly, hash, isLabArchiveDocument(d)) });
+        // The metadata-only rows for these bytes are tombstoned only once the
+        // blob lands, or a changed row replaces them: a failed write must not
+        // lose the hash key.
+        const lab = isLabArchiveDocument(d);
+        writes.push({ doc, ref, file: d.file, lab, held: pendingRowsFor(metadataOnly, hash, lab)[0] });
       }
       out.push(doc);
     }
@@ -453,7 +455,7 @@ export class RoadmapStore {
     // ~40 sequential round trips (20-40s on a slow link). The FIRST write into
     // each folder still runs alone (concurrent find-or-create of the same new
     // folder would create duplicates); the rest pool. A failed write degrades
-    // to metadata-only — unless a connector row already holds these bytes: a
+    // to metadata-only — unless a held row already holds these bytes: a
     // plain row beside it would list the letter twice, and every later upload
     // would offer to archive it again (Sentry 7715862604).
     const writeOne = async (w: (typeof writes)[number]) => {
@@ -466,7 +468,7 @@ export class RoadmapStore {
         Sentry.captureException(recordFailure(error, 'Document file not stored'), {
           tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id },
         });
-        w.failed = w.supersedes.length > 0;
+        w.failed = !!w.held;
       }
     };
     const seenFolders = new Set<string>();
@@ -487,22 +489,26 @@ export class RoadmapStore {
       }),
     );
 
-    // A refused batch leaves its blobs as harmless orphans, and the
-    // connector's metadata-only rows as they were.
-    const failed = new Set(writes.filter((w) => w.failed).map((w) => w.doc));
-    const saved = out.filter((d) => !failed.has(d));
-    // A repeat failure behind only the website's own failed rows is settled,
-    // not an error: an original that can never be stored (a size cap, GitHub's
-    // public-repo guard) must not loop on "Failed to save". Behind a connector
-    // row it stays an error, for a retry (US-14 AC4).
-    const errorCount = writes.filter((w) => w.failed && w.supersedes.some((d) => d.metadata.importedVia)).length;
+    // A repeat failure behind a held row (a connector's or an earlier failed
+    // save, alike) is settled, never an error: an original that can never be
+    // stored (a size cap) must not loop on "Failed to save". The held details
+    // stay, unless the review changed the title or date: then a new
+    // metadata-only row carries them and replaces the held rows. `unstored`
+    // tells the done screen to say so (US-14 AC4).
+    const unstored = writes.filter((w) => w.failed);
+    const unchanged = new Set(unstored.filter(({ doc, held }) => doc.title === held!.title && doc.date === held!.documentDate).map((w) => w.doc));
+    const saved = out.filter((d) => !unchanged.has(d));
     const committed = this.session.edit((file) => {
-      const superseded = new Set(writes.flatMap((w) => (w.doc.fileRef ? w.supersedes.map((d) => d.id) : [])));
-      for (const d of file.documents) if (superseded.has(d.id)) d.deleted = true;
+      // The rows to replace, read from the file as it now is, so a same-hash
+      // row merged in from another device during the upload goes too.
+      const pending = file.documents.filter((d) => !d.deleted && d.contentHash && !d.fileRef).map(toApiDocument);
+      const replaced = new Set(writes.filter((w) => w.doc.fileRef || (w.failed && !unchanged.has(w.doc)))
+        .flatMap((w) => pendingRowsFor(pending, w.doc.contentHash, w.lab).map((d) => d.id)));
+      for (const d of file.documents) if (replaced.has(d.id)) d.deleted = true;
       file.documents.push(...saved);
     }, erase);
     if (!committed) return { saved: [], errorCount: documents.length };
-    return { saved: saved.map(toApiDocument), errorCount };
+    return { saved: saved.map(toApiDocument), errorCount: 0, ...(unstored.length ? { unstored: unstored.length } : {}) };
   }
 
   /** Read a stored document's bytes back (viewer). */
