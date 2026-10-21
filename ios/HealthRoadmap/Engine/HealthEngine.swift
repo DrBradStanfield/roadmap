@@ -21,6 +21,7 @@ final class HealthEngine {
 
     private let context: JSContext
     private let planJson: JSValue
+    private let sectionsJson: JSValue
 
     init(bundle: Bundle = .main) throws {
         guard let url = bundle.url(forResource: "health-engine", withExtension: "js"),
@@ -34,24 +35,41 @@ final class HealthEngine {
         context.evaluateScript(source, withSourceURL: url)
         if let exception = context.exception { throw EngineError.loadFailed(exception.toString()) }
 
-        guard let planJson = context.objectForKeyedSubscript("HealthEngine")?.objectForKeyedSubscript("planJson"),
-              !planJson.isUndefined
-        else { throw EngineError.loadFailed("HealthEngine.planJson is not defined") }
+        let engine = context.objectForKeyedSubscript("HealthEngine")
+        guard let planJson = engine?.objectForKeyedSubscript("planJson"), !planJson.isUndefined,
+              let sectionsJson = engine?.objectForKeyedSubscript("sectionsJson"), !sectionsJson.isUndefined
+        else { throw EngineError.loadFailed("HealthEngine.planJson or sectionsJson is not defined") }
         self.context = context
         self.planJson = planJson
+        self.sectionsJson = sectionsJson
     }
 
     /// The plan for a record, as the engine's JSON.
     func plan(recordJSON: String, now: Date, deviceId: String) throws -> String {
-        let result = planJson.call(withArguments: [recordJSON, now.formatted(Self.iso), deviceId])
+        try call(planJson, [recordJSON, now.formatted(Self.iso), deviceId])
+    }
+
+    /// The plan's on-screen layout, from the same function the web uses.
+    func sections(planJSON: String) throws -> [PlanSection] {
+        try JSONDecoder().decode([PlanSection].self, from: Data(sectionsJSON(planJSON: planJSON).utf8))
+    }
+
+    /// The layout as the engine's JSON, for the parity test to compare byte for byte.
+    func sectionsJSON(planJSON: String) throws -> String {
+        try call(sectionsJson, [planJSON])
+    }
+
+    /// Calls an engine function that returns text, turning a JavaScript exception into a Swift error.
+    private func call(_ function: JSValue, _ arguments: [Any]) throws -> String {
+        let result = function.call(withArguments: arguments)
         if let exception = context.exception {
             context.exception = nil
             throw EngineError.callFailed(exception.toString())
         }
-        guard let result, result.isString, let json = result.toString() else {
-            throw EngineError.callFailed("planJson returned no text")
+        guard let result, result.isString, let text = result.toString() else {
+            throw EngineError.callFailed("the engine returned no text")
         }
-        return json
+        return text
     }
 
     /// The instant format JavaScript's `toISOString` writes, milliseconds included.

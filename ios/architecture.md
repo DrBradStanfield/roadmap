@@ -46,7 +46,7 @@ Why not a Swift rewrite:
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
 JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs 4.6 ms.
-Bundle 368 KB. A frame is 16 ms, so the cost is invisible. Re-measure on a real iPhone in
+Bundle 368 KB with merge included (the app's bundle, plan and layout only, is 335 KB). A frame is 16 ms, so the cost is invisible. Re-measure on a real iPhone in
 the spike; the limit is 100 ms for plan plus merge, 300 ms for a cold engine load.
 
 The runtime needs a bridge for what a bare JSContext lacks: `fetch`, `Response`, `Headers`,
@@ -170,6 +170,10 @@ The app sends no product events to Brad's server. The usage signal is App Store 
 analytics (installs, sessions, retention, crashes, from users who opt in). Stated limit: it
 cannot see "viewed a plan". Health values never enter any telemetry.
 
+The plan screen says "No health data left your device". That is true only while the app
+has no network code. The first network call (D3's update check, D5's sync, D8's chat)
+must re-derive that sentence in the same commit.
+
 ### D10 · Old app versions stay safe
 
 Any change to merge behaviour bumps the schema version, so an older app refuses the file
@@ -198,10 +202,16 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext`; the generated
     bundle sits beside it.
   - `Plan/`: the plan screen. `Plan.swift` is the slice of the engine's JSON the app
-    reads; `PlanSection.swift` groups suggestions as the web does; `PlanView.swift` and
-    `SuggestionCard.swift` draw them.
-- `HealthRoadmapTests/`: XCTest. `EngineParityTests` is US-25 AC1; `PlanSectionTests`
-  pins the web's grouping.
+    reads, evidence included. The layout (sections, card order, grouped cards) is not
+    Swift: it is health-core's `planSections` (packages/health-core/src/plan-sections.ts),
+    which the web's results panel calls too. `PlanView.swift` and `PlanCardView.swift`
+    draw it.
+- `engine/fixtures.mjs`: the parity records (the sample, an urgent value reached by a
+  correction, a minor, an excluded value, no height). `engine/golden.ts` runs the engine
+  from source on each to make the goldens.
+- `HealthRoadmapTests/`: XCTest. `EngineParityTests` is US-25 AC1 (every fixture, plan and
+  layout, byte for byte); `PlanLayoutTests` pins the sample's web layout and checks that
+  no card loses its evidence or ingredients.
 
 **Code for AI agents to read (HARD, Brad 2026-10-21).** This app is written and maintained
 by AI agents, so the code is shaped for a reader with no memory of how it got here:
@@ -231,8 +241,11 @@ then about 1 ms each.
   Simulator, and a real iPhone. Claude Code builds with `xcodebuild`, drives simulators with
   `simctl`, and runs XCTest and XCUITest. Signing, App Store Connect, background HealthKit
   delivery and real performance need the phone and Brad's account.
-- **Conformance tests:** the same fixtures run through Node (vitest) and through the app's
-  JavaScriptCore, with `now` and the time zone pinned; outputs must match byte for byte.
+- **Conformance tests:** `build-engine.mjs` runs each fixture through the engine's source
+  (tsx) and through the bundle (Node), and fails if they differ; the app's JavaScriptCore
+  must then match the source's goldens byte for byte, with `now` and the time zone pinned.
+  Known gap: an Xcode build does not rebuild the bundle, so a build from Xcode after a
+  health-core change runs the old engine until `build-engine.mjs` or `test.sh` runs.
 - **Stories first:** each feature gets a US-id with acceptance criteria before code (Lane
   B). Tests cite the id.
 - **CI:** a macOS runner job. Workflow files are Brad-only.
