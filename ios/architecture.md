@@ -260,6 +260,31 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
 - **Erase (US-11)** runs as on the web, and also deletes the samples this app wrote to
   Apple Health and cancels its notifications. A phone that takes in an erase made on another
   device does the same.
+  **Built 2026-10-21 (US-25 AC13)**, with "Export my record" beside it. Decisions taken
+  while Brad slept, for him to revisit:
+  - **One engine erase per mode.** No cloud: the phone's file through health-core's
+    `buildErasedFile` (`ios/engine/erase.ts`; the stored record and the working copy are the
+    same file, and there is no device mirror). A cloud open: `RecordSession.deleteAllData`
+    (`cloudErase`), so the cloud file keeps the erase and the web's guard applies. A cloud
+    connected but not open: refused, as the web refuses in its on-device fallback.
+  - **An unreadable phone record refuses the erase.** The web erases a device copy it cannot
+    read with its own epoch; the app has no working copy then, and never writes over a record
+    it cannot read (US-25 AC4). The user sees why.
+  - **After a cloud erase the phone copy is the erased record**, not absent: the session wipes
+    the pre-erase copy and the pending marker, then the erased record goes in its place, so an
+    offline launch opens on it, as every other cloud change reaches the phone copy.
+  - **Chat history** (a phone-only file) is tombstoned by the engine's `ChatSession.eraseAll`
+    and written only when that step ran. **Gap:** an erase made on the web reaches this
+    phone's record and reminders but not its chat history. Closing it needs the phone to
+    remember the erase epoch its chat last saw, as the reminders opt-in does; not built.
+  - **Units are kept** (a setting; the web keeps its unit preference through an erase), the
+    welcome flag and the AI consent are kept, the sync connection is kept.
+  - **Reminders** need no step of their own: the opt-in ends when the epoch moves (D7).
+  - **Apple Health** is not on main yet: `DataEraser.eraseAll` has the marked hook, and
+    `EraseText.confirm` the marked line, for D6 to fill.
+  - **Export** is the record as shown (`store.recordJSON`) through the share sheet, written by
+    the share sheet itself (`RecordExport`, a `DataRepresentation`), so the app keeps no
+    stray copy. The website has no "load a file" flow; that would be a web feature.
 
 ### D6 · Apple Health (Brad, 2026-10-21, import deletions ignored)
 
@@ -342,7 +367,7 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
 - **Erase (US-11).** When the record's erase epoch moves (an erase here or one synced in),
   the opt-in ends and every pending reminder is cancelled; the user turns reminders on
   again. This assumes an erase bumps the epoch and never deletes the file for a fresh
-  one at epoch 0: the in-app erase, when built, must use health-core's `erase.ts`. An
+  one at epoch 0: the in-app erase (built, D5, US-25 AC13) uses health-core's `erase.ts`. An
   unreadable record cancels them all for that round but keeps the opt-in; the next good
   read schedules again.
 - **Permission.** A refusal points to Settings; "not asked yet" (Settings has no switch
