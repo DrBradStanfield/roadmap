@@ -30,6 +30,8 @@ final class CloudSync: CloudPort {
     /// restored from a backup starts unconnected, as its Keychain tokens stay behind.
     private let providerFile: URL
     private let pendingFile: URL
+    /// An open under way: the launch and the first foreground must not open twice.
+    private var opening = false
 
     init(engine: HealthEngine, store: RecordStore, oauth: OAuthClient) {
         self.engine = engine
@@ -106,7 +108,9 @@ final class CloudSync: CloudPort {
     }
 
     private func open(firstConnect: Bool) async {
-        guard let provider else { return }
+        guard let provider, !opening else { return }
+        opening = true
+        defer { opening = false }
         status = .connecting
         do {
             let view = try await engine.cloudOpen(provider: provider, deviceId: store.deviceId, firstConnect: firstConnect)

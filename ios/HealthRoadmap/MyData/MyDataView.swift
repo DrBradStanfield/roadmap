@@ -19,11 +19,36 @@ struct MyDataView: View {
     }
 
     let store: RecordStore
+    let sync: CloudSync
     @State private var entry: Entry?
+    @State private var showSync = false
     @State private var refusal: String?
     @State private var saves = 0
 
     var body: some View {
+        NavigationStack {
+            content
+                .navigationTitle("My data")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { showSync = true } label: {
+                            Label("Sync", systemImage: syncSymbol)
+                        }
+                    }
+                }
+                .sheet(isPresented: $showSync) { SyncView(sync: sync) }
+        }
+    }
+
+    /// The toolbar's sync icon: a phone, or a cloud that shows the sync's state.
+    private var syncSymbol: String {
+        guard sync.provider != nil else { return "icloud.slash" }
+        if case .problem = sync.status { return "exclamationmark.icloud" }
+        return "icloud"
+    }
+
+    private var content: some View {
         Group {
             if let data = store.myData {
                 List {
@@ -33,7 +58,7 @@ struct MyDataView: View {
                     metrics("Blood tests", data.bloodTests)
                     Section {
                     } footer: {
-                        Label("Saved on this iPhone and left out of its backups. Until cloud sync arrives, a new phone starts empty.", systemImage: "lock.shield")
+                        Label(SyncStatusText.myDataFooter(provider: sync.provider), systemImage: "lock.shield")
                             .frame(maxWidth: .infinity)
                     }
                 }

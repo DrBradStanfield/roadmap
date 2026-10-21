@@ -7,14 +7,15 @@ struct RootView: View {
 
     let engine: HealthEngine
     let store: RecordStore
+    let sync: CloudSync
     @State private var tab = Tab.data
 
     var body: some View {
         TabView(selection: $tab) {
-            MyDataView(store: store)
+            MyDataView(store: store, sync: sync)
                 .tabItem { Label("My data", systemImage: "list.bullet.clipboard") }
                 .tag(Tab.data)
-            PlanView(engine: engine, store: store, showMyData: { tab = .data })
+            PlanView(engine: engine, store: store, sync: sync, showMyData: { tab = .data })
                 .tabItem { Label("My plan", systemImage: "heart.text.square") }
                 .tag(Tab.plan)
         }

@@ -13,6 +13,8 @@ struct PlanView: View {
 
     let engine: HealthEngine
     let store: RecordStore
+    /// Where the record is kept, for the privacy line.
+    let sync: CloudSync
     /// Switches to the My data tab.
     let showMyData: () -> Void
     @State private var state = LoadState.loading
@@ -32,7 +34,7 @@ struct PlanView: View {
                         .buttonStyle(.borderedProminent)
                 }
             case .loaded(let sections, let planMs):
-                PlanList(sections: sections, planMs: planMs)
+                PlanList(sections: sections, planMs: planMs, privacy: SyncStatusText.planPrivacy(provider: sync.provider))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -64,6 +66,8 @@ struct PlanView: View {
 private struct PlanList: View {
     let sections: [PlanSection]
     let planMs: Double
+    /// Where the record goes (SyncStatusText.planPrivacy).
+    let privacy: String
     @State private var appeared = false
 
     var body: some View {
@@ -87,10 +91,10 @@ private struct PlanList: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 4)
 
-                // True while the app has no network code (architecture.md D9); re-check it
-                // when the first network call lands.
+                // Re-derived with cloud sync (architecture.md D9): the plan is worked out
+                // here; the record goes only to the cloud the user connected.
                 Label {
-                    Text("Worked out on this iPhone in \(planMs.formatted(.number.precision(.fractionLength(1)))) ms. No health data left your device.")
+                    Text("Worked out on this iPhone in \(planMs.formatted(.number.precision(.fractionLength(1)))) ms. \(privacy)")
                 } icon: {
                     Image(systemName: "lock.shield")
                 }
