@@ -1,4 +1,45 @@
+import Observation
 import SwiftUI
+
+/// What "From Dropbox" shows of the app folder: loading, the lab files, or why
+/// not. Kept apart from the view so a test can drive it (review: a sign-in
+/// after a refused listing must list afresh).
+@MainActor
+@Observable
+final class DropboxLabFolder {
+    enum Load: Equatable {
+        case loading
+        case files([HealthEngine.CloudLabFile])
+        case failed(SyncProblem.Kind)
+    }
+
+    private(set) var load = Load.loading
+    private let engine: HealthEngine
+    private let sync: CloudSync
+
+    init(engine: HealthEngine, sync: CloudSync) {
+        self.engine = engine
+        self.sync = sync
+    }
+
+    /// List the folder again, keeping the files on screen while it does.
+    func refresh() async {
+        guard sync.provider == .dropbox else { return }
+        if case .files = load {} else { load = .loading }
+        do {
+            load = .files(try await engine.labFiles())
+        } catch {
+            load = .failed(SyncProblem(error).kind)
+        }
+    }
+
+    /// A Connect or "Sign in again" here worked: the provider may not have
+    /// changed, so nothing else re-lists.
+    func signedIn() async {
+        load = .loading
+        await refresh()
+    }
+}
 
 /// "From Dropbox" under "+" (US-52 AC11). Not connected: what connecting does,
 /// then Sync's own sign-in. Connected: the lab files in the app folder, newest
@@ -9,13 +50,15 @@ struct DropboxLabFiles: View {
     let pick: (HealthEngine.CloudLabFile) -> Void
     let browseFiles: () -> Void
 
-    private enum Load: Equatable {
-        case loading
-        case files([HealthEngine.CloudLabFile])
-        case failed(SyncProblem.Kind)
-    }
+    @State private var folder: DropboxLabFolder
 
-    @State private var load = Load.loading
+    init(engine: HealthEngine, sync: CloudSync, pick: @escaping (HealthEngine.CloudLabFile) -> Void, browseFiles: @escaping () -> Void) {
+        self.engine = engine
+        self.sync = sync
+        self.pick = pick
+        self.browseFiles = browseFiles
+        _folder = State(initialValue: DropboxLabFolder(engine: engine, sync: sync))
+    }
 
     var body: some View {
         List {
@@ -32,9 +75,9 @@ struct DropboxLabFiles: View {
         }
         .navigationTitle("From Dropbox")
         .navigationBarTitleDisplayMode(.inline)
-        .refreshable { await refresh() }
+        .refreshable { await folder.refresh() }
         // Runs again once a Connect here sets the provider.
-        .task(id: sync.provider) { await refresh() }
+        .task(id: sync.provider) { await folder.refresh() }
     }
 
     private var notConnected: some View {
@@ -47,7 +90,7 @@ struct DropboxLabFiles: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.vertical, 4)
-            ConnectCloudButton(sync: sync, provider: .dropbox) {
+            ConnectCloudButton(sync: sync, provider: .dropbox, connected: { Task { await folder.signedIn() } }) {
                 Label("Connect Dropbox", systemImage: "link")
             }
         }
@@ -61,7 +104,7 @@ struct DropboxLabFiles: View {
 
     @ViewBuilder
     private var listing: some View {
-        switch load {
+        switch folder.load {
         case .loading:
             Section {
                 HStack(spacing: 12) {
@@ -77,7 +120,7 @@ struct DropboxLabFiles: View {
                     Text("Put a PDF, a photo (JPEG or PNG) or a ZIP in \(CloudProvider.dropbox.folder), then pull down to refresh.")
                 }
                 .padding(.vertical, 4)
-                Button("Refresh", systemImage: "arrow.clockwise") { Task { await refresh() } }
+                Button("Refresh", systemImage: "arrow.clockwise") { Task { await folder.refresh() } }
             }
         case .files(let files):
             Section {
@@ -92,27 +135,18 @@ struct DropboxLabFiles: View {
         case .failed(.signIn):
             Section {
                 Text("Dropbox needs you to sign in again.")
-                ConnectCloudButton(sync: sync, provider: .dropbox) {
+                ConnectCloudButton(sync: sync, provider: .dropbox, connected: { Task { await folder.signedIn() } }) {
                     Label("Sign in to Dropbox again", systemImage: "person.badge.key")
                 }
             }
         case .failed:
             Section {
                 Text("Dropbox could not be reached. Check the connection and try again.")
-                Button("Try again", systemImage: "arrow.clockwise") { Task { await refresh() } }
+                Button("Try again", systemImage: "arrow.clockwise") { Task { await folder.refresh() } }
             }
         }
     }
 
-    private func refresh() async {
-        guard sync.provider == .dropbox else { return }
-        if case .files = load {} else { load = .loading }
-        do {
-            load = .files(try await engine.labFiles())
-        } catch {
-            load = .failed(SyncProblem(error).kind)
-        }
-    }
 }
 
 /// One file in the Dropbox list: its kind, name, day and size.
@@ -125,6 +159,7 @@ private struct LabFileRow: View {
                 .font(.title2)
                 .foregroundStyle(.tint)
                 .frame(width: 32)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(file.name)
                     .foregroundStyle(Color.primary)
@@ -200,7 +235,7 @@ struct GoogleDriveLabFiles: View {
                 }
             }
             .padding(.vertical, 4)
-            ConnectCloudButton(sync: sync, provider: .googleDrive) {
+            ConnectCloudButton(sync: sync, provider: .googleDrive, connected: {}) {
                 Label("Connect Google Drive", systemImage: "link")
             }
         }

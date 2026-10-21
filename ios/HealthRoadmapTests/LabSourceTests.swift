@@ -35,7 +35,13 @@ final class LabSourceTests: XCTestCase {
         let seen = seen
         StubHTTP.handler = { request in
             seen.add(request)
+            if request.url.path == "/oauth2/token" {
+                return .init(body: Data(#"{"access_token":"token-1","refresh_token":"r","expires_in":14400,"account_id":"dbid:A"}"#.utf8))
+            }
             guard request.headers["authorization"] == "Bearer token-1" else { return .init(status: 401) }
+            if request.headers["dropbox-api-arg"] == #"{"path":"/health-roadmap.json"}"# {
+                return .init(status: 409, body: Data(#"{"error_summary":"path/not_found/"}"#.utf8)) // no record yet
+            }
             if request.url.path.hasSuffix("/files/list_folder") {
                 return .init(body: Data(#"""
                 {"entries":[
@@ -101,6 +107,23 @@ final class LabSourceTests: XCTestCase {
         } catch {
             XCTAssertEqual(SyncProblem(error).kind, .signIn)
         }
+    }
+
+    /// Review (both reviewers): after "Sign in to Dropbox again" works, the screen
+    /// lists afresh instead of staying on the sign-in error.
+    func testASignInAfterARefusedListingListsAfresh() async throws {
+        tokens.delete(.dropbox)
+        let (engine, sync) = try app()
+        let list = DropboxLabFolder(engine: engine, sync: sync)
+        await list.refresh()
+        XCTAssertEqual(list.load, .failed(.signIn))
+        try await sync.connect(.dropbox) { url, _ in
+            let state = URLComponents(url: url, resolvingAgainstBaseURL: false)!.queryItems!.first { $0.name == "state" }!.value!
+            return URL(string: "db-xf96vqvjotm5xhx://2/token?code=c&state=\(state)")!
+        }
+        await list.signedIn()
+        guard case .files(let files) = list.load else { return XCTFail("still \(list.load)") }
+        XCTAssertEqual(files.map(\.name), ["Bloods October.pdf", "Lipids 2025.pdf"])
     }
 
     // MARK: Reading on the phone (AC10, AC11)

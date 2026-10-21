@@ -641,6 +641,8 @@ class FakeLabFolder implements Server {
   downloads: string[] = [];
   /** Answers 401 to this many calls first (an access token Dropbox refused). */
   refuse = 0;
+  /** A download's body in place of the default one, when it gives one. */
+  bodyFor: (id: string) => string | null = () => null;
   entries: Array<Record<string, unknown>> = [
     { '.tag': 'file', id: 'id:record', name: 'health-roadmap.json', size: 900, server_modified: '2026-10-22T01:00:00Z' },
     { '.tag': 'folder', id: 'id:imports', name: 'imports' },
@@ -666,7 +668,7 @@ class FakeLabFolder implements Server {
     if (url.endsWith('/files/download')) {
       const { path } = JSON.parse(headers['dropbox-api-arg']) as { path: string };
       this.downloads.push(path);
-      return { status: 200, headers: {}, body: `%PDF bytes of ${path}` };
+      return { status: 200, headers: {}, body: this.bodyFor(path) ?? `%PDF bytes of ${path}` };
     }
     throw new Error(`FakeLabFolder has no ${url}`);
   }
@@ -696,6 +698,31 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
     await expect(engine.labFileBytes('health-roadmap.json')).rejects.toThrow();
     await expect(engine.labFileBytes('/Other/thing.pdf')).rejects.toThrow();
     expect(folder.downloads).toEqual([]);
+  });
+
+  it('R3: downloads only an id a fresh listing offers as a lab file, never the record or an unlisted id', async () => {
+    const folder = new FakeLabFolder();
+    const { engine } = await phone(folder);
+    await expect(engine.labFileBytes('id:record')).rejects.toThrow('not a lab file in the folder');
+    await expect(engine.labFileBytes('id:backup')).rejects.toThrow('not a lab file in the folder');
+    await expect(engine.labFileBytes('id:chat-history')).rejects.toThrow('not a lab file in the folder');
+    expect(folder.downloads).toEqual([]);
+    expect(folder.listed).toHaveLength(3); // each read lists the folder afresh
+  });
+
+  it('R5: a file over the size limit, or with no size, is refused before it downloads; a body over it after', async () => {
+    const folder = new FakeLabFolder();
+    folder.entries.push(
+      { '.tag': 'file', id: 'id:big', name: 'Big.pdf', size: 10 * 1024 * 1024 + 1, server_modified: '2026-10-19T00:00:00Z' },
+      { '.tag': 'file', id: 'id:bigzip', name: 'Big.zip', size: 20 * 1024 * 1024 + 1, server_modified: '2026-10-19T00:00:00Z' },
+      { '.tag': 'file', id: 'id:nosize', name: 'Nosize.pdf', server_modified: '2026-10-19T00:00:00Z' },
+      { '.tag': 'file', id: 'id:liar', name: 'Liar.pdf', size: 10, server_modified: '2026-10-19T00:00:00Z' },
+    );
+    folder.bodyFor = (id) => (id === 'id:liar' ? 'x'.repeat(10 * 1024 * 1024 + 1) : null);
+    const { engine } = await phone(folder);
+    for (const id of ['id:big', 'id:bigzip', 'id:nosize']) await expect(engine.labFileBytes(id)).rejects.toThrow('larger than');
+    expect(folder.downloads).toEqual([]);
+    await expect(engine.labFileBytes('id:liar')).rejects.toThrow('larger than');
   });
 
   it('a refused token is refreshed once and the listing repeated', async () => {

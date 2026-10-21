@@ -115,6 +115,7 @@ final class OAuthClient {
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = Data("null".utf8)
+        request.timeoutInterval = 5 // a slow answer must not hold up the connect (review R9)
         guard let (data, response) = try? await session.data(for: request), (response as? HTTPURLResponse)?.statusCode == 200,
               let account = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               account["email_verified"] as? Bool == true, let email = account["email"] as? String, !email.isEmpty

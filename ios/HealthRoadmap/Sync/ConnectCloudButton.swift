@@ -8,7 +8,7 @@ struct ConnectCloudButton<Label: View>: View {
     let sync: CloudSync
     let provider: CloudProvider
     /// Runs after a sign-in that connected.
-    var connected: () -> Void = {}
+    let connected: () -> Void
     @ViewBuilder let label: () -> Label
 
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
@@ -22,7 +22,7 @@ struct ConnectCloudButton<Label: View>: View {
             HStack {
                 label()
                 Spacer()
-                if signingIn { ProgressView() }
+                if signingIn { ProgressView().accessibilityLabel("Signing in") }
             }
         }
         .disabled(signingIn || !provider.isConfigured || sync.erasing)

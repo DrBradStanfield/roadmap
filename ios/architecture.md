@@ -681,8 +681,13 @@ Files, From Photos, and Scan a paper report (VisionKit's document camera, real p
   listing and download are health-core's `dropboxListFolder` and `dropboxDownload`, run in
   the engine (`labFilesJson`, `labFileBytes` in cloud.ts), filtered by the connector's name
   rule (`isImportableEntryName`, `FOLDER_IMPORT_EXTENSIONS`), so the record and the app's
-  own files never list. Download is by listing id only, never a path. A file over the
-  web's size limit is refused from the listing's size, before it downloads.
+  own files never list. Download is by listing id only, never a path, and only an id a
+  fresh listing still offers as a lab file (review R3): any Dropbox id the phone could
+  learn, the record's included, is otherwise refused. A file over the web's size limit,
+  or listed with no size, is refused before it downloads, and the bytes are checked again
+  (R5). The bridge's fetch holds the whole answer in Swift before JavaScript sees its
+  headers, so a header check would guard nothing more; a true cap would sit in
+  `EngineNatives.http`.
 - *Google Drive cannot list.* `drive.file` sees only the files the app made, so Drive
   reports come in through the Files picker (the Google Drive app's file provider). "From
   Google Drive" offers Connect (for the record) and says that plainly.
@@ -698,7 +703,9 @@ Files, From Photos, and Scan a paper report (VisionKit's document camera, real p
   person with two Dropbox accounts can see which one is linked. Dropbox's token answer has
   no email, so connect makes one `users/get_current_account` call, as the web's
   `accountEmail` does (verified only, lower-cased); Drive's `about` call, already made for
-  the account id, also asks for `emailAddress`. No new scope. A missing email never fails a
+  the account id, also asks for `emailAddress`; that it answers under `drive.file` alone is
+  unverified until a real Google sign-in, so the cloud's name stays the fallback. No new
+  scope. The lookup times out after 5 seconds (review R9). A missing email never fails a
   connect. It is kept only in `sync-account-email`, beside `sync-account` in the Record
   folder that backups leave out, never logged, and removed on Disconnect and on "Delete
   all my data". The web's code lives in the widget's adapter, not health-core, so the

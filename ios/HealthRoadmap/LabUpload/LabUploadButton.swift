@@ -157,7 +157,9 @@ struct LabUploadSheet: View {
 
     /// Reads the report on the phone, then sends it, or asks for consent first.
     /// Nothing leaves the phone for the server before the user agrees.
+    /// A second pick while one is under way (a double tap) is ignored (review R6).
     private func read(_ documents: () async throws -> [LabFileReader.Document]) async {
+        guard case .choose = step else { return }
         path = []
         step = .working("Reading the file")
         do {
@@ -191,6 +193,7 @@ struct LabUploadSheet: View {
 
     /// A Dropbox file, refused before it downloads when it is over the web's limit.
     private func read(dropbox file: HealthEngine.CloudLabFile) async {
+        guard case .choose = step else { return }
         guard LabFileReader.fits(name: file.name, bytes: file.size) else {
             path = []
             step = .failed(LabFileReader.Failure.tooLarge(file.name).localizedDescription)
@@ -202,7 +205,7 @@ struct LabUploadSheet: View {
             do {
                 data = try await engine.labFileData(file)
             } catch {
-                throw DropboxFailure(kind: SyncProblem(error).kind)
+                throw DropboxFailure(error)
             }
             return try LabFileReader.documents(from: data, name: file.name)
         }
@@ -230,13 +233,19 @@ struct LabUploadSheet: View {
     }
 }
 
-/// A Dropbox download that failed, in plain words.
+/// A Dropbox download that failed, in plain words: the engine's own refusal
+/// (not a listed lab file, too large), or what the cloud failure means.
 private struct DropboxFailure: LocalizedError {
-    let kind: SyncProblem.Kind
-    var errorDescription: String? {
-        kind == .signIn
-            ? "Dropbox needs you to sign in again. Open From Dropbox to sign in."
-            : "Dropbox could not be reached. Check the connection and try again."
+    let errorDescription: String?
+
+    init(_ error: Error) {
+        if case HealthEngine.EngineError.callFailed(let message) = error, !message.hasPrefix("{") {
+            errorDescription = message
+        } else if SyncProblem(error).kind == .signIn {
+            errorDescription = "Dropbox needs you to sign in again. Open From Dropbox to sign in."
+        } else {
+            errorDescription = "Dropbox could not be reached. Check the connection and try again."
+        }
     }
 }
 
@@ -252,6 +261,7 @@ private struct SourceRow: View {
                 .font(.title3)
                 .foregroundStyle(.tint)
                 .frame(width: 30)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).foregroundStyle(Color.primary)
                 Text(detail)

@@ -8,6 +8,7 @@
 import { ROADMAP_FILE_NAME, StorageError, ConflictError, UNREACHABLE_HINT, type ReadResult, type StorageAdapter, type WriteResult } from '../../packages/health-core/src/adapter';
 import { DropboxAdapter, dropboxDownload, dropboxListFolder } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
+import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { FOLDER_IMPORT_EXTENSIONS, isImportableEntryName } from '../../packages/health-core/src/lab-extraction';
 import { LiveRefresh } from '../../packages/health-core/src/live-refresh';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
@@ -542,23 +543,40 @@ async function closeAt(at: Open, copyDown: boolean): Promise<string> {
  *  `[{ id, name, size, modified }]`. The record and the app's own files are
  *  not lab files by name, so they never list. Rejects with the failure JSON. */
 export async function labFilesJson(): Promise<string> {
+  const labs = await labFiles();
+  return JSON.stringify(labs.sort((a, b) => b.modified.localeCompare(a.modified)));
+}
+
+/** The folder root's lab files, listed afresh. Rejects with the failure JSON. */
+async function labFiles(): Promise<Awaited<ReturnType<typeof dropboxListFolder>>> {
   try {
     const entries = await refreshOn401(async (force) => dropboxListFolder(await accessToken('dropbox', force), ''));
-    const labs = entries.filter((entry) => isImportableEntryName(entry.name, FOLDER_IMPORT_EXTENSIONS));
-    return JSON.stringify(labs.sort((a, b) => b.modified.localeCompare(a.modified)));
+    return entries.filter((entry) => isImportableEntryName(entry.name, FOLDER_IMPORT_EXTENSIONS));
   } catch (error) {
     throw new Error(failed('dropbox', error));
   }
 }
 
-/** One listed file's bytes, by its listing id (`id:…`): a path is refused, so
- *  nothing but a file the listing offered can be read. */
+/**
+ * One file's bytes, by its id, only when a fresh listing offers it as a lab
+ * file (review R3): an id from anywhere else, the record's or the chat
+ * history's included, is refused before any download. The web's size limit
+ * holds on the listing's size, a missing size counting as too big, and again
+ * on the bytes (review R5). Refusals are plain words; a cloud failure is the
+ * failure JSON.
+ */
 export async function labFileBytes(id: string): Promise<ArrayBuffer> {
-  if (!id.startsWith('id:')) throw new Error('Only a listed file can be read.');
+  const entry = (await labFiles()).find((file) => file.id === id);
+  if (!entry) throw new Error('That file is not a lab file in the folder any more. Refresh the list and try again.');
+  const limit = (entry.name.toLowerCase().endsWith('.zip') ? IMPORT_LIMITS.zipMb : IMPORT_LIMITS.websiteFileMb) * 1024 * 1024;
+  const tooBig = `${entry.name} is larger than the website's limit (${IMPORT_LIMITS.websiteFileMb} MB a file, ${IMPORT_LIMITS.zipMb} MB a ZIP).`;
+  if (!(entry.size > 0) || entry.size > limit) throw new Error(tooBig);
+  let bytes: Uint8Array<ArrayBuffer>;
   try {
-    const bytes = await refreshOn401(async (force) => dropboxDownload(await accessToken('dropbox', force), id));
-    return bytes.buffer;
+    bytes = await refreshOn401(async (force) => dropboxDownload(await accessToken('dropbox', force), id));
   } catch (error) {
     throw new Error(failed('dropbox', error));
   }
+  if (bytes.byteLength > limit) throw new Error(tooBig);
+  return bytes.buffer;
 }

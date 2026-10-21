@@ -45,7 +45,7 @@ struct SyncView: View {
         }
         Section {
             ForEach(CloudProvider.allCases) { provider in
-                ConnectCloudButton(sync: sync, provider: provider) {
+                ConnectCloudButton(sync: sync, provider: provider, connected: {}) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Connect \(provider.label)")
                         Text(provider.isConfigured ? "Saves to \(provider.folder)" : "Not set up in this version of the app yet")
@@ -72,7 +72,7 @@ struct SyncView: View {
 
         Section {
             if case .problem(let problem) = sync.status, problem.kind == .signIn {
-                ConnectCloudButton(sync: sync, provider: provider) {
+                ConnectCloudButton(sync: sync, provider: provider, connected: {}) {
                     Label("Sign in to \(provider.label) again", systemImage: "person.badge.key")
                 }
             }
@@ -121,6 +121,7 @@ private struct SyncStatusCard: View {
                 .background(tint.opacity(0.15), in: Circle())
                 .symbolEffect(.pulse, isActive: busy)
                 .contentTransition(.symbolEffect(.replace))
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(SyncStatusText.headline(status, provider: provider))
                     .font(.headline)
