@@ -669,6 +669,33 @@ for confirmation and writes the ticked ones itself, through health-core's
 `bulkAppendValues` in the engine. Chat history is the web's `chat-history.json`, written
 by health-core's `ChatSession` in the engine, kept beside the record.
 
+**Where a report comes from (2026-10-22, US-52 AC10 to AC12).** Brad could not find how to
+connect Dropbox from "+". "+" now opens a chooser: From Dropbox, From Google Drive, From
+Files, From Photos, and Scan a paper report (VisionKit's document camera, real phones only).
+- *One connection, two jobs.* Connect Dropbox under "+" is Sync's own sign-in
+  (`ConnectCloudButton` → `CloudSync.connect`), so connecting to upload also syncs the
+  record. The screen says so in one sentence before the sign-in. A second OAuth flow, or a
+  token that reads files but does not sync, would be two Dropbox grants for one app key.
+- *The app folder is the inbox.* The Dropbox app is an App folder app, so the app lists
+  only `Apps/Health Plan by Dr Brad`, the root the hosted connector imports from too. The
+  listing and download are health-core's `dropboxListFolder` and `dropboxDownload`, run in
+  the engine (`labFilesJson`, `labFileBytes` in cloud.ts), filtered by the connector's name
+  rule (`isImportableEntryName`, `FOLDER_IMPORT_EXTENSIONS`), so the record and the app's
+  own files never list. Download is by listing id only, never a path. A file over the
+  web's size limit is refused from the listing's size, before it downloads.
+- *Google Drive cannot list.* `drive.file` sees only the files the app made, so Drive
+  reports come in through the Files picker (the Google Drive app's file provider). "From
+  Google Drive" offers Connect (for the record) and says that plainly.
+- *Consent moved to the send.* The AI consent now comes after a file is picked and read on
+  the phone, before anything goes to the server. Choosing a source and signing in to
+  Dropbox are not AI steps, so asking first got in the way.
+- *Bytes across the bridge.* `HealthEngine.callAsyncBytes` settles a Promise of an
+  ArrayBuffer into `Data` (the shim's own `EngineNatives.data`), so no base64 detour.
+- *Sync screen.* It says what sync does before a connect, names the cloud and folder once
+  connected, and draws "not connected" as a phone (`SyncStatusText.symbol`): a struck-out
+  iCloud symbol read as "iCloud is off". Dropbox's token answer has no email, so no
+  account is named; showing one would need `users/get_current_account`, an open question.
+
 ### D9 · No server telemetry (Brad, 2026-10-21)
 
 The app sends no product events to Brad's server. The usage signal is App Store Connect

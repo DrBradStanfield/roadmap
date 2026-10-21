@@ -6,8 +6,9 @@
 // connect and the copy-down on leaving. This file only builds the RecordHost
 // the phone stands behind, out of the natives Swift supplies.
 import { ROADMAP_FILE_NAME, StorageError, ConflictError, UNREACHABLE_HINT, type ReadResult, type StorageAdapter, type WriteResult } from '../../packages/health-core/src/adapter';
-import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
+import { DropboxAdapter, dropboxDownload, dropboxListFolder } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
+import { FOLDER_IMPORT_EXTENSIONS, isImportableEntryName } from '../../packages/health-core/src/lab-extraction';
 import { LiveRefresh } from '../../packages/health-core/src/live-refresh';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import type { RecordHost } from '../../packages/health-core/src/record-host';
@@ -103,13 +104,8 @@ class PhoneCloudAdapter implements StorageAdapter {
     throw new StorageError('The iPhone app does not sync documents yet.');
   }
 
-  private async run<T>(call: (cloud: StorageAdapter) => Promise<T>): Promise<T> {
-    try {
-      return await call(await this.adapter(false));
-    } catch (error) {
-      if (!(error instanceof StorageError) || error.status !== 401 || error instanceof SignInError) throw error;
-      return call(await this.adapter(true));
-    }
+  private run<T>(call: (cloud: StorageAdapter) => Promise<T>): Promise<T> {
+    return refreshOn401(async (force) => call(await this.adapter(force)));
   }
 
   /** One adapter per token, so Drive's file-id cache lives as long as the token. */
@@ -119,6 +115,16 @@ class PhoneCloudAdapter implements StorageAdapter {
       this.current = { token, adapter: this.provider === 'dropbox' ? new DropboxAdapter(token) : new DriveAdapter(token) };
     }
     return this.current.adapter;
+  }
+}
+
+/** A call the provider refused with 401 runs once more on a forced token refresh. */
+async function refreshOn401<T>(call: (force: boolean) => Promise<T>): Promise<T> {
+  try {
+    return await call(false);
+  } catch (error) {
+    if (!(error instanceof StorageError) || error.status !== 401 || error instanceof SignInError) throw error;
+    return call(true);
   }
 }
 
@@ -525,5 +531,34 @@ async function closeAt(at: Open, copyDown: boolean): Promise<string> {
     return 'copied';
   } catch {
     return 'unreachable';
+  }
+}
+
+// Lab files for "+" (US-52 AC11). The Dropbox app folder's root is where the
+// hosted connector reads lab files too (US-35 AC2), by the same name rule. The
+// token is the connected Dropbox's; no record session needs to be open.
+
+/** The lab files directly in the Dropbox app folder, newest first, as JSON
+ *  `[{ id, name, size, modified }]`. The record and the app's own files are
+ *  not lab files by name, so they never list. Rejects with the failure JSON. */
+export async function labFilesJson(): Promise<string> {
+  try {
+    const entries = await refreshOn401(async (force) => dropboxListFolder(await accessToken('dropbox', force), ''));
+    const labs = entries.filter((entry) => isImportableEntryName(entry.name, FOLDER_IMPORT_EXTENSIONS));
+    return JSON.stringify(labs.sort((a, b) => b.modified.localeCompare(a.modified)));
+  } catch (error) {
+    throw new Error(failed('dropbox', error));
+  }
+}
+
+/** One listed file's bytes, by its listing id (`id:…`): a path is refused, so
+ *  nothing but a file the listing offered can be read. */
+export async function labFileBytes(id: string): Promise<ArrayBuffer> {
+  if (!id.startsWith('id:')) throw new Error('Only a listed file can be read.');
+  try {
+    const bytes = await refreshOn401(async (force) => dropboxDownload(await accessToken('dropbox', force), id));
+    return bytes.buffer;
+  } catch (error) {
+    throw new Error(failed('dropbox', error));
   }
 }

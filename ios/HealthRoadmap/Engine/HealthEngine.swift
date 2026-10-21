@@ -119,6 +119,12 @@ final class HealthEngine {
         try await settle(callValue(name, arguments))
     }
 
+    /// Calls an engine function that returns a Promise of an ArrayBuffer, and waits for its bytes.
+    @MainActor
+    func callAsyncBytes(_ name: String, _ arguments: [Any]) async throws -> Data {
+        try await settle(callValue(name, arguments)) { EngineNatives.data($0) ?? Data() }
+    }
+
     /// Runs a script in the engine's context; tests use it to reach the shim directly.
     func evaluate(_ script: String) throws -> JSValue {
         let result = context.evaluateScript(script)
@@ -132,8 +138,14 @@ final class HealthEngine {
     /// Waits for a Promise (or takes a plain value) and answers it as text.
     @MainActor
     func settle(_ value: JSValue) async throws -> String {
-        try await withCheckedThrowingContinuation { (done: CheckedContinuation<String, Error>) in
-            let fulfilled: @convention(block) (JSValue) -> Void = { done.resume(returning: $0.isUndefined ? "" : $0.toString()) }
+        try await settle(value) { $0.isUndefined ? "" : $0.toString() }
+    }
+
+    /// Waits for a Promise (or takes a plain value) and answers what `read` makes of it.
+    @MainActor
+    func settle<T: Sendable>(_ value: JSValue, read: @escaping (JSValue) -> T) async throws -> T {
+        try await withCheckedThrowingContinuation { (done: CheckedContinuation<T, Error>) in
+            let fulfilled: @convention(block) (JSValue) -> Void = { done.resume(returning: read($0)) }
             let rejected: @convention(block) (JSValue) -> Void = { error in
                 let message = error.isObject ? error.objectForKeyedSubscript("message")?.toString() : nil
                 done.resume(throwing: EngineError.callFailed(message ?? error.toString()))

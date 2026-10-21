@@ -53,4 +53,28 @@ extension HealthEngine {
     func cloudClose(copyDown: Bool) async throws -> Bool {
         try await callAsync("cloudClose", [copyDown]) == "copied"
     }
+
+    /// A lab file in the Dropbox app folder, as the engine lists it (US-52 AC11).
+    struct CloudLabFile: Decodable, Equatable, Identifiable, Sendable {
+        /// Dropbox's `id:…`, the only way the engine downloads a file.
+        let id: String
+        let name: String
+        let size: Int
+        /// Dropbox's `server_modified`, ISO 8601 in UTC.
+        let modified: String
+    }
+
+    /// The lab files in the connected Dropbox's app folder, newest first. Throws
+    /// `EngineError.callFailed` whose text is the failure JSON (`SyncProblem`).
+    @MainActor
+    func labFiles() async throws -> [CloudLabFile] {
+        let json = try await callAsync("labFilesJson", [])
+        return try JSONDecoder().decode([CloudLabFile].self, from: Data(json.utf8))
+    }
+
+    /// One listed file's bytes.
+    @MainActor
+    func labFileData(_ file: CloudLabFile) async throws -> Data {
+        try await callAsyncBytes("labFileBytes", [file.id])
+    }
 }

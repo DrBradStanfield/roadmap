@@ -72,6 +72,8 @@ interface Engine {
   cloudRefresh(): Promise<string>;
   cloudClose(copyDown: boolean): Promise<string>;
   cloudErase(historyText: string | null, now: string, keepChat?: (text: string) => string): Promise<string>;
+  labFilesJson(): Promise<string>;
+  labFileBytes(id: string): Promise<ArrayBuffer>;
 }
 
 const opened: Engine[] = [];
@@ -631,3 +633,87 @@ class FakeDrive implements Server {
     throw new Error(`FakeDrive has no ${method} ${url}`);
   }
 }
+
+/** The Dropbox app folder's root as the "+" lists it: list_folder and download by id. */
+class FakeLabFolder implements Server {
+  online = true;
+  listed: Array<{ path: string }> = [];
+  downloads: string[] = [];
+  /** Answers 401 to this many calls first (an access token Dropbox refused). */
+  refuse = 0;
+  entries: Array<Record<string, unknown>> = [
+    { '.tag': 'file', id: 'id:record', name: 'health-roadmap.json', size: 900, server_modified: '2026-10-22T01:00:00Z' },
+    { '.tag': 'folder', id: 'id:imports', name: 'imports' },
+    { '.tag': 'file', id: 'id:old', name: 'Lipids 2025.pdf', size: 2000, server_modified: '2025-03-01T00:00:00Z' },
+    { '.tag': 'file', id: 'id:new', name: 'Bloods October.PDF', size: 3000, server_modified: '2026-10-20T00:00:00Z' },
+    { '.tag': 'file', id: 'id:zip', name: 'Portal export.zip', size: 4000, server_modified: '2026-06-01T00:00:00Z' },
+    { '.tag': 'file', id: 'id:photo', name: 'report.jpg', size: 5000, server_modified: '2026-09-01T00:00:00Z' },
+    { '.tag': 'file', id: 'id:ds', name: '.DS_Store', size: 10, server_modified: '2026-10-21T00:00:00Z' },
+    { '.tag': 'file', id: 'id:notes', name: 'notes.txt', size: 10, server_modified: '2026-10-21T00:00:00Z' },
+    { '.tag': 'file', id: 'id:backup', name: 'health-roadmap.json.bak', size: 900, server_modified: '2026-10-21T00:00:00Z' },
+  ];
+
+  answer(url: string, headers: Record<string, string>, body: string | null): { status: number; headers: Record<string, string>; body: string } {
+    if (this.refuse > 0) {
+      this.refuse -= 1;
+      return { status: 401, headers: {}, body: 'expired_access_token' };
+    }
+    if (headers.authorization !== 'Bearer token-1') return { status: 401, headers: {}, body: 'expired' };
+    if (url.endsWith('/files/list_folder')) {
+      this.listed.push(JSON.parse(body!) as { path: string });
+      return { status: 200, headers: {}, body: JSON.stringify({ entries: this.entries, has_more: false }) };
+    }
+    if (url.endsWith('/files/download')) {
+      const { path } = JSON.parse(headers['dropbox-api-arg']) as { path: string };
+      this.downloads.push(path);
+      return { status: 200, headers: {}, body: `%PDF bytes of ${path}` };
+    }
+    throw new Error(`FakeLabFolder has no ${url}`);
+  }
+}
+
+describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
+  it('lists the lab files at the folder root, newest first, and never the record, folders or other files', async () => {
+    const folder = new FakeLabFolder();
+    const { engine } = await phone(folder);
+    const files = JSON.parse(await engine.labFilesJson()) as Array<{ id: string; name: string; size: number; modified: string }>;
+    expect(files.map((f) => f.name)).toEqual(['Bloods October.PDF', 'report.jpg', 'Portal export.zip', 'Lipids 2025.pdf']);
+    expect(files[0]).toEqual({ id: 'id:new', name: 'Bloods October.PDF', size: 3000, modified: '2026-10-20T00:00:00Z' });
+    expect(folder.listed).toEqual([expect.objectContaining({ path: '' })]);
+  });
+
+  it('downloads a listed file by its id and answers its bytes', async () => {
+    const folder = new FakeLabFolder();
+    const { engine } = await phone(folder);
+    const bytes = await engine.labFileBytes('id:new');
+    expect(Buffer.from(new Uint8Array(bytes)).toString('utf8')).toBe('%PDF bytes of id:new');
+    expect(folder.downloads).toEqual(['id:new']);
+  });
+
+  it('downloads only by a listing id, never by a path', async () => {
+    const folder = new FakeLabFolder();
+    const { engine } = await phone(folder);
+    await expect(engine.labFileBytes('health-roadmap.json')).rejects.toThrow();
+    await expect(engine.labFileBytes('/Other/thing.pdf')).rejects.toThrow();
+    expect(folder.downloads).toEqual([]);
+  });
+
+  it('a refused token is refreshed once and the listing repeated', async () => {
+    const folder = new FakeLabFolder();
+    folder.refuse = 1;
+    const { engine, state } = await phone(folder);
+    expect(JSON.parse(await engine.labFilesJson())).toHaveLength(4);
+    expect(state.tokenRefreshes).toBe(1);
+  });
+
+  it('a failure rejects with its kind, for Swift to word: sign-in or unreachable', async () => {
+    const folder = new FakeLabFolder();
+    const signedOut = await phone(folder);
+    signedOut.state.signedOut = true;
+    await expect(signedOut.engine.labFilesJson()).rejects.toThrow('"kind":"sign-in"');
+    folder.online = false;
+    const offline = await phone(folder);
+    await expect(offline.engine.labFilesJson()).rejects.toThrow('"kind":"unreachable"');
+    await expect(offline.engine.labFileBytes('id:new')).rejects.toThrow('"kind":"unreachable"');
+  });
+});

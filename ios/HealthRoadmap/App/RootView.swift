@@ -24,7 +24,7 @@ struct RootView: View {
         TabView(selection: $tab) {
             titled("My data") {
                 MyDataView(store: store, sync: sync)
-                    .toolbar { ToolbarItem(placement: .topBarTrailing) { LabUploadButton(engine: engine, store: store) } }
+                    .toolbar { ToolbarItem(placement: .topBarTrailing) { LabUploadButton(engine: engine, store: store, sync: sync) } }
             }
                 .tabItem { Label("My data", systemImage: "list.bullet.clipboard") }
                 .tag(Tab.data)
