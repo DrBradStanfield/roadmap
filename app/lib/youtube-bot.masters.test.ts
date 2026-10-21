@@ -49,7 +49,7 @@ vi.mock('./chat.server', async (orig) => ({
 
 import { runPipeline } from './youtube-bot.server';
 import { platformChatCompletion } from './platform-chat.server';
-import { currentViewSection, safetySections, masterViews, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_KEY_POINTS_CHARS, BULLET_LINE } from './youtube-context';
+import { currentViewSection, safetySections, masterViews, reducedMaster, MAX_VIEW_CHARS, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_KEY_POINTS_CHARS, BULLET_LINE } from './youtube-context';
 import { MAX_KEY_POINTS_CHARS as CHECKER_MAX_KEY_POINTS_CHARS, BULLET_LINE as CHECKER_BULLET_LINE, keySafetyErrors } from '../../tools/knowledge-batch-check';
 import { getChatCompletion } from './chat.server';
 import { routeQuery } from './chat-router.server';
@@ -486,5 +486,17 @@ describe('youtube-comment-dryrun uses the router view (US-50 AC3)', () => {
     expect(src).toContain('.replace(/\\{\\{ENTRY_COUNT\\}\\}/g, String(ROUTER_VIEW.length))');
     expect(src).not.toContain('TYPE_ORDER');
     expect(src).not.toContain('# KB Index');
+  });
+});
+
+// US-50 AC13 (R6): the chat's reduced form applies masterViews' malformed-view
+// rule, so a view over MAX_VIEW_CHARS never reaches the model by that path either.
+describe('reducedMaster keeps the malformed-view check (US-50 AC13)', () => {
+  it('drops a view over MAX_VIEW_CHARS and keeps the safety sections with their reference lines', () => {
+    const md = `---\ntitle: "X"\nreviewed: "2026-10-20"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'v'.repeat(MAX_VIEW_CHARS)}\n\n## 5. Safety and Side Effects\n\nSafe [1].\n\n## 8. References\n\n[1] A ref.\n`;
+    const reduced = reducedMaster(md)!;
+    expect(reduced).not.toContain('vvv');
+    expect(reduced).toContain('Safe [1].');
+    expect(reduced).toMatch(/^\[1\] A ref\.$/m);
   });
 });

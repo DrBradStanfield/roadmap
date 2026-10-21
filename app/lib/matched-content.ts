@@ -11,9 +11,10 @@ import { reducedMaster } from './youtube-context';
 
 // ~30K tokens. Above the largest entry in the corpus (the B vitamins master,
 // about 106,000 body chars), so any single routed entry fits (US-15 AC23). Two
-// masters often pass it together (vitamin D + vitamin K, about 134,000): the
-// second then loads reduced (US-50 AC13).
+// masters often pass it together (vitamin D + vitamin K, about 134,000): one
+// then loads reduced (US-50 AC13).
 export const MAX_BLOG_CHARS = 120_000;
+const SEPARATOR = '\n\n---\n\n';
 
 const articleCache = new Map<string, string | null>();
 
@@ -70,35 +71,46 @@ export function contentBlock(handle: string, content: string): string {
 
 /**
  * Concatenate the content for the router's handles, in order, up to
- * MAX_BLOG_CHARS, each as contentBlock() gives it, so frontmatter never counts
- * (US-50 AC4). A topic master that would overflow the cap loads reduced, as
- * reducedMaster() gives it, so its safety sections still reach the model
- * (US-50 AC13). Any other entry, or a master whose reduced form still does not
- * fit, is skipped (listed in `skipped`), never the rest of the list (US-15 AC23). `titles` names the
+ * MAX_BLOG_CHARS, separators included, each as contentBlock() gives it, so
+ * frontmatter never counts (US-50 AC4). A topic master has smaller forms
+ * (US-50 AC13): reducedMaster() with its dosing section, then without, each
+ * after a header and an internal note. Each master takes its largest form that
+ * leaves room for the smallest form of every master after it (one that fits the
+ * cap at all), else its smallest form that fits; so a large first master yields
+ * and every routed master loads at least reduced. Any other entry loads whole
+ * if it fits, as before. One that does not fit is skipped (listed in
+ * `skipped`), never the rest of the list (US-15 AC23). `titles` names the
  * entries loaded, from the blog index, never model output (US-15 AC20), and
  * only those in `titled`; the content is the same either way (US-15 AC25).
  */
 export function loadMatchedContent(handles: string[], titled = handles): { content: string | null; titles: string[]; skipped: string[] } {
+  const items = handles.flatMap(handle => {
+    const raw = loadBlogArticle(handle);
+    if (!raw) return [];
+    const entry = loadBlogIndex().find(a => a.handle === handle);
+    const forms = [contentBlock(handle, raw)];
+    if (entry && isMaster(entry)) {
+      const note = `${contentHeader(entry, parseFrontmatter(raw) ?? {})}\n\n[Internal note, do not quote: this page is shortened to fit. For anything not below, say the full page covers it and give its link from the lines above.]\n\n`;
+      for (const reduced of [reducedMaster(raw, true), reducedMaster(raw)]) if (reduced) forms.push(note + reduced);
+    }
+    return [{ handle, entry, forms, master: forms.length > 1 }];
+  });
+  const smallest = (forms: string[]) => forms[forms.length - 1].length + SEPARATOR.length;
   const parts: string[] = [];
   const titles: string[] = [];
   const skipped: string[] = [];
   let totalChars = 0;
-  for (const handle of handles) {
-    const raw = loadBlogArticle(handle);
-    if (!raw) continue;
-    const entry = loadBlogIndex().find(a => a.handle === handle);
-    let content = contentBlock(handle, raw);
-    const reduced = totalChars + content.length > MAX_BLOG_CHARS && entry && isMaster(entry) && reducedMaster(raw);
-    if (reduced) {
-      content = `${contentHeader(entry, parseFrontmatter(raw) ?? {})}\n\n[Shortened to fit the content limit: this page's current view and safety sections only. The full page has ${stripFrontmatter(raw).length.toLocaleString('en-US')} characters.]\n\n${reduced}`;
-    }
-    if (totalChars + content.length > MAX_BLOG_CHARS) {
+  for (const [i, { handle, entry, forms, master }] of items.entries()) {
+    const room = MAX_BLOG_CHARS - totalChars - (parts.length > 0 ? SEPARATOR.length : 0);
+    const reserve = master ? items.slice(i + 1).filter(it => it.master && smallest(it.forms) <= MAX_BLOG_CHARS).reduce((n, it) => n + smallest(it.forms), 0) : 0;
+    const content = forms.find(f => f.length <= room - reserve) ?? (forms[forms.length - 1].length <= room ? forms[forms.length - 1] : undefined);
+    if (content === undefined) {
       skipped.push(handle);
       continue;
     }
+    totalChars += content.length + (parts.length > 0 ? SEPARATOR.length : 0);
     parts.push(content);
-    totalChars += content.length;
     if (entry?.title && titled.includes(handle)) titles.push(entry.title);
   }
-  return { content: parts.length > 0 ? parts.join('\n\n---\n\n') : null, titles, skipped };
+  return { content: parts.length > 0 ? parts.join(SEPARATOR) : null, titles, skipped };
 }

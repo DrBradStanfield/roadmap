@@ -8,7 +8,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { loadMatchedContent, contentHeader, MAX_BLOG_CHARS } from './matched-content';
-import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 
 const index = loadBlogIndex();
 const video = index.find(e => e.youtube && e.commerceUrl)!;
@@ -92,7 +92,7 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     expect(content).toMatch(/^#+ Warfarin and Vitamin K Antagonists$/m);
     expect(content).toContain('Vitamin K can have a serious and potentially dangerous interaction with warfarin');
     expect(content).toMatch(/^#+ 5\. Safety and Side Effects$/m);
-    expect(content).toContain('[Shortened to fit');
+    expect(content).toContain('Internal note, do not quote: this page is shortened to fit.');
   });
 
   it('magnesium + vitamin D: both load, vitamin D reduced with its safety and interactions', () => {
@@ -104,6 +104,48 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     expect(tail).toMatch(/^#+ 5\. Safety and Side Effects$/m);
     expect(tail).toMatch(/^#+ 6\. Drug Interactions$/m);
     expect(tail).not.toMatch(/^#+ 3\. Evidence for Health Benefits$/m);
+  });
+
+  // The last block of a loaded context: the entry loaded after the final separator.
+  const lastPart = (content: string) => content.slice(content.lastIndexOf('\n\n---\n\n'));
+  const parts = (content: string) => content.split('\n\n---\n\n');
+
+  it('every citation in a reduced master keeps its reference line: taurine\'s view cites [26] (Codex R1)', () => {
+    const { content, skipped } = loadMatchedContent(['protein-powders-benefits-types-dosing-and-side-effects', 'taurine-benefits-forms-dosing-and-side-effects']);
+    expect(skipped).toEqual([]);
+    const tail = lastPart(content!);
+    expect(tail).toContain('Internal note, do not quote');
+    expect(tail).toMatch(/^#+ Current view[\s\S]*\[26\]/m);
+    expect(tail).toMatch(/^\[26\] Sharma S/m);
+  });
+
+  it('a large first master yields so the next master loads at least reduced (adversary R1)', () => {
+    for (const pair of [['b-vitamins-benefits-forms-dosing-and-side-effects', 'multivitamins-benefits-evidence-dosing-and-side-effects'], ['vitamin-c-benefits-forms-dosing-and-side-effects', 'b-vitamins-benefits-forms-dosing-and-side-effects']]) {
+      const { content, skipped } = loadMatchedContent(pair);
+      expect(skipped, pair.join(' + ')).toEqual([]);
+      expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
+      for (const part of parts(content!)) expect(part, pair.join(' + ')).toMatch(/^#+ \d+\. Safety and Side Effects$/m);
+    }
+  });
+
+  it('a reduced master keeps its Recommended Dosing when it fits: magnesium\'s UL after vitamin D (adversary R2)', () => {
+    const { content } = loadMatchedContent([D, MG]);
+    const tail = lastPart(content!);
+    expect(tail).toContain('Internal note, do not quote');
+    expect(tail).toMatch(/^#+ 4\. Recommended Dosing$/m);
+    expect(tail).toContain('The UL for supplemental magnesium (not including food sources) is **350 mg/day**');
+  });
+
+  it('the separators count against the cap: content never passes MAX_BLOG_CHARS (R4)', () => {
+    vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
+      const handle = path.basename(String(p), '.md');
+      if (handle === 'sep-test-a') return 'a'.repeat(60_000);
+      if (handle === 'sep-test-b') return 'b'.repeat(MAX_BLOG_CHARS - 60_000 - '[article]\n\n'.length * 2);
+      return (realRead as (...a: unknown[]) => unknown)(p, ...rest);
+    }) as typeof fs.readFileSync);
+    const { content, skipped } = loadMatchedContent(['sep-test-a', 'sep-test-b']);
+    expect(skipped).toEqual(['sep-test-b']);
+    expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
   });
 
   it('a non-master entry that would overflow is still skipped whole', () => {
@@ -119,11 +161,25 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   it('a master whose reduced form still does not fit is skipped', () => {
     const real = String(realRead(path.join('docs/blog', `${POTASSIUM}.md`), 'utf-8'));
     vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
-      if (path.basename(String(p), '.md') === POTASSIUM) return real.replace('## 5. Safety and Side Effects', `## 5. Safety and Side Effects\n\n${'q'.repeat(60_000)}`);
+      if (path.basename(String(p), '.md') === POTASSIUM) return real.replace('## 5. Safety and Side Effects', `## 5. Safety and Side Effects\n\n${'q'.repeat(125_000)}`);
       return (realRead as (...a: unknown[]) => unknown)(p, ...rest);
     }) as typeof fs.readFileSync);
     const { content, skipped } = loadMatchedContent([D, POTASSIUM]);
     expect(skipped).toEqual([POTASSIUM]);
     expect(content).not.toContain('qqq');
+  });
+  // A fresh module: loadBlogArticle's cache still holds the mocked files above.
+  it('every ordered pair of masters loads both, safety sections present, inside the cap (R1, R4)', async () => {
+    vi.resetModules();
+    const { loadMatchedContent } = await import('./matched-content');
+    const masters = loadBlogIndex().filter(isMaster).map(e => e.handle);
+    expect(masters.length).toBeGreaterThanOrEqual(20);
+    for (const a of masters) for (const b of masters) {
+      if (a === b) continue;
+      const { content, skipped } = loadMatchedContent([a, b]);
+      expect(skipped, `${a} + ${b}`).toEqual([]);
+      expect(content!.length, `${a} + ${b}`).toBeLessThanOrEqual(MAX_BLOG_CHARS);
+      for (const part of parts(content!)) expect(part, `${a} + ${b}`).toMatch(/^#+ .*Safety/m);
+    }
   });
 });

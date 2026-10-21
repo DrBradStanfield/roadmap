@@ -230,7 +230,7 @@ describe('US-41 AC7 — search_knowledge: masters first, capped, the notice on e
     for (const r of results) expect(r.excerpt.length).toBeLessThanOrEqual(r.master ? MAX_MASTER_EXCERPT_CHARS : MAX_EXCERPT_CHARS);
     expect(answer.structuredContent!.notice).toBe(NOTICE);
     expect(answer.content[0].text.startsWith(`{"notice":${JSON.stringify(NOTICE)}`)).toBe(true);
-    expect(answer.content[0].text.length).toBeLessThan(MAX_RESULTS * (MAX_EXCERPT_CHARS + 1_500));
+    expect(answer.content[0].text.length).toBeLessThan(MAX_RESULTS * (Math.max(MAX_EXCERPT_CHARS, MAX_MASTER_EXCERPT_CHARS) + 1_500));
   });
 
   // US-50 AC13: the writer contract puts "who should not take it" last in the
@@ -240,6 +240,17 @@ describe('US-41 AC7 — search_knowledge: masters first, capped, the notice on e
     expect(results[0]).toMatchObject({ handle: 'potassium-benefits-forms-dosing-and-side-effects', master: true });
     expect(results[0].excerpt.length).toBeGreaterThan(MAX_EXCERPT_CHARS);
     expect(results[0].excerpt).toMatch(/Talk to your doctor before taking added potassium if you have kidney disease, .*ACE inhibitor.*\(Brad's current guidance, 6 Oct 2026\)\.$/);
+  });
+
+  // US-50 AC13 (R5): the master excerpt cap must hold every served view whole, so none is cut silently.
+  it('every served master\'s Current view fits MAX_MASTER_EXCERPT_CHARS', () => {
+    const masters = loadBlogIndex().filter((e) => isServed(e) && e.type === 'reference' && e.reviewed);
+    expect(masters.length).toBeGreaterThanOrEqual(20);
+    for (const e of masters) {
+      const body = readFileSync(`docs/blog/${e.handle}.md`, 'utf-8').replace(/^---[\s\S]*?\n---\n/, '');
+      const view = body.split(/^(?=## )/m).find((sec) => /^## Current (view|evidence position)\b/.test(sec)) ?? '';
+      expect(view.trim().length, e.handle).toBeLessThanOrEqual(MAX_MASTER_EXCERPT_CHARS);
+    }
   });
 
   it('refuses a query that does not fit, in fixed words that never repeat it', async () => {
