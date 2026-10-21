@@ -306,8 +306,16 @@ describe('US-17 AC8 — a credential-free optin creates or refreshes, never clob
     };
     // The lookup returns the row's provider here, so a JS branch on it would
     // change the reply or the chain. The provider filter lives in the UPDATE.
-    const verified = await run('google-drive');
-    const addressLane = await run('typed');
+    // A frozen clock keeps updated_at identical across the two runs.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    let verified, addressLane;
+    try {
+      verified = await run('google-drive');
+      addressLane = await run('typed');
+    } finally {
+      vi.useRealTimers();
+    }
     expect(verified.result).toEqual({ isNew: false });
     expect(addressLane.result).toEqual({ isNew: false });
     expect(verified.chain.filter((c) => c.method === 'update')).toHaveLength(1);
