@@ -38,8 +38,8 @@ struct EngineBoot {
         guard let folder, var state = try? folder.readState() else { return nil }
         let bundledVersion = bundled.facts.version
 
-        // A trial that never finished: that launch crashed, hung, or ended before the
-        // user's own plan rendered. Judged only on a foreground launch (R8): a
+        // A trial that never finished: that launch crashed or hung before the user's
+        // own record was shown. Judged only on a foreground launch (R8): a
         // background launch leaves the mark for the next foreground one.
         if foreground, let trying = state.trying {
             Self.log.notice("engine \(trying, privacy: .public) did not finish its trial launch: marked bad")
@@ -63,7 +63,7 @@ struct EngineBoot {
             }
             do {
                 let engine = try load(staged, floor: state.floor)
-                // The mark stays until the user's own plan renders (PlanView confirms).
+                // The mark stays until the user's own record is shown (My data or the plan).
                 if trial { engine.trial = EngineTrial(version: version, folder: folder) }
                 Self.log.notice("running downloaded engine \(version, privacy: .public)")
                 return Choice(engine: engine, version: version)
@@ -104,9 +104,9 @@ struct EngineBoot {
 }
 
 /// A downloaded engine on its first foreground launch (US-25 AC18). Its "trying"
-/// mark stays set until the user's own plan has been worked out by it, so a crash
-/// or hang on the real record, not only on the self-test's fixture, counts against
-/// it at the next launch. PlanView calls `confirm()` once the plan has rendered.
+/// mark stays set until it has shown the user's own record, so a crash or hang on the
+/// real record, not only on the self-test's fixture, counts against it at the next
+/// launch. MyDataView and PlanView each call `confirm()`; the first one wins.
 @MainActor
 final class EngineTrial {
     let version: Int
@@ -118,7 +118,7 @@ final class EngineTrial {
         self.folder = folder
     }
 
-    /// The engine ran the user's record through to a plan: it is proven.
+    /// The engine read the user's record and drew it: it is proven.
     func confirm() {
         guard !confirmed, var state = try? folder.readState() else { return }
         confirmed = true

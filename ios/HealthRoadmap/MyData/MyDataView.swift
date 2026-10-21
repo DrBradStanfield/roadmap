@@ -66,6 +66,8 @@ struct MyDataView: View {
                     }
                 }
                 .listStyle(.insetGrouped)
+                // A downloaded engine on trial has now read the user's own record (US-25 AC18).
+                .onAppear { store.engineTrial?.confirm() }
             } else {
                 ContentUnavailableView("Your record could not be opened", systemImage: "exclamationmark.triangle", description: Text(store.problem ?? ""))
             }

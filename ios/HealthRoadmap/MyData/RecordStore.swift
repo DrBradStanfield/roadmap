@@ -61,6 +61,8 @@ final class RecordStore {
     }
 
     private let engine: HealthEngine
+    /// A downloaded engine on trial (US-25 AC18): My data confirms it once it shows the record.
+    var engineTrial: EngineTrial? { engine.trial }
     /// Where the record is kept.
     let file: URL
     let deviceId: String

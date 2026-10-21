@@ -29,7 +29,7 @@ final class EngineBootTests: XCTestCase {
         let choice = try boot()
         XCTAssertEqual(choice.version, release.version)
         XCTAssertEqual(try version(choice), release.version)
-        XCTAssertEqual(try folder.readState().trying, release.version, "on trial until the user's plan renders")
+        XCTAssertEqual(try folder.readState().trying, release.version, "on trial until the user's record is shown")
         XCTAssertEqual(try folder.readState().proven, [])
         choice.engine.trial?.confirm()
         let state = try folder.readState()
@@ -37,7 +37,7 @@ final class EngineBootTests: XCTestCase {
         XCTAssertEqual(state.proven, [release.version])
     }
 
-    func testALaunchThatEndsBeforeThePlanRendersCountsAgainstTheEngine() throws {
+    func testALaunchThatEndsBeforeTheRecordIsShownCountsAgainstTheEngine() throws {
         let release = fixture.staged(daysAfterBundled: 2)
         try folder.stage(release)
         XCTAssertEqual(try boot().version, release.version) // never confirmed: a hang on the real record
@@ -52,6 +52,22 @@ final class EngineBootTests: XCTestCase {
         XCTAssertNil(try boot(foreground: false).version, "not proven, so not run in the background")
         XCTAssertEqual(try folder.readState().trying, release.version)
         XCTAssertEqual(try folder.readState().bad, [])
+    }
+
+    func testMyDataConfirmsATrialThroughItsStore() throws {
+        let release = fixture.staged(daysAfterBundled: 2)
+        try folder.stage(release)
+        let choice = try boot()
+        let records = FileManager.default.temporaryDirectory.appending(path: "data trial \(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
+        let store = try RecordStore(folder: records, engine: choice.engine, deviceId: "test")
+        XCTAssertNotNil(store.myData, "the engine read the user's record")
+        XCTAssertTrue(store.engineTrial === choice.engine.trial)
+        store.engineTrial?.confirm() // MyDataView's one call, on appear
+        XCTAssertNil(try folder.readState().trying)
+        XCTAssertEqual(try folder.readState().proven, [release.version])
+        store.engineTrial?.confirm() // idempotent: the plan confirming later changes nothing
+        XCTAssertEqual(try folder.readState().proven, [release.version])
     }
 
     func testThePlanScreenConfirmsATrialOnceThePlanRenders() async throws {

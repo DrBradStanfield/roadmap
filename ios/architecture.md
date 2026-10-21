@@ -154,13 +154,15 @@ A signature means "the key holder approved this bundle", nothing more.
   built, from the same bytes. **The self-test catches accidents, not malice**: a hostile
   engine could pass it. The signature is what keeps hostile engines out.
 - **Fallback.** A "trying" mark is written before a version's first foreground load and
-  cleared only when the user's own plan has rendered from it (`EngineTrial.confirm`, one
-  call in `PlanView`; orchestrator's call, 2026-10-22), so a crash or hang on the real
-  record counts, not only one on the self-test's fixture. Still there at the next
-  foreground launch means that launch crashed, hung, or ended before the plan was
-  opened, and the version is marked bad. The cost: the app opens on My data, so a user
-  who quits before opening My plan marks a good release bad on that phone; it then runs
-  the bundled engine until the next release, which gets its own trial. A failed check or self-test marks it bad too. Bad
+  cleared once the engine has shown the user's own record: My data drawn from it, or the
+  plan, whichever comes first (`EngineTrial.confirm`, one call in `MyDataView` and one in
+  `PlanView`; orchestrator's call, 2026-10-22). So a crash or hang on the real record
+  counts, not only one on the self-test's fixture, while quitting does not: the app opens
+  on My data, which confirms at once. Still there at the next foreground launch means
+  that launch crashed or hung before the record was shown, and the version is marked
+  bad. The cost that remains: a launch killed in that first moment, or a record My data
+  cannot draw when the user never opens My plan, marks a good release bad on that phone,
+  which then runs the bundled engine until the next release gets its own trial. A failed check or self-test marks it bad too. Bad
   versions are deleted and never tried again; the next staged version, or the bundled
   engine, runs. **Background launches (R8)** (a Health delivery) never try a new engine:
   they run only a version that passed a foreground launch, and an unreadable file there
@@ -197,9 +199,12 @@ A signature means "the key holder approved this bundle", nothing more.
 URL and a throwaway key): the first launch fetched the manifest, signature and bundle and
 staged release 202610212108; the next launch ran it after its self-test ("running
 downloaded engine 202610212108", marked proven); with one byte of the staged file flipped,
-the next launch refused it (hashMismatch), marked it bad and ran the bundled engine. After
-the trial change, release 202610212136: its "trying" mark stayed through the welcome
-screen and My data, and cleared (version proven) once My plan was opened.
+the next launch refused it (hashMismatch), marked it bad and ran the bundled engine. With the
+trial held until the record is shown (confirmed by the plan only), release 202610212136's
+mark stayed through the welcome screen and My data and cleared when My plan opened. With
+My data confirming too, release 202610212154 was proven within six seconds of launch,
+before Get started was tapped: the welcome screen is a full-screen cover, and My data
+draws the record beneath it.
 
 **Known gaps.** Only names and arities of doors are drift-checked; their JSON shapes
 are described in the contract and pinned by the self-test and the app's own tests.
