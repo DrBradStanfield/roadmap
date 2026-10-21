@@ -20,8 +20,8 @@ final class HealthEngine {
     }
 
     private let context: JSContext
-    private let planJson: JSValue
-    private let sectionsJson: JSValue
+    /// The bundle's exports: planJson, sectionsJson, newRecordJson, myDataJson, applyEditJson (ios/engine/entry.ts).
+    private let exports: JSValue
 
     init(bundle: Bundle = .main) throws {
         guard let url = bundle.url(forResource: "health-engine", withExtension: "js"),
@@ -32,21 +32,22 @@ final class HealthEngine {
         // A bare JSContext has no console. The engine may log a warning; drop it,
         // because a log line must never carry a health value.
         context.evaluateScript("var console = { log() {}, info() {}, warn() {}, error() {}, debug() {} };")
+        // Nor has it `crypto`, and health-core gives every new row a fresh
+        // `crypto.randomUUID()` (FHIR rule 5). The phone's own UUID stands in.
+        let randomUUID: @convention(block) () -> String = { UUID().uuidString.lowercased() }
+        context.setObject(["randomUUID": randomUUID], forKeyedSubscript: "crypto" as NSString)
         context.evaluateScript(source, withSourceURL: url)
         if let exception = context.exception { throw EngineError.loadFailed(exception.toString()) }
 
-        let engine = context.objectForKeyedSubscript("HealthEngine")
-        guard let planJson = engine?.objectForKeyedSubscript("planJson"), !planJson.isUndefined,
-              let sectionsJson = engine?.objectForKeyedSubscript("sectionsJson"), !sectionsJson.isUndefined
-        else { throw EngineError.loadFailed("HealthEngine.planJson or sectionsJson is not defined") }
+        guard let exports = context.objectForKeyedSubscript("HealthEngine"), !exports.isUndefined
+        else { throw EngineError.loadFailed("HealthEngine is not defined") }
         self.context = context
-        self.planJson = planJson
-        self.sectionsJson = sectionsJson
+        self.exports = exports
     }
 
     /// The plan for a record, as the engine's JSON.
     func plan(recordJSON: String, now: Date, deviceId: String) throws -> String {
-        try call(planJson, [recordJSON, now.formatted(Self.iso), deviceId])
+        try call("planJson", [recordJSON, now.formatted(Self.iso), deviceId])
     }
 
     /// The plan's on-screen layout, from the same function the web uses.
@@ -56,11 +57,32 @@ final class HealthEngine {
 
     /// The layout as the engine's JSON, for the parity test to compare byte for byte.
     func sectionsJSON(planJSON: String) throws -> String {
-        try call(sectionsJson, [planJSON])
+        try call("sectionsJson", [planJSON])
+    }
+
+    /// A first-launch record, as JSON. Units follow the phone's region.
+    func newRecord(now: Date, deviceId: String, locale: Locale = .current, timeZone: TimeZone = .current) throws -> String {
+        try call("newRecordJson", [now.formatted(Self.iso), deviceId, locale.identifier(.bcp47), timeZone.identifier])
+    }
+
+    /// What the My data tab shows for a record.
+    func myData(recordJSON: String, now: Date, deviceId: String) throws -> MyData {
+        let json = try call("myDataJson", [recordJSON, now.formatted(Self.iso), deviceId])
+        return try JSONDecoder().decode(MyData.self, from: Data(json.utf8))
+    }
+
+    /// Applies one edit with health-core's own write rules. The record passed in is not changed.
+    func apply(_ edit: RecordEdit, to recordJSON: String, now: Date, deviceId: String) throws -> EditOutcome {
+        let editJSON = String(decoding: try JSONEncoder().encode(edit), as: UTF8.self)
+        let json = try call("applyEditJson", [recordJSON, editJSON, now.formatted(Self.iso), deviceId])
+        return try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
     }
 
     /// Calls an engine function that returns text, turning a JavaScript exception into a Swift error.
-    private func call(_ function: JSValue, _ arguments: [Any]) throws -> String {
+    private func call(_ name: String, _ arguments: [Any]) throws -> String {
+        guard let function = exports.objectForKeyedSubscript(name), !function.isUndefined else {
+            throw EngineError.callFailed("HealthEngine.\(name) is not defined")
+        }
         let result = function.call(withArguments: arguments)
         if let exception = context.exception {
             context.exception = nil

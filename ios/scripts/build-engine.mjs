@@ -9,7 +9,7 @@
 // must match them, so a bundling difference fails here, before any app test.
 import { build } from 'esbuild';
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parityFixtures } from '../engine/fixtures.mjs';
@@ -44,7 +44,6 @@ await build({
 });
 
 const sample = JSON.parse(readFileSync(join(repo, 'docs/examples/health-roadmap.sample.json'), 'utf8'));
-copyFileSync(join(repo, 'docs/examples/health-roadmap.sample.json'), join(ios, 'HealthRoadmap/Engine/sample-record.json'));
 
 // The bundle, run in Node the way the app runs it: global HealthEngine, JSON in and out.
 const bundleGolden = `

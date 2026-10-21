@@ -1,51 +1,58 @@
 import SwiftUI
 
-/// The plan screen (US-25 AC2): the record's plan, computed on the phone by the
-/// shared engine and laid out by the web's own `planSections`. For the spike it
-/// shows the sample record.
+/// The plan screen (US-25 AC2, AC6): the user's own record, planned on the phone
+/// by the shared engine and laid out by the web's own `planSections`. It plans
+/// again whenever the record changes.
 struct PlanView: View {
     private enum LoadState {
         case loading
         case loaded(sections: [PlanSection], planMs: Double)
-        case failed(String)
+        /// The engine cannot plan this record yet, in its own words.
+        case cannotPlan(String)
     }
 
+    let engine: HealthEngine
+    let store: RecordStore
+    /// Switches to the My data tab.
+    let showMyData: () -> Void
     @State private var state = LoadState.loading
 
     var body: some View {
-        // No title bar: the cards start at the top (Brad 2026-10-21). The
-        // disclaimer at the end says to consult a healthcare provider.
         Group {
             switch state {
             case .loading:
                 ProgressView()
-            case .failed(let message):
-                ContentUnavailableView("No plan", systemImage: "exclamationmark.triangle", description: Text(message))
+            case .cannotPlan(let reason):
+                ContentUnavailableView {
+                    Label("Your plan needs a few details", systemImage: "person.text.rectangle")
+                } description: {
+                    Text(reason)
+                } actions: {
+                    Button("Go to My data", action: showMyData)
+                        .buttonStyle(.borderedProminent)
+                }
             case .loaded(let sections, let planMs):
                 PlanList(sections: sections, planMs: planMs)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
-        .task { state = Self.load() }
+        .task(id: store.recordJSON) { state = load(store.recordJSON) }
     }
 
-    private static func load() -> LoadState {
+    private func load(_ record: String) -> LoadState {
         let clock = ContinuousClock()
         do {
-            let engine = try HealthEngine()
-            guard let url = Bundle.main.url(forResource: "sample-record", withExtension: "json") else {
-                throw HealthEngine.EngineError.missingBundle
-            }
-            let record = try String(contentsOf: url, encoding: .utf8)
             let start = clock.now
-            let json = try engine.plan(recordJSON: record, now: .now, deviceId: "ios-spike")
+            let json = try engine.plan(recordJSON: record, now: .now, deviceId: store.deviceId)
             let elapsed = clock.now - start
             let sections = try engine.sections(planJSON: json)
             let ms = Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15
             return .loaded(sections: sections, planMs: ms)
+        } catch HealthEngine.EngineError.callFailed(let why) where why.hasPrefix("PlanError: ") {
+            return .cannotPlan(String(why.dropFirst("PlanError: ".count)))
         } catch {
-            return .failed(error.localizedDescription)
+            return .cannotPlan(error.localizedDescription)
         }
     }
 }
