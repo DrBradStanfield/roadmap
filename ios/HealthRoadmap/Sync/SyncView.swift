@@ -64,7 +64,7 @@ struct SyncView: View {
     @ViewBuilder
     private func connected(_ provider: CloudProvider) -> some View {
         Section {
-            LabeledContent("Connected to", value: provider.label)
+            LabeledContent("Connected to", value: sync.accountEmail ?? provider.label)
             LabeledContent("Folder", value: provider.folder)
         } footer: {
             Text("The website and your other devices use this same file. Dr Brad's server never sees it.")

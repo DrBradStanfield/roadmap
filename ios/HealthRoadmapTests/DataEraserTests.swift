@@ -137,12 +137,19 @@ final class DataEraserTests: XCTestCase {
 
     func testTheCloudEraseWritesTheEraseIntoTheCloudFileAndLeavesThePhoneOnlyTheErasedCopy() async throws {
         dropbox.put(try record(days: ["2026-10-01"]))
+        let emailFile = folder.appending(path: "sync-account-email")
+        try Data("brad@example.com".utf8).write(to: emailFile)
         let app = try app(connected: true)
         await app.sync.start()
         XCTAssertNotNil(app.store.cloudErase)
+        XCTAssertEqual(app.sync.accountEmail, "brad@example.com")
         seedChat(app.chat)
 
         guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+
+        // US-25 AC11e (2026-10-22): the connected account's email goes with the erase.
+        XCTAssertNil(app.sync.accountEmail)
+        XCTAssertFalse(exists(emailFile))
 
         XCTAssertEqual(epoch(dropbox.record), 1, "the file stays in Dropbox, with the erase in it")
         XCTAssertEqual(rows(dropbox.record), 0)

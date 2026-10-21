@@ -22,6 +22,9 @@ final class CloudSync: CloudPort {
     /// The connected cloud; nil when the record is the phone's file.
     private(set) var provider: CloudProvider?
     private(set) var status = Status.onPhone
+    /// The connected account's email, which Sync shows; nil when the provider gave
+    /// none. On the phone only (SyncFiles.email), never logged.
+    private(set) var accountEmail: String?
     /// The cloud the record was last synced with, kept after Disconnect: the copy
     /// there stays, so the app never says the record never left the phone (review A3).
     private(set) var syncedBefore: CloudProvider?
@@ -54,6 +57,7 @@ final class CloudSync: CloudPort {
         files = SyncFiles(folder: store.file.deletingLastPathComponent())
         provider = files.read(files.provider).flatMap(CloudProvider.init(rawValue:))
         syncedBefore = files.read(files.history).flatMap(CloudProvider.init(rawValue:))
+        accountEmail = provider == nil ? nil : files.read(files.email)
         engine.natives.cloud = self
         store.onEdit = { [weak self] in self?.edited() }
         if provider != nil { status = .connecting }
@@ -79,6 +83,8 @@ final class CloudSync: CloudPort {
         try oauth.keep(signedIn)
         try files.write(provider.rawValue, to: files.provider)
         try files.write(signedIn.account, to: files.account)
+        if let email = signedIn.email { try files.write(email, to: files.email) } else { files.remove(files.email) }
+        accountEmail = signedIn.email
         self.provider = provider
         await open(firstConnect: first)
     }
@@ -131,6 +137,8 @@ final class CloudSync: CloudPort {
             if shownSession == session { status = .problem(SyncProblem(error)) }
             throw error
         }
+        // "Delete all my data" takes the account's email too; the connection stays.
+        if result.erased { forgetEmail() }
         // A Disconnect or reopen during the await owns the screen now (review F7).
         guard shownSession == session else { return result }
         if result.erased, let view = result.view { store.showErased(view) }
@@ -156,6 +164,7 @@ final class CloudSync: CloudPort {
         oauth.signOut(provider)
         files.remove(files.provider)
         files.remove(files.account)
+        forgetEmail()
         files.remove(files.pending)
         store.showPhone()
         status = .onPhone
@@ -203,6 +212,11 @@ final class CloudSync: CloudPort {
         _ = try? await engine.cloudClose(copyDown: false)
         guard mine == generation else { return }
         status = .problem(SyncProblem(kind: .busy))
+    }
+
+    private func forgetEmail() {
+        files.remove(files.email)
+        accountEmail = nil
     }
 
     /// The one rule for "Synced": nothing waits on the phone, the pending marker

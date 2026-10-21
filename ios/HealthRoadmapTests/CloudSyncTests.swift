@@ -39,6 +39,9 @@ final class CloudSyncTests: XCTestCase {
             }
             if !online { return .init(offline: true) }
             guard request.headers["authorization"] == "Bearer token-1" else { return .init(status: 401) }
+            if request.url.path == "/2/users/get_current_account" {
+                return .init(body: Data(#"{"account_id":"\#(tokenAccount)","email":"Brad@Example.com","email_verified":true}"#.utf8))
+            }
             let arg = try! JSONSerialization.jsonObject(with: Data(request.headers["dropbox-api-arg"]!.utf8)) as! [String: Any]
             if request.url.path.hasSuffix("/files/download") {
                 if let hook = onDownload { DispatchQueue.main.async { MainActor.assumeIsolated { hook() } } }
@@ -336,6 +339,25 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r-dbid:A", "the first account's sign-in is kept")
         XCTAssertNotNil(store.cloudErase)
         XCTAssertEqual(dropbox.uploads, uploads)
+    }
+
+    /// US-25 AC11e (2026-10-22): Sync names the connected account by its email. It is
+    /// kept only on the phone, beside the account id, and goes on Disconnect.
+    func testTheConnectedAccountsEmailIsKeptBesideItsIdAndGoesOnDisconnect() async throws {
+        dropbox.put(try record(days: [], device: "web"))
+        let (store, sync, engine) = try app(connected: false)
+        XCTAssertNil(sync.accountEmail)
+        try await sync.connect(.dropbox, authenticate: signIn())
+        XCTAssertEqual(sync.accountEmail, "brad@example.com")
+        let file = folder.appending(path: "sync-account-email")
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "brad@example.com")
+        XCTAssertEqual(file.deletingLastPathComponent().standardizedFileURL, store.file.deletingLastPathComponent().standardizedFileURL,
+                       "in the Record folder, which backups leave out")
+        let relaunched = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
+        XCTAssertEqual(relaunched.accountEmail, "brad@example.com")
+        await relaunched.disconnect()
+        XCTAssertNil(relaunched.accountEmail)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path(percentEncoded: false)))
     }
 
     func testA3AfterDisconnectTheWordsSayACopyStaysInTheCloud() async throws {

@@ -33,6 +33,9 @@ final class OAuthClient {
         /// Which account signed in: Dropbox's `account_id`, or Drive's
         /// `about.user.permissionId` (drive.file gives no email or id token).
         let account: String
+        /// The account's email, for Sync to name it: nil when the provider gives
+        /// none (or Dropbox has not verified it). Kept only on the phone; never logged.
+        let email: String?
     }
 
     private let tokens: TokenStore
@@ -95,9 +98,28 @@ final class OAuthClient {
             throw Failure.refused("Allow access to the files this app creates in Google Drive, or the record cannot sync.")
         }
         let kept = OAuthTokens(accessToken: answer.accessToken, refreshToken: refresh, expiresAt: expiry(answer))
-        let account = provider == .dropbox ? answer.accountId : try await driveAccount(answer.accessToken)
+        let (account, email) = if provider == .dropbox {
+            (answer.accountId, await dropboxEmail(answer.accessToken))
+        } else {
+            try await driveAccount(answer.accessToken)
+        }
         guard let account, !account.isEmpty else { throw Failure.refused("\(provider.label) did not say which account signed in. Try again.") }
-        return SignedIn(provider: provider, tokens: kept, account: account)
+        return SignedIn(provider: provider, tokens: kept, account: account, email: email)
+    }
+
+    /// The Dropbox account's email, as the web's `accountEmail` reads it: verified
+    /// only, lower-cased. Nil when Dropbox does not answer: the sign-in never fails for it.
+    private func dropboxEmail(_ accessToken: String) async -> String? {
+        var request = URLRequest(url: URL(string: "https://api.dropboxapi.com/2/users/get_current_account")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Data("null".utf8)
+        guard let (data, response) = try? await session.data(for: request), (response as? HTTPURLResponse)?.statusCode == 200,
+              let account = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              account["email_verified"] as? Bool == true, let email = account["email"] as? String, !email.isEmpty
+        else { return nil }
+        return email.lowercased()
     }
 
     /// Keep a sign-in's tokens in the Keychain.
@@ -105,15 +127,17 @@ final class OAuthClient {
         try tokens.save(signedIn.tokens, for: signedIn.provider)
     }
 
-    /// Drive's stable id for the signed-in user. `about` answers under drive.file.
-    private func driveAccount(_ accessToken: String) async throws -> String? {
-        var request = URLRequest(url: URL(string: "https://www.googleapis.com/drive/v3/about?fields=user(permissionId)")!)
+    /// Drive's stable id for the signed-in user, and its email when `about` gives
+    /// one. `about` answers under drive.file: no other scope is asked for.
+    private func driveAccount(_ accessToken: String) async throws -> (String?, String?) {
+        var request = URLRequest(url: URL(string: "https://www.googleapis.com/drive/v3/about?fields=user(permissionId,emailAddress)")!)
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         guard let (data, response) = try? await session.data(for: request), (response as? HTTPURLResponse)?.statusCode == 200 else {
             throw Failure.unreachable("Google Drive did not answer. Check the connection and try again.")
         }
-        let about = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        return (about?["user"] as? [String: Any])?["permissionId"] as? String
+        let user = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["user"] as? [String: Any]
+        let email = (user?["emailAddress"] as? String).flatMap { $0.isEmpty ? nil : $0.lowercased() }
+        return (user?["permissionId"] as? String, email)
     }
 
     /// A current access token, refreshed a minute before it expires, or now when `force`.

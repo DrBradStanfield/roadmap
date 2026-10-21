@@ -57,7 +57,8 @@ final class SignInTests: XCTestCase {
     func testSignInExchangesTheCodeWithTheVerifierAndKeepsTheTokens() async throws {
         var form = ""
         StubHTTP.handler = { request in
-            form = String(decoding: request.body, as: UTF8.self)
+            // The token exchange's form; the account call after it has a JSON body.
+            if request.url.path == "/oauth2/token" { form = String(decoding: request.body, as: UTF8.self) }
             return .init(body: Data(#"{"access_token":"a1","refresh_token":"r1","expires_in":14400,"account_id":"dbid:1"}"#.utf8))
         }
         let client = OAuthClient(tokens: tokens, session: StubHTTP.session())
@@ -130,5 +131,62 @@ final class SignInTests: XCTestCase {
         XCTAssertEqual(drive.account, "perm-7")
         try client.keep(dropbox)
         XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r1")
+    }
+
+    /// US-25 AC11e (2026-10-22): the email Sync names the account by, from what each
+    /// provider gives under the scopes already asked for: Dropbox's get_current_account
+    /// (the web's accountEmail, verified only, lower-cased) and Drive's about.user.
+    func testSignInAnswersTheEmailEachProviderGivesAndNeverFailsWithoutIt() async throws {
+        /// What the stub answers and saw; StubHTTP runs off the main thread.
+        final class Stub: @unchecked Sendable {
+            private let lock = NSLock()
+            private var answer = StubHTTP.Answer(body: Data(#"{"email":"Brad@Example.com","email_verified":true}"#.utf8))
+            private var fields = ""
+            private var accountCalls: [StubHTTP.Request] = []
+            var accountAnswer: StubHTTP.Answer {
+                get { lock.withLock { answer } }
+                set { lock.withLock { answer = newValue } }
+            }
+            var aboutFields: String {
+                get { lock.withLock { fields } }
+                set { lock.withLock { fields = newValue } }
+            }
+            var calls: [StubHTTP.Request] { lock.withLock { accountCalls } }
+            func called(_ request: StubHTTP.Request) { lock.withLock { accountCalls.append(request) } }
+        }
+        let stub = Stub()
+        StubHTTP.handler = { @Sendable request in // nonisolated: StubHTTP calls it off the main thread
+            if request.url.host == "www.googleapis.com" {
+                stub.aboutFields = URLComponents(url: request.url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "fields" }?.value ?? ""
+                return .init(body: Data(#"{"user":{"permissionId":"perm-7","emailAddress":"g@example.com"}}"#.utf8))
+            }
+            if request.url.host == "oauth2.googleapis.com" {
+                return .init(body: Data(#"{"access_token":"g1","refresh_token":"gr","expires_in":3600,"scope":"https://www.googleapis.com/auth/drive.file"}"#.utf8))
+            }
+            if request.url.path == "/2/users/get_current_account" {
+                stub.called(request)
+                return stub.accountAnswer
+            }
+            return .init(body: Data(#"{"access_token":"a1","refresh_token":"r1","expires_in":14400,"account_id":"dbid:XYZ"}"#.utf8))
+        }
+        let client = OAuthClient(tokens: tokens, session: StubHTTP.session(), clientId: { $0 == .googleDrive ? "123-abc.apps.googleusercontent.com" : $0.clientId })
+        let back: OAuthClient.Authenticate = { url, _ in
+            let state = URLComponents(url: url, resolvingAgainstBaseURL: false)!.queryItems!.first { $0.name == "state" }!.value!
+            return URL(string: "x:/r?code=c&state=\(state)")!
+        }
+        let verified = try await client.signIn(.dropbox, authenticate: back)
+        XCTAssertEqual(verified.email, "brad@example.com")
+        XCTAssertEqual(stub.calls.map(\.method), ["POST"])
+        XCTAssertEqual(stub.calls.first?.headers["authorization"], "Bearer a1")
+        stub.accountAnswer = .init(body: Data(#"{"email":"brad@example.com","email_verified":false}"#.utf8))
+        let unverified = try await client.signIn(.dropbox, authenticate: back)
+        XCTAssertNil(unverified.email, "an unverified email is not shown, as on the web")
+        stub.accountAnswer = .init(status: 500)
+        let failed = try await client.signIn(.dropbox, authenticate: back)
+        XCTAssertNil(failed.email)
+        XCTAssertEqual(failed.account, "dbid:XYZ", "the sign-in still works without an email")
+        let drive = try await client.signIn(.googleDrive, authenticate: back)
+        XCTAssertEqual(drive.email, "g@example.com")
+        XCTAssertTrue(stub.aboutFields.contains("emailAddress"), stub.aboutFields)
     }
 }

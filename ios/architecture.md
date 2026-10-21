@@ -693,8 +693,16 @@ Files, From Photos, and Scan a paper report (VisionKit's document camera, real p
   ArrayBuffer into `Data` (the shim's own `EngineNatives.data`), so no base64 detour.
 - *Sync screen.* It says what sync does before a connect, names the cloud and folder once
   connected, and draws "not connected" as a phone (`SyncStatusText.symbol`): a struck-out
-  iCloud symbol read as "iCloud is off". Dropbox's token answer has no email, so no
-  account is named; showing one would need `users/get_current_account`, an open question.
+  iCloud symbol read as "iCloud is off".
+- *The account's email (orchestrator, 2026-10-22).* Sync says "Connected to <email>", so a
+  person with two Dropbox accounts can see which one is linked. Dropbox's token answer has
+  no email, so connect makes one `users/get_current_account` call, as the web's
+  `accountEmail` does (verified only, lower-cased); Drive's `about` call, already made for
+  the account id, also asks for `emailAddress`. No new scope. A missing email never fails a
+  connect. It is kept only in `sync-account-email`, beside `sync-account` in the Record
+  folder that backups leave out, never logged, and removed on Disconnect and on "Delete
+  all my data". The web's code lives in the widget's adapter, not health-core, so the
+  phone repeats the one call in OAuthClient beside Drive's `about`.
 
 ### D9 · No server telemetry (Brad, 2026-10-21)
 
