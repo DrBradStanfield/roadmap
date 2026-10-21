@@ -12,8 +12,7 @@ import { ERASE_UNREACHABLE, RecordSession, PERSIST_DEBOUNCE_MS } from './record-
 import type { RecordHost } from './record-host';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type WriteResult } from './adapter';
 import { createMeasurement, type FileDocument, type RoadmapFile } from './roadmap-file';
-import { liftDeviceCopy } from './record-transfer';
-import { setReminderOptIn, setScreening, stampProfile } from './state-edits';
+import { stampProfile } from './state-edits';
 
 /** A store whose writes can be made to fail, and whose reads can be held. */
 class TestStore extends MemoryAdapter {
@@ -58,8 +57,6 @@ interface Fake {
   reports: Array<{ op?: string; cause?: string; repeat: boolean }>;
   mirrorCloud: MemoryCloud;
   pending: { value: boolean };
-  /** This tab's unconfirmed erase (sessionStorage on the web). */
-  mark: { value: string | null };
   /** The originals each off-file clear was told to keep. */
   kept: string[][];
 }
@@ -72,7 +69,6 @@ function fakeHost(store: TestStore, tier: 'device' | 'cloud' = 'cloud'): Fake {
   const reports: Fake['reports'] = [];
   const mirrorCloud = new MemoryCloud();
   const pending = { value: false };
-  const mark = { value: null as string | null };
   const kept: string[][] = [];
   const base = {
     store,
@@ -103,10 +99,9 @@ function fakeHost(store: TestStore, tier: 'device' | 'cloud' = 'cloud'): Fake {
           writesStopped: () => false,
           wipe: async () => { mirrorCloud.files.clear(); calls.push('wipe'); },
           opened: () => calls.push('opened'),
-          unconfirmedErase: { get: () => mark.value, set: (v: string) => { mark.value = v; }, clear: () => { mark.value = null; } },
         },
       };
-  return { host, timers, calls, reports, mirrorCloud, pending, kept, mark };
+  return { host, timers, calls, reports, mirrorCloud, pending, kept };
 }
 
 const weight = (id: string, value: number, day: string) =>
@@ -341,73 +336,6 @@ describe('RecordSession: erase (US-09 AC23, US-11)', () => {
     expect(add(session, 'fresh', 80, '2026-10-01', session.eraseIdentity)).toBe(true);
     session.showErase(session.eraseIdentity);
     expect(add(session, 'next', 81, '2026-10-02')).toBe(true);
-  });
-});
-
-describe('RecordSession: an erase this tab has not yet seen the cloud hold (US-11 AC9)', () => {
-  /** A cloud record with rows, erased; answers the copy from before the erase. */
-  async function erased() {
-    const store = new TestStore();
-    const fake = fakeHost(store);
-    const session = await RecordSession.open(fake.host);
-    add(session, 'a');
-    await session.flush();
-    const stale = { ...store.cloud.files.get(ROADMAP_FILE_NAME)! };
-    expect((await session.erase()).success).toBe(true);
-    return { store, fake, stale };
-  }
-
-  it('a reload while the provider still serves the pre-erase file shows no old rows, and pushes the erase again', async () => {
-    const { store, fake, stale } = await erased();
-    store.cloud.files.set(ROADMAP_FILE_NAME, stale);
-    fake.timers.length = 0;
-    const reloaded = await RecordSession.open(fake.host);
-    expect(reloaded.file.meta.eraseEpoch).toBe(1);
-    expect(reloaded.file.measurements).toEqual([]);
-    expect(fake.timers).toHaveLength(1); // the push is queued
-    await reloaded.flush();
-    expect(stored(store.cloud).meta.eraseEpoch).toBe(1);
-    expect(stored(store.cloud).measurements).toEqual([]);
-  });
-
-  it('once a read shows the erase, a version restored from history loads as it is', async () => {
-    const { store, fake, stale } = await erased();
-    expect(fake.mark.value).not.toBeNull();
-    // Another device saves a row after the erase; this tab's read of that
-    // file shows the erase, a row it never listed beside it: confirmed.
-    const other = await RecordSession.open(fakeHost(store).host);
-    add(other, 'after', 81, '2026-10-02', other.eraseIdentity);
-    await other.flush();
-    await RecordSession.open(fake.host);
-    expect(fake.mark.value).toBeNull();
-    store.cloud.files.set(ROADMAP_FILE_NAME, stale); // the user restores an old version
-    const restored = await RecordSession.open(fake.host);
-    expect(ids(restored.file)).toEqual(['a']);
-  });
-
-  it("an erase of account A never reaches account B's file: profile, screenings, opt-in and ids survive", async () => {
-    const { fake } = await erased();
-    const a = stored((fake.host.store as TestStore).cloud);
-    // Account B, connected in the same tab: its own record.
-    const storeB = new TestStore();
-    const ownerB = await RecordSession.open(fakeHost(storeB).host);
-    ownerB.edit((file) => stampProfile(file, { sex: 'female' }, new Date(clock).toISOString()));
-    ownerB.edit((file) => setScreening(file, 'colorectal_method', 'fit', new Date(clock).toISOString()));
-    ownerB.edit((file) => setReminderOptIn(file, { status: 'active', token: 't', email: 'b@example.com', provider: 'dropbox' }, new Date(clock).toISOString()));
-    add(ownerB, 'b');
-    await ownerB.flush();
-    const hostB = { ...fake.host, store: storeB } as Extract<RecordHost, { tier: 'cloud' }>;
-    await liftDeviceCopy(hostB);
-    const sessionB = await RecordSession.open(hostB);
-    await sessionB.flush();
-    for (const file of [sessionB.file, stored(storeB.cloud)]) {
-      expect(file.profile.sex).toBe('female');
-      expect(file.screenings.colorectalMethod).toBe('fit');
-      expect(file.reminderOptIn?.status).toBe('active');
-      expect(ids(file)).toEqual(['b']);
-      expect(file.meta.eraseEpoch ?? 0).toBe(0);
-      expect(file.erasedRows?.ids ?? []).not.toEqual(expect.arrayContaining(a.erasedRows!.ids));
-    }
   });
 });
 

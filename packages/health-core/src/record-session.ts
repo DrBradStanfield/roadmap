@@ -8,7 +8,7 @@
  */
 import { ConflictError, ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { buildErasedFile } from './erase';
-import { CLOCK_KEYS, mergeFiles, rowRootIds } from './merge';
+import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
 import type { RecordHost, SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
@@ -158,11 +158,6 @@ export class RecordSession {
     const revision = host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
     const session = new RecordSession(host, deviceId, sync, await sync.load(), cloudUnreachable);
     session.revisionSeen = revision;
-    const behind = session.unconfirmed(session.current);
-    if (behind) {
-      session.current = behind;
-      session.touch();
-    }
     const mirror = host.tier === 'cloud' ? host.mirror : null;
     mirror?.opened();
     // A previous cloud session failed to save and mirrored its changes
@@ -336,8 +331,6 @@ export class RecordSession {
         // it: a row a device-tier tab saved after the erase read that copy
         // goes too (the residual US-11 AC6 names).
         host.mirror.pending.clear();
-        // Until a read shows it, a stale copy of this file is not shown (AC9).
-        host.mirror.unconfirmedErase?.set(JSON.stringify({ backend: this.sync.backendId, createdAt: this.current.meta.createdAt, record: this.current }));
         await host.mirror.wipe();
       }
       return { success: true };
@@ -422,8 +415,7 @@ export class RecordSession {
     // Taken before the read: a write landing in between costs a second read,
     // never a missed one.
     const revision = this.host.sync?.revision(ROADMAP_DOC.fileName) ?? null;
-    const loaded = await this.sync.load();
-    const merged = mergeFiles(local, this.unconfirmed(loaded) ?? loaded, this.ctx());
+    const merged = mergeFiles(local, await this.sync.load(), this.ctx());
     // A merge always bumps the file's own clock, so the comparison is on the
     // CONTENT, not on a version: re-rendering on every poll would count a
     // change nobody made.
@@ -495,33 +487,6 @@ export class RecordSession {
       /* unreadable: it names nothing */
     }
     this.host.clearOffFileData(liveOriginals(kept));
-  }
-
-  /**
-   * The record this tab erased, when `loaded` is a copy of that same file
-   * from before the erase (same backend and `meta.createdAt`, and every row
-   * one the erase listed): then the
-   * erase merged over it, for the caller to show and push again. Null for
-   * any other copy, and once a read shows the erase, which ends the wait
-   * (US-11 AC9). Another account's file never matches.
-   */
-  private unconfirmed(loaded: RoadmapFile): RoadmapFile | null {
-    const mark = this.host.tier === 'cloud' ? this.host.mirror.unconfirmedErase : undefined;
-    const text = mark?.get();
-    if (!mark || !text) return null;
-    try {
-      const { backend, createdAt, record } = JSON.parse(text) as { backend: string; createdAt: string; record: unknown };
-      if (backend !== this.sync.backendId || createdAt !== loaded.meta.createdAt) return null;
-      const erased = ROADMAP_DOC.migrate(record, this.ctx());
-      if ((loaded.meta.eraseEpoch ?? 0) < (erased.meta.eraseEpoch ?? 0)) {
-        const listed = new Set(erased.erasedRows?.ids);
-        return rowRootIds(loaded).every((id) => listed.has(id)) ? ROADMAP_DOC.merge(erased, loaded, this.ctx()) : null;
-      }
-    } catch {
-      /* unreadable: nothing to hold back */
-    }
-    mark.clear();
-    return null;
   }
 
   /** Device tier: write the erased record over bytes no record reads, at the

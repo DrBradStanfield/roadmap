@@ -28,11 +28,6 @@ export interface DeviceMirror {
   /** Remove the device copy and what sits beside it, after an erase has
    *  reached the cloud (US-11). */
   wipe(): Promise<void>;
-  /** An erase made in this page that no read of the cloud has shown yet
-   *  (US-11 AC9), as the engine's own text: kept for this tab only, across a
-   *  reload, and dropped at log-off. Leave it out and a stale read after an
-   *  erase shows until a re-read meets the erase. */
-  unconfirmedErase?: { get(): string | null; set(value: string): void; clear(): void };
   /** The cloud record has loaded: from now on this device's log-off, made in
    *  another page, stops writes here too (US-09 AC2c). Not before: a load
    *  that fails falls back to the device, whose copy is then its only store. */
