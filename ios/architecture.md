@@ -1,8 +1,13 @@
 # iOS app — architecture and decisions
 
-Status: **Phase 1 spike started** (2026-10-21): the shared engine runs in the app and
-matches Node byte for byte (US-25 AC1, AC2); Dropbox sync runs on the shared sync engine
-(US-25 AC11); Google Drive waits on its iOS client id. This file records what we decided for the
+Status: **feature complete in the simulator, waiting on Brad's accounts** (2026-10-21,
+overnight). Built and on main: My data with medications, screenings, supplements and
+history (US-25 AC5-AC9); the plan (AC1, AC2, AC6); welcome, rating prompt, icon (AC10);
+Dropbox sync on the shared sync engine (AC11; Google Drive waits on its iOS client id);
+reminders (AC12); Apple Health (AC13-AC15); erase and export (AC16); chat and lab upload
+behind App Attest (US-52, server routes off until deployed with a team id). Not built:
+over-the-air engine updates (D3). What Brad must do before TestFlight:
+[launch-checklist.md](launch-checklist.md). This file records what we decided for the
 native iPhone app and why. It is the entry point for anyone, human or agent, working in
 `ios/`.
 
@@ -819,10 +824,11 @@ then about 1 ms each.
 
 0. **Readiness (Brad, in progress 2026-10-21):** macOS upgrade, Xcode 26, Apple Developer
    Program as the company (D-U-N-S), a test iPhone.
-1. **Spike, go/no-go:** engine in JavaScriptCore on the phone; Dropbox and Drive sync
-   against the scratch record; Apple Health read and write; the over-the-air update path.
-2. **TestFlight:** entry, plan, corrections, units, sync, erase, notifications, Apple
-   Health, then chat behind App Attest.
+1. **Spike, go/no-go:** done 2026-10-21 for the engine, Dropbox sync (stubbed and
+   Node-tested; the live check waits on a sign-in) and Apple Health (simulator). The
+   over-the-air update path (D3) is not built.
+2. **TestFlight:** every feature is built (2026-10-21); a real iPhone and Brad's
+   accounts are owed (launch-checklist.md).
 3. **Health Records labs and camera lab upload.**
 4. **App Store submission.**
 
