@@ -304,7 +304,7 @@ export class RecordSession {
       // device-tier user gets no wipe below (it would delete the erased file
       // just written), and used to keep them — except the originals of
       // documents the erase did not remove (another tab's, saved meanwhile).
-      host.clearOffFileData(liveOriginals(this.current));
+      this.clearOffFileData();
       if (host.tier === 'device') {
         // The other record files (chat history): their contents are already
         // tombstoned (the caller's beforeErase erases chat history first).
@@ -312,6 +312,9 @@ export class RecordSession {
         // old snapshot into the missing file.
         host.clearNamedFiles();
       } else {
+        // The wipe takes the whole device copy, every stored original with
+        // it: a row a device-tier tab saved after the erase read that copy
+        // goes too (the residual US-11 AC6 names).
         host.mirror.pending.clear();
         await host.mirror.wipe();
       }
@@ -416,6 +419,31 @@ export class RecordSession {
     void this.persist();
   }
 
+  /**
+   * Clear this device's off-file health data for the erase this copy is at
+   * (US-11 AC1, AC6), sparing only the stored originals of documents that
+   * outlive it (US-09 AC20, AC23): those live in this copy, and those live in
+   * the device's own record copy once the erase is applied to it, so an
+   * original the erase listed goes even where a stale device copy still names
+   * it. A device copy that cannot be read names nothing, as in erase().
+   * The page calls it too, after an erase whose write failed.
+   */
+  clearOffFileData(): void {
+    this.clearOffFile(this.current);
+  }
+
+  private clearOffFile(after: RoadmapFile): void {
+    const ctx = this.ctx();
+    let kept = after;
+    try {
+      const body = this.host.deviceRecord?.();
+      if (body != null) kept = mergeFiles(after, ROADMAP_DOC.migrate(body, ctx), ctx);
+    } catch {
+      /* unreadable: it names nothing */
+    }
+    this.host.clearOffFileData(liveOriginals(kept));
+  }
+
   /** The merge context: this device, and now. */
   private ctx(): SyncContext {
     return { deviceId: this.deviceId, now: new Date(this.host.clock.now()).toISOString() };
@@ -430,7 +458,7 @@ export class RecordSession {
   private adopt(merged: RoadmapFile): boolean {
     const seen = visibleContentOf(this.current);
     // An erase from elsewhere, a later one at the same epoch included (adversary R6).
-    if (eraseIdentityOf(merged) !== this.eraseIdentity) this.host.clearOffFileData(liveOriginals(merged));
+    if (eraseIdentityOf(merged) !== this.eraseIdentity) this.clearOffFile(merged);
     this.current = merged;
     return visibleContentOf(merged) !== seen;
   }

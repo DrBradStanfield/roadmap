@@ -80,36 +80,16 @@ export function isSyncPending(): boolean {
   return safeGetItem(PENDING_MIRROR_KEY) != null;
 }
 
-/** The originals the device record still names, read from its stored bytes:
- *  a tab of this browser on the device tier (a guest, an on-device fallback)
- *  keeps its documents there, whatever the record the erase came in on
- *  holds (US-09 AC23). Null when that record cannot be read: then no
- *  original can be shown to be unnamed, and none goes. */
-function deviceOriginals(): Set<string> | null {
-  try {
-    const { body } = new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME);
-    const documents = (body as { documents?: unknown } | null)?.documents;
-    if (!Array.isArray(documents)) return new Set();
-    return new Set(documents.filter((d) => d && !d.deleted && typeof d.fileRef === 'string' && d.fileRef).map((d) => d.fileRef as string));
-  } catch {
-    return null;
-  }
-}
-
-/** Clear the off-file data, sparing the originals of live documents: those
- *  the session names and those the device record names (US-11 AC6). */
-function clearOffFileData(keepOriginals: ReadonlySet<string>): void {
-  const device = deviceOriginals();
-  clearOffFileHealthData((ref) => device === null || keepOriginals.has(ref) || device.has(ref));
-}
-
 /** The host for `store`: the device tier when it is localStorage itself,
  *  else a cloud with localStorage as its mirror. Every global is read at each
  *  call, never captured, so tests' fake timers and clocks apply. */
 export function webRecordHost(store: StorageAdapter): RecordHost {
   const base = {
     store,
-    clearOffFileData,
+    clearOffFileData: (keepOriginals: ReadonlySet<string>) => clearOffFileHealthData((ref) => keepOriginals.has(ref)),
+    // The localStorage record: a guest or on-device fallback tab keeps its
+    // documents there, whatever record the erase came in on (US-09 AC23).
+    deviceRecord: () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body,
     deviceId: getDeviceId,
     clock: { now: () => Date.now() },
     timers: {

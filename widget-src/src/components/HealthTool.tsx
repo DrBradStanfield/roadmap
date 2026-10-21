@@ -61,7 +61,6 @@ import {
   saveToLocalStorage,
   patchMirror,
   clearLocalStorage,
-  clearOffFileHealthData,
   saveUnitPreference,
   loadUnitPreference,
   safeSetItem,
@@ -74,6 +73,7 @@ import {
   getEraseIdentity,
   getShownErase,
   markEraseShown,
+  clearOffFileAfterErase,
   loadLatestMeasurementsSync,
   loadAllHistory,
   loadLabValues,
@@ -809,8 +809,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     if (result.success || getEraseIdentity() !== before) {
       clearLocalStorage();
       // The matrices' drafts and the Lp(a) check's answers too, on the device
-      // and on screen: a failed write's store holds the erased copy.
-      clearOffFileHealthData();
+      // and on screen: a failed write's store holds the erased copy. Stored
+      // originals go by the session's rule, never by the page (US-11 AC6).
+      clearOffFileAfterErase();
       setInputs({});
       setPreviousMeasurements([]);
       setHistory([]);

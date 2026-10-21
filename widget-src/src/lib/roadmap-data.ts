@@ -76,6 +76,12 @@ export function getEraseIdentity(): string {
 export function getShownErase(): string {
   return store?.shownErase ?? '';
 }
+/** After an erase: clear this device's off-file health data by the record
+ *  session's one rule, which spares the originals of documents that outlive
+ *  the erase (US-11 AC6). The page never clears stored originals itself. */
+export function clearOffFileAfterErase(): void {
+  store?.clearOffFileData();
+}
 export function markEraseShown(identity: string): void {
   store?.showErase(identity);
 }

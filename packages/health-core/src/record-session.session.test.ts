@@ -290,6 +290,34 @@ describe('RecordSession: an erase made elsewhere (US-11 AC6, O5)', () => {
   });
 });
 
+describe("RecordSession: the device's own record copy (US-11 AC6, US-09 AC23)", () => {
+  async function erasedWithDeviceCopy(deviceRecord: () => unknown) {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    session.edit((file) => void file.documents.push(doc('listed', 'Lab results/listed.pdf')));
+    await session.flush();
+    // The device copy: the listed document, and one no erase saw.
+    const device = structuredClone(session.file);
+    device.documents.push(doc('unseen', 'Lab results/unseen.pdf'));
+    const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+    fake.host.deviceRecord = () => deviceRecord.call(null) ?? device;
+    clock += 60_000;
+    expect(await session.refreshFromRemote()).toBe(true);
+    return fake.kept;
+  }
+
+  it('keeps the originals its unseen documents name, never the ones the erase listed', async () => {
+    expect(await erasedWithDeviceCopy(() => undefined)).toEqual([['Lab results/unseen.pdf']]);
+  });
+
+  it('names nothing when that copy cannot be read', async () => {
+    expect(await erasedWithDeviceCopy(() => { throw new Error('corrupt'); })).toEqual([[]]);
+  });
+});
+
 describe('RecordSession: host timer ids', () => {
   it('cancels a debounce whose timer id is 0 (iOS timer ids may start there)', async () => {
     const store = new TestStore();

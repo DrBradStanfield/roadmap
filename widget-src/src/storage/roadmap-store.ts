@@ -726,6 +726,12 @@ export class RoadmapStore {
     };
   }
 
+  /** Clear the off-file health data for the erase this copy is at, sparing
+   *  the originals of documents that outlive it (US-11 AC6); see the session. */
+  clearOffFileData(): void {
+    this.session.clearOffFileData();
+  }
+
   /** Last-ditch save for tab close and hide (US-10 AC5); see the session. */
   flushSync(): void {
     this.session.flushSync();
