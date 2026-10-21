@@ -156,8 +156,8 @@ function sameValue(a: number, b: number): boolean {
   return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-/** Rule 5 — a fresh UUID per row, always. */
-function newId(): string {
+/** Rule 5 — a fresh UUID per row, always. Shared with state-edits.ts. */
+export function newId(): string {
   return crypto.randomUUID();
 }
 

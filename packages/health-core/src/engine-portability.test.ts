@@ -16,17 +16,20 @@ import { build } from 'esbuild';
 const SRC = dirname(fileURLToPath(import.meta.url));
 
 /** The modules the web store and the app share. Add each one as it moves. */
-const ENGINE_ENTRIES = ['chat-session.ts', 'erase.ts', 'live-refresh.ts', 'record-host.ts', 'record-session.ts', 'record-transfer.ts', 'storage-self-test.ts'];
+const ENGINE_ENTRIES = ['chat-session.ts', 'state-edits.ts', 'erase.ts', 'live-refresh.ts', 'record-host.ts', 'record-session.ts', 'record-transfer.ts', 'storage-self-test.ts'];
 
 const FORBIDDEN: Array<[string, RegExp]> = [
   ['a node: import', /from\s+['"]node:|require\(\s*['"]node:/],
   ['a bare Node built-in', /from\s+['"](fs|path|os|crypto|url|child_process)['"]/],
   ['window', /\bwindow\b/],
-  ['document.', /\bdocument\s*\./],
+  // The global, not a property of the same name (`parsed.document.title`).
+  ['document.', /(?<![.\w])document\s*\./],
   ['localStorage', /\blocalStorage\b/],
   ['sessionStorage', /\bsessionStorage\b/],
   ['navigator', /\bnavigator\b/],
-  ['crypto.', /\bcrypto\s*\./],
+  // crypto.randomUUID is the one exception: the iPhone engine supplies it
+  // (HealthEngine.swift), for record-edits' fresh row ids (rule 5).
+  ['crypto.', /\bcrypto\s*\.(?!randomUUID\b)/],
 ];
 
 /** Globals a module feature-detects (`typeof x !== 'undefined'`), so it runs
@@ -37,9 +40,11 @@ function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 }
 
-/** Code only: plain string literals (user-facing text) out as well. */
+/** Code only: string literals (user-facing text) out as well. Template
+ *  literals too (model prompts are prose); a ${} inside one is blanked with
+ *  it, a blind spot this scan accepts. */
 function codeOf(source: string): string {
-  return source.replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/g, "''");
+  return source.replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g, "''");
 }
 
 function reachable(entries: string[]): string[] {

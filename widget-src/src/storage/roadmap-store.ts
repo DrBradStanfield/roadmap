@@ -31,8 +31,8 @@ import {
   RecordSession,
   bulkAppendValues,
   splitDocumentRef,
-  classifyMedicationChange,
-  classifySupplementChange,
+  upsertMedication,
+  upsertSupplement,
   isEscalationKey,
   computeReminderSchedule,
   correctValue as correctRecordValue,
@@ -335,50 +335,18 @@ export class RoadmapStore {
 
   saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): boolean {
     if (this.refuses(erase)) return false;
-    // Classify against the current record BEFORE the upsert mutates it; a
-    // non-null result appends one append-only history row (never edited or
-    // deleted — merges across devices by id union). Identical re-saves and
-    // non-taking ↔ non-taking flips classify null, so no duplicate rows.
-    const prev = this.file.medications.find((m) => m.medicationKey === medicationKey);
-    const changeType = classifyMedicationChange(prev, { medicationKey, drugName, doseValue, doseUnit });
+    // health-core's one rule, shared with the iPhone app: the keyed row with
+    // its sync clock, and a history row only when the change classifies.
     // One edit, one save: state + history in one atomic file write.
-    return this.session.edit((file) => {
-      this.upsertByKey(file.medications, 'medicationKey', medicationKey, () => ({
-        id: newId(), medicationKey, drugName, doseValue, doseUnit,
-      }), (existing) => { existing.drugName = drugName; existing.doseValue = doseValue; existing.doseUnit = doseUnit; });
-      if (changeType) {
-        file.medicationHistory.push({
-          id: newId(), medicationKey, drugName, doseValue, doseUnit,
-          changeType, updatedAt: new Date().toISOString(),
-        });
-      }
-    }, erase);
+    const save = { medicationKey, drugName, doseValue, doseUnit };
+    return this.session.edit((file) => upsertMedication(file, save, new Date().toISOString()).file, erase);
   }
 
   saveSupplement(supplementKey: string, supplementName: string, doseValue: number | null = null, doseUnit: string | null = null, status = 'active', startedAt?: string, erase?: string): boolean {
     if (this.refuses(erase)) return false;
-    const prev = this.file.supplements.find((s) => s.supplementKey === supplementKey);
-    const changeType = classifySupplementChange(prev, {
-      supplementName, doseValue, doseUnit, status: status as FileSupplement['status'],
-    });
-    // One edit, one save: state + history in one atomic file write.
-    return this.session.edit((file) => {
-      this.upsertByKey(file.supplements, 'supplementKey', supplementKey, () => ({
-        id: newId(), supplementKey, supplementName, doseValue, doseUnit,
-        status: status as FileSupplement['status'], startedAt: startedAt ?? new Date().toISOString(),
-      }), (existing) => {
-        existing.supplementName = supplementName; existing.doseValue = doseValue;
-        existing.doseUnit = doseUnit; existing.status = status as FileSupplement['status'];
-      });
-      if (changeType) {
-        file.supplementHistory.push({
-          id: newId(), supplementKey, supplementName, doseValue, doseUnit,
-          status: status as FileSupplement['status'],
-          startedAt: prev?.startedAt ?? startedAt ?? new Date().toISOString(),
-          changeType, updatedAt: new Date().toISOString(),
-        });
-      }
-    }, erase);
+    // health-core's one rule, shared with the iPhone app (as saveMedication).
+    const save = { supplementKey, supplementName, doseValue, doseUnit, status: status as FileSupplement['status'], startedAt };
+    return this.session.edit((file) => upsertSupplement(file, save, new Date().toISOString()).file, erase);
   }
 
   deleteSupplementApi(supplementKey: string, erase?: string): boolean {
@@ -681,26 +649,6 @@ export class RoadmapStore {
     // save at all, so it sat in memory until the next unrelated edit carried it up.
     this.session.edit((file) => void (file.profile = stampFields(file.profile, changes as Partial<RoadmapProfile>, new Date().toISOString())), erase);
   }
-
-  /** Upsert a current-state row keyed by `keyField`, stamping the sync clock. */
-  private upsertByKey<T extends { updatedAt?: string; lamport?: number }>(
-    list: T[],
-    keyField: keyof T,
-    key: string,
-    make: () => Omit<T, 'updatedAt' | 'lamport'>,
-    update: (existing: T) => void,
-  ): void {
-    const existing = list.find((r) => (r as Record<string, unknown>)[keyField as string] === key);
-    const now = new Date().toISOString();
-    if (existing) {
-      update(existing);
-      existing.updatedAt = now;
-      existing.lamport = (existing.lamport ?? 0) + 1;
-    } else {
-      list.push({ ...(make() as T), updatedAt: now, lamport: 0 });
-    }
-  }
-
 }
 
 function toApiDocument(d: FileDocument): ApiDocument {
