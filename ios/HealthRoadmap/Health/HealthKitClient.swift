@@ -151,7 +151,7 @@ final class HealthKitClient: HealthStoreClient {
                 default: nil
                 }
                 guard let metric else { return nil }
-                return HealthSample(id: half.uuid, metric: metric, value: half.quantity.doubleValue(for: mmHg), at: correlation.startDate)
+                return HealthSample(id: half.uuid, metric: metric, value: half.quantity.doubleValue(for: mmHg), at: correlation.startDate, timeZone: zone(of: correlation), pairId: correlation.uuid)
             }
         }
         guard let quantity = sample as? HKQuantitySample else { return [] }
@@ -162,6 +162,13 @@ final class HealthKitClient: HealthStoreClient {
         case .bloodPressure: ""
         }
         guard !metric.isEmpty else { return [] }
-        return [HealthSample(id: quantity.uuid, metric: metric, value: quantity.quantity.doubleValue(for: unit(kind)), at: quantity.startDate)]
+        return [HealthSample(id: quantity.uuid, metric: metric, value: quantity.quantity.doubleValue(for: unit(kind)), at: quantity.startDate, timeZone: zone(of: quantity))]
+    }
+
+    /// The zone the reading was taken in, when its writer recorded one (the Health app
+    /// and many scales do), else the phone's: a first import of years of history run
+    /// while travelling must not move every reading onto another day, for good.
+    private static func zone(of sample: HKSample) -> TimeZone {
+        (sample.metadata?[HKMetadataKeyTimeZone] as? String).flatMap(TimeZone.init(identifier:)) ?? .current
     }
 }

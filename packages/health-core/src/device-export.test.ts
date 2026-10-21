@@ -22,10 +22,10 @@ function empty(): RoadmapFile {
 }
 
 describe('deviceWrites', () => {
-  it('writes a typed value keyed by its own id, versioned by when it was written', () => {
+  it('writes a typed value keyed by its own id, version 1', () => {
     const file = add(empty(), 'weight', 80, '2026-10-20');
     expect(deviceWrites(file, 'apple_health')).toEqual([
-      { syncId: file.measurements[0].id, version: Date.parse(T1), day: '2026-10-20', values: { weight: 80 } },
+      { syncId: file.measurements[0].id, version: 1, day: '2026-10-20', values: { weight: 80 } },
     ]);
   });
 
@@ -36,13 +36,29 @@ describe('deviceWrites', () => {
     const again = correctValue(corrected.file, { id: corrected.row.id, newValue: 87, now: '2026-10-21T10:00:00.000Z' });
     if (!again.ok) throw new Error(again.message);
     expect(deviceWrites(again.file, 'apple_health')).toEqual([
-      { syncId: typed.measurements[0].id, version: Date.parse('2026-10-21T10:00:00.000Z'), day: '2026-10-20', values: { waist: 87 } },
+      { syncId: typed.measurements[0].id, version: 3, day: '2026-10-20', values: { waist: 87 } },
     ]);
+  });
+
+  it('raises the version on a correction even when the phone\'s clock went back', () => {
+    const typed = add(empty(), 'weight', 80, '2026-10-20', T2);
+    const corrected = correctValue(typed, { id: typed.measurements[0].id, newValue: 79, now: T1 });
+    if (!corrected.ok) throw new Error(corrected.message);
+    expect(deviceWrites(corrected.file, 'apple_health')[0]).toMatchObject({ version: 2, values: { weight: 79 } });
+  });
+
+  it('raises a blood pressure\'s version when either half is corrected', () => {
+    let file = add(add(empty(), 'systolic_bp', 128, '2026-10-20'), 'diastolic_bp', 82, '2026-10-20');
+    const diastolic = file.measurements[1];
+    const corrected = correctValue(file, { id: diastolic.id, newValue: 80, now: T2 });
+    if (!corrected.ok) throw new Error(corrected.message);
+    file = corrected.file;
+    expect(deviceWrites(file, 'apple_health')[0]).toMatchObject({ version: 3, values: { systolic_bp: 128, diastolic_bp: 80 } });
   });
 
   it('never writes back a row that came from the device store, or a correction of one', () => {
     const imported = importDeviceSamples(empty(), [
-      { externalId: 'hk-1', metricType: 'weight', value: 80, measuredAt: '2026-10-20T19:00:00.000Z', localTime: '2026-10-21T08:00:00' },
+      { externalId: 'hk-1', metricType: 'weight', value: 80, measuredAt: '2026-10-21T08:00:00+13:00' },
     ], { now: T1, source: 'apple_health' }).file;
     expect(deviceWrites(imported, 'apple_health')).toEqual([]);
     const corrected = correctValue(imported, { id: imported.measurements[0].id, newValue: 78, now: T2 });
@@ -55,14 +71,14 @@ describe('deviceWrites', () => {
     expect(deviceWrites(file, 'apple_health')).toEqual([]);
     file = add(file, 'diastolic_bp', 82, '2026-10-20', T2);
     expect(deviceWrites(file, 'apple_health')).toEqual([
-      { syncId: file.measurements[0].id, version: Date.parse(T2), day: '2026-10-20', values: { systolic_bp: 128, diastolic_bp: 82 } },
+      { syncId: file.measurements[0].id, version: 2, day: '2026-10-20', values: { systolic_bp: 128, diastolic_bp: 82 } },
     ]);
   });
 
   it('writes neither half when one half came from the device store', () => {
     let file = add(empty(), 'systolic_bp', 128, '2026-10-21');
     file = importDeviceSamples(file, [
-      { externalId: 'hk-dia', metricType: 'diastolic_bp', value: 82, measuredAt: '2026-10-20T19:00:00.000Z', localTime: '2026-10-21T08:00:00' },
+      { externalId: 'hk-dia', metricType: 'diastolic_bp', value: 82, measuredAt: '2026-10-21T08:00:00+13:00' },
     ], { now: T1, source: 'apple_health' }).file;
     expect(deviceWrites(file, 'apple_health')).toEqual([]);
   });

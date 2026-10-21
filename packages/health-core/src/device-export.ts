@@ -7,7 +7,8 @@
  *   of one (judged by the root of its chain): the store already holds that
  *   reading, and a second copy would be read again as a new one.
  * - Each write is keyed by the root id of its correction chain, with the
- *   active row's write time as a rising version. The store keeps one sample
+ *   chain's length as a rising version (a write clock can go back; a chain only
+ *   grows; Codex review 2026-10-21). The store keeps one sample
  *   per key and replaces it when the version rises, so a correction replaces
  *   the sample instead of adding a second.
  * - Blood pressure is one reading in a store (systolic over diastolic): the
@@ -22,7 +23,7 @@ import type { MeasurementSource } from './validation';
 export interface DeviceWrite {
   /** The root id of the correction chain: the same for every correction of one value. */
   syncId: string;
-  /** Rises with each correction: the active row's `createdAt`, in ms. */
+  /** Rises with each correction: the chain's length (both chains' for a blood pressure). */
   version: number;
   /** YYYY-MM-DD: the day the value is for. */
   day: string;
@@ -34,47 +35,50 @@ const SINGLE_METRICS = new Set(['weight', 'waist']);
 
 export function deviceWrites(file: RoadmapFile, source: MeasurementSource): DeviceWrite[] {
   const byId = new Map(file.measurements.map((row) => [row.id, row]));
-  /** The first row of the chain `row` ends, following `correctsId` back. */
-  const rootOf = (row: FileMeasurement): FileMeasurement => {
+  /** The first row of the chain `row` ends, following `correctsId` back, and the chain's length. */
+  const chainOf = (row: FileMeasurement): { root: FileMeasurement; length: number } => {
     let root = row;
+    let length = 1;
     // A chain is short; the bound only stops a hand-made cycle.
-    for (let steps = 0; root.correctsId && steps < 1000; steps++) {
+    for (; root.correctsId && length < 1000; length++) {
       const previous = byId.get(root.correctsId);
       if (!previous) break;
       root = previous;
     }
-    return root;
+    return { root, length };
   };
 
+  type Half = { row: FileMeasurement; length: number };
   const writes: DeviceWrite[] = [];
-  const pressure = new Map<string, { systolic?: FileMeasurement; diastolic?: FileMeasurement; root?: string }>();
+  const pressure = new Map<string, { systolic?: Half & { root: string }; diastolic?: Half }>();
   /** Days with a store-sourced half: that day's pair is not written at all. */
   const storeDays = new Set<string>();
   for (const row of file.measurements) {
     if (row.status !== 'active') continue;
     const isPressure = row.metricType === 'systolic_bp' || row.metricType === 'diastolic_bp';
     if (!SINGLE_METRICS.has(row.metricType) && !isPressure) continue;
-    const root = rootOf(row);
+    const { root, length } = chainOf(row);
     const day = dayOf(row.recordedAt);
     if (root.source === source || row.source === source) {
       if (isPressure) storeDays.add(day);
       continue;
     }
     if (!isPressure) {
-      writes.push({ syncId: root.id, version: Date.parse(row.createdAt), day, values: { [row.metricType]: row.value } });
+      writes.push({ syncId: root.id, version: length, day, values: { [row.metricType]: row.value } });
       continue;
     }
     const pair = pressure.get(day) ?? {};
-    if (row.metricType === 'systolic_bp') pressure.set(day, { ...pair, systolic: row, root: root.id });
-    else pressure.set(day, { ...pair, diastolic: row });
+    if (row.metricType === 'systolic_bp') pressure.set(day, { ...pair, systolic: { row, length, root: root.id } });
+    else pressure.set(day, { ...pair, diastolic: { row, length } });
   }
-  for (const [day, { systolic, diastolic, root }] of pressure) {
-    if (!systolic || !diastolic || !root || storeDays.has(day)) continue;
+  for (const [day, { systolic, diastolic }] of pressure) {
+    if (!systolic || !diastolic || storeDays.has(day)) continue;
     writes.push({
-      syncId: root,
-      version: Math.max(Date.parse(systolic.createdAt), Date.parse(diastolic.createdAt)),
+      syncId: systolic.root,
+      // A correction of either half lengthens its chain, so the sum rises.
+      version: systolic.length + diastolic.length,
       day,
-      values: { systolic_bp: systolic.value, diastolic_bp: diastolic.value },
+      values: { systolic_bp: systolic.row.value, diastolic_bp: diastolic.row.value },
     });
   }
   return writes;

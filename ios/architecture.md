@@ -170,12 +170,23 @@ exact list matched to `types.ts` in the spike).
 HealthKit and hands readings over: `device-import.ts` (`importDeviceSamples`, the My data
 edit `appleHealth`) and `device-export.ts` (`deviceWrites`, the door `healthWritesJson`).
 Decisions made building it (agent, 2026-10-21; Brad to confirm):
-- **The row's `recordedAt` carries the reading's wall-clock time**, in the web's
-  local-day shape (`2026-10-21T08:30:00.000Z` is 8:30 on the phone's clock, not UTC), so
-  `dayOf` gives the day the person lived and the time orders a day's readings. Within a
-  day the latest reading wins: a later reading replaces an earlier Apple Health row (a
-  correction), an earlier one is skipped. Without the time, the winner would depend on
-  arrival order and a full re-import could swap it.
+- **The row's `recordedAt` is the reading's real instant with the UTC offset of where it
+  was taken** (`2026-10-21T08:30:00.000+13:00`), in the zone HealthKit recorded
+  (`HKMetadataKeyTimeZone`), else the phone's. `dayOf` gives the day the person lived
+  there; the web shows it as a moment (`formatShortDate` treats only `T00:00:00Z` as a day),
+  so a viewer in another zone may see the neighbouring date. Within a day the latest
+  reading wins, compared as instants: a later reading replaces an earlier Apple Health row
+  (a correction with its own `recordedAt`, same day), an earlier one is skipped. Without
+  the time, the winner would depend on arrival order and a full re-import could swap it.
+  First built as wall-clock time labelled Z; the adversary review found the web showed it
+  on the wrong day, so it fell before any real data (2026-10-21).
+- **A blood pressure lands whole or not at all.** Its halves carry the correlation's id
+  (`pairId`); a pair with a half refused (out of range, a typed half, a later reading) or
+  missing (Health shows only the half the person allowed) lands neither.
+- **Single device only.** These rules hold on one phone. Across devices the merge keeps the
+  newest-written row of a slot, so a phone import written after a web-typed value for the
+  same day can win the merge, and a later-written earlier reading can stay active. Fixing
+  that is merge-class work for the cloud-sync slice (adversary plus Codex).
 - **Height** is the profile's: Apple Health fills an empty height and never replaces one.
   It is not written back: the profile has no source, so an imported height would echo.
 - **Blood glucose is not read.** It is a catalogue lab value, and lab rows have no
@@ -183,6 +194,9 @@ Decisions made building it (agent, 2026-10-21; Brad to confirm):
   quantity type.
 - **Blood pressure** is written as one correlation per day, both halves present, keyed by
   the systolic chain's root; a day with an imported half is not written.
+- **The write version is the correction chain's length** (the sum of both chains for a
+  blood pressure), not a clock: a phone clock set back would otherwise give a correction a
+  lower version, and Health would keep the old value (Codex review 2026-10-21).
 
 **Built 2026-10-21 (app).** `HealthRoadmap/Health/`: `HealthKitClient` is the only file that
 touches HealthKit (types, SI units, anchored queries, observer queries, saves), behind the
@@ -192,19 +206,29 @@ asked for during one loops once more. Its decisions:
 - **Anchors and the written versions live in UserDefaults** (`HealthSyncMemory`), not the
   record: they are this phone's bookkeeping. An anchor moves only after the record holding
   that batch is on disk; a refused or failed save reads the batch again.
-- **No anchor is kept until a kind has given readings.** iOS answers a refused read with an
-  empty result, not an error; keeping that anchor would skip every older reading once the
-  person allows it in Settings (found on the simulator 2026-10-21). Limit: a read turned off
-  and on again later misses what arrived while it was off.
+- **No anchor is kept until a kind has given a whole reading** (for blood pressure, both
+  halves). iOS answers a refused read with an empty result, not an error; keeping that
+  anchor would skip every older reading once the person allows it in Settings (found on the
+  simulator 2026-10-21). Limits: a read turned off and on again later misses what arrived
+  while it was off; a kind holding only our own samples re-reads its history each time
+  (cost only); a reading the engine skips (a future day from a clock running ahead) is not
+  offered again.
 - **Our own samples are never read back:** our bundle id, or our `healthroadmap:` sync
   identifier prefix (a sample our app wrote on the person's other iPhone, synced by Health).
 - **Locked phone:** HealthKit's `errorDatabaseInaccessible` becomes "waiting for unlock";
   the anchor stays, and the next unlock (`protectedDataDidBecomeAvailable`) or return to
   the foreground retries. Observer queries with background delivery wake the app for new
-  data; iOS is told the work is done only after the import saved.
-- **Writes**: once per (sync id, version); a kind the person did not allow is skipped. A
-  typed value has a day, not a time, so Health gets noon of that day. Height is read, never
-  written, and the sheet does not ask to write it.
+  data; iOS is told the work is done only after the import saved (a refresh asked for
+  during one waits for it).
+- **Writes**: once per (sync id, version); a kind the person did not allow is skipped; one
+  that Health refuses is retried next time and does not hold back the others. A typed
+  value has a day, not a time, so Health gets noon of that day, or now if noon has not
+  come. Height is read, never written, and the sheet does not ask to write it.
+- **Blood pressure on the simulator (iOS 26.5): not checkable.** The app asks for both
+  halves (HealthKit's log: "Requesting prompting authorization to share (…BloodPressure
+  Diastolic…Systolic)"), but the simulator's permission sheet leaves them out ("Ordered
+  read" lists only height, waist and weight), so blood pressure is neither read nor
+  written there. Weight in and waist out were checked; blood pressure needs a real iPhone.
 - **Erase (D5) does not yet delete our samples from Health**: the app has no erase yet.
   Whoever builds it deletes samples whose sync identifier starts `healthroadmap:` and
   clears `HealthSyncMemory`'s written versions.
@@ -215,9 +239,13 @@ Health Records access) is set as `CODE_SIGN_ENTITLEMENTS`; the purpose strings a
 build signs it locally with no team. **For Brad, once the Apple Developer team exists:** set
 the team in Xcode (Signing & Capabilities), confirm the App ID `com.drbrad.healthroadmap`
 has the HealthKit capability (Xcode adds it when signing automatically), and test the
-background delivery on a real iPhone: the simulator cannot show it. App Store Connect's
-privacy answers must list Health data (read and written, not linked to tracking, kept on the
-device), and the review notes should say why the app reads Health.
+background delivery and blood pressure both ways on a real iPhone: the simulator shows
+neither. App Store Connect's privacy answers must list Health data (read and written, not
+linked to tracking, kept on the device), the review notes should say why the app reads
+Health, and a HealthKit app needs a privacy policy URL. The read purpose string says "kept on
+this iPhone": it changes when cloud sync or chat ships (and Health values reaching chat
+would be a guideline 5.1.3 disclosure question). Whether a device backup counts as "iCloud"
+under 5.1.3 is the D5 backup question, still open.
 
 **Out of scope 2026-10-21: blood tests from Health Records** (`HKClinicalRecord`). Below
 is the plan for them, not built.

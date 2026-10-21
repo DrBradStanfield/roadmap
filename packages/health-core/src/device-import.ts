@@ -12,16 +12,21 @@
  *    as a FHIR correction (`correctsId`, the old row `entered-in-error`). It
  *    never supersedes a value a person typed or corrected: otherwise a scale
  *    re-sync would undo the person's correction every time.
+ *  - The two halves of a blood pressure land together or not at all.
  *  - A reading measured before the record's erase is skipped: the erase
  *    removed the rows that would have deduplicated it.
  *  - Deletions in the store are not handed over at all: the record is
  *    append-only (Brad 2026-09-24).
  *  - Height is the profile's, not a row: it fills an empty height only.
+ *  These hold on one device. Across devices the merge (merge.ts) keeps the
+ *  newest-written row of a slot, which can undo them: cloud-sync work.
  *
- * The row's `recordedAt` is the phone's wall-clock time of the reading,
- * written in the shape the web writes its local day (`…T00:00:00.000Z`): its
- * first ten characters are the day the person lived, which is the slot key
- * everywhere (`dayOf`), and its time orders two readings of one day.
+ * The row's `recordedAt` is the reading's real instant with the UTC offset of
+ * where it was taken (`2026-10-21T08:30:00.000+13:00`). Its first ten
+ * characters are the day the person lived, the slot key everywhere (`dayOf`);
+ * as an instant it orders a day's readings, and the web shows it as a moment
+ * (widget-src/src/lib/constants.ts `formatShortDate`), not as a UTC day. A
+ * wall-clock time labelled Z would show on the wrong day (review R1, 2026-10-21).
  */
 import { localDay } from './merge';
 import { isCalendarDay } from './measurement-history';
@@ -38,20 +43,25 @@ export interface DeviceSample {
   metricType: string;
   /** SI canonical: kg, cm, mmHg. */
   value: number;
-  /** When it was measured, as an instant (ISO 8601): compared with the erase. */
+  /**
+   * When and where it was measured: the instant with the UTC offset of the
+   * zone it was taken in, `2026-10-21T08:30:00+13:00`. Its date is the slot's
+   * day; as an instant it orders a day's readings and is compared with the erase.
+   */
   measuredAt: string;
-  /** The same moment on the phone's clock, `YYYY-MM-DDTHH:mm:ss`: its day is the slot. */
-  localTime: string;
+  /** Shared by the two halves of one blood pressure: they land together or not at all. */
+  pairId?: string;
 }
 
 export interface DeviceImportResult {
   /** The record with the readings in; the SAME object when nothing changed. */
   file: RoadmapFile;
-  /** Readings that filled an empty day. */
+  /** Rows that filled an empty day. */
   added: number;
-  /** Readings that replaced an earlier reading of the same day from the store. */
+  /** Rows that replaced an earlier reading of the same day from the store. */
   replaced: number;
   heightSet: boolean;
+  /** Samples skipped, by reason; a pair counts both halves. */
   skipped: {
     /** Already in the record, by `externalId`. */
     known: number;
@@ -66,17 +76,40 @@ export interface DeviceImportResult {
   };
 }
 
-const LOCAL_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
+/** An instant with its UTC offset (or Z): the date and time are where the reading was taken. */
+const MEASURED_AT = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 
-/** The reading's slot day, or null when its time is unreadable or not yet lived. */
-function dayOfReading(sample: DeviceSample, now: string): string | null {
-  if (typeof sample.localTime !== 'string' || !LOCAL_TIME.test(sample.localTime)) return null;
-  const day = sample.localTime.slice(0, 10);
-  return isCalendarDay(day) && day <= localDay(now) ? day : null;
+/** The row's `recordedAt` for a reading, or null when its time is unreadable or its day not yet lived. */
+function recordedAtOf(sample: DeviceSample, now: string): string | null {
+  const parts = typeof sample.measuredAt === 'string' ? MEASURED_AT.exec(sample.measuredAt) : null;
+  if (!parts || Number.isNaN(Date.parse(sample.measuredAt))) return null;
+  const [, day, time, offset] = parts;
+  return isCalendarDay(day) && day <= localDay(now) ? `${day}T${time}.000${offset}` : null;
 }
 
 function heightFault(value: number): boolean {
   return !Number.isFinite(value) || !healthInputSchema.shape.heightCm.safeParse(value).success;
+}
+
+/**
+ * The readings that land or fall together: one sample, or both halves of a
+ * blood pressure (one `pairId`). Half a pair would put a systolic and a
+ * diastolic that were never measured together into the plan as one reading.
+ */
+function readingsOf(samples: DeviceSample[]): DeviceSample[][] {
+  const pairs = new Map<string, DeviceSample[]>();
+  const readings: DeviceSample[][] = [];
+  for (const sample of samples) {
+    if (typeof sample.pairId !== 'string') { readings.push([sample]); continue; }
+    const pair = pairs.get(sample.pairId);
+    if (pair) { pair.push(sample); continue; }
+    const fresh = [sample];
+    pairs.set(sample.pairId, fresh);
+    readings.push(fresh);
+  }
+  // Measured order, so the day's latest reading is the one left active.
+  const at = (reading: DeviceSample[]) => Date.parse(reading[0].measuredAt) || 0;
+  return readings.sort((a, b) => at(a) - at(b));
 }
 
 export function importDeviceSamples(
@@ -97,46 +130,55 @@ export function importDeviceSamples(
   measurements.forEach((row, i) => { if (row.status === 'active') activeAt.set(slotKey('measurement', row.metricType, row.recordedAt), i); });
   let height: DeviceSample | null = null;
 
-  // Measured order, so the day's latest reading is the one left active.
-  const ordered = [...samples].sort((a, b) => (a.localTime < b.localTime ? -1 : a.localTime > b.localTime ? 1 : 0));
-  for (const sample of ordered) {
-    if (known.has(sample.externalId)) { result.skipped.known++; continue; }
-    const day = dayOfReading(sample, now);
-    if (day === null || typeof sample.externalId !== 'string' || !sample.externalId) { result.skipped.invalid++; continue; }
-    const measured = Date.parse(sample.measuredAt);
-    if (Number.isNaN(measured)) { result.skipped.invalid++; continue; }
-    if (erasedAt !== null && measured < erasedAt) { result.skipped.erased++; continue; }
-
-    if (sample.metricType === 'height') {
-      if (heightFault(sample.value)) result.skipped.invalid++;
-      else height = sample;
+  for (const reading of readingsOf(samples)) {
+    const skip = (why: keyof DeviceImportResult['skipped']) => { result.skipped[why] += reading.length; };
+    if (reading.some((sample) => known.has(sample.externalId))) { skip('known'); continue; }
+    const times = reading.map((sample) => recordedAtOf(sample, now));
+    if (times.some((time) => time === null) || reading.some((sample) => typeof sample.externalId !== 'string' || !sample.externalId)) {
+      skip('invalid');
       continue;
     }
-    if (!(METRIC_TYPES as readonly string[]).includes(sample.metricType) || measurementValueFault(sample.metricType, sample.value)) {
-      result.skipped.invalid++;
+    if (erasedAt !== null && Date.parse(reading[0].measuredAt) < erasedAt) { skip('erased'); continue; }
+
+    if (reading.length === 1 && reading[0].metricType === 'height') {
+      if (heightFault(reading[0].value)) skip('invalid');
+      else height = reading[0];
+      continue;
+    }
+    // A pair is one systolic and one diastolic. Health shows only the half the
+    // person allowed, and half a reading is not a blood pressure.
+    const halves = reading.map((sample) => sample.metricType).sort().join();
+    if (typeof reading[0].pairId === 'string' && halves !== 'diastolic_bp,systolic_bp') { skip('invalid'); continue; }
+    if (reading.some((sample) => !(METRIC_TYPES as readonly string[]).includes(sample.metricType) || measurementValueFault(sample.metricType, sample.value))) {
+      skip('invalid');
       continue;
     }
 
-    const recordedAt = `${sample.localTime}.000Z`;
-    const key = slotKey('measurement', sample.metricType, recordedAt);
-    const heldAt = activeAt.get(key);
-    const held = heldAt === undefined ? undefined : measurements[heldAt];
-    if (held && held.source !== source) { result.skipped.held++; continue; }
-    if (held && held.recordedAt >= recordedAt) { result.skipped.earlier++; continue; }
-
-    const row: FileMeasurement = createMeasurement({
-      id: newId(), metricType: sample.metricType, value: sample.value, recordedAt, createdAt: now,
-      source, externalId: sample.externalId, ...(held ? { correctsId: held.id } : null),
+    // Every half must be free to land before any does.
+    const places = reading.map((sample, i) => {
+      const recordedAt = times[i] as string;
+      const key = slotKey('measurement', sample.metricType, recordedAt);
+      const heldAt = activeAt.get(key);
+      return { sample, recordedAt, key, heldAt, held: heldAt === undefined ? undefined : measurements[heldAt] };
     });
-    if (held && heldAt !== undefined) {
-      measurements[heldAt] = { ...held, status: 'entered-in-error' };
-      result.replaced++;
-    } else {
-      result.added++;
+    if (places.some(({ held }) => held && held.source !== source)) { skip('held'); continue; }
+    if (places.some(({ held, recordedAt }) => held && Date.parse(held.recordedAt) >= Date.parse(recordedAt))) { skip('earlier'); continue; }
+
+    for (const { sample, recordedAt, key, heldAt, held } of places) {
+      const row: FileMeasurement = createMeasurement({
+        id: newId(), metricType: sample.metricType, value: sample.value, recordedAt, createdAt: now,
+        source, externalId: sample.externalId, ...(held ? { correctsId: held.id } : null),
+      });
+      if (held && heldAt !== undefined) {
+        measurements[heldAt] = { ...held, status: 'entered-in-error' };
+        result.replaced++;
+      } else {
+        result.added++;
+      }
+      activeAt.set(key, measurements.length);
+      measurements.push(row);
+      known.add(sample.externalId);
     }
-    activeAt.set(key, measurements.length);
-    measurements.push(row);
-    known.add(sample.externalId);
   }
 
   if (result.added + result.replaced > 0) {

@@ -199,7 +199,7 @@ describe('medications and supplements (US-06, D4b)', () => {
 // US-25 AC8/AC9 (ios/architecture.md D6): Apple Health in and out, through
 // health-core's device-import and device-export (their rules are tested there).
 describe('Apple Health (AC8, AC9)', () => {
-  const reading = { externalId: 'hk-1', metricType: 'weight', value: 80, measuredAt: '2026-10-20T19:30:00.000Z', localTime: '2026-10-21T08:30:00' };
+  const reading = { externalId: 'hk-1', metricType: 'weight', value: 80, measuredAt: '2026-10-21T08:30:00+13:00' };
 
   it('takes readings in as apple_health rows, shown in My data', () => {
     const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'appleHealth', samples: [reading] });
@@ -220,6 +220,6 @@ describe('Apple Health (AC8, AC9)', () => {
 
   it('lists a typed weight as a write to Apple Health, and an imported one not', () => {
     const typed = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'weight', value: 80, day: '2026-10-20' }, { kind: 'appleHealth', samples: [reading] });
-    expect(healthWrites(typed)).toEqual([{ syncId: typed.measurements[0].id, version: Date.parse(NOW), day: '2026-10-20', values: { weight: 80 } }]);
+    expect(healthWrites(typed)).toEqual([{ syncId: typed.measurements[0].id, version: 1, day: '2026-10-20', values: { weight: 80 } }]);
   });
 });

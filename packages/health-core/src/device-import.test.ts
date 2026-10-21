@@ -16,7 +16,7 @@ function empty(): RoadmapFile {
 }
 
 function sample(fields: Partial<DeviceSample> & Pick<DeviceSample, 'externalId'>): DeviceSample {
-  return { metricType: 'weight', value: 80, measuredAt: '2026-10-20T19:30:00.000Z', localTime: '2026-10-21T08:30:00', ...fields };
+  return { metricType: 'weight', value: 80, measuredAt: '2026-10-21T08:30:00+13:00', ...fields };
 }
 
 function run(file: RoadmapFile, samples: DeviceSample[], now = NOW) {
@@ -30,8 +30,9 @@ describe('importDeviceSamples: filling empty days', () => {
     expect(file.measurements).toHaveLength(1);
     expect(file.measurements[0]).toMatchObject({
       metricType: 'weight', value: 80, source: 'apple_health', externalId: 'hk-1', status: 'active', correctsId: null,
-      // The phone's wall clock, so the day is the one the user lived (the web stores a local day the same way).
-      recordedAt: '2026-10-21T08:30:00.000Z', createdAt: NOW,
+      // The real instant with its offset: its first ten characters are the day the
+      // person lived (the slot), and the web reads it as a moment, not a day.
+      recordedAt: '2026-10-21T08:30:00.000+13:00', createdAt: NOW,
     });
     expect(file.meta.updatedAt).toBe(NOW);
   });
@@ -87,10 +88,10 @@ describe('importDeviceSamples: a day someone typed is theirs', () => {
   });
 
   it('never supersedes a person\'s correction of an imported value', () => {
-    const imported = run(empty(), [sample({ externalId: 'hk-1', localTime: '2026-10-21T07:00:00' })]).file;
+    const imported = run(empty(), [sample({ externalId: 'hk-1', measuredAt: '2026-10-21T07:00:00+13:00' })]).file;
     const corrected = correctValue(imported, { id: imported.measurements[0].id, newValue: 78, now: LATER });
     if (!corrected.ok) throw new Error(corrected.message);
-    const result = run(corrected.file, [sample({ externalId: 'hk-2', localTime: '2026-10-21T20:00:00' })], LATER);
+    const result = run(corrected.file, [sample({ externalId: 'hk-2', measuredAt: '2026-10-21T20:00:00+13:00' })], LATER);
     expect(result.skipped.held).toBe(1);
     expect(result.file).toBe(corrected.file);
   });
@@ -98,20 +99,20 @@ describe('importDeviceSamples: a day someone typed is theirs', () => {
 
 describe('importDeviceSamples: one value a day, the latest reading', () => {
   it('replaces its own earlier reading of the day as a FHIR correction', () => {
-    const morning = run(empty(), [sample({ externalId: 'hk-am', value: 80, localTime: '2026-10-21T07:00:00' })]).file;
-    const { file, replaced } = run(morning, [sample({ externalId: 'hk-pm', value: 81, localTime: '2026-10-21T20:00:00' })], LATER);
+    const morning = run(empty(), [sample({ externalId: 'hk-am', value: 80, measuredAt: '2026-10-21T07:00:00+13:00' })]).file;
+    const { file, replaced } = run(morning, [sample({ externalId: 'hk-pm', value: 81, measuredAt: '2026-10-21T20:00:00+13:00' })], LATER);
     expect(replaced).toBe(1);
     expect(file.measurements).toHaveLength(2);
     expect(file.measurements[0]).toMatchObject({ externalId: 'hk-am', status: 'entered-in-error', value: 80 });
     expect(file.measurements[1]).toMatchObject({
       externalId: 'hk-pm', status: 'active', value: 81, source: 'apple_health',
-      correctsId: file.measurements[0].id, recordedAt: '2026-10-21T20:00:00.000Z', createdAt: LATER,
+      correctsId: file.measurements[0].id, recordedAt: '2026-10-21T20:00:00.000+13:00', createdAt: LATER,
     });
   });
 
   it('skips a reading measured earlier than the one holding the day, whatever order they arrive in', () => {
-    const am = sample({ externalId: 'hk-am', value: 80, localTime: '2026-10-21T07:00:00' });
-    const pm = sample({ externalId: 'hk-pm', value: 81, localTime: '2026-10-21T20:00:00' });
+    const am = sample({ externalId: 'hk-am', value: 80, measuredAt: '2026-10-21T07:00:00+13:00' });
+    const pm = sample({ externalId: 'hk-pm', value: 81, measuredAt: '2026-10-21T20:00:00+13:00' });
     const pmFirst = run(run(empty(), [pm]).file, [am], LATER);
     expect(pmFirst.skipped.earlier).toBe(1);
     const amFirst = run(run(empty(), [am]).file, [pm], LATER);
@@ -122,10 +123,64 @@ describe('importDeviceSamples: one value a day, the latest reading', () => {
 
   it('settles a batch in measured order, leaving the latest reading active', () => {
     const { file } = run(empty(), [
-      sample({ externalId: 'hk-pm', value: 81, localTime: '2026-10-21T20:00:00' }),
-      sample({ externalId: 'hk-am', value: 80, localTime: '2026-10-21T07:00:00' }),
+      sample({ externalId: 'hk-pm', value: 81, measuredAt: '2026-10-21T20:00:00+13:00' }),
+      sample({ externalId: 'hk-am', value: 80, measuredAt: '2026-10-21T07:00:00+13:00' }),
     ]);
     expect(file.measurements.filter((row) => row.status === 'active').map((row) => row.externalId)).toEqual(['hk-pm']);
+  });
+});
+
+describe('importDeviceSamples: a reading\'s own day and time', () => {
+  it('orders a day by the instant, whatever offset each reading carries', () => {
+    // 07:30 in Sydney (+11) is after 08:00 in Auckland (+13) on the same day.
+    const { file } = run(empty(), [
+      sample({ externalId: 'nz', value: 80, measuredAt: '2026-10-21T08:00:00+13:00' }),
+      sample({ externalId: 'au', value: 81, measuredAt: '2026-10-21T07:30:00+11:00' }),
+    ]);
+    expect(file.measurements.filter((row) => row.status === 'active').map((row) => row.externalId)).toEqual(['au']);
+  });
+
+  it('keys the slot on the day where the reading was taken', () => {
+    const { file } = run(empty(), [sample({ externalId: 'hk-1', measuredAt: '2026-10-20T22:00:00-07:00' })]);
+    expect(file.measurements[0].recordedAt.slice(0, 10)).toBe('2026-10-20');
+  });
+});
+
+describe('importDeviceSamples: blood pressure is one reading', () => {
+  const pair = (id: string, systolic: number, diastolic: number, measuredAt: string) => [
+    sample({ externalId: `${id}-s`, pairId: id, metricType: 'systolic_bp', value: systolic, measuredAt }),
+    sample({ externalId: `${id}-d`, pairId: id, metricType: 'diastolic_bp', value: diastolic, measuredAt }),
+  ];
+  const active = (file: RoadmapFile) => file.measurements.filter((row) => row.status === 'active').map((row) => [row.metricType, row.value]);
+
+  it('lands both halves, or neither when one is out of range', () => {
+    const result = run(empty(), pair('bp', 400, 80, '2026-10-21T08:00:00+13:00'));
+    expect(result.file.measurements).toEqual([]);
+    expect(result.skipped.invalid).toBe(2);
+  });
+
+  it('never splits a pair across a half a person corrected', () => {
+    const morning = run(empty(), pair('am', 130, 85, '2026-10-21T07:00:00+13:00')).file;
+    const systolic = morning.measurements.find((row) => row.metricType === 'systolic_bp')!;
+    const corrected = correctValue(morning, { id: systolic.id, newValue: 128, now: LATER });
+    if (!corrected.ok) throw new Error(corrected.message);
+    const evening = run(corrected.file, pair('pm', 120, 80, '2026-10-21T20:00:00+13:00'), LATER);
+    expect(evening.skipped.held).toBe(2);
+    expect(active(evening.file)).toEqual([['diastolic_bp', 85], ['systolic_bp', 128]]);
+  });
+
+  it('refuses half a pair (Health shows only the half the person allowed)', () => {
+    const [systolic] = pair('bp', 130, 85, '2026-10-21T08:00:00+13:00');
+    const result = run(empty(), [systolic]);
+    expect(result.file.measurements).toEqual([]);
+    expect(result.skipped.invalid).toBe(1);
+  });
+
+  it('replaces both halves with a later pair', () => {
+    const morning = run(empty(), pair('am', 130, 85, '2026-10-21T07:00:00+13:00')).file;
+    const evening = run(morning, pair('pm', 120, 80, '2026-10-21T20:00:00+13:00'), LATER);
+    expect(evening.replaced).toBe(2);
+    expect(active(evening.file)).toEqual([['systolic_bp', 120], ['diastolic_bp', 80]]);
   });
 });
 
@@ -133,8 +188,8 @@ describe('importDeviceSamples: what is refused', () => {
   it('skips readings measured before the record\'s erase', () => {
     const erased: RoadmapFile = { ...empty(), meta: { ...empty().meta, eraseEpoch: 1, erasedAt: '2026-10-21T00:00:00.000Z' } };
     const result = run(erased, [
-      sample({ externalId: 'hk-old', measuredAt: '2026-10-20T23:59:59.000Z', localTime: '2026-10-20T12:59:59' }),
-      sample({ externalId: 'hk-new', measuredAt: '2026-10-21T00:00:01.000Z', localTime: '2026-10-21T13:00:01' }),
+      sample({ externalId: 'hk-old', measuredAt: '2026-10-21T12:59:59+13:00' }),
+      sample({ externalId: 'hk-new', measuredAt: '2026-10-21T13:00:01+13:00' }),
     ]);
     expect(result.skipped.erased).toBe(1);
     expect(result.file.measurements.map((row) => row.externalId)).toEqual(['hk-new']);
@@ -144,11 +199,12 @@ describe('importDeviceSamples: what is refused', () => {
     const result = run(empty(), [
       sample({ externalId: 'a', metricType: 'systolic_bp', value: 400 }),
       sample({ externalId: 'b', metricType: 'steps', value: 1000 }),
-      sample({ externalId: 'c', localTime: '2099-01-01T08:00:00', measuredAt: '2098-12-31T19:00:00.000Z' }),
-      sample({ externalId: 'd', localTime: 'yesterday' }),
+      sample({ externalId: 'c', measuredAt: '2099-01-01T08:00:00+13:00' }),
+      sample({ externalId: 'd', measuredAt: 'yesterday' }),
+      sample({ externalId: 'f', measuredAt: '2026-10-21T08:30:00' }),
       sample({ externalId: 'e', value: Number.NaN }),
     ]);
-    expect(result.skipped.invalid).toBe(5);
+    expect(result.skipped.invalid).toBe(6);
     expect(result.file.measurements).toEqual([]);
   });
 });
@@ -156,8 +212,8 @@ describe('importDeviceSamples: what is refused', () => {
 describe('importDeviceSamples: height', () => {
   it('fills an empty height, from the latest reading', () => {
     const { file, heightSet } = run(empty(), [
-      sample({ externalId: 'h1', metricType: 'height', value: 170, localTime: '2026-01-01T08:00:00' }),
-      sample({ externalId: 'h2', metricType: 'height', value: 172, localTime: '2026-10-01T08:00:00' }),
+      sample({ externalId: 'h1', metricType: 'height', value: 170, measuredAt: '2026-01-01T08:00:00+13:00' }),
+      sample({ externalId: 'h2', metricType: 'height', value: 172, measuredAt: '2026-10-01T08:00:00+13:00' }),
     ]);
     expect(heightSet).toBe(true);
     expect(file.profile.heightCm).toBe(172);

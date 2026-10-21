@@ -15,26 +15,26 @@ struct HealthSample: Encodable, Equatable, Sendable {
     let metricType: String
     /// SI: kg, cm, mmHg.
     let value: Double
-    /// The instant, as JavaScript's `toISOString` writes it: compared with the record's erase.
+    /// The instant in the zone it was taken in, with that zone's offset, Gregorian:
+    /// `2026-10-21T08:30:00+13:00`. Its date is the record's slot (the day the person lived).
     let measuredAt: String
-    /// The phone's wall clock, `YYYY-MM-DDTHH:mm:ss`, Gregorian: its day is the record's slot.
-    let localTime: String
+    /// The two halves of one blood pressure share it (the correlation's UUID): they land together.
+    let pairId: String?
 
-    init(id: UUID, metric: String, value: Double, at date: Date, timeZone: TimeZone = .current) {
+    init(id: UUID, metric: String, value: Double, at date: Date, timeZone: TimeZone = .current, pairId: UUID? = nil) {
         externalId = id.uuidString
         metricType = metric
         self.value = value
-        measuredAt = date.formatted(Self.iso)
+        self.pairId = pairId?.uuidString
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let p = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
-        localTime = String(format: "%04d-%02d-%02dT%02d:%02d:%02d", p.year ?? 0, p.month ?? 0, p.day ?? 0, p.hour ?? 0, p.minute ?? 0, p.second ?? 0)
+        let offset = timeZone.secondsFromGMT(for: date) / 60
+        measuredAt = String(
+            format: "%04d-%02d-%02dT%02d:%02d:%02d%@%02d:%02d",
+            p.year ?? 0, p.month ?? 0, p.day ?? 0, p.hour ?? 0, p.minute ?? 0, p.second ?? 0,
+            offset < 0 ? "-" : "+", abs(offset) / 60, abs(offset) % 60)
     }
-
-    /// The instant again.
-    var date: Date { (try? Date(measuredAt, strategy: Self.iso)) ?? .distantPast }
-
-    private static let iso = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
 }
 
 /// One value the engine says to write to Apple Health (`DeviceWrite` in device-export.ts).
@@ -56,13 +56,14 @@ struct HealthWrite: Codable, Equatable, Sendable {
     }
 
     /// A typed value has a day, not a time: Health gets noon of that day in the phone's
-    /// zone, the moment least likely to fall on another day in Health's own views.
-    func date(timeZone: TimeZone = .current) -> Date? {
+    /// zone, the moment least likely to fall on another day in Health's own views, or
+    /// now if noon today has not come yet (a sample in the future may be refused).
+    func date(timeZone: TimeZone = .current, now: Date = .now) -> Date? {
         let parts = day.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 3 else { return nil }
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
-        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
+        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12)).map { min($0, now) }
     }
 }
 

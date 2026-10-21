@@ -35,6 +35,7 @@ final class AppleHealthSync {
     private let memory: HealthSyncMemory
     private var running = false
     private var again = false
+    private var waiting: [CheckedContinuation<Void, Never>] = []
     private var started = false
 
     init(store: RecordStore, engine: HealthEngine, client: HealthStoreClient, memory: HealthSyncMemory = HealthSyncMemory()) {
@@ -74,13 +75,23 @@ final class AppleHealthSync {
         watchRecord()
     }
 
-    /// Reads what is new, then writes what is typed.
+    /// Reads what is new, then writes what is typed. A call made while a refresh runs
+    /// asks it to go round once more and returns when it has finished, so an observer
+    /// query tells iOS its background work is done only after the import saved.
     func refresh() async {
         guard client.isAvailable else { return }
         guard memory.connected else { status = .notConnected; return }
-        if running { again = true; return }
+        if running {
+            again = true
+            await withCheckedContinuation { waiting.append($0) }
+            return
+        }
         running = true
-        defer { running = false }
+        defer {
+            running = false
+            waiting.forEach { $0.resume() }
+            waiting = []
+        }
         repeat {
             again = false
             status = .working
@@ -102,9 +113,10 @@ final class AppleHealthSync {
         for kind in HealthKind.allCases {
             let anchor = memory.anchor(for: kind)
             let batch = try await client.samples(of: kind, after: anchor)
-            // A refused read looks like an empty one (iOS hides which). Until a kind has
-            // given readings, keep no anchor, so allowing it later still brings in its past.
-            if batch.samples.isEmpty, anchor == nil { continue }
+            // A refused read looks like an empty one (iOS hides which), and a blood pressure
+            // with one half refused shows only the other. Until a kind has given a whole
+            // reading, keep no anchor, so allowing it later still brings in its past.
+            if anchor == nil, !Self.hasWholeReading(batch.samples, kind) { continue }
             if !batch.samples.isEmpty, case .refused(let message, _) = store.apply(.appleHealth(batch.samples)) {
                 throw ImportRefused(message: message)
             }
@@ -112,13 +124,30 @@ final class AppleHealthSync {
         }
     }
 
+    /// Each value once per version. One Health refuses does not hold back the rest:
+    /// it is tried again next time, and the first refusal is reported after the others.
     private func writeTyped() async throws {
         let writes = try engine.healthWrites(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+        var refused: Error?
         for write in writes where write.version > memory.writtenVersion(write.syncId) {
             guard let kind = write.kind, client.canWrite(kind) else { continue }
-            try await client.save(write)
-            memory.setWritten(write.version, for: write.syncId)
+            do {
+                try await client.save(write)
+                memory.setWritten(write.version, for: write.syncId)
+            } catch HealthStoreError.locked {
+                throw HealthStoreError.locked
+            } catch {
+                refused = refused ?? error
+            }
         }
+        if let refused { throw refused }
+    }
+
+    /// Any reading for most kinds; for blood pressure, both halves of one.
+    private static func hasWholeReading(_ samples: [HealthSample], _ kind: HealthKind) -> Bool {
+        guard kind == .bloodPressure else { return !samples.isEmpty }
+        let systolic = Set(samples.filter { $0.metricType == "systolic_bp" }.compactMap(\.pairId))
+        return samples.contains { $0.metricType == "diastolic_bp" && $0.pairId.map(systolic.contains) == true }
     }
 
     /// A typed save changes `recordJSON`; the next refresh writes it to Health.

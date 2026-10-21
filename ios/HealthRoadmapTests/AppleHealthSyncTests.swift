@@ -72,7 +72,7 @@ final class AppleHealthSyncTests: XCTestCase {
         // put, so the readings come again once the record is readable.
         try "not json".write(to: folder.appending(path: "health-roadmap.json"), atomically: true, encoding: .utf8)
         let (broken, _) = try parts()
-        let later = HealthSample(id: UUID(), metric: "waist", value: 90, at: Self.morning.date, timeZone: .gmt)
+        let later = HealthSample(id: UUID(), metric: "waist", value: 90, at: Date(timeIntervalSince1970: 1_792_000_000), timeZone: .gmt)
         health.pending[.waist] = [later]
         let waistAnchor = memory.anchor(for: .waist)
         let brokenSync = sync(broken, engine, health)
@@ -96,6 +96,29 @@ final class AppleHealthSyncTests: XCTestCase {
         await sync.refresh()
         XCTAssertNotNil(memory.anchor(for: .weight))
         XCTAssertEqual(try activeRows(store).count, 1)
+    }
+
+    /// Health shows only the half of a blood pressure the person allowed. Its anchor
+    /// waits for a whole pair, so allowing the other half later brings in the past.
+    func testHalfABloodPressureKeepsNoAnchor() async throws {
+        let (store, engine) = try parts()
+        let health = FakeHealthStore()
+        let sync = sync(store, engine, health)
+        await sync.connect()
+        let correlation = UUID()
+        let at = Date(timeIntervalSince1970: 1_792_000_000)
+        health.pending[.bloodPressure] = [HealthSample(id: UUID(), metric: "systolic_bp", value: 130, at: at, pairId: correlation)]
+        await sync.refresh()
+        XCTAssertNil(HealthSyncMemory(defaults: defaults).anchor(for: .bloodPressure))
+        XCTAssertTrue(try activeRows(store).isEmpty)
+
+        health.pending[.bloodPressure] = [
+            HealthSample(id: UUID(), metric: "systolic_bp", value: 130, at: at, pairId: correlation),
+            HealthSample(id: UUID(), metric: "diastolic_bp", value: 85, at: at, pairId: correlation),
+        ]
+        await sync.refresh()
+        XCTAssertNotNil(HealthSyncMemory(defaults: defaults).anchor(for: .bloodPressure))
+        XCTAssertEqual(try activeRows(store).count, 2)
     }
 
     func testALockedPhoneWaitsAndKeepsItsAnchor() async throws {
@@ -136,6 +159,35 @@ final class AppleHealthSyncTests: XCTestCase {
         XCTAssertGreaterThan(health.saved.last?.version ?? 0, first.version)
     }
 
+    func testOneRefusedWriteDoesNotBlockTheOthers() async throws {
+        let (store, engine) = try parts()
+        let health = FakeHealthStore()
+        let sync = sync(store, engine, health)
+        await sync.connect()
+        XCTAssertEqual(store.apply(.add(metric: "weight", value: 82, day: "2026-10-19")), .saved)
+        XCTAssertEqual(store.apply(.add(metric: "weight", value: 81, day: "2026-10-20")), .saved)
+        let first = try XCTUnwrap(engine.healthWrites(recordJSON: store.recordJSON, now: .now, deviceId: "test").first)
+        health.refusing = [first.syncId]
+        await sync.refresh()
+        XCTAssertEqual(health.saved.map(\.values), [["weight": 81]])
+        guard case .failed = sync.status else { return XCTFail("status \(sync.status)") }
+    }
+
+    /// A refresh asked for while one runs returns only once that one has saved: an
+    /// observer query tells iOS the background work is done when it returns.
+    func testARefreshDuringARefreshWaitsForIt() async throws {
+        let (store, engine) = try parts()
+        let health = FakeHealthStore()
+        let sync = sync(store, engine, health)
+        await sync.connect()
+        health.pending[.weight] = [Self.morning]
+        let first = Task { await sync.refresh() }
+        await Task.yield()
+        await sync.refresh()
+        XCTAssertEqual(try activeRows(store).count, 1)
+        await first.value
+    }
+
     func testNothingIsWrittenWhenHealthRefusesSharing() async throws {
         let (store, engine) = try parts()
         let health = FakeHealthStore()
@@ -172,14 +224,24 @@ final class AppleHealthSyncTests: XCTestCase {
     }
 }
 
-/// HealthSample's two clocks: the instant, and the phone's wall clock the record keys its day on.
+/// HealthSample's time: the instant, in the zone it was taken in, with that zone's offset.
 final class HealthSampleTests: XCTestCase {
-    func testTheLocalTimeIsThePhonesWallClock() throws {
-        // 2026-10-20 19:30 UTC is 08:30 on 21 October in Auckland (NZDT, +13).
+    func testTheTimeIsTheReadingsOwnZoneWithItsOffset() throws {
+        // 2026-10-20 19:30 UTC is 08:30 on 21 October in Auckland (NZDT, +13)
+        // and 12:30 on 20 October in Los Angeles (PDT, -7).
         let instant = try Date("2026-10-20T19:30:00Z", strategy: .iso8601)
-        let sample = HealthSample(id: UUID(), metric: "weight", value: 80, at: instant, timeZone: TimeZone(identifier: "Pacific/Auckland")!)
-        XCTAssertEqual(sample.localTime, "2026-10-21T08:30:00")
-        XCTAssertEqual(sample.measuredAt, "2026-10-20T19:30:00.000Z")
+        let auckland = HealthSample(id: UUID(), metric: "weight", value: 80, at: instant, timeZone: TimeZone(identifier: "Pacific/Auckland")!)
+        XCTAssertEqual(auckland.measuredAt, "2026-10-21T08:30:00+13:00")
+        let la = HealthSample(id: UUID(), metric: "weight", value: 80, at: instant, timeZone: TimeZone(identifier: "America/Los_Angeles")!)
+        XCTAssertEqual(la.measuredAt, "2026-10-20T12:30:00-07:00")
+        XCTAssertEqual(HealthSample(id: UUID(), metric: "weight", value: 80, at: instant, timeZone: .gmt).measuredAt, "2026-10-20T19:30:00+00:00")
+    }
+
+    func testAWriteForTodayIsNeverInTheFuture() throws {
+        let zone = TimeZone(identifier: "Pacific/Auckland")!
+        let now = try Date("2026-10-20T19:30:00Z", strategy: .iso8601) // 08:30 on the 21st in Auckland
+        let write = HealthWrite(syncId: "a", version: 1, day: "2026-10-21", values: ["weight": 80])
+        XCTAssertEqual(write.date(timeZone: zone, now: now), now)
     }
 
     func testOurOwnSamplesAreNeverReadBack() {
@@ -207,6 +269,8 @@ final class FakeHealthStore: HealthStoreClient {
     var locked = false
     var authorized = false
     var writable: Set<HealthKind> = Set(HealthKind.allCases)
+    /// Saves of these sync ids fail, as HealthKit can refuse one sample.
+    var refusing: Set<String> = []
     private(set) var saved: [HealthWrite] = []
     private var served: [HealthKind: Int] = [:]
 
@@ -218,6 +282,8 @@ final class FakeHealthStore: HealthStoreClient {
 
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch {
         if locked { throw HealthStoreError.locked }
+        // HealthKit answers later: another refresh can be asked for meanwhile.
+        await Task.yield()
         let batch = pending[kind] ?? []
         pending[kind] = nil
         served[kind, default: 0] += 1
@@ -228,6 +294,7 @@ final class FakeHealthStore: HealthStoreClient {
 
     func save(_ write: HealthWrite) async throws {
         if locked { throw HealthStoreError.locked }
+        if refusing.contains(write.syncId) { throw CocoaError(.validationNumberTooLarge) }
         saved.append(write)
     }
 
