@@ -32,10 +32,14 @@ export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): Road
   // erase saw (US-09 AC23): the stored record's, this copy's and, on a
   // cloud, this device's file, where other tabs' failed saves wait.
   const copies = [stored, own, device].filter((file): file is RoadmapFile => file !== null);
-  // The list keeps the claim the merge of the stored and own copies makes:
-  // every erase from `fromEpoch` on listed its ids. With no list there, this
-  // erase is the first to list.
-  const before = stored ? mergeErasedRows(own, stored) : own.erasedRows;
+  // The list keeps the claim the merge of every copy read makes: every erase
+  // from `fromEpoch` on listed its ids. The device copy's history counts too,
+  // so a legacy erase there that listed nothing keeps its gap (AC9). With no
+  // list anywhere, this erase is the first to list.
+  const before = [stored, device].reduce<Pick<RoadmapFile, 'meta' | 'erasedRows'>>((acc, file) => file ? {
+    meta: { ...acc.meta, eraseEpoch: Math.max(acc.meta.eraseEpoch ?? 0, file.meta.eraseEpoch ?? 0) },
+    erasedRows: mergeErasedRows(acc as RoadmapFile, file),
+  } : acc, own).erasedRows;
   const ids = new Set(copies.flatMap((file) => [...rowRootIds(file), ...(file.erasedRows?.ids ?? [])]));
   const erasedRows = { fromEpoch: before?.fromEpoch ?? eraseEpoch, ids: [...ids].sort() };
   // An erase must not silently re-consent the user. Under US-17's default-on

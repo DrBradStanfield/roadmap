@@ -8,7 +8,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
-import { ERASE_UNREACHABLE, RecordSession, PERSIST_DEBOUNCE_MS } from './record-session';
+import { ERASE_UNREACHABLE, RecordSession, PERSIST_DEBOUNCE_MS, saveRecordInto } from './record-session';
 import type { RecordHost } from './record-host';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type WriteResult } from './adapter';
 import { createMeasurement, type FileDocument, type RoadmapFile } from './roadmap-file';
@@ -295,19 +295,47 @@ describe('RecordSession: erase (US-09 AC23, US-11)', () => {
   });
 
   it('on the device tier refuses to erase a record a newer app wrote, and leaves it (US-11 AC9)', async () => {
+    // The second shape fails the row check before the version check (Codex R1).
+    for (const newer of [JSON.stringify({ schemaVersion: 9999 }), JSON.stringify({ schemaVersion: 9999, measurements: {} })]) {
+      const store = new TestStore();
+      const fake = fakeHost(store, 'device');
+      const session = await RecordSession.open(fake.host);
+      add(session, 'a');
+      await session.flush();
+      store.cloud.files.set(ROADMAP_FILE_NAME, { json: newer, version: 7 });
+      const beforeErase = vi.fn(async () => {});
+      const result = await session.erase(beforeErase);
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/Update the app/);
+      expect(beforeErase).not.toHaveBeenCalled();
+      expect(store.cloud.files.get(ROADMAP_FILE_NAME)!.json).toBe(newer);
+    }
+  });
+
+  it("keeps a legacy erase's gap when the device copy holds it, so a stale copy cannot bring back what it removed (US-11 AC9, US-09 AC23)", async () => {
     const store = new TestStore();
-    const fake = fakeHost(store, 'device');
+    const fake = fakeHost(store);
     const session = await RecordSession.open(fake.host);
     add(session, 'a');
     await session.flush();
-    const newer = JSON.stringify({ schemaVersion: 9999 });
-    store.cloud.files.set(ROADMAP_FILE_NAME, { json: newer, version: 7 });
-    const beforeErase = vi.fn(async () => {});
-    const result = await session.erase(beforeErase);
-    expect(result.success).toBe(false);
-    expect(result.error).toMatch(/Update the app/);
-    expect(beforeErase).not.toHaveBeenCalled();
-    expect(store.cloud.files.get(ROADMAP_FILE_NAME)!.json).toBe(newer);
+    expect((await session.erase()).success).toBe(true); // epoch 1, its list from 1
+    // The device copy: an older app's erase at epoch 5 that listed nothing.
+    const legacy = structuredClone(session.file);
+    legacy.meta.eraseEpoch = 5;
+    delete legacy.erasedRows;
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(legacy), version: 1 });
+    // A copy from before that erase, holding a row it removed.
+    const stale = structuredClone(legacy);
+    stale.meta.eraseEpoch = 4;
+    stale.measurements = [weight('pre', 79, '2026-09-01')];
+    clock += 60_000;
+    store.failWrites = true;
+    expect((await session.erase()).success).toBe(false); // mirrored onto the device
+    const mirror = fake.host.tier === 'cloud' ? fake.host.mirror.adapter : null;
+    expect(stored(fake.mirrorCloud).meta.eraseEpoch).toBe(6);
+    expect(stored(fake.mirrorCloud).erasedRows?.fromEpoch).toBe(6);
+    await saveRecordInto(mirror!, stale, { deviceId: 'old-tab', now: new Date(clock).toISOString() });
+    expect(ids(stored(fake.mirrorCloud))).toEqual([]);
   });
 
   it('on the device tier clears the named files instead of wiping a mirror', async () => {

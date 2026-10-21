@@ -12,7 +12,7 @@ import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
 import type { RecordHost, SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
-import { stableStringify, type RoadmapFile } from './roadmap-file';
+import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
 
 /** How long a burst of edits waits before one save carries them all. */
@@ -79,6 +79,20 @@ export const ERASE_UNREACHABLE = 'Your cloud storage could not be reached, so no
  *  leaves these (US-09 AC20, AC23; US-11 AC6). */
 function liveOriginals(file: RoadmapFile): Set<string> {
   return new Set(file.documents.filter((d) => !d.deleted && d.fileRef).map((d) => d.fileRef));
+}
+
+/** The refusal for a stored record a newer app wrote, read from its raw
+ *  `schemaVersion` before any shape check; null for bytes that do not parse,
+ *  or a version this app knows (US-11 AC9). */
+function newerSchema(store: SyncStorage): SchemaTooNewError | null {
+  let body: unknown;
+  try {
+    ({ body } = store.readSync(ROADMAP_FILE_NAME));
+  } catch {
+    return null;
+  }
+  const version = (body as { schemaVersion?: unknown } | null)?.schemaVersion;
+  return typeof version === 'number' && version > CURRENT_SCHEMA_VERSION ? new SchemaTooNewError(version, CURRENT_SCHEMA_VERSION) : null;
 }
 
 /** What an awaited save that failed says. */
@@ -276,11 +290,12 @@ export class RecordSession {
     const revision = this.host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
     let readError: unknown = null;
     const stored = await this.sync.load().catch((error) => { readError = error; return null; });
-    // A newer app's record is never written over: update first (US-11 AC9).
-    const tooNew = readError instanceof SchemaTooNewError && this.host.tier === 'device';
+    // A newer app's record is never written over, whatever else fails in it:
+    // update first (US-11 AC9).
+    const tooNew = readError && this.host.tier === 'device' ? newerSchema(this.host.sync) : null;
     if (!stored && (this.host.tier === 'cloud' || tooNew)) {
       if (debounced) this.touch();
-      return { success: false, error: tooNew ? (readError as Error).message : ERASE_UNREACHABLE };
+      return { success: false, error: tooNew ? tooNew.message : ERASE_UNREACHABLE };
     }
     await beforeErase?.();
     // From here every failure comes back as a refusal, never a rejection: the
