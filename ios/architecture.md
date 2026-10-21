@@ -124,10 +124,10 @@ merge on conflict and the erase guard.
   (standard iCloud Backup is not end-to-end encrypted) or a computer backup. The mark is on
   the folder because every save replaces the file. The cost: a user who moves to a new
   phone without Dropbox or Drive sync starts empty, and My data says so. To check on a real
-  iPhone: whether Quick Start (direct phone-to-phone transfer) also leaves it out. For the
-  sync work: the `deviceId` in UserDefaults IS backed up, so a phone restored from a
-  backup starts with the old phone's id; give a restored install a new id before two
-  phones can write the same file. If the mark cannot be set, the app does not start (it
+  iPhone: whether Quick Start (direct phone-to-phone transfer) also leaves it out. The
+  install's `deviceId` lives beside the record, in the same left-out folder (`device-id`),
+  so a phone restored from a backup gets a new id and never writes a shared cloud record as
+  the old phone (it was in UserDefaults, which is backed up; moved 2026-10-21). If the mark cannot be set, the app does not start (it
   fails closed); Brad may prefer a read-only record instead. The first record is staged beside the file and moved into
   place, which fails if a file is already there. A record the app cannot open or read,
   including JSON that fails health-core's record shape check, is kept as it is and never written over.

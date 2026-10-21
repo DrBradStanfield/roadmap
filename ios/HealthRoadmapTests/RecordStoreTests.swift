@@ -86,6 +86,19 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(try holder.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, true)
     }
 
+    func testTheDeviceIdIsKeptOutOfBackupsWithTheRecord() throws {
+        // D5: a phone restored from a backup must not reuse the old phone's id, or two
+        // phones would write one cloud record as the same device. The id lives in the
+        // record's folder, which backups leave out, so a restore starts with a new one.
+        let marked = try RecordStore.appFolder(in: folder)
+        let id = try RecordStore.deviceId(in: marked)
+        XCTAssertTrue(id.hasPrefix("ios-"))
+        XCTAssertEqual(try RecordStore.deviceId(in: marked), id, "the same install keeps its id")
+
+        let restored = try RecordStore.appFolder(in: folder.appending(path: "Restored phone"))
+        XCTAssertNotEqual(try RecordStore.deviceId(in: restored), id, "a folder without the id is a new device")
+    }
+
     func testJSONThatIsNotARecordIsNeverOverwritten() throws {
         // Adversary R4: the engine's migration turned `null` into an empty record.
         try Data("null".utf8).write(to: file)

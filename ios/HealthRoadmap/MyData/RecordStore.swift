@@ -63,6 +63,17 @@ final class RecordStore {
         return folder
     }
 
+    /// This install's id, for the record's `meta.lastDeviceId`. Kept in the record's folder,
+    /// which backups leave out, so a phone restored from a backup gets a new id and never
+    /// writes a shared cloud record as the old phone (D5).
+    static func deviceId(in folder: URL) throws -> String {
+        let file = folder.appending(path: "device-id")
+        if let id = try? String(contentsOf: file, encoding: .utf8), id.hasPrefix("ios-") { return id }
+        let id = "ios-" + UUID().uuidString.lowercased()
+        try write(id, to: file)
+        return id
+    }
+
     /// A typed number, read by the web's rule; nil if it is not a plain decimal.
     func number(_ text: String) -> Double? {
         (try? engine.number(from: text)) ?? nil

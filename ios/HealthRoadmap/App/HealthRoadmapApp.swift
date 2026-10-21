@@ -24,16 +24,7 @@ struct AppParts {
 
     init() throws {
         engine = try HealthEngine()
-        store = try RecordStore(folder: RecordStore.appFolder(), engine: engine, deviceId: Self.deviceId())
-    }
-
-    /// This install's id. A new record names it as its first device (`meta.lastDeviceId`);
-    /// edits leave `meta` alone, as the CLI's and the connector's do.
-    private static func deviceId() -> String {
-        let key = "deviceId"
-        if let id = UserDefaults.standard.string(forKey: key) { return id }
-        let id = "ios-" + UUID().uuidString.lowercased()
-        UserDefaults.standard.set(id, forKey: key)
-        return id
+        let folder = try RecordStore.appFolder()
+        store = try RecordStore(folder: folder, engine: engine, deviceId: RecordStore.deviceId(in: folder))
     }
 }
