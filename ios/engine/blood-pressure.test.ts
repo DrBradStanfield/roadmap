@@ -18,6 +18,16 @@ function edited(file: RoadmapFile, now: string, ...edits: Parameters<typeof appl
 
 const nz = () => newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
 const us = () => newRecord(NOW, 'phone', 'en-US', 'America/New_York');
+/** A moment `ms` milliseconds after `at`, as the web stamps each half with its own `new Date()`. */
+const plus = (at: string, ms: number) => new Date(Date.parse(at) + ms).toISOString();
+/** The ids of the day's active halves: what the screen showed the user. */
+const seen = (file: RoadmapFile, day = '2026-10-20') => file.measurements
+  .filter((row) => row.status === 'active' && row.recordedAt.slice(0, 10) === day && row.metricType.endsWith('_bp'))
+  .map((row) => row.id);
+/** A pair as the web writes it: each half its own row, 1 ms apart. */
+const webPair = (systolic: number, diastolic: number) => edited(edited(nz(), NOW, { kind: 'add', metric: 'systolic_bp', value: systolic, day: '2026-10-20' }), plus(NOW, 1),
+  { kind: 'add', metric: 'diastolic_bp', value: diastolic, day: '2026-10-20' });
+const history = (file: RoadmapFile) => metricHistory(file, 'blood_pressure', LATER).rows.map((row) => [row.day, row.value, row.status]);
 
 describe('blood pressure, one reading (US-25 AC17)', () => {
   it('My data shows one row, the newest day\'s pair', () => {
@@ -53,43 +63,52 @@ describe('blood pressure, one reading (US-25 AC17)', () => {
     expect(outcome).toMatchObject({ ok: false, reason: 'slot-occupied', existingId: half.measurements[0].id });
   });
 
-  it('replacing corrects both halves, so history keeps a whole struck pair (orchestrator, 2026-10-22)', () => {
+  it('replacing corrects only the half that changed, so merge never re-asserts the other (review, 2026-10-22)', () => {
     const file = edited(nz(), NOW, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
     const [sys, dia] = file.measurements;
-    const fixed = edited(file, LATER, { kind: 'bloodPressure', systolic: 125, diastolic: 80, day: '2026-10-20', replace: true });
-    expect(fixed.measurements).toHaveLength(4);
+    const fixed = edited(file, LATER, { kind: 'bloodPressure', systolic: 130, diastolic: 80, day: '2026-10-20', replace: true, seenIds: seen(file) });
+    expect(fixed.measurements).toHaveLength(3);
     expect(fixed.measurements[0]).toMatchObject({ id: sys.id, status: 'entered-in-error', value: 120 });
-    expect(fixed.measurements[1]).toMatchObject({ id: dia.id, status: 'entered-in-error', value: 80 });
-    expect(fixed.measurements[2]).toMatchObject({ metricType: 'systolic_bp', value: 125, correctsId: sys.id, status: 'active', recordedAt: '2026-10-20' });
-    expect(fixed.measurements[3]).toMatchObject({ metricType: 'diastolic_bp', value: 80, correctsId: dia.id, status: 'active', recordedAt: '2026-10-20' });
-    expect(metricHistory(fixed, 'blood_pressure', LATER).rows.map((row) => [row.value, row.status])).toEqual([
-      ['125/80', 'active'],
-      ['120/80', 'entered-in-error'],
-    ]);
+    expect(fixed.measurements[1]).toEqual(dia);
+    expect(fixed.measurements[2]).toMatchObject({ metricType: 'systolic_bp', value: 130, correctsId: sys.id, status: 'active', recordedAt: '2026-10-20' });
+    // The struck pair is rebuilt from the chain: the diastolic active before the revision.
+    expect(history(fixed)).toEqual([['2026-10-20', '130/80', 'active'], ['2026-10-20', '120/80', 'entered-in-error']]);
     // The exact same pair again writes nothing.
-    expect(applyEdit(fixed, { kind: 'bloodPressure', systolic: 125, diastolic: 80, day: '2026-10-20', replace: true }, LATER)).toEqual({ ok: true, file: fixed });
+    expect(applyEdit(fixed, { kind: 'bloodPressure', systolic: 130, diastolic: 80, day: '2026-10-20', replace: true, seenIds: seen(fixed) }, LATER)).toEqual({ ok: true, file: fixed });
   });
 
   it('replacing a day that holds one half corrects it and adds the other', () => {
     const half = edited(nz(), NOW, { kind: 'add', metric: 'diastolic_bp', value: 80, day: '2026-10-20' });
-    const fixed = edited(half, LATER, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20', replace: true });
+    const fixed = edited(half, LATER, { kind: 'bloodPressure', systolic: 120, diastolic: 82, day: '2026-10-20', replace: true, seenIds: seen(half) });
     expect(fixed.measurements.map((row) => [row.metricType, row.value, row.status, row.correctsId ?? null])).toEqual([
       ['diastolic_bp', 80, 'entered-in-error', null],
       ['systolic_bp', 120, 'active', null],
-      ['diastolic_bp', 80, 'active', half.measurements[0].id],
+      ['diastolic_bp', 82, 'active', half.measurements[0].id],
     ]);
+  });
+
+  it('refuses a replacement when the day\'s rows changed under the user (Codex R1, adversary R3)', () => {
+    const file = edited(nz(), NOW, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
+    const shown = seen(file);
+    // Another device corrects the diastolic before Save.
+    const dia = file.measurements[1];
+    const moved = edited(file, LATER, { kind: 'correct', id: dia.id, value: 78 });
+    const outcome = applyEdit(moved, { kind: 'bloodPressure', systolic: 130, diastolic: 80, day: '2026-10-20', replace: true, seenIds: shown }, LATER);
+    expect(outcome).toMatchObject({ ok: false, reason: 'record-changed', message: expect.stringMatching(/^Your record changed while this was open/) });
+    // A replacement must say what it saw.
+    expect(applyEdit(file, { kind: 'bloodPressure', systolic: 130, diastolic: 80, day: '2026-10-20', replace: true }, LATER)).toMatchObject({ ok: false, reason: 'record-changed' });
   });
 
   it('a replacement with one half out of range corrects neither', () => {
     const file = edited(nz(), NOW, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
-    expect(applyEdit(file, { kind: 'bloodPressure', systolic: 125, diastolic: 20, day: '2026-10-20', replace: true }, LATER)).toMatchObject({ ok: false });
+    expect(applyEdit(file, { kind: 'bloodPressure', systolic: 125, diastolic: 20, day: '2026-10-20', replace: true, seenIds: seen(file) }, LATER)).toMatchObject({ ok: false });
   });
 
   it('history lists each day\'s pair newest first, a replaced pair struck, the plan\'s current marked', () => {
     let file = edited(nz(), NOW,
       { kind: 'bloodPressure', systolic: 130, diastolic: 85, day: '2026-09-01' },
       { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
-    file = edited(file, LATER, { kind: 'bloodPressure', systolic: 118, diastolic: 78, day: '2026-10-20', replace: true });
+    file = edited(file, LATER, { kind: 'bloodPressure', systolic: 118, diastolic: 78, day: '2026-10-20', replace: true, seenIds: seen(file) });
     const history = metricHistory(file, 'blood_pressure', LATER);
     expect(history).toMatchObject({ metric: 'blood_pressure', label: 'Blood pressure', unit: 'mmHg', excluded: false });
     expect(history.rows.map((row) => [row.day, row.value, row.status, row.current, row.correction])).toEqual([
@@ -98,6 +117,42 @@ describe('blood pressure, one reading (US-25 AC17)', () => {
       ['2026-09-01', '130/85', 'active', false, false],
     ]);
     expect(history.rows[0]).toMatchObject({ systolic: '118', diastolic: '78' });
+  });
+
+  it('pairs web-style halves written 1 ms apart, then a phone replace, as one struck pair', () => {
+    const web = webPair(120, 80);
+    const fixed = edited(web, LATER, { kind: 'bloodPressure', systolic: 130, diastolic: 80, day: '2026-10-20', replace: true, seenIds: seen(web) });
+    expect(history(fixed)).toEqual([['2026-10-20', '130/80', 'active'], ['2026-10-20', '120/80', 'entered-in-error']]);
+  });
+
+  it('a web-style correction of both halves 1 ms apart is one revision, one struck pair', () => {
+    const file = webPair(120, 80);
+    const [sys, dia] = file.measurements;
+    const fixed = edited(edited(file, LATER, { kind: 'correct', id: sys.id, value: 125 }), plus(LATER, 1), { kind: 'correct', id: dia.id, value: 82 });
+    expect(history(fixed)).toEqual([['2026-10-20', '125/82', 'active'], ['2026-10-20', '120/80', 'entered-in-error']]);
+  });
+
+  it('two revisions a day apart are two struck pairs, newest first', () => {
+    const file = webPair(120, 80);
+    const once = edited(file, LATER, { kind: 'bloodPressure', systolic: 125, diastolic: 80, day: '2026-10-20', replace: true, seenIds: seen(file) });
+    const twice = edited(once, plus(LATER, 86_400_000), { kind: 'bloodPressure', systolic: 125, diastolic: 75, day: '2026-10-20', replace: true, seenIds: seen(once) });
+    expect(history(twice)).toEqual([
+      ['2026-10-20', '125/75', 'active'],
+      ['2026-10-20', '125/80', 'entered-in-error'],
+      ['2026-10-20', '120/80', 'entered-in-error'],
+    ]);
+  });
+
+  it('a correction stamped the same instant as its original still strikes the original (found by MyDataLayoutTests: "–/–")', () => {
+    const file = edited(nz(), NOW, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
+    const fixed = edited(file, NOW, { kind: 'bloodPressure', systolic: 125, diastolic: 80, day: '2026-10-20', replace: true, seenIds: seen(file) });
+    expect(history(fixed)).toEqual([['2026-10-20', '125/80', 'active'], ['2026-10-20', '120/80', 'entered-in-error']]);
+  });
+
+  it('a half that never had a partner shows a dash, struck or not', () => {
+    const lone = edited(nz(), NOW, { kind: 'add', metric: 'systolic_bp', value: 120, day: '2026-10-20' });
+    const fixed = edited(lone, LATER, { kind: 'correct', id: lone.measurements[0].id, value: 125 });
+    expect(history(fixed)).toEqual([['2026-10-20', '125/–', 'active'], ['2026-10-20', '120/–', 'entered-in-error']]);
   });
 
   it('a day missing a half shows a dash for it', () => {
@@ -120,6 +175,15 @@ describe('height in feet and inches (US-25 AC17)', () => {
     expect(myData(us()).profile.feetInches).toBeNull();
     const metric = edited(nz(), NOW, { kind: 'profile', height: 178 });
     expect(myData(metric).profile.feetInches).toBeNull();
+  });
+
+  it('Save without a change writes nothing, so 178 cm is never rounded to 177.8 (adversary R4)', () => {
+    const file = edited(us(), NOW, { kind: 'profile', height: 178 / 2.54 });
+    expect(myData(file).profile.feetInches).toEqual({ feet: 5, inches: 10 });
+    expect(applyEdit(file, { kind: 'profile', heightFeet: 5, heightInches: 10 }, LATER)).toEqual({ ok: true, file });
+    // A real change still writes.
+    const changed = applyEdit(file, { kind: 'profile', heightFeet: 5, heightInches: 11 }, LATER);
+    expect(changed.ok && changed.file.profile.heightCm).toBeCloseTo(180.34, 5);
   });
 
   it('feet and inches mean the same height in either unit system', () => {

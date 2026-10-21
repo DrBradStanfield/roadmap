@@ -152,7 +152,13 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
         if (!Number.isInteger(heightFeet) || !Number.isInteger(heightInches) || heightFeet! < 0 || heightInches! < 0 || heightInches! > 11) {
           return { ok: false, reason: 'invalid-value', message: 'Height is whole feet and 0 to 11 inches.' };
         }
-        heightCm = feetInchesToCm(heightFeet!, heightInches!);
+        const shown = file.profile.heightCm === undefined ? undefined : cmToFeetInches(file.profile.heightCm);
+        // The wheels as they opened: write nothing, so 178 cm never becomes 177.8 (adversary R4).
+        if (shown?.feet === heightFeet && shown?.inches === heightInches) {
+          if (Object.keys(rest).length === 0) return { ok: true, file };
+        } else {
+          heightCm = feetInchesToCm(heightFeet!, heightInches!);
+        }
       }
       const outcome = updateProfile(file, { ...rest, ...(heightCm === undefined ? null : { heightCm }) }, now);
       if (outcome.status !== 'ok') return { ok: false, reason: 'invalid-value', message: outcome.text };

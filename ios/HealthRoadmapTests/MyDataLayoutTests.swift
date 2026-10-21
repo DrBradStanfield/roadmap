@@ -29,19 +29,24 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(shown.vitals.last?.latest?.value, "120/80")
     }
 
-    func testReplacingABloodPressureAsksFirstThenCorrectsBothHalves() throws {
+    func testReplacingABloodPressureAsksFirstThenCorrectsTheChangedHalf() throws {
         let engine = try HealthEngine()
         let first = try XCTUnwrap(engine.apply(.bloodPressure(systolic: 120, diastolic: 80, day: "2026-10-20", replace: false), to: try record(engine), now: now, deviceId: "test").record)
         let held = try engine.apply(.bloodPressure(systolic: 125, diastolic: 80, day: "2026-10-20", replace: false), to: first, now: now, deviceId: "test")
         XCTAssertEqual(held.reason, "slot-occupied")
         XCTAssertNotNil(held.existingId)
 
-        let fixed = try XCTUnwrap(engine.apply(.bloodPressure(systolic: 125, diastolic: 80, day: "2026-10-20", replace: true), to: first, now: now, deviceId: "test").record)
+        let shown = try XCTUnwrap(engine.history(recordJSON: first, metric: MyData.bloodPressure, now: now, deviceId: "test").rows.first?.pairIds)
+        XCTAssertEqual(shown.count, 2)
+        // A replace that names other rows than the day holds is refused (Codex R1).
+        let stale = try engine.apply(.bloodPressure(systolic: 125, diastolic: 80, day: "2026-10-20", replace: true, seenIds: [shown[0]]), to: first, now: now, deviceId: "test")
+        XCTAssertEqual(stale.reason, "record-changed")
+
+        let fixed = try XCTUnwrap(engine.apply(.bloodPressure(systolic: 125, diastolic: 80, day: "2026-10-20", replace: true, seenIds: shown), to: first, now: now, deviceId: "test").record)
         let after = try rows(fixed)
-        XCTAssertEqual(after.count, 4)
+        XCTAssertEqual(after.count, 3)
         XCTAssertEqual(after[0]["status"] as? String, "entered-in-error")
-        XCTAssertEqual(after[1]["status"] as? String, "entered-in-error")
-        XCTAssertEqual(after[3]["correctsId"] as? String, after[1]["id"] as? String)
+        XCTAssertEqual(after[1]["status"] as? String, "active")
         XCTAssertEqual(after[2]["correctsId"] as? String, after[0]["id"] as? String)
 
         let history = try engine.history(recordJSON: fixed, metric: MyData.bloodPressure, now: now, deviceId: "test")

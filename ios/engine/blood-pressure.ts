@@ -12,6 +12,9 @@ import type { HistoryRow, MetricHistory } from './my-data-forms';
 export const BLOOD_PRESSURE = 'blood_pressure';
 const HALVES = ['systolic_bp', 'diastolic_bp'] as const;
 const UNIT = 'mmHg';
+/** Correcting writes this close together are one revision: the web stamps each half with its own clock. */
+const REVISION_MS = 5_000;
+const CHANGED = 'Your record changed while this was open, so this was not saved. Close this and enter the value again.';
 
 export interface PressureEdit {
   kind: 'bloodPressure';
@@ -21,6 +24,8 @@ export interface PressureEdit {
   day: string;
   /** The user agreed to replace what the day holds: each changed half becomes a correction. */
   replace?: boolean;
+  /** With `replace`: the ids of the day's active halves the user saw. Any other set refuses. */
+  seenIds?: string[];
 }
 
 type Outcome =
@@ -46,13 +51,17 @@ export function applyPressure(file: RoadmapFile, edit: PressureEdit, now: string
   if (taken && !edit.replace) {
     return { ok: false, reason: 'slot-occupied', message: `Blood pressure already has a value on ${day}.`, existingId: taken.id };
   }
-  // The exact pair the day already holds writes nothing.
-  if (held.every((row, index) => row && Math.abs(row.value - values[index]) < 1e-9)) return { ok: true, file };
-  // Otherwise every held half is corrected, an unchanged one too, so the history
-  // keeps whole pairs: the struck pair reads 120/80, never 120/– (orchestrator, 2026-10-22).
+  // A replace names the rows it saw; if another device has moved them since, the
+  // user is overwriting a value they never saw (Codex R1, adversary R3).
+  if (edit.replace && !sameIds(edit.seenIds, held.flatMap((row) => (row ? [row.id] : [])))) {
+    return { ok: false, reason: 'record-changed', message: CHANGED };
+  }
   let next = file;
   for (const [index, metricType] of HALVES.entries()) {
     const old = held[index];
+    // Only a changed half is corrected. Re-correcting an unchanged one would join
+    // merge's last-writer-wins and could undo another device's fix of that half.
+    if (old && Math.abs(old.value - values[index]) < 1e-9) continue;
     const result = old
       ? correctValue(next, { id: old.id, newValue: values[index], unit: UNIT, now })
       : appendMeasurement(next, { metricType, value: values[index], unit: UNIT, recordedAt: day, now });
@@ -62,10 +71,19 @@ export function applyPressure(file: RoadmapFile, edit: PressureEdit, now: string
   return { ok: true, file: next };
 }
 
+function sameIds(seen: unknown, held: string[]): boolean {
+  if (!Array.isArray(seen) || seen.length !== held.length) return false;
+  return held.every((id) => seen.includes(id));
+}
+
 /**
  * Every blood pressure, newest day first, as pairs: each day's active pair,
- * then the pairs it replaced, grouped by the write that made them (rows written
- * together share `createdAt`). A missing half shows as a dash.
+ * then one struck pair per revision, newest first. A revision is the correcting
+ * writes (rows with `correctsId`) on that day within five seconds of each other,
+ * across both halves: the web, CLI and MCP stamp each half with its own clock.
+ * Its struck pair shows, for each half, the value active just before it: the row
+ * the revision corrected, or for a half it left alone, that half's latest row
+ * written by the revision's start. A half the day never held shows as a dash.
  */
 export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[]): MetricHistory {
   const rows = file.measurements.filter((row) => (HALVES as readonly string[]).includes(row.metricType));
@@ -76,12 +94,25 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
     const onDay = rows.filter((row) => row.recordedAt.slice(0, 10) === day);
     const active = latestActivePerMetric(onDay);
     if (active.length > 0) {
-      pairs.push(pair(active, 'active', active.some((row) => current.has(row.id))));
+      const [systolic, diastolic] = HALVES.map((metric) => active.find((row) => row.metricType === metric));
+      pairs.push({
+        ...pair(systolic, diastolic, 'active', active.some((row) => current.has(row.id))),
+        id: active[0].id, day, correction: active.some((row) => !!row.correctsId), pairIds: active.map((row) => row.id),
+      });
     }
-    const replaced = onDay.filter((row) => row.status !== 'active');
-    const writes = [...new Set(replaced.map((row) => String(row.createdAt ?? '')))].sort().reverse();
-    for (const write of writes) {
-      pairs.push(pair(replaced.filter((row) => String(row.createdAt ?? '') === write), 'entered-in-error', false));
+    for (const revision of revisions(onDay).reverse()) {
+      // A half the revision corrected: the row it corrected. A half it left alone:
+      // that half's latest row written by the revision's start.
+      const before = (metric: string) => {
+        const first = revision.rows.find((row) => row.metricType === metric);
+        if (first) return onDay.find((row) => row.id === first.correctsId);
+        return onDay
+          .filter((row) => row.metricType === metric && createdAt(row) <= revision.at)
+          .sort((a, b) => createdAt(a).localeCompare(createdAt(b)))
+          .at(-1);
+      };
+      const [systolic, diastolic] = HALVES.map(before);
+      pairs.push({ ...pair(systolic, diastolic, 'entered-in-error', false), id: revision.rows[0].id, day, correction: false });
     }
   }
   return {
@@ -93,21 +124,23 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
   };
 }
 
-function pair(rows: FileMeasurement[], status: HistoryRow['status'], isCurrent: boolean): HistoryRow {
-  const half = (metric: string) => {
-    const row = rows.find((r) => r.metricType === metric);
-    return row ? formatDisplayValue(metric as 'systolic_bp', row.value, 'si') : null;
-  };
-  const systolic = half('systolic_bp');
-  const diastolic = half('diastolic_bp');
-  return {
-    id: rows[0].id,
-    value: `${systolic ?? '–'}/${diastolic ?? '–'}`,
-    systolic,
-    diastolic,
-    day: rows[0].recordedAt.slice(0, 10),
-    status,
-    current: isCurrent,
-    correction: rows.some((row) => !!row.correctsId),
-  };
+const createdAt = (row: FileMeasurement) => String(row.createdAt ?? '');
+
+/** The day's correcting writes, oldest first, grouped into revisions: each starts at its first write. */
+function revisions(onDay: FileMeasurement[]): Array<{ at: string; rows: FileMeasurement[] }> {
+  const corrections = onDay.filter((row) => !!row.correctsId).sort((a, b) => createdAt(a).localeCompare(createdAt(b)));
+  const found: Array<{ at: string; rows: FileMeasurement[] }> = [];
+  for (const row of corrections) {
+    const open = found.at(-1);
+    if (open && Date.parse(createdAt(row)) - Date.parse(open.at) <= REVISION_MS) open.rows.push(row);
+    else found.push({ at: createdAt(row), rows: [row] });
+  }
+  return found;
+}
+
+function pair(sys: FileMeasurement | undefined, dia: FileMeasurement | undefined, status: HistoryRow['status'], isCurrent: boolean):
+  Omit<HistoryRow, 'id' | 'day' | 'correction'> {
+  const systolic = sys ? formatDisplayValue('systolic_bp', sys.value, 'si') : null;
+  const diastolic = dia ? formatDisplayValue('diastolic_bp', dia.value, 'si') : null;
+  return { value: `${systolic ?? '–'}/${diastolic ?? '–'}`, systolic, diastolic, status, current: isCurrent };
 }

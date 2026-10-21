@@ -64,6 +64,8 @@ export interface HistoryRow {
   /** A blood pressure's halves, a dash's place null (blood-pressure.ts). */
   systolic?: string | null;
   diastolic?: string | null;
+  /** A blood pressure's active row ids, which a replace sends back as `seenIds`. */
+  pairIds?: string[];
 }
 
 export interface MetricHistory {

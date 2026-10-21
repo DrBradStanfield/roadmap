@@ -709,14 +709,23 @@ open web tab, Pages fork and CLI off from its chat history until it updated.
   runs health-core's `appendMeasurement` or `correctValue` for each half on one record and
   returns the first refusal, so both rows land or neither. Two Swift calls in a row would
   save a lone systolic when the diastolic is refused. The record keeps two rows per day,
-  as the web pairs them; no new row shape. Replacing corrects both halves, the unchanged
-  one too, so the history always shows a whole struck pair (orchestrator, 2026-10-22: one
-  redundant row is fine under append-only); the exact same pair writes nothing. A held
-  day is asked about before any half is written.
+  as the web pairs them; no new row shape. Replacing corrects only the half that changed:
+  re-correcting the unchanged half joins merge's last-writer-wins and can silently undo
+  another device's fix of it (review 2026-10-22, reproduced with `mergeFiles`). The exact
+  same pair writes nothing. A held day is asked about before any half is written, and a
+  replace carries the active row ids the user saw (`seenIds`); other ids at save time
+  refuse it, as a single value's stale correction is refused.
+- **Struck pairs come from the correction chains**, not from the originals' `createdAt`:
+  the web, CLI and MCP stamp each half with its own clock, so originals never share a
+  stamp. A revision is the day's correcting writes within 5 s of each other; its struck
+  pair is, per half, the row it corrected, or for a half it left alone that half's latest
+  row by the revision's start. The corrected row, not a timestamp, decides "before",
+  because a correction can carry the same instant as its original.
 - **Feet and inches in the engine.** `profile` takes `heightFeet` and `heightInches` and
   calls health-core's `feetInchesToCm`; My data gets `cmToFeetInches`. Same maths and
   rounding as the web's form, no Swift copy (D2). Not unit-dependent, so the cloud's
-  unit-change guard does not refuse it.
+  unit-change guard does not refuse it. Wheels saved unchanged write nothing, so a metric
+  height is never rounded to the nearest inch.
 - **A pushed page, not a sheet.** Apple Health's pattern: range picker, headline, chart,
   values. The range logic (`ChartRange`) is presentation, so it is Swift and unit-tested;
   values and pairs come from the engine. Days are midnight UTC and the chart reads them

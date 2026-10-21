@@ -22,8 +22,9 @@ struct MetricEntrySheet: View {
 
 /// One blood pressure: systolic and diastolic side by side, one day. The engine
 /// saves both halves or neither (`bloodPressure` in ios/engine/blood-pressure.ts).
-/// A day that already holds one asks first; replacing it corrects both halves,
-/// the old rows kept as entered in error, so the history shows whole pairs. The web twin is the BP cell of
+/// A day that already holds one asks first; replacing it corrects the half that
+/// changed, the old row kept as entered in error. A replace names the rows the
+/// user saw, so one another device moved meanwhile is refused (Codex R1). The web twin is the BP cell of
 /// StartingInfoVitals.tsx, which commits the pair together.
 struct BloodPressureSheet: View {
     let store: RecordStore
@@ -39,6 +40,8 @@ struct BloodPressureSheet: View {
     @State private var day = Date.now
     @State private var message: String?
     @State private var asking = false
+    /// The day's active rows when the "replace it?" prompt was shown.
+    @State private var held: [String] = []
     @FocusState private var focus: Field?
 
     var body: some View {
@@ -67,11 +70,11 @@ struct BloodPressureSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save(replace: correcting != nil) }.disabled(pair == nil)
+                    Button("Save") { save(replace: correcting != nil, seen: correcting?.pairIds ?? []) }.disabled(pair == nil)
                 }
             }
             .confirmationDialog("This day already has a blood pressure", isPresented: $asking, titleVisibility: .visible) {
-                Button("Replace it") { save(replace: true) }
+                Button("Replace it") { save(replace: true, seen: held) }
             } message: {
                 Text("The old value stays in your record, marked as entered in error.")
             }
@@ -99,13 +102,16 @@ struct BloodPressureSheet: View {
         return (s, d)
     }
 
-    private func save(replace: Bool) {
+    private func save(replace: Bool, seen: [String]) {
         guard let pair else { return }
         let when = correcting?.day ?? DayText.iso(day)
-        let result = saved(store.apply(.bloodPressure(systolic: pair.systolic, diastolic: pair.diastolic, day: when, replace: replace)))
+        let result = saved(store.apply(.bloodPressure(systolic: pair.systolic, diastolic: pair.diastolic, day: when, replace: replace, seenIds: seen)))
         switch result {
         case .saved: dismiss()
-        case .refused(_, .some) where !replace: asking = true
+        case .refused(_, .some) where !replace:
+            // The rows the prompt is about, read from the same record the engine just refused on.
+            held = store.history(for: MyData.bloodPressure)?.rows.first { $0.isActive && $0.day == when }?.pairIds ?? []
+            asking = true
         case .refused(let why, _): message = why
         }
     }
