@@ -242,11 +242,20 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   event; Swift acts only on the session it shows. An open that finishes after a newer open
   or a close began closes itself and rejects ("superseded"), so two racing opens never
   orphan a session. "Synced" is said only when the pending marker is clear. A unit change
-  refuses only edits whose number is in units (a value, a correction, a height), and a
-  refusal re-pins the sheet so a corrected retry saves. After three opens interrupted by
+  refuses only edits whose number is in units (a value, a correction, a height). ~~A
+  refusal re-pins the sheet so a corrected retry saves~~ (reversed by the second re-check:
+  the sheet still showed the old unit and kept the typed number, so a second Save stored
+  it in the new units). A refused sheet now keeps refusing until it closes, and says
+  "Close this and enter the value again". After three opens interrupted by
   edits, the last session is closed and the app says why. Disconnect's copy-down reports
   only a real copy. Drive's storageQuotaExceeded says the Drive is full; dailyLimitExceeded
   retries.
+  Second re-check (Codex, same day): an open takes its number before any await, so the
+  order of the calls decides which open wins, never the order their awaits finish in.
+  "Synced" has one rule (`CloudSync.settled`): the pending marker is clear. The marker is
+  set before every edit is taken and cleared by the session only when a save has landed
+  and verified, and the engine says 'synced' at that moment; until then the app says
+  "Saving…", on open, after a write and after Sync now.
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free
   (US-34). Until then the app polls each minute while on screen. Documents are not synced

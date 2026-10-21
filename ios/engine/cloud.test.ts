@@ -395,6 +395,26 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(state.pending).toBe(true);
   });
 
+  it('R2 (re-check): an open that waits on a slow flush of the old session never beats a later open', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const first = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    engine.cloudEdit(add('2026-10-13'), first.erase, 'si', NOW); // the old session has a save to flush
+    dropbox.delay = 60;
+    const older = engine.cloudOpen('dropbox', 'ios-1', false); // waits on that flush
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const newer = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; session: number };
+    await expect(older).rejects.toThrow('superseded');
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    dropbox.delay = 0;
+    state.sessions.length = 0;
+    expect((JSON.parse(engine.cloudEdit(add('2026-10-14'), newer.erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(new Set(state.sessions)).toEqual(new Set([newer.session]));
+    expect(days(dropbox.record)).toEqual(['2026-10-13', '2026-10-14']);
+  });
+
   it('F2/F4: of two opens, the newer wins whichever finishes last; the older closes itself and its events carry its own id', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));

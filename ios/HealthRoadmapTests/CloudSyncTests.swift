@@ -15,6 +15,8 @@ final class CloudSyncTests: XCTestCase {
         var tokenAccount = "dbid:A"
         /// False: the content endpoints fail as a dead network does; sign-in still works.
         var online = true
+        /// False: every upload fails with a 500; reads still work.
+        var uploadsWork = true
         /// Seconds every download waits before it answers.
         var downloadDelay: TimeInterval = 0
         /// Runs on the main queue as each download starts, before its answer.
@@ -43,6 +45,7 @@ final class CloudSyncTests: XCTestCase {
                 guard let file else { return .init(status: 409, body: Data(#"{"error_summary":"path/not_found/"}"#.utf8), delay: downloadDelay) }
                 return .init(headers: ["Dropbox-API-Result": #"{"rev":"r\#(file.rev)"}"#], body: Data(file.text.utf8), delay: downloadDelay)
             }
+            guard uploadsWork else { return .init(status: 500, body: Data("internal_error".utf8)) }
             beforeNextUpload?()
             beforeNextUpload = nil
             let mode = arg["mode"] as? [String: Any]
@@ -251,8 +254,15 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(store.myData?.unitSystem, "conventional")
         XCTAssertEqual(store.apply(.profile(sex: "female")), .saved, "an edit with no number in units still saves (F5)")
         guard case .refused = store.apply(.correct(id: rowId, value: 79)) else { return XCTFail("the replace path: 79 kg must not be 79 lb") }
-        // The refusal re-pins the sheet to what is now shown, so a value checked
-        // and typed again in the new units saves without closing the sheet (F5).
+        // The sheet still shows kg and still holds the typed 80: a second Save in it
+        // is refused too, and says to close it (Codex re-check R1).
+        guard case .refused(let message, _) = store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) else {
+            return XCTFail("a second Save in the same sheet must not store 80 lb")
+        }
+        XCTAssertTrue(message.contains("Close this"), message)
+        store.unpinScreen()
+        // A sheet opened now shows lb: its value saves.
+        store.pinScreen()
         XCTAssertEqual(store.apply(.add(metric: "weight", value: 176, day: "2026-10-02")), .saved)
         store.unpinScreen()
         await sync.background()
@@ -386,5 +396,30 @@ final class CloudSyncTests: XCTestCase {
         await syncing.value
         XCTAssertEqual(sync.status, .onPhone)
         XCTAssertNil(sync.provider)
+    }
+
+    /// Codex re-check R3: "Synced" only when nothing waits on the phone. A reopen that
+    /// merges a pending phone change only schedules its upload; with uploads failing
+    /// the app must never say Synced.
+    func testR3AReopenWithAPendingChangeAndFailingUploadsIsNeverSynced() async throws {
+        dropbox.put(try record(days: [], device: "web"))
+        dropbox.online = false
+        let (store, sync, _) = try app()
+        await sync.start()
+        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-06")), .saved)
+        dropbox.online = true
+        dropbox.uploadsWork = false
+        await sync.foreground()
+        XCTAssertNotNil(store.cloudErase, "the cloud record opened")
+        if case .synced = sync.status { XCTFail("open with a pending change said Synced") }
+        try await Task.sleep(for: .milliseconds(1500)) // the session's debounced save runs and fails
+        if case .synced = sync.status { XCTFail("a failed upload left Synced on screen") }
+        await sync.syncNow()
+        if case .synced = sync.status { XCTFail("Sync now with failing uploads said Synced") }
+        dropbox.uploadsWork = true
+        await sync.syncNow()
+        try await Task.sleep(for: .milliseconds(300))
+        guard case .synced = sync.status else { return XCTFail("once the upload lands it is Synced: \(sync.status)") }
+        XCTAssertEqual(activeDays(dropbox.record), ["2026-10-06"])
     }
 }

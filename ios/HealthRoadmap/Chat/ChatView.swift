@@ -52,6 +52,36 @@ struct ChatView: View {
 
     // MARK: The conversation
 
+    /// Questions to start from, for someone who does not know what to ask. A tap
+    /// sends one as typed; nothing is sent until then.
+    private static let starterQuestions = [
+        "What should I talk to my doctor about first?",
+        "Explain my cholesterol results",
+        "Which screening tests are due for me?",
+        "What does my blood pressure mean?",
+    ]
+
+    private var starters: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Self.starterQuestions, id: \.self) { question in
+                Button {
+                    draft = question
+                    Task { await send() }
+                } label: {
+                    Label(question, systemImage: "sparkle")
+                        .font(.subheadline)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(.tint.opacity(0.1), in: .capsule)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.tint)
+                .disabled(sending)
+            }
+        }
+        .padding(.top, 8)
+    }
+
     private var conversation: some View {
         VStack(spacing: 0) {
             ScrollViewReader { proxy in
@@ -61,6 +91,7 @@ struct ChatView: View {
                             Text("Ask about your plan, a test result, or a guideline. The answer uses your saved values.")
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 24)
+                            starters
                         }
                         ForEach(lines) { ChatBubble(line: $0) }
                         if let status { Label(status, systemImage: "ellipsis").foregroundStyle(.secondary).font(.footnote) }
