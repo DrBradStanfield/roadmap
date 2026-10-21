@@ -32,6 +32,9 @@ import {
   bulkAppendValues,
   splitDocumentRef,
   placeMeasurement,
+  setReminderOptIn,
+  setScreening,
+  stampProfile,
   upsertMedication,
   upsertSupplement,
   isEscalationKey,
@@ -44,17 +47,13 @@ import {
   latestActivePerMetric,
   localDay,
   measurementsToInputs,
-  parseLocalisedNumber,
   PREFILL_FIELDS,
-  screeningFieldName,
-  stampFields,
   type ApiMeasurement,
   type ApiMedication,
   type ApiScreening,
   type DocumentType,
   type FileDocument,
   type FileReminderOptIn,
-  type FileScreenings,
   type FileSupplement,
   type HealthInputs,
   type LabUnitRefusal,
@@ -178,7 +177,6 @@ export interface BulkLabValueInput {
 
 // --- small pure helpers ---
 
-const NUMERIC_SCREENING_KEYS = new Set(['lung_pack_years', 'prostate_psa_value']);
 
 function newId(): string {
   return crypto.randomUUID();
@@ -349,14 +347,9 @@ export class RoadmapStore {
 
   saveScreening(screeningKey: string, value: string, erase?: string): boolean {
     if (this.refuses(erase)) return false;
-    const field = screeningFieldName(screeningKey);
-    // A blank or unreadable number is stored as null, which clears the field (US-10 AC6).
-    const parsed = NUMERIC_SCREENING_KEYS.has(screeningKey) ? parseLocalisedNumber(value) ?? null : value;
-    // Stamp this answer's clock, and only its own (US-10 AC6). Unstamped it
-    // stays lamport:0 like the empty remote, and the merge can discard it; with
-    // the whole object's stamp it would carry this copy of every other answer.
-    const answer = { [field]: parsed } as Partial<FileScreenings>;
-    return this.session.edit((file) => void (file.screenings = stampFields(file.screenings, answer, new Date().toISOString())), erase);
+    // health-core's rule (state-edits setScreening): this answer's own stamp,
+    // a blank or unreadable number stored as null (US-10 AC6).
+    return this.session.edit((file) => setScreening(file, screeningKey, value, new Date().toISOString()), erase);
   }
 
   /** The reviewed batch, written by health-core's one bulk rule (shared with
@@ -544,7 +537,7 @@ export class RoadmapStore {
   /** Mark the email-capture step done (monotonic, stamped + persisted). */
   markReportEmailCaptured(): boolean {
     if (this.file.profile.reportEmailCaptured) return true; // idempotent — only ever set true
-    return this.session.edit((file) => void (file.profile = stampFields(file.profile, { reportEmailCaptured: true }, new Date().toISOString())));
+    return this.session.edit((file) => stampProfile(file, { reportEmailCaptured: true }, new Date().toISOString()));
   }
 
   /** The unit the user chose for Lp(a)'s field (US-05 AC2), as the record holds it: unchecked. */
@@ -555,7 +548,7 @@ export class RoadmapStore {
   /** Remember Lp(a)'s field unit: a profile preference, stamped like the others so it syncs (US-05 AC2). */
   setLpaUnit(unit: LpaUnit): boolean {
     if (this.file.profile.lpaUnit === unit) return true;
-    return this.session.edit((file) => void (file.profile = stampFields(file.profile, { lpaUnit: unit }, new Date().toISOString())));
+    return this.session.edit((file) => stampProfile(file, { lpaUnit: unit }, new Date().toISOString()));
   }
 
   getReminderOptIn(): FileReminderOptIn | undefined {
@@ -564,13 +557,7 @@ export class RoadmapStore {
 
   /** Set/replace the opt-in singleton (status flips included), stamped + persisted. */
   setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, erase?: string): boolean {
-    return this.session.edit((file) => {
-      file.reminderOptIn = {
-        ...fields,
-        updatedAt: new Date().toISOString(),
-        lamport: (file.reminderOptIn?.lamport ?? 0) + 1,
-      };
-    }, erase);
+    return this.session.edit((file) => setReminderOptIn(file, fields, new Date().toISOString()), erase);
   }
 
   /** The client-computed forward schedule that gets pushed to the server (§10). */
@@ -637,7 +624,7 @@ export class RoadmapStore {
     // schedules a save, as every other mutation is: a profile-only edit (sex,
     // height, birth date — no measurement changed with it) once scheduled no
     // save at all, so it sat in memory until the next unrelated edit carried it up.
-    this.session.edit((file) => void (file.profile = stampFields(file.profile, changes as Partial<RoadmapProfile>, new Date().toISOString())), erase);
+    this.session.edit((file) => stampProfile(file, changes as Partial<RoadmapProfile>, new Date().toISOString()), erase);
   }
 }
 

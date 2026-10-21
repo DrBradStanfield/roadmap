@@ -277,7 +277,7 @@ export {
   type HistoryChangeType,
 } from './roadmap-file';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
-export { mergeFiles, stampFields, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
+export { mergeFiles, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
 export { buildErasedFile, type EraseInputs } from './erase';
 export {
   RecordSession,
@@ -290,7 +290,7 @@ export type { RecordHost } from './record-host';
 export { LiveRefresh, type LiveRefreshOptions } from './live-refresh';
 export { liftDeviceCopy, copyCloudDown } from './record-transfer';
 export { ChatSession, type ChatConversationSummary } from './chat-session';
-export { upsertMedication, upsertSupplement } from './state-edits';
+export { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from './state-edits';
 export { isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 
