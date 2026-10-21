@@ -78,18 +78,22 @@ change below. The original plan and its reasoning:
   2026-10-21: both products and the tool appear only when asked by name.
   Generic prompts name Centrum and Thorne (supplements) and Function Health and
   HealthEx (tool).
+- **AI crawlers** (GPTBot, ClaudeBot, PerplexityBot, Google-Extended) are not
+  blocked in any of the three sites' `robots.txt`. Keep it that way.
 - **AI referrers** in the weekly product-health loop (Clarity and Shopify).
 
 ## Ideas not yet done
 
 Ranked by cost against likely effect.
 
-1. **Bing Webmaster Tools and IndexNow** on all three sites. ChatGPT search
-   leans on Bing. Free.
+1. **Bing Webmaster Tools** on all three sites (none carries a Bing
+   verification tag, 2026-10-21). ChatGPT and Copilot search lean on Bing.
+   Free: Bing imports sites from Google Search Console in one step.
 2. **YouTube descriptions:** the `/pages/roadmap` link and one line on the
    connector. Gemini and Perplexity cite YouTube heavily.
-3. **potassiumfiber.com in Google Search Console** (about 25,000 potassium
-   impressions sit on drstanfield.com articles now).
+3. **potassiumfiber.com in Google Search Console** (no Google verification
+   tag on the site, 2026-10-21; about 25,000 potassium impressions sit on
+   drstanfield.com articles now).
 4. **Task guides** for the questions people ask inside the tool: uploading a
    lab PDF, fixing a wrong value, finding the record file.
 5. **Glama tool descriptions:** the score page asks for read_record and
