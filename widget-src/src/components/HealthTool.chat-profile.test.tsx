@@ -11,14 +11,23 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@testing-library/react';
-import { parseProposedEdit, ROADMAP_FILE_NAME, type ProposedEdit, type RoadmapFile } from '@roadmap/health-core';
-import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
+import { parseProposedEdit, ROADMAP_FILE_NAME, CURRENT_SCHEMA_VERSION, MemoryAdapter, MemoryCloud, migrateFile, rowRootIds, type ProposedEdit, type RoadmapFile, type StorageAdapter } from '@roadmap/health-core';
+import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import { MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
 
-const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void) }));
+const chat = vi.hoisted(() => ({
+  proposeEdit: null as null | ((edits: ProposedEdit[]) => void),
+  context: null as null | (() => unknown),
+}));
+/** What the upload modal is handed: its completion (the page's re-read) and
+ *  the history it shows. */
+const reload = vi.hoisted(() => ({
+  complete: null as null | (() => Promise<void>),
+  history: null as unknown,
+}));
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -29,15 +38,20 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ onProposeEdit }: { onProposeEdit: (edits: ProposedEdit[]) => void }) => {
+  ChatEmbed: ({ onProposeEdit, guestInputs }: { onProposeEdit: (edits: ProposedEdit[]) => void; guestInputs: () => unknown }) => {
     chat.proposeEdit = onProposeEdit;
+    chat.context = guestInputs;
     return null;
   },
 }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
+vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete, history }: { onComplete: () => Promise<void>; history: unknown }) => {
+  reload.complete = onComplete;
+  reload.history = history;
+  return null;
+} }));
 
-import { HealthTool } from './HealthTool';
+import { HealthTool, WRITE_REFUSED } from './HealthTool';
 
 /** The guest's record as this browser holds it, after every pending save. */
 async function recordOnDisk(): Promise<RoadmapFile> {
@@ -51,8 +65,8 @@ const planShown = (view: RenderResult) =>
   !view.container.querySelector('.plan-empty-preview') && !!view.container.querySelector('.health-results-panel .stat-card');
 
 /** A guest with a saved weight and no sex or height (unless given): no plan yet. */
-async function guestWithoutProfile(saved: { sex?: 'male' | 'female'; heightCm?: number } = {}): Promise<RenderResult> {
-  await initRoadmapStore(new LocalStorageAdapter());
+async function guestWithoutProfile(saved: { sex?: 'male' | 'female'; heightCm?: number } = {}, adapter: StorageAdapter = new LocalStorageAdapter()): Promise<RenderResult> {
+  await initRoadmapStore(adapter);
   await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, ...saved }, {});
   await addMeasurement('weight', 82, '2026-09-01');
   const view = render(<HealthTool />);
@@ -81,6 +95,7 @@ beforeEach(() => {
   }));
   Element.prototype.scrollIntoView ??= () => {};
   chat.proposeEdit = null;
+  reload.complete = null;
 });
 afterEach(async () => {
   cleanup();
@@ -284,6 +299,551 @@ describe('US-16 AC2: the proposal banner, after review', () => {
     const after = await recordOnDisk();
     expect(after.medications).toEqual(before.medications);
     expect(after.profile).toEqual(before.profile);
+  });
+});
+
+// US-16 AC2a: a refresh is not an erase. A proposal (and the medication Undo)
+// stands through a re-read that brings no erase, and goes with one that does,
+// whichever device made it.
+describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its rows', () => {
+  /** This tab's own store, as initRoadmapStore made it. */
+  async function thisTabsStore(): Promise<RoadmapStore> {
+    const created = vi.mocked(RoadmapStore.create).mock.results;
+    return created[created.length - 1].value;
+  }
+  /** Another device erases the record in the shared cloud, as its own
+   *  deleteUserData writes it (US-09 AC23), and may save a row after. This
+   *  page never makes a second store: it learns of the erase only by
+   *  re-reading the cloud. */
+  async function otherDeviceErases(cloud: MemoryCloud, opts: { sameEpoch?: boolean; weightAfter?: number } = {}) {
+    const adapter = new MemoryAdapter(cloud);
+    const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
+    const now = new Date(Date.now() + 1000).toISOString();
+    const ctx = { deviceId: 'other-device', now };
+    const prior = migrateFile(body, ctx);
+    const erased = migrateFile(null, ctx);
+    const epoch = (prior.meta.eraseEpoch ?? 0) + (opts.sameEpoch ? 0 : 1);
+    erased.schemaVersion = CURRENT_SCHEMA_VERSION;
+    const ids = new Set([...rowRootIds(prior), ...(prior.erasedRows?.ids ?? [])]);
+    erased.erasedRows = { fromEpoch: prior.erasedRows?.fromEpoch ?? epoch, ids: [...ids].sort() };
+    erased.meta.eraseEpoch = epoch;
+    erased.meta.erasedAt = now;
+    if (opts.weightAfter !== undefined) {
+      erased.measurements.push({
+        id: 'post-erase-weight', metricType: 'weight', value: opts.weightAfter, recordedAt: '2026-09-02',
+        createdAt: now, source: 'manual', status: 'active', correctsId: null, externalId: null,
+      });
+    }
+    await adapter.write(ROADMAP_FILE_NAME, erased, version);
+  }
+  async function cloudGuest(cloud: MemoryCloud, saved?: { sex?: 'male' | 'female'; heightCm?: number }) {
+    vi.spyOn(RoadmapStore, 'create');
+    return saved ? guestWithoutProfile(saved, new MemoryAdapter(cloud)) : emptyGuest(new MemoryAdapter(cloud));
+  }
+  async function emptyGuest(adapter: StorageAdapter = new LocalStorageAdapter()) {
+    await initRoadmapStore(adapter);
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    await wait(600);
+    return view;
+  }
+  const refreshThisTab = async () => {
+    await act(async () => { await (await thisTabsStore()).refreshFromRemote(); });
+    await wait(600);
+  };
+
+  it('keeps an empty guest\'s proposal through an unchanged refresh, and Save then writes it', async () => {
+    await emptyGuest();
+    const before = (await recordOnDisk()).meta;
+    chatProposes({ sex: 'female', height: { value: 165, unit: 'cm' } });
+    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await wait(600);
+    expect((await recordOnDisk()).meta.eraseEpoch).toBe(before.eraseEpoch);
+    expect(banner()).not.toBeNull();
+    expect((await recordOnDisk()).profile).not.toHaveProperty('sex');
+    pressButton('Save');
+    await wait(1500);
+    expect((await recordOnDisk()).profile).toMatchObject({ sex: 'female', heightCm: 165 });
+  });
+
+  it('keeps medication Undo through an unchanged refresh, and Undo restores the prior answer', async () => {
+    await guestWithoutProfile();
+    act(() => chat.proposeEdit!([
+      { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
+    ]));
+    await wait(1500);
+    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await wait(600);
+    const undo = Array.from(document.body.querySelectorAll('.chat-banners button')).find(b => b.textContent === 'Undo');
+    expect(undo).toBeTruthy();
+    fireEvent.click(undo!);
+    await wait(1500);
+    expect((await loadLatestMeasurements())?.medications.find(m => m.medicationKey === 'statin')?.drugName).toBe('none');
+  });
+
+  it('keeps a proposal made after this tab\'s own erase through an unchanged refresh', async () => {
+    const view = await guestWithoutProfile({ sex: 'male', heightCm: 175 });
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', () => {});
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await wait(1500);
+    chatProposes({ sex: 'female' });
+    expect(banner()).not.toBeNull();
+    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await wait(600);
+    expect(banner()).not.toBeNull();
+  });
+
+  it('clears an empty guest\'s proposal when another device\'s erase is re-read', async () => {
+    const cloud = new MemoryCloud();
+    await cloudGuest(cloud);
+    chatProposes({ sex: 'female', height: { value: 165, unit: 'cm' } });
+    expect(banner()).not.toBeNull();
+    await otherDeviceErases(cloud);
+    await refreshThisTab();
+    expect(banner()).toBeNull();
+    // Again, at the same epoch: an empty record erased again can differ only
+    // in its erasedAt, which the merge keeps (the later one, US-09 AC20).
+    chatProposes({ sex: 'female' });
+    expect(banner()).not.toBeNull();
+    await wait(6000); // past the re-read throttle
+    await otherDeviceErases(cloud, { sameEpoch: true });
+    await refreshThisTab();
+    expect(banner()).toBeNull();
+  });
+
+  for (const sameEpoch of [false, true]) {
+    it(`clears the proposal and Undo for another device's ${sameEpoch ? 'later erase at the same epoch' : 'erase'}, though a post-erase row remains`, async () => {
+      const cloud = new MemoryCloud();
+      await cloudGuest(cloud, { sex: 'male' });
+      act(() => chat.proposeEdit!([
+        { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
+        parseProposedEdit('propose_profile_edit', { height: { value: 178, unit: 'cm' } })!,
+      ]));
+      await wait(1500);
+      expect(document.body.querySelectorAll('.chat-banners [role="status"]')).toHaveLength(2);
+      await otherDeviceErases(cloud, { sameEpoch, weightAfter: 84 });
+      await refreshThisTab();
+      expect((await loadLatestMeasurements())?.previousMeasurements.map(m => m.value)).toEqual([84]);
+      expect(document.body.querySelector('.chat-banners')).toBeNull();
+    });
+  }
+
+  it('Save refuses a proposal made before an erase this page has not yet shown', async () => {
+    const cloud = new MemoryCloud();
+    await cloudGuest(cloud, { sex: 'male' });
+    chatProposes({ height: { value: 178, unit: 'cm' } });
+    // The store takes the erase in, but the page is not told (as while the
+    // relay holds a remote change behind an unsaved profile edit, US-34 AC4).
+    const swallow = (e: Event) => e.stopImmediatePropagation();
+    window.addEventListener(REMOTE_CHANGED_EVENT, swallow, { capture: true });
+    try {
+      await otherDeviceErases(cloud);
+      await refreshThisTab();
+    } finally {
+      window.removeEventListener(REMOTE_CHANGED_EVENT, swallow, { capture: true });
+    }
+    expect(banner()).not.toBeNull();
+    pressButton('Save');
+    await wait(1500);
+    expect(banner()).toBeNull();
+    const stored = await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME);
+    expect((stored.body as RoadmapFile).profile).not.toHaveProperty('heightCm');
+    expect((await loadLatestMeasurements())?.inputs.heightCm).toBeUndefined();
+  });
+
+  it('an erase refused while a remote erase is held back leaves the form, the unsaved edit and the banner as they were (Codex final R2)', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuest(cloud, { sex: 'male', heightCm: 175 });
+    chatProposes({ height: { value: 178, unit: 'cm' } });
+    const swallow = (e: Event) => e.stopImmediatePropagation();
+    window.addEventListener(REMOTE_CHANGED_EVENT, swallow, { capture: true });
+    try {
+      await otherDeviceErases(cloud);
+      await refreshThisTab();
+    } finally {
+      window.removeEventListener(REMOTE_CHANGED_EVENT, swallow, { capture: true });
+    }
+    fireEvent.change(view.container.querySelector('#birthYear')!, { target: { value: '1975' } });
+    vi.spyOn(MemoryAdapter.prototype, 'read').mockRejectedValueOnce(new Error('cloud did not answer'));
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
+    await wait(100);
+    expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value).toBe('175');
+    expect(view.container.querySelector<HTMLInputElement>('#birthYear')?.value).toBe('1975');
+    expect(banner()).not.toBeNull();
+  });
+
+  // US-34 AC4: the relay holds a remote change behind an unsaved profile
+  // edit until that edit saves. When the change is an erase the save is
+  // refused, and the refusal must still let the page catch up.
+  it('a profile save refused behind a held remote erase says so and shows the erased record', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuest(cloud, { sex: 'male', heightCm: 175 });
+    const alert = vi.fn();
+    vi.stubGlobal('alert', alert);
+    fireEvent.change(view.container.querySelector('#birthYear')!, { target: { value: '1975' } });
+    await otherDeviceErases(cloud);
+    await act(async () => { await (await thisTabsStore()).refreshFromRemote(); });
+    // Held: the form still shows the old record.
+    expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value).toBe('175');
+    await wait(1500); // the profile save is due, refused, and the page re-reads
+    expect(alert).toHaveBeenCalledWith(WRITE_REFUSED);
+    expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value ?? '').toBe('');
+    const stored = (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+    expect(stored.profile).not.toHaveProperty('birthYear');
+  });
+
+  /** A cloud guest on a statin and an omega-3, with the page shown. */
+  async function cloudGuestOnLists(cloud: MemoryCloud) {
+    vi.spyOn(RoadmapStore, 'create');
+    await initRoadmapStore(new MemoryAdapter(cloud));
+    await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+    await saveSupplement('omega3', 'Omega-3', 1, 'g');
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    await wait(600);
+    return view;
+  }
+  const supplementsShown = (view: RenderResult) => Array.from(view.container.querySelectorAll('.supplement-name'), (e) => e.textContent);
+  /** The user starts again on the erased record, and the page re-reads it:
+   *  the form is back at the stage that shows the supplements. */
+  async function startAgain() {
+    await act(async () => {
+      await saveChangedMeasurements({ birthYear: 1980, birthMonth: 1, sex: 'female', heightCm: 165 }, {});
+      await addMeasurement('weight', 70, '2026-09-03');
+    });
+    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await wait(600);
+  }
+  const cloudRecord = async (cloud: MemoryCloud) => (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+
+  // Codex R3, adversary R3: a save armed before the page showed an erase
+  // carries the erase it was asked for under, so it is refused even once the
+  // page has caught up.
+  it('a chat medication change armed before another device\'s erase is shown does not land after it', async () => {
+    const cloud = new MemoryCloud();
+    await cloudGuestOnLists(cloud);
+    const alert = vi.fn();
+    vi.stubGlobal('alert', alert);
+    act(() => chat.proposeEdit!([
+      { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
+      { kind: 'medication', medicationKey: 'ezetimibe', drugName: 'ezetimibe', doseValue: 10, doseUnit: 'mg' },
+    ]));
+    await otherDeviceErases(cloud); // within the saves' 300 ms
+    await act(async () => { await (await thisTabsStore()).refreshFromRemote(); });
+    await wait(1500);
+    expect(JSON.stringify((await cloudRecord(cloud)).medications)).not.toContain('atorvastatin');
+    expect(JSON.stringify((await cloudRecord(cloud)).medications)).not.toContain('ezetimibe');
+    expect(alert).toHaveBeenCalledTimes(1); // two refused saves, one alert (adversary R5)
+    expect(alert).toHaveBeenCalledWith(WRITE_REFUSED);
+  });
+
+  // Adversary R1: the supplements on screen follow the record too.
+  it('this tab\'s erase clears the supplements on screen', async () => {
+    const view = await cloudGuestOnLists(new MemoryCloud());
+    expect(supplementsShown(view)).toEqual(['Omega-3']);
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', () => {});
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await wait(1500);
+    await startAgain();
+    expect(view.container.querySelector('.supplement-chips')).not.toBeNull();
+    expect(supplementsShown(view)).toEqual([]);
+  });
+
+  it('another device\'s erase, once re-read, clears the supplements on screen', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuestOnLists(cloud);
+    await otherDeviceErases(cloud);
+    await refreshThisTab();
+    await startAgain();
+    expect(view.container.querySelector('.supplement-chips')).not.toBeNull();
+    expect(supplementsShown(view)).toEqual([]);
+  });
+
+  it('a supplement edit refused behind a held remote erase says so, shows the erased record and saves nothing', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuestOnLists(cloud);
+    const alert = vi.fn();
+    vi.stubGlobal('alert', alert);
+    const swallow = (e: Event) => e.stopImmediatePropagation();
+    window.addEventListener(REMOTE_CHANGED_EVENT, swallow, { capture: true });
+    try {
+      await otherDeviceErases(cloud);
+      await refreshThisTab();
+    } finally {
+      window.removeEventListener(REMOTE_CHANGED_EVENT, swallow, { capture: true });
+    }
+    fireEvent.change(view.container.querySelector('.supplement-dose')!, { target: { value: '2' } });
+    await wait(1500);
+    expect(alert).toHaveBeenCalledWith(WRITE_REFUSED);
+    expect(supplementsShown(view)).toEqual([]);
+    expect((await cloudRecord(cloud)).supplements).toEqual([]);
+  });
+
+  it('US-09 AC23: an erase refused because the cloud cannot be read leaves the medications and screenings on screen', async () => {
+    const cloud = new MemoryCloud();
+    await initRoadmapStore(new MemoryAdapter(cloud));
+    await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await saveMedication('statin', 'atorvastatin', 20, 'mg');
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    await wait(600);
+    const contextBefore = JSON.stringify(chat.context!());
+    const mirrorBefore = localStorage.getItem(MIRROR_KEY);
+    expect(contextBefore).toContain('atorvastatin');
+    expect(mirrorBefore).toContain('atorvastatin');
+    vi.spyOn(MemoryAdapter.prototype, 'read').mockRejectedValueOnce(new Error('cloud did not answer'));
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
+    await wait(600);
+    expect(JSON.stringify(chat.context!())).toBe(contextBefore);
+    expect(localStorage.getItem(MIRROR_KEY)).toBe(mirrorBefore);
+    expect(planShown(view)).toBe(true);
+  });
+
+  it('US-11: a successful erase clears the lab rows and documents the upload view holds', async () => {
+    const view = await guestWithoutProfile({ sex: 'male', heightCm: 175 });
+    await act(async () => {
+      await bulkSaveLabValues([{ metricName: 'Ferritin', value: 75, unit: 'µg/L', recordedAt: '2026-09-01' }]);
+      await bulkSaveDocuments([{
+        documentType: 'lab_report', title: 'Synthetic prior report', documentDate: '2026-09-01',
+        contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'synthetic-prior.pdf',
+      }]);
+      await reload.complete!();
+    });
+    expect(JSON.stringify(reload.history)).toContain('Synthetic prior report');
+    expect(JSON.stringify(reload.history)).toContain('Ferritin');
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', () => {});
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await wait(1500);
+    expect(reload.history).toEqual({ measurements: [], labValues: [], documents: [] });
+  });
+
+  // Review R1/R3 (2026-10-21): while the store holds an erase the screen does
+  // not show yet, the screen's values are pre-erase. A banner made then, or a
+  // form save scheduled before the erase, would write them into the erased record.
+  /** This tab's cloud. `hold` stops its erase at the cloud write (the store
+   *  already holds the erased copy), then lets it land or fail. */
+  class HeldCloud extends MemoryAdapter {
+    private gate: Promise<void> | null = null;
+    private fail = false;
+    private entered: () => void = () => {};
+    hold(fail = false) {
+      let release!: () => void;
+      this.gate = new Promise<void>((r) => { release = r; });
+      this.fail = fail;
+      const reached = new Promise<void>((r) => { this.entered = r; });
+      return { reached, release };
+    }
+    open() { this.gate = null; }
+    override async write(name: string, body: object, version: string | null, signal?: AbortSignal) {
+      if (this.gate && name === ROADMAP_FILE_NAME && ((body as RoadmapFile).meta?.eraseEpoch ?? 0) > 0) {
+        this.entered();
+        await this.gate;
+        if (this.fail) throw new Error('cloud did not answer');
+      }
+      return super.write(name, body, version, signal);
+    }
+  }
+  async function cloudGuestOnStatin(adapter: HeldCloud, seed?: () => Promise<unknown>) {
+    await initRoadmapStore(adapter);
+    await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+    await seed?.();
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    await wait(600);
+    return view;
+  }
+  const cloudMedications = async (cloud: MemoryCloud) =>
+    JSON.stringify(((await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile).medications);
+  const undoButton = () => Array.from(document.body.querySelectorAll('.chat-banners button')).find(b => b.textContent === 'Undo') as HTMLElement | undefined;
+  const atorvastatin: ProposedEdit = { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' };
+
+  it('a chat reply during this tab\'s erase applies nothing and makes no Undo, so no pre-erase medication is written back', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await cloudGuestOnStatin(adapter);
+    const erase = adapter.hold();
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await erase.reached;
+    act(() => chat.proposeEdit!([atorvastatin, parseProposedEdit('propose_profile_edit', { sex: 'female' })!]));
+    const undo = undoButton();
+    const offered = { undo: !!undo, profile: !!banner() };
+    if (undo) fireEvent.click(undo); // the old code offered it: rosuvastatin back
+    await wait(600);
+    erase.release();
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    await wait(1500);
+    expect(offered).toEqual({ undo: false, profile: false });
+    const meds = await cloudMedications(cloud);
+    expect(meds).not.toContain('rosuvastatin');
+    // The reply came from the conversation the erase tombstones (review R4).
+    expect(meds).not.toContain('atorvastatin');
+  });
+
+  // Adversary probe: the profile's 500 ms auto-save, scheduled just before
+  // Delete, fired while the erase wrote and put the height into the erased record.
+  it('a height typed just before Delete, saved by the profile timer during the erase write, does not land', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await cloudGuestOnStatin(adapter);
+    const erase = adapter.hold();
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '191' } });
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await erase.reached;
+    await wait(800); // the profile timer fires while the erase writes
+    erase.release();
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    await wait(1500);
+    expect(((await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile).profile).not.toHaveProperty('heightCm');
+    expect(alert).toHaveBeenCalledTimes(1); // the erase's own; this tab's erase threw the edit away
+  });
+
+  it('a form edit made while this tab\'s erase is writing is not saved into the erased record', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await cloudGuestOnStatin(adapter);
+    const erase = adapter.hold();
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await erase.reached;
+    fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '191' } });
+    await wait(1500);
+    erase.release();
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    await wait(1500);
+    const stored = (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+    expect(stored.profile).not.toHaveProperty('heightCm');
+    // Nor in the plan's inputs or the chat's copy. (The field's own typed
+    // text can stay on screen until it is edited; it reaches nothing.)
+    expect(JSON.stringify(chat.context!())).not.toContain('191');
+    expect(localStorage.getItem(MIRROR_KEY) ?? '').not.toContain('191');
+  });
+
+  it('after an erase whose write failed, the screen shows the erased copy the store holds, and the next chat reply shows its banners', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await cloudGuestOnStatin(adapter);
+    const erase = adapter.hold(true);
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await erase.reached;
+    erase.release();
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    adapter.open();
+    expect(alert.mock.calls[0][0]).not.toMatch(/deleted/i);
+    expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value ?? '').toBe('');
+    expect(localStorage.getItem(MIRROR_KEY) ?? '').not.toContain('rosuvastatin');
+    act(() => chat.proposeEdit!([atorvastatin, parseProposedEdit('propose_profile_edit', { sex: 'female' })!]));
+    expect(undoButton()).toBeDefined();
+    expect(banner()).not.toBeNull();
+  });
+
+  it('US-06 AC12: a chat drug change resets an escalation answer still waiting to save', async () => {
+    const cloud = new MemoryCloud();
+    // An LDL over target opens the cascade; a recorded answer keeps the question on the form (US-06 AC7).
+    const view = await cloudGuestOnStatin(new HeldCloud(cloud), async () => {
+      await addMeasurement('ldl', 4.2, '2026-09-01');
+      await saveMedication('statin_escalation', 'not_yet');
+    });
+    const select = await waitFor(() => {
+      const el = view.container.querySelector<HTMLSelectElement>('#statin-escalation');
+      expect(el).not.toBeNull();
+      return el!;
+    });
+    fireEvent.change(select, { target: { value: 'not_tolerated' } }); // saves in 300 ms
+    act(() => chat.proposeEdit!([atorvastatin]));
+    await wait(1500);
+    await act(async () => { await flushRoadmapStore(); });
+    const meds = ((await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile).medications;
+    expect(meds.find(m => m.medicationKey === 'statin')?.drugName).toBe('atorvastatin');
+    expect(meds.find(m => m.medicationKey === 'statin_escalation')?.drugName ?? 'not_yet').toBe('not_yet');
+  });
+
+  it('US-06 AC12: a chat dose equal to the saved one still resets an answer given after a form dose change not yet saved', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuestOnStatin(new HeldCloud(cloud), async () => {
+      await addMeasurement('ldl', 4.2, '2026-09-01');
+      await saveMedication('statin_escalation', 'not_yet');
+    });
+    // Saved: rosuvastatin 10 mg. The form moves to 20 mg and answers the
+    // escalation; both saves wait 300 ms. The chat then states 10 mg.
+    fireEvent.change(view.container.querySelector('#statin-dose')!, { target: { value: '20' } });
+    fireEvent.change(view.container.querySelector('#statin-escalation')!, { target: { value: 'not_tolerated' } });
+    act(() => chat.proposeEdit!([{ kind: 'medication', medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' }]));
+    await wait(1500);
+    await act(async () => { await flushRoadmapStore(); });
+    const meds = ((await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile).medications;
+    expect(meds.find(m => m.medicationKey === 'statin')?.doseValue).toBe(10);
+    expect(meds.find(m => m.medicationKey === 'statin_escalation')?.drugName).toBe('not_yet');
+  });
+
+  it('after an erase whose write failed, a matrix draft the chat filled in is gone from the device and the screen', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await cloudGuestOnStatin(adapter);
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'ldlC', displayValue: 3.2, unitSystem: 'si', date: null }]));
+    await wait(600);
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').toContain('3.2');
+    const erase = adapter.hold(true);
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await erase.reached;
+    erase.release();
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    adapter.open();
+    await wait(600);
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
+    expect(JSON.stringify(chat.context!())).not.toContain('3.2');
+  });
+
+  it('a medication save scheduled before this tab\'s erase does not land in the erased record', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await cloudGuestOnStatin(adapter);
+    const erase = adapter.hold();
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    act(() => chat.proposeEdit!([atorvastatin])); // its save waits 300 ms
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await erase.reached;
+    await wait(600); // the save's timer fires while the erase is still writing
+    erase.release();
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    await wait(1500);
+    const meds = await cloudMedications(cloud);
+    expect(meds).not.toContain('atorvastatin');
+    expect(meds).not.toContain('rosuvastatin');
   });
 });
 

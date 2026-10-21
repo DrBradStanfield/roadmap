@@ -88,6 +88,7 @@ export {
 export { generateSuggestions, LIPID_DIET_ADVICE, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
 export type { LipidMarker, WeightMedicationTrigger } from './suggestions';
 export { weightCascade, lipidCascade } from './medication-cascades';
+export { planSections, type PlanSection, type PlanCard, type PlanSectionKey } from './plan-sections';
 
 // Validation
 export {

@@ -129,7 +129,7 @@ Critically, protein-enriched ultra-processed foods **do not prevent overeating**
 
 ### Omega-3 supplementation divergence
 
-The AHA states fish oil supplementation "has not been demonstrated to lower CVD risk in otherwise healthy adults" and may increase AF risk [42-44]. Brad recommends omega-3 supplementation for all users (`supplement-omega3`) based on two lines of evidence: (1) The VITAL trial (Manson 2019, NEJM) showed a 28% reduction in myocardial infarction, and the Bernasconi 2021 meta-analysis confirmed reduced cardiovascular events and cardiac death with benefits increasing at higher doses. (2) Cognitive protection — Jerneren 2015 and Oulhaj 2016 found that B-vitamin supplementation slowed brain atrophy by 40%, but only in participants with adequate omega-3 levels, suggesting omega-3 is necessary for B-vitamins to exert their neuroprotective effect.
+The AHA states fish oil supplementation "has not been demonstrated to lower CVD risk in otherwise healthy adults" and may increase AF risk [42-44]. Brad's position is that it is reasonable for everyone to consider up to 1 g a day of EPA and DHA (`supplement-omega3`), based on two lines of evidence: (1) The VITAL trial (Manson 2019, NEJM) showed a 28% reduction in myocardial infarction, and the Bernasconi 2021 meta-analysis confirmed reduced cardiovascular events and cardiac death with benefits increasing at higher doses. (2) Cognition: in the VITACOG trial, Jernerén 2015 and Oulhaj 2016 found that B-vitamin supplementation slowed brain atrophy by 40%, but only in participants with adequate omega-3 levels, suggesting the cognitive benefit of B vitamins may depend on omega-3 status. The Dutch FACIT trial found the reverse: folic acid improved cognition only in people with lower omega-3 levels (van Soest 2021, Am J Clin Nutr, DOI: 10.1093/ajcn/nqaa373). Omega-3 was not randomised in either trial. The 1 g ceiling reflects the higher atrial fibrillation risk above 1 g a day (Gencer 2021, Circulation, DOI: 10.1161/CIRCULATIONAHA.121.055654). WHO 2026 recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia without a diagnosed deficiency (strong recommendation, moderate certainty); it did not consider the omega-3 analyses of VITACOG or FACIT, and it does not address omega-3 for heart health.
 
 ### References
 - Naghshi 2020, protein intake and mortality, BMJ, 32 cohort studies (DOI: 10.1136/bmj.m2412)
@@ -141,8 +141,10 @@ The AHA states fish oil supplementation "has not been demonstrated to lower CVD 
 - Protein and CKD mortality, JAMA Netw Open (DOI: 10.1001/jamanetworkopen.2024.26577)
 - High-protein UPFs and energy balance, Nat Metab (DOI: 10.1038/s42255-025-01247-4)
 - Protein claims and food quality, Nutrients (DOI: 10.3390/nu16244281)
-- Bernasconi 2021, omega-3 meta-analysis (DOI: 10.1016/j.mayocp.2021.02.008)
+- Bernasconi 2021, omega-3 meta-analysis (DOI: 10.1016/j.mayocp.2020.08.034)
 - Manson 2019, VITAL trial (DOI: 10.1056/NEJMoa1811403)
+- van Soest 2021, FACIT post hoc analysis, folic acid and cognition by omega-3 status, Am J Clin Nutr (DOI: 10.1093/ajcn/nqaa373)
+- Gencer 2021, omega-3 dose and atrial fibrillation meta-analysis, Circulation (DOI: 10.1161/CIRCULATIONAHA.121.055654)
 
 ---
 
@@ -239,7 +241,7 @@ However, Brad's position is that while a healthy diet is foundational, specific 
 - **Vitamin D** (1000 IU): most people are insufficient, especially at higher latitudes. Supplementation corrects deficiency safely.
 - **Magnesium**: intakes are commonly below the RDA. Magnesium taurate in MicroVitamin supports cardiovascular and metabolic health.
 - **Omega-3**: the VITAL trial showed a 28% reduction in myocardial infarction, and in one trial (VITACOG) B vitamins slowed brain atrophy only in people with good omega-3 levels (Jerneren 2015, Oulhaj 2016). See Feature 4 divergence above.
-- **Multivitamin/mineral**: a meta-analysis of three COSMOS cognition sub-studies (Vyas 2024) found that daily multivitamin/mineral supplementation (Centrum Silver vs placebo) improved global cognition and episodic memory in older adults, equivalent to about 2 years less cognitive ageing. Executive function improved in COSMOS-Mind only (Baker 2023). WHO 2026 recommends against these supplements for dementia risk reduction without a diagnosed deficiency; it did not reassess supplements or cite COSMOS.
+- **Multivitamin/mineral**: a meta-analysis of three COSMOS cognition sub-studies (Vyas 2024) found that daily multivitamin/mineral supplementation (Centrum Silver vs placebo) improved global cognition and episodic memory in older adults, equivalent to about 2 years less cognitive ageing. Executive function improved in COSMOS-Mind only (Baker 2023). WHO 2026 recommends against these supplements to reduce the risk of cognitive decline and dementia without a diagnosed deficiency; it did not reassess supplements or cite COSMOS.
 - **Collagen**: Collagen peptides may improve skin hydration and elasticity (Batool 2026). Trials used 0.5 to 10 g a day (Batool 2026).
 - **Creatine**: evidence supports muscle preservation, cognitive function, and exercise performance — difficult to obtain in adequate amounts from diet alone without high red meat intake.
 

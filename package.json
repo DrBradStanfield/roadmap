@@ -64,6 +64,7 @@
     "@types/react": "^18.2.31",
     "@types/react-dom": "^18.2.14",
     "@vitejs/plugin-react": "^4.2.0",
+    "esbuild": "^0.28.2",
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^10.0.1",
     "jsdom": "^29.1.1",
@@ -71,7 +72,7 @@
     "prettier": "^3.2.4",
     "tsx": "4.23.13",
     "typescript": "^5.2.2",
-    "vite": "^6.2.2"
+    "vite": "^6.4.4"
   },
   "workspaces": [
     "packages/*",
@@ -82,7 +83,7 @@
   ],
   "resolutions": {
     "minimatch": "9.0.9",
-    "vite": "^6.2.2"
+    "vite": "^6.4.4"
   },
   "overrides": {
     "minimatch": "9.0.9",
@@ -90,7 +91,7 @@
     "tsup": {
       "esbuild": "^0.28.1"
     },
-    "vite": "^6.2.2"
+    "vite": "^6.4.4"
   },
   "author": "bradstanfield"
 }

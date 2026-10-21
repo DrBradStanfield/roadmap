@@ -10,9 +10,10 @@
 -- applies what's missing. This is the canonical way to apply schema changes:
 -- edit this file, paste the whole thing into the SQL Editor, run.
 --
--- RLS is enforced at the database level. The app uses:
---   - Service key (supabaseAdmin) for user creation and profile lookups only
---   - Anon key + custom JWT (createUserClient) for all data queries
+-- RLS is enforced at the database level. Health data no longer lives here
+-- (v2, 2026-06-12). The server uses:
+--   - Service key (supabaseAdmin) for ops tables, user creation and both RPCs it calls
+--   - Anon key + custom JWT (createUserClient) for a logged-in user's chat rows
 -- RLS policies use auth.uid() to scope every query to the authenticated user.
 
 -- ===== Create profiles table =====
@@ -121,7 +122,8 @@ BEGIN
   INSERT INTO public.profiles (id, shopify_customer_id, email)
   VALUES (
     NEW.id,
-    NEW.raw_user_meta_data->>'shopify_customer_id',
+    -- User metadata is editable by the account holder; only admins own this link.
+    NEW.raw_app_meta_data->>'shopify_customer_id',
     NEW.email
   )
   ON CONFLICT (id) DO NOTHING;
@@ -208,9 +210,8 @@ CREATE POLICY "Users can read own profile"
   ON profiles FOR SELECT
   USING (id = auth.uid());
 
-CREATE POLICY "Users can update own profile"
-  ON profiles FOR UPDATE
-  USING (id = auth.uid());
+-- No write policy: only the service role writes profiles (US-09 AC27). The
+-- DROP above removes the old "Users can update own profile" policy.
 
 -- ===== Health measurements policies =====
 -- No UPDATE policy — records are immutable (Apple Health model: delete + re-add).
@@ -231,7 +232,13 @@ CREATE POLICY "Users can delete own measurements"
 -- Explicit grants ensure the authenticated role can access tables after DROP/CREATE.
 -- Without these, the anon key + custom JWT client silently fails.
 
-GRANT SELECT, UPDATE ON profiles TO authenticated;
+-- RLS scopes rows, not columns. Remove the table-wide privileges Supabase grants
+-- by default (live 2026-10-21: anon and authenticated held INSERT, UPDATE,
+-- DELETE and TRUNCATE; TRUNCATE ignores RLS). Identity links, email, credits
+-- and plan are admin-owned (US-09 AC27): no code writes profiles except
+-- through the service role, so authenticated keeps SELECT only (getProfile).
+REVOKE ALL ON profiles FROM anon, authenticated;
+GRANT SELECT ON profiles TO authenticated;
 GRANT SELECT, INSERT, DELETE ON health_measurements TO authenticated;
 
 -- ============================================================
@@ -353,7 +360,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
-GRANT EXECUTE ON FUNCTION correct_measurement(UUID, NUMERIC, TIMESTAMPTZ) TO authenticated;
+-- EXECUTE is locked down in the closing section of this file.
 
 -- Two active rows must NOT share (user_id, metric_type, recorded_at).
 -- Catches the case where the LLM extracts a lab report's "current + previous"
@@ -681,6 +688,9 @@ BEGIN
   ORDER BY m.metric_type, m.recorded_at DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+-- DROP + CREATE resets the grants to Supabase's open defaults: close them here
+-- too, so running this section alone stays locked (US-09 AC26).
+REVOKE EXECUTE ON FUNCTION public.get_latest_measurement_dates(uuid) FROM PUBLIC, anon, authenticated;
 
 -- ===== Cron lock table =====
 -- Coordinates the reminder cron job across multiple Fly.io machines.
@@ -885,13 +895,34 @@ CREATE POLICY "Users can delete own conversations"
 
 DROP POLICY IF EXISTS "Users can view own messages" ON chat_messages;
 CREATE POLICY "Users can view own messages"
-  ON chat_messages FOR SELECT USING (user_id = auth.uid());
+  ON chat_messages FOR SELECT USING (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM chat_conversations
+      WHERE chat_conversations.id = chat_messages.conversation_id
+        AND chat_conversations.user_id = auth.uid()
+    )
+  );
 DROP POLICY IF EXISTS "Users can create own messages" ON chat_messages;
 CREATE POLICY "Users can create own messages"
-  ON chat_messages FOR INSERT WITH CHECK (user_id = auth.uid());
+  ON chat_messages FOR INSERT WITH CHECK (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM chat_conversations
+      WHERE chat_conversations.id = chat_messages.conversation_id
+        AND chat_conversations.user_id = auth.uid()
+    )
+  );
 DROP POLICY IF EXISTS "Users can delete own messages" ON chat_messages;
 CREATE POLICY "Users can delete own messages"
-  ON chat_messages FOR DELETE USING (user_id = auth.uid());
+  ON chat_messages FOR DELETE USING (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM chat_conversations
+      WHERE chat_conversations.id = chat_messages.conversation_id
+        AND chat_conversations.user_id = auth.uid()
+    )
+  );
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON chat_conversations TO authenticated;
 GRANT SELECT, INSERT, DELETE ON chat_messages TO authenticated;
@@ -961,7 +992,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
-GRANT EXECUTE ON FUNCTION deduct_message_credit(UUID) TO authenticated;
+-- EXECUTE is locked down in the closing section of this file.
 
 -- Atomic credit addition RPC (prevents race conditions on concurrent orders)
 CREATE OR REPLACE FUNCTION add_message_credits(
@@ -980,7 +1011,7 @@ EXCEPTION WHEN unique_violation THEN RETURN NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
-GRANT EXECUTE ON FUNCTION add_message_credits(UUID, INT, TEXT) TO authenticated;
+-- EXECUTE is locked down in the closing section of this file.
 
 -- ===== Create medication_history table =====
 -- Immutable, append-only log of medication changes (FHIR MedicationStatement pattern).
@@ -1406,6 +1437,8 @@ CREATE OR REPLACE FUNCTION youtube_bot_cleanup_skipped()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+-- The body names youtube_bot_log unqualified, so '' would break it.
+SET search_path = public, pg_temp
 AS $$
 BEGIN
   DELETE FROM youtube_bot_log
@@ -1540,3 +1573,36 @@ NOTIFY pgrst, 'reload schema';
 -- router_input_tokens; NULL when the router did not run.
 ALTER TABLE chat_match_events ADD COLUMN IF NOT EXISTS router_output_tokens integer;
 NOTIFY pgrst, 'reload schema';
+
+-- ===== Lock down SECURITY DEFINER functions (2026-10-21) =====
+-- KEEP THIS SECTION LAST. A definer function runs with its owner's rights,
+-- and Postgres grants EXECUTE to PUBLIC on every new function; Supabase's
+-- default privileges add anon and authenticated. So anyone holding the anon
+-- key could call these through PostgREST /rpc. Re-running the file
+-- re-creates get_latest_measurement_dates (DROP + CREATE resets its ACL), so
+-- these revokes must run after every CREATE above.
+--
+-- Callers (repo + claude_business, 2026-10-21): add_message_credits
+-- (webhooks.orders-paid -> supabaseAdmin) and youtube_bot_cleanup_skipped
+-- (youtube-bot.server cron -> supabaseAdmin), both with the service key.
+-- No other function here has a caller. handle_new_user is the
+-- on_auth_user_created trigger on auth.users; Postgres checks EXECUTE on a
+-- trigger function only at CREATE TRIGGER, never when the trigger fires.
+REVOKE EXECUTE ON FUNCTION public.get_latest_measurement_dates(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.correct_measurement(uuid, numeric, timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.add_message_credits(uuid, integer, text) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.deduct_message_credit(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.youtube_bot_cleanup_skipped() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.add_message_credits(uuid, integer, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.youtube_bot_cleanup_skipped() TO service_role;
+ALTER FUNCTION public.youtube_bot_cleanup_skipped() SET search_path = public, pg_temp;
+--
+-- Rollback (restores the pre-2026-10-21 ACLs exactly):
+--   GRANT EXECUTE ON FUNCTION public.get_latest_measurement_dates(uuid) TO PUBLIC, anon, authenticated;
+--   GRANT EXECUTE ON FUNCTION public.correct_measurement(uuid, numeric, timestamptz) TO PUBLIC, anon, authenticated;
+--   GRANT EXECUTE ON FUNCTION public.add_message_credits(uuid, integer, text) TO PUBLIC, anon, authenticated;
+--   GRANT EXECUTE ON FUNCTION public.deduct_message_credit(uuid) TO PUBLIC, anon, authenticated;
+--   GRANT EXECUTE ON FUNCTION public.handle_new_user() TO PUBLIC, anon, authenticated;
+--   GRANT EXECUTE ON FUNCTION public.youtube_bot_cleanup_skipped() TO PUBLIC, anon, authenticated;
+--   ALTER FUNCTION public.youtube_bot_cleanup_skipped() RESET search_path;

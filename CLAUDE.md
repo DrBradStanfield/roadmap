@@ -1,10 +1,9 @@
 # CLAUDE.md
 
-Context for Claude Code in this repo. Depth lives in on-demand docs:
-[docs/reference.md](docs/reference.md) (FHIR detail, file inventory, data model,
-A/B, endpoints, gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md)
-(manual deploy, build flags, two-app split, env vars, scaling) ·
-[docs/architecture-v2.md](docs/architecture-v2.md) (visual system map; the entry point for new threads).
+Context for Claude Code in this repo. Depth lives in on-demand docs: [docs/reference.md](docs/reference.md) (FHIR detail,
+file inventory, data model, A/B, endpoints, gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md) (manual deploy, build flags, two-app split, env vars, scaling) ·
+[docs/architecture-v2.md](docs/architecture-v2.md) (visual system map; the entry point for new threads) ·
+[docs/ai-discoverability.md](docs/ai-discoverability.md) (AI visibility: what's live, listings, rules; update it with every change).
 
 ## Project Overview
 
@@ -40,8 +39,8 @@ A/B + product events, reminders, Klaviyo, hosted MCP (mcp.drstanfield.com).
   docs/reference.md). No health values, ever.
 - Two builds, same source: Shopify storefront (`build:shopify-prod`, both
   stores; tool page on drstanfield.com only, microvitamin.com runs the chat)
-  and GitHub Pages self-host (`build:pages`, no Brad server, BYOK). Flags:
-  `VITE_LOCAL_FIRST` (all v2), `VITE_SHOPIFY_SURFACE` (Shopify only — gates Brad-server features). Detail: docs/deploy-runbook.md.
+  and GitHub Pages self-host (`build:pages`, no Brad server, BYOK). Flags: `VITE_LOCAL_FIRST` (all v2), `VITE_SHOPIFY_SURFACE` (Shopify only — gates Brad-server features). Detail: docs/deploy-runbook.md.
+- **iOS app (native SwiftUI, spike under way):** lives in `ios/`; every decision and its why: [ios/architecture.md](ios/architecture.md) — keep it current.
 
 ## Clinical Content — three-file sync (HARD RULE)
 

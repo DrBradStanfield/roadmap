@@ -15,7 +15,7 @@ vi.mock('./chat-history-access', () => ({
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: false }));
 
 import * as Sentry from '@sentry/react';
-import { listConversations, sendMessage } from './chat-api';
+import { deleteConversation, listConversations, loadConversation, sendMessage } from './chat-api';
 
 // US-15 AC3: a transient upstream failure — a 5xx whose body is not our
 // handler's JSON (the Shopify proxy / Fly edge answered, not our route) — is
@@ -133,5 +133,123 @@ describe('chat-api transient upstream retry (US-15 AC3)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result).toBeNull();
     expect(Sentry.captureMessage).toHaveBeenCalledWith('Chat listConversations failed', expect.anything());
+  });
+});
+
+// US-15 AC6a: a guest's identity is its session token plus its IP, so a new IP
+// is a new guest who does not own the stored thread, and every send in it
+// answers 404. The guest's 404 carries the session the server just gave it;
+// the client keeps that session and sends the message once in a fresh
+// conversation, so it is neither lost nor sent twice. A customer's 404 is shown.
+describe('chat-api: a thread the server no longer recognizes (US-15 AC6a)', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+  const bodyOf = (call: number) => JSON.parse(fetchMock.mock.calls[call][1].body);
+  const guestNotFound = (sessionToken: string) =>
+    new Response(JSON.stringify({ success: false, error: 'Conversation not found', sessionToken, isGuest: true }), {
+      status: 404, headers: { 'Content-Type': 'application/json' },
+    });
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const stored = new Map<string, string>([['health_roadmap_guest_session', 'old-tok']]);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => stored.get(k) ?? null,
+      setItem: (k: string, v: string) => { stored.set(k, v); },
+      removeItem: (k: string) => { stored.delete(k); },
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('US-15 AC6a: a guest 404 for the stored thread resends the message once, in a new conversation, on the session it handed back', async () => {
+    fetchMock
+      .mockResolvedValueOnce(guestNotFound('new-tok'))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true, conversationId: 'c2', messageId: 'm2', content: 'hi', sessionToken: 'new-tok', isGuest: true }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      }));
+
+    const { result, error } = await sendMessage('my message', 'c1', null);
+
+    expect(error).toBeNull();
+    expect(result?.conversationId).toBe('c2');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(bodyOf(0)).toMatchObject({ message: 'my message', conversationId: 'c1', sessionToken: 'old-tok' });
+    expect(bodyOf(1)).toMatchObject({ message: 'my message', sessionToken: 'new-tok' });
+    expect(bodyOf(1)).not.toHaveProperty('conversationId');
+    expect(localStorage.getItem('health_roadmap_guest_session')).toBe('new-tok');
+  });
+
+  it('US-15 AC6a: a signed-in customer\'s 404 is shown, not forked into a new thread', async () => {
+    fetchMock.mockResolvedValueOnce(jsonError(404, 'Conversation not found'));
+
+    const { result, error } = await sendMessage('my message', 'c1', null);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result).toBeNull();
+    expect(error?.error).toBe('Conversation not found');
+  });
+
+  it('US-15 AC6a: a 404 on a message that named no thread is an error, not a resend', async () => {
+    fetchMock.mockResolvedValueOnce(guestNotFound('new-tok'));
+
+    const { result, error } = await sendMessage('my message', null, null);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result).toBeNull();
+    expect(error?.error).toBe('Conversation not found');
+  });
+
+  it('US-15 AC6a: a 404 in the new conversation too surfaces the error after two requests', async () => {
+    fetchMock
+      .mockResolvedValueOnce(guestNotFound('new-tok'))
+      .mockResolvedValueOnce(guestNotFound('new-tok'));
+
+    const { result, error } = await sendMessage('my message', 'c1', null);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result).toBeNull();
+    expect(error?.error).toBe('Conversation not found');
+  });
+
+  it('US-15 AC6a: the resend carries the handed-back token even when storage refuses the write', async () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => 'old-tok',
+      setItem: () => { throw new Error('QuotaExceededError'); },
+      removeItem: () => {},
+    });
+    fetchMock
+      .mockResolvedValueOnce(guestNotFound('new-tok'))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true, conversationId: 'c2', messageId: 'm2', content: 'hi', sessionToken: 'new-tok', isGuest: true }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      }));
+
+    const { result } = await sendMessage('my message', 'c1', null);
+
+    expect(result?.conversationId).toBe('c2');
+    expect(bodyOf(1)).toMatchObject({ message: 'my message', sessionToken: 'new-tok' });
+  });
+
+  it('US-15 AC6a: loading a guest thread that 404s keeps the handed-back session and reports the thread gone', async () => {
+    fetchMock.mockResolvedValueOnce(guestNotFound('new-tok'));
+
+    expect(await loadConversation('c1')).toBeNull();
+    expect(localStorage.getItem('health_roadmap_guest_session')).toBe('new-tok');
+  });
+
+  it('US-15 AC6a: a customer\'s 404 on load stays an empty thread', async () => {
+    fetchMock.mockResolvedValueOnce(jsonError(404, 'Conversation not found'));
+
+    expect(await loadConversation('c1')).toEqual([]);
+  });
+
+  it('US-15 AC6a: deleting a guest thread that 404s keeps the handed-back session and counts as gone', async () => {
+    fetchMock.mockResolvedValueOnce(guestNotFound('new-tok'));
+
+    expect(await deleteConversation('c1')).toBe(true);
+    expect(localStorage.getItem('health_roadmap_guest_session')).toBe('new-tok');
   });
 });

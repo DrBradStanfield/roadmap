@@ -63,7 +63,7 @@ beforeEach(() => {
   mocks.auth.mockResolvedValue({ client: { from: mocks.from }, userId: '12345678-1234-4234-8234-123456789abc', customerId: '7001', admin: {} });
   mocks.from.mockReset().mockImplementation(() => {
     const q: any = {};
-    for (const m of ['select', 'eq', 'order', 'limit', 'single', 'update', 'delete', 'insert']) q[m] = () => q;
+    for (const m of ['select', 'eq', 'order', 'limit', 'single', 'maybeSingle', 'update', 'delete', 'insert']) q[m] = () => q;
     q.then = (resolve: any, reject: any) => Promise.resolve({ data: { id: '12345678-1234-4234-8234-123456789abc' }, error: null }).then(resolve, reject);
     return q;
   });
@@ -112,7 +112,7 @@ describe('US-49 AC6 — the chat turn', () => {
   it('Codex C2: a double-sent message is answered again, never replayed as text without its card', async () => {
     mocks.from.mockReset().mockImplementation((table: string) => {
       const q: any = {};
-      for (const m of ['select', 'eq', 'order', 'limit', 'single', 'update', 'delete', 'insert']) q[m] = () => q;
+      for (const m of ['select', 'eq', 'order', 'limit', 'single', 'maybeSingle', 'update', 'delete', 'insert']) q[m] = () => q;
       const history = [
         { role: 'user', content: 'Please cancel my MicroVitamin subscription', created_at: new Date().toISOString(), is_fallback: false },
         { role: 'assistant', content: 'Press Confirm below to cancel it.', created_at: new Date().toISOString(), is_fallback: false },

@@ -277,10 +277,14 @@ export function migrateFile(
   // localStorage mirror the failure path falls back to included, leaving no
   // way to persist anything again.
   const rowsOf = <T>(rows: unknown): T[] => asArray<T>(rows).filter((r) => isObject(r));
+  // Only id-bearing arrays require IDs. Dropped rows are absent on a later
+  // save, not quarantined or assigned IDs.
+  const idRowsOf = <T>(rows: unknown): T[] => rowsOf<T>(rows)
+    .filter((r) => isObject(r) && typeof r.id === 'string' && r.id.length > 0);
   const stamped = <T>(rows: unknown): T[] => rowsOf<T>(rows).map((r) => sanitizeStamp(r, anchor));
   // US-29 AC4: omit malformed clinical days; never invent a date or move a
   // valid observation to another slot. Keep the original timestamp and zone.
-  const dated = <T extends { recordedAt: string }>(rows: unknown): T[] => rowsOf<T>(rows)
+  const dated = <T extends { recordedAt: string }>(rows: unknown): T[] => idRowsOf<T>(rows)
     .filter((r) => isClinicalDay(r.recordedAt))
     .map((r) => sanitizeCreatedAt(r, anchor));
   // Profile and screenings: the object's own stamp, and each field's (US-10
@@ -310,13 +314,13 @@ export function migrateFile(
     meta,
     profile: singleton(raw.profile),
     measurements: dated(raw.measurements),
-    medications: stamped(raw.medications),
-    medicationHistory: stamped(raw.medicationHistory),
-    supplements: stamped(raw.supplements),
-    supplementHistory: stamped(raw.supplementHistory),
+    medications: stamped(idRowsOf(raw.medications)),
+    medicationHistory: stamped(idRowsOf(raw.medicationHistory)),
+    supplements: stamped(idRowsOf(raw.supplements)),
+    supplementHistory: stamped(idRowsOf(raw.supplementHistory)),
     screenings: singleton(raw.screenings),
     labValues: withSiCorrections(dated<FileLabValue>(raw.labValues)),
-    documents: rowsOf(raw.documents),
+    documents: idRowsOf(raw.documents),
     reminderPreferences: stamped(raw.reminderPreferences),
     recommendationSnapshots: rowsOf(raw.recommendationSnapshots),
     // Absent stays absent — present-beats-absent is how a cancellation wins.

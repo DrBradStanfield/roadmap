@@ -183,6 +183,27 @@ async function refreshSubscriptionIfStale(
   return plan;
 }
 
+// A guest's 404 hands back its session, which a changed IP may just have
+// minted, so the client's one resend reuses it (US-15 AC6a).
+const conversationNotFound = (auth?: AuthResult) => Response.json({
+  success: false, error: 'Conversation not found',
+  ...(auth?.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
+}, { status: 404 });
+
+async function checkConversationParent(auth: AuthResult, conversationId: string): Promise<Response | null> {
+  const { data: parent, error } = await auth.client
+    .from('chat_conversations')
+    .select('id')
+    .eq('id', conversationId)
+    .eq('user_id', auth.userId)
+    .maybeSingle();
+  if (error) {
+    reportChatError('Chat: Failed to check conversation');
+    return Response.json({ success: false, error: 'Failed to check conversation' }, { status: 500 });
+  }
+  return parent ? null : conversationNotFound(auth);
+}
+
 // ---------------------------------------------------------------------------
 // GET — list conversations or load conversation messages
 // ---------------------------------------------------------------------------
@@ -202,6 +223,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       // unsigned one gets its 400; a duplicated id that passes it is still a
       // guest (US-09 AC24). A bare GET skips it (US-15 AC9).
       if (url.searchParams.getAll('logged_in_customer_id').some((v) => v !== '')) await authenticate.public.appProxy(request);
+      // No token, no customer: no principal owns any thread (US-15 AC6a).
+      if (conversationId) return conversationNotFound();
       return Response.json({
         success: true,
         conversations: [],
@@ -212,6 +235,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const auth = await getAuthOrGuest(request, sessionToken, url.searchParams.get('localFirst') === '1');
 
     if (conversationId) {
+      const parentFailure = await checkConversationParent(auth, conversationId);
+      if (parentFailure) return parentFailure;
       const { data, error } = await auth.client
         .from('chat_messages')
         .select('id, role, content, created_at')
@@ -325,10 +350,13 @@ export async function action({ request }: ActionFunctionArgs) {
     // ----- DELETE -----
     if (request.method === 'DELETE') {
       const { conversationId } = body;
+      const parentFailure = await checkConversationParent(auth, conversationId);
+      if (parentFailure) return parentFailure;
       const { error } = await auth.client
         .from('chat_conversations')
         .delete()
-        .eq('id', conversationId);
+        .eq('id', conversationId)
+        .eq('user_id', auth.userId);
 
       if (error) {
         reportChatError('Chat: Failed to delete conversation');
@@ -358,6 +386,10 @@ export async function action({ request }: ActionFunctionArgs) {
     // transcripts server-side and load them here; is_fallback is needed for
     // the dedup check below, created_at for the time window.
     const widget = body.localFirst === true;
+    if (conversationId && !widget) {
+      const parentFailure = await checkConversationParent(auth, conversationId);
+      if (parentFailure) return parentFailure;
+    }
     let history: Turn[] = widget ? readClientHistory(body.history) : [];
     let storedHistory: DedupHistoryItem[] = [];
     if (conversationId && !widget) {

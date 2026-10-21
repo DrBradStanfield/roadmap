@@ -1012,7 +1012,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Micronutrient base',
-      description: 'A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO\'s 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements for dementia risk reduction in people without a diagnosed deficiency. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials.',
+      description: 'A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO\'s 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials.',
       ingredients: [
         'Methylated B-complex',
         'Vitamin D3 with K2',
@@ -1042,7 +1042,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Omega-3',
-      description: 'A meta-analysis of interventional trials found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death, with dose-dependent benefits strongest for EPA-rich formulations. In trials, omega-3 slightly raised the risk of atrial fibrillation at 1 g a day or less, and more so above 1 g. Dr Stanfield suggests about 1 g a day of EPA and DHA combined: benefit may rise with dose, but so may the risk of atrial fibrillation. In one trial (VITACOG), B vitamins slowed brain atrophy only in people with good omega-3 levels.',
+      description: 'A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO\'s 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health.',
     },
     {
       id: 'supplement-sleep',

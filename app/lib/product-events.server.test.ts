@@ -149,6 +149,15 @@ describe('the hosted MCP counters', () => {
     expect(event.success).toBe(true);
   });
 
+  it('takes the two knowledge tools by name, and no query text (US-41 AC12)', () => {
+    for (const tool of ['search_knowledge', 'get_article']) {
+      const metadata = { tool, client: 'chatgpt', outcome: 'ok' };
+      expect(productEventSchema.safeParse({ eventName: 'mcp_tool_call', visitorId: SERVER_VISITOR_ID, metadata }).success).toBe(true);
+    }
+    const metadata = { tool: 'search_knowledge', client: 'chatgpt', outcome: 'ok', query: 'magnesium sleep' };
+    expect(productEventSchema.safeParse({ eventName: 'mcp_tool_call', visitorId: SERVER_VISITOR_ID, metadata }).success).toBe(false);
+  });
+
   it('refuses a tool that is not published, and an assistant that names itself', () => {
     for (const metadata of [
       { tool: 'delete_everything', client: 'claude', outcome: 'ok' },
