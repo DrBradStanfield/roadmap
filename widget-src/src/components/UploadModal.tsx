@@ -701,10 +701,11 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
 
   const handleCancel = () => { resetSession(); };
 
-  const handleSave = useCallback(async ({ values: selectedValues, documents, labValues }: {
+  const handleSave = useCallback(async ({ values: selectedValues, documents, labValues, reviewed }: {
     values: ReviewedValue[];
     documents: DocumentToSave[];
     labValues: ReviewedLabValue[];
+    reviewed: FileResult[];
   }) => {
     if (savingRef.current) return;
     savingRef.current = true;
@@ -740,9 +741,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         file: d.file,
       }));
       const covered = new Set(documents.map(d => d.sourceFileName));
-      docPayloads.push(...synthesizeLabArchiveEntries(results, covered));
-      // A letter the connector filed metadata-only: unselected here, still archived (US-35 AC8).
-      docPayloads.push(...connectorDocumentEntries(results, history.documents, covered));
+      docPayloads.push(...synthesizeLabArchiveEntries(reviewed, covered));
+      // A letter the connector filed metadata-only: unselected here, still archived
+      // (US-35 AC8), with the title and date the review shows (US-13 AC6).
+      docPayloads.push(...connectorDocumentEntries(reviewed, history.documents, covered));
       const labValuePayloads = labValues.map(lv => ({
         metricName: lv.name,
         value: lv.value,
@@ -810,7 +812,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       savingRef.current = false;
       setIsSaving(false);
     }
-  }, [onComplete, onScreeningUpdate, results, history.documents]);
+  }, [onComplete, onScreeningUpdate, history.documents]);
 
   // One report can refuse the same test on several dates; the user needs it
   // named once. A note says what to look for instead, where there is one, and

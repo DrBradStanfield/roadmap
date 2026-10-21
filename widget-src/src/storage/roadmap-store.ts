@@ -23,7 +23,7 @@
  *    build hides them.
  *  - Medication-history chart annotations use explicit change types saved at write time.
  */
-import { sha256Blob } from '../lib/archive-payloads';
+import { isLabArchiveDocument, sha256Blob } from '../lib/archive-payloads';
 import {
   buildDocumentRef,
   type BulkRow,
@@ -390,7 +390,8 @@ export class RoadmapStore {
    * `contentHash` is ONE key for the website and the connector (US-35 AC6): a
    * live row that carries the hash AND a `fileRef` is the archived original,
    * so the upload is a no-op; a row with the hash and no `fileRef` came in
-   * through the connector metadata-only, and THIS upload is the user archiving
+   * through the connector metadata-only (or is a website save whose blob
+   * failed), and THIS upload, of the same kind, is the user archiving
    * that original — the new row lands with the blob and the old one is
    * tombstoned, never edited (documents are immutable under merge).
    */
@@ -409,20 +410,28 @@ export class RoadmapStore {
     // review step dedups extracted VALUES but knows nothing about originals.
     const hashed = this.file.documents.filter((d) => !d.deleted && d.contentHash);
     const archived = new Set(hashed.filter((d) => d.fileRef).map((d) => d.contentHash));
-    const metadataOnly = new Map(hashed.filter((d) => !d.fileRef).map((d) => [d.contentHash, d]));
+    // A metadata-only row is replaced only by an upload of its own kind, a lab
+    // archive or a shown document (US-14 AC4): `deleted` is OR-ed on merge, so
+    // a letter tombstoned by a lab re-read would be gone for good. Kind, not
+    // type: the type is the model's per-run guess.
+    const kindKey = (doc: { documentType: string; title: string; contentMd: string; metadata: Record<string, unknown> }, hash: string) =>
+      `${isLabArchiveDocument(doc) ? 'lab' : 'shown'}|${hash}`;
+    const metadataOnly = new Map(hashed.filter((d) => !d.fileRef).map((d) => [kindKey(toApiDocument(d), d.contentHash), d]));
 
     // Phase 1 (serial, order-dependent): dedup by hash, assign collision-safe
     // refs, build the metadata rows.
-    const writes: Array<{ doc: FileDocument; ref: string; file: Blob; hash: string; supersedes?: FileDocument; failed?: boolean }> = [];
+    const writes: Array<{ doc: FileDocument; ref: string; file: Blob; supersedes?: FileDocument; failed?: boolean }> = [];
     for (const d of documents) {
       const hash = d.file ? await sha256Blob(d.file) : null;
       if (hash) {
         if (archived.has(hash)) continue; // identical original already archived
         archived.add(hash);
       }
+      // The hash is the bytes' identity even when the blob write fails, so a
+      // later upload of the same bytes can replace this row (US-14 AC4).
       const doc: FileDocument = {
         id: newId(), title: d.title, type: d.documentType as DocumentType, date: d.documentDate,
-        fileRef: '', contentHash: '', mimeType: '', extractedText: d.contentMd,
+        fileRef: '', contentHash: hash ?? '', mimeType: '', extractedText: d.contentMd,
         addedAt: new Date().toISOString(), metadata: d.metadata, sourceFileName: d.sourceFileName,
       };
       if (d.file) {
@@ -436,7 +445,7 @@ export class RoadmapStore {
         existingRefs.add(ref);
         // The connector's metadata-only row for these bytes is tombstoned only
         // once the blob lands: a failed write must not lose the hash key.
-        writes.push({ doc, ref, file: d.file, hash: hash!, supersedes: metadataOnly.get(hash!) });
+        writes.push({ doc, ref, file: d.file, supersedes: metadataOnly.get(kindKey(d, hash!)) });
       }
       out.push(doc);
     }
@@ -452,7 +461,6 @@ export class RoadmapStore {
       try {
         await this.host.store.writeDocument(w.ref, w.file);
         w.doc.fileRef = w.ref;
-        w.doc.contentHash = w.hash;
         w.doc.mimeType = w.file.type || '';
       } catch (error) {
         console.warn('Document file not stored');

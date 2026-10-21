@@ -75,17 +75,22 @@ function isArchivableFile(r: FileResult, alreadyCovered: Set<string | null>): bo
   return !!r.document || r.values.length > 0 || r.additionalValues.length > 0;
 }
 
+/** A stored row as the archive step reads it. */
+type ExistingDoc = Pick<ApiDocument, 'contentHash' | 'fileRef' | 'documentType' | 'title' | 'contentMd' | 'metadata'>;
+
 /**
  * Unarchived lab originals remain saveable after their values become history
  * context (US-12 AC6). Unselected letters require a matching metadata-only
- * connector row (US-35 AC8), so deselecting a new letter still excludes it.
+ * shown-document row (the connector's, or a website save whose blob failed;
+ * US-35 AC8, US-14 AC4), so deselecting a new letter still excludes it, and a
+ * lab-archive row never stands in for one: the store replaces only its own kind.
  */
 export function unarchivedOriginals(
   results: FileResult[],
-  existing: ReadonlyArray<Pick<ApiDocument, 'contentHash' | 'fileRef'>>,
+  existing: ReadonlyArray<ExistingDoc>,
   alreadyCovered: Set<string | null>,
 ): FileResult[] {
-  const pending = new Set(existing.filter((d) => d.contentHash && !d.fileRef).map((d) => d.contentHash));
+  const pending = new Set(existing.filter((d) => d.contentHash && !d.fileRef && !isLabArchiveDocument(d)).map((d) => d.contentHash));
   const archived = new Set(existing.filter((d) => d.contentHash && d.fileRef).map((d) => d.contentHash));
   return results.filter((r) => isArchivableFile(r, alreadyCovered)
     && !archived.has(r.contentHash) && (!r.document || pending.has(r.contentHash)));
@@ -98,7 +103,7 @@ export function unarchivedOriginals(
  */
 export function connectorDocumentEntries(
   results: FileResult[],
-  existing: ReadonlyArray<Pick<ApiDocument, 'contentHash' | 'fileRef'>>,
+  existing: ReadonlyArray<ExistingDoc>,
   alreadyCovered: Set<string | null>,
 ): ArchiveDocPayload[] {
   return unarchivedOriginals(results, existing, alreadyCovered)

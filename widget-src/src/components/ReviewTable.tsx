@@ -96,6 +96,10 @@ interface ReviewTableProps {
     values: ReviewedValue[];
     documents: DocumentToSave[];
     labValues: ReviewedLabValue[];
+    /** Every result as reviewed: its report date (the column day, or null) and
+     *  its document's title and date. The archive files originals from these,
+     *  an unselected document included (US-13 AC6). */
+    reviewed: FileResult[];
   }) => void;
   onCancel: () => void;
   isSaving: boolean;
@@ -145,7 +149,20 @@ function longDate(day: string): string | null {
 /** A column's date when it is a calendar day that has happened, else null:
  *  only then is it set, and Save allowed (US-13 AC8). */
 function columnDay(date: FullDate): string | null {
-  return date.day ? validDay(fullDateToIso(date), { now: new Date().toISOString() }) : null;
+  return date.day ? pastDay(fullDateToIso(date)) : null;
+}
+
+/** A calendar day that has happened, by this device's clock, or null. */
+function pastDay(raw: string | null | undefined): string | null {
+  return validDay(raw, { now: new Date().toISOString() });
+}
+
+/** The model's document date as review state (US-13 AC6), read as the
+ *  connector reads it: a past calendar day, else unknown. A month alone keeps
+ *  no day, which is the user's to pick, but it may still date a screening. */
+function readDocumentDate(raw: string | null | undefined): { day: string | null; month: string | null } {
+  const day = pastDay(raw);
+  return { day, month: !day && raw && /^\d{4}-\d{2}$/.test(raw) && pastDay(`${raw}-01`) ? raw : null };
 }
 
 function getDaysInMonth(month: string, year: string): number {
@@ -657,6 +674,14 @@ export function ReviewTable({
     });
   }, [docHistoryIndex, results]);
 
+  // A document's date is its own, never the blood-test column's: the day it
+  // saves, null until known or picked. A month alone still dates its
+  // screening update (US-13 AC6).
+  const extractedDocDates = useMemo(() => results.map(r => readDocumentDate(r.document?.documentDate)), [results]);
+  const [documentDates, setDocumentDates] = useState<Record<number, string | null>>(() =>
+    Object.fromEntries(extractedDocDates.map((d, fi) => [fi, d.day])));
+  const screeningDateFor = (fi: number) => documentDates[fi] ?? extractedDocDates[fi]?.month ?? null;
+
   // Per-document: editable title
   const [docTitles, setDocTitles] = useState<Record<number, string>>(() => {
     const map: Record<number, string> = {};
@@ -1002,31 +1027,33 @@ export function ReviewTable({
       }
     }
 
-    // Collect documents
+    // Every result as reviewed. The report date is the column's past day or
+    // unknown, never the extracted string (US-13 AC8).
+    const reviewed: FileResult[] = results.map((r, fi) => ({
+      ...r,
+      reportDate: columnDay(fileDates[fi]),
+      ...(r.document ? { document: { ...r.document, title: docTitles[fi] || r.document.title, documentDate: documentDates[fi] ?? null } } : {}),
+    }));
     const documents: DocumentToSave[] = [];
-    results.forEach((r, fi) => {
-      if (!r.document || !docChecked[fi]) return;
-      const date = fileDates[fi];
-      const dateStr = date.year && date.month ? fullDateToIso(date) : null;
-
-      const screeningType = r.document.metadata?.screeningType as string | undefined;
-      const screeningKey = screeningType ? `${screeningType}_last_date` : undefined;
-
+    reviewed.forEach(({ document: doc, fileName, file }, fi) => {
+      if (!doc || !docChecked[fi]) return;
+      const screeningType = doc.metadata?.screeningType as string | undefined;
+      const screeningDate = screeningDateFor(fi);
       documents.push({
-        documentType: r.document.classification,
-        title: docTitles[fi] || r.document.title,
-        documentDate: dateStr,
-        contentMd: r.document.contentMarkdown,
-        metadata: r.document.metadata,
-        sourceFileName: r.fileName,
-        screeningUpdate: screeningKey && screeningChecked[fi] && dateStr
-          ? { key: screeningKey, date: dateStr }
+        documentType: doc.classification,
+        title: doc.title,
+        documentDate: doc.documentDate,
+        contentMd: doc.contentMarkdown,
+        metadata: doc.metadata,
+        sourceFileName: fileName,
+        screeningUpdate: screeningType && screeningChecked[fi] && screeningDate
+          ? { key: `${screeningType}_last_date`, date: screeningDate }
           : undefined,
-        file: r.file,
+        file,
       });
     });
 
-    onSave({ values: selected, documents, labValues: selectedLabValues });
+    onSave({ values: selected, documents, labValues: selectedLabValues, reviewed });
   };
 
   return (
@@ -1077,7 +1104,9 @@ export function ReviewTable({
         const hasNothingForMatrix = !r.error && !r.document && r.values.length === 0 && r.additionalValues.length === 0;
         if (!r.error && !r.document && !hasNothingForMatrix) return null;
 
-        const date = fileDates[fi];
+        const documentDate = documentDates[fi] ?? null;
+        const month = extractedDocDates[fi]?.month;
+        const screeningDate = screeningDateFor(fi);
         const isDocDup = r.document ? isDocDuplicate(r.fileName, docHistoryIndex) : false;
 
         return (
@@ -1116,13 +1145,17 @@ export function ReviewTable({
 
                 <div className="review-file-date">
                   <span>Date:</span>
+                  {/* No day: an empty picker, "— Jun '24" for a month alone
+                      or "Date unknown", so any day picked sets it (US-13 AC6). */}
                   <DraftDateCell
-                    date={fullDateToIso(date)}
-                    needsDay={!date.day}
+                    date={documentDate ?? (month ? `${month}-01` : fullDateToIso(fileDates[fi]))}
+                    needsDay={!documentDate}
+                    placeholder={documentDate || month ? undefined : 'Date unknown'}
                     ariaLabel="Document date"
                     onChange={picked => {
-                      const parsed = parseIsoToFullDate(picked);
-                      if (parsed) setFileDates(prev => ({ ...prev, [fi]: parsed }));
+                      // Cleared is unknown; a day not yet happened is refused, never written.
+                      const day = pastDay(picked);
+                      if (!picked || day) setDocumentDates(prev => ({ ...prev, [fi]: day }));
                     }}
                   />
                 </div>
@@ -1136,12 +1169,13 @@ export function ReviewTable({
                   <label className="review-screening-update">
                     <input
                       type="checkbox"
-                      checked={screeningChecked[fi] ?? false}
+                      checked={!!screeningDate && (screeningChecked[fi] ?? false)}
+                      disabled={!screeningDate}
                       onChange={(e) => setScreeningChecked(prev => ({ ...prev, [fi]: e.target.checked }))}
                     />
                     <span>
                       Update <strong>{String(r.document.metadata.screeningType)}</strong> screening date
-                      {r.document.documentDate ? ` to ${r.document.documentDate}` : ''}
+                      {screeningDate ? ` to ${screeningDate}` : ' (pick the document date first)'}
                     </span>
                   </label>
                 )}
