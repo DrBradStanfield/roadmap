@@ -1,6 +1,6 @@
 ---
-title: "Massive Lp(a) Cholesterol Study FAILED. Now What?"
-url: "https://drstanfield.com/blogs/articles/massive-lpa-cholesterol-study-failed-now-what"
+title: "Lp(a) Cholesterol Study SHOCKS Cardiologists. Now What?"
+url: "https://drstanfield.com/blogs/articles/lpa-cholesterol-study-shocks-cardiologists-now-what"
 commerceUrl: "https://microvitamin.com/blogs/articles/lpa-horizon-trial-failed-what-it-means"
 youtube: "https://www.youtube.com/watch?v=1c7L_s4TqDs"
 publishedAt: "2026-10-20T20:15:14Z"
