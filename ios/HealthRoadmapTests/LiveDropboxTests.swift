@@ -1,7 +1,7 @@
 import XCTest
 @testable import HealthRoadmap
 
-/// US-25 AC8 against the REAL Dropbox, for the scratch account only
+/// US-25 AC11 against the REAL Dropbox, for the scratch account only
 /// (brad@microvitamin.com; never a drstanfield.com account). Skipped unless an
 /// access token for that account is passed at launch:
 ///   TEST_RUNNER_DROPBOX_E2E_TOKEN=<token> xcodebuild test ... -only-testing:HealthRoadmapTests/LiveDropboxTests

@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// Keeps the record in the user's Dropbox or Google Drive (US-25 AC8). It signs
+/// Keeps the record in the user's Dropbox or Google Drive (US-25 AC11). It signs
 /// in, opens the engine's cloud session, tells it when the app shows and hides,
 /// and turns what the engine reports into a status the Sync screen draws. It
 /// decides nothing about what is written: that is health-core's RecordSession,

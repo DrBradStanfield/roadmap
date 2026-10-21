@@ -1,7 +1,7 @@
 import Foundation
 import JavaScriptCore
 
-/// What the engine needs from the phone to sync (US-25 AC8): tokens, the
+/// What the engine needs from the phone to sync (US-25 AC11): tokens, the
 /// phone's record file, the pending marker and news of what happened.
 /// `CloudSync` provides it; ios/engine/cloud.ts `CloudNatives` is its twin.
 @MainActor

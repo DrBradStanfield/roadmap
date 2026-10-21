@@ -1,7 +1,7 @@
 import XCTest
 @testable import HealthRoadmap
 
-/// US-25 AC8: the web APIs ios/engine/shim.ts builds over the Swift natives
+/// US-25 AC11: the web APIs ios/engine/shim.ts builds over the Swift natives
 /// (EngineNatives), run in the app's own JavaScriptCore: fetch over URLSession,
 /// timers on the main queue, abort, and UTF-8. Node runs the same shim against
 /// a fake native in ios/engine/shim.test.ts.

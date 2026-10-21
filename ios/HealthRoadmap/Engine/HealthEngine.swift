@@ -84,6 +84,12 @@ final class HealthEngine {
         return try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
     }
 
+    /// Every value recorded for one metric, newest first, corrections included (US-25 AC9).
+    func history(recordJSON: String, metric: String, now: Date, deviceId: String) throws -> MetricHistory {
+        let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId])
+        return try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
+    }
+
     /// A typed number, read by the web's rule (health-core's `parseLocalisedNumber`):
     /// either decimal mark, and nil for anything that is not a plain decimal.
     func number(from text: String) throws -> Double? {

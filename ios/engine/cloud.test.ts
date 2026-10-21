@@ -1,4 +1,4 @@
-// US-25 AC8: the iPhone app's cloud sync (cloud.ts), run as the app runs it:
+// US-25 AC11: the iPhone app's cloud sync (cloud.ts), run as the app runs it:
 // the engine bundle in an empty context (no fetch, no timers, nothing but
 // ECMAScript, as in JavaScriptCore), the web APIs from shim.ts, and fake
 // natives in place of Swift: an in-memory Dropbox behind the HTTP native, the
@@ -136,8 +136,8 @@ async function recordWith(days: string[], device: string): Promise<RoadmapFile> 
 const days = (file: RoadmapFile) => file.measurements.filter((m) => m.status === 'active').map((m) => m.recordedAt.slice(0, 10)).sort();
 const add = (day: string) => JSON.stringify({ kind: 'add', metric: 'weight', value: 81, day });
 
-describe('cloud sync in the engine (US-25 AC8)', () => {
-  it('AC8a: first connect merges the phone record and the cloud record, dropping neither', async () => {
+describe('cloud sync in the engine (US-25 AC11)', () => {
+  it('AC11a: first connect merges the phone record and the cloud record, dropping neither', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const { engine } = await phone(dropbox, JSON.stringify(await recordWith(['2026-10-02'], 'ios-1')));
@@ -146,7 +146,7 @@ describe('cloud sync in the engine (US-25 AC8)', () => {
     expect(days(dropbox.record)).toEqual(['2026-10-01', '2026-10-02']);
   });
 
-  it('AC8b: an edit whose first write conflicts with another device ends with both rows', async () => {
+  it('AC11b: an edit whose first write conflicts with another device ends with both rows', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
@@ -163,7 +163,7 @@ describe('cloud sync in the engine (US-25 AC8)', () => {
     expect(state.pending).toBe(false);
   });
 
-  it('AC8c: a row the web added is taken in on a re-read', async () => {
+  it('AC11c: a row the web added is taken in on a re-read', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const { engine, state } = await phone(dropbox);
@@ -174,7 +174,7 @@ describe('cloud sync in the engine (US-25 AC8)', () => {
     expect(days(JSON.parse((JSON.parse(payload) as { record: string }).record) as RoadmapFile)).toContain('2026-10-05');
   });
 
-  it('AC8c: an erase made on another device is taken in, and a write made for the old screen is refused', async () => {
+  it('AC11c: an erase made on another device is taken in, and a write made for the old screen is refused', async () => {
     const dropbox = new FakeDropbox();
     const before = await recordWith(['2026-10-01'], 'web');
     dropbox.put(before);
@@ -191,7 +191,7 @@ describe('cloud sync in the engine (US-25 AC8)', () => {
     expect((JSON.parse(engine.cloudEdit(add('2026-10-06'), view.erase, NOW)) as { ok: boolean }).ok).toBe(true);
   });
 
-  it('AC8d: a save the cloud cannot take waits on the phone, marked pending, and goes up with the next session', async () => {
+  it('AC11d: a save the cloud cannot take waits on the phone, marked pending, and goes up with the next session', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const first = await phone(dropbox);
@@ -215,7 +215,7 @@ describe('cloud sync in the engine (US-25 AC8)', () => {
     expect(second.state.pending).toBe(false);
   });
 
-  it('AC8e: Disconnect copies the cloud record down onto the phone, and never writes the cloud', async () => {
+  it('AC11e: Disconnect copies the cloud record down onto the phone, and never writes the cloud', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01', '2026-10-02'], 'web'));
     const { engine, state } = await phone(dropbox, JSON.stringify(await recordWith([], 'ios-1')));

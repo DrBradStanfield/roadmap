@@ -8,7 +8,7 @@ struct OAuthTokens: Codable, Equatable, Sendable {
     var expiresAt: Date
 }
 
-/// The cloud tokens, in the Keychain (US-25 AC8, architecture.md D5): readable
+/// The cloud tokens, in the Keychain (US-25 AC11, architecture.md D5): readable
 /// once the phone has been unlocked after a restart, so a sync can run in the
 /// background, and never copied to a backup or another phone
 /// (`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`). The web keeps the same

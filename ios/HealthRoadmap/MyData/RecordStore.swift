@@ -20,7 +20,7 @@ final class RecordStore {
     private(set) var myData: MyData?
     /// Why the record cannot be read, if it cannot. The app then writes nothing.
     private(set) var problem: String?
-    /// While a cloud record is open (US-25 AC8): the erase the screen shows. Every
+    /// While a cloud record is open (US-25 AC11): the erase the screen shows. Every
     /// edit then goes through the engine's session, which refuses one made for
     /// another erase. Nil: the record is the phone's file, written here.
     private(set) var cloudErase: String?
@@ -66,7 +66,7 @@ final class RecordStore {
         }
     }
 
-    // MARK: Cloud (US-25 AC8)
+    // MARK: Cloud (US-25 AC11)
 
     /// Show the cloud record the engine opened or took in, and send edits to it.
     /// A record the screen cannot draw is not shown; the last good one stays.
@@ -129,6 +129,12 @@ final class RecordStore {
     /// A typed number, read by the web's rule; nil if it is not a plain decimal.
     func number(_ text: String) -> Double? {
         (try? engine.number(from: text)) ?? nil
+    }
+
+    /// Every value recorded for one metric (US-25 AC9); nil while the record cannot be read.
+    func history(for metric: String) -> MetricHistory? {
+        guard problem == nil else { return nil }
+        return try? engine.history(recordJSON: recordJSON, metric: metric, now: .now, deviceId: deviceId)
     }
 
     func apply(_ edit: RecordEdit) -> ApplyResult {

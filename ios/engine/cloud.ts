@@ -1,4 +1,4 @@
-// Cloud sync for the iPhone app (US-25 AC8; ios/architecture.md D2, D4, D5).
+// Cloud sync for the iPhone app (US-25 AC11; ios/architecture.md D2, D4, D5).
 // The record lives in the user's Dropbox or Google Drive, the same
 // health-roadmap.json the website uses. Everything that decides what is
 // written is health-core's: RecordSession (save loop, re-read, merge on

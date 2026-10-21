@@ -1,7 +1,7 @@
 import XCTest
 @testable import HealthRoadmap
 
-/// US-25 AC8e, AC8f: the words that say where the record is. Every privacy
+/// US-25 AC11e, AC11f: the words that say where the record is. Every privacy
 /// sentence must match what the code does (US-09 decisions, 2026-09-10).
 final class SyncStatusTextTests: XCTestCase {
     func testNotConnectedSaysThePhoneOnly() {

@@ -1,7 +1,7 @@
 import XCTest
 @testable import HealthRoadmap
 
-/// US-25 AC8, end to end inside the app: My data's store, the CloudSync, the
+/// US-25 AC11, end to end inside the app: My data's store, the CloudSync, the
 /// engine's RecordSession in JavaScriptCore, the fetch bridge, and a stubbed
 /// Dropbox with Dropbox's rev rules (StubHTTP). Node runs the engine half alone
 /// in ios/engine/cloud.test.ts.

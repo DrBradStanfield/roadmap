@@ -1,7 +1,7 @@
 import Foundation
 
-/// What the Sync screen and My data say about where the record is (US-25 AC8e,
-/// AC8f). Pure, so a test pins the words.
+/// What the Sync screen and My data say about where the record is (US-25 AC11e,
+/// AC11f). Pure, so a test pins the words.
 enum SyncStatusText {
     /// The status line's headline.
     static func headline(_ status: CloudSync.Status, provider: CloudProvider?) -> String {

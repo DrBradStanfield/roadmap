@@ -1,6 +1,6 @@
 import Foundation
 
-/// The two clouds the app can keep the record in (US-25 AC8, architecture.md D5),
+/// The two clouds the app can keep the record in (US-25 AC11, architecture.md D5),
 /// with what signing in to each needs. The raw values are health-core's backend
 /// ids, which ios/engine/cloud.ts takes.
 enum CloudProvider: String, CaseIterable, Codable, Identifiable, Sendable {

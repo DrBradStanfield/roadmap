@@ -1,7 +1,7 @@
 import Foundation
 
 /// Signs in to Dropbox or Google Drive and keeps the access token fresh
-/// (US-25 AC8). PKCE throughout: the phone holds no client secret, and no
+/// (US-25 AC11). PKCE throughout: the phone holds no client secret, and no
 /// server sees a token. The browser step is passed in (`Authenticate`), which
 /// the Sync screen gives from SwiftUI's `webAuthenticationSession`.
 @MainActor

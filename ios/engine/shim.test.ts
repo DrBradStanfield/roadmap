@@ -1,4 +1,4 @@
-// US-25 AC8: the web APIs health-core's cloud adapters need, built for
+// US-25 AC11: the web APIs health-core's cloud adapters need, built for
 // JavaScriptCore over the natives Swift supplies (shim.ts). Run here in an
 // empty vm context, which like JavaScriptCore has ECMAScript and nothing else,
 // with a fake native standing in for URLSession and the main queue.
@@ -69,7 +69,7 @@ async function shimmed() {
 
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
-describe('the JavaScriptCore shim (US-25 AC8)', () => {
+describe('the JavaScriptCore shim (US-25 AC11)', () => {
   it('fetch sends the method, headers and body, and reads the answer as text, JSON and headers', async () => {
     const { fake, run } = await shimmed();
     const pending = run<Promise<unknown>>(`

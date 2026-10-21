@@ -1,6 +1,6 @@
 import Foundation
 
-/// The engine's cloud doors (ios/engine/cloud.ts, US-25 AC8). The sync itself,
+/// The engine's cloud doors (ios/engine/cloud.ts, US-25 AC11). The sync itself,
 /// save loop, merge and erase guard included, is health-core's, in JavaScript;
 /// these only carry text across.
 extension HealthEngine {

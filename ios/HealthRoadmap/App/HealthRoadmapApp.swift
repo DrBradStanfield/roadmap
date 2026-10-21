@@ -20,7 +20,7 @@ struct HealthRoadmapApp: App {
     }
 }
 
-/// Cloud sync follows the app on and off the screen (US-25 AC8c): it re-reads on
+/// Cloud sync follows the app on and off the screen (US-25 AC11c): it re-reads on
 /// return, and saves what waits before iOS suspends the app, asking iOS for the
 /// few seconds that save needs.
 @MainActor

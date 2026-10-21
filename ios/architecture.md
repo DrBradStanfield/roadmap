@@ -2,7 +2,7 @@
 
 Status: **Phase 1 spike started** (2026-10-21): the shared engine runs in the app and
 matches Node byte for byte (US-25 AC1, AC2); Dropbox sync runs on the shared sync engine
-(US-25 AC8); Google Drive waits on its iOS client id. This file records what we decided for the
+(US-25 AC11); Google Drive waits on its iOS client id. This file records what we decided for the
 native iPhone app and why. It is the entry point for anyone, human or agent, working in
 `ios/`.
 
@@ -140,6 +140,16 @@ the merge on conflict and the erase guard. The phone-file path stays outside a s
 the device tier has one writer, and a session there would add a second copy of the file in
 memory for no gain. Revisit when Apple Health import becomes a second writer (D6).
 
+**The form's questions moved too (2026-10-21, US-25 AC8).** The medication, screening and
+supplement questions (labels, hints, option lists, show-when rules and what each answer
+writes) lived as JSX in `InputPanel.tsx`. They now live in health-core's `input-form.ts`
+as data (`medicationForm`, `screeningForm`, `medicationWrites`, `screeningWrites`); the web
+form imports the text and write rules (net -204 lines there, DOM unchanged, a parity test
+renders it against the descriptions) and the app renders the same descriptions natively.
+Decided in the night session because the alternative, Swift or a second TypeScript copy of
+the cascade steps, is the drift D2 exists to stop. The web still lays its fields out in
+JSX: rendering the web from the descriptions too is a possible follow-up, not needed for parity.
+
 ### D5 · Storage: on the phone by default, Dropbox or Google Drive optional (Brad, 2026-10-21)
 
 - **Default: a file in the app's container**, with iOS Data Protection. Built 2026-10-21
@@ -182,7 +192,7 @@ memory for no gain. Revisit when Apple Health import becomes a second writer (D6
   `com.googleusercontent.apps.<id>:/oauth2redirect`. Scope `drive.file` only (the web also
   asks `openid email`, for server reminders the app does not use, D7). A grant without
   `drive.file` is refused at sign-in.
-- **How sync runs (built 2026-10-21, US-25 AC8).** One cloud session at a time, health-core's
+- **How sync runs (built 2026-10-21, US-25 AC11).** One cloud session at a time, health-core's
   own `RecordSession` over a `RecordHost` that `ios/engine/cloud.ts` builds: the store is the
   cloud through health-core's `DropboxAdapter`/`DriveAdapter`, re-made per access token
   (Swift refreshes the token; a 401 refreshes once and retries); the device mirror is the
@@ -313,7 +323,12 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
 - `engine/my-data.ts`: what the My data tab shows and every write it makes, each one
   health-core's own (`createEmptyFile`, `updateProfile`, `stampProfile`,
   `appendMeasurement`, `correctValue`, `upsertMedication`, `upsertSupplement`), with
-  values in the user's units (US-25 AC7). Not yet through `RecordSession.edit` (D4). Tested in Node by
+  values in the user's units (US-25 AC7). Not yet through `RecordSession.edit` (D4).
+- `engine/my-data-forms.ts`: the medication, screening and supplement questions
+  (health-core `input-form.ts`) for the plan's age, sex and cascades, their answers
+  (only a shown question, only an offered answer, then the web's writes), and
+  `metricHistory` (every row of a metric, entered-in-error included). Entry door:
+  `historyJson`. Tested in Node by
   `engine/my-data.test.ts`, which the web's `test:all` runs.
 - `scripts/build-engine.mjs`: bundles health-core with esbuild (target Safari 17, iOS 17's
   JavaScriptCore) into `HealthRoadmap/Engine/health-engine.js`, and writes the parity
@@ -334,7 +349,7 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext` and awaits its
     Promises; `EngineNatives.swift` is the bridge (D2); `HealthEngine+Cloud.swift` the
     typed cloud doors. The generated bundle sits beside them.
-  - `Sync/`: cloud sync (D5, US-25 AC8). `CloudProvider` (client ids, redirects),
+  - `Sync/`: cloud sync (D5, US-25 AC11). `CloudProvider` (client ids, redirects),
     `PKCE`, `TokenStore` (Keychain), `OAuthClient` (sign-in and refresh), `CloudSync`
     (opens the engine's session, follows the app on and off screen, answers the engine's
     `CloudPort` calls), `SyncProblem` and `SyncStatusText` (the words), `SyncView` (the
@@ -342,6 +357,11 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   - `MyData/`: the record and its tab. `RecordStore` keeps the file and applies edits
     through the engine; `MyData.swift` is the engine's view of the record and the
     `RecordEdit` the tab sends; `MyDataView`, `ValueEntrySheet` and `DayText` draw it.
+    The form sections (US-25 AC8): `FormModels` (the engine's question JSON and `FormEdit`),
+    `FormFieldRow` (one question: menu, month wheel, number or dated value),
+    `FormSectionsList`, `MedicationsSection`, `ScreeningsSection`, `SupplementsSection`
+    with `SupplementSheet`. Value history (AC9): `MetricSheet` (history, or entry when
+    empty) and `HistoryView` (Swift Charts trend, tap to correct, no delete).
   - `Plan/`: the plan screen, planned from the stored record whenever it changes.
     `Plan.swift` is the slice of the engine's JSON the app reads, evidence included. The layout (sections, card order, grouped cards) is not
     Swift: it is health-core's `planSections` (packages/health-core/src/plan-sections.ts),
@@ -354,10 +374,12 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   layout, byte for byte); `PlanLayoutTests` pins the sample's web layout and checks that
   no card loses its evidence or ingredients; `RecordEditTests` runs the My data writes in
   JavaScriptCore; `RecordStoreTests` covers the file (AC4) and the plan following it
-  (AC6); `DayTextTests` pins the local day. Sync (AC8): `ShimTests` (the shim in
-  JavaScriptCore over a URLProtocol stub, `StubHTTP`), `SignInTests` (Keychain, PKCE,
-  code exchange, refresh), `CloudSyncTests` (the whole path against a stubbed Dropbox with
-  its rev rules), `SyncStatusTextTests`.
+  (AC6); `DayTextTests` pins the local day; `FormEditTests` runs the form answers,
+  supplements and history in JavaScriptCore (AC8, AC9). Sync (AC11): `ShimTests` (the
+  shim in JavaScriptCore over a URLProtocol stub, `StubHTTP`), `SignInTests` (Keychain,
+  PKCE, code exchange, refresh), `CloudSyncTests` (the whole path against a stubbed
+  Dropbox with its rev rules), `SyncStatusTextTests`, `LiveDropboxTests` (real Dropbox,
+  scratch account, skipped without a token).
 
 **Code for AI agents to read (HARD, Brad 2026-10-21).** This app is written and maintained
 by AI agents, so the code is shaped for a reader with no memory of how it got here:

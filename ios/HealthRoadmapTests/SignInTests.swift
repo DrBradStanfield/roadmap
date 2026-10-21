@@ -1,7 +1,7 @@
 import XCTest
 @testable import HealthRoadmap
 
-/// US-25 AC8: the sign-in pieces. Tokens live in the Keychain, this device
+/// US-25 AC11: the sign-in pieces. Tokens live in the Keychain, this device
 /// only; PKCE matches RFC 7636; a token is refreshed with no client secret,
 /// and a refused refresh asks the user to sign in again.
 @MainActor
