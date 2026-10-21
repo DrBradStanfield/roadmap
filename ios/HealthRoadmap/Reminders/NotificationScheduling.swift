@@ -2,12 +2,18 @@ import UserNotifications
 
 /// The part of UNUserNotificationCenter the reminders use, behind a protocol so
 /// the tests can run the scheduler against a fake (ReminderSchedulerTests).
+/// What iOS allows. `notAsked` is not a refusal: Settings has no switch for the
+/// app until it has asked, so the app asks again instead of pointing there.
+enum NotificationPermission: Equatable {
+    case allowed, denied, notAsked
+}
+
 @MainActor
 protocol NotificationScheduling {
     /// Asks iOS for permission; true when granted.
     func requestPermission() async throws -> Bool
-    /// Whether iOS will show our notifications now (the user can turn them off in Settings).
-    func isPermitted() async -> Bool
+    /// What iOS allows now (the user can change it in Settings).
+    func permission() async -> NotificationPermission
     func pendingIdentifiers() async -> [String]
     func removePending(_ identifiers: [String])
     func add(_ request: UNNotificationRequest) async throws
@@ -18,9 +24,12 @@ extension UNUserNotificationCenter: NotificationScheduling {
         try await requestAuthorization(options: [.alert, .sound])
     }
 
-    func isPermitted() async -> Bool {
-        let status = await notificationSettings().authorizationStatus
-        return status == .authorized || status == .provisional || status == .ephemeral
+    func permission() async -> NotificationPermission {
+        switch await notificationSettings().authorizationStatus {
+        case .authorized, .provisional, .ephemeral: .allowed
+        case .notDetermined: .notAsked
+        default: .denied
+        }
     }
 
     func pendingIdentifiers() async -> [String] {

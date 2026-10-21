@@ -31,7 +31,7 @@ struct AppParts {
         let folder = try RecordStore.appFolder()
         store = try RecordStore(folder: folder, engine: engine, deviceId: RecordStore.deviceId(in: folder))
         let (engine, store) = (engine, store)
-        reminders = ReminderScheduler(center: UNUserNotificationCenter.current()) {
+        reminders = ReminderScheduler(center: UNUserNotificationCenter.current(), folder: folder) {
             try engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         }
         // Before launch finishes, so a tap that starts the app still reaches My plan.

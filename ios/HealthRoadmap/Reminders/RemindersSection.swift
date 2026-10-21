@@ -20,14 +20,18 @@ struct RemindersSection: View {
                     if on { explaining = true } else { Task { await scheduler.optOut() } }
                 }
             ))
-            if scheduler.optedIn && !scheduler.permitted {
-                Button("Notifications are off in Settings. Turn them on") { openSettings() }
+            if scheduler.optedIn {
+                switch scheduler.permission {
+                case .denied: Button("Notifications are off in Settings. Turn them on") { openSettings() }
+                case .notAsked: Button("Allow notifications") { Task { await ask() } }
+                case .allowed, nil: EmptyView()
+                }
             }
             ForEach(scheduler.reminders?.upcoming ?? [], id: \.category) { item in
                 HStack(alignment: .firstTextBaseline) {
                     Text(item.label)
                     Spacer()
-                    Text(item.overdue ? "Due now" : Self.month(item.dueAt))
+                    Text(item.overdue ? "Due now" : item.dueText)
                         .foregroundStyle(item.overdue ? Color.accentColor : .secondary)
                         .monospacedDigit()
                 }
@@ -38,7 +42,7 @@ struct RemindersSection: View {
             Text("Worked out on this iPhone from your record, with nothing sent anywhere. The lock screen says only that a check-up is due, never which one.")
         }
         .alert("Turn on reminders?", isPresented: $explaining) {
-            Button("Continue") { Task { refused = !(await scheduler.optIn()) } }
+            Button("Continue") { Task { await ask() } }
             Button("Not now", role: .cancel) {}
         } message: {
             Text("This iPhone will notify you when a check-up, screening or blood test in your plan is due. iOS will ask if notifications are allowed.")
@@ -51,14 +55,10 @@ struct RemindersSection: View {
         }
     }
 
-    /// "Mar 2027", as the web's reminder emails write it (`formatReminderDate`): a
-    /// screening is due in a month, and its stored day is always the 1st.
-    private static func month(_ day: String) -> String {
-        let parts = day.split(separator: "-").compactMap { Int($0) }
-        var utc = Calendar(identifier: .gregorian)
-        utc.timeZone = .gmt
-        guard parts.count == 3, let date = utc.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) else { return day }
-        return date.formatted(Date.FormatStyle(timeZone: .gmt).month(.abbreviated).year())
+    /// Asks iOS; only a refusal points to Settings (a grant with an unreadable record is not one).
+    private func ask() async {
+        _ = await scheduler.optIn()
+        refused = scheduler.permission == .denied
     }
 
     private func openSettings() {

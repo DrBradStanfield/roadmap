@@ -203,8 +203,13 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   tests 180, reviews and the annual check-in 365) while it stays due, up to two years
   ahead. The phone keeps no "last sent", so repeats count from the due day: the same
   record gives the same days on every refill, and an item already overdue waits for its
-  next step instead of firing on every launch. Nothing is scheduled for today or earlier;
-  the in-app list shows those as "Due now".
+  next step instead of firing on every launch. Today is kept (review fix): opening the
+  app that morning must not drop the 9:00 reminder, and iOS never fires a one-off trigger
+  whose hour has passed. The in-app list shows due items as "Due now", the rest as "Mar
+  2027" (health-core's `formatReminderDate`, the web's email format).
+- **The annual check-in slides**, as on the web: it is a year from the last time the app
+  computed it, so a user who opens the app once a year never gets it. A user enrolled in
+  the web's emails who also turns on phone reminders is reminded twice; no dedupe.
 - **Lock-screen words: generic.** Title "Health Roadmap", body "A check-up is due. Open
   the app to see which." The procedure's name is shown only inside the app. Revisit if
   Brad prefers the name ("Colonoscopy due") on the lock screen.
@@ -212,8 +217,12 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   change: remove our pending ones (ids start `reminder.`), add the soonest 64. One
   notification a day, however many things fall due on it (the words are generic, so two
   would be the same banner twice); ids are `reminder.<day>`, stable across refills.
-- **The opt-in is this phone's, not the record's.** It sits in UserDefaults, stamped with
-  the record's erase epoch. The task asked for health-core's `setReminderOptIn`, but that
+- **The opt-in is this phone's, not the record's.** It is a small file
+  (`reminders-opt-in`) beside the record, in the folder backups leave out (D5), holding
+  the record's erase epoch when it was given. A phone restored from a backup starts a new
+  record and so starts with reminders off (UserDefaults would have carried a stale
+  opt-in across; review finding). Not keyed on `meta.createdAt`: a merge takes the
+  earliest across devices, so cloud sync would silently turn reminders off. The task asked for health-core's `setReminderOptIn`, but that
   singleton is the web's email enrolment: it carries a server token, an address and a
   cloud provider, and the web reads `status: 'active'` as "this address gets emails". A
   phone writing it would put a fake enrolment in a synced record. Notification permission
@@ -223,9 +232,15 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   still honours any `reminderPreferences` already in the record.
 - **Erase (US-11).** When the record's erase epoch moves (an erase here or one synced in),
   the opt-in ends and every pending reminder is cancelled; the user turns reminders on
-  again. An unreadable record also cancels them all.
+  again. This assumes an erase bumps the epoch and never deletes the file for a fresh
+  one at epoch 0: the in-app erase, when built, must use health-core's `erase.ts`. An
+  unreadable record cancels them all for that round but keeps the opt-in; the next good
+  read schedules again.
+- **Permission.** A refusal points to Settings; "not asked yet" (Settings has no switch
+  for the app until it asks) offers "Allow notifications" instead.
 - **A tap opens My plan**, cold start included (`ReminderTaps` is the notification
-  delegate from launch).
+  delegate from launch, with the completion-handler callbacks). Not yet checked on a
+  device: the agent's simulator could not tap Allow.
 
 ### D8 · Chat: wanted; no user sign-in, but the app proves itself (proposed)
 

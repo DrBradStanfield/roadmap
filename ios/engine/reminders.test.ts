@@ -6,6 +6,7 @@ import { phoneReminders, PHONE_REMINDER_LIMIT } from './reminders';
 import { newRecord } from './my-data';
 import { computeReminderSchedule } from '../../packages/health-core/src/reminder-schedule';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { localDay } from '../../packages/health-core/src/merge';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 
@@ -52,13 +53,31 @@ describe('phoneReminders (US-25 AC9)', () => {
     expect(lipids.slice(0, 2)).toEqual(['2027-01-15', '2027-07-14']);
   });
 
-  it('never notifies for today or the past: an overdue item waits for its next cooldown step', () => {
+  it('keeps a notification due today, on the phone\'s own day, so opening the app that morning does not drop it', () => {
+    // A late-evening instant: in Pacific/Auckland its local day is a day past UTC's.
+    const now = new Date('2026-10-21T13:00:00.000Z');
+    const today = localDay(now);
+    const yearAgo = `${Number(today.slice(0, 4)) - 1}${today.slice(4)}`;
+    const file = record();
+    file.measurements = [{ ...file.measurements[0], recordedAt: `${yearAgo}T00:00:00.000Z` }];
+    const out = phoneReminders(file, now);
+    expect(out.upcoming.find((i) => i.category === 'blood_test_lipids')).toMatchObject({ dueAt: today, overdue: true });
+    expect(out.notifications[0]).toMatchObject({ fireDay: today, categories: ['blood_test_lipids'] });
+    expect(out.notifications.every((n) => n.fireDay >= today)).toBe(true);
+  });
+
+  it('writes each date as the web\'s reminder emails do', () => {
+    const out = phoneReminders(record(), new Date(NOW));
+    expect(out.upcoming.find((i) => i.category === 'blood_test_lipids')?.dueText).toBe('Jan 2027');
+  });
+
+  it('never notifies for the past: an overdue item waits for its next cooldown step', () => {
     // The mammogram was due 2025-06-01, past; screening repeats every 90 days,
     // so its steps run 2025-08-30, 2025-11-28 ... 2026-08-25, then 2026-11-23.
     const out = phoneReminders(record(), new Date(NOW));
     const mammogram = out.notifications.filter((n) => n.categories.includes('screening_breast')).map((n) => n.fireDay);
     expect(mammogram.slice(0, 2)).toEqual(['2026-11-23', '2027-02-21']);
-    expect(out.notifications.every((n) => n.fireDay > '2026-10-21')).toBe(true);
+    expect(out.notifications.every((n) => n.fireDay >= '2026-10-21')).toBe(true);
   });
 
   it('caps the batch, soonest first, with stable ids (iOS holds 64 pending)', () => {

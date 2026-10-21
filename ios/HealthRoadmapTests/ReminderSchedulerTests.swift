@@ -9,19 +9,24 @@ import XCTest
 @MainActor
 final class ReminderSchedulerTests: XCTestCase {
     private var center: FakeNotificationCenter!
-    private var defaults: UserDefaults!
+    private var folder: URL!
     private var engineOutput: PhoneReminders!
     private var engineFails = false
 
+    override func tearDown() async throws {
+        try? FileManager.default.removeItem(at: folder)
+    }
+
     override func setUp() async throws {
         center = FakeNotificationCenter()
-        defaults = UserDefaults(suiteName: "ReminderSchedulerTests-\(UUID().uuidString)")
+        folder = FileManager.default.temporaryDirectory.appending(path: "Reminders \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         engineOutput = reminders(epoch: 0, days: ["2027-01-15", "2027-03-01"])
         engineFails = false
     }
 
     private func scheduler() -> ReminderScheduler {
-        ReminderScheduler(center: center, defaults: defaults) { [unowned self] in
+        ReminderScheduler(center: center, folder: folder) { [unowned self] in
             if engineFails { throw HealthEngine.EngineError.callFailed("unreadable") }
             return engineOutput
         }
@@ -30,7 +35,7 @@ final class ReminderSchedulerTests: XCTestCase {
     private func reminders(epoch: Int, days: [String]) -> PhoneReminders {
         PhoneReminders(
             eraseEpoch: epoch,
-            upcoming: [.init(category: "blood_test_lipids", group: "blood_test", label: "Lipid panel blood test", dueAt: days.first ?? "2027-01-15", overdue: false)],
+            upcoming: [.init(category: "blood_test_lipids", group: "blood_test", label: "Lipid panel blood test", dueAt: days.first ?? "2027-01-15", overdue: false, dueText: "Jan 2027")],
             notifications: days.map { .init(id: "reminder.\($0)", fireDay: $0, categories: ["blood_test_lipids"]) }
         )
     }
@@ -66,10 +71,10 @@ final class ReminderSchedulerTests: XCTestCase {
     func testPermissionTurnedOffInSettingsSchedulesNothing() async {
         let scheduler = scheduler()
         _ = await scheduler.optIn()
-        center.authorized = false
+        center.status = .denied
         await scheduler.refresh()
         XCTAssertTrue(scheduler.optedIn)
-        XCTAssertFalse(scheduler.permitted)
+        XCTAssertEqual(scheduler.permission, .denied)
         XCTAssertEqual(center.pending.count, 0)
     }
 
@@ -110,19 +115,43 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(center.pending.count, 1)
     }
 
-    func testTheOptInSurvivesARelaunch() async {
+    func testTheOptInSurvivesARelaunchInTheRecordsFolder() async {
         _ = await scheduler().optIn()
         let relaunched = scheduler()
         XCTAssertTrue(relaunched.optedIn)
+        // Kept beside the record, in the folder backups leave out (D5), so a restored
+        // phone, which starts a new record, starts with reminders off.
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false)))
     }
 
-    func testAnUnreadableRecordCancelsEverything() async {
+    func testAnUnreadableRecordCancelsEverythingButKeepsTheOptIn() async {
         let scheduler = scheduler()
         _ = await scheduler.optIn()
         engineFails = true
         await scheduler.refresh()
         XCTAssertEqual(center.pending.count, 0)
         XCTAssertNil(scheduler.reminders)
+        XCTAssertTrue(scheduler.optedIn, "a failed read is not an erase")
+        engineFails = false
+        await scheduler.refresh()
+        XCTAssertEqual(center.pending.count, 2)
+    }
+
+    func testAGrantWithAnUnreadableRecordIsNotReportedAsARefusal() async {
+        engineFails = true
+        let scheduler = scheduler()
+        let on = await scheduler.optIn()
+        XCTAssertFalse(on)
+        XCTAssertEqual(scheduler.permission, .allowed, "the switch must not send the user to Settings")
+    }
+
+    func testTurningRemindersOffRedrawsTheSwitch() async {
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        let redrawn = expectation(description: "the section is told the opt-in changed")
+        withObservationTracking { _ = scheduler.optedIn } onChange: { redrawn.fulfill() }
+        await scheduler.optOut()
+        await fulfillment(of: [redrawn], timeout: 1)
     }
 
     func testOptingOutCancelsEverything() async {
@@ -164,16 +193,16 @@ final class ReminderSchedulerTests: XCTestCase {
 final class FakeNotificationCenter: NotificationScheduling {
     var pending: [UNNotificationRequest] = []
     var grants = true
-    var authorized = false
+    var status = NotificationPermission.notAsked
     var permissionAsks = 0
 
     func requestPermission() async throws -> Bool {
         permissionAsks += 1
-        authorized = grants
+        status = grants ? .allowed : .denied
         return grants
     }
 
-    func isPermitted() async -> Bool { authorized }
+    func permission() async -> NotificationPermission { status }
 
     func pendingIdentifiers() async -> [String] { pending.map(\.identifier) }
 

@@ -4,7 +4,7 @@
 // per-category preferences and the annual floor. This file adds only the
 // phone's notification days, so Swift schedules and never decides.
 import { computeReminderSchedule, type ReminderScheduleItem } from '../../packages/health-core/src/reminder-schedule';
-import { GROUP_COOLDOWNS } from '../../packages/health-core/src/reminders';
+import { GROUP_COOLDOWNS, formatReminderDate } from '../../packages/health-core/src/reminders';
 import { localDay } from '../../packages/health-core/src/merge';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
@@ -28,8 +28,9 @@ export interface PhoneReminders {
   /** The record's erase epoch: an erase moves it, and the phone then drops every reminder. */
   eraseEpoch: number;
   /** What is due, soonest first: the in-app list. Labels and dates stay inside the app.
-   *  `overdue`: due today or earlier, on the phone's own calendar day. */
-  upcoming: Array<ReminderScheduleItem & { overdue: boolean }>;
+   *  `overdue`: due today or earlier, on the phone's own calendar day. `dueText`:
+   *  "Mar 2027", as the web's reminder emails write it. */
+  upcoming: Array<ReminderScheduleItem & { overdue: boolean; dueText: string }>;
   /** The soonest notifications, at most `limit` (iOS's 64 by default). */
   notifications: PhoneNotification[];
 }
@@ -40,20 +41,21 @@ export interface PhoneReminders {
  * screenings 90 days, blood tests 180, reviews 365) for as long as it stays due.
  * The phone keeps no "last sent", so the repeats are counted from the due day:
  * the same record gives the same days on every refill, and an item already
- * overdue waits for its next step instead of firing on every launch. Days start
- * tomorrow in the phone's own calendar: today's are past or seen in the app.
+ * overdue waits for its next step instead of firing on every launch. Today is
+ * kept, on the phone's own calendar: a refresh that morning must not drop the
+ * reminder, and iOS never fires a one-off trigger whose hour has passed.
  */
 export function phoneReminders(file: RoadmapFile, now: Date, limit = PHONE_REMINDER_LIMIT): PhoneReminders {
   const today = localDay(now);
   const upcoming = computeReminderSchedule(file, now)
     .sort((a, b) => a.dueAt.localeCompare(b.dueAt) || a.category.localeCompare(b.category))
-    .map((item) => ({ ...item, overdue: item.dueAt <= today }));
+    .map((item) => ({ ...item, overdue: item.dueAt <= today, dueText: formatReminderDate(item.dueAt) }));
   const horizon = addDays(today, HORIZON_DAYS);
   const byDay = new Map<string, PhoneNotification>();
   for (const item of upcoming) {
     const step = GROUP_COOLDOWNS[item.group];
     for (let day = item.dueAt; day <= horizon; day = addDays(day, step)) {
-      if (day <= today) continue;
+      if (day < today) continue;
       const notification = byDay.get(day) ?? { id: `reminder.${day}`, fireDay: day, categories: [] };
       notification.categories.push(item.category);
       byDay.set(day, notification);

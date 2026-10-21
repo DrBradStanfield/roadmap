@@ -9,9 +9,11 @@ import UserNotifications
 /// soonest batch (iOS holds 64). The app refreshes on launch, on return to the
 /// foreground and on every change to the record, so the batch refills itself.
 ///
-/// The opt-in is this phone's, kept in UserDefaults with the record's erase epoch
-/// at the time. An erase moves the epoch, which ends the opt-in and cancels every
-/// reminder, so an erased record never notifies (US-11). It is not written to the
+/// The opt-in is this phone's: a small file beside the record, in the folder backups
+/// leave out (D5), holding the record's erase epoch at the time. A restored phone
+/// starts a new record, so it starts with reminders off. An erase moves the epoch,
+/// which ends the opt-in and cancels every reminder, so an erased record never
+/// notifies (US-11). It is not written to the
 /// record: the record's `reminderOptIn` is the web's email enrolment, with a server
 /// token and an address, and a phone's notification permission is not one (D7).
 @MainActor
@@ -19,8 +21,13 @@ import UserNotifications
 final class ReminderScheduler {
     /// What the engine last said; nil when the record could not be read.
     private(set) var reminders: PhoneReminders?
-    /// Whether iOS lets us notify; false until known.
-    private(set) var permitted = false
+    /// What iOS allows; nil until first asked.
+    private(set) var permission: NotificationPermission?
+    /// The record's erase epoch when the user turned reminders on; nil when off.
+    /// Stored, so SwiftUI sees it change; saved to `optInFile` on every change.
+    private var optedInEpoch: Int? {
+        didSet { save() }
+    }
     var optedIn: Bool { optedInEpoch != nil }
 
     /// Our notifications, and only ours, start with this.
@@ -29,23 +36,27 @@ final class ReminderScheduler {
     static let limit = 64
     /// The hour, on the phone's clock, a reminder shows on its day.
     static let hour = 9
-    private static let epochKey = "reminders.optedInEpoch"
 
     private let center: NotificationScheduling
-    private let defaults: UserDefaults
+    private let optInFile: URL
     private let compute: @MainActor () throws -> PhoneReminders
     /// Refreshes run one after another, so two never interleave their removes and adds.
     private var last: Task<Void, Never>?
 
-    init(center: NotificationScheduling, defaults: UserDefaults = .standard, compute: @escaping @MainActor () throws -> PhoneReminders) {
+    /// `folder` is the record's (RecordStore.appFolder), left out of backups.
+    init(center: NotificationScheduling, folder: URL, compute: @escaping @MainActor () throws -> PhoneReminders) {
         self.center = center
-        self.defaults = defaults
         self.compute = compute
+        optInFile = folder.appending(path: "reminders-opt-in")
+        optedInEpoch = (try? String(contentsOf: optInFile, encoding: .utf8)).flatMap { Int($0) }
     }
 
-    private var optedInEpoch: Int? {
-        get { defaults.object(forKey: Self.epochKey) as? Int }
-        set { defaults.set(newValue, forKey: Self.epochKey) }
+    private func save() {
+        if let optedInEpoch {
+            try? Data(String(optedInEpoch).utf8).write(to: optInFile, options: .atomic)
+        } else {
+            try? FileManager.default.removeItem(at: optInFile)
+        }
     }
 
     /// Recomputes and reschedules.
@@ -72,13 +83,14 @@ final class ReminderScheduler {
     private func reschedule() async {
         let next = try? compute()
         reminders = next
-        // An erase since the opt-in ends it.
-        if let epoch = optedInEpoch, epoch != next?.eraseEpoch { optedInEpoch = nil }
-        permitted = await center.isPermitted()
+        // An erase since the opt-in ends it. A failed read is not an erase: it only
+        // cancels this round, and the next good read schedules again.
+        if let epoch = optedInEpoch, let next, epoch != next.eraseEpoch { optedInEpoch = nil }
+        permission = await center.permission()
 
         let ours = await center.pendingIdentifiers().filter { $0.hasPrefix(Self.prefix) }
         center.removePending(ours)
-        guard let next, optedIn, permitted else { return }
+        guard let next, optedIn, permission == .allowed else { return }
         for notification in next.notifications.prefix(Self.limit) {
             try? await center.add(Self.request(for: notification))
         }

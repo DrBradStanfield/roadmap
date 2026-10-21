@@ -14,6 +14,8 @@ struct PhoneReminders: Decodable, Equatable {
         let dueAt: String
         /// Due today or earlier, by the engine's reading of the phone's day.
         let overdue: Bool
+        /// "Mar 2027", health-core's `formatReminderDate`, as the web's emails write it.
+        let dueText: String
     }
 
     /// One notification to schedule on `fireDay`, the phone's own calendar day; one a day.
