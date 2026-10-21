@@ -18,9 +18,9 @@
  * `crypto.randomUUID()`, as in record-edits.ts; the iPhone app's engine
  * supplies it from the phone's own UUID (HealthEngine.swift).
  */
-import { classifyMedicationChange } from './history-change';
+import { classifyMedicationChange, classifySupplementChange } from './history-change';
 import { newId, stampUpdatedAt } from './record-edits';
-import type { FileMedication, HistoryChangeType, RoadmapFile } from './roadmap-file';
+import type { FileMedication, FileSupplement, HistoryChangeType, RoadmapFile } from './roadmap-file';
 
 export interface StateEditResult {
   /** A new file. The one passed in is untouched. */
@@ -73,4 +73,40 @@ export function upsertMedication(file: RoadmapFile, save: MedicationSave, now: s
     ? [...file.medicationHistory, { id: newId(), medicationKey, drugName, doseValue, doseUnit, changeType, updatedAt: now }]
     : file.medicationHistory;
   return { file: stampUpdatedAt({ ...file, medications, medicationHistory }, now), changeType };
+}
+
+export interface SupplementSave {
+  supplementKey: string;
+  supplementName: string;
+  doseValue: number | null;
+  doseUnit: string | null;
+  status: FileSupplement['status'];
+  /** When it was started; a new row without one starts now. An edit keeps its own. */
+  startedAt?: string;
+}
+
+/**
+ * Save one supplement's current state (US-06): the row keyed by
+ * `supplementKey`, and a history row when the change classifies (started,
+ * restarted, stopped, switched, dose changed). Stopping is a save with
+ * `status: 'stopped'` (a soft stop the merge carries), never a removal.
+ */
+export function upsertSupplement(file: RoadmapFile, save: SupplementSave, now: string): StateEditResult {
+  const { supplementKey, supplementName, doseValue, doseUnit, status, startedAt } = save;
+  const prev = file.supplements.find((s) => s.supplementKey === supplementKey);
+  const changeType = classifySupplementChange(prev, save);
+  const supplements = upsert<FileSupplement>(
+    file.supplements,
+    (s) => s.supplementKey === supplementKey,
+    () => ({ id: newId(), supplementKey, supplementName, doseValue, doseUnit, status, startedAt: startedAt ?? now }),
+    () => ({ supplementName, doseValue, doseUnit, status }),
+    now,
+  );
+  const supplementHistory = changeType
+    ? [...file.supplementHistory, {
+        id: newId(), supplementKey, supplementName, doseValue, doseUnit, status,
+        startedAt: prev?.startedAt ?? startedAt ?? now, changeType, updatedAt: now,
+      }]
+    : file.supplementHistory;
+  return { file: stampUpdatedAt({ ...file, supplements, supplementHistory }, now), changeType };
 }

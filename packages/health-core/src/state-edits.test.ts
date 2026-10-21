@@ -5,7 +5,7 @@
  * tests pin the same writes through RoadmapStore.
  */
 import { describe, expect, it } from 'vitest';
-import { upsertMedication } from './state-edits';
+import { upsertMedication, upsertSupplement, type SupplementSave } from './state-edits';
 import { mergeFiles } from './merge';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 
@@ -68,5 +68,58 @@ describe('upsertMedication (US-06)', () => {
     expect(merged.medications.map((m) => m.doseValue)).toEqual([40]);
     // The merge orders history rows by id, and ids are random.
     expect(merged.medicationHistory.map((h) => h.changeType).sort()).toEqual(['dose_changed', 'started']);
+  });
+});
+
+const omega = (over: Partial<SupplementSave> = {}): SupplementSave =>
+  ({ supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: 1, doseUnit: 'g', status: 'active', ...over });
+
+describe('upsertSupplement (US-06)', () => {
+  it('creates the keyed row started now (or when given), with a started history row', () => {
+    const before = empty();
+    const snapshot = structuredClone(before);
+    const { file, changeType } = upsertSupplement(before, omega(), T1);
+    expect(before).toEqual(snapshot);
+    expect(changeType).toBe('started');
+    expect(file.supplements).toEqual([{
+      id: expect.any(String), supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: 1, doseUnit: 'g',
+      status: 'active', startedAt: T1, updatedAt: T1, lamport: 0,
+    }]);
+    expect(file.supplementHistory).toEqual([{
+      id: expect.any(String), supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: 1, doseUnit: 'g',
+      status: 'active', startedAt: T1, changeType: 'started', updatedAt: T1,
+    }]);
+    expect(file.meta.updatedAt).toBe(T1);
+    expect(upsertSupplement(empty(), omega({ startedAt: T0 }), T1).file.supplements[0].startedAt).toBe(T0);
+  });
+
+  it('a soft stop keeps the row, its id and its startedAt, lamport + 1, and records stopped; a second stop records nothing', () => {
+    const first = upsertSupplement(empty(), omega({ startedAt: T0 }), T1).file;
+    const stopped = upsertSupplement(first, omega({ status: 'stopped' }), T2);
+    expect(stopped.changeType).toBe('stopped');
+    expect(stopped.file.supplements).toEqual([expect.objectContaining({
+      id: first.supplements[0].id, status: 'stopped', startedAt: T0, updatedAt: T2, lamport: 1,
+    })]);
+    // The history row carries the row's own start, not the stop's.
+    expect(stopped.file.supplementHistory[1]).toMatchObject({ changeType: 'stopped', startedAt: T0 });
+    const again = upsertSupplement(stopped.file, omega({ status: 'stopped' }), T2);
+    expect(again.changeType).toBeNull();
+    expect(again.file.supplementHistory).toHaveLength(2);
+  });
+
+  it('classifies a restart, a switch and a dose change; an identical re-save writes none', () => {
+    const active = upsertSupplement(empty(), omega(), T1).file;
+    const stopped = upsertSupplement(active, omega({ status: 'stopped' }), T2).file;
+    expect(upsertSupplement(stopped, omega(), T2).changeType).toBe('started');
+    expect(upsertSupplement(active, omega({ supplementName: 'Fish oil' }), T2).changeType).toBe('switched');
+    expect(upsertSupplement(active, omega({ doseValue: 2 }), T2).changeType).toBe('dose_changed');
+    expect(upsertSupplement(active, omega(), T2).changeType).toBeNull();
+  });
+
+  it("wins the merge against another device's older edit of the same row", () => {
+    const shared = upsertSupplement(empty(), omega(), T1).file;
+    const here = upsertSupplement(shared, omega({ status: 'stopped' }), T2).file;
+    const merged = mergeFiles(shared, here, { deviceId: 'd', now: T2 });
+    expect(merged.supplements.map((x) => x.status)).toEqual(['stopped']);
   });
 });

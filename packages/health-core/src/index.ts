@@ -290,8 +290,8 @@ export type { RecordHost } from './record-host';
 export { LiveRefresh, type LiveRefreshOptions } from './live-refresh';
 export { liftDeviceCopy, copyCloudDown } from './record-transfer';
 export { ChatSession, type ChatConversationSummary } from './chat-session';
-export { upsertMedication } from './state-edits';
-export { classifySupplementChange, isTakingDrug } from './history-change';
+export { upsertMedication, upsertSupplement } from './state-edits';
+export { isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 
 // v2 reminder schedule (client-computed; the server is a dumb scheduler — §10)
