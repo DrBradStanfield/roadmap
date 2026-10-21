@@ -4,6 +4,15 @@
 import { computePlan, type Plan } from '../../packages/health-core/src/plan';
 import { planSections } from '../../packages/health-core/src/plan-sections';
 import { applyEdit, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
+import { installShim, type Natives } from './shim';
+
+// The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
+// in Node, where the parity goldens run the bundle with nothing but ECMAScript.
+declare const __native: Natives | undefined;
+if (typeof __native !== 'undefined') installShim(globalThis as unknown as Record<string, unknown>, __native);
+
+// Cloud sync (cloud.ts): every call but cloudEdit is async and answers a Promise.
+export { cloudClose, cloudEdit, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible } from './cloud';
 
 /** The plan for a record, as JSON. `nowIso` is passed in so tests can pin it. */
 export function planJson(recordJson: string, nowIso: string, deviceId: string): string {
