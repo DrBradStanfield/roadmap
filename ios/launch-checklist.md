@@ -75,6 +75,8 @@ Two website changes ride along and ship at the next deploy:
 - App Attest with a real device key (tested only against a fake certificate authority).
 - Deleting the app's Apple Health samples, and the Export share sheet.
 - Whether Quick Start (phone to phone) leaves the record behind, as backups do.
+- Over-the-air engine updates on a prewarmed launch (iOS starts the app before the user
+  opens it): that it neither starts a trial nor marks a good release bad (D3, review R9).
 
 ## Decisions to confirm (each recorded where it lives)
 

@@ -30,15 +30,22 @@ enum TokenAnswer: Sendable {
 /// `CloudPort` calls. Installed as the global `__native` before the bundle runs.
 /// JavaScript runs on the main queue only: every answer from URLSession or a
 /// timer hops there before it touches a JSValue.
+/// HTTP goes only where `EngineHTTP` allows, and tokens never reach JavaScript
+/// (US-25 AC18): an engine can be updated over the air, the fence cannot.
 final class EngineNatives {
     weak var cloud: CloudPort?
     private let session: URLSession
+    /// A self-test context for a downloaded engine (EngineBoot): every request refused.
+    private let quarantined: Bool
     private var tasks: [Int: URLSessionTask] = [:]
+    /// Requests cancelled before their token arrived.
+    private var cancelled: Set<Int> = []
     private var timers: [Int: DispatchWorkItem] = [:]
     private var nextId = 1
 
-    init(session: URLSession) {
+    init(session: URLSession, quarantined: Bool = false) {
         self.session = session
+        self.quarantined = quarantined
     }
 
     func install(in context: JSContext) {
@@ -46,7 +53,7 @@ final class EngineNatives {
             request(method: method, url: url, headers: headers, body: Self.data(body), done: done)
         }
         let cancelHttp: @convention(block) (Int) -> Void = { [unowned self] id in
-            tasks.removeValue(forKey: id)?.cancel()
+            if let task = tasks.removeValue(forKey: id) { task.cancel() } else { cancelled.insert(id) }
         }
         let setTimer: @convention(block) (Double, JSValue) -> Int = { [unowned self] ms, run in
             timer(after: ms, run: run)
@@ -74,15 +81,40 @@ final class EngineNatives {
         let id = nextId
         nextId += 1
         let answer = MainQueueOnly(done)
-        guard let address = URL(string: url) else {
-            DispatchQueue.main.async { answer.value.call(withArguments: [0, "", "{}", NSNull(), "Not a web address."]) }
+        let refuse = { (why: String) in
+            DispatchQueue.main.async { answer.value.call(withArguments: [0, "", "{}", NSNull(), why]) }
+        }
+        let fields = (try? JSONDecoder().decode([String: String].self, from: Data(headers.utf8))) ?? [:]
+        guard !quarantined, let address = URL(string: url),
+              case .success(let allowed) = EngineHTTP.check(method: method, url: address, headers: fields)
+        else {
+            refuse("This app does not send that request.")
             return id
         }
         var request = URLRequest(url: address)
         request.httpMethod = method
         request.httpBody = body
-        let fields = (try? JSONDecoder().decode([String: String].self, from: Data(headers.utf8))) ?? [:]
-        for (name, value) in fields { request.setValue(value, forHTTPHeaderField: name) }
+        for (name, value) in allowed.headers { request.setValue(value, forHTTPHeaderField: name) }
+        // The real token, from Swift, onto an allowed call for its own provider only.
+        let owner = MainQueueOnly(self)
+        let port = cloud
+        let wanted = MainQueueOnly(request)
+        Task { @MainActor in
+            let token = await port?.accessToken(provider: allowed.provider, force: false) ?? .failed("Not connected.", signIn: true)
+            let natives = owner.value
+            if natives.cancelled.remove(id) != nil { return }
+            guard case .token(let value) = token else {
+                answer.value.call(withArguments: [0, "", "{}", NSNull(), "Not signed in."])
+                return
+            }
+            var request = wanted.value
+            request.setValue("Bearer \(value)", forHTTPHeaderField: "Authorization")
+            natives.send(request, id: id, answer: answer)
+        }
+        return id
+    }
+
+    private func send(_ request: URLRequest, id: Int, answer: MainQueueOnly<JSValue>) {
         let owner = MainQueueOnly(self)
         let task = session.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
@@ -108,9 +140,9 @@ final class EngineNatives {
                 ])
             }
         }
+        task.delegate = NoRedirects.shared
         tasks[id] = task
         task.resume()
-        return id
     }
 
     // MARK: Timers
@@ -136,11 +168,12 @@ final class EngineNatives {
         let owner = MainQueueOnly(self)
         let accessToken: @convention(block) (String, Bool, JSValue) -> Void = { provider, force, done in
             let answer = MainQueueOnly(done)
-            let port = owner.value.cloud
+            let port = owner.value.quarantined ? nil : owner.value.cloud
             Task { @MainActor in
                 let result = await port?.accessToken(provider: provider, force: force) ?? .failed("Not connected.", signIn: true)
                 switch result {
-                case .token(let token): answer.value.call(withArguments: [token, NSNull(), false])
+                // The sentinel, never the token: EngineHTTP swaps it on an allowed call.
+                case .token: answer.value.call(withArguments: [EngineHTTP.sentinelPrefix + provider, NSNull(), false])
                 case .failed(let why, let signIn): answer.value.call(withArguments: [NSNull(), why, signIn])
                 }
             }

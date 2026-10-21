@@ -91,6 +91,11 @@ three together. Brad's rule (2026-10-22): over-declare rather than under-declare
   details in the notes field, never in this file.
 - Chat and lab upload use Apple's App Attest to prove the request comes from this
   app; there is no user account.
+- Over-the-air engine updates: the app downloads updates to its JavaScript engine (run
+  in JavaScriptCore) from GitHub, signed with our key and checked before use. They
+  change computation and text only (thresholds, suggestions, wording); the native
+  code, what the app can reach on the network and its purpose never change without
+  an App Store update.
 - Guideline 1.4.1: the app gives educational information drawn from published
   guidelines (each step cites them), shows a medical disclaimer on the first screen
   and under every plan, and tells users to talk to their doctor. It does not diagnose,

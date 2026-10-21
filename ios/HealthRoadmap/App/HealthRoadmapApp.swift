@@ -14,7 +14,7 @@ struct HealthRoadmapApp: App {
                 RootView(engine: parts.engine, store: parts.store, sync: parts.sync)
                     .environment(parts.reminders).environment(parts.reminderTaps).environment(parts.health).environment(parts.eraser)
                     .task { await parts.sync.start() }
-                    .onChange(of: scenePhase) { _, phase in follow(phase, parts.sync) }
+                    .onChange(of: scenePhase) { _, phase in follow(phase, parts.sync, parts.updater) }
             case .failure(let error):
                 ContentUnavailableView("The app could not start", systemImage: "exclamationmark.triangle", description: Text(error.localizedDescription))
             }
@@ -24,12 +24,14 @@ struct HealthRoadmapApp: App {
 
 /// Cloud sync follows the app on and off the screen (US-25 AC11c): it re-reads on
 /// return, and saves what waits before iOS suspends the app, asking iOS for the
-/// few seconds that save needs.
+/// few seconds that save needs. Coming on screen (launch included) also looks for
+/// a newer engine, at most once in 6 hours (US-25 AC18).
 @MainActor
-private func follow(_ phase: ScenePhase, _ sync: CloudSync) {
+private func follow(_ phase: ScenePhase, _ sync: CloudSync, _ updater: EngineUpdater?) {
     switch phase {
     case .active:
         Task { await sync.foreground() }
+        Task { await updater?.checkIfDue() }
     case .background:
         let task = BackgroundTask()
         Task {
@@ -74,9 +76,17 @@ struct AppParts {
     /// observers are in place when iOS wakes the app for new Health data.
     let health: AppleHealthSync
     let eraser: DataEraser
+    /// Over-the-air engine updates (US-25 AC18); nil if their folder cannot be made.
+    let updater: EngineUpdater?
 
     init() throws {
-        engine = try HealthEngine()
+        // The newest verified downloaded engine, or the bundled one (ios/architecture.md D3).
+        // A background launch (a Health delivery) never tries a new engine.
+        let bundled = try BundledEngine()
+        let engineFolder = try? EngineFolder.live()
+        let foreground = UIApplication.shared.applicationState != .background
+        engine = try EngineBoot(folder: engineFolder, bundled: bundled, foreground: foreground).start().engine
+        updater = engineFolder.map { EngineUpdater(folder: $0, bundled: bundled.facts) }
         let folder = try RecordStore.appFolder()
         store = try RecordStore(folder: folder, engine: engine, deviceId: RecordStore.deviceId(in: folder))
         sync = CloudSync(engine: engine, store: store, oauth: OAuthClient())

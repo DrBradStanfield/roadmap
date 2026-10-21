@@ -27,7 +27,9 @@
     "test:server": "vitest run app/lib",
     "test:watch": "npm run test --workspace=@roadmap/health-core -- --watch",
     "rebuild-index": "npx tsx scripts/rebuild-blog-index.ts",
-    "build:chatgpt-plugin": "node docs/chatgpt-review/build-plugin-zip.mjs"
+    "build:chatgpt-plugin": "node docs/chatgpt-review/build-plugin-zip.mjs",
+    "engine:build": "env -u ENGINE_SIGNING_KEY node ios/scripts/release-engine.mjs",
+    "engine:release": "env -u ENGINE_SIGNING_KEY node ios/scripts/release-engine.mjs --if-changed"
   },
   "type": "module",
   "engines": {

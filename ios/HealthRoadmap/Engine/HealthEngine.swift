@@ -24,13 +24,23 @@ final class HealthEngine {
     private let exports: JSValue
     /// HTTP, timers and the cloud calls the engine reaches Swift through.
     let natives: EngineNatives
+    /// Set when this is a downloaded engine on trial (EngineBoot, US-25 AC18).
+    @MainActor var trial: EngineTrial?
 
-    /// `session`: the URLSession the engine's fetch runs on; tests pass a stubbed one.
-    init(bundle: Bundle = .main, session: URLSession = .shared) throws {
+    /// The engine shipped in the app. `session`: the URLSession the engine's fetch
+    /// runs on (EngineHTTP's own by default); tests pass a stubbed one.
+    convenience init(bundle: Bundle = .main, session: URLSession = EngineHTTP.shared) throws {
         guard let url = bundle.url(forResource: "health-engine", withExtension: "js"),
-              let source = try? String(contentsOf: url, encoding: .utf8),
-              let context = JSContext()
+              let source = try? String(contentsOf: url, encoding: .utf8)
         else { throw EngineError.missingBundle }
+        try self.init(source: source, sourceURL: url, session: session)
+    }
+
+    /// An engine from source text: the bundled one, or a verified download (EngineBoot).
+    /// `quarantined`: a self-test context whose natives refuse every request and hold
+    /// no token (US-25 AC18).
+    init(source: String, sourceURL: URL?, session: URLSession = EngineHTTP.shared, quarantined: Bool = false) throws {
+        guard let context = JSContext() else { throw EngineError.missingBundle }
 
         // A bare JSContext has no console. The engine may log a warning; drop it,
         // because a log line must never carry a health value.
@@ -40,9 +50,9 @@ final class HealthEngine {
         let randomUUID: @convention(block) () -> String = { UUID().uuidString.lowercased() }
         context.setObject(["randomUUID": randomUUID], forKeyedSubscript: "crypto" as NSString)
         // fetch, timers and text coding for the cloud adapters (ios/engine/shim.ts).
-        natives = EngineNatives(session: session)
+        natives = EngineNatives(session: session, quarantined: quarantined)
         natives.install(in: context)
-        context.evaluateScript(source, withSourceURL: url)
+        context.evaluateScript(source, withSourceURL: sourceURL)
         if let exception = context.exception { throw EngineError.loadFailed(exception.toString()) }
 
         guard let exports = context.objectForKeyedSubscript("HealthEngine"), !exports.isUndefined

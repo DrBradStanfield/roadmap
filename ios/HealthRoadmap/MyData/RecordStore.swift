@@ -61,6 +61,17 @@ final class RecordStore {
     }
 
     private let engine: HealthEngine
+    /// A downloaded engine on trial (US-25 AC18).
+    var engineTrial: EngineTrial? { engine.trial }
+
+    /// The trial's confirm path from My data (review N1): only when the engine drew the
+    /// user's record AND planned it (a plan, or health-core's PlanError), never when either threw.
+    func confirmEngineTrial() {
+        guard let trial = engine.trial, myData != nil,
+              EngineTrial.planned(engine, recordJSON: recordJSON, deviceId: deviceId)
+        else { return }
+        trial.confirm()
+    }
     /// Where the record is kept.
     let file: URL
     let deviceId: String

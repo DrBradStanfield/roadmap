@@ -5,8 +5,8 @@ overnight). Built and on main: My data with medications, screenings, supplements
 history (US-25 AC5-AC9); the plan (AC1, AC2, AC6); welcome, rating prompt, icon (AC10);
 Dropbox sync on the shared sync engine (AC11; Google Drive waits on its iOS client id);
 reminders (AC12); Apple Health (AC13-AC15); erase and export (AC16); chat and lab upload
-behind App Attest (US-52, server routes off until deployed with a team id). Not built:
-over-the-air engine updates (D3). What Brad must do before TestFlight:
+behind App Attest (US-52, server routes off until deployed with a team id); over-the-air
+engine updates, signed (D3, AC18, 2026-10-22). What Brad must do before TestFlight:
 [launch-checklist.md](launch-checklist.md). This file records what we decided for the
 native iPhone app and why. It is the entry point for anyone, human or agent, working in
 `ios/`.
@@ -92,25 +92,165 @@ it shared, so a fix to `dropbox-rest.ts`, `drive-rest.ts`, `SyncManager` or
   them with a continuation, and JavaScriptCore runs the promise jobs when each call from
   Swift returns. The bundle is 510 KB with sync.
 
-### D3 · Clinical fixes ship over the air, signed (Brad, 2026-10-21)
+### D3 · Clinical fixes ship over the air, signed (Brad, 2026-10-21; built 2026-10-22, US-25 AC18)
 
 The engine bundle can be updated without an App Store release. Apple's developer agreement
 allows an app to download interpreted code if it does not change the app's advertised
-purpose; Expo Updates and CodePush rely on the same rule. Conditions we hold ourselves to:
+purpose; Expo Updates and CodePush rely on the same rule. Brad, 2026-10-22: "should
+automatically come through if I update github". How to release: [engine-updates.md](engine-updates.md).
 
-- **Signed.** Each bundle is signed with an offline key; the app checks the signature
-  (CryptoKit) before it runs a byte. An unsigned or mismatched bundle is refused.
-- **Engine only.** An update changes computation and text, never what the app can reach:
-  the native bridge is fixed in the binary.
-- **Safe fallback.** The app ships with a bundled engine and keeps the last good update. A
-  bundle that fails its self-test on load is dropped and the previous one runs.
-- **Versioned.** A bundle declares the minimum app version it needs. An app too old for a
-  required fix says "update the app".
-- **Disclosed.** The update check is a request to a static host and carries no health data.
-  The privacy text says it exists.
+**What was built.** The release is three files in `ios/engine-release/bridge-<id>/` on
+`main`: the bundle as `<sha256>.js`, `manifest.json` and `manifest.sig`. Two steps
+write them, so no repo code runs next to a key (review R1, N3, N4): `npm run
+engine:build` runs `env -u ENGINE_SIGNING_KEY node ios/scripts/release-engine.mjs`, a
+first module that refuses if a key is still in its environment and only then imports
+the build code (`release-build.mjs`: esbuild and the parity check; a test shows no build
+module is loaded with a key present). Then `node ios/scripts/sign-engine.mjs`, run
+directly, not through npm (Node's own modules and `engine-signing.mjs` only, the Keychain
+read through `/usr/bin/security` by absolute path), checks the manifest and bundle on
+disk and signs. The app reads them from
+`raw.githubusercontent.com`. GitHub is a dumb host: trust comes only from the signature,
+so a push to `main` by a loop or anyone else reaches no phone unless Brad's key signed it.
+A signature means "the key holder approved this bundle", nothing more.
 
-This is security work: its design gets a fresh adversary and a Codex review before it is
-built.
+- **Signed, by pinned keys.** Ed25519 over `"health-roadmap-engine-manifest/v1\n"` plus
+  the manifest's exact bytes (the prefix stops a signature made for anything else passing
+  as a manifest's). Three keys, pinned by id in `EngineRelease.swift` and
+  `ios/engine/signing-keys.json`: `daily` in Brad's login Keychain, trusted by no app, so
+  every read asks him (adversary R9: not a 0600 file, which any process of his could
+  read), and never anywhere else; `cold` in 1Password only, for a lost Mac; and `ci`,
+  only in the GitHub `engine-signing` environment's secret, for the workflow (pinned
+  2026-10-22 before any app shipped, so it cost no app update; orchestrator's call). Any pinned key verifies; the
+  manifest's `keyId` must name the one that did. The manifest must be the one canonical
+  spelling (keys sorted, no whitespace), so a duplicate or unknown key is refused (R5).
+- **The manifest** (`format` 1): `appId`, `channel` "production", `bridge`,
+  `schemaVersion`, `version` (UTC yyyymmddHHMM, at most one a minute), `issuedAt`,
+  `notAfter` (30 days on), `minVersion`, `minAppBuild`, `sha256`, `size` (R2, R12). Checked
+  in this order: signature before any parse, then the fields. `notAfter` and "no more than
+  two days ahead of the phone's clock" apply only to installing, never to running a
+  bundle already installed, so a phone with a wrong clock keeps working (R2). The version
+  must beat both the bundled engine and the highest version this phone ever accepted
+  (anti-rollback), and `minVersion` raises a floor the phone keeps, which kills a bad
+  release.
+- **The bridge is a hash (R7).** `bridge` is the first 16 hex digits of the SHA-256 of
+  `ios/engine/bridge-contract.json`: the natives, the doors with their arguments, the
+  events. `bridge.test.ts` (Node) and `EngineBridgeContractTests` (XCTest) fail if either
+  side drifts from the file, so an engine that needs a new native cannot reach an app
+  without it: it lands in a new `bridge-<id>` folder that old apps never read.
+- **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
+  bundled engine's is refused. A schema change always needs an app update, so an over-the-
+  air engine can never write a record the web or an older phone cannot read.
+- **The bundled engine has a version** (`health-engine.json`, beside the bundle): the
+  source commit's UTC minute, not the build time, so a release built later from the same
+  source is newer, and an App Store update whose engine is newer deletes older downloads.
+- **The check** (`EngineUpdater`): on coming on screen, launch included, at most once in 6
+  hours. Two GETs (manifest, signature) on an ephemeral session: no cookies, no cache, a
+  plain User-Agent, no redirects, 15 s timeouts, no health data, no device id. Only a
+  verified manifest leads to the third GET, the bundle, read up to its declared size (8 MB
+  cap) and refused unless its SHA-256 matches. It is staged in `Application
+  Support/Engine` (left out of backups, as the record is) with its manifest and signature.
+  Failures are silent and keep the current engine. Its last write re-reads the state and
+  changes only `highWater`, `floor` and `lastCheck`, so a trial confirmed during a
+  download is kept (review R4).
+- **The state file** (`state.json`) decodes a missing field as its default. `highWater`
+  and `floor` are mirrored into the Keychain (`EngineWatermark`, this device only, after
+  first unlock, only ever raised), and every read of the state is raised to them, so
+  losing or damaging the file never lowers either (review N5). A file that reads but does
+  not decode is corrupt, not locked: it is moved aside, every staged version is deleted
+  (the record of which were bad went with it), and the state starts again with
+  `highWater` at the higher of the Keychain's and the bundled engine's version and
+  `floor` at the Keychain's (review R8, N5). One that cannot be read (before first
+  unlock) is "not now".
+- **Activation** (`EngineBoot`), only at a fresh launch, never mid-session. The staged file
+  is read once; the signature and fields are checked again against today's pins (a key
+  removed in an app update stops its bundles), and the hash against the bytes in memory,
+  which are the bytes run (R6). Then a **quarantine** (R6, R11): the bundle loads in a
+  JSContext whose natives refuse every request, hold no token and keep the phone file in
+  memory, and `EngineSelfTest` runs: version, schema, every contract door, a new record,
+  edits, My data, a plan and its layout, and merge goldens (no row lost or invented,
+  entered-in-error sticky, the higher `eraseEpoch` wins). Only then is the real context
+  built, from the same bytes. **The self-test catches accidents, not malice**: a hostile
+  engine could pass it. The signature is what keeps hostile engines out.
+- **Fallback.** A "trying" mark is written before a version's first foreground load and
+  cleared once the engine has shown the user's own record and planned it: My data drawn
+  from it (`RecordStore.confirmEngineTrial`, which also runs the plan on that record,
+  silently) or the plan screen, whichever comes first; orchestrator's call, 2026-10-22.
+  Both confirm only when the plan worked or met health-core's own PlanError (no height
+  or sex), never when the engine threw (review R5, N1). So a crash or hang on the real record
+  counts, not only one on the self-test's fixture, while quitting does not: the app opens
+  on My data, which confirms at once. Still there at the next foreground launch means
+  that launch crashed or hung before the record was shown, and the version is marked
+  bad. The cost that remains: a launch killed in that first moment, or a record My data
+  cannot draw when the user never opens My plan, marks a good release bad on that phone,
+  which then runs the bundled engine until the next release gets its own trial. A failed check or self-test marks it bad too. Bad
+  versions are deleted and never tried again; the next staged version, or the bundled
+  engine, runs. **Background launches (R8)** (a Health delivery) never try a new engine:
+  they run only a version that passed a foreground launch, and an unreadable file there
+  (before first unlock) means "not now", never "bad".
+- **Swift holds the tokens; the network is fenced (R3, R4).** The engine's `accessToken`
+  native answers the sentinel `native-token:<provider>`, never the token. Native `http`
+  (`EngineHTTP`) sends only the allow-listed calls, method, host and path, of the provider
+  the sentinel names: Dropbox `files/download`, `files/upload`, `files/list_folder`
+  (+`/continue`); Drive `files` list, create, get (metadata and media) and the upload
+  create and update. Each route also lists its query parameters (Dropbox none; Drive
+  only what drive-rest.ts sends on it: `q`, `spaces`, `fields`, `pageSize`, `pageToken`,
+  `alt`, `uploadType`), and every call may carry only the adapters' headers
+  (`Content-Type`, `Dropbox-API-Arg`, `Accept`, `Content-Length`) besides the sentinel;
+  `access_token`, `authorization`, `oauth_token` and `key` in a query are refused in any
+  case (review R2). It swaps the real token in there and nowhere else. Any other header,
+  path (Dropbox `sharing/*`, `delete_v2`, Drive `permissions`), host (the app's own
+  server included) or plain http is refused. The engine has its own ephemeral session,
+  and every redirect is refused. The upload branch's lab reads (`files/list_folder` and
+  `files/download`, no query) fit the list as it is. So no engine, however changed, can
+  send the record or a token anywhere new by itself. **One path remains, by design: the
+  chat context** (review R7). The engine builds it from the record, and Swift sends it
+  to our server when the user asks a question (US-52); the server rebuilds its prompt
+  from it rather than passing it on as it is. Swift checks it is a JSON object with a
+  unit system and under 512 KB, and sends only the top-level keys `chatContextOf` can
+  produce (`ChatClient.contextKeys`; `chat-context-keys.test.ts` fails if health-core's
+  set drifts), dropping any other (`ChatClient.body`, Codex R3). Derived from
+  dropbox-rest.ts and drive-rest.ts on the app's path; `get_metadata` and longpoll are
+  left off because the app never calls them (push is web-only). **Before Drive sync goes
+  live, check that Drive's `alt=media` download answers directly, without a redirect**:
+  a redirect (to googleusercontent.com, say) is refused, which would break Drive reads.
+- **Disclosed (R13, R14).** The privacy policy says GitHub sees the phone's IP address
+  when it checks and the check carries no health data; the App Review notes say updates
+  change computation and text only (ios/app-store.md). The plan line ("Worked out on this
+  iPhone", D9) stays true.
+- **Automatic on GitHub.** Workflows are Brad's, so agents wrote the job for him to paste
+  (engine-updates.md, R1, R3, N2): a build job with no secret (`npm ci --ignore-scripts`)
+  uploads the artifact; a `verify` job, with no repo code and no npm, writes that
+  artifact's manifest and sha256s and the engine source log and diffstat since the last
+  release into its run summary, for Brad to read before he approves; then a signing job
+  in a separate `engine-signing` environment (Brad the required reviewer, `main` only,
+  the `ci` key) checks the same artifact against the bridge the build declared, signs it
+  with openssl, and commits only the new files, refusing to lower or replace a newer
+  release on `main`. Neither of the last two runs repo code. Until he pastes it, releasing is the two local steps.
+- **Revocation needs the repo public** (review R10). Phones read releases without a
+  sign-in; if the repo goes private, no phone can fetch a release that raises the floor
+  to kill a bad one. The fallback is an App Store update, whose newer bundled engine
+  makes phones delete older downloads.
+- **Prewarm is unverified** (review R9). iOS may prewarm the app before the user opens
+  it; whether that launch counts as foreground for the trial is unchecked on a real
+  iPhone (ios/launch-checklist.md).
+- **Usage signal:** engine-load failures in crash reports (App Store Connect); the app
+  sends nothing (D9). A version refused at launch is in the device log (no health value).
+- **DEBUG only, compiled out of Release:** launch arguments `-EngineUpdateBaseURL` (a
+  local server) and `-EngineUpdateTestKey` (a throwaway key), for the end-to-end check.
+
+**Checked end to end, 2026-10-22,** in the simulator against a local server (DEBUG base
+URL and a throwaway key): the first launch fetched the manifest, signature and bundle and
+staged release 202610212108; the next launch ran it after its self-test ("running
+downloaded engine 202610212108", marked proven); with one byte of the staged file flipped,
+the next launch refused it (hashMismatch), marked it bad and ran the bundled engine. With the
+trial held until the record is shown (confirmed by the plan only), release 202610212136's
+mark stayed through the welcome screen and My data and cleared when My plan opened. With
+My data confirming too, release 202610212154 was proven within six seconds of launch,
+before Get started was tapped: the welcome screen is a full-screen cover, and My data
+draws the record beneath it.
+
+**Known gaps.** Only names and arities of doors are drift-checked; their JSON shapes
+are described in the contract and pinned by the self-test and the app's own tests.
 
 ### D4 · Shared store logic moves into health-core (Brad, 2026-10-21)
 
@@ -688,7 +828,8 @@ The plan screen said "No health data left your device". That was true only while
 had no network code; D8's chat and upload re-derived it to "Worked out on this iPhone"
 (2026-10-21). The first network call (D3's update check, D5's sync, D8's chat)
 must re-derive that sentence in the same commit.
-With D5's sync (2026-10-21) the plan line stays as it is: it claims only where the
+D3's update check (2026-10-22) sends no health data, so the plan line stands; the
+privacy policy names GitHub. With D5's sync (2026-10-21) the plan line stays as it is: it claims only where the
 plan was worked out. Where the record is kept is said on My data
 (`SyncStatusText.myDataFooter`): the connected cloud, or after a Disconnect that a copy
 stays in the cloud synced earlier, or only this iPhone.
@@ -798,6 +939,11 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
   JavaScriptCore) into `HealthRoadmap/Engine/health-engine.js`, and writes the parity
   goldens. Run it before any Xcode build: `node ios/scripts/build-engine.mjs`. Its outputs
   are generated and ignored by git.
+- `scripts/release-engine.mjs` (`npm run engine:build`, loading `release-build.mjs`), `scripts/sign-engine.mjs` (run directly), `scripts/engine-keygen.mjs`,
+  `scripts/engine-signing.mjs`: signed over-the-air releases into `engine-release/` (D3).
+  `engine/bridge-contract.json` is the native bridge's contract; its hash is the bridge id.
+  Tested by `scripts/release-engine.test.ts`, `scripts/signing-key-guard.test.ts` and
+  `engine/bridge.test.ts`.
 - `scripts/test.sh`: builds the engine and runs the tests once in UTC and once in
   Pacific/Auckland. Gotcha (2026-10-21): JavaScriptCore reads the time zone once per
   process, so `setenv("TZ")` inside a test does not reach the engine; the first
@@ -811,8 +957,13 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
   - `App/`: the entry point (`AppParts` makes the engine and the record once) and
     `RootView`, the two tabs: My data first, then My plan, the web's mobile order.
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext` and awaits its
-    Promises; `EngineNatives.swift` is the bridge (D2); `HealthEngine+Cloud.swift` the
-    typed cloud doors. The generated bundle sits beside them.
+    Promises; `EngineNatives.swift` is the bridge (D2); `EngineHTTP.swift` its network
+    fence (D3); `HealthEngine+Cloud.swift` the typed cloud doors. The generated bundle and
+    its `health-engine.json` sidecar sit beside them.
+  - `EngineUpdates/`: over-the-air engines (D3, AC18). `EngineRelease` (pins, bridge,
+    limits, address), `EngineManifest` (`ManifestCheck`), `EngineFolder` (staging and
+    state), `EngineUpdater` (the check), `EngineBoot` (which engine runs),
+    `EngineSelfTest` (the quarantine's test and `QuarantinePort`).
   - `Sync/`: cloud sync (D5, US-25 AC11). `CloudProvider` (client ids, redirects),
     `PKCE`, `TokenStore` (Keychain), `OAuthClient` (sign-in and refresh), `CloudSync`
     (opens the engine's session, follows the app on and off screen, answers the engine's
@@ -902,7 +1053,7 @@ then about 1 ms each.
    Program as the company (D-U-N-S), a test iPhone.
 1. **Spike, go/no-go:** done 2026-10-21 for the engine, Dropbox sync (stubbed and
    Node-tested; the live check waits on a sign-in) and Apple Health (simulator). The
-   over-the-air update path (D3) is not built.
+   over-the-air update path (D3) was built 2026-10-22.
 2. **TestFlight:** every feature is built (2026-10-21); a real iPhone and Brad's
    accounts are owed (launch-checklist.md).
 3. **Health Records labs and camera lab upload.**
