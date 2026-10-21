@@ -51,7 +51,7 @@ vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete, history }: { onCom
   return null;
 } }));
 
-import { HealthTool } from './HealthTool';
+import { HealthTool, WRITE_REFUSED } from './HealthTool';
 
 /** The guest's record as this browser holds it, after every pending save. */
 async function recordOnDisk(): Promise<RoadmapFile> {
@@ -477,6 +477,26 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     expect(banner()).not.toBeNull();
   });
 
+  // US-34 AC4: the relay holds a remote change behind an unsaved profile
+  // edit until that edit saves. When the change is an erase the save is
+  // refused, and the refusal must still let the page catch up.
+  it('a profile save refused behind a held remote erase says so and shows the erased record', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuest(cloud, { sex: 'male', heightCm: 175 });
+    const alert = vi.fn();
+    vi.stubGlobal('alert', alert);
+    fireEvent.change(view.container.querySelector('#birthYear')!, { target: { value: '1975' } });
+    await otherDeviceErases(cloud);
+    await act(async () => { await (await thisTabsStore()).refreshFromRemote(); });
+    // Held: the form still shows the old record.
+    expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value).toBe('175');
+    await wait(1500); // the profile save is due, refused, and the page re-reads
+    expect(alert).toHaveBeenCalledWith(WRITE_REFUSED);
+    expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value ?? '').toBe('');
+    const stored = (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+    expect(stored.profile).not.toHaveProperty('birthYear');
+  });
+
   it('US-09 AC23: an erase refused because the cloud cannot be read leaves the medications and screenings on screen', async () => {
     const cloud = new MemoryCloud();
     await initRoadmapStore(new MemoryAdapter(cloud));
@@ -588,6 +608,27 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     expect(meds).not.toContain('rosuvastatin');
     // The reply came from the conversation the erase tombstones (review R4).
     expect(meds).not.toContain('atorvastatin');
+  });
+
+  // Adversary probe: the profile's 500 ms auto-save, scheduled just before
+  // Delete, fired while the erase wrote and put the height into the erased record.
+  it('a height typed just before Delete, saved by the profile timer during the erase write, does not land', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await cloudGuestOnStatin(adapter);
+    const erase = adapter.hold();
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '191' } });
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await erase.reached;
+    await wait(800); // the profile timer fires while the erase writes
+    erase.release();
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    await wait(1500);
+    expect(((await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile).profile).not.toHaveProperty('heightCm');
+    expect(alert).toHaveBeenCalledTimes(1); // the erase's own; this tab's erase threw the edit away
   });
 
   it('a form edit made while this tab\'s erase is writing is not saved into the erased record', async () => {

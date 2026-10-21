@@ -333,6 +333,11 @@ export class RoadmapStore {
    *  re-read or its own write. Never a read it did not merge in, such as a
    *  save's verify-after-write (US-34 AC6). */
   private seenRevision: string | null = null;
+  /** The erase the page shows (`showErase`); null until a page says, and
+   *  then no write is checked against it. */
+  private shown: string | null = null;
+  /** From the erase's swap to the end of its write. */
+  private erasing = false;
 
   private constructor(
     private readonly sync: SyncManager<RoadmapFile>,
@@ -400,6 +405,21 @@ export class RoadmapStore {
     return JSON.stringify(eraseOf(this.file));
   }
 
+  /** The erase the page shows. Every write below is refused while this copy
+   *  is at another one, or while this copy's own erase is swapping in and
+   *  writing: what the page shows is pre-erase, and the write would carry it
+   *  into the erased record (US-16 AC2a). A refusal is the method's error
+   *  answer, never a throw. */
+  showErase(identity: string): void {
+    this.shown = identity;
+  }
+  get shownErase(): string {
+    return this.shown ?? this.eraseIdentity;
+  }
+  private get refusesWrites(): boolean {
+    return this.erasing || (this.shown !== null && this.shown !== this.eraseIdentity);
+  }
+
   // ===================================================================== reads
 
   loadLatestMeasurements(): LatestMeasurementsResult {
@@ -457,6 +477,7 @@ export class RoadmapStore {
   // ================================================================= mutations
 
   addMeasurement(metricType: string, value: number, recordedAt?: string): AddMeasurementResult {
+    if (this.refusesWrites) return { status: 'error' };
     // No date picked = today, in the USER'S timezone and at the day granularity
     // the picked-date path already stores — otherwise an evening entry lands on
     // the previous UTC day and the two paths fight over one slot.
@@ -485,6 +506,7 @@ export class RoadmapStore {
    *  the new number on the SAME day with `correctsId`, flip the old row.
    *  `newValue` is in the unit the row is stored in (SI for a core metric). */
   correctValue(id: string, newValue: number): CorrectStatus {
+    if (this.refusesWrites) return 'error';
     const result = correctRecordValue(this.file, { id, newValue, now: new Date().toISOString() });
     if (!result.ok) return result.reason === 'not-found' || result.reason === 'not-active' ? 'changed' : 'invalid';
     this.file = result.file;
@@ -493,6 +515,7 @@ export class RoadmapStore {
   }
 
   saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>): boolean {
+    if (this.refusesWrites) return false;
     this.applyProfileChanges(current, previous);
     // diffInputsToMeasurements (health-core) owns the field→metric map + change detection.
     for (const { metricType, value } of diffInputsToMeasurements(current, previous)) {
@@ -502,6 +525,7 @@ export class RoadmapStore {
   }
 
   saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null): boolean {
+    if (this.refusesWrites) return false;
     // Classify against the current record BEFORE the upsert mutates it; a
     // non-null result appends one append-only history row (never edited or
     // deleted — merges across devices by id union). Identical re-saves and
@@ -522,6 +546,7 @@ export class RoadmapStore {
   }
 
   saveSupplement(supplementKey: string, supplementName: string, doseValue: number | null = null, doseUnit: string | null = null, status = 'active', startedAt?: string): boolean {
+    if (this.refusesWrites) return false;
     const prev = this.file.supplements.find((s) => s.supplementKey === supplementKey);
     const changeType = classifySupplementChange(prev, {
       supplementName, doseValue, doseUnit, status: status as FileSupplement['status'],
@@ -550,11 +575,11 @@ export class RoadmapStore {
     // last-write-wins merge against another device's copy) AND records the
     // 'stopped' history row. Re-deleting an already-stopped row appends nothing.
     const s = this.file.supplements.find((x) => x.supplementKey === supplementKey);
-    if (s) this.saveSupplement(s.supplementKey, s.supplementName, s.doseValue, s.doseUnit, 'stopped', s.startedAt);
-    return true;
+    return s ? this.saveSupplement(s.supplementKey, s.supplementName, s.doseValue, s.doseUnit, 'stopped', s.startedAt) : !this.refusesWrites;
   }
 
   saveScreening(screeningKey: string, value: string): boolean {
+    if (this.refusesWrites) return false;
     const field = screeningFieldName(screeningKey);
     // A blank or unreadable number is stored as null, which clears the field (US-10 AC6).
     const parsed = NUMERIC_SCREENING_KEYS.has(screeningKey) ? parseLocalisedNumber(value) ?? null : value;
@@ -571,6 +596,7 @@ export class RoadmapStore {
    *  the connector's import, US-35 AC8): replace-on-`correctsId` only while
    *  that row still holds the slot, skip a taken slot, never two actives. */
   bulkSaveMeasurements(measurements: BulkMeasurementInput[]): BulkSaveResult {
+    if (this.refusesWrites) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
     const { saved, skippedDuplicates, measurementRefusals } = this.bulkSave(measurements.map((m) => ({ kind: 'measurement' as const, ...m })));
     // A refused number is the caller's to SHOW, like a refused lab unit: no
     // retry can change it, so it is not an error (US-12 AC6, US-35 AC17).
@@ -578,6 +604,7 @@ export class RoadmapStore {
   }
 
   bulkSaveLabValues(values: BulkLabValueInput[]): BulkLabValuesResult {
+    if (this.refusesWrites) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
     const { saved, skippedDuplicates, refused } = this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' })));
     return { saved: saved as ApiLabValue[], skippedDuplicates, errorCount: 0, refused };
   }
@@ -689,6 +716,9 @@ export class RoadmapStore {
       }),
     );
 
+    // Checked once the uploads end, since an erase can begin while they run;
+    // a refused batch leaves its blobs as harmless orphans.
+    if (this.refusesWrites) return { saved: [], errorCount: documents.length };
     const failed = new Set(writes.filter((w) => w.failed).map((w) => w.doc));
     const saved = out.filter((d) => !failed.has(d));
     this.file.documents.push(...saved);
@@ -703,7 +733,7 @@ export class RoadmapStore {
 
   deleteDocument(documentId: string): boolean {
     const doc = this.file.documents.find((d) => d.id === documentId);
-    if (!doc || doc.deleted) return false;
+    if (!doc || doc.deleted || this.refusesWrites) return false;
     // Tombstone, never splice — a hard-removed row resurrects from any other
     // copy via the union merge. The blob (if any) stays put as a harmless
     // orphan in the user's own cloud; they can remove it there if they wish.
@@ -739,7 +769,7 @@ export class RoadmapStore {
 
   /** Mark the email-capture step done (monotonic, stamped + persisted). */
   markReportEmailCaptured(): void {
-    if (this.file.profile.reportEmailCaptured) return; // idempotent — only ever set true
+    if (this.file.profile.reportEmailCaptured || this.refusesWrites) return; // idempotent — only ever set true
     this.file.profile = stampFields(this.file.profile, { reportEmailCaptured: true }, new Date().toISOString());
     this.touch();
   }
@@ -751,7 +781,7 @@ export class RoadmapStore {
 
   /** Remember Lp(a)'s field unit: a profile preference, stamped like the others so it syncs (US-05 AC2). */
   setLpaUnit(unit: LpaUnit): void {
-    if (this.file.profile.lpaUnit === unit) return;
+    if (this.file.profile.lpaUnit === unit || this.refusesWrites) return;
     this.file.profile = stampFields(this.file.profile, { lpaUnit: unit }, new Date().toISOString());
     this.touch();
   }
@@ -762,6 +792,7 @@ export class RoadmapStore {
 
   /** Set/replace the opt-in singleton (status flips included), stamped + persisted. */
   setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>): void {
+    if (this.refusesWrites) return;
     const prev = this.file.reminderOptIn;
     this.file.reminderOptIn = {
       ...fields,
@@ -854,6 +885,7 @@ export class RoadmapStore {
       const seen = [stored?.meta.updatedAt, this.file.meta.updatedAt].map(stampInstant);
       const floor = seen.filter((t) => t <= now + 86_400_000); // NaN fails too
       const erasedAt = new Date(Math.max(now, ...floor) + 1).toISOString();
+      this.erasing = true;
       this.file = migrateFile(null, ctx);
       this.file.schemaVersion = CURRENT_SCHEMA_VERSION;
       this.file.erasedRows = erasedRows;
@@ -866,7 +898,11 @@ export class RoadmapStore {
         };
       }
       this.touch(); // a change like any other: a failed flush leaves it for a hide to retry
-      await this.flush();
+      try {
+        await this.flush();
+      } finally {
+        this.erasing = false;
+      }
       erased = true;
       // The erase reached the cloud — wipe the on-device residue too (failure
       // mirror + marker + named files/documents), so no pre-erase copy outlives
@@ -1192,6 +1228,9 @@ export class RoadmapStore {
       return true;
     } catch (error) {
       this.running = null; // as above: ended before the marker is announced
+      // A pass that landed before this one failed may have folded a remote
+      // change in: the page must still hear of it (adversary R3).
+      if (remoteFolded) notify(REMOTE_CHANGED_EVENT);
       // The background cloud save failed — this MUST be observable (unreported,
       // it's silent data-at-risk), and the changes must NOT stay memory-only:
       // mirror the working copy on-device so a tab close can't lose it, and

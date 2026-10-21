@@ -37,6 +37,9 @@ let store: RoadmapStore | null = null;
  *  chose could not be read (US-09 AC13). */
 export async function initRoadmapStore(adapter: StorageAdapter, cloudUnreachable = false): Promise<void> {
   store = await RoadmapStore.create(adapter, cloudUnreachable);
+  // The page about to render shows this erase; it moves the mark as it shows
+  // another, and the store refuses a write made against an older one (US-16 AC2a).
+  store.showErase(store.eraseIdentity);
   // Both surfaces init here, so this is the one place the live re-read starts
   // (US-34). It runs for the life of the page; nothing unmounts the data layer.
   store.startLiveRefresh();
@@ -68,6 +71,13 @@ export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' 
  *  another device's once re-read (US-16 AC2a). */
 export function getEraseIdentity(): string {
   return store?.eraseIdentity ?? '';
+}
+/** The erase the page shows, and its mark once the page shows another. */
+export function getShownErase(): string {
+  return store?.shownErase ?? '';
+}
+export function markEraseShown(identity: string): void {
+  store?.showErase(identity);
 }
 
 /** Where the record lives, as the usage counters name it (US-34). */
