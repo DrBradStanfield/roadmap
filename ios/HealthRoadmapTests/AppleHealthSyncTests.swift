@@ -1,7 +1,7 @@
 import XCTest
 @testable import HealthRoadmap
 
-/// US-25 AC8–AC10 (ios/architecture.md D6): Apple Health readings land in the
+/// US-25 AC13–AC15 (ios/architecture.md D6): Apple Health readings land in the
 /// record through the engine, the anchor moves only after the record is on
 /// disk, typed values go back to Health once per version, and a locked phone
 /// waits instead of failing. HealthKit itself is faked (`FakeHealthStore`).

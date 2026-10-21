@@ -21,7 +21,7 @@ type Source = { body: ReadableStream<Uint8Array> | null } | AsyncIterable<Uint8A
  * never believed — a chunked body has none at all. Takes a web `Request` or
  * `Response`, or a Node stream such as an `IncomingMessage`.
  */
-async function readCappedBytes(source: Source, cap: number): Promise<Buffer> {
+export async function readCappedBytes(source: Source, cap: number): Promise<Buffer> {
   // A web stream is async-iterable in Node; the DOM types just do not say so.
   const chunks = 'body' in source ? (source.body as unknown as AsyncIterable<Uint8Array> | null) : source;
   if (!chunks) return Buffer.alloc(0);

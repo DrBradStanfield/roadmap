@@ -1,4 +1,4 @@
-// US-25 AC9 (ios/architecture.md D6): the values a person typed go to the
+// US-25 AC14 (ios/architecture.md D6): the values a person typed go to the
 // device store (Apple Health). Only each slot's active row, never a row that
 // came from that store, and keyed by the root of its correction chain with a
 // rising version, so a correction replaces the sample instead of adding one.

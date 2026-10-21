@@ -1,4 +1,4 @@
-// US-25 AC8 (ios/architecture.md D6): readings from a device store (Apple
+// US-25 AC13 (ios/architecture.md D6): readings from a device store (Apple
 // Health) become appended rows, under the record's own rules. The importer
 // fills an empty day or replaces a day its own source holds; it never
 // supersedes a value a person typed or corrected, never imports a reading

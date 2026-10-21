@@ -3,6 +3,7 @@
 // JavaScriptCore; these tests run it in Node.
 import { describe, expect, it } from 'vitest';
 import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord } from './my-data';
+import { metricHistory } from './my-data-forms';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
 const NOW = '2026-10-21T08:00:00.000Z';
@@ -196,9 +197,9 @@ describe('medications and supplements (US-06, D4b)', () => {
   });
 });
 
-// US-25 AC8/AC9 (ios/architecture.md D6): Apple Health in and out, through
+// US-25 AC13/AC14 (ios/architecture.md D6): Apple Health in and out, through
 // health-core's device-import and device-export (their rules are tested there).
-describe('Apple Health (AC8, AC9)', () => {
+describe('Apple Health (AC13, AC14)', () => {
   const reading = { externalId: 'hk-1', metricType: 'weight', value: 80, measuredAt: '2026-10-21T08:30:00+13:00' };
 
   it('takes readings in as apple_health rows, shown in My data', () => {
@@ -221,5 +222,145 @@ describe('Apple Health (AC8, AC9)', () => {
   it('lists a typed weight as a write to Apple Health, and an imported one not', () => {
     const typed = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'weight', value: 80, day: '2026-10-20' }, { kind: 'appleHealth', samples: [reading] });
     expect(healthWrites(typed)).toEqual([{ syncId: typed.measurements[0].id, version: 1, day: '2026-10-20', values: { weight: 80 } }]);
+  });
+});
+
+// US-25 AC8: the medication, screening and supplement questions, health-core's
+// input-form, answered through the web's own writes.
+describe('forms (AC8)', () => {
+  /** A 60-year-old man, 180 cm, NZ units, with an ApoB over target. */
+  function man60(...extra: Parameters<typeof applyEdit>[1][]): RoadmapFile {
+    return edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', sex: 'male', birthYear: 1966, birthMonth: 1, height: 180 },
+      { kind: 'add', metric: 'apob', value: 1.3, day: '2026-10-01' }, ...extra);
+  }
+
+  it('shows no screening questions, and says why, until About you is complete', () => {
+    const data = myData(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), NOW);
+    expect(data.screenings).toEqual([]);
+    expect(data.screeningNote).toMatch(/sex, birth year and height/);
+    expect(data.medications).toEqual([]);
+  });
+
+  it('asks the web\'s questions for the plan\'s age and sex, and the cascade\'s first step', () => {
+    const data = myData(man60(), NOW);
+    expect(data.screenings[0].groups.map((g) => g.id)).toEqual(['colorectal', 'lung', 'prostate']);
+    expect(data.medications.map((s) => s.id)).toEqual(['lipid-medications']);
+    expect(data.medications[0].groups[0].fields[0]).toMatchObject({ key: 'statin', label: 'Statin' });
+    expect(data.months.past.at(-1)).toBe('2026-10');
+  });
+
+  it('a medication answer writes the web\'s rows: a statin with its first dose', () => {
+    const file = man60({ kind: 'medicationField', field: 'statin', value: 'atorvastatin' });
+    expect(file.medications).toEqual([expect.objectContaining({ medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 10, doseUnit: 'mg' })]);
+    expect(myData(file, NOW).medications[0].groups.map((g) => g.id)).toEqual(['statin', 'ezetimibe']);
+  });
+
+  it('refuses a medication question the form does not show, or an answer it does not offer', () => {
+    const file = man60();
+    expect(applyEdit(file, { kind: 'medicationField', field: 'pcsk9i', value: 'yes' }, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+    expect(applyEdit(file, { kind: 'medicationField', field: 'statin', value: 'aspirin' }, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+    expect(applyEdit(file, { kind: 'medicationField', field: 'statin_dose', value: '10' }, NOW)).toMatchObject({ ok: false });
+  });
+
+  it('a screening answer is setScreening, and "not yet started" clears what it closes', () => {
+    let file = man60({ kind: 'screening', key: 'colorectal_method', value: 'fit_annual' }, { kind: 'screening', key: 'colorectal_last_date', value: '2025-03' });
+    expect(file.screenings).toMatchObject({ colorectalMethod: 'fit_annual', colorectalLastDate: '2025-03' });
+    file = edited(file, { kind: 'screening', key: 'colorectal_method', value: 'not_yet_started' });
+    expect(file.screenings.colorectalMethod).toBe('not_yet_started');
+    expect(file.screenings.colorectalLastDate ?? '').toBe('');
+  });
+
+  it('refuses an unknown key, a hidden question, a month out of range and a bad pack-years', () => {
+    const file = man60({ kind: 'screening', key: 'lung_smoking_history', value: 'former_smoker' });
+    const refused = (key: string, value: string) => expect(applyEdit(file, { kind: 'screening', key, value }, NOW), `${key}=${value}`).toMatchObject({ ok: false });
+    refused('colon_vibes', 'yes');
+    refused('breast_frequency', 'annual');
+    refused('colorectal_method', 'tea_leaves');
+    refused('lung_pack_years', '-3');
+    refused('lung_pack_years', '2.5');
+    expect(edited(file, { kind: 'screening', key: 'lung_pack_years', value: '30' }).screenings.lungPackYears).toBe(30);
+    const dated = man60({ kind: 'screening', key: 'colorectal_method', value: 'fit_annual' });
+    expect(applyEdit(dated, { kind: 'screening', key: 'colorectal_last_date', value: '2027-01' }, NOW)).toMatchObject({ ok: false });
+    expect(applyEdit(dated, { kind: 'screening', key: 'colorectal_last_date', value: '2026-13' }, NOW)).toMatchObject({ ok: false });
+  });
+
+  it('shows PSA as a row once a man will screen; it saves as a measurement', () => {
+    const file = man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' }, { kind: 'add', metric: 'psa', value: 1.2, day: '2026-10-02' });
+    const data = myData(file, NOW);
+    expect(data.screenings[0].groups.find((g) => g.id === 'prostate')!.fields[1]).toMatchObject({ kind: 'measurement', metric: 'psa' });
+    expect(data.psa.latest).toMatchObject({ value: '1.2', day: '2026-10-02' });
+  });
+
+  it('lists supplements: quick-add first, a typed one keyed by the web\'s rule, a stopped one kept', () => {
+    let file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    expect(myData(file, NOW).supplements.choices.slice(0, 2)).toEqual([
+      { key: 'microvitamin', name: 'Micronutrient base', featured: true, dose: 1, unit: 'serving' },
+      { key: 'creatine', name: 'Creatine', featured: true, dose: 5, unit: 'g' },
+    ]);
+    file = edited(file, { kind: 'customSupplement', name: '  Lion\'s Mane ' });
+    expect(file.supplements[0]).toMatchObject({ supplementKey: 'custom_lion_s_mane', supplementName: 'Lion\'s Mane', status: 'active' });
+    file = edited(file, { kind: 'supplement', supplementKey: 'custom_lion_s_mane', supplementName: 'Lion\'s Mane', status: 'stopped' });
+    const view = myData(file, NOW).supplements;
+    expect(view.active).toEqual([]);
+    expect(view.stopped.map((s) => s.key)).toEqual(['custom_lion_s_mane']);
+  });
+});
+
+// US-25 AC9: a metric's history, corrections included, never a removal.
+describe('metricHistory (AC9)', () => {
+  it('lists every value newest first, the corrected one entered-in-error, the plan\'s current marked', () => {
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' }, { kind: 'add', metric: 'weight', value: 82, day: '2026-10-01' });
+    file = edited(file, { kind: 'correct', id: file.measurements[1].id, value: 81 });
+    const history = metricHistory(file, 'weight');
+    expect(history).toMatchObject({ label: 'Weight', unit: 'kg' });
+    expect(history.rows.map((r) => [r.value, r.day, r.status, r.current, r.correction])).toEqual([
+      ['81.0', '2026-10-01', 'active', true, true],
+      ['82.0', '2026-10-01', 'entered-in-error', false, false],
+      ['80.0', '2026-09-01', 'active', false, false],
+    ]);
+  });
+});
+
+// US-25 AC8/AC9, adversary R2/R3: rows the record keeps in odd shapes (no
+// updatedAt or createdAt, a name that is not text, a dose that is not a
+// number, correctsId absent) must not lock the tab or blank the history.
+describe('odd rows the migration keeps (adversary R2, R3)', () => {
+  it('lists supplements without throwing, skipping a nameless row and reading a bad dose as none', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const odd = {
+      ...file,
+      supplements: [
+        { id: 'a', supplementKey: 'zinc', supplementName: 'Zinc', doseValue: 'lots', doseUnit: 'mg', status: 'stopped', startedAt: '2026-01-01' },
+        { id: 'b', supplementKey: 'iron', supplementName: 'Iron', doseValue: 10, doseUnit: 'mg', status: 'stopped', startedAt: '2026-01-01', updatedAt: NOW },
+        { id: 'c', supplementKey: 'odd', supplementName: 42, doseValue: null, doseUnit: null, status: 'active', startedAt: '2026-01-01', updatedAt: NOW },
+      ],
+    } as unknown as RoadmapFile;
+    const view = myData(odd, NOW).supplements;
+    expect(view.active).toEqual([]);
+    expect(view.stopped.map((s) => [s.key, s.dose])).toEqual([['iron', 10], ['zinc', null]]);
+  });
+
+  it('reads a history row with no createdAt or correctsId, never calling it a correction', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' });
+    const { createdAt: _c, correctsId: _k, ...bare } = file.measurements[0];
+    const odd = { ...file, measurements: [...file.measurements, { ...bare, id: 'legacy', recordedAt: '2026-08-01' }] } as unknown as RoadmapFile;
+    const rows = metricHistory(odd, 'weight').rows;
+    expect(rows.map((r) => [r.id === 'legacy', r.correction])).toEqual([[false, false], [true, false]]);
+  });
+});
+
+// US-25 AC9, Codex R2: a value the plan excludes (out of its accepted range)
+// is never labelled as the one the plan uses.
+describe('metricHistory and the plan\'s exclusions (Codex R2)', () => {
+  it('says the plan does not use an excluded current value', () => {
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'profile', sex: 'male', birthYear: 1966, height: 180 }, { kind: 'add', metric: 'systolic_bp', value: 120, day: '2026-09-01' });
+    expect(metricHistory(file, 'systolic_bp', NOW).excluded).toBe(false);
+    const row = file.measurements[0];
+    file = { ...file, measurements: [{ ...row, value: 400 }] };
+    const history = metricHistory(file, 'systolic_bp', NOW);
+    expect(history.excluded).toBe(true);
+    expect(history.rows[0].current).toBe(true);
   });
 });

@@ -19,11 +19,33 @@ struct MyDataView: View {
     }
 
     let store: RecordStore
+    let sync: CloudSync
     @State private var entry: Entry?
+    @State private var showSync = false
     @State private var refusal: String?
     @State private var saves = 0
 
     var body: some View {
+        // The tab's NavigationStack and title are RootView's (`titled`).
+        content
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showSync = true } label: {
+                        Label("Sync", systemImage: syncSymbol)
+                    }
+                }
+            }
+            .sheet(isPresented: $showSync) { SyncView(sync: sync) }
+    }
+
+    /// The toolbar's sync icon: a phone, or a cloud that shows the sync's state.
+    private var syncSymbol: String {
+        guard sync.provider != nil else { return "icloud.slash" }
+        if case .problem = sync.status { return "exclamationmark.icloud" }
+        return "icloud"
+    }
+
+    private var content: some View {
         Group {
             if let data = store.myData {
                 List {
@@ -31,10 +53,14 @@ struct MyDataView: View {
                     units(data)
                     metrics("Vitals", data.vitals)
                     metrics("Blood tests", data.bloodTests)
+                    MedicationsSection(store: store, data: data, saved: saved)
+                    ScreeningsSection(store: store, data: data, saved: saved)
+                    SupplementsSection(store: store, supplements: data.supplements, saved: saved)
+                    RemindersSection()
                     AppleHealthSection()
                     Section {
                     } footer: {
-                        Label("Saved on this iPhone and in its backups. The app sends it nowhere.", systemImage: "lock.shield")
+                        Label(SyncStatusText.myDataFooter(provider: sync.provider, earlier: sync.syncedBefore), systemImage: "lock.shield")
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -114,11 +140,7 @@ struct MyDataView: View {
                 saved(store.apply(.profile(height: value)))
             }
         case .metric(let row):
-            ValueEntrySheet(title: row.label, unit: row.unit, current: row.latest?.value, asksForDay: true, read: store.number) { value, day in
-                saved(store.apply(.add(metric: row.metric, value: value, day: day)))
-            } replace: { existingId, value in
-                saved(store.apply(.correct(id: existingId, value: value)))
-            }
+            MetricSheet(store: store, row: row, saved: saved)
         }
     }
 

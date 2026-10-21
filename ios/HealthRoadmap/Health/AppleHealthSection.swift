@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The Apple Health section of My data (US-25 AC10): one row to connect, then the
+/// The Apple Health section of My data (US-25 AC15): one row to connect, then the
 /// sync's state. Readings land in the Vitals rows above; typed vitals go to Health.
 /// The sync comes from the environment (HealthRoadmapApp), so My data needs one line.
 struct AppleHealthSection: View {

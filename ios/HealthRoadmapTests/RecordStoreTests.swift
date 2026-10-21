@@ -77,6 +77,28 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertTrue(ids.contains { $0.hasPrefix("bp-") }, "a 150/95 reading must reach the plan: \(ids)")
     }
 
+    func testTheRecordIsKeptOutOfBackups() throws {
+        // Brad 2026-10-21: the record is left out of backups. The mark is on the folder,
+        // because every save replaces the file; so the file must sit in that folder.
+        let store = try RecordStore(folder: RecordStore.appFolder(in: folder), engine: HealthEngine(), deviceId: "test")
+        var holder = store.file.deletingLastPathComponent()
+        holder.removeAllCachedResourceValues()
+        XCTAssertEqual(try holder.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, true)
+    }
+
+    func testTheDeviceIdIsKeptOutOfBackupsWithTheRecord() throws {
+        // D5: a phone restored from a backup must not reuse the old phone's id, or two
+        // phones would write one cloud record as the same device. The id lives in the
+        // record's folder, which backups leave out, so a restore starts with a new one.
+        let marked = try RecordStore.appFolder(in: folder)
+        let id = try RecordStore.deviceId(in: marked)
+        XCTAssertTrue(id.hasPrefix("ios-"))
+        XCTAssertEqual(try RecordStore.deviceId(in: marked), id, "the same install keeps its id")
+
+        let restored = try RecordStore.appFolder(in: folder.appending(path: "Restored phone"))
+        XCTAssertNotEqual(try RecordStore.deviceId(in: restored), id, "a folder without the id is a new device")
+    }
+
     func testJSONThatIsNotARecordIsNeverOverwritten() throws {
         // Adversary R4: the engine's migration turned `null` into an empty record.
         try Data("null".utf8).write(to: file)

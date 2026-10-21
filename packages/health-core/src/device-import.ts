@@ -1,6 +1,6 @@
 /**
  * Readings from a device's health store (Apple Health on the iPhone) taken
- * into the record (US-25 AC8, ios/architecture.md D6, Brad 2026-10-21).
+ * into the record (US-25 AC13, ios/architecture.md D6, Brad 2026-10-21).
  *
  * The app reads the store; this decides what lands. The rules:
  *  - Each reading is an APPENDED row with the store's source and the store's

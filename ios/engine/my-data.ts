@@ -5,13 +5,15 @@
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
-import { appendMeasurement, correctValue, validDay } from '../../packages/health-core/src/record-edits';
+import { appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
+import { labRows, type Extraction } from './lab-review';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, supplementSchema } from '../../packages/health-core/src/validation';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
 import { deviceWrites, type DeviceWrite } from '../../packages/health-core/src/device-export';
+import { applyFormEdit, customSupplement, formsOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import {
   detectUnitSystem, formatDisplayValue, getDisplayLabel, toCanonicalValue,
@@ -37,6 +39,8 @@ export interface MyData {
   };
   vitals: MyDataRow[];
   bloodTests: MyDataRow[];
+  /** PSA, asked for under prostate screening (US-25 AC8). */
+  psa: MyDataRow;
 }
 
 /** Every change the tab can ask for. Numbers are in the user's units. */
@@ -49,8 +53,12 @@ export type Edit =
   | { kind: 'medication'; medicationKey: string; drugName: string; doseValue?: number | null; doseUnit?: string | null }
   /** A supplement's current state; `status: 'stopped'` is the soft stop (US-06). */
   | { kind: 'supplement'; supplementKey: string; supplementName: string; doseValue?: number | null; doseUnit?: string | null; status: 'active' | 'stopped'; startedAt?: string }
-  /** Readings from Apple Health (US-25 AC8): health-core's device-import decides what lands. */
-  | { kind: 'appleHealth'; samples: DeviceSample[] };
+  /** Readings from Apple Health (US-25 AC13): health-core's device-import decides what lands. */
+  | { kind: 'appleHealth'; samples: DeviceSample[] }
+  /** Medication and screening answers and a typed supplement (my-data-forms.ts, US-25 AC8). */
+  | FormEdit
+  /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
+  | { kind: 'labImport'; extractionJson: string; refs: string[]; reportDay: string };
 
 /** A refusal leaves the record as it was. `existingId` names the row holding the day. */
 export type EditOutcome =
@@ -94,7 +102,7 @@ function unitsOf(file: RoadmapFile): UnitSystem {
   return file.profile.unitSystem ?? 'si';
 }
 
-export function myData(file: RoadmapFile): MyData {
+export function myData(file: RoadmapFile, now = new Date().toISOString()): MyData & FormsView {
   const system = unitsOf(file);
   const current = new Map(latestActivePerMetric(file.measurements).map((row) => [row.metricType, row]));
   const row = (metric: string): MyDataRow => {
@@ -121,6 +129,8 @@ export function myData(file: RoadmapFile): MyData {
     vitals: VITAL_METRICS.map(row),
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
+    psa: row('psa'),
+    ...formsOf(file, now),
   };
 }
 
@@ -184,10 +194,21 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
       if (!Array.isArray(edit.samples)) return { ok: false, reason: 'invalid-value', message: 'Apple Health readings come as a list.' };
       return { ok: true, file: importDeviceSamples(file, edit.samples, { now, source: 'apple_health' }).file };
     }
+    case 'customSupplement':
+      return applyEdit(file, { kind: 'supplement', ...customSupplement(edit.name), status: 'active' }, now);
+    case 'medicationField':
+    case 'screening':
+      return applyFormEdit(file, edit, now, (next, save) => applyEdit(next, save, now));
+    case 'labImport': {
+      const rows = labRows(JSON.parse(edit.extractionJson) as Extraction, edit.refs, edit.reportDay, now);
+      if (!rows.ok) return rows;
+      // A held day is skipped and a refused unit left out: labSaveSummary says which, beforehand.
+      return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
+    }
   }
 }
 
-/** What the app writes to Apple Health (US-25 AC9): the values a person entered, never its own imports. */
+/** What the app writes to Apple Health (US-25 AC14): the values a person entered, never its own imports. */
 export function healthWrites(file: RoadmapFile): DeviceWrite[] {
   return deviceWrites(file, 'apple_health');
 }

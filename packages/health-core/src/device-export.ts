@@ -1,6 +1,6 @@
 /**
  * The values a person entered, as writes to a device's health store (Apple
- * Health on the iPhone): US-25 AC9, ios/architecture.md D6 (Brad 2026-10-21).
+ * Health on the iPhone): US-25 AC14, ios/architecture.md D6 (Brad 2026-10-21).
  *
  * - Only each slot's ACTIVE row is written; a replaced value is not.
  * - A row that came from the store is never written back, nor any correction

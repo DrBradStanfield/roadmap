@@ -26,6 +26,10 @@ struct ValueEntrySheet: View {
     @FocusState private var focused: Bool
 
     var body: some View {
+        sheet.pinsRecord()
+    }
+
+    private var sheet: some View {
         NavigationStack {
             Form {
                 Section {

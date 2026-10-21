@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import UIKit
 
-/// Apple Health in and out (US-25 AC8–AC10, ios/architecture.md D6).
+/// Apple Health in and out (US-25 AC13–AC15, ios/architecture.md D6).
 ///
 /// In: new readings since each kind's anchor go to the engine as one edit
 /// (`appleHealth`), whose rules decide what lands; the anchor moves only after
@@ -38,11 +38,17 @@ final class AppleHealthSync {
     private var waiting: [CheckedContinuation<Void, Never>] = []
     private var started = false
 
-    init(store: RecordStore, engine: HealthEngine, client: HealthStoreClient, memory: HealthSyncMemory = HealthSyncMemory()) {
+    /// Reads the record again (cloud sync's re-read) after an import was refused: in
+    /// the cloud a refusal means the record moved on (an erase or units taken in).
+    private let reread: @MainActor () async -> Void
+
+    init(store: RecordStore, engine: HealthEngine, client: HealthStoreClient, memory: HealthSyncMemory = HealthSyncMemory(),
+         reread: @escaping @MainActor () async -> Void = {}) {
         self.store = store
         self.engine = engine
         self.client = client
         self.memory = memory
+        self.reread = reread
         status = !client.isAvailable ? .unavailable : memory.connected ? .working : .notConnected
     }
 
@@ -117,10 +123,20 @@ final class AppleHealthSync {
             // with one half refused shows only the other. Until a kind has given a whole
             // reading, keep no anchor, so allowing it later still brings in its past.
             if anchor == nil, !Self.hasWholeReading(batch.samples, kind) { continue }
-            if !batch.samples.isEmpty, case .refused(let message, _) = store.apply(.appleHealth(batch.samples)) {
-                throw ImportRefused(message: message)
-            }
+            if !batch.samples.isEmpty { try await save(batch.samples) }
             memory.setAnchor(batch.anchor, for: kind)
+        }
+    }
+
+    /// Through the same door as a typed value (in the cloud: the session, the merge and
+    /// the erase guard), checked against the record as it is now: an import is not a
+    /// sheet, so a sheet's pin never refuses it. A refusal reads the record again and
+    /// tries once more; a second refusal keeps the anchor, so the batch comes again.
+    private func save(_ samples: [HealthSample]) async throws {
+        if case .saved = store.applyNow(.appleHealth(samples)) { return }
+        await reread()
+        if case .refused(let message, _) = store.applyNow(.appleHealth(samples)) {
+            throw ImportRefused(message: message)
         }
     }
 

@@ -59,26 +59,30 @@ struct PlanView: View {
     }
 }
 
-/// The plan's sections, which float in one after another, then the disclaimer
+/// The plan's sections, which rise in as they scroll into view, then the disclaimer
 /// and the privacy line.
 private struct PlanList: View {
     let sections: [PlanSection]
     let planMs: Double
-    @State private var appeared = false
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 28) {
-                ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
+                ForEach(sections) { section in
                     VStack(alignment: .leading, spacing: 12) {
                         Text(section.title)
                             .font(.title3.weight(.semibold))
                             .padding(.horizontal, 4)
                         ForEach(section.cards) { PlanCardView(card: $0) }
                     }
-                    .opacity(appeared ? 1 : 0)
-                    .offset(y: appeared ? 0 : 24)
-                    .animation(.spring(duration: 0.6, bounce: 0.25).delay(0.08 * Double(index)), value: appeared)
+                    // Each section rises in as it scrolls into view. Driven by scroll position,
+                    // not an appear flag: inside a navigation stack the flag's animation
+                    // never ran, and the plan stayed invisible.
+                    .scrollTransition(topLeading: .identity, bottomTrailing: .animated(.spring(duration: 0.6, bounce: 0.25))) { content, phase in
+                        content
+                            .opacity(phase.isIdentity ? 1 : 0)
+                            .offset(y: phase.isIdentity ? 0 : 24)
+                    }
                 }
 
                 // Same words as the web's disclaimer (ResultsPanel.tsx, `health-disclaimer`).
@@ -87,10 +91,10 @@ private struct PlanList: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 4)
 
-                // True while the app has no network code (architecture.md D9); re-check it
-                // when the first network call lands.
+                // Chat and lab upload send data (US-52 AC9, architecture.md D9), so the
+                // line claims only where the plan was worked out.
                 Label {
-                    Text("Worked out on this iPhone in \(planMs.formatted(.number.precision(.fractionLength(1)))) ms. No health data left your device.")
+                    Text("Worked out on this iPhone in \(planMs.formatted(.number.precision(.fractionLength(1)))) ms.")
                 } icon: {
                     Image(systemName: "lock.shield")
                 }
@@ -102,6 +106,5 @@ private struct PlanList: View {
             .padding(.top, 8)
             .padding(.bottom, 32)
         }
-        .onAppear { appeared = true }
     }
 }
