@@ -34,7 +34,7 @@ A large meta-analysis of over 1.3 million participants confirmed a U-shaped rela
 
 **Guideline position:** Sleep hygiene refers to a set of behavioural and environmental practices that promote healthy sleep. Considerable research supports these guidelines as long-term solutions to sleep difficulties. Crucially, sleep hygiene alone is not an effective treatment for established insomnia disorder — it is incorporated as one component of CBT-I. However, it is appropriate as initial counselling for mild or short-term sleep difficulties.
 
-Core sleep hygiene recommendations (from CCI and UpToDate, consolidated):
+Core sleep hygiene recommendations:
 
 1. **Consistent schedule** — go to bed and wake at the same time every day, including weekends. A fixed rise time is the anchor.
 2. **Sleep only when sleepy** — go to bed only when actually feeling drowsy, not just tired.
@@ -42,15 +42,13 @@ Core sleep hygiene recommendations (from CCI and UpToDate, consolidated):
 4. **Avoid caffeine and nicotine** — for at least 4–6 hours before bedtime. Caffeine is a stimulant that directly interferes with sleep onset.
 5. **Avoid alcohol** — for at least 4–6 hours before bed. Alcohol may initially aid sleep onset but fragments sleep architecture and reduces sleep quality.
 6. **Bed is for sleep and sex only** — do not use the bed for screens, eating, reading, or working. This strengthens the conditioned association between bed and sleepiness.
-7. **Limit or avoid naps** — avoid napping; if unavoidable, keep naps under 30 minutes and before 3 PM.
-8. **Pre-sleep routine** — engage in relaxing activities for 30–60 minutes before bed (bath, light reading, breathing exercises, calm music).
-9. **Hot bath 1–2 hours before bed** — raises body temperature; the subsequent drop promotes sleepiness.
-10. **No clock-watching** — clock-watching at night reinforces anxiety about sleep loss. Place clocks out of sight.
-11. **Optimise the sleep environment** — cool, dark, quiet room. Use blackout curtains or eyemask; earplugs if noise is an issue.
-12. **Exercise regularly** — a well-established aid for sleep quality. Avoid strenuous exercise within 4 hours of bedtime. Morning exercise (with light exposure) is ideal.
-13. **Eat right** — avoid heavy meals close to bedtime. A light snack may help if hunger is distracting.
-14. **Screen avoidance** — avoid screens (phones, tablets, laptops) for at least 2 hours before bed; blue light suppresses melatonin secretion and promotes cortical arousal.
-15. **Keep daytime routine consistent** — even after a bad night, keep normal daytime activities. Avoiding activities due to tiredness reinforces the insomnia cycle.
+7. **Pre-sleep routine** — engage in relaxing activities for 30–60 minutes before bed (bath, light reading, breathing exercises, calm music).
+8. **Hot bath 1–2 hours before bed** — raises body temperature; the subsequent drop promotes sleepiness.
+9. **No clock-watching** — clock-watching at night reinforces anxiety about sleep loss. Place clocks out of sight.
+10. **Optimise the sleep environment** — cool, dark, quiet room. Use blackout curtains or eyemask; earplugs if noise is an issue.
+11. **Exercise regularly** — a well-established aid for sleep quality. Avoid strenuous exercise within 4 hours of bedtime. Morning exercise (with light exposure) is ideal.
+12. **Eat right** — avoid heavy meals close to bedtime. A light snack may help if hunger is distracting.
+13. **Keep daytime routine consistent** — even after a bad night, keep normal daytime activities. Avoiding activities due to tiredness reinforces the insomnia cycle.
 
 **Brad's position:** Aligns with all guideline recommendations. Brad emphasises the 20-minute rule and bed-sleep association as the most impactful individual habits. The algorithm does not have dedicated sleep hygiene suggestion IDs beyond the general `sleep` suggestion — sleep hygiene is delivered as content rather than discrete conditional triggers.
 
@@ -83,7 +81,7 @@ In practice, difficulty falling asleep is defined as sleep latency >30 minutes; 
 ### Screening tools
 
 - **Pittsburgh Sleep Quality Index (PSQI)**: global score >5/21 indicates significant sleep disturbance.
-- **Insomnia Severity Index (ISI)**: easy to use; useful for monitoring treatment progress.
+- **Insomnia Severity Index (ISI)**: a short questionnaire scoring insomnia severity.
 - **Epworth Sleepiness Scale (ESS)**: assesses excessive daytime sleepiness. A low ESS score does not rule out severe insomnia — many insomnia patients feel fatigued but paradoxically cannot nap.
 - **Sleep diary**: 2-week daily record of sleep times, awakenings, and quality. Essential when history is variable or recall is unreliable.
 - **PHQ-2/PHQ-9**: screen for depression (highly comorbid with insomnia).
@@ -97,13 +95,6 @@ In practice, difficulty falling asleep is defined as sleep latency >30 minutes; 
 - **Advanced sleep-wake phase disorder (ASWPD)**: more common in older adults; early sleep onset (7 PM), early waking (3–4 AM). Falls asleep easily if allowed to go to bed early — unlike insomnia.
 - **Restless legs syndrome (RLS)**: uncomfortable, restless sensations in the legs at rest, worse in evenings. Screen with: "Do your legs bother you at night?" RLS is a clinical diagnosis; check iron stores.
 - **Obstructive sleep apnea (OSA)**: 30–40% of chronic insomnia patients have comorbid OSA. Consider OSA if daytime sleepiness is prominent, if there is snoring or witnessed apneas, or if insomnia is treatment-refractory.
-
-### When to refer
-
-Refer to sleep medicine when:
-- Insomnia does not respond to primary care management and significantly affects the patient's life or work.
-- Profound daytime sleepiness, or symptoms of another sleep disorder (narcolepsy, parasomnias, circadian disorders, PLMS).
-- Safety concern (unexplained excessive daytime sleepiness, risk of falling asleep while driving).
 
 **Brad's position:** Aligns. Brad would use ISI or PSQI for monitoring progress. Screening for depression and anxiety in all insomnia presentations aligns with the algorithm's general mental health awareness.
 
@@ -167,8 +158,7 @@ Progressive muscle relaxation (PMR) and diaphragmatic breathing reduce physiolog
 
 - **Traditional individual CBT-I**: 4–8 sessions face-to-face or via telehealth with a trained provider. Greatest benefit from 4 or 8 sessions vs 1–2.
 - **Brief behavioural treatment for insomnia (BBTI)**: 2–4 sessions focused on behavioural elements; deliverable by GPs with some training.
-- **Digital/app-based CBT-I**: lower adherence but broader access. Free options include Insomnia Coach (VA) and CBT-I Coach apps. Paid options: Sleepio (6-week programme), SleepSchool (ACT-based).
-- **Online programmes (NZ)**: Just a Thought (free, monitored, includes Managing Insomnia module).
+- **Digital/app-based CBT-I**: lower adherence but broader access. Free options include Insomnia Coach (VA) and CBT-I Coach apps. Paid options: Sleepio (6-week programme).
 
 ### Efficacy
 
@@ -253,11 +243,9 @@ Ramelteon 8 mg is FDA-approved for sleep-onset insomnia. MT1/MT2 agonist — fac
 
 **Trazodone** (50–100 mg nightly): most widely used off-label medication for insomnia despite AASM guideline recommending against it due to limited evidence. A systematic review identified 7 trials (429 patients total); the largest RCT (306 nondepressed patients) found benefit at 1 week but not at 2 weeks vs placebo. Use is pragmatic in practice. Key risks: orthostatic hypotension, QT prolongation, priapism (males), serotonin syndrome risk with serotonergic drugs.
 
-**Amitriptyline** (10–25 mg nightly): tricyclic antidepressant. May help patients with comorbid neuropathic pain, depression, or anxiety. Sedating but has more side effects than alternatives above 10 mg — anticholinergic effects (dry mouth, urinary retention, blurred vision), cardiac conduction risks.
-
 **Mirtazapine** (7.5–15 mg nightly): sedating antidepressant. Limited evidence in insomnia without comorbid depression; benefits may not be sustained chronically. Side effects: significant weight gain, somnolence, increased appetite.
 
-**Quetiapine** (6.25–25 mg nightly): low-dose antipsychotic. Not approved for insomnia; use only with psychiatric comorbidity. Little evidence in primary insomnia. Long-term risks: weight gain, diabetes, tardive dyskinesia, QT prolongation.
+**Quetiapine** (6.25–25 mg nightly): low-dose antipsychotic. Not approved for insomnia; use only with psychiatric comorbidity. Little evidence in primary insomnia.
 
 **Gabapentin** (limited evidence): may help in patients with comorbid pain syndromes or alcohol use disorder. Avoid in renal impairment (renally eliminated).
 
@@ -468,7 +456,7 @@ Insomnia disorder requires three things: difficulty sleeping (initiating, mainta
 Sleeping pills help in the short term (reducing sleep latency by ~5–15 minutes, increasing total sleep time by 30–60 minutes vs placebo), but they do not fix the underlying cause. When you stop taking them, insomnia often returns. CBT-I addresses the perpetuating factors that keep insomnia going — and its benefits last after treatment ends. Medication is most useful as a short-term bridge, or in combination with CBT-I for severe or refractory cases.
 
 **Q: Is CBT-I available without seeing a therapist?**
-Yes. Digital CBT-I programmes are effective. Free options include the Insomnia Coach app (US Department of Veterans Affairs) and CBT-I Coach. Paid options include Sleepio (6-week self-directed programme). In NZ, Just a Thought (justathought.co.nz) offers a free online Managing Insomnia module. These have lower adherence than face-to-face CBT-I but reach more patients.
+Yes. Digital CBT-I programmes are effective. Free options include the Insomnia Coach app (US Department of Veterans Affairs) and CBT-I Coach. Paid options include Sleepio (6-week self-directed programme). These have lower adherence than face-to-face CBT-I but reach more patients.
 
 **Q: What should I do if I wake at 3 AM and can't get back to sleep?**
 Do not lie in bed clock-watching for hours — this strengthens the association between your bed and wakefulness (conditioned arousal). If awake for more than ~20 minutes, get out of bed. Sit quietly in dim light. Do something calm and non-stimulating (light reading, breathing exercises). Return to bed only when sleepy. This is the core of stimulus control therapy. It feels counterintuitive but works. Checking your phone or watching TV in bed is the worst thing you can do.
@@ -490,7 +478,7 @@ Guideline recommendations not currently covered by dedicated suggestion IDs in t
 
 | Gap | Guideline recommendation | Priority |
 |-----|-------------------------|---------|
-| Sleep hygiene checklist | CCI/UpToDate 15-point checklist not delivered as structured content | Medium |
+| Sleep hygiene checklist | The sleep hygiene checklist is not delivered as structured content | Medium |
 | CBT-I signposting | No suggestion directing patients to CBT-I resources or digital programmes | High |
 | Screen time / blue light | Screens 2 hours before bed: not in current algorithm | Medium |
 | Alcohol and sleep | Alcohol-sleep interaction not flagged unless triggered by alcohol use question | Medium |

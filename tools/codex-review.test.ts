@@ -1614,10 +1614,10 @@ describe('US-40 AC13 — --include copies a pinned, read-only source folder from
     const r = refused(dir, ['--include', rawDir({ 'doc.md': `seen ${value}\n` }, broken)], `it sits in a git repo git cannot inspect (${join(realpathSync(broken), '.git')})`);
     expect(r.stdout + r.stderr).not.toContain(value);
   });
-  it('the shipped policy pins the dated refresh folders, the pathway raw, the supplements raw and the diff reports; only its committed copy in the wrapper\'s own checkout counts', () => {
+  it('the shipped policy pins the dated refresh folders, the supplements raw and the diff reports (the April pathway raw left 2026-10-22, US-15 AC39); only its committed copy in the wrapper\'s own checkout counts', () => {
     const shipped = JSON.parse(readFileSync(resolve(__dirname, 'codex-review-includes.json'), 'utf8'));
     const kb = '~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw';
-    expect(shipped.roots).toEqual([`${kb}/refresh-*/`, `${kb}/health_pathways/`, `${kb}/supplements/`, '~/.codex-review/diff-reports/']);
+    expect(shipped.roots).toEqual([`${kb}/refresh-*/`, `${kb}/supplements/`, '~/.codex-review/diff-reports/']);
     // A copy of the wrapper in its own git checkout, with that policy committed; another repo is under review.
     const home = realpathSync(mkdtempSync(join(tmpdir(), 'cr-include-home-'))); // node reports the wrapper's own path resolved
     mkdirSync(join(home, 'tools'));

@@ -649,6 +649,46 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     expect(verdicts(fixtureOf("I have type 2 diabetes and I'm on insulin"), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
   }, 120_000);
 
+  it('the BMI 23 case fails a GLP-1-first order the roadmap does not give her, in either word order or as a list (US-15 AC32)', () => {
+    const bad = [
+      "The roadmap's cascade puts a GLP-1 first for you, then an SGLT2 inhibitor, then metformin.",
+      "The roadmap's medication cascade runs in this order:\n1. GLP-1\n2. SGLT2i\n3. Metformin",
+      'Your roadmap starts with a GLP-1 for you.',
+    ];
+    const good = [
+      "The roadmap's weight-and-diabetes medication cascade (GLP-1, then SGLT2 inhibitor, then metformin) is not triggered for you. The roadmap therefore does not name a first drug for you. A loaded guideline says healthy lifestyle measures plus metformin are first-line for type 2 diabetes.",
+      "Your roadmap's cascade (GLP-1 first) is not triggered at a BMI of 23. The pathway starts with metformin.",
+      "The roadmap's cascade starts with a GLP-1, but it only applies when the weight card shows, which it does not for you.",
+    ];
+    expect(verdicts(fixtureOf('Which diabetes medicine would come first', 73), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
+  }, 120_000);
+
+  // Adversary 2026-10-12: the BMI 32 case passed its must_mention on the baseline, and failed an
+  // answer that gave metformin first-line as the NZ pathway's. Its regexes score whose order it is.
+  it('must_match and must_not_match score whose first step it is (the BMI 32 diabetes case)', () => {
+    const p3 = cases.find(q => q.query === 'Which diabetes medicine would come first for me?' && q.must_match)!;
+    const verdict = (answer: string) => run([p3], answer).status;
+    // Baseline shape: the pathway's order only, GLP-1 only as the separate weight card.
+    expect(verdict('Metformin is the usual first-line medicine in the loaded pathway. Your roadmap separately suggests discussing a GLP-1 medication for weight.')).toBe(1);
+    // The roadmap's order first, the pathway's attributed: passes.
+    expect(verdict('The **Health Roadmap’s** first medication step for you is a GLP-1 medication. In the NZ pathway, metformin is first-line, while the roadmap starts with GLP-1.')).toBe(0);
+    // The roadmap's order as a numbered list, or "lists GLP-1 first", passes too.
+    expect(verdict('The roadmap’s weight and diabetes medication cascade runs in this order:\n1. GLP-1 (tirzepatide preferred)\n2. SGLT2 inhibitor\n3. Metformin')).toBe(0);
+    expect(verdict('Your roadmap’s own cascade lists GLP-1 first, then an SGLT2 inhibitor, then metformin.')).toBe(0);
+    // Metformin as the roadmap's first step fails, even beside a GLP-1 first step.
+    expect(verdict('Your roadmap starts with a GLP-1. Metformin is first in your roadmap for diabetes.')).toBe(1);
+    expect(verdict('The roadmap’s first step is a GLP-1 medication, and your plan’s first step would be metformin.')).toBe(1);
+    // Round 2 (R5): the pathway's order with GLP-1 second, a GLP-1 'later', or metformin first for her, all fail.
+    expect(verdicts(p3, [
+      'Your roadmap shows a weight card, but the pathway puts metformin first, and GLP-1 second.',
+      "The roadmap's GLP-1 card is separate. For diabetes, metformin comes first under the pathway, and your plan's first step is to see your doctor about a GLP-1 later.",
+      'Your roadmap starts with a GLP-1. Metformin would come first for you.',
+      "Your roadmap puts a GLP-1 first. The pathway's first-line medicine is metformin, so metformin would come first for you under the pathway.",
+      // A logged answer on the round-2 prompt that the first regex missed ("a GLP-1 medication first").
+      "The Health Roadmap's order for you is a GLP-1 medication first, then an SGLT2 inhibitor, then metformin. This is the roadmap's suggestion to discuss with your doctor, not a prescription.",
+    ])).toEqual(['fail', 'fail', 'fail', 'pass', 'pass']);
+  }, 120_000);
+
   // US-07 AC6 (2026-10-14): the minor-gate fixture's payload resolves to a knownMinor context, sent after the posture.
   it('the minor-gate fixture sends its knownMinor context after the posture (US-07 AC6)', () => {
     const minor = all.find(q => q.category === 'minor-gate')!;

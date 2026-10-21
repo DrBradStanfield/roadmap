@@ -4,7 +4,7 @@ gpt-6.1-sol reviewed main..41becc66 (all four batches, no raw included, so INCOM
 
 - R1 ACCEPTED, parked batch new-1: analgesia-in-children-with-acute-pain gives a post-tonsillectomy tramadol dose for 12 to 17-year-olds. Medsafe (June 2020) contraindicates tramadol after tonsillectomy or adenoidectomy under 18. Fix before new-1 review: state the contraindication, remove the dose.
 - R2 ACCEPTED, references-1: lithium long-COVID trial (PMID 39356507) used 5 mg elemental lithium capsules, 2 or 3 daily, and 40 to 45 mg in follow-up; the entry says 0.383 to 1.7 mg. Fix from the abstract; correct reference [6] DOI to 10.1001/jamanetworkopen.2024.36874 if the abstract confirms it.
-- R3 ACCEPTED, parked batch new-1: inflammatory-bowel-disease-ibd gives faecal calprotectin as 50 micrograms/L; docs/pathway/calprotectin.md uses micrograms/g. Check the raw; if the raw says /L, FOR BRAD.
+- R3 ACCEPTED, parked batch new-1: a unit mismatch between two pathway entries. Moot: pathways removed 2026-10-22 (US-15 AC39).
 - R4 ACCEPTED: each batch's Codex content review runs with its raw sources, abstracts and reports included.
 - R5 ACCEPTED, references-1: taurine references [18] to [20] are placeholders awaiting PubMed (McLeay 29039798, Messina 11787620, Husain 31781908). Fetch the abstracts, keep only supported claims.
 - R6 ACCEPTED: answer fixtures (AC5) for every refreshed handle must be registered before sign-off; the 2026-09-29 fixtures were lost with the scratchpad.

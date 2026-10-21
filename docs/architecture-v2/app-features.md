@@ -116,7 +116,7 @@ The "Get Your Personalized Plan" button does **exactly two things**: (1) the ema
 
 #### Blog / trending
 
-The chat knowledge base is `docs/blog/` + `docs/guideline/` + `docs/pathway/`, indexed by `scripts/rebuild-blog-index.ts` into `index.json`. [trending-cron](../../app/lib/trending-cron.server.ts) writes trending articles to a metafield. The "supplement wiki" is `type:"reference"` articles with a +5 ranking boost in `chat.server.ts` — content, not infrastructure.
+The chat knowledge base is `docs/blog/` + `docs/guideline/` (third-party pathways removed 2026-10-22, US-15 AC39), indexed by `scripts/rebuild-blog-index.ts` into `index.json`. [trending-cron](../../app/lib/trending-cron.server.ts) writes trending articles to a metafield. The "supplement wiki" is `type:"reference"` articles with a +5 ranking boost in `chat.server.ts` — content, not infrastructure.
 
 #### Discord / YouTube
 

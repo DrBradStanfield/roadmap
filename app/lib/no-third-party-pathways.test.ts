@@ -63,23 +63,73 @@ describe('US-15 AC39 — no third-party pathway content', () => {
     expect(text).not.toMatch(/clinical pathway/i);
   });
 
-  // The red flags the pathways supplied now come from one prompt rule (orchestrator 2026-10-22).
-  it('the built answer prompt opens emergencies with the emergency number and gives crisis lines', () => {
+  // The red flags the pathways supplied now come from one prompt rule (orchestrator 2026-10-22; review R1, R4, R7).
+  it('the emergency rule opens the system prompt, overrides scope and posture, and covers someone else', () => {
     const text = buildSystemBlocks('{}')[0].text;
-    expect(text).toContain('**Emergencies come first.**');
-    for (const s of ['chest pain', 'signs of stroke', 'thoughts of suicide or self-harm', 'floppy', '111 in NZ', '911 in the US', 'nearest emergency department now', '1737', '988', 'Samaritans 116 123', 'Lifeline 13 11 14']) {
-      expect(text, s).toContain(s);
-    }
+    const rule = text.indexOf('## Emergencies come first');
+    expect(rule).toBeGreaterThan(-1);
+    expect(rule).toBeLessThan(text.indexOf('## Your role'));
+    expect(rule).toBeLessThan(text.indexOf('## Scope boundaries'));
+    const section = text.slice(rule, text.indexOf('## Your role'));
+    for (const s of ['overrides every scope boundary', 'SURFACE CONTEXT', 'someone else', 'happening now or very recently', 'for example']) expect(section, s).toContain(s);
+  });
+
+  it('the emergency rule names each red flag, the numbers, crisis and poison lines, and the past-event carve-out', () => {
+    const text = buildSystemBlocks('{}')[0].text;
+    const section = text.slice(text.indexOf('## Emergencies come first'), text.indexOf('## Your role'));
+    for (const s of [
+      'chest pain', 'signs of stroke', 'severe difficulty breathing', 'anaphylaxis', 'overdose or poisoning', 'swallowed tablets or supplements',
+      'unresponsive or very hard to wake', 'very low blood sugar with confusion', 'worst ever', 'a seizure', 'vomiting blood', 'black stools',
+      'sudden severe testicular pain', 'signs of sepsis', 'chemicals in the eye', 'shoulder-tip pain', 'green vomit', 'floppy',
+      'thoughts of suicide or self-harm', '111 in NZ', '000 in Australia', '911 in the US', '999 in the UK', 'nearest emergency department now',
+      '1737', '988', 'Samaritans 116 123', 'Lifeline 13 11 14', '0800 764 766', '13 11 26', '1-800-222-1222', 'UK: call 111',
+      'does isotretinoin cause suicidal thoughts?', 'one closing line',
+    ]) expect(section, s).toContain(s);
+    expect(section).not.toContain('\u2014');
+    expect(text.match(/Emergencies come first/g)).toHaveLength(1);
+  });
+
+  it('a health question with no loaded content gets brief hedged education, never a diagnosis', () => {
+    const text = buildSystemBlocks('{}')[0].text;
+    expect(text).toContain('**When no content is loaded for a health question**');
+  });
+
+  it('YouTube: a current emergency or suicidal comment gets a short reply with the number and crisis line, never the skip (review R5)', () => {
+    const prompt = fs.readFileSync(path.join(ROOT, 'app/lib/chat-youtube-prompt.md'), 'utf-8');
+    const step0 = prompt.indexOf('### Step 0: a current emergency or suicidal thoughts always get Output A');
+    expect(step0).toBeGreaterThan(-1);
+    expect(step0).toBeLessThan(prompt.indexOf('### Step 1:'));
+    const section = prompt.slice(step0, prompt.indexOf('### Step 1:'));
+    for (const s of ['overrides every SKIP category', '111 in NZ', '911 in the US', '1737', '988', 'Samaritans 116 123', 'Lifeline 13 11 14', '[by Brad AI]']) expect(section, s).toContain(s);
+  });
+
+  it('the router routes a named condition only when an entry covers it', () => {
+    const prompt = fs.readFileSync(path.join(ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8');
+    expect(prompt).not.toContain('are NEVER out of scope');
+    expect(prompt).toContain('route only when an index entry covers them');
   });
 
   it('each emergency answer check loads nothing and must name the emergency number', () => {
     const all = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/test-queries.json'), 'utf-8')) as Array<{ category?: string; answer_handles?: string[]; must_match?: string[] }>;
-    const cases = all.filter(q => q.category === 'emergency');
-    expect(cases).toHaveLength(4);
+    const cases = all.filter(q => q.category === 'emergency' || q.category === 'red-flag');
+    expect(cases.length).toBeGreaterThanOrEqual(50);
     for (const q of cases) {
       expect(q.answer_handles).toEqual([]);
       expect(new RegExp(q.must_match![0]).test('please call 111 or go to the emergency department now')).toBe(true);
       expect(new RegExp(q.must_match![0]).test('see your doctor next week')).toBe(false);
+    }
+  });
+
+  it('the past-event checks fail an emergency opening and pass a normal answer (review R4)', () => {
+    const all = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/test-queries.json'), 'utf-8')) as Array<{ category?: string; answer_handles?: string[]; must_not_match?: string[] }>;
+    const cases = all.filter(q => q.category === 'emergency-negative');
+    expect(cases).toHaveLength(3);
+    for (const q of cases) {
+      const re = new RegExp(q.must_not_match![0]);
+      expect(q.answer_handles).toEqual([]);
+      expect(re.test('call 111 now or go to the emergency department.')).toBe(true);
+      expect(re.test('please call your emergency number (111) right away.')).toBe(true);
+      expect(re.test('a normal troponin makes a heart attack unlikely. if pain comes back, call 111.')).toBe(false);
     }
   });
 });

@@ -44,8 +44,8 @@ Every batch: AC8 signed by Brad (sheets signoff-*.md); answer checks (AC5) pre-r
 7. Sign-off sheet (signoff-batch-N.md), Brad's AC8.
 
 ## Merge checklist (after AC8)
-1. New worktree from origin/main (check the path is free; a worktree inside the repo with no node_modules uses the root's). Check out the batch's docs/pathway files and docs/knowledge-refresh files from knowledge-refresh/batches; data-merge the batch's fixtures into tools/test-queries.json. Never merge knowledge-refresh/batches itself (870c44c9 holds raw quotes).
-2. `npx tsx scripts/rebuild-blog-index.ts` (CI fails on drift). New pathways also need docs/pathway/categories.json titles (append, no reordering) and the router-guard population pin in app/lib/chat-router-guard.test.ts reviewed (US-15 AC25).
+1. New worktree from origin/main (check the path is free; a worktree inside the repo with no node_modules uses the root's). Check out the batch's entry files and docs/knowledge-refresh files from knowledge-refresh/batches; data-merge the batch's fixtures into tools/test-queries.json. Never merge knowledge-refresh/batches itself (870c44c9 holds raw quotes).
+2. `npx tsx scripts/rebuild-blog-index.ts` (CI fails on drift).
 3. `npm run test:all`. Known failures on main itself since 2026-10-15: scripts/build-user-stories-html.test.ts (7) and tools/codex-review.test.ts (8); compare against a clean origin/main worktree before blaming the batch.
 4. Fetch, rebase if main moved, push HEAD:main (fast-forward). Brad deploys from Actions.
 

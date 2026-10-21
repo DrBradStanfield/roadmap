@@ -102,18 +102,17 @@ describe('preferMasters (US-50 AC14)', () => {
   const stale = master('nad-nmn'); // a reference with no reviewed date: not a master
   const dVideo = post('vitamin-d-video', { topics: ['vitamin-d'] });
   const dkVideo = post('d-and-k-video', { topics: ['vitamin-d', 'vitamin-k'] });
-  const pathway = post('a-pathway', { type: 'pathway', topics: ['vitamin-d'] });
   const guideline = post('a-guideline', { type: 'guideline', topics: ['vitamin-d'] });
   const ref = { ...master('other-ref'), topics: ['vitamin-d'] };
   const nadVideo = post('nad-video', { topics: ['nad-nmn'] });
   const plain = post('plain-article');
-  const index = [d, k, stale, dVideo, dkVideo, pathway, guideline, ref, nadVideo, plain];
+  const index = [d, k, stale, dVideo, dkVideo, guideline, ref, nadVideo, plain];
   const pm = (picks: string[], opts: { message?: string; open?: string; keep?: string[] } = {}, idx = index) =>
     preferMasters(picks, idx, opts.message ?? '', opts);
 
   it('replaces an article pick with its master in the same slot', () => {
-    expect(pm(['a-pathway', 'vitamin-d-video', 'plain-article']))
-      .toEqual({ handles: ['a-pathway', 'vitamin-d', 'plain-article'], replaced: ['vitamin-d-video'] });
+    expect(pm(['vitamin-d-video', 'plain-article']))
+      .toEqual({ handles: ['vitamin-d', 'plain-article'], replaced: ['vitamin-d-video'] });
   });
 
   it('a multi-master article becomes all its masters, in its slot', () => {
@@ -122,8 +121,8 @@ describe('preferMasters (US-50 AC14)', () => {
   });
 
   it('keeps the result to 3 handles: added masters take only the free slots, in slot order', () => {
-    expect(pm(['a-pathway', 'd-and-k-video', 'plain-article']))
-      .toEqual({ handles: ['a-pathway', 'vitamin-d', 'plain-article'], replaced: ['d-and-k-video'] });
+    expect(pm(['a-guideline', 'd-and-k-video', 'plain-article']))
+      .toEqual({ handles: ['a-guideline', 'vitamin-d', 'plain-article'], replaced: ['d-and-k-video'] });
   });
 
   it('never drops a master the router picked to make room for an added one', () => {
@@ -202,10 +201,10 @@ describe('preferMasters (US-50 AC14)', () => {
     const a = { ...master('vitamin-a-benefits', '2026-10-20'), title: 'Vitamin A: Benefits, Forms, Dosing, and Side Effects' };
     const mv = post('multivitamins-old-post', { topics: ['multivitamins-benefits', 'vitamin-a-benefits'] });
     const idx = [...index, multi, a, mv];
-    expect(pm(['multivitamins-old-post', 'plain-article', 'a-pathway'], { message: 'is the vitamin A in a multivitamin safe in pregnancy?' }, idx).handles)
-      .toEqual(['vitamin-a-benefits', 'plain-article', 'a-pathway']);
-    expect(pm(['multivitamins-old-post', 'plain-article', 'a-pathway'], { message: 'are multivitamins worth it?' }, idx).handles)
-      .toEqual(['multivitamins-benefits', 'plain-article', 'a-pathway']);
+    expect(pm(['multivitamins-old-post', 'plain-article', 'a-guideline'], { message: 'is the vitamin A in a multivitamin safe in pregnancy?' }, idx).handles)
+      .toEqual(['vitamin-a-benefits', 'plain-article', 'a-guideline']);
+    expect(pm(['multivitamins-old-post', 'plain-article', 'a-guideline'], { message: 'are multivitamins worth it?' }, idx).handles)
+      .toEqual(['multivitamins-benefits', 'plain-article', 'a-guideline']);
   });
 
   // Review R3: a post the message names by URL or handle loads even when the router did not pick it.
@@ -250,8 +249,8 @@ describe('preferMasters (US-50 AC14)', () => {
     });
 
     it('is not forced in when the question routed elsewhere', () => {
-      expect(pm(['plain-article', 'a-pathway'], { open: 'vitamin-d-video' }))
-        .toEqual({ handles: ['plain-article', 'a-pathway'], replaced: [] });
+      expect(pm(['plain-article'], { open: 'vitamin-d-video' }))
+        .toEqual({ handles: ['plain-article'], replaced: [] });
     });
 
     it('takes only a free slot', () => {
@@ -265,9 +264,9 @@ describe('preferMasters (US-50 AC14)', () => {
     });
   });
 
-  it('pathways, guidelines, references, non-master topics and articles with no topics are untouched', () => {
-    expect(pm(['a-pathway', 'a-guideline', 'other-ref']))
-      .toEqual({ handles: ['a-pathway', 'a-guideline', 'other-ref'], replaced: [] });
+  it('guidelines, references, non-master topics and articles with no topics are untouched', () => {
+    expect(pm(['a-guideline', 'other-ref']))
+      .toEqual({ handles: ['a-guideline', 'other-ref'], replaced: [] });
     expect(pm(['nad-video', 'plain-article', 'not-in-index']))
       .toEqual({ handles: ['nad-video', 'plain-article', 'not-in-index'], replaced: [] });
   });
