@@ -108,6 +108,25 @@ final class CloudSync: CloudPort {
         }
     }
 
+    /// "Delete all my data" through the open session (US-25 AC13; the erase is the
+    /// engine's RecordSession.deleteAllData). Nil when no session is open: the phone
+    /// then cannot read the cloud record, so it cannot list what it erases, and
+    /// refuses as the web does (US-09 AC23).
+    func erase(chatHistory: String?) async throws -> HealthEngine.CloudErase? {
+        guard let session = shownSession else { return nil }
+        status = .saving
+        let result = try await engine.cloudErase(historyJSON: chatHistory, now: .now)
+        // A Disconnect or reopen during the await owns the screen now (review F7).
+        guard shownSession == session else { return result }
+        if result.erased, let view = result.view { store.showErased(view) }
+        if result.success {
+            status = .synced(.now)
+        } else if status == .saving {
+            status = .problem(SyncProblem(kind: .unreachable))
+        }
+        return result
+    }
+
     /// Back to the phone: the cloud record is merged down onto the phone first,
     /// then the tokens go. The cloud file stays where it is. False when the cloud
     /// could not be read for the copy; the phone keeps what it already held.

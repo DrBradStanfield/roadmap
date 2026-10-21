@@ -29,6 +29,9 @@ final class RecordStore {
     /// Told after each edit: in the cloud, that a save is on its way; on the
     /// phone, that the file moved (CloudSync marks it for the cloud then).
     var onEdit: (() -> Void)?
+    /// Moves each time "Delete all my data" erases the record here (US-25 AC13),
+    /// so a view holding health data outside the record, the open chat, drops it.
+    private(set) var erasures = 0
 
     /// What the screen showed when an edit began: the erase it was at (nil on the
     /// phone's file) and its units. A sheet pins it as it opens (`pinsRecord`),
@@ -122,6 +125,24 @@ final class RecordStore {
         } catch {
             problem = "Your record on this iPhone could not be opened. \(error.localizedDescription)"
         }
+    }
+
+    // MARK: Erase (US-25 AC13)
+
+    /// The phone's own file, erased by the engine (DataEraser): written, then shown.
+    func showErased(_ erased: String) throws {
+        let shown = try engine.myData(recordJSON: erased, now: .now, deviceId: deviceId)
+        try Self.write(erased, to: file)
+        recordJSON = erased
+        myData = shown
+        problem = nil
+        erasures += 1
+    }
+
+    /// The cloud record, erased by the engine's session: shown like any record it sends.
+    func showErased(_ view: HealthEngine.CloudView) {
+        showCloud(view)
+        erasures += 1
     }
 
     /// The phone's file as text, nil when there is none (the engine's device mirror).

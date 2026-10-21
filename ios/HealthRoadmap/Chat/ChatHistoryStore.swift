@@ -46,6 +46,21 @@ final class ChatHistoryStore {
         write(next)
     }
 
+    /// The file's text for "Delete all my data"; nil when there is none. Throws when
+    /// it is there but cannot be read, so the erase never claims a history it missed.
+    func textForErase() throws -> String? {
+        guard FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) else { return nil }
+        return try String(contentsOf: file, encoding: .utf8)
+    }
+
+    /// Keeps the tombstoned file the engine made for an erase (US-11 AC2); nil: none to
+    /// write. False when the phone refused the write, so the erase can say so.
+    func keepErased(_ json: String?) -> Bool {
+        defer { refresh() }
+        guard let json else { return true }
+        return (try? Data(json.utf8).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])) != nil
+    }
+
     private func write(_ json: String) {
         try? Data(json.utf8).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         refresh()

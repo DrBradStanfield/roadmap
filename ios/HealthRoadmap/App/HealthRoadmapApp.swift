@@ -12,7 +12,7 @@ struct HealthRoadmapApp: App {
             switch parts {
             case .success(let parts):
                 RootView(engine: parts.engine, store: parts.store, sync: parts.sync)
-                    .environment(parts.reminders).environment(parts.reminderTaps)
+                    .environment(parts.reminders).environment(parts.reminderTaps).environment(parts.eraser)
                     .task { await parts.sync.start() }
                     .onChange(of: scenePhase) { _, phase in follow(phase, parts.sync) }
             case .failure(let error):
@@ -70,6 +70,7 @@ struct AppParts {
     let sync: CloudSync
     let reminders: ReminderScheduler
     let reminderTaps = ReminderTaps()
+    let eraser: DataEraser
 
     init() throws {
         engine = try HealthEngine()
@@ -80,6 +81,8 @@ struct AppParts {
         reminders = ReminderScheduler(center: UNUserNotificationCenter.current(), folder: folder) {
             try engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         }
+        let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
+        eraser = DataEraser(engine: engine, store: store, sync: sync, chat: chat, reminders: reminders)
         // Before launch finishes, so a tap that starts the app still reaches My plan.
         UNUserNotificationCenter.current().delegate = reminderTaps
     }

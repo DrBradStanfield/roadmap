@@ -35,6 +35,14 @@ struct ChatView: View {
                 if let history { ChatHistoryList(history: history, open: open) }
             }
         }
+        // "Delete all my data" erased the history: the conversation on screen goes too,
+        // and the next question starts a new one (US-25 AC13).
+        .onChange(of: store.erasures) {
+            lines = []
+            error = nil
+            conversationId = UUID().uuidString.lowercased()
+            history?.refresh()
+        }
         .task {
             if history == nil, let folder = try? RecordStore.appFolder() {
                 history = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
