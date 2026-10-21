@@ -6,13 +6,13 @@ updated: "2026-10-22"
 stories: ["US-07", "US-09", "US-12", "US-32", "US-36", "US-38"]
 ---
 
-Most people's blood tests are scattered. One result is a PDF in an email, another sits in a lab portal, a third is a printout in a drawer. You can paste a report into ChatGPT or Claude and ask what it means. But a chat is a poor place to keep years of results. Next time you have to find the old reports and paste them in again before you can ask whether a number is going up or down.
+Most people's blood tests are scattered. One result is a PDF in an email. Another sits in a lab portal. You can paste a report into ChatGPT or Claude and ask what it means. But a chat is a poor place to keep years of results. Next time you have to find the old reports and paste them in again before you can ask whether a number is going up or down.
 
 Health by Dr Brad keeps your results in one place you own, and lets your assistant read and add to it.
 
 ## What it is
 
-Your record is one file, `health-roadmap.json`, in your own Dropbox or Google Drive. It holds your blood test results, your measurements, your medications and your screening answers, each with its date. It is plain JSON, so any program that reads text can open it. Our server never holds a copy.
+Your record is one file, `health-roadmap.json`, in your own Dropbox or Google Drive. It holds your blood test results, your measurements, your medications and your screening answers, each with its date. It is plain JSON, so any program that reads text can open it. Our server never stores a copy.
 
 Three things read and write that same file:
 
@@ -26,7 +26,7 @@ It is free, and you do not create an account. The code is public under the MIT l
 
 ## Step 1: Start your record
 
-Open [the tool](https://drstanfield.com/pages/roadmap). Click "Where do you want to keep your health record?" and pick Dropbox or Google Drive. Then save one value, such as your weight. That first save writes the file to your cloud folder.
+Open [the tool](https://drstanfield.com/pages/roadmap) and enter your sex, height and weight. A button then appears at the top of your plan, which on a phone is the Plan tab. It says "Where do you want to keep your health record?" Click it and pick Dropbox or Google Drive. When the cloud connects, the tool copies what you entered into a new file in your cloud folder.
 
 Until you connect a cloud, the tool keeps your record in your browser only, and no assistant can reach it. [Find your health record file](/blogs/guides/find-your-record) shows where the file lands in each cloud.
 
@@ -40,13 +40,13 @@ https://mcp.drstanfield.com/mcp
 
 ### Claude
 
-In claude.ai, open Settings, then Connectors, then Add custom connector. Name it Health by Dr Brad, paste the address and press Add, then Connect. Approve it in Dropbox or Google Drive. It works on any Claude plan, with nothing to install. The full steps are in [connect Claude on the web](/blogs/guides/ai-health-record#connect-claude-on-the-web).
+In claude.ai, open Settings, then Connectors, then Add custom connector. Name it Health by Dr Brad, paste the address and press Add, then Connect. Approve it in Dropbox or Google Drive. On Google's screen, tick the Google Drive box, as [connect Google Drive](/blogs/guides/connect-google-drive) shows. It works on any Claude plan, with nothing to install. The full steps are in [connect Claude on the web](/blogs/guides/ai-health-record#connect-claude-on-the-web).
 
 ### ChatGPT
 
 You need a paid ChatGPT plan, on the web. OpenAI has not published our app yet, so today you add it in developer mode: switch on developer mode, create the app with the address above, and sign in with Dropbox or Google Drive. ChatGPT asks you to pick the app again in each new chat. The steps, and what to do when one goes wrong, are in [connect ChatGPT to your health record](/blogs/guides/connect-chatgpt).
 
-You authorise the connector once. After 90 days it asks again.
+You authorize the connector once. After 90 days it asks again.
 
 ### On your own computer
 
@@ -83,7 +83,7 @@ The plan is educational information, not medical advice. It does not replace you
 
 ## What it will not do
 
-It never deletes a value. There is no delete tool. If a number went in wrong, the assistant adds the right number as a new entry and marks the old one as entered in error. Both stay in your file, so you can always see what was there before. The website fixes a value the same way: [how to fix a value](/blogs/guides/upload-lab-report#fix-a-value-after-saving).
+It never deletes a value. There is no delete tool. If a number went in wrong, the assistant adds the right number as a new entry and marks the old one as entered in error. Both stay in your file, so you can always see what was there before. The connector corrects only values from the last 90 days. You fix an older one on the website, the same way: [how to fix a value](/blogs/guides/upload-lab-report#fix-a-value-after-saving).
 
 It holds one value per test per day. Asking for a second LDL on a day that already has one is refused, and the assistant is told to make a correction instead.
 
@@ -93,8 +93,8 @@ A Google Drive record works with files dropped into the chat and with the websit
 
 ## What our server sees
 
-To answer one request, the connector opens your folder with the credential you approved and holds your record in memory for that request. It reads it, but it stores none of it and keeps no copy. You cancel it in your own cloud settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) or [myaccount.google.com/connections](https://myaccount.google.com/connections). The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) has the detail.
+To answer one request, the connector opens your folder with the credential you approved and holds your record in memory for that request. It reads it, but it stores none of it and keeps no copy. You cancel it in your own cloud settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) or [myaccount.google.com/connections](https://myaccount.google.com/connections). The connector and the website use the same app at your provider, so cancelling it there also disconnects this website from your record. The tool asks you to connect again next time you open it. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) has the detail.
 
 ## If you get stuck
 
-Ask the chat on [the tool page](https://drstanfield.com/pages/roadmap). On a phone it is the Chat tab. Or open an issue at [github.com/DrBradStanfield/roadmap/issues](https://github.com/DrBradStanfield/roadmap/issues).
+Ask the chat on [the tool page](https://drstanfield.com/pages/roadmap). On a phone it is the Chat tab. Or open an issue at [github.com/DrBradStanfield/roadmap/issues](https://github.com/DrBradStanfield/roadmap/issues). Issues are public, so leave out your values.

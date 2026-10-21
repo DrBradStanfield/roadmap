@@ -2,13 +2,13 @@
 title: "Find your health record file"
 description: "Where the Health by Dr Brad tool keeps your record in Dropbox, Google Drive, GitHub or your browser, and how to open, back up, move or delete it."
 slug: "find-your-record"
-updated: "2026-10-21"
+updated: "2026-10-22"
 stories: ["US-09", "US-10", "US-11", "US-29"]
 ---
 
 Everything you save in [the tool](https://drstanfield.com/pages/roadmap) goes into one file, `health-roadmap.json`. It holds your profile, your measurements, your blood test results, your medications and your screening answers. It is plain JSON, so any program that reads text can open it.
 
-Where that file lives depends on what you chose when the tool asked where to keep your health record. Our server never holds a copy.
+Where that file lives depends on what you chose when the tool asked where to keep your health record. Our server never stores a copy.
 
 ## Which one are you using?
 

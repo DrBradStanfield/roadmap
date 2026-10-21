@@ -113,7 +113,7 @@ You need an AI that can open files on your computer. [Claude Code](https://claud
 
 Your cloud folder has to be synced to disk, so the file is really there. Dropbox does this by default, though a file set to online-only needs "Make available offline" first. For Google Drive, mark the folder "Available offline", or Drive streams the file instead of storing it.
 
-If you have never connected a cloud provider, there is no file on disk at all: the tool is holding your record in your browser. Connect Dropbox or Google Drive in the tool first: that moves your record into a file there.
+If you have never connected a cloud provider, your record lives only in your browser and there is no file on disk, so connect Dropbox or Google Drive in the tool first, which copies your record into a file there.
 
 Then paste the setup prompt below into that AI and answer its questions.
 
