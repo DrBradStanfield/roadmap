@@ -62,4 +62,24 @@ describe('US-15 AC39 — no third-party pathway content', () => {
     expect(text).not.toMatch(THIRD_PARTY);
     expect(text).not.toMatch(/clinical pathway/i);
   });
+
+  // The red flags the pathways supplied now come from one prompt rule (orchestrator 2026-10-22).
+  it('the built answer prompt opens emergencies with the emergency number and gives crisis lines', () => {
+    const text = buildSystemBlocks('{}')[0].text;
+    expect(text).toContain('**Emergencies come first.**');
+    for (const s of ['chest pain', 'signs of stroke', 'thoughts of suicide or self-harm', 'floppy', '111 in NZ', '911 in the US', 'nearest emergency department now', '1737', '988', 'Samaritans 116 123', 'Lifeline 13 11 14']) {
+      expect(text, s).toContain(s);
+    }
+  });
+
+  it('each emergency answer check loads nothing and must name the emergency number', () => {
+    const all = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/test-queries.json'), 'utf-8')) as Array<{ category?: string; answer_handles?: string[]; must_match?: string[] }>;
+    const cases = all.filter(q => q.category === 'emergency');
+    expect(cases).toHaveLength(4);
+    for (const q of cases) {
+      expect(q.answer_handles).toEqual([]);
+      expect(new RegExp(q.must_match![0]).test('please call 111 or go to the emergency department now')).toBe(true);
+      expect(new RegExp(q.must_match![0]).test('see your doctor next week')).toBe(false);
+    }
+  });
 });
