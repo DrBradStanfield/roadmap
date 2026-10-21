@@ -121,7 +121,7 @@ const WIDGET_ROW_COLUMNS = [
 
 export interface MatchEventRow extends Record<string, unknown> {
   message: string;
-  router_context: { platform: string; first: string | null; recent: string[] };
+  router_context: { platform: string; first: string | null; recent: string[]; replaced?: string[]; reduced?: string[] };
 }
 
 /** A number in a question: a run of digits in any script, with one decimal part ('4.1', '4,1', '４.１'). */
@@ -140,12 +140,14 @@ const maskNumbers = (s: string) => s.replace(TOPIC_OR_NUMBER, (m, topic) => (top
  * `router_error` get the same mask, since either can quote the question. The
  * earlier turns the router saw (`first`, `recent`) are dropped — the router
  * still gets them at call time; only the stored row loses them, so one widget
- * row can never hold a second question (2026-09-10).
+ * row can never hold a second question (2026-09-10). The context keeps only
+ * US-50 AC14's `replaced` and `reduced`, index handles chosen by the server.
  */
 export function redactForWidget(row: MatchEventRow): Record<string, unknown> {
   const kept = Object.fromEntries(WIDGET_ROW_COLUMNS.filter((c) => c in row).map((c) => [c, row[c]]));
   for (const c of ['router_raw', 'router_error']) if (typeof kept[c] === 'string') kept[c] = maskNumbers(kept[c]);
-  return { ...kept, message: maskNumbers(row.message), router_context: { platform: 'widget' } };
+  const { replaced, reduced } = row.router_context;
+  return { ...kept, message: maskNumbers(row.message), router_context: { platform: 'widget', ...(replaced ? { replaced } : {}), ...(reduced ? { reduced } : {}) } };
 }
 
 // ---------------------------------------------------------------------------

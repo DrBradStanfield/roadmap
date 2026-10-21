@@ -26,7 +26,7 @@ vi.mock('./chat.server', async (original) => ({
   buildSystemBlocks: () => [],
   buildConversationMessages: (history: unknown[], message: string) => [...history, { role: 'user', content: message }],
   matchDocumentTitle: () => null,
-  loadMatchedArticlesFromHandles: () => ({ content: 'x', titles: ['ApoB explained'] }),
+  loadMatchedArticlesFromHandles: () => ({ content: 'x', titles: ['ApoB explained'], skipped: [], reduced: [] }),
   DOCTOR_POSTURE: 'doctor', BRAND_POSTURE: 'brand',
   getChatCompletion: mocks.getChatCompletion,
   reportChatFallback: vi.fn(), generateTitle: () => 't', CHAT_MODEL: 'test',

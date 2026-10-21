@@ -5,7 +5,7 @@
  * `TOPIC_MASTER_HIDE=off` restores the full view.
  */
 import { describe, it, expect } from 'vitest';
-import { routerView, routerIndexBlock } from './router-view';
+import { routerView, routerIndexBlock, preferMasters, namedArticles } from './router-view';
 import type { BlogIndexEntry } from './blog-index.server';
 
 const post = (handle: string, over: Partial<BlogIndexEntry> = {}): BlogIndexEntry => ({
@@ -86,5 +86,101 @@ describe('routerView (US-50 AC3)', () => {
     const hidden = post('collagen-video', { topics: ['collagen'], router: 'hidden', summary: 'old collagen video' });
     const block = routerIndexBlock(routerView([hidden, collagen, post('b-article')], true));
     expect(block).toBe('[reference] collagen: collagen\n[article] b-article: b-article');
+  });
+});
+
+/**
+ * US-50 AC14: after routing, an article pick that names topic masters is
+ * replaced by those masters in its slot, unless the article is named (open
+ * in the chat, its URL or handle in the message, or the YouTube video's own
+ * post) or newer than every master it names.
+ */
+describe('preferMasters (US-50 AC14)', () => {
+  const d = master('vitamin-d', '2026-10-20');
+  const k = master('vitamin-k', '2026-10-20');
+  const stale = master('nad-nmn'); // a reference with no reviewed date: not a master
+  const dVideo = post('vitamin-d-video', { topics: ['vitamin-d'] });
+  const dkVideo = post('d-and-k-video', { topics: ['vitamin-d', 'vitamin-k'] });
+  const pathway = post('a-pathway', { type: 'pathway', topics: ['vitamin-d'] });
+  const guideline = post('a-guideline', { type: 'guideline', topics: ['vitamin-d'] });
+  const ref = { ...master('other-ref'), topics: ['vitamin-d'] };
+  const nadVideo = post('nad-video', { topics: ['nad-nmn'] });
+  const plain = post('plain-article');
+  const index = [d, k, stale, dVideo, dkVideo, pathway, guideline, ref, nadVideo, plain];
+  const none = new Set<string>();
+
+  it('replaces an article pick with its master in the same slot', () => {
+    expect(preferMasters(['a-pathway', 'vitamin-d-video', 'plain-article'], index, none))
+      .toEqual({ handles: ['a-pathway', 'vitamin-d', 'plain-article'], replaced: ['vitamin-d-video'] });
+  });
+
+  it('a multi-master article becomes all its masters, in its slot', () => {
+    expect(preferMasters(['d-and-k-video', 'plain-article'], index, none))
+      .toEqual({ handles: ['vitamin-d', 'vitamin-k', 'plain-article'], replaced: ['d-and-k-video'] });
+  });
+
+  it('keeps the result to 3 handles', () => {
+    expect(preferMasters(['a-pathway', 'd-and-k-video', 'plain-article'], index, none))
+      .toEqual({ handles: ['a-pathway', 'vitamin-d', 'vitamin-k'], replaced: ['d-and-k-video'] });
+  });
+
+  it('dedupes: a master the router picked keeps its own place, and is not added twice', () => {
+    expect(preferMasters(['d-and-k-video', 'vitamin-d', 'plain-article'], index, none))
+      .toEqual({ handles: ['vitamin-k', 'vitamin-d', 'plain-article'], replaced: ['d-and-k-video'] });
+    expect(preferMasters(['vitamin-d-video', 'd-and-k-video'], index, none))
+      .toEqual({ handles: ['vitamin-d', 'vitamin-k'], replaced: ['vitamin-d-video', 'd-and-k-video'] });
+    expect(preferMasters(['vitamin-d', 'vitamin-d-video'], index, none))
+      .toEqual({ handles: ['vitamin-d'], replaced: ['vitamin-d-video'] });
+  });
+
+  it('a named article stays, and its masters load beside it', () => {
+    expect(preferMasters(['vitamin-d-video', 'plain-article'], index, new Set(['vitamin-d-video'])))
+      .toEqual({ handles: ['vitamin-d-video', 'vitamin-d', 'plain-article'], replaced: [] });
+  });
+
+  it('an article newer than every master it names stays (US-50 AC5)', () => {
+    const newer = post('newer-video', { topics: ['vitamin-d', 'vitamin-k'], publishedAt: '2026-10-21T08:00:00Z' });
+    const sameDay = post('same-day-video', { topics: ['vitamin-d'], publishedAt: '2026-10-20T08:00:00Z' });
+    expect(preferMasters(['newer-video', 'same-day-video'], [...index, newer, sameDay], none))
+      .toEqual({ handles: ['newer-video', 'vitamin-d'], replaced: ['same-day-video'] });
+  });
+
+  it('pathways, guidelines, references, non-master topics and articles with no topics are untouched', () => {
+    expect(preferMasters(['a-pathway', 'a-guideline', 'other-ref'], index, none))
+      .toEqual({ handles: ['a-pathway', 'a-guideline', 'other-ref'], replaced: [] });
+    expect(preferMasters(['nad-video', 'plain-article', 'not-in-index'], index, none))
+      .toEqual({ handles: ['nad-video', 'plain-article', 'not-in-index'], replaced: [] });
+  });
+});
+
+describe('namedArticles (US-50 AC14)', () => {
+  const video = post('why-arent-cardiologists-prescribing-vitamin-k2', {
+    commerceUrl: 'https://microvitamin.com/blogs/articles/vitamin-k2-artery-calcification-trials',
+  });
+  const one = post('lipoproteina');
+  const index = [master('vitamin-k', '2026-10-20'), video, one];
+  const named = (message: string, articleHandle?: unknown) => [...namedArticles(index, message, articleHandle)];
+
+  it('the article the chat is open on, by its handle or its commerce slug', () => {
+    expect(named('what dose?', 'why-arent-cardiologists-prescribing-vitamin-k2')).toEqual([video.handle]);
+    expect(named('what dose?', 'vitamin-k2-artery-calcification-trials')).toEqual([video.handle]);
+  });
+
+  it('an articleHandle that matches no index entry, or is not a string, is ignored', () => {
+    expect(named('what dose?', 'no-such-post')).toEqual([]);
+    expect(named('what dose?', '')).toEqual([]);
+    expect(named('what dose?', { handle: video.handle })).toEqual([]);
+    expect(named('what dose?', '../why-arent-cardiologists-prescribing-vitamin-k2')).toEqual([]);
+  });
+
+  it('a URL or handle in the message names the post', () => {
+    expect(named('About https://microvitamin.com/blogs/articles/vitamin-k2-artery-calcification-trials?ref=x: is it right?')).toEqual([video.handle]);
+    expect(named('In WHY-ARENT-CARDIOLOGISTS-PRESCRIBING-VITAMIN-K2, you said...')).toEqual([video.handle]);
+    expect(named('see drstanfield.com/blogs/articles/lipoproteina')).toEqual([one.handle]);
+  });
+
+  it('a topic word alone names nothing', () => {
+    expect(named('Is vitamin k2 worth it? What about lipoproteina levels?')).toEqual([]);
+    expect(named('the vitamin-k2-artery-calcification-trials-extra post')).toEqual([]);
   });
 });

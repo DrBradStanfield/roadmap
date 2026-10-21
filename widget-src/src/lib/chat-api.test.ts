@@ -16,6 +16,7 @@ vi.mock('./build-flags', () => ({ LOCAL_FIRST: false }));
 
 import * as Sentry from '@sentry/react';
 import { deleteConversation, listConversations, loadConversation, sendMessage } from './chat-api';
+import { setChatArticle } from './assistant-config';
 
 // US-15 AC3: a transient upstream failure — a 5xx whose body is not our
 // handler's JSON (the Shopify proxy / Fly edge answered, not our route) — is
@@ -251,5 +252,32 @@ describe('chat-api: a thread the server no longer recognizes (US-15 AC6a)', () =
 
     expect(await deleteConversation('c1')).toBe(true);
     expect(localStorage.getItem('health_roadmap_guest_session')).toBe('new-tok');
+  });
+});
+
+// US-50 AC14: the site chat sends the blog post it is open on, so the server
+// keeps that post beside its topic master. Nothing is sent off a blog post.
+describe('chat-api: the open blog post (US-50 AC14)', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn(async () => new Response(JSON.stringify({ success: true, conversationId: 'c1', messageId: 'm1', content: 'hi' }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {}, removeItem: () => {} });
+  });
+
+  afterEach(() => {
+    setChatArticle(null);
+    vi.unstubAllGlobals();
+  });
+
+  it('sends articleHandle only when set', async () => {
+    await sendMessage('my message', 'c1', null);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).not.toHaveProperty('articleHandle');
+    setChatArticle('some-post');
+    await sendMessage('my message', 'c1', null);
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).articleHandle).toBe('some-post');
   });
 });

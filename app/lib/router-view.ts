@@ -1,7 +1,7 @@
 // The router's view of the knowledge-base index, shared by the production router
 // (chat-router.server.ts) and its harness (tools/test-chatbot-matching.ts).
 // Sentry-free, so the harness can import it under tsx.
-import type { BlogIndexEntry } from './blog-index.server';
+import { isMaster, type BlogIndexEntry } from './blog-index.server';
 
 /**
  * The index the router sees (US-50 AC3). A `router: hidden` article leaves it
@@ -21,6 +21,48 @@ export function routerView(index: BlogIndexEntry[], hide = process.env.TOPIC_MAS
     });
   };
   return index.filter(e => !(e.router === 'hidden' && (e.type ?? 'article') === 'article' && covered(e)));
+}
+
+/**
+ * The index entries a turn names (US-50 AC14): the post the chat is open on,
+ * by its handle or its microvitamin.com slug, and any post whose handle or
+ * slug the message gives, as a hyphenated word or a /blogs/<blog>/<slug> path.
+ * `open` is untrusted: it is only compared with index slugs, never stored.
+ */
+export function namedArticles(index: BlogIndexEntry[], message: string, open?: unknown): Set<string> {
+  const text = message.toLowerCase();
+  const said = new Set([...text.matchAll(/\/blogs\/[^/\s]+\/([a-z0-9-]+)/g)].map(m => m[1]));
+  for (const word of text.match(/[a-z0-9]+(?:-[a-z0-9]+)+/g) ?? []) said.add(word);
+  if (typeof open === 'string') said.add(open);
+  const slug = (url?: string) => url?.split(/[?#]/)[0].split('/').pop();
+  return new Set(index.filter(e => [e.handle, slug(e.commerceUrl)].some(s => !!s && said.has(s))).map(e => e.handle));
+}
+
+/**
+ * The router's picks with each older post replaced by its topic masters, in
+ * its slot (US-50 AC14). A pick stays as it is unless it is an article whose
+ * `topics` name at least one master and it is not newer than every one of
+ * them (published after its `reviewed`, US-50 AC5). A `named` article stays
+ * and loads with its masters after it; any other is replaced. Masters the
+ * router picked keep their own place; duplicates drop; at most 3 handles.
+ */
+export function preferMasters(picks: string[], index: BlogIndexEntry[], named: Set<string>): { handles: string[]; replaced: string[] } {
+  const byHandle = new Map(index.map(e => [e.handle, e]));
+  const handles: string[] = [];
+  const replaced: string[] = [];
+  const add = (h: string) => { if (!handles.includes(h)) handles.push(h); };
+  for (const pick of picks) {
+    const entry = byHandle.get(pick);
+    const masters = entry && (entry.type ?? 'article') === 'article'
+      ? (entry.topics ?? []).filter(t => { const m = byHandle.get(t); return !!m && isMaster(m); })
+      : [];
+    const day = entry?.publishedAt?.slice(0, 10) ?? '';
+    if (masters.length === 0 || masters.every(m => day > byHandle.get(m)!.reviewed!)) { add(pick); continue; }
+    if (named.has(pick)) add(pick);
+    else replaced.push(pick);
+    for (const m of masters) if (!picks.includes(m)) add(m);
+  }
+  return { handles: handles.slice(0, 3), replaced };
 }
 
 /**

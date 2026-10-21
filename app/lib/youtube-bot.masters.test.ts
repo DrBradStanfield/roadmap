@@ -25,6 +25,7 @@ const fakes = vi.hoisted(() => {
     ref('tm-keyed'), ref('tm-keylong'), ref('tm-kp-head'), ref('tm-kp-tbw'), ref('tm-kp-rule'), ref('tm-kp-two'), ref('tm-kp-indent'), ref('tm-kp-summary'),
     ...Array.from({ length: 14 }, (_, i) => ref(`tm-stack-${i}`, '2026-10-20')),
     { title: 'An article', handle: 'tm-article', url: 'u', tags: [], publishedAt: '2025-01-01T00:00:00Z' },
+    { title: 'Collagen video', handle: 'tm-collagen-video', url: 'u', tags: [], publishedAt: '2025-01-01T00:00:00Z', topics: ['tm-collagen'] },
   ];
 });
 
@@ -75,6 +76,7 @@ const files: Record<string, string> = {
   'tm-huge': `---\ntitle: "Huge"\n---\n\n## Current view (reviewed 20 October 2026)\n\nHuge view.\n\n## 5. Safety and Side Effects\n\n${'h'.repeat(119_750)}\n`,
   'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
   'tm-article': `---\ntitle: "An article"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNot a master.\n`,
+  'tm-collagen-video': `---\ntitle: "Collagen video"\n---\n\nThe old collagen video's text.\n`,
 };
 const KEY_POINTS = '## Key safety points\n\n- May interact with warfarin [1].\n- Not for pregnant people [2].\n- Mild bloating is common [1, 2].';
 files['tm-keyed'] = `---\ntitle: "Keyed"\n---\n\n## Current view (reviewed 20 October 2026)\n\nKeyed view.\n\n${KEY_POINTS}\n\n## 5. Safety and Side Effects\n\nFull safety text.\n\n## 6. Drug Interactions\n\nFull interactions text [3].\n\n## 9. References\n\n[1] Ref one.\n[2] Ref two.\n[3] Ref three.\n`;
@@ -434,6 +436,39 @@ describe('runPipeline: the reply-or-skip input (US-50 AC6)', () => {
     const texts = systemOf();
     expect(texts.find(t => t.startsWith('## Referenced Blog Articles'))).toContain('Collagen peptides');
     expect(texts.join('\n')).not.toContain(`${MASTER_VIEWS_HEADING}\n\n[reference`);
+  });
+
+  // US-50 AC14: the router's picks go through the same master filter as the storefront chat.
+  const pick = (handles: string[]) => vi.mocked(routeQuery).mockResolvedValueOnce({ handles, rawJson: null, usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 }, latencyMs: 1, cacheHit: false, error: null });
+
+  it('an older post the router picks is replaced by its master, and the outcome says so (US-50 AC14)', async () => {
+    fakeFiles();
+    pick(['tm-collagen-video']);
+    const outcome = await runPipeline(thread, { ...entry, topics: [] }, 'The video body.');
+    const articles = systemOf().find(t => t.startsWith('## Referenced Blog Articles'))!;
+    expect(articles).toContain('Collagen peptides');
+    expect(articles).not.toContain("The old collagen video's text.");
+    expect(outcome.routerHandles).toEqual(['tm-collagen-video']);
+    expect(outcome.replaced).toEqual(['tm-collagen-video']);
+    expect(outcome.reduced ?? []).toEqual([]);
+  });
+
+  it('the video\'s own post stays when the router picks it, with its master beside it (US-50 AC14)', async () => {
+    fakeFiles();
+    pick(['tm-collagen-video']);
+    const outcome = await runPipeline(thread, { ...entry, handle: 'tm-collagen-video' }, 'The video body.');
+    const articles = systemOf().find(t => t.startsWith('## Referenced Blog Articles'))!;
+    expect(articles).toContain("The old collagen video's text.");
+    expect(articles).toContain('Collagen peptides');
+    expect(outcome.replaced).toEqual([]);
+  });
+
+  it('a comment giving the post\'s handle names it (US-50 AC14)', async () => {
+    fakeFiles();
+    pick(['tm-collagen-video']);
+    const outcome = await runPipeline({ ...thread, text: 'In tm-collagen-video you said collagen works. Still true?' }, entry, 'The video body.');
+    expect(systemOf().find(t => t.startsWith('## Referenced Blog Articles'))).toContain("The old collagen video's text.");
+    expect(outcome.replaced).toEqual([]);
   });
 });
 

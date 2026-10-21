@@ -30,7 +30,8 @@ import { supabaseAdmin } from './supabase.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION, type RouterResult } from './chat-router.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
-import { findBlogByVideoId, type BlogIndexEntry } from './blog-index.server';
+import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { namedArticles, preferMasters } from './router-view';
 import { loadBlogArticle } from './matched-content';
 import { stripFrontmatter } from './frontmatter';
 import { YOUTUBE_PROMPT_TEMPLATE, buildYouTubePlatformContext, loadedHandles } from './youtube-context';
@@ -618,6 +619,8 @@ export async function persistYouTubeTurn(p: {
         postedYoutubeId: p.postedYoutubeId,
         posted: outcome.posted,
         skipReason: outcome.skipReason ?? null,
+        ...(outcome.replaced?.length ? { replaced: outcome.replaced } : {}),
+        ...(outcome.reduced?.length ? { reduced: outcome.reduced } : {}),
       },
       matched_handles: outcome.routerHandles ?? [],
       router_version: ROUTER_VERSION,
@@ -820,6 +823,9 @@ interface PipelineOutcome {
   skipReason?: string;
   classification?: string;
   routerHandles?: string[];
+  /** US-50 AC14: router picks replaced by their masters, and masters loaded reduced. */
+  replaced?: string[];
+  reduced?: string[];
   replyText?: string;
   /**
    * Telemetry for persistYouTubeTurn(). Previously all of this was computed and
@@ -891,10 +897,14 @@ export async function runPipeline(
     routerHandles = routerResult.handles;
   }
 
-  const matched = loadMatchedArticlesFromHandles(routerHandles);
+  // US-50 AC14: an older post gives way to its topic masters, unless it is
+  // this video's own post or the comment gives its URL or handle.
+  const index = loadBlogIndex();
+  const routed = preferMasters(routerHandles, index, new Set([entry.handle, ...namedArticles(index, sanitized)]));
+  const matched = loadMatchedArticlesFromHandles(routed.handles);
   const blogArticles = matched?.content ?? null;
   // Master views skip only masters that actually loaded, not ones the cap skipped (US-50 AC6).
-  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, loadedHandles(routerHandles, matched), isFollowUp);
+  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, loadedHandles(routed.handles, matched), isFollowUp);
   // YouTube is a doctor-family surface (Brad's public channel) → strict doctor posture.
   const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, blogArticles });
   const conversationMessages = buildConversationMessages(history, thread.text);
@@ -905,6 +915,8 @@ export async function runPipeline(
   return {
     classification: classifierResult.classification,
     routerHandles,
+    replaced: routed.replaced,
+    reduced: matched?.reduced,
     routerResult,
     routerSkipped,
     usage: completion.usage,
