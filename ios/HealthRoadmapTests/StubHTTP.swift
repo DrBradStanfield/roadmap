@@ -1,4 +1,5 @@
 import Foundation
+@testable import HealthRoadmap
 
 /// A URLProtocol that answers every request from a test's handler, so the
 /// engine's fetch (EngineNatives) and the OAuth client run against fakes.
@@ -12,6 +13,8 @@ final class StubHTTP: URLProtocol {
         var hang = false
         /// Fail as a dead network does.
         var offline = false
+        /// Answer after this many seconds (an open still in flight).
+        var delay: TimeInterval = 0
     }
 
     /// The request as the handler sees it, body read from its stream.
@@ -56,9 +59,17 @@ final class StubHTTP: URLProtocol {
             return
         }
         let response = HTTPURLResponse(url: request.url!, statusCode: answer.status, httpVersion: "HTTP/1.1", headerFields: answer.headers)!
-        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: answer.body)
-        client?.urlProtocolDidFinishLoading(self)
+        let deliver = { [self] in
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: answer.body)
+            client?.urlProtocolDidFinishLoading(self)
+        }
+        if answer.delay > 0 {
+            let later = MainQueueOnly(deliver)
+            DispatchQueue.global().asyncAfter(deadline: .now() + answer.delay) { later.value() }
+        } else {
+            deliver()
+        }
     }
 
     override func stopLoading() {

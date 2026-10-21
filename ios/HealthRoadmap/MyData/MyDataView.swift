@@ -58,7 +58,7 @@ struct MyDataView: View {
                     SupplementsSection(store: store, supplements: data.supplements, saved: saved)
                     Section {
                     } footer: {
-                        Label(SyncStatusText.myDataFooter(provider: sync.provider), systemImage: "lock.shield")
+                        Label(SyncStatusText.myDataFooter(provider: sync.provider, earlier: sync.syncedBefore), systemImage: "lock.shield")
                             .frame(maxWidth: .infinity)
                     }
                 }

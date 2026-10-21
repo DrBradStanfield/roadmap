@@ -29,17 +29,22 @@ enum SyncStatusText {
     }
 
     /// The footer under My data: where the record is kept, and nothing more.
-    static func myDataFooter(provider: CloudProvider?) -> String {
-        guard let provider else {
-            return "Saved only on this iPhone and left out of its backups. Connect Dropbox or Google Drive in Sync to use it on the web or a new phone."
+    /// `earlier`: the cloud it was synced with before a Disconnect, whose copy stays.
+    static func myDataFooter(provider: CloudProvider?, earlier: CloudProvider?) -> String {
+        if let provider {
+            return "Saved in your \(provider.label), the file the website uses, and on this iPhone, left out of its backups."
         }
-        return "Saved in your \(provider.label), the file the website uses, and on this iPhone, left out of its backups."
+        if let earlier {
+            return "Kept on this iPhone and left out of its backups. A copy you synced earlier stays in your \(earlier.label)."
+        }
+        return "Saved only on this iPhone and left out of its backups. Connect Dropbox or Google Drive in Sync to use it on the web or a new phone."
     }
 
     /// The plan's privacy line (architecture.md D9). True to the code: the plan is
     /// worked out here, and the record goes only to the cloud the user connected.
-    static func planPrivacy(provider: CloudProvider?) -> String {
-        guard let provider else { return "No health data left your device." }
-        return "Your record goes only to the \(provider.label) you connected, never to Dr Brad's server."
+    static func planPrivacy(provider: CloudProvider?, earlier: CloudProvider?) -> String {
+        if let provider { return "Your record goes only to the \(provider.label) you connected, never to Dr Brad's server." }
+        if let earlier { return "Nothing is sent anywhere now. A copy you synced earlier stays in your \(earlier.label)." }
+        return "No health data left your device."
     }
 }

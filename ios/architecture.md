@@ -221,6 +221,23 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   open merges them up. All of it is health-core's merge, so rows are never lost and an
   erase still wins. Cost: the phone file holds the record while connected, under the same
   protection and backup exclusion as before. Brad may prefer the web's leaner rule.
+- **Review fixes (2026-10-21, Codex R1-R6 and Opus adversary A3-A10).** Edit sheets pin the
+  erase and the units they opened on (`MyData/RecordPin.swift`, `RecordStore.Screen`); the
+  engine's `cloudEdit` refuses a value typed in units another device has since changed, and
+  `RecordSession.refuses` refuses one typed before a remote erase. `cloudEdit` merges the edit
+  into the phone's file synchronously and refuses it if the phone cannot write it, so
+  "saved" is true on the phone before the save goes up. CloudSync tracks its session
+  explicitly (`sessionOpen`); a failed reopen falls back to the phone's file; a generation
+  number makes a Disconnect beat an open still in flight; edits that land while the cloud
+  opens make the open run again so the session merges them. Every re-read reports to Swift
+  (`synced` or `failed` with its kind). A 403 whose reason is a rate limit is a retry, not a
+  sign-in. The account a sign-in belongs to is kept (`sync-account`); signing in again as
+  another account is refused, because merging would put one person's record into
+  another's: the user disconnects first, then connects the other account (a fresh connect
+  then lifts the phone's record, as any first connect does). After a Disconnect,
+  `sync-history` remembers the cloud, and the words say a copy stays there. The background
+  save has an expiration handler. Drive runs through the shim in Node against a fake
+  Drive (`cloud.test.ts`), so its path is tested before the iOS client id exists.
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free
   (US-34). Until then the app polls each minute while on screen. Documents are not synced

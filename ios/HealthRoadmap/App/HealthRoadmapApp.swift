@@ -29,13 +29,34 @@ private func follow(_ phase: ScenePhase, _ sync: CloudSync) {
     case .active:
         Task { await sync.foreground() }
     case .background:
-        let task = UIApplication.shared.beginBackgroundTask(withName: "Save the record")
+        let task = BackgroundTask()
         Task {
             await sync.background()
-            UIApplication.shared.endBackgroundTask(task)
+            task.end()
         }
     default:
         break
+    }
+}
+
+/// iOS's few seconds to finish a save after the app leaves the screen. If they run
+/// out first, iOS calls the expiration handler, which must end the task or iOS
+/// kills the app. Nothing is lost then: the edit is on the phone, marked pending,
+/// and the next open sends it (review A7).
+@MainActor
+private final class BackgroundTask {
+    private var id = UIBackgroundTaskIdentifier.invalid
+
+    init() {
+        id = UIApplication.shared.beginBackgroundTask(withName: "Save the record") { [weak self] in
+            MainActor.assumeIsolated { self?.end() }
+        }
+    }
+
+    func end() {
+        guard id != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(id)
+        id = .invalid
     }
 }
 

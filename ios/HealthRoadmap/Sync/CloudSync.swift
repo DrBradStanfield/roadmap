@@ -22,25 +22,32 @@ final class CloudSync: CloudPort {
     /// The connected cloud; nil when the record is the phone's file.
     private(set) var provider: CloudProvider?
     private(set) var status = Status.onPhone
+    /// The cloud the record was last synced with, kept after Disconnect: the copy
+    /// there stays, so the app never says the record never left the phone (review A3).
+    private(set) var syncedBefore: CloudProvider?
 
     private let engine: HealthEngine
     private let store: RecordStore
     private let oauth: OAuthClient
-    /// Beside the record, so backups leave them out with it (D5): a phone
-    /// restored from a backup starts unconnected, as its Keychain tokens stay behind.
-    private let providerFile: URL
-    private let pendingFile: URL
-    /// An open under way: the launch and the first foreground must not open twice.
-    private var opening = false
+    private let files: SyncFiles
+    /// True only while the engine holds an open session and the store sends it
+    /// edits. Everything that talks to the session checks this, never the store.
+    private var sessionOpen = false
+    /// Moves on every Disconnect. An open that finishes under an older one is
+    /// closed, not shown: Disconnect wins (review R5).
+    private var generation = 0
+    /// The generation an open is under way for; nil when none is.
+    private var openingFor: Int?
+    /// Edits the phone took while an open was under way (review A5).
+    private var editsWhileOpening = 0
 
     init(engine: HealthEngine, store: RecordStore, oauth: OAuthClient) {
         self.engine = engine
         self.store = store
         self.oauth = oauth
-        let folder = store.file.deletingLastPathComponent()
-        providerFile = folder.appending(path: "sync-provider")
-        pendingFile = folder.appending(path: "sync-pending")
-        provider = (try? String(contentsOf: providerFile, encoding: .utf8)).flatMap(CloudProvider.init(rawValue:))
+        files = SyncFiles(folder: store.file.deletingLastPathComponent())
+        provider = files.read(files.provider).flatMap(CloudProvider.init(rawValue:))
+        syncedBefore = files.read(files.history).flatMap(CloudProvider.init(rawValue:))
         engine.natives.cloud = self
         store.onEdit = { [weak self] in self?.edited() }
         if provider != nil { status = .connecting }
@@ -51,11 +58,18 @@ final class CloudSync: CloudPort {
         if provider != nil { await open(firstConnect: false) }
     }
 
-    /// Sign in and connect. The phone's record is merged up into the cloud's.
+    /// Sign in and connect. On a first connect the phone's record is merged up
+    /// into the cloud's. Signing in again as a different account is refused:
+    /// it would merge one person's record into another's (review A6).
     func connect(_ provider: CloudProvider, authenticate: OAuthClient.Authenticate) async throws {
-        try await oauth.signIn(provider, authenticate: authenticate)
+        let signedIn = try await oauth.signIn(provider, authenticate: authenticate)
+        if self.provider == provider, let known = files.read(files.account), known != signedIn.account {
+            throw OAuthClient.Failure.refused("That is a different \(provider.label) account from the one this iPhone syncs with. To use it, disconnect first, then connect it.")
+        }
         let first = self.provider != provider
-        try Data(provider.rawValue.utf8).write(to: providerFile, options: .atomic)
+        try oauth.keep(signedIn)
+        try files.write(provider.rawValue, to: files.provider)
+        try files.write(signedIn.account, to: files.account)
         self.provider = provider
         await open(firstConnect: first)
     }
@@ -63,7 +77,7 @@ final class CloudSync: CloudPort {
     /// The app came to the foreground: re-read, or try again to open.
     func foreground() async {
         guard provider != nil else { return }
-        if store.cloudErase != nil {
+        if sessionOpen {
             try? engine.cloudVisible()
         } else {
             await open(firstConnect: false)
@@ -72,7 +86,7 @@ final class CloudSync: CloudPort {
 
     /// The app is leaving the screen: stop re-reading, and save what waits.
     func background() async {
-        guard store.cloudErase != nil else { return }
+        guard sessionOpen else { return }
         try? engine.cloudHidden()
         _ = try? await engine.cloudFlush()
     }
@@ -80,7 +94,7 @@ final class CloudSync: CloudPort {
     /// "Sync now": save what waits and read the cloud again.
     func syncNow() async {
         guard provider != nil else { return }
-        guard store.cloudErase != nil else { return await open(firstConnect: false) }
+        guard sessionOpen else { return await open(firstConnect: false) }
         status = .saving
         do {
             let saved = try await engine.cloudFlush()
@@ -97,37 +111,69 @@ final class CloudSync: CloudPort {
     @discardableResult
     func disconnect() async -> Bool {
         guard let provider else { return true }
+        generation += 1
+        sessionOpen = false
+        self.provider = nil
         let copied = (try? await engine.cloudClose(copyDown: true)) ?? false
         oauth.signOut(provider)
-        try? FileManager.default.removeItem(at: providerFile)
-        try? FileManager.default.removeItem(at: pendingFile)
-        self.provider = nil
+        files.remove(files.provider)
+        files.remove(files.account)
+        files.remove(files.pending)
         store.showPhone()
         status = .onPhone
         return copied
     }
 
+    /// Open (or reopen) the cloud session. While it opens, edits go to the
+    /// phone's file, marked pending; if any landed, the open runs once more so
+    /// the session merges them in, rather than showing a record without them.
     private func open(firstConnect: Bool) async {
-        guard let provider, !opening else { return }
-        opening = true
-        defer { opening = false }
-        status = .connecting
-        do {
-            let view = try await engine.cloudOpen(provider: provider, deviceId: store.deviceId, firstConnect: firstConnect)
-            store.showCloud(view)
-            status = .synced(.now)
-        } catch {
-            // The phone's copy stays on screen and takes the edits, marked for the cloud.
-            status = .problem(SyncProblem(error))
+        guard let provider, openingFor != generation else { return }
+        let mine = generation
+        openingFor = mine
+        defer { if openingFor == mine { openingFor = nil } }
+        // The phone's file holds every edit (write-ahead), so the screen falls back
+        // to it while the session is closed, and edits made meanwhile wait there.
+        if sessionOpen {
+            sessionOpen = false
+            store.showPhone()
         }
+        status = .connecting
+        var first = firstConnect
+        for _ in 0..<3 {
+            editsWhileOpening = 0
+            do {
+                let view = try await engine.cloudOpen(provider: provider, deviceId: store.deviceId, firstConnect: first)
+                guard mine == generation else {
+                    // Disconnected meanwhile: close what this open made, show nothing.
+                    _ = try? await engine.cloudClose(copyDown: false)
+                    return
+                }
+                first = false
+                if editsWhileOpening > 0 { continue }
+                store.showCloud(view)
+                sessionOpen = true
+                status = .synced(.now)
+                syncedBefore = provider
+                try? files.write(provider.rawValue, to: files.history)
+                return
+            } catch {
+                guard mine == generation else { return }
+                status = .problem(SyncProblem(error))
+                return
+            }
+        }
+        // Edits kept arriving: stay on the phone; the next foreground opens again.
+        status = .problem(SyncProblem(kind: .unreachable))
     }
 
     private func edited() {
-        if store.cloudErase != nil {
+        if sessionOpen {
             status = .saving
         } else if provider != nil {
-            // Connected, but the cloud could not be opened: this edit waits on the phone.
+            // Connected, but no session is open: this edit waits on the phone.
             _ = pending("set")
+            if openingFor != nil { editsWhileOpening += 1 }
         }
     }
 
@@ -158,20 +204,22 @@ final class CloudSync: CloudPort {
 
     func pending(_ op: String) -> Bool {
         switch op {
-        case "set": try? Data().write(to: pendingFile, options: .atomic)
-        case "clear": try? FileManager.default.removeItem(at: pendingFile)
+        case "set": try? files.write("", to: files.pending)
+        case "clear": files.remove(files.pending)
         default: break
         }
-        return FileManager.default.fileExists(atPath: pendingFile.path(percentEncoded: false))
+        return files.exists(files.pending)
     }
 
     func notify(_ event: String, _ payload: String) {
         switch event {
         case "saving": status = .saving
         case "saved": status = .synced(.now)
+        // A re-read worked: a passing failure is over. Never over "Saving…".
+        case "synced": if case .problem = status { status = .synced(.now) }
         case "failed": status = .problem(SyncProblem(json: payload))
         case "changed":
-            if let view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) { store.showCloud(view) }
+            if sessionOpen, let view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) { store.showCloud(view) }
         default: break
         }
     }

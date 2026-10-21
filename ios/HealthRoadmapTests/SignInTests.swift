@@ -58,10 +58,10 @@ final class SignInTests: XCTestCase {
         var form = ""
         StubHTTP.handler = { request in
             form = String(decoding: request.body, as: UTF8.self)
-            return .init(body: Data(#"{"access_token":"a1","refresh_token":"r1","expires_in":14400}"#.utf8))
+            return .init(body: Data(#"{"access_token":"a1","refresh_token":"r1","expires_in":14400,"account_id":"dbid:1"}"#.utf8))
         }
         let client = OAuthClient(tokens: tokens, session: StubHTTP.session())
-        try await client.signIn(.dropbox) { url, scheme in
+        let signedIn = try await client.signIn(.dropbox) { url, scheme in
             XCTAssertEqual(scheme, "db-xf96vqvjotm5xhx")
             let state = URLComponents(url: url, resolvingAgainstBaseURL: false)!.queryItems!.first { $0.name == "state" }!.value!
             return URL(string: "db-xf96vqvjotm5xhx://2/token?code=the-code&state=\(state)")!
@@ -71,6 +71,8 @@ final class SignInTests: XCTestCase {
         XCTAssertTrue(form.contains("code_verifier="))
         XCTAssertTrue(form.contains("redirect_uri=db-xf96vqvjotm5xhx%3A%2F%2F2%2Ftoken"))
         XCTAssertFalse(form.contains("secret"))
+        XCTAssertNil(tokens.load(.dropbox), "nothing is kept before the caller checks the account")
+        try client.keep(signedIn)
         XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r1")
     }
 
@@ -102,5 +104,31 @@ final class SignInTests: XCTestCase {
         } catch {
             XCTAssertEqual(error as? OAuthClient.Failure, .signInAgain)
         }
+    }
+
+    /// Adversary A6: the account a sign-in belongs to. Dropbox names it in the token
+    /// answer; Google with drive.file only does not, so Drive's about.user.permissionId.
+    func testSignInAnswersTheAccountForEachProvider() async throws {
+        StubHTTP.handler = { request in
+            if request.url.host == "www.googleapis.com" {
+                XCTAssertEqual(request.headers["authorization"], "Bearer g1")
+                return .init(body: Data(#"{"user":{"permissionId":"perm-7"}}"#.utf8))
+            }
+            if request.url.host == "oauth2.googleapis.com" {
+                return .init(body: Data(#"{"access_token":"g1","refresh_token":"gr","expires_in":3600,"scope":"https://www.googleapis.com/auth/drive.file"}"#.utf8))
+            }
+            return .init(body: Data(#"{"access_token":"a1","refresh_token":"r1","expires_in":14400,"account_id":"dbid:XYZ"}"#.utf8))
+        }
+        let client = OAuthClient(tokens: tokens, session: StubHTTP.session(), clientId: { $0 == .googleDrive ? "123-abc.apps.googleusercontent.com" : $0.clientId })
+        let back: OAuthClient.Authenticate = { url, _ in
+            let state = URLComponents(url: url, resolvingAgainstBaseURL: false)!.queryItems!.first { $0.name == "state" }!.value!
+            return URL(string: "x:/r?code=c&state=\(state)")!
+        }
+        let dropbox = try await client.signIn(.dropbox, authenticate: back)
+        XCTAssertEqual(dropbox.account, "dbid:XYZ")
+        let drive = try await client.signIn(.googleDrive, authenticate: back)
+        XCTAssertEqual(drive.account, "perm-7")
+        try client.keep(dropbox)
+        XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r1")
     }
 }

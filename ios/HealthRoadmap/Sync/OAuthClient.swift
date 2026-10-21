@@ -26,16 +26,29 @@ final class OAuthClient {
         }
     }
 
+    /// A finished sign-in, not yet kept: the caller checks the account first.
+    struct SignedIn: Sendable {
+        let provider: CloudProvider
+        let tokens: OAuthTokens
+        /// Which account signed in: Dropbox's `account_id`, or Drive's
+        /// `about.user.permissionId` (drive.file gives no email or id token).
+        let account: String
+    }
+
     private let tokens: TokenStore
     private let session: URLSession
     private let now: () -> Date
+    /// The provider's client id; tests pass one for Google before the real one exists.
+    private let clientId: (CloudProvider) -> String
     /// One refresh at a time per provider: two saves asking at once share it.
     private var refreshing: [CloudProvider: Task<OAuthTokens, Error>] = [:]
 
-    init(tokens: TokenStore = TokenStore(), session: URLSession = .shared, now: @escaping () -> Date = Date.init) {
+    init(tokens: TokenStore = TokenStore(), session: URLSession = .shared, now: @escaping () -> Date = Date.init,
+         clientId: @escaping (CloudProvider) -> String = { $0.clientId }) {
         self.tokens = tokens
         self.session = session
         self.now = now
+        self.clientId = clientId
     }
 
     func isSignedIn(_ provider: CloudProvider) -> Bool {
@@ -46,7 +59,7 @@ final class OAuthClient {
     func authorizeURL(_ provider: CloudProvider, pkce: PKCE) -> URL {
         var parts = URLComponents(url: provider.authorizeURL, resolvingAgainstBaseURL: false)!
         let query = [
-            "client_id": provider.clientId,
+            "client_id": clientId(provider),
             "response_type": "code",
             "redirect_uri": provider.redirectURI,
             "code_challenge": pkce.challenge,
@@ -57,9 +70,10 @@ final class OAuthClient {
         return parts.url!
     }
 
-    /// Sign in, exchange the code and keep the tokens.
-    func signIn(_ provider: CloudProvider, authenticate: Authenticate) async throws {
-        guard provider.isConfigured else { throw Failure.refused("\(provider.label) sign-in is not set up in this build yet.") }
+    /// Sign in and exchange the code. Nothing is kept until `keep`: a sign-in
+    /// as another account must not replace the connected one's tokens.
+    func signIn(_ provider: CloudProvider, authenticate: Authenticate) async throws -> SignedIn {
+        guard !clientId(provider).isEmpty else { throw Failure.refused("\(provider.label) sign-in is not set up in this build yet.") }
         let pkce = PKCE()
         let returned: URL
         do {
@@ -71,7 +85,7 @@ final class OAuthClient {
         let answer = try await post(provider, [
             "grant_type": "authorization_code",
             "code": code,
-            "client_id": provider.clientId,
+            "client_id": clientId(provider),
             "redirect_uri": provider.redirectURI,
             "code_verifier": pkce.verifier,
         ])
@@ -80,7 +94,26 @@ final class OAuthClient {
         if provider == .googleDrive, !(answer.scope ?? "").split(separator: " ").contains(Substring(CloudProvider.driveFileScope)) {
             throw Failure.refused("Allow access to the files this app creates in Google Drive, or the record cannot sync.")
         }
-        try tokens.save(OAuthTokens(accessToken: answer.accessToken, refreshToken: refresh, expiresAt: expiry(answer)), for: provider)
+        let kept = OAuthTokens(accessToken: answer.accessToken, refreshToken: refresh, expiresAt: expiry(answer))
+        let account = provider == .dropbox ? answer.accountId : try await driveAccount(answer.accessToken)
+        guard let account, !account.isEmpty else { throw Failure.refused("\(provider.label) did not say which account signed in. Try again.") }
+        return SignedIn(provider: provider, tokens: kept, account: account)
+    }
+
+    /// Keep a sign-in's tokens in the Keychain.
+    func keep(_ signedIn: SignedIn) throws {
+        try tokens.save(signedIn.tokens, for: signedIn.provider)
+    }
+
+    /// Drive's stable id for the signed-in user. `about` answers under drive.file.
+    private func driveAccount(_ accessToken: String) async throws -> String? {
+        var request = URLRequest(url: URL(string: "https://www.googleapis.com/drive/v3/about?fields=user(permissionId)")!)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        guard let (data, response) = try? await session.data(for: request), (response as? HTTPURLResponse)?.statusCode == 200 else {
+            throw Failure.unreachable("Google Drive did not answer. Check the connection and try again.")
+        }
+        let about = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        return (about?["user"] as? [String: Any])?["permissionId"] as? String
     }
 
     /// A current access token, refreshed a minute before it expires, or now when `force`.
@@ -103,7 +136,7 @@ final class OAuthClient {
         let answer = try await post(provider, [
             "grant_type": "refresh_token",
             "refresh_token": saved.refreshToken,
-            "client_id": provider.clientId,
+            "client_id": clientId(provider),
         ])
         // Google may rotate the refresh token; Dropbox keeps the one it gave.
         let next = OAuthTokens(accessToken: answer.accessToken, refreshToken: answer.refreshToken ?? saved.refreshToken, expiresAt: expiry(answer))
@@ -130,8 +163,9 @@ final class OAuthClient {
         let refreshToken: String?
         let expiresIn: Int?
         let scope: String?
+        let accountId: String?
         enum CodingKeys: String, CodingKey {
-            case accessToken = "access_token", refreshToken = "refresh_token", expiresIn = "expires_in", scope
+            case accessToken = "access_token", refreshToken = "refresh_token", expiresIn = "expires_in", scope, accountId = "account_id"
         }
     }
 

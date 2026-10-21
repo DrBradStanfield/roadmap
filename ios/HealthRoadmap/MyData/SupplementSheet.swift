@@ -17,6 +17,10 @@ struct SupplementSheet: View {
     @State private var confirmingStop = false
 
     var body: some View {
+        sheet.pinsRecord()
+    }
+
+    private var sheet: some View {
         NavigationStack {
             Form {
                 Section {
@@ -96,6 +100,10 @@ struct AddSupplementSheet: View {
     @State private var message: String?
 
     var body: some View {
+        sheet.pinsRecord()
+    }
+
+    private var sheet: some View {
         NavigationStack {
             List {
                 if let message {

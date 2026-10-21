@@ -27,6 +27,8 @@ struct RootView: View {
                 .tag(Tab.plan)
         }
         .sensoryFeedback(.selection, trigger: tab)
+        // Edit sheets pin the record they opened on (MyData/RecordPin.swift).
+        .environment(store)
         .fullScreenCover(isPresented: Binding(get: { !welcomed }, set: { welcomed = !$0 })) {
             WelcomeView { welcomed = true }
         }

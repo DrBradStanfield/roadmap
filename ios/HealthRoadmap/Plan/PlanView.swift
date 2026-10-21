@@ -34,7 +34,7 @@ struct PlanView: View {
                         .buttonStyle(.borderedProminent)
                 }
             case .loaded(let sections, let planMs):
-                PlanList(sections: sections, planMs: planMs, privacy: SyncStatusText.planPrivacy(provider: sync.provider))
+                PlanList(sections: sections, planMs: planMs, privacy: SyncStatusText.planPrivacy(provider: sync.provider, earlier: sync.syncedBefore))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

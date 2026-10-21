@@ -18,10 +18,11 @@ extension HealthEngine {
         return try JSONDecoder().decode(CloudView.self, from: Data(json.utf8))
     }
 
-    /// One My data edit through the open session, checked against the erase the screen showed.
-    func cloudEdit(_ edit: RecordEdit, erase: String, now: Date) throws -> EditOutcome {
+    /// One My data edit through the open session, checked against the erase and the
+    /// units the screen showed when the edit began (a sheet's opening).
+    func cloudEdit(_ edit: RecordEdit, erase: String, units: String, now: Date) throws -> EditOutcome {
         let editJSON = String(decoding: try JSONEncoder().encode(edit), as: UTF8.self)
-        let json = try call("cloudEdit", [editJSON, erase, now.formatted(Date.ISO8601FormatStyle(includingFractionalSeconds: true))])
+        let json = try call("cloudEdit", [editJSON, erase, units, now.formatted(Date.ISO8601FormatStyle(includingFractionalSeconds: true))])
         return try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
     }
 

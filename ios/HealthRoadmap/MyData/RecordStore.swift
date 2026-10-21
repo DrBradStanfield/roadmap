@@ -28,6 +28,33 @@ final class RecordStore {
     /// phone, that the file moved (CloudSync marks it for the cloud then).
     var onEdit: (() -> Void)?
 
+    /// What the screen showed when an edit began: the erase it was at (nil on the
+    /// phone's file) and its units. A sheet pins it as it opens (`pinsRecord`),
+    /// so a value typed there is checked against the record the user saw, not
+    /// one a sync brought in since (US-25 AC11; review R1, R2).
+    struct Screen: Equatable {
+        let erase: String?
+        let units: String
+    }
+    private var pinned: Screen?
+    private var pins = 0
+
+    var screen: Screen {
+        Screen(erase: cloudErase, units: myData?.unitSystem ?? "si")
+    }
+
+    /// A sheet that edits the record opened.
+    func pinScreen() {
+        if pins == 0 { pinned = screen }
+        pins += 1
+    }
+
+    /// That sheet closed.
+    func unpinScreen() {
+        pins = max(0, pins - 1)
+        if pins == 0 { pinned = nil }
+    }
+
     private let engine: HealthEngine
     /// Where the record is kept.
     let file: URL
@@ -138,7 +165,12 @@ final class RecordStore {
     }
 
     func apply(_ edit: RecordEdit) -> ApplyResult {
-        if let cloudErase { return applyInCloud(edit, erase: cloudErase) }
+        let seen = pinned ?? screen
+        // An erase taken in, or sync turned on or off, since the sheet opened.
+        guard seen.erase == cloudErase else {
+            return .refused(message: "Your record changed while this was open, so this was not saved. Check it and try again.", existingId: nil)
+        }
+        if let erase = seen.erase { return applyInCloud(edit, erase: erase, units: seen.units) }
         if let problem { return .refused(message: problem, existingId: nil) }
         do {
             let outcome = try engine.apply(edit, to: recordJSON, now: .now, deviceId: deviceId)
@@ -157,9 +189,9 @@ final class RecordStore {
     }
 
     /// Through the engine's open session: the save loop sends it to the cloud.
-    private func applyInCloud(_ edit: RecordEdit, erase: String) -> ApplyResult {
+    private func applyInCloud(_ edit: RecordEdit, erase: String, units: String) -> ApplyResult {
         do {
-            let outcome = try engine.cloudEdit(edit, erase: erase, now: .now)
+            let outcome = try engine.cloudEdit(edit, erase: erase, units: units, now: .now)
             guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
             }
