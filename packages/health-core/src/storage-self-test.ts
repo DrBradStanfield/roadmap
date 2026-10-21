@@ -6,7 +6,8 @@
  *   - the same-day double-entry and schema-too-new guards behave
  *
  * Pure (no real network, injected clock) so it runs identically in the browser
- * (GitHub Pages harness) and in a future vitest. Returns structured results.
+ * (GitHub Pages harness), in vitest and, on bundle load, in the iPhone app's
+ * JavaScriptCore (ios/architecture.md D3, D4). Returns structured results.
  */
 import {
   createEmptyFile,
@@ -14,11 +15,11 @@ import {
   type FileMeasurement,
   type FileMedication,
   type RoadmapFile,
-} from '@roadmap/health-core';
-import { type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core';
-import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
-import { SyncManager } from '@roadmap/health-core';
-import { ROADMAP_DOC } from './roadmap-store';
+} from './roadmap-file';
+import { type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
+import { MemoryAdapter, MemoryCloud } from './memory-adapter';
+import { SyncManager } from './sync-manager';
+import { ROADMAP_DOC } from './roadmap-doc';
 
 export interface SelfTestResult {
   name: string;
