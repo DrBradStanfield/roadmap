@@ -49,9 +49,11 @@ enum EraseText {
         return "Nothing was deleted. \(engineWords)"
     }
 
-    /// The erase failed before it could say why (an engine error).
-    static func failed(_ reason: String) -> String {
-        "Nothing was deleted. \(reason)"
+    /// The erase failed (an engine error). The chat history may already be gone (re-check N2).
+    static func failed(_ reason: String, chatErased: Bool) -> String {
+        chatErased
+            ? "Your record was not erased. \(reason) Your chat history was deleted."
+            : "Nothing was deleted. \(reason)"
     }
 
     static func unreachable(_ provider: CloudProvider) -> String {

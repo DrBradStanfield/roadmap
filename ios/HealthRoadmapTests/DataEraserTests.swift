@@ -83,7 +83,7 @@ final class DataEraserTests: XCTestCase {
     }
 
     private func seedChat(_ chat: ChatHistoryStore) {
-        chat.record(ChatExchange(conversationId: "c1", isNew: true, userText: question, assistantText: "It is above target.", isFallback: false))
+        chat.record(ChatExchange(conversationId: "c1", isNew: true, userText: question, assistantText: "It is above target.", isFallback: false), askedAt: ChatHistoryStore.erasures)
         XCTAssertEqual(chat.conversations.count, 1)
     }
 
@@ -211,6 +211,37 @@ final class DataEraserTests: XCTestCase {
         XCTAssertEqual(epoch(dropbox.record), 1)
         XCTAssertEqual(epoch(object(app.store.recordJSON)), 1, "the screen shows the erase")
         XCTAssertFalse(app.sync.erasing)
+    }
+
+    func testN1AnAnswerThatStartedBeforeTheEraseIsNeverSavedAfterIt() async throws {
+        dropbox.put(try record(days: ["2026-10-01"]))
+        let app = try app(connected: true)
+        await app.sync.start()
+        seedChat(app.chat)
+        // ChatView's own store, apart from the eraser's, as in the app.
+        let screen = ChatHistoryStore(engine: try HealthEngine(), folder: folder, deviceId: "ios-test")
+        let askedAt = ChatHistoryStore.erasures
+        // The answer lands between the chat write and the end of the erase: a new
+        // conversation, so no tombstone of its own guards it.
+        let fake = dropbox!
+        var landed = false
+        StubHTTP.handler = { request in
+            if request.url.path.hasSuffix("/files/upload"), !landed {
+                landed = true
+                DispatchQueue.main.sync {
+                    MainActor.assumeIsolated {
+                        screen.record(ChatExchange(conversationId: "c-new", isNew: true, userText: self.question, assistantText: "Answer.", isFallback: false), askedAt: askedAt)
+                    }
+                }
+            }
+            return fake.answer(request)
+        }
+        guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+        XCTAssertTrue(landed)
+        XCTAssertFalse(try String(contentsOf: chatFile, encoding: .utf8).contains(question), "the late answer was not saved")
+        // A question asked after the erase saves as usual.
+        screen.record(ChatExchange(conversationId: "c-after", isNew: true, userText: "Later", assistantText: "Answer.", isFallback: false), askedAt: ChatHistoryStore.erasures)
+        XCTAssertEqual(screen.conversations.count, 1)
     }
 
     // MARK: Words and export

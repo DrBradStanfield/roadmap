@@ -70,6 +70,8 @@ final class CloudSync: CloudPort {
     func connect(_ provider: CloudProvider, authenticate: OAuthClient.Authenticate) async throws {
         guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
         let signedIn = try await oauth.signIn(provider, authenticate: authenticate)
+        // A sign-in begun before the erase may finish during it (Codex re-check R2).
+        guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
         if self.provider == provider, let known = files.read(files.account), known != signedIn.account {
             throw OAuthClient.Failure.refused("That is a different \(provider.label) account from the one this iPhone syncs with. To use it, disconnect first, then connect it.")
         }

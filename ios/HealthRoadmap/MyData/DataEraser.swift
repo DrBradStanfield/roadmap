@@ -74,14 +74,21 @@ final class DataEraser {
 
     private func eraseInCloud(_ provider: CloudProvider) async -> Outcome {
         let (history, chatReadable) = chatText()
+        var chatWritten = false
         let answer: HealthEngine.CloudErase?
         do {
-            answer = try await sync.erase(chatHistory: history) { [chat] in chat.keepErased($0) }
+            answer = try await sync.erase(chatHistory: history) { [chat] in
+                chatWritten = chat.keepErased($0)
+                return chatWritten
+            }
         } catch {
-            return .refused(EraseText.failed(error.localizedDescription))
+            return .refused(EraseText.failed(error.localizedDescription, chatErased: chatWritten))
         }
         guard let result = answer, result.erased else {
-            return .refused(EraseText.refusal(answer?.error, provider: provider))
+            // The engine refuses before the chat step, so chatWritten is false here but
+            // in a failure after it (re-check N2), which the words then name.
+            let words = chatWritten ? EraseText.failed(answer?.error ?? "", chatErased: true) : EraseText.refusal(answer?.error, provider: provider)
+            return .refused(words)
         }
         let chatErased = chatReadable && result.chatErased
         return result.success

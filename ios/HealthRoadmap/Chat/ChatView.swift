@@ -132,6 +132,7 @@ struct ChatView: View {
         // An erase while the answer streams empties `lines` and the history: from then on
         // this turn is dropped, never indexed into the new lines or saved (review R1).
         let erasures = store.erasures
+        let askedAt = ChatHistoryStore.erasures
         draft = ""
         error = nil
         sending = true
@@ -155,7 +156,7 @@ struct ChatView: View {
                     // The final reply replaces what streamed (US-15 AC16).
                     lines[answerIndex].text = content ?? lines[answerIndex].text
                     finished = true
-                    history?.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: lines[answerIndex].text, isFallback: isFallback))
+                    history?.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: lines[answerIndex].text, isFallback: isFallback), askedAt: askedAt)
                 case .other: break
                 }
             }

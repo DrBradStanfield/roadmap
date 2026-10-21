@@ -9,6 +9,11 @@ import Observation
 @Observable
 final class ChatHistoryStore {
     private(set) var conversations: [ChatConversation] = []
+    /// Moves the moment an erase writes the chat file (`keepErased`), in either mode.
+    /// An answer asked for before it is never saved after it (re-check N1): a new
+    /// conversation has no tombstone of its own to refuse it, and the record erase
+    /// that moves RecordStore.erasures may still be uploading.
+    private(set) static var erasures = 0
 
     private let engine: HealthEngine
     private let file: URL
@@ -36,7 +41,9 @@ final class ChatHistoryStore {
     }
 
     /// Saves one exchange. A failure is dropped: the answer is already on screen.
-    func record(_ exchange: ChatExchange) {
+    /// `askedAt` is `erasures` when the question was sent; an erase since refuses it.
+    func record(_ exchange: ChatExchange, askedAt: Int) {
+        guard askedAt == Self.erasures else { return }
         guard let next = try? engine.recordChatExchange(historyJSON: text(), exchange: exchange, now: .now, deviceId: deviceId) else { return }
         write(next)
     }
@@ -57,6 +64,7 @@ final class ChatHistoryStore {
     /// write. False when the phone refused the write, so the erase can say so.
     func keepErased(_ json: String?) -> Bool {
         defer { refresh() }
+        Self.erasures += 1
         guard let json else { return true }
         return (try? Data(json.utf8).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])) != nil
     }

@@ -116,6 +116,7 @@ struct SyncView: View {
     }
 
     private func disconnect(_ provider: CloudProvider) async {
+        guard !sync.erasing else { return } // refused, not unreachable (re-check N3)
         if !(await sync.disconnect()) {
             message = "\(provider.label) could not be reached, so changes made on other devices since the last sync are not on this iPhone. Everything saved on this iPhone is kept."
         }
