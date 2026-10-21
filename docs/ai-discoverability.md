@@ -33,12 +33,21 @@ change below. The original plan and its reasoning:
   URL, the guides, the CLI, agent-access.md and the schema. Source:
   claude_business `tools/shopify-llms-txt.js`.
 - `/pages/roadmap`: intro text, `WebApplication` JSON-LD, SEO title and
-  description. Seven guides carry `TechArticle` JSON-LD, including upload-lab-report (upload
-  and fix a value) and find-your-record (where the file sits, backups, erase).
+  description. Ten guides carry `TechArticle` JSON-LD, including upload-lab-report (upload
+  and fix a value), find-your-record (where the file sits, backups, erase),
+  track-blood-tests-with-ai (the entry page for "track my blood tests with
+  ChatGPT or Claude"), connect-google-drive (the Drive box people miss) and
+  where-your-data-lives (the privacy page: what touches our server, Supabase,
+  Anthropic and others). Added 2026-10-22.
 - `/pages/start` and `/pages/health` are hidden (page metafield `seo.hidden`=1):
   noindex and out of the sitemap. `/pages/health-plan` is still indexable.
 - Google Search Console: all three sites verified by DNS record (potassiumfiber.com
   too, checked 2026-10-21).
+- Bing Webmaster Tools: all three sites added. Sitemaps submitted for
+  drstanfield.com and potassiumfiber.com on 2026-10-22; microvitamin.com's were
+  already crawled.
+- potassiumfiber.com has 10 articles of its own, including potassium citrate vs
+  chloride and the other forms.
 - GitHub repo: description, homepage, 11 topics, `glama.json`, release v1.0.2.
 - `get-plan --from-values`: a plan from numbers with no record file (US-30 AC7).
 
@@ -89,18 +98,15 @@ change below. The original plan and its reasoning:
 
 Ranked by cost against likely effect.
 
-1. **Bing Webmaster Tools:** Brad believes it is done via the Google Search
-   Console import, which leaves no tag or DNS record to check. Confirm in
-   Bing Webmaster once. ChatGPT and Copilot search lean on Bing.
-2. **YouTube descriptions:** the `/pages/roadmap` link and one line on the
+1. **YouTube descriptions:** the `/pages/roadmap` link and one line on the
    connector. Gemini and Perplexity cite YouTube heavily.
-3. **Glama tool descriptions:** read_record and get_plan name their siblings,
+2. **Glama tool descriptions:** read_record and get_plan name their siblings,
    import_documents and file_results made easier to scan. Written on PR #209's
    branch (held), so it ships with #209 after the OpenAI verdict.
-4. **Glama to 100%.** "CI is failing" and "No stable releases" were stale on
+3. **Glama to 100%.** "CI is failing" and "No stable releases" were stale on
    2026-10-21 and should clear on the next scan. "No recent usage": a sandbox
    get_plan call ran through "Try in Browser" on 2026-10-21. "No related
    servers": the admin's own pick of similar servers. Glama already shows
    similar ones on our page automatically; picking them is optional.
-5. **Third-party testing for MicroVitamin,** under way. A citable certificate
+4. **Third-party testing for MicroVitamin,** under way. A citable certificate
    answers the ConsumerLab "Not Approved" page that models quote.
