@@ -261,7 +261,6 @@ export {
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
   createMeasurement,
-  stableStringify,
   type RoadmapFile,
   type RoadmapFileMeta,
   type RoadmapProfile,
@@ -278,7 +277,17 @@ export {
   type HistoryChangeType,
 } from './roadmap-file';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
-export { mergeFiles, stampFields, CLOCK_KEYS, mergeErasedRows, rowRootIds, stampInstant, dayOf, localDay, type MergeOptions } from './merge';
+export { mergeFiles, stampFields, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
+export { buildErasedFile, type EraseInputs } from './erase';
+export {
+  REMOTE_POLL_MS,
+  REMOTE_THROTTLE_MS,
+  RecordSession,
+  ERASE_UNREACHABLE,
+  saveRecordInto,
+  type EraseResult,
+} from './record-session';
+export type { RecordHost } from './record-host';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 
@@ -383,6 +392,7 @@ export {
 } from './sync-manager';
 export { ROADMAP_DOC } from './roadmap-doc';
 export { MemoryAdapter, MemoryCloud } from './memory-adapter';
+export { runStorageSelfTest, type SelfTestResult } from './storage-self-test';
 export { dropboxApiArg, dropboxDownload, dropboxListFolder, dropboxRead, dropboxWrite, DropboxAdapter, DROPBOX_TOKEN_URL } from './dropbox-rest';
 // Google Drive v3 as plain fetch calls: the folder/file discovery the browser
 // adapter and the hosted MCP server MUST agree on, plus the server's adapter.

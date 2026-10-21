@@ -134,13 +134,14 @@ export const VITALS_DRAFT_KEY = 'health_roadmap_vitals_draft';
 export const LPA_CHECK_KEPT_KEY = 'health_roadmap_lpa_check_kept';
 
 /**
- * Remove every stored document blob, both matrices' unsaved drafts and the
+ * Remove the stored document blobs, both matrices' unsaved drafts and the
  * Lp(a) check's kept answers — the on-device health data an erase would
- * otherwise leave behind.
+ * otherwise leave behind. `keepDocument` spares the blobs of documents an
+ * erase did not remove (US-09 AC20, AC23): by default none is spared.
  */
-export function clearOffFileHealthData(): void {
+export function clearOffFileHealthData(keepDocument: (ref: string) => boolean = () => false): void {
   clearMatrixDrafts();
-  removeByPrefix(DOC_KEY_PREFIX);
+  removeByPrefix(DOC_KEY_PREFIX, (key) => keepDocument(key.slice(DOC_KEY_PREFIX.length)));
   safeRemoveItem(LPA_CHECK_KEPT_KEY);
 }
 
@@ -156,11 +157,12 @@ export function clearMatrixDrafts(): void {
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(DRAFTS_CLEARED_EVENT));
 }
 
-/** Remove every stored key under `prefix` (document blobs, named record files). */
-export function removeByPrefix(prefix: string): void {
+/** Remove every stored key under `prefix` (document blobs, named record
+ *  files), except those `keep` names. */
+export function removeByPrefix(prefix: string, keep: (key: string) => boolean = () => false): void {
   try {
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(prefix)) safeRemoveItem(key);
+      if (key.startsWith(prefix) && !keep(key)) safeRemoveItem(key);
     }
   } catch {
     /* storage unavailable — nothing to clear */
