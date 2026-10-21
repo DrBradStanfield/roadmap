@@ -12,7 +12,8 @@ import { ERASE_UNREACHABLE, RecordSession, PERSIST_DEBOUNCE_MS } from './record-
 import type { RecordHost } from './record-host';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type WriteResult } from './adapter';
 import { createMeasurement, type FileDocument, type RoadmapFile } from './roadmap-file';
-import { copyCloudDown } from './record-transfer';
+import { liftDeviceCopy } from './record-transfer';
+import { setReminderOptIn, setScreening, stampProfile } from './state-edits';
 
 /** A store whose writes can be made to fail, and whose reads can be held. */
 class TestStore extends MemoryAdapter {
@@ -57,6 +58,8 @@ interface Fake {
   reports: Array<{ op?: string; cause?: string; repeat: boolean }>;
   mirrorCloud: MemoryCloud;
   pending: { value: boolean };
+  /** This tab's unconfirmed erase (sessionStorage on the web). */
+  mark: { value: string | null };
   /** The originals each off-file clear was told to keep. */
   kept: string[][];
 }
@@ -69,6 +72,7 @@ function fakeHost(store: TestStore, tier: 'device' | 'cloud' = 'cloud'): Fake {
   const reports: Fake['reports'] = [];
   const mirrorCloud = new MemoryCloud();
   const pending = { value: false };
+  const mark = { value: null as string | null };
   const kept: string[][] = [];
   const base = {
     store,
@@ -83,10 +87,9 @@ function fakeHost(store: TestStore, tier: 'device' | 'cloud' = 'cloud'): Fake {
     failureCause: () => 'QuotaExceededError',
     report: (_error: unknown, at: { op: string; cause?: string; repeat: boolean }) =>
       void reports.push(at.op === 'persist' ? { cause: at.cause, repeat: at.repeat } : { op: at.op, repeat: at.repeat }),
-    clearNamedFiles: () => calls.push('clearNamedFiles'),
   };
   const host: RecordHost = tier === 'device'
-    ? { ...base, tier: 'device', sync: store, eraseFence: () => null }
+    ? { ...base, tier: 'device', sync: store, clearNamedFiles: () => calls.push('clearNamedFiles'), eraseFence: () => null }
     : {
         ...base,
         tier: 'cloud',
@@ -98,10 +101,12 @@ function fakeHost(store: TestStore, tier: 'device' | 'cloud' = 'cloud'): Fake {
             clear: () => { pending.value = false; calls.push('pending.clear'); },
           },
           writesStopped: () => false,
+          wipe: async () => { mirrorCloud.files.clear(); calls.push('wipe'); },
           opened: () => calls.push('opened'),
+          unconfirmedErase: { get: () => mark.value, set: (v: string) => { mark.value = v; }, clear: () => { mark.value = null; } },
         },
       };
-  return { host, timers, calls, reports, mirrorCloud, pending, kept };
+  return { host, timers, calls, reports, mirrorCloud, pending, kept, mark };
 }
 
 const weight = (id: string, value: number, day: string) =>
@@ -238,126 +243,26 @@ describe('RecordSession: erase (US-09 AC23, US-11)', () => {
     expect(erased.meta.eraseEpoch).toBe(1);
     expect(erased.erasedRows?.ids).toEqual(['a']);
     expect(erased.measurements).toEqual([]);
-    expect(fake.calls).toEqual(expect.arrayContaining(['pending.clear', 'clearOffFileData', 'clearNamedFiles']));
+    expect(fake.calls).toEqual(expect.arrayContaining(['clearOffFileData', 'pending.clear', 'wipe']));
   });
 
-  it('on a cloud writes the erased record onto the device, so a stale cloud copy cannot put old rows back there (US-11 AC9)', async () => {
-    const store = new TestStore();
-    const fake = fakeHost(store);
-    if (fake.host.tier !== 'cloud') throw new Error('expected the cloud tier');
-    const mirror = fake.host.mirror;
-    // On the web the device record is the mirror's own file.
-    fake.host.deviceRecord = () => {
-      const entry = fake.mirrorCloud.files.get(ROADMAP_FILE_NAME);
-      return entry ? JSON.parse(entry.json) : null;
-    };
-    const session = await RecordSession.open(fake.host);
-    add(session, 'a');
-    session.edit((file) => void file.documents.push(doc('listed', 'Lab results/listed.pdf')));
-    await session.flush();
-    // The cloud as it stood before the erase, and a device copy that names it.
-    const stale = { ...store.cloud.files.get(ROADMAP_FILE_NAME)! };
-    await mirror.adapter.write(ROADMAP_FILE_NAME, session.file, null);
-
-    expect((await session.erase()).success).toBe(true);
-    const device = stored(fake.mirrorCloud);
-    expect(device.meta.eraseEpoch).toBe(1);
-    expect(device.measurements).toEqual([]);
-    expect(device.documents).toEqual([]);
-    expect(fake.pending.value).toBe(false);
-    // The listed original goes, though the device copy named it before the erase.
-    expect(fake.kept.at(-1)).toEqual([]);
-
-    // A stale cloud read, copied down (log-off, a switch): the device stays erased.
-    store.cloud.files.set(ROADMAP_FILE_NAME, stale);
-    await copyCloudDown(fake.host);
-    const after = stored(fake.mirrorCloud);
-    expect(after.meta.eraseEpoch).toBe(1);
-    expect(after.measurements).toEqual([]);
-    expect(after.documents).toEqual([]);
-  });
-
-  it("keeps a row, and its original, that this browser's guest tab saved after the erase read the device copy (US-11 AC9, AC6)", async () => {
-    const store = new TestStore();
-    const fake = fakeHost(store);
-    fake.host.deviceRecord = () => stored(fake.mirrorCloud);
-    const session = await RecordSession.open(fake.host);
-    add(session, 'a');
-    await session.flush();
-    // The guest tab's save lands while the erase writes the cloud.
-    store.onWrite = () => {
-      const late = structuredClone(session.file);
-      late.measurements = [weight('late', 81, '2026-10-02')];
-      late.documents = [doc('late', 'Lab results/late.pdf')];
-      fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(late), version: 1 });
-      store.onWrite = undefined;
-    };
-    expect((await session.erase()).success).toBe(true);
-    const device = stored(fake.mirrorCloud);
-    expect(device.meta.eraseEpoch).toBe(1);
-    expect(ids(device)).toEqual(['late']);
-    expect(fake.kept.at(-1)).toEqual(['Lab results/late.pdf']);
-  });
-
-  it('a reload while the provider still serves the pre-erase file shows no old rows, and pushes the erase again (US-11 AC9)', async () => {
+  it('bumps past the device copy\'s epoch too, so a higher-epoch device copy cannot keep its profile (US-11 AC9)', async () => {
     const store = new TestStore();
     const fake = fakeHost(store);
     const session = await RecordSession.open(fake.host);
     add(session, 'a');
     await session.flush();
-    const stale = { ...store.cloud.files.get(ROADMAP_FILE_NAME)! };
-    expect((await session.erase()).success).toBe(true);
-    store.cloud.files.set(ROADMAP_FILE_NAME, stale);
-
-    fake.timers.length = 0;
-    const reloaded = await RecordSession.open(fake.host);
-    expect(reloaded.file.meta.eraseEpoch).toBe(1);
-    expect(reloaded.file.measurements).toEqual([]);
-    expect(fake.timers).toHaveLength(1); // the push is queued
-    await reloaded.flush();
-    expect(stored(store.cloud).meta.eraseEpoch).toBe(1);
-    expect(stored(store.cloud).measurements).toEqual([]);
-  });
-
-  it('an ordinary open never takes in a device copy at the same erase', async () => {
-    const store = new TestStore();
-    const fake = fakeHost(store);
-    const device = await RecordSession.open(fakeHost(new TestStore(fake.mirrorCloud)).host);
-    add(device, 'device-only');
-    await device.flush();
-    fake.timers.length = 0;
-    const session = await RecordSession.open(fake.host);
-    expect(session.file.measurements).toEqual([]);
-    expect(fake.timers).toHaveLength(0);
-  });
-
-  it('replaces a device copy no record reads with the erased record (US-11 AC9)', async () => {
-    for (const bytes of ['{not valid json', JSON.stringify({ schemaVersion: 1, measurements: 'not a list' })]) {
-      const store = new TestStore();
-      const fake = fakeHost(store);
-      const session = await RecordSession.open(fake.host);
-      add(session, 'a');
-      await session.flush();
-      fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: bytes, version: 3 });
-      expect(await session.erase()).toEqual({ success: true });
-      const device = stored(fake.mirrorCloud);
-      expect(device.meta.eraseEpoch).toBe(1);
-      expect(device.measurements).toEqual([]);
-      expect(fake.calls).toEqual(expect.arrayContaining(['clearOffFileData', 'clearNamedFiles']));
-    }
-  });
-
-  it('still clears the off-file data and named files when the device copy cannot take the erased record, and warns (US-11 AC9)', async () => {
-    const store = new TestStore();
-    const fake = fakeHost(store);
-    if (fake.host.tier !== 'cloud') throw new Error('expected the cloud tier');
-    const session = await RecordSession.open(fake.host);
-    add(session, 'a');
-    await session.flush();
-    fake.host.mirror.adapter.write = async () => { throw new StorageError('device refused'); };
-    expect(await session.erase()).toEqual({ success: true, warning: 'device refused' });
-    expect(fake.calls).toEqual(expect.arrayContaining(['pending.clear', 'clearOffFileData', 'clearNamedFiles']));
-    expect(stored(store.cloud).meta.eraseEpoch).toBe(1);
+    // The device copy: a later erase and a profile, from a session that never reached this cloud.
+    const device = stampProfile(structuredClone(session.file), { sex: 'female' }, new Date(clock).toISOString());
+    device.meta.eraseEpoch = 5;
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(device), version: 1 });
+    store.failWrites = true;
+    expect((await session.erase()).success).toBe(false);
+    expect(session.file.meta.eraseEpoch).toBe(6);
+    // The failed save mirrored the erase: it wins over the device copy.
+    const mirrored = stored(fake.mirrorCloud);
+    expect(mirrored.meta.eraseEpoch).toBe(6);
+    expect(mirrored.profile.sex).toBeUndefined();
   });
 
   it('on the device tier replaces a record no one can read with the erased record, and succeeds (US-11 AC9)', async () => {
@@ -374,11 +279,43 @@ describe('RecordSession: erase (US-09 AC23, US-11)', () => {
       expect(erased.erasedRows?.ids).toEqual(['a']);
       expect(erased.measurements).toEqual([]);
       expect(fake.calls).toEqual(['clearOffFileData', 'clearNamedFiles']);
-      expect(fake.timers).toHaveLength(0); // nothing left to save
     }
   });
 
-  it('on the device tier clears the named files, with no mirror to write', async () => {
+  it('on the device tier never overwrites bytes another tab replaced after the erase found them unreadable (US-11 AC9)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store, 'device');
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    store.cloud.files.set(ROADMAP_FILE_NAME, { json: '{not valid json', version: 7 });
+    // Another tab repairs the file and saves a row while the erase runs.
+    const result = await session.erase(async () => {
+      const repaired = structuredClone(session.file);
+      repaired.measurements = [weight('other-tab', 81, '2026-10-02')];
+      store.cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(repaired), version: 8 });
+    });
+    expect(result.success).toBe(true);
+    expect(ids(stored(store.cloud))).toEqual(['other-tab']);
+  });
+
+  it('on the device tier refuses to erase a record a newer app wrote, and leaves it (US-11 AC9)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store, 'device');
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    const newer = JSON.stringify({ schemaVersion: 9999 });
+    store.cloud.files.set(ROADMAP_FILE_NAME, { json: newer, version: 7 });
+    const beforeErase = vi.fn(async () => {});
+    const result = await session.erase(beforeErase);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/Update the app/);
+    expect(beforeErase).not.toHaveBeenCalled();
+    expect(store.cloud.files.get(ROADMAP_FILE_NAME)!.json).toBe(newer);
+  });
+
+  it('on the device tier clears the named files instead of wiping a mirror', async () => {
     const store = new TestStore();
     const fake = fakeHost(store, 'device');
     const session = await RecordSession.open(fake.host);
@@ -404,6 +341,73 @@ describe('RecordSession: erase (US-09 AC23, US-11)', () => {
     expect(add(session, 'fresh', 80, '2026-10-01', session.eraseIdentity)).toBe(true);
     session.showErase(session.eraseIdentity);
     expect(add(session, 'next', 81, '2026-10-02')).toBe(true);
+  });
+});
+
+describe('RecordSession: an erase this tab has not yet seen the cloud hold (US-11 AC9)', () => {
+  /** A cloud record with rows, erased; answers the copy from before the erase. */
+  async function erased() {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    const stale = { ...store.cloud.files.get(ROADMAP_FILE_NAME)! };
+    expect((await session.erase()).success).toBe(true);
+    return { store, fake, stale };
+  }
+
+  it('a reload while the provider still serves the pre-erase file shows no old rows, and pushes the erase again', async () => {
+    const { store, fake, stale } = await erased();
+    store.cloud.files.set(ROADMAP_FILE_NAME, stale);
+    fake.timers.length = 0;
+    const reloaded = await RecordSession.open(fake.host);
+    expect(reloaded.file.meta.eraseEpoch).toBe(1);
+    expect(reloaded.file.measurements).toEqual([]);
+    expect(fake.timers).toHaveLength(1); // the push is queued
+    await reloaded.flush();
+    expect(stored(store.cloud).meta.eraseEpoch).toBe(1);
+    expect(stored(store.cloud).measurements).toEqual([]);
+  });
+
+  it('once a read shows the erase, a version restored from history loads as it is', async () => {
+    const { store, fake, stale } = await erased();
+    expect(fake.mark.value).not.toBeNull();
+    // Another device saves a row after the erase; this tab's read of that
+    // file shows the erase, a row it never listed beside it: confirmed.
+    const other = await RecordSession.open(fakeHost(store).host);
+    add(other, 'after', 81, '2026-10-02', other.eraseIdentity);
+    await other.flush();
+    await RecordSession.open(fake.host);
+    expect(fake.mark.value).toBeNull();
+    store.cloud.files.set(ROADMAP_FILE_NAME, stale); // the user restores an old version
+    const restored = await RecordSession.open(fake.host);
+    expect(ids(restored.file)).toEqual(['a']);
+  });
+
+  it("an erase of account A never reaches account B's file: profile, screenings, opt-in and ids survive", async () => {
+    const { fake } = await erased();
+    const a = stored((fake.host.store as TestStore).cloud);
+    // Account B, connected in the same tab: its own record.
+    const storeB = new TestStore();
+    const ownerB = await RecordSession.open(fakeHost(storeB).host);
+    ownerB.edit((file) => stampProfile(file, { sex: 'female' }, new Date(clock).toISOString()));
+    ownerB.edit((file) => setScreening(file, 'colorectal_method', 'fit', new Date(clock).toISOString()));
+    ownerB.edit((file) => setReminderOptIn(file, { status: 'active', token: 't', email: 'b@example.com', provider: 'dropbox' }, new Date(clock).toISOString()));
+    add(ownerB, 'b');
+    await ownerB.flush();
+    const hostB = { ...fake.host, store: storeB } as Extract<RecordHost, { tier: 'cloud' }>;
+    await liftDeviceCopy(hostB);
+    const sessionB = await RecordSession.open(hostB);
+    await sessionB.flush();
+    for (const file of [sessionB.file, stored(storeB.cloud)]) {
+      expect(file.profile.sex).toBe('female');
+      expect(file.screenings.colorectalMethod).toBe('fit');
+      expect(file.reminderOptIn?.status).toBe('active');
+      expect(ids(file)).toEqual(['b']);
+      expect(file.meta.eraseEpoch ?? 0).toBe(0);
+      expect(file.erasedRows?.ids ?? []).not.toEqual(expect.arrayContaining(a.erasedRows!.ids));
+    }
   });
 });
 

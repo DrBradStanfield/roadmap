@@ -8,9 +8,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME } from '@roadmap/health-core';
 import { LocalStorageAdapter } from './local-storage-adapter';
-import { PENDING_MIRROR_KEY, webRecordHost } from './web-record-host';
+import { PENDING_MIRROR_KEY, beginRoadmapLogOff, webRecordHost } from './web-record-host';
 
-afterEach(() => localStorage.clear());
+afterEach(() => { localStorage.clear(); sessionStorage.clear(); });
 
 describe('webRecordHost', () => {
   it('makes localStorage the device tier, with its synchronous reads and writes', () => {
@@ -35,12 +35,21 @@ describe('webRecordHost', () => {
     host.mirror.pending.clear();
     expect(host.mirror.pending.get()).toBe(false);
 
-    // An erase keeps the device copy, rewritten as the erased record, and
-    // clears only the other record files beside it (US-11 AC3, AC9).
+    // The wipe removes the device copy (US-11).
     await host.mirror.adapter.write(ROADMAP_FILE_NAME, { schemaVersion: 1 }, null);
-    localStorage.setItem('health_roadmap_file_v2:chat-history.json', '{}');
-    host.clearNamedFiles();
-    expect(localStorage.getItem('health_roadmap_file_v2:chat-history.json')).toBeNull();
-    expect((await host.mirror.adapter.read(ROADMAP_FILE_NAME)).body).toEqual({ schemaVersion: 1 });
+    await host.mirror.wipe();
+    expect((await host.mirror.adapter.read(ROADMAP_FILE_NAME)).body).toBeNull();
+  });
+
+  it("keeps this tab's unconfirmed erase in sessionStorage, untouched by the wipe, and drops it at log-off (US-11 AC9)", async () => {
+    const host = webRecordHost(new MemoryAdapter(new MemoryCloud()));
+    if (host.tier !== 'cloud') throw new Error('expected the cloud tier');
+    const mark = host.mirror.unconfirmedErase!;
+    mark.set('{"backend":"memory"}');
+    expect(sessionStorage.getItem('health_roadmap_erase_unconfirmed')).toBe('{"backend":"memory"}');
+    await host.mirror.wipe();
+    expect(mark.get()).toBe('{"backend":"memory"}');
+    beginRoadmapLogOff();
+    expect(mark.get()).toBeNull();
   });
 });

@@ -6,11 +6,11 @@
  * announce lives here too. The device itself comes in as a RecordHost.
  * No DOM and no Node: engine-portability.test.ts checks.
  */
-import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
+import { ConflictError, ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { buildErasedFile } from './erase';
-import { CLOCK_KEYS, mergeFiles } from './merge';
+import { CLOCK_KEYS, mergeFiles, rowRootIds } from './merge';
 import { SchemaTooNewError } from './migrate';
-import type { RecordHost } from './record-host';
+import type { RecordHost, SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
@@ -158,6 +158,11 @@ export class RecordSession {
     const revision = host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
     const session = new RecordSession(host, deviceId, sync, await sync.load(), cloudUnreachable);
     session.revisionSeen = revision;
+    const behind = session.unconfirmed(session.current);
+    if (behind) {
+      session.current = behind;
+      session.touch();
+    }
     const mirror = host.tier === 'cloud' ? host.mirror : null;
     mirror?.opened();
     // A previous cloud session failed to save and mirrored its changes
@@ -191,23 +196,6 @@ export class RecordSession {
           // nothing can recover — clear it; the bytes themselves stay put.
           mirror.pending.clear();
         }
-      }
-    } else if (mirror) {
-      // An erase made here that the cloud has not caught up with (the
-      // provider still serves the pre-erase file): the device copy is at a
-      // higher epoch, so the normal merge drops the stale rows, and the save
-      // pushes the erase again (US-11 AC9). Any other device copy waits, as
-      // before: an ordinary open reads only the cloud.
-      try {
-        const ctx = session.ctx();
-        const { body } = await mirror.adapter.read(ROADMAP_FILE_NAME);
-        const device = body == null ? null : ROADMAP_DOC.migrate(body, ctx);
-        if (device && (device.meta.eraseEpoch ?? 0) > (session.current.meta.eraseEpoch ?? 0)) {
-          session.current = ROADMAP_DOC.merge(device, session.current, ctx);
-          session.touch();
-        }
-      } catch {
-        /* unreadable: the cloud copy stands */
       }
     }
     return session;
@@ -287,12 +275,17 @@ export class RecordSession {
     // epoch unions with that record instead of beating it (US-11 AC7). On a
     // cloud an unreadable record refuses the erase, and the change on the
     // debounce goes back on it. On this device an unreadable record leaves
-    // this copy's epoch, as before: there is no other copy to list, and the
-    // erased record replaces its bytes below (US-11 AC9).
-    const stored = await this.sync.load().catch(() => null);
-    if (!stored && this.host.tier === 'cloud') {
+    // this copy's epoch, as before: there is no other copy to list.
+    // On this device, the revision of the bytes read: an unreadable record is
+    // replaced only at it, so another tab's repair is never written over (AC9).
+    const revision = this.host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
+    let readError: unknown = null;
+    const stored = await this.sync.load().catch((error) => { readError = error; return null; });
+    // A newer app's record is never written over: update first (US-11 AC9).
+    const tooNew = readError instanceof SchemaTooNewError && this.host.tier === 'device';
+    if (!stored && (this.host.tier === 'cloud' || tooNew)) {
       if (debounced) this.touch();
-      return { success: false, error: ERASE_UNREACHABLE };
+      return { success: false, error: tooNew ? (readError as Error).message : ERASE_UNREACHABLE };
     }
     await beforeErase?.();
     // From here every failure comes back as a refusal, never a rejection: the
@@ -315,55 +308,38 @@ export class RecordSession {
       this.current = buildErasedFile({ stored, own: this.current, device, ctx: this.ctx() });
       this.touch(); // a change like any other: a failed flush leaves it for a hide to retry
       try {
-        if (!stored && host.tier === 'device') {
-          // A read-merge-write would meet the same bytes: write over them.
-          this.cancelDebounce();
-          this.revisionSeen = host.sync.writeSync(ROADMAP_FILE_NAME, this.current, host.sync.revision(ROADMAP_FILE_NAME)).version;
-          this.savedChanges = this.changes;
-        } else {
-          await this.flush();
-        }
+        if (readError && host.tier === 'device') await this.replaceUnreadable(host.sync, revision);
+        else await this.flush();
       } finally {
         this.erasing = false;
       }
       erased = true;
-      // The erase reached the cloud. On a cloud the device copy becomes the
-      // erased record too, merged, never deleted: its bumped eraseEpoch beats
-      // a stale cloud copy that later reaches this device, and a row a
-      // device-tier tab saved after the erase read that copy survives,
-      // because no erase listed it (US-11 AC9, US-09 AC23). The marker
-      // clears: the cloud holds the erase. On a failed flush the session
-      // mirrored the ERASED file under the marker instead, and the next
-      // session carries it up. A device copy no record reads (bad JSON, a
-      // shape migrate refuses) cannot take the merge: the erased record
-      // replaces its bytes. A write that still fails leaves the cleanup below
-      // to run, and the erase warns.
-      let deviceFailure: unknown = null;
-      if (host.tier === 'cloud') {
-        host.mirror.pending.clear();
-        if (!host.mirror.writesStopped()) {
-          const ctx = this.ctx();
-          const adapter = host.mirror.adapter;
-          const readable = await adapter.read(ROADMAP_FILE_NAME)
-            .then(({ body }) => (body == null || ROADMAP_DOC.migrate(body, ctx), true))
-            .catch(() => false);
-          await (readable
-            ? saveRecordInto(adapter, this.current, ctx)
-            : adapter.write(ROADMAP_FILE_NAME, this.current, adapter.revision(ROADMAP_FILE_NAME))
-          ).catch((e) => { deviceFailure = e; });
-        }
-      }
+      // The erase reached the cloud — wipe the on-device residue too (failure
+      // mirror + marker + named files/documents), so no pre-erase copy outlives
+      // the erase on this device (US-11). On a failed flush we keep the mirror
+      // instead: it now holds the ERASED file, whose bumped eraseEpoch wins the
+      // merge and carries the erase to the cloud next session.
       // Document blobs and the unsaved drafts sit outside the record file, so
-      // the erased file alone doesn't reach them. They go in every mode,
-      // except the originals of documents the erase did not remove (another
-      // tab's, saved meanwhile), read from the device copy just written.
+      // the erased file alone doesn't reach them. They go in every mode — a
+      // device-tier user gets no wipe below (it would delete the erased file
+      // just written), and used to keep them — except the originals of
+      // documents the erase did not remove (another tab's, saved meanwhile).
       this.clearOffFileData();
-      // The other record files (chat history): their contents are already
-      // tombstoned (the caller's beforeErase erases chat history first).
-      // Also rotate the content-free fence so another tab cannot merge its
-      // old snapshot into the missing file.
-      host.clearNamedFiles();
-      if (deviceFailure) throw deviceFailure;
+      if (host.tier === 'device') {
+        // The other record files (chat history): their contents are already
+        // tombstoned (the caller's beforeErase erases chat history first).
+        // Also rotate the content-free fence so another tab cannot merge its
+        // old snapshot into the missing file.
+        host.clearNamedFiles();
+      } else {
+        // The wipe takes the whole device copy, every stored original with
+        // it: a row a device-tier tab saved after the erase read that copy
+        // goes too (the residual US-11 AC6 names).
+        host.mirror.pending.clear();
+        // Until a read shows it, a stale copy of this file is not shown (AC9).
+        host.mirror.unconfirmedErase?.set(JSON.stringify({ backend: this.sync.backendId, createdAt: this.current.meta.createdAt, record: this.current }));
+        await host.mirror.wipe();
+      }
       return { success: true };
     } catch (e) {
       const message = (e as Error).message;
@@ -446,7 +422,8 @@ export class RecordSession {
     // Taken before the read: a write landing in between costs a second read,
     // never a missed one.
     const revision = this.host.sync?.revision(ROADMAP_DOC.fileName) ?? null;
-    const merged = mergeFiles(local, await this.sync.load(), this.ctx());
+    const loaded = await this.sync.load();
+    const merged = mergeFiles(local, this.unconfirmed(loaded) ?? loaded, this.ctx());
     // A merge always bumps the file's own clock, so the comparison is on the
     // CONTENT, not on a version: re-rendering on every poll would count a
     // change nobody made.
@@ -518,6 +495,47 @@ export class RecordSession {
       /* unreadable: it names nothing */
     }
     this.host.clearOffFileData(liveOriginals(kept));
+  }
+
+  /**
+   * The record this tab erased, when `loaded` is a copy of that same file
+   * from before the erase (same backend and `meta.createdAt`, and every row
+   * one the erase listed): then the
+   * erase merged over it, for the caller to show and push again. Null for
+   * any other copy, and once a read shows the erase, which ends the wait
+   * (US-11 AC9). Another account's file never matches.
+   */
+  private unconfirmed(loaded: RoadmapFile): RoadmapFile | null {
+    const mark = this.host.tier === 'cloud' ? this.host.mirror.unconfirmedErase : undefined;
+    const text = mark?.get();
+    if (!mark || !text) return null;
+    try {
+      const { backend, createdAt, record } = JSON.parse(text) as { backend: string; createdAt: string; record: unknown };
+      if (backend !== this.sync.backendId || createdAt !== loaded.meta.createdAt) return null;
+      const erased = ROADMAP_DOC.migrate(record, this.ctx());
+      if ((loaded.meta.eraseEpoch ?? 0) < (erased.meta.eraseEpoch ?? 0)) {
+        const listed = new Set(erased.erasedRows?.ids);
+        return rowRootIds(loaded).every((id) => listed.has(id)) ? ROADMAP_DOC.merge(erased, loaded, this.ctx()) : null;
+      }
+    } catch {
+      /* unreadable: nothing to hold back */
+    }
+    mark.clear();
+    return null;
+  }
+
+  /** Device tier: write the erased record over bytes no record reads, at the
+   *  revision they were read at. Another tab that wrote since wins the race:
+   *  the save then reads its record and merges, as any save does (US-11 AC9). */
+  private async replaceUnreadable(store: SyncStorage, revision: string | null): Promise<void> {
+    this.cancelDebounce();
+    try {
+      this.revisionSeen = store.writeSync(ROADMAP_FILE_NAME, this.current, revision).version;
+      this.savedChanges = this.changes;
+    } catch (error) {
+      if (!(error instanceof ConflictError)) throw error;
+      await this.flush();
+    }
   }
 
   /** The merge context: this device, and now. */

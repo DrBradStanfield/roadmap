@@ -13,11 +13,11 @@ let clock = Date.parse('2026-10-21T10:00:00.000Z');
 const base = (store: MemoryAdapter) => ({
   store, deviceId: () => 'phone', clock: { now: () => (clock += 1) },
   timers: { set: () => 0, clear: () => {} }, remoteChanged: () => {}, failureCause: () => 'other', report: () => {},
-  clearOffFileData: () => {}, clearNamedFiles: () => {},
+  clearOffFileData: () => {},
 });
 const cloudHost = (store: MemoryAdapter) => ({
   ...base(store), tier: 'cloud',
-  mirror: { adapter: new MemoryAdapter(), pending: { get: () => false, set: () => {}, clear: () => {} }, writesStopped: () => false, opened: () => {} },
+  mirror: { adapter: new MemoryAdapter(), pending: { get: () => false, set: () => {}, clear: () => {} }, writesStopped: () => false, wipe: async () => {}, opened: () => {} },
 }) as RecordHost;
 
 /** A synchronous device store, as localStorage is on the web. */

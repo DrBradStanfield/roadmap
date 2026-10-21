@@ -20,12 +20,19 @@ export interface SyncStorage {
 /** On a cloud: the copy on this device that holds a save the cloud refused,
  *  and the marker that says it is there (US-09 AC4). */
 export interface DeviceMirror {
-  /** `revision`: so an erase can replace bytes no record reads (US-11 AC9). */
-  adapter: StorageAdapter & Pick<SyncStorage, 'revision'>;
+  adapter: StorageAdapter;
   pending: { get(): boolean; set(): void; clear(): void };
   /** True once this device has logged off: no write may recreate the record
    *  here (US-09 AC2c). */
   writesStopped(): boolean;
+  /** Remove the device copy and what sits beside it, after an erase has
+   *  reached the cloud (US-11). */
+  wipe(): Promise<void>;
+  /** An erase made in this page that no read of the cloud has shown yet
+   *  (US-11 AC9), as the engine's own text: kept for this tab only, across a
+   *  reload, and dropped at log-off. Leave it out and a stale read after an
+   *  erase shows until a re-read meets the erase. */
+  unconfirmedErase?: { get(): string | null; set(value: string): void; clear(): void };
   /** The cloud record has loaded: from now on this device's log-off, made in
    *  another page, stops writes here too (US-09 AC2c). Not before: a load
    *  that fails falls back to the device, whose copy is then its only store. */
@@ -49,9 +56,6 @@ interface HostBase {
    *  may have changed elsewhere; answer the stop. Leave it out when the
    *  store has none, and the live re-read polls instead. */
   watch?(onChange: () => void): () => void;
-  /** After an erase: clear the other record files here (chat history) and
-   *  move the erase fence, so no stale writer brings them back (US-11). */
-  clearNamedFiles(): void;
   /** This device's id, for the merge's `lastDeviceId`. Read once, at open. */
   deviceId(): string;
   /** Read at each use, never captured, so a test's fake clock applies. */
@@ -85,6 +89,9 @@ export type RecordHost =
       /** The store's synchronous path: required, because the device copy is
        *  the record's only one and must land before the page goes. */
       sync: SyncStorage;
+      /** After an erase: clear the other record files here (chat history) and
+       *  move the erase fence, so no stale writer brings them back (US-11). */
+      clearNamedFiles(): void;
       /** The content-free marker `clearNamedFiles` moves: a chat session
        *  that sees it move drops its pre-erase copy (US-11 AC3b). */
       eraseFence(): string | null;

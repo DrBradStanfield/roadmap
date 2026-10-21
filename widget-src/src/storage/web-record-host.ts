@@ -63,12 +63,29 @@ export function markSyncPending(): void {
   notify(SYNC_PENDING_EVENT);
 }
 
+/** An erase made in this tab that no cloud read has shown yet (US-11 AC9).
+ *  sessionStorage: it survives a reload of this tab, never reaches another
+ *  tab, and goes at log-off. It names row ids, never a health value. */
+const UNCONFIRMED_ERASE_KEY = 'health_roadmap_erase_unconfirmed';
+const unconfirmedErase = {
+  get(): string | null {
+    try { return sessionStorage.getItem(UNCONFIRMED_ERASE_KEY); } catch { return null; }
+  },
+  set(value: string): void {
+    try { sessionStorage.setItem(UNCONFIRMED_ERASE_KEY, value); } catch { /* full or blocked: a stale read shows until a re-read */ }
+  },
+  clear(): void {
+    try { sessionStorage.removeItem(UNCONFIRMED_ERASE_KEY); } catch { /* blocked */ }
+  },
+};
+
 /** Stop this page (and every other tab, by a storage signal) recreating the
  *  roadmap after logout, without erasing cloud data or cancelling successful
  *  cloud saves (including lifecycle flushes). */
 export function beginRoadmapLogOff(): void {
   stopRoadmapLocalWrites();
   clearSyncPending();
+  unconfirmedErase.clear();
 }
 
 function clearSyncPending(): void {
@@ -91,10 +108,6 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     // The localStorage record: a guest or on-device fallback tab keeps its
     // documents there, whatever record the erase came in on (US-09 AC23).
     deviceRecord: () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body,
-    // The other record files (chat-history.json) sit under the adapter's
-    // named-file prefix, which only disconnect() clears — and disconnect()
-    // after an erase would delete the erased record file just written.
-    clearNamedFiles: clearLocalNamedFiles,
     ...(store.watch ? {
       watch(onChange: () => void) {
         const watching = new AbortController();
@@ -131,15 +144,21 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     },
   };
   if (store instanceof LocalStorageAdapter) {
-    return { ...base, tier: 'device', sync: store, eraseFence: localEraseGeneration };
+    // The other record files (chat-history.json) sit under the adapter's
+    // named-file prefix, which only disconnect() clears — and disconnect()
+    // after an erase would delete the erased record file just written.
+    return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles, eraseFence: localEraseGeneration };
   }
+  const device = new LocalStorageAdapter();
   return {
     ...base,
     tier: 'cloud',
     mirror: {
-      adapter: new LocalStorageAdapter(),
+      adapter: device,
       pending: { get: isSyncPending, set: markSyncPending, clear: clearSyncPending },
       writesStopped: roadmapLocalWritesStopped,
+      wipe: () => device.disconnect(),
+      unconfirmedErase,
       opened: latchOnOtherTabsLogOff,
     },
   };

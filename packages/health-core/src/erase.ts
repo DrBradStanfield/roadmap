@@ -25,8 +25,9 @@ export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): Road
   // Bump the erase epoch so the empty file BEATS the merge — persist goes
   // through read-merge-write, whose never-lose-data semantics would otherwise
   // resurrect every record from the stored copy (and any other device's).
-  // Bump past the stored epoch as well (US-11 AC7).
-  const eraseEpoch = Math.max(stored?.meta.eraseEpoch ?? 0, own.meta.eraseEpoch ?? 0) + 1;
+  // Bump past the stored epoch as well (US-11 AC7), and past the device
+  // copy's: a failed save mirrors the erase there, and must win (AC9).
+  const eraseEpoch = Math.max(...[stored, own, device].map((file) => file?.meta.eraseEpoch ?? 0)) + 1;
   // WHICH rows, so the merge drops them on every copy and keeps every row no
   // erase saw (US-09 AC23): the stored record's, this copy's and, on a
   // cloud, this device's file, where other tabs' failed saves wait.

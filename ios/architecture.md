@@ -281,9 +281,15 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
     same file, and there is no device mirror). A cloud open: `RecordSession.deleteAllData`
     (`cloudErase`), so the cloud file keeps the erase and the web's guard applies. A cloud
     connected but not open: refused, as the web refuses in its on-device fallback.
-  - **An unreadable phone record refuses the erase.** The web erases a device copy it cannot
-    read with its own epoch; the app has no working copy then, and never writes over a record
-    it cannot read (US-25 AC4). The user sees why.
+  - **An unreadable phone record refuses the erase.** The web's guest erase replaces a record
+    it cannot read with the erased record, at the revision it found unreadable (US-11 AC9); the
+    app has no working copy then, and never writes over a record it cannot read (US-25 AC4).
+    The user sees why.
+  - **No unconfirmed-erase marker yet (US-11 AC9).** The web remembers a cloud erase in its tab
+    until a read shows it, so a provider still serving the pre-erase file cannot show old rows.
+    The app's cloud host leaves `unconfirmedErase` out: a stale read after an erase shows until
+    a re-read meets the erase. Adding it is one host hook (a file beside the record, cleared at
+    disconnect).
   - **After a cloud erase the phone copy is the erased record**, not absent: the session wipes
     the pre-erase copy and the pending marker, then the erased record goes in its place, so an
     offline launch opens on it, as every other cloud change reaches the phone copy.

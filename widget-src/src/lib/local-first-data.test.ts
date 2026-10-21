@@ -19,15 +19,6 @@ describe('explicit local-first data path', () => {
   beforeEach(async () => {
     vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Health CRUD must not use HTTP')));
-    // A cloud erase writes the erased record onto the device (US-11 AC9).
-    const backing = new Map<string, string>();
-    vi.stubGlobal('localStorage', {
-      getItem: (k: string) => backing.get(k) ?? null,
-      setItem: (k: string, v: string) => void backing.set(k, v),
-      removeItem: (k: string) => void backing.delete(k),
-      key: (i: number) => [...backing.keys()][i] ?? null,
-      get length() { return backing.size; },
-    });
     cloud = new MemoryCloud();
     await initRoadmapStore(new MemoryAdapter(cloud));
   });

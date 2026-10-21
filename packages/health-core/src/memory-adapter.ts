@@ -48,12 +48,6 @@ export class MemoryAdapter implements StorageAdapter {
     return { body: JSON.parse(entry.json), version: String(entry.version) };
   }
 
-  /** The stored version, null when there is none (a device mirror's, US-11 AC9). */
-  revision(fileName: string): string | null {
-    const entry = this.cloud.files.get(fileName);
-    return entry == null ? null : String(entry.version);
-  }
-
   async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
     signal?.throwIfAborted();
     const entry = this.cloud.files.get(fileName);

@@ -11,6 +11,7 @@ protocol CloudPort: AnyObject, Sendable {
     /// The phone's record: its text, nil when there is none; throws when unreadable.
     func phoneRead() throws -> String?
     func phoneWrite(_ text: String) throws
+    func phoneRemove()
     /// "get", "set" or "clear" the marker that says the phone holds changes the cloud lacks.
     func pending(_ op: String) -> Bool
     /// "saving", "saved", "synced", "failed" (payload: kind and detail) or
@@ -166,6 +167,9 @@ final class EngineNatives {
                 }
             }
         }
+        let phoneRemove: @convention(block) () -> Void = {
+            MainActor.assumeIsolated { owner.value.cloud?.phoneRemove() }
+        }
         let pending: @convention(block) (String) -> Bool = { op in
             MainActor.assumeIsolated { owner.value.cloud?.pending(op) ?? false }
         }
@@ -174,7 +178,7 @@ final class EngineNatives {
         }
         return [
             "accessToken": accessToken, "phoneRead": phoneRead, "phoneWrite": phoneWrite,
-            "pending": pending, "notify": notify,
+            "phoneRemove": phoneRemove, "pending": pending, "notify": notify,
         ]
     }
 

@@ -17,9 +17,9 @@ function host(cloud: MemoryAdapter, device: MemoryAdapter) {
   const h = {
     tier: 'cloud', store: cloud, deviceId: () => 'phone', clock: { now: () => NOW },
     timers: { set: () => 0, clear: () => {} }, remoteChanged: () => {}, failureCause: () => 'other', report: () => {},
-    clearOffFileData: () => {}, clearNamedFiles: () => {},
+    clearOffFileData: () => {},
     mirror: {
-      adapter: device, writesStopped: () => false, opened: () => {},
+      adapter: device, writesStopped: () => false, wipe: async () => {}, opened: () => {},
       pending: { get: () => pending.value, set: () => { pending.value = true; }, clear: () => { pending.value = false; } },
     },
   } as Extract<RecordHost, { tier: 'cloud' }>;
