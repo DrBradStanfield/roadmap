@@ -200,6 +200,32 @@ describe('US-52 AC1/AC2: the gate', () => {
     expect(mocks.getChatCompletion).not.toHaveBeenCalled();
   });
 
+  it('charges an oversized body to the failure budget, still a 413 (Codex re-check R2)', async () => {
+    await registered();
+    const big = { message: 'x'.repeat(2 * 1024 * 1024 + 10) };
+    for (let i = 0; i < 50; i++) expect((await appChat(signed('/api/app/v1/chat', big), store)).status).toBe(413);
+    let reads = 0;
+    const get = store.get.bind(store);
+    store.get = async (keyId: string) => { reads++; return get(keyId); };
+    const req = signed('/api/app/v1/chat', big);
+    const res = await appChat(req, store);
+    expect(res.status).toBe(429);
+    expect(reads).toBe(0);
+    expect(req.bodyUsed).toBe(false);
+    expect(mocks.getChatCompletion).not.toHaveBeenCalled();
+  });
+
+  it('does not charge a dropped upload to the failure budget (re-check adversary R1)', async () => {
+    await registered();
+    const ok = signed('/api/app/v1/chat', chatBody);
+    const broken = () => new Request(ok.url, {
+      method: 'POST', headers: ok.headers, duplex: 'half',
+      body: new ReadableStream({ pull(c) { c.error(new Error('connection reset')); } }),
+    } as RequestInit);
+    for (let i = 0; i < 60; i++) expect((await appChat(broken(), store)).status).toBe(400);
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(50);
+  });
+
   it('answers 503, never a pass, with no team id, a store outage or on the brand surface', async () => {
     await registered();
     delete process.env.APP_ATTEST_TEAM_ID;

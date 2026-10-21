@@ -515,13 +515,12 @@ owed as a fixture before release; until then the first real device is the test.
 
 **Reviews (2026-10-21).** Design: adversary R1 to R14 fixed, Codex no findings. Code: a
 fresh adversary (no blocker; R2 to R7 fixed) and Codex (R2 to R7 fixed; R1 "not wired into
-RootView" is by design: the orchestrator wires `ChatView` and `LabUploadButton`). Found
-and NOT fixed here (merge-class, the orchestrator's call): health-core's `mergeMessages`
-sorts by (createdAt, id), and `recordExchange` stamps a question and its answer with one
-createdAt and ids `u-<t>` / `a-<t>`, so from the second exchange the stored history puts
-each answer above its question; the web widget reads it back that way after a reload and
-the Pages BYOK chat sends it to the model mispaired. The app re-sorts on read
-(`chatMessagesJson`); that re-sort goes once health-core is fixed.
+RootView" is by design: the orchestrator wires `ChatView` and `LabUploadButton`). The chat
+history order bug it found was then fixed in health-core (orchestrator's call,
+2026-10-21): `mergeMessages` orders a question before its answer at an equal
+createdAt (ids `u-<t>` / `a-<t>` used to put the answer first from the second exchange),
+and `ChatSession.getMessages` reads in that order, so a file saved the old way reads
+right before its next save. The app's own re-sort was deleted.
 
 **The record stays the app's.** Lab extraction returns proposed values; the app shows them
 for confirmation and writes the ticked ones itself, through health-core's

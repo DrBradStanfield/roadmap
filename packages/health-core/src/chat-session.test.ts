@@ -112,3 +112,30 @@ describe('ChatSession on the device tier', () => {
     expect(c.listConversations().map((x) => x.id).sort()).toEqual(['a1', 'b1']);
   });
 });
+
+describe('US-52 AC6 / US-15 AC7: a saved conversation keeps each question above its answer', () => {
+  it('reads question, answer, question, answer after a second exchange', async () => {
+    const sync = new DeviceStore();
+    const fence = { value: null };
+    const s = await ChatSession.open(deviceHost(sync, fence));
+    await s.recordExchange({ conversationId: 'c1', isNew: true, userText: 'q1', assistantText: 'a1' });
+    await s.recordExchange({ conversationId: 'c1', isNew: false, userText: 'q2', assistantText: 'a2' });
+    const again = await ChatSession.open(deviceHost(sync, fence));
+    expect(again.getMessages('c1').map((m) => m.content)).toEqual(['q1', 'a1', 'q2', 'a2']);
+  });
+
+  it('reads a file saved in the old answer-first order question first, before any new save', async () => {
+    const sync = new DeviceStore();
+    const at = '2026-10-21T08:00:00.000Z';
+    sync.writeSync('chat-history.json', {
+      schemaVersion: 1,
+      meta: { createdAt: at, updatedAt: at, lastDeviceId: 'd', lamport: 1 },
+      conversations: [{ id: 'old', title: 'q1', createdAt: at, updatedAt: at, messages: [
+        { id: 'a-1', role: 'assistant', content: 'a1', createdAt: at },
+        { id: 'u-1', role: 'user', content: 'q1', createdAt: at },
+      ] }],
+    }, null);
+    const s = await ChatSession.open(deviceHost(sync, { value: null }));
+    expect(s.getMessages('old').map((m) => m.content)).toEqual(['q1', 'a1']);
+  });
+});

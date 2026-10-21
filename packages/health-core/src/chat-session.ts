@@ -95,7 +95,9 @@ export class ChatSession {
   getMessages(conversationId: string): ChatFileMessage[] {
     this.refreshAfterDeviceErase();
     const conv = this.file.conversations.find((c) => c.id === conversationId);
-    return conv && !conv.deleted ? conv.messages : [];
+    // Read in merge order, so a file saved before the question-first rule
+    // (US-52 AC6) reads right before its next save rewrites it.
+    return conv && !conv.deleted ? mergeMessages(conv.messages, []) : [];
   }
 
   /**

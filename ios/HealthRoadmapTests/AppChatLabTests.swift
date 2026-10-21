@@ -128,6 +128,53 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertThrowsError(try ZipReader.members(of: zip, maxMemberBytes: 1_000_000, maxMembers: 1) { _ in true })
     }
 
+    /// US-52 AC7, Codex re-check R1: a stored member that declares fewer bytes than it
+    /// holds is refused, and the archive cap counts the bytes actually kept, so many
+    /// entries pointing at one payload cannot pile up gigabytes.
+    func testAZipCannotUnderstateOrReuseItsBytes() throws {
+        let payload = Data(repeating: 0x41, count: 1000)
+        // One stored member that says it is 1 byte but holds 1,000.
+        let understated = Self.rawZip(payload: payload, method: 0, entries: [(name: "a.pdf", compressed: 1000, size: 1)])
+        XCTAssertThrowsError(try ZipReader.members(of: understated, maxMemberBytes: 10_000) { _ in true })
+        // Honest stored entries, all pointing at the same payload: the kept bytes reach the cap.
+        let reused = Self.rawZip(payload: payload, method: 0, entries: (0..<5).map { (name: "r\($0).pdf", compressed: 1000, size: 1000) })
+        XCTAssertEqual(try ZipReader.members(of: reused, maxMemberBytes: 10_000, maxTotalBytes: 5000) { _ in true }.count, 5)
+        XCTAssertThrowsError(try ZipReader.members(of: reused, maxMemberBytes: 10_000, maxTotalBytes: 4999) { _ in true })
+        // The same through deflate: every entry inflates the one blob, and the cap still holds.
+        let deflated = Self.deflate(payload)
+        let overlapping = Self.rawZip(payload: deflated, method: 8, entries: (0..<5).map { (name: "d\($0).pdf", compressed: deflated.count, size: 1000) })
+        XCTAssertThrowsError(try ZipReader.members(of: overlapping, maxMemberBytes: 10_000, maxTotalBytes: 4999) { _ in true })
+    }
+
+    /// One local payload, then central entries that each point at it, declaring what they like.
+    private static func rawZip(payload: Data, method: Int, entries: [(name: String, compressed: Int, size: Int)]) -> Data {
+        // Appended one field at a time: a long `+` chain makes the type checker crawl.
+        var out = Data()
+        func u16(_ v: Int) { withUnsafeBytes(of: UInt16(v).littleEndian) { out.append(contentsOf: $0) } }
+        func u32(_ v: Int) { withUnsafeBytes(of: UInt32(v).littleEndian) { out.append(contentsOf: $0) } }
+        for v in [0x0403_4b50] { u32(v) }
+        for v in [20, 0, method, 0, 0] { u16(v) }
+        for v in [0, payload.count, payload.count] { u32(v) }
+        for v in [1, 0] { u16(v) }
+        out.append(Data("p".utf8))
+        out.append(payload)
+        let start = out.count
+        for entry in entries {
+            u32(0x0201_4b50)
+            for v in [20, 20, 0, method, 0, 0] { u16(v) }
+            for v in [0, entry.compressed, entry.size] { u32(v) }
+            for v in [entry.name.utf8.count, 0, 0, 0, 0] { u16(v) }
+            for v in [0, 0] { u32(v) } // external attributes; local header at offset 0
+            out.append(Data(entry.name.utf8))
+        }
+        let centralSize = out.count - start
+        u32(0x0605_4b50)
+        for v in [0, 0, entries.count, entries.count] { u16(v) }
+        for v in [centralSize, start] { u32(v) }
+        u16(0)
+        return out
+    }
+
     /// A minimal ZIP: stored or raw-deflated members, with a central directory.
     private static func zip(_ members: [(String, Data, Bool)]) -> Data {
         var out = Data()

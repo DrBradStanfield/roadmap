@@ -139,8 +139,12 @@ export function mergeMessages(a: ChatFileMessage[], b: ChatFileMessage[]): ChatF
   for (const m of [...a, ...b]) {
     if (!map.has(m.id)) map.set(m.id, m);
   }
+  // One exchange stamps its question and answer with one createdAt (ids
+  // `u-<t>`, `a-<t>`): the question goes first. A total order on every copy,
+  // so the merge stays commutative, and an old file re-sorts right (US-52 AC6).
+  const rank = (m: ChatFileMessage) => (m.role === 'user' ? 0 : 1);
   return [...map.values()].sort(
-    (x, y) => cmpStr(x.createdAt, y.createdAt) || cmpStr(x.id, y.id),
+    (x, y) => cmpStr(x.createdAt, y.createdAt) || rank(x) - rank(y) || cmpStr(x.id, y.id),
   );
 }
 
