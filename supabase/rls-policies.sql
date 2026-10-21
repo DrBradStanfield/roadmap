@@ -122,7 +122,8 @@ BEGIN
   INSERT INTO public.profiles (id, shopify_customer_id, email)
   VALUES (
     NEW.id,
-    NEW.raw_user_meta_data->>'shopify_customer_id',
+    -- User metadata is editable by the account holder; only admins own this link.
+    NEW.raw_app_meta_data->>'shopify_customer_id',
     NEW.email
   )
   ON CONFLICT (id) DO NOTHING;
@@ -209,9 +210,8 @@ CREATE POLICY "Users can read own profile"
   ON profiles FOR SELECT
   USING (id = auth.uid());
 
-CREATE POLICY "Users can update own profile"
-  ON profiles FOR UPDATE
-  USING (id = auth.uid());
+-- No write policy: only the service role writes profiles (US-09 AC27). The
+-- DROP above removes the old "Users can update own profile" policy.
 
 -- ===== Health measurements policies =====
 -- No UPDATE policy — records are immutable (Apple Health model: delete + re-add).
@@ -232,7 +232,13 @@ CREATE POLICY "Users can delete own measurements"
 -- Explicit grants ensure the authenticated role can access tables after DROP/CREATE.
 -- Without these, the anon key + custom JWT client silently fails.
 
-GRANT SELECT, UPDATE ON profiles TO authenticated;
+-- RLS scopes rows, not columns. Remove the table-wide privileges Supabase grants
+-- by default (live 2026-10-21: anon and authenticated held INSERT, UPDATE,
+-- DELETE and TRUNCATE; TRUNCATE ignores RLS). Identity links, email, credits
+-- and plan are admin-owned (US-09 AC27): no code writes profiles except
+-- through the service role, so authenticated keeps SELECT only (getProfile).
+REVOKE ALL ON profiles FROM anon, authenticated;
+GRANT SELECT ON profiles TO authenticated;
 GRANT SELECT, INSERT, DELETE ON health_measurements TO authenticated;
 
 -- ============================================================

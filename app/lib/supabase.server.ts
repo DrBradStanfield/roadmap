@@ -106,6 +106,12 @@ export function logAudit(
 // ---------------------------------------------------------------------------
 // getOrCreateSupabaseUser — maps a Shopify customer to a Supabase Auth user.
 // Both params are required; throws if either is missing.
+//
+// US-09 AC27: a link counts only when the auth user's admin-written
+// app_metadata names this customer. Email, user_metadata (editable by anyone
+// holding a session for that user) and a bare profile column are never proof.
+// An unproven link returns null, so the caller answers as a guest: never a
+// 500, never that principal, never cached.
 // ---------------------------------------------------------------------------
 
 export async function getOrCreateSupabaseUser(
@@ -113,7 +119,7 @@ export async function getOrCreateSupabaseUser(
   email: string,
   firstName?: string | null,
   lastName?: string | null,
-): Promise<string> {
+): Promise<string | null> {
   if (!shopifyCustomerId || !email) {
     throw new Error('shopifyCustomerId and email are both required');
   }
@@ -125,13 +131,16 @@ export async function getOrCreateSupabaseUser(
   if (cached) return cached;
 
   // Check if profile already exists
-  const { data: profile } = await supabaseAdmin
+  const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
     .select('id, first_name, last_name')
     .eq('shopify_customer_id', shopifyCustomerId)
-    .single();
+    .maybeSingle();
+  if (profileError) throw new Error('Profile lookup failed');
 
   if (profile) {
+    // Never create a second account beside an unproven link.
+    if (!(await hasLinkProof(profile.id, shopifyCustomerId))) return refuseUnprovenLink(profile.id);
     // Sync first/last name from Shopify only if changed
     const nameUpdates: Record<string, string> = {};
     if (firstName != null && firstName !== profile.first_name) nameUpdates.first_name = firstName;
@@ -146,50 +155,42 @@ export async function getOrCreateSupabaseUser(
     return profile.id;
   }
 
-  // Create Supabase Auth user (or find existing one by email)
-  let userId: string;
+  // Create Supabase Auth user
   const { data: authUser, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     email_confirm: true,
     user_metadata: { shopify_customer_id: shopifyCustomerId },
+    // The proof: only the service role can write app_metadata.
+    app_metadata: { shopify_customer_id: shopifyCustomerId },
   });
 
   if (error) {
-    // Race condition or existing user — find by profile email first (fast, indexed),
-    // then fall back to auth admin API only if needed.
-    const { data: existingProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .single();
-    if (existingProfile) {
-      cacheUserId(shopifyCustomerId, existingProfile.id);
-      return existingProfile.id;
-    }
-
-    // Also check by shopify_customer_id (parallel request may have just created it)
-    const { data: retryProfile } = await supabaseAdmin
+    // A parallel request may have just linked this customer.
+    const { data: retryProfile, error: retryError } = await supabaseAdmin
       .from('profiles')
       .select('id')
       .eq('shopify_customer_id', shopifyCustomerId)
-      .single();
+      .maybeSingle();
+    if (retryError) throw new Error('Profile retry lookup failed');
     if (retryProfile) {
+      if (!(await hasLinkProof(retryProfile.id, shopifyCustomerId))) return refuseUnprovenLink(retryProfile.id);
       cacheUserId(shopifyCustomerId, retryProfile.id);
       return retryProfile.id;
     }
 
-    // Last resort: query auth users by email (Supabase admin API)
-    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    if (listError) {
-      throw new Error(`Failed to list users: ${listError.message}`);
-    }
-    const existingUser = listData.users.find((u) => u.email === email);
-    if (!existingUser) {
-      throw new Error(`Failed to create Supabase user: ${error.message}`);
-    }
-    userId = existingUser.id;
-  } else {
-    userId = authUser.user.id;
+    // Otherwise another account holds this email (or creation failed). Email
+    // is never proof, so that account is never adopted: guest, never a 500.
+    return refuseUnprovenLink(null);
+  }
+  if (!authUser?.user) throw new Error('Failed to create Supabase user');
+  const userId = authUser.user.id;
+
+  // Never overwrite a competing link, including one created concurrently.
+  const { data: candidateProfile, error: candidateError } = await supabaseAdmin
+    .from('profiles').select('id, shopify_customer_id').eq('id', userId).maybeSingle();
+  if (candidateError) throw new Error('Profile identity lookup failed');
+  if (candidateProfile && candidateProfile.shopify_customer_id !== shopifyCustomerId) {
+    return refuseUnprovenLink(userId);
   }
 
   // Explicitly create profile row — this is the primary mechanism.
@@ -198,7 +199,7 @@ export async function getOrCreateSupabaseUser(
     .from('profiles')
     .upsert(
       { id: userId, shopify_customer_id: shopifyCustomerId, email, first_name: firstName ?? null, last_name: lastName ?? null },
-      { onConflict: 'id' },
+      { onConflict: 'id', ignoreDuplicates: true },
     );
 
   if (upsertError) {
@@ -206,27 +207,46 @@ export async function getOrCreateSupabaseUser(
     throw new Error(`Failed to create profile: ${upsertError.message}`);
   }
 
-  // Verify profile was actually created — catches silent failures
+  // Verify the row carries this link — catches silent failures and a competing insert
   const { data: verifiedProfile, error: verifyError } = await supabaseAdmin
     .from('profiles')
     .select('id')
     .eq('id', userId)
-    .single();
+    .eq('shopify_customer_id', shopifyCustomerId)
+    .maybeSingle();
 
-  if (verifyError || !verifiedProfile) {
-    console.error('Profile verification failed after upsert:', {
-      userId,
-      shopifyCustomerId,
-      verifyError,
-    });
-    throw new Error(
-      `Profile not found after upsert: ${verifyError?.message || 'row missing'}`,
-    );
+  if (verifyError) throw new Error('Profile identity link verification failed');
+  if (!verifiedProfile) return refuseUnprovenLink(userId);
+
+  // The auth trigger may have won the insert. Sync names without changing its
+  // identity columns, and scope the update to the verified Shopify mapping.
+  const names: Record<string, string> = {};
+  if (firstName != null) names.first_name = firstName;
+  if (lastName != null) names.last_name = lastName;
+  if (Object.keys(names).length) {
+    const { error: nameError } = await supabaseAdmin.from('profiles').update(names)
+      .eq('id', userId).eq('shopify_customer_id', shopifyCustomerId);
+    if (nameError) throw new Error('Profile name update failed');
   }
 
   logAudit(userId, 'USER_CREATED', 'user', userId, { shopifyCustomerId });
   cacheUserId(shopifyCustomerId, userId);
   return userId;
+}
+
+/** True when the auth user's admin-written app_metadata names this customer (US-09 AC27). */
+async function hasLinkProof(userId: string, shopifyCustomerId: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin!.auth.admin.getUserById(userId);
+  if (error || !data?.user) throw new Error('Auth user lookup failed');
+  return data.user.app_metadata?.shopify_customer_id === shopifyCustomerId;
+}
+
+/** An unproven link: warn without the customer id, audit the profile, answer null. */
+function refuseUnprovenLink(userId: string | null): null {
+  console.warn('Shopify link without admin-written proof; treated as guest');
+  Sentry.captureMessage('Shopify link without admin-written proof', { level: 'warning', tags: { feature: 'identity_link' } });
+  logAudit(userId, 'IDENTITY_LINK_UNPROVEN', 'user', userId ?? undefined);
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -551,12 +571,33 @@ export async function updateSubscriptionPlan(
 }
 
 /**
- * Look up a Supabase user ID by Shopify customer ID. Uses admin client.
+ * Durably record a paid order the webhook did not credit because its link is
+ * unproven (US-09 AC27), so Brad can credit it by hand. Once per order (check,
+ * then insert); order id and profile id only. False when it could not be stored.
  */
-export async function getUserIdByCustomerId(shopifyCustomerId: string): Promise<string | null> {
+export async function recordUnprovenPaidOrder(userId: string, orderId: string): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+  const action = 'PAID_ORDER_UNPROVEN_LINK';
+  const { data, error } = await supabaseAdmin
+    .from('audit_logs').select('id').eq('action', action).eq('resource_id', orderId).limit(1);
+  if (error) return false;
+  if (data?.length) return true;
+  const { error: insertError } = await supabaseAdmin.from('audit_logs')
+    .insert({ user_id: userId, action, resource_type: 'chat', resource_id: orderId, metadata: null });
+  return !insertError;
+}
+
+/**
+ * Look up the Supabase user linked to a Shopify customer. Uses admin client.
+ * Null when no profile is linked; `proven: false` when the link lacks
+ * admin-written proof (US-09 AC27), so the caller must not credit it.
+ */
+export async function getUserIdByCustomerId(
+  shopifyCustomerId: string,
+): Promise<{ userId: string; proven: boolean } | null> {
   // Check in-memory cache first
   const cached = getCachedUserId(shopifyCustomerId);
-  if (cached) return cached;
+  if (cached) return { userId: cached, proven: true };
 
   if (!supabaseAdmin) return null;
 
@@ -567,8 +608,13 @@ export async function getUserIdByCustomerId(shopifyCustomerId: string): Promise<
     .single();
 
   if (error || !data) return null;
+  // The cache is shared with chat: hold only a proven link (US-09 AC27).
+  if (!(await hasLinkProof(data.id, shopifyCustomerId))) {
+    refuseUnprovenLink(data.id);
+    return { userId: data.id, proven: false };
+  }
   cacheUserId(shopifyCustomerId, data.id);
-  return data.id;
+  return { userId: data.id, proven: true };
 }
 
 // ---------------------------------------------------------------------------
