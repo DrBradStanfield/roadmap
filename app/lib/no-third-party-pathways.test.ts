@@ -45,7 +45,7 @@ describe('US-15 AC39 — no third-party pathway content', () => {
   it('a former pathway handle loads nothing and the loader never opens docs/pathway', () => {
     const read = vi.spyOn(fs, 'readFileSync');
     for (const h of FORMER_PATHWAYS) expect(loadBlogArticle(h), h).toBeNull();
-    expect(loadMatchedContent(FORMER_PATHWAYS)).toEqual({ content: null, titles: [], skipped: [] });
+    expect(loadMatchedContent(FORMER_PATHWAYS)).toEqual({ content: null, titles: [], skipped: [], reduced: [] });
     expect(read.mock.calls.filter(([p]) => String(p).includes('docs/pathway'))).toEqual([]);
   });
 
