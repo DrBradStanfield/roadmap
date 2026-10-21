@@ -9,7 +9,9 @@ final class RecordStoreTests: XCTestCase {
     private var folder: URL!
 
     override func setUp() async throws {
-        folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        // A space in the name, as in "Application Support", where the app keeps the record:
+        // a percent-encoded path once made the app miss its own file and start a new one.
+        folder = FileManager.default.temporaryDirectory.appending(path: "Record Store \(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     }
 
@@ -58,6 +60,19 @@ final class RecordStoreTests: XCTestCase {
         }
         XCTAssertEqual(store.apply(.correct(id: existingId, value: 82)), .saved)
         XCTAssertEqual(store.myData?.vitals.first?.latest?.value, "82.0")
+    }
+
+    func testThePlanFollowsTheStoredRecord() throws {
+        let store = try store()
+        let engine = try HealthEngine()
+        XCTAssertThrowsError(try engine.plan(recordJSON: store.recordJSON, now: .now, deviceId: "test"), "an empty record has no height or sex")
+
+        XCTAssertEqual(store.apply(.profile(sex: "male", birthYear: 1975, birthMonth: 6, height: 178)), .saved)
+        XCTAssertEqual(store.apply(.add(metric: "systolic_bp", value: 150, day: "2026-10-20")), .saved)
+        XCTAssertEqual(store.apply(.add(metric: "diastolic_bp", value: 95, day: "2026-10-20")), .saved)
+        let sections = try engine.sections(planJSON: engine.plan(recordJSON: store.recordJSON, now: .now, deviceId: "test"))
+        let ids = sections.flatMap(\.cards).flatMap(\.suggestions).map(\.id)
+        XCTAssertTrue(ids.contains { $0.hasPrefix("bp-") }, "a 150/95 reading must reach the plan: \(ids)")
     }
 
     func testAnUnreadableRecordIsNeverOverwritten() throws {

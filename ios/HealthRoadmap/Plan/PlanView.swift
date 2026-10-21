@@ -50,7 +50,9 @@ struct PlanView: View {
             let ms = Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15
             return .loaded(sections: sections, planMs: ms)
         } catch HealthEngine.EngineError.callFailed(let why) where why.hasPrefix("PlanError: ") {
-            return .cannotPlan(String(why.dropFirst("PlanError: ".count)))
+            // health-core's one PlanError: no usable height or sex (plan.ts). Its own
+            // words are written for connectors, so people get a plain sentence.
+            return .cannotPlan("Add your sex and height on My data, and your plan appears here.")
         } catch {
             return .cannotPlan(error.localizedDescription)
         }
