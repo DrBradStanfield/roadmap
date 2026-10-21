@@ -105,6 +105,18 @@ describe('US-50 AC14: the storefront chat loads the master, not the older post',
     expect(JSON.stringify(matchEvent())).not.toContain('tm-d-video-commerce');
   });
 
+  it('the open post loads after its master when the router picked the master', async () => {
+    mocks.route.mockResolvedValueOnce({ handles: ['tm-d'], rawJson: null, usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 }, latencyMs: 1, cacheHit: false, error: null });
+    await post({ message: 'What dose?', localFirst: true, articleHandle: 'tm-d-video-commerce' });
+    expect(loaded()).toEqual(['tm-d', 'tm-d-video']);
+  });
+
+  it('the open post is not forced in when the question routed elsewhere', async () => {
+    mocks.route.mockResolvedValueOnce({ handles: ['apob-explained-x'], rawJson: null, usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 }, latencyMs: 1, cacheHit: false, error: null });
+    await post({ message: 'What is ApoB?', localFirst: true, articleHandle: 'tm-d-video-commerce' });
+    expect(loaded()).toEqual(['apob-explained-x']);
+  });
+
   it('a URL in the message names the post', async () => {
     await post({ message: 'About microvitamin.com/blogs/articles/tm-d-video-commerce: is it still right?' });
     expect(loaded()).toEqual(['tm-d-video', 'tm-d']);

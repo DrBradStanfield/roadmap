@@ -89,6 +89,15 @@ describe('US-15 AC37: router_output_tokens on the Discord row', () => {
     expect(row()?.router_output_tokens).toBe(37);
   });
 
+  it('US-50 AC14: the row records replaced picks and reduced masters in router_context', async () => {
+    supa.inserts.length = 0;
+    await persistConversation({ ...turn, routerResult: null, classifier: { classification: 'ROUTE', routerSkipped: false }, replaced: ['old-post'], reduced: ['a-master'] });
+    expect(row()?.router_context).toMatchObject({ platform: 'discord', replaced: ['old-post'], reduced: ['a-master'] });
+    supa.inserts.length = 0;
+    await persistConversation({ ...turn, routerResult: null, classifier: { classification: 'ROUTE', routerSkipped: false } });
+    expect(row()?.router_context).not.toHaveProperty('replaced');
+  });
+
   it('US-15 AC37: reads null when the router did not run', async () => {
     supa.inserts.length = 0;
     await persistConversation({ ...turn, routerResult: null, classifier: { classification: 'GREETING', routerSkipped: true } });

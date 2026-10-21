@@ -23,46 +23,75 @@ export function routerView(index: BlogIndexEntry[], hide = process.env.TOPIC_MAS
   return index.filter(e => !(e.router === 'hidden' && (e.type ?? 'article') === 'article' && covered(e)));
 }
 
+const slugsOf = (e: BlogIndexEntry) => [e.handle, e.commerceUrl?.split(/[?#]/)[0].split('/').pop()];
+
 /**
- * The index entries a turn names (US-50 AC14): the post the chat is open on,
- * by its handle or its microvitamin.com slug, and any post whose handle or
- * slug the message gives, as a hyphenated word or a /blogs/<blog>/<slug> path.
- * `open` is untrusted: it is only compared with index slugs, never stored.
+ * The posts a message names (US-50 AC14): any post whose handle or
+ * microvitamin.com slug it gives, as a hyphenated word or a
+ * /blogs/<blog>/<slug> path.
  */
-export function namedArticles(index: BlogIndexEntry[], message: string, open?: unknown): Set<string> {
+export function namedArticles(index: BlogIndexEntry[], message: string): Set<string> {
   const text = message.toLowerCase();
   const said = new Set([...text.matchAll(/\/blogs\/[^/\s]+\/([a-z0-9-]+)/g)].map(m => m[1]));
   for (const word of text.match(/[a-z0-9]+(?:-[a-z0-9]+)+/g) ?? []) said.add(word);
-  if (typeof open === 'string') said.add(open);
-  const slug = (url?: string) => url?.split(/[?#]/)[0].split('/').pop();
-  return new Set(index.filter(e => [e.handle, slug(e.commerceUrl)].some(s => !!s && said.has(s))).map(e => e.handle));
+  return new Set(index.filter(e => slugsOf(e).some(s => !!s && said.has(s))).map(e => e.handle));
+}
+
+/**
+ * The post the storefront chat is open on (US-50 AC14): the article whose
+ * handle or microvitamin.com slug is `value`, else undefined. `value` is
+ * untrusted: it is only compared with index slugs, never stored.
+ */
+export function openArticle(index: BlogIndexEntry[], value: unknown): string | undefined {
+  if (typeof value !== 'string' || !value) return undefined;
+  return index.find(e => (e.type ?? 'article') === 'article' && slugsOf(e).includes(value))?.handle;
 }
 
 /**
  * The router's picks with each older post replaced by its topic masters, in
- * its slot (US-50 AC14). A pick stays as it is unless it is an article whose
- * `topics` name at least one master and it is not newer than every one of
- * them (published after its `reviewed`, US-50 AC5). A `named` article stays
- * and loads with its masters after it; any other is replaced. Masters the
- * router picked keep their own place; duplicates drop; at most 3 handles.
+ * its slot (US-50 AC14). An article whose `topics` name masters gives way only
+ * when every one of them covers it (reviewed on or after its publish day, as
+ * routerView, US-50 AC3 and AC5). A `named` post, or the `open` one, stays and
+ * its masters follow it. The open post, when the router did not pick it, is
+ * added right after its first master once one is in the list, or with its
+ * masters when the router picked nothing. Every pick the router made that
+ * stays keeps its place; added handles take only the slots those leave free
+ * under 3, in slot order; duplicates drop.
  */
-export function preferMasters(picks: string[], index: BlogIndexEntry[], named: Set<string>): { handles: string[]; replaced: string[] } {
+export function preferMasters(picks: string[], index: BlogIndexEntry[], named: Set<string>, open?: string): { handles: string[]; replaced: string[] } {
   const byHandle = new Map(index.map(e => [e.handle, e]));
-  const handles: string[] = [];
-  const replaced: string[] = [];
-  const add = (h: string) => { if (!handles.includes(h)) handles.push(h); };
-  for (const pick of picks) {
-    const entry = byHandle.get(pick);
-    const masters = entry && (entry.type ?? 'article') === 'article'
+  const mastersOf = (h: string) => {
+    const entry = byHandle.get(h);
+    return entry && (entry.type ?? 'article') === 'article'
       ? (entry.topics ?? []).filter(t => { const m = byHandle.get(t); return !!m && isMaster(m); })
       : [];
-    const day = entry?.publishedAt?.slice(0, 10) ?? '';
-    if (masters.length === 0 || masters.every(m => day > byHandle.get(m)!.reviewed!)) { add(pick); continue; }
-    if (named.has(pick)) add(pick);
+  };
+  const seq: { handle: string; kept: boolean }[] = [];
+  const replaced: string[] = [];
+  for (const pick of picks) {
+    const masters = mastersOf(pick);
+    const day = byHandle.get(pick)?.publishedAt?.slice(0, 10);
+    if (masters.length === 0 || !day || !masters.every(m => byHandle.get(m)!.reviewed! >= day)) { seq.push({ handle: pick, kept: true }); continue; }
+    if (named.has(pick) || pick === open) seq.push({ handle: pick, kept: true });
     else replaced.push(pick);
-    for (const m of masters) if (!picks.includes(m)) add(m);
+    seq.push(...masters.map(handle => ({ handle, kept: false })));
   }
-  return { handles: handles.slice(0, 3), replaced };
+  if (open && !picks.includes(open)) {
+    const masters = mastersOf(open);
+    if (picks.length === 0) seq.push(...masters.map(handle => ({ handle, kept: false })));
+    const first = seq.findIndex(s => masters.includes(s.handle));
+    if (first >= 0) seq.splice(first + 1, 0, { handle: open, kept: false });
+    else if (picks.length === 0) seq.push({ handle: open, kept: false });
+  }
+  const kept = new Set(seq.filter(s => s.kept).map(s => s.handle));
+  let free = 3 - kept.size;
+  const handles: string[] = [];
+  for (const { handle, kept: own } of seq) {
+    if (handles.includes(handle)) continue;
+    if (own) handles.push(handle);
+    else if (!kept.has(handle) && free > 0) { handles.push(handle); free--; }
+  }
+  return { handles, replaced };
 }
 
 /**

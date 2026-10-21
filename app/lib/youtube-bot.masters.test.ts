@@ -463,6 +463,16 @@ describe('runPipeline: the reply-or-skip input (US-50 AC6)', () => {
     expect(outcome.replaced).toEqual([]);
   });
 
+  it('Discord: an older post the router picks is replaced by its master, and the result says so (US-50 AC14)', async () => {
+    fakeFiles();
+    pick(['tm-collagen-video']);
+    const result = await platformChatCompletion({ message: 'Is collagen worth it?', history: [] });
+    const articles = systemOf().find(t => t.startsWith('## Referenced Blog Articles'))!;
+    expect(articles).toContain('Collagen peptides');
+    expect(articles).not.toContain("The old collagen video's text.");
+    expect(result.replaced).toEqual(['tm-collagen-video']);
+  });
+
   it('a comment giving the post\'s handle names it (US-50 AC14)', async () => {
     fakeFiles();
     pick(['tm-collagen-video']);
