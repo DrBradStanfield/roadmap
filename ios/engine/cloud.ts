@@ -6,6 +6,7 @@
 // connect and the copy-down on leaving. This file only builds the RecordHost
 // the phone stands behind, out of the natives Swift supplies.
 import { ROADMAP_FILE_NAME, StorageError, ConflictError, UNREACHABLE_HINT, type ReadResult, type StorageAdapter, type WriteResult } from '../../packages/health-core/src/adapter';
+import { ChatSession } from '../../packages/health-core/src/chat-session';
 import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { LiveRefresh } from '../../packages/health-core/src/live-refresh';
@@ -400,9 +401,10 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
  * "Delete all my data" with a cloud open (US-25 AC16, US-11): health-core's
  * RecordSession.deleteAllData, the web's order and guard. The cloud record is
  * read first; one that cannot be read refuses, and nothing changes anywhere,
- * the chat history included. Then the chat tombstones, written by Swift's
- * `keepChat` inside that step (the phone's own file; it answers '' or why not),
- * so they land before the record goes up (Codex R3). Then the erased record, by a
+ * the chat history included. Then the chat tombstones, in that step so they
+ * land before the record goes up (Codex R3): the chat-history.json the website
+ * saved in the cloud, then the phone's own file, written by Swift's `keepChat`
+ * (it answers '' or why not). Then the erased record, by a
  * higher eraseEpoch: the file stays in the cloud with the erase in it, so other
  * devices take it in (US-11 AC6). The app's reminders have no server to tear
  * down: they follow the epoch (ReminderScheduler).
@@ -421,6 +423,10 @@ export async function cloudErase(historyText: string | null, nowIso: string, kee
   const result = await at.session.deleteAllData({
     chat: async () => ({
       eraseAll: async () => {
+        // The cloud's chat-history.json first, as the web erases it: through
+        // ChatSession on the same host. A failure there leaves the phone's chat
+        // too, so "still on this iPhone" stays true and a retry runs both.
+        await (await ChatSession.open(at.host)).eraseAll();
         chatHistory = await eraseChatText(historyText, nowIso, at.host.deviceId());
         const refused = chatHistory === null ? '' : keepChat?.(chatHistory);
         if (refused) throw new Error(refused);

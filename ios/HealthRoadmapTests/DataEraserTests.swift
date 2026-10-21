@@ -155,6 +155,27 @@ final class DataEraserTests: XCTestCase {
         XCTAssertEqual(app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-05")), .saved, "a new value after the erase saves")
     }
 
+    func testTheCloudEraseTombstonesTheChatHistoryTheWebsiteSavedInTheCloud() async throws {
+        dropbox.put(try record(days: ["2026-10-01"]))
+        let websiteQuestion = "A question asked on the website"
+        let now = "2026-10-20T08:00:00.000Z"
+        dropbox.chat = (#"{"schemaVersion":1,"conversations":[{"id":"w1","title":"\#(websiteQuestion)","createdAt":"\#(now)","updatedAt":"\#(now)","messages":[{"id":"u-1","role":"user","content":"\#(websiteQuestion)","createdAt":"\#(now)"}]}],"meta":{"updatedAt":"\#(now)","lamport":1,"lastDeviceId":"web"}}"#, 1)
+        let app = try app(connected: true)
+        await app.sync.start()
+        seedChat(app.chat)
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+
+        XCTAssertTrue(words.contains("chat history and reminders are deleted"), words)
+        let cloudChat = try XCTUnwrap(dropbox.chat).text
+        XCTAssertFalse(cloudChat.contains(websiteQuestion), "the website's chat in Dropbox is tombstoned")
+        let conversations = try XCTUnwrap(object(cloudChat)["conversations"] as? [[String: Any]])
+        XCTAssertEqual(conversations.count, 1)
+        XCTAssertEqual(conversations.first?["deleted"] as? Bool, true)
+        XCTAssertFalse(try String(contentsOf: chatFile, encoding: .utf8).contains(question), "the phone's own chat is erased as before")
+        XCTAssertEqual(epoch(dropbox.record), 1)
+    }
+
     func testAnUnreachableCloudErasesNothingAndSaysSo() async throws {
         dropbox.put(try record(days: ["2026-10-01"]))
         let app = try app(connected: true)

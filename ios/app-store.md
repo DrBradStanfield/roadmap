@@ -53,6 +53,31 @@ The master is [docs/privacy-app-addendum.md](../docs/privacy-app-addendum.md), a
 against the code; its "Items still to verify" tail lists what is still open. Edit it
 there and republish with `node scripts/build-privacy-page.mjs app --publish`.
 
+## App privacy answers (App Store Connect)
+
+These match `ios/HealthRoadmap/PrivacyInfo.xcprivacy` and the privacy page. Change all
+three together.
+
+- **Do you or your third-party partners collect data from this app?** Yes. Chat and lab
+  upload send data through our server to Anthropic. The record itself never leaves the
+  phone except to the user's own Dropbox or Google Drive, which is not collection by us.
+- **Health & Fitness > Health.** Collected. The record summary each chat question carries
+  (including values from Apple Health), and the lab values read from an uploaded report.
+  Purpose: App Functionality only. Linked to the user's identity: No. Used for tracking: No.
+- **Health & Fitness > Fitness.** Not collected. The app reads no workouts or motion data.
+- **User Content > Other User Content.** Collected. Chat questions and the conversation so
+  far, and the pages of an uploaded lab report. Purpose: App Functionality only. Linked:
+  No. Tracking: No.
+- **User Content > Customer Support.** Not collected. The chat answers health questions;
+  it is not a support channel.
+- **Everything else** (contact info, location, identifiers, usage data, diagnostics,
+  purchases, financial info, contacts, browsing, search, sensitive info): Not collected.
+  The app sends no analytics or crash reports, and our server keeps no IP address.
+  Open question for Brad: the App Attest row (a per-install key id with that day's chat
+  and upload counts) may count as Identifiers > Device ID and Usage Data > Product
+  Interaction. If he declares them, add both to the manifest too (App Functionality, not
+  linked, no tracking).
+
 ## App Review notes
 
 - No sign-in. Open the app, tap Get started, and add a height, sex and birth year on
@@ -76,8 +101,7 @@ there and republish with `node scripts/build-privacy-page.mjs app --publish`.
 1. Apple Developer enrolment approved (ID 726UVSY5YZ); set the team on the target and
    the final bundle id.
 2. Create the app in App Store Connect; paste the listing; answer the privacy
-   questions to match the policy (Health and Fitness data: used for app
-   functionality, not linked to identity, not tracking; user content for chat).
+   questions as "App privacy answers" above says.
 3. Add the privacy policy URL (https://drstanfield.com/pages/app-privacy, published
    2026-10-22) and a support URL.
 4. Google Drive: create an iOS OAuth client in the website's Google Cloud project

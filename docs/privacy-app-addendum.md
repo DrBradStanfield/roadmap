@@ -125,11 +125,11 @@ crash reports and usage counts.
 reminders on this iPhone, and deletes the readings this app wrote to Apple Health. Readings
 from other apps and devices stay in Apple Health. With a cloud connected, it also erases your
 record there: the file stays, with your values erased, so your other devices erase their
-copies when they next sync. A value another device has not synced yet is kept, and arrives
-later.
+copies when they next sync. It also deletes the chat history the website saved there. A
+value another device has not synced yet is kept, and arrives later.
 
-It cannot reach copies you exported or shared, your cloud provider's version history, a chat
-history the website saved in your Dropbox or Google Drive, or chat questions already sent.
+It cannot reach copies you exported or shared, your cloud provider's version history, or
+chat questions already sent.
 Our server keeps none of those questions, but Anthropic may keep them for a limited time, as
 described above. The App Attest row stays; it holds nothing about you or your health.
 
@@ -157,9 +157,10 @@ time.
 - [VERIFY] Engine updates (D3) are not in the code at b3a4789f. The paragraph states what
   the orchestrator specified. When D3 merges, check the host, that the request carries no
   record data or device id, and what headers it sends.
-- [VERIFY] `ios/HealthRoadmap/PrivacyInfo.xcprivacy` still has an empty
-  `NSPrivacyCollectedDataTypes`, though chat and lab upload send health data and user
-  content off the phone. It must match this page and the App Store Connect answers.
+- [VERIFY] `ios/HealthRoadmap/PrivacyInfo.xcprivacy` declares Health and Other User
+  Content (app functionality, not linked, no tracking), matching `ios/app-store.md`.
+  Open: whether the App Attest row (a per-install key id with daily counts, "How the app
+  proves itself") must be declared as Device ID and Product Interaction.
 - [VERIFY] The chat consent screen (`AIConsent.swift`) lists the record summary but does not
   name Apple Health. architecture.md calls this a 5.1.3 disclosure question.
 - [VERIFY] `ServerConfig.swift` still points at the placeholder host

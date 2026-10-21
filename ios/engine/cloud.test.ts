@@ -24,9 +24,12 @@ async function engineSource(): Promise<string> {
   return bundle;
 }
 
-/** Dropbox's two content endpoints, in memory, with its rev rules. */
+/** Dropbox's two content endpoints, in memory, with its rev rules: the record,
+ *  and the chat history the website keeps beside it. */
 class FakeDropbox {
   file: { text: string; rev: number } | null = null;
+  /** `/chat-history.json`, which only the website writes (US-25 AC16). */
+  chat: { text: string; rev: number } | null = null;
   online = true;
   delay = 0;
   /** False: uploads fail with a 500; reads still work. */
@@ -45,20 +48,24 @@ class FakeDropbox {
   answer(url: string, headers: Record<string, string>, body: string | null): { status: number; headers: Record<string, string>; body: string } {
     if (headers.authorization !== 'Bearer token-1') return { status: 401, headers: {}, body: 'expired' };
     const arg = JSON.parse(headers['dropbox-api-arg']) as { path: string; mode?: { '.tag': string; update?: string } };
-    expect(arg.path).toBe('/health-roadmap.json');
+    expect(['/health-roadmap.json', '/chat-history.json']).toContain(arg.path);
+    const slot = arg.path === '/chat-history.json' ? 'chat' : 'file';
+    const now = this[slot];
     if (url.endsWith('/files/download')) {
-      if (!this.file) return { status: 409, headers: {}, body: '{"error_summary":"path/not_found/"}' };
-      return { status: 200, headers: { 'Dropbox-API-Result': JSON.stringify({ rev: `r${this.file.rev}` }) }, body: this.file.text };
+      if (!now) return { status: 409, headers: {}, body: '{"error_summary":"path/not_found/"}' };
+      return { status: 200, headers: { 'Dropbox-API-Result': JSON.stringify({ rev: `r${now.rev}` }) }, body: now.text };
     }
     if (!this.uploadsWork) return { status: 500, headers: {}, body: 'internal_error' };
-    this.beforeNextUpload?.();
-    this.beforeNextUpload = null;
+    if (slot === 'file') {
+      this.beforeNextUpload?.();
+      this.beforeNextUpload = null;
+    }
     const expected = arg.mode?.['.tag'] === 'update' ? arg.mode.update : null;
-    const current = this.file ? `r${this.file.rev}` : null;
+    const current = this[slot] ? `r${this[slot]!.rev}` : null;
     if (expected !== current) return { status: 409, headers: {}, body: '{"error_summary":"path/conflict/file/"}' };
-    this.uploads += 1;
-    this.file = { text: body!, rev: (this.file?.rev ?? 0) + 1 };
-    return { status: 200, headers: {}, body: JSON.stringify({ rev: `r${this.file.rev}` }) };
+    if (slot === 'file') this.uploads += 1;
+    this[slot] = { text: body!, rev: (this[slot]?.rev ?? 0) + 1 };
+    return { status: 200, headers: {}, body: JSON.stringify({ rev: `r${this[slot]!.rev}` }) };
   }
 }
 
@@ -519,6 +526,43 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     await engine.cloudOpen('dropbox', 'ios-1', false);
     const result = JSON.parse(await engine.cloudErase(chat, NOW, () => 'disk full')) as Erased;
     expect(result).toMatchObject({ success: true, erased: true, chatErased: false });
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+  });
+
+  it('tombstones the chat history the website saved in the cloud, before the record goes up', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    dropbox.chat = { text: chat.replace(/Is my LDL high\?/g, 'Website question'), rev: 1 };
+    const { engine } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false);
+
+    const order: string[] = [];
+    dropbox.beforeNextUpload = () => order.push(dropbox.chat!.text.includes('Website question') ? 'record before chat' : 'record after chat');
+    const kept: string[] = [];
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, (text) => { kept.push(text); return ''; })) as Erased;
+    expect(result).toMatchObject({ success: true, erased: true, chatErased: true });
+    expect(order).toEqual(['record after chat']);
+    // The cloud file: every conversation a tombstone, the user's words gone.
+    expect(dropbox.chat!.text).not.toContain('Website question');
+    const cloudChat = JSON.parse(dropbox.chat!.text) as { conversations: Array<{ deleted?: boolean }> };
+    expect(cloudChat.conversations.length).toBe(1);
+    expect(cloudChat.conversations.every((c) => c.deleted === true)).toBe(true);
+    // The phone's own chat history is still tombstoned, as before.
+    expect(kept).toHaveLength(1);
+    expect(kept[0]).not.toContain('Is my LDL high?');
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+  });
+
+  it('a cloud chat history that cannot be erased is reported, the phone chat is left, and the record erase still goes on', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    dropbox.chat = { text: '{not json', rev: 1 };
+    const { engine } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false);
+    const kept: string[] = [];
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, (text) => { kept.push(text); return ''; })) as Erased;
+    expect(result).toMatchObject({ success: true, erased: true, chatErased: false });
+    expect(kept).toEqual([]);
     expect(dropbox.record.meta.eraseEpoch).toBe(1);
   });
 
