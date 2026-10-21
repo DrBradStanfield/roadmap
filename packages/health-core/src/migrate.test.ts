@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { migrateFile, SchemaTooNewError } from './migrate';
-import { mergeFiles } from './merge';
+import { mergeFiles, stampInstant } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { labSlotKey } from './lab-catalog';
 import { BASE_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION, createEmptyFile, createMeasurement, stableStringify, type FileLabValue, type FileMeasurement } from './roadmap-file';
@@ -432,6 +432,28 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     }
     const future = migrateFile(rawFile({ medications: [medRow({ updatedAt: '2099-01-01T00:00:00Z' })] }), OPTS);
     expect(future.medications[0].updatedAt).toBe(META.updatedAt);
+  });
+
+  // US-23 AC6a (Codex re-check, 2026-10-21): a zone-less time after a
+  // lowercase t was parsed in the machine's zone, so in Auckland
+  // 2026-06-02t00:00:00 fell before an 18:00Z anchor the day before and
+  // escaped the clamp it gets in UTC. It reads as UTC, like an uppercase T.
+  it('reads a zone-less lowercase-t stamp as UTC in every zone', () => {
+    const tz = process.env.TZ;
+    try {
+      for (const zone of ['UTC', 'Pacific/Auckland', 'America/Los_Angeles']) {
+        process.env.TZ = zone; // a forks child re-reads it on the next Date call
+        expect(stampInstant('2026-05-01t10:00:00'), zone).toBe(Date.parse('2026-05-01T10:00:00Z'));
+        const f = migrateFile(rawFile({
+          meta: { ...META, updatedAt: '2026-06-01T18:00:00Z' },
+          medications: [medRow({ updatedAt: '2026-06-02t00:00:00' })],
+        }), OPTS);
+        expect(f.medications[0].updatedAt, zone).toBe('2026-06-01T18:00:00Z');
+      }
+    } finally {
+      if (tz === undefined) delete process.env.TZ;
+      else process.env.TZ = tz;
+    }
   });
 });
 
