@@ -114,7 +114,6 @@ struct MetricHistory: Decodable, Equatable {
         let current: Bool
         /// This row corrected an earlier one.
         let correction: Bool
-        let source: String
 
         var isActive: Bool { status == "active" }
     }
@@ -123,6 +122,8 @@ struct MetricHistory: Decodable, Equatable {
     let label: String
     let unit: String
     let rows: [Row]
+    /// The plan set the current value aside (outside the range it accepts), so it does not use it.
+    let excluded: Bool
 }
 
 /// An answer to a form question, or a supplement change (`FormEdit` and the

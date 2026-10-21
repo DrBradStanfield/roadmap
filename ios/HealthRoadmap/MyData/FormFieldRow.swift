@@ -72,7 +72,7 @@ struct FormFieldRow: View {
             case (.number, .number(_, let label, _, let value)):
                 ValueEntrySheet(title: label, unit: "", current: value.isEmpty ? nil : value, asksForDay: false, read: read) { number, _ in
                     // Sent as typed; the engine refuses what the question does not offer (a whole number in range).
-                    answer(number.rounded() == number ? String(Int(number)) : String(number))
+                    answer(SupplementSheet.doseText(number))
                 }
                 .presentationDetents([.medium])
             default:

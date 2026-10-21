@@ -43,5 +43,5 @@ export function numberJson(text: string): string {
 
 /** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */
 export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(metricHistory(readRecord(recordJson, nowIso, deviceId), metric));
+  return JSON.stringify(metricHistory(readRecord(recordJson, nowIso, deviceId), metric, nowIso));
 }

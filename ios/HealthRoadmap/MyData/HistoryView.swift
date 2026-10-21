@@ -47,11 +47,11 @@ struct HistoryView: View {
                     Section {
                         ForEach(history.rows) { value in
                             if value.isActive {
-                                Button { editing = .correct(value) } label: { HistoryRow(row: value, unit: history.unit) }
+                                Button { editing = .correct(value) } label: { HistoryRow(row: value, unit: history.unit, excluded: history.excluded) }
                                     .tint(.primary)
                                     .accessibilityHint("Opens a correction")
                             } else {
-                                HistoryRow(row: value, unit: history.unit)
+                                HistoryRow(row: value, unit: history.unit, excluded: history.excluded)
                             }
                         }
                     } header: {
@@ -122,6 +122,8 @@ private struct ChartPoint: Identifiable {
 private struct HistoryRow: View {
     let row: MetricHistory.Row
     let unit: String
+    /// The plan set the current value aside.
+    let excluded: Bool
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
@@ -129,6 +131,8 @@ private struct HistoryRow: View {
                 Text(DayText.short(row.day))
                 if !row.isActive {
                     Text("Entered in error").font(.caption).foregroundStyle(.secondary)
+                } else if row.current && excluded {
+                    Text("Not used: outside the range your plan accepts").font(.caption).foregroundStyle(.orange)
                 } else if row.current {
                     Text("Used in your plan").font(.caption).foregroundStyle(.tint)
                 } else if row.correction {

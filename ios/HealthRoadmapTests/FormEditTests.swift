@@ -78,6 +78,23 @@ final class FormEditTests: XCTestCase {
         XCTAssertEqual(data.supplements.stopped.first?.dose, 500)
     }
 
+    /// Adversary R1: a dose past Int's range (the schema has no upper bound) must print, not trap on every launch.
+    func testAHugeDoseOrNumberPrintsWithoutTrapping() {
+        XCTAssertEqual(SupplementSheet.doseText(5), "5")
+        XCTAssertEqual(SupplementSheet.doseText(2.5), "2.5")
+        XCTAssertEqual(SupplementSheet.doseText(1e20), "1e+20")
+        XCTAssertEqual(SupplementSheet.doseText(.infinity), "inf")
+    }
+
+    /// Codex R3: a metric whose only rows are entered in error still opens its history, not a blank entry.
+    func testAMetricWithOnlyStruckRowsOpensItsHistory() throws {
+        let json = #"{"metric":"weight","label":"Weight","unit":"kg","excluded":false,"rows":[{"id":"a","value":"80.0","day":"2026-10-01","status":"entered-in-error","current":false,"correction":false}]}"#
+        let struck = try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
+        XCTAssertTrue(MetricSheet.opensHistory(struck))
+        XCTAssertFalse(MetricSheet.opensHistory(MetricHistory(metric: "weight", label: "Weight", unit: "kg", rows: [], excluded: false)))
+        XCTAssertFalse(MetricSheet.opensHistory(nil))
+    }
+
     func testHistoryKeepsTheCorrectedValueStruckNotRemoved() throws {
         let engine = try HealthEngine()
         var record = try engine.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!)

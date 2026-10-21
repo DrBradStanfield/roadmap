@@ -294,3 +294,45 @@ describe('metricHistory (AC9)', () => {
     ]);
   });
 });
+
+// US-25 AC8/AC9, adversary R2/R3: rows the record keeps in odd shapes (no
+// updatedAt or createdAt, a name that is not text, a dose that is not a
+// number, correctsId absent) must not lock the tab or blank the history.
+describe('odd rows the migration keeps (adversary R2, R3)', () => {
+  it('lists supplements without throwing, skipping a nameless row and reading a bad dose as none', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const odd = {
+      ...file,
+      supplements: [
+        { id: 'a', supplementKey: 'zinc', supplementName: 'Zinc', doseValue: 'lots', doseUnit: 'mg', status: 'stopped', startedAt: '2026-01-01' },
+        { id: 'b', supplementKey: 'iron', supplementName: 'Iron', doseValue: 10, doseUnit: 'mg', status: 'stopped', startedAt: '2026-01-01', updatedAt: NOW },
+        { id: 'c', supplementKey: 'odd', supplementName: 42, doseValue: null, doseUnit: null, status: 'active', startedAt: '2026-01-01', updatedAt: NOW },
+      ],
+    } as unknown as RoadmapFile;
+    const view = myData(odd, NOW).supplements;
+    expect(view.active).toEqual([]);
+    expect(view.stopped.map((s) => [s.key, s.dose])).toEqual([['iron', 10], ['zinc', null]]);
+  });
+
+  it('reads a history row with no createdAt or correctsId, never calling it a correction', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' });
+    const { createdAt: _c, correctsId: _k, ...bare } = file.measurements[0];
+    const odd = { ...file, measurements: [...file.measurements, { ...bare, id: 'legacy', recordedAt: '2026-08-01' }] } as unknown as RoadmapFile;
+    const rows = metricHistory(odd, 'weight').rows;
+    expect(rows.map((r) => [r.id === 'legacy', r.correction])).toEqual([[false, false], [true, false]]);
+  });
+});
+
+// US-25 AC9, Codex R2: a value the plan excludes (out of its accepted range)
+// is never labelled as the one the plan uses.
+describe('metricHistory and the plan\'s exclusions (Codex R2)', () => {
+  it('says the plan does not use an excluded current value', () => {
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'profile', sex: 'male', birthYear: 1966, height: 180 }, { kind: 'add', metric: 'systolic_bp', value: 120, day: '2026-09-01' });
+    expect(metricHistory(file, 'systolic_bp', NOW).excluded).toBe(false);
+    const row = file.measurements[0];
+    file = { ...file, measurements: [{ ...row, value: 400 }] };
+    const history = metricHistory(file, 'systolic_bp', NOW);
+    expect(history.excluded).toBe(true);
+    expect(history.rows[0].current).toBe(true);
+  });
+});

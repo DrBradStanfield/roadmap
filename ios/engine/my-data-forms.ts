@@ -15,7 +15,7 @@ import { SUPPLEMENT_OPTIONS, type HealthInputs } from '../../packages/health-cor
 import { SCREENING_KEYS, screeningSchema } from '../../packages/health-core/src/validation';
 import { setScreening } from '../../packages/health-core/src/state-edits';
 import { localDay } from '../../packages/health-core/src/merge';
-import { METRIC_LABELS } from '../../packages/health-core/src/mappings';
+import { METRIC_LABELS, METRIC_TO_FIELD } from '../../packages/health-core/src/mappings';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { formatDisplayValue, getDisplayLabel, type MetricType } from '../../packages/health-core/src/units';
 
@@ -60,10 +60,13 @@ export interface HistoryRow {
   current: boolean;
   /** This row corrected an earlier one. */
   correction: boolean;
-  source: string;
 }
 
-export interface MetricHistory { metric: string; label: string; unit: string; rows: HistoryRow[] }
+export interface MetricHistory {
+  metric: string; label: string; unit: string; rows: HistoryRow[];
+  /** The plan set the current value aside (outside the range it accepts), so it is not used (Codex R2). */
+  excluded: boolean;
+}
 
 /** The edits this file answers; my-data.ts's `Edit` includes them. */
 export type FormEdit =
@@ -101,11 +104,44 @@ function basisOf(file: RoadmapFile, now: string) {
   };
 }
 
+/**
+ * A supplement row as the tab lists it. The migration keeps rows in odd
+ * shapes (hand edits, other writers), so each field is read defensively:
+ * one odd row must never lock the tab.
+ */
 function supplementRow(row: RoadmapFile['supplements'][number]): SupplementRow {
-  return { key: row.supplementKey, name: row.supplementName, dose: row.doseValue, unit: row.doseUnit, startedDay: (row.startedAt ?? '').slice(0, 10) };
+  const text = (value: unknown) => (typeof value === 'string' ? value : null);
+  return {
+    key: row.supplementKey, name: row.supplementName,
+    dose: typeof row.doseValue === 'number' && Number.isFinite(row.doseValue) ? row.doseValue : null,
+    unit: text(row.doseUnit), startedDay: (text(row.startedAt) ?? '').slice(0, 10),
+  };
 }
 
+/** Supplements with a usable key and name, as medicationsToInputs skips a nameless medication. */
+function listable(file: RoadmapFile, status: 'active' | 'stopped') {
+  return file.supplements.filter((s) => s.status === status && typeof s.supplementKey === 'string' && typeof s.supplementName === 'string');
+}
+
+/**
+ * The questions for this record. A record these cannot be built from (an odd
+ * row this code did not foresee) gets no questions and a plain note, so the
+ * rest of My data still opens and saves (adversary R2).
+ */
 export function formsOf(file: RoadmapFile, now: string): FormsView {
+  try {
+    return buildForms(file, now);
+  } catch {
+    return {
+      medications: [], screenings: [],
+      screeningNote: 'Your medication, screening and supplement answers could not be read from this record.',
+      supplements: { intro: SUPPLEMENT_TEXT.intro, active: [], stopped: [], choices: [], units: [...SUPPLEMENT_DOSE_UNITS] },
+      months: { past: [], future: [] },
+    };
+  }
+}
+
+function buildForms(file: RoadmapFile, now: string): FormsView {
   const basis = basisOf(file, now);
   const screenings = screeningForm(basis.age, basis.sex, basis.derived.screenings);
   const taking = new Set(file.supplements.filter((s) => s.status === 'active').map((s) => s.supplementKey));
@@ -119,8 +155,8 @@ export function formsOf(file: RoadmapFile, now: string): FormsView {
         : 'No screening questions apply at your age and sex yet.',
     supplements: {
       intro: SUPPLEMENT_TEXT.intro,
-      active: file.supplements.filter((s) => s.status === 'active').map(supplementRow),
-      stopped: file.supplements.filter((s) => s.status === 'stopped').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(supplementRow),
+      active: listable(file, 'active').map(supplementRow),
+      stopped: listable(file, 'stopped').sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? ''))).map(supplementRow),
       choices: featuredFirst.filter((o) => !taking.has(o.key)).map((o) => ({
         key: o.key, name: o.name, featured: o.category === 'featured', dose: o.defaultDose ?? null, unit: o.defaultUnit ?? null,
       })),
@@ -204,18 +240,25 @@ export function customSupplement(name: string): { supplementKey: string; supplem
  * included (the app strikes them through). The record is append-only: this
  * view offers corrections, never removal.
  */
-export function metricHistory(file: RoadmapFile, metric: string): MetricHistory {
+export function metricHistory(file: RoadmapFile, metric: string, now = new Date().toISOString()): MetricHistory {
   const system = file.profile.unitSystem ?? 'si';
   const rows = file.measurements.filter((row) => row.metricType === metric);
   // The plan's own pick of the current value.
   const current = latestActivePerMetric(rows.filter((row) => row.status === 'active'))[0];
+  let excluded = false;
+  try {
+    excluded = computePlan(file, new Date(now)).excluded.includes(METRIC_TO_FIELD[metric]);
+  } catch {
+    // No plan yet (no usable height or sex): nothing is excluded, and nothing used.
+  }
   return {
     metric,
+    excluded,
     label: METRIC_LABELS[metric] ?? metric,
     unit: getDisplayLabel(metric as MetricType, system),
     rows: [...rows]
       // Newest day first; within a day, newest written first, the active row above the ones it replaced.
-      .sort((a, b) => b.recordedAt.slice(0, 10).localeCompare(a.recordedAt.slice(0, 10)) || b.createdAt.localeCompare(a.createdAt)
+      .sort((a, b) => b.recordedAt.slice(0, 10).localeCompare(a.recordedAt.slice(0, 10)) || String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''))
         || Number(b.status === 'active') - Number(a.status === 'active'))
       .map((row) => ({
         id: row.id,
@@ -223,8 +266,8 @@ export function metricHistory(file: RoadmapFile, metric: string): MetricHistory 
         day: row.recordedAt.slice(0, 10),
         status: row.status,
         current: row.id === current?.id,
-        correction: row.correctsId !== null,
-        source: row.source,
+        // A legacy row may lack the key: only a named row is a correction.
+        correction: !!row.correctsId,
       })),
   };
 }
