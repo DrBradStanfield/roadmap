@@ -369,6 +369,8 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
   }
   const outcome = applyEdit(session.file, edit, nowIso);
   if (!outcome.ok) return JSON.stringify(outcome);
+  // An edit that changed nothing (an Apple Health batch already taken in) saves nothing.
+  if (outcome.file === session.file) return JSON.stringify({ ok: true, record: JSON.stringify(session.file), erase: session.eraseIdentity });
   // On the phone first, marked for the cloud: only then is the edit taken. A
   // phone that cannot keep it refuses it, and nothing changes (US-09 AC4).
   at.host.mirror.pending.set();

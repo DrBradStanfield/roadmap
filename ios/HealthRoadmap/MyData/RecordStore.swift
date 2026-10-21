@@ -173,8 +173,15 @@ final class RecordStore {
         return try? engine.history(recordJSON: recordJSON, metric: metric, now: .now, deviceId: deviceId)
     }
 
-    func apply(_ edit: RecordEdit) -> ApplyResult {
-        let seen = pinned ?? screen
+    func apply(_ edit: RecordEdit) -> ApplyResult { apply(edit, as: pinned ?? screen) }
+
+    /// An edit no sheet opened, such as an Apple Health import (D6): checked against
+    /// the record as it is now, never against a sheet's pin, so an open sheet cannot
+    /// make it refuse. It still takes the same path: in the cloud, the session, the
+    /// merge and the erase guard.
+    func applyNow(_ edit: RecordEdit) -> ApplyResult { apply(edit, as: screen) }
+
+    private func apply(_ edit: RecordEdit, as seen: Screen) -> ApplyResult {
         // An erase taken in, or sync turned on or off, since the sheet opened.
         guard seen.erase == cloudErase else {
             repin()
@@ -187,6 +194,8 @@ final class RecordStore {
             guard outcome.ok, let next = outcome.record else {
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
             }
+            // An edit that changed nothing (an Apple Health batch with nothing new) writes nothing.
+            if next == recordJSON { return .saved }
             let shown = try engine.myData(recordJSON: next, now: .now, deviceId: deviceId)
             try Self.write(next, to: file)
             recordJSON = next
@@ -206,6 +215,7 @@ final class RecordStore {
                 if outcome.reason == "units-changed" || outcome.reason == "erased" { repin() }
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
             }
+            if next == recordJSON { return .saved }
             showCloud(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0))
             onEdit?()
             return .saved
