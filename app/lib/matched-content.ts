@@ -102,8 +102,9 @@ export function contentForms(handle: string, raw: string): string[] {
  * handles load once. `titles` names the
  * entries loaded, from the blog index, never model output (US-15 AC20), and
  * only those in `titled`; the content is the same either way (US-15 AC25).
+ * `reduced` lists the masters that loaded in a reduced form (US-50 AC14's log).
  */
-export function loadMatchedContent(handles: string[], titled = handles): { content: string | null; titles: string[]; skipped: string[] } {
+export function loadMatchedContent(handles: string[], titled = handles): { content: string | null; titles: string[]; skipped: string[]; reduced: string[] } {
   const items = [...new Set(handles)].flatMap(handle => {
     const raw = loadBlogArticle(handle);
     if (!raw) return [];
@@ -115,6 +116,7 @@ export function loadMatchedContent(handles: string[], titled = handles): { conte
   const parts: string[] = [];
   const titles: string[] = [];
   const skipped: string[] = [];
+  const reduced: string[] = [];
   let totalChars = 0;
   for (const [i, { handle, raw, entry, forms, master }] of items.entries()) {
     const room = MAX_BLOG_CHARS - totalChars - (parts.length > 0 ? SEPARATOR.length : 0);
@@ -127,10 +129,13 @@ export function loadMatchedContent(handles: string[], titled = handles): { conte
       skipped.push(handle);
       continue;
     }
-    if (content !== forms[0]) for (const why of reducedDrops(raw)) console.warn(`Chat reduced master: ${why}, dropped: ${handle}`);
+    if (content !== forms[0]) {
+      reduced.push(handle);
+      for (const why of reducedDrops(raw)) console.warn(`Chat reduced master: ${why}, dropped: ${handle}`);
+    }
     totalChars += content.length + (parts.length > 0 ? SEPARATOR.length : 0);
     parts.push(content);
     if (entry?.title && titled.includes(handle)) titles.push(entry.title);
   }
-  return { content: parts.length > 0 ? parts.join(SEPARATOR) : null, titles, skipped };
+  return { content: parts.length > 0 ? parts.join(SEPARATOR) : null, titles, skipped, reduced };
 }

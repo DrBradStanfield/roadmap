@@ -378,6 +378,8 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       failureMode: result.failureMode,
       errorDetail: result.errorDetail,
       routerResult: result.routerResult,
+      replaced: result.replaced,
+      reduced: result.reduced,
       classifier: {
         classification: result.classifier.classification,
         routerSkipped: result.classifier.routerSkipped,
@@ -663,6 +665,9 @@ interface PersistParams {
   errorDetail?: string;
   /** Router-call result. null when classifier said SKIP — router never ran. */
   routerResult: RouterResult | null;
+  /** US-50 AC14: router picks replaced by their masters, and masters loaded reduced. */
+  replaced?: string[];
+  reduced?: string[];
   classifier: {
     classification: string;
     routerSkipped: boolean;
@@ -763,6 +768,8 @@ export async function persistConversation(p: PersistParams): Promise<void> {
         platform: PLATFORM_DISCORD,
         first: p.contextFirst ?? null,
         recent: p.contextRecent,
+        ...(p.replaced?.length ? { replaced: p.replaced } : {}),
+        ...(p.reduced?.length ? { reduced: p.reduced } : {}),
       },
       matched_handles: r?.handles ?? [],
       router_version: r ? ROUTER_VERSION : null,

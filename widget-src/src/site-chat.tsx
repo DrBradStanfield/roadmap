@@ -12,7 +12,7 @@ import { ChatSection } from './components/ChatSection';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { loadGuestInputs } from './lib/storage';
 import { observeVisibility } from './lib/observe-visibility';
-import { resolveAssistantName, setAssistantName, resolveChatSurface, setChatSurface } from './lib/assistant-config';
+import { resolveAssistantName, setAssistantName, resolveChatSurface, setChatSurface, resolveChatArticle, setChatArticle } from './lib/assistant-config';
 import { initSentry } from './lib/sentry';
 import './styles.css';
 
@@ -213,6 +213,7 @@ function mount() {
 
   setAssistantName(resolveAssistantName(container));
   setChatSurface(resolveChatSurface(container));
+  setChatArticle(resolveChatArticle(location.pathname));
 
   const isLoggedIn = container.dataset.loggedIn === 'true';
   const productTitle = container.dataset.productTitle;

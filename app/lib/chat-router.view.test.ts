@@ -11,7 +11,8 @@ const fixture = vi.hoisted(() => [
   { title: 'Mixed skin post', handle: 'skin-aging', url: 'u', tags: [], publishedAt: '2025-03-12T00:00:00Z', topics: ['collagen'] },
 ]);
 
-vi.mock('./blog-index.server', () => ({
+vi.mock('./blog-index.server', async (orig) => ({
+  isMaster: (await orig<typeof import('./blog-index.server')>()).isMaster,
   loadBlogIndex: () => fixture,
 }));
 vi.mock('./anthropic.server', async (orig) => ({

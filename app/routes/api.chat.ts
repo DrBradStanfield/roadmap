@@ -29,6 +29,8 @@ import {
 } from '../lib/chat.server';
 import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, routerText, ROUTER_VERSION } from '../lib/chat-router.server';
 import { titledHandles } from '../lib/chat-router-guard';
+import { loadBlogIndex } from '../lib/blog-index.server';
+import { openArticle, preferMasters } from '../lib/router-view';
 import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../packages/health-core/src/chat-history';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
@@ -517,6 +519,14 @@ async function chatAction(request: Request, app: boolean) {
 
       const routerSkipped = classifierResult.routerSkipped;
       const effectiveHandles = routerResult?.handles ?? [];
+      // US-50 AC14, only on a turn the router ran: an older post gives way to
+      // its topic masters, unless the chat is open on it (`articleHandle`,
+      // untrusted, a lookup only) or the message gives its URL or handle. The
+      // whole message is read here (Codex C2), a lookup only, never logged.
+      const index = loadBlogIndex();
+      const routed = routerResult
+        ? preferMasters(effectiveHandles, index, message, { open: openArticle(index, body.articleHandle) })
+        : { handles: [], replaced: [] };
 
       reportRouterFailure(routerResult);
 
@@ -571,12 +581,12 @@ async function chatAction(request: Request, app: boolean) {
         }
       }
 
-      // Load content from router handles — [] when classifier said SKIP (router never ran).
+      // Load content from the routed handles after AC14's filter — [] when classifier said SKIP (router never ran).
       // The stream names the articles loaded, by their index titles (US-15 AC20),
       // except crisis pathways and population pathways the text gives no signal
       // of (AC25). Every routed article still loads.
-      const titled = titledHandles(effectiveHandles, routerText(sanitizedCurrent, sanitizedFirst, sanitizedRecent));
-      const articles = loadMatchedArticlesFromHandles(effectiveHandles, titled);
+      const titled = titledHandles(routed.handles, routerText(sanitizedCurrent, sanitizedFirst, sanitizedRecent));
+      const articles = loadMatchedArticlesFromHandles(routed.handles, titled);
       if (articles?.titles.length) write({ type: 'sources', titles: articles.titles });
 
       // Build system blocks + messages, call LLM
@@ -649,6 +659,9 @@ async function chatAction(request: Request, app: boolean) {
           platform: 'shopify',
           first: sanitizedFirst ? clip(sanitizedFirst) : null,
           recent: sanitizedRecent.map(clip),
+          // US-50 AC14 usage signal: index handles only, never user text.
+          ...(routed.replaced.length ? { replaced: routed.replaced } : {}),
+          ...(articles?.reduced.length ? { reduced: articles.reduced } : {}),
         },
         matched_handles: effectiveHandles,
         router_version: routerResult ? ROUTER_VERSION : null,

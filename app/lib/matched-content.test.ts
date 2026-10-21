@@ -95,6 +95,11 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     expect(content).toContain('Internal note, do not quote: this page is shortened to fit.');
   });
 
+  it('names each master that loaded reduced, for the match log (US-50 AC14 usage signal)', () => {
+    expect(loadMatchedContent([D, K]).reduced).toEqual([K]);
+    expect(loadMatchedContent([MG]).reduced).toEqual([]);
+  });
+
   // A large non-master routed before or between masters must leave the later
   // masters their room too (the re-check: 197 of 1,140 pairs with one between,
   // 42 with it first, dropped a master whole).
