@@ -28,14 +28,34 @@ export interface DeviceMirror {
   /** Remove the device copy and what sits beside it, after an erase has
    *  reached the cloud (US-11). */
   wipe(): Promise<void>;
+  /** The cloud record has loaded: from now on this device's log-off, made in
+   *  another page, stops writes here too (US-09 AC2c). Not before: a load
+   *  that fails falls back to the device, whose copy is then its only store. */
+  opened(): void;
 }
 
 interface HostBase {
   store: StorageAdapter;
   sync?: SyncStorage;
   /** Health data this device keeps outside the record (drafts, kept answers,
-   *  stored originals), cleared by an erase (US-11 AC1). */
+   *  stored originals), cleared by an erase made here (US-11 AC1) or taken in
+   *  from another device (AC6). */
   clearOffFileData(): void;
+  /** This device's id, for the merge's `lastDeviceId`. Read once, at open. */
+  deviceId(): string;
+  /** Read at each use, never captured, so a test's fake clock applies. */
+  clock: { now(): number };
+  /** The engine's only timers (JavaScriptCore has none of its own). Called at
+   *  each use, never captured, so a test's fake timers apply. */
+  timers: { set(run: () => void, ms: number): unknown; clear(handle: unknown): void };
+  /** A re-read or a save brought in something a person would see (US-34). */
+  remoteChanged(): void;
+  /** Why a device store refused a write, as one word from a closed set
+   *  ('other' when it cannot say). Asked only on the device tier. */
+  failureCause(error: unknown): string;
+  /** A save failed. `repeat`: this kind of device refusal was already reported
+   *  this session. Gets the error and closed tags only, never record content. */
+  report(error: unknown, at: { op: 'persist'; cause?: string; repeat: boolean }): void;
 }
 
 /**

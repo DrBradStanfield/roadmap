@@ -280,12 +280,12 @@ export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-
 export { mergeFiles, stampFields, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
 export { buildErasedFile, type EraseInputs } from './erase';
 export {
-  contentOf,
-  visibleContentOf,
-  eraseIdentityOf,
-  PERSIST_DEBOUNCE_MS,
   REMOTE_POLL_MS,
   REMOTE_THROTTLE_MS,
+  RecordSession,
+  ERASE_UNREACHABLE,
+  saveRecordInto,
+  type EraseResult,
 } from './record-session';
 export type { RecordHost } from './record-host';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
