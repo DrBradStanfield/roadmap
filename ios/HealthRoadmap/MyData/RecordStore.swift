@@ -69,6 +69,8 @@ final class RecordStore {
             guard outcome.ok, let next = outcome.record else {
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
             }
+            // An edit that changed nothing (an Apple Health batch with nothing new) writes nothing.
+            if next == recordJSON { return .saved }
             let shown = try engine.myData(recordJSON: next, now: .now, deviceId: deviceId)
             try Self.write(next, to: file)
             recordJSON = next

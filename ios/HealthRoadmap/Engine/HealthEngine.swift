@@ -78,6 +78,12 @@ final class HealthEngine {
         return try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
     }
 
+    /// The values a person entered that belong in Apple Health (US-25 AC9, device-export.ts).
+    func healthWrites(recordJSON: String, now: Date, deviceId: String) throws -> [HealthWrite] {
+        let json = try call("healthWritesJson", [recordJSON, now.formatted(Self.iso), deviceId])
+        return try JSONDecoder().decode([HealthWrite].self, from: Data(json.utf8))
+    }
+
     /// A typed number, read by the web's rule (health-core's `parseLocalisedNumber`):
     /// either decimal mark, and nil for anything that is not a plain decimal.
     func number(from text: String) throws -> Double? {

@@ -9,6 +9,7 @@ struct HealthRoadmapApp: App {
             switch parts {
             case .success(let parts):
                 RootView(engine: parts.engine, store: parts.store)
+                    .environment(parts.health)
             case .failure(let error):
                 ContentUnavailableView("The app could not start", systemImage: "exclamationmark.triangle", description: Text(error.localizedDescription))
             }
@@ -21,10 +22,15 @@ struct HealthRoadmapApp: App {
 struct AppParts {
     let engine: HealthEngine
     let store: RecordStore
+    /// Apple Health in and out (ios/architecture.md D6). Started at launch, so its
+    /// observers are in place when iOS wakes the app for new Health data.
+    let health: AppleHealthSync
 
     init() throws {
         engine = try HealthEngine()
         store = try RecordStore(folder: RecordStore.appFolder(), engine: engine, deviceId: Self.deviceId())
+        health = AppleHealthSync(store: store, engine: engine, client: HealthKitClient())
+        health.start()
     }
 
     /// This install's id. A new record names it as its first device (`meta.lastDeviceId`);

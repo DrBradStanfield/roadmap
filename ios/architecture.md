@@ -184,6 +184,44 @@ Decisions made building it (agent, 2026-10-21; Brad to confirm):
 - **Blood pressure** is written as one correlation per day, both halves present, keyed by
   the systolic chain's root; a day with an imported half is not written.
 
+**Built 2026-10-21 (app).** `HealthRoadmap/Health/`: `HealthKitClient` is the only file that
+touches HealthKit (types, SI units, anchored queries, observer queries, saves), behind the
+`HealthStoreClient` protocol so the tests run on a fake. `AppleHealthSync` runs it on the
+main actor, as `RecordStore` does, so an import and a typed save never overlap; a refresh
+asked for during one loops once more. Its decisions:
+- **Anchors and the written versions live in UserDefaults** (`HealthSyncMemory`), not the
+  record: they are this phone's bookkeeping. An anchor moves only after the record holding
+  that batch is on disk; a refused or failed save reads the batch again.
+- **No anchor is kept until a kind has given readings.** iOS answers a refused read with an
+  empty result, not an error; keeping that anchor would skip every older reading once the
+  person allows it in Settings (found on the simulator 2026-10-21). Limit: a read turned off
+  and on again later misses what arrived while it was off.
+- **Our own samples are never read back:** our bundle id, or our `healthroadmap:` sync
+  identifier prefix (a sample our app wrote on the person's other iPhone, synced by Health).
+- **Locked phone:** HealthKit's `errorDatabaseInaccessible` becomes "waiting for unlock";
+  the anchor stays, and the next unlock (`protectedDataDidBecomeAvailable`) or return to
+  the foreground retries. Observer queries with background delivery wake the app for new
+  data; iOS is told the work is done only after the import saved.
+- **Writes**: once per (sync id, version); a kind the person did not allow is skipped. A
+  typed value has a day, not a time, so Health gets noon of that day. Height is read, never
+  written, and the sheet does not ask to write it.
+- **Erase (D5) does not yet delete our samples from Health**: the app has no erase yet.
+  Whoever builds it deletes samples whose sync identifier starts `healthroadmap:` and
+  clears `HealthSyncMemory`'s written versions.
+
+**Entitlement.** `ios/HealthRoadmap.entitlements` (HealthKit, with background delivery, no
+Health Records access) is set as `CODE_SIGN_ENTITLEMENTS`; the purpose strings are
+`INFOPLIST_KEY_NSHealthShareUsageDescription` and `...UpdateUsageDescription`. The simulator
+build signs it locally with no team. **For Brad, once the Apple Developer team exists:** set
+the team in Xcode (Signing & Capabilities), confirm the App ID `com.drbrad.healthroadmap`
+has the HealthKit capability (Xcode adds it when signing automatically), and test the
+background delivery on a real iPhone: the simulator cannot show it. App Store Connect's
+privacy answers must list Health data (read and written, not linked to tracking, kept on the
+device), and the review notes should say why the app reads Health.
+
+**Out of scope 2026-10-21: blood tests from Health Records** (`HKClinicalRecord`). Below
+is the plan for them, not built.
+
 **Blood tests** mostly are not HealthKit quantity types. They arrive as Health Records
 (`HKClinicalRecord`), which needs Apple's entitlement and, to our knowledge, works only in
 the US, UK and Canada (verify). Records come in FHIR DSTU2 or R4: decode by version, with
@@ -269,6 +307,9 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   - `MyData/`: the record and its tab. `RecordStore` keeps the file and applies edits
     through the engine; `MyData.swift` is the engine's view of the record and the
     `RecordEdit` the tab sends; `MyDataView`, `ValueEntrySheet` and `DayText` draw it.
+  - `Health/`: Apple Health (D6). `HealthKitClient` is HealthKit; `AppleHealthSync` runs
+    the import and the writes; `HealthReading.swift` is what crosses to the engine;
+    `HealthSyncMemory` the anchors; `AppleHealthSection` the row in My data.
   - `Plan/`: the plan screen, planned from the stored record whenever it changes.
     `Plan.swift` is the slice of the engine's JSON the app reads, evidence included. The layout (sections, card order, grouped cards) is not
     Swift: it is health-core's `planSections` (packages/health-core/src/plan-sections.ts),

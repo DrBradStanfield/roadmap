@@ -31,6 +31,7 @@ struct MyDataView: View {
                     units(data)
                     metrics("Vitals", data.vitals)
                     metrics("Blood tests", data.bloodTests)
+                    AppleHealthSection()
                     Section {
                     } footer: {
                         Label("Saved on this iPhone and in its backups. The app sends it nowhere.", systemImage: "lock.shield")
