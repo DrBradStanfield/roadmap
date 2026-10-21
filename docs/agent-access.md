@@ -36,7 +36,7 @@ so this is the whole footprint.
 | Google Drive | Folder `Health Plan by Dr Brad` in My Drive (an older connection may still use `Health Roadmap by Dr Brad`; the app finds either, `DRIVE_LEGACY_FOLDER_NAME` in `drive-rest.ts`) | Wherever Drive for desktop mounts My Drive, on macOS usually `~/Library/CloudStorage/GoogleDrive-<email>/My Drive/`, elsewhere often `~/Google Drive/My Drive/`. Set the folder "Available offline", or Drive streams it rather than storing it |
 | GitHub | Default branch of the one repo the token is scoped to, at the repo root | your clone: `health-roadmap.json` |
 | WebDAV / self-host | Relative to the configured base URL | wherever you mounted it |
-| Browser only | `localStorage` key `health_roadmap_file_v2` | no file on disk, export from the app instead |
+| Browser only | `localStorage` key `health_roadmap_file_v2` | no file on disk; the user connects a cloud provider in the tool, which merges the browser copy into the cloud file |
 
 Uploaded reports sit beside the JSON in human folders: `Lab results/`, `Scans/`,
 `Clinic letters/`, `Other documents/`, named `YYYY-MM-DD Title.ext`. Each
