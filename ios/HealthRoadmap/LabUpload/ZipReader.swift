@@ -54,18 +54,23 @@ enum ZipReader {
             at += 46 + nameLength + extraLength + commentLength
             if name.hasSuffix("/") || !keep(name) { continue }
             if flags & 0x1 != 0 || compressed == 0xFFFF_FFFF || size == 0xFFFF_FFFF { throw Failure.unsupported }
-            // Per member, per archive and by count: overlapping entries cannot inflate one blob many times.
-            total += size
-            guard size <= maxMemberBytes, total <= maxTotalBytes, out.count < maxMembers else { throw Failure.tooLarge }
+            // A stored member is its own bytes: one that declares a different size is lying.
+            if method == 0, compressed != size { throw Failure.notAZip }
+            // Per member, per archive and by count, checked before anything is copied; the
+            // archive cap counts bytes kept, so entries that share one payload add up.
+            guard size <= maxMemberBytes, total + size <= maxTotalBytes, out.count < maxMembers else { throw Failure.tooLarge }
             guard local + 30 <= bytes.count, u32(bytes, local) == 0x0403_4b50 else { throw Failure.notAZip }
             let start = local + 30 + Int(u16(bytes, local + 26)) + Int(u16(bytes, local + 28))
             guard start + compressed <= bytes.count else { throw Failure.notAZip }
             let raw = Data(bytes[start..<(start + compressed)])
+            let data: Data
             switch method {
-            case 0: out.append(Member(name: name, data: raw))
-            case 8: out.append(Member(name: name, data: try inflate(raw, size: size)))
+            case 0: data = raw
+            case 8: data = try inflate(raw, size: size)
             default: throw Failure.unsupported
             }
+            total += data.count
+            out.append(Member(name: name, data: data))
         }
         return out
     }

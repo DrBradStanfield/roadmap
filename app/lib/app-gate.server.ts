@@ -162,7 +162,12 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   if (!config.environments.includes(key.environment)) { appLimits.failures.take(ip, 1); logRefusal(kind, 'environment_refused'); return unauthorized('unknown_key'); }
 
   const body = await readBody(request, opts.bodyCap);
-  if (!body) return refuse(413, 'too_large', 'Request too large');
+  if (!body) {
+    // Charged like any refused signed request, so it cannot repeat forever (Codex re-check R2).
+    appLimits.failures.take(ip, 1);
+    logRefusal(kind, 'too_large');
+    return refuse(413, 'too_large', 'Request too large');
+  }
   if (!assertionSignatureValid(assertion, requestClientData(request.method, path, body), key.publicKey)) return failed('bad_signature');
 
   let outcome: UseOutcome;
