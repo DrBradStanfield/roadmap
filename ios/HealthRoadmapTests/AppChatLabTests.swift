@@ -54,6 +54,8 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(ChatStreamEvent.parse(#"{"type":"done","success":true,"content":"All","isFallback":false}"#), .done(content: "All", isFallback: false, error: nil))
         XCTAssertEqual(ChatStreamEvent.parse(#"{"type":"done","success":false,"error":"Failed"}"#), .done(content: nil, isFallback: false, error: "Failed"))
         XCTAssertNil(ChatStreamEvent.parse("not json"))
+        // CHAT_STREAMING=false: one JSON reply with no type is the final answer.
+        XCTAssertEqual(ChatStreamEvent.parse(#"{"success":true,"content":"Plain","isFallback":false}"#), .done(content: "Plain", isFallback: false, error: nil))
     }
 
     // MARK: AC1: what the app signs
@@ -122,6 +124,8 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(documents.map(\.name), ["labs.zip/bundle/a.png", "labs.zip/bundle/b.png"])
         XCTAssertEqual(documents.map { $0.pages.first?.type }, ["image", "image"])
         XCTAssertThrowsError(try LabFileReader.documents(from: Data("not a zip".utf8), name: "x.zip"))
+        // More members than the cap is refused before they pile up in memory.
+        XCTAssertThrowsError(try ZipReader.members(of: zip, maxMemberBytes: 1_000_000, maxMembers: 1) { _ in true })
     }
 
     /// A minimal ZIP: stored or raw-deflated members, with a central directory.

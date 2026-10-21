@@ -15,6 +15,8 @@ struct LabReviewView: View {
     @State private var review: LabReview?
     @State private var ticked: Set<String> = []
     @State private var testDay = Date.now
+    /// The report printed no full day: Save waits until the user says the day is right (US-13 AC8's rule).
+    @State private var dayConfirmed = false
     @State private var outcome: String?
     @State private var problem: String?
 
@@ -35,7 +37,7 @@ struct LabReviewView: View {
             Section {
                 if outcome == nil, review?.isLabReport == true, result.failure == nil {
                     Button("Save \(ticked.count) value\(ticked.count == 1 ? "" : "s")") { save() }
-                        .disabled(ticked.isEmpty)
+                        .disabled(ticked.isEmpty || (review?.reportDay == nil && !dayConfirmed && needsTestDay))
                 }
                 Button(outcome == nil ? "Skip" : (position.0 < position.1 ? "Next report" : "Done")) { onDone() }
             }
@@ -51,7 +53,8 @@ struct LabReviewView: View {
             Section {
                 DatePicker("Day of the test", selection: $testDay, in: ...Date.now, displayedComponents: .date)
                 if review.reportDay == nil {
-                    Text("The report does not print a full date. Check the day before saving.").font(.footnote).foregroundStyle(.orange)
+                    Text("The report does not print a full date. Set the day of the test.").font(.footnote).foregroundStyle(.orange)
+                    Toggle("This is the right day", isOn: $dayConfirmed)
                 }
             }
             Section("Values found") {
@@ -61,7 +64,11 @@ struct LabReviewView: View {
                             Text(item.label)
                             Text("\(item.value) \(item.unit)").font(.body.monospacedDigit())
                             if let day = item.day { Text("Dated \(DayText.short(day)) on the report").font(.caption).foregroundStyle(.secondary) }
-                            if item.check { Text("Check this value against the report").font(.caption).foregroundStyle(.orange) }
+                            if let question = item.question {
+                                Text("\(question) Tick it only if so.").font(.caption).foregroundStyle(.orange)
+                            } else if item.check {
+                                Text("Check this value and its unit against the report").font(.caption).foregroundStyle(.orange)
+                            }
                         }
                     }
                 }
@@ -75,6 +82,11 @@ struct LabReviewView: View {
         }
     }
 
+    /// A ticked value with no day of its own takes the test's day.
+    private var needsTestDay: Bool {
+        review?.items.contains { ticked.contains($0.ref) && $0.day == nil } ?? false
+    }
+
     private func binding(_ ref: String) -> Binding<Bool> {
         Binding(get: { ticked.contains(ref) }, set: { on in if on { ticked.insert(ref) } else { ticked.remove(ref) } })
     }
@@ -84,7 +96,8 @@ struct LabReviewView: View {
         do {
             let loaded = try engine.labReview(extractionJSON: json, now: .now)
             review = loaded
-            ticked = Set(loaded.items.map(\.ref))
+            // A value the extractor asked about starts unticked: never saved unnoticed.
+            ticked = Set(loaded.items.filter { $0.question == nil }.map(\.ref))
             if let day = loaded.reportDay, let date = Self.localDate(day) { testDay = date }
         } catch {
             problem = error.localizedDescription

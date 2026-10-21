@@ -28,6 +28,9 @@ export interface LabReviewItem {
   day: string | null;
   /** The extractor was unsure, or guessed the unit (US-12 AC16): the review says so. */
   check: boolean;
+  /** The extractor's own question, such as "Was this a blood test?" (resolveLabValues).
+   *  The review shows it and leaves the value unticked. */
+  question?: string;
 }
 
 export interface LabReview {
@@ -52,6 +55,7 @@ export function labReview(extraction: Extraction, now: string): LabReview {
       unit: v.displayUnit,
       day: ownDay(v.recordedAt, now),
       check: v.confidence !== 'high' || v.unitGuessed === true,
+      ...(v.question ? { question: v.question } : {}),
     })),
     ...(extraction.additionalValues ?? []).map((v, i) => ({
       ref: `a${i}`,

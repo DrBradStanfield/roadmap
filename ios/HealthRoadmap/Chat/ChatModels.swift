@@ -40,8 +40,9 @@ enum ChatStreamEvent: Equatable, Sendable {
     static func parse(_ line: String) -> ChatStreamEvent? {
         guard let data = line.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let type = object["type"] as? String
+              let type = object["type"] as? String ?? (object["success"] != nil ? "done" : nil)
         else { return nil }
+        // With CHAT_STREAMING=false the server answers one JSON reply with no type: read it as `done`.
         switch type {
         case "status": return .status(object["text"] as? String ?? "")
         case "text": return .text(object["text"] as? String ?? "")

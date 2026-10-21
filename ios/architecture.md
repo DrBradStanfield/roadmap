@@ -297,7 +297,10 @@ later.
 - Per machine, in memory: `APP_CHAT_DAILY_CAP` turns (default 500) and `APP_LAB_DAILY_CAP`
   files (default 300). Lab files also spend the web's per-machine file cap
   (`machineFiles`, `AI_DAILY_FILE_CAP`, 2000), but the app's own cap is smaller, so the
-  app can never use up the web's and the connector's uploads (R5).
+  app can never use up the web's and the connector's uploads (R5); the code also holds it
+  at or under 15% of `AI_DAILY_FILE_CAP` whatever the env says.
+- Per IP, refused signed requests: 50 a day. Past that, the gate reads neither the key nor
+  the body (code review R3).
 - In memory means cap x machines, reset whenever a machine restarts: on deploy and on
   Fly's idle stop and start (`auto_stop_machines`). The per-key cap holds exactly; the
   machine caps bound the worst case.
@@ -325,7 +328,7 @@ log a closed reason word, never the key id or IP.
 **Config.** `APP_ATTEST_TEAM_ID` (no default: Apple enrolment pending; until set, the
 endpoints answer 503), `APP_ATTEST_BUNDLE_ID` (default `com.drbrad.healthroadmap`, the
 placeholder above), `APP_ATTEST_ALLOW_DEVELOPMENT`, `APP_ATTEST_DEV_BYPASS`,
-`APP_CHAT_DAILY_CAP`. The app's server address is a build setting; the release value is a
+`APP_CHAT_DAILY_CAP`, `APP_LAB_DAILY_CAP`. The app's server address is a build setting; the release value is a
 placeholder until Brad picks the host.
 
 **Consent** (App Review 5.1.2(i)): before the first chat message, and before the first lab
@@ -346,6 +349,16 @@ stays true; the consent screens carry the sharing statement.
 our reading of Apple's format, so they cannot catch a misreading shared by generator and
 verifier. A real attestation and assertion from Brad's iPhone, once enrolment clears, is
 owed as a fixture before release; until then the first real device is the test.
+
+**Reviews (2026-10-21).** Design: adversary R1 to R14 fixed, Codex no findings. Code: a
+fresh adversary (no blocker; R2 to R7 fixed) and Codex (R2 to R7 fixed; R1 "not wired into
+RootView" is by design: the orchestrator wires `ChatView` and `LabUploadButton`). Found
+and NOT fixed here (merge-class, the orchestrator's call): health-core's `mergeMessages`
+sorts by (createdAt, id), and `recordExchange` stamps a question and its answer with one
+createdAt and ids `u-<t>` / `a-<t>`, so from the second exchange the stored history puts
+each answer above its question; the web widget reads it back that way after a reload and
+the Pages BYOK chat sends it to the model mispaired. The app re-sorts on read
+(`chatMessagesJson`); that re-sort goes once health-core is fixed.
 
 **The record stays the app's.** Lab extraction returns proposed values; the app shows them
 for confirmation and writes the ticked ones itself, through health-core's

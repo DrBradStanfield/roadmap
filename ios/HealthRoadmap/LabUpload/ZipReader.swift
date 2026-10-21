@@ -23,7 +23,7 @@ enum ZipReader {
     }
 
     /// Every member whose name passes `keep`, each at most `maxMemberBytes` once inflated.
-    static func members(of zip: Data, maxMemberBytes: Int, keep: (String) -> Bool) throws -> [Member] {
+    static func members(of zip: Data, maxMemberBytes: Int, maxMembers: Int = 200, maxTotalBytes: Int = 100 * 1024 * 1024, keep: (String) -> Bool) throws -> [Member] {
         let bytes = [UInt8](zip)
         // The end of central directory record: the last "PK\u{5}\u{6}" within the final 64 KB + 22.
         guard bytes.count >= 22 else { throw Failure.notAZip }
@@ -38,6 +38,7 @@ enum ZipReader {
         let count = Int(u16(bytes, end + 10))
         var at = Int(u32(bytes, end + 16))
         var out: [Member] = []
+        var total = 0
         for _ in 0..<count {
             guard at + 46 <= bytes.count, u32(bytes, at) == 0x0201_4b50 else { throw Failure.notAZip }
             let flags = u16(bytes, at + 8)
@@ -53,7 +54,9 @@ enum ZipReader {
             at += 46 + nameLength + extraLength + commentLength
             if name.hasSuffix("/") || !keep(name) { continue }
             if flags & 0x1 != 0 || compressed == 0xFFFF_FFFF || size == 0xFFFF_FFFF { throw Failure.unsupported }
-            guard size <= maxMemberBytes else { throw Failure.tooLarge }
+            // Per member, per archive and by count: overlapping entries cannot inflate one blob many times.
+            total += size
+            guard size <= maxMemberBytes, total <= maxTotalBytes, out.count < maxMembers else { throw Failure.tooLarge }
             guard local + 30 <= bytes.count, u32(bytes, local) == 0x0403_4b50 else { throw Failure.notAZip }
             let start = local + 30 + Int(u16(bytes, local + 26)) + Int(u16(bytes, local + 28))
             guard start + compressed <= bytes.count else { throw Failure.notAZip }

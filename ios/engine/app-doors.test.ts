@@ -91,6 +91,10 @@ describe('US-52 AC8: the lab review and the write', () => {
       ['v0', null, false], ['v1', '2025-04-02', true], ['a0', null, false], ['a1', null, false],
     ]);
     expect(review.items[0]).toMatchObject({ label: 'LDL Cholesterol', value: '3.1', unit: 'mmol/L' });
+    expect(review.items[0].question).toBeUndefined();
+    // The extractor's own question reaches the review (resolveLabValues: "Was this a blood test?").
+    const asked = { ...extraction, values: [{ ...extraction.values[0], metric: 'creatinine', question: 'Was this a blood test?' }] };
+    expect(JSON.parse(labReviewJson(JSON.stringify(asked), NOW)).items[0].question).toBe('Was this a blood test?');
     expect(review.notSaved).toEqual([{ label: 'Creatinine', reason: 'unit unknown' }]);
     expect(review.unreadCount).toBe(1);
     // A report with no full day asks the user.

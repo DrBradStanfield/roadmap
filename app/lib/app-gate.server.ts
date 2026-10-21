@@ -62,6 +62,8 @@ export const supabaseKeyStore: KeyStore = {
  * carrier NAT share a bucket, the price of having one at all.
  */
 export function ipBucket(ip: string): string {
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
+  if (mapped) return mapped[1];
   if (!ip.includes(':')) return ip;
   const [head] = ip.split('%');
   const halves = head.split('::');
@@ -83,8 +85,11 @@ export const appLimits = {
   ip: { chat: createQuotaCounter(200, DAY_MS, 30 * 60_000), lab: createQuotaCounter(200, DAY_MS, 30 * 60_000) },
   machine: {
     chat: createQuotaCounter(num(process.env.APP_CHAT_DAILY_CAP, 500), DAY_MS, 30 * 60_000),
-    lab: createQuotaCounter(num(process.env.APP_LAB_DAILY_CAP, 300), DAY_MS, 30 * 60_000),
+    // Never more than 15% of the web's shared file cap, whatever the env says (AC4, Codex R7).
+    lab: createQuotaCounter(Math.min(num(process.env.APP_LAB_DAILY_CAP, 300), Math.floor(0.15 * num(process.env.AI_DAILY_FILE_CAP, 2000))), DAY_MS, 30 * 60_000),
   },
+  /** Refused signed requests per IP per day; past it, no key lookup or body read (adversary code R3). */
+  failures: createQuotaCounter(50, DAY_MS, 30 * 60_000),
   /** Registration attempts per IP per day, counted before verifying (R11). */
   register: createQuotaCounter(10, DAY_MS, 30 * 60_000),
   /** The dev bypass's per-key count, since no key row exists for it. */
@@ -133,13 +138,16 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   const header = request.headers.get('x-app-attest-assertion');
   if (!validKeyId(keyId) || !header) { logRefusal(kind, 'missing_assertion'); return unauthorized('missing_assertion'); }
 
+  // A refused signed request costs a key read and maybe a body read: past
+  // the IP's failure budget, nothing more is read.
+  if (appLimits.failures.remaining(ip) === 0) { logRefusal(kind, 'failure_limit'); return overLimit(); }
+  const failed = (reason: string) => { appLimits.failures.take(ip, 1); logRefusal(kind, reason); return unauthorized(reason); };
+
   let assertion;
   try {
     assertion = parseAssertion(header, config.appId);
   } catch (error) {
-    const reason = error instanceof AttestError ? error.reason : 'bad_assertion';
-    logRefusal(kind, reason);
-    return unauthorized(reason);
+    return failed(error instanceof AttestError ? error.reason : 'bad_assertion');
   }
 
   let key;
@@ -149,16 +157,13 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     logRefusal(kind, 'store_unavailable');
     return unavailable(); // an outage is never "unknown key", or every app would re-attest (R11)
   }
-  if (!key) { logRefusal(kind, 'unknown_key'); return unauthorized('unknown_key'); }
+  if (!key) return failed('unknown_key');
   // A development key stops working the day the flag goes off (R10).
-  if (!config.environments.includes(key.environment)) { logRefusal(kind, 'environment_refused'); return unauthorized('unknown_key'); }
+  if (!config.environments.includes(key.environment)) { appLimits.failures.take(ip, 1); logRefusal(kind, 'environment_refused'); return unauthorized('unknown_key'); }
 
   const body = await readBody(request, opts.bodyCap);
   if (!body) return refuse(413, 'too_large', 'Request too large');
-  if (!assertionSignatureValid(assertion, requestClientData(request.method, path, body), key.publicKey)) {
-    logRefusal(kind, 'bad_signature');
-    return unauthorized('bad_signature');
-  }
+  if (!assertionSignatureValid(assertion, requestClientData(request.method, path, body), key.publicKey)) return failed('bad_signature');
 
   let outcome: UseOutcome;
   try {
@@ -167,8 +172,8 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     logRefusal(kind, 'store_unavailable');
     return unavailable();
   }
-  if (outcome === 'unknown') { logRefusal(kind, 'unknown_key'); return unauthorized('unknown_key'); }
-  if (outcome === 'stale') { logRefusal(kind, 'stale_counter'); return unauthorized('stale_counter'); }
+  if (outcome === 'unknown') return failed('unknown_key');
+  if (outcome === 'stale') return failed('stale_counter');
   if (outcome === 'limit') { logRefusal(kind, 'key_limit'); return overLimit(); }
   return takeShared(kind, ip) ? { body } : overLimit();
 }

@@ -120,7 +120,7 @@ beforeEach(async () => {
   Object.assign(process.env, { APP_ATTEST_TEAM_ID: 'TEAM123456', SHOPIFY_API_SECRET: 'test-secret' });
   delete process.env.APP_ATTEST_DEV_BYPASS;
   delete process.env.CHAT_SURFACE;
-  for (const c of [appLimits.register, appLimits.ip.chat, appLimits.ip.lab, appLimits.machine.chat, appLimits.machine.lab, appLimits.dev.chat, appLimits.dev.lab, machineFiles]) c.reset();
+  for (const c of [appLimits.failures, appLimits.register, appLimits.ip.chat, appLimits.ip.lab, appLimits.machine.chat, appLimits.machine.lab, appLimits.dev.chat, appLimits.dev.lab, machineFiles]) c.reset();
   store = memoryStore();
   counter = 0;
   mocks.getChatCompletion.mockReset().mockImplementation(async (_s: unknown, _m: unknown, _edits: boolean, onEvent?: (e: unknown) => void) => {
@@ -190,6 +190,16 @@ describe('US-52 AC1/AC2: the gate', () => {
     expect(mocks.getChatCompletion).toHaveBeenCalledTimes(1);
   });
 
+  it('stops reading after an IP\'s refused requests run out', async () => {
+    await registered();
+    for (let i = 0; i < 50; i++) await appChat(signed('/api/app/v1/chat', chatBody, { tamper: true }), store);
+    const req = signed('/api/app/v1/chat', chatBody);
+    const res = await appChat(req, store);
+    expect(res.status).toBe(429);
+    expect(req.bodyUsed).toBe(false);
+    expect(mocks.getChatCompletion).not.toHaveBeenCalled();
+  });
+
   it('answers 503, never a pass, with no team id, a store outage or on the brand surface', async () => {
     await registered();
     delete process.env.APP_ATTEST_TEAM_ID;
@@ -242,6 +252,7 @@ describe('US-52 AC4: limits', () => {
     expect(ipBucket('2001:db8:1:2:bbbb:cccc:dddd:eeee')).toBe('2001:db8:1:2::/64');
     expect(ipBucket('2001:db8::1')).toBe('2001:db8:0:0::/64');
     expect(ipBucket('203.0.113.9')).toBe('203.0.113.9');
+    expect(ipBucket('::ffff:203.0.113.9')).toBe('203.0.113.9');
   });
 });
 

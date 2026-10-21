@@ -12,6 +12,8 @@ struct LabReview: Decodable, Equatable, Sendable {
         let day: String?
         /// The extractor was unsure or guessed the unit: the review flags it.
         let check: Bool
+        /// The extractor's own question ("Was this a blood test?"): shown, and the value starts unticked.
+        let question: String?
         var id: String { ref }
     }
 

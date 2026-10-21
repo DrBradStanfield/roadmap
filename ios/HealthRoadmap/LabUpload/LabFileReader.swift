@@ -29,7 +29,7 @@ enum LabFileReader {
             switch self {
             case .unreadable(let name): "\(name) could not be opened."
             case .unsupported(let name): "\(name) is not a PDF, JPEG, PNG or ZIP."
-            case .tooLarge(let name): "\(name) is larger than 10 MB, the website's limit."
+            case .tooLarge(let name): "\(name) is larger than the website's limit (10 MB a file, 20 MB a ZIP of up to 200 files)."
             case .empty: "There was nothing in this file the app can read."
             }
         }
@@ -46,7 +46,9 @@ enum LabFileReader {
     static func documents(from data: Data, name: String) throws -> [Document] {
         let ext = (name as NSString).pathExtension.lowercased()
         if ext == "zip" {
-            let members = try ZipReader.members(of: data, maxMemberBytes: maxFileBytes) { member in
+            // The web's ZIP limits: 20 MB as downloaded, 200 files (IMPORT_LIMITS.zipMb, the folder's file cap).
+            guard data.count <= 20 * 1024 * 1024 else { throw Failure.tooLarge(name) }
+            let members = try ZipReader.members(of: data, maxMemberBytes: maxFileBytes, maxMembers: 200, maxTotalBytes: 200 * 1024 * 1024) { member in
                 let leaf = (member as NSString).lastPathComponent
                 return !leaf.hasPrefix(".") && !member.contains("__MACOSX") && ["pdf", "jpg", "jpeg", "png"].contains((member as NSString).pathExtension.lowercased())
             }

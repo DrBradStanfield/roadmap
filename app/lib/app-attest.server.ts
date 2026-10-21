@@ -5,7 +5,7 @@
  * a key attested once by Apple, then an assertion per request.
  *
  * Pure verification lives here; storage is a `KeyStore` (Supabase in
- * production, app-attest-store.server.ts). Every refusal is a closed reason
+ * production, `supabaseKeyStore` in app-gate.server.ts). Every refusal is a closed reason
  * word: no key id, IP or request content reaches a log.
  */
 import crypto from 'node:crypto';

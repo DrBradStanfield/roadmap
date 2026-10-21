@@ -51,8 +51,8 @@ struct AIConsentView: View {
 
     private var keptWhere: String {
         switch consent {
-        case .chat: "Your conversations are saved on this iPhone only."
-        case .labUpload: "The values you confirm are saved on this iPhone, in your record. The report itself is not kept."
+        case .chat: "Your conversations are saved on this iPhone, and in its backups."
+        case .labUpload: "The values you confirm are saved in your record on this iPhone, and in its backups. The report itself is not kept."
         }
     }
 

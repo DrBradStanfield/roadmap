@@ -84,6 +84,7 @@ struct ChatView: View {
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
             Button("History") { history?.refresh(); showingHistory = true }
+                .disabled(sending) // a turn in flight keeps its own conversation
         }
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
@@ -119,6 +120,7 @@ struct ChatView: View {
         guard !question.isEmpty, AIConsent.chat.given else { return }
         let earlier = lines.filter { !$0.failed }.map { ChatClient.Turn(role: $0.role == .user ? "user" : "assistant", content: $0.text) }
         let isNew = lines.isEmpty
+        let conversation = conversationId
         draft = ""
         error = nil
         sending = true
@@ -129,7 +131,8 @@ struct ChatView: View {
 
         do {
             let context = try engine.chatContext(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
-            let body = try ChatClient.body(message: question, conversationId: conversationId, history: earlier, contextJSON: context)
+            let body = try ChatClient.body(message: question, conversationId: conversation, history: earlier, contextJSON: context)
+            var finished = false
             for try await event in ChatClient().ask(body: body) {
                 switch event {
                 case .status(let text): status = text
@@ -139,10 +142,13 @@ struct ChatView: View {
                     if let failure { throw AppAttestClient.Failure.server(status: 500, message: failure) }
                     // The final reply replaces what streamed (US-15 AC16).
                     lines[answerIndex].text = content ?? lines[answerIndex].text
-                    history?.record(ChatExchange(conversationId: conversationId, isNew: isNew, userText: question, assistantText: lines[answerIndex].text, isFallback: isFallback))
+                    finished = true
+                    history?.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: lines[answerIndex].text, isFallback: isFallback))
                 case .other: break
                 }
             }
+            // A stream that ended with no `done` line was cut off: never history.
+            if !finished { throw AppAttestClient.Failure.server(status: 0, message: "The answer was cut off. Please ask again.") }
         } catch {
             lines[answerIndex].failed = true
             if lines[answerIndex].text.isEmpty { lines[answerIndex].text = "No answer." }
