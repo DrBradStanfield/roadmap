@@ -92,7 +92,7 @@ describe('isLabArchiveDocument', () => {
 // is what a website upload of the same bytes archives behind.
 describe('unarchivedOriginals', () => {
   const doc = (over: Partial<{ contentHash: string | null; fileRef: string | null }>) =>
-    ({ contentHash: 'sha256-a', fileRef: null, ...over });
+    ({ contentHash: 'sha256-a', fileRef: null, documentType: 'clinic_letter', title: 'Letter', contentMd: '', metadata: {}, ...over });
 
   it('counts a value-bearing file whose hash matches a row without a fileRef', () => {
     expect(unarchivedOriginals([result({ file: blob(), contentHash: 'sha256-a' })], [doc({})], new Set()).length).toBe(1);
@@ -116,7 +116,7 @@ describe('unarchivedOriginals', () => {
 const LETTER = { classification: 'clinic_letter' as const, title: 'Cardiology follow-up', documentDate: '2024-06-10', contentMarkdown: '# Letter', metadata: { clinic: 'x' } };
 
 describe('connectorDocumentEntries', () => {
-  const pending = [{ contentHash: 'sha256-a', fileRef: null }];
+  const pending = [{ contentHash: 'sha256-a', fileRef: null, documentType: 'clinic_letter', title: 'Connector title', contentMd: '', metadata: {} }];
   const letter = result({ fileName: 'letter.pdf', values: [], file: blob(), contentHash: 'sha256-a', document: LETTER });
 
   it('files an unselected connector-held letter with its reviewed content and bytes', () => {
