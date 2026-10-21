@@ -75,7 +75,7 @@ afterEach(async () => {
 
 /** The engine in an empty context, with the fake natives. */
 async function phone(dropbox: FakeDropbox, phoneText: string | null = null) {
-  const state = { phoneText, pending: false, events: [] as Array<[string, string]>, tokenRefreshes: 0 };
+  const state = { phoneText, pending: false, events: [] as Array<[string, string]>, tokenRefreshes: 0, signedOut: false };
   const encode = (text: string) => new Uint8Array(Buffer.from(text, 'utf8')).buffer;
   const decode = (bytes: ArrayBuffer) => Buffer.from(new Uint8Array(bytes)).toString('utf8');
   let next = 1;
@@ -95,14 +95,14 @@ async function phone(dropbox: FakeDropbox, phoneText: string | null = null) {
     clearTimer: (id: number) => clearTimeout(id),
     utf8Encode: encode,
     utf8Decode: decode,
-    accessToken(_provider: string, force: boolean, done: (t: string | null, e: string | null) => void) {
+    accessToken(_provider: string, force: boolean, done: (t: string | null, e: string | null, signIn: boolean) => void) {
       if (force) state.tokenRefreshes += 1;
-      setImmediate(() => done('token-1', null));
+      setImmediate(() => (state.signedOut ? done(null, 'Dropbox refused the sign-in.', true) : done('token-1', null, false)));
     },
     phoneRead: () => JSON.stringify({ text: state.phoneText }),
     phoneWrite: (text: string) => {
       state.phoneText = text;
-      return null;
+      return '';
     },
     phoneRemove: () => {
       state.phoneText = null;
@@ -235,5 +235,16 @@ describe('cloud sync in the engine (US-25 AC8)', () => {
     dropbox.answer = (url, headers, body) => (calls++ === 0 ? { status: 401, headers: {}, body: 'expired_access_token' } : answer(url, headers, body));
     await engine.cloudOpen('dropbox', 'ios-1', false);
     expect(state.tokenRefreshes).toBe(1);
+  });
+
+  it('an open that cannot read the cloud rejects with the kind of failure, for Swift to word', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.online = false;
+    const offline = await phone(dropbox);
+    await expect(offline.engine.cloudOpen('dropbox', 'ios-1', false)).rejects.toThrow('"kind":"unreachable"');
+    dropbox.online = true;
+    const signedOut = await phone(dropbox);
+    signedOut.state.signedOut = true;
+    await expect(signedOut.engine.cloudOpen('dropbox', 'ios-1', false)).rejects.toThrow('"kind":"sign-in"');
   });
 });

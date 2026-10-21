@@ -20,6 +20,13 @@ final class RecordStore {
     private(set) var myData: MyData?
     /// Why the record cannot be read, if it cannot. The app then writes nothing.
     private(set) var problem: String?
+    /// While a cloud record is open (US-25 AC8): the erase the screen shows. Every
+    /// edit then goes through the engine's session, which refuses one made for
+    /// another erase. Nil: the record is the phone's file, written here.
+    private(set) var cloudErase: String?
+    /// Told after each edit: in the cloud, that a save is on its way; on the
+    /// phone, that the file moved (CloudSync marks it for the cloud then).
+    var onEdit: (() -> Void)?
 
     private let engine: HealthEngine
     /// Where the record is kept.
@@ -30,6 +37,14 @@ final class RecordStore {
         self.engine = engine
         self.deviceId = deviceId
         file = folder.appending(path: "health-roadmap.json")
+        recordJSON = ""
+        try loadPhoneRecord()
+    }
+
+    /// Reads the phone's file, or starts a first record when there is none.
+    private func loadPhoneRecord() throws {
+        problem = nil
+        myData = nil
         // The plain path: `path()` percent-encodes, and "Application Support" has a space.
         if FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) {
             do {
@@ -49,6 +64,43 @@ final class RecordStore {
             // A damaged file, or one a newer app wrote: keep it as it is for a later fix.
             problem = "Your saved record could not be read, so nothing will be saved over it. \(error.localizedDescription)"
         }
+    }
+
+    // MARK: Cloud (US-25 AC8)
+
+    /// Show the cloud record the engine opened or took in, and send edits to it.
+    /// A record the screen cannot draw is not shown; the last good one stays.
+    func showCloud(_ view: HealthEngine.CloudView) {
+        guard let shown = try? engine.myData(recordJSON: view.record, now: .now, deviceId: deviceId) else { return }
+        recordJSON = view.record
+        myData = shown
+        problem = nil
+        cloudErase = view.erase
+    }
+
+    /// Back to the phone's own file (Disconnect, or a cloud that could not open).
+    func showPhone() {
+        cloudErase = nil
+        do {
+            try loadPhoneRecord()
+        } catch {
+            problem = "Your record on this iPhone could not be opened. \(error.localizedDescription)"
+        }
+    }
+
+    /// The phone's file as text, nil when there is none (the engine's device mirror).
+    func phoneText() throws -> String? {
+        guard FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) else { return nil }
+        return try String(contentsOf: file, encoding: .utf8)
+    }
+
+    /// Writes the phone's file, atomically, for the engine's device mirror.
+    func writePhone(_ text: String) throws {
+        try Self.write(text, to: file)
+    }
+
+    func removePhone() {
+        try? FileManager.default.removeItem(at: file)
     }
 
     /// The folder the app keeps the record in, made on first use and marked for iOS
@@ -80,6 +132,7 @@ final class RecordStore {
     }
 
     func apply(_ edit: RecordEdit) -> ApplyResult {
+        if let cloudErase { return applyInCloud(edit, erase: cloudErase) }
         if let problem { return .refused(message: problem, existingId: nil) }
         do {
             let outcome = try engine.apply(edit, to: recordJSON, now: .now, deviceId: deviceId)
@@ -90,6 +143,22 @@ final class RecordStore {
             try Self.write(next, to: file)
             recordJSON = next
             myData = shown
+            onEdit?()
+            return .saved
+        } catch {
+            return .refused(message: error.localizedDescription, existingId: nil)
+        }
+    }
+
+    /// Through the engine's open session: the save loop sends it to the cloud.
+    private func applyInCloud(_ edit: RecordEdit, erase: String) -> ApplyResult {
+        do {
+            let outcome = try engine.cloudEdit(edit, erase: erase, now: .now)
+            guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
+                return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
+            }
+            showCloud(HealthEngine.CloudView(record: next, erase: nextErase))
+            onEdit?()
             return .saved
         } catch {
             return .refused(message: error.localizedDescription, existingId: nil)

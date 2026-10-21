@@ -5,7 +5,7 @@
 // conflict, erase guard), SyncManager, the REST adapters, the lift on first
 // connect and the copy-down on leaving. This file only builds the RecordHost
 // the phone stands behind, out of the natives Swift supplies.
-import { ROADMAP_FILE_NAME, StorageError, ConflictError, type ReadResult, type StorageAdapter, type WriteResult } from '../../packages/health-core/src/adapter';
+import { ROADMAP_FILE_NAME, StorageError, ConflictError, UNREACHABLE_HINT, type ReadResult, type StorageAdapter, type WriteResult } from '../../packages/health-core/src/adapter';
 import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { LiveRefresh } from '../../packages/health-core/src/live-refresh';
@@ -23,13 +23,14 @@ const LABELS: Record<Provider, string> = { dropbox: 'Dropbox', 'google-drive': '
 /** What Swift gives the sync (CloudSync.swift, EngineNatives.swift). */
 export interface CloudNatives {
   /** A current access token. `force` after the provider refused the last one.
-   *  `error` set means the user must sign in again. */
-  accessToken(provider: Provider, force: boolean, done: (token: string | null, error: string | null) => void): void;
+   *  On failure, `error` says why and `signIn` whether only signing in again
+   *  fixes it (a refresh token the provider refused) or a retry may (no network). */
+  accessToken(provider: Provider, force: boolean, done: (token: string | null, error: string | null, signIn: boolean) => void): void;
   /** The phone's record file: `{"text": "..."}`, `{"text": null}` when there is
    *  none, or `{"error": "..."}` when it cannot be read. */
   phoneRead(): string;
-  /** Writes the phone's record file atomically; answers an error or null. */
-  phoneWrite(text: string): string | null;
+  /** Writes the phone's record file atomically; answers the error, or '' when it landed. */
+  phoneWrite(text: string): string;
   phoneRemove(): void;
   /** The marker that says the phone holds changes the cloud lacks (US-09 AC4). */
   pending(op: 'get' | 'set' | 'clear'): boolean;
@@ -50,9 +51,10 @@ class SignInError extends StorageError {
 
 function accessToken(provider: Provider, force: boolean): Promise<string> {
   return new Promise((resolve, reject) => {
-    __native.accessToken(provider, force, (token, error) => {
+    __native.accessToken(provider, force, (token, error, signIn) => {
       if (token) resolve(token);
-      else reject(new SignInError(error ?? `${LABELS[provider]} needs you to sign in again.`));
+      else if (signIn) reject(new SignInError(error ?? `${LABELS[provider]} needs you to sign in again.`));
+      else reject(new StorageError(error ?? `${LABELS[provider]} did not answer`, UNREACHABLE_HINT));
     });
   });
 }
@@ -168,7 +170,7 @@ class PhoneFileAdapter implements StorageAdapter {
     if ((now === null ? null : fingerprint(now)) !== expectedVersion) throw new ConflictError();
     const text = JSON.stringify(body);
     const error = __native.phoneWrite(text);
-    if (error !== null) throw new StorageError(error);
+    if (error) throw new StorageError(error);
     return { version: fingerprint(text) };
   }
 
@@ -281,8 +283,17 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
       /* the pending marker is set; the session below merges the phone copy in */
     }
   }
-  const session = await RecordSession.open(host);
-  const at: Open = { provider, host, phone, session, live: null!, visible: true, unflushed: 0 };
+  // A pending phone copy is merged in by the session's open and saved on its
+  // debounce; counted here so a flush on going to the background sends it too.
+  const waiting = host.mirror.pending.get();
+  let session: RecordSession;
+  try {
+    session = await RecordSession.open(host);
+  } catch (error) {
+    // Swift reads the kind from the message (CloudSync.swift).
+    throw new Error(failed(provider, error));
+  }
+  const at: Open = { provider, host, phone, session, live: null!, visible: true, unflushed: waiting ? 1 : 0 };
   at.live = new LiveRefresh(session, host, { reread: () => session.refreshFromRemote(), isVisible: () => at.visible });
   open = at;
   at.live.start();
@@ -313,18 +324,20 @@ export function cloudEdit(editJson: string, erase: string, nowIso: string): stri
 }
 
 /** The app came to the foreground: re-read (US-34), and retry a refused save. */
-export function cloudVisible(): void {
-  if (!open) return;
+export function cloudVisible(): string {
+  if (!open) return '';
   open.visible = true;
   open.live.visible();
   open.session.flushSync();
+  return '';
 }
 
 /** The app left the screen: stop re-reading until it comes back. */
-export function cloudHidden(): void {
-  if (!open) return;
+export function cloudHidden(): string {
+  if (!open) return '';
   open.visible = false;
   open.live.hidden();
+  return '';
 }
 
 /** Re-read now ("Sync now"): answers 'changed' or 'same'. */
