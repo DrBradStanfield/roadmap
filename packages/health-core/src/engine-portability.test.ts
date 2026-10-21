@@ -97,9 +97,13 @@ describe('engine portability (ios/architecture.md D4)', () => {
     const { RecordSession, MemoryAdapter, MemoryCloud } = (ctx as { Engine: typeof import('./index') }).Engine;
     const store = new MemoryAdapter(new MemoryCloud());
     const host = {
-      tier: 'device' as const, store, deviceId: () => 'phone', clock: { now: () => Date.parse('2026-10-21T10:00:00.000Z') },
+      tier: 'cloud' as const, store, deviceId: () => 'phone', clock: { now: () => Date.parse('2026-10-21T10:00:00.000Z') },
       timers: { set: () => 1, clear: () => {} },
-      remoteChanged: () => {}, failureCause: () => 'other', report: () => {}, clearOffFileData: () => {}, clearNamedFiles: () => {},
+      remoteChanged: () => {}, failureCause: () => 'other', report: () => {}, clearOffFileData: () => {},
+      mirror: {
+        adapter: new MemoryAdapter(new MemoryCloud()), writesStopped: () => false, wipe: async () => {}, opened: () => {},
+        pending: { get: () => false, set: () => {}, clear: () => {} },
+      },
     };
     const session = await RecordSession.open(host);
     expect(session.edit((file) => void (file.profile.sex = 'female'))).toBe(true);

@@ -93,7 +93,7 @@ describe('US-16 AC2a: the store refuses a write made against an erase it no long
     const adapter = new HeldCloud(cloud);
     const { store, ...ids } = await seeded(adapter);
     const held = adapter.hold();
-    const erase = store.deleteUserData();
+    const erase = store.deleteAllData();
     await held.reached;
     const erased = JSON.stringify(fileOf(store));
     expect(await write(store, ids)).toEqual(refusal);
@@ -109,7 +109,7 @@ describe('US-16 AC2a: the store refuses a write made against an erase it no long
   it('with no page mark, and once the erase has written, writes land as before', async () => {
     const cloud = new MemoryCloud();
     const { store } = await seeded(new MemoryAdapter(cloud));
-    expect((await store.deleteUserData()).success).toBe(true);
+    expect((await store.deleteAllData()).success).toBe(true);
     expect(store.addMeasurement('waist', 90, '2026-09-02').status).toBe('inserted');
     store.showErase(store.eraseIdentity); // the page shows the erased record
     expect(store.saveMedication('statin', 'atorvastatin', 20, 'mg')).toBe(true);
@@ -142,7 +142,7 @@ describe('US-16 AC2a: a write carries the erase it was asked for under', () => {
     const { store } = await seeded(new MemoryAdapter(cloud));
     store.showErase(store.eraseIdentity);
     const asked = store.shownErase; // a timer armed now
-    expect((await store.deleteUserData()).success).toBe(true);
+    expect((await store.deleteAllData()).success).toBe(true);
     store.showErase(store.eraseIdentity); // the page shows the erase
     expect(store.saveMedication('statin', 'atorvastatin', 20, 'mg', asked)).toBe(false);
     expect(store.addMeasurement('waist', 90, '2026-09-02', asked)).toEqual({ status: 'error' });
@@ -178,7 +178,7 @@ describe('US-16 AC2a: a document upload refused at its commit', () => {
     const held = adapter.hold();
     const pending = store.bulkSaveDocuments(upload(new Blob(['held bytes'], { type: 'application/pdf' })));
     await held.reached;
-    expect((await store.deleteUserData()).success).toBe(true);
+    expect((await store.deleteAllData()).success).toBe(true);
     held.release();
     expect(await pending).toEqual({ saved: [], errorCount: 1 });
     expect(fileOf(store).documents).toEqual([]);
@@ -216,7 +216,7 @@ describe('US-11: a later erase at the same epoch clears the matrices\' drafts', 
   it('drops the drafts when the re-read takes it in', async () => {
     const cloud = new MemoryCloud();
     const { store } = await seeded(new MemoryAdapter(cloud));
-    expect((await store.deleteUserData()).success).toBe(true);
+    expect((await store.deleteAllData()).success).toBe(true);
     localStorage.setItem(BT_TIMELINE_DRAFT_KEY, '{"draft":{"values":{"ldl":"3.2"}}}');
     await otherDeviceErases(cloud, true);
     expect(await store.refreshFromRemote()).toBe(true);

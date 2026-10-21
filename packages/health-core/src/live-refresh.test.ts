@@ -12,7 +12,7 @@ import { MemoryAdapter } from './memory-adapter';
 
 function rig(opts: { tier?: 'device' | 'cloud'; watch?: boolean; revision?: () => string | null } = {}) {
   let now = 1_000_000;
-  let visible = true;
+  let visible: boolean | 'throws' = true;
   const timers = new Map<number, { at: number; run: () => void }>();
   let nextId = 0;
   let watching = 0;
@@ -32,7 +32,7 @@ function rig(opts: { tier?: 'device' | 'cloud'; watch?: boolean; revision?: () =
   const host = (opts.tier === 'device'
     ? { ...base, tier: 'device', clearNamedFiles: () => {} }
     : { ...base, tier: 'cloud' }) as unknown as RecordHost;
-  const live = new LiveRefresh(session as unknown as RecordSession, host, { reread, isVisible: () => visible });
+  const live = new LiveRefresh(session as unknown as RecordSession, host, { reread, isVisible: () => { if (visible === 'throws') throw new Error('scene phase unavailable'); return visible; } });
   /** Move the clock on, running every timer that falls due, in order. */
   const advance = (ms: number) => {
     const end = now + ms;
@@ -47,7 +47,7 @@ function rig(opts: { tier?: 'device' | 'cloud'; watch?: boolean; revision?: () =
   };
   return {
     live, reread, session, timers, advance,
-    setVisible: (v: boolean) => { visible = v; },
+    setVisible: (v: boolean | 'throws') => { visible = v; },
     push: () => onChange?.(),
     watching: () => watching,
   };
@@ -129,5 +129,15 @@ describe('LiveRefresh (US-34)', () => {
     r.setVisible(false);
     r.push();
     expect(r.reread).not.toHaveBeenCalled();
+  });
+
+  it('keeps polling after a tick that throws', () => {
+    const r = rig();
+    r.live.start();
+    r.setVisible('throws');
+    expect(() => r.advance(REMOTE_POLL_MS)).toThrow('scene phase unavailable');
+    r.setVisible(true);
+    r.advance(REMOTE_POLL_MS);
+    expect(r.reread).toHaveBeenCalledTimes(1);
   });
 });

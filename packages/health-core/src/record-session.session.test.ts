@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ERASE_UNREACHABLE, RecordSession, PERSIST_DEBOUNCE_MS } from './record-session';
 import type { RecordHost } from './record-host';
-import { ROADMAP_FILE_NAME, StorageError } from './adapter';
+import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type WriteResult } from './adapter';
 import { createMeasurement, type FileDocument, type RoadmapFile } from './roadmap-file';
 
 /** A store whose writes can be made to fail, and whose reads can be held. */
@@ -28,6 +28,24 @@ class TestStore extends MemoryAdapter {
     this.onWrite?.();
     if (this.failWrites) throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }));
     return super.write(fileName, body, expected);
+  }
+  // The synchronous face a device tier needs, as localStorage has on the web.
+  readSync(fileName: string): ReadResult {
+    const entry = this.cloud.files.get(fileName);
+    return entry ? { body: JSON.parse(entry.json), version: String(entry.version) } : { body: null, version: null };
+  }
+  writeSync(fileName: string, body: object, expected: string | null): WriteResult {
+    this.writes += 1;
+    if (this.failWrites) throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }));
+    const entry = this.cloud.files.get(fileName);
+    if ((entry ? String(entry.version) : null) !== expected) throw new ConflictError('moved');
+    const version = (entry?.version ?? 0) + 1;
+    this.cloud.files.set(fileName, { json: JSON.stringify(body), version });
+    return { version: String(version) };
+  }
+  revision(fileName: string): string | null {
+    const entry = this.cloud.files.get(fileName);
+    return entry ? String(entry.version) : null;
   }
 }
 
@@ -66,7 +84,7 @@ function fakeHost(store: TestStore, tier: 'device' | 'cloud' = 'cloud'): Fake {
       void reports.push(at.op === 'persist' ? { cause: at.cause, repeat: at.repeat } : { op: at.op, repeat: at.repeat }),
   };
   const host: RecordHost = tier === 'device'
-    ? { ...base, tier: 'device', clearNamedFiles: () => calls.push('clearNamedFiles') }
+    ? { ...base, tier: 'device', sync: store, clearNamedFiles: () => calls.push('clearNamedFiles'), eraseFence: () => null }
     : {
         ...base,
         tier: 'cloud',

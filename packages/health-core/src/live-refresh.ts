@@ -120,9 +120,13 @@ export class LiveRefresh {
   private schedulePoll(): void {
     this.poll = this.host.timers.set(() => {
       this.poll = null;
-      if (this.opts.isVisible()) this.visible();
-      else this.hidden();
-      if (this.running) this.schedulePoll();
+      try {
+        if (this.opts.isVisible()) this.visible();
+        else this.hidden();
+      } finally {
+        // A tick that throws (a host's revision read, say) must not end the poll.
+        if (this.running) this.schedulePoll();
+      }
     }, REMOTE_POLL_MS);
   }
 }

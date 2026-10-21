@@ -50,9 +50,9 @@ function tombstone(conv: ChatFileConversation, now?: string): void {
   if (now) conv.updatedAt = now;
 }
 
-/** The device tier's synchronous store and its erase fence, when it has both. */
+/** The device tier's synchronous store and its erase fence. */
 function deviceStore(host: RecordHost): { sync: SyncStorage; fence: () => string | null } | null {
-  return host.tier === 'device' && host.sync && host.eraseFence ? { sync: host.sync, fence: host.eraseFence } : null;
+  return host.tier === 'device' ? { sync: host.sync, fence: () => host.eraseFence() } : null;
 }
 
 export class ChatSession {

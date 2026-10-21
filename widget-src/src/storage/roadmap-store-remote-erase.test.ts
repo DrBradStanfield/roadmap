@@ -63,7 +63,7 @@ describe('an erase made on another device clears every off-file kind here (US-11
     await page.flush();
     const otherPage = await RoadmapStore.create(new MemoryAdapter(cloud));
     vi.setSystemTime(new Date('2026-10-21T10:01:00.000Z'));
-    expect((await (await RoadmapStore.create(new MemoryAdapter(cloud))).deleteUserData()).success).toBe(true);
+    expect((await (await RoadmapStore.create(new MemoryAdapter(cloud))).deleteAllData()).success).toBe(true);
     putBack();
     return { page, otherPage };
   }

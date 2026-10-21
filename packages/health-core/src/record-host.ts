@@ -36,7 +36,6 @@ export interface DeviceMirror {
 
 interface HostBase {
   store: StorageAdapter;
-  sync?: SyncStorage;
   /** Health data this device keeps outside the record (drafts, kept answers,
    *  stored originals), cleared by an erase made here (US-11 AC1) or taken in
    *  from another device (AC6). `keepOriginals`: the `fileRef`s whose stored
@@ -82,11 +81,14 @@ interface HostBase {
 export type RecordHost =
   | (HostBase & {
       tier: 'device';
+      /** The store's synchronous path: required, because the device copy is
+       *  the record's only one and must land before the page goes. */
+      sync: SyncStorage;
       /** After an erase: clear the other record files here (chat history) and
        *  move the erase fence, so no stale writer brings them back (US-11). */
       clearNamedFiles(): void;
       /** The content-free marker `clearNamedFiles` moves: a chat session
        *  that sees it move drops its pre-erase copy (US-11 AC3b). */
-      eraseFence?(): string | null;
+      eraseFence(): string | null;
     })
-  | (HostBase & { tier: 'cloud'; mirror: DeviceMirror });
+  | (HostBase & { tier: 'cloud'; mirror: DeviceMirror; sync?: never });

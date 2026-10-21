@@ -29,7 +29,6 @@ import {
   type BulkRow,
   LiveRefresh,
   RecordSession,
-  saveRecordInto,
   bulkAppendValues,
   splitDocumentRef,
   classifyMedicationChange,
@@ -67,7 +66,6 @@ import {
   type RoadmapFile,
   type RoadmapProfile,
 } from '@roadmap/health-core';
-import { getDeviceId } from './device-id';
 import { ROADMAP_DOC } from '@roadmap/health-core';
 import { type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
@@ -622,19 +620,10 @@ export class RoadmapStore {
     return computeReminderSchedule(this.file, new Date());
   }
 
-  /**
-   * Erase the record. `beforeErase` runs once the stored record has been read,
-   * and only then: it is the irreversible part the caller owns (the reminders
-   * teardown on Brad's server, the chat-history tombstones), so an erase
-   * refused here has changed nothing anywhere (US-09 AC23).
-   */
-  deleteUserData(beforeErase?: () => Promise<void>): Promise<EraseResult> {
-    return this.session.erase(beforeErase);
-  }
-
-  /** "Delete all my data": server teardown, chat tombstones, then the record,
-   *  in the session's order (US-09 AC23, US-11 AC2). */
-  deleteAllData(steps: EraseSteps): Promise<EraseResult & { chatErased: boolean }> {
+  /** "Delete all my data": the stored record is read first, then the server
+   *  teardown and the chat tombstones, then the record, in the session's order;
+   *  a refused erase runs neither step (US-09 AC23, US-11 AC2). */
+  deleteAllData(steps: EraseSteps = {}): Promise<EraseResult & { chatErased: boolean }> {
     return this.session.deleteAllData(steps);
   }
 
@@ -712,15 +701,6 @@ export class RoadmapStore {
     }
   }
 
-}
-
-/**
- * Merge a raw roadmap-file body into `target` (migrate + read-merge-write),
- * by health-core's one transfer (saveRecordInto). The connect-time lift and
- * the pre-switch copy-down call health-core's record-transfer.ts directly.
- */
-export async function saveRoadmapFileInto(target: StorageAdapter, body: unknown): Promise<void> {
-  await saveRecordInto(target, body, { deviceId: getDeviceId(), now: new Date().toISOString() });
 }
 
 function toApiDocument(d: FileDocument): ApiDocument {
