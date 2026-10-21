@@ -22,7 +22,8 @@ final class RecordStore {
     private(set) var problem: String?
 
     private let engine: HealthEngine
-    private let file: URL
+    /// Where the record is kept.
+    let file: URL
     let deviceId: String
 
     init(folder: URL, engine: HealthEngine, deviceId: String) throws {
@@ -50,9 +51,8 @@ final class RecordStore {
         }
     }
 
-    /// The folder the app keeps the record in, made on first use and kept out of
-    /// iCloud and computer backups, so the record never reaches Apple's servers
-    /// (Brad 2026-10-21). The mark is on the folder, not the file: every save
+    /// The folder the app keeps the record in, made on first use and marked for iOS
+    /// to leave out of iCloud and computer backups (Brad 2026-10-21). The mark is on the folder, not the file: every save
     /// replaces the file, and a mark on it would go with the old copy.
     static func appFolder(in base: URL = .applicationSupportDirectory) throws -> URL {
         var folder = base.appending(path: "Record", directoryHint: .isDirectory)

@@ -78,13 +78,12 @@ final class RecordStoreTests: XCTestCase {
     }
 
     func testTheRecordIsKeptOutOfBackups() throws {
-        // Brad 2026-10-21: the record never reaches Apple's servers in an iCloud backup.
-        // The mark is on the folder, because every save replaces the file itself.
-        var record = try RecordStore.appFolder(in: folder)
-        let store = try RecordStore(folder: record, engine: HealthEngine(), deviceId: "test")
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")), .saved)
-        record.removeAllCachedResourceValues()
-        XCTAssertEqual(try record.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, true)
+        // Brad 2026-10-21: the record is left out of backups. The mark is on the folder,
+        // because every save replaces the file; so the file must sit in that folder.
+        let store = try RecordStore(folder: RecordStore.appFolder(in: folder), engine: HealthEngine(), deviceId: "test")
+        var holder = store.file.deletingLastPathComponent()
+        holder.removeAllCachedResourceValues()
+        XCTAssertEqual(try holder.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, true)
     }
 
     func testJSONThatIsNotARecordIsNeverOverwritten() throws {
