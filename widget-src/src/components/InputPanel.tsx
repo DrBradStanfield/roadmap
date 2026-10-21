@@ -53,12 +53,30 @@ import {
   SGLT2I_NAMES,
   SGLT2I_DRUGS,
   METFORMIN_OPTIONS,
-  SCREENING_FOLLOWUP_INFO,
   validateInputValue,
   isBirthYearClearlyInvalid,
   parseLocalisedNumber,
   dayOf,
   localDay,
+  MEDICATION_TEXT,
+  SCREENING_TEXT,
+  SCREENING_OPTIONS,
+  SCREENING_LABELS,
+  SUPPLEMENT_TEXT,
+  SUPPLEMENT_DOSE_UNITS,
+  optionsShowing,
+  escalationOptions,
+  doseOptions,
+  medicationWrites,
+  screeningWrites,
+  readScreening,
+  followupName,
+  followupDateLabel,
+  anyScreeningEligible,
+  dexaEligible,
+  customSupplementKey,
+  type FormOption,
+  type MedicationInputs,
 } from '@roadmap/health-core';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
@@ -82,44 +100,9 @@ const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
   { field: 'waistCm', name: 'Waist Circumference' },
 ];
 
-/** Look up a screening value by its snake_case DB key. */
-function scrVal(scr: ScreeningInputs, dbKey: string): string | number | undefined {
-  const camelKey = dbKey.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
-  return scr[camelKey as keyof ScreeningInputs];
-}
-function scrStr(scr: ScreeningInputs, dbKey: string): string | undefined {
-  return scrVal(scr, dbKey) as string | undefined;
-}
-function scrNum(scr: ScreeningInputs, dbKey: string): number | undefined {
-  return scrVal(scr, dbKey) as number | undefined;
-}
-
-/** A medication select's options, showing what the record holds (US-06 AC5):
- *  an empty value, which the plan reads as unanswered, reads `unrecorded`
- *  ("Not recorded"), and a value the list lacks (a legacy 'tier_1', an
- *  agent's 'yes') reads "Other (recorded)", never the first option. A name
- *  that is not a string never gets here: medicationsToInputs skips its row. */
-function optionsShowing(options: ReadonlyArray<{ value: string; label: string }>, recorded: string, unrecorded = 'Not recorded') {
-  const list = options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>);
-  if (options.some(opt => opt.value === recorded)) return list;
-  const blank = recorded === '';
-  return [<option key="recorded" value={recorded} disabled={blank}>{blank ? unrecorded : 'Other (recorded)'}</option>, ...list];
-}
-/** An escalation answer's options: the plan's words while it asks the
- *  question (`step`); neutral when it does not, so a recorded answer never
- *  pitches a step up the plan is not suggesting (US-06 AC5, AC7). */
-function escalationOptions(step: 'increase' | 'switch' | null) {
-  return [
-    { value: 'not_yet', label: step ? 'Not yet' : 'Not tried' },
-    { value: 'not_tolerated', label: step === 'increase' ? "Didn't tolerate a higher dose" : step === 'switch' ? "Didn't tolerate switching" : "Didn't tolerate" },
-  ];
-}
-/** An escalation field's label when the plan asks no step-up question. */
-const ESCALATION_RECORDED = 'Higher dose or switch (recorded answer)';
-/** A drug field's hint while the plan asks for its dose (US-06 AC8). */
-const DOSE_HINT = 'Add your dose: your next step depends on it.';
-/** A dose select's options, in mg. */
-const doseOptions = (doses: number[]) => doses.map(dose => ({ value: String(dose), label: `${dose}mg` }));
+/** Option data (health-core's input-form) as <option> elements. */
+const optionElements = (options: FormOption[]) =>
+  options.map(opt => <option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</option>);
 
 /** What the form reads from the plan, so it never recommends, targets or
  *  steps through what the plan does not (US-06 AC5). HealthTool computes it
@@ -432,7 +415,7 @@ export function InputPanel({
   /** Render a month/year date picker for screening dates. Used by both cancer screening and bone density. */
   const renderScreeningDateInput = (scr: ScreeningInputs, key: string, label: string, options?: { futureOnly?: boolean }) => {
     const futureOnly = options?.futureOnly ?? false;
-    const savedValue = scrStr(scr, key) || '';
+    const savedValue = readScreening(scr, key);
     const [savedYear, savedMonth] = savedValue.split('-');
 
     const localState = dateInputs[key];
@@ -1118,6 +1101,15 @@ export function InputPanel({
     />
   );
 
+  /** Send one medication answer's writes, in order (health-core's rules). */
+  const writeMedication = (meds: MedicationInputs, cascadeMode: boolean, field: string, value: string) => {
+    for (const w of medicationWrites(meds, cascadeMode, field, value)) onMedicationChange(w.medicationKey, w.drugName, w.doseValue, w.doseUnit);
+  };
+  /** Send one screening answer and the clears it implies, in order (health-core's rules). */
+  const writeScreening = (scr: ScreeningInputs, key: string, value: string) => {
+    for (const [k, v] of screeningWrites(scr, key, value)) onScreeningChange(k, v);
+  };
+
   const renderMedications = () => (
     <>
       {/* Cholesterol Medications Section — cascade when the plan's lipid marker is elevated (US-06 AC5), flat when any lipid entered */}
@@ -1148,39 +1140,23 @@ export function InputPanel({
 
           const statinDropdown = (
             <div className="health-field">
-              <label htmlFor="statin-name">Statin</label>
-              {cascadeMode && <p className="med-step-hint">{cascade.suggest.includes('statin-dose') ? DOSE_HINT : 'Statins are the most effective first step. They reduce cholesterol production in the liver.'}</p>}
+              <label htmlFor="statin-name">{MEDICATION_TEXT.statinLabel}</label>
+              {cascadeMode && <p className="med-step-hint">{cascade.suggest.includes('statin-dose') ? MEDICATION_TEXT.doseHint : MEDICATION_TEXT.statinHint}</p>}
               <div className="statin-selection-row">
                 <select
                   id="statin-name"
                   value={statinDrug}
-                  onChange={(e) => {
-                    const newDrug = e.target.value;
-                    // In cascade mode only the statin's own escalation answer
-                    // depends on it; no other medication is ever written, and
-                    // flat mode, which hides that answer, writes none (US-06 AC7).
-                    if (cascadeMode && medInputs.statinEscalation) onMedicationChange('statin_escalation', 'not_yet', null, null);
-                    if (newDrug === 'none' || newDrug === 'not_tolerated') {
-                      onMedicationChange('statin', newDrug, null, null);
-                    } else {
-                      const firstDose = STATIN_DRUGS[newDrug]?.doses[0] ?? null;
-                      onMedicationChange('statin', newDrug, firstDose, 'mg');
-                    }
-                  }}
+                  onChange={(e) => writeMedication(medInputs, cascadeMode, 'statin', e.target.value)}
                 >
-                  {optionsShowing(STATIN_NAMES, statinDrug)}
+                  {optionElements(optionsShowing(STATIN_NAMES, statinDrug))}
                 </select>
                 {availableDoses.length > 0 && (
                   <select
                     id="statin-dose"
                     value={statinDose ?? ''}
-                    onChange={(e) => {
-                      const newDose = parseInt(e.target.value, 10);
-                      if (cascadeMode && medInputs.statinEscalation) onMedicationChange('statin_escalation', 'not_yet', null, null);
-                      onMedicationChange('statin', statinDrug, newDose, 'mg');
-                    }}
+                    onChange={(e) => writeMedication(medInputs, cascadeMode, 'statin_dose', e.target.value)}
                   >
-                    {optionsShowing(doseOptions(availableDoses), statinDose === null ? '' : String(statinDose), 'Add dose')}
+                    {optionElements(optionsShowing(doseOptions(availableDoses), statinDose === null ? '' : String(statinDose), 'Add dose'))}
                   </select>
                 )}
               </div>
@@ -1189,74 +1165,51 @@ export function InputPanel({
 
           const ezetimibeDropdown = (
             <div className="health-field">
-              <label htmlFor="ezetimibe">On Ezetimibe 10mg?</label>
+              <label htmlFor="ezetimibe">{MEDICATION_TEXT.ezetimibeLabel}</label>
               <select
                 id="ezetimibe"
                 value={medInputs.ezetimibe || 'not_yet'}
-                onChange={e => {
-                  const val = e.target.value;
-                  if (val === 'yes') {
-                    onMedicationChange('ezetimibe', 'ezetimibe', 10, 'mg');
-                  } else {
-                    onMedicationChange('ezetimibe', val, null, null);
-                  }
-                }}
+                onChange={e => writeMedication(medInputs, cascadeMode, 'ezetimibe', e.target.value)}
               >
-                {optionsShowing(EZETIMIBE_OPTIONS, medInputs.ezetimibe || 'not_yet')}
+                {optionElements(optionsShowing(EZETIMIBE_OPTIONS, medInputs.ezetimibe || 'not_yet'))}
               </select>
             </div>
           );
 
           const pcsk9iDropdown = (
             <div className="health-field">
-              <label htmlFor="pcsk9i">On a PCSK9 inhibitor?</label>
+              <label htmlFor="pcsk9i">{MEDICATION_TEXT.pcsk9iLabel}</label>
               <select
                 id="pcsk9i"
                 value={medInputs.pcsk9i || 'not_yet'}
-                onChange={e => {
-                  const val = e.target.value;
-                  if (val === 'yes') {
-                    onMedicationChange('pcsk9i', 'pcsk9i', 140, 'mg');
-                  } else {
-                    onMedicationChange('pcsk9i', val, null, null);
-                  }
-                }}
+                onChange={e => writeMedication(medInputs, cascadeMode, 'pcsk9i', e.target.value)}
               >
-                {optionsShowing(PCSK9I_OPTIONS, medInputs.pcsk9i || 'not_yet')}
+                {optionElements(optionsShowing(PCSK9I_OPTIONS, medInputs.pcsk9i || 'not_yet'))}
               </select>
             </div>
           );
 
           const bempedoicAcidDropdown = (
             <div className="health-field">
-              <label htmlFor="bempedoic-acid">Bempedoic acid</label>
+              <label htmlFor="bempedoic-acid">{MEDICATION_TEXT.bempedoicAcidLabel}</label>
               <select
                 id="bempedoic-acid"
                 value={medInputs.bempedoicAcid || 'not_yet'}
-                onChange={e => {
-                  const val = e.target.value;
-                  if (val === 'bempedoic_acid') {
-                    onMedicationChange('bempedoic_acid', val, 180, 'mg');
-                  } else if (val === 'bempedoic_acid_ezetimibe') {
-                    onMedicationChange('bempedoic_acid', val, 180, 'mg');
-                  } else {
-                    onMedicationChange('bempedoic_acid', val, null, null);
-                  }
-                }}
+                onChange={e => writeMedication(medInputs, cascadeMode, 'bempedoic_acid', e.target.value)}
               >
-                {optionsShowing(BEMPEDOIC_ACID_OPTIONS, medInputs.bempedoicAcid || 'not_yet')}
+                {optionElements(optionsShowing(BEMPEDOIC_ACID_OPTIONS, medInputs.bempedoicAcid || 'not_yet'))}
               </select>
             </div>
           );
 
-          const neutral = 'Are you currently taking any cholesterol medications? Recording these helps track your health over time.';
+          const neutral = MEDICATION_TEXT.lipidNeutral;
 
           // ── Flat mode: all fields visible independently (no cascade gating) ──
           if (!cascadeMode) {
             return (
               <div className="section-card">
                 <section className="health-section">
-                  <h3 className="health-section-title">Cholesterol Medications</h3>
+                  <h3 className="health-section-title">{MEDICATION_TEXT.lipidTitle}</h3>
                   <p className="health-section-desc">{neutral}</p>
                   {statinDropdown}
                   {ezetimibeDropdown}
@@ -1278,7 +1231,7 @@ export function InputPanel({
           return (
             <div className="section-card">
             <section className="health-section medication-cascade">
-              <h3 className="health-section-title">Cholesterol Medications</h3>
+              <h3 className="health-section-title">{MEDICATION_TEXT.lipidTitle}</h3>
               <p className="health-section-desc">
                 {/* It recommends only while the plan shows a step's card: with every
                     step answered the marker stays elevated and the plan shows none. */}
@@ -1289,14 +1242,14 @@ export function InputPanel({
 
               {(cascade.ezetimibeReached || medInputs.ezetimibe !== undefined) && (
                 <div className="med-step-enter">
-                  <p className="med-step-hint">{`Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more ${lipidName} reduction.`}</p>
+                  <p className="med-step-hint">{MEDICATION_TEXT.ezetimibeHint(lipidName)}</p>
                   {ezetimibeDropdown}
                 </div>
               )}
 
               {(cascade.bempedoicAcidReached || medInputs.bempedoicAcid !== undefined) && (
                 <div className="med-step-enter">
-                  <p className="med-step-hint">Bempedoic acid lowers cholesterol production via a different pathway than statins, and can be used alongside them.</p>
+                  <p className="med-step-hint">{MEDICATION_TEXT.bempedoicAcidHint}</p>
                   {bempedoicAcidDropdown}
                 </div>
               )}
@@ -1304,26 +1257,26 @@ export function InputPanel({
               {showEscalation && (
                 <div className="health-field med-step-enter">
                   <label htmlFor="statin-escalation">
-                    {step === 'increase' ? 'Tried increasing statin dose?' : step === 'switch' ? 'Tried switching to a more potent statin?' : ESCALATION_RECORDED}
+                    {step ? MEDICATION_TEXT.statinEscalationLabel[step] : MEDICATION_TEXT.escalationRecorded}
                   </label>
                   {step && (
                     <p className="med-step-hint">
-                      {step === 'increase' ? `A higher dose may lower your ${lipidName} further.` : `A more potent statin can provide greater ${lipidName} reduction at the same or lower dose.`}
+                      {MEDICATION_TEXT.statinEscalationHint[step](lipidName)}
                     </p>
                   )}
                   <select
                     id="statin-escalation"
                     value={medInputs.statinEscalation || 'not_yet'}
-                    onChange={e => onMedicationChange('statin_escalation', e.target.value, null, null)}
+                    onChange={e => writeMedication(medInputs, cascadeMode, 'statin_escalation', e.target.value)}
                   >
-                    {optionsShowing(escalationOptions(step), medInputs.statinEscalation || 'not_yet')}
+                    {optionElements(optionsShowing(escalationOptions(step), medInputs.statinEscalation || 'not_yet'))}
                   </select>
                 </div>
               )}
 
               {(cascade.pcsk9iReached || medInputs.pcsk9i !== undefined) && (
                 <div className="med-step-enter">
-                  <p className="med-step-hint">{`PCSK9 inhibitors are injectable medications that help your body clear ${lipidName} from the blood. They can reduce ${lipidName} by ~50%.`}</p>
+                  <p className="med-step-hint">{MEDICATION_TEXT.pcsk9iHint(lipidName)}</p>
                   {pcsk9iDropdown}
                 </div>
               )}
@@ -1363,39 +1316,23 @@ export function InputPanel({
 
         const glp1Dropdown = (
           <div className="health-field">
-            <label htmlFor="glp1-name">GLP-1 Medication</label>
-            {weightCascadeMode && <p className="med-step-hint">{cascade.suggest.includes('glp1-dose') ? DOSE_HINT : 'GLP-1 medications reduce appetite and improve blood sugar control, often leading to significant weight loss.'}</p>}
+            <label htmlFor="glp1-name">{MEDICATION_TEXT.glp1Label}</label>
+            {weightCascadeMode && <p className="med-step-hint">{cascade.suggest.includes('glp1-dose') ? MEDICATION_TEXT.doseHint : MEDICATION_TEXT.glp1Hint}</p>}
             <div className="statin-selection-row">
               <select
                 id="glp1-name"
                 value={glp1Drug}
-                onChange={(e) => {
-                  const newDrug = e.target.value;
-                  // In cascade mode only the GLP-1's own escalation answer
-                  // depends on it; no other medication is ever written, and
-                  // flat mode, which hides that answer, writes none (US-06 AC7).
-                  if (weightCascadeMode && medInputs.glp1Escalation) onMedicationChange('glp1_escalation', 'not_yet', null, null);
-                  if (newDrug === 'none' || newDrug === 'not_tolerated' || newDrug === 'other') {
-                    onMedicationChange('glp1', newDrug, null, null);
-                  } else {
-                    const firstDose = GLP1_DRUGS[newDrug]?.doses[0] ?? null;
-                    onMedicationChange('glp1', newDrug, firstDose, 'mg');
-                  }
-                }}
+                onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'glp1', e.target.value)}
               >
-                {optionsShowing(GLP1_NAMES, glp1Drug)}
+                {optionElements(optionsShowing(GLP1_NAMES, glp1Drug))}
               </select>
               {availableGlp1Doses.length > 0 && (
                 <select
                   id="glp1-dose"
                   value={glp1Dose ?? ''}
-                  onChange={(e) => {
-                    const newDose = parseLocalisedNumber(e.target.value) ?? null;
-                    if (weightCascadeMode && medInputs.glp1Escalation) onMedicationChange('glp1_escalation', 'not_yet', null, null);
-                    onMedicationChange('glp1', glp1Drug, newDose, 'mg');
-                  }}
+                  onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'glp1_dose', e.target.value)}
                 >
-                  {optionsShowing(doseOptions(availableGlp1Doses), glp1Dose === null ? '' : String(glp1Dose), 'Add dose')}
+                  {optionElements(optionsShowing(doseOptions(availableGlp1Doses), glp1Dose === null ? '' : String(glp1Dose), 'Add dose'))}
                 </select>
               )}
             </div>
@@ -1404,31 +1341,23 @@ export function InputPanel({
 
         const sglt2iDropdown = (
           <div className="health-field">
-            <label htmlFor="sglt2i-name">SGLT2 Inhibitor</label>
-            {weightCascadeMode && <p className="med-step-hint">SGLT2 inhibitors help your kidneys remove excess glucose and offer additional heart and kidney protection.</p>}
+            <label htmlFor="sglt2i-name">{MEDICATION_TEXT.sglt2iLabel}</label>
+            {weightCascadeMode && <p className="med-step-hint">{MEDICATION_TEXT.sglt2iHint}</p>}
             <div className="statin-selection-row">
               <select
                 id="sglt2i-name"
                 value={sglt2iDrug}
-                onChange={(e) => {
-                  const newDrug = e.target.value;
-                  if (newDrug === 'none' || newDrug === 'not_tolerated') {
-                    onMedicationChange('sglt2i', newDrug, null, null);
-                  } else {
-                    const firstDose = SGLT2I_DRUGS[newDrug]?.doses[0] ?? null;
-                    onMedicationChange('sglt2i', newDrug, firstDose, 'mg');
-                  }
-                }}
+                onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'sglt2i', e.target.value)}
               >
-                {optionsShowing(SGLT2I_NAMES, sglt2iDrug)}
+                {optionElements(optionsShowing(SGLT2I_NAMES, sglt2iDrug))}
               </select>
               {availableSglt2iDoses.length > 0 && (
                 <select
                   id="sglt2i-dose"
                   value={sglt2iDose ?? ''}
-                  onChange={(e) => onMedicationChange('sglt2i', sglt2iDrug, parseLocalisedNumber(e.target.value) ?? null, 'mg')}
+                  onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'sglt2i_dose', e.target.value)}
                 >
-                  {optionsShowing(doseOptions(availableSglt2iDoses), sglt2iDose === null ? '' : String(sglt2iDose), 'Add dose')}
+                  {optionElements(optionsShowing(doseOptions(availableSglt2iDoses), sglt2iDose === null ? '' : String(sglt2iDose), 'Add dose'))}
                 </select>
               )}
             </div>
@@ -1437,26 +1366,26 @@ export function InputPanel({
 
         const metforminDropdown = (
           <div className="health-field">
-            <label htmlFor="metformin">Metformin</label>
-            {weightCascadeMode && <p className="med-step-hint">Metformin improves insulin sensitivity. It is well-studied and inexpensive.</p>}
+            <label htmlFor="metformin">{MEDICATION_TEXT.metforminLabel}</label>
+            {weightCascadeMode && <p className="med-step-hint">{MEDICATION_TEXT.metforminHint}</p>}
             <select
               id="metformin"
               value={medInputs.metformin || 'none'}
-              onChange={(e) => onMedicationChange('metformin', e.target.value, null, null)}
+              onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'metformin', e.target.value)}
             >
-              {optionsShowing(METFORMIN_OPTIONS, medInputs.metformin || 'none')}
+              {optionElements(optionsShowing(METFORMIN_OPTIONS, medInputs.metformin || 'none'))}
             </select>
           </div>
         );
 
-        const neutral = 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time.';
+        const neutral = MEDICATION_TEXT.weightNeutral;
 
         // ── Flat mode: all fields visible independently ──
         if (!weightCascadeMode) {
           return (
             <div className="section-card">
               <section className="health-section">
-                <h3 className="health-section-title">Weight & Diabetes Medications</h3>
+                <h3 className="health-section-title">{MEDICATION_TEXT.weightTitle}</h3>
                 <p className="health-section-desc">{neutral}</p>
                 {glp1Dropdown}
                 {sglt2iDropdown}
@@ -1475,7 +1404,7 @@ export function InputPanel({
         return (
           <div className="section-card">
           <section className="health-section medication-cascade">
-            <h3 className="health-section-title">Weight & Diabetes Medications</h3>
+            <h3 className="health-section-title">{MEDICATION_TEXT.weightTitle}</h3>
             <p className="health-section-desc">
               {/* It recommends only while the plan shows a step's card: with every
                   step answered the trigger stays on and the plan shows none. */}
@@ -1487,19 +1416,19 @@ export function InputPanel({
             {showEscalation && (
               <div className="health-field med-step-enter">
                 <label htmlFor="glp1-escalation">
-                  {step === 'increase' ? 'Tried increasing GLP-1 dose?' : step === 'switch' ? 'Tried switching to Tirzepatide?' : ESCALATION_RECORDED}
+                  {step ? MEDICATION_TEXT.glp1EscalationLabel[step] : MEDICATION_TEXT.escalationRecorded}
                 </label>
                 {step && (
                   <p className="med-step-hint">
-                    {step === 'increase' ? 'A higher dose may improve results.' : 'Tirzepatide targets two hormones (GIP + GLP-1) and may be more effective for weight loss.'}
+                    {MEDICATION_TEXT.glp1EscalationHint[step]}
                   </p>
                 )}
                 <select
                   id="glp1-escalation"
                   value={medInputs.glp1Escalation || 'not_yet'}
-                  onChange={e => onMedicationChange('glp1_escalation', e.target.value, null, null)}
+                  onChange={e => writeMedication(medInputs, weightCascadeMode, 'glp1_escalation', e.target.value)}
                 >
-                  {optionsShowing(escalationOptions(step), medInputs.glp1Escalation || 'not_yet')}
+                  {optionElements(optionsShowing(escalationOptions(step), medInputs.glp1Escalation || 'not_yet'))}
                 </select>
               </div>
             )}
@@ -1533,44 +1462,25 @@ export function InputPanel({
         const sex = inputs.sex;
         const scr = screeningsToInputs(screenings);
 
-        /** Clear result and follow-up fields for a screening type. */
-        const clearResultChain = (type: string) => {
-          if (scrStr(scr, `${type}_result`)) onScreeningChange(`${type}_result`, '');
-          if (scrStr(scr, `${type}_followup_status`)) onScreeningChange(`${type}_followup_status`, '');
-          if (scrStr(scr, `${type}_followup_date`)) onScreeningChange(`${type}_followup_date`, '');
-        };
-
         /** Render result dropdown + follow-up status + follow-up date for a screening type. */
         const renderResultFollowup = (type: string, method: string | undefined) => {
-          if (!scrStr(scr,`${type}_last_date`)) return null;
+          if (!readScreening(scr, `${type}_last_date`)) return null;
 
-          const result = scrStr(scr,`${type}_result`);
-          const followupStatus = scrStr(scr,`${type}_followup_status`);
-          const methodKey = method ? `${type}_${method}` : `${type}_other`;
-          const info = SCREENING_FOLLOWUP_INFO[methodKey];
-          const followupLabel = info?.followupName
-            ? info.followupName.charAt(0).toUpperCase() + info.followupName.slice(1)
-            : 'Follow-up';
+          const result = readScreening(scr, `${type}_result`);
+          const followupStatus = readScreening(scr, `${type}_followup_status`);
+          const name = followupName(type, method);
+          const followupLabel = name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Follow-up';
 
           return (
             <>
               <div className="health-field">
-                <label htmlFor={`${type}-result`}>Result</label>
+                <label htmlFor={`${type}-result`}>{SCREENING_LABELS.result}</label>
                 <select
                   id={`${type}-result`}
-                  value={result || ''}
-                  onChange={(e) => {
-                    onScreeningChange(`${type}_result`, e.target.value);
-                    if (e.target.value !== 'abnormal') {
-                      if (scrStr(scr,`${type}_followup_status`)) onScreeningChange(`${type}_followup_status`, '');
-                      if (scrStr(scr,`${type}_followup_date`)) onScreeningChange(`${type}_followup_date`, '');
-                    }
-                  }}
+                  value={result}
+                  onChange={(e) => writeScreening(scr, `${type}_result`, e.target.value)}
                 >
-                  <option value="">Select...</option>
-                  <option value="normal">Normal</option>
-                  <option value="abnormal">Abnormal</option>
-                  <option value="awaiting">Awaiting results</option>
+                  {optionElements(SCREENING_OPTIONS.result)}
                 </select>
               </div>
 
@@ -1579,18 +1489,10 @@ export function InputPanel({
                   <label htmlFor={`${type}-followup-status`}>{followupLabel} status</label>
                   <select
                     id={`${type}-followup-status`}
-                    value={followupStatus || ''}
-                    onChange={(e) => {
-                      onScreeningChange(`${type}_followup_status`, e.target.value);
-                      if (e.target.value === 'not_organized' || e.target.value === '') {
-                        if (scrStr(scr,`${type}_followup_date`)) onScreeningChange(`${type}_followup_date`, '');
-                      }
-                    }}
+                    value={followupStatus}
+                    onChange={(e) => writeScreening(scr, `${type}_followup_status`, e.target.value)}
                   >
-                    <option value="">Select...</option>
-                    <option value="not_organized">Not yet organized</option>
-                    <option value="scheduled">Scheduled</option>
-                    <option value="completed">Completed</option>
+                    {optionElements(SCREENING_OPTIONS.followup_status)}
                   </select>
                 </div>
               )}
@@ -1598,9 +1500,7 @@ export function InputPanel({
               {result === 'abnormal' && (followupStatus === 'scheduled' || followupStatus === 'completed') && (
                 renderScreeningDateInput(scr,
                   `${type}_followup_date`,
-                  followupStatus === 'completed'
-                    ? `When was the ${info?.followupName ?? 'follow-up'} completed?`
-                    : `When is the ${info?.followupName ?? 'follow-up'} scheduled?`,
+                  followupDateLabel(name, followupStatus),
                   { futureOnly: followupStatus === 'scheduled' }
                 )
               )}
@@ -1608,22 +1508,14 @@ export function InputPanel({
           );
         };
 
-        const hasAnyEligible =
-          age >= 35 || // colorectal
-          (sex === 'female' && age >= 25) || // cervical
-          (sex === 'female' && age >= 40) || // breast
-          (age >= 50 && age <= 80) || // lung
-          (sex === 'male' && age >= 45) || // prostate
-          (sex === 'female' && age >= 45); // endometrial
-
-        if (!hasAnyEligible) return null;
+        if (!anyScreeningEligible(age, sex)) return null;
 
         return (
           <div className="section-card">
           <section className="health-section screening-cascade">
-            <h3 className="health-section-title">Cancer Screening</h3>
+            <h3 className="health-section-title">{SCREENING_TEXT.title}</h3>
             <p className="health-section-desc">
-              Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.
+              {SCREENING_TEXT.intro}
             </p>
 
             {/* Colorectal (age 35-85, all genders) */}
@@ -1632,43 +1524,33 @@ export function InputPanel({
                 <h4>Colorectal</h4>
                 {age < 45 && (
                   <div className="screening-notice">
-                    Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.
+                    {SCREENING_TEXT.colorectalEarly}
                   </div>
                 )}
 
                 {age <= 75 ? (
                   <>
                     <div className="health-field">
-                      <label htmlFor="colorectal-method">Screening method</label>
+                      <label htmlFor="colorectal-method">{SCREENING_LABELS.method}</label>
                       <select
                         id="colorectal-method"
-                        value={scrStr(scr, 'colorectal_method') || ''}
-                        onChange={(e) => {
-                          onScreeningChange('colorectal_method', e.target.value);
-                          if (e.target.value === 'not_yet_started' || e.target.value === '') {
-                            if (scrStr(scr, 'colorectal_last_date')) onScreeningChange('colorectal_last_date', '');
-                            clearResultChain('colorectal');
-                          }
-                        }}
+                        value={readScreening(scr, 'colorectal_method')}
+                        onChange={(e) => writeScreening(scr, 'colorectal_method', e.target.value)}
                       >
-                        <option value="">Select...</option>
-                        <option value="fit_annual">FIT test (annual)</option>
-                        <option value="colonoscopy_10yr">Colonoscopy (every 10 years)</option>
-                        <option value="other">Other method</option>
-                        <option value="not_yet_started">Not yet started</option>
+                        {optionElements(SCREENING_OPTIONS.colorectal_method)}
                       </select>
                     </div>
 
-                    {scrStr(scr, 'colorectal_method') && scrStr(scr, 'colorectal_method') !== 'not_yet_started' && (
+                    {readScreening(scr, 'colorectal_method') && readScreening(scr, 'colorectal_method') !== 'not_yet_started' && (
                       <>
-                        {renderScreeningDateInput(scr,'colorectal_last_date', 'Date of last screening')}
-                        {renderResultFollowup('colorectal', scrStr(scr, 'colorectal_method'))}
+                        {renderScreeningDateInput(scr, 'colorectal_last_date', SCREENING_LABELS.lastScreening)}
+                        {renderResultFollowup('colorectal', readScreening(scr, 'colorectal_method'))}
                       </>
                     )}
                   </>
                 ) : (
                   <p className="screening-age-message">
-                    Screening is individualized at your age. Discuss with your doctor whether continued screening is appropriate.
+                    {SCREENING_TEXT.colorectalIndividual}
                   </p>
                 )}
               </div>
@@ -1679,37 +1561,24 @@ export function InputPanel({
               <div className="screening-group">
                 <h4>Breast</h4>
                 <p className="screening-age-message">
-                  {age <= 44
-                    ? 'Annual mammograms are optional at your age (40\u201344).'
-                    : age <= 54
-                    ? 'Annual mammograms are recommended at your age (45\u201354).'
-                    : 'Annual or biennial mammograms are recommended at your age (55+).'}
+                  {SCREENING_TEXT.breastByAge(age)}
                 </p>
 
                 <div className="health-field">
-                  <label htmlFor="breast-frequency">Screening frequency</label>
+                  <label htmlFor="breast-frequency">{SCREENING_LABELS.frequency}</label>
                   <select
                     id="breast-frequency"
-                    value={scrStr(scr, 'breast_frequency') || ''}
-                    onChange={(e) => {
-                      onScreeningChange('breast_frequency', e.target.value);
-                      if (e.target.value === 'not_yet_started' || e.target.value === '') {
-                        if (scrStr(scr, 'breast_last_date')) onScreeningChange('breast_last_date', '');
-                        clearResultChain('breast');
-                      }
-                    }}
+                    value={readScreening(scr, 'breast_frequency')}
+                    onChange={(e) => writeScreening(scr, 'breast_frequency', e.target.value)}
                   >
-                    <option value="">Select...</option>
-                    <option value="annual">Annual</option>
-                    <option value="biennial">Every 2 years</option>
-                    <option value="not_yet_started">Not yet started</option>
+                    {optionElements(SCREENING_OPTIONS.breast_frequency)}
                   </select>
                 </div>
 
-                {scrStr(scr, 'breast_frequency') && scrStr(scr, 'breast_frequency') !== 'not_yet_started' && (
+                {readScreening(scr, 'breast_frequency') && readScreening(scr, 'breast_frequency') !== 'not_yet_started' && (
                   <>
-                    {renderScreeningDateInput(scr,'breast_last_date', 'Date of last mammogram')}
-                    {renderResultFollowup('breast', scrStr(scr, 'breast_frequency'))}
+                    {renderScreeningDateInput(scr, 'breast_last_date', SCREENING_LABELS.lastMammogram)}
+                    {renderResultFollowup('breast', readScreening(scr, 'breast_frequency'))}
                   </>
                 )}
               </div>
@@ -1722,36 +1591,26 @@ export function InputPanel({
                 {age <= 65 ? (
                   <>
                     <div className="health-field">
-                      <label htmlFor="cervical-method">Screening method</label>
+                      <label htmlFor="cervical-method">{SCREENING_LABELS.method}</label>
                       <select
                         id="cervical-method"
-                        value={scrStr(scr, 'cervical_method') || ''}
-                        onChange={(e) => {
-                          onScreeningChange('cervical_method', e.target.value);
-                          if (e.target.value === 'not_yet_started' || e.target.value === '') {
-                            if (scrStr(scr, 'cervical_last_date')) onScreeningChange('cervical_last_date', '');
-                            clearResultChain('cervical');
-                          }
-                        }}
+                        value={readScreening(scr, 'cervical_method')}
+                        onChange={(e) => writeScreening(scr, 'cervical_method', e.target.value)}
                       >
-                        <option value="">Select...</option>
-                        <option value="hpv_every_5yr">HPV test every 5 years (preferred)</option>
-                        <option value="pap_every_3yr">Pap test every 3 years</option>
-                        <option value="other">Other method</option>
-                        <option value="not_yet_started">Not yet started</option>
+                        {optionElements(SCREENING_OPTIONS.cervical_method)}
                       </select>
                     </div>
 
-                    {scrStr(scr, 'cervical_method') && scrStr(scr, 'cervical_method') !== 'not_yet_started' && (
+                    {readScreening(scr, 'cervical_method') && readScreening(scr, 'cervical_method') !== 'not_yet_started' && (
                       <>
-                        {renderScreeningDateInput(scr,'cervical_last_date', 'Date of last screening')}
-                        {renderResultFollowup('cervical', scrStr(scr, 'cervical_method'))}
+                        {renderScreeningDateInput(scr, 'cervical_last_date', SCREENING_LABELS.lastScreening)}
+                        {renderResultFollowup('cervical', readScreening(scr, 'cervical_method'))}
                       </>
                     )}
                   </>
                 ) : (
                   <p className="screening-age-message">
-                    Routine cervical screening typically stops at age 65 if you have no history of abnormal results. Discuss with your doctor.
+                    {SCREENING_TEXT.cervicalStop}
                   </p>
                 )}
               </div>
@@ -1763,71 +1622,52 @@ export function InputPanel({
                 <h4>Lung</h4>
 
                 <div className="health-field">
-                  <label htmlFor="lung-smoking-history">Smoking history</label>
+                  <label htmlFor="lung-smoking-history">{SCREENING_LABELS.smokingHistory}</label>
                   <select
                     id="lung-smoking-history"
-                    value={scrStr(scr, 'lung_smoking_history') || ''}
-                    onChange={(e) => {
-                      onScreeningChange('lung_smoking_history', e.target.value);
-                      if (e.target.value === 'never_smoked' || e.target.value === '') {
-                        if (scrStr(scr, 'lung_pack_years') !== undefined) onScreeningChange('lung_pack_years', '');
-                        if (scrStr(scr, 'lung_screening')) onScreeningChange('lung_screening', '');
-                        if (scrStr(scr, 'lung_last_date')) onScreeningChange('lung_last_date', '');
-                        clearResultChain('lung');
-                      }
-                    }}
+                    value={readScreening(scr, 'lung_smoking_history')}
+                    onChange={(e) => writeScreening(scr, 'lung_smoking_history', e.target.value)}
                   >
-                    <option value="">Select...</option>
-                    <option value="never_smoked">Never smoked</option>
-                    <option value="former_smoker">Former smoker</option>
-                    <option value="current_smoker">Current smoker</option>
+                    {optionElements(SCREENING_OPTIONS.lung_smoking_history)}
                   </select>
                 </div>
 
-                {(scrStr(scr, 'lung_smoking_history') === 'former_smoker' || scrStr(scr, 'lung_smoking_history') === 'current_smoker') && (
+                {(readScreening(scr, 'lung_smoking_history') === 'former_smoker' || readScreening(scr, 'lung_smoking_history') === 'current_smoker') && (
                   <>
                     <div className="health-field">
-                      <label htmlFor="lung-pack-years">Pack-years (packs/day &times; years smoked)</label>
+                      <label htmlFor="lung-pack-years">{SCREENING_TEXT.packYearsLabel}</label>
                       <input
                         type="number"
                         id="lung-pack-years"
                         onKeyDown={blockNonIntegerKeys}
                         onWheel={blurOnWheel}
-                        value={scrNum(scr, 'lung_pack_years') ?? ''}
+                        value={scr.lungPackYears ?? ''}
                         onChange={(e) => onScreeningChange('lung_pack_years', e.target.value)}
                         placeholder=""
                         min="0"
                         max="200"
                         step="1"
                       />
-                      <span className="field-hint">Screening recommended if &ge;20 pack-years</span>
+                      <span className="field-hint">{SCREENING_TEXT.packYearsHint}</span>
                     </div>
 
-                    {scrNum(scr, 'lung_pack_years') !== undefined && scrNum(scr, 'lung_pack_years')! >= 20 && (
+                    {scr.lungPackYears !== undefined && scr.lungPackYears >= 20 && (
                       <>
                         <div className="health-field">
-                          <label htmlFor="lung-screening">Screening status</label>
+                          <label htmlFor="lung-screening">{SCREENING_LABELS.lungScreening}</label>
                           <select
                             id="lung-screening"
-                            value={scrStr(scr, 'lung_screening') || ''}
-                            onChange={(e) => {
-                              onScreeningChange('lung_screening', e.target.value);
-                              if (e.target.value === 'not_yet_started' || e.target.value === '') {
-                                if (scrStr(scr, 'lung_last_date')) onScreeningChange('lung_last_date', '');
-                                clearResultChain('lung');
-                              }
-                            }}
+                            value={readScreening(scr, 'lung_screening')}
+                            onChange={(e) => writeScreening(scr, 'lung_screening', e.target.value)}
                           >
-                            <option value="">Select...</option>
-                            <option value="annual_ldct">Annual low-dose CT</option>
-                            <option value="not_yet_started">Not yet started</option>
+                            {optionElements(SCREENING_OPTIONS.lung_screening)}
                           </select>
                         </div>
 
-                        {scrStr(scr, 'lung_screening') === 'annual_ldct' && (
+                        {readScreening(scr, 'lung_screening') === 'annual_ldct' && (
                           <>
-                            {renderScreeningDateInput(scr,'lung_last_date', 'Date of last low-dose CT')}
-                            {renderResultFollowup('lung', scrStr(scr, 'lung_screening'))}
+                            {renderScreeningDateInput(scr, 'lung_last_date', SCREENING_LABELS.lastLdct)}
+                            {renderResultFollowup('lung', readScreening(scr, 'lung_screening'))}
                           </>
                         )}
                       </>
@@ -1842,26 +1682,21 @@ export function InputPanel({
               <div className="screening-group">
                 <h4>Prostate</h4>
                 <p className="screening-age-message">
-                  {age < 50
-                    ? 'Screening typically starts at 50, but consider at 45 if you are at higher risk (African American or family history).'
-                    : 'PSA testing is an option after an informed discussion with your doctor.'}
+                  {SCREENING_TEXT.prostateByAge(age)}
                 </p>
 
                 <div className="health-field">
-                  <label htmlFor="prostate-discussion">Discussed prostate screening with your doctor?</label>
+                  <label htmlFor="prostate-discussion">{SCREENING_LABELS.prostateDiscussion}</label>
                   <select
                     id="prostate-discussion"
-                    value={scrStr(scr, 'prostate_discussion') || ''}
-                    onChange={(e) => onScreeningChange('prostate_discussion', e.target.value)}
+                    value={readScreening(scr, 'prostate_discussion')}
+                    onChange={(e) => writeScreening(scr, 'prostate_discussion', e.target.value)}
                   >
-                    <option value="">Select...</option>
-                    <option value="not_yet">Not yet</option>
-                    <option value="elected_not_to">Yes, and I've elected not to screen</option>
-                    <option value="will_screen">Yes, and I will screen</option>
+                    {optionElements(SCREENING_OPTIONS.prostate_discussion)}
                   </select>
                 </div>
 
-                {scrStr(scr, 'prostate_discussion') === 'will_screen' && (
+                {readScreening(scr, 'prostate_discussion') === 'will_screen' && (
                   <>
                     {/* PSA input with inline date picker */}
                     {(() => {
@@ -1872,7 +1707,7 @@ export function InputPanel({
 
                       return (
                         <div className="health-field">
-                          <label htmlFor="psa-input">PSA (ng/mL)</label>
+                          <label htmlFor="psa-input">{SCREENING_TEXT.psaLabel}</label>
                           <div className="psa-inline-row">
                             <input
                               type="number"
@@ -1908,7 +1743,7 @@ export function InputPanel({
                           </div>
                           {errors.psa && <span className="field-error">{errors.psa}</span>}
                           <div className="field-meta">
-                            <span className="field-hint">Normal: &lt;4.0 ng/mL</span>
+                            <span className="field-hint">{SCREENING_TEXT.psaHint}</span>
                             {psaPreviousLabel && (
                               <a
                                 className="previous-value"
@@ -1933,29 +1768,24 @@ export function InputPanel({
                 <h4>Endometrial</h4>
 
                 <div className="health-field">
-                  <label htmlFor="endometrial-discussion">Discussed endometrial cancer risk at menopause?</label>
+                  <label htmlFor="endometrial-discussion">{SCREENING_LABELS.endometrialDiscussion}</label>
                   <select
                     id="endometrial-discussion"
-                    value={scrStr(scr, 'endometrial_discussion') || ''}
-                    onChange={(e) => onScreeningChange('endometrial_discussion', e.target.value)}
+                    value={readScreening(scr, 'endometrial_discussion')}
+                    onChange={(e) => writeScreening(scr, 'endometrial_discussion', e.target.value)}
                   >
-                    <option value="">Select...</option>
-                    <option value="not_yet">Not yet</option>
-                    <option value="discussed">Yes, discussed</option>
+                    {optionElements(SCREENING_OPTIONS.endometrial_discussion)}
                   </select>
                 </div>
 
                 <div className="health-field">
-                  <label htmlFor="endometrial-bleeding">Any abnormal uterine bleeding?</label>
+                  <label htmlFor="endometrial-bleeding">{SCREENING_LABELS.endometrialBleeding}</label>
                   <select
                     id="endometrial-bleeding"
-                    value={scrStr(scr, 'endometrial_abnormal_bleeding') || ''}
-                    onChange={(e) => onScreeningChange('endometrial_abnormal_bleeding', e.target.value)}
+                    value={readScreening(scr, 'endometrial_abnormal_bleeding')}
+                    onChange={(e) => writeScreening(scr, 'endometrial_abnormal_bleeding', e.target.value)}
                   >
-                    <option value="">Select...</option>
-                    <option value="no">No</option>
-                    <option value="yes_reported">Yes, reported to doctor</option>
-                    <option value="yes_need_to_report">Yes, need to report to doctor</option>
+                    {optionElements(SCREENING_OPTIONS.endometrial_abnormal_bleeding)}
                   </select>
                 </div>
               </div>
@@ -1974,89 +1804,60 @@ export function InputPanel({
         if (age === undefined) return null;
 
         const sex = inputs.sex;
-        const dexaEligible = (sex === 'female' && age >= 50) || (sex === 'male' && age >= 70);
-        if (!dexaEligible) return null;
+        if (!dexaEligible(age, sex)) return null;
 
         const scr = screeningsToInputs(screenings);
 
-        const dexaScreening = scrStr(scr, 'dexa_screening');
-        const dexaResult = scrStr(scr, 'dexa_result');
-        const followupStatus = scrStr(scr, 'dexa_followup_status');
+        const dexaScreening = readScreening(scr, 'dexa_screening');
+        const dexaResult = readScreening(scr, 'dexa_result');
+        const followupStatus = readScreening(scr, 'dexa_followup_status');
 
         return (
           <div className="section-card">
           <section className="health-section screening-cascade">
-            <h3 className="health-section-title">Bone Density</h3>
+            <h3 className="health-section-title">{SCREENING_TEXT.boneTitle}</h3>
             <p className="health-section-desc">
-              DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.
+              {SCREENING_TEXT.boneIntro}
             </p>
 
             <div className="screening-group">
               <div className="health-field">
-                <label htmlFor="dexa-screening">DEXA scan status</label>
+                <label htmlFor="dexa-screening">{SCREENING_LABELS.dexaScreening}</label>
                 <select
                   id="dexa-screening"
-                  value={dexaScreening || ''}
-                  onChange={(e) => {
-                    onScreeningChange('dexa_screening', e.target.value);
-                    if (e.target.value !== 'dexa_scan') {
-                      if (scrStr(scr, 'dexa_last_date')) onScreeningChange('dexa_last_date', '');
-                      if (scrStr(scr, 'dexa_result')) onScreeningChange('dexa_result', '');
-                      if (scrStr(scr, 'dexa_followup_status')) onScreeningChange('dexa_followup_status', '');
-                      if (scrStr(scr, 'dexa_followup_date')) onScreeningChange('dexa_followup_date', '');
-                    }
-                  }}
+                  value={dexaScreening}
+                  onChange={(e) => writeScreening(scr, 'dexa_screening', e.target.value)}
                 >
-                  <option value="">Select...</option>
-                  <option value="dexa_scan">Had a DEXA scan</option>
-                  <option value="not_yet_started">Not yet started</option>
+                  {optionElements(SCREENING_OPTIONS.dexa_screening)}
                 </select>
               </div>
 
               {dexaScreening === 'dexa_scan' && (
                 <>
-                  {renderScreeningDateInput(scr,'dexa_last_date', 'Date of last DEXA scan')}
+                  {renderScreeningDateInput(scr, 'dexa_last_date', SCREENING_LABELS.lastDexa)}
 
-                  {scrStr(scr, 'dexa_last_date') && (
+                  {readScreening(scr, 'dexa_last_date') && (
                     <div className="health-field">
-                      <label htmlFor="dexa-result">Result</label>
+                      <label htmlFor="dexa-result">{SCREENING_LABELS.result}</label>
                       <select
                         id="dexa-result"
-                        value={dexaResult || ''}
-                        onChange={(e) => {
-                          onScreeningChange('dexa_result', e.target.value);
-                          if (e.target.value !== 'osteoporosis') {
-                            if (scrStr(scr, 'dexa_followup_status')) onScreeningChange('dexa_followup_status', '');
-                            if (scrStr(scr, 'dexa_followup_date')) onScreeningChange('dexa_followup_date', '');
-                          }
-                        }}
+                        value={dexaResult}
+                        onChange={(e) => writeScreening(scr, 'dexa_result', e.target.value)}
                       >
-                        <option value="">Select...</option>
-                        <option value="normal">Normal</option>
-                        <option value="osteopenia">Osteopenia</option>
-                        <option value="osteoporosis">Osteoporosis</option>
-                        <option value="awaiting">Awaiting results</option>
+                        {optionElements(SCREENING_OPTIONS.dexa_result)}
                       </select>
                     </div>
                   )}
 
                   {dexaResult === 'osteoporosis' && (
                     <div className="health-field">
-                      <label htmlFor="dexa-followup-status">Treatment review status</label>
+                      <label htmlFor="dexa-followup-status">{SCREENING_LABELS.dexaFollowupStatus}</label>
                       <select
                         id="dexa-followup-status"
-                        value={followupStatus || ''}
-                        onChange={(e) => {
-                          onScreeningChange('dexa_followup_status', e.target.value);
-                          if (e.target.value === 'not_organized' || e.target.value === '') {
-                            if (scrStr(scr, 'dexa_followup_date')) onScreeningChange('dexa_followup_date', '');
-                          }
-                        }}
+                        value={followupStatus}
+                        onChange={(e) => writeScreening(scr, 'dexa_followup_status', e.target.value)}
                       >
-                        <option value="">Select...</option>
-                        <option value="not_organized">Not yet organized</option>
-                        <option value="scheduled">Scheduled</option>
-                        <option value="completed">Completed</option>
+                        {optionElements(SCREENING_OPTIONS.followup_status)}
                       </select>
                     </div>
                   )}
@@ -2064,7 +1865,7 @@ export function InputPanel({
                   {dexaResult === 'osteoporosis' && (followupStatus === 'scheduled' || followupStatus === 'completed') && (
                     renderScreeningDateInput(scr,
                       'dexa_followup_date',
-                      followupStatus === 'completed' ? 'When was the treatment review completed?' : 'When is the treatment review scheduled?',
+                      followupDateLabel('treatment review', followupStatus),
                       { futureOnly: followupStatus === 'scheduled' }
                     )
                   )}
@@ -2119,8 +1920,8 @@ export function InputPanel({
     return (
       <div className="section-card">
         <section className="health-section">
-          <h3 className="health-section-title">Supplements</h3>
-          <p className="health-section-desc">Track supplements you take regularly.</p>
+          <h3 className="health-section-title">{SUPPLEMENT_TEXT.title}</h3>
+          <p className="health-section-desc">{SUPPLEMENT_TEXT.intro}</p>
 
           {/* Featured supplement chips */}
           <div className="supplement-chips">
@@ -2161,12 +1962,7 @@ export function InputPanel({
                 onChange={e => onSupplementChange(s.supplementKey, s.supplementName, s.doseValue, e.target.value || null)}
               >
                 <option value="">Unit</option>
-                <option value="mg">mg</option>
-                <option value="mcg">mcg</option>
-                <option value="g">g</option>
-                <option value="IU">IU</option>
-                <option value="capsules">capsules</option>
-                <option value="scoop">scoop</option>
+                {SUPPLEMENT_DOSE_UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
               </select>
               <button
                 type="button"
@@ -2183,7 +1979,7 @@ export function InputPanel({
           <div className="supplement-add" ref={supplementDropdownRef}>
             <input
               type="text"
-              placeholder="Add another supplement..."
+              placeholder={SUPPLEMENT_TEXT.addPlaceholder}
               value={supplementSearch}
               maxLength={100}
               onFocus={() => setShowSupplementDropdown(true)}
@@ -2208,7 +2004,7 @@ export function InputPanel({
                   <button
                     type="button"
                     className="supplement-dropdown-item supplement-custom"
-                    onClick={() => addSupplement(`custom_${trimmedSearch.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')}`, trimmedSearch.slice(0, 100))}
+                    onClick={() => addSupplement(customSupplementKey(trimmedSearch), trimmedSearch.slice(0, 100))}
                   >
                     + Add "{trimmedSearch}"
                   </button>
