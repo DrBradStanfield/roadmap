@@ -92,7 +92,7 @@ final class HealthEngine {
     }
 
     /// Calls an engine function that returns text, turning a JavaScript exception into a Swift error.
-    private func call(_ name: String, _ arguments: [Any]) throws -> String {
+    func call(_ name: String, _ arguments: [Any]) throws -> String {
         guard let function = exports.objectForKeyedSubscript(name), !function.isUndefined else {
             throw EngineError.callFailed("HealthEngine.\(name) is not defined")
         }

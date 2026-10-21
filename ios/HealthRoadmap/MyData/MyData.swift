@@ -57,9 +57,12 @@ enum RecordEdit: Encodable, Equatable {
     case correct(id: String, value: Double)
     /// A medication, screening or supplement answer (FormModels.swift).
     case form(FormEdit)
+    /// The ticked values of an uploaded lab report (US-52 AC8): the server's extraction
+    /// as JSON text, the refs ticked, and the report's day.
+    case labImport(extractionJSON: String, refs: [String], reportDay: String)
 
     private enum Key: String, CodingKey {
-        case kind, sex, birthYear, birthMonth, height, unitSystem, metric, value, day, id
+        case kind, sex, birthYear, birthMonth, height, unitSystem, metric, value, day, id, extractionJson, refs, reportDay
     }
 
     func encode(to encoder: Encoder) throws {
@@ -85,6 +88,11 @@ enum RecordEdit: Encodable, Equatable {
             try json.encode(value, forKey: .value)
         case .form(let edit):
             try edit.encode(to: encoder)
+        case .labImport(let extractionJSON, let refs, let reportDay):
+            try json.encode("labImport", forKey: .kind)
+            try json.encode(extractionJSON, forKey: .extractionJson)
+            try json.encode(refs, forKey: .refs)
+            try json.encode(reportDay, forKey: .reportDay)
         }
     }
 }

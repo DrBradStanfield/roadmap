@@ -91,10 +91,10 @@ private struct PlanList: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 4)
 
-                // True while the app has no network code (architecture.md D9); re-check it
-                // when the first network call lands.
+                // Chat and lab upload send data (US-52 AC9, architecture.md D9), so the
+                // line claims only where the plan was worked out.
                 Label {
-                    Text("Worked out on this iPhone in \(planMs.formatted(.number.precision(.fractionLength(1)))) ms. No health data left your device.")
+                    Text("Worked out on this iPhone in \(planMs.formatted(.number.precision(.fractionLength(1)))) ms.")
                 } icon: {
                     Image(systemName: "lock.shield")
                 }

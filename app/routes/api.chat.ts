@@ -317,7 +317,28 @@ export async function loader({ request }: LoaderFunctionArgs) {
 // POST/DELETE — send message or delete conversation
 // ---------------------------------------------------------------------------
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request, context }: ActionFunctionArgs) {
+  return chatAction(request, (context as Record<symbol, unknown> | undefined)?.[APP_ATTESTED] === true);
+}
+
+/**
+ * Set only by the iPhone app's route, in the server-built `context` it passes
+ * after App Attest checked the request (app-routes.server.ts, US-52 AC5). A
+ * registered symbol, so no request can carry it, and no export is needed: a
+ * route module's other exports would pull its server code into the client build.
+ */
+const APP_ATTESTED = Symbol.for('roadmap.us52.app-attested');
+
+/** The iPhone app's caller (US-52 AC5): App Attest already checked the request
+ *  (api.app.v1.chat.ts). It has no Shopify session and no guest session. */
+const APP_AUTH: AuthResult = { client: null, userId: 'app', customerId: null, admin: null, isGuest: true };
+
+/**
+ * The send-a-message action. `app`: the iPhone app's turn (US-52 AC5), which
+ * runs the widget's path (history and context in the body, nothing stored) with
+ * no guest session, no form edits, no match-event or audit row (D9).
+ */
+async function chatAction(request: Request, app: boolean) {
   const t0 = Date.now();
   try {
     if (process.env.CHAT_ENABLED === 'false') {
@@ -341,11 +362,12 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ success: false, error: 'JSON object required' }, { status: 400 });
     }
     // Omitted/null means a new conversation; an explicitly empty ID is invalid.
+    if (app && request.method !== 'POST') return Response.json({ success: false, error: 'POST only' }, { status: 405 });
     if ((body.conversationId != null || request.method === 'DELETE') && !validConversationId(body.conversationId)) {
       return Response.json({ success: false, error: 'Invalid conversationId' }, { status: 400 });
     }
 
-    const auth = await getAuthOrGuest(request, body.sessionToken, body.localFirst === true);
+    const auth = app ? APP_AUTH : await getAuthOrGuest(request, body.sessionToken, body.localFirst === true);
 
     // ----- DELETE -----
     if (request.method === 'DELETE') {
@@ -385,7 +407,7 @@ export async function action({ request }: ActionFunctionArgs) {
     // history arrives in the body (US-15 AC7). The other surfaces keep their
     // transcripts server-side and load them here; is_fallback is needed for
     // the dedup check below, created_at for the time window.
-    const widget = body.localFirst === true;
+    const widget = app || body.localFirst === true;
     if (conversationId && !widget) {
       const parentFailure = await checkConversationParent(auth, conversationId);
       if (parentFailure) return parentFailure;
@@ -442,7 +464,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // Only the widget's own chat applies form edits, so only it gets the tools (US-15 AC19):
     // the server holds the other surfaces to that, whatever their body says.
-    const canApplyEdits = widget && body.canApplyEdits === true;
+    const canApplyEdits = !app && widget && body.canApplyEdits === true;
     // US-16 AC2: only a widget that applies a profile edit says so; an older one would write it as a medication.
     const canApplyProfileEdits = canApplyEdits && body.canApplyProfileEdits === true;
     // The streamed turn opens its stream here, before stage 1, so the user
@@ -651,7 +673,9 @@ export async function action({ request }: ActionFunctionArgs) {
           }
         }).catch(() => reportChatError('Chat: Match-event insert failed'));
 
-      if (widget) {
+      if (app) {
+        // D9: the app's turn leaves no row on the server.
+      } else if (widget) {
         logMatchEvent();
       } else {
         // Fire-and-forget: save the assistant message, then log the match event
@@ -692,7 +716,7 @@ export async function action({ request }: ActionFunctionArgs) {
           }).catch(() => reportChatError('Chat: Failed to update conversation timestamp'));
       }
 
-      logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {
+      if (!app) logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {
         cacheRead: completion.usage.cacheReadTokens,
         cacheCreation: completion.usage.cacheCreationTokens,
       });
@@ -729,6 +753,7 @@ export async function action({ request }: ActionFunctionArgs) {
         routerSkipped,
         classifierError: !!classifierResult.error,
         isGuest: auth.isGuest,
+        app,
         streamed: streaming,
         // The question's length, a number only: how often a message passes 500 or 2,000 (US-15 AC26).
         messageChars: message.length,

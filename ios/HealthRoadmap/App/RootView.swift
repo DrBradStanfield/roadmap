@@ -1,12 +1,12 @@
 import StoreKit
 import SwiftUI
 
-/// The two tabs, in the web's mobile order (US-25 AC3): My data first, then My plan.
+/// The tabs, in the web's mobile order (US-25 AC3): My data, My plan, then Chat (US-52).
 /// The app opens on My data. The web twin is widget-src/src/components/MobileTabBar.tsx.
 /// Each tab sits in a navigation stack with a small title: its bar turns to frosted
 /// glass as content scrolls under it, so rows never run beneath the clock.
 struct RootView: View {
-    enum Tab: Hashable { case data, plan }
+    enum Tab: Hashable { case data, plan, chat }
 
     let engine: HealthEngine
     let store: RecordStore
@@ -18,12 +18,19 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $tab) {
-            titled("My data") { MyDataView(store: store) }
+            titled("My data") {
+                MyDataView(store: store)
+                    .toolbar { ToolbarItem(placement: .topBarTrailing) { LabUploadButton(engine: engine, store: store) } }
+            }
                 .tabItem { Label("My data", systemImage: "list.bullet.clipboard") }
                 .tag(Tab.data)
             titled("My plan") { PlanView(engine: engine, store: store, showMyData: { tab = .data }) }
                 .tabItem { Label("My plan", systemImage: "heart.text.square") }
                 .tag(Tab.plan)
+            // ChatView keeps its own navigation stack and title.
+            ChatView(engine: engine, store: store)
+                .tabItem { Label("Chat", systemImage: "bubble.left.and.text.bubble.right") }
+                .tag(Tab.chat)
         }
         .sensoryFeedback(.selection, trigger: tab)
         .fullScreenCover(isPresented: Binding(get: { !welcomed }, set: { welcomed = !$0 })) {

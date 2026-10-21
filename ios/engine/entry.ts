@@ -45,3 +45,5 @@ export function numberJson(text: string): string {
 export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string): string {
   return JSON.stringify(metricHistory(readRecord(recordJson, nowIso, deviceId), metric, nowIso));
 }
+// Chat and lab upload (US-52): app-doors.ts.
+export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
