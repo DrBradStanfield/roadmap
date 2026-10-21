@@ -12,8 +12,8 @@ import type { HistoryRow, MetricHistory } from './my-data-forms';
 export const BLOOD_PRESSURE = 'blood_pressure';
 const HALVES = ['systolic_bp', 'diastolic_bp'] as const;
 const UNIT = 'mmHg';
-/** Correcting writes this close together are one revision: the web stamps each half with its own clock. */
-const REVISION_MS = 5_000;
+/** Rows this close together can be one write: the web stamps each half with its own clock. */
+const WRITE_MS = 5_000;
 const CHANGED = 'Your record changed while this was open, so this was not saved. Close this and enter the value again.';
 
 export interface PressureEdit {
@@ -77,15 +77,13 @@ function sameIds(seen: unknown, held: string[]): boolean {
 }
 
 /**
- * Every blood pressure, newest day first, as pairs: each day's active pair,
- * then one struck pair per revision, newest first. A revision is the correcting
- * writes (rows with `correctsId`) on that day within five seconds of each other,
- * across both halves: the web, CLI and MCP stamp each half with its own clock.
- * Its struck pair shows, for each half, the value active just before it: the row
- * the revision corrected, or for a half it left alone, that half's latest row
- * written by the revision's start. Rows merge set aside (entered in error, no
- * correction naming them) are listed too, a systolic and a diastolic within 5 s
- * as one pair, all struck entries ordered by time. A missing half is a dash.
+ * Every blood pressure, newest day first. Each day is replayed (orchestrator,
+ * 2026-10-22): its rows, both halves, active or not, in write order, grouped
+ * into writes (`writes`); each write sets its halves on the pair and leaves a
+ * snapshot. The day's pair now is shown active; every other snapshot is struck,
+ * newest first. A row merge set aside (entered in error, no correction naming
+ * it) shows over the pair as it stood but never changes it, so a lost write
+ * cannot leak into the pair later writes build on. A half not yet written is a dash.
  */
 export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[]): MetricHistory {
   const rows = file.measurements.filter((row) => (HALVES as readonly string[]).includes(row.metricType));
@@ -94,38 +92,37 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
   const pairs: HistoryRow[] = [];
   for (const day of days) {
     const onDay = rows.filter((row) => row.recordedAt.slice(0, 10) === day);
-    const active = latestActivePerMetric(onDay);
-    if (active.length > 0) {
-      const [systolic, diastolic] = HALVES.map((metric) => active.find((row) => row.metricType === metric));
-      pairs.push({
-        ...pair(systolic, diastolic, 'active', active.some((row) => current.has(row.id))),
-        id: active[0].id, day, correction: active.some((row) => !!row.correctsId), pairIds: active.map((row) => row.id),
-      });
+    const named = new Set(onDay.map((row) => row.correctsId));
+    const lost = (row: FileMeasurement) => row.status !== 'active' && !named.has(row.id);
+    let state: Partial<Record<string, FileMeasurement>> = {};
+    let stateAt = -1;
+    const snapshots: Array<{ id: string; sys?: FileMeasurement; dia?: FileMeasurement; rows: FileMeasurement[] }> = [];
+    for (const write of writes(onDay)) {
+      const shown = { ...state, ...Object.fromEntries(write.map((row) => [row.metricType, row])) };
+      const before = snapshots.at(-1);
+      const same = before && before.sys?.value === shown.systolic_bp?.value && before.dia?.value === shown.diastolic_bp?.value;
+      // Nothing new: the same values again, written only by rows now set aside.
+      if (same && write.every((row) => row.status !== 'active')) continue;
+      snapshots.push({ id: write.map((row) => row.id).join('+'), sys: shown.systolic_bp, dia: shown.diastolic_bp, rows: write });
+      if (!write.every(lost)) {
+        state = shown;
+        stateAt = snapshots.length - 1;
+      }
     }
-    // Rows merge set aside: entered in error with no correction naming them (AC9 lists every value).
-    const corrected = new Set(onDay.map((row) => row.correctsId).filter(Boolean));
-    const setAside = onDay.filter((row) => row.status !== 'active' && !corrected.has(row.id));
-    const struck: Array<{ at: string; row: HistoryRow }> = [];
-    for (const revision of revisions(onDay)) {
-      // A half the revision corrected: the row it corrected. A half it left alone:
-      // that half's latest chain row written by the revision's start, never one merge set aside.
-      const before = (metric: string) => {
-        const first = revision.rows.find((row) => row.metricType === metric);
-        if (first) return onDay.find((row) => row.id === first.correctsId);
-        return onDay
-          .filter((row) => row.metricType === metric && createdAt(row) <= revision.at && !setAside.includes(row))
-          .sort((a, b) => createdAt(a).localeCompare(createdAt(b)))
-          .at(-1);
+    // The pair now: the engine's own slot lookup, the ids a replace must send back (re-check R4).
+    const held = HALVES.flatMap((metric) => findActiveInSlot(file, 'measurement', metric, day) ?? []) as FileMeasurement[];
+    const shownRow = (index: number): HistoryRow => {
+      const now = held.length > 0 && index === stateAt;
+      const snapshot = snapshots[index];
+      return {
+        ...pair(snapshot.sys, snapshot.dia, now ? 'active' : 'entered-in-error', now && held.some((row) => current.has(row.id))),
+        id: `${day}:${snapshot.id}`, day, correction: snapshot.rows.some((row) => !!row.correctsId),
+        ...(now ? { pairIds: held.map((row) => row.id) } : null),
       };
-      const [systolic, diastolic] = HALVES.map(before);
-      struck.push({ at: revision.at, row: { ...pair(systolic, diastolic, 'entered-in-error', false), id: revision.rows[0].id, day, correction: false } });
-    }
-    for (const group of groups(setAside)) {
-      const [systolic, diastolic] = HALVES.map((metric) => group.rows.find((row) => row.metricType === metric));
-      struck.push({ at: group.at, row: { ...pair(systolic, diastolic, 'entered-in-error', false), id: group.rows[0].id, day, correction: !!group.rows[0].correctsId } });
-    }
-    struck.sort((a, b) => b.at.localeCompare(a.at));
-    pairs.push(...struck.map((entry) => entry.row));
+    };
+    // The pair now first, then the struck snapshots newest first.
+    const newestFirst = snapshots.map((_, index) => shownRow(index)).reverse();
+    pairs.push(...newestFirst.filter((row) => row.status === 'active'), ...newestFirst.filter((row) => row.status !== 'active'));
   }
   return {
     metric: BLOOD_PRESSURE,
@@ -138,30 +135,31 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
 
 const createdAt = (row: FileMeasurement) => String(row.createdAt ?? '');
 
-/** The day's correcting writes, oldest first, grouped into revisions: each starts at its first write. */
-function revisions(onDay: FileMeasurement[]): Array<{ at: string; rows: FileMeasurement[] }> {
-  const found: Array<{ at: string; rows: FileMeasurement[] }> = [];
-  for (const row of byTime(onDay.filter((r) => !!r.correctsId))) {
+/**
+ * The day's rows in write order, grouped into writes. Order: `createdAt`; at a tie,
+ * a correction after the row it names (by its depth in the day's chain), then id.
+ * A row joins the open write when its half is not there yet, it is within 5 s of
+ * the write's first row, and it does not correct a row in the write.
+ */
+function writes(onDay: FileMeasurement[]): FileMeasurement[][] {
+  const byId = new Map(onDay.map((row) => [row.id, row]));
+  const depth = (row: FileMeasurement, seen = 0): number => {
+    const target = row.correctsId ? byId.get(row.correctsId) : undefined;
+    return target && seen < onDay.length ? 1 + depth(target, seen + 1) : 0;
+  };
+  const ordered = [...onDay].sort((a, b) => createdAt(a).localeCompare(createdAt(b)) || depth(a) - depth(b) || a.id.localeCompare(b.id));
+  const found: FileMeasurement[][] = [];
+  for (const row of ordered) {
     const open = found.at(-1);
-    if (open && within(open.at, row)) open.rows.push(row);
-    else found.push({ at: createdAt(row), rows: [row] });
+    const joins = open
+      && !open.some((r) => r.metricType === row.metricType)
+      && Date.parse(createdAt(row)) - Date.parse(createdAt(open[0])) <= WRITE_MS
+      && !open.some((r) => r.id === row.correctsId);
+    if (joins) open.push(row);
+    else found.push([row]);
   }
   return found;
 }
-
-/** Rows merge set aside, oldest first, a systolic and a diastolic within 5 s made one pair. */
-function groups(setAside: FileMeasurement[]): Array<{ at: string; rows: FileMeasurement[] }> {
-  const found: Array<{ at: string; rows: FileMeasurement[] }> = [];
-  for (const row of byTime(setAside)) {
-    const open = found.at(-1);
-    if (open && within(open.at, row) && !open.rows.some((r) => r.metricType === row.metricType)) open.rows.push(row);
-    else found.push({ at: createdAt(row), rows: [row] });
-  }
-  return found;
-}
-
-const byTime = (rows: FileMeasurement[]) => [...rows].sort((a, b) => createdAt(a).localeCompare(createdAt(b)));
-const within = (start: string, row: FileMeasurement) => Date.parse(createdAt(row)) - Date.parse(start) <= REVISION_MS;
 
 function pair(sys: FileMeasurement | undefined, dia: FileMeasurement | undefined, status: HistoryRow['status'], isCurrent: boolean):
   Omit<HistoryRow, 'id' | 'day' | 'correction'> {

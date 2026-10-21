@@ -715,15 +715,15 @@ open web tab, Pages fork and CLI off from its chat history until it updated.
   same pair writes nothing. A held day is asked about before any half is written, and a
   replace carries the active row ids the user saw (`seenIds`); other ids at save time
   refuse it, as a single value's stale correction is refused.
-- **Struck pairs come from the correction chains**, not from the originals' `createdAt`:
-  the web, CLI and MCP stamp each half with its own clock, so originals never share a
-  stamp. A revision is the day's correcting writes within 5 s of each other; its struck
-  pair is, per half, the row it corrected, or for a half it left alone that half's latest
-  row by the revision's start. The corrected row, not a timestamp, decides "before",
-  because a correction can carry the same instant as its original. Rows merge's slot
-  reconciliation set aside (entered in error, no correction naming them) are listed too,
-  struck, paired within 5 s or with a dash, in time order (orchestrator, 2026-10-22: AC9
-  lists every value).
+- **The history replays the day** (orchestrator, 2026-10-22, after a re-check found
+  the window-based struck pairs dropping and duplicating values). All the day's rows, in
+  write order (`createdAt`, a correction after the row it names, then id), grouped into
+  writes: one row per half, within 5 s of the write's first row, never a correction of a
+  row in the same write (the web, CLI and MCP stamp each half with its own clock). Each
+  write sets its halves and leaves a snapshot; the pair now is active, the rest struck.
+  One choice beyond the brief: a row merge set aside shows over the pair as it stood but
+  does not change it, or a lost write would leak into every later snapshot and into the
+  active pair. Ids are per snapshot, so the active and a struck pair never share one.
 - **Feet and inches in the engine.** `profile` takes `heightFeet` and `heightInches` and
   calls health-core's `feetInchesToCm`; My data gets `cmToFeetInches`. Same maths and
   rounding as the web's form, no Swift copy (D2). Not unit-dependent, so the cloud's

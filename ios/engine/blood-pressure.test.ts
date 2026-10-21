@@ -162,13 +162,69 @@ describe('blood pressure, one reading (US-25 AC17)', () => {
         orphan('diastolic_bp', 85, plus(NOW, 1_800_001), 'o-dia'),
         orphan('diastolic_bp', 90, plus(NOW, 7_200_000), 'o-lone')],
     };
+    // Replayed in time order. A set-aside write shows over the pair as it stood, and never
+    // changes the pair the later writes build on, so the active 125/80 is never 125/90.
     expect(history(merged)).toEqual([
       ['2026-10-20', '125/80', 'active'],
-      ['2026-10-20', '–/90', 'entered-in-error'],
-      // The revision's untouched diastolic is the chain's 80, never a row merge set aside.
-      ['2026-10-20', '120/80', 'entered-in-error'],
+      ['2026-10-20', '125/90', 'entered-in-error'],
       ['2026-10-20', '130/85', 'entered-in-error'],
+      ['2026-10-20', '120/80', 'entered-in-error'],
     ]);
+  });
+
+  it('a correction that lost a merge shows once, as a whole pair (re-check R3)', () => {
+    const file = edited(nz(), NOW, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
+    const sys = file.measurements[0];
+    // Two devices corrected the systolic; merge kept 128 and set 125 aside.
+    const lost = { ...sys, id: 'b', value: 125, createdAt: LATER, correctsId: sys.id, status: 'entered-in-error' as const };
+    const won = { ...sys, id: 'a', value: 128, createdAt: plus(LATER, 10_000), correctsId: sys.id, status: 'active' as const };
+    const merged: RoadmapFile = { ...file, measurements: [{ ...sys, status: 'entered-in-error' }, file.measurements[1], lost, won] };
+    expect(history(merged)).toEqual([
+      ['2026-10-20', '128/80', 'active'],
+      ['2026-10-20', '125/80', 'entered-in-error'],
+      ['2026-10-20', '120/80', 'entered-in-error'],
+    ]);
+  });
+
+  it('a one-half day shows the half alone before the pair (re-check R1)', () => {
+    const half = edited(nz(), NOW, { kind: 'add', metric: 'diastolic_bp', value: 80, day: '2026-10-20' });
+    const fixed = edited(half, LATER, { kind: 'bloodPressure', systolic: 120, diastolic: 82, day: '2026-10-20', replace: true, seenIds: seen(half) });
+    expect(history(fixed)).toEqual([['2026-10-20', '120/82', 'active'], ['2026-10-20', '–/80', 'entered-in-error']]);
+  });
+
+  it('rapid edits a second apart keep every value (re-check R2)', () => {
+    let file = edited(nz(), NOW, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
+    file = edited(file, plus(NOW, 1_000), { kind: 'bloodPressure', systolic: 125, diastolic: 80, day: '2026-10-20', replace: true, seenIds: seen(file) });
+    file = edited(file, plus(NOW, 2_000), { kind: 'bloodPressure', systolic: 128, diastolic: 80, day: '2026-10-20', replace: true, seenIds: seen(file) });
+    expect(history(file)).toEqual([
+      ['2026-10-20', '128/80', 'active'],
+      ['2026-10-20', '125/80', 'entered-in-error'],
+      ['2026-10-20', '120/80', 'entered-in-error'],
+    ]);
+  });
+
+  it('an Apple Health day with three readings in one batch keeps all three (re-check R2)', () => {
+    const reading = (n: number, time: string, systolic: number, diastolic: number) => [
+      { externalId: `s${n}`, metricType: 'systolic_bp', value: systolic, measuredAt: `2026-10-21T${time}:00+13:00`, pairId: `p${n}` },
+      { externalId: `d${n}`, metricType: 'diastolic_bp', value: diastolic, measuredAt: `2026-10-21T${time}:00+13:00`, pairId: `p${n}` },
+    ];
+    const file = edited(nz(), NOW, { kind: 'appleHealth', samples: [...reading(1, '08:00', 120, 80), ...reading(2, '12:00', 125, 82), ...reading(3, '18:00', 130, 84)] });
+    const rows = metricHistory(file, 'blood_pressure', LATER).rows;
+    expect(rows.map((row) => [row.value, row.status])).toEqual([
+      ['130/84', 'active'], ['125/82', 'entered-in-error'], ['120/80', 'entered-in-error'],
+    ]);
+    expect(new Set(rows.map((row) => row.id)).size).toBe(rows.length);
+  });
+
+  it('every history row has its own id, and pairIds are the measurement ids (Codex re-check R1)', () => {
+    const both = edited(nz(), NOW, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
+    const bothFixed = edited(both, LATER, { kind: 'bloodPressure', systolic: 125, diastolic: 82, day: '2026-10-20', replace: true, seenIds: seen(both) });
+    const half = edited(both, LATER, { kind: 'bloodPressure', systolic: 125, diastolic: 80, day: '2026-10-20', replace: true, seenIds: seen(both) });
+    for (const file of [bothFixed, half]) {
+      const rows = metricHistory(file, 'blood_pressure', LATER).rows;
+      expect(new Set(rows.map((row) => row.id)).size).toBe(rows.length);
+      expect([...rows[0].pairIds!].sort()).toEqual([...seen(file)].sort());
+    }
   });
 
   it('a half that never had a partner shows a dash, struck or not', () => {
