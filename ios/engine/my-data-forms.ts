@@ -18,6 +18,7 @@ import { localDay } from '../../packages/health-core/src/merge';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '../../packages/health-core/src/mappings';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { formatDisplayValue, getDisplayLabel, type MetricType } from '../../packages/health-core/src/units';
+import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 
 /** A supplement as the tab lists it. */
 export interface SupplementRow {
@@ -60,6 +61,9 @@ export interface HistoryRow {
   current: boolean;
   /** This row corrected an earlier one. */
   correction: boolean;
+  /** A blood pressure's halves, a dash's place null (blood-pressure.ts). */
+  systolic?: string | null;
+  diastolic?: string | null;
 }
 
 export interface MetricHistory {
@@ -241,19 +245,20 @@ export function customSupplement(name: string): { supplementKey: string; supplem
  * view offers corrections, never removal.
  */
 export function metricHistory(file: RoadmapFile, metric: string, now = new Date().toISOString()): MetricHistory {
+  let excludedFields: string[] = [];
+  try {
+    excludedFields = computePlan(file, new Date(now)).excluded;
+  } catch {
+    // No plan yet (no usable height or sex): nothing is excluded, and nothing used.
+  }
+  if (metric === BLOOD_PRESSURE) return pressureHistory(file, excludedFields);
   const system = file.profile.unitSystem ?? 'si';
   const rows = file.measurements.filter((row) => row.metricType === metric);
   // The plan's own pick of the current value.
   const current = latestActivePerMetric(rows.filter((row) => row.status === 'active'))[0];
-  let excluded = false;
-  try {
-    excluded = computePlan(file, new Date(now)).excluded.includes(METRIC_TO_FIELD[metric]);
-  } catch {
-    // No plan yet (no usable height or sex): nothing is excluded, and nothing used.
-  }
   return {
     metric,
-    excluded,
+    excluded: excludedFields.includes(METRIC_TO_FIELD[metric]),
     label: METRIC_LABELS[metric] ?? metric,
     unit: getDisplayLabel(metric as MetricType, system),
     rows: [...rows]

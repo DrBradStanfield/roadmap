@@ -29,7 +29,7 @@ describe('newRecord (AC4)', () => {
 describe('myData (AC5)', () => {
   it('lists the web\'s vitals and blood tests, PSA left to screening', () => {
     const data = myData(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'));
-    expect(data.vitals.map((row) => row.metric)).toEqual(['weight', 'waist', 'systolic_bp', 'diastolic_bp']);
+    expect(data.vitals.map((row) => row.metric)).toEqual(['weight', 'waist', 'blood_pressure']);
     expect(data.bloodTests.map((row) => row.metric)).toEqual(['hba1c', 'creatinine', 'apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'lpa']);
     expect(data.bloodTests.find((row) => row.metric === 'ldl')).toMatchObject({ label: 'LDL Cholesterol', unit: 'mmol/L', latest: null });
   });
@@ -43,7 +43,7 @@ describe('myData (AC5)', () => {
 
   it('shows the profile, height in the user\'s units', () => {
     const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'profile', sex: 'female', birthYear: 1970, birthMonth: 4, height: 165 });
-    expect(myData(file).profile).toEqual({ sex: 'female', birthYear: 1970, birthMonth: 4, height: '165', heightUnit: 'cm' });
+    expect(myData(file).profile).toEqual({ sex: 'female', birthYear: 1970, birthMonth: 4, height: '165', heightUnit: 'cm', feetInches: null });
   });
 });
 

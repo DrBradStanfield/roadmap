@@ -3,8 +3,9 @@ import SwiftUI
 
 /// The tabs, in the web's mobile order (US-25 AC3): My data, My plan, then Chat (US-52).
 /// The app opens on My data. The web twin is widget-src/src/components/MobileTabBar.tsx.
-/// Each tab sits in a navigation stack with a small title: its bar turns to frosted
-/// glass as content scrolls under it, so rows never run beneath the clock.
+/// Each tab sits in a navigation stack. My plan has a small title, whose bar turns
+/// to frosted glass as content scrolls under it; My data has no bar (Brad
+/// 2026-10-22, US-25 AC17), and a strip of its background keeps rows from the clock.
 struct RootView: View {
     enum Tab: Hashable { case data, plan, chat }
 
@@ -22,10 +23,7 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $tab) {
-            titled("My data") {
-                MyDataView(store: store, sync: sync)
-                    .toolbar { ToolbarItem(placement: .topBarTrailing) { LabUploadButton(engine: engine, store: store) } }
-            }
+            NavigationStack { MyDataView(engine: engine, store: store, sync: sync).firmTopEdge() }
                 .tabItem { Label("My data", systemImage: "list.bullet.clipboard") }
                 .tag(Tab.data)
             titled("My plan") { PlanView(engine: engine, store: store, showMyData: { tab = .data }) }

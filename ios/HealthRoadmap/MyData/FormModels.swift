@@ -114,6 +114,9 @@ struct MetricHistory: Decodable, Equatable {
         let current: Bool
         /// This row corrected an earlier one.
         let correction: Bool
+        /// A blood pressure's halves; nil for a missing half or another metric (AC17).
+        var systolic: String? = nil
+        var diastolic: String? = nil
 
         var isActive: Bool { status == "active" }
     }
