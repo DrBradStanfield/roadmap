@@ -452,6 +452,31 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     expect((await loadLatestMeasurements())?.inputs.heightCm).toBeUndefined();
   });
 
+  it('an erase refused while a remote erase is held back leaves the form, the unsaved edit and the banner as they were (Codex final R2)', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuest(cloud, { sex: 'male', heightCm: 175 });
+    chatProposes({ height: { value: 178, unit: 'cm' } });
+    const swallow = (e: Event) => e.stopImmediatePropagation();
+    window.addEventListener(REMOTE_CHANGED_EVENT, swallow, { capture: true });
+    try {
+      await otherDeviceErases(cloud);
+      await refreshThisTab();
+    } finally {
+      window.removeEventListener(REMOTE_CHANGED_EVENT, swallow, { capture: true });
+    }
+    fireEvent.change(view.container.querySelector('#birthYear')!, { target: { value: '1975' } });
+    vi.spyOn(MemoryAdapter.prototype, 'read').mockRejectedValueOnce(new Error('cloud did not answer'));
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
+    await wait(100);
+    expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value).toBe('175');
+    expect(view.container.querySelector<HTMLInputElement>('#birthYear')?.value).toBe('1975');
+    expect(banner()).not.toBeNull();
+  });
+
   it('US-09 AC23: an erase refused because the cloud cannot be read leaves the medications and screenings on screen', async () => {
     const cloud = new MemoryCloud();
     await initRoadmapStore(new MemoryAdapter(cloud));

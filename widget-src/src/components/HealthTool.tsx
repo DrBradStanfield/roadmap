@@ -357,6 +357,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const eraseUnshown = useCallback(() => getEraseIdentity() !== shownEraseRef.current, []);
   // True while this tab's erase runs: the form takes no edit (US-16 AC2a).
   const erasingRef = useRef(false);
+  // No write from the form or the matrices while this tab's erase runs or
+  // the screen is behind an erase: it would land in the erased copy.
+  const writeBlocked = useCallback(() => erasingRef.current || eraseUnshown(), [eraseUnshown]);
   // One save per key, 300 ms after its last change: rapid dropdown changes
   // would otherwise race. A save scheduled before an erase, or firing while
   // the screen is behind one, never lands in the erased record (US-16 AC2a).
@@ -491,10 +494,11 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),
   // then the page re-reads the record.
   const handleCorrectValue = useCallback<CorrectFn>(async (id, newValue) => {
+    if (writeBlocked()) return 'error';
     const status = await countedCorrection(id, newValue);
     if (status === 'ok') await reloadValues();
     return status;
-  }, [reloadValues]);
+  }, [reloadValues, writeBlocked]);
 
   // Save typed values by the one routing rule (matrix-save.ts), against the
   // store's own rows, then re-read the record. The matrices pass their cells;
@@ -528,6 +532,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     };
 
     const save = async (): Promise<Refused> => {
+      // During an erase every value is refused, so its draft stays (US-16 AC2a).
+      if (writeBlocked()) {
+        return new Map((tasks ?? fromForm()).flatMap(t => Object.keys(t.values).map(m => [slotOf(t.date, m), 'error' as const])));
+      }
       // Keep the profile and saved measurements consistent across the debounce.
       await flushPendingProfileSave();
       const toSave = tasks ?? fromForm();
@@ -539,10 +547,11 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
           toSave,
           await loadAllHistory(), // the store's rows, as it writes: never the page's copy
           async (date, metric, value) => {
+            if (writeBlocked()) return 'error'; // an erase began mid-save
             const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date));
             return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : 'error';
           },
-          countedCorrection,
+          async (id, newValue) => (writeBlocked() ? 'error' : countedCorrection(id, newValue)),
         );
         await reloadValues();
 
@@ -580,7 +589,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     const run = savesRef.current.then(save);
     savesRef.current = run.catch(() => {});
     return run;
-  }, [inputs, history, unitOverrides, unitSystem, reloadValues]);
+  }, [inputs, history, unitOverrides, unitSystem, reloadValues, writeBlocked]);
 
   // Auto-save on blur / Enter for InputPanel longitudinal fields. The
   // 500ms debounce batches systolic→diastolic tab transitions into one
@@ -772,13 +781,15 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
     setIsDeleting(true);
     erasingRef.current = true;
+    const before = getEraseIdentity();
     const result = await deleteUserData();
     erasingRef.current = false;
     setIsDeleting(false);
 
     // An erase whose write failed still leaves the erased copy in the store,
-    // which retries it: the screen shows that copy too (US-16 AC2a).
-    if (result.success || eraseUnshown()) {
+    // which retries it: the screen shows that copy too (US-16 AC2a). A
+    // refused erase moved nothing, whatever else the screen is behind.
+    if (result.success || getEraseIdentity() !== before) {
       clearLocalStorage();
       setInputs({});
       setPreviousMeasurements([]);
@@ -804,7 +815,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }
     return result.success;
-  }, [eraseUnshown]);
+  }, []);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
@@ -819,11 +830,15 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // A matrix's draft value, as the plan and the chat read it (US-03 AC6);
   // undefined leaves the field to the record. One update per field, so
   // several sent at once all land.
-  const handleDraftValue = useCallback((field: keyof HealthInputs, value: number | undefined) => setLent(prev => {
-    const next = { ...prev, [field]: value };
-    if (value === undefined) delete next[field];
-    return next;
-  }), []);
+  const handleDraftValue = useCallback((field: keyof HealthInputs, value: number | undefined) => {
+    // While this tab's erase runs a draft lends nothing new; taking back is fine.
+    if (erasingRef.current && value !== undefined) return;
+    setLent(prev => {
+      const next = { ...prev, [field]: value };
+      if (value === undefined) delete next[field];
+      return next;
+    });
+  }, []);
 
   const handleMedicationChange = useCallback((
     medicationKey: string,
@@ -1146,7 +1161,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
             }}
           >
             <SwiperSlide>
-              <InputPanel {...inputPanelProps} />
+              <fieldset className="health-form-lock" disabled={isDeleting}><InputPanel {...inputPanelProps} /></fieldset>
             </SwiperSlide>
             <SwiperSlide>
               <div className="health-tool-right">
@@ -1176,7 +1191,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       ) : (
         <div className="health-tool-content">
           <div className="health-tool-left">
-            <InputPanel {...inputPanelProps} />
+            <fieldset className="health-form-lock" disabled={isDeleting}><InputPanel {...inputPanelProps} /></fieldset>
           </div>
           <div className="health-tool-right">
             <ResultsPanel {...resultsPanelProps} />
