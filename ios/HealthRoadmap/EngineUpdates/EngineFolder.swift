@@ -1,6 +1,6 @@
 import Foundation
 
-/// Where downloaded engines wait (US-25 AC17): `Application Support/Engine`, left out
+/// Where downloaded engines wait (US-25 AC18): `Application Support/Engine`, left out
 /// of backups like the record. Each release is three files named by its version
 /// (`<v>.js`, `<v>.manifest.json`, `<v>.manifest.sig`) and one state file says what
 /// this phone has decided. Swift never trusts a file here without checking it again.

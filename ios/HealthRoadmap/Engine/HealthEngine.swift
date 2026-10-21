@@ -24,6 +24,8 @@ final class HealthEngine {
     private let exports: JSValue
     /// HTTP, timers and the cloud calls the engine reaches Swift through.
     let natives: EngineNatives
+    /// Set when this is a downloaded engine on trial (EngineBoot, US-25 AC18).
+    @MainActor var trial: EngineTrial?
 
     /// The engine shipped in the app. `session`: the URLSession the engine's fetch
     /// runs on (EngineHTTP's own by default); tests pass a stubbed one.
@@ -36,7 +38,7 @@ final class HealthEngine {
 
     /// An engine from source text: the bundled one, or a verified download (EngineBoot).
     /// `quarantined`: a self-test context whose natives refuse every request and hold
-    /// no token (US-25 AC17).
+    /// no token (US-25 AC18).
     init(source: String, sourceURL: URL?, session: URLSession = EngineHTTP.shared, quarantined: Bool = false) throws {
         guard let context = JSContext() else { throw EngineError.missingBundle }
 

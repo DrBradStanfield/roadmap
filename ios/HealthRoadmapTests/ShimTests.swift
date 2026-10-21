@@ -10,7 +10,7 @@ final class ShimTests: XCTestCase {
     private let port = TokenPort()
 
     /// The engine on a stubbed session. Requests go to an allowed Dropbox call with the
-    /// sentinel, as the adapters send them (EngineHTTP, US-25 AC17).
+    /// sentinel, as the adapters send them (EngineHTTP, US-25 AC18).
     private func engine() throws -> HealthEngine {
         let engine = try HealthEngine(session: StubHTTP.session())
         engine.natives.cloud = port

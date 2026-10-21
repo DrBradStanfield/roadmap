@@ -1,4 +1,4 @@
-// US-25 AC17: the engine side of the native bridge matches its checked-in
+// US-25 AC18: the engine side of the native bridge matches its checked-in
 // contract (bridge-contract.json). The contract's hash is the bridge id a
 // downloaded engine must match, so drift here would let an engine reach an app
 // that cannot serve it. The Swift side: EngineBridgeContractTests.swift.
@@ -22,7 +22,7 @@ function members(file: string, name: string): string[] {
   return [...block.matchAll(/^ {2}(\w+)\(/gm)].map((m) => m[1]);
 }
 
-describe('bridge contract (US-25 AC17)', () => {
+describe('bridge contract (US-25 AC18)', () => {
   it('every door the engine exports is in the contract, with its arity', () => {
     const doors = Object.entries(entry).filter(([, v]) => typeof v === 'function');
     expect(doors.map(([k]) => k).sort()).toEqual(Object.keys(contract.doors).sort());

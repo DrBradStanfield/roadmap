@@ -2,7 +2,7 @@ import CryptoKit
 import XCTest
 @testable import HealthRoadmap
 
-/// US-25 AC17: a manifest is trusted only when a pinned key signed its exact bytes
+/// US-25 AC18: a manifest is trusted only when a pinned key signed its exact bytes
 /// and every field fits this app (ManifestCheck).
 final class EngineManifestTests: XCTestCase {
     private var fixture: EngineReleaseFixture!

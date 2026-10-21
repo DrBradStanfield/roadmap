@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-/// A release's signed description (US-25 AC17). Written by ios/scripts/release-engine.mjs
+/// A release's signed description (US-25 AC18). Written by ios/scripts/release-engine.mjs
 /// as canonical JSON: keys sorted, no whitespace, nothing else.
 struct EngineManifest: Codable, Equatable {
     let appId: String

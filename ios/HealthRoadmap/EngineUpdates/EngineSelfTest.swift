@@ -1,6 +1,6 @@
 import Foundation
 
-/// Proves a downloaded engine's doors work before the app trusts it (US-25 AC17):
+/// Proves a downloaded engine's doors work before the app trusts it (US-25 AC18):
 /// run in a quarantined context (no network, no token, an in-memory phone file).
 /// It catches accidents, a broken build or a door that drifted, not malice: a
 /// hostile engine could pass it. The signature is what keeps hostile engines out.

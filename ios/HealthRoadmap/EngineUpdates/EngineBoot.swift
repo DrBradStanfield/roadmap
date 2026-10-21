@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 import os
 
-/// Picks the engine at launch (US-25 AC17, ios/architecture.md D3). A downloaded engine
+/// Picks the engine at launch (US-25 AC18, ios/architecture.md D3). A downloaded engine
 /// runs only from a fresh launch, never mid-session, and only after it is checked again
 /// here: its stored manifest's signature and fields, its bytes' hash, then a self-test
 /// in a quarantined context. The bytes checked are the bytes run: the file is read once.
@@ -38,8 +38,10 @@ struct EngineBoot {
         guard let folder, var state = try? folder.readState() else { return nil }
         let bundledVersion = bundled.facts.version
 
-        // A trial that never finished: that launch crashed or hung.
-        if let trying = state.trying {
+        // A trial that never finished: that launch crashed, hung, or ended before the
+        // user's own plan rendered. Judged only on a foreground launch (R8): a
+        // background launch leaves the mark for the next foreground one.
+        if foreground, let trying = state.trying {
             Self.log.notice("engine \(trying, privacy: .public) did not finish its trial launch: marked bad")
             state.bad.append(trying)
             state.trying = nil
@@ -61,11 +63,8 @@ struct EngineBoot {
             }
             do {
                 let engine = try load(staged, floor: state.floor)
-                if trial {
-                    state.trying = nil
-                    state.proven.append(version)
-                    try? folder.write(state)
-                }
+                // The mark stays until the user's own plan renders (PlanView confirms).
+                if trial { engine.trial = EngineTrial(version: version, folder: folder) }
                 Self.log.notice("running downloaded engine \(version, privacy: .public)")
                 return Choice(engine: engine, version: version)
             } catch {
@@ -101,5 +100,30 @@ struct EngineBoot {
         try EngineSelfTest.run(quarantine, version: manifest.version, schemaVersion: manifest.schemaVersion)
         // Then the real context, from the same bytes.
         return try HealthEngine(source: source, sourceURL: folder?.url.appending(path: "\(manifest.version).js"), session: session)
+    }
+}
+
+/// A downloaded engine on its first foreground launch (US-25 AC18). Its "trying"
+/// mark stays set until the user's own plan has been worked out by it, so a crash
+/// or hang on the real record, not only on the self-test's fixture, counts against
+/// it at the next launch. PlanView calls `confirm()` once the plan has rendered.
+@MainActor
+final class EngineTrial {
+    let version: Int
+    private let folder: EngineFolder
+    private(set) var confirmed = false
+
+    init(version: Int, folder: EngineFolder) {
+        self.version = version
+        self.folder = folder
+    }
+
+    /// The engine ran the user's record through to a plan: it is proven.
+    func confirm() {
+        guard !confirmed, var state = try? folder.readState() else { return }
+        confirmed = true
+        if state.trying == version { state.trying = nil }
+        if !state.proven.contains(version) { state.proven.append(version) }
+        try? folder.write(state)
     }
 }

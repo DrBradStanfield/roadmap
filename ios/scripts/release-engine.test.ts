@@ -1,4 +1,4 @@
-// US-25 AC17: the over-the-air engine release (ios/architecture.md D3).
+// US-25 AC18: the over-the-air engine release (ios/architecture.md D3).
 // Runs the real release script against a throwaway key and a temp folder.
 import { spawnSync } from 'node:child_process';
 import { generateKeyPairSync } from 'node:crypto';
@@ -33,7 +33,7 @@ function release(now: string, extra: string[] = [], key = seed) {
 const manifestBytes = () => readFileSync(join(dir, 'manifest.json'));
 const manifest = () => JSON.parse(manifestBytes().toString());
 
-describe('release-engine (US-25 AC17)', () => {
+describe('release-engine (US-25 AC18)', () => {
   it('refuses a key the app does not pin, before building', () => {
     const run = release('2026-10-22T03:15:00Z', [], newSeed());
     expect(run.status).not.toBe(0);

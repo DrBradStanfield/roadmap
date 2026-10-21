@@ -15,7 +15,7 @@ import { installShim, type Natives } from './shim';
 declare const __native: Natives | undefined;
 if (typeof __native !== 'undefined') installShim(globalThis as unknown as Record<string, unknown>, __native);
 
-// Over-the-air updates (ios/architecture.md D3, US-25 AC17). The build stamps
+// Over-the-air updates (ios/architecture.md D3, US-25 AC18). The build stamps
 // the version (scripts/build-engine.mjs); the app checks both against the
 // signed manifest before it trusts a downloaded engine.
 declare const __ENGINE_VERSION__: number | undefined;

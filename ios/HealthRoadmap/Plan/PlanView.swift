@@ -37,7 +37,11 @@ struct PlanView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
-        .task(id: store.recordJSON) { state = load(store.recordJSON) }
+        .task(id: store.recordJSON) {
+            state = load(store.recordJSON)
+            // A downloaded engine on trial has now planned the user's own record (US-25 AC18).
+            engine.trial?.confirm()
+        }
     }
 
     private func load(_ record: String) -> LoadState {

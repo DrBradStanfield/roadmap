@@ -18,7 +18,7 @@ final class TokenPort: CloudPort {
     func notify(_ event: String, _ payload: String, session: Int) {}
 }
 
-/// US-25 AC17: the fence around the engine's network (EngineHTTP). JavaScript gets a
+/// US-25 AC18: the fence around the engine's network (EngineHTTP). JavaScript gets a
 /// sentinel, never a token; Swift sends only the allow-listed Dropbox and Drive calls,
 /// swaps the real token in, and follows no redirect.
 @MainActor

@@ -3,7 +3,7 @@ import JavaScriptCore
 import XCTest
 @testable import HealthRoadmap
 
-/// US-25 AC17: the Swift side of the native bridge matches ios/engine/bridge-contract.json,
+/// US-25 AC18: the Swift side of the native bridge matches ios/engine/bridge-contract.json,
 /// whose hash is the bridge id a downloaded engine must carry. The engine side:
 /// ios/engine/bridge.test.ts. The simulator reads the repo's files from the Mac.
 final class EngineBridgeContractTests: XCTestCase {
@@ -52,7 +52,7 @@ final class EngineBridgeContractTests: XCTestCase {
     func testThePinnedKeysAreTheReleaseScriptsKeys() throws {
         let file = try JSONDecoder().decode([String: String].self, from: Data(contentsOf: ios.appending(path: "engine/signing-keys.json")))
         XCTAssertEqual(file, EngineRelease.publicKeys)
-        XCTAssertEqual(Set(EngineRelease.publicKeys.keys), ["daily", "cold"])
+        XCTAssertEqual(Set(EngineRelease.publicKeys.keys), ["daily", "cold", "ci"])
         for (id, text) in EngineRelease.publicKeys {
             XCTAssertNoThrow(try Curve25519.Signing.PublicKey(rawRepresentation: XCTUnwrap(Data(base64Encoded: text))), id)
         }

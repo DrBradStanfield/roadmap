@@ -1,5 +1,5 @@
 // Ed25519 signing for over-the-air engine releases (ios/architecture.md D3,
-// US-25 AC17). Shared by engine-keygen.mjs, release-engine.mjs and their tests.
+// US-25 AC18). Shared by engine-keygen.mjs, release-engine.mjs and their tests.
 // A signature covers DOMAIN + the manifest's exact bytes, so a signature made
 // for anything else with the same key can never pass as a manifest's.
 import { createHash, createPrivateKey, createPublicKey, sign, verify } from 'node:crypto';

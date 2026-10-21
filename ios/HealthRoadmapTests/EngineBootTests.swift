@@ -1,7 +1,8 @@
+import SwiftUI
 import XCTest
 @testable import HealthRoadmap
 
-/// US-25 AC17: which engine runs at launch. A staged engine runs only after it is
+/// US-25 AC18: which engine runs at launch. A staged engine runs only after it is
 /// checked again and passes its quarantined self-test; a failure, a crash during its
 /// trial, or a tampered file falls back to the bundled engine.
 @MainActor
@@ -28,9 +29,49 @@ final class EngineBootTests: XCTestCase {
         let choice = try boot()
         XCTAssertEqual(choice.version, release.version)
         XCTAssertEqual(try version(choice), release.version)
+        XCTAssertEqual(try folder.readState().trying, release.version, "on trial until the user's plan renders")
+        XCTAssertEqual(try folder.readState().proven, [])
+        choice.engine.trial?.confirm()
         let state = try folder.readState()
         XCTAssertNil(state.trying, "the trial finished")
         XCTAssertEqual(state.proven, [release.version])
+    }
+
+    func testALaunchThatEndsBeforeThePlanRendersCountsAgainstTheEngine() throws {
+        let release = fixture.staged(daysAfterBundled: 2)
+        try folder.stage(release)
+        XCTAssertEqual(try boot().version, release.version) // never confirmed: a hang on the real record
+        XCTAssertNil(try boot().version)
+        XCTAssertEqual(try folder.readState().bad, [release.version])
+    }
+
+    func testABackgroundLaunchLeavesAnOpenTrialForTheNextForegroundOne() throws {
+        let release = fixture.staged(daysAfterBundled: 2)
+        try folder.stage(release)
+        _ = try boot()
+        XCTAssertNil(try boot(foreground: false).version, "not proven, so not run in the background")
+        XCTAssertEqual(try folder.readState().trying, release.version)
+        XCTAssertEqual(try folder.readState().bad, [])
+    }
+
+    func testThePlanScreenConfirmsATrialOnceThePlanRenders() async throws {
+        let release = fixture.staged(daysAfterBundled: 2)
+        try folder.stage(release)
+        let choice = try boot()
+        let records = FileManager.default.temporaryDirectory.appending(path: "plan trial \(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
+        let store = try RecordStore(folder: records, engine: choice.engine, deviceId: "test")
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = UIHostingController(rootView: PlanView(engine: choice.engine, store: store, showMyData: {}))
+        window.makeKeyAndVisible()
+        var waited = 0
+        while try folder.readState().trying != nil, waited < 100 {
+            try await Task.sleep(for: .milliseconds(50))
+            waited += 1
+        }
+        XCTAssertNil(try folder.readState().trying)
+        XCTAssertEqual(try folder.readState().proven, [release.version])
+        window.isHidden = true
     }
 
     func testTheNewestOfTwoRuns() throws {
@@ -97,7 +138,9 @@ final class EngineBootTests: XCTestCase {
         XCTAssertNil(state.trying)
         XCTAssertEqual(state.bad, [])
         XCTAssertEqual(folder.stagedVersions(), [release.version], "kept for a foreground launch")
-        XCTAssertEqual(try boot(foreground: true).version, release.version)
+        let trial = try boot(foreground: true)
+        XCTAssertEqual(trial.version, release.version)
+        trial.engine.trial?.confirm()
         XCTAssertEqual(try boot(foreground: false).version, release.version, "proven now, so a background launch may run it")
     }
 

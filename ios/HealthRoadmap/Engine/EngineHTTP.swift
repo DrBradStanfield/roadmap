@@ -1,6 +1,6 @@
 import Foundation
 
-/// The fence around the engine's network (US-25 AC17, ios/architecture.md D3). Because
+/// The fence around the engine's network (US-25 AC18, ios/architecture.md D3). Because
 /// the engine can be updated over the air, Swift, not JavaScript, decides what it may
 /// send: only the Dropbox and Google Drive calls health-core's dropbox-rest.ts and
 /// drive-rest.ts make for the record, over https, with no redirect. JavaScript never

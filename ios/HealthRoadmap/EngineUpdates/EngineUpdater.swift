@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 import os
 
-/// Looks for a newer engine (US-25 AC17, ios/architecture.md D3): at launch and on each
+/// Looks for a newer engine (US-25 AC18, ios/architecture.md D3): at launch and on each
 /// return to the foreground, at most once in 6 hours. Two small GETs to GitHub, with no
 /// health data, device id, cookie or custom header; the bundle is fetched only after
 /// the manifest's signature and fields pass. A verified bundle is staged for the next

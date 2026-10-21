@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Makes a signed over-the-air engine release (ios/architecture.md D3, US-25 AC17):
+// Makes a signed over-the-air engine release (ios/architecture.md D3, US-25 AC18):
 //   npm run engine:release            (signs with the daily key; macOS asks to allow the Keychain read)
 //   npm run engine:release -- --if-changed
 // Then commit ios/engine-release/ and push to main: installed apps fetch it from

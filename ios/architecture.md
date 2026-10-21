@@ -6,7 +6,7 @@ history (US-25 AC5-AC9); the plan (AC1, AC2, AC6); welcome, rating prompt, icon 
 Dropbox sync on the shared sync engine (AC11; Google Drive waits on its iOS client id);
 reminders (AC12); Apple Health (AC13-AC15); erase and export (AC16); chat and lab upload
 behind App Attest (US-52, server routes off until deployed with a team id); over-the-air
-engine updates, signed (D3, AC17, 2026-10-22). What Brad must do before TestFlight:
+engine updates, signed (D3, AC18, 2026-10-22). What Brad must do before TestFlight:
 [launch-checklist.md](launch-checklist.md). This file records what we decided for the
 native iPhone app and why. It is the entry point for anyone, human or agent, working in
 `ios/`.
@@ -92,7 +92,7 @@ it shared, so a fix to `dropbox-rest.ts`, `drive-rest.ts`, `SyncManager` or
   them with a continuation, and JavaScriptCore runs the promise jobs when each call from
   Swift returns. The bundle is 510 KB with sync.
 
-### D3 · Clinical fixes ship over the air, signed (Brad, 2026-10-21; built 2026-10-22, US-25 AC17)
+### D3 · Clinical fixes ship over the air, signed (Brad, 2026-10-21; built 2026-10-22, US-25 AC18)
 
 The engine bundle can be updated without an App Store release. Apple's developer agreement
 allows an app to download interpreted code if it does not change the app's advertised
@@ -108,10 +108,12 @@ A signature means "the key holder approved this bundle", nothing more.
 
 - **Signed, by pinned keys.** Ed25519 over `"health-roadmap-engine-manifest/v1\n"` plus
   the manifest's exact bytes (the prefix stops a signature made for anything else passing
-  as a manifest's). Two keys, pinned by id in `EngineRelease.swift` and
+  as a manifest's). Three keys, pinned by id in `EngineRelease.swift` and
   `ios/engine/signing-keys.json`: `daily` in Brad's login Keychain, trusted by no app, so
   every read asks him (adversary R9: not a 0600 file, which any process of his could
-  read), and `cold` in 1Password only, for a lost Mac. Any pinned key verifies; the
+  read), and never anywhere else; `cold` in 1Password only, for a lost Mac; and `ci`,
+  only in the GitHub `engine-signing` environment's secret, for the workflow (pinned
+  2026-10-22 before any app shipped, so it cost no app update; orchestrator's call). Any pinned key verifies; the
   manifest's `keyId` must name the one that did. The manifest must be the one canonical
   spelling (keys sorted, no whitespace), so a duplicate or unknown key is refused (R5).
 - **The manifest** (`format` 1): `appId`, `channel` "production", `bridge`,
@@ -152,8 +154,13 @@ A signature means "the key holder approved this bundle", nothing more.
   built, from the same bytes. **The self-test catches accidents, not malice**: a hostile
   engine could pass it. The signature is what keeps hostile engines out.
 - **Fallback.** A "trying" mark is written before a version's first foreground load and
-  cleared when it passes; still there at the next launch means that load crashed or hung,
-  and the version is marked bad. A failed check or self-test marks it bad too. Bad
+  cleared only when the user's own plan has rendered from it (`EngineTrial.confirm`, one
+  call in `PlanView`; orchestrator's call, 2026-10-22), so a crash or hang on the real
+  record counts, not only one on the self-test's fixture. Still there at the next
+  foreground launch means that launch crashed, hung, or ended before the plan was
+  opened, and the version is marked bad. The cost: the app opens on My data, so a user
+  who quits before opening My plan marks a good release bad on that phone; it then runs
+  the bundled engine until the next release, which gets its own trial. A failed check or self-test marks it bad too. Bad
   versions are deleted and never tried again; the next staged version, or the bundled
   engine, runs. **Background launches (R8)** (a Health delivery) never try a new engine:
   they run only a version that passed a foreground launch, and an unreadable file there
@@ -169,7 +176,9 @@ A signature means "the key holder approved this bundle", nothing more.
   refused. The engine has its own ephemeral session, and every redirect is refused. So no
   engine, however changed, can send the record or a token anywhere new. Derived from
   dropbox-rest.ts and drive-rest.ts on the app's path; `get_metadata` and longpoll are
-  left off because the app never calls them (push is web-only).
+  left off because the app never calls them (push is web-only). **Before Drive sync goes
+  live, check that Drive's `alt=media` download answers directly, without a redirect**:
+  a redirect (to googleusercontent.com, say) is refused, which would break Drive reads.
 - **Disclosed (R13, R14).** The privacy policy says GitHub sees the phone's IP address
   when it checks and the check carries no health data; the App Review notes say updates
   change computation and text only (ios/app-store.md). The plan line ("Worked out on this
@@ -188,13 +197,11 @@ A signature means "the key holder approved this bundle", nothing more.
 URL and a throwaway key): the first launch fetched the manifest, signature and bundle and
 staged release 202610212108; the next launch ran it after its self-test ("running
 downloaded engine 202610212108", marked proven); with one byte of the staged file flipped,
-the next launch refused it (hashMismatch), marked it bad and ran the bundled engine.
+the next launch refused it (hashMismatch), marked it bad and ran the bundled engine. After
+the trial change, release 202610212136: its "trying" mark stayed through the welcome
+screen and My data, and cleared (version proven) once My plan was opened.
 
-**Known gaps.** The self-test runs on a fixture, not the user's record: an engine that
-hangs only on some real record passes its trial and then hangs that user's launches until
-a newer release or an app update (the marker is cleared once the self-test passes).
-Clearing it later, after the first real plan, was left out to keep the trial inside one
-synchronous step. Only names and arities of doors are drift-checked; their JSON shapes
+**Known gaps.** Only names and arities of doors are drift-checked; their JSON shapes
 are described in the contract and pinned by the self-test and the app's own tests.
 
 ### D4 · Shared store logic moves into health-core (Brad, 2026-10-21)
@@ -832,7 +839,7 @@ open web tab, Pages fork and CLI off from its chat history until it updated.
     Promises; `EngineNatives.swift` is the bridge (D2); `EngineHTTP.swift` its network
     fence (D3); `HealthEngine+Cloud.swift` the typed cloud doors. The generated bundle and
     its `health-engine.json` sidecar sit beside them.
-  - `EngineUpdates/`: over-the-air engines (D3, AC17). `EngineRelease` (pins, bridge,
+  - `EngineUpdates/`: over-the-air engines (D3, AC18). `EngineRelease` (pins, bridge,
     limits, address), `EngineManifest` (`ManifestCheck`), `EngineFolder` (staging and
     state), `EngineUpdater` (the check), `EngineBoot` (which engine runs),
     `EngineSelfTest` (the quarantine's test and `QuarantinePort`).

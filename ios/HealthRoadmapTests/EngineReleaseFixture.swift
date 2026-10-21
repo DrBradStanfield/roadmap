@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 @testable import HealthRoadmap
 
-/// Builds signed test releases for the over-the-air update tests (US-25 AC17): a
+/// Builds signed test releases for the over-the-air update tests (US-25 AC18): a
 /// throwaway key, canonical manifests, and engine bundles made from the app's own
 /// bundled engine with a new version stamped on (or a door broken).
 struct EngineReleaseFixture {

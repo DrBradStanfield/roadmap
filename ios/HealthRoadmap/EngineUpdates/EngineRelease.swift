@@ -1,20 +1,22 @@
 import CryptoKit
 import Foundation
 
-/// The fixed facts of over-the-air engine updates (US-25 AC17, ios/architecture.md D3):
+/// The fixed facts of over-the-air engine updates (US-25 AC18, ios/architecture.md D3):
 /// where releases live, which keys may sign them, and the bridge this binary serves.
 /// Release side: ios/scripts/release-engine.mjs; how to release: ios/engine-updates.md.
 enum EngineRelease {
     /// The native bridge this binary serves: the first 16 hex digits of the SHA-256 of
     /// ios/engine/bridge-contract.json. EngineBridgeContractTests fails if they drift.
-    static let bridge = "5ef08a6cee56f32b"
+    static let bridge = "cbc110dc21d17fa3"
 
-    /// The signing keys this app trusts, by id: the daily key (Brad's login Keychain)
-    /// and the cold backup (1Password). ios/engine/signing-keys.json holds the same;
+    /// The signing keys this app trusts, by id: the daily key (Brad's login Keychain),
+    /// the cold backup (1Password) and the ci key (the GitHub `engine-signing`
+    /// environment's secret, for the workflow). ios/engine/signing-keys.json holds the same;
     /// the release script refuses any other key. Rotation: ios/engine-updates.md.
     static let publicKeys: [String: String] = [
         "daily": "rVHa1bJ5T6wGMKwNSTz+Vjmw7wkm4mzcJja3krs52kg=",
         "cold": "Rd9GxYU0sK2GmpuCLeHHpkJTlwg5ppmr1o6C11zZhzg=",
+        "ci": "IRVIQw6gXNjk4+7TterhMNIzlUE8Pen2a6f70TU1cdc=",
     ]
 
     /// Every door the engine must have (the contract's `doors`), checked by the self-test.

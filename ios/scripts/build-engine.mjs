@@ -10,7 +10,7 @@
 //
 // The bundle is stamped with a version: UTC yyyymmddHHMM of the source commit,
 // or ENGINE_VERSION. A sidecar, health-engine.json, tells the app the bundled
-// engine's version, bridge and schema without loading it (D3, US-25 AC17).
+// engine's version, bridge and schema without loading it (D3, US-25 AC18).
 // release-engine.mjs reuses bundleEngine, bundleFacts and checkParity.
 import { build } from 'esbuild';
 import { execFileSync } from 'node:child_process';

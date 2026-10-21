@@ -1,7 +1,7 @@
-// US-25 AC17: the engine signing keys never enter the repo (ios/architecture.md D3).
+// US-25 AC18: the engine signing keys never enter the repo (ios/architecture.md D3).
 // Fails on a key-shaped file name, an Ed25519 private key in PKCS#8 form, a
-// stray file in the release folder, or, when the cold key file is still on this
-// Mac, its bytes in any tracked file. Nothing secret is ever printed.
+// stray file in the release folder, or, when a file-held key (cold, ci) is still on
+// this Mac, its bytes in any tracked file. Nothing secret is ever printed.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -10,7 +10,8 @@ import { describe, expect, it } from 'vitest';
 
 const repo = join(__dirname, '../..');
 const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: repo }).toString().split('\0').filter(Boolean);
-const coldFile = join(homedir(), '.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt');
+// The file-held keys while they wait on this Mac for 1Password and GitHub.
+const keyFiles = ['COLD-move-to-1password', 'CI-move-to-github-secret'].map((name) => join(homedir(), `.config/health-roadmap/engine-signing-key-${name}.txt`));
 
 // A PKCS#8 Ed25519 private key: its header followed by the 32 key bytes, as DER hex
 // or as base64 (a PEM body). The bare header (engine-signing.mjs) is not a key.
@@ -22,7 +23,7 @@ function contents(): Array<[string, string]> {
     .map((file) => [file, readFileSync(join(repo, file)).toString('latin1')]);
 }
 
-describe('engine signing key guard (US-25 AC17)', () => {
+describe('engine signing key guard (US-25 AC18)', () => {
   it('no tracked file is named like a key', () => {
     const named = tracked.filter((file) => /signing-key(?!s\.json$)|\.pem$|\.p8$|\.p12$|\.key$|id_ed25519/i.test(file) && !file.endsWith('.test.ts'));
     expect(named).toEqual([]);
@@ -38,10 +39,13 @@ describe('engine signing key guard (US-25 AC17)', () => {
     expect(stray).toEqual([]);
   });
 
-  it.skipIf(!existsSync(coldFile))('the cold key on this Mac is in no tracked file', () => {
-    const seed = Buffer.from(readFileSync(coldFile, 'utf8').trim(), 'base64');
-    const forms = [seed.toString('base64'), seed.toString('hex'), seed.toString('base64url')];
-    const found = contents().filter(([, text]) => forms.some((form) => text.includes(form)));
-    expect(found.length, 'a tracked file holds the cold signing key').toBe(0);
+  it.skipIf(!keyFiles.some((file) => existsSync(file)))('the file-held keys on this Mac are in no tracked file', () => {
+    const files = contents();
+    for (const file of keyFiles.filter((f) => existsSync(f))) {
+      const seed = Buffer.from(readFileSync(file, 'utf8').trim(), 'base64');
+      const forms = [seed.toString('base64'), seed.toString('hex'), seed.toString('base64url')];
+      const found = files.filter(([, text]) => forms.some((form) => text.includes(form)));
+      expect(found.length, 'a tracked file holds a signing key').toBe(0);
+    }
   });
 });

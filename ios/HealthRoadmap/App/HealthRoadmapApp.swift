@@ -25,7 +25,7 @@ struct HealthRoadmapApp: App {
 /// Cloud sync follows the app on and off the screen (US-25 AC11c): it re-reads on
 /// return, and saves what waits before iOS suspends the app, asking iOS for the
 /// few seconds that save needs. Coming on screen (launch included) also looks for
-/// a newer engine, at most once in 6 hours (US-25 AC17).
+/// a newer engine, at most once in 6 hours (US-25 AC18).
 @MainActor
 private func follow(_ phase: ScenePhase, _ sync: CloudSync, _ updater: EngineUpdater?) {
     switch phase {
@@ -76,7 +76,7 @@ struct AppParts {
     /// observers are in place when iOS wakes the app for new Health data.
     let health: AppleHealthSync
     let eraser: DataEraser
-    /// Over-the-air engine updates (US-25 AC17); nil if their folder cannot be made.
+    /// Over-the-air engine updates (US-25 AC18); nil if their folder cannot be made.
     let updater: EngineUpdater?
 
     init() throws {

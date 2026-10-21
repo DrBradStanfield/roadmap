@@ -1,5 +1,5 @@
 {
-  "about": "The contract between the native app and its JavaScript engine (ios/architecture.md D3, US-25 AC17). The app's bridge id is the first 16 hex digits of this file's SHA-256 (EngineRelease.bridge in Swift); a downloaded engine is accepted only for the same id. Any change here is a new bridge, so an engine that needs it waits for an app update. bridge.test.ts and EngineBridgeContractTests.swift fail if either side drifts from this file.",
+  "about": "The contract between the native app and its JavaScript engine (ios/architecture.md D3, US-25 AC18). The app's bridge id is the first 16 hex digits of this file's SHA-256 (EngineRelease.bridge in Swift); a downloaded engine is accepted only for the same id. Any change here is a new bridge, so an engine that needs it waits for an app update. bridge.test.ts and EngineBridgeContractTests.swift fail if either side drifts from this file.",
   "natives": {
     "http": "(method, url, headersJson, body ArrayBuffer|null, done(status, statusText, headersJson, body ArrayBuffer|null, error|null)) -> id. Swift sends only the allow-listed provider calls; an Authorization header must be 'Bearer native-token:<provider>', which Swift swaps for the real token.",
     "cancelHttp": "(id) -> void",

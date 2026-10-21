@@ -1,7 +1,7 @@
 import XCTest
 @testable import HealthRoadmap
 
-/// US-25 AC17: the update check against a stubbed GitHub. It fetches only the
+/// US-25 AC18: the update check against a stubbed GitHub. It fetches only the
 /// manifest, its signature and then the bundle, carries nothing of the user's, and
 /// stages only what verifies.
 @MainActor

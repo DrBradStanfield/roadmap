@@ -31,7 +31,7 @@ enum TokenAnswer: Sendable {
 /// JavaScript runs on the main queue only: every answer from URLSession or a
 /// timer hops there before it touches a JSValue.
 /// HTTP goes only where `EngineHTTP` allows, and tokens never reach JavaScript
-/// (US-25 AC17): an engine can be updated over the air, the fence cannot.
+/// (US-25 AC18): an engine can be updated over the air, the fence cannot.
 final class EngineNatives {
     weak var cloud: CloudPort?
     private let session: URLSession

@@ -1,7 +1,7 @@
 # Engine updates over the air: how to release
 
 For Brad. The design and its reasons are in [architecture.md](architecture.md) D3; the
-story is US-25 AC17. This page is the how-to.
+story is US-25 AC18. This page is the how-to.
 
 A fix to health-core reaches installed iPhones without an App Store release. Phones
 read `ios/engine-release/` from `main` on GitHub, but they run a release only if your
@@ -42,11 +42,16 @@ Made once on 2026-10-22 by `ios/scripts/engine-keygen.mjs`. Public keys:
 |---|---|---|
 | daily | login Keychain, service `health-roadmap-engine-signing`, account `daily`, trusted by no app | `519a8365b02da897` |
 | cold | 1Password only | `9a415581b0a54dbd` |
+| ci | GitHub `engine-signing` environment secret only | `d6a343128471bae8` |
 
 **Do now (Brad):** the cold key's private half is in
 `~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt` (mode 0600).
 Copy its one line into a 1Password item "Health Roadmap engine signing key (cold)",
-then `rm -P` that file. No agent has seen it.
+then `rm -P` that file. The ci key's private half is in
+`~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt` (0600): paste
+its one line as the `ENGINE_SIGNING_KEY` secret of the `engine-signing` environment
+(below), then `rm -P` that file. No agent has seen either. The daily key stays only in
+your Keychain.
 
 - **Lost Mac or Keychain:** sign with the cold key:
   `ENGINE_SIGNING_KEY='<cold line from 1Password>' npm run engine:release -- --key cold`.
@@ -66,9 +71,9 @@ Once pasted, each successful Deploy on `main` builds the engine with no secret, 
 second job, gated by a separate `engine-signing` environment where you are the
 required reviewer, shows what it will sign and signs it with inline steps only, so no
 repo code runs next to the key. Set up first: Settings, Environments, New environment
-`engine-signing`; Required reviewers: you; secret `ENGINE_SIGNING_KEY` = the daily
-key's line. That puts the daily key in GitHub as well as your Keychain: your call. A
-separate pinned `ci` key would keep them apart, at the cost of an app update.
+`engine-signing`; Required reviewers: you; secret `ENGINE_SIGNING_KEY` = the ci key's
+line (its own pinned key, so the daily key never leaves your Keychain). If the ci key
+leaks, remove it from the pins in an app update; the other two keep working.
 
 ```yaml
 # .github/workflows/engine-release.yml
@@ -102,7 +107,7 @@ jobs:
         run: |
           mkdir -p release-out
           [ -d ios/engine-release ] && cp -R ios/engine-release/. release-out/
-          node ios/scripts/release-engine.mjs --no-sign --if-changed --out release-out
+          node ios/scripts/release-engine.mjs --no-sign --key ci --if-changed --out release-out
           if diff -r ios/engine-release release-out >/dev/null 2>&1; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
       - if: steps.release.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
@@ -132,7 +137,7 @@ jobs:
           last=$(git log -1 --format=%H -- ios/engine-release || true)
           echo "== engine source changed since the last release ($last):"
           [ -n "$last" ] && git diff --stat "$last" HEAD -- packages/health-core/src ios/engine || true
-      - name: Sign (inline; no repo code runs here)
+      - name: Sign with the ci key (inline; no repo code runs here)
         env:
           ENGINE_SIGNING_KEY: ${{ secrets.ENGINE_SIGNING_KEY }}
         run: |
