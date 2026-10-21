@@ -548,6 +548,14 @@ Any change to merge behaviour bumps the schema version, so an older app refuses 
 (`SchemaTooNewError`) and asks for an update instead of merging the old way. Over-the-air
 engine updates (D3) close most of this gap; the bump covers what they cannot reach.
 
+The rule is for merges that could lose or change data. A change that only orders what
+merges already keep does not bump. Decided 2026-10-21 by the orchestrator, for Brad to
+revisit: `mergeMessages` now sorts question before answer at an equal `createdAt`
+(US-52). Codex asked for a chat-history version bump. Not done, because every reader
+sorts on read (`ChatSession.getMessages`), so a file an older client writes still reads
+in the right order, and nothing can be lost or duplicated. A bump would have cut every
+open web tab, Pages fork and CLI off from its chat history until it updated.
+
 ## Build and test
 
 **Layout.**
