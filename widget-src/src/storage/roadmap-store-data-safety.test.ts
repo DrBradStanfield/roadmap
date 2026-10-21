@@ -1285,10 +1285,14 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
     localStorage.setItem('health_roadmap_file_v2', '{not valid json');
     const beforeErase = vi.fn(async () => {});
 
-    // The write reads the same bytes, so it fails as before; the erase went ahead.
-    expect((await store.deleteAllData({ teardown: beforeErase })).success).toBe(false);
+    // The erased record replaces the bytes no record reads (US-11 AC9).
+    expect((await store.deleteAllData({ teardown: beforeErase })).success).toBe(true);
     expect(beforeErase).toHaveBeenCalledTimes(1);
     expect(fileOf(store).erasedRows).toEqual({ fromEpoch: 1, ids: [id] });
+    const device = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!) as RoadmapFile;
+    expect(device.meta.eraseEpoch).toBe(1);
+    expect(device.erasedRows).toEqual({ fromEpoch: 1, ids: [id] });
+    expect(device.measurements).toEqual([]);
   });
 
   it('a device file of valid JSON in a shape migrate refuses lists nothing, and the erase still succeeds (Codex R1)', async () => {

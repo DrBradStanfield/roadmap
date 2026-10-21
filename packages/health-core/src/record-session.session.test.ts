@@ -360,6 +360,24 @@ describe('RecordSession: erase (US-09 AC23, US-11)', () => {
     expect(stored(store.cloud).meta.eraseEpoch).toBe(1);
   });
 
+  it('on the device tier replaces a record no one can read with the erased record, and succeeds (US-11 AC9)', async () => {
+    for (const bytes of ['{not valid json', JSON.stringify({ schemaVersion: 1, measurements: 'not a list' })]) {
+      const store = new TestStore();
+      const fake = fakeHost(store, 'device');
+      const session = await RecordSession.open(fake.host);
+      add(session, 'a');
+      await session.flush();
+      store.cloud.files.set(ROADMAP_FILE_NAME, { json: bytes, version: 7 });
+      expect(await session.erase()).toEqual({ success: true });
+      const erased = stored(store.cloud);
+      expect(erased.meta.eraseEpoch).toBe(1);
+      expect(erased.erasedRows?.ids).toEqual(['a']);
+      expect(erased.measurements).toEqual([]);
+      expect(fake.calls).toEqual(['clearOffFileData', 'clearNamedFiles']);
+      expect(fake.timers).toHaveLength(0); // nothing left to save
+    }
+  });
+
   it('on the device tier clears the named files, with no mirror to write', async () => {
     const store = new TestStore();
     const fake = fakeHost(store, 'device');

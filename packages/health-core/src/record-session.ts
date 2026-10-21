@@ -287,7 +287,8 @@ export class RecordSession {
     // epoch unions with that record instead of beating it (US-11 AC7). On a
     // cloud an unreadable record refuses the erase, and the change on the
     // debounce goes back on it. On this device an unreadable record leaves
-    // this copy's epoch, as before: there is no other copy to list.
+    // this copy's epoch, as before: there is no other copy to list, and the
+    // erased record replaces its bytes below (US-11 AC9).
     const stored = await this.sync.load().catch(() => null);
     if (!stored && this.host.tier === 'cloud') {
       if (debounced) this.touch();
@@ -314,7 +315,14 @@ export class RecordSession {
       this.current = buildErasedFile({ stored, own: this.current, device, ctx: this.ctx() });
       this.touch(); // a change like any other: a failed flush leaves it for a hide to retry
       try {
-        await this.flush();
+        if (!stored && host.tier === 'device') {
+          // A read-merge-write would meet the same bytes: write over them.
+          this.cancelDebounce();
+          this.revisionSeen = host.sync.writeSync(ROADMAP_FILE_NAME, this.current, host.sync.revision(ROADMAP_FILE_NAME)).version;
+          this.savedChanges = this.changes;
+        } else {
+          await this.flush();
+        }
       } finally {
         this.erasing = false;
       }
