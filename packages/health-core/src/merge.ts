@@ -536,7 +536,7 @@ const CREATED_STAMPS: readonly StampedArray[] = ['measurements', 'labValues', 'd
  *  and NaN compares false. A date-time with no zone reads as UTC, as a
  *  date-only string already does, never as this machine's local time. */
 export const stampInstant = (iso: unknown): number =>
-  typeof iso === 'string' ? Date.parse(/T[\d:.]+$/.test(iso) ? `${iso}Z` : iso) : NaN;
+  typeof iso === 'string' ? Date.parse(/[Tt][\d:.]+$/.test(iso) ? `${iso}Z` : iso) : NaN;
 
 /** The root id of every row in the file: what an erase made now would list
  *  (US-09 AC23). A row whose id is not a string has no root, and is skipped. */

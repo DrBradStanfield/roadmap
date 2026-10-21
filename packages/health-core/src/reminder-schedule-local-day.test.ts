@@ -5,7 +5,9 @@
  * read the result back through the local clock, so west of Greenwich every
  * due date landed a day early: an item due tomorrow reads overdue today in the
  * Americas, and the server emails on the wrong day. Stored dates get UTC
- * arithmetic; only `now`, a real instant, is read locally.
+ * arithmetic. Since US-23 AC6b (2026-10-21) `now` is read as its UTC day too:
+ * the schedule is server-side reminder maths, which uses UTC days until the
+ * user's time zone is stored (US-23 AC12).
  *
  * The timezone is pinned per-file, never suite-wide; vitest.config runs the
  * whole suite in the `forks` pool, because only a real child process picks up a

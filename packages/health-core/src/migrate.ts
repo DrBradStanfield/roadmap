@@ -101,6 +101,20 @@ function after(a: string, b: string): boolean {
 
 const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
 
+/** Every shape a writer stamps with: a day alone, or with a time and an
+ *  optional zone. A space for the T, and an hour-only offset, are Postgres's
+ *  text style, which files imported from v1 may hold. That form needs its
+ *  zone: `stampInstant` reads it zone-less in the machine's local time. */
+const STAMP = /^\d{4}-\d{2}-\d{2}([Tt]\d{2}:\d{2}(:\d{2}(\.\d+)?)?([Zz]|[+-](0\d|1[0-4])(:?[0-5]\d)?)?| \d{2}:\d{2}(:\d{2}(\.\d+)?)?([Zz]|[+-](0\d|1[0-4])(:?[0-5]\d)?))?$/;
+
+/** A complete stamp (US-23 AC6a): a real calendar day, alone or with a time,
+ *  that parses. A real day followed by a broken time or offset, or by junk,
+ *  is not one. `Date.parse` alone takes '2026-05-01 junk' and 2026-02-30. */
+function isStamp(value: unknown): value is string {
+  return typeof value === 'string' && STAMP.test(value) && isCalendarDay(value.slice(0, 10))
+    && !Number.isNaN(stampInstant(value));
+}
+
 /** A counter from an untrusted writer: finite, non-negative, integral, bounded. */
 function counterOf(value: unknown, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return fallback;
@@ -121,12 +135,18 @@ function sanitizeStamp<T>(row: T, anchor: string): T {
   if (!isObject(row)) return row;
   const lamport = counterOf(row.lamport, 0);
   const clamped = 'lamport' in row && lamport !== row.lamport;
-  const future = typeof row.updatedAt === 'string' && after(row.updatedAt, anchor);
-  // A NON-string stamp (epoch millis from an agent, a null) is incomparable:
-  // `number > string` and `string > number` are both false, so with tied
-  // lamports neither row is newer either way round and the merge stops being
-  // symmetric. `""` sorts below every ISO string, restoring a total order.
-  const mistyped = 'updatedAt' in row && typeof row.updatedAt !== 'string';
+  // Validate the whole stamp before comparing: `after` orders a string that is
+  // not a time as a string, so 'not-a-date' read as future and took the
+  // anchor, a real date (US-23 AC6a).
+  const known = isStamp(row.updatedAt);
+  const future = known && after(row.updatedAt as string, anchor);
+  // A stamp that is not a time (epoch millis from an agent, a null,
+  // 'not-a-date', 2026-02-30, a broken time) is an unknown time. A non-string
+  // one is also incomparable: `number > string` and `string > number` are both
+  // false, so with tied lamports the merge stops being symmetric. `""` sorts
+  // below every ISO string, so it orders against any PRESENT stamp; a row with
+  // no `updatedAt` at all is still ordered by present-beats-absent, not by this.
+  const mistyped = 'updatedAt' in row && !known && row.updatedAt !== '';
   if (!clamped && !future && !mistyped) return row;
   return {
     ...row,
@@ -243,8 +263,8 @@ export function migrateFile(
   // the losing side (US-09 AC20).
   if ('erasedAt' in meta) {
     const at = meta.erasedAt;
-    // `isCalendarDay`: Date.parse rolls 2026-02-30 over to March 2.
-    const ok = typeof at === 'string' && ISO_DATE_TIME.test(at) && isCalendarDay(at.slice(0, 10)) && !Number.isNaN(Date.parse(at));
+    // `isStamp`: Date.parse rolls 2026-02-30 over to March 2.
+    const ok = isStamp(at) && ISO_DATE_TIME.test(at);
     if (ok) meta.erasedAt = new Date(at).toISOString();
     else delete meta.erasedAt;
   }
