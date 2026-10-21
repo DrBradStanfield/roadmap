@@ -119,10 +119,11 @@ final class HealthEngine {
         try await settle(callValue(name, arguments))
     }
 
-    /// Calls an engine function that returns a Promise of an ArrayBuffer, and waits for its bytes.
+    /// Calls an engine function that returns a Promise of something other than
+    /// text (an object holding an ArrayBuffer), and answers what `read` makes of it.
     @MainActor
-    func callAsyncBytes(_ name: String, _ arguments: [Any]) async throws -> Data {
-        try await settle(callValue(name, arguments)) { EngineNatives.data($0) ?? Data() }
+    func callAsync<T: Sendable>(_ name: String, _ arguments: [Any], read: @escaping (JSValue) -> T) async throws -> T {
+        try await settle(callValue(name, arguments), read: read)
     }
 
     /// Runs a script in the engine's context; tests use it to reach the shim directly.

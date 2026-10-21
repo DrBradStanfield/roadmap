@@ -90,12 +90,26 @@ final class LabSourceTests: XCTestCase {
         let (engine, _) = try app()
         let listed = try await engine.labFiles()
         let file = try XCTUnwrap(listed.first)
-        let data = try await engine.labFileData(file)
+        // A stale name on the phone: the file is read under the fresh listing's name (re-check R3).
+        let stale = HealthEngine.CloudLabFile(id: file.id, name: "renamed since.zip", size: file.size, modified: file.modified)
+        let fetched = try await engine.labFile(stale)
+        XCTAssertEqual(fetched.name, "Bloods October.pdf")
         let download = try XCTUnwrap(requests.last { $0.url.path.hasSuffix("/files/download") })
         XCTAssertEqual(download.headers["dropbox-api-arg"], #"{"path":"id:new"}"#)
-        let documents = try LabFileReader.documents(from: data, name: file.name)
+        let documents = try LabFileReader.documents(from: fetched.data, name: fetched.name)
         XCTAssertEqual(documents.map(\.name), ["Bloods October.pdf"])
         XCTAssertTrue(documents[0].pages[0].content.contains("LDL Cholesterol 3.1"))
+    }
+
+    /// Re-check R1: a refusal is told from a cloud failure by its marker, not by its
+    /// first character, so a file named "{scan}.pdf" is still said in plain words.
+    func testARefusalIsSaidInItsOwnWordsWhateverTheyStartWith() {
+        let refusal = DropboxFailure(HealthEngine.EngineError.callFailed(#"{"refused":"{scan}.pdf is empty."}"#))
+        XCTAssertEqual(refusal.errorDescription, "{scan}.pdf is empty.")
+        let signIn = DropboxFailure(HealthEngine.EngineError.callFailed(#"{"kind":"sign-in","detail":"x"}"#))
+        XCTAssertEqual(signIn.errorDescription, "Dropbox needs you to sign in again. Open From Dropbox to sign in.")
+        let other = DropboxFailure(HealthEngine.EngineError.callFailed("{scan}.pdf: something odd"))
+        XCTAssertEqual(other.errorDescription, "Dropbox could not be reached. Check the connection and try again.")
     }
 
     func testARevokedSignInIsClassedForTheScreen() async throws {
@@ -110,7 +124,9 @@ final class LabSourceTests: XCTestCase {
     }
 
     /// Review (both reviewers): after "Sign in to Dropbox again" works, the screen
-    /// lists afresh instead of staying on the sign-in error.
+    /// lists afresh instead of staying on the sign-in error. This drives the model;
+    /// that both Dropbox sign-in buttons call `signedIn()` through `connected:` was
+    /// checked by reading LabSourceViews.swift, not by a UI test (re-check R4).
     func testASignInAfterARefusedListingListsAfresh() async throws {
         tokens.delete(.dropbox)
         let (engine, sync) = try app()

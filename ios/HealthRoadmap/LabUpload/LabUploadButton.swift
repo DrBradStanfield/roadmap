@@ -201,13 +201,14 @@ struct LabUploadSheet: View {
         }
         await read {
             step = .working("Getting the file from Dropbox")
-            let data: Data
+            let fetched: (name: String, data: Data)
             do {
-                data = try await engine.labFileData(file)
+                fetched = try await engine.labFile(file)
             } catch {
                 throw DropboxFailure(error)
             }
-            return try LabFileReader.documents(from: data, name: file.name)
+            // Read under the name Dropbox gives it now, not the one the list showed (re-check R3).
+            return try LabFileReader.documents(from: fetched.data, name: fetched.name)
         }
     }
 
@@ -234,13 +235,16 @@ struct LabUploadSheet: View {
 }
 
 /// A Dropbox download that failed, in plain words: the engine's own refusal
-/// (not a listed lab file, too large), or what the cloud failure means.
-private struct DropboxFailure: LocalizedError {
+/// (`{"refused": "…"}`: not a listed lab file, empty, too large), or what the
+/// cloud failure means. The marker tells them apart, never the first character (re-check R1).
+struct DropboxFailure: LocalizedError {
     let errorDescription: String?
 
     init(_ error: Error) {
-        if case HealthEngine.EngineError.callFailed(let message) = error, !message.hasPrefix("{") {
-            errorDescription = message
+        if case HealthEngine.EngineError.callFailed(let message) = error,
+           let object = try? JSONSerialization.jsonObject(with: Data(message.utf8)) as? [String: Any],
+           let words = object["refused"] as? String {
+            errorDescription = words
         } else if SyncProblem(error).kind == .signIn {
             errorDescription = "Dropbox needs you to sign in again. Open From Dropbox to sign in."
         } else {

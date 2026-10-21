@@ -14,7 +14,7 @@ declare const __native: Natives | undefined;
 if (typeof __native !== 'undefined') installShim(globalThis as unknown as Record<string, unknown>, __native);
 
 // Cloud sync (cloud.ts): every call but cloudEdit is async and answers a Promise.
-export { cloudClose, cloudEdit, cloudErase, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible, labFileBytes, labFilesJson } from './cloud';
+export { cloudClose, cloudEdit, cloudErase, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible, labFile, labFilesJson } from './cloud';
 // "Delete all my data" on the phone's own file (erase.ts); a cloud's is cloudErase.
 export { erasePhoneJson } from './erase';
 

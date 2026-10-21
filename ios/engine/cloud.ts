@@ -557,26 +557,37 @@ async function labFiles(): Promise<Awaited<ReturnType<typeof dropboxListFolder>>
   }
 }
 
+/** A refusal in plain words, marked as one so Swift never reads it as a cloud
+ *  failure's JSON, whatever the words start with (re-check R1). */
+function refused(words: string): Error {
+  return new Error(JSON.stringify({ refused: words }));
+}
+
 /**
- * One file's bytes, by its id, only when a fresh listing offers it as a lab
- * file (review R3): an id from anywhere else, the record's or the chat
- * history's included, is refused before any download. The web's size limit
- * holds on the listing's size, a missing size counting as too big, and again
- * on the bytes (review R5). Refusals are plain words; a cloud failure is the
+ * One file, by its id, only when a fresh listing offers it as a lab file
+ * (review R3): an id from anywhere else, the record's or the chat history's
+ * included, is refused before any download. Answers the listing's name with
+ * the bytes, so the phone reads the file under the name Dropbox gives it now.
+ * The web's size limit holds on the listing's size and again on the bytes
+ * (review R5); an empty file is called empty (re-check R2), and a listing with
+ * no size reads as 0. Refusals are `{ refused }`; a cloud failure is the
  * failure JSON.
  */
-export async function labFileBytes(id: string): Promise<ArrayBuffer> {
+export async function labFile(id: string): Promise<{ name: string; bytes: ArrayBuffer }> {
   const entry = (await labFiles()).find((file) => file.id === id);
-  if (!entry) throw new Error('That file is not a lab file in the folder any more. Refresh the list and try again.');
+  if (!entry) throw refused('That file is not a lab file in the folder any more. Refresh the list and try again.');
   const limit = (entry.name.toLowerCase().endsWith('.zip') ? IMPORT_LIMITS.zipMb : IMPORT_LIMITS.websiteFileMb) * 1024 * 1024;
-  const tooBig = `${entry.name} is larger than the website's limit (${IMPORT_LIMITS.websiteFileMb} MB a file, ${IMPORT_LIMITS.zipMb} MB a ZIP).`;
-  if (!(entry.size > 0) || entry.size > limit) throw new Error(tooBig);
+  const check = (size: number) => {
+    if (!(size > 0)) throw refused(`${entry.name} is empty.`);
+    if (size > limit) throw refused(`${entry.name} is larger than the website's limit (${IMPORT_LIMITS.websiteFileMb} MB a file, ${IMPORT_LIMITS.zipMb} MB a ZIP).`);
+  };
+  check(entry.size);
   let bytes: Uint8Array<ArrayBuffer>;
   try {
     bytes = await refreshOn401(async (force) => dropboxDownload(await accessToken('dropbox', force), id));
   } catch (error) {
     throw new Error(failed('dropbox', error));
   }
-  if (bytes.byteLength > limit) throw new Error(tooBig);
-  return bytes.buffer;
+  check(bytes.byteLength);
+  return { name: entry.name, bytes: bytes.buffer };
 }

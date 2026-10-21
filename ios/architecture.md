@@ -679,12 +679,12 @@ Files, From Photos, and Scan a paper report (VisionKit's document camera, real p
 - *The app folder is the inbox.* The Dropbox app is an App folder app, so the app lists
   only `Apps/Health Plan by Dr Brad`, the root the hosted connector imports from too. The
   listing and download are health-core's `dropboxListFolder` and `dropboxDownload`, run in
-  the engine (`labFilesJson`, `labFileBytes` in cloud.ts), filtered by the connector's name
+  the engine (`labFilesJson`, `labFile` in cloud.ts), filtered by the connector's name
   rule (`isImportableEntryName`, `FOLDER_IMPORT_EXTENSIONS`), so the record and the app's
   own files never list. Download is by listing id only, never a path, and only an id a
   fresh listing still offers as a lab file (review R3): any Dropbox id the phone could
-  learn, the record's included, is otherwise refused. A file over the web's size limit,
-  or listed with no size, is refused before it downloads, and the bytes are checked again
+  learn, the record's included, is otherwise refused. A file over the web's size limit
+  is refused before it downloads, an empty one (or one listed with no size) is called empty, and the bytes are checked again
   (R5). The bridge's fetch holds the whole answer in Swift before JavaScript sees its
   headers, so a header check would guard nothing more; a true cap would sit in
   `EngineNatives.http`.
@@ -694,8 +694,8 @@ Files, From Photos, and Scan a paper report (VisionKit's document camera, real p
 - *Consent moved to the send.* The AI consent now comes after a file is picked and read on
   the phone, before anything goes to the server. Choosing a source and signing in to
   Dropbox are not AI steps, so asking first got in the way.
-- *Bytes across the bridge.* `HealthEngine.callAsyncBytes` settles a Promise of an
-  ArrayBuffer into `Data` (the shim's own `EngineNatives.data`), so no base64 detour.
+- *Bytes across the bridge.* `labFile` answers `{ name, bytes }`: the fresh listing's name, which
+  the phone reads the file under (re-check R3), and an ArrayBuffer that `HealthEngine.callAsync(_:_:read:)` turns into `Data` (the shim's own `EngineNatives.data`), so no base64 detour. Refusals are `{"refused": "…"}`, told from a cloud failure by that marker (re-check R1).
 - *Sync screen.* It says what sync does before a connect, names the cloud and folder once
   connected, and draws "not connected" as a phone (`SyncStatusText.symbol`): a struck-out
   iCloud symbol read as "iCloud is off".

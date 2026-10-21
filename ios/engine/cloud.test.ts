@@ -73,7 +73,7 @@ interface Engine {
   cloudClose(copyDown: boolean): Promise<string>;
   cloudErase(historyText: string | null, now: string, keepChat?: (text: string) => string): Promise<string>;
   labFilesJson(): Promise<string>;
-  labFileBytes(id: string): Promise<ArrayBuffer>;
+  labFile(id: string): Promise<{ name: string; bytes: ArrayBuffer }>;
 }
 
 const opened: Engine[] = [];
@@ -687,25 +687,28 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
   it('downloads a listed file by its id and answers its bytes', async () => {
     const folder = new FakeLabFolder();
     const { engine } = await phone(folder);
-    const bytes = await engine.labFileBytes('id:new');
-    expect(Buffer.from(new Uint8Array(bytes)).toString('utf8')).toBe('%PDF bytes of id:new');
+    const file = await engine.labFile('id:new');
+    expect(file.name).toBe('Bloods October.PDF'); // the fresh listing's name, which Swift reads it under (re-check R3)
+    expect(Buffer.from(new Uint8Array(file.bytes)).toString('utf8')).toBe('%PDF bytes of id:new');
     expect(folder.downloads).toEqual(['id:new']);
   });
 
   it('downloads only by a listing id, never by a path', async () => {
     const folder = new FakeLabFolder();
     const { engine } = await phone(folder);
-    await expect(engine.labFileBytes('health-roadmap.json')).rejects.toThrow();
-    await expect(engine.labFileBytes('/Other/thing.pdf')).rejects.toThrow();
+    await expect(engine.labFile('health-roadmap.json')).rejects.toThrow();
+    await expect(engine.labFile('/Other/thing.pdf')).rejects.toThrow();
     expect(folder.downloads).toEqual([]);
   });
 
   it('R3: downloads only an id a fresh listing offers as a lab file, never the record or an unlisted id', async () => {
     const folder = new FakeLabFolder();
     const { engine } = await phone(folder);
-    await expect(engine.labFileBytes('id:record')).rejects.toThrow('not a lab file in the folder');
-    await expect(engine.labFileBytes('id:backup')).rejects.toThrow('not a lab file in the folder');
-    await expect(engine.labFileBytes('id:chat-history')).rejects.toThrow('not a lab file in the folder');
+    // A refusal is marked as one, so Swift never reads a name like "{scan}.pdf" as a failure's JSON (re-check R1).
+    const refusal = await engine.labFile('id:record').catch((error: Error) => JSON.parse(error.message) as { refused?: string });
+    expect(refusal.refused).toContain('not a lab file in the folder');
+    await expect(engine.labFile('id:backup')).rejects.toThrow('not a lab file in the folder');
+    await expect(engine.labFile('id:chat-history')).rejects.toThrow('not a lab file in the folder');
     expect(folder.downloads).toEqual([]);
     expect(folder.listed).toHaveLength(3); // each read lists the folder afresh
   });
@@ -720,9 +723,25 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
     );
     folder.bodyFor = (id) => (id === 'id:liar' ? 'x'.repeat(10 * 1024 * 1024 + 1) : null);
     const { engine } = await phone(folder);
-    for (const id of ['id:big', 'id:bigzip', 'id:nosize']) await expect(engine.labFileBytes(id)).rejects.toThrow('larger than');
+    for (const id of ['id:big', 'id:bigzip']) await expect(engine.labFile(id)).rejects.toThrow('larger than');
+    // No size reads as 0 (dropboxListFolder), so it is refused as empty, never downloaded.
+    await expect(engine.labFile('id:nosize')).rejects.toThrow('Nosize.pdf is empty.');
     expect(folder.downloads).toEqual([]);
-    await expect(engine.labFileBytes('id:liar')).rejects.toThrow('larger than');
+    await expect(engine.labFile('id:liar')).rejects.toThrow('larger than');
+  });
+
+  it('re-check R2: an empty file is called empty, not too large, before and after the download', async () => {
+    const folder = new FakeLabFolder();
+    folder.entries.push(
+      { '.tag': 'file', id: 'id:empty', name: '{scan}.pdf', size: 0, server_modified: '2026-10-19T00:00:00Z' },
+      { '.tag': 'file', id: 'id:hollow', name: 'Hollow.pdf', size: 10, server_modified: '2026-10-19T00:00:00Z' },
+    );
+    folder.bodyFor = (id) => (id === 'id:hollow' ? '' : null);
+    const { engine } = await phone(folder);
+    const empty = await engine.labFile('id:empty').catch((error: Error) => JSON.parse(error.message) as { refused?: string });
+    expect(empty.refused).toBe('{scan}.pdf is empty.');
+    expect(folder.downloads).toEqual([]);
+    await expect(engine.labFile('id:hollow')).rejects.toThrow('Hollow.pdf is empty.');
   });
 
   it('a refused token is refreshed once and the listing repeated', async () => {
@@ -741,6 +760,6 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
     folder.online = false;
     const offline = await phone(folder);
     await expect(offline.engine.labFilesJson()).rejects.toThrow('"kind":"unreachable"');
-    await expect(offline.engine.labFileBytes('id:new')).rejects.toThrow('"kind":"unreachable"');
+    await expect(offline.engine.labFile('id:new')).rejects.toThrow('"kind":"unreachable"');
   });
 });

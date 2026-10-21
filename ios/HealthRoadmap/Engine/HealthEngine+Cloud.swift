@@ -72,9 +72,13 @@ extension HealthEngine {
         return try JSONDecoder().decode([CloudLabFile].self, from: Data(json.utf8))
     }
 
-    /// One listed file's bytes.
+    /// One listed file: its name in a fresh listing, which the phone reads it
+    /// under (re-check R3), and its bytes. Throws `EngineError.callFailed` whose
+    /// text is `{"refused": "…"}` or the failure JSON.
     @MainActor
-    func labFileData(_ file: CloudLabFile) async throws -> Data {
-        try await callAsyncBytes("labFileBytes", [file.id])
+    func labFile(_ file: CloudLabFile) async throws -> (name: String, data: Data) {
+        try await callAsync("labFile", [file.id]) { answer in
+            (answer.forProperty("name")?.toString() ?? file.name, EngineNatives.data(answer.forProperty("bytes")) ?? Data())
+        }
     }
 }
