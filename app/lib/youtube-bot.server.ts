@@ -31,7 +31,7 @@ import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION, type RouterResult } from './chat-router.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
-import { namedArticles, preferMasters } from './router-view';
+import { preferMasters } from './router-view';
 import { loadBlogArticle } from './matched-content';
 import { stripFrontmatter } from './frontmatter';
 import { YOUTUBE_PROMPT_TEMPLATE, buildYouTubePlatformContext, loadedHandles } from './youtube-context';
@@ -900,7 +900,7 @@ export async function runPipeline(
   // US-50 AC14: an older post gives way to its topic masters, unless it is
   // this video's own post or the comment gives its URL or handle.
   const index = loadBlogIndex();
-  const routed = preferMasters(routerHandles, index, new Set([entry.handle, ...namedArticles(index, sanitized)]));
+  const routed = preferMasters(routerHandles, index, thread.text, { keep: [entry.handle] });
   const matched = loadMatchedArticlesFromHandles(routed.handles);
   const blogArticles = matched?.content ?? null;
   // Master views skip only masters that actually loaded, not ones the cap skipped (US-50 AC6).

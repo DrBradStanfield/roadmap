@@ -122,6 +122,11 @@ describe('US-50 AC14: the storefront chat loads the master, not the older post',
     expect(loaded()).toEqual(['tm-d-video', 'tm-d']);
   });
 
+  it('a URL after the router\'s first 2,000 characters still names the post (Codex C2)', async () => {
+    await post({ message: `${'Some context. '.repeat(200)}About microvitamin.com/blogs/articles/tm-d-video-commerce: still right?`, localFirst: true });
+    expect(loaded()).toEqual(['tm-d-video', 'tm-d']);
+  });
+
   it('an articleHandle that is not an index handle is ignored and never stored', async () => {
     await post({ message: 'Is vitamin D worth taking?', articleHandle: 'not-a-real-post-x9' });
     expect(loaded()).toEqual(['tm-d']);

@@ -25,17 +25,25 @@ export function routerView(index: BlogIndexEntry[], hide = process.env.TOPIC_MAS
 
 const slugsOf = (e: BlogIndexEntry) => [e.handle, e.commerceUrl?.split(/[?#]/)[0].split('/').pop()];
 
+const isArticle = (e: BlogIndexEntry) => (e.type ?? 'article') === 'article';
+
 /**
- * The posts a message names (US-50 AC14): any post whose handle or
- * microvitamin.com slug it gives, as a hyphenated word or a
- * /blogs/<blog>/<slug> path.
+ * The posts a message names (US-50 AC14): any article whose handle or
+ * microvitamin.com slug it gives in a /blogs/<blog>/<slug> path, or as a bare
+ * hyphenated word of at least 4 words ("calcium-rich-foods" names nothing).
+ * Callers pass the whole message, not the router's 2,000-character cut.
  */
 export function namedArticles(index: BlogIndexEntry[], message: string): Set<string> {
   const text = message.toLowerCase();
   const said = new Set([...text.matchAll(/\/blogs\/[^/\s]+\/([a-z0-9-]+)/g)].map(m => m[1]));
-  for (const word of text.match(/[a-z0-9]+(?:-[a-z0-9]+)+/g) ?? []) said.add(word);
-  return new Set(index.filter(e => slugsOf(e).some(s => !!s && said.has(s))).map(e => e.handle));
+  for (const word of text.match(/[a-z0-9]+(?:-[a-z0-9]+){3,}/g) ?? []) said.add(word);
+  return new Set(index.filter(e => isArticle(e) && slugsOf(e).some(s => !!s && said.has(s))).map(e => e.handle));
 }
+
+/** Patterns for the names a message gives a master's topic: its title before the colon, without parentheses, each side of an "and", a final "s" optional. */
+const topicNames = (e: BlogIndexEntry) => e.title.split(':')[0].replace(/\([^)]*\)/g, '').toLowerCase().split(/\s+and\s+/)
+  .map(n => n.trim().replace(/s$/, '')).filter(Boolean)
+  .map(n => new RegExp(`(?<![a-z0-9])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}s?(?![a-z0-9])`));
 
 /**
  * The post the storefront chat is open on (US-50 AC14): the article whose
@@ -44,52 +52,71 @@ export function namedArticles(index: BlogIndexEntry[], message: string): Set<str
  */
 export function openArticle(index: BlogIndexEntry[], value: unknown): string | undefined {
   if (typeof value !== 'string' || !value) return undefined;
-  return index.find(e => (e.type ?? 'article') === 'article' && slugsOf(e).includes(value))?.handle;
+  return index.find(e => isArticle(e) && slugsOf(e).includes(value))?.handle;
 }
 
 /**
  * The router's picks with each older post replaced by its topic masters, in
  * its slot (US-50 AC14). An article whose `topics` name masters gives way only
  * when every one of them covers it (reviewed on or after its publish day, as
- * routerView, US-50 AC3 and AC5). A `named` post, or the `open` one, stays and
- * its masters follow it. The open post, when the router did not pick it, is
- * added right after its first master once one is in the list, or with its
- * masters when the router picked nothing. Every pick the router made that
- * stays keeps its place; added handles take only the slots those leave free
- * under 3, in slot order; duplicates drop.
+ * routerView, US-50 AC3 and AC5). A post's masters rank by where the message
+ * names their topic, earliest first, then by its `topics` order. A post the
+ * message names, the `open` one or one in `keep` (the YouTube video's own
+ * post) stays when picked, its masters after it. At most 3 handles, in passes:
+ * (1) every pick that stays, in its own slot; (2) per replaced pick, its
+ * first-ranked master not yet in, in that slot (each pick owns a slot, so one
+ * always fits); (3) the open post when the router picked nothing or one of its
+ * masters is in, and each post the message names that the router did not pick
+ * (not one in `keep`), each with its first master if none is in; (4) the other
+ * masters, in slot order. The list is in slot order; a pass-3 post sits after
+ * the first of its own masters in the final list, else at the end.
  */
-export function preferMasters(picks: string[], index: BlogIndexEntry[], named: Set<string>, open?: string): { handles: string[]; replaced: string[] } {
+export function preferMasters(picks: string[], index: BlogIndexEntry[], message: string, opts: { open?: string; keep?: string[] } = {}): { handles: string[]; replaced: string[] } {
+  const { open, keep = [] } = opts;
   const byHandle = new Map(index.map(e => [e.handle, e]));
+  const text = message.toLowerCase();
+  const named = namedArticles(index, message);
+  const mentionedAt = (m: string) => Math.min(Infinity, ...topicNames(byHandle.get(m)!).map(re => text.search(re)).filter(i => i >= 0));
   const mastersOf = (h: string) => {
     const entry = byHandle.get(h);
-    return entry && (entry.type ?? 'article') === 'article'
-      ? (entry.topics ?? []).filter(t => { const m = byHandle.get(t); return !!m && isMaster(m); })
-      : [];
+    const masters = entry && isArticle(entry) ? (entry.topics ?? []).filter(t => { const m = byHandle.get(t); return !!m && isMaster(m); }) : [];
+    return masters.map((m, i) => ({ m, i, at: mentionedAt(m) })).sort((a, b) => a.at - b.at || a.i - b.i).map(x => x.m);
   };
-  const seq: { handle: string; kept: boolean }[] = [];
+  // Chosen handles and their sort keys: slot * 100 + place in the slot; pass-3 masters go last, in order.
+  const chosen = new Map<string, number>();
+  const LAST = 1e6;
+  const take = (h: string, key: number) => { if (!chosen.has(h) && chosen.size < 3) chosen.set(h, key); };
+  const rest: [string, number][] = [];
   const replaced: string[] = [];
-  for (const pick of picks) {
+  const unique = [...new Set(picks)];
+  const toReplace: [string[], number][] = [];
+  unique.forEach((pick, slot) => {
     const masters = mastersOf(pick);
     const day = byHandle.get(pick)?.publishedAt?.slice(0, 10);
-    if (masters.length === 0 || !day || !masters.every(m => byHandle.get(m)!.reviewed! >= day)) { seq.push({ handle: pick, kept: true }); continue; }
-    if (named.has(pick) || pick === open) seq.push({ handle: pick, kept: true });
-    else replaced.push(pick);
-    seq.push(...masters.map(handle => ({ handle, kept: false })));
+    const covered = masters.length > 0 && !!day && masters.every(m => byHandle.get(m)!.reviewed! >= day);
+    if (covered && !named.has(pick) && pick !== open && !keep.includes(pick)) { replaced.push(pick); toReplace.push([masters, slot]); return; }
+    take(pick, slot * 100);
+    if (covered) masters.forEach((m, j) => rest.push([m, slot * 100 + 1 + j]));
+  });
+  for (const [masters, slot] of toReplace) {
+    const first = masters.find(m => !chosen.has(m));
+    if (first) take(first, slot * 100);
+    masters.forEach((m, j) => rest.push([m, slot * 100 + 1 + j]));
   }
-  if (open && !picks.includes(open)) {
-    const masters = mastersOf(open);
-    if (picks.length === 0) seq.push(...masters.map(handle => ({ handle, kept: false })));
-    const first = seq.findIndex(s => masters.includes(s.handle));
-    if (first >= 0) seq.splice(first + 1, 0, { handle: open, kept: false });
-    else if (picks.length === 0) seq.push({ handle: open, kept: false });
+  const forced: string[] = [];
+  const openFits = !!open && (unique.length === 0 || mastersOf(open).some(m => chosen.has(m)));
+  for (const post of [...(open && openFits ? [open] : []), ...[...named].filter(h => !keep.includes(h))]) {
+    if (unique.includes(post) || chosen.has(post) || chosen.size >= 3) continue;
+    chosen.set(post, LAST);
+    forced.push(post);
+    const masters = mastersOf(post);
+    if (masters.length > 0 && !masters.some(m => chosen.has(m))) take(masters[0], LAST + chosen.size);
   }
-  const kept = new Set(seq.filter(s => s.kept).map(s => s.handle));
-  let free = 3 - kept.size;
-  const handles: string[] = [];
-  for (const { handle, kept: own } of seq) {
-    if (handles.includes(handle)) continue;
-    if (own) handles.push(handle);
-    else if (!kept.has(handle) && free > 0) { handles.push(handle); free--; }
+  for (const [m, key] of rest.sort((a, b) => a[1] - b[1])) take(m, key);
+  const handles = [...chosen].filter(([h]) => !forced.includes(h)).sort((a, b) => a[1] - b[1]).map(([h]) => h);
+  for (const post of forced) {
+    const anchor = mastersOf(post).map(m => handles.indexOf(m)).find(i => i >= 0);
+    handles.splice(anchor === undefined ? handles.length : anchor + 1, 0, post);
   }
   return { handles, replaced };
 }

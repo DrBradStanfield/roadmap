@@ -18,7 +18,7 @@ import type { ChatFailureMode } from './chat.server';
 import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { loadBlogIndex } from './blog-index.server';
-import { namedArticles, preferMasters } from './router-view';
+import { preferMasters } from './router-view';
 import type { AnthropicUsage } from './anthropic.server';
 import type { Classification, RefusalCategory } from '../../packages/health-core/src/models';
 
@@ -91,7 +91,7 @@ export async function platformChatCompletion(params: {
 
   // US-50 AC14: an older post gives way to its topic masters unless the message gives its URL or handle.
   const index = loadBlogIndex();
-  const routed = preferMasters(routerResult?.handles ?? [], index, namedArticles(index, sanitizedCurrent));
+  const routed = preferMasters(routerResult?.handles ?? [], index, message);
   const matched = loadMatchedArticlesFromHandles(routed.handles);
   const blogArticles = matched?.content ?? null;
 

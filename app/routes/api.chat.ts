@@ -30,7 +30,7 @@ import {
 import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, routerText, ROUTER_VERSION } from '../lib/chat-router.server';
 import { titledHandles } from '../lib/chat-router-guard';
 import { loadBlogIndex } from '../lib/blog-index.server';
-import { namedArticles, openArticle, preferMasters } from '../lib/router-view';
+import { openArticle, preferMasters } from '../lib/router-view';
 import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../packages/health-core/src/chat-history';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
@@ -521,10 +521,11 @@ async function chatAction(request: Request, app: boolean) {
       const effectiveHandles = routerResult?.handles ?? [];
       // US-50 AC14: an older post gives way to its topic masters, unless the
       // chat is open on it (`articleHandle`, untrusted, a lookup only; forced
-      // in only on a routed turn) or the message gives its URL or handle.
+      // in only on a routed turn) or the message gives its URL or handle. The
+      // whole message is read here (Codex C2), a lookup only, never logged.
       const index = loadBlogIndex();
       const open = routerResult ? openArticle(index, body.articleHandle) : undefined;
-      const routed = preferMasters(effectiveHandles, index, namedArticles(index, sanitizedCurrent), open);
+      const routed = preferMasters(effectiveHandles, index, message, { open });
 
       reportRouterFailure(routerResult);
 

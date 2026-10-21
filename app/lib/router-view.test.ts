@@ -90,11 +90,11 @@ describe('routerView (US-50 AC3)', () => {
 });
 
 /**
- * US-50 AC14: after routing, an article pick that names topic masters is
- * replaced by those masters in its slot, unless the article is named (open
- * in the chat, its URL or handle in the message, or the YouTube video's own
- * post) or not covered by every master it names. Added handles take only the
- * slots the router's own kept picks leave free.
+ * US-50 AC14: after routing, an article pick its masters all cover is
+ * replaced by a master in its slot, unless the post is named (open in the
+ * chat, its URL or handle in the message, or the YouTube video's own post).
+ * Slots go in passes: the router's kept picks, one master per replaced pick,
+ * the open or named post, then the remaining masters.
  */
 describe('preferMasters (US-50 AC14)', () => {
   const d = master('vitamin-d', '2026-10-20');
@@ -108,41 +108,42 @@ describe('preferMasters (US-50 AC14)', () => {
   const nadVideo = post('nad-video', { topics: ['nad-nmn'] });
   const plain = post('plain-article');
   const index = [d, k, stale, dVideo, dkVideo, pathway, guideline, ref, nadVideo, plain];
-  const none = new Set<string>();
+  const pm = (picks: string[], opts: { message?: string; open?: string; keep?: string[] } = {}, idx = index) =>
+    preferMasters(picks, idx, opts.message ?? '', opts);
 
   it('replaces an article pick with its master in the same slot', () => {
-    expect(preferMasters(['a-pathway', 'vitamin-d-video', 'plain-article'], index, none))
+    expect(pm(['a-pathway', 'vitamin-d-video', 'plain-article']))
       .toEqual({ handles: ['a-pathway', 'vitamin-d', 'plain-article'], replaced: ['vitamin-d-video'] });
   });
 
   it('a multi-master article becomes all its masters, in its slot', () => {
-    expect(preferMasters(['d-and-k-video', 'plain-article'], index, none))
+    expect(pm(['d-and-k-video', 'plain-article']))
       .toEqual({ handles: ['vitamin-d', 'vitamin-k', 'plain-article'], replaced: ['d-and-k-video'] });
   });
 
   it('keeps the result to 3 handles: added masters take only the free slots, in slot order', () => {
-    expect(preferMasters(['a-pathway', 'd-and-k-video', 'plain-article'], index, none))
+    expect(pm(['a-pathway', 'd-and-k-video', 'plain-article']))
       .toEqual({ handles: ['a-pathway', 'vitamin-d', 'plain-article'], replaced: ['d-and-k-video'] });
   });
 
   it('never drops a master the router picked to make room for an added one', () => {
     const e = master('vitamin-e', '2026-10-20');
     const tri = post('tri-video', { topics: ['vitamin-d', 'vitamin-k', 'vitamin-e'] });
-    expect(preferMasters(['tri-video', 'plain-article', 'vitamin-d'], [...index, e, tri], none))
+    expect(pm(['tri-video', 'plain-article', 'vitamin-d'], {}, [...index, e, tri]))
       .toEqual({ handles: ['vitamin-k', 'plain-article', 'vitamin-d'], replaced: ['tri-video'] });
   });
 
   it('dedupes: a master the router picked keeps its own place, and is not added twice', () => {
-    expect(preferMasters(['d-and-k-video', 'vitamin-d', 'plain-article'], index, none))
+    expect(pm(['d-and-k-video', 'vitamin-d', 'plain-article']))
       .toEqual({ handles: ['vitamin-k', 'vitamin-d', 'plain-article'], replaced: ['d-and-k-video'] });
-    expect(preferMasters(['vitamin-d-video', 'd-and-k-video'], index, none))
+    expect(pm(['vitamin-d-video', 'd-and-k-video']))
       .toEqual({ handles: ['vitamin-d', 'vitamin-k'], replaced: ['vitamin-d-video', 'd-and-k-video'] });
-    expect(preferMasters(['vitamin-d', 'vitamin-d-video'], index, none))
+    expect(pm(['vitamin-d', 'vitamin-d-video']))
       .toEqual({ handles: ['vitamin-d'], replaced: ['vitamin-d-video'] });
   });
 
   it('a named article stays, and its masters load beside it', () => {
-    expect(preferMasters(['vitamin-d-video', 'plain-article'], index, new Set(['vitamin-d-video'])))
+    expect(pm(['vitamin-d-video', 'plain-article'], { keep: ['vitamin-d-video'] }))
       .toEqual({ handles: ['vitamin-d-video', 'vitamin-d', 'plain-article'], replaced: [] });
   });
 
@@ -153,50 +154,95 @@ describe('preferMasters (US-50 AC14)', () => {
     const sameDay = post('same-day-video', { topics: ['vitamin-d'], publishedAt: '2026-10-20T08:00:00Z' });
     const undated = post('undated-video', { topics: ['vitamin-d'], publishedAt: undefined as unknown as string });
     const all = [...index, later, newer, mixed, sameDay, undated];
-    expect(preferMasters(['newer-video', 'mixed-video', 'undated-video'], all, none))
+    expect(pm(['newer-video', 'mixed-video', 'undated-video'], {}, all))
       .toEqual({ handles: ['newer-video', 'mixed-video', 'undated-video'], replaced: [] });
-    expect(preferMasters(['same-day-video'], all, none))
+    expect(pm(['same-day-video'], {}, all))
       .toEqual({ handles: ['vitamin-d'], replaced: ['same-day-video'] });
+  });
+
+  // Review R1: the open post's masters once took every free slot, so a second
+  // replaced post vanished with nothing in its place yet was logged as replaced.
+  it('a replaced pick always gets a master slot before the open post\'s other masters (review R1)', () => {
+    const many = ['m-one', 'm-two', 'm-three', 'm-four', 'm-five'].map(h => master(h, '2026-10-20'));
+    const open = post('open-multi-post', { topics: many.map(m => m.handle) });
+    const other = post('other-trial-post', { topics: ['vitamin-k'] });
+    expect(pm(['open-multi-post', 'other-trial-post'], { open: 'open-multi-post' }, [...index, ...many, open, other]))
+      .toEqual({ handles: ['open-multi-post', 'm-one', 'vitamin-k'], replaced: ['other-trial-post'] });
+  });
+
+  // Review R2: the master the question is about goes first.
+  it('ranks a post\'s masters by the topic the message names, then by its topics order (review R2)', () => {
+    const multi = { ...master('multivitamins-benefits', '2026-10-20'), title: 'Multivitamins: Benefits, Evidence, Dosing, and Side Effects' };
+    const a = { ...master('vitamin-a-benefits', '2026-10-20'), title: 'Vitamin A: Benefits, Forms, Dosing, and Side Effects' };
+    const mv = post('multivitamins-old-post', { topics: ['multivitamins-benefits', 'vitamin-a-benefits'] });
+    const idx = [...index, multi, a, mv];
+    expect(pm(['multivitamins-old-post', 'plain-article', 'a-pathway'], { message: 'is the vitamin A in a multivitamin safe in pregnancy?' }, idx).handles)
+      .toEqual(['vitamin-a-benefits', 'plain-article', 'a-pathway']);
+    expect(pm(['multivitamins-old-post', 'plain-article', 'a-pathway'], { message: 'are multivitamins worth it?' }, idx).handles)
+      .toEqual(['multivitamins-benefits', 'plain-article', 'a-pathway']);
+  });
+
+  // Review R3: a post the message names by URL or handle loads even when the router did not pick it.
+  it('a post the message names loads with its first master, even unpicked or router-hidden (review R3)', () => {
+    const hidden = post('old-vitamin-d-trial-video', { topics: ['vitamin-d', 'vitamin-k'], router: 'hidden' });
+    const idx = [...index, hidden];
+    expect(pm(['plain-article'], { message: 'In old-vitamin-d-trial-video you said what?' }, idx))
+      .toEqual({ handles: ['plain-article', 'vitamin-d', 'old-vitamin-d-trial-video'], replaced: [] });
+    expect(pm(['vitamin-k', 'plain-article'], { message: 'see /blogs/articles/old-vitamin-d-trial-video' }, idx))
+      .toEqual({ handles: ['vitamin-k', 'old-vitamin-d-trial-video', 'plain-article'], replaced: [] });
+    // The YouTube video's own post is already in the bot's context: it stays when picked, but is never forced in.
+    expect(pm(['plain-article'], { message: 'old-vitamin-d-trial-video was great', keep: ['old-vitamin-d-trial-video'] }, idx).handles)
+      .toEqual(['plain-article']);
   });
 
   describe('the post the chat is open on', () => {
     it('loads right after its first master when the router picked that master', () => {
-      expect(preferMasters(['vitamin-d', 'plain-article'], index, none, 'vitamin-d-video'))
+      expect(pm(['vitamin-d', 'plain-article'], { open: 'vitamin-d-video' }))
         .toEqual({ handles: ['vitamin-d', 'vitamin-d-video', 'plain-article'], replaced: [] });
     });
 
-    it('loads with its masters when the router picked nothing', () => {
-      expect(preferMasters([], index, none, 'd-and-k-video'))
-        .toEqual({ handles: ['vitamin-d', 'd-and-k-video', 'vitamin-k'], replaced: [] });
-      expect(preferMasters([], index, none, 'plain-article'))
+    it('loads with its first master when the router picked nothing', () => {
+      expect(pm([], { open: 'd-and-k-video' }))
+        .toEqual({ handles: ['vitamin-d', 'd-and-k-video'], replaced: [] });
+      expect(pm([], { open: 'plain-article' }))
         .toEqual({ handles: ['plain-article'], replaced: [] });
     });
 
     it('loads when its master came in by replacing another routed post', () => {
-      expect(preferMasters(['d-and-k-video'], index, none, 'vitamin-d-video'))
+      expect(pm(['d-and-k-video'], { open: 'vitamin-d-video' }))
         .toEqual({ handles: ['vitamin-d', 'vitamin-d-video', 'vitamin-k'], replaced: ['d-and-k-video'] });
     });
 
+    it('sits after the first of its own masters in the list, by its masters order (review R4)', () => {
+      expect(pm(['vitamin-k', 'vitamin-d'], { open: 'd-and-k-video' }))
+        .toEqual({ handles: ['vitamin-k', 'vitamin-d', 'd-and-k-video'], replaced: [] });
+    });
+
+    it('anchors only on the final list, never on a duplicate it drops (Codex C1)', () => {
+      expect(pm(['d-and-k-video', 'vitamin-d', 'plain-article'], { open: 'vitamin-d-video' }))
+        .toEqual({ handles: ['vitamin-k', 'vitamin-d', 'plain-article'], replaced: ['d-and-k-video'] });
+    });
+
     it('is not forced in when the question routed elsewhere', () => {
-      expect(preferMasters(['plain-article', 'a-pathway'], index, none, 'vitamin-d-video'))
+      expect(pm(['plain-article', 'a-pathway'], { open: 'vitamin-d-video' }))
         .toEqual({ handles: ['plain-article', 'a-pathway'], replaced: [] });
     });
 
     it('takes only a free slot', () => {
-      expect(preferMasters(['vitamin-d', 'plain-article', 'a-guideline'], index, none, 'vitamin-d-video'))
+      expect(pm(['vitamin-d', 'plain-article', 'a-guideline'], { open: 'vitamin-d-video' }))
         .toEqual({ handles: ['vitamin-d', 'plain-article', 'a-guideline'], replaced: [] });
     });
 
     it('stays in its own slot when the router picked it', () => {
-      expect(preferMasters(['vitamin-d-video', 'plain-article'], index, none, 'vitamin-d-video'))
+      expect(pm(['vitamin-d-video', 'plain-article'], { open: 'vitamin-d-video' }))
         .toEqual({ handles: ['vitamin-d-video', 'vitamin-d', 'plain-article'], replaced: [] });
     });
   });
 
   it('pathways, guidelines, references, non-master topics and articles with no topics are untouched', () => {
-    expect(preferMasters(['a-pathway', 'a-guideline', 'other-ref'], index, none))
+    expect(pm(['a-pathway', 'a-guideline', 'other-ref']))
       .toEqual({ handles: ['a-pathway', 'a-guideline', 'other-ref'], replaced: [] });
-    expect(preferMasters(['nad-video', 'plain-article', 'not-in-index'], index, none))
+    expect(pm(['nad-video', 'plain-article', 'not-in-index']))
       .toEqual({ handles: ['nad-video', 'plain-article', 'not-in-index'], replaced: [] });
   });
 });
@@ -206,7 +252,8 @@ describe('namedArticles (US-50 AC14)', () => {
     commerceUrl: 'https://microvitamin.com/blogs/articles/vitamin-k2-artery-calcification-trials',
   });
   const one = post('lipoproteina');
-  const index = [master('vitamin-k', '2026-10-20'), video, one];
+  const short = post('calcium-rich-foods');
+  const index = [master('vitamin-k', '2026-10-20'), video, one, short];
   const named = (message: string) => [...namedArticles(index, message)];
 
   it('the article the chat is open on, by its handle or its commerce slug', () => {
@@ -224,10 +271,16 @@ describe('namedArticles (US-50 AC14)', () => {
     expect(named('About https://microvitamin.com/blogs/articles/vitamin-k2-artery-calcification-trials?ref=x: is it right?')).toEqual([video.handle]);
     expect(named('In WHY-ARENT-CARDIOLOGISTS-PRESCRIBING-VITAMIN-K2, you said...')).toEqual([video.handle]);
     expect(named('see drstanfield.com/blogs/articles/lipoproteina')).toEqual([one.handle]);
+    expect(named('see /blogs/news/calcium-rich-foods')).toEqual([short.handle]);
   });
 
-  it('a topic word alone names nothing', () => {
+  it('a topic word alone names nothing, nor a bare hyphenated word under 4 words (review R5)', () => {
     expect(named('Is vitamin k2 worth it? What about lipoproteina levels?')).toEqual([]);
     expect(named('the vitamin-k2-artery-calcification-trials-extra post')).toEqual([]);
+    expect(named('I eat calcium-rich-foods daily')).toEqual([]);
+  });
+
+  it('reads the whole message, past the router\'s 2,000 characters (Codex C2)', () => {
+    expect(named(`${'x '.repeat(1_500)}see why-arent-cardiologists-prescribing-vitamin-k2`)).toEqual([video.handle]);
   });
 });

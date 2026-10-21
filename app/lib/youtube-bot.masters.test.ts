@@ -476,7 +476,7 @@ describe('runPipeline: the reply-or-skip input (US-50 AC6)', () => {
   it('a comment giving the post\'s handle names it (US-50 AC14)', async () => {
     fakeFiles();
     pick(['tm-collagen-video']);
-    const outcome = await runPipeline({ ...thread, text: 'In tm-collagen-video you said collagen works. Still true?' }, entry, 'The video body.');
+    const outcome = await runPipeline({ ...thread, text: 'In drstanfield.com/blogs/articles/tm-collagen-video you said collagen works. Still true?' }, entry, 'The video body.');
     expect(systemOf().find(t => t.startsWith('## Referenced Blog Articles'))).toContain("The old collagen video's text.");
     expect(outcome.replaced).toEqual([]);
   });

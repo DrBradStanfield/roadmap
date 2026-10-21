@@ -36,7 +36,7 @@ import { spawnSync } from 'child_process';
 import { loadBlogIndex, findBlogByVideoId, type BlogIndexEntry } from '../app/lib/blog-index.server';
 import { loadMatchedContent } from '../app/lib/matched-content';
 import { buildYouTubePlatformContext, loadedHandles } from '../app/lib/youtube-context';
-import { routerView, routerIndexBlock, preferMasters, namedArticles } from '../app/lib/router-view';
+import { routerView, routerIndexBlock, preferMasters } from '../app/lib/router-view';
 import { stripFrontmatter } from '../app/lib/frontmatter';
 import {
   CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams, parseClassification,
@@ -323,8 +323,7 @@ async function processOne(c: YouTubeComment, blogPost: BlogPost): Promise<DryRun
   }
 
   // As production (US-50 AC14): older posts give way to their masters, except this video's post or one the comment names.
-  const named = new Set([blogPost.entry.handle, ...namedArticles(loadBlogIndex(), c.text)]);
-  const main = await callMainLLM(c.text, blogPost, preferMasters(handles, loadBlogIndex(), named).handles);
+  const main = await callMainLLM(c.text, blogPost, preferMasters(handles, loadBlogIndex(), c.text, { keep: [blogPost.entry.handle] }).handles);
 
   let willPost = !!main.text && !main.error;
   let skipReason: string | undefined;

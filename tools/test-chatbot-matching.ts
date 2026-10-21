@@ -131,7 +131,7 @@ import {
 import { chatToolsFor, withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
 import { toolOnlyAck, type ProposedEdit, type ProposedProfileEdit } from '../packages/health-core/src/chat-edits';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
-import { routerView, routerIndexBlock, preferMasters, namedArticles, ROUTER_SUMMARY_MAX_CHARS } from '../app/lib/router-view';
+import { routerView, routerIndexBlock, preferMasters, ROUTER_SUMMARY_MAX_CHARS } from '../app/lib/router-view';
 import type { BlogIndexEntry } from '../app/lib/blog-index.server';
 import { parseRouterReply } from '../app/lib/router-reply';
 import { buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
@@ -669,7 +669,7 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || q.must_match?.length || q.must_not_match?.length || typeof q.max_length_chars === 'number' || q.expect_roadmap_run !== undefined || q.expect_profile_edit)) {
     const answerRuns: AnswerCheckResult[] = [];
     // As production: routed older posts give way to their masters (US-50 AC14); fixed handles load as given.
-    const answerHandles = fixed ? intersection : preferMasters(intersection, FULL_INDEX, namedArticles(FULL_INDEX, q.query)).handles;
+    const answerHandles = fixed ? intersection : preferMasters(intersection, FULL_INDEX, q.query).handles;
     for (let i = 0; i < answerCheckRuns; i++) {
       answerRuns.push(await checkAnswer(q, answerHandles));
     }
