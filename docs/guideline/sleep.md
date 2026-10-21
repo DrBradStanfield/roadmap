@@ -187,7 +187,7 @@ Moderate-quality evidence: multicomponent CBT-I produces clinically significant 
 | DORAs | Orexin receptor antagonist | Suvorexant, lemborexant, daridorexant | Sleep onset and maintenance | IV |
 | Low-dose doxepin | H1 antagonist | Doxepin 3–6 mg | Sleep maintenance only | No schedule |
 | Ramelteon | MT1/MT2 agonist | Ramelteon 8 mg | Sleep onset only | No schedule |
-| Off-label antidepressants | Mixed | Trazodone, mirtazapine, amitriptyline | Sleep onset ± maintenance | — |
+| Off-label antidepressants | Mixed | Trazodone, mirtazapine | Sleep onset ± maintenance | — |
 | Off-label antipsychotics | H1 antagonist (mainly) | Quetiapine 6.25–25 mg | Not recommended without psychiatric comorbidity | — |
 | OTC antihistamines | H1 antagonist | Diphenhydramine, doxylamine | Short-term only; limited efficacy | — |
 | Melatonin (supplement) | MT1/MT2 agonist | Various | Sleep-onset; mild efficacy | — |
@@ -480,7 +480,6 @@ Guideline recommendations not currently covered by dedicated suggestion IDs in t
 |-----|-------------------------|---------|
 | Sleep hygiene checklist | The sleep hygiene checklist is not delivered as structured content | Medium |
 | CBT-I signposting | No suggestion directing patients to CBT-I resources or digital programmes | High |
-| Screen time / blue light | Screens 2 hours before bed: not in current algorithm | Medium |
 | Alcohol and sleep | Alcohol-sleep interaction not flagged unless triggered by alcohol use question | Medium |
 | Caffeine timing | No sleep-specific caffeine suggestion (current suggestions only general) | Low |
 | OSA screening | No conditional branch for insomnia + sleepiness + snoring → OSA evaluation | High |

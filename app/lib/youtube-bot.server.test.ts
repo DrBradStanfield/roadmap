@@ -368,6 +368,13 @@ describe('US-53: a comment YouTube will not let us reply to is skipped, not an e
     expect(filterThread(thread).pass).toBe(true);
   });
 
+  it('a short comment passes when it reads as a crisis or emergency (US-15 AC39 review N5)', () => {
+    for (const text of ['I want to die', 'thinking of suicide', 'gonna kill myself', 'chest pain right now', "can't breathe help", 'took an overdose']) {
+      expect(filterThread({ ...thread, text }).pass, text).toBe(true);
+    }
+    expect(filterThread({ ...thread, text: 'great video thanks' })).toEqual({ pass: false, reason: 'too short (3 words)' });
+  });
+
   it('AC2: only the canReply 400 counts as not replyable', () => {
     const body = '{"error":{"code":400,"message":"Not all comments can be replied to. Check the comment thread\'s canReply field."}}';
     expect(isNotReplyableError(new Error(`YouTube post failed: 400 ${body}`))).toBe(true);

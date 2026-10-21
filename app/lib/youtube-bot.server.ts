@@ -57,6 +57,7 @@ const DAILY_REPLY_CAP = 50;           // hard ceiling on posts per day
 const PER_VIDEO_REPLY_CAP = 10;       // ceiling per video lifetime
 const COMMENT_MAX_AGE_DAYS = 7;       // ignore comments older than this
 const MIN_WORDS = 5;                  // ≥5 words to be considered substantive
+const CRISIS = /\b(die|suicid\w*|kill (myself|me)|chest pain|can'?t breathe|cannot breathe|overdos\w*)\b/i;
 
 // Multi-turn (follow-up) config — see § Follow-up replies below.
 const FOLLOWUP_MIN_WORDS = 3;             // follow-ups are naturally shorter ("does it cause blindness?")
@@ -690,7 +691,8 @@ export function filterThread(thread: YouTubeThread): FilterResult {
   if (thread.canReply === false) return { pass: false, reason: 'cannot reply' };
   if (!thread.text || !thread.text.trim()) return { pass: false, reason: 'empty' };
   const words = wordCount(thread.text);
-  if (words < MIN_WORDS) return { pass: false, reason: `too short (${words} words)` };
+  // A short crisis or emergency comment still gets the chat's emergency reply (US-15 AC39 review N5).
+  if (words < MIN_WORDS && !CRISIS.test(thread.text)) return { pass: false, reason: `too short (${words} words)` };
 
   // Don't reply to Brad's own comments
   if (thread.authorChannelId && CHANNEL_ID && thread.authorChannelId === CHANNEL_ID) {
