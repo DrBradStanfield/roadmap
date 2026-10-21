@@ -1,7 +1,8 @@
 /**
  * Writing the record's last-write-wins current state: medications and
  * supplements, each a row keyed by its key, with an append-only history row
- * per real change (US-06, ios/architecture.md D4b). The web widget's store
+ * per real change, and the profile, screening answers and reminders opt-in
+ * (US-06, US-10 AC6, US-17, ios/architecture.md D4b). The web widget's store
  * and the iPhone app make these writes through the same functions, inside
  * `RecordSession.edit`, so both follow one set of rules.
  *
@@ -18,9 +19,12 @@
  * `crypto.randomUUID()`, as in record-edits.ts; the iPhone app's engine
  * supplies it from the phone's own UUID (HealthEngine.swift).
  */
+import { screeningFieldName } from './file-inputs';
 import { classifyMedicationChange, classifySupplementChange } from './history-change';
+import { stampFields } from './merge';
+import { parseLocalisedNumber } from './parseNumber';
 import { newId, stampUpdatedAt } from './record-edits';
-import type { FileMedication, FileSupplement, HistoryChangeType, RoadmapFile } from './roadmap-file';
+import type { FileMedication, FileReminderOptIn, FileScreenings, FileSupplement, HistoryChangeType, RoadmapFile, RoadmapProfile } from './roadmap-file';
 
 export interface StateEditResult {
   /** A new file. The one passed in is untouched. */
@@ -109,4 +113,39 @@ export function upsertSupplement(file: RoadmapFile, save: SupplementSave, now: s
       }]
     : file.supplementHistory;
   return { file: stampUpdatedAt({ ...file, supplements, supplementHistory }, now), changeType };
+}
+
+/**
+ * Change profile fields (US-10 AC6): only the fields named take a new stamp,
+ * one past the copy they were made on (`stampFields`), so a concurrent edit
+ * of another field elsewhere is kept. The web form, the connector's
+ * `update_profile` and the iPhone app's My data tab all write through it.
+ */
+export function stampProfile(file: RoadmapFile, changes: Partial<RoadmapProfile>, now: string): RoadmapFile {
+  return stampUpdatedAt({ ...file, profile: stampFields(file.profile, changes, now) }, now);
+}
+
+/** The screening answers stored as numbers; every other answer is text. */
+const NUMERIC_SCREENING_KEYS = new Set(['lung_pack_years', 'prostate_psa_value']);
+
+/**
+ * Save one screening answer (US-06, US-10 AC6). A number answer that is blank
+ * or unreadable is stored as null, which clears the field. Only this answer's
+ * clock is stamped: unstamped it stays lamport 0 like an empty remote and the
+ * merge can discard it, and with the whole object's stamp it would carry this
+ * copy of every other answer.
+ */
+export function setScreening(file: RoadmapFile, screeningKey: string, value: string, now: string): RoadmapFile {
+  const parsed = NUMERIC_SCREENING_KEYS.has(screeningKey) ? parseLocalisedNumber(value) ?? null : value;
+  const answer = { [screeningFieldName(screeningKey)]: parsed } as Partial<FileScreenings>;
+  return stampUpdatedAt({ ...file, screenings: stampFields(file.screenings, answer, now) }, now);
+}
+
+/**
+ * Set or replace the reminders opt-in singleton (US-17), status flips
+ * included: lamport one past the copy it replaces, so the last write wins.
+ */
+export function setReminderOptIn(file: RoadmapFile, fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, now: string): RoadmapFile {
+  const reminderOptIn = { ...fields, updatedAt: now, lamport: (file.reminderOptIn?.lamport ?? 0) + 1 };
+  return stampUpdatedAt({ ...file, reminderOptIn }, now);
 }

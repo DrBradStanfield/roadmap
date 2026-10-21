@@ -12,7 +12,8 @@
  * Nothing here reads the clock, the filesystem or the network.
  */
 import { deadlineSignal } from './adapter';
-import { dayOf, daysBetween, stampFields } from './merge';
+import { dayOf, daysBetween } from './merge';
+import { stampProfile } from './state-edits';
 import { displayLabUnit, foldLpa, LAB_CATALOG, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
 import { ISO_DATE, latestActivePerMetric } from './measurement-history';
 import {
@@ -783,10 +784,9 @@ export function updateProfile(
   // connector write beat a concurrent one made in the app, whenever it was
   // made; tied lamports fall through to wall-clock time, which is the honest
   // answer to "who wrote last".
-  const profile = stampFields(stored, Object.fromEntries(changed.map((field) => [field, request[field]])) as Partial<RoadmapProfile>, now);
   return {
     status: 'ok',
-    file: stampUpdatedAt({ ...file, profile }, now),
+    file: stampProfile(file, Object.fromEntries(changed.map((field) => [field, request[field]])) as Partial<RoadmapProfile>, now),
     text: changed.map((field) => `${field}: ${stored[field] ?? 'not set'} → ${request[field]}`).join('\n'),
     data: {
       changed: changed.map((field) => ({ field, from: stored[field] ?? null, to: request[field] as string | number })),

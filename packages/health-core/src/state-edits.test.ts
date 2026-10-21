@@ -5,7 +5,7 @@
  * tests pin the same writes through RoadmapStore.
  */
 import { describe, expect, it } from 'vitest';
-import { upsertMedication, upsertSupplement, type SupplementSave } from './state-edits';
+import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement, type SupplementSave } from './state-edits';
 import { mergeFiles } from './merge';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 
@@ -121,5 +121,42 @@ describe('upsertSupplement (US-06)', () => {
     const here = upsertSupplement(shared, omega({ status: 'stopped' }), T2).file;
     const merged = mergeFiles(shared, here, { deviceId: 'd', now: T2 });
     expect(merged.supplements.map((x) => x.status)).toEqual(['stopped']);
+  });
+});
+
+describe('stampProfile, setScreening, setReminderOptIn (US-10 AC6, US-17)', () => {
+  it('stamps only the profile fields changed, and the file clock', () => {
+    const before = empty();
+    const snapshot = structuredClone(before);
+    const file = stampProfile(before, { sex: 'female', heightCm: 165 }, T1);
+    expect(before).toEqual(snapshot);
+    expect(file.profile).toMatchObject({ sex: 'female', heightCm: 165 });
+    expect(Object.keys(file.profile.fieldStamps ?? {}).sort()).toEqual(['heightCm', 'sex']);
+    expect(file.meta.updatedAt).toBe(T1);
+    // A concurrent edit of another field elsewhere survives the merge.
+    const other = stampProfile(before, { birthYear: 1970 }, T2);
+    const merged = mergeFiles(file, other, { deviceId: 'd', now: T2 });
+    expect(merged.profile).toMatchObject({ sex: 'female', heightCm: 165, birthYear: 1970 });
+  });
+
+  it('stores a screening answer as text, a number answer as a number, and a blank number as null', () => {
+    const before = empty();
+    const text = setScreening(before, 'colorectal_method', 'colonoscopy_10yr', T1);
+    expect(before.screenings).toEqual(empty().screenings);
+    expect(text.screenings).toMatchObject({ colorectalMethod: 'colonoscopy_10yr' });
+    expect(text.meta.updatedAt).toBe(T1);
+    expect(setScreening(text, 'prostate_psa_value', '1,5', T2).screenings).toMatchObject({ prostatePsaValue: 1.5 });
+    expect(setScreening(text, 'prostate_psa_value', '', T2).screenings).toMatchObject({ prostatePsaValue: null });
+    expect(Object.keys(setScreening(text, 'prostate_psa_value', '2', T2).screenings.fieldStamps ?? {}).sort()).toEqual(['colorectalMethod', 'prostatePsaValue']);
+  });
+
+  it('replaces the reminders opt-in with lamport one past the last, and the file clock', () => {
+    const fields = { status: 'active' as const, token: 't', email: 'a@b.c', provider: 'dropbox' as const };
+    const first = setReminderOptIn(empty(), fields, T1);
+    expect(first.reminderOptIn).toEqual({ ...fields, updatedAt: T1, lamport: 1 });
+    expect(first.meta.updatedAt).toBe(T1);
+    const cancelled = setReminderOptIn(first, { ...fields, status: 'cancelled' }, T2);
+    expect(cancelled.reminderOptIn).toMatchObject({ status: 'cancelled', updatedAt: T2, lamport: 2 });
+    expect(first.reminderOptIn?.status).toBe('active');
   });
 });

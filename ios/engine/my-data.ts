@@ -5,9 +5,10 @@
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
-import { appendMeasurement, correctValue, stampUpdatedAt } from '../../packages/health-core/src/record-edits';
+import { appendMeasurement, correctValue, validDay } from '../../packages/health-core/src/record-edits';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
-import { stampFields } from '../../packages/health-core/src/merge';
+import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
+import { medicationSchema, supplementSchema } from '../../packages/health-core/src/validation';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import {
@@ -41,7 +42,11 @@ export type Edit =
   | { kind: 'profile'; sex?: 'male' | 'female'; birthYear?: number; birthMonth?: number; height?: number }
   | { kind: 'units'; unitSystem: UnitSystem }
   | { kind: 'add'; metric: string; value: number; day?: string }
-  | { kind: 'correct'; id: string; value: number };
+  | { kind: 'correct'; id: string; value: number }
+  /** A medication's current state (US-06): the web's write, history row included. */
+  | { kind: 'medication'; medicationKey: string; drugName: string; doseValue?: number | null; doseUnit?: string | null }
+  /** A supplement's current state; `status: 'stopped'` is the soft stop (US-06). */
+  | { kind: 'supplement'; supplementKey: string; supplementName: string; doseValue?: number | null; doseUnit?: string | null; status: 'active' | 'stopped'; startedAt?: string };
 
 /** A refusal leaves the record as it was. `existingId` names the row holding the day. */
 export type EditOutcome =
@@ -130,8 +135,7 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
         return { ok: false, reason: 'invalid-value', message: 'Units are metric or US.' };
       }
       if (edit.unitSystem === file.profile.unitSystem) return { ok: true, file };
-      const profile = stampFields(file.profile, { unitSystem: edit.unitSystem }, now);
-      return { ok: true, file: stampUpdatedAt({ ...file, profile }, now) };
+      return { ok: true, file: stampProfile(file, { unitSystem: edit.unitSystem }, now) };
     }
     case 'add': {
       const result = appendMeasurement(file, {
@@ -146,6 +150,31 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
       const result = correctValue(file, { id: edit.id, newValue: edit.value, unit, now });
       if (result.ok) return { ok: true, file: result.file };
       return { ok: false, reason: result.reason, message: result.message };
+    }
+    // The web's own writes (state-edits.ts), behind the API's own schemas:
+    // the app's input is checked the way a request to the server was.
+    case 'medication': {
+      const checked = medicationSchema.safeParse(edit);
+      if (!checked.success) return { ok: false, reason: 'invalid-value', message: checked.error.issues[0]?.message ?? 'Not a medication.' };
+      const { medicationKey, drugName, doseValue = null, doseUnit = null } = checked.data;
+      return { ok: true, file: upsertMedication(file, { medicationKey, drugName, doseValue, doseUnit }, now).file };
+    }
+    case 'supplement': {
+      const checked = supplementSchema.safeParse(edit);
+      if (!checked.success || !checked.data.status) {
+        return { ok: false, reason: 'invalid-value', message: checked.success ? 'A supplement is active or stopped.' : checked.error.issues[0]?.message ?? 'Not a supplement.' };
+      }
+      const { supplementKey, supplementName, doseValue = null, doseUnit = null, status, startedAt } = checked.data;
+      // A start is a real day or instant that has happened (rule 9's check).
+      if (startedAt !== undefined && (Number.isNaN(Date.parse(startedAt)) || validDay(startedAt, { now }) === null)) {
+        return { ok: false, reason: 'invalid-date', message: 'A supplement starts on a real day, today or before.' };
+      }
+      // Stopping is for a supplement the record holds: a stop for any other
+      // key would create a stopped row out of nothing.
+      if (status === 'stopped' && !file.supplements.some((row) => row.supplementKey === supplementKey)) {
+        return { ok: false, reason: 'not-found', message: 'There is no such supplement to stop.' };
+      }
+      return { ok: true, file: upsertSupplement(file, { supplementKey, supplementName, doseValue, doseUnit, status, startedAt }, now).file };
     }
   }
 }

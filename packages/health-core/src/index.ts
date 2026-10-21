@@ -277,7 +277,7 @@ export {
   type HistoryChangeType,
 } from './roadmap-file';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
-export { mergeFiles, stampFields, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
+export { mergeFiles, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
 export { buildErasedFile, type EraseInputs } from './erase';
 export {
   RecordSession,
@@ -290,7 +290,7 @@ export type { RecordHost } from './record-host';
 export { LiveRefresh, type LiveRefreshOptions } from './live-refresh';
 export { liftDeviceCopy, copyCloudDown } from './record-transfer';
 export { ChatSession, type ChatConversationSummary } from './chat-session';
-export { upsertMedication, upsertSupplement } from './state-edits';
+export { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from './state-edits';
 export { isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 
@@ -418,6 +418,6 @@ export {
 } from './drive-rest';
 
 // US-35: the slot rule and the bulk save the website and the connector share.
-export { bulkAppendValues, correctValue, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type SlotState } from './record-edits';
+export { bulkAppendValues, correctValue, placeMeasurement, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type SlotState } from './record-edits';
 export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, UNDATED_PREVIOUS, type RefusedLabValue } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';

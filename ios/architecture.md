@@ -226,8 +226,9 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   `numberJson`. Every door reads the record through health-core's `ROADMAP_DOC.migrate`
   (shape check, then migration), as the web, CLI and connector do.
 - `engine/my-data.ts`: what the My data tab shows and every write it makes, each one
-  health-core's own (`createEmptyFile`, `updateProfile`, `stampFields`,
-  `appendMeasurement`, `correctValue`), with values in the user's units. Tested in Node by
+  health-core's own (`createEmptyFile`, `updateProfile`, `stampProfile`,
+  `appendMeasurement`, `correctValue`, `upsertMedication`, `upsertSupplement`), with
+  values in the user's units (US-25 AC7). Not yet through `RecordSession.edit` (D4). Tested in Node by
   `engine/my-data.test.ts`, which the web's `test:all` runs.
 - `scripts/build-engine.mjs`: bundles health-core with esbuild (target Safari 17, iOS 17's
   JavaScriptCore) into `HealthRoadmap/Engine/health-engine.js`, and writes the parity

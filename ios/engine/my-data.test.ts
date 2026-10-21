@@ -142,3 +142,56 @@ describe('readRecord (AC4, adversary R4)', () => {
     expect(readRecord(JSON.stringify(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland')), NOW, 'phone').measurements).toEqual([]);
   });
 });
+
+describe('medications and supplements (US-06, D4b)', () => {
+  it('saves a medication by the web rule: the keyed row and a started history row; a dose change adds one more', () => {
+    let file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    file = edited(file, { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 10, doseUnit: 'mg' });
+    expect(file.medications).toEqual([expect.objectContaining({ medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 10, doseUnit: 'mg', lamport: 0 })]);
+    expect(file.medicationHistory.map((h) => h.changeType)).toEqual(['started']);
+    file = edited(file, { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' });
+    expect(file.medications).toEqual([expect.objectContaining({ doseValue: 20, lamport: 1 })]);
+    expect(file.medicationHistory.map((h) => h.changeType)).toEqual(['started', 'dose_changed']);
+  });
+
+  it('refuses a medication key or dose the API would refuse, and writes nothing', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    expect(applyEdit(file, { kind: 'medication', medicationKey: 'aspirin', drugName: 'aspirin' }, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+    expect(applyEdit(file, { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: -5 }, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+  });
+
+  it('saves and soft-stops a supplement, keeping its start', () => {
+    let file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    file = edited(file, { kind: 'supplement', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: 1, doseUnit: 'g', status: 'active' });
+    const startedAt = file.supplements[0].startedAt;
+    const stopped = applyEdit(file, { kind: 'supplement', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: 1, doseUnit: 'g', status: 'stopped' }, LATER);
+    if (!stopped.ok) throw new Error(stopped.message);
+    expect(stopped.file.supplements).toEqual([expect.objectContaining({ status: 'stopped', startedAt, lamport: 1 })]);
+    expect(stopped.file.supplementHistory.map((h) => h.changeType)).toEqual(['started', 'stopped']);
+  });
+
+  it('refuses a start that is not a real day, or has not happened yet, and writes nothing', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const save = { kind: 'supplement' as const, supplementKey: 'omega3', supplementName: 'Omega-3', status: 'active' as const };
+    for (const startedAt of ['yesterday', '2026-02-30', '2099-01-01', '2026-10-20Tnonsense']) {
+      expect(applyEdit(file, { ...save, startedAt }, NOW), startedAt).toMatchObject({ ok: false, reason: 'invalid-date' });
+    }
+    for (const startedAt of ['2026-10-01', '2026-10-01T09:30:00.000Z']) {
+      const saved = applyEdit(file, { ...save, startedAt }, NOW);
+      if (!saved.ok) throw new Error(saved.message);
+      expect(saved.file.supplements[0].startedAt).toBe(startedAt);
+    }
+  });
+
+  it('refuses to stop a supplement the record does not hold', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    expect(applyEdit(file, { kind: 'supplement', supplementKey: 'omega3', supplementName: 'Omega-3', status: 'stopped' }, NOW))
+      .toMatchObject({ ok: false, reason: 'not-found' });
+  });
+
+  it('refuses a supplement with a bad key or no status', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    expect(applyEdit(file, { kind: 'supplement', supplementKey: 'Omega 3!', supplementName: 'Omega-3', status: 'active' }, NOW)).toMatchObject({ ok: false });
+    expect(applyEdit(file, { kind: 'supplement', supplementKey: 'omega3', supplementName: 'Omega-3' } as never, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+  });
+});
