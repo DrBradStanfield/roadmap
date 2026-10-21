@@ -76,7 +76,18 @@ function isArchivableFile(r: FileResult, alreadyCovered: Set<string | null>): bo
 }
 
 /** A stored row as the archive step reads it. */
-type ExistingDoc = Pick<ApiDocument, 'contentHash' | 'fileRef' | 'documentType' | 'title' | 'contentMd' | 'metadata'>;
+type ExistingDoc = Pick<ApiDocument, 'contentHash' | 'fileRef' | 'documentType' | 'title' | 'contentMd' | 'metadata'> & { createdAt?: string };
+
+/**
+ * The live metadata-only rows of one kind (lab archive or shown document)
+ * holding these bytes, newest first (US-14 AC4). An upload of that kind
+ * replaces them all once its blob lands, and its review card starts from the
+ * newest. One rule for the card and the store.
+ */
+export function pendingRowsFor<T extends ExistingDoc>(existing: readonly T[], hash: string | null | undefined, lab: boolean): T[] {
+  return existing.filter((d) => !!hash && d.contentHash === hash && !d.fileRef && isLabArchiveDocument(d) === lab)
+    .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+}
 
 /**
  * Unarchived lab originals remain saveable after their values become history
@@ -90,10 +101,9 @@ export function unarchivedOriginals(
   existing: ReadonlyArray<ExistingDoc>,
   alreadyCovered: Set<string | null>,
 ): FileResult[] {
-  const pending = new Set(existing.filter((d) => d.contentHash && !d.fileRef && !isLabArchiveDocument(d)).map((d) => d.contentHash));
   const archived = new Set(existing.filter((d) => d.contentHash && d.fileRef).map((d) => d.contentHash));
   return results.filter((r) => isArchivableFile(r, alreadyCovered)
-    && !archived.has(r.contentHash) && (!r.document || pending.has(r.contentHash)));
+    && !archived.has(r.contentHash) && (!r.document || pendingRowsFor(existing, r.contentHash, false).length > 0));
 }
 
 /**

@@ -48,7 +48,10 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     expect(file.documents.find(d => !d.deleted)?.fileRef).toBeTruthy();
     expect((await retry.bulkSaveDocuments([doc])).saved).toHaveLength(0);
   });
-  it('a retry that fails again leaves the first metadata row intact and reports the failure', async () => {
+  // An original that can never be stored (a size cap, GitHub's public-repo
+  // guard) must not trap the user in "Failed to save": a repeat failure behind
+  // the website's own failed row is settled, the row stays, no error.
+  it('a retry that fails again leaves the first metadata row intact, settled with no error', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
@@ -59,8 +62,41 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     await store.flush();
     const result = await store.bulkSaveDocuments([doc]);
     await store.flush();
-    expect(result).toEqual({ saved: [], errorCount: 1 });
+    expect(result).toEqual({ saved: [], errorCount: 0 });
     expect(read(cloud).documents.filter(d => !d.deleted).map(d => d.id)).toEqual([original.id]);
+  });
+
+  it('a repeat failure behind a connector row still reports the failure for a retry', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    adapter.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
+    const store = await RoadmapStore.create(adapter);
+    const doc = { ...payload(), metadata: { importedVia: 'connector' } };
+    await store.bulkSaveDocuments([doc]);
+    await store.flush();
+    expect(await store.bulkSaveDocuments([payload()])).toEqual({ saved: [], errorCount: 1 });
+  });
+
+  it('a stored blob supersedes every metadata-only row of its kind for those bytes', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const cloud = new MemoryCloud();
+    const failing = new MemoryAdapter(cloud);
+    failing.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
+    const first = await RoadmapStore.create(failing);
+    const original = (await first.bulkSaveDocuments([payload()])).saved[0];
+    await first.flush();
+    // A second such row, as another device's failed save would leave.
+    const stored = cloud.files.get(ROADMAP_FILE_NAME)!;
+    const file = JSON.parse(stored.json) as RoadmapFile;
+    file.documents.push({ ...file.documents[0], id: 'other-device', addedAt: '2020-01-01T00:00:00.000Z' });
+    cloud.files.set(ROADMAP_FILE_NAME, { ...stored, json: JSON.stringify(file) });
+    const retry = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect((await retry.bulkSaveDocuments([payload()])).saved).toHaveLength(1);
+    await retry.flush();
+    const after = read(cloud).documents;
+    expect(after.filter(d => d.deleted).map(d => d.id).sort()).toEqual([original.id, 'other-device'].sort());
+    expect(after.filter(d => !d.deleted)).toHaveLength(1);
   });
 });
 

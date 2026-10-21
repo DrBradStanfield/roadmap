@@ -152,6 +152,31 @@ describe('US-13 AC6: reviewed document dates', () => {
     }
   });
 
+  it('starts from the newest such row, and a held row with no date stays unknown', () => {
+    const letter: FileResult = { fileName: 'synthetic-letter.pdf', reportDate: null, values: [], additionalValues: [],
+      file: new Blob(['synthetic']), contentHash: 'sha256-synthetic',
+      document: { classification: 'clinic_letter', title: 'Extracted title', documentDate: '2024-06-01', contentMarkdown: 'Synthetic', metadata: {} } };
+    const row = (id: string, title: string, createdAt: string, documentDate: string | null) => ({ id, documentType: 'clinic_letter', title, documentDate,
+      contentMd: 'Synthetic', metadata: {}, sourceFileName: 'synthetic-letter.pdf', contentHash: 'sha256-synthetic', fileRef: null, createdAt });
+    const onSave = vi.fn();
+    const view = render(<ReviewTable results={[letter]} grading={{}} unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null}
+      history={{ measurements: [], labValues: [], documents: [row('old', 'Older title', '2024-06-02T00:00:00Z', '2024-05-01'), row('new', 'Newer title', '2024-07-02T00:00:00Z', null)] }} />);
+    expect(view.getByDisplayValue('Newer title')).toBeTruthy();
+    expect(view.getByText('Date unknown')).toBeTruthy();
+    fireEvent.click(view.getByRole('button', { name: /^Save / }));
+    expect(onSave.mock.lastCall![0].reviewed[0].document).toMatchObject({ title: 'Newer title', documentDate: null });
+  });
+
+  it('a clear makes a month-only date unknown too: no month comes back, no screening write', () => {
+    const view = review('2024-06');
+    view.pick('2024-06-12');
+    view.pick('');
+    expect(view.getByText('Date unknown')).toBeTruthy();
+    expect(view.box().disabled).toBe(true);
+    expect(view.promise()).not.toContain('2024-06');
+    expect(view.save().documents[0]).toMatchObject({ documentDate: null, screeningUpdate: undefined });
+  });
+
   it('hands back every result as reviewed: title, document date and report column day', () => {
     const view = review('2024-06', '2023-02-18', true);
     fireEvent.change(view.getByDisplayValue('Synthetic colonoscopy'), { target: { value: 'Reviewed title' } });

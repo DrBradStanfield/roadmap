@@ -26,7 +26,7 @@ import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
 import type { RefusedLabValue } from '@roadmap/health-core';
 import { labUnitRefusalLine, labValueLabel } from '../lib/lab-value-labels';
-import { isLabArchiveDocument, unarchivedOriginals } from '../lib/archive-payloads';
+import { pendingRowsFor, unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
 import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
@@ -674,18 +674,17 @@ export function ReviewTable({
     });
   }, [docHistoryIndex, results]);
 
+  // A document whose bytes metadata-only shown-document rows hold (a failed
+  // upload, or the connector's) replaces them, so its card starts from the
+  // newest: the user sees the earlier title and date, a missing date included,
+  // and can change them (US-14 AC4).
+  const [heldRows] = useState(() => results.map(r => (r.document ? pendingRowsFor(history.documents, r.contentHash, false)[0] : undefined)));
   // A document's date is its own, never the blood-test column's: the day it
   // saves, null until known or picked. A month alone still dates its
-  // screening update (US-13 AC6).
-  // A document whose bytes a metadata-only shown-document row holds (a failed
-  // upload, or the connector's) replaces that row, so its card starts from it:
-  // the user sees the earlier title and date, and can change them (US-14 AC4).
-  const [heldRows] = useState(() => results.map(r => r.document && r.contentHash
-    ? history.documents.find(d => d.contentHash === r.contentHash && !d.fileRef && !isLabArchiveDocument(d)) : undefined));
-  const extractedDocDates = useMemo(() => results.map((r, fi) => readDocumentDate(heldRows[fi]?.documentDate ?? r.document?.documentDate)), [results, heldRows]);
-  const [documentDates, setDocumentDates] = useState<Record<number, string | null>>(() =>
-    Object.fromEntries(extractedDocDates.map((d, fi) => [fi, d.day])));
-  const screeningDateFor = (fi: number) => documentDates[fi] ?? extractedDocDates[fi]?.month ?? null;
+  // screening update until the user picks a day or clears it (US-13 AC6).
+  const [documentDates, setDocumentDates] = useState<Record<number, { day: string | null; month: string | null }>>(() =>
+    Object.fromEntries(results.map((r, fi) => [fi, readDocumentDate(heldRows[fi] ? heldRows[fi].documentDate : r.document?.documentDate)])));
+  const screeningDateFor = (fi: number) => documentDates[fi]?.day ?? documentDates[fi]?.month ?? null;
 
   // Per-document: editable title
   const [docTitles, setDocTitles] = useState<Record<number, string>>(() => {
@@ -1037,7 +1036,7 @@ export function ReviewTable({
     const reviewed: FileResult[] = results.map((r, fi) => ({
       ...r,
       reportDate: columnDay(fileDates[fi]),
-      ...(r.document ? { document: { ...r.document, title: docTitles[fi] || r.document.title, documentDate: documentDates[fi] ?? null } } : {}),
+      ...(r.document ? { document: { ...r.document, title: docTitles[fi] || r.document.title, documentDate: documentDates[fi]?.day ?? null } } : {}),
     }));
     const documents: DocumentToSave[] = [];
     reviewed.forEach(({ document: doc, fileName, file }, fi) => {
@@ -1109,8 +1108,8 @@ export function ReviewTable({
         const hasNothingForMatrix = !r.error && !r.document && r.values.length === 0 && r.additionalValues.length === 0;
         if (!r.error && !r.document && !hasNothingForMatrix) return null;
 
-        const documentDate = documentDates[fi] ?? null;
-        const month = extractedDocDates[fi]?.month;
+        const documentDate = documentDates[fi]?.day ?? null;
+        const month = documentDates[fi]?.month;
         const screeningDate = screeningDateFor(fi);
         const isDocDup = r.document ? isDocDuplicate(r.fileName, docHistoryIndex) : false;
 
@@ -1158,9 +1157,9 @@ export function ReviewTable({
                     placeholder={documentDate || month ? undefined : 'Date unknown'}
                     ariaLabel="Document date"
                     onChange={picked => {
-                      // Cleared is unknown; a day not yet happened is refused, never written.
+                      // Cleared is unknown, its month too; a day not yet happened is refused, never written.
                       const day = pastDay(picked);
-                      if (!picked || day) setDocumentDates(prev => ({ ...prev, [fi]: day }));
+                      if (!picked || day) setDocumentDates(prev => ({ ...prev, [fi]: { day, month: null } }));
                     }}
                   />
                 </div>

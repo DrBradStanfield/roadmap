@@ -23,7 +23,7 @@
  *    build hides them.
  *  - Medication-history chart annotations use explicit change types saved at write time.
  */
-import { isLabArchiveDocument, sha256Blob } from '../lib/archive-payloads';
+import { isLabArchiveDocument, pendingRowsFor, sha256Blob } from '../lib/archive-payloads';
 import {
   buildDocumentRef,
   type BulkRow,
@@ -385,7 +385,8 @@ export class RoadmapStore {
    * A failed blob write (e.g. GitHub's ~1 MB cap, localStorage quota) degrades
    * to metadata-only: the extracted values are never lost with the file. Except
    * behind a connector row (below): there the metadata already exists, so the
-   * upload files nothing and reports the failure in `errorCount` for a retry.
+   * upload files nothing and reports the failure in `errorCount` for a retry
+   * (behind only the website's own failed rows, a settled outcome: no error).
    *
    * `contentHash` is ONE key for the website and the connector (US-35 AC6): a
    * live row that carries the hash AND a `fileRef` is the archived original,
@@ -410,17 +411,15 @@ export class RoadmapStore {
     // review step dedups extracted VALUES but knows nothing about originals.
     const hashed = this.file.documents.filter((d) => !d.deleted && d.contentHash);
     const archived = new Set(hashed.filter((d) => d.fileRef).map((d) => d.contentHash));
-    // A metadata-only row is replaced only by an upload of its own kind, a lab
-    // archive or a shown document (US-14 AC4): `deleted` is OR-ed on merge, so
-    // a letter tombstoned by a lab re-read would be gone for good. Kind, not
+    // Metadata-only rows are replaced only by an upload of their own kind, a
+    // lab archive or a shown document (US-14 AC4): `deleted` is OR-ed on merge,
+    // so a letter tombstoned by a lab re-read would be gone for good. Kind, not
     // type: the type is the model's per-run guess.
-    const kindKey = (doc: { documentType: string; title: string; contentMd: string; metadata: Record<string, unknown> }, hash: string) =>
-      `${isLabArchiveDocument(doc) ? 'lab' : 'shown'}|${hash}`;
-    const metadataOnly = new Map(hashed.filter((d) => !d.fileRef).map((d) => [kindKey(toApiDocument(d), d.contentHash), d]));
+    const metadataOnly = hashed.filter((d) => !d.fileRef).map(toApiDocument);
 
     // Phase 1 (serial, order-dependent): dedup by hash, assign collision-safe
     // refs, build the metadata rows.
-    const writes: Array<{ doc: FileDocument; ref: string; file: Blob; supersedes?: FileDocument; failed?: boolean }> = [];
+    const writes: Array<{ doc: FileDocument; ref: string; file: Blob; supersedes: ApiDocument[]; failed?: boolean }> = [];
     for (const d of documents) {
       const hash = d.file ? await sha256Blob(d.file) : null;
       if (hash) {
@@ -445,7 +444,7 @@ export class RoadmapStore {
         existingRefs.add(ref);
         // The connector's metadata-only row for these bytes is tombstoned only
         // once the blob lands: a failed write must not lose the hash key.
-        writes.push({ doc, ref, file: d.file, supersedes: metadataOnly.get(kindKey(d, hash!)) });
+        writes.push({ doc, ref, file: d.file, supersedes: pendingRowsFor(metadataOnly, hash, isLabArchiveDocument(d)) });
       }
       out.push(doc);
     }
@@ -467,7 +466,7 @@ export class RoadmapStore {
         Sentry.captureException(recordFailure(error, 'Document file not stored'), {
           tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id },
         });
-        w.failed = Boolean(w.supersedes);
+        w.failed = w.supersedes.length > 0;
       }
     };
     const seenFolders = new Set<string>();
@@ -492,15 +491,18 @@ export class RoadmapStore {
     // connector's metadata-only rows as they were.
     const failed = new Set(writes.filter((w) => w.failed).map((w) => w.doc));
     const saved = out.filter((d) => !failed.has(d));
+    // A repeat failure behind only the website's own failed rows is settled,
+    // not an error: an original that can never be stored (a size cap, GitHub's
+    // public-repo guard) must not loop on "Failed to save". Behind a connector
+    // row it stays an error, for a retry (US-14 AC4).
+    const errorCount = writes.filter((w) => w.failed && w.supersedes.some((d) => d.metadata.importedVia)).length;
     const committed = this.session.edit((file) => {
-      for (const w of writes) {
-        const superseded = w.supersedes && w.doc.fileRef && file.documents.find((d) => d.id === w.supersedes!.id);
-        if (superseded) superseded.deleted = true;
-      }
+      const superseded = new Set(writes.flatMap((w) => (w.doc.fileRef ? w.supersedes.map((d) => d.id) : [])));
+      for (const d of file.documents) if (superseded.has(d.id)) d.deleted = true;
       file.documents.push(...saved);
     }, erase);
     if (!committed) return { saved: [], errorCount: documents.length };
-    return { saved: saved.map(toApiDocument), errorCount: failed.size };
+    return { saved: saved.map(toApiDocument), errorCount };
   }
 
   /** Read a stored document's bytes back (viewer). */
