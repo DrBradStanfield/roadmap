@@ -70,3 +70,60 @@ describe('block headers (US-50 AC5)', () => {
     expect(content).toContain(`\n\n---\n\n[pathway]\ntitle: ${pathway.title}\n\n`);
   });
 });
+
+// US-50 AC13: a topic master that would overflow MAX_BLOG_CHARS loads reduced
+// (current view, key safety points, safety sections), never skipped whole. The
+// router fixture "I notice that there is a small amount of D3…" routes
+// [vitamin D, vitamin K]: about 134K together, so vitamin K's warfarin section
+// was dropped before this.
+describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => {
+  const D = 'vitamin-d-benefits-forms-dosing-and-side-effects';
+  const K = 'vitamin-k-benefits-forms-dosing-and-side-effects';
+  const MG = 'magnesium-benefits-best-forms-dosing';
+  const POTASSIUM = 'potassium-benefits-forms-dosing-and-side-effects';
+  const realRead = fs.readFileSync;
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('vitamin D + vitamin K: both load, with vitamin K\'s warfarin lines', () => {
+    const { content, titles, skipped } = loadMatchedContent([D, K]);
+    expect(skipped).toEqual([]);
+    expect(titles).toHaveLength(2);
+    expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
+    expect(content).toMatch(/^#+ Warfarin and Vitamin K Antagonists$/m);
+    expect(content).toContain('Vitamin K can have a serious and potentially dangerous interaction with warfarin');
+    expect(content).toMatch(/^#+ 5\. Safety and Side Effects$/m);
+    expect(content).toContain('[Shortened to fit');
+  });
+
+  it('magnesium + vitamin D: both load, vitamin D reduced with its safety and interactions', () => {
+    const { content, skipped } = loadMatchedContent([MG, D]);
+    expect(skipped).toEqual([]);
+    expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
+    const tail = content!.slice(content!.lastIndexOf('\n\n---\n\n'));
+    expect(tail).toMatch(/^#+ Current view/m);
+    expect(tail).toMatch(/^#+ 5\. Safety and Side Effects$/m);
+    expect(tail).toMatch(/^#+ 6\. Drug Interactions$/m);
+    expect(tail).not.toMatch(/^#+ 3\. Evidence for Health Benefits$/m);
+  });
+
+  it('a non-master entry that would overflow is still skipped whole', () => {
+    vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
+      if (path.basename(String(p), '.md') === 'cap-test-post') return `## Safety\n\n${'p'.repeat(60_000)}`;
+      return (realRead as (...a: unknown[]) => unknown)(p, ...rest);
+    }) as typeof fs.readFileSync);
+    const { content, skipped } = loadMatchedContent([D, 'cap-test-post']);
+    expect(skipped).toEqual(['cap-test-post']);
+    expect(content).not.toContain('ppp');
+  });
+
+  it('a master whose reduced form still does not fit is skipped', () => {
+    const real = String(realRead(path.join('docs/blog', `${POTASSIUM}.md`), 'utf-8'));
+    vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
+      if (path.basename(String(p), '.md') === POTASSIUM) return real.replace('## 5. Safety and Side Effects', `## 5. Safety and Side Effects\n\n${'q'.repeat(60_000)}`);
+      return (realRead as (...a: unknown[]) => unknown)(p, ...rest);
+    }) as typeof fs.readFileSync);
+    const { content, skipped } = loadMatchedContent([D, POTASSIUM]);
+    expect(skipped).toEqual([POTASSIUM]);
+    expect(content).not.toContain('qqq');
+  });
+});

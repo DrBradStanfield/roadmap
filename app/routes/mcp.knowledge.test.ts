@@ -17,7 +17,7 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { INSTRUCTIONS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
-import { callKnowledgeTool, cutEntry, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_RESULTS, NOTICE, safetyBlocks } from '../lib/mcp-knowledge.server';
+import { callKnowledgeTool, cutEntry, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_MASTER_EXCERPT_CHARS, MAX_RESULTS, NOTICE, safetyBlocks } from '../lib/mcp-knowledge.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { parseFrontmatter } from '../lib/frontmatter';
 import { recordServerEvent } from '../lib/product-events.server';
@@ -227,10 +227,19 @@ describe('US-41 AC7 — search_knowledge: masters first, capped, the notice on e
     const answer = await call(await connect(), 'search_knowledge', { query: 'side effects dosing benefits vitamin' });
     const results = answer.structuredContent!.results as Array<Record<string, any>>;
     expect(results).toHaveLength(MAX_RESULTS);
-    for (const r of results) expect(r.excerpt.length).toBeLessThanOrEqual(MAX_EXCERPT_CHARS);
+    for (const r of results) expect(r.excerpt.length).toBeLessThanOrEqual(r.master ? MAX_MASTER_EXCERPT_CHARS : MAX_EXCERPT_CHARS);
     expect(answer.structuredContent!.notice).toBe(NOTICE);
     expect(answer.content[0].text.startsWith(`{"notice":${JSON.stringify(NOTICE)}`)).toBe(true);
     expect(answer.content[0].text.length).toBeLessThan(MAX_RESULTS * (MAX_EXCERPT_CHARS + 1_500));
+  });
+
+  // US-50 AC13: the writer contract puts "who should not take it" last in the
+  // Current view, so a master's excerpt is the whole view, not cut at 1,500.
+  it('a master excerpt is its whole Current view, the closing caution included', async () => {
+    const results = (await call(await connect(), 'search_knowledge', { query: 'potassium supplements' })).structuredContent!.results as Array<Record<string, any>>;
+    expect(results[0]).toMatchObject({ handle: 'potassium-benefits-forms-dosing-and-side-effects', master: true });
+    expect(results[0].excerpt.length).toBeGreaterThan(MAX_EXCERPT_CHARS);
+    expect(results[0].excerpt).toMatch(/Talk to your doctor before taking added potassium if you have kidney disease, .*ACE inhibitor.*\(Brad's current guidance, 6 Oct 2026\)\.$/);
   });
 
   it('refuses a query that does not fit, in fixed words that never repeat it', async () => {

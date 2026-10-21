@@ -1,14 +1,18 @@
 import fs from 'fs';
 import path from 'path';
-import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { parseFrontmatter, stripFrontmatter } from './frontmatter';
+// A cycle (youtube-context imports this file); both use the other only inside functions.
+import { reducedMaster } from './youtube-context';
 
 // Sentry-free on purpose: the router harness and the YouTube dry run import this
 // under tsx, which cannot follow chat.server.ts's server import chain. Paths
 // resolve from process.cwd(), so run those tools from the repo root.
 
-// ~30K tokens. Above the largest entry in the corpus (vitamin C, 83,150 chars),
-// so any single routed entry fits (US-15 AC23).
+// ~30K tokens. Above the largest entry in the corpus (the B vitamins master,
+// about 106,000 body chars), so any single routed entry fits (US-15 AC23). Two
+// masters often pass it together (vitamin D + vitamin K, about 134,000): the
+// second then loads reduced (US-50 AC13).
 export const MAX_BLOG_CHARS = 120_000;
 
 const articleCache = new Map<string, string | null>();
@@ -67,8 +71,10 @@ export function contentBlock(handle: string, content: string): string {
 /**
  * Concatenate the content for the router's handles, in order, up to
  * MAX_BLOG_CHARS, each as contentBlock() gives it, so frontmatter never counts
- * (US-50 AC4). An entry that would overflow the cap is skipped (listed in
- * `skipped`), never the rest of the list (US-15 AC23). `titles` names the
+ * (US-50 AC4). A topic master that would overflow the cap loads reduced, as
+ * reducedMaster() gives it, so its safety sections still reach the model
+ * (US-50 AC13). Any other entry, or a master whose reduced form still does not
+ * fit, is skipped (listed in `skipped`), never the rest of the list (US-15 AC23). `titles` names the
  * entries loaded, from the blog index, never model output (US-15 AC20), and
  * only those in `titled`; the content is the same either way (US-15 AC25).
  */
@@ -80,15 +86,19 @@ export function loadMatchedContent(handles: string[], titled = handles): { conte
   for (const handle of handles) {
     const raw = loadBlogArticle(handle);
     if (!raw) continue;
-    const content = contentBlock(handle, raw);
+    const entry = loadBlogIndex().find(a => a.handle === handle);
+    let content = contentBlock(handle, raw);
+    const reduced = totalChars + content.length > MAX_BLOG_CHARS && entry && isMaster(entry) && reducedMaster(raw);
+    if (reduced) {
+      content = `${contentHeader(entry, parseFrontmatter(raw) ?? {})}\n\n[Shortened to fit the content limit: this page's current view and safety sections only. The full page has ${stripFrontmatter(raw).length.toLocaleString('en-US')} characters.]\n\n${reduced}`;
+    }
     if (totalChars + content.length > MAX_BLOG_CHARS) {
       skipped.push(handle);
       continue;
     }
     parts.push(content);
     totalChars += content.length;
-    const title = loadBlogIndex().find(a => a.handle === handle)?.title;
-    if (title && titled.includes(handle)) titles.push(title);
+    if (entry?.title && titled.includes(handle)) titles.push(entry.title);
   }
   return { content: parts.length > 0 ? parts.join('\n\n---\n\n') : null, titles, skipped };
 }

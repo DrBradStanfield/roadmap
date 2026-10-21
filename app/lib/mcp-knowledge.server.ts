@@ -16,7 +16,7 @@
  */
 import { z } from 'zod';
 import { bestSection, buildIndex, search, tokenize, type Index } from '../../tools/search-knowledge';
-import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { loadBlogArticle } from './matched-content';
 import { parseFrontmatter, stripFrontmatter } from './frontmatter';
 import { routerView } from './router-view';
@@ -33,6 +33,14 @@ export const MAX_RESULTS = 5;
 const POOL = 20;
 /** Characters of body text per search result. */
 export const MAX_EXCERPT_CHARS = 1_500;
+/**
+ * Characters of a master's excerpt, its whole Current view (US-50 AC13). The
+ * writer contract puts "who should not take it" last in the view, and views run
+ * 1,600 to 2,500 characters, so a 1,500 cut lost that caution. 4,000 holds every
+ * view with room, and stays under youtube-context's MAX_VIEW_CHARS (6,000),
+ * past which a view is malformed.
+ */
+export const MAX_MASTER_EXCERPT_CHARS = 4_000;
 /** Characters of one article or section; the longest masters run past 100,000. */
 export const MAX_ARTICLE_CHARS = 30_000;
 const MAX_QUERY_LENGTH = 200;
@@ -176,9 +184,6 @@ export function isKnowledgeTool(name: string): boolean {
   return KNOWLEDGE_TOOLS.some((tool) => tool.name === name);
 }
 
-/** A topic master (US-50 AC1): a reference with a review date. */
-const isMaster = (entry: BlogIndexEntry) => entry.type === 'reference' && /^\d{4}-\d{2}-\d{2}$/.test(entry.reviewed ?? '');
-
 /**
  * What is already public under Brad's name (AC11): his video articles and the
  * topic masters, each published at its drstanfield.com url. Pathways
@@ -283,7 +288,7 @@ function searchKnowledge(query: string): ToolAnswer {
     const body = bodyOf(raw);
     // A master's excerpt is its Current view (the chatbot's precedence rule); any other entry's, its best-matching section.
     const view = isMaster(entry) ? sectionsOf(body).find((s) => /^## Current (view|evidence position)\b/.test(s)) : undefined;
-    const excerpt = (view ?? bestSection(body, query, MAX_EXCERPT_CHARS)).trim().slice(0, MAX_EXCERPT_CHARS);
+    const excerpt = view ? view.trim().slice(0, MAX_MASTER_EXCERPT_CHARS) : bestSection(body, query, MAX_EXCERPT_CHARS).trim().slice(0, MAX_EXCERPT_CHARS);
     return { ...describeEntry(entry, raw), summary: entry.summary ?? '', excerpt };
   });
   return answer({ notice: NOTICE, results });

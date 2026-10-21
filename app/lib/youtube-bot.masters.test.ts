@@ -70,7 +70,8 @@ const files: Record<string, string> = {
   'tm-dup2': `---\ntitle: "Dup2"\n---\n\n## Current view (reviewed 20 October 2026)\n\nDup two.\n\n## Safety\n\n${'d'.repeat(MAX_MASTER_VIEW_CHARS * 0.6)}\n`,
   'tm-cited':`---\ntitle: "Cited"\n---\n\n## Current view (reviewed 20 October 2026)\n\nCited view [1].\n\n## 3. Evidence\n\nBenefit [1].\n\n## 5. Safety and Side Effects\n\nRare rash [2]. Liver note [3, 5]. Range [6–7]. A DOI link [10.1000/xyz].\n\n## 9. References\n\n[1] Ref one.\n\n[2] Ref two.\n\n[3] Ref three.\n\n[4] Ref four.\n\n[5] Ref five.\n\n[6] Ref six.\n\n[7] Ref seven.\n`,
   'tm-numbered': `---\ntitle: "Numbered"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNumbered view.\n\n## 6. Drug Interactions\n\nWarfarin [2].\n\n## 8. References\n\n1. Ref A.\n2. Ref B.\n`,
-  'tm-huge': `---\ntitle: "Huge"\n---\n\n${'h'.repeat(110_000)}\n`,
+  // Leaves no room even for tm-master-long reduced (US-50 AC13).
+  'tm-huge': `---\ntitle: "Huge"\n---\n\n${'h'.repeat(119_900)}\n`,
   'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
   'tm-article': `---\ntitle: "An article"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNot a master.\n`,
 };
@@ -401,7 +402,7 @@ describe('runPipeline: the reply-or-skip input (US-50 AC6)', () => {
     expect(platform).toContain('[reference — reviewed 2026-10-20]');
   });
 
-  it('a master the router picked but the cap skipped still adds its current view (H2, Codex R2)', async () => {
+  it('a master the router picked but the cap skipped, even reduced, still adds its current view (H2, Codex R2; US-50 AC13)', async () => {
     fakeFiles();
     vi.mocked(routeQuery).mockResolvedValueOnce({ handles: ['tm-huge', 'tm-master-long'], rawJson: null, usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 }, latencyMs: 1, cacheHit: false, error: null });
     await runPipeline(thread, { ...entry, topics: ['tm-master-long'] }, 'The video body.');

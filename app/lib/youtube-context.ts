@@ -159,6 +159,16 @@ function keySafetyPoints(md: string): { text: string | null; dropped?: string } 
 }
 
 /**
+ * A master cut to what must reach the answer model when the whole page would
+ * pass the chat's content cap (US-50 AC13): its current view, key safety points
+ * and every safety section with the lines it cites. Null when it has none.
+ */
+export function reducedMaster(md: string): string | null {
+  const parts = [currentViewSection(md), keySafetyPoints(md).text, ...safetySections(md)].filter(Boolean);
+  return parts.length > 0 ? parts.join('\n\n') : null;
+}
+
+/**
  * The master views for a comment: each reference named in the post's `topics`,
  * once, skipping masters already loaded as router-matched content (pass the
  * loaded handles, from loadedHandles(), never the router's raw picks). What

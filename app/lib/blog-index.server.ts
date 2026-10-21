@@ -24,6 +24,9 @@ export interface BlogIndexEntry {
   reviewed?: string;
 }
 
+/** A topic master (US-50 AC1): a reference with a review date. */
+export const isMaster = (entry: BlogIndexEntry) => entry.type === 'reference' && /^\d{4}-\d{2}-\d{2}$/.test(entry.reviewed ?? '');
+
 const INDEX_PATH = path.join(process.cwd(), 'docs/blog/index.json');
 
 let cached: BlogIndexEntry[] | null = null;
