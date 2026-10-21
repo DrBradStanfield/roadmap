@@ -30,6 +30,7 @@ import {
   computeCurrentReminderSchedule,
   flushRoadmapStore,
   getReminderOptIn,
+  getShownErase,
   isKnownMinorNow,
   setReminderOptIn,
 } from '../src/lib/roadmap-data';
@@ -172,6 +173,9 @@ export async function optInToReminders(
   if (!remindersSupported(backend)) throw new Error('Reminders need a connected cloud account.');
   // US-07 AC6: the plan is built for adults, and so are its reminders.
   if (isKnownMinorNow()) throw new Error('Check-up reminders are for adults aged 18 and over.');
+  // The record this enrolment was asked for: a reply landing after an erase
+  // the page has shown since is refused, not saved into it (US-16 AC2a).
+  const erase = getShownErase();
   const schedule = computeCurrentReminderSchedule();
   const identity: Identity | null = email ? { provider: 'typed', email } : await identityFor(backend);
   if (!identity) {
@@ -196,11 +200,17 @@ export async function optInToReminders(
   // cancelled so it cannot outlive the decision (not their opt-out, so not
   // counted). A token the file already holds active is theirs: left alone.
   const now = getReminderOptIn();
-  if (silent && !sameOptIn(now, silent.from)) {
+  const superseded = silent && !sameOptIn(now, silent.from);
+  // A token the file already holds active is theirs: never cancelled, and
+  // its switch marker stays (adversary R1).
+  const held = now?.status === 'active' && now.token === reply.token;
+  // The record can also refuse the token: it was erased under the page (US-16
+  // AC2a). That erase is a decision made meanwhile too, so the row goes.
+  if (superseded || !setReminderOptIn({ status: 'active', token: reply.token, email: reply.email, provider: backend }, erase)) {
     // The decision that superseded this enrolment (an erase, a toggle-off) owns
     // the file now: no switch marker outlives it (US-11 AC4).
-    if (now?.status !== 'active') safeRemoveItem(SWITCH_CANCELLED_KEY);
-    if (now?.status !== 'active' || now.token !== reply.token) {
+    if (!held && (!superseded || now?.status !== 'active')) safeRemoveItem(SWITCH_CANCELLED_KEY);
+    if (!held) {
       const cancel = await postCancel(reply.token, await cancelProofFor(backend));
       // The status code only (CLAUDE.md telemetry rule): this row has no token anywhere now.
       if (!cancel.ok) {
@@ -210,7 +220,6 @@ export async function optInToReminders(
     }
     throw new Error('Reminder enrolment superseded by a decision made meanwhile.');
   }
-  setReminderOptIn({ status: 'active', token: reply.token, email: reply.email, provider: backend });
   await flushRoadmapStore(); // the token must reach the cloud file
   // reminder_optin is counted by the SERVER when the row lands (every lane) —
   // only it knows the enrolment happened, and abuse enrolments count too.

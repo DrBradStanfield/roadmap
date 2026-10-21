@@ -272,6 +272,14 @@ input[type="number"] {
 
 }
 
+/* The form, locked while this tab's erase runs (US-16 AC2a): a plain box. */
+.health-form-lock.health-form-lock {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
 .health-tool-left {
   display: flex;
   flex-direction: column;
