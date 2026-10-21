@@ -2993,7 +2993,7 @@ describe('Evidence attachment', () => {
     const reason = SUGGESTION_EVIDENCE['supplement-creatine'].reason;
     expect(reason).toContain('his judgement, not a trial finding');
     expect(reason).toContain('A systematic review (Avgerinos 2018)');
-    expect(reason).toContain('no overall memory benefit except in older adults');
+    expect(reason).toContain('no clear overall memory benefit except in older adults');
     expect(reason).toContain('no effect on overall cognition or executive function');
     expect(reason).toContain('has not been established');
     expect(reason).not.toMatch(/consistently find|largest|women/i);
