@@ -159,5 +159,5 @@ final class HealthEngine {
     }
 
     /// The instant format JavaScript's `toISOString` writes, milliseconds included.
-    private static let iso = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
+    static let iso = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
 }

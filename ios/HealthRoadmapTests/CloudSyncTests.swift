@@ -334,7 +334,7 @@ final class CloudSyncTests: XCTestCase {
         await sync.start()
         await sync.disconnect()
         XCTAssertEqual(sync.syncedBefore, .dropbox)
-        XCTAssertTrue(SyncStatusText.planPrivacy(provider: nil, earlier: sync.syncedBefore).contains("Dropbox"))
+        XCTAssertTrue(SyncStatusText.myDataFooter(provider: nil, earlier: sync.syncedBefore).contains("Dropbox"))
     }
 
     // MARK: Re-check findings (F2, F3, F7)

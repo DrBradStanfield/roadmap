@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UserNotifications
 
 @main
 struct HealthRoadmapApp: App {
@@ -11,6 +12,7 @@ struct HealthRoadmapApp: App {
             switch parts {
             case .success(let parts):
                 RootView(engine: parts.engine, store: parts.store, sync: parts.sync)
+                    .environment(parts.reminders).environment(parts.reminderTaps)
                     .task { await parts.sync.start() }
                     .onChange(of: scenePhase) { _, phase in follow(phase, parts.sync) }
             case .failure(let error):
@@ -66,11 +68,19 @@ struct AppParts {
     let engine: HealthEngine
     let store: RecordStore
     let sync: CloudSync
+    let reminders: ReminderScheduler
+    let reminderTaps = ReminderTaps()
 
     init() throws {
         engine = try HealthEngine()
         let folder = try RecordStore.appFolder()
         store = try RecordStore(folder: folder, engine: engine, deviceId: RecordStore.deviceId(in: folder))
         sync = CloudSync(engine: engine, store: store, oauth: OAuthClient())
+        let (engine, store) = (engine, store)
+        reminders = ReminderScheduler(center: UNUserNotificationCenter.current(), folder: folder) {
+            try engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+        }
+        // Before launch finishes, so a tap that starts the app still reaches My plan.
+        UNUserNotificationCenter.current().delegate = reminderTaps
     }
 }

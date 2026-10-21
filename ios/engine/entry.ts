@@ -5,6 +5,7 @@ import { computePlan, type Plan } from '../../packages/health-core/src/plan';
 import { planSections } from '../../packages/health-core/src/plan-sections';
 import { applyEdit, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
 import { metricHistory } from './my-data-forms';
+import { phoneReminders } from './reminders';
 import { installShim, type Natives } from './shim';
 
 // The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
@@ -53,4 +54,10 @@ export function numberJson(text: string): string {
 /** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */
 export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string): string {
   return JSON.stringify(metricHistory(readRecord(recordJson, nowIso, deviceId), metric, nowIso));
+}
+// Chat and lab upload (US-52): app-doors.ts.
+export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
+/** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON. */
+export function remindersJson(recordJson: string, nowIso: string, deviceId: string): string {
+  return JSON.stringify(phoneReminders(readRecord(recordJson, nowIso, deviceId), new Date(nowIso)));
 }

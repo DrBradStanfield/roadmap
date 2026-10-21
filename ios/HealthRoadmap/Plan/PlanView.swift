@@ -13,8 +13,6 @@ struct PlanView: View {
 
     let engine: HealthEngine
     let store: RecordStore
-    /// Where the record is kept, for the privacy line.
-    let sync: CloudSync
     /// Switches to the My data tab.
     let showMyData: () -> Void
     @State private var state = LoadState.loading
@@ -34,7 +32,7 @@ struct PlanView: View {
                         .buttonStyle(.borderedProminent)
                 }
             case .loaded(let sections, let planMs):
-                PlanList(sections: sections, planMs: planMs, privacy: SyncStatusText.planPrivacy(provider: sync.provider, earlier: sync.syncedBefore))
+                PlanList(sections: sections, planMs: planMs)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -66,8 +64,6 @@ struct PlanView: View {
 private struct PlanList: View {
     let sections: [PlanSection]
     let planMs: Double
-    /// Where the record goes (SyncStatusText.planPrivacy).
-    let privacy: String
 
     var body: some View {
         ScrollView {
@@ -95,10 +91,10 @@ private struct PlanList: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 4)
 
-                // Re-derived with cloud sync (architecture.md D9): the plan is worked out
-                // here; the record goes only to the cloud the user connected.
+                // Chat and lab upload send data (US-52 AC9, architecture.md D9), so the
+                // line claims only where the plan was worked out.
                 Label {
-                    Text("Worked out on this iPhone in \(planMs.formatted(.number.precision(.fractionLength(1)))) ms. \(privacy)")
+                    Text("Worked out on this iPhone in \(planMs.formatted(.number.precision(.fractionLength(1)))) ms.")
                 } icon: {
                     Image(systemName: "lock.shield")
                 }
