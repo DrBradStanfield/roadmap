@@ -1,0 +1,55 @@
+/**
+ * What a client gives the record engine: where the record lives and the
+ * device capabilities around it (ios/architecture.md D4). The web widget
+ * builds one from localStorage and its cloud adapters
+ * (widget-src/src/storage/web-record-host.ts); the iPhone app will build one
+ * from its container file and Dropbox or Drive. No DOM and no Node here.
+ */
+import type { ReadResult, StorageAdapter, WriteResult } from './adapter';
+
+/** A store that reads and writes synchronously (localStorage, a local file).
+ *  Lets a page's last-ditch save land before the page goes (US-10 AC5), and a
+ *  returning page skip a re-read when nothing moved (US-34 AC6). */
+export interface SyncStorage {
+  readSync(fileName: string): ReadResult;
+  writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult;
+  /** The file's stored revision; null when there is none. */
+  revision(fileName: string): string | null;
+}
+
+/** On a cloud: the copy on this device that holds a save the cloud refused,
+ *  and the marker that says it is there (US-09 AC4). */
+export interface DeviceMirror {
+  adapter: StorageAdapter;
+  pending: { get(): boolean; set(): void; clear(): void };
+  /** True once this device has logged off: no write may recreate the record
+   *  here (US-09 AC2c). */
+  writesStopped(): boolean;
+  /** Remove the device copy and what sits beside it, after an erase has
+   *  reached the cloud (US-11). */
+  wipe(): Promise<void>;
+}
+
+interface HostBase {
+  store: StorageAdapter;
+  sync?: SyncStorage;
+  /** Health data this device keeps outside the record (drafts, kept answers,
+   *  stored originals), cleared by an erase (US-11 AC1). */
+  clearOffFileData(): void;
+}
+
+/**
+ * `device`: the store is the record's only copy (localStorage on the web, the
+ * app's container file on the phone). An unreadable stored record does not
+ * block an erase there, and a failed save has nowhere else to go.
+ * `cloud`: the record lives in the user's cloud, with a device mirror behind
+ * it for a save the cloud refused.
+ */
+export type RecordHost =
+  | (HostBase & {
+      tier: 'device';
+      /** After an erase: clear the other record files here (chat history) and
+       *  move the erase fence, so no stale writer brings them back (US-11). */
+      clearNamedFiles(): void;
+    })
+  | (HostBase & { tier: 'cloud'; mirror: DeviceMirror });

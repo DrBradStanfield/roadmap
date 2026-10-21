@@ -287,6 +287,7 @@ export {
   REMOTE_POLL_MS,
   REMOTE_THROTTLE_MS,
 } from './record-session';
+export type { RecordHost } from './record-host';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 

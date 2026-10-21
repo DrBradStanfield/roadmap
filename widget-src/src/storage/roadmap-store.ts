@@ -73,16 +73,11 @@ import {
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
 import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core';
-import {
-  LocalStorageAdapter,
-  clearLocalNamedFiles,
-  latchOnOtherTabsLogOff,
-  roadmapLocalWritesStopped,
-  stopRoadmapLocalWrites,
-} from './local-storage-adapter';
-import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
+import { LocalStorageAdapter, latchOnOtherTabsLogOff } from './local-storage-adapter';
+import { ROADMAP_FILE_NAME, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
-import { clearMatrixDrafts, clearOffFileHealthData, LPA_CHECK_KEPT_KEY, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { clearMatrixDrafts, LPA_CHECK_KEPT_KEY, safeRemoveItem } from '../lib/storage';
+import { notify, webRecordHost } from './web-record-host';
 import { Sentry } from '../lib/sentry';
 import { recordFailure, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -91,19 +86,9 @@ import { recordFailure, storageFailureClass } from '../lib/error-diagnostics';
  *  hosted MCP server runs the same read-merge-write loop from Node (US-32). */
 export { ROADMAP_DOC };
 
-/**
- * Set while the on-device copy may hold changes a cloud backend hasn't seen
- * (US-09 AC4): a failed cloud persist mirrors the working copy locally under
- * this marker; a failed connect-time lift and an on-device fallback session
- * (standalone/connect.ts) mark the existing local file the same way. Cleared by the next successful cloud
- * save, after create() has merged the on-device copy back in. ONLY the
- * functions below write it — the key is exported for tests alone.
- */
-export const PENDING_MIRROR_KEY = 'health_roadmap_pending_cloud_sync';
-
-/** Fired on every marker flip; the sync-status UI listens (same convention as
- *  the standalone hr:* events). Dispatch is best-effort — absent in tests. */
-export const SYNC_PENDING_EVENT = 'hr:sync-pending-changed';
+/** The pending-mirror marker (US-09 AC4) is the web host's; re-exported for
+ *  the modules that import it from the store. */
+export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, markSyncPending, beginRoadmapLogOff, isSyncPending } from './web-record-host';
 
 /**
  * Fired when a re-read brought something new into the working copy — another
@@ -112,43 +97,6 @@ export const SYNC_PENDING_EVENT = 'hr:sync-pending-changed';
  * without a reload.
  */
 export const REMOTE_CHANGED_EVENT = 'hr:remote-changed';
-
-function notify(name: string): void {
-  try {
-    window.dispatchEvent(new Event(name));
-  } catch {
-    /* non-browser environment (tests) */
-  }
-}
-
-/** Record that on-device data is ahead of the cloud (see PENDING_MIRROR_KEY).
- *  A yes or no: which rows travel is the erase list's call, not a time's
- *  (US-09 AC23). isSyncPending checks only that it is there. The value is a
- *  far-future instant because an older bundle in another tab still reads it
- *  as "keep rows newer than this" past an erase: so it keeps nothing extra. */
-export function markSyncPending(): void {
-  if (roadmapLocalWritesStopped()) return;
-  safeSetItem(PENDING_MIRROR_KEY, '9999-12-31T23:59:59.999Z');
-  notify(SYNC_PENDING_EVENT);
-}
-
-/** Stop this page (and every other tab, by a storage signal) recreating the
- *  roadmap after logout, without erasing cloud data or cancelling successful
- *  cloud saves (including lifecycle flushes). */
-export function beginRoadmapLogOff(): void {
-  stopRoadmapLocalWrites();
-  clearSyncPending();
-}
-
-function clearSyncPending(): void {
-  safeRemoveItem(PENDING_MIRROR_KEY);
-  notify(SYNC_PENDING_EVENT);
-}
-
-/** True while on-device data is still waiting to reach the cloud. */
-export function isSyncPending(): boolean {
-  return safeGetItem(PENDING_MIRROR_KEY) != null;
-}
 
 /** What an erase that cannot read the cloud record says. It cannot list what
  *  it removes, so it removes nothing (US-09 AC23). */
@@ -291,7 +239,8 @@ export class RoadmapStore {
 
   private constructor(
     private readonly sync: SyncManager<RoadmapFile>,
-    private readonly adapter: StorageAdapter,
+    /** The device and its tier (health-core record-host.ts). */
+    private readonly host: RecordHost,
     file: RoadmapFile,
     deviceId: string,
     /** The user chose a cloud this session cannot reach, and runs on-device
@@ -305,15 +254,17 @@ export class RoadmapStore {
   /** Load the user's record from the given backend and return a ready store. */
   static async create(adapter: StorageAdapter, cloudUnreachable = false): Promise<RoadmapStore> {
     const deviceId = getDeviceId();
+    const host = webRecordHost(adapter);
     const sync = new SyncManager(adapter, deviceId, ROADMAP_DOC);
-    const revision = adapter instanceof LocalStorageAdapter ? adapter.revision(ROADMAP_FILE_NAME) : null;
-    const store = new RoadmapStore(sync, adapter, await sync.load(), deviceId, cloudUnreachable);
+    const revision = host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
+    const store = new RoadmapStore(sync, host, await sync.load(), deviceId, cloudUnreachable);
     store.seenRevision = revision;
-    if (adapter.id !== 'local') latchOnOtherTabsLogOff();
+    const mirror = host.tier === 'cloud' ? host.mirror : null;
+    if (mirror) latchOnOtherTabsLogOff();
     // A previous cloud session failed to save and mirrored its changes
     // on-device (see persist()'s catch). Merge them in now and schedule a save
     // to lift them up; the marker clears only once a cloud save succeeds.
-    if (adapter.id !== 'local' && isSyncPending()) {
+    if (mirror?.pending.get()) {
       // Fault-tolerant like the mirror-WRITE side: an unreadable mirror must
       // not brick the load — continue on the cloud file. What happens to the
       // marker depends on WHY it was unreadable (see the catch below). A plain
@@ -322,12 +273,12 @@ export class RoadmapStore {
       // AC23).
       try {
         const ctx: SyncContext = { deviceId, now: new Date().toISOString() };
-        const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+        const { body } = await mirror.adapter.read(ROADMAP_FILE_NAME);
         if (body != null) {
           store.file = ROADMAP_DOC.merge(ROADMAP_DOC.migrate(body, ctx), store.file, ctx);
           store.touch();
         } else {
-          clearSyncPending(); // stale marker, nothing mirrored
+          mirror.pending.clear(); // stale marker, nothing mirrored
         }
       } catch (error) {
         if (error instanceof SchemaTooNewError) {
@@ -339,7 +290,7 @@ export class RoadmapStore {
           // write reads before merging, so it throws on the same bytes). A
           // sticky marker would show "waiting to sync" forever for data
           // nothing can recover — clear it; the bytes themselves stay put.
-          clearSyncPending();
+          mirror.pending.clear();
         }
       }
     }
@@ -641,14 +592,14 @@ export class RoadmapStore {
     // would offer to archive it again (Sentry 7715862604).
     const writeOne = async (w: (typeof writes)[number]) => {
       try {
-        await this.adapter.writeDocument(w.ref, w.file);
+        await this.host.store.writeDocument(w.ref, w.file);
         w.doc.fileRef = w.ref;
         w.doc.contentHash = w.hash;
         w.doc.mimeType = w.file.type || '';
       } catch (error) {
         console.warn('Document file not stored');
         Sentry.captureException(recordFailure(error, 'Document file not stored'), {
-          tags: { area: 'cloud-sync', op: 'write-document', backend: this.adapter.id },
+          tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id },
         });
         w.failed = Boolean(w.supersedes);
       }
@@ -687,7 +638,7 @@ export class RoadmapStore {
 
   /** Read a stored document's bytes back (viewer). */
   async readDocumentFile(fileRef: string): Promise<Blob> {
-    return this.adapter.readDocument(fileRef);
+    return this.host.store.readDocument(fileRef);
   }
 
   deleteDocument(documentId: string): boolean {
@@ -793,7 +744,7 @@ export class RoadmapStore {
     // debounce goes back on it. On this device an unreadable record leaves
     // this copy's epoch, as before: there is no other copy to list.
     const stored = await this.sync.load().catch(() => null);
-    if (!stored && this.adapter.id !== 'local') {
+    if (!stored && this.host.tier === 'cloud') {
       if (debounced) this.touch();
       return { success: false, error: ERASE_UNREACHABLE };
     }
@@ -810,9 +761,10 @@ export class RoadmapStore {
       // The device file, on a cloud, is where other tabs' failed saves wait.
       // One that cannot be read, or read into a record, lists nothing; a
       // successful erase removes it below.
-      const device = this.adapter.id === 'local'
+      const host = this.host;
+      const device = host.tier === 'device'
         ? null
-        : await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)
+        : await host.mirror.adapter.read(ROADMAP_FILE_NAME)
           .then(({ body }) => (body == null ? null : ROADMAP_DOC.migrate(body, this.ctx())))
           .catch(() => null);
       this.erasing = true;
@@ -833,18 +785,16 @@ export class RoadmapStore {
       // file, so the erased file alone doesn't reach them. Clear them by NAME
       // in every mode — a localStorage-only user gets no disconnect() below
       // (it would delete the erased file we just wrote), and used to keep both.
-      clearOffFileHealthData();
-      if (this.adapter.id === 'local') {
-        // The other record files (chat-history.json) sit under the adapter's
-        // named-file prefix, which only disconnect() clears — and disconnect()
-        // here would delete the erased record file we just wrote. Their
-        // contents are already tombstoned (roadmap-data.ts's beforeErase step
-        // erases chat history first). Also rotate the content-free fence
-        // so another tab cannot merge its old snapshot into the missing file.
-        clearLocalNamedFiles();
+      host.clearOffFileData();
+      if (host.tier === 'device') {
+        // The other record files (chat-history.json): their contents are
+        // already tombstoned (roadmap-data.ts's beforeErase step erases chat
+        // history first). Also rotate the content-free fence so another tab
+        // cannot merge its old snapshot into the missing file.
+        host.clearNamedFiles();
       } else {
-        clearSyncPending();
-        await new LocalStorageAdapter().disconnect();
+        host.mirror.pending.clear();
+        await host.mirror.wipe();
       }
       return { success: true };
     } catch (e) {
@@ -899,7 +849,7 @@ export class RoadmapStore {
     const local = this.file;
     // Taken before the read: a write landing in between costs a second read,
     // never a missed one.
-    const revision = this.adapter instanceof LocalStorageAdapter ? this.adapter.revision(ROADMAP_DOC.fileName) : null;
+    const revision = this.host.sync?.revision(ROADMAP_DOC.fileName) ?? null;
     const merged = mergeFiles(local, await this.sync.load(), this.ctx());
     // A merge always bumps the file's own clock, so the comparison is on the
     // CONTENT, not on a version: re-rendering on every poll would count a
@@ -935,8 +885,9 @@ export class RoadmapStore {
    * re-reads at all. Returns the stop.
    */
   startLiveRefresh(): () => void {
-    const watchable = !!this.adapter.watch;
-    const local = this.adapter.id === 'local';
+    const adapter = this.host.store;
+    const watchable = !!adapter.watch;
+    const local = this.host.tier === 'device';
     let watching: AbortController | null = null;
     // The push a throttled window swallowed. A watch fires once per remote
     // change and then goes quiet — the cursor has moved past it — so dropping
@@ -966,7 +917,7 @@ export class RoadmapStore {
     const startWatch = () => {
       if (!watchable || watching) return;
       watching = new AbortController();
-      this.adapter.watch!(ROADMAP_DOC.fileName, pushed, watching.signal);
+      adapter.watch!(ROADMAP_DOC.fileName, pushed, watching.signal);
     };
     const run = () => {
       if (document.visibilityState === 'hidden') {
@@ -982,7 +933,7 @@ export class RoadmapStore {
         return;
       }
       startWatch();
-      if (this.adapter instanceof LocalStorageAdapter && this.adapter.revision(ROADMAP_DOC.fileName) === this.seenRevision) return;
+      if (this.host.sync && this.host.sync.revision(ROADMAP_DOC.fileName) === this.seenRevision) return;
       // The return's catch-up waits out the throttle; it is never dropped. Once
       // it has read, a second trigger may be (focus and visibilitychange fire
       // together).
@@ -1013,12 +964,13 @@ export class RoadmapStore {
   flushSync(): void {
     if (!this.unsaved) return;
     this.cancelDebounce();
-    if (this.adapter instanceof LocalStorageAdapter) {
+    const store = this.host.sync;
+    if (store) {
       try {
         const ctx = this.ctx();
-        const { body, version } = this.adapter.readSync(ROADMAP_DOC.fileName);
+        const { body, version } = store.readSync(ROADMAP_DOC.fileName);
         const merged = ROADMAP_DOC.merge(this.file, ROADMAP_DOC.migrate(body, ctx), ctx);
-        this.seenRevision = this.adapter.writeSync(ROADMAP_DOC.fileName, merged, version).version;
+        this.seenRevision = store.writeSync(ROADMAP_DOC.fileName, merged, version).version;
         this.savedChanges = this.changes;
         if (this.adopt(merged)) notify(REMOTE_CHANGED_EVENT);
         return;
@@ -1145,7 +1097,7 @@ export class RoadmapStore {
       if (remoteFolded) notify(REMOTE_CHANGED_EVENT);
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
-      if (this.adapter.id !== 'local' && !this.mirrorSkipped) clearSyncPending();
+      if (this.host.tier === 'cloud' && !this.mirrorSkipped) this.host.mirror.pending.clear();
       return true;
     } catch (error) {
       this.running = null; // as above: ended before the marker is announced
@@ -1162,8 +1114,9 @@ export class RoadmapStore {
       // so returning false (not rethrowing) keeps them from re-creating the
       // unhandled rejection Sentry's noise filters dropped; awaited callers
       // (flush) check the result.
-      if (this.adapter.id !== 'local' && !roadmapLocalWritesStopped()) {
-        markSyncPending();
+      const mirror = this.host.tier === 'cloud' ? this.host.mirror : null;
+      if (mirror && !mirror.writesStopped()) {
+        mirror.pending.set();
         // Deliberately the merged transfer primitive, NOT a plain overwrite: the
         // local file may hold guest-era data this session never loaded (no
         // marker set), and an overwrite would destroy its only copy. The merge
@@ -1174,7 +1127,7 @@ export class RoadmapStore {
         try {
           const now = new Date().toISOString();
           if (now > this.file.meta.updatedAt) this.file.meta.updatedAt = now;
-          await saveRoadmapFileInto(new LocalStorageAdapter(), this.file);
+          await saveRoadmapFileInto(mirror.adapter, this.file);
         } catch {
           /* device storage unavailable — memory-only is the best we have */
         }
@@ -1184,14 +1137,14 @@ export class RoadmapStore {
       // is the transport, which `recordFailure` already classifies. A device
       // refuses every retry the same way, and each hide retries a refused
       // save, so each kind of refusal is reported once per page load.
-      const cause = this.adapter.id === 'local' ? storageFailureClass(error) : undefined;
+      const cause = this.host.tier === 'device' ? storageFailureClass(error) : undefined;
       if (cause) {
         const kind = `${error instanceof Error ? error.name : ''}/${cause}`;
         if (this.refusalsReported.has(kind)) return false;
         this.refusalsReported.add(kind);
       }
       Sentry.captureException(recordFailure(error, 'Cloud sync failed'), {
-        tags: { area: 'cloud-sync', op: 'persist', backend: this.adapter.id, ...(cause ? { cause } : {}) },
+        tags: { area: 'cloud-sync', op: 'persist', backend: this.host.store.id, ...(cause ? { cause } : {}) },
       });
       return false;
     }
