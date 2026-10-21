@@ -72,7 +72,9 @@ by the orchestrator, not a fresh reviewer.
 
 ## To check on a real iPhone
 
-Needs Xcode 27 (your iPhone runs iOS 27) and Developer Mode on the phone.
+The app runs on your iPhone since 2026-10-22, built on the second Mac (Xcode 27.1) with
+your free personal team (P7LB54J2PM). Free-team installs expire after 7 days: rebuild
+then. App Attest needs the paid team, so chat and upload wait for enrolment.
 
 - Apple Health blood pressure and background delivery.
 - A reminder notification firing, and its tap opening My plan.
