@@ -720,7 +720,10 @@ open web tab, Pages fork and CLI off from its chat history until it updated.
   stamp. A revision is the day's correcting writes within 5 s of each other; its struck
   pair is, per half, the row it corrected, or for a half it left alone that half's latest
   row by the revision's start. The corrected row, not a timestamp, decides "before",
-  because a correction can carry the same instant as its original.
+  because a correction can carry the same instant as its original. Rows merge's slot
+  reconciliation set aside (entered in error, no correction naming them) are listed too,
+  struck, paired within 5 s or with a dash, in time order (orchestrator, 2026-10-22: AC9
+  lists every value).
 - **Feet and inches in the engine.** `profile` takes `heightFeet` and `heightInches` and
   calls health-core's `feetInchesToCm`; My data gets `cmToFeetInches`. Same maths and
   rounding as the web's form, no Swift copy (D2). Not unit-dependent, so the cloud's

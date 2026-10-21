@@ -149,6 +149,28 @@ describe('blood pressure, one reading (US-25 AC17)', () => {
     expect(history(fixed)).toEqual([['2026-10-20', '125/80', 'active'], ['2026-10-20', '120/80', 'entered-in-error']]);
   });
 
+  it('lists rows merge set aside (entered in error, no correction naming them) as struck, paired within 5 s, in time order (AC9)', () => {
+    const file = edited(nz(), NOW, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
+    const fixed = edited(file, plus(NOW, 3_600_000), { kind: 'correct', id: file.measurements[0].id, value: 125 });
+    // Slot losers from a merge: a pair 1 ms apart half an hour in, and a lone diastolic two hours in.
+    const orphan = (metricType: string, value: number, at: string, id: string) =>
+      ({ ...file.measurements[0], id, metricType, value, createdAt: at, status: 'entered-in-error' as const });
+    const merged: RoadmapFile = {
+      ...fixed,
+      measurements: [...fixed.measurements,
+        orphan('systolic_bp', 130, plus(NOW, 1_800_000), 'o-sys'),
+        orphan('diastolic_bp', 85, plus(NOW, 1_800_001), 'o-dia'),
+        orphan('diastolic_bp', 90, plus(NOW, 7_200_000), 'o-lone')],
+    };
+    expect(history(merged)).toEqual([
+      ['2026-10-20', '125/80', 'active'],
+      ['2026-10-20', '–/90', 'entered-in-error'],
+      // The revision's untouched diastolic is the chain's 80, never a row merge set aside.
+      ['2026-10-20', '120/80', 'entered-in-error'],
+      ['2026-10-20', '130/85', 'entered-in-error'],
+    ]);
+  });
+
   it('a half that never had a partner shows a dash, struck or not', () => {
     const lone = edited(nz(), NOW, { kind: 'add', metric: 'systolic_bp', value: 120, day: '2026-10-20' });
     const fixed = edited(lone, LATER, { kind: 'correct', id: lone.measurements[0].id, value: 125 });
