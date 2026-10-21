@@ -43,11 +43,51 @@ function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 }
 
-/** Code only: string literals (user-facing text) out as well, and template
- *  literals with no `${` (model prompts are prose). One with a `${` stays in
- *  whole, so no code inside it escapes the scan. */
+/** Code only: the text of string and template literals blanked (user-facing
+ *  prose, model prompts), the code inside a template's `${...}` kept, so a
+ *  quote in a template's prose can never hide the code after it. A small
+ *  tokenizer, not a regex: `${}` nests braces, strings and templates. */
 function codeOf(source: string): string {
-  return source.replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\$]|\\.|\$(?!\{))*`/g, "''");
+  let out = '';
+  let i = 0;
+  const quoted = (quote: string) => {
+    for (i++; i < source.length && source[i] !== quote && source[i] !== '\n'; i++) if (source[i] === '\\') i++;
+    i++;
+    out += "''";
+  };
+  const template = () => {
+    for (i++; i < source.length && source[i] !== '`'; ) {
+      if (source[i] === '\\') i += 2;
+      else if (source[i] === '$' && source[i + 1] === '{') {
+        i += 2;
+        out += ' ';
+        code(true);
+        out += ' ';
+      } else i++;
+    }
+    i++;
+    out += "''";
+  };
+  /** Code up to the end, or to the `}` that closes a template's `${`. */
+  const code = (inTemplate: boolean) => {
+    let depth = 0;
+    while (i < source.length) {
+      const c = source[i];
+      if (c === "'" || c === '"') quoted(c);
+      else if (c === '`') template();
+      else {
+        if (inTemplate && c === '}' && depth-- === 0) {
+          i++;
+          return;
+        }
+        if (inTemplate && c === '{') depth++;
+        out += c;
+        i++;
+      }
+    }
+  };
+  code(false);
+  return out;
 }
 
 /** What `source` reaches that JavaScriptCore lacks. The two import rules
@@ -88,6 +128,9 @@ describe('engine portability (ios/architecture.md D4)', () => {
   it('the scan itself: catches code in a template, globalThis and self, and allows only crypto.randomUUID', () => {
     expect(violations('x.ts', 'const t = `see ${document.title}`;')).toEqual(['document.']);
     expect(violations('x.ts', 'const t = `the document. Return`;')).toEqual([]);
+    // A quote in a template's prose must not swallow the code after it.
+    expect(violations('x.ts', "const t = `don't ${a}` + window.x;")).toEqual(['window']);
+    expect(violations('x.ts', 'const t = `${f({ a: "}" })} and ${`nested ${document.title}`}`;')).toEqual(['document.']);
     expect(violations('x.ts', 'globalThis.fetch(u);')).toEqual(['globalThis']);
     expect(violations('x.ts', 'self.postMessage(m);')).toEqual(['self']);
     expect(violations('x.ts', 'parsed.document.title; row.self;')).toEqual([]);

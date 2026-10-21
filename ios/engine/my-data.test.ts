@@ -170,6 +170,25 @@ describe('medications and supplements (US-06, D4b)', () => {
     expect(stopped.file.supplementHistory.map((h) => h.changeType)).toEqual(['started', 'stopped']);
   });
 
+  it('refuses a start that is not a real day, or has not happened yet, and writes nothing', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const save = { kind: 'supplement' as const, supplementKey: 'omega3', supplementName: 'Omega-3', status: 'active' as const };
+    for (const startedAt of ['yesterday', '2026-02-30', '2099-01-01', '2026-10-20Tnonsense']) {
+      expect(applyEdit(file, { ...save, startedAt }, NOW), startedAt).toMatchObject({ ok: false, reason: 'invalid-date' });
+    }
+    for (const startedAt of ['2026-10-01', '2026-10-01T09:30:00.000Z']) {
+      const saved = applyEdit(file, { ...save, startedAt }, NOW);
+      if (!saved.ok) throw new Error(saved.message);
+      expect(saved.file.supplements[0].startedAt).toBe(startedAt);
+    }
+  });
+
+  it('refuses to stop a supplement the record does not hold', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    expect(applyEdit(file, { kind: 'supplement', supplementKey: 'omega3', supplementName: 'Omega-3', status: 'stopped' }, NOW))
+      .toMatchObject({ ok: false, reason: 'not-found' });
+  });
+
   it('refuses a supplement with a bad key or no status', () => {
     const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
     expect(applyEdit(file, { kind: 'supplement', supplementKey: 'Omega 3!', supplementName: 'Omega-3', status: 'active' }, NOW)).toMatchObject({ ok: false });
