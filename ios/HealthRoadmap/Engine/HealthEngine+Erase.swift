@@ -32,6 +32,13 @@ extension HealthEngine {
         let chatErased: Bool
         /// The website's chat history in the cloud was tombstoned (or there was none).
         let cloudChatErased: Bool
+        /// Why not, when the step ran and failed: "unreadable" or "unreachable".
+        let cloudChatProblem: String?
+
+        /// The website's chat history in the cloud, as the words need it.
+        var cloudChat: EraseText.CloudChat {
+            cloudChatErased ? .erased : cloudChatProblem == "unreadable" ? .unreadable : .unreachable
+        }
         /// The erased record to show, when `erased`.
         let view: CloudView?
     }

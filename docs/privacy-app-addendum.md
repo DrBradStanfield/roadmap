@@ -131,13 +131,13 @@ reminders on this iPhone, and deletes the readings this app wrote to Apple Healt
 from other apps and devices stay in Apple Health. With a cloud connected, it also erases your
 record there: the file stays, with your values erased, so your other devices erase their
 copies when they next sync. It also deletes the chat history the website saved there, when
-it can reach it. If it cannot, the app says so, and you can try again. A value another
-device has not synced yet is kept, and arrives later.
+it can reach it. If it cannot reach it, the app says so, and you can try again. If it cannot
+read it, the app says so too: delete it on the website, or delete `chat-history.json` in your
+Dropbox or Google Drive. A value another device has not synced yet is kept, and arrives later.
 
 It cannot reach copies you exported or shared, your cloud provider's version history, or
-chat questions already sent.
-Our server keeps none of those questions, but Anthropic may keep them for a limited time, as
-described above. The App Attest row stays; it holds nothing about you or your health.
+chat questions already sent. Our server keeps none of the questions sent from this app, but
+Anthropic may keep them for a limited time, as described above. The App Attest row stays; it holds nothing about you or your health.
 
 An erase made on the website reaches this iPhone's record and reminders when the app next
 syncs, but not the chat history on it. Delete that in the app.

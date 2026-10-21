@@ -30,6 +30,8 @@ class FakeDropbox {
   file: { text: string; rev: number } | null = null;
   /** `/chat-history.json`, which only the website writes (US-25 AC16). */
   chat: { text: string; rev: number } | null = null;
+  /** False: the chat file's endpoints answer 500, the record's still work. */
+  chatAnswers = true;
   online = true;
   delay = 0;
   /** False: uploads fail with a 500; reads still work. */
@@ -51,6 +53,7 @@ class FakeDropbox {
     expect(['/health-roadmap.json', '/chat-history.json']).toContain(arg.path);
     const slot = arg.path === '/chat-history.json' ? 'chat' : 'file';
     const now = this[slot];
+    if (slot === 'chat' && !this.chatAnswers) return { status: 500, headers: {}, body: 'internal_error' };
     if (url.endsWith('/files/download')) {
       if (!now) return { status: 409, headers: {}, body: '{"error_summary":"path/not_found/"}' };
       return { status: 200, headers: { 'Dropbox-API-Result': JSON.stringify({ rev: `r${now.rev}` }) }, body: now.text };
@@ -481,7 +484,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
 // US-25 AC16 (US-11 on the iPhone): "Delete all my data" with a cloud open.
 // The engine runs RecordSession.deleteAllData, the web's own order and guard.
 describe('cloudErase (US-25 AC16, US-11)', () => {
-  interface Erased { success: boolean; error?: string; chatErased: boolean; cloudChatErased: boolean; chatHistory: string | null; erased: boolean; view: { record: string; erase: string; session: number } | null }
+  interface Erased { success: boolean; error?: string; chatErased: boolean; cloudChatErased: boolean; cloudChatProblem: string | null; chatHistory: string | null; erased: boolean; view: { record: string; erase: string; session: number } | null }
   const chat = JSON.stringify({ schemaVersion: 1, conversations: [{ id: 'c1', title: 'Is my LDL high?', createdAt: NOW, updatedAt: NOW, messages: [{ id: 'u-1', role: 'user', content: 'Is my LDL high?', createdAt: NOW }] }], meta: { updatedAt: NOW, lamport: 1, lastDeviceId: 'ios-1' } });
 
   it('erases the cloud record by eraseEpoch, never deleting the file; the phone keeps only the erased copy, nothing pending', async () => {
@@ -542,7 +545,7 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     dropbox.beforeNextUpload = () => order.push(dropbox.chat!.text.includes('Website question') ? 'record before chat' : 'record after chat');
     const kept: string[] = [];
     const result = JSON.parse(await engine.cloudErase(chat, NOW, (text) => { kept.push(text); return ''; })) as Erased;
-    expect(result).toMatchObject({ success: true, erased: true, chatErased: true, cloudChatErased: true });
+    expect(result).toMatchObject({ success: true, erased: true, chatErased: true, cloudChatErased: true, cloudChatProblem: null });
     expect(order).toEqual(['record after chat']);
     // Sync status follows the record file only: one saving and one saved per
     // record upload, none for the chat file's (adversary R3).
@@ -562,20 +565,23 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
   });
 
   // Adversary R1: a cloud chat file the app cannot erase never blocks the phone's
-  // chat erase, on this try or any retry. Each result is reported on its own.
-  for (const [why, text] of [
-    ['unreadable', '{not json'],
-    ['written by a newer website (SchemaTooNewError)', JSON.stringify({ schemaVersion: 99, conversations: [], meta: { updatedAt: NOW, lamport: 1, lastDeviceId: 'web' } })],
+  // chat erase, on this try or any retry. Each result is reported on its own,
+  // with why (M1): 'unreadable' will not mend on a retry, 'unreachable' may.
+  for (const [why, text, problem] of [
+    ['unreadable', '{not json', 'unreadable'],
+    ['written by a newer website (SchemaTooNewError)', JSON.stringify({ schemaVersion: 99, conversations: [], meta: { updatedAt: NOW, lamport: 1, lastDeviceId: 'web' } }), 'unreadable'],
+    ['unreachable (the provider answers 500)', chat, 'unreachable'],
   ] as const) {
     it(`a cloud chat history that is ${why} is reported; the phone chat and the record are still erased`, async () => {
       const dropbox = new FakeDropbox();
       dropbox.put(await recordWith(['2026-10-01'], 'web'));
       dropbox.chat = { text, rev: 1 };
+      dropbox.chatAnswers = problem !== 'unreachable';
       const { engine } = await phone(dropbox);
       await engine.cloudOpen('dropbox', 'ios-1', false);
       const kept: string[] = [];
       const result = JSON.parse(await engine.cloudErase(chat, NOW, (t) => { kept.push(t); return ''; })) as Erased;
-      expect(result).toMatchObject({ success: true, erased: true, chatErased: true, cloudChatErased: false });
+      expect(result).toMatchObject({ success: true, erased: true, chatErased: true, cloudChatErased: false, cloudChatProblem: problem });
       expect(kept).toHaveLength(1);
       expect(kept[0]).not.toContain('Is my LDL high?');
       expect(dropbox.chat!.text).toBe(text);

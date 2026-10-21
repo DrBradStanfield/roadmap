@@ -419,10 +419,11 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
  */
 export async function cloudErase(historyText: string | null, nowIso: string, keepChat?: (text: string) => string): Promise<string> {
   const at = open;
-  if (!at) return JSON.stringify({ success: false, error: ERASE_UNREACHABLE, chatErased: false, cloudChatErased: false, chatHistory: null, erased: false, view: null });
+  if (!at) return JSON.stringify({ success: false, error: ERASE_UNREACHABLE, chatErased: false, cloudChatErased: false, cloudChatProblem: null, chatHistory: null, erased: false, view: null });
   const before = at.session.eraseIdentity;
   let chatHistory: string | null = null;
   let cloudChatErased = false;
+  let cloudChatProblem: 'unreachable' | 'unreadable' | null = null;
   const result = await at.session.deleteAllData({
     chat: async () => ({
       eraseAll: async () => {
@@ -433,8 +434,10 @@ export async function cloudErase(historyText: string | null, nowIso: string, kee
         try {
           await (await ChatSession.open(at.host)).eraseAll();
           cloudChatErased = true;
-        } catch {
-          /* cloudChatErased stays false; the words say the website's chat is still there */
+        } catch (error) {
+          // Why, so the words fit (adversary M1): a file the app cannot read will
+          // not mend on a retry; a provider that did not answer may.
+          cloudChatProblem = unreadable(error) ? 'unreadable' : 'unreachable';
         }
         chatHistory = await eraseChatText(historyText, nowIso, at.host.deviceId());
         const refused = chatHistory === null ? '' : keepChat?.(chatHistory);
@@ -449,7 +452,12 @@ export async function cloudErase(historyText: string | null, nowIso: string, kee
   } else if (erased) {
     at.unflushed += 1; // the background flush retries it
   }
-  return JSON.stringify({ ...result, cloudChatErased, chatHistory, erased, view: erased ? JSON.parse(view(at)) : null });
+  return JSON.stringify({ ...result, cloudChatErased, cloudChatProblem, chatHistory, erased, view: erased ? JSON.parse(view(at)) : null });
+}
+
+/** A file read but not understood: not JSON, or a newer schema than this engine's. */
+function unreadable(error: unknown): boolean {
+  return error instanceof SchemaTooNewError || (error instanceof StorageError && error.cause instanceof SyntaxError);
 }
 
 /** The app came to the foreground: re-read (US-34), and retry a refused save. */

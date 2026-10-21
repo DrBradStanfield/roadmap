@@ -189,8 +189,10 @@ final class DataEraserTests: XCTestCase {
         guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
 
         XCTAssertTrue(words.contains("chat history and reminders are deleted"), words)
-        XCTAssertTrue(words.contains("website conversations in Dropbox are still there"), words)
-        XCTAssertTrue(words.contains("Try again"), words)
+        // A file the app cannot read will not mend on a retry, so the words name the way out (M1).
+        XCTAssertTrue(words.contains("chat history in Dropbox could not be read, so it is still there"), words)
+        XCTAssertTrue(words.contains("delete chat-history.json in Dropbox"), words)
+        XCTAssertFalse(words.contains("Try again"), words)
         XCTAssertFalse(try String(contentsOf: chatFile, encoding: .utf8).contains(question), "the phone's chat is erased")
         XCTAssertEqual(dropbox.chat?.text, "{not json")
         XCTAssertEqual(epoch(dropbox.record), 1)
@@ -332,7 +334,9 @@ final class DataEraserTests: XCTestCase {
         XCTAssertFalse(phone.contains("Dropbox"))
         let cloud = EraseText.confirm(provider: .dropbox, earlier: .dropbox)
         XCTAssertTrue(cloud.contains("in Dropbox"))
-        XCTAssertTrue(cloud.contains("website's chat history in Dropbox"), cloud)
+        XCTAssertTrue(cloud.contains("It also erases your record in Dropbox, and the website's chat history there when the app can reach it."), cloud)
+        XCTAssertEqual(cloud.components(separatedBy: "It also").count, 2, "one 'It also' sentence for the cloud (L3)")
+        XCTAssertTrue(cloud.contains("questions sent from this app"), "the server claim is scoped to the app's chat (L3)")
         XCTAssertFalse(phone.contains("website"))
         XCTAssertTrue(cloud.contains("other devices"))
         let before = EraseText.confirm(provider: nil, earlier: .dropbox)
@@ -341,16 +345,34 @@ final class DataEraserTests: XCTestCase {
     }
 
     func testTheResultNamesTheWebsitesChatInTheCloud() {
-        XCTAssertTrue(EraseText.done(provider: .googleDrive, chatErased: true, cloudChatErased: true).contains("website chat history in Google Drive is deleted"))
-        let left = EraseText.done(provider: .googleDrive, chatErased: true, cloudChatErased: false)
-        XCTAssertTrue(left.contains("website conversations in Google Drive are still there"), left)
-        XCTAssertTrue(left.contains("Try again"), left)
-        XCTAssertTrue(EraseText.notSent(provider: .dropbox, chatErased: true, cloudChatErased: true).contains("website chat history in Dropbox is deleted"))
-        XCTAssertTrue(EraseText.notSent(provider: .dropbox, chatErased: true, cloudChatErased: false).contains("website conversations in Dropbox are still there"))
-        XCTAssertFalse(EraseText.done(provider: nil, chatErased: true).contains("website"))
-        for text in [left, EraseText.confirm(provider: .dropbox, earlier: nil)] {
+        XCTAssertTrue(EraseText.done(provider: .googleDrive, chatErased: true, cloudChat: .erased).contains("website chat history in Google Drive is deleted"))
+        let unreachable = EraseText.done(provider: .googleDrive, chatErased: true, cloudChat: .unreachable)
+        XCTAssertTrue(unreachable.contains("website conversations in Google Drive are still there"), unreachable)
+        XCTAssertTrue(unreachable.contains("Try again"), unreachable)
+        let unreadable = EraseText.done(provider: .googleDrive, chatErased: true, cloudChat: .unreadable)
+        XCTAssertTrue(unreadable.contains("The website's chat history in Google Drive could not be read, so it is still there. Delete it on the website, or delete chat-history.json in Google Drive."), unreadable)
+        XCTAssertFalse(unreadable.contains("Try again"), "a retry will not mend an unreadable file (M1)")
+        XCTAssertTrue(EraseText.notSent(provider: .dropbox, chatErased: true, cloudChat: .erased).contains("website chat history in Dropbox is deleted"))
+        XCTAssertTrue(EraseText.notSent(provider: .dropbox, chatErased: true, cloudChat: .unreachable).contains("website conversations in Dropbox are still there"))
+        XCTAssertTrue(EraseText.notSent(provider: .dropbox, chatErased: true, cloudChat: .unreadable).contains("could not be read"))
+        XCTAssertFalse(EraseText.done(provider: nil, chatErased: true, cloudChat: nil).contains("website"))
+        for text in [unreachable, unreadable, EraseText.confirm(provider: .dropbox, earlier: nil)] {
             XCTAssertFalse(text.contains("\u{2014}"), "no em dashes")
         }
+    }
+
+    /// L1: a refusal that comes after the chat step never says nothing was deleted
+    /// when a chat file was tombstoned.
+    func testARefusalAfterTheChatStepSaysWhatWasDeleted() {
+        let cloudOnly = EraseText.failed("The write failed.", chatErased: false, cloudChatErased: true, provider: .dropbox)
+        XCTAssertFalse(cloudOnly.contains("Nothing was deleted"), cloudOnly)
+        XCTAssertTrue(cloudOnly.contains("Your record was not erased."), cloudOnly)
+        XCTAssertTrue(cloudOnly.contains("website chat history in Dropbox was deleted"), cloudOnly)
+        let phoneOnly = EraseText.failed("The write failed.", chatErased: true, cloudChatErased: false, provider: .dropbox)
+        XCTAssertFalse(phoneOnly.contains("Nothing was deleted"), phoneOnly)
+        XCTAssertTrue(phoneOnly.contains("Your chat history was deleted."), phoneOnly)
+        XCTAssertFalse(phoneOnly.contains("website"), phoneOnly)
+        XCTAssertTrue(EraseText.failed("The write failed.", chatErased: false, cloudChatErased: false, provider: .dropbox).hasPrefix("Nothing was deleted."))
     }
 
     func testTheExportIsTheRecordFileUnderTheWebsName() async throws {

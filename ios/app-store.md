@@ -56,13 +56,11 @@ there and republish with `node scripts/build-privacy-page.mjs app --publish`.
 ## App privacy answers (App Store Connect)
 
 These match `ios/HealthRoadmap/PrivacyInfo.xcprivacy` and the privacy page. Change all
-three together.
+three together. Brad's rule (2026-10-22): over-declare rather than under-declare.
 
 - **Do you or your third-party partners collect data from this app?** Yes. Chat and lab
   upload send data through our server to Anthropic. The record itself never leaves the
   phone except to the user's own Dropbox or Google Drive, which is not collection by us.
-Brad's rule (2026-10-22): over-declare rather than under-declare.
-
 - **Health & Fitness > Health.** Collected. The record summary each chat question carries
   (including values from Apple Health), and the lab values read from an uploaded report.
   Purpose: App Functionality only. Linked to the user's identity: Yes, because an uploaded

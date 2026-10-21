@@ -10,6 +10,15 @@ enum EraseText {
     static let finalMessage = "This cannot be undone."
     static let deleteButton = "Delete everything"
 
+    /// What happened to the website's chat history in the cloud (adversary R2, M1).
+    enum CloudChat: Equatable {
+        case erased
+        /// Read but not understood (corrupt, or a newer website's): a retry will not mend it.
+        case unreadable
+        /// The provider did not answer: a retry may.
+        case unreachable
+    }
+
     /// The first step: what goes, where, and what the erase cannot reach.
     static func confirm(provider: CloudProvider?, earlier: CloudProvider?, appleHealth: Bool = false) -> String {
         var text = "This deletes your health record, your chat history and your reminders on this iPhone."
@@ -17,8 +26,7 @@ enum EraseText {
             text += " It also deletes the readings this app wrote to Apple Health. Readings from other apps and devices stay in Apple Health."
         }
         if let provider {
-            text += " It also erases your record in \(provider.label). The file stays there with your values erased from it, so your other devices erase their copies when they next sync."
-            text += " It also deletes the website's chat history in \(provider.label), if the app can reach it."
+            text += " It also erases your record in \(provider.label), and the website's chat history there when the app can reach it. The file stays there with your values erased from it, so your other devices erase their copies when they next sync."
             text += "\n\nA value another device has not synced yet is kept, and arrives later."
         } else if let earlier {
             // A later connect lifts this erase up: its higher epoch and its list of rows win
@@ -26,34 +34,36 @@ enum EraseText {
             text += " Your record's copy in \(earlier.label), from before you disconnected, is not changed now. If you connect \(earlier.label) again, the values erased here are erased there too."
         }
         let history = provider.map { " \($0.label)'s version history of the file," } ?? ""
-        text += "\n\nThis cannot reach copies you exported or shared,\(history) or chat questions already sent: Dr Brad's server keeps none, but Anthropic may keep them for a limited time."
+        text += "\n\nThis cannot reach copies you exported or shared,\(history) or chat questions already sent: Dr Brad's server keeps none of the questions sent from this app, but Anthropic may keep them for a limited time."
         return text
     }
 
     /// The erase reached everywhere it was meant to.
-    static func done(provider: CloudProvider?, chatErased: Bool, cloudChatErased: Bool = true) -> String {
+    static func done(provider: CloudProvider?, chatErased: Bool, cloudChat: CloudChat?) -> String {
         var text = chatErased
             ? "Your health record, chat history and reminders are deleted."
             : "Your health record and reminders are deleted. Your chat history could not be deleted, so it is still on this iPhone. Try again to delete it."
         if let provider {
-            text += websiteChat(provider, erased: cloudChatErased)
+            if let cloudChat { text += websiteChat(provider, cloudChat) }
             text += " Your other devices erase their copies when they next sync with \(provider.label)."
         }
         return text
     }
 
-    /// The website's chat history in the cloud: deleted, or still there (adversary R2).
-    private static func websiteChat(_ provider: CloudProvider, erased: Bool) -> String {
-        erased
-            ? " Any website chat history in \(provider.label) is deleted too."
-            : " Your website conversations in \(provider.label) are still there. Try again to delete them."
+    /// The website's chat history in the cloud: deleted, or still there and what to do (adversary R2, M1).
+    private static func websiteChat(_ provider: CloudProvider, _ outcome: CloudChat) -> String {
+        switch outcome {
+        case .erased: " Any website chat history in \(provider.label) is deleted too."
+        case .unreachable: " Your website conversations in \(provider.label) are still there. Try again to delete them."
+        case .unreadable: " The website's chat history in \(provider.label) could not be read, so it is still there. Delete it on the website, or delete chat-history.json in \(provider.label)."
+        }
     }
 
     /// Erased here, but the cloud has not taken it yet: the app sends it later.
-    static func notSent(provider: CloudProvider, chatErased: Bool, cloudChatErased: Bool) -> String {
+    static func notSent(provider: CloudProvider, chatErased: Bool, cloudChat: CloudChat) -> String {
         var text = "Your record is erased on this iPhone, but \(provider.label) could not take the erase just now. The app sends it when \(provider.label) answers; until then the copy there is unchanged."
         text += chatErased ? " Your chat history and reminders are deleted." : " Your reminders are deleted. Your chat history could not be deleted, so it is still on this iPhone."
-        text += websiteChat(provider, erased: cloudChatErased)
+        text += websiteChat(provider, cloudChat)
         return text
     }
 
@@ -63,11 +73,13 @@ enum EraseText {
         return "Nothing was deleted. \(engineWords)"
     }
 
-    /// The erase failed (an engine error). The chat history may already be gone (re-check N2).
-    static func failed(_ reason: String, chatErased: Bool) -> String {
-        chatErased
-            ? "Your record was not erased. \(reason) Your chat history was deleted."
-            : "Nothing was deleted. \(reason)"
+    /// The erase failed after its chat step: a chat file may already be gone (re-check N2, L1).
+    static func failed(_ reason: String, chatErased: Bool, cloudChatErased: Bool, provider: CloudProvider) -> String {
+        guard chatErased || cloudChatErased else { return "Nothing was deleted. \(reason)" }
+        var text = "Your record was not erased. \(reason)"
+        if chatErased { text += " Your chat history was deleted." }
+        if cloudChatErased { text += " Any website chat history in \(provider.label) was deleted." }
+        return text
     }
 
     /// Apple Health refused to delete the app's samples: the record erase still stands.
