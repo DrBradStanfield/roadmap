@@ -262,7 +262,7 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   KLAVIYO_ is shared (every sign-up joins the MicroVitamin list; the drstanfield
   Klaviyo account is shut down, Brad 2026-09-28); edu omits the Discord and
   YouTube bot tokens.
-- **iPhone app gate (US-52, edu app only):** `APP_ATTEST_TEAM_ID` (unset = the app routes answer 503), `APP_ATTEST_BUNDLE_ID` (default `com.drbrad.healthroadmap`), `APP_ATTEST_ALLOW_DEVELOPMENT=1` (accept Xcode-signed keys, off in production), `APP_CHAT_DAILY_CAP` (default 500 turns/machine/day), `APP_LAB_DAILY_CAP` (default 300 files/machine/day). `APP_ATTEST_DEV_BYPASS=1` is for a local server only; it is refused unless `NODE_ENV` is development or test. Run `supabase/app-attest-2026-10.sql` first.
+- **iPhone app gate (US-52, edu app only):** `APP_ATTEST_TEAM_ID` (unset = the app routes answer 503), `APP_ATTEST_BUNDLE_ID` (default `com.drbrad.healthroadmap`), `APP_ATTEST_ALLOW_DEVELOPMENT=1` (accept Xcode-signed keys, off in production), `APP_CHAT_DAILY_CAP` (default 500 turns/machine/day), `APP_LAB_DAILY_CAP` (default 300 files/machine/day). `APP_ATTEST_DEV_BYPASS=1` is for a local server only; it is refused unless `NODE_ENV` is development or test. Run the App Attest section of `supabase/rls-policies.sql` first.
 - **Chat switches** (optional, both default on): `CHAT_ENABLED=false` answers
   every chat POST 503; `CHAT_STREAMING=false` makes `/api/chat` ignore
   `stream: true` and answer JSON, which the widget reads unchanged (US-15 AC16).

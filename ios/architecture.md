@@ -583,7 +583,7 @@ server's counter step runs before any model call), so a long chat stream never b
 next request (R14).
 
 **Storage** (Supabase, operational only; migration
-`supabase/app-attest-2026-10.sql`, not run by agents): `app_attest_keys` with `key_id`
+the App Attest section of `supabase/rls-policies.sql`, not run by agents): `app_attest_keys` with `key_id`
 (primary key), `public_key` (PEM), `sign_count` (bigint: the counter is a uint32),
 `environment`, `created_at`, and the day's use counts (`use_day`, `chat_uses`,
 `lab_uses`). No last-used time (R12: a per-device activity log sits badly with D9); the

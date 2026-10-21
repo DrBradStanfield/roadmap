@@ -51,7 +51,7 @@ Two website changes ride along and ship at the next deploy:
    `ios/HealthRoadmap/Sync/CloudProvider.swift` (`googleIOSClientId`). Until then the
    button says Drive is not set up.
 4. **Server, for chat and lab upload.**
-   - Run `supabase/app-attest-2026-10.sql` in the Supabase SQL editor.
+   - Paste the whole of `supabase/rls-policies.sql` into the Supabase SQL editor and run it (it now holds the App Attest table).
    - Set `APP_ATTEST_TEAM_ID` on `health-tool-edu` (until then the routes answer 503).
      Optional: `APP_CHAT_DAILY_CAP`, `APP_LAB_DAILY_CAP` (set from your billing).
    - Never set `APP_ATTEST_DEV_BYPASS` in production (production refuses it anyway).

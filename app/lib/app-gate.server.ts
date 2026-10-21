@@ -30,7 +30,7 @@ export interface KeyStore {
   use(keyId: string, counter: number, kind: AppUseKind, cap: number): Promise<UseOutcome>;
 }
 
-/** The Supabase store (migration supabase/app-attest-2026-10.sql). Service role only. */
+/** The Supabase store (migration the App Attest section of supabase/rls-policies.sql). Service role only. */
 export const supabaseKeyStore: KeyStore = {
   async get(keyId) {
     if (!supabaseAdmin) throw new Error('key store not configured');

@@ -23,8 +23,8 @@ enum CloudProvider: String, CaseIterable, Codable, Identifiable, Sendable {
 
     /// An iOS OAuth client in the web's Google Cloud project (project number
     /// 687809032623), because `drive.file` shows only the files that project made.
-    /// Empty until Brad creates it: Connect Google Drive says so instead of failing.
-    static let googleIOSClientId = ""
+    /// Created by Brad on 2026-10-22 for bundle id com.drbrad.healthroadmap.
+    static let googleIOSClientId = "687809032623-chsdl61oed3k2p95p24bl26oo4aj2lo6.apps.googleusercontent.com"
 
     var clientId: String {
         switch self {

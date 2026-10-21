@@ -290,8 +290,10 @@ chatbot embed on that device keep sending your record as it was before the erase
 every message. If that open widget holds a profile edit typed and not yet saved, the
 copy is emptied only once that edit is saved or the page is loaded again. The sixth is
 on our server: your chat questions (the widget, the blog chat bubble and the chatbot
-embed) and the bubble's and embed's replies are kept for 30 days after your last message in that chat,
-and the button does not reach them. Reminders are
+embed) and the bubble's and embed's replies, and the button does not reach them. A daily
+job blanks the text of each question row 30 days after that row was made, and each bubble
+or embed message 30 days after that message; a bubble or embed conversation's title is
+blanked 30 days after its last message. Reminders are
 turned off by the erase, and stay off on your own devices. The row on our server keeps your address for 90 days, as it does for any
 switch-off, so a later enrolment of that address does not send a second welcome email;
 it does not stop the schedule being refilled. Anyone who enrols that address again
