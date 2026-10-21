@@ -56,8 +56,9 @@ Two website changes ride along and ship at the next deploy:
      Optional: `APP_CHAT_DAILY_CAP`, `APP_LAB_DAILY_CAP` (set from your billing).
    - Never set `APP_ATTEST_DEV_BYPASS` in production (production refuses it anyway).
    - Deploy through CI. `package-lock.json` changed (esbuild), so canary first.
-5. **Publish the privacy policy** drafted in [app-store.md](app-store.md) at
-   drstanfield.com/pages/app-privacy, after checking the chat retention sentence.
+5. **Privacy policy: published** 2026-10-22 at drstanfield.com/pages/app-privacy, from
+   [docs/privacy-app-addendum.md](../docs/privacy-app-addendum.md) (audited against the
+   code). Read it, and work through its "Items still to verify" list.
 6. **App Store Connect:** paste the listing from app-store.md, answer the privacy
    questions (Health data: app functionality, not tracking), add screenshots, archive,
    TestFlight.

@@ -1,4 +1,4 @@
-# App Store listing, privacy policy and review notes (draft, 2026-10-21)
+# App Store listing and review notes (draft, 2026-10-21)
 
 Drafts for App Store Connect. Brad reviews and pastes them in. Every claim about chat, lab upload, Apple Health and deletion must be re-checked against the merged app before submission. Audience-facing text
 follows docs/writing-style.md (no em dashes, plain words). Character limits are
@@ -46,46 +46,12 @@ Built by Dr Brad Stanfield, a medical doctor. The code is open source.
 Health Roadmap is for education only. It does not diagnose or treat any condition.
 Talk to your doctor before you change anything about your health or your medicines.
 
-## Privacy policy (to publish at drstanfield.com/pages/app-privacy)
+## Privacy policy
 
-Health Roadmap is made by DR BRAD, INC. This policy covers the iPhone app.
-
-**What stays on your iPhone.** Your health record (the values you enter or import,
-your plan, your reminders) is a file in the app's own storage. It is left out of
-iCloud and computer backups. We cannot see it.
-
-**If you connect Dropbox or Google Drive.** The app saves the same file in a folder
-of your Dropbox or Google Drive that only this app can open. It goes straight from
-your iPhone to your provider. We never receive it. Disconnecting stops the sync;
-the file stays in your cloud until you delete it.
-
-**Apple Health.** If you allow it, the app reads weight, height, waist, blood pressure
-and glucose from Apple Health, and writes back values you type. Apple Health data is
-never used for advertising and never sent to us.
-
-**Chat and lab upload.** When you send a chat message or upload a lab report, the
-message or file and the parts of your record needed to answer go to our server, which
-passes them to Anthropic, the company that makes the Claude AI model, to produce the
-answer or read the report. We do not keep your lab files. Chat messages are kept for
-a short time to run the service and then deleted; your chat history lives in your
-record. Anthropic does not use this data to train its models. You are asked before
-your first chat message.
-
-**No tracking.** The app has no advertising, no analytics and no tracking. Apple tells
-us install and crash counts if you share them with developers.
-
-**Deleting your data.** Delete all my data, in the app, erases the record on this
-iPhone and in your connected cloud, deletes your chat history, cancels reminders and
-removes the values the app wrote to Apple Health. Your other devices erase their copies
-when they next sync. Export my record saves a copy of the file first, if you want one.
-Deleting the app also deletes the record on this iPhone.
-
-**Contact.** drstanfield.com/pages/contact
-
-(Before publishing: check the chat retention sentence against what the server
-really keeps; US-15 AC7 purges chat text on a schedule.)
-(Before publishing: the Apple Health clause is built (US-25 AC16) but checked only
-against a fake Health store; confirm on a real iPhone.)
+Published at https://drstanfield.com/pages/app-privacy (the URL for App Store Connect).
+The master is [docs/privacy-app-addendum.md](../docs/privacy-app-addendum.md), audited
+against the code; its "Items still to verify" tail lists what is still open. Edit it
+there and republish with `node scripts/build-privacy-page.mjs app --publish`.
 
 ## App Review notes
 
@@ -100,9 +66,10 @@ against a fake Health store; confirm on a real iPhone.)
   guidelines (each step cites them), shows a medical disclaimer on the first screen
   and under every plan, and tells users to talk to their doctor. It does not diagnose,
   dose or measure anything with the phone's sensors.
-- Guideline 5.1.3: HealthKit data is not used for advertising, not stored in iCloud
-  by us, and not sent to our server except the values a user chooses to include in a
-  chat.
+- Guideline 5.1.3: HealthKit data is not used for advertising or marketing, not sold,
+  and not stored in iCloud by us. It reaches our server only inside the record summary
+  a chat question carries, after the user agrees to the chat; the server keeps no copy
+  (privacy policy, "Chat").
 
 ## Before submission (Brad)
 
@@ -111,7 +78,8 @@ against a fake Health store; confirm on a real iPhone.)
 2. Create the app in App Store Connect; paste the listing; answer the privacy
    questions to match the policy (Health and Fitness data: used for app
    functionality, not linked to identity, not tracking; user content for chat).
-3. Publish the privacy policy page; add its URL and a support URL.
+3. Add the privacy policy URL (https://drstanfield.com/pages/app-privacy, published
+   2026-10-22) and a support URL.
 4. Google Drive: create an iOS OAuth client in the website's Google Cloud project
    (see ios/architecture.md D5 for the bundle id and redirect).
 5. Deploy the server routes for chat and lab upload and run their SQL migration (see
