@@ -11,6 +11,10 @@
  * hashed too, as the shared dispatch answers it, so a change made while
  * serializing (annotations.title; AC51's field strip) moves a pin. Re-pinned on the held branch
  * claude/mcp-annotation-title, merged only after OpenAI's 1.0.2 verdict.
+ *
+ * US-32 AC52 (2026-10-21): four descriptions rewritten to name their sibling
+ * tools (Glama's tool-quality grade). MCP_TOOLS and tools/list re-pinned on the
+ * same held branch, so the verdict brings one freeze bump.
  */
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
@@ -23,7 +27,7 @@ const sha256 = (value: unknown) => createHash('sha256').update(JSON.stringify(va
 describe('US-35 AC13 — the published connector text is frozen during the 1.0.2 review', () => {
   it.each([
     ['INSTRUCTIONS', INSTRUCTIONS, '765b597e650f5e6e19169462ee9aa5746ec78d46ac8680bc9224e64825bbf26d'],
-    ['MCP_TOOLS', MCP_TOOLS, '4d36f2f0084cc27973b47fcb43219e9ddf4e6b714fde81b4a4284a35aced7e31'],
+    ['MCP_TOOLS', MCP_TOOLS, '88d3e15924613c03bafa48da0be1ee058e5568c25a73410a873a29595a4a7d59'],
     ['MCP_PROMPTS', MCP_PROMPTS, 'a159ee16a3ce5fefc23ed8f90178a852551350795731fabd30ca7a5f6267c140'],
     ['SERVER_INFO', SERVER_INFO, 'ce1110c13b5b005a4f14f0068138039eecd7fddc888032f08479060ad2da400f'],
   ] as const)('%s hashes to its value at cab5615a', (_name, value, pinned) => {
@@ -39,6 +43,6 @@ describe('US-32 AC50 — the tools/list answer itself is pinned', () => {
       instructions: INSTRUCTIONS,
       callTool: async () => ({ errorMessage: 'not called' }),
     })) as { result: { tools: unknown } };
-    expect(sha256(answer.result.tools)).toBe('2eebcb9e795cd1c0b525330b200fc7fb4c49679ababf5fde37cf4fa1e328c8dc');
+    expect(sha256(answer.result.tools)).toBe('111a51a8b8b6f34f525b65cf3e6de1d561f03c58ee9156427d385f16c7731bf0');
   });
 });
