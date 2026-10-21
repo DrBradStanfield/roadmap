@@ -187,9 +187,31 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
 - `HealthRoadmap.xcodeproj`: hand-written, using Xcode's synchronized folders, so a file
   added to `HealthRoadmap/` or `HealthRoadmapTests/` joins its target with no project edit.
   No project generator, so no new dependency.
-- `HealthRoadmap/`: the SwiftUI app. `HealthEngine.swift` loads the bundle into a
-  `JSContext`.
-- `HealthRoadmapTests/`: XCTest. `EngineParityTests` is US-25 AC1.
+- `HealthRoadmap/`: the SwiftUI app, one folder per feature:
+  - `App/`: the entry point.
+  - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext`; the generated
+    bundle sits beside it.
+  - `Plan/`: the plan screen. `Plan.swift` is the slice of the engine's JSON the app
+    reads; `PlanSection.swift` groups suggestions as the web does; `PlanView.swift` and
+    `SuggestionCard.swift` draw them.
+- `HealthRoadmapTests/`: XCTest. `EngineParityTests` is US-25 AC1; `PlanSectionTests`
+  pins the web's grouping.
+
+**Code for AI agents to read (HARD, Brad 2026-10-21).** This app is written and maintained
+by AI agents, so the code is shaped for a reader with no memory of how it got here:
+- **One feature per folder, one main type per file**, named for what it holds. A file
+  over ~200 lines is split.
+- **Every type opens with a doc comment** saying what it is for and, when it serves a
+  story, the US-id. Comments say why, not what.
+- **Point at the web's twin.** Where Swift mirrors web behaviour (grouping, labels,
+  order), the comment names the web file, and a test pins the match.
+- **No clever code.** Plain SwiftUI and Foundation, no third-party packages without a
+  decision recorded here, no custom operators, no deep generics, no global state. Logic
+  that can be a pure function is one, so a test can call it.
+- **Clinical logic never lives in Swift.** If a screen needs a clinical rule, the engine
+  provides it; Swift only renders.
+- **This file is the map.** A new folder or a moved responsibility updates the layout
+  above in the same commit.
 
 **Bundle ID:** `com.drbrad.healthroadmap` is a placeholder until the Apple Developer
 account exists; it is permanent once the app is on the App Store.
