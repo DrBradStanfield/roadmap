@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 
 /// The two tabs, in the web's mobile order (US-25 AC3): My data first, then My plan.
@@ -10,6 +11,10 @@ struct RootView: View {
     let engine: HealthEngine
     let store: RecordStore
     @State private var tab = Tab.data
+    @State private var reviewPrompt = ReviewPrompt()
+    @Environment(\.requestReview) private var requestReview
+    /// Set once the welcome screen is done; a setting, not health data.
+    @AppStorage("welcomed") private var welcomed = false
 
     var body: some View {
         TabView(selection: $tab) {
@@ -21,6 +26,17 @@ struct RootView: View {
                 .tag(Tab.plan)
         }
         .sensoryFeedback(.selection, trigger: tab)
+        .fullScreenCover(isPresented: Binding(get: { !welcomed }, set: { welcomed = !$0 })) {
+            WelcomeView { welcomed = true }
+        }
+        .onChange(of: store.recordJSON) { reviewPrompt.recordChanged() }
+        .task(id: tab) {
+            // A pause first, so the plan is on screen before iOS's rating sheet;
+            // leaving the tab during it cancels the ask without using it up.
+            guard tab == .plan else { return }
+            try? await Task.sleep(for: .seconds(2))
+            if !Task.isCancelled, reviewPrompt.planOpened() { requestReview() }
+        }
     }
 
     private func titled(_ title: String, @ViewBuilder _ content: () -> some View) -> some View {
