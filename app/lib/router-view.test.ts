@@ -160,6 +160,16 @@ describe('preferMasters (US-50 AC14)', () => {
       .toEqual({ handles: ['vitamin-d'], replaced: ['same-day-video'] });
   });
 
+  // As routerView: a post with any topic not yet a reviewed master stays whole
+  // (the live multivitamins-are-no-longer-expensive-urine shape: 5 topics, 3 masters).
+  it('a post with any topic not yet a master stays, as routerView (US-50 AC3)', () => {
+    const three = ['multi-m', 'bvit-m', 'omega-m'].map(h => master(h, '2026-10-20'));
+    const notYet = [master('vit-a-ref'), master('lutein-ref')];
+    const mv = post('multivitamins-old-post', { topics: ['multi-m', 'vit-a-ref', 'lutein-ref', 'bvit-m', 'omega-m'] });
+    expect(pm(['multivitamins-old-post'], {}, [...index, ...three, ...notYet, mv]))
+      .toEqual({ handles: ['multivitamins-old-post'], replaced: [] });
+  });
+
   // Review R1: the open post's masters once took every free slot, so a second
   // replaced post vanished with nothing in its place yet was logged as replaced.
   it('a replaced pick always gets a master slot before the open post\'s other masters (review R1)', () => {

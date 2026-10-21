@@ -13,14 +13,16 @@ import { isMaster, type BlogIndexEntry } from './blog-index.server';
 export function routerView(index: BlogIndexEntry[], hide = process.env.TOPIC_MASTER_HIDE !== 'off'): BlogIndexEntry[] {
   if (!hide) return index;
   const byHandle = new Map(index.map(e => [e.handle, e]));
-  const covered = (post: BlogIndexEntry) => {
-    const day = post.publishedAt?.slice(0, 10);
-    return !!day && !!post.topics?.length && post.topics.every(t => {
-      const master = byHandle.get(t);
-      return master?.type === 'reference' && /^\d{4}-\d{2}-\d{2}$/.test(master.reviewed ?? '') && master.reviewed! >= day;
-    });
-  };
-  return index.filter(e => !(e.router === 'hidden' && (e.type ?? 'article') === 'article' && covered(e)));
+  return index.filter(e => !(e.router === 'hidden' && (e.type ?? 'article') === 'article' && covered(e, byHandle)));
+}
+
+/** Every topic of the post is a master (AC1) reviewed on or after its publish day (AC3; AC14 uses the same test). */
+function covered(post: BlogIndexEntry, byHandle: Map<string, BlogIndexEntry>): boolean {
+  const day = post.publishedAt?.slice(0, 10);
+  return !!day && !!post.topics?.length && post.topics.every(t => {
+    const master = byHandle.get(t);
+    return !!master && isMaster(master) && master.reviewed! >= day;
+  });
 }
 
 const slugsOf = (e: BlogIndexEntry) => [e.handle, e.commerceUrl?.split(/[?#]/)[0].split('/').pop()];
@@ -57,9 +59,9 @@ export function openArticle(index: BlogIndexEntry[], value: unknown): string | u
 
 /**
  * The router's picks with each older post replaced by its topic masters, in
- * its slot (US-50 AC14). An article whose `topics` name masters gives way only
- * when every one of them covers it (reviewed on or after its publish day, as
- * routerView, US-50 AC3 and AC5). A post's masters rank by where the message
+ * its slot (US-50 AC14). An article gives way only when every one of its
+ * `topics` is a master reviewed on or after its publish day (covered(), the
+ * routerView test, US-50 AC3 and AC5). A post's masters rank by where the message
  * names their topic, earliest first, then by its `topics` order. A post the
  * message names, the `open` one or one in `keep` (the YouTube video's own
  * post) stays when picked, its masters after it. At most 3 handles, in passes:
@@ -92,11 +94,11 @@ export function preferMasters(picks: string[], index: BlogIndexEntry[], message:
   const toReplace: [string[], number][] = [];
   unique.forEach((pick, slot) => {
     const masters = mastersOf(pick);
-    const day = byHandle.get(pick)?.publishedAt?.slice(0, 10);
-    const covered = masters.length > 0 && !!day && masters.every(m => byHandle.get(m)!.reviewed! >= day);
-    if (covered && !named.has(pick) && pick !== open && !keep.includes(pick)) { replaced.push(pick); toReplace.push([masters, slot]); return; }
+    const entry = byHandle.get(pick);
+    const mastered = !!entry && isArticle(entry) && covered(entry, byHandle);
+    if (mastered && !named.has(pick) && pick !== open && !keep.includes(pick)) { replaced.push(pick); toReplace.push([masters, slot]); return; }
     take(pick, slot * 100);
-    if (covered) masters.forEach((m, j) => rest.push([m, slot * 100 + 1 + j]));
+    if (mastered) masters.forEach((m, j) => rest.push([m, slot * 100 + 1 + j]));
   });
   for (const [masters, slot] of toReplace) {
     const first = masters.find(m => !chosen.has(m));
