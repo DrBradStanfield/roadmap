@@ -47,9 +47,12 @@ enum RecordEdit: Encodable, Equatable {
     case add(metric: String, value: Double, day: String)
     /// Replaces the value in row `id`: a FHIR correction, never a removal.
     case correct(id: String, value: Double)
+    /// The ticked values of an uploaded lab report (US-52 AC8): the server's extraction
+    /// as JSON text, the refs ticked, and the report's day.
+    case labImport(extractionJSON: String, refs: [String], reportDay: String)
 
     private enum Key: String, CodingKey {
-        case kind, sex, birthYear, birthMonth, height, unitSystem, metric, value, day, id
+        case kind, sex, birthYear, birthMonth, height, unitSystem, metric, value, day, id, extractionJson, refs, reportDay
     }
 
     func encode(to encoder: Encoder) throws {
@@ -73,6 +76,11 @@ enum RecordEdit: Encodable, Equatable {
             try json.encode("correct", forKey: .kind)
             try json.encode(id, forKey: .id)
             try json.encode(value, forKey: .value)
+        case .labImport(let extractionJSON, let refs, let reportDay):
+            try json.encode("labImport", forKey: .kind)
+            try json.encode(extractionJSON, forKey: .extractionJson)
+            try json.encode(refs, forKey: .refs)
+            try json.encode(reportDay, forKey: .reportDay)
         }
     }
 }
