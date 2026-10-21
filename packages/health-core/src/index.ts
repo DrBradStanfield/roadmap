@@ -421,3 +421,9 @@ export {
 export { bulkAppendValues, correctValue, placeMeasurement, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type SlotState } from './record-edits';
 export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, UNDATED_PREVIOUS, type RefusedLabValue } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';
+export {
+  MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS,
+  optionsShowing, escalationOptions, doseOptions, medicationForm, medicationWrites, screeningForm, screeningWrites,
+  screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, customSupplementKey,
+  type FormOption, type FormField, type FormGroup, type FormSection, type MedicationBasis,
+} from './input-form';

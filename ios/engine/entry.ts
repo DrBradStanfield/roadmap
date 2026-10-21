@@ -4,6 +4,17 @@
 import { computePlan, type Plan } from '../../packages/health-core/src/plan';
 import { planSections } from '../../packages/health-core/src/plan-sections';
 import { applyEdit, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
+import { metricHistory } from './my-data-forms';
+import { phoneReminders } from './reminders';
+import { installShim, type Natives } from './shim';
+
+// The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
+// in Node, where the parity goldens run the bundle with nothing but ECMAScript.
+declare const __native: Natives | undefined;
+if (typeof __native !== 'undefined') installShim(globalThis as unknown as Record<string, unknown>, __native);
+
+// Cloud sync (cloud.ts): every call but cloudEdit is async and answers a Promise.
+export { cloudClose, cloudEdit, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible } from './cloud';
 
 /** The plan for a record, as JSON. `nowIso` is passed in so tests can pin it. */
 export function planJson(recordJson: string, nowIso: string, deviceId: string): string {
@@ -26,7 +37,7 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
 
 /** What the My data tab shows, as JSON. */
 export function myDataJson(recordJson: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(myData(readRecord(recordJson, nowIso, deviceId)));
+  return JSON.stringify(myData(readRecord(recordJson, nowIso, deviceId), nowIso));
 }
 
 /** One edit, as JSON: `{ ok: true, record }` with the new record as text, or the refusal. */
@@ -40,5 +51,13 @@ export function numberJson(text: string): string {
   return JSON.stringify(readNumber(text) ?? null);
 }
 
+/** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */
+export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string): string {
+  return JSON.stringify(metricHistory(readRecord(recordJson, nowIso, deviceId), metric, nowIso));
+}
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
+/** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON. */
+export function remindersJson(recordJson: string, nowIso: string, deviceId: string): string {
+  return JSON.stringify(phoneReminders(readRecord(recordJson, nowIso, deviceId), new Date(nowIso)));
+}
