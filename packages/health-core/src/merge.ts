@@ -392,17 +392,22 @@ function timeOf(iso: string | undefined): number {
 
 /**
  * -1, 0 or 1: the newer edit by clock time wins (US-10 AC8, Brad 2026-10-22);
- * the lamport only breaks a tie in time, then the spelling, so two spellings of
- * one instant order the same way everywhere. A Clock holds nothing else, so
- * two that compare 0 are the same clock. Wall-clock time is not skew-proof:
- * a device whose clock runs ahead wins until real time passes it, or until an
- * edit made after seeing it, which stamps no earlier (`laterStamp`).
+ * the lamport only breaks a tie in time. Two spellings of one instant with one
+ * lamport compare 0, so a winner falls to the value or content tie-break, never
+ * to the spelling. Wall-clock time is not skew-proof: a device whose clock runs
+ * ahead wins until real time passes it, or until an edit made after seeing it,
+ * which stamps no earlier (`laterStamp`).
  */
 function cmpClock(a: Clock, b: Clock): number {
   const [ta, tb] = [timeOf(a.updatedAt), timeOf(b.updatedAt)];
   if (ta !== tb) return ta < tb ? -1 : 1;
-  if (a.lamport !== b.lamport) return a.lamport < b.lamport ? -1 : 1;
-  return cmpStr(a.updatedAt, b.updatedAt);
+  return a.lamport === b.lamport ? 0 : a.lamport < b.lamport ? -1 : 1;
+}
+
+/** `cmpClock`, then the spelling: which of two clocks to STORE, so a tie
+ *  writes the same spelling whichever side merges. Never picks a value. */
+function cmpStored(a: Clock, b: Clock): number {
+  return cmpClock(a, b) || cmpStr(a.updatedAt, b.updatedAt);
 }
 
 /**
@@ -489,12 +494,13 @@ function mergeFields<T extends FieldStamped>(local: T, remote: T): T {
     const order = !b ? 1 : !a ? -1 : cmpClock(a, b);
     const takeLocal = order > 0 ||
       (order === 0 && l !== r && (stableStringify(l) ?? '') > (stableStringify(r) ?? ''));
-    const [value, clock] = takeLocal ? [l, a!] : [r, b!];
+    const value = takeLocal ? l : r;
+    const clock = order > 0 ? a! : order < 0 ? b! : cmpStored(a!, b!) <= 0 ? a! : b!;
     if (value !== undefined) values.push([field, value]);
     stamps.push([field, clock]);
-    if (!newest || cmpClock(clock, newest) > 0) newest = clock;
+    if (!newest || cmpStored(clock, newest) > 0) newest = clock;
   }
-  const older = cmpClock(clockOf(local), clockOf(remote)) <= 0 ? clockOf(local) : clockOf(remote);
+  const older = cmpStored(clockOf(local), clockOf(remote)) <= 0 ? clockOf(local) : clockOf(remote);
   // Built from entries, never by assignment: a field named `__proto__` in a
   // hand-edited file must stay a field.
   return {
@@ -559,11 +565,33 @@ type StampedArray = keyof typeof ROW_STAMPS;
  */
 const CREATED_STAMPS: readonly StampedArray[] = ['measurements', 'labValues', 'documents'];
 
-/** An ISO stamp as an instant; NaN when it is not a string or does not parse,
- *  and NaN compares false. A date-time with no zone reads as UTC, as a
- *  date-only string already does, never as this machine's local time. */
-export const stampInstant = (iso: unknown): number =>
-  typeof iso === 'string' ? Date.parse(/[Tt][\d:.]+$/.test(iso) ? `${iso}Z` : iso) : NaN;
+/** The stamp grammar `migrate.ts` accepts: a day, alone or with a time after a
+ *  T, a t or a space, and an optional zone (Z, z, +HHMM or +HH:MM; an hour-only
+ *  +HH only after a space, Postgres's text style). */
+const STAMP_PARTS = /^(\d{4}-\d{2}-\d{2})(?:(?:[Tt](\d{2}:\d{2}(?::\d{2})?)(?:\.(\d+))?([Zz]|[+-]\d{2}:?\d{2})?)|(?: (\d{2}:\d{2}(?::\d{2})?)(?:\.(\d+))?([Zz]|[+-]\d{2}(?::?\d{2})?)?))?$/;
+
+/**
+ * An ISO stamp as an instant; NaN when it is not a string or not a stamp, and
+ * NaN compares false. A date-time with no zone reads as UTC, as a date-only
+ * string already does, never as this machine's local time. The stamp is
+ * rebuilt in the one form ECMAScript defines before parsing, so V8 and the
+ * iPhone's JavaScriptCore read every spelling alike (US-10 AC8 review, R3).
+ */
+export function stampInstant(iso: unknown): number {
+  const m = typeof iso === 'string' ? STAMP_PARTS.exec(iso) : null;
+  if (!m) return NaN;
+  const [day, time, fraction, zone] = [m[1], m[2] ?? m[5], m[3] ?? m[6], m[4] ?? m[7]];
+  if (time === undefined) return Date.parse(day);
+  const offset = !zone || /^[Zz]$/.test(zone) ? 'Z' : `${zone.slice(0, 3)}:${zone.slice(3).replace(':', '') || '00'}`;
+  return Date.parse(`${day}T${time}${fraction ? `.${fraction.padEnd(3, '0').slice(0, 3)}` : ''}${offset}`);
+}
+
+/** The later of two ISO stamps as instants; of one instant in two spellings,
+ *  the larger string, so the choice is the same in either order. */
+export function latestStamp(a: string, b: string): string {
+  const [ta, tb] = [timeOf(a), timeOf(b)];
+  return ta !== tb ? (ta > tb ? a : b) : a > b ? a : b;
+}
 
 /** The root id of every row in the file: what an erase made now would list
  *  (US-09 AC23). A row whose id is not a string has no root, and is skipped. */
@@ -692,9 +720,7 @@ export function mergeFiles(
   // timestamp to meta.updatedAt, so a device whose wall clock runs backwards
   // would otherwise write a file whose own rows post-date its meta — and have
   // the next load rewrite all of them.
-  const updatedAt = [opts.now, local.meta.updatedAt, remote.meta.updatedAt].reduce((a, b) =>
-    a > b ? a : b,
-  );
+  const updatedAt = [opts.now, local.meta.updatedAt, remote.meta.updatedAt].reduce(latestStamp);
   if (localEpoch !== remoteEpoch) {
     const localWins = localEpoch > remoteEpoch;
     const [top, loser] = localWins ? [local, remote] : [remote, local];

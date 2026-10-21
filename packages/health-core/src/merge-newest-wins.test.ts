@@ -5,7 +5,8 @@
  * a newer edit had replaced.
  */
 import { describe, it, expect } from 'vitest';
-import { mergeFiles, stampFields } from './merge';
+import { mergeFiles, stampFields, stampInstant } from './merge';
+import { migrateFile } from './migrate';
 import { setReminderOptIn, upsertMedication } from './state-edits';
 import {
   createEmptyFile,
@@ -216,5 +217,62 @@ describe('US-10 AC8: a stamp from a clock running ahead does not win forever', (
     skewed.medications = [med('atorvastatin', 0, FUTURE)];
     const other = upsertMedication(file(), { medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' }, NOW).file;
     for (const merged of bothWays(other, skewed)) expect(merged.medications[0].drugName).toBe('atorvastatin');
+  });
+});
+
+describe('US-10 AC8 review fixes (2026-10-22)', () => {
+  it('R1: an offset-spelled meta.updatedAt never drags the winning row back after save, reload and a re-merge with the stale device', () => {
+    // Local's meta is spelled with an offset: the larger string, the earlier instant (20:00Z).
+    const local = file();
+    local.meta.updatedAt = '2026-05-03T08:00:00+12:00';
+    const remote = file(); // holds the newer edit, at 22:00Z
+    remote.meta.updatedAt = '2026-05-02T22:00:00Z';
+    remote.medications = [med('rosuvastatin', 1, '2026-05-02T22:00:00Z')];
+    const merged = mergeFiles(local, remote, { deviceId: 'dev_merge', now: '2026-05-02T00:00:00Z' });
+    const reloaded = migrateFile(JSON.parse(JSON.stringify(merged)), { deviceId: 'dev_merge', now: '2026-05-02T00:00:00Z' });
+    expect(reloaded.medications[0].updatedAt).toBe('2026-05-02T22:00:00Z');
+    expect(reloaded.meta.updatedAt).toBe('2026-05-02T22:00:00Z');
+    const stale = file(); // the older edit, at 21:00Z, with a higher counter
+    stale.meta.updatedAt = '2026-05-02T21:00:00Z';
+    stale.medications = [med('atorvastatin', 7, '2026-05-02T21:00:00Z')];
+    for (const out of bothWays(reloaded, stale)) expect(out.medications[0].drugName).toBe('rosuvastatin');
+  });
+
+  it('R1: a write moves an offset-spelled meta.updatedAt forward when it is later as an instant', () => {
+    const before = file();
+    before.meta.updatedAt = '2026-05-03T08:00:00+12:00'; // 20:00Z on 2026-05-02
+    const { file: after } = upsertMedication(before, { medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: null, doseUnit: null }, '2026-05-02T21:00:00Z');
+    expect(after.meta.updatedAt).toBe('2026-05-02T21:00:00Z');
+  });
+
+  it('R1: migrate writes meta.createdAt and meta.updatedAt in UTC', () => {
+    const raw = { ...file(), meta: { ...file().meta, createdAt: '2026-05-01T12:00:00+12:00', updatedAt: '2026-05-03T08:00:00+12:00' } };
+    const out = migrateFile(JSON.parse(JSON.stringify(raw)), { deviceId: 'd', now: '2026-06-01T00:00:00Z' });
+    expect(out.meta).toMatchObject({ createdAt: '2026-05-01T00:00:00.000Z', updatedAt: '2026-05-02T20:00:00.000Z' });
+  });
+
+  it('R2: one instant and one counter in two spellings falls to the value tie-break, and stores one spelling', () => {
+    const a = file();
+    const b = file();
+    // Without the spelling step, 50 beats 5 as it does when the spellings match.
+    a.profile = { v: 5, updatedAt: '2026-05-02T21:00:00+12:00', lamport: 2, fieldStamps: { v: at(2, '2026-05-02T21:00:00+12:00') } } as unknown as RoadmapProfile;
+    b.profile = { v: 50, updatedAt: T1, lamport: 2, fieldStamps: { v: at(2, T1) } } as unknown as RoadmapProfile;
+    const [x, y] = bothWays(a, b);
+    expect((x.profile as unknown as { v: number }).v).toBe(50);
+    expect(stableStringify(x.profile)).toBe(stableStringify(y.profile));
+    // Equal values in two spellings: one stored stamp, whichever side merges.
+    (a.profile as unknown as { v: number }).v = 50;
+    const [p, q] = bothWays(a, b);
+    expect(stableStringify(p.profile)).toBe(stableStringify(q.profile));
+  });
+
+  it('R3: stampInstant reads lowercase t and z, a space, short offsets and long fractions as the canonical form, in any zone', () => {
+    const canonical = Date.parse('2026-05-02T09:00:00.000Z');
+    for (const form of [
+      '2026-05-02t09:00:00z', '2026-05-02 09:00:00Z', '2026-05-02T09:00:00', '2026-05-02 09:00:00',
+      '2026-05-02T21:00:00+1200', '2026-05-02 21:00:00+12', '2026-05-02T09:00:00.000000Z', '2026-05-02t09:00',
+    ]) expect(stampInstant(form), form).toBe(canonical);
+    expect(stampInstant('2026-05-02')).toBe(Date.parse('2026-05-02T00:00:00.000Z'));
+    expect(stampInstant('May 2, 2026')).toBeNaN(); // engine-specific forms are not stamps
   });
 });

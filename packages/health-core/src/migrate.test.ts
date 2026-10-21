@@ -232,7 +232,7 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     // A row past the clock as an instant is still clamped.
     const ahead = { ...MEAS, id: 'ahead', createdAt: '2026-05-10T02:00:00Z' };
     expect(migrateFile(rawFile({ meta: { ...META, updatedAt: '2026-05-10T14:00:00+13:00' }, measurements: [ahead] }), ctx).measurements[0].createdAt)
-      .toBe('2026-05-10T14:00:00+13:00');
+      .toBe('2026-05-10T01:00:00.000Z'); // the clock, rewritten in UTC (US-10 AC8 review, R1)
   });
 
   // Defect 2 (cont.): a saturated meta.lamport breaks the file clock forever —
