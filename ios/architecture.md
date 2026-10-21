@@ -698,6 +698,46 @@ sorts on read (`ChatSession.getMessages`), so a file an older client writes stil
 in the right order, and nothing can be lost or duplicated. A bump would have cut every
 open web tab, Pages fork and CLI off from its chat history until it updated.
 
+### D11 · My data: no title bar, one blood pressure, Apple Health's metric page (Brad, 2026-10-22, US-25 AC17)
+
+- **No title bar.** It cost a line for a word the tab bar already says. The "+" and Sync
+  sit on the About you header, the unit switch on the Vitals header. With no bar, iOS 26's
+  scroll edge effect left rows legible behind the clock (checked in the simulator), so a
+  zero-height top inset carries the list's background into the status bar. My plan keeps
+  its bar and `firmTopEdge`.
+- **Blood pressure is one engine edit.** `bloodPressure` (`engine/blood-pressure.ts`)
+  runs health-core's `appendMeasurement` or `correctValue` for each half on one record and
+  returns the first refusal, so both rows land or neither. Two Swift calls in a row would
+  save a lone systolic when the diastolic is refused. The record keeps two rows per day,
+  as the web pairs them; no new row shape. Replacing corrects only the half that changed:
+  re-correcting the unchanged half joins merge's last-writer-wins and can silently undo
+  another device's fix of it (review 2026-10-22, reproduced with `mergeFiles`). The exact
+  same pair writes nothing. A held day is asked about before any half is written, and a
+  replace carries the active row ids the user saw (`seenIds`); other ids at save time
+  refuse it, as a single value's stale correction is refused.
+- **The history replays the day** (orchestrator, 2026-10-22, after a re-check found
+  the window-based struck pairs dropping and duplicating values). All the day's rows, in
+  write order (`createdAt`, a correction after the row it names, then id), grouped into
+  writes: one row per half, within 5 s of the write's first row, never a correction of a
+  row in the same write (the web, CLI and MCP stamp each half with its own clock). Each
+  write sets its halves and leaves a snapshot; the pair now is active, the rest struck.
+  One choice beyond the brief: a row merge set aside shows over the pair as it stood but
+  does not change it, or a lost write would leak into every later snapshot and into the
+  active pair. Ids are per snapshot, so the active and a struck pair never share one.
+- **Feet and inches in the engine.** `profile` takes `heightFeet` and `heightInches` and
+  calls health-core's `feetInchesToCm`; My data gets `cmToFeetInches`. Same maths and
+  rounding as the web's form, no Swift copy (D2). Not unit-dependent, so the cloud's
+  unit-change guard does not refuse it. Wheels saved unchanged write nothing, so a metric
+  height is never rounded to the nearest inch.
+- **A pushed page, not a sheet.** Apple Health's pattern: range picker, headline, chart,
+  values. The range logic (`ChartRange`) is presentation, so it is Swift and unit-tested;
+  values and pairs come from the engine. Days are midnight UTC and the chart reads them
+  in UTC, so no zone moves a point to the next day. No target band: the engine has no
+  per-metric target to give, and drawing one is a clinical call.
+- **Two Charts traps:** a material background inside a chart annotation renders black, so
+  the callout uses a solid system fill; and the newest axis label clips unless the marks
+  use the `.aligned` preset.
+
 ## Build and test
 
 **Layout.**
@@ -715,6 +755,8 @@ open web tab, Pages fork and CLI off from its chat history until it updated.
   health-core's own (`createEmptyFile`, `updateProfile`, `stampProfile`,
   `appendMeasurement`, `correctValue`, `upsertMedication`, `upsertSupplement`), with
   values in the user's units (US-25 AC7). Not yet through `RecordSession.edit` (D4).
+- `engine/blood-pressure.ts`: the `bloodPressure` edit (both halves or neither) and the
+  paired history (D11). Tested by `engine/blood-pressure.test.ts`.
 - `engine/my-data-forms.ts`: the medication, screening and supplement questions
   (health-core `input-form.ts`) for the plan's age, sex and cascades, their answers
   (only a shown question, only an offered answer, then the web's writes), and
@@ -744,15 +786,18 @@ open web tab, Pages fork and CLI off from its chat history until it updated.
     `PKCE`, `TokenStore` (Keychain), `OAuthClient` (sign-in and refresh), `CloudSync`
     (opens the engine's session, follows the app on and off screen, answers the engine's
     `CloudPort` calls), `SyncProblem` and `SyncStatusText` (the words), `SyncView` (the
-    screen, from My data's toolbar).
+    screen, from the cloud button on My data's About you line).
   - `MyData/`: the record and its tab. `RecordStore` keeps the file and applies edits
     through the engine; `MyData.swift` is the engine's view of the record and the
     `RecordEdit` the tab sends; `MyDataView`, `ValueEntrySheet` and `DayText` draw it.
     The form sections (US-25 AC8): `FormModels` (the engine's question JSON and `FormEdit`),
     `FormFieldRow` (one question: menu, month wheel, number or dated value),
     `FormSectionsList`, `MedicationsSection`, `ScreeningsSection`, `SupplementsSection`
-    with `SupplementSheet`. Value history (AC9): `MetricSheet` (history, or entry when
-    empty) and `HistoryView` (Swift Charts trend, tap to correct, no delete).
+    with `SupplementSheet`. Value pages (AC9, AC17): `MetricDetailView` (pushed:
+    range picker, headline, values, tap to correct, no delete), `MetricChart` (Swift
+    Charts, scrubbing, the VoiceOver chart descriptor), `ChartRange` (which ranges to
+    offer), `BloodPressureSheet` (with `MetricEntrySheet`, which picks it or
+    `ValueEntrySheet`) and `FeetInchesSheet`.
   - `Reminders/`: on-device reminders (D7). `PhoneReminders` is the engine's answer,
     `ReminderScheduler` keeps the pending notifications equal to it behind
     `NotificationScheduling` (a fake in the tests), `ReminderTaps` sends a tap to My plan,
@@ -772,7 +817,7 @@ open web tab, Pages fork and CLI off from its chat history until it updated.
   layout, byte for byte); `PlanLayoutTests` pins the sample's web layout and checks that
   no card loses its evidence or ingredients; `RecordEditTests` runs the My data writes in
   JavaScriptCore; `RecordStoreTests` covers the file (AC4) and the plan following it
-  (AC6); `DayTextTests` pins the local day; `FormEditTests` runs the form answers,
+  (AC6); `DayTextTests` pins the local day; `MyDataLayoutTests` is AC17; `FormEditTests` runs the form answers,
   supplements and history in JavaScriptCore (AC8, AC9). Sync (AC11): `ShimTests` (the
   shim in JavaScriptCore over a URLProtocol stub, `StubHTTP`), `SignInTests` (Keychain,
   PKCE, code exchange, refresh), `CloudSyncTests` (the whole path against a stubbed

@@ -90,9 +90,9 @@ final class FormEditTests: XCTestCase {
     func testAMetricWithOnlyStruckRowsOpensItsHistory() throws {
         let json = #"{"metric":"weight","label":"Weight","unit":"kg","excluded":false,"rows":[{"id":"a","value":"80.0","day":"2026-10-01","status":"entered-in-error","current":false,"correction":false}]}"#
         let struck = try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
-        XCTAssertTrue(MetricSheet.opensHistory(struck))
-        XCTAssertFalse(MetricSheet.opensHistory(MetricHistory(metric: "weight", label: "Weight", unit: "kg", rows: [], excluded: false)))
-        XCTAssertFalse(MetricSheet.opensHistory(nil))
+        XCTAssertTrue(MetricDetailView.opensHistory(struck))
+        XCTAssertFalse(MetricDetailView.opensHistory(MetricHistory(metric: "weight", label: "Weight", unit: "kg", rows: [], excluded: false)))
+        XCTAssertFalse(MetricDetailView.opensHistory(nil))
     }
 
     func testHistoryKeepsTheCorrectedValueStruckNotRemoved() throws {

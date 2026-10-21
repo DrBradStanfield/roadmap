@@ -1,7 +1,7 @@
 import AuthenticationServices
 import SwiftUI
 
-/// The Sync screen (US-25 AC11e), opened from My data's toolbar: where the record
+/// The Sync screen (US-25 AC11e), opened from My data's About you line: where the record
 /// is, its state in plain words, Connect Dropbox or Google Drive, Sync now, and
 /// Disconnect. Every action is CloudSync's; this view only draws and asks.
 struct SyncView: View {

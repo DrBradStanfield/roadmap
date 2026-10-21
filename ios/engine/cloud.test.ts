@@ -457,6 +457,26 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'profile', height: 170 }), erase, 'si', NOW))).toMatchObject({ reason: 'units-changed' });
   });
 
+  it('US-25 AC17 (Codex R1): a blood pressure replace is refused when another device corrected the day before Save', async () => {
+    const dropbox = new FakeDropbox();
+    const { engine: maker } = await phone(new FakeDropbox());
+    const pair = JSON.parse(maker.applyEditJson(maker.newRecordJson(NOW, 'web', 'en-NZ', 'Pacific/Auckland'),
+      JSON.stringify({ kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' }), NOW, 'web')) as { record: string };
+    const before = JSON.parse(pair.record) as RoadmapFile;
+    dropbox.put(before);
+    const { engine } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const shown = before.measurements.map((row) => row.id);
+    // The web corrects the diastolic 80 to 78; the phone takes it in while its sheet is open.
+    const web = JSON.parse(maker.applyEditJson(pair.record, JSON.stringify({ kind: 'correct', id: before.measurements[1].id, value: 78 }), '2026-10-21T09:00:00.000Z', 'web')) as { record: string };
+    dropbox.put(JSON.parse(web.record) as RoadmapFile);
+    expect(await engine.cloudRefresh()).toBe('changed');
+    const replace = (seenIds: string[]) => JSON.stringify({ kind: 'bloodPressure', systolic: 130, diastolic: 80, day: '2026-10-20', replace: true, seenIds });
+    expect(JSON.parse(engine.cloudEdit(replace(shown), erase, 'si', NOW))).toMatchObject({ ok: false, reason: 'record-changed' });
+    // The web's 78 stands.
+    expect(dropbox.record.measurements.filter((row) => row.status === 'active').map((row) => row.value).sort()).toEqual([120, 78].sort());
+  });
+
   it.each([
     ['storageQuotaExceeded', 'storage-full'],
     ['dailyLimitExceeded', 'unreachable'],

@@ -11,11 +11,22 @@ struct MyData: Decodable {
         /// Height in the user's units, formatted by the engine.
         let height: String?
         let heightUnit: String
+        /// A US height in feet and inches, by health-core's `cmToFeetInches`; nil in metric (AC17).
+        let feetInches: FeetInches?
     }
 
+    struct FeetInches: Decodable, Equatable, Hashable {
+        let feet: Int
+        let inches: Int
+        var text: String { "\(feet) ft \(inches) in" }
+    }
+
+    /// The Vitals row that pairs systolic and diastolic (ios/engine/blood-pressure.ts).
+    static let bloodPressure = "blood_pressure"
+
     /// One metric's row: the plan's current value, if there is one.
-    struct Row: Decodable, Identifiable {
-        struct Latest: Decodable {
+    struct Row: Decodable, Identifiable, Hashable {
+        struct Latest: Decodable, Hashable {
             /// The row id a correction names.
             let id: String
             let value: String
@@ -50,6 +61,11 @@ struct MyData: Decodable {
 /// Numbers are in the user's units; the engine stores SI.
 enum RecordEdit: Encodable, Equatable {
     case profile(sex: String? = nil, birthYear: Int? = nil, birthMonth: Int? = nil, height: Double? = nil)
+    /// A US height, whole feet and 0 to 11 inches; the engine converts it (AC17).
+    case feetInches(feet: Int, inches: Int)
+    /// Both halves for one day, or neither; `replace` corrects what the day holds and names
+    /// the active rows the user saw (`seenIds`), so a change from elsewhere refuses it (AC17).
+    case bloodPressure(systolic: Double, diastolic: Double, day: String, replace: Bool, seenIds: [String] = [])
     case units(String)
     /// A new value for a day, YYYY-MM-DD.
     case add(metric: String, value: Double, day: String)
@@ -64,7 +80,7 @@ enum RecordEdit: Encodable, Equatable {
     case labImport(extractionJSON: String, refs: [String], reportDay: String)
 
     private enum Key: String, CodingKey {
-        case kind, sex, birthYear, birthMonth, height, unitSystem, metric, value, day, id, extractionJson, refs, reportDay, samples
+        case kind, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, metric, value, day, id, extractionJson, refs, reportDay, samples
     }
 
     func encode(to encoder: Encoder) throws {
@@ -76,6 +92,17 @@ enum RecordEdit: Encodable, Equatable {
             try json.encodeIfPresent(birthYear, forKey: .birthYear)
             try json.encodeIfPresent(birthMonth, forKey: .birthMonth)
             try json.encodeIfPresent(height, forKey: .height)
+        case .feetInches(let feet, let inches):
+            try json.encode("profile", forKey: .kind)
+            try json.encode(feet, forKey: .heightFeet)
+            try json.encode(inches, forKey: .heightInches)
+        case .bloodPressure(let systolic, let diastolic, let day, let replace, let seenIds):
+            try json.encode("bloodPressure", forKey: .kind)
+            try json.encode(systolic, forKey: .systolic)
+            try json.encode(diastolic, forKey: .diastolic)
+            try json.encode(day, forKey: .day)
+            try json.encode(replace, forKey: .replace)
+            if replace { try json.encode(seenIds, forKey: .seenIds) }
         case .units(let unitSystem):
             try json.encode("units", forKey: .kind)
             try json.encode(unitSystem, forKey: .unitSystem)

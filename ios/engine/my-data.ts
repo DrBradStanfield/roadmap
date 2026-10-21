@@ -16,9 +16,10 @@ import { deviceWrites, type DeviceWrite } from '../../packages/health-core/src/d
 import { applyFormEdit, customSupplement, formsOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import {
-  detectUnitSystem, formatDisplayValue, getDisplayLabel, toCanonicalValue,
+  cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, toCanonicalValue,
   type MetricType, type UnitSystem,
 } from '../../packages/health-core/src/units';
+import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
 
 /** One row of Vitals or Blood tests: the plan's current value, if any, in the user's units. */
 export interface MyDataRow {
@@ -36,6 +37,8 @@ export interface MyData {
     birthMonth: number | null;
     height: string | null;
     heightUnit: string;
+    /** A US height as the web shows it, 5 ft 10 in; null in metric or with no height. */
+    feetInches: { feet: number; inches: number } | null;
   };
   vitals: MyDataRow[];
   bloodTests: MyDataRow[];
@@ -45,7 +48,9 @@ export interface MyData {
 
 /** Every change the tab can ask for. Numbers are in the user's units. */
 export type Edit =
-  | { kind: 'profile'; sex?: 'male' | 'female'; birthYear?: number; birthMonth?: number; height?: number }
+  | { kind: 'profile'; sex?: 'male' | 'female'; birthYear?: number; birthMonth?: number; height?: number; heightFeet?: number; heightInches?: number }
+  /** Systolic and diastolic for one day, both or neither (blood-pressure.ts). */
+  | PressureEdit
   | { kind: 'units'; unitSystem: UnitSystem }
   | { kind: 'add'; metric: string; value: number; day?: string }
   | { kind: 'correct'; id: string; value: number }
@@ -125,8 +130,10 @@ export function myData(file: RoadmapFile, now = new Date().toISOString()): MyDat
       birthMonth: birthMonth ?? null,
       height: heightCm === undefined ? null : formatDisplayValue('height', heightCm, system),
       heightUnit: getDisplayLabel('height', system),
+      feetInches: heightCm === undefined || system !== 'conventional' ? null : cmToFeetInches(heightCm),
     },
-    vitals: VITAL_METRICS.map(row),
+    // Blood pressure is one row, as the web's matrix shows it: the newest day's pair.
+    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file)],
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     psa: row('psa'),
@@ -138,8 +145,21 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
   const system = unitsOf(file);
   switch (edit.kind) {
     case 'profile': {
-      const { kind: _kind, height, ...rest } = edit;
-      const heightCm = height === undefined ? undefined : toCanonicalValue('height', height, system);
+      const { kind: _kind, height, heightFeet, heightInches, ...rest } = edit;
+      let heightCm = height === undefined ? undefined : toCanonicalValue('height', height, system);
+      if (heightFeet !== undefined || heightInches !== undefined) {
+        // The web's two fields, read whole (InputPanel.tsx); its range is updateProfile's, in cm.
+        if (!Number.isInteger(heightFeet) || !Number.isInteger(heightInches) || heightFeet! < 0 || heightInches! < 0 || heightInches! > 11) {
+          return { ok: false, reason: 'invalid-value', message: 'Height is whole feet and 0 to 11 inches.' };
+        }
+        const shown = file.profile.heightCm === undefined ? undefined : cmToFeetInches(file.profile.heightCm);
+        // The wheels as they opened: write nothing, so 178 cm never becomes 177.8 (adversary R4).
+        if (shown?.feet === heightFeet && shown?.inches === heightInches) {
+          if (Object.keys(rest).length === 0) return { ok: true, file };
+        } else {
+          heightCm = feetInchesToCm(heightFeet!, heightInches!);
+        }
+      }
       const outcome = updateProfile(file, { ...rest, ...(heightCm === undefined ? null : { heightCm }) }, now);
       if (outcome.status !== 'ok') return { ok: false, reason: 'invalid-value', message: outcome.text };
       return { ok: true, file: outcome.file ?? file };
@@ -190,6 +210,8 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
       }
       return { ok: true, file: upsertSupplement(file, { supplementKey, supplementName, doseValue, doseUnit, status, startedAt }, now).file };
     }
+    case 'bloodPressure':
+      return applyPressure(file, edit, now);
     case 'appleHealth': {
       if (!Array.isArray(edit.samples)) return { ok: false, reason: 'invalid-value', message: 'Apple Health readings come as a list.' };
       return { ok: true, file: importDeviceSamples(file, edit.samples, { now, source: 'apple_health' }).file };
@@ -206,6 +228,13 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
   }
+}
+
+/** The Vitals row for blood pressure: the newest day's pair, from the history's own pairing. */
+function pressureRow(file: RoadmapFile): MyDataRow {
+  const { label, unit, rows } = pressureHistory(file, []);
+  const newest = rows.find((row) => row.status === 'active');
+  return { metric: BLOOD_PRESSURE, label, unit, latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null };
 }
 
 /** What the app writes to Apple Health (US-25 AC14): the values a person entered, never its own imports. */

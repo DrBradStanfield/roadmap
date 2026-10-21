@@ -1,11 +1,11 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The "+" that uploads a lab report (US-52 AC7), ready for a toolbar:
-/// `.toolbar { LabUploadButton(engine: engine, store: store) }`.
+/// The "+" that uploads a lab report (US-52 AC7), on My data's About you line.
 struct LabUploadButton: View {
     let engine: HealthEngine
     let store: RecordStore
+    let sync: CloudSync
     @State private var showing = false
 
     var body: some View {
