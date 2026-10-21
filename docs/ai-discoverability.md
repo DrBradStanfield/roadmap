@@ -53,7 +53,7 @@ change below. The original plan and its reasoning:
 | Official MCP Registry | Listed | namespace `io.github.DrBradStanfield` |
 | OpenAI (ChatGPT apps) | 1.0.2 in review since 2026-10-14 | [chatgpt-app-listing.md](chatgpt-app-listing.md) |
 | Claude directory | Submitted 2026-10-21, in review | [claude-directory-listing.md](claude-directory-listing.md) |
-| Glama | Server and connector listed, claimed, build passes; tools rated A, maintenance B | glama.ai/mcp/servers/DrBradStanfield/roadmap |
+| Glama | Server and connector listed, claimed, build passes; profile 83% (2026-10-21), tools A, maintenance B | glama.ai/mcp/servers/DrBradStanfield/roadmap (Admin → score) |
 | mcp.so | Live, paid ($39) | mcp.so/servers/health-by-dr-brad |
 | awesome-mcp-servers | PR open, Glama badge added | punkpeye/awesome-mcp-servers#17137 |
 | Wikidata | Item created | Q141797039 (developer Q141452826) |
@@ -99,5 +99,10 @@ Ranked by cost against likely effect.
 5. **Glama tool descriptions:** the score page asks for read_record and
    get_plan to name their siblings, and for import_documents and file_results
    to be less dense. This changes tools/list, so it waits for the OpenAI verdict.
-6. **Third-party testing for MicroVitamin,** under way. A citable certificate
+6. **Glama to 100%.** Open items 2026-10-21: "CI is failing" and "No stable
+   releases" were stale (CI green since 7a3cb9eb; v1.0.2 is a stable release),
+   so they should clear on Glama's next scan. "No recent usage": one call via
+   "Try in Browser" seeds it. "No related servers": Brad's call, since it links
+   our page to competitors (twyn, Kinjay).
+7. **Third-party testing for MicroVitamin,** under way. A citable certificate
    answers the ConsumerLab "Not Approved" page that models quote.
