@@ -54,12 +54,35 @@ describe('run', () => {
       row.appMetadata = appMetadata; row.appClaim = String(appMetadata.shopify_customer_id);
       return true;
     });
-    const deps = { readRows: async () => rows.map(r => ({ ...r })), update, readAppClaim: async (id: string) => rows.find(r => r.id === id)!.appClaim };
-    expect(await run(deps, false)).toMatchObject({ mode: 'dry-run', to_write: 1, skipped_signed_in: 1, written: 0 });
+    const deps = {
+      readRows: async () => rows.map(r => ({ ...r })), update,
+      readAppClaim: async (id: string) => rows.find(r => r.id === id)!.appClaim,
+      confirm: async (id: string) => ({ ...rows.find(r => r.id === id)! }),
+    };
+    expect(await run(deps, false)).toMatchObject({ mode: 'dry-run', to_write: 1, confirmed: 1, skipped_signed_in: 1, written: 0 });
     expect(update).not.toHaveBeenCalled();
     expect(await run(deps, true)).toMatchObject({ mode: 'execute', to_write: 1, written: 1, verified: 1, write_failed: 0 });
     expect(rows[0].appMetadata).toEqual({ provider: 'email', shopify_customer_id: '1' });
     expect(await run(deps, true)).toMatchObject({ already_proven: 1, to_write: 0, written: 0 });
     expect(update).toHaveBeenCalledTimes(1);
+  });
+
+  // The pg read is not certificate-verified, so it only narrows candidates; the
+  // HTTPS admin record decides.
+  it.each<[string, Partial<AuthRow> | null]>([
+    ['missing from the admin API', null],
+    ['signed in per the admin API', { lastSignInAt: '2026-10-01T00:00:00Z' }],
+    ['self sign-up per the admin API', { confirmationSentAt: T }],
+    ['a different user_metadata claim', { userClaim: '2' }],
+    ['a different profile link', { profileCustomerId: '2' }],
+    ['already holding another app_metadata claim', { appClaim: '2' }],
+  ])('skips a candidate whose pg row disagrees with the admin record: %s', async (_name, change) => {
+    const update = vi.fn(async () => true);
+    const deps = {
+      readRows: async () => [created('a', '1')], update, readAppClaim: async () => '1',
+      confirm: async () => (change ? { ...created('a', '1'), ...change } : null),
+    };
+    expect(await run(deps, true)).toMatchObject({ to_write: 1, confirmed: 0, skipped_admin_mismatch: 1, written: 0 });
+    expect(update).not.toHaveBeenCalled();
   });
 });

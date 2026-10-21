@@ -571,12 +571,16 @@ export async function updateSubscriptionPlan(
 }
 
 /**
- * Look up a Supabase user ID by Shopify customer ID. Uses admin client.
+ * Look up the Supabase user linked to a Shopify customer. Uses admin client.
+ * Null when no profile is linked; `proven: false` when the link lacks
+ * admin-written proof (US-09 AC27), so the caller must not credit it.
  */
-export async function getUserIdByCustomerId(shopifyCustomerId: string): Promise<string | null> {
+export async function getUserIdByCustomerId(
+  shopifyCustomerId: string,
+): Promise<{ userId: string; proven: boolean } | null> {
   // Check in-memory cache first
   const cached = getCachedUserId(shopifyCustomerId);
-  if (cached) return cached;
+  if (cached) return { userId: cached, proven: true };
 
   if (!supabaseAdmin) return null;
 
@@ -588,9 +592,12 @@ export async function getUserIdByCustomerId(shopifyCustomerId: string): Promise<
 
   if (error || !data) return null;
   // The cache is shared with chat: hold only a proven link (US-09 AC27).
-  if (!(await hasLinkProof(data.id, shopifyCustomerId))) return refuseUnprovenLink(data.id);
+  if (!(await hasLinkProof(data.id, shopifyCustomerId))) {
+    refuseUnprovenLink(data.id);
+    return { userId: data.id, proven: false };
+  }
   cacheUserId(shopifyCustomerId, data.id);
-  return data.id;
+  return { userId: data.id, proven: true };
 }
 
 // ---------------------------------------------------------------------------

@@ -202,14 +202,15 @@ describe('webhook customer lookup', () => {
   it('returns no principal for a legacy unproven link, and a later chat request cannot reach it through the cache', async () => {
     const customer = identity();
     profiles.push({ id: 'legacy', email, shopify_customer_id: customer }); addAuth('legacy', null);
-    expect(await webhookUser(customer)).toBeNull();
+    expect(await webhookUser(customer)).toEqual({ userId: 'legacy', proven: false });
     expect(await mapUser(customer, email)).toBeNull();
     expect(state.getById).toHaveBeenCalledTimes(2);
   });
   it('caches only a proven link', async () => {
     const customer = identity();
     profiles.push({ id: 'own', email, shopify_customer_id: customer }); addAuth('own', customer);
-    expect(await webhookUser(customer)).toBe('own');
+    expect(await webhookUser(customer)).toEqual({ userId: 'own', proven: true });
+    expect(await webhookUser(customer)).toEqual({ userId: 'own', proven: true }); // from the cache
     expect(await mapUser(customer, email)).toBe('own');
     expect(state.getById).toHaveBeenCalledTimes(1);
   });

@@ -37,15 +37,27 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
     if (!packItems.length) return new Response();
 
-    const userId = await getUserIdByCustomerId(customerId);
-    if (!userId) {
-      // No proven principal yet (US-09 AC27) — return 500 so Shopify retries later;
-      // credits are idempotent per order. The log names no customer.
-      console.warn('orders/paid: no proven Supabase user for this customer, will retry');
+    const user = await getUserIdByCustomerId(customerId);
+    if (!user) {
+      // No linked user yet — return 500 so Shopify retries later; credits are
+      // idempotent per order. The log names no customer (US-09 AC27).
+      console.warn('orders/paid: no Supabase user for this customer yet, will retry');
       return new Response(null, { status: 500 });
     }
 
     const orderId = `gid://shopify/Order/${order.id}`;
+
+    if (!user.proven) {
+      // A link without admin-written proof is never credited (US-09 AC27). Answer
+      // 200 so Shopify stops retrying, and leave Brad a value-free record to
+      // credit by hand once the backfill proves the link.
+      logAudit(user.userId, 'PAID_ORDER_UNPROVEN_LINK', 'chat', orderId);
+      Sentry.captureMessage('orders/paid for an unproven Shopify link; credit by hand after the backfill', {
+        level: 'warning', tags: { feature: 'message_credits' },
+      });
+      return new Response();
+    }
+    const userId = user.userId;
 
     for (const item of packItems) {
       const variantId = item.variant_id?.toString();
