@@ -1,7 +1,7 @@
 /**
  * US-35 AC13 (2026-10-19): the text the connector publishes is frozen while
  * the MCP 1.0.2 submission is in OpenAI's review. Each hash is the value at
- * origin/main cab5615a: the server instructions, every tool definition (names,
+ * origin/main cab5615a (MCP_TOOLS and tools/list re-pinned for US-32 AC52 on this held branch): the server instructions, every tool definition (names,
  * descriptions, input and output schemas, annotations, _meta), the prompts and
  * the server info. A wording change in a RESULT moves none of them; a change
  * to what initialize, tools/list or prompts/list answers fails here until the
@@ -30,7 +30,7 @@ describe('US-35 AC13 — the published connector text is frozen during the 1.0.2
     ['MCP_TOOLS', MCP_TOOLS, '88d3e15924613c03bafa48da0be1ee058e5568c25a73410a873a29595a4a7d59'],
     ['MCP_PROMPTS', MCP_PROMPTS, 'a159ee16a3ce5fefc23ed8f90178a852551350795731fabd30ca7a5f6267c140'],
     ['SERVER_INFO', SERVER_INFO, 'ce1110c13b5b005a4f14f0068138039eecd7fddc888032f08479060ad2da400f'],
-  ] as const)('%s hashes to its value at cab5615a', (_name, value, pinned) => {
+  ] as const)('%s hashes to its pinned value (cab5615a; AC52 re-pin)', (_name, value, pinned) => {
     expect(sha256(value)).toBe(pinned);
   });
 });

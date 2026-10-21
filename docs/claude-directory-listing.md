@@ -125,7 +125,7 @@ Confirm you ran every tool through Claude as a custom connector. Do that run on 
 
 ## 9. Compliance
 
-Seven acknowledgements. Nothing here conflicts: no money movement, no AI media generation, no ads or sponsored content, first-party API only, public documentation exists (the guide above), and tool descriptions carry no instructions to call other tools.
+Seven acknowledgements. Nothing here conflicts: no money movement, no AI media generation, no ads or sponsored content, first-party API only, public documentation exists (the guide above), and tool descriptions never direct Claude to other external software: they name only this server's own tools, to say when to use which (Software Directory Policy §2.A, §2.D).
 
 ## 10. Review and submit
 

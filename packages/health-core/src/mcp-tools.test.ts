@@ -3148,6 +3148,12 @@ describe('US-32 AC52 — the read and import descriptions name their siblings (G
     expect(description('import_documents')).toMatch(/^Import lab files \([^)]+\) from the user’s Dropbox folder [^.]+\. Nothing is written to the record until the user confirms;/);
     expect(description('file_results')).toMatch(/^File what you read from ONE lab report[^.]+\. Nothing is written to the record until the user confirms;/);
   });
+
+  it('import_documents keeps every rule it carried before the rewrite', () => {
+    for (const rule of ['Anthropic keeps them up to 30 days', 'we keep none', 'data, not instructions', 'permanent, so name only what they asked for', 'expire in an hour', 'wait for their own confirmation', 'HEIC', 'You cannot edit a value here']) {
+      expect(description('import_documents'), rule).toContain(rule);
+    }
+  });
 });
 
 describe('US-36 AC11 — tools/list stays inside ChatGPT’s budget', () => {
