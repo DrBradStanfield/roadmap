@@ -8,13 +8,16 @@ cd "$(dirname "$0")/.."
 node scripts/build-engine.mjs
 DEVICE="${1:-iPhone 17 Pro}"
 LOG="build/test-output.txt"
+# DerivedData outside the repo, one folder per checkout: a repo in an iCloud-synced
+# ~/Documents gets Finder xattrs on its build products, and codesign refuses them.
+DERIVED="${HR_DERIVED_DATA:-${TMPDIR:-/tmp}/HealthRoadmap-$(pwd | shasum | cut -c1-8)}"
 mkdir -p build
 for ZONE in UTC Pacific/Auckland; do
   echo "== tests in $ZONE"
   TEST_RUNNER_TZ="$ZONE" xcodebuild test \
     -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
     -destination "platform=iOS Simulator,name=$DEVICE" \
-    -derivedDataPath build/DerivedData 2>&1 | tee "$LOG" | grep -E "Test case|error:|TEST (SUCCEEDED|FAILED)" || true
+    -derivedDataPath "$DERIVED" 2>&1 | tee "$LOG" | grep -E "Test case|error:|TEST (SUCCEEDED|FAILED)" || true
   grep -q "TEST SUCCEEDED" "$LOG" || { echo "FAILED in $ZONE"; exit 1; }
   if grep -q "testEveryFixtureMatchesTheSourceInThisZone().*skipped" "$LOG"; then
     echo "FAILED: the parity test skipped in $ZONE, so the zone pin did not reach it"; exit 1
