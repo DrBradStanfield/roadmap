@@ -9,8 +9,9 @@
  * (Codex + adversary, 2026-10-21) of the blanket clear O5 first brought in.
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME } from '@roadmap/health-core';
-import { RoadmapStore, saveRoadmapFileInto } from './roadmap-store';
+import { liftDeviceCopy, MemoryAdapter, MemoryCloud, type RecordHost } from '@roadmap/health-core';
+import { RoadmapStore } from './roadmap-store';
+import { webRecordHost } from './web-record-host';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { clearOffFileAfterErase, deleteUserData, initRoadmapStore, setPreEraseHook } from '../lib/roadmap-data';
 import { setChatHistoryFactory } from '../lib/chat-history-access';
@@ -48,7 +49,7 @@ async function eraseElsewhere(cloud: MemoryCloud, at: string): Promise<void> {
   const mine = Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)!]));
   localStorage.clear();
   vi.setSystemTime(new Date(at));
-  expect((await (await RoadmapStore.create(new MemoryAdapter(cloud))).deleteUserData()).success).toBe(true);
+  expect((await (await RoadmapStore.create(new MemoryAdapter(cloud))).deleteAllData()).success).toBe(true);
   localStorage.clear();
   for (const [k, v] of Object.entries(mine)) localStorage.setItem(k, v);
 }
@@ -60,7 +61,7 @@ it('a stale guest tab that takes in the erase keeps an original uploaded after i
   const b = await RoadmapStore.create(new LocalStorageAdapter()); // the stale tab
 
   vi.setSystemTime(new Date('2026-10-21T10:01:00.000Z'));
-  expect((await a.deleteUserData()).success).toBe(true);
+  expect((await a.deleteAllData()).success).toBe(true);
   vi.setSystemTime(new Date('2026-10-21T10:02:00.000Z'));
   const ref = await upload(a); // after the erase: its row survives everywhere
 
@@ -112,7 +113,7 @@ it('an original the erase listed goes, though a stale device copy still names it
   const guest = await RoadmapStore.create(new LocalStorageAdapter());
   await upload(guest);
   const cloud = new MemoryCloud();
-  await saveRoadmapFileInto(new MemoryAdapter(cloud), (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body);
+  expect(await liftDeviceCopy(webRecordHost(new MemoryAdapter(cloud)) as Extract<RecordHost, { tier: 'cloud' }>)).toBe('lifted');
   const page = await RoadmapStore.create(new MemoryAdapter(cloud));
   expect(page.loadLatestMeasurements().documents).toHaveLength(1);
 

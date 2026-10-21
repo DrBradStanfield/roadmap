@@ -106,7 +106,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
 
   it('an erase made in the other tab stands when a tab with nothing unsaved closes', async () => {
     const [a, b] = await twoTabs();
-    expect((await b.deleteUserData()).success).toBe(true);
+    expect((await b.deleteAllData()).success).toBe(true);
 
     a.flushSync();
 
@@ -116,7 +116,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
 
   it('an erase made in the other tab stands when a tab with an unsaved edit closes, and only the edit typed after it survives', async () => {
     const [a, b] = await twoTabs();
-    expect((await b.deleteUserData()).success).toBe(true);
+    expect((await b.deleteAllData()).success).toBe(true);
     vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
     a.addMeasurement('hdl', 1.4, TODAY); // typed in A, which has not heard of the erase
 
@@ -142,7 +142,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     }
     const a = await RoadmapStore.create(new SaveFails(cloud)); // holds the weight
     const b = await RoadmapStore.create(new MemoryAdapter(cloud));
-    expect((await b.deleteUserData()).success).toBe(true);
+    expect((await b.deleteAllData()).success).toBe(true);
     a.addMeasurement('hdl', 1.4, TODAY); // after B's erase, which never saw it
     await expect(a.flush()).rejects.toThrow(); // mirrors the weight AND the hdl on this device
 
@@ -194,7 +194,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     const [a, b] = await twoTabs();
     a.addMeasurement('hdl', 1.4, TODAY); // unsaved when B erases
     vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
-    expect((await b.deleteUserData()).success).toBe(true);
+    expect((await b.deleteAllData()).success).toBe(true);
     // A's matrix, still open on the old record, typed on after B's erase.
     localStorage.setItem(BT_TIMELINE_DRAFT_KEY, '{"draft":{"date":"2026-09-25","values":{"ldl":"3.2"}}}');
     localStorage.setItem(VITALS_DRAFT_KEY, '{"draft":{"date":"2026-09-25","values":{"weight":"84"}}}');
@@ -237,13 +237,13 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
   it('after that hide, an erase in this tab removes what the other tab saved since', async () => {
     const [a, b] = await twoTabs();
     a.addMeasurement('hdl', 1.4, TODAY);
-    expect((await b.deleteUserData()).success).toBe(true);
+    expect((await b.deleteAllData()).success).toBe(true);
     a.flushSync(); // A hides, and takes B's erase in
     b.addMeasurement('weight', 83, TODAY); // B starts again
     await b.flush();
     vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
 
-    expect((await a.deleteUserData()).success).toBe(true);
+    expect((await a.deleteAllData()).success).toBe(true);
 
     expect(stored().meta.eraseEpoch).toBe(2);
     expect(stored().measurements).toEqual([]);
@@ -377,7 +377,7 @@ async function slowCloudWithEdit(): Promise<{ cloud: MemoryCloud; adapter: SlowA
 /** Erase, and note what the cloud holds at the moment success is reported. */
 async function eraseAndLook(cloud: MemoryCloud, store: RoadmapStore): Promise<RoadmapFile | null> {
   let atSuccess: RoadmapFile | null = null;
-  const erase = store.deleteUserData().then((result) => {
+  const erase = store.deleteAllData().then((result) => {
     if (result.success) atSuccess = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
   });
   await vi.advanceTimersByTimeAsync(10_000);
@@ -388,13 +388,13 @@ async function eraseAndLook(cloud: MemoryCloud, store: RoadmapStore): Promise<Ro
 describe('US-11 AC7 — an erase beats what it has not seen, and says so only once written', () => {
   it('a tab that never hid still erases over the other tab\'s erase and fresh start', async () => {
     const [a, b] = await twoTabs();
-    expect((await b.deleteUserData()).success).toBe(true);
+    expect((await b.deleteAllData()).success).toBe(true);
     b.addMeasurement('weight', 83, TODAY); // B starts again
     await b.flush();
     vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
 
     // A still holds the record from before B's erase, at the old epoch.
-    expect((await a.deleteUserData()).success).toBe(true);
+    expect((await a.deleteAllData()).success).toBe(true);
 
     expect(stored().meta.eraseEpoch).toBe(2);
     expect(stored().measurements).toEqual([]);
@@ -406,12 +406,12 @@ describe('US-11 AC7 — an erase beats what it has not seen, and says so only on
     phone.addMeasurement('weight', 82, '2026-09-18T00:00:00.000Z');
     await phone.flush();
     const laptop = await RoadmapStore.create(new MemoryAdapter(cloud));
-    expect((await phone.deleteUserData()).success).toBe(true);
+    expect((await phone.deleteAllData()).success).toBe(true);
     phone.addMeasurement('weight', 83, TODAY); // the phone starts again
     await phone.flush();
     vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
 
-    expect((await laptop.deleteUserData()).success).toBe(true);
+    expect((await laptop.deleteAllData()).success).toBe(true);
 
     const file = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
     expect(file.meta.eraseEpoch).toBe(2);
@@ -468,7 +468,7 @@ describe('US-11 AC7 — an erase beats what it has not seen, and says so only on
       if (full && key === FILE_KEY) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
       setItem.call(this, key, value);
     });
-    expect((await a.deleteUserData()).success).toBe(false);
+    expect((await a.deleteAllData()).success).toBe(false);
     expect(rows()).toEqual(['weight 82 active']);
 
     full = false;
@@ -868,7 +868,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
 
   it('takes the other tab\'s erase in: the drafts go, the page hears it once, and a later edit is kept', async () => {
     const { a, b, adapterA } = await listeningTabs();
-    expect((await b.deleteUserData()).success).toBe(true);
+    expect((await b.deleteAllData()).success).toBe(true);
     // A's matrices still hold drafts typed on the old record. One localStorage
     // and one window serve both tabs here, so B's erase already cleared them:
     // they are put back, and the listeners attached, after it.

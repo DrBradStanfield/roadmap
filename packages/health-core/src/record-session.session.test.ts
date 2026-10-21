@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ERASE_UNREACHABLE, RecordSession, PERSIST_DEBOUNCE_MS } from './record-session';
 import type { RecordHost } from './record-host';
-import { ROADMAP_FILE_NAME, StorageError } from './adapter';
+import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type WriteResult } from './adapter';
 import { createMeasurement, type FileDocument, type RoadmapFile } from './roadmap-file';
 
 /** A store whose writes can be made to fail, and whose reads can be held. */
@@ -29,13 +29,31 @@ class TestStore extends MemoryAdapter {
     if (this.failWrites) throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }));
     return super.write(fileName, body, expected);
   }
+  // The synchronous face a device tier needs, as localStorage has on the web.
+  readSync(fileName: string): ReadResult {
+    const entry = this.cloud.files.get(fileName);
+    return entry ? { body: JSON.parse(entry.json), version: String(entry.version) } : { body: null, version: null };
+  }
+  writeSync(fileName: string, body: object, expected: string | null): WriteResult {
+    this.writes += 1;
+    if (this.failWrites) throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }));
+    const entry = this.cloud.files.get(fileName);
+    if ((entry ? String(entry.version) : null) !== expected) throw new ConflictError('moved');
+    const version = (entry?.version ?? 0) + 1;
+    this.cloud.files.set(fileName, { json: JSON.stringify(body), version });
+    return { version: String(version) };
+  }
+  revision(fileName: string): string | null {
+    const entry = this.cloud.files.get(fileName);
+    return entry ? String(entry.version) : null;
+  }
 }
 
 interface Fake {
   host: RecordHost;
   timers: Array<{ run: () => void; ms: number }>;
   calls: string[];
-  reports: Array<{ cause?: string; repeat: boolean }>;
+  reports: Array<{ op?: string; cause?: string; repeat: boolean }>;
   mirrorCloud: MemoryCloud;
   pending: { value: boolean };
   /** The originals each off-file clear was told to keep. */
@@ -62,10 +80,11 @@ function fakeHost(store: TestStore, tier: 'device' | 'cloud' = 'cloud'): Fake {
     },
     remoteChanged: () => calls.push('remoteChanged'),
     failureCause: () => 'QuotaExceededError',
-    report: (_error: unknown, at: { cause?: string; repeat: boolean }) => void reports.push({ cause: at.cause, repeat: at.repeat }),
+    report: (_error: unknown, at: { op: string; cause?: string; repeat: boolean }) =>
+      void reports.push(at.op === 'persist' ? { cause: at.cause, repeat: at.repeat } : { op: at.op, repeat: at.repeat }),
   };
   const host: RecordHost = tier === 'device'
-    ? { ...base, tier: 'device', clearNamedFiles: () => calls.push('clearNamedFiles') }
+    ? { ...base, tier: 'device', sync: store, clearNamedFiles: () => calls.push('clearNamedFiles'), eraseFence: () => null }
     : {
         ...base,
         tier: 'cloud',
@@ -333,5 +352,49 @@ describe('RecordSession: host timer ids', () => {
     expect([...live.keys()]).toEqual([0]);
     await session.flush(); // saves now, so the debounced save must be gone
     expect(live.size).toBe(0);
+  });
+});
+
+describe('RecordSession.deleteAllData: the erase order (US-09 AC23, US-11 AC2; O6)', () => {
+  it('reads the record, then the teardown, then the chat tombstones, then writes the erase', async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    add(session, 'a');
+    await session.flush();
+    const order: string[] = [];
+    const read = store.read.bind(store);
+    store.read = async (name: string) => { order.push('read'); return read(name); };
+    store.onWrite = () => order.push('write');
+    const result = await session.deleteAllData({
+      teardown: async () => { order.push('teardown'); },
+      chat: async () => ({ eraseAll: async () => { order.push('chat'); } }),
+    });
+    expect(result).toEqual({ success: true, chatErased: true });
+    expect(order.slice(0, 3)).toEqual(['read', 'teardown', 'chat']);
+    expect(order.indexOf('write')).toBeGreaterThan(2); // the record's own write comes last
+  });
+
+  it('reports a failed step and erases anyway; a failed chat step says so', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    const result = await session.deleteAllData({
+      teardown: async () => { throw new Error('server down'); },
+      chat: async () => ({ eraseAll: async () => { throw new Error('chat cloud down'); } }),
+    });
+    expect(result).toEqual({ success: true, chatErased: false });
+    expect(fake.reports).toEqual([{ op: 'pre-erase', repeat: false }, { op: 'chat-erase', repeat: false }]);
+    expect(stored(store.cloud).meta.eraseEpoch).toBe(1);
+  });
+
+  it('runs neither step when the erase is refused', async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    store.failReads = true;
+    const teardown = vi.fn(async () => {});
+    const chat = vi.fn(async () => null);
+    expect(await session.deleteAllData({ teardown, chat })).toEqual({ success: false, error: ERASE_UNREACHABLE, chatErased: false });
+    expect(teardown).not.toHaveBeenCalled();
+    expect(chat).not.toHaveBeenCalled();
   });
 });

@@ -36,7 +36,6 @@ export interface DeviceMirror {
 
 interface HostBase {
   store: StorageAdapter;
-  sync?: SyncStorage;
   /** Health data this device keeps outside the record (drafts, kept answers,
    *  stored originals), cleared by an erase made here (US-11 AC1) or taken in
    *  from another device (AC6). `keepOriginals`: the `fileRef`s whose stored
@@ -48,6 +47,10 @@ interface HostBase {
    *  tab writes), read synchronously; null when there is none. May throw when
    *  the bytes cannot be read. Leave it out when the host has no such copy. */
   deviceRecord?(): unknown;
+  /** The store's own change signal (US-34): call `onChange` when the record
+   *  may have changed elsewhere; answer the stop. Leave it out when the
+   *  store has none, and the live re-read polls instead. */
+  watch?(onChange: () => void): () => void;
   /** This device's id, for the merge's `lastDeviceId`. Read once, at open. */
   deviceId(): string;
   /** Read at each use, never captured, so a test's fake clock applies. */
@@ -60,9 +63,12 @@ interface HostBase {
   /** Why a device store refused a write, as one word from a closed set
    *  ('other' when it cannot say). Asked only on the device tier. */
   failureCause(error: unknown): string;
-  /** A save failed. `repeat`: this kind of device refusal was already reported
-   *  this session. Gets the error and closed tags only, never record content. */
-  report(error: unknown, at: { op: 'persist'; cause?: string; repeat: boolean }): void;
+  /** Something the user cannot fix failed and must still be seen: a save
+   *  (`persist`), or a best-effort erase step (`pre-erase`, the caller's
+   *  server teardown; `chat-erase`, the chat history's tombstones). `repeat`:
+   *  this kind of device refusal was already reported this session. Gets the
+   *  error and closed tags only, never record content. */
+  report(error: unknown, at: { op: 'persist' | 'pre-erase' | 'chat-erase'; cause?: string; repeat: boolean }): void;
 }
 
 /**
@@ -75,8 +81,14 @@ interface HostBase {
 export type RecordHost =
   | (HostBase & {
       tier: 'device';
+      /** The store's synchronous path: required, because the device copy is
+       *  the record's only one and must land before the page goes. */
+      sync: SyncStorage;
       /** After an erase: clear the other record files here (chat history) and
        *  move the erase fence, so no stale writer brings them back (US-11). */
       clearNamedFiles(): void;
+      /** The content-free marker `clearNamedFiles` moves: a chat session
+       *  that sees it move drops its pre-erase copy (US-11 AC3b). */
+      eraseFence(): string | null;
     })
-  | (HostBase & { tier: 'cloud'; mirror: DeviceMirror });
+  | (HostBase & { tier: 'cloud'; mirror: DeviceMirror; sync?: never });
