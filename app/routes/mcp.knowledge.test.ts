@@ -37,8 +37,9 @@ const NOW = '2026-10-21T10:00:00.000Z';
 /**
  * sha256 of the hosted `tools/list` response body for request id 1, taken at
  * b625b92f before these tools existed. Off, the body must still be these bytes.
+ * Re-taken on purpose for US-32 AC50 and AC51 (annotations.title on every tool; only spec fields published; 2026-10-21), and for AC52 (sibling tools named in four descriptions; 2026-10-21).
  */
-const TOOLS_LIST_SHA256_BEFORE = '9650e0d7f4d34c6a68e1008130376bb97e70624404e02bcea389617c701a8eaf';
+const TOOLS_LIST_SHA256_BEFORE = 'c98e4ddb7e0aef116e678a3135e10359b09a8108e84ec4b3b065e719b0925a36';
 
 const NINE_TOOLS = [
   'read_record', 'get_plan', 'add_measurement', 'add_lab_values',
