@@ -9,6 +9,8 @@ export const DOMAIN = 'health-roadmap-engine-manifest/v1\n';
 /** Where the daily key lives: the login Keychain, trusted by no app (-T ""), so
  *  every read asks Brad. The cold key lives only in 1Password. */
 export const KEYCHAIN_SERVICE = 'health-roadmap-engine-signing';
+/** macOS's own Keychain tool, by absolute path (review N4). */
+export const SECURITY = '/usr/bin/security';
 
 const PKCS8_PREFIX = Buffer.from('302e020100300506032b657004220420', 'hex');
 const SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
@@ -52,7 +54,8 @@ export function readSigningKey(keyId, env = process.env) {
   if (!text) {
     if (keyId !== 'daily') throw new Error(`The ${keyId} key is not in the Keychain: put it in ENGINE_SIGNING_KEY from 1Password.`);
     try {
-      text = execFileSync('security', ['find-generic-password', '-s', KEYCHAIN_SERVICE, '-a', keyId, '-w'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+      // By absolute path: no PATH lookup can put another program between the key and us (N4).
+      text = execFileSync(SECURITY, ['find-generic-password', '-s', KEYCHAIN_SERVICE, '-a', keyId, '-w'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString();
     } catch {
       throw new Error('No signing key: set ENGINE_SIGNING_KEY, or allow the Keychain read (run engine-keygen.mjs once first).');
     }

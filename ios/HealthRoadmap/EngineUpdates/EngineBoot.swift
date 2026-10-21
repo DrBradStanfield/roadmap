@@ -106,7 +106,8 @@ struct EngineBoot {
 /// A downloaded engine on its first foreground launch (US-25 AC18). Its "trying"
 /// mark stays set until it has shown the user's own record, so a crash or hang on the
 /// real record, not only on the self-test's fixture, counts against it at the next
-/// launch. MyDataView and PlanView each call `confirm()`; the first one wins.
+/// launch. My data (`RecordStore.confirmEngineTrial`, which also plans the record) and
+/// PlanView confirm only when the plan worked; the first one wins.
 @MainActor
 final class EngineTrial {
     let version: Int
@@ -120,7 +121,20 @@ final class EngineTrial {
         self.bundled = bundled
     }
 
-    /// The engine read the user's record and drew it: it is proven.
+    /// Whether the engine plans `recordJSON`: a plan, or health-core's own PlanError
+    /// (no height or sex), which is the engine working. Any other throw is a failure.
+    static func planned(_ engine: HealthEngine, recordJSON: String, deviceId: String) -> Bool {
+        do {
+            _ = try engine.plan(recordJSON: recordJSON, now: .now, deviceId: deviceId)
+            return true
+        } catch HealthEngine.EngineError.callFailed(let why) where why.hasPrefix("PlanError: ") {
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /// The engine drew and planned the user's record: it is proven.
     func confirm() {
         guard !confirmed, var state = try? folder.readState(bundled: bundled) else { return }
         confirmed = true

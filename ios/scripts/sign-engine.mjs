@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-// Signs a built engine release (ios/architecture.md D3, US-25 AC18, review R1):
-//   npm run engine:sign                     the daily key (macOS asks to allow the Keychain read)
+// Signs a built engine release (ios/architecture.md D3, US-25 AC18, review R1, N4):
+//   node ios/scripts/sign-engine.mjs        the daily key (macOS asks to allow the Keychain read)
 //   ENGINE_SIGNING_KEY='<line>' node ios/scripts/sign-engine.mjs --key cold
+// Run it directly, never through `npm run`: npm runs lifecycle scripts and puts the
+// repo's node_modules/.bin first on PATH. The Keychain tool is called by absolute path.
 // Step 2 of 2, after release-engine.mjs. It runs no repo code: it imports only Node's
 // own modules and engine-signing.mjs, reads the manifest and bundle from disk, checks
 // them, and signs. The key is never in a process that ran esbuild, tsx or a test.

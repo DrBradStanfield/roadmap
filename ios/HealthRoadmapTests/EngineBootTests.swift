@@ -63,10 +63,10 @@ final class EngineBootTests: XCTestCase {
         let store = try RecordStore(folder: records, engine: choice.engine, deviceId: "test")
         XCTAssertNotNil(store.myData, "the engine read the user's record")
         XCTAssertTrue(store.engineTrial === choice.engine.trial)
-        store.engineTrial?.confirm() // MyDataView's one call, on appear
+        store.confirmEngineTrial() // MyDataView's one call, on appear: My data, then a silent plan (PlanError here)
         XCTAssertNil(try folder.readState(bundled: 0).trying)
         XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version])
-        store.engineTrial?.confirm() // idempotent: the plan confirming later changes nothing
+        store.confirmEngineTrial() // idempotent: the plan confirming later changes nothing
         XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version])
     }
 
@@ -104,10 +104,43 @@ final class EngineBootTests: XCTestCase {
         try folder.stage(release)
         try Data("{not json".utf8).write(to: folder.url.appending(path: "state.json"))
         let choice = try boot()
-        XCTAssertEqual(choice.version, release.version, "a verified staged engine still runs")
+        XCTAssertNil(choice.version, "a rebuilt state runs no download: every staged version is deleted")
+        XCTAssertEqual(folder.stagedVersions(), [])
         let names = try FileManager.default.contentsOfDirectory(atPath: folder.url.path(percentEncoded: false))
         XCTAssertEqual(names.filter { $0.hasPrefix("state.corrupt-") }.count, 1, "the corrupt file is kept aside")
         XCTAssertEqual(try folder.readState(bundled: 0).highWater, fixture.bundled.facts.version)
+    }
+
+    /// Review N5: the watermarks live in the Keychain too, so a corrupt state file
+    /// cannot lower the floor or bring back a revoked version.
+    func testACorruptStateKeepsTheFloorAndRunsNoRevokedVersion() throws {
+        let revoked = fixture.staged(daysAfterBundled: 2)
+        let newer = fixture.version(daysAfterBundled: 3).version
+        try folder.stage(revoked)
+        var state = EngineFolder.State()
+        state.highWater = newer
+        state.floor = newer // a release raised the floor above `revoked`
+        try folder.write(state)
+        try Data("{not json".utf8).write(to: folder.url.appending(path: "state.json"))
+        XCTAssertNil(try boot().version, "the revoked version never runs")
+        let after = try folder.readState(bundled: 0)
+        XCTAssertEqual(after.floor, newer)
+        XCTAssertEqual(after.highWater, newer)
+        XCTAssertEqual(folder.stagedVersions(), [])
+    }
+
+    /// Review N1: My data's confirm also plans the record; an engine whose plan throws is never proven.
+    func testMyDataNeverConfirmsAnEngineWhosePlanThrows() throws {
+        let release = fixture.staged(daysAfterBundled: 2, throwsOnRealRecords: true)
+        try folder.stage(release)
+        let choice = try boot()
+        let records = FileManager.default.temporaryDirectory.appending(path: "data throws \(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
+        let store = try RecordStore(folder: records, engine: choice.engine, deviceId: "test")
+        XCTAssertNotNil(store.myData, "My data drew the record")
+        store.confirmEngineTrial()
+        XCTAssertEqual(try folder.readState(bundled: 0).trying, release.version, "still on trial")
+        XCTAssertEqual(try folder.readState(bundled: 0).proven, [])
     }
 
     func testThePlanScreenConfirmsATrialOnceThePlanRenders() async throws {

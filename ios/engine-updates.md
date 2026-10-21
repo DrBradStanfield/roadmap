@@ -11,31 +11,38 @@ bundle". Nothing more.** Sign only what you would ship.
 
 ## Release from your Mac (the path today)
 
-Two steps, so no repo code ever runs next to a key (review R1): the build runs esbuild
-and the parity check and never holds a key; the signer runs no repo code.
+Two steps, so no repo code ever runs next to a key (review R1, N3, N4): the build runs
+esbuild and the parity check and never holds a key; the signer runs no repo code.
 
 1. Commit the engine change (health-core or `ios/engine`) and `git pull --ff-only`.
-2. `npm run engine:build -- --if-changed`
+2. `npm run engine:release` (the same as `npm run engine:build -- --if-changed`)
+   - It runs `env -u ENGINE_SIGNING_KEY node ios/scripts/release-engine.mjs`, whose
+     first module refuses to go on if a key is in its environment; only then does it
+     load the build code.
    - It builds the engine, checks it against the source on every parity fixture, and
      writes `ios/engine-release/bridge-<id>/`: the bundle as `<sha256>.js` and
-     `manifest.json`, unsigned. It drops any `ENGINE_SIGNING_KEY` from its environment
-     before it starts anything.
+     `manifest.json`, unsigned. Its last line names the sign command.
    - `--if-changed` stops with "nothing to release" when the engine is unchanged.
    - It refuses uncommitted engine source and a second release in the same minute.
-3. `npm run engine:sign`
+   - Build options go after `--`, on the build command only:
+     `npm run engine:build -- --if-changed --min-version <v>`.
+3. `node ios/scripts/sign-engine.mjs`: run it directly, never through `npm run` (npm
+   runs lifecycle scripts and puts the repo's tools first on PATH).
    - It reads the manifest and bundle from disk, checks them (canonical, this bridge,
-     the hash), and signs with the daily key.
+     the hash), and signs with the daily key, read with `/usr/bin/security` by its
+     absolute path.
    - macOS asks: *security wants to use your confidential information stored in
      "health-roadmap-engine-signing" in your keychain.* Type your login password and
      click **Allow**. Never **Always Allow**: that would let any script read the key
      without asking.
 4. `git add ios/engine-release && git commit -m "Engine release <version>" && git pull --ff-only && git push`
 
-`npm run engine:release` runs steps 2 and 3 together. Phones see a release the next
-time the app comes on screen (at most one check in 6 hours) and run it from the launch
-after that. Build options: `--min-version <v>` raises the floor, so no phone runs
-anything older (use it to kill a bad release); `--min-app-build <n>` keeps a release
-from app builds too old for it.
+Phones see a release the next time the app comes on screen (at most one check in 6
+hours) and run it from the launch after that. Build options: `--min-version <v>` raises
+the floor, so no phone runs anything older (use it to kill a bad release);
+`--min-app-build <n>` keeps a release from app builds too old for it. The floor and the
+highest version each phone accepted also live in its Keychain, so a damaged state
+file on the phone cannot lower them.
 
 **What only an app update can change** (the app refuses these in a download): the
 native bridge (`ios/engine/bridge-contract.json`: its hash is the bridge id, and a new
@@ -68,7 +75,7 @@ your Keychain.
 
 - **Lost Mac or Keychain:** build for the cold key, then sign with it in the signer
   only, so the key never reaches the build:
-  `npm run engine:build -- --key cold`, then
+  `npm run engine:build -- --if-changed --key cold`, then
   `ENGINE_SIGNING_KEY='<cold line from 1Password>' node ios/scripts/sign-engine.mjs --key cold`.
   Then make a new daily key in an app update (below).
 - **Rotate or revoke:** add the new public key under a new id to both
@@ -83,11 +90,13 @@ your Keychain.
 
 ## Automatic on push to main (for you to paste; agents never edit workflows)
 
-Once pasted, each successful Deploy on `main` builds the engine with no secret and puts
-what it built (the manifest, the bundle's hash, and the engine source changes since the
-last release) in that run's summary. Read it, then approve the second job, gated by a
-separate `engine-signing` environment. That job runs no repo code: it checks the
-artifact, signs it with openssl and the ci key, and commits only the new files.
+Once pasted, each successful Deploy on `main` builds the engine with no secret and
+uploads it as an artifact. A second job, `verify`, runs no repo code and no npm: it
+downloads that artifact and writes its manifest, its sha256s and the engine source log
+and diffstat (from a fresh checkout at the built commit) into its run summary (review
+N2). Read that summary, then approve the third job, gated by a separate
+`engine-signing` environment. It runs no repo code either: it checks the same artifact,
+signs it with openssl and the ci key, and commits only the new files.
 
 Set up first, in Settings, Environments, New environment `engine-signing`:
 - Required reviewers: you.
@@ -140,29 +149,41 @@ jobs:
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+      - if: steps.release.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: engine-release
+          path: release-out/bridge-${{ steps.release.outputs.bridge }}
+  verify:
+    # No repo code and no npm: what Brad reads before approving `sign` comes from here.
+    needs: build
+    if: needs.build.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.sha }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: engine-release
+          path: built
       - name: What will be signed (read this before approving)
-        if: steps.release.outputs.changed == 'true'
         run: |
           set -euo pipefail
-          dir="release-out/bridge-${{ steps.release.outputs.bridge }}"
           last=$(git log -1 --format=%H -- ios/engine-release || true)
           {
-            echo "## Engine release for bridge ${{ steps.release.outputs.bridge }}, built from ${{ steps.release.outputs.sha }}"
-            echo '```json'; cat "$dir/manifest.json"; echo; echo '```'
-            echo '```'; sha256sum "$dir"/*.js; echo '```'
+            echo "## Engine release for bridge ${{ needs.build.outputs.bridge }}, built from ${{ needs.build.outputs.sha }}"
+            echo '```json'; cat built/manifest.json; echo; echo '```'
+            echo '```'; sha256sum built/*; echo '```'
             echo "### Engine source changed since the last release (${last:-none})"
             echo '```'
             [ -n "$last" ] && git log --oneline "$last"..HEAD -- packages/health-core/src ios/engine
             [ -n "$last" ] && git diff --stat "$last" HEAD -- packages/health-core/src ios/engine
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-      - if: steps.release.outputs.changed == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: engine-release
-          path: release-out/bridge-${{ steps.release.outputs.bridge }}
   sign:
-    needs: build
+    needs: [build, verify]
     if: needs.build.outputs.changed == 'true'
     runs-on: ubuntu-latest
     environment: engine-signing
@@ -215,8 +236,10 @@ jobs:
 ```
 
 Pin the four actions to commit SHAs when you paste it, as the other workflows do. The
-build job installs with `--ignore-scripts` and never sees the key. The sign job sees the
-key and runs only `jq`, `openssl`, `base64` and `git`. It signs the artifact built from
-the commit named in the summary, never a fresh checkout of `main`. If `main` moved and
+build job installs with `--ignore-scripts` and never sees the key. `verify` and `sign`
+run no repo code and no npm: `verify` only reads the artifact and the git history, and
+`sign` sees the key and runs only `jq`, `openssl`, `base64` and `git`. Both use the one
+artifact the build uploaded, built from the commit named in the summary, never a fresh
+build or a checkout of `main`. If `main` moved and
 the push is refused, run it again. Old bundles stay in the folder; the app reads only
 the one its manifest names.

@@ -43,12 +43,14 @@ struct EngineFolder {
     }
 
     let url: URL
+    let watermark: EngineWatermark
 
     static func live() throws -> EngineFolder {
         try EngineFolder(base: .applicationSupportDirectory)
     }
 
-    init(base: URL) throws {
+    init(base: URL, watermark: EngineWatermark = .live) throws {
+        self.watermark = watermark
         var folder = base.appending(path: "Engine", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         var values = URLResourceValues()
@@ -60,23 +62,40 @@ struct EngineFolder {
     private var stateFile: URL { url.appending(path: "state.json") }
 
     /// Throws when the state cannot be read (before first unlock, say): the caller then
-    /// changes nothing and runs the bundled engine. No file yet is a fresh state. A file
-    /// that reads but does not decode is corrupt, not locked (review R8): it is moved
-    /// aside and the state starts again with `highWater` at the bundled engine's version,
-    /// so rollback protection holds; only the record of proven and bad versions is lost.
+    /// changes nothing and runs the bundled engine. Every state read is raised to the
+    /// Keychain's watermarks (`EngineWatermark`), so losing or replacing the file never
+    /// lowers `highWater` or `floor`. No file yet is a fresh state at those marks. A file
+    /// that reads but does not decode is corrupt, not locked (review R8, N5): it is moved
+    /// aside, every staged version is deleted (the record of which were bad went with
+    /// it), and the state starts again with `highWater` at the higher of the Keychain's
+    /// mark and the bundled engine's version, and `floor` at the Keychain's.
     func readState(bundled: Int) throws -> State {
-        guard FileManager.default.fileExists(atPath: stateFile.path(percentEncoded: false)) else { return State() }
+        let marks = watermark.read()
+        guard FileManager.default.fileExists(atPath: stateFile.path(percentEncoded: false)) else {
+            var fresh = State()
+            fresh.highWater = marks.highWater
+            fresh.floor = marks.floor
+            return fresh
+        }
         let data = try Data(contentsOf: stateFile)
-        if let state = try? JSONDecoder().decode(State.self, from: data) { return state }
+        if var state = try? JSONDecoder().decode(State.self, from: data) {
+            state.highWater = max(state.highWater, marks.highWater)
+            state.floor = max(state.floor, marks.floor)
+            return state
+        }
         try? FileManager.default.moveItem(at: stateFile, to: url.appending(path: "state.corrupt-\(UUID().uuidString).json"))
+        for version in stagedVersions() { remove(version) }
         var fresh = State()
-        fresh.highWater = bundled
+        fresh.highWater = max(marks.highWater, bundled)
+        fresh.floor = marks.floor
         try write(fresh)
         return fresh
     }
 
+    /// Writes the state and raises the Keychain's watermarks to it.
     func write(_ state: State) throws {
         try JSONEncoder().encode(state).write(to: stateFile, options: .atomic)
+        watermark.raise(highWater: state.highWater, floor: state.floor)
     }
 
     /// The versions with a staged bundle, newest first.

@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 import { bridgeId } from './build-engine.mjs';
 import { canonicalManifest, DOMAIN, publicKeyOf, signManifest, verifyManifest } from './engine-signing.mjs';
@@ -24,10 +25,12 @@ writeFileSync(pinsFile, JSON.stringify({ daily: publicKeyOf(seed).toString('base
 const out = join(work, 'out');
 const dir = join(out, `bridge-${bridgeId()}`);
 
-/** Step 1, the build. The key is in its environment on purpose: it must drop it. */
+/** Step 1, the build, as `env -u ENGINE_SIGNING_KEY node …` runs it: no key. */
 function build(now: string, extra: string[] = [], env: Record<string, string> = {}) {
+  const clean: Record<string, string | undefined> = { ...process.env, ...env };
+  delete clean.ENGINE_SIGNING_KEY;
   return spawnSync(process.execPath, [script, '--out', out, '--keys', pinsFile, '--allow-dirty', '--now', now, ...extra], {
-    env: { ...process.env, ENGINE_SIGNING_KEY: seed.toString('base64'), ...env },
+    env: clean,
     encoding: 'utf8',
   });
 }
@@ -40,7 +43,7 @@ function sign(key = seed, extra: string[] = []) {
   });
 }
 
-/** Both steps, as `npm run engine:release` runs them. */
+/** Both steps, as Brad runs them: the build, then the signer directly. */
 function release(now: string, extra: string[] = []) {
   const built = build(now, extra);
   return built.status === 0 ? sign() : built;
@@ -57,19 +60,43 @@ describe('release-engine (US-25 AC18)', () => {
     expect(existsSync(dir)).toBe(false);
   });
 
-  it('the build step drops the signing key before any child process starts (review R1)', () => {
-    const probeLog = join(work, 'env-probe.log');
-    const probe = join(work, 'env-probe.cjs');
-    writeFileSync(probe, "require('fs').appendFileSync(process.env.ENV_PROBE_LOG, process.pid + ' ' + (process.env.ENGINE_SIGNING_KEY ? 'KEY' : 'none') + '\\n');\n");
-    const run = build('2026-10-22T02:00:00Z', [], { NODE_OPTIONS: `--require ${probe}`, ENV_PROBE_LOG: probeLog });
+  /** Logs every module the build resolves, and whether the key was in the environment then. */
+  function moduleProbe(): { options: Record<string, string>; log: string } {
+    const log = join(work, `modules-${Date.now()}.log`);
+    const hooks = join(work, 'module-hooks.mjs');
+    const register = join(work, 'module-register.mjs');
+    writeFileSync(hooks, `import { appendFileSync } from 'node:fs';
+export async function resolve(specifier, context, next) {
+  const answer = await next(specifier, context);
+  appendFileSync(process.env.MODULE_PROBE_LOG, answer.url + ' ' + (process.env.ENGINE_SIGNING_KEY ? 'KEY' : 'none') + '\\n');
+  return answer;
+}
+`);
+    writeFileSync(register, `import { register } from 'node:module';\nregister(${JSON.stringify(pathToFileURL(hooks).href)});\n`);
+    writeFileSync(log, '');
+    return { options: { NODE_OPTIONS: `--import ${pathToFileURL(register).href}`, MODULE_PROBE_LOG: log }, log };
+  }
+
+  it('refuses to start with a signing key in its environment, before importing any build code (review N3)', () => {
+    const probe = moduleProbe();
+    const run = spawnSync(process.execPath, [script, '--out', out, '--keys', pinsFile, '--allow-dirty', '--now', '2026-10-22T02:00:00Z'], {
+      env: { ...process.env, ENGINE_SIGNING_KEY: seed.toString('base64'), ...probe.options },
+      encoding: 'utf8',
+    });
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain('ENGINE_SIGNING_KEY');
+    const loaded = readFileSync(probe.log, 'utf8');
+    expect(loaded).not.toContain('build-engine.mjs'); // no build module ever saw the key
+    expect(existsSync(dir)).toBe(false);
+  });
+
+  it('without the key, the modules the build imports run and see none', () => {
+    const probe = moduleProbe();
+    const run = build('2026-10-22T02:30:00Z', [], probe.options);
     expect(run.status, run.stderr).toBe(0);
-    const lines = readFileSync(probeLog, 'utf8').trim().split('\n').map((line) => line.split(' '));
-    // The probe works: the build process itself started with the key in its environment.
-    expect(lines.find(([pid]) => Number(pid) === run.pid)?.[1]).toBe('KEY');
-    const children = lines.filter(([pid]) => Number(pid) !== run.pid);
-    expect(children.length).toBeGreaterThan(5); // tsx and node, per parity fixture and zone
-    expect(children.filter(([, seen]) => seen === 'KEY')).toEqual([]);
-    expect(existsSync(join(dir, 'manifest.sig'))).toBe(false);
+    const builds = readFileSync(probe.log, 'utf8').split('\n').filter((line) => line.includes('build-engine.mjs'));
+    expect(builds.length).toBeGreaterThan(0);
+    expect(builds.filter((line) => line.endsWith(' KEY'))).toEqual([]);
     rmSync(out, { recursive: true, force: true });
   }, 120_000);
 

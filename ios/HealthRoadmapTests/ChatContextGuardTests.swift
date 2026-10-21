@@ -23,6 +23,16 @@ final class ChatContextGuardTests: XCTestCase {
         }
     }
 
+    /// Codex R3: only the keys chatContextOf produces leave the phone.
+    func testAnUnknownKeyNeverLeavesThePhone() throws {
+        let sent = try JSONSerialization.jsonObject(with: body(#"{"unitSystem":"si","sex":"male","record":{"measurements":[{"value":1}]}}"#)) as? [String: Any]
+        let inputs = try XCTUnwrap(sent?["guestInputs"] as? [String: Any])
+        XCTAssertEqual(inputs["unitSystem"] as? String, "si")
+        XCTAssertEqual(inputs["sex"] as? String, "male")
+        XCTAssertNil(inputs["record"], "the extra key was dropped")
+        XCTAssertEqual(Set(inputs.keys), ["unitSystem", "sex"])
+    }
+
     func testAnOversizedContextIsRefused() {
         let padding = String(repeating: "x", count: ChatClient.maxContextBytes)
         XCTAssertThrowsError(try body(#"{"unitSystem":"si","pad":"\#(padding)"}"#))

@@ -67,6 +67,6 @@ struct EngineReleaseFixture {
     /// A fresh, empty folder for one test.
     static func folder() throws -> EngineFolder {
         let base = FileManager.default.temporaryDirectory.appending(path: "engine test \(UUID().uuidString)", directoryHint: .isDirectory)
-        return try EngineFolder(base: base)
+        return try EngineFolder(base: base, watermark: EngineWatermark(service: "engine-test-\(UUID().uuidString)"))
     }
 }

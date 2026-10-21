@@ -18,7 +18,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { fingerprint, KEYCHAIN_SERVICE, publicKeyOf } from './engine-signing.mjs';
+import { fingerprint, KEYCHAIN_SERVICE, publicKeyOf, SECURITY } from './engine-signing.mjs';
 
 const ios = join(dirname(fileURLToPath(import.meta.url)), '..');
 const keysFile = join(ios, 'engine/signing-keys.json');
@@ -35,7 +35,7 @@ function seed() {
 }
 
 function keychainHas(account) {
-  return spawnSync('security', ['find-generic-password', '-s', KEYCHAIN_SERVICE, '-a', account], { stdio: 'ignore' }).status === 0;
+  return spawnSync(SECURITY, ['find-generic-password', '-s', KEYCHAIN_SERVICE, '-a', account], { stdio: 'ignore' }).status === 0;
 }
 
 /** Writes a file-held key once, 0600 in a 0700 folder. */
@@ -72,7 +72,7 @@ if (opts.add) {
   const cold = seed();
   // The secret goes to `security` on stdin (its interactive mode), never on a
   // command line where other processes could read it.
-  const added = spawnSync('security', ['-i'], {
+  const added = spawnSync(SECURITY, ['-i'], {
     input: `add-generic-password -s ${KEYCHAIN_SERVICE} -a daily -l "Health Roadmap engine signing key (daily)" -T "" -w ${daily.toString('base64')}\n`,
     stdio: ['pipe', 'ignore', 'pipe'],
   });
