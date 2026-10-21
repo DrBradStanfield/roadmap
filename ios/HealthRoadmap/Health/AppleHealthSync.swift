@@ -52,6 +52,24 @@ final class AppleHealthSync {
         status = !client.isAvailable ? .unavailable : memory.connected ? .working : .notConnected
     }
 
+    /// True once the person connected Apple Health on this phone.
+    var connected: Bool { memory.connected }
+
+    /// "Delete all my data" (US-25 AC16): deletes the samples this app wrote to Health
+    /// and forgets their versions. The import anchors stay, so readings already in
+    /// Health from before the erase are not imported again (D6). False when Health
+    /// refused, for the erase to say so. Never connected: nothing to delete.
+    func eraseOwnSamples() async -> Bool {
+        guard memory.connected, client.isAvailable else { return true }
+        do {
+            try await client.deleteOwnSamples()
+        } catch {
+            return false
+        }
+        memory.forgetWritten()
+        return true
+    }
+
     /// The "Connect Apple Health" row: Apple's permission sheet, then the first import.
     func connect() async {
         guard client.isAvailable else { return }

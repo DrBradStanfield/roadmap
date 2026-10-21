@@ -12,7 +12,7 @@ struct HealthRoadmapApp: App {
             switch parts {
             case .success(let parts):
                 RootView(engine: parts.engine, store: parts.store, sync: parts.sync)
-                    .environment(parts.reminders).environment(parts.reminderTaps).environment(parts.health)
+                    .environment(parts.reminders).environment(parts.reminderTaps).environment(parts.health).environment(parts.eraser)
                     .task { await parts.sync.start() }
                     .onChange(of: scenePhase) { _, phase in follow(phase, parts.sync) }
             case .failure(let error):
@@ -73,6 +73,7 @@ struct AppParts {
     /// Apple Health in and out (ios/architecture.md D6). Started at launch, so its
     /// observers are in place when iOS wakes the app for new Health data.
     let health: AppleHealthSync
+    let eraser: DataEraser
 
     init() throws {
         engine = try HealthEngine()
@@ -88,5 +89,7 @@ struct AppParts {
         let sync = self.sync
         health = AppleHealthSync(store: store, engine: engine, client: HealthKitClient()) { await sync.syncNow() }
         health.start()
+        let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
+        eraser = DataEraser(engine: engine, store: store, sync: sync, chat: chat, reminders: reminders, health: health)
     }
 }

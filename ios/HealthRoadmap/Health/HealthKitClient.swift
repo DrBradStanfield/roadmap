@@ -38,6 +38,17 @@ final class HealthKitClient: HealthStoreClient {
         return HealthBatch(samples: samples, anchor: data)
     }
 
+    func deleteOwnSamples() async throws {
+        // Ours by source, which every sample we saved carries; each with a
+        // `healthroadmap:` sync id (D6). A kind never allowed for writing holds none.
+        let mine = HKQuery.predicateForObjects(from: HKSource.default())
+        for kind in HealthKind.allCases where kind != .height && canWrite(kind) {
+            for type in Self.quantityTypes(kind) {
+                _ = try await store.deleteObjects(of: type, predicate: mine)
+            }
+        }
+    }
+
     func canWrite(_ kind: HealthKind) -> Bool {
         Self.quantityTypes(kind).allSatisfy { store.authorizationStatus(for: $0) == .sharingAuthorized }
     }

@@ -31,7 +31,7 @@ extension HealthEngine {
 
     /// Calls an async door, then reads its answer. JavaScriptCore runs pending promise
     /// work before a call returns, so the answer is there; "pending" would mean it was not.
-    private func settled<T: Decodable>(_ type: T.Type, _ name: String, _ arguments: [Any]) throws -> T {
+    func settled<T: Decodable>(_ type: T.Type, _ name: String, _ arguments: [Any]) throws -> T {
         _ = try call(name, arguments)
         let answer = try JSONDecoder().decode(Settled<T>.self, from: Data(call("settledJson", []).utf8))
         guard answer.ok, let value = answer.value else { throw EngineError.callFailed(answer.message ?? "no answer") }

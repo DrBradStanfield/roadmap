@@ -58,6 +58,7 @@ struct MyDataView: View {
                     SupplementsSection(store: store, supplements: data.supplements, saved: saved)
                     RemindersSection()
                     AppleHealthSection()
+                    RecordSection(store: store, sync: sync)
                     Section {
                     } footer: {
                         Label(SyncStatusText.myDataFooter(provider: sync.provider, earlier: sync.syncedBefore), systemImage: "lock.shield")

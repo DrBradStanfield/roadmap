@@ -75,13 +75,17 @@ your first chat message.
 us install and crash counts if you share them with developers.
 
 **Deleting your data.** Delete all my data, in the app, erases the record on this
-iPhone and in your connected cloud, cancels reminders and removes the values the app
-wrote to Apple Health. Deleting the app also deletes the record on this iPhone.
+iPhone and in your connected cloud, deletes your chat history, cancels reminders and
+removes the values the app wrote to Apple Health. Your other devices erase their copies
+when they next sync. Export my record saves a copy of the file first, if you want one.
+Deleting the app also deletes the record on this iPhone.
 
 **Contact.** drstanfield.com/pages/contact
 
 (Before publishing: check the chat retention sentence against what the server
 really keeps; US-15 AC7 purges chat text on a schedule.)
+(Before publishing: the Apple Health clause is built (US-25 AC16) but checked only
+against a fake Health store; confirm on a real iPhone.)
 
 ## App Review notes
 

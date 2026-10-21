@@ -35,6 +35,14 @@ struct ChatView: View {
                 if let history { ChatHistoryList(history: history, open: open) }
             }
         }
+        // "Delete all my data" erased the history: the conversation on screen goes too,
+        // and the next question starts a new one (US-25 AC13).
+        .onChange(of: store.erasures) {
+            lines = []
+            error = nil
+            conversationId = UUID().uuidString.lowercased()
+            history?.refresh()
+        }
         .task {
             if history == nil, let folder = try? RecordStore.appFolder() {
                 history = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
@@ -152,6 +160,10 @@ struct ChatView: View {
         let earlier = lines.filter { !$0.failed }.map { ChatClient.Turn(role: $0.role == .user ? "user" : "assistant", content: $0.text) }
         let isNew = lines.isEmpty
         let conversation = conversationId
+        // An erase while the answer streams empties `lines` and the history: from then on
+        // this turn is dropped, never indexed into the new lines or saved (review R1).
+        let erasures = store.erasures
+        let askedAt = ChatHistoryStore.erasures
         draft = ""
         error = nil
         sending = true
@@ -165,6 +177,7 @@ struct ChatView: View {
             let body = try ChatClient.body(message: question, conversationId: conversation, history: earlier, contextJSON: context)
             var finished = false
             for try await event in ChatClient().ask(body: body) {
+                guard store.erasures == erasures else { return }
                 switch event {
                 case .status(let text): status = text
                 case .text(let text): lines[answerIndex].text += text
@@ -174,13 +187,15 @@ struct ChatView: View {
                     // The final reply replaces what streamed (US-15 AC16).
                     lines[answerIndex].text = content ?? lines[answerIndex].text
                     finished = true
-                    history?.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: lines[answerIndex].text, isFallback: isFallback))
+                    history?.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: lines[answerIndex].text, isFallback: isFallback), askedAt: askedAt)
                 case .other: break
                 }
             }
             // A stream that ended with no `done` line was cut off: never history.
+            guard store.erasures == erasures else { return }
             if !finished { throw AppAttestClient.Failure.server(status: 0, message: "The answer was cut off. Please ask again.") }
         } catch {
+            guard store.erasures == erasures else { return }
             lines[answerIndex].failed = true
             if lines[answerIndex].text.isEmpty { lines[answerIndex].text = "No answer." }
             self.error = error.localizedDescription

@@ -30,6 +30,11 @@ struct HealthSyncMemory {
         (defaults.dictionary(forKey: "appleHealth.written")?[syncId] as? NSNumber)?.int64Value ?? 0
     }
 
+    /// After an erase deleted our samples from Health: nothing is written any more.
+    func forgetWritten() {
+        defaults.removeObject(forKey: "appleHealth.written")
+    }
+
     func setWritten(_ version: Int64, for syncId: String) {
         var written = defaults.dictionary(forKey: "appleHealth.written") ?? [:]
         written[syncId] = NSNumber(value: version)

@@ -56,7 +56,7 @@ function memoryHost(historyText: string | null, nowIso: string, deviceId: string
 let settled: string | null = null;
 
 /** Runs an async door; its answer is read with `settledJson` after the call returns. */
-function settle(work: Promise<unknown>): string {
+export function settle(work: Promise<unknown>): string {
   settled = null;
   work.then(
     (value) => { settled = JSON.stringify({ ok: true, value }); },
@@ -97,6 +97,18 @@ export function chatRecordExchangeJson(historyText: string | null, exchangeJson:
 export function chatDeleteJson(historyText: string | null, conversationId: string, nowIso: string, deviceId: string): string {
   const { host, written } = memoryHost(historyText, nowIso, deviceId);
   return settle(ChatSession.open(host).then((s) => s.deleteConversation(conversationId)).then(() => JSON.stringify(written())));
+}
+
+/**
+ * Tombstones every conversation for "delete all my data" (US-11 AC2): the
+ * web's ChatSession.eraseAll. Resolves to the new file's text, or null when
+ * there is no file. Rejects when the file cannot be read.
+ */
+export async function eraseChatText(historyText: string | null, nowIso: string, deviceId: string): Promise<string | null> {
+  const { host, written } = memoryHost(historyText, nowIso, deviceId);
+  await (await ChatSession.open(host)).eraseAll();
+  const body = written();
+  return body == null ? null : JSON.stringify(body);
 }
 
 // --- Lab upload review -------------------------------------------------------

@@ -11,11 +11,12 @@ import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { LiveRefresh } from '../../packages/health-core/src/live-refresh';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import type { RecordHost } from '../../packages/health-core/src/record-host';
-import { RecordSession, saveRecordInto } from '../../packages/health-core/src/record-session';
+import { ERASE_UNREACHABLE, RecordSession, saveRecordInto } from '../../packages/health-core/src/record-session';
 import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/record-transfer';
 import { describeStorageFailure } from '../../packages/health-core/src/sync-manager';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { eraseChatText } from './app-doors';
 import { applyEdit, type Edit } from './my-data';
 
 export type Provider = 'dropbox' | 'google-drive';
@@ -393,6 +394,47 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
   session.edit(() => outcome.file, erase);
   at.unflushed += 1;
   return JSON.stringify({ ok: true, record: JSON.stringify(session.file), erase: session.eraseIdentity });
+}
+
+/**
+ * "Delete all my data" with a cloud open (US-25 AC16, US-11): health-core's
+ * RecordSession.deleteAllData, the web's order and guard. The cloud record is
+ * read first; one that cannot be read refuses, and nothing changes anywhere,
+ * the chat history included. Then the chat tombstones, written by Swift's
+ * `keepChat` inside that step (the phone's own file; it answers '' or why not),
+ * so they land before the record goes up (Codex R3). Then the erased record, by a
+ * higher eraseEpoch: the file stays in the cloud with the erase in it, so other
+ * devices take it in (US-11 AC6). The app's reminders have no server to tear
+ * down: they follow the epoch (ReminderScheduler).
+ *
+ * `erased`: the working copy is now the erased record, written or not. When
+ * the write failed, the session mirrored it onto the phone, marked pending,
+ * and the next flush or open sends it: the screen shows it, and the app says
+ * the cloud still has to take it. On success the session wiped the pre-erase
+ * mirror; the erased record goes in its place, so an offline launch opens on it.
+ */
+export async function cloudErase(historyText: string | null, nowIso: string, keepChat?: (text: string) => string): Promise<string> {
+  const at = open;
+  if (!at) return JSON.stringify({ success: false, error: ERASE_UNREACHABLE, chatErased: false, chatHistory: null, erased: false, view: null });
+  const before = at.session.eraseIdentity;
+  let chatHistory: string | null = null;
+  const result = await at.session.deleteAllData({
+    chat: async () => ({
+      eraseAll: async () => {
+        chatHistory = await eraseChatText(historyText, nowIso, at.host.deviceId());
+        const refused = chatHistory === null ? '' : keepChat?.(chatHistory);
+        if (refused) throw new Error(refused);
+      },
+    }),
+  });
+  const erased = at.session.eraseIdentity !== before;
+  if (result.success) {
+    await saveRecordInto(at.phone, at.session.file, { deviceId: at.host.deviceId(), now: nowIso }).catch(() => {});
+    at.unflushed = 0;
+  } else if (erased) {
+    at.unflushed += 1; // the background flush retries it
+  }
+  return JSON.stringify({ ...result, chatHistory, erased, view: erased ? JSON.parse(view(at)) : null });
 }
 
 /** The app came to the foreground: re-read (US-34), and retry a refused save. */

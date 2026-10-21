@@ -53,7 +53,7 @@ struct SyncView: View {
                         if signingIn == provider { ProgressView() }
                     }
                 }
-                .disabled(signingIn != nil || !provider.isConfigured)
+                .disabled(signingIn != nil || !provider.isConfigured || sync.erasing)
             }
         } footer: {
             VStack(alignment: .leading, spacing: 8) {
@@ -90,6 +90,7 @@ struct SyncView: View {
 
         Section {
             Button("Disconnect from \(provider.label)", role: .destructive) { confirmDisconnect = true }
+                .disabled(sync.erasing)
                 .confirmationDialog("Disconnect from \(provider.label)?", isPresented: $confirmDisconnect, titleVisibility: .visible) {
                     Button("Disconnect", role: .destructive) { Task { await disconnect(provider) } }
                 } message: {
@@ -115,6 +116,7 @@ struct SyncView: View {
     }
 
     private func disconnect(_ provider: CloudProvider) async {
+        guard !sync.erasing else { return } // refused, not unreachable (re-check N3)
         if !(await sync.disconnect()) {
             message = "\(provider.label) could not be reached, so changes made on other devices since the last sync are not on this iPhone. Everything saved on this iPhone is kept."
         }
