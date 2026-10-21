@@ -140,6 +140,14 @@ describe('importDeviceSamples: a reading\'s own day and time', () => {
     expect(file.measurements.filter((row) => row.status === 'active').map((row) => row.externalId)).toEqual(['au']);
   });
 
+  it('takes a reading from a zone ahead of the phone\'s, already on tomorrow there', () => {
+    // 10:25 UTC is 00:25 on the 21st in Kiritimati (+14) but still the 20th in
+    // Auckland, Los Angeles and UTC: a past reading, not a future one.
+    const result = run(empty(), [sample({ externalId: 'ki', measuredAt: '2026-10-21T00:25:00+14:00' })], '2026-10-20T10:30:00.000Z');
+    expect(result.added).toBe(1);
+    expect(result.file.measurements[0].recordedAt).toBe('2026-10-21T00:25:00.000+14:00');
+  });
+
   it('keys the slot on the day where the reading was taken', () => {
     const { file } = run(empty(), [sample({ externalId: 'hk-1', measuredAt: '2026-10-20T22:00:00-07:00' })]);
     expect(file.measurements[0].recordedAt.slice(0, 10)).toBe('2026-10-20');

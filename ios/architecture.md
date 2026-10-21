@@ -185,8 +185,14 @@ Decisions made building it (agent, 2026-10-21; Brad to confirm):
   missing (Health shows only the half the person allowed) lands neither.
 - **Single device only.** These rules hold on one phone. Across devices the merge keeps the
   newest-written row of a slot, so a phone import written after a web-typed value for the
-  same day can win the merge, and a later-written earlier reading can stay active. Fixing
-  that is merge-class work for the cloud-sync slice (adversary plus Codex).
+  same day can win the merge, and a later-written earlier reading can stay active. The write
+  version (below) has the same limit: when a merge picks another device's correction with a
+  shorter chain, its version does not rise, so Health keeps the old value. Fixing these is
+  merge-class work for the cloud-sync slice (adversary plus Codex); a version of (chain
+  length, write time) or a lamport clock would rise across both.
+- **"Not yet happened" compares instants**, with five minutes for a device clock running
+  ahead: a reading's day is the day where it was taken, which in a zone ahead of the phone's
+  is already the phone's tomorrow (fix-scoped re-check, 2026-10-21).
 - **Height** is the profile's: Apple Health fills an empty height and never replaces one.
   It is not written back: the profile has no source, so an imported height would echo.
 - **Blood glucose is not read.** It is a catalogue lab value, and lab rows have no
@@ -211,8 +217,11 @@ asked for during one loops once more. Its decisions:
   anchor would skip every older reading once the person allows it in Settings (found on the
   simulator 2026-10-21). Limits: a read turned off and on again later misses what arrived
   while it was off; a kind holding only our own samples re-reads its history each time
-  (cost only); a reading the engine skips (a future day from a clock running ahead) is not
-  offered again.
+  (cost only); a reading the engine skips (out of range, or timed ahead of the phone) is not
+  offered again; and once blood pressure has an anchor, readings that arrive while the
+  person has turned one half off are refused as half pairs and not offered again.
+  Simulator gotcha: versions written before the chain-length rule were milliseconds, so a
+  simulator that ran an earlier build needs the app deleted before testing corrections.
 - **Our own samples are never read back:** our bundle id, or our `healthroadmap:` sync
   identifier prefix (a sample our app wrote on the person's other iPhone, synced by Health).
 - **Locked phone:** HealthKit's `errorDatabaseInaccessible` becomes "waiting for unlock";

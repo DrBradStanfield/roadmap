@@ -28,7 +28,6 @@
  * (widget-src/src/lib/constants.ts `formatShortDate`), not as a UTC day. A
  * wall-clock time labelled Z would show on the wrong day (review R1, 2026-10-21).
  */
-import { localDay } from './merge';
 import { isCalendarDay } from './measurement-history';
 import { measurementValueFault, newId, slotKey, stampUpdatedAt } from './record-edits';
 import { createMeasurement, type FileMeasurement, type RoadmapFile } from './roadmap-file';
@@ -79,12 +78,21 @@ export interface DeviceImportResult {
 /** An instant with its UTC offset (or Z): the date and time are where the reading was taken. */
 const MEASURED_AT = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 
-/** The row's `recordedAt` for a reading, or null when its time is unreadable or its day not yet lived. */
+/** A device clock a little ahead of the phone's is not a reading from the future. */
+const CLOCK_SKEW_MS = 5 * 60_000;
+
+/**
+ * The row's `recordedAt` for a reading, or null when its time is unreadable or
+ * has not happened. "Not yet" compares instants: the reading's day is the day
+ * where it was taken, which in a zone ahead of the phone's is already the
+ * phone's tomorrow (re-check F1, 2026-10-21).
+ */
 function recordedAtOf(sample: DeviceSample, now: string): string | null {
   const parts = typeof sample.measuredAt === 'string' ? MEASURED_AT.exec(sample.measuredAt) : null;
-  if (!parts || Number.isNaN(Date.parse(sample.measuredAt))) return null;
+  const at = parts ? Date.parse(sample.measuredAt) : Number.NaN;
+  if (!parts || Number.isNaN(at) || at > Date.parse(now) + CLOCK_SKEW_MS) return null;
   const [, day, time, offset] = parts;
-  return isCalendarDay(day) && day <= localDay(now) ? `${day}T${time}.000${offset}` : null;
+  return isCalendarDay(day) ? `${day}T${time}.000${offset}` : null;
 }
 
 function heightFault(value: number): boolean {
