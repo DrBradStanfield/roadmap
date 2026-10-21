@@ -69,7 +69,7 @@ import {
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
 import { ROADMAP_DOC } from '@roadmap/health-core';
-import { type EraseResult, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
+import { type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
 import { Sentry } from '../lib/sentry';
@@ -630,6 +630,12 @@ export class RoadmapStore {
    */
   deleteUserData(beforeErase?: () => Promise<void>): Promise<EraseResult> {
     return this.session.erase(beforeErase);
+  }
+
+  /** "Delete all my data": server teardown, chat tombstones, then the record,
+   *  in the session's order (US-09 AC23, US-11 AC2). */
+  deleteAllData(steps: EraseSteps): Promise<EraseResult & { chatErased: boolean }> {
+    return this.session.deleteAllData(steps);
   }
 
   /** Force-persist any pending changes (call before navigation). */

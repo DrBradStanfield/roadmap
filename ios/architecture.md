@@ -98,12 +98,18 @@ problem D2 exists to avoid.
 **Confirmed by Brad on 2026-10-21:** "the sync and erase logic should go into the shared
 engine." His earlier speed objection is answered by measurement: it is the same TypeScript,
 and moving it grew the web bundle (`health-plan-v2.js`) by about 2.1 KB, 1.1 KB gzipped,
-on 871 KB (steps 1 to 5 of branch `claude/d4-engine-move` and their review fix). The engine now holds the erase
-(`erase.ts`), the record session with its save loop, re-read and erase guard
-(`record-session.ts`), the host interface the app implements (`record-host.ts`) and the
-storage self-test (`storage-self-test.ts`). `engine-portability.test.ts` runs them in an
-empty JavaScript context, as JavaScriptCore will. Still to move: the live re-read's timing,
-the guest lift and copy-down, chat history, then the row-write rules (D4b).
+on 871 KB (steps 1 to 5 of branch `claude/d4-engine-move` and their review fix); steps 6 to 8
+added 1.8 KB more, 0.5 KB gzipped. The engine now holds the erase (`erase.ts`), the record
+session with its save loop, re-read, erase order and erase guard (`record-session.ts`), the
+re-read timing (`live-refresh.ts`, driven by `visible()`, `hidden()` and `pushed()`), the lift
+on connect and the copy-down (`record-transfer.ts`), chat history (`chat-session.ts`), the
+host interface the app implements (`record-host.ts`) and the storage self-test
+(`storage-self-test.ts`). `engine-portability.test.ts` runs them in an empty JavaScript
+context, as JavaScriptCore will. Still to move: the row-write rules (D4b). The My data
+tab (`ios/engine/my-data.ts`) writes through health-core's `record-edits` directly today,
+one pure edit per call; once the app keeps a session open it should run each edit through
+`RecordSession.edit` with the page's erase stamp, so its writes get the save loop, the
+merge on conflict and the erase guard.
 
 ### D5 · Storage: on the phone by default, Dropbox or Google Drive optional (Brad, 2026-10-21)
 

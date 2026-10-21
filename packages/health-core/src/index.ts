@@ -284,10 +284,12 @@ export {
   ERASE_UNREACHABLE,
   saveRecordInto,
   type EraseResult,
+  type EraseSteps,
 } from './record-session';
 export type { RecordHost } from './record-host';
 export { LiveRefresh, type LiveRefreshOptions } from './live-refresh';
 export { liftDeviceCopy, copyCloudDown } from './record-transfer';
+export { ChatSession, type ChatConversationSummary } from './chat-session';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 

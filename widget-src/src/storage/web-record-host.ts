@@ -10,6 +10,7 @@ import {
   LocalStorageAdapter,
   clearLocalNamedFiles,
   latchOnOtherTabsLogOff,
+  localEraseGeneration,
   roadmapLocalWritesStopped,
   stopRoadmapLocalWrites,
 } from './local-storage-adapter';
@@ -105,7 +106,19 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     },
     remoteChanged: () => notify(REMOTE_CHANGED_EVENT),
     failureCause: storageFailureClass,
-    report(error: unknown, at: { op: 'persist'; cause?: string; repeat: boolean }) {
+    report(error: unknown, at: { op: 'persist' | 'pre-erase' | 'chat-erase'; cause?: string; repeat: boolean }) {
+      // The erase's best-effort steps: an orphaned server row or chat history
+      // left behind is reported, never silently swallowed.
+      if (at.op === 'pre-erase') {
+        console.warn('Pre-erase teardown failed', error);
+        Sentry.captureException(error, { tags: { area: 'reminders', op: 'pre-erase' } });
+        return;
+      }
+      if (at.op === 'chat-erase') {
+        console.warn('Chat-history erase failed', error);
+        Sentry.captureException(error, { tags: { area: 'chat-history', op: 'erase' } });
+        return;
+      }
       console.warn('Cloud sync failed');
       if (at.repeat) return;
       Sentry.captureException(recordFailure(error, 'Cloud sync failed'), {
@@ -117,7 +130,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     // The other record files (chat-history.json) sit under the adapter's
     // named-file prefix, which only disconnect() clears — and disconnect()
     // after an erase would delete the erased record file just written.
-    return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles };
+    return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles, eraseFence: localEraseGeneration };
   }
   const device = new LocalStorageAdapter();
   return {

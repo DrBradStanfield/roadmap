@@ -86,6 +86,14 @@ const SAVE_FAILED = 'Cloud sync failed — your latest changes are still on this
 
 export interface EraseResult { success: boolean; error?: string; warning?: string }
 
+/** The steps "delete all my data" runs before the record's own erase. */
+export interface EraseSteps {
+  /** Teardown on a server the caller owns (the reminders row), best-effort. */
+  teardown?: () => Promise<void>;
+  /** The chat history to tombstone; null when there is none. */
+  chat?: () => Promise<{ eraseAll(): Promise<void> } | null>;
+}
+
 /**
  * Merge a raw record body into `target` (migrate + read-merge-write). The one
  * cross-store transfer: the failure mirror, the connect-time lift-up and the
@@ -323,6 +331,36 @@ export class RecordSession {
       const message = (e as Error).message;
       return erased ? { success: true, warning: message } : { success: false, error: message };
     }
+  }
+
+  /**
+   * "Delete all my data": the stored record is read first (erase()), then, in
+   * this order and only then, the caller's server teardown and the chat
+   * history's tombstones, then the record erase itself (US-09 AC23, US-11 AC2).
+   * Both steps are best-effort: an unreachable server or a chat cloud that
+   * will not answer must never trap the user's data, so each failure is
+   * reported and the erase goes on. `chatErased` says whether the chat step
+   * landed, so the page never claims a deletion that did not happen.
+   */
+  async deleteAllData(steps: EraseSteps = {}): Promise<EraseResult & { chatErased: boolean }> {
+    let chatErased = false;
+    const result = await this.erase(async () => {
+      try {
+        await steps.teardown?.();
+      } catch (error) {
+        this.host.report(error, { op: 'pre-erase', repeat: false });
+      }
+      // Through the caller's own chat session, so an open chat panel's copy is
+      // the one erased, and BEFORE the record erase, which then clears the
+      // device tier's named files underneath it (US-11 AC3).
+      try {
+        await (await steps.chat?.())?.eraseAll();
+        chatErased = true;
+      } catch (error) {
+        this.host.report(error, { op: 'chat-erase', repeat: false });
+      }
+    });
+    return { ...result, chatErased };
   }
 
   /** Force-persist any pending changes (call before navigation). */

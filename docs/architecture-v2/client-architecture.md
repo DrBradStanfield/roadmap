@@ -59,7 +59,7 @@ Three layers: a pure data model + merge engine in `health-core` (so CI exercises
 - `roadmap-doc.ts` — `health-roadmap.json` as a `DocumentSpec`, shared by the widget and the hosted MCP server so both migrate/merge the record identically
 - `document-path.ts` — the organised-archive folder+filename scheme for uploaded documents
 - `lab-catalog.ts`'s `labSlotKey()` — normalises a lab name to its merge-dedup slot key
-- `erase.ts` (the erased record), `record-session.ts` (change detection, erase identity, session timings), `storage-self-test.ts`, `record-host.ts` (what a client gives the engine) — the record engine the widget's store and the iPhone app share (ios/architecture.md D4); `engine-portability.test.ts` keeps them free of DOM and Node
+- `erase.ts` (the erased record), `record-session.ts` (the session: save loop, re-read, erase, erase guard, change detection), `live-refresh.ts` (US-34 re-read timing), `record-transfer.ts` (lift on connect, copy-down before a switch), `chat-session.ts` (chat history), `storage-self-test.ts`, `record-host.ts` (what a client gives the engine) — the record engine the widget's store and the iPhone app share (ios/architecture.md D4); `engine-portability.test.ts` keeps them free of DOM and Node
 
 #### Shell (widget-src/storage)
 

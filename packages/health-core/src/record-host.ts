@@ -64,9 +64,12 @@ interface HostBase {
   /** Why a device store refused a write, as one word from a closed set
    *  ('other' when it cannot say). Asked only on the device tier. */
   failureCause(error: unknown): string;
-  /** A save failed. `repeat`: this kind of device refusal was already reported
-   *  this session. Gets the error and closed tags only, never record content. */
-  report(error: unknown, at: { op: 'persist'; cause?: string; repeat: boolean }): void;
+  /** Something the user cannot fix failed and must still be seen: a save
+   *  (`persist`), or a best-effort erase step (`pre-erase`, the caller's
+   *  server teardown; `chat-erase`, the chat history's tombstones). `repeat`:
+   *  this kind of device refusal was already reported this session. Gets the
+   *  error and closed tags only, never record content. */
+  report(error: unknown, at: { op: 'persist' | 'pre-erase' | 'chat-erase'; cause?: string; repeat: boolean }): void;
 }
 
 /**
@@ -82,5 +85,8 @@ export type RecordHost =
       /** After an erase: clear the other record files here (chat history) and
        *  move the erase fence, so no stale writer brings them back (US-11). */
       clearNamedFiles(): void;
+      /** The content-free marker `clearNamedFiles` moves: a chat session
+       *  that sees it move drops its pre-erase copy (US-11 AC3b). */
+      eraseFence?(): string | null;
     })
   | (HostBase & { tier: 'cloud'; mirror: DeviceMirror });

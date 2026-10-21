@@ -17,7 +17,6 @@ import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { SHOPIFY_SURFACE } from './build-flags';
-import { Sentry } from './sentry';
 import type { StorageAdapter } from '@roadmap/health-core';
 import type {
   AddMeasurementResult,
@@ -248,37 +247,11 @@ export function setPreEraseHook(fn: () => Promise<void>): void {
 
 export async function deleteUserData(): Promise<{ success: boolean; error?: string; warning?: string; chatErased: boolean }> {
   if (!store) return { success: false, error: 'Data store not initialised', chatErased: false };
-  // Both steps below run only once the store has read the record it erases:
-  // an erase that cannot read it is refused, and must have changed nothing
-  // here either (US-09 AC23).
-  let chatErased = false;
-  const result = await store.deleteUserData(async () => {
-    try {
-      await preEraseHook?.();
-    } catch (error) {
-      // Best-effort: an unreachable server must never block a user from erasing
-      // their own device. The orphaned row is reported, not silently swallowed.
-      console.warn('Pre-erase teardown failed', error);
-      Sentry.captureException(error, { tags: { area: 'reminders', op: 'pre-erase' } });
-    }
-    // Chat history is a SEPARATE file the record erase never touches, and its
-    // merge is append-only — so every conversation is tombstoned. Through the
-    // singleton, so an open chat panel's instance is the one erased, and BEFORE
-    // the record erase, which then clears the local-mode keys underneath it.
-    // Best-effort, like the hook above: a cloud that won't answer must not trap
-    // the user's data on their device.
-    // Reported, not just swallowed: the caller's post-erase notice must not claim
-    // a deletion that did not happen. The tombstones are already in the singleton,
-    // so the next recordExchange carries them through sync.save.
-    try {
-      await (await getChatHistory())?.eraseAll();
-      chatErased = true;
-    } catch (error) {
-      console.warn('Chat-history erase failed', error);
-      Sentry.captureException(error, { tags: { area: 'chat-history', op: 'erase' } });
-    }
-  });
-  return { ...result, chatErased };
+  // The order and the best-effort rules are the record session's (health-core
+  // deleteAllData): it reads the record first, and an erase that cannot read
+  // it is refused before either step runs (US-09 AC23). Chat goes through the
+  // singleton, so an open chat panel's instance is the one erased.
+  return store.deleteAllData({ teardown: preEraseHook ?? undefined, chat: getChatHistory });
 }
 
 // ---------------------------------------------------------------------------
