@@ -280,14 +280,13 @@ export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-
 export { mergeFiles, stampFields, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
 export { buildErasedFile, type EraseInputs } from './erase';
 export {
-  REMOTE_POLL_MS,
-  REMOTE_THROTTLE_MS,
   RecordSession,
   ERASE_UNREACHABLE,
   saveRecordInto,
   type EraseResult,
 } from './record-session';
 export type { RecordHost } from './record-host';
+export { LiveRefresh, type LiveRefreshOptions } from './live-refresh';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 

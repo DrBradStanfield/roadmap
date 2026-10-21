@@ -48,6 +48,10 @@ interface HostBase {
    *  tab writes), read synchronously; null when there is none. May throw when
    *  the bytes cannot be read. Leave it out when the host has no such copy. */
   deviceRecord?(): unknown;
+  /** The store's own change signal (US-34): call `onChange` when the record
+   *  may have changed elsewhere; answer the stop. Leave it out when the
+   *  store has none, and the live re-read polls instead. */
+  watch?(onChange: () => void): () => void;
   /** This device's id, for the merge's `lastDeviceId`. Read once, at open. */
   deviceId(): string;
   /** Read at each use, never captured, so a test's fake clock applies. */

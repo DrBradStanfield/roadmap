@@ -90,6 +90,13 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     // The localStorage record: a guest or on-device fallback tab keeps its
     // documents there, whatever record the erase came in on (US-09 AC23).
     deviceRecord: () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body,
+    ...(store.watch ? {
+      watch(onChange: () => void) {
+        const watching = new AbortController();
+        store.watch!(ROADMAP_FILE_NAME, onChange, watching.signal);
+        return () => watching.abort();
+      },
+    } : {}),
     deviceId: getDeviceId,
     clock: { now: () => Date.now() },
     timers: {

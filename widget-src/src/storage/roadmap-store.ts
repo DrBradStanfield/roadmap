@@ -27,9 +27,8 @@ import { sha256Blob } from '../lib/archive-payloads';
 import {
   buildDocumentRef,
   type BulkRow,
+  LiveRefresh,
   RecordSession,
-  REMOTE_THROTTLE_MS,
-  REMOTE_POLL_MS,
   saveRecordInto,
   bulkAppendValues,
   splitDocumentRef,
@@ -645,84 +644,21 @@ export class RoadmapStore {
   }
 
   /**
-   * Start the live re-read: the provider's own change signal where there is
-   * one, plus the two moments a user comes back to the tab. A backend with no
-   * `watch` keeps the minute poll; one with a watch does not need it, and
-   * paying for it anyway would be a round trip a second apart from a push that
-   * already happened. A hidden tab watches and polls nothing — it has no
-   * screen to keep up to date, and a phone left on a background tab would
-   * spend the day holding a connection open. Its return catches up on what
-   * it missed. The local tier's watch holds no connection, so a hidden tab
-   * keeps it and reads nothing; its return re-reads only when the stored
-   * revision moved since this tab last read or wrote it, so a lone tab never
-   * re-reads at all. Returns the stop.
+   * Start the live re-read (US-34): health-core's LiveRefresh decides when to
+   * read; the page tells it when the tab shows or hides. visibilitychange and
+   * focus both ask where the tab is now. Returns the stop.
    */
   startLiveRefresh(): () => void {
-    const adapter = this.host.store;
-    const watchable = !!adapter.watch;
-    const local = this.host.tier === 'device';
-    let watching: AbortController | null = null;
-    // The push a throttled window swallowed. A watch fires once per remote
-    // change and then goes quiet — the cursor has moved past it — so dropping
-    // one on the throttle would lose that change until the user next came
-    // back to the tab. It waits out the window instead.
-    let trailing: ReturnType<typeof setTimeout> | null = null;
-    // When the tab last hid. A re-read before then cannot have seen what the
-    // hidden tab missed.
-    let hiddenAt = 0;
-
-    // A failed re-read is not the user's problem and not a lost write: the
-    // next trigger tries again, and nothing here is waiting on the answer.
-    const reread = () => void this.refreshFromRemote().catch(() => {});
-    const pushed = () => {
-      if (document.visibilityState === 'hidden' || trailing) return;
-      const wait = REMOTE_THROTTLE_MS - (Date.now() - this.session.lastRefreshAt);
-      if (wait <= 0) {
-        reread();
-        return;
-      }
-      trailing = setTimeout(() => {
-        trailing = null;
-        reread();
-      }, wait);
-    };
-
-    const startWatch = () => {
-      if (!watchable || watching) return;
-      watching = new AbortController();
-      adapter.watch!(ROADMAP_DOC.fileName, pushed, watching.signal);
-    };
-    const run = () => {
-      if (document.visibilityState === 'hidden') {
-        if (!local) {
-          watching?.abort();
-          watching = null;
-        }
-        // No read while hidden, a queued one included: it would move the
-        // throttle on, and the return's catch-up would be dropped (US-34 AC6).
-        if (trailing) clearTimeout(trailing);
-        trailing = null;
-        hiddenAt = Date.now();
-        return;
-      }
-      startWatch();
-      if (this.host.sync && this.host.sync.revision(ROADMAP_DOC.fileName) === this.session.seenRevision) return;
-      // The return's catch-up waits out the throttle; it is never dropped. Once
-      // it has read, a second trigger may be (focus and visibilitychange fire
-      // together).
-      if (this.session.lastRefreshAt <= hiddenAt) pushed();
-      else reread();
-    };
-    const timer = watchable ? null : setInterval(run, REMOTE_POLL_MS);
-    document.addEventListener('visibilitychange', run);
-    window.addEventListener('focus', run);
-    if (local || document.visibilityState !== 'hidden') startWatch();
+    const isVisible = () => document.visibilityState !== 'hidden';
+    const live = new LiveRefresh(this.session, this.host, { reread: () => this.refreshFromRemote(), isVisible });
+    const check = () => (isVisible() ? live.visible() : live.hidden());
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('focus', check);
+    live.start();
     return () => {
-      if (timer) clearInterval(timer);
-      if (trailing) clearTimeout(trailing);
-      watching?.abort();
-      document.removeEventListener('visibilitychange', run);
-      window.removeEventListener('focus', run);
+      live.stop();
+      document.removeEventListener('visibilitychange', check);
+      window.removeEventListener('focus', check);
     };
   }
 
