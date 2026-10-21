@@ -24,14 +24,16 @@ let writes: Array<Record<string, any>>;
 let audits: Array<Record<string, any>>;
 let lookupError: boolean;
 let competingInsert: boolean;
+let auditInsertFails: boolean;
+let recordPaid: typeof import('./supabase.server').recordUnprovenPaidOrder;
 let counter = 0;
 let mapUser: typeof import('./supabase.server').getOrCreateSupabaseUser;
 let webhookUser: typeof import('./supabase.server').getUserIdByCustomerId;
 const addAuth = (id: string, customer: string | null, extra: Partial<AuthUser> = {}) =>
   authUsers.set(id, { id, email, app_metadata: customer ? { provider: 'email', shopify_customer_id: customer } : { provider: 'email' }, ...extra });
 beforeEach(async () => {
-  vi.resetModules(); profiles = []; writes = []; audits = []; authUsers = new Map(); lookupError = false; competingInsert = false;
-  ({ getOrCreateSupabaseUser: mapUser, getUserIdByCustomerId: webhookUser } = await import('./supabase.server'));
+  vi.resetModules(); profiles = []; writes = []; audits = []; authUsers = new Map(); lookupError = false; competingInsert = false; auditInsertFails = false;
+  ({ getOrCreateSupabaseUser: mapUser, getUserIdByCustomerId: webhookUser, recordUnprovenPaidOrder: recordPaid } = await import('./supabase.server'));
   state.warn.mockReset();
   state.create.mockReset().mockResolvedValue({ data: null, error: { message: 'already registered' } });
   state.getById.mockReset().mockImplementation(async (id: string) => {
@@ -41,15 +43,19 @@ beforeEach(async () => {
   state.from.mockImplementation((table: string) => {
     const filters: Array<[string, unknown]> = []; let payload: Record<string, any> | undefined; let ignore = false; let update = false;
     const q: any = {};
-    q.select = q.single = q.maybeSingle = () => q;
+    q.select = q.single = q.maybeSingle = q.limit = () => q;
     q.eq = (k: string, v: unknown) => { filters.push([k,v]); return q; };
     q.upsert = (row: Record<string, any>, opts: any) => {
       if (competingInsert) profiles.push({ id: row.id, shopify_customer_id: 'competing', email: 'competing@example.invalid' });
       payload = row; ignore = opts?.ignoreDuplicates; return q;
     };
     q.update = (row: Record<string, any>) => { payload = row; update = true; return q; };
-    q.insert = (row: Record<string, any>) => { if (table === 'audit_logs') audits.push(row); return { then: (resolve: any) => resolve({ error: null }) }; };
+    q.insert = (row: Record<string, any>) => {
+      if (table === 'audit_logs' && !auditInsertFails) audits.push(row);
+      return { then: (resolve: any) => resolve({ error: table === 'audit_logs' && auditInsertFails ? { message: 'down' } : null }) };
+    };
     q.then = (resolve: any, reject: any) => Promise.resolve().then(() => {
+      if (table === 'audit_logs') return { data: audits.filter(a => filters.every(([k,v]) => a[k] === v)), error: null };
       if (table !== 'profiles') return { data: null, error: null };
       if (payload) {
         writes.push(payload);
@@ -213,5 +219,20 @@ describe('webhook customer lookup', () => {
     expect(await webhookUser(customer)).toEqual({ userId: 'own', proven: true }); // from the cache
     expect(await mapUser(customer, email)).toBe('own');
     expect(state.getById).toHaveBeenCalledTimes(1);
+  });
+});
+
+// US-09 AC27: the record Brad credits an unproven paid order from must be
+// stored before orders/paid answers 200, once per order.
+describe('recordUnprovenPaidOrder', () => {
+  const order = 'gid://shopify/Order/5';
+  it('stores one row per order, value-free, and reports success', async () => {
+    expect(await recordPaid('legacy', order)).toBe(true);
+    expect(await recordPaid('legacy', order)).toBe(true);
+    expect(audits).toEqual([expect.objectContaining({ user_id: 'legacy', action: 'PAID_ORDER_UNPROVEN_LINK', resource_id: order, metadata: null })]);
+  });
+  it('reports failure when the row cannot be stored, so the webhook can ask for a retry', async () => {
+    auditInsertFails = true;
+    expect(await recordPaid('legacy', order)).toBe(false);
   });
 });

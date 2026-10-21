@@ -9,7 +9,7 @@
 import type { ActionFunctionArgs } from 'react-router';
 import * as Sentry from '@sentry/react-router';
 import { authenticate } from '../shopify.server';
-import { addMessageCredits, getUserIdByCustomerId, logAudit } from '../lib/supabase.server';
+import { addMessageCredits, getUserIdByCustomerId, logAudit, recordUnprovenPaidOrder } from '../lib/supabase.server';
 import { VARIANT_CREDIT_MAP } from '../lib/message-packs';
 import { cappedRequest, WEBHOOK_BODY_CAP } from '../lib/capped-body.server';
 
@@ -48,12 +48,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const orderId = `gid://shopify/Order/${order.id}`;
 
     if (!user.proven) {
-      // A link without admin-written proof is never credited (US-09 AC27). Answer
-      // 200 so Shopify stops retrying, and leave Brad a value-free record to
-      // credit by hand once the backfill proves the link.
-      logAudit(user.userId, 'PAID_ORDER_UNPROVEN_LINK', 'chat', orderId);
+      // A link without admin-written proof is never credited (US-09 AC27). Store a
+      // value-free record for Brad to credit by hand once the backfill proves the
+      // link, then answer 200 so Shopify stops retrying; if it cannot be stored,
+      // 500 so Shopify retries rather than the credit being lost.
+      if (!(await recordUnprovenPaidOrder(user.userId, orderId))) return new Response(null, { status: 500 });
       Sentry.captureMessage('orders/paid for an unproven Shopify link; credit by hand after the backfill', {
-        level: 'warning', tags: { feature: 'message_credits' },
+        level: 'warning', tags: { feature: 'message_credits' }, extra: { orderId, profileId: user.userId },
       });
       return new Response();
     }

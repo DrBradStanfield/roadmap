@@ -9,7 +9,9 @@ vi.mock('../shopify.server', () => ({
     payload: { id: 5, customer: { id: Number(CUSTOMER) }, line_items: [{ variant_id: 111, quantity: 1 }] },
   })) },
 }));
-const lib = vi.hoisted(() => ({ getUserIdByCustomerId: vi.fn(), addMessageCredits: vi.fn(), logAudit: vi.fn(), warn: vi.fn() }));
+const lib = vi.hoisted(() => ({
+  getUserIdByCustomerId: vi.fn(), addMessageCredits: vi.fn(), logAudit: vi.fn(), recordUnprovenPaidOrder: vi.fn(), warn: vi.fn(),
+}));
 vi.mock('../lib/supabase.server', () => lib);
 vi.mock('@sentry/react-router', () => ({ captureMessage: lib.warn, captureException: vi.fn() }));
 
@@ -22,7 +24,7 @@ beforeEach(() => {
   logs = [vi.spyOn(console, 'log'), vi.spyOn(console, 'warn'), vi.spyOn(console, 'error')];
 });
 const nothingNamesTheCustomer = () => {
-  for (const spy of [...logs, lib.warn, lib.logAudit]) expect(JSON.stringify(spy.mock.calls)).not.toContain(CUSTOMER);
+  for (const spy of [...logs, lib.warn, lib.logAudit, lib.recordUnprovenPaidOrder]) expect(JSON.stringify(spy.mock.calls)).not.toContain(CUSTOMER);
 };
 
 describe('orders/paid without a proven principal', () => {
@@ -32,12 +34,21 @@ describe('orders/paid without a proven principal', () => {
     expect(lib.addMessageCredits).not.toHaveBeenCalled();
     nothingNamesTheCustomer();
   });
-  it('an unproven link: answers 200, credits nothing, and leaves a value-free audit row and a warning to credit by hand', async () => {
+  it('an unproven link: stores the audit row before answering 200, credits nothing, and warns with order and profile ids', async () => {
     lib.getUserIdByCustomerId.mockResolvedValue({ userId: 'legacy', proven: false });
+    lib.recordUnprovenPaidOrder.mockResolvedValue(true);
     expect((await post()).status).toBe(200);
     expect(lib.addMessageCredits).not.toHaveBeenCalled();
-    expect(lib.logAudit).toHaveBeenCalledWith('legacy', 'PAID_ORDER_UNPROVEN_LINK', 'chat', 'gid://shopify/Order/5');
+    expect(lib.recordUnprovenPaidOrder).toHaveBeenCalledWith('legacy', 'gid://shopify/Order/5');
     expect(lib.warn).toHaveBeenCalledTimes(1);
+    expect(lib.warn.mock.calls[0][1]).toMatchObject({ extra: { orderId: 'gid://shopify/Order/5', profileId: 'legacy' } });
+    nothingNamesTheCustomer();
+  });
+  it('an unproven link whose audit row cannot be stored: 500 so Shopify retries, no credit', async () => {
+    lib.getUserIdByCustomerId.mockResolvedValue({ userId: 'legacy', proven: false });
+    lib.recordUnprovenPaidOrder.mockResolvedValue(false);
+    expect((await post()).status).toBe(500);
+    expect(lib.addMessageCredits).not.toHaveBeenCalled();
     nothingNamesTheCustomer();
   });
   it('a proven link is credited', async () => {

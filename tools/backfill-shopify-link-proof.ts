@@ -23,6 +23,11 @@
  * row) and every gate runs on that record; a disagreement skips it. Writes go
  * through the admin API. Prints counts only.
  *
+ * Accepted residual (orchestrator, 2026-10-21): the duplicate-claimant gate
+ * still rests on the pg read alone, since no HTTPS API lists every user. Only
+ * someone able to intercept that connection during this one-off admin run could
+ * hide a second claimant; live showed 0 duplicates, and sign-up is off first.
+ *
  * Usage (dry run is the default; --execute writes):
  *   npx tsx --env-file=.env tools/backfill-shopify-link-proof.ts
  *   npx tsx --env-file=.env tools/backfill-shopify-link-proof.ts --execute

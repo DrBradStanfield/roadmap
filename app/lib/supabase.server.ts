@@ -571,6 +571,23 @@ export async function updateSubscriptionPlan(
 }
 
 /**
+ * Durably record a paid order the webhook did not credit because its link is
+ * unproven (US-09 AC27), so Brad can credit it by hand. Once per order (check,
+ * then insert); order id and profile id only. False when it could not be stored.
+ */
+export async function recordUnprovenPaidOrder(userId: string, orderId: string): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+  const action = 'PAID_ORDER_UNPROVEN_LINK';
+  const { data, error } = await supabaseAdmin
+    .from('audit_logs').select('id').eq('action', action).eq('resource_id', orderId).limit(1);
+  if (error) return false;
+  if (data?.length) return true;
+  const { error: insertError } = await supabaseAdmin.from('audit_logs')
+    .insert({ user_id: userId, action, resource_type: 'chat', resource_id: orderId, metadata: null });
+  return !insertError;
+}
+
+/**
  * Look up the Supabase user linked to a Shopify customer. Uses admin client.
  * Null when no profile is linked; `proven: false` when the link lacks
  * admin-written proof (US-09 AC27), so the caller must not credit it.
