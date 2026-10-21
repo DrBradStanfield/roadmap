@@ -27,6 +27,9 @@ const FORBIDDEN: Array<[string, RegExp]> = [
   ['localStorage', /\blocalStorage\b/],
   ['sessionStorage', /\bsessionStorage\b/],
   ['navigator', /\bnavigator\b/],
+  // Reaching a global through the global object would get past every name above.
+  ['globalThis', /\bglobalThis\b/],
+  ['self', /(?<![.\w])self\b/],
   // crypto.randomUUID is the one exception: the iPhone engine supplies it
   // (HealthEngine.swift), for record-edits' fresh row ids (rule 5).
   ['crypto.', /\bcrypto\s*\.(?!randomUUID\b)/],
@@ -40,11 +43,20 @@ function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 }
 
-/** Code only: string literals (user-facing text) out as well. Template
- *  literals too (model prompts are prose); a ${} inside one is blanked with
- *  it, a blind spot this scan accepts. */
+/** Code only: string literals (user-facing text) out as well, and template
+ *  literals with no `${` (model prompts are prose). One with a `${` stays in
+ *  whole, so no code inside it escapes the scan. */
 function codeOf(source: string): string {
-  return source.replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g, "''");
+  return source.replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\$]|\\.|\$(?!\{))*`/g, "''");
+}
+
+/** What `source` reaches that JavaScriptCore lacks. The two import rules
+ *  read the strings; the globals read code only. */
+function violations(name: string, raw: string): string[] {
+  const source = stripComments(raw);
+  return FORBIDDEN.filter(([, re], i) => re.test(i < 2 ? source : codeOf(source)))
+    .map(([what]) => what)
+    .filter((what) => !GUARDED[name]?.includes(what));
 }
 
 function reachable(entries: string[]): string[] {
@@ -70,12 +82,17 @@ describe('engine portability (ios/architecture.md D4)', () => {
   });
 
   it.each(files.map((f) => [f.slice(SRC.length + 1), f]))('%s has no DOM and no Node', (name, file) => {
-    const source = stripComments(readFileSync(file, 'utf8'));
-    // The two import rules read the strings; the globals read code only.
-    const found = FORBIDDEN.filter(([, re], i) => re.test(i < 2 ? source : codeOf(source)))
-      .map(([what]) => what)
-      .filter((what) => !GUARDED[name]?.includes(what));
-    expect(found).toEqual([]);
+    expect(violations(name, readFileSync(file, 'utf8'))).toEqual([]);
+  });
+
+  it('the scan itself: catches code in a template, globalThis and self, and allows only crypto.randomUUID', () => {
+    expect(violations('x.ts', 'const t = `see ${document.title}`;')).toEqual(['document.']);
+    expect(violations('x.ts', 'const t = `the document. Return`;')).toEqual([]);
+    expect(violations('x.ts', 'globalThis.fetch(u);')).toEqual(['globalThis']);
+    expect(violations('x.ts', 'self.postMessage(m);')).toEqual(['self']);
+    expect(violations('x.ts', 'parsed.document.title; row.self;')).toEqual([]);
+    expect(violations('x.ts', 'crypto.randomUUID();')).toEqual([]);
+    expect(violations('x.ts', 'crypto.subtle.digest(a, b);')).toEqual(['crypto.']);
   });
 
   // The grep above cannot see a global reached at load (fetch, setTimeout,
