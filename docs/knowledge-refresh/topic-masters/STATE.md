@@ -83,3 +83,4 @@ These posts are not masters yet, so the masters-answers round (2026-10-21) left 
 - The checker misreads glued units and signs ("≥800 mg/kg"). File AC2 exceptions only after opening the source yourself.
 - products.md positions drift from Brad's newer posts. Each batch's notes list the drift for him.
 - The Codex wrapper used to keep a 1–2 GB snapshot per incomplete run. On 2026-10-20 that filled the disk (another thread is fixing it). Watch disk space before a Codex run.
+- 2026-10-22: masters answers 2026-10-21 landed. The checker run swaps lint-state.json, rulings-since-contract.md, topic-masters/STATE.md and tools/test-queries.json to the base before checking (re-check F2). The multivitamins capsule-line market label is left with Brad for the v9 switch.
