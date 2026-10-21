@@ -33,7 +33,7 @@ struct MyDataView: View {
                     metrics("Blood tests", data.bloodTests)
                     Section {
                     } footer: {
-                        Label("Saved on this iPhone and in its backups. The app sends it nowhere.", systemImage: "lock.shield")
+                        Label("Saved only on this iPhone, never in its backups. Until cloud sync arrives, a new phone starts empty.", systemImage: "lock.shield")
                             .frame(maxWidth: .infinity)
                     }
                 }

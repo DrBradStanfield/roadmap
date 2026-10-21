@@ -50,10 +50,16 @@ final class RecordStore {
         }
     }
 
-    /// The folder the app keeps the record in: Application Support, made on first use.
-    static func appFolder() throws -> URL {
-        let folder = URL.applicationSupportDirectory
+    /// The folder the app keeps the record in, made on first use and kept out of
+    /// iCloud and computer backups, so the record never reaches Apple's servers
+    /// (Brad 2026-10-21). The mark is on the folder, not the file: every save
+    /// replaces the file, and a mark on it would go with the old copy.
+    static func appFolder(in base: URL = .applicationSupportDirectory) throws -> URL {
+        var folder = base.appending(path: "Record", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try folder.setResourceValues(values)
         return folder
     }
 

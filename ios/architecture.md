@@ -114,12 +114,16 @@ merge on conflict and the erase guard.
 ### D5 · Storage: on the phone by default, Dropbox or Google Drive optional (Brad, 2026-10-21)
 
 - **Default: a file in the app's container**, with iOS Data Protection. Built 2026-10-21
-  (`MyData/RecordStore.swift`): `Application Support/health-roadmap.json`, the web's schema,
+  (`MyData/RecordStore.swift`): `Application Support/Record/health-roadmap.json`, the web's schema,
   written atomically, and only after the engine accepted the edit. Data protection is
   "until first unlock", Apple's default (the strictest class, which HealthKit uses, would
   fail when iOS pre-launches the app before the user unlocks; a read that fails still
-  stays failed until the next launch). Open for Brad: keep this, or the strictest class
-  with a re-read when the phone unlocks. The first record is staged beside the file and moved into
+  stays failed until the next launch). Brad kept this class, 2026-10-21.
+  **Not in backups (Brad, 2026-10-21):** the `Record` folder is marked
+  `isExcludedFromBackup`, so the record never reaches Apple's servers in an iCloud backup
+  (standard iCloud Backup is not end-to-end encrypted) or a computer backup. The mark is on
+  the folder because every save replaces the file. The cost: a user who moves to a new
+  phone without Dropbox or Drive sync starts empty, and My data says so. The first record is staged beside the file and moved into
   place, which fails if a file is already there. A record the app cannot open or read,
   including JSON that fails health-core's record shape check, is kept as it is and never written over.
   Dates are always Gregorian and numbers are read by health-core's
@@ -138,11 +142,7 @@ merge on conflict and the erase guard.
 - **iCloud: open.** A website cannot read iCloud Drive, so an iCloud user could not use the
   web app (CloudKit JS would need its own sign-in and work). App Review has also restricted
   health data in iCloud (guideline 5.1.3). Brad is checking. Same question for iOS device
-  backups of the app's file: today the backup includes it (standard iCloud Backup is not
-  end-to-end encrypted unless the user turns on Advanced Data Protection), and My data
-  says "Saved on this iPhone and in its backups". Excluding it (`isExcludedFromBackup`)
-  keeps it off Apple's servers but loses it when the user moves to a new phone without
-  cloud sync. Codex raised it 2026-10-21; Brad's call.
+  backups: decided, the record is excluded (above).
 - **Erase (US-11)** runs as on the web, and also deletes the samples this app wrote to
   Apple Health and cancels its notifications. A phone that takes in an erase made on another
   device does the same.

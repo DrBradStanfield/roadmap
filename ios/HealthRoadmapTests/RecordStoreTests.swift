@@ -77,6 +77,16 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertTrue(ids.contains { $0.hasPrefix("bp-") }, "a 150/95 reading must reach the plan: \(ids)")
     }
 
+    func testTheRecordIsKeptOutOfBackups() throws {
+        // Brad 2026-10-21: the record never reaches Apple's servers in an iCloud backup.
+        // The mark is on the folder, because every save replaces the file itself.
+        var record = try RecordStore.appFolder(in: folder)
+        let store = try RecordStore(folder: record, engine: HealthEngine(), deviceId: "test")
+        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")), .saved)
+        record.removeAllCachedResourceValues()
+        XCTAssertEqual(try record.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, true)
+    }
+
     func testJSONThatIsNotARecordIsNeverOverwritten() throws {
         // Adversary R4: the engine's migration turned `null` into an empty record.
         try Data("null".utf8).write(to: file)
