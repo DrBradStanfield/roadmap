@@ -36,7 +36,7 @@ export const MAX_EXCERPT_CHARS = 1_500;
 /**
  * Characters of a master's excerpt, its whole Current view (US-50 AC13). The
  * writer contract puts "who should not take it" last in the view, and views run
- * 1,233 to 2,449 characters, so a 1,500 cut lost that caution in most. 4,000
+ * 1,232 to 2,448 characters, so a 1,500 cut lost that caution in most. 4,000
  * holds every view with room (a test checks each served view fits), and stays
  * under youtube-context's MAX_VIEW_CHARS (6,000), past which a view is malformed.
  */
