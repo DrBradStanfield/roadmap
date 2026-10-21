@@ -1028,7 +1028,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Creatine',
-      description: 'One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training, with emerging evidence for cognitive benefits.',
+      description: 'One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training. Meta-analyses also consistently find better memory, with less certain gains in attention and processing speed.',
     },
     {
       id: 'supplement-collagen',

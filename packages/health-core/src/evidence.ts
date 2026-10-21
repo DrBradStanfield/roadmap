@@ -543,11 +543,12 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'supplement-creatine': {
-    reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training, and emerging evidence suggests cognitive benefits, particularly under conditions of stress or sleep deprivation.',
+    reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training. Meta-analyses of randomised trials consistently find better memory. The largest, of 16 small trials, also found faster attention and processing speed, with less certainty, and larger benefits in women.',
     guidelines: [],
     references: [
       { label: 'Kreider 2017 – ISSN position stand: creatine safety & efficacy (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/s12970-017-0173-z' },
       { label: 'Avgerinos 2018 – Creatine & cognition: systematic review (Exp Gerontol)', url: 'https://doi.org/10.1016/j.exger.2018.04.013' },
+      { label: 'Xu 2024 – Creatine & cognition in adults: meta-analysis of 16 RCTs (Front Nutr)', url: 'https://doi.org/10.3389/fnut.2024.1424972' },
     ],
   },
 
