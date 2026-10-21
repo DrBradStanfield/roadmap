@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 const repo = join(__dirname, '../..');
 const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: repo }).toString().split('\0').filter(Boolean);
-// The file-held keys while they wait on this Mac for 1Password and GitHub.
+// The file-held keys while they wait on this Mac for the Passwords app and GitHub.
 const keyFiles = ['COLD-move-to-1password', 'CI-move-to-github-secret'].map((name) => join(homedir(), `.config/health-roadmap/engine-signing-key-${name}.txt`));
 
 // A PKCS#8 Ed25519 private key: its header followed by the 32 key bytes, as DER hex

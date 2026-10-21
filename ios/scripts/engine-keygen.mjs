@@ -5,7 +5,7 @@
 // - daily: into the login Keychain (service health-roadmap-engine-signing,
 //   account daily), trusted by no app, so each read asks Brad.
 // - cold: the backup, written once to a 0600 file for Brad to move into
-//   1Password and then delete.
+//   the Passwords app and then delete.
 // - ci: written once to a 0600 file for Brad to paste into the engine-signing
 //   environment's secret on GitHub and then delete.
 // No private key is ever printed. Public keys go into ios/engine/signing-keys.json,
@@ -82,6 +82,6 @@ if (opts.add) {
   const pins = { cold: publicKeyOf(cold).toString('base64'), daily: publicKeyOf(daily).toString('base64') };
   writeFileSync(keysFile, JSON.stringify(pins, null, 2) + '\n', { flag: 'wx' });
   report('daily', daily, `in the login Keychain (${KEYCHAIN_SERVICE} / daily)`);
-  report('cold', cold, `${FILE_KEYS.cold} (0600). Put it in 1Password, then rm -P it`);
+  report('cold', cold, `${FILE_KEYS.cold} (0600). Put it in the Passwords app, then rm -P it`);
   console.log(`public keys → ${keysFile}; pin them in EngineRelease.swift (EngineBridgeContractTests checks).`);
 }

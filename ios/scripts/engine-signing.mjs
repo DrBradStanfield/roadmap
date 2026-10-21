@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 
 export const DOMAIN = 'health-roadmap-engine-manifest/v1\n';
 /** Where the daily key lives: the login Keychain, trusted by no app (-T ""), so
- *  every read asks Brad. The cold key lives only in 1Password. */
+ *  every read asks Brad. The cold key lives only in the Passwords app. */
 export const KEYCHAIN_SERVICE = 'health-roadmap-engine-signing';
 /** macOS's own Keychain tool, by absolute path (review N4). */
 export const SECURITY = '/usr/bin/security';
@@ -52,7 +52,7 @@ export function canonicalManifest(fields) {
 export function readSigningKey(keyId, env = process.env) {
   let text = env.ENGINE_SIGNING_KEY;
   if (!text) {
-    if (keyId !== 'daily') throw new Error(`The ${keyId} key is not in the Keychain: put it in ENGINE_SIGNING_KEY from 1Password.`);
+    if (keyId !== 'daily') throw new Error(`The ${keyId} key is not in the Keychain: put it in ENGINE_SIGNING_KEY from the Passwords app.`);
     try {
       // By absolute path: no PATH lookup can put another program between the key and us (N4).
       text = execFileSync(SECURITY, ['find-generic-password', '-s', KEYCHAIN_SERVICE, '-a', keyId, '-w'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString();

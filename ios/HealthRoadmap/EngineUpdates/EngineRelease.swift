@@ -10,7 +10,7 @@ enum EngineRelease {
     static let bridge = "3917f06967e15d9b"
 
     /// The signing keys this app trusts, by id: the daily key (Brad's login Keychain),
-    /// the cold backup (1Password) and the ci key (the GitHub `engine-signing`
+    /// the cold backup (the Passwords app) and the ci key (the GitHub `engine-signing`
     /// environment's secret, for the workflow). ios/engine/signing-keys.json holds the same;
     /// the release script refuses any other key. Rotation: ios/engine-updates.md.
     static let publicKeys: [String: String] = [

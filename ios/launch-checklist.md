@@ -35,7 +35,7 @@ by the orchestrator, not a fresh reviewer.
 
 1. **Signing keys for engine updates** ([engine-updates.md](engine-updates.md)).
    - Copy `~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt` into
-     1Password, then `rm -P` it.
+     the Passwords app, then `rm -P` it.
    - In GitHub, create the environment `engine-signing`, limited to `main`, with you as
      required reviewer. Add the secret `ENGINE_SIGNING_KEY` from
      `~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt`, then

@@ -61,12 +61,12 @@ keys: `ios/engine/signing-keys.json`, pinned in `EngineRelease.swift`.
 | Key | Where | Fingerprint (SHA-256 of the public key, first 16 hex) |
 |---|---|---|
 | daily | login Keychain, service `health-roadmap-engine-signing`, account `daily`, trusted by no app | `519a8365b02da897` |
-| cold | 1Password only | `9a415581b0a54dbd` |
+| cold | the Passwords app only | `9a415581b0a54dbd` |
 | ci | GitHub `engine-signing` environment secret only | `d6a343128471bae8` |
 
 **Do now (Brad):** the cold key's private half is in
 `~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt` (mode 0600).
-Copy its one line into a 1Password item "Health Roadmap engine signing key (cold)",
+Copy its one line into an entry in the Passwords app (iCloud Keychain) "Health Roadmap engine signing key (cold)",
 then `rm -P` that file. The ci key's private half is in
 `~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt` (0600): paste
 its one line as the `ENGINE_SIGNING_KEY` secret of the `engine-signing` environment
@@ -75,7 +75,7 @@ your Keychain.
 
 - **Moving to another Mac:** on the old Mac, in Terminal (macOS asks you to allow the read),
   `/usr/bin/security find-generic-password -s health-roadmap-engine-signing -a daily -w`.
-  Put the line it prints in a 1Password item "Health Roadmap engine signing key (daily)".
+  Put the line it prints in an entry in the Passwords app (iCloud Keychain) "Health Roadmap engine signing key (daily)".
   On the new Mac:
   `/usr/bin/security add-generic-password -s health-roadmap-engine-signing -a daily -T "" -w`
   and paste the line when it asks (typed there, it stays out of your shell history).
@@ -83,7 +83,7 @@ your Keychain.
 - **Lost Mac or Keychain:** build for the cold key, then sign with it in the signer
   only, so the key never reaches the build:
   `npm run engine:build -- --if-changed --key cold`, then
-  `ENGINE_SIGNING_KEY='<cold line from 1Password>' node ios/scripts/sign-engine.mjs --key cold`.
+  `ENGINE_SIGNING_KEY='<cold line from the Passwords app>' node ios/scripts/sign-engine.mjs --key cold`.
   Then make a new daily key in an app update (below).
 - **Rotate or revoke:** add the new public key under a new id to both
   `signing-keys.json` and `EngineRelease.publicKeys`, remove the old one, ship an app

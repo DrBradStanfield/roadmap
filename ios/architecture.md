@@ -118,7 +118,7 @@ A signature means "the key holder approved this bundle", nothing more.
   as a manifest's). Three keys, pinned by id in `EngineRelease.swift` and
   `ios/engine/signing-keys.json`: `daily` in Brad's login Keychain, trusted by no app, so
   every read asks him (adversary R9: not a 0600 file, which any process of his could
-  read), and never anywhere else; `cold` in 1Password only, for a lost Mac; and `ci`,
+  read), and never anywhere else; `cold` in the Passwords app only, for a lost Mac; and `ci`,
   only in the GitHub `engine-signing` environment's secret, for the workflow (pinned
   2026-10-22 before any app shipped, so it cost no app update; orchestrator's call). Any pinned key verifies; the
   manifest's `keyId` must name the one that did. The manifest must be the one canonical
