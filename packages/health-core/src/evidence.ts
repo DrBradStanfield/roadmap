@@ -543,12 +543,15 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'supplement-creatine': {
-    reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training. Meta-analyses of randomised trials consistently find better memory. The largest, of 16 small trials, also found faster attention and processing speed, with less certainty, and larger benefits in women.',
+    reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training. Dr Stanfield considers the evidence that creatine improves memory clear and consistent; this is his judgement, not a trial finding. Formal reviews are more mixed. A systematic review (Avgerinos 2018) and two meta-analyses of small trials (Prokopidis 2023, Xu 2024) reported better memory, but the meta-analyses counted several tests from the same people as separate results. Reanalysed by its authors, Prokopidis 2023 found no overall memory benefit except in older adults (aged 66 to 76). Xu 2024 found no effect on overall cognition or executive function. In 2024 the European Food Safety Authority concluded that a cause-and-effect link between creatine and better cognitive function has not been established.',
     guidelines: [],
     references: [
       { label: 'Kreider 2017 – ISSN position stand: creatine safety & efficacy (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/s12970-017-0173-z' },
       { label: 'Avgerinos 2018 – Creatine & cognition: systematic review (Exp Gerontol)', url: 'https://doi.org/10.1016/j.exger.2018.04.013' },
+      { label: 'Prokopidis 2023 – Creatine & memory: meta-analysis of RCTs (Nutr Rev)', url: 'https://doi.org/10.1093/nutrit/nuac064' },
+      { label: 'Prokopidis 2023 – Authors\' reply and reanalysis: memory benefit only in older adults (Nutr Rev)', url: 'https://doi.org/10.1093/nutrit/nuac111' },
       { label: 'Xu 2024 – Creatine & cognition in adults: meta-analysis of 16 RCTs (Front Nutr)', url: 'https://doi.org/10.3389/fnut.2024.1424972' },
+      { label: 'EFSA 2024 – Creatine & cognitive function: health claim not substantiated (EFSA J)', url: 'https://doi.org/10.2903/j.efsa.2024.9100' },
     ],
   },
 

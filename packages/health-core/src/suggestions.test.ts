@@ -2979,6 +2979,31 @@ describe('Evidence attachment', () => {
   // on good omega-3 levels (VITACOG), but FACIT found the reverse (van Soest 2021);
   // the omega-3 card carries the WHO 2026 note, and the reason drops the unhedged
   // "important role in cognitive protection".
+  it('US-07 AC1: creatine card attributes the memory view to Dr Stanfield; reviews are mixed', () => {
+    const { inputs, results } = createTestData({}, { bmi: 22 });
+    const creatine = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-creatine')!;
+
+    expect(creatine.description).toContain('Dr Stanfield considers the memory evidence clear and consistent');
+    expect(creatine.description).toContain('formal reviews are more mixed, with the clearest benefit in older adults');
+    expect(creatine.description).not.toMatch(/consistently find/i);
+    expect(creatine.description).not.toMatch(/emerging evidence/i);
+    expect(creatine.description).not.toMatch(/women/i);
+    expect(creatine.description).not.toContain('—');
+
+    const reason = SUGGESTION_EVIDENCE['supplement-creatine'].reason;
+    expect(reason).toContain('his judgement, not a trial finding');
+    expect(reason).toContain('A systematic review (Avgerinos 2018)');
+    expect(reason).toContain('no overall memory benefit except in older adults');
+    expect(reason).toContain('no effect on overall cognition or executive function');
+    expect(reason).toContain('has not been established');
+    expect(reason).not.toMatch(/consistently find|largest|women/i);
+
+    const urls = creatine.references!.map(r => r.url);
+    expect(urls).toContain('https://doi.org/10.1093/nutrit/nuac064');
+    expect(urls).toContain('https://doi.org/10.1093/nutrit/nuac111');
+    expect(urls).toContain('https://doi.org/10.2903/j.efsa.2024.9100');
+  });
+
   it('US-07 AC1: omega-3 card and reason give VITACOG and the reverse FACIT finding, and the WHO 2026 note', () => {
     const { inputs, results } = createTestData({}, { bmi: 22 });
     const omega3 = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-omega3')!;
