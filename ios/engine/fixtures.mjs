@@ -24,6 +24,13 @@ export function parityFixtures(sample) {
   });
   fixtures['urgent-corrected'] = corrected;
 
+  // The same correction written out of order: the correcting row's createdAt is
+  // EARLIER than the row it corrects. Only honouring entered-in-error gives 60;
+  // a newest-createdAt rule would bring 38 back.
+  const outOfOrder = clone(corrected);
+  outOfOrder.measurements.find((m) => m.correctsId).createdAt = '2026-05-01T08:00:00Z';
+  fixtures['correction-out-of-order'] = outOfOrder;
+
   // A known minor gets the adults-only plan (US-07 AC6).
   const minor = clone(sample);
   minor.profile.birthYear = 2012;

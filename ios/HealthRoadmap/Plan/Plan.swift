@@ -27,6 +27,8 @@ struct Suggestion: Decodable, Identifiable {
     let priority: String
     let title: String
     let description: String
+    /// A product page the title links to on the web, such as a sunscreen.
+    let link: URL?
     /// Why the engine made this suggestion ("Why this suggestion?" on the web).
     let reason: String?
     /// Guideline tags, such as "ESC/EAS 2025".

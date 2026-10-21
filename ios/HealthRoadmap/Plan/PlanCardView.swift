@@ -81,6 +81,13 @@ private struct SuggestionDetails: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if let link = suggestion.link {
+                // The web links the title; a tap on the title here opens the card, so the link sits inside.
+                Link(destination: link) {
+                    Label("View product", systemImage: "arrow.up.right.square")
+                        .font(.subheadline.weight(.medium))
+                }
+            }
             if let ingredients = suggestion.ingredients, !ingredients.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(ingredients, id: \.self) { ingredient in

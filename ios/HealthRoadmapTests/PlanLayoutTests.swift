@@ -8,7 +8,9 @@ final class PlanLayoutTests: XCTestCase {
         let fixtures = Bundle(for: Self.self)
         let record = try String(contentsOf: XCTUnwrap(fixtures.url(forResource: "sample.record", withExtension: "json")), encoding: .utf8)
         let engine = try HealthEngine(bundle: .main)
-        return (engine, try engine.plan(recordJSON: record, now: .now, deviceId: "layout-test"))
+        // Pinned, like EngineParityTests: due dates and ages depend on the day.
+        let now = try Date("2026-10-21T12:30:00.000Z", strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true))
+        return (engine, try engine.plan(recordJSON: record, now: now, deviceId: "layout-test"))
     }
 
     func testSampleRecordMatchesTheWebLayout() throws {
@@ -44,6 +46,7 @@ final class PlanLayoutTests: XCTestCase {
             let id = try XCTUnwrap(rawSuggestion["id"] as? String)
             let suggestion = try XCTUnwrap(shown.first { $0.id == id }, "\(id) is not on screen")
             XCTAssertEqual(suggestion.reason, rawSuggestion["reason"] as? String, id)
+            XCTAssertEqual(suggestion.link?.absoluteString, rawSuggestion["link"] as? String, id)
             XCTAssertEqual(suggestion.guidelines ?? [], rawSuggestion["guidelines"] as? [String] ?? [], id)
             XCTAssertEqual(suggestion.ingredients ?? [], rawSuggestion["ingredients"] as? [String] ?? [], id)
             let rawReferences = rawSuggestion["references"] as? [[String: String]] ?? []
