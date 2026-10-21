@@ -14,6 +14,8 @@ const INVALID_STAMPS: unknown[] = [
   '2099-01-01T99:00:00Z', '2026-05-01 junk', '2026-05-01Tjunk', '2026-05-01T10:60:00Z',
   '2026-05-01T10:00:00+99:00', '2026-05-01T10:00:00+13', '2026-05-01T10:00:00Zjunk',
   '2025-01-15 03:00:00+99', '2025-01-15  03:00:00Z', '2025-01-15 junk+00',
+  // A space-separated time with no zone: the merge would read it in the machine's zone.
+  '2025-01-15 03:00:00', '2025-01-15 03:00',
 ];
 /** Every shape a real writer emits, all before the fixtures' anchor: toISOString,
  *  a date-only day, offsets (+13:00, compact +0530), fractional seconds,
