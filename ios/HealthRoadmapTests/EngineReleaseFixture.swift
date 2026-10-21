@@ -25,10 +25,15 @@ struct EngineReleaseFixture {
         return (Int(String(format: "%04d%02d%02d%02d%02d", c.year!, c.month!, c.day!, c.hour!, c.minute!))!, date)
     }
 
-    /// The bundled engine re-stamped as `version`; `broken` makes the plan door throw.
-    func bundle(version: Int, broken: Bool = false) -> Data {
+    /// The bundled engine re-stamped as `version`; `broken` makes the plan door throw;
+    /// `throwsOnRealRecords` makes it throw for every device but the self-test's, so it
+    /// passes its self-test and fails on the user's record.
+    func bundle(version: Int, broken: Bool = false, throwsOnRealRecords: Bool = false) -> Data {
         var source = bundled.source + "\nHealthEngine = Object.assign({}, HealthEngine, { engineVersion: \(version) });\n"
         if broken { source += "HealthEngine.planJson = function () { throw new Error('broken on purpose'); };\n" }
+        if throwsOnRealRecords {
+            source += "const selfTestPlan = HealthEngine.planJson; HealthEngine.planJson = function (r, n, d) { if (d !== 'self-test') throw new Error('broken on real records'); return selfTestPlan(r, n, d); };\n"
+        }
         return Data(source.utf8)
     }
 
@@ -52,9 +57,9 @@ struct EngineReleaseFixture {
     }
 
     /// A whole staged release.
-    func staged(daysAfterBundled days: Int, broken: Bool = false) -> EngineFolder.Staged {
+    func staged(daysAfterBundled days: Int, broken: Bool = false, throwsOnRealRecords: Bool = false) -> EngineFolder.Staged {
         let (version, date) = version(daysAfterBundled: days)
-        let bundle = bundle(version: version, broken: broken)
+        let bundle = bundle(version: version, broken: broken, throwsOnRealRecords: throwsOnRealRecords)
         let manifest = manifest(version: version, issued: date, bundle: bundle)
         return EngineFolder.Staged(version: version, bundle: bundle, manifest: manifest, signature: signatureFile(manifest))
     }

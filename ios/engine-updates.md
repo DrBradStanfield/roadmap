@@ -4,39 +4,52 @@ For Brad. The design and its reasons are in [architecture.md](architecture.md) D
 story is US-25 AC18. This page is the how-to.
 
 A fix to health-core reaches installed iPhones without an App Store release. Phones
-read `ios/engine-release/` from `main` on GitHub, but they run a release only if your
-key signed it. A push to `main` without a signature, from a loop or anyone else,
+read `ios/engine-release/` from `main` on GitHub, but they run a release only if one of
+your keys signed it. A push to `main` without a signature, from a loop or anyone else,
 changes nothing on a phone. **A signature means "the key holder approved this
 bundle". Nothing more.** Sign only what you would ship.
 
 ## Release from your Mac (the path today)
 
+Two steps, so no repo code ever runs next to a key (review R1): the build runs esbuild
+and the parity check and never holds a key; the signer runs no repo code.
+
 1. Commit the engine change (health-core or `ios/engine`) and `git pull --ff-only`.
-2. `npm run engine:release -- --if-changed`
+2. `npm run engine:build -- --if-changed`
    - It builds the engine, checks it against the source on every parity fixture, and
-     writes `ios/engine-release/bridge-<id>/`: the bundle as `<sha256>.js`,
-     `manifest.json` and `manifest.sig`.
+     writes `ios/engine-release/bridge-<id>/`: the bundle as `<sha256>.js` and
+     `manifest.json`, unsigned. It drops any `ENGINE_SIGNING_KEY` from its environment
+     before it starts anything.
+   - `--if-changed` stops with "nothing to release" when the engine is unchanged.
+   - It refuses uncommitted engine source and a second release in the same minute.
+3. `npm run engine:sign`
+   - It reads the manifest and bundle from disk, checks them (canonical, this bridge,
+     the hash), and signs with the daily key.
    - macOS asks: *security wants to use your confidential information stored in
      "health-roadmap-engine-signing" in your keychain.* Type your login password and
      click **Allow**. Never **Always Allow**: that would let any script read the key
      without asking.
-   - `--if-changed` stops with "nothing to release" when the engine is unchanged.
-   - It refuses uncommitted engine source and a second release in the same minute.
-3. `git add ios/engine-release && git commit -m "Engine release <version>" && git pull --ff-only && git push`
+4. `git add ios/engine-release && git commit -m "Engine release <version>" && git pull --ff-only && git push`
 
-Phones see it the next time the app comes on screen (at most one check in 6 hours) and
-run it from the launch after that. Options: `--min-version <v>` raises the floor, so no
-phone runs anything older (use it to kill a bad release); `--min-app-build <n>` keeps a
-release from app builds too old for it.
+`npm run engine:release` runs steps 2 and 3 together. Phones see a release the next
+time the app comes on screen (at most one check in 6 hours) and run it from the launch
+after that. Build options: `--min-version <v>` raises the floor, so no phone runs
+anything older (use it to kill a bad release); `--min-app-build <n>` keeps a release
+from app builds too old for it.
 
 **What only an app update can change** (the app refuses these in a download): the
 native bridge (`ios/engine/bridge-contract.json`: its hash is the bridge id, and a new
 bridge gets its own folder), the record schema version, and the pinned keys.
 
+**Revocation needs the repo public.** Phones read releases from raw.githubusercontent.com
+with no sign-in. If the repo goes private (as in September 2026), no phone can fetch a
+new release, including one that raises the floor to kill a bad one. The fallback is an
+App Store update: its bundled engine is newer, so phones delete older downloads.
+
 ## The keys
 
-Made once on 2026-10-22 by `ios/scripts/engine-keygen.mjs`. Public keys:
-`ios/engine/signing-keys.json`, pinned in `EngineRelease.swift`.
+Made on 2026-10-22 by `ios/scripts/engine-keygen.mjs` (`--add ci` for the third). Public
+keys: `ios/engine/signing-keys.json`, pinned in `EngineRelease.swift`.
 
 | Key | Where | Fingerprint (SHA-256 of the public key, first 16 hex) |
 |---|---|---|
@@ -53,8 +66,10 @@ its one line as the `ENGINE_SIGNING_KEY` secret of the `engine-signing` environm
 (below), then `rm -P` that file. No agent has seen either. The daily key stays only in
 your Keychain.
 
-- **Lost Mac or Keychain:** sign with the cold key:
-  `ENGINE_SIGNING_KEY='<cold line from 1Password>' npm run engine:release -- --key cold`.
+- **Lost Mac or Keychain:** build for the cold key, then sign with it in the signer
+  only, so the key never reaches the build:
+  `npm run engine:build -- --key cold`, then
+  `ENGINE_SIGNING_KEY='<cold line from 1Password>' node ios/scripts/sign-engine.mjs --key cold`.
   Then make a new daily key in an app update (below).
 - **Rotate or revoke:** add the new public key under a new id to both
   `signing-keys.json` and `EngineRelease.publicKeys`, remove the old one, ship an app
@@ -63,17 +78,23 @@ your Keychain.
   versions at most two days past the phone's clock, so a release after that, from the
   new key, outranks anything it signed.
 - `ios/scripts/signing-key-guard.test.ts` fails if a key-shaped file or a private key
-  appears in any tracked file.
+  appears in any tracked file, and, while the cold and ci files are still on this Mac,
+  if their bytes do.
 
 ## Automatic on push to main (for you to paste; agents never edit workflows)
 
-Once pasted, each successful Deploy on `main` builds the engine with no secret, and a
-second job, gated by a separate `engine-signing` environment where you are the
-required reviewer, shows what it will sign and signs it with inline steps only, so no
-repo code runs next to the key. Set up first: Settings, Environments, New environment
-`engine-signing`; Required reviewers: you; secret `ENGINE_SIGNING_KEY` = the ci key's
-line (its own pinned key, so the daily key never leaves your Keychain). If the ci key
-leaks, remove it from the pins in an app update; the other two keep working.
+Once pasted, each successful Deploy on `main` builds the engine with no secret and puts
+what it built (the manifest, the bundle's hash, and the engine source changes since the
+last release) in that run's summary. Read it, then approve the second job, gated by a
+separate `engine-signing` environment. That job runs no repo code: it checks the
+artifact, signs it with openssl and the ci key, and commits only the new files.
+
+Set up first, in Settings, Environments, New environment `engine-signing`:
+- Required reviewers: you.
+- Deployment branches and tags: **Selected branches, `main` only**.
+- Secret `ENGINE_SIGNING_KEY` = the ci key's line (its own pinned key, so the daily key
+  never leaves your Keychain). If the ci key leaks, remove it from the pins in an app
+  update; the other two keep working.
 
 ```yaml
 # .github/workflows/engine-release.yml
@@ -93,6 +114,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.release.outputs.changed }}
+      bridge: ${{ steps.release.outputs.bridge }}
+      sha: ${{ steps.release.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -101,19 +124,43 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - id: release
-        name: Build the release, unsigned
+        name: Build the release, unsigned (no secret in this job)
         run: |
+          set -euo pipefail
+          bridge=$(sha256sum ios/engine/bridge-contract.json | cut -c1-16)
           mkdir -p release-out
-          [ -d ios/engine-release ] && cp -R ios/engine-release/. release-out/
-          node ios/scripts/release-engine.mjs --no-sign --key ci --if-changed --out release-out
-          if diff -r ios/engine-release release-out >/dev/null 2>&1; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+          [ -d "ios/engine-release/bridge-$bridge" ] && cp -R "ios/engine-release/bridge-$bridge" release-out/
+          node ios/scripts/release-engine.mjs --key ci --if-changed --out release-out
+          echo "bridge=$bridge" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if diff -r "ios/engine-release/bridge-$bridge" "release-out/bridge-$bridge" >/dev/null 2>&1; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: What will be signed (read this before approving)
+        if: steps.release.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          dir="release-out/bridge-${{ steps.release.outputs.bridge }}"
+          last=$(git log -1 --format=%H -- ios/engine-release || true)
+          {
+            echo "## Engine release for bridge ${{ steps.release.outputs.bridge }}, built from ${{ steps.release.outputs.sha }}"
+            echo '```json'; cat "$dir/manifest.json"; echo; echo '```'
+            echo '```'; sha256sum "$dir"/*.js; echo '```'
+            echo "### Engine source changed since the last release (${last:-none})"
+            echo '```'
+            [ -n "$last" ] && git log --oneline "$last"..HEAD -- packages/health-core/src ios/engine
+            [ -n "$last" ] && git diff --stat "$last" HEAD -- packages/health-core/src ios/engine
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - if: steps.release.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: engine-release
-          path: release-out
+          path: release-out/bridge-${{ steps.release.outputs.bridge }}
   sign:
     needs: build
     if: needs.build.outputs.changed == 'true'
@@ -125,18 +172,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           name: engine-release
-          path: release-out
-      - name: Show what will be signed
+          path: built
+      - name: Check the artifact is what the build declared
         run: |
-          for m in release-out/bridge-*/manifest.json; do echo "== $m"; cat "$m"; echo; done
-          sha256sum release-out/bridge-*/*.js
-          last=$(git log -1 --format=%H -- ios/engine-release || true)
-          echo "== engine source changed since the last release ($last):"
-          [ -n "$last" ] && git diff --stat "$last" HEAD -- packages/health-core/src ios/engine || true
+          set -euo pipefail
+          test "$(jq -r .bridge built/manifest.json)" = "${{ needs.build.outputs.bridge }}"
+          test "$(jq -r .keyId built/manifest.json)" = ci
+          js="built/$(jq -r .sha256 built/manifest.json).js"
+          test "$(sha256sum "$js" | cut -c1-64)" = "$(jq -r .sha256 built/manifest.json)"
+          test "$(stat -c %s "$js")" = "$(jq -r .size built/manifest.json)"
+          rm -f built/manifest.sig
       - name: Sign with the ci key (inline; no repo code runs here)
         env:
           ENGINE_SIGNING_KEY: ${{ secrets.ENGINE_SIGNING_KEY }}
@@ -146,23 +194,29 @@ jobs:
           key=$(mktemp); der=$(mktemp)
           { printf '\x30\x2e\x02\x01\x00\x30\x05\x06\x03\x2b\x65\x70\x04\x22\x04\x20'; printf '%s' "$ENGINE_SIGNING_KEY" | base64 -d; } > "$der"
           openssl pkey -inform DER -in "$der" -out "$key"
-          for dir in release-out/bridge-*/; do
-            [ -f "$dir/manifest.sig" ] && continue
-            { printf 'health-roadmap-engine-manifest/v1\n'; cat "$dir/manifest.json"; } > "$dir/signed.tmp"
-            openssl pkeyutl -sign -inkey "$key" -rawin -in "$dir/signed.tmp" | base64 -w0 > "$dir/manifest.sig"
-            echo >> "$dir/manifest.sig"
-            rm "$dir/signed.tmp"
-          done
-          shred -u "$key" "$der"
-      - name: Commit the release
+          { printf 'health-roadmap-engine-manifest/v1\n'; cat built/manifest.json; } > signed.tmp
+          openssl pkeyutl -sign -inkey "$key" -rawin -in signed.tmp | base64 -w0 > built/manifest.sig
+          echo >> built/manifest.sig
+          shred -u "$key" "$der"; rm signed.tmp
+      - name: Commit the release (add files only; never lower or replace a newer release)
         run: |
-          rsync -a --delete release-out/ ios/engine-release/
-          git add ios/engine-release
-          git -c user.name="Brad Stanfield" -c user.email="<your GitHub noreply address>" commit -m "Engine release (signed in CI)"
-          git pull --rebase origin main
+          set -euo pipefail
+          dest="ios/engine-release/bridge-${{ needs.build.outputs.bridge }}"
+          new=$(jq -r .version built/manifest.json)
+          if [ -f "$dest/manifest.json" ] && [ "$(jq -r .version "$dest/manifest.json")" -ge "$new" ]; then
+            echo "main already has release $(jq -r .version "$dest/manifest.json"), not older than $new: nothing to commit"; exit 0
+          fi
+          mkdir -p "$dest"
+          cp built/*.js "$dest/"
+          cp built/manifest.json built/manifest.sig "$dest/"
+          git add "$dest"
+          git -c user.name="Brad Stanfield" -c user.email="<your GitHub noreply address>" commit -m "Engine release $new (built from ${{ needs.build.outputs.sha }}, signed in CI)"
           git push origin HEAD:main
 ```
 
 Pin the four actions to commit SHAs when you paste it, as the other workflows do. The
-build job runs `npm ci` and the release script, but never sees the key; the sign job
-sees the key and runs only `openssl`, `base64` and `git`.
+build job installs with `--ignore-scripts` and never sees the key. The sign job sees the
+key and runs only `jq`, `openssl`, `base64` and `git`. It signs the artifact built from
+the commit named in the summary, never a fresh checkout of `main`. If `main` moved and
+the push is refused, run it again. Old bundles stay in the folder; the app reads only
+the one its manifest names.

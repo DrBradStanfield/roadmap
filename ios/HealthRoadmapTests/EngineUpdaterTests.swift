@@ -26,7 +26,7 @@ final class EngineUpdaterTests: XCTestCase {
         serve(release)
     }
 
-    private func serve(_ release: EngineFolder.Staged, bundle: Data? = nil) {
+    private func serve(_ release: EngineFolder.Staged, bundle: Data? = nil, delay: TimeInterval = 0) {
         let dir = "/DrBradStanfield/roadmap/main/ios/engine-release/bridge-\(EngineRelease.bridge)/"
         let log = log
         StubHTTP.handler = { request in
@@ -34,7 +34,7 @@ final class EngineUpdaterTests: XCTestCase {
             switch request.url.path() {
             case dir + "manifest.json": return .init(body: release.manifest)
             case dir + "manifest.sig": return .init(body: release.signature)
-            case dir + "\(ManifestCheck.sha256(release.bundle)).js": return .init(body: bundle ?? release.bundle)
+            case dir + "\(ManifestCheck.sha256(release.bundle)).js": return .init(body: bundle ?? release.bundle, delay: delay)
             default: return .init(status: 404)
             }
         }
@@ -52,7 +52,7 @@ final class EngineUpdaterTests: XCTestCase {
         let staged = try folder.read(release.version)
         XCTAssertEqual(staged.bundle, release.bundle)
         XCTAssertEqual(staged.manifest, release.manifest)
-        XCTAssertEqual(try folder.readState().highWater, release.version)
+        XCTAssertEqual(try folder.readState(bundled: 0).highWater, release.version)
     }
 
     func testTheRequestsCarryNothingOfTheUser() async throws {
@@ -107,7 +107,7 @@ final class EngineUpdaterTests: XCTestCase {
         let outcome = await updater().checkIfDue()
         XCTAssertEqual(outcome, .refused("hashMismatch"))
         XCTAssertEqual(folder.stagedVersions(), [])
-        XCTAssertEqual(try folder.readState().highWater, 0)
+        XCTAssertEqual(try folder.readState(bundled: 0).highWater, 0)
     }
 
     func testAnOversizeBundleIsNotRead() async throws {
@@ -124,6 +124,25 @@ final class EngineUpdaterTests: XCTestCase {
         XCTAssertEqual(folder.stagedVersions(), [])
     }
 
+    /// Review R4: the check's last write re-reads the state, so a trial confirmed
+    /// while the bundle downloads is kept.
+    func testATrialConfirmedDuringADownloadIsKept() async throws {
+        let onTrial = fixture.version(daysAfterBundled: 1).version
+        var state = EngineFolder.State()
+        state.trying = onTrial
+        try folder.write(state)
+        serve(release, delay: 1)
+        let check = Task { await updater().checkIfDue() }
+        try await Task.sleep(for: .milliseconds(400))
+        EngineTrial(version: onTrial, folder: folder, bundled: fixture.bundled.facts.version).confirm()
+        let outcome = await check.value
+        XCTAssertEqual(outcome, .staged(release.version))
+        let after = try folder.readState(bundled: 0)
+        XCTAssertNil(after.trying)
+        XCTAssertEqual(after.proven, [onTrial])
+        XCTAssertEqual(after.highWater, release.version)
+    }
+
     func testTheFloorOnlyRises() async throws {
         let bundle = release.bundle
         let manifest = fixture.manifest(version: release.version, issued: ManifestCheck.versionDate(release.version)!, bundle: bundle) {
@@ -131,6 +150,6 @@ final class EngineUpdaterTests: XCTestCase {
         }
         serve(EngineFolder.Staged(version: release.version, bundle: bundle, manifest: manifest, signature: fixture.signatureFile(manifest)))
         _ = await updater().checkIfDue()
-        XCTAssertEqual(try folder.readState().floor, release.version)
+        XCTAssertEqual(try folder.readState(bundled: 0).floor, release.version)
     }
 }

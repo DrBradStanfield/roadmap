@@ -96,6 +96,64 @@ final class EngineFenceTests: XCTestCase {
         XCTAssertTrue(seen.isEmpty)
     }
 
+    // Review R2: query parameters and headers are allow-listed per route.
+
+    private let drive = "{ Authorization: 'Bearer native-token:google-drive' }"
+
+    func testDropboxTakesNoQueryParameters() async throws {
+        let answer = try await fetch("https://content.dropboxapi.com/2/files/download?arg=x")
+        XCTAssertEqual(answer, "refused")
+        let list = try await fetch("https://api.dropboxapi.com/2/files/list_folder?cursor=1")
+        XCTAssertEqual(list, "refused")
+        XCTAssertTrue(seen.isEmpty)
+    }
+
+    func testDriveTakesOnlyTheParametersItsAdapterSends() async throws {
+        let list = try await fetch("https://www.googleapis.com/drive/v3/files?q=name%3D%27x%27&spaces=drive&fields=files(id)&pageSize=1", method: "GET", headers: drive)
+        XCTAssertEqual(list, "200")
+        let media = try await fetch("https://www.googleapis.com/drive/v3/files/abc?alt=media", method: "GET", headers: drive)
+        XCTAssertEqual(media, "200")
+        let upload = try await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,version", headers: drive)
+        XCTAssertEqual(upload, "200")
+        XCTAssertEqual(seen.count, 3)
+        for url in ["https://www.googleapis.com/drive/v3/files?q=x&corpora=allDrives",
+                    "https://www.googleapis.com/drive/v3/files/abc?alt=media&supportsAllDrives=true",
+                    "https://www.googleapis.com/drive/v3/files/abc?uploadType=media"] {
+            let answer = try await fetch(url, method: "GET", headers: drive)
+            XCTAssertEqual(answer, "refused", url)
+        }
+        XCTAssertEqual(seen.count, 3)
+    }
+
+    func testACredentialInTheQueryIsRefusedInAnyCase() async throws {
+        for name in ["access_token", "Authorization", "OAUTH_TOKEN", "key", "Key", "fields&access_token"] {
+            let answer = try await fetch("https://www.googleapis.com/drive/v3/files/abc?\(name)=t", method: "GET", headers: drive)
+            XCTAssertEqual(answer, "refused", name)
+        }
+        XCTAssertTrue(seen.isEmpty)
+    }
+
+    func testOnlyTheAdaptersHeadersPass() async throws {
+        let known = try await fetch("https://content.dropboxapi.com/2/files/upload",
+                                    headers: "{ Authorization: 'Bearer native-token:dropbox', 'Content-Type': 'application/octet-stream', 'Dropbox-API-Arg': '{}', Accept: '*/*' }")
+        XCTAssertEqual(known, "200")
+        for extra in ["'X-Forward-To': 'evil.example'", "Origin: 'https://evil.example'", "'Proxy-Authorization': 'x'"] {
+            let answer = try await fetch("https://content.dropboxapi.com/2/files/upload", headers: "{ Authorization: 'Bearer native-token:dropbox', \(extra) }")
+            XCTAssertEqual(answer, "refused", extra)
+        }
+        XCTAssertEqual(seen.count, 1)
+    }
+
+    func testTheUploadBranchesLabCallsPass() async throws {
+        // labFilesJson and labFileBytes (the upload branch): files/list_folder and files/download, no query.
+        let list = try await fetch("https://api.dropboxapi.com/2/files/list_folder",
+                                   headers: "{ Authorization: 'Bearer native-token:dropbox', 'Content-Type': 'application/json' }")
+        XCTAssertEqual(list, "200")
+        let download = try await fetch("https://content.dropboxapi.com/2/files/download",
+                                       headers: "{ Authorization: 'Bearer native-token:dropbox', 'Dropbox-API-Arg': '{\"path\":\"/a.pdf\"}' }")
+        XCTAssertEqual(download, "200")
+    }
+
     func testACookieOrNoAuthorizationIsRefused() async throws {
         let cookie = try await fetch("https://content.dropboxapi.com/2/files/download",
                                      headers: "{ Authorization: 'Bearer native-token:dropbox', Cookie: 'a=b' }")

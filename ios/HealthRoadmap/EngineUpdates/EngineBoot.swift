@@ -35,8 +35,8 @@ struct EngineBoot {
 
     private func downloaded() -> Choice? {
         // Unreadable before first unlock: not now, and nothing is marked.
-        guard let folder, var state = try? folder.readState() else { return nil }
         let bundledVersion = bundled.facts.version
+        guard let folder, var state = try? folder.readState(bundled: bundledVersion) else { return nil }
 
         // A trial that never finished: that launch crashed or hung before the user's
         // own record was shown. Judged only on a foreground launch (R8): a
@@ -64,7 +64,7 @@ struct EngineBoot {
             do {
                 let engine = try load(staged, floor: state.floor)
                 // The mark stays until the user's own record is shown (My data or the plan).
-                if trial { engine.trial = EngineTrial(version: version, folder: folder) }
+                if trial { engine.trial = EngineTrial(version: version, folder: folder, bundled: bundledVersion) }
                 Self.log.notice("running downloaded engine \(version, privacy: .public)")
                 return Choice(engine: engine, version: version)
             } catch {
@@ -111,16 +111,18 @@ struct EngineBoot {
 final class EngineTrial {
     let version: Int
     private let folder: EngineFolder
+    private let bundled: Int
     private(set) var confirmed = false
 
-    init(version: Int, folder: EngineFolder) {
+    init(version: Int, folder: EngineFolder, bundled: Int) {
         self.version = version
         self.folder = folder
+        self.bundled = bundled
     }
 
     /// The engine read the user's record and drew it: it is proven.
     func confirm() {
-        guard !confirmed, var state = try? folder.readState() else { return }
+        guard !confirmed, var state = try? folder.readState(bundled: bundled) else { return }
         confirmed = true
         if state.trying == version { state.trying = nil }
         if !state.proven.contains(version) { state.proven.append(version) }

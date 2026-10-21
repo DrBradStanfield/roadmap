@@ -100,8 +100,12 @@ purpose; Expo Updates and CodePush rely on the same rule. Brad, 2026-10-22: "sho
 automatically come through if I update github". How to release: [engine-updates.md](engine-updates.md).
 
 **What was built.** The release is three files in `ios/engine-release/bridge-<id>/` on
-`main`: the bundle as `<sha256>.js`, `manifest.json` and `manifest.sig`, written by
-`npm run engine:release` (`ios/scripts/release-engine.mjs`). The app reads them from
+`main`: the bundle as `<sha256>.js`, `manifest.json` and `manifest.sig`. Two steps
+write them, so no repo code runs next to a key (review R1): `npm run engine:build`
+(`release-engine.mjs`: esbuild and the parity check; it drops `ENGINE_SIGNING_KEY` from
+its environment before starting any child, and a test proves none sees it), then
+`npm run engine:sign` (`sign-engine.mjs`: Node's own modules and `engine-signing.mjs`
+only; it checks the manifest and bundle on disk and signs). The app reads them from
 `raw.githubusercontent.com`. GitHub is a dumb host: trust comes only from the signature,
 so a push to `main` by a loop or anyone else reaches no phone unless Brad's key signed it.
 A signature means "the key holder approved this bundle", nothing more.
@@ -142,7 +146,14 @@ A signature means "the key holder approved this bundle", nothing more.
   verified manifest leads to the third GET, the bundle, read up to its declared size (8 MB
   cap) and refused unless its SHA-256 matches. It is staged in `Application
   Support/Engine` (left out of backups, as the record is) with its manifest and signature.
-  Failures are silent and keep the current engine.
+  Failures are silent and keep the current engine. Its last write re-reads the state and
+  changes only `highWater`, `floor` and `lastCheck`, so a trial confirmed during a
+  download is kept (review R4).
+- **The state file** (`state.json`) decodes a missing field as its default. One that
+  reads but does not decode is corrupt, not locked: it is moved aside and the state
+  starts again with `highWater` at the bundled engine's version, so rollback protection
+  holds and only the record of proven and bad versions is lost (review R8). One that
+  cannot be read (before first unlock) is "not now".
 - **Activation** (`EngineBoot`), only at a fresh launch, never mid-session. The staged file
   is read once; the signature and fields are checked again against today's pins (a key
   removed in an app update stops its bundles), and the hash against the bytes in memory,
@@ -156,7 +167,9 @@ A signature means "the key holder approved this bundle", nothing more.
 - **Fallback.** A "trying" mark is written before a version's first foreground load and
   cleared once the engine has shown the user's own record: My data drawn from it, or the
   plan, whichever comes first (`EngineTrial.confirm`, one call in `MyDataView` and one in
-  `PlanView`; orchestrator's call, 2026-10-22). So a crash or hang on the real record
+  `PlanView`; orchestrator's call, 2026-10-22). The plan confirms only when it planned
+  the record or met health-core's own PlanError (no height or sex), never when the
+  engine threw (review R5). So a crash or hang on the real record
   counts, not only one on the self-test's fixture, while quitting does not: the app opens
   on My data, which confirms at once. Still there at the next foreground launch means
   that launch crashed or hung before the record was shown, and the version is marked
@@ -172,11 +185,22 @@ A signature means "the key holder approved this bundle", nothing more.
   (`EngineHTTP`) sends only the allow-listed calls, method, host and path, of the provider
   the sentinel names: Dropbox `files/download`, `files/upload`, `files/list_folder`
   (+`/continue`); Drive `files` list, create, get (metadata and media) and the upload
-  create and update. It swaps the real token in there and nowhere else. Any other
-  Authorization or Cookie header, any other path (Dropbox `sharing/*`, `delete_v2`, Drive
-  `permissions`), any other host (the app's own server included) or plain http is
-  refused. The engine has its own ephemeral session, and every redirect is refused. So no
-  engine, however changed, can send the record or a token anywhere new. Derived from
+  create and update. Each route also lists its query parameters (Dropbox none; Drive
+  only what drive-rest.ts sends on it: `q`, `spaces`, `fields`, `pageSize`, `pageToken`,
+  `alt`, `uploadType`), and every call may carry only the adapters' headers
+  (`Content-Type`, `Dropbox-API-Arg`, `Accept`, `Content-Length`) besides the sentinel;
+  `access_token`, `authorization`, `oauth_token` and `key` in a query are refused in any
+  case (review R2). It swaps the real token in there and nowhere else. Any other header,
+  path (Dropbox `sharing/*`, `delete_v2`, Drive `permissions`), host (the app's own
+  server included) or plain http is refused. The engine has its own ephemeral session,
+  and every redirect is refused. The upload branch's lab reads (`files/list_folder` and
+  `files/download`, no query) fit the list as it is. So no engine, however changed, can
+  send the record or a token anywhere new by itself. **One path remains, by design: the
+  chat context** (review R7). The engine builds it from the record, and Swift sends it
+  to our server when the user asks a question (US-52); the server rebuilds its prompt
+  from it rather than passing it on as it is. Swift checks it is a JSON object with a
+  unit system and under 512 KB (`ChatClient.body`), so a changed engine cannot use it to
+  ship the whole file or something else. Derived from
   dropbox-rest.ts and drive-rest.ts on the app's path; `get_metadata` and longpoll are
   left off because the app never calls them (push is web-only). **Before Drive sync goes
   live, check that Drive's `alt=media` download answers directly, without a redirect**:
@@ -186,10 +210,20 @@ A signature means "the key holder approved this bundle", nothing more.
   change computation and text only (ios/app-store.md). The plan line ("Worked out on this
   iPhone", D9) stays true.
 - **Automatic on GitHub.** Workflows are Brad's, so agents wrote the job for him to paste
-  (engine-updates.md, R1): a secret-less build job, then a signing job in a separate
-  `engine-signing` environment with Brad as required reviewer, which runs no repo code
-  (openssl and git only) and shows the manifest, the hashes and the source diff since the
-  last release before it signs. Until he pastes it, releasing is the local script.
+  (engine-updates.md, R1, R3): a build job with no secret (`npm ci --ignore-scripts`)
+  puts the manifest, the bundle's hash and the engine source changes since the last
+  release in its run summary, for Brad to read before he approves; then a signing job in
+  a separate `engine-signing` environment (Brad the required reviewer, `main` only, the
+  `ci` key) checks the artifact against the bridge the build declared, signs it with
+  openssl, and commits only the new files, refusing to lower or replace a newer release
+  on `main`. It runs no repo code. Until he pastes it, releasing is the two local steps.
+- **Revocation needs the repo public** (review R10). Phones read releases without a
+  sign-in; if the repo goes private, no phone can fetch a release that raises the floor
+  to kill a bad one. The fallback is an App Store update, whose newer bundled engine
+  makes phones delete older downloads.
+- **Prewarm is unverified** (review R9). iOS may prewarm the app before the user opens
+  it; whether that launch counts as foreground for the trial is unchecked on a real
+  iPhone (ios/launch-checklist.md).
 - **Usage signal:** engine-load failures in crash reports (App Store Connect); the app
   sends nothing (D9). A version refused at launch is in the device log (no health value).
 - **DEBUG only, compiled out of Release:** launch arguments `-EngineUpdateBaseURL` (a
@@ -823,7 +857,7 @@ open web tab, Pages fork and CLI off from its chat history until it updated.
   JavaScriptCore) into `HealthRoadmap/Engine/health-engine.js`, and writes the parity
   goldens. Run it before any Xcode build: `node ios/scripts/build-engine.mjs`. Its outputs
   are generated and ignored by git.
-- `scripts/release-engine.mjs` (`npm run engine:release`), `scripts/engine-keygen.mjs`,
+- `scripts/release-engine.mjs` (`npm run engine:build`), `scripts/sign-engine.mjs` (`npm run engine:sign`), `scripts/engine-keygen.mjs`,
   `scripts/engine-signing.mjs`: signed over-the-air releases into `engine-release/` (D3).
   `engine/bridge-contract.json` is the native bridge's contract; its hash is the bridge id.
   Tested by `scripts/release-engine.test.ts`, `scripts/signing-key-guard.test.ts` and

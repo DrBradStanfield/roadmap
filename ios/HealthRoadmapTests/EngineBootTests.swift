@@ -29,10 +29,10 @@ final class EngineBootTests: XCTestCase {
         let choice = try boot()
         XCTAssertEqual(choice.version, release.version)
         XCTAssertEqual(try version(choice), release.version)
-        XCTAssertEqual(try folder.readState().trying, release.version, "on trial until the user's record is shown")
-        XCTAssertEqual(try folder.readState().proven, [])
+        XCTAssertEqual(try folder.readState(bundled: 0).trying, release.version, "on trial until the user's record is shown")
+        XCTAssertEqual(try folder.readState(bundled: 0).proven, [])
         choice.engine.trial?.confirm()
-        let state = try folder.readState()
+        let state = try folder.readState(bundled: 0)
         XCTAssertNil(state.trying, "the trial finished")
         XCTAssertEqual(state.proven, [release.version])
     }
@@ -42,7 +42,7 @@ final class EngineBootTests: XCTestCase {
         try folder.stage(release)
         XCTAssertEqual(try boot().version, release.version) // never confirmed: a hang on the real record
         XCTAssertNil(try boot().version)
-        XCTAssertEqual(try folder.readState().bad, [release.version])
+        XCTAssertEqual(try folder.readState(bundled: 0).bad, [release.version])
     }
 
     func testABackgroundLaunchLeavesAnOpenTrialForTheNextForegroundOne() throws {
@@ -50,8 +50,8 @@ final class EngineBootTests: XCTestCase {
         try folder.stage(release)
         _ = try boot()
         XCTAssertNil(try boot(foreground: false).version, "not proven, so not run in the background")
-        XCTAssertEqual(try folder.readState().trying, release.version)
-        XCTAssertEqual(try folder.readState().bad, [])
+        XCTAssertEqual(try folder.readState(bundled: 0).trying, release.version)
+        XCTAssertEqual(try folder.readState(bundled: 0).bad, [])
     }
 
     func testMyDataConfirmsATrialThroughItsStore() throws {
@@ -64,10 +64,50 @@ final class EngineBootTests: XCTestCase {
         XCTAssertNotNil(store.myData, "the engine read the user's record")
         XCTAssertTrue(store.engineTrial === choice.engine.trial)
         store.engineTrial?.confirm() // MyDataView's one call, on appear
-        XCTAssertNil(try folder.readState().trying)
-        XCTAssertEqual(try folder.readState().proven, [release.version])
+        XCTAssertNil(try folder.readState(bundled: 0).trying)
+        XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version])
         store.engineTrial?.confirm() // idempotent: the plan confirming later changes nothing
-        XCTAssertEqual(try folder.readState().proven, [release.version])
+        XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version])
+    }
+
+    /// Review R5: a plan screen whose engine threw on the user's record never confirms.
+    func testThePlanScreenNeverConfirmsAnEngineThatThrewOnTheRecord() async throws {
+        let release = fixture.staged(daysAfterBundled: 2, throwsOnRealRecords: true)
+        try folder.stage(release)
+        let choice = try boot()
+        XCTAssertEqual(choice.version, release.version, "it passed its self-test")
+        let records = FileManager.default.temporaryDirectory.appending(path: "plan throws \(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
+        let store = try RecordStore(folder: records, engine: choice.engine, deviceId: "test")
+        XCTAssertThrowsError(try choice.engine.plan(recordJSON: store.recordJSON, now: .now, deviceId: "test"))
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = UIHostingController(rootView: PlanView(engine: choice.engine, store: store, showMyData: {}))
+        window.makeKeyAndVisible()
+        try await Task.sleep(for: .seconds(2))
+        XCTAssertEqual(try folder.readState(bundled: 0).trying, release.version, "still on trial")
+        XCTAssertEqual(try folder.readState(bundled: 0).proven, [])
+        window.isHidden = true
+        XCTAssertNil(try boot().version, "the next launch counts it against the engine")
+    }
+
+    /// Review R8: missing fields take defaults; a corrupt file is moved aside, not "locked".
+    func testAStateWithMissingFieldsDecodesWithDefaults() throws {
+        try Data(#"{"highWater":7}"#.utf8).write(to: folder.url.appending(path: "state.json"))
+        let state = try folder.readState(bundled: 0)
+        XCTAssertEqual(state.highWater, 7)
+        XCTAssertEqual(state.bad, [])
+        XCTAssertNil(state.trying)
+    }
+
+    func testACorruptStateStartsAgainAboveTheBundledEngine() throws {
+        let release = fixture.staged(daysAfterBundled: 2)
+        try folder.stage(release)
+        try Data("{not json".utf8).write(to: folder.url.appending(path: "state.json"))
+        let choice = try boot()
+        XCTAssertEqual(choice.version, release.version, "a verified staged engine still runs")
+        let names = try FileManager.default.contentsOfDirectory(atPath: folder.url.path(percentEncoded: false))
+        XCTAssertEqual(names.filter { $0.hasPrefix("state.corrupt-") }.count, 1, "the corrupt file is kept aside")
+        XCTAssertEqual(try folder.readState(bundled: 0).highWater, fixture.bundled.facts.version)
     }
 
     func testThePlanScreenConfirmsATrialOnceThePlanRenders() async throws {
@@ -81,12 +121,12 @@ final class EngineBootTests: XCTestCase {
         window.rootViewController = UIHostingController(rootView: PlanView(engine: choice.engine, store: store, showMyData: {}))
         window.makeKeyAndVisible()
         var waited = 0
-        while try folder.readState().trying != nil, waited < 100 {
+        while try folder.readState(bundled: 0).trying != nil, waited < 100 {
             try await Task.sleep(for: .milliseconds(50))
             waited += 1
         }
-        XCTAssertNil(try folder.readState().trying)
-        XCTAssertEqual(try folder.readState().proven, [release.version])
+        XCTAssertNil(try folder.readState(bundled: 0).trying)
+        XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version])
         window.isHidden = true
     }
 
@@ -104,7 +144,7 @@ final class EngineBootTests: XCTestCase {
         let choice = try boot()
         XCTAssertNil(choice.version)
         XCTAssertEqual(try version(choice), fixture.bundled.facts.version)
-        let state = try folder.readState()
+        let state = try folder.readState(bundled: 0)
         XCTAssertEqual(state.bad, [release.version])
         XCTAssertNil(state.trying)
         XCTAssertEqual(folder.stagedVersions(), [], "a bad engine is deleted")
@@ -126,7 +166,7 @@ final class EngineBootTests: XCTestCase {
         try folder.write(state)
         let choice = try boot()
         XCTAssertNil(choice.version)
-        XCTAssertEqual(try folder.readState().bad, [release.version])
+        XCTAssertEqual(try folder.readState(bundled: 0).bad, [release.version])
         XCTAssertEqual(folder.stagedVersions(), [])
     }
 
@@ -136,7 +176,7 @@ final class EngineBootTests: XCTestCase {
         tampered[tampered.count - 3] ^= 1
         try folder.stage(EngineFolder.Staged(version: release.version, bundle: tampered, manifest: release.manifest, signature: release.signature))
         XCTAssertNil(try boot().version)
-        XCTAssertEqual(try folder.readState().bad, [release.version])
+        XCTAssertEqual(try folder.readState(bundled: 0).bad, [release.version])
     }
 
     func testAnEngineSignedByAKeyNoLongerPinnedIsRefused() throws {
@@ -150,7 +190,7 @@ final class EngineBootTests: XCTestCase {
         let release = fixture.staged(daysAfterBundled: 2)
         try folder.stage(release)
         XCTAssertNil(try boot(foreground: false).version)
-        let state = try folder.readState()
+        let state = try folder.readState(bundled: 0)
         XCTAssertNil(state.trying)
         XCTAssertEqual(state.bad, [])
         XCTAssertEqual(folder.stagedVersions(), [release.version], "kept for a foreground launch")

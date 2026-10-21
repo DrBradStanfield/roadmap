@@ -57,7 +57,7 @@ final class EngineUpdater {
     }
 
     private func check() async -> Outcome {
-        guard var state = try? folder.readState() else { return .failed }
+        guard var state = try? folder.readState(bundled: bundled.version) else { return .failed }
         let time = now()
         if let last = state.lastCheck, time.timeIntervalSince(last) < EngineRelease.checkInterval, time >= last { return .notDue }
         state.lastCheck = time
@@ -84,9 +84,13 @@ final class EngineUpdater {
 
         do {
             try folder.stage(EngineFolder.Staged(version: manifest.version, bundle: bundle, manifest: manifestBytes, signature: signatureFile))
-            state.highWater = manifest.version
-            state.floor = max(state.floor, manifest.minVersion)
-            try folder.write(state)
+            // Read again: a trial may have been confirmed during the download (review R4).
+            // This check owns only highWater, floor and lastCheck.
+            var latest = try folder.readState(bundled: bundled.version)
+            latest.highWater = max(latest.highWater, manifest.version)
+            latest.floor = max(latest.floor, manifest.minVersion)
+            latest.lastCheck = time
+            try folder.write(latest)
         } catch {
             return .failed
         }

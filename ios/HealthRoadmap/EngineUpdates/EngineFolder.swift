@@ -19,6 +19,19 @@ struct EngineFolder {
         /// Still set at a later launch means that load crashed or hung.
         var trying: Int?
         var lastCheck: Date?
+
+        init() {}
+
+        /// A field missing (an older or newer app wrote the file) takes its default.
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            highWater = try c.decodeIfPresent(Int.self, forKey: .highWater) ?? 0
+            floor = try c.decodeIfPresent(Int.self, forKey: .floor) ?? 0
+            bad = try c.decodeIfPresent([Int].self, forKey: .bad) ?? []
+            proven = try c.decodeIfPresent([Int].self, forKey: .proven) ?? []
+            trying = try c.decodeIfPresent(Int.self, forKey: .trying)
+            lastCheck = try c.decodeIfPresent(Date.self, forKey: .lastCheck)
+        }
     }
 
     /// The staged files of one version, read once into memory.
@@ -47,10 +60,19 @@ struct EngineFolder {
     private var stateFile: URL { url.appending(path: "state.json") }
 
     /// Throws when the state cannot be read (before first unlock, say): the caller then
-    /// changes nothing and runs the bundled engine. No file yet is a fresh state.
-    func readState() throws -> State {
+    /// changes nothing and runs the bundled engine. No file yet is a fresh state. A file
+    /// that reads but does not decode is corrupt, not locked (review R8): it is moved
+    /// aside and the state starts again with `highWater` at the bundled engine's version,
+    /// so rollback protection holds; only the record of proven and bad versions is lost.
+    func readState(bundled: Int) throws -> State {
         guard FileManager.default.fileExists(atPath: stateFile.path(percentEncoded: false)) else { return State() }
-        return try JSONDecoder().decode(State.self, from: Data(contentsOf: stateFile))
+        let data = try Data(contentsOf: stateFile)
+        if let state = try? JSONDecoder().decode(State.self, from: data) { return state }
+        try? FileManager.default.moveItem(at: stateFile, to: url.appending(path: "state.corrupt-\(UUID().uuidString).json"))
+        var fresh = State()
+        fresh.highWater = bundled
+        try write(fresh)
+        return fresh
     }
 
     func write(_ state: State) throws {

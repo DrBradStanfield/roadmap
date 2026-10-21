@@ -28,7 +28,9 @@
     "test:watch": "npm run test --workspace=@roadmap/health-core -- --watch",
     "rebuild-index": "npx tsx scripts/rebuild-blog-index.ts",
     "build:chatgpt-plugin": "node docs/chatgpt-review/build-plugin-zip.mjs",
-    "engine:release": "node ios/scripts/release-engine.mjs"
+    "engine:build": "node ios/scripts/release-engine.mjs",
+    "engine:sign": "node ios/scripts/sign-engine.mjs",
+    "engine:release": "node ios/scripts/release-engine.mjs --if-changed && node ios/scripts/sign-engine.mjs"
   },
   "type": "module",
   "engines": {

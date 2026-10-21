@@ -38,13 +38,17 @@ struct PlanView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
         .task(id: store.recordJSON) {
-            state = load(store.recordJSON)
-            // A downloaded engine on trial has now planned the user's own record (US-25 AC18).
-            engine.trial?.confirm()
+            let (next, planned) = load(store.recordJSON)
+            state = next
+            // A downloaded engine on trial has planned the user's own record (US-25 AC18).
+            // Never when it threw: that is the failure the trial exists to catch (review R5).
+            if planned { engine.trial?.confirm() }
         }
     }
 
-    private func load(_ record: String) -> LoadState {
+    /// The screen's state, and whether the engine planned the record: a plan, or
+    /// health-core's own PlanError (no height or sex). Any other throw is not.
+    private func load(_ record: String) -> (LoadState, planned: Bool) {
         let clock = ContinuousClock()
         do {
             let start = clock.now
@@ -52,13 +56,13 @@ struct PlanView: View {
             let elapsed = clock.now - start
             let sections = try engine.sections(planJSON: json)
             let ms = Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15
-            return .loaded(sections: sections, planMs: ms)
+            return (.loaded(sections: sections, planMs: ms), true)
         } catch HealthEngine.EngineError.callFailed(let why) where why.hasPrefix("PlanError: ") {
             // health-core's one PlanError: no usable height or sex (plan.ts). Its own
             // words are written for connectors, so people get a plain sentence.
-            return .cannotPlan("Add your sex and height on My data, and your plan appears here.")
+            return (.cannotPlan("Add your sex and height on My data, and your plan appears here."), true)
         } catch {
-            return .cannotPlan(error.localizedDescription)
+            return (.cannotPlan(error.localizedDescription), false)
         }
     }
 }

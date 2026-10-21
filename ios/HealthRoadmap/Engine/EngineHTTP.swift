@@ -16,25 +16,38 @@ enum EngineHTTP {
         let host: String
         /// Path segments; "*" is one Drive file id.
         let path: [String]
+        /// The query parameters this call may carry; Dropbox's carry none.
+        var query: Set<String> = []
     }
 
-    /// Every call the adapters make on the app's path (read and write of the record).
-    /// Not here, because the app never makes them: Dropbox delete_v2, get_metadata and
-    /// longpoll (documents and push are web-only), Drive DELETE and permissions.
+    /// Every call the adapters make on the app's path, with the query parameters
+    /// drive-rest.ts sends on each. Not here, because the app never makes them:
+    /// Dropbox delete_v2, get_metadata and longpoll (documents and push are web-only),
+    /// Drive DELETE and permissions. The upload branch's lab reads (files/list_folder,
+    /// files/download, no query) are the first two Dropbox routes.
     static let routes: [Route] = [
         Route(provider: "dropbox", method: "POST", host: "content.dropboxapi.com", path: ["2", "files", "download"]),
         Route(provider: "dropbox", method: "POST", host: "content.dropboxapi.com", path: ["2", "files", "upload"]),
         Route(provider: "dropbox", method: "POST", host: "api.dropboxapi.com", path: ["2", "files", "list_folder"]),
         Route(provider: "dropbox", method: "POST", host: "api.dropboxapi.com", path: ["2", "files", "list_folder", "continue"]),
-        Route(provider: "google-drive", method: "GET", host: "www.googleapis.com", path: ["drive", "v3", "files"]),
-        Route(provider: "google-drive", method: "POST", host: "www.googleapis.com", path: ["drive", "v3", "files"]),
-        Route(provider: "google-drive", method: "GET", host: "www.googleapis.com", path: ["drive", "v3", "files", "*"]),
-        Route(provider: "google-drive", method: "POST", host: "www.googleapis.com", path: ["upload", "drive", "v3", "files"]),
-        Route(provider: "google-drive", method: "PATCH", host: "www.googleapis.com", path: ["upload", "drive", "v3", "files", "*"]),
+        Route(provider: "google-drive", method: "GET", host: "www.googleapis.com", path: ["drive", "v3", "files"],
+              query: ["q", "spaces", "fields", "pageSize", "pageToken"]),
+        Route(provider: "google-drive", method: "POST", host: "www.googleapis.com", path: ["drive", "v3", "files"], query: ["fields"]),
+        Route(provider: "google-drive", method: "GET", host: "www.googleapis.com", path: ["drive", "v3", "files", "*"], query: ["fields", "alt"]),
+        Route(provider: "google-drive", method: "POST", host: "www.googleapis.com", path: ["upload", "drive", "v3", "files"], query: ["uploadType", "fields"]),
+        Route(provider: "google-drive", method: "PATCH", host: "www.googleapis.com", path: ["upload", "drive", "v3", "files", "*"], query: ["uploadType", "fields"]),
     ]
 
+    /// The headers the adapters set (lowercase; the shim lowercases them), besides the sentinel.
+    static let headers: Set<String> = ["content-type", "dropbox-api-arg", "accept", "content-length"]
+    /// Credentials refused in a query whatever the route, in any case.
+    static let credentialParameters: Set<String> = ["access_token", "authorization", "oauth_token", "key"]
+
     enum Refusal: Error, Equatable {
-        case notAllowed, credentialHeader
+        /// Not an allowed method, host, path or query parameter.
+        case notAllowed
+        /// A header or query parameter that is not the adapters', or the wrong sentinel.
+        case credentialHeader
     }
 
     /// The provider whose token this request may carry, and its headers without the
@@ -47,13 +60,19 @@ enum EngineHTTP {
         guard let route = routes.first(where: { $0.method == method.uppercased() && $0.host == host && matches($0.path, segments) }) else {
             return .failure(.notAllowed)
         }
+        let names = (URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []).map(\.name)
+        if names.contains(where: { credentialParameters.contains($0.lowercased()) }) { return .failure(.credentialHeader) }
+        guard names.allSatisfy(route.query.contains), url.fragment == nil else { return .failure(.notAllowed) }
         var rest: [String: String] = [:]
         var authorization: String?
         for (name, value) in headers {
-            switch name.lowercased() {
-            case "authorization": authorization = value
-            case "cookie", "proxy-authorization": return .failure(.credentialHeader)
-            default: rest[name] = value
+            let lower = name.lowercased()
+            if lower == "authorization" {
+                authorization = value
+            } else if Self.headers.contains(lower) {
+                rest[name] = value
+            } else {
+                return .failure(.credentialHeader)
             }
         }
         guard authorization == "Bearer \(sentinelPrefix)\(route.provider)" else { return .failure(.credentialHeader) }

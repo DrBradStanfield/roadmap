@@ -1,20 +1,21 @@
 #!/usr/bin/env node
-// Makes a signed over-the-air engine release (ios/architecture.md D3, US-25 AC18):
-//   npm run engine:release            (signs with the daily key; macOS asks to allow the Keychain read)
-//   npm run engine:release -- --if-changed
-// Then commit ios/engine-release/ and push to main: installed apps fetch it from
-// raw.githubusercontent.com. How to release, back up the key and run it from CI:
-// ios/engine-updates.md.
+// Builds an over-the-air engine release, unsigned (ios/architecture.md D3, US-25 AC18):
+//   npm run engine:build -- --if-changed      then   npm run engine:sign
+// Step 1 of 2. This step runs repo code (esbuild, the parity check under tsx) and so
+// never holds the signing key: it drops ENGINE_SIGNING_KEY from its environment before
+// anything starts, so no child process can see it (review R1). sign-engine.mjs, which
+// runs no repo code, signs what this wrote. Then commit ios/engine-release/ and push to
+// main. How to release, back up the keys and run it from CI: ios/engine-updates.md.
 //
 // Writes ios/engine-release/bridge-<id>/:
 //   <sha256>.js      the bundle, content-addressed
 //   manifest.json    canonical JSON: appId, bridge, channel, format, issuedAt, keyId,
 //                    minAppBuild, minVersion, notAfter, schemaVersion, sha256, size, version
-//   manifest.sig     base64 Ed25519 over "health-roadmap-engine-manifest/v1\n" + manifest bytes
-// A signature means only that the key holder approved this bundle.
+//   manifest.sig     written by sign-engine.mjs, not here; a stale one is removed
 //
-// Options: --key daily|cold, --if-changed, --no-sign (CI's build job), --min-app-build N,
-// --min-version N, --allow-dirty, and for tests --out DIR, --keys FILE, --now ISO.
+// Options: --key daily|cold|ci (the key that will sign: the manifest's keyId),
+// --if-changed, --min-app-build N, --min-version N, --allow-dirty, and for tests
+// --out DIR, --keys FILE, --now ISO.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -23,7 +24,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { bridgeId, bundleEngine, bundleFacts, checkParity } from './build-engine.mjs';
-import { canonicalManifest, fingerprint, publicKeyOf, readSigningKey, signManifest } from './engine-signing.mjs';
+import { canonicalManifest } from './engine-signing.mjs';
+
+// Before anything else: no child of this process may see a signing key.
+delete process.env.ENGINE_SIGNING_KEY;
 
 const ios = join(dirname(fileURLToPath(import.meta.url)), '..');
 const repo = join(ios, '..');
@@ -38,7 +42,6 @@ const { values: opts } = parseArgs({
     'min-app-build': { type: 'string' },
     'min-version': { type: 'string' },
     'if-changed': { type: 'boolean', default: false },
-    'no-sign': { type: 'boolean', default: false },
     'allow-dirty': { type: 'boolean', default: false },
   },
 });
@@ -66,16 +69,9 @@ const bridge = bridgeId();
 const dir = join(opts.out, `bridge-${bridge}`);
 const last = existsSync(join(dir, 'manifest.json')) ? JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8')) : null;
 
-// The key first, so a wrong key fails before a slow build.
+// The key id first, so a wrong one fails before a slow build.
 const pins = JSON.parse(readFileSync(opts.keys, 'utf8'));
 if (!pins[opts.key]) throw new Error(`No pinned public key named ${opts.key} in ${opts.keys}.`);
-let seed = null;
-if (!opts['no-sign']) {
-  seed = readSigningKey(opts.key);
-  if (publicKeyOf(seed).toString('base64') !== pins[opts.key]) {
-    throw new Error(`That key is not the pinned ${opts.key} key: the app would refuse its signature.`);
-  }
-}
 
 if (!opts['allow-dirty']) {
   const dirty = execFileSync('git', ['status', '--porcelain', '--', 'packages/health-core', 'ios/engine'], { cwd: repo }).toString().trim();
@@ -127,17 +123,17 @@ async function release(work) {
 
   mkdirSync(dir, { recursive: true });
   const name = `${sha256(bytes)}.js`;
+  // The old signature goes first: it would not match the new manifest.
+  rmSync(join(dir, 'manifest.sig'), { force: true });
   writeFileSync(join(dir, name), bytes);
   writeFileSync(join(dir, 'manifest.json'), manifest);
-  if (seed) writeFileSync(join(dir, 'manifest.sig'), signManifest(manifest, seed).toString('base64') + '\n');
-  else rmSync(join(dir, 'manifest.sig'), { force: true });
   // Keep the previous bundle a while: a phone may hold the old manifest from a cache.
   for (const file of readdirSync(dir)) {
     if (file.endsWith('.js') && file !== name && file !== `${last?.sha256}.js`) rmSync(join(dir, file));
   }
 
   console.log(`release ${version} (bridge ${bridge}, schema ${facts.schemaVersion}) ${Math.round(bytes.length / 1024)} KB sha256 ${sha256(bytes)}`);
-  console.log(seed ? `signed with ${opts.key} (${fingerprint(publicKeyOf(seed))}) → ${dir}` : `NOT signed (--no-sign) → ${dir}`);
+  console.log(`unsigned, for the ${opts.key} key → ${dir}. Next: npm run engine:sign${opts.key === 'daily' ? '' : ` -- --key ${opts.key}`}`);
 }
 
 const work = mkdtempSync(join(tmpdir(), 'engine-release-'));
