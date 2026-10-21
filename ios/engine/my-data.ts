@@ -3,6 +3,8 @@
 // connector use, so the app follows the record's rules without copying them.
 // Values come in and go out in the user's units; the record stores SI.
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { migrateFile } from '../../packages/health-core/src/migrate';
+import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
 import { appendMeasurement, correctValue, stampUpdatedAt } from '../../packages/health-core/src/record-edits';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampFields } from '../../packages/health-core/src/merge';
@@ -45,6 +47,24 @@ export type Edit =
 export type EditOutcome =
   | { ok: true; file: RoadmapFile }
   | { ok: false; reason: string; message: string; existingId?: string };
+
+/**
+ * The record on disk, migrated as the web reads it. Text that is JSON but not an
+ * object is refused: the migration would turn it into an empty record, and the
+ * app's first save would then write over whatever the file was.
+ */
+export function readRecord(text: string, now: string, deviceId: string): RoadmapFile {
+  const raw: unknown = JSON.parse(text);
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    throw new Error('This file is not a health record.');
+  }
+  return migrateFile(raw, { deviceId, now });
+}
+
+/** A typed number, read by the web's rule: either decimal mark, nothing else. */
+export function readNumber(text: string): number | undefined {
+  return parseLocalisedNumber(text);
+}
 
 /** A first-launch record. Units follow the phone's region, as the web's do. */
 export function newRecord(now: string, deviceId: string, locale: string, timeZone: string): RoadmapFile {

@@ -53,6 +53,25 @@ final class RecordEditTests: XCTestCase {
         XCTAssertEqual(rows[1]["status"] as? String, "active")
     }
 
+    func testAUSPhoneGetsUSUnitsWhateverItsClockSettings() throws {
+        // Adversary R3: 24-hour time or a Monday week adds keywords to the locale,
+        // and the region was then read from the keyword, so the record started metric.
+        let engine = try HealthEngine()
+        let newYork = try XCTUnwrap(TimeZone(identifier: "America/New_York"))
+        for identifier in ["en_US", "en_US@hours=h23", "en_US@fw=mon"] {
+            let record = try engine.newRecord(now: now, deviceId: "test", locale: Locale(identifier: identifier), timeZone: newYork)
+            XCTAssertEqual(try engine.myData(recordJSON: record, now: now, deviceId: "test").unitSystem, "conventional", identifier)
+        }
+    }
+
+    func testTheEngineReadsNumbersAsTheWebDoes() throws {
+        // Adversary R2: a German phone read "3.4" as 3.
+        let engine = try HealthEngine()
+        XCTAssertEqual(try engine.number(from: "3.4"), 3.4)
+        XCTAssertEqual(try engine.number(from: "3,4"), 3.4)
+        XCTAssertNil(try engine.number(from: "3.4.5"))
+    }
+
     func testTheEditEncodesAsTheEngineReadsIt() throws {
         let json = String(decoding: try JSONEncoder().encode(RecordEdit.profile(sex: "female", height: 165)), as: UTF8.self)
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])

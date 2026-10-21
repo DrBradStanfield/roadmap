@@ -31,6 +31,8 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(onDisk, store.recordJSON)
         XCTAssertTrue(onDisk.contains("\"measurements\":[]"))
         XCTAssertNotNil(store.myData)
+        // Staged beside the record, then moved: nothing else is left behind.
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path(percentEncoded: false)), ["health-roadmap.json"])
     }
 
     func testAnAddedValueIsOnDiskAndSurvivesARelaunch() throws {
@@ -73,6 +75,17 @@ final class RecordStoreTests: XCTestCase {
         let sections = try engine.sections(planJSON: engine.plan(recordJSON: store.recordJSON, now: .now, deviceId: "test"))
         let ids = sections.flatMap(\.cards).flatMap(\.suggestions).map(\.id)
         XCTAssertTrue(ids.contains { $0.hasPrefix("bp-") }, "a 150/95 reading must reach the plan: \(ids)")
+    }
+
+    func testJSONThatIsNotARecordIsNeverOverwritten() throws {
+        // Adversary R4: the engine's migration turned `null` into an empty record.
+        try Data("null".utf8).write(to: file)
+        let store = try store()
+        XCTAssertNotNil(store.problem)
+        if case .saved = store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")) {
+            XCTFail("an edit must not write over a file that is not a record")
+        }
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "null")
     }
 
     func testAnUnreadableRecordIsNeverOverwritten() throws {

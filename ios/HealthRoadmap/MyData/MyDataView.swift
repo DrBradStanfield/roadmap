@@ -66,12 +66,12 @@ struct MyDataView: View {
 
             Picker("Birth year", selection: binding(data.profile.birthYear ?? 0) { .profile(birthYear: $0) }) {
                 if data.profile.birthYear == nil { Text("Not set").tag(0) }
-                ForEach(Self.birthYears, id: \.self) { Text(String($0)).tag($0) }
+                ForEach(DayText.birthYears(now: .now), id: \.self) { Text(String($0)).tag($0) }
             }
 
             Picker("Birth month", selection: binding(data.profile.birthMonth ?? 0) { .profile(birthMonth: $0) }) {
                 if data.profile.birthMonth == nil { Text("Not set").tag(0) }
-                ForEach(1...12, id: \.self) { Text(Calendar.current.monthSymbols[$0 - 1]).tag($0) }
+                ForEach(1...12, id: \.self) { Text(DayText.gregorian.monthSymbols[$0 - 1]).tag($0) }
             }
 
             Button { entry = .height } label: {
@@ -109,11 +109,11 @@ struct MyDataView: View {
         switch entry {
         case .height:
             let profile = store.myData?.profile
-            ValueEntrySheet(title: "Height", unit: profile?.heightUnit ?? "", current: profile?.height, asksForDay: false) { value, _ in
+            ValueEntrySheet(title: "Height", unit: profile?.heightUnit ?? "", current: profile?.height, asksForDay: false, read: store.number) { value, _ in
                 saved(store.apply(.profile(height: value)))
             }
         case .metric(let row):
-            ValueEntrySheet(title: row.label, unit: row.unit, current: row.latest?.value, asksForDay: true) { value, day in
+            ValueEntrySheet(title: row.label, unit: row.unit, current: row.latest?.value, asksForDay: true, read: store.number) { value, day in
                 saved(store.apply(.add(metric: row.metric, value: value, day: day)))
             } replace: { existingId, value in
                 saved(store.apply(.correct(id: existingId, value: value)))
@@ -134,9 +134,6 @@ struct MyDataView: View {
         if result == .saved { saves += 1 }
         return result
     }
-
-    /// Birth years the picker offers, newest first. The engine still checks the age.
-    private static let birthYears = Array((1900...Calendar.current.component(.year, from: .now)).reversed())
 }
 
 /// One row: the label, then the value and its unit, or "Add" when there is none.

@@ -27,7 +27,8 @@ struct AppParts {
         store = try RecordStore(folder: RecordStore.appFolder(), engine: engine, deviceId: Self.deviceId())
     }
 
-    /// This install's id, stamped on what it writes so a merge can tell devices apart.
+    /// This install's id. A new record names it as its first device (`meta.lastDeviceId`);
+    /// edits leave `meta` alone, as the CLI's and the connector's do.
     private static func deviceId() -> String {
         let key = "deviceId"
         if let id = UserDefaults.standard.string(forKey: key) { return id }

@@ -62,7 +62,7 @@ final class HealthEngine {
 
     /// A first-launch record, as JSON. Units follow the phone's region.
     func newRecord(now: Date, deviceId: String, locale: Locale = .current, timeZone: TimeZone = .current) throws -> String {
-        try call("newRecordJson", [now.formatted(Self.iso), deviceId, locale.identifier(.bcp47), timeZone.identifier])
+        try call("newRecordJson", [now.formatted(Self.iso), deviceId, Self.languageAndRegion(locale), timeZone.identifier])
     }
 
     /// What the My data tab shows for a record.
@@ -76,6 +76,13 @@ final class HealthEngine {
         let editJSON = String(decoding: try JSONEncoder().encode(edit), as: UTF8.self)
         let json = try call("applyEditJson", [recordJSON, editJSON, now.formatted(Self.iso), deviceId])
         return try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
+    }
+
+    /// A typed number, read by the web's rule (health-core's `parseLocalisedNumber`):
+    /// either decimal mark, and nil for anything that is not a plain decimal.
+    func number(from text: String) throws -> Double? {
+        let json = try call("numberJson", [text])
+        return try JSONDecoder().decode(Double?.self, from: Data(json.utf8))
     }
 
     /// Calls an engine function that returns text, turning a JavaScript exception into a Swift error.
@@ -92,6 +99,15 @@ final class HealthEngine {
             throw EngineError.callFailed("the engine returned no text")
         }
         return text
+    }
+
+    /// "en-US": the language and region only. The full identifier can end in a keyword
+    /// (24-hour time adds `-u-hc-h23`), which health-core's `detectUnitSystem` would
+    /// read as the country, and a US phone would start in metric.
+    private static func languageAndRegion(_ locale: Locale) -> String {
+        let language = locale.language.languageCode?.identifier ?? "en"
+        guard let region = locale.region?.identifier else { return language }
+        return "\(language)-\(region)"
     }
 
     /// The instant format JavaScript's `toISOString` writes, milliseconds included.

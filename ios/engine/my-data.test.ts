@@ -2,7 +2,7 @@
 // health-core's own write functions. The app runs this same code in
 // JavaScriptCore; these tests run it in Node.
 import { describe, expect, it } from 'vitest';
-import { applyEdit, myData, newRecord } from './my-data';
+import { applyEdit, myData, newRecord, readNumber, readRecord } from './my-data';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
 const NOW = '2026-10-21T08:00:00.000Z';
@@ -104,5 +104,28 @@ describe('applyEdit (AC4/AC5)', () => {
     applyEdit(file, { kind: 'add', metric: 'weight', value: 80, day: '2026-10-20' }, NOW);
     applyEdit(file, { kind: 'profile', sex: 'male' }, NOW);
     expect(JSON.stringify(file)).toBe(before);
+  });
+});
+
+describe('readNumber (AC5, adversary R2)', () => {
+  it('reads either decimal mark, as the web does, and refuses what it cannot read whole', () => {
+    expect(readNumber('3.4')).toBe(3.4);
+    expect(readNumber('3,4')).toBe(3.4);
+    expect(readNumber(' 80 ')).toBe(80);
+    expect(readNumber('3.4.5')).toBeUndefined();
+    expect(readNumber('80kg')).toBeUndefined();
+    expect(readNumber('')).toBeUndefined();
+  });
+});
+
+describe('readRecord (AC4, adversary R4)', () => {
+  it('refuses a file that is JSON but not a record, so the app never writes over it', () => {
+    for (const raw of ['null', '[]', '"text"', '42']) {
+      expect(() => readRecord(raw, NOW, 'phone'), raw).toThrow();
+    }
+  });
+
+  it('reads a record', () => {
+    expect(readRecord(JSON.stringify(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland')), NOW, 'phone').measurements).toEqual([]);
   });
 });

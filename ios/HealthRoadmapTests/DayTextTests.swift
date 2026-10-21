@@ -11,6 +11,23 @@ final class DayTextTests: XCTestCase {
         XCTAssertEqual(DayText.iso(morningInAuckland, calendar: auckland), "2026-10-21")
     }
 
+    func testTheDayIsGregorianWhateverCalendarThePhoneUses() throws {
+        // Adversary R1: a Japanese-calendar phone saved year 0008, a Buddhist one 2569.
+        let morningInAuckland = try Date("2026-10-20T20:30:00Z", strategy: .iso8601)
+        for identifier in [Calendar.Identifier.japanese, .buddhist, .islamicUmmAlQura, .persian, .hebrew] {
+            var phone = Calendar(identifier: identifier)
+            phone.timeZone = try XCTUnwrap(TimeZone(identifier: "Pacific/Auckland"))
+            XCTAssertEqual(DayText.iso(morningInAuckland, calendar: phone), "2026-10-21", "\(identifier)")
+        }
+    }
+
+    func testBirthYearsAreGregorian() throws {
+        let now = try Date("2026-10-21T00:00:00Z", strategy: .iso8601)
+        let years = DayText.birthYears(now: now)
+        XCTAssertEqual(years.first, 2026)
+        XCTAssertEqual(years.last, 1900)
+    }
+
     func testAStoredDayPrintsAsItself() {
         XCTAssertTrue(DayText.short("2026-10-20").contains("20"), DayText.short("2026-10-20"))
         XCTAssertEqual(DayText.short("not a day"), "not a day")

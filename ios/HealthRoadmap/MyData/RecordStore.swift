@@ -29,11 +29,18 @@ final class RecordStore {
         self.engine = engine
         self.deviceId = deviceId
         file = folder.appending(path: "health-roadmap.json")
-        if FileManager.default.fileExists(atPath: file.path()) {
-            recordJSON = (try? String(contentsOf: file, encoding: .utf8)) ?? ""
+        // The plain path: `path()` percent-encodes, and "Application Support" has a space.
+        if FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) {
+            do {
+                recordJSON = try String(contentsOf: file, encoding: .utf8)
+            } catch {
+                recordJSON = ""
+                problem = "Your saved record could not be opened, so nothing will be saved over it. \(error.localizedDescription)"
+                return
+            }
         } else {
             recordJSON = try engine.newRecord(now: .now, deviceId: deviceId)
-            try Self.write(recordJSON, to: file)
+            try Self.create(recordJSON, at: file)
         }
         do {
             myData = try engine.myData(recordJSON: recordJSON, now: .now, deviceId: deviceId)
@@ -48,6 +55,11 @@ final class RecordStore {
         let folder = URL.applicationSupportDirectory
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         return folder
+    }
+
+    /// A typed number, read by the web's rule; nil if it is not a plain decimal.
+    func number(_ text: String) -> Double? {
+        (try? engine.number(from: text)) ?? nil
     }
 
     func apply(_ edit: RecordEdit) -> ApplyResult {
@@ -67,9 +79,25 @@ final class RecordStore {
         }
     }
 
-    /// Atomic, so a crash leaves the old record or the new one, never half of each;
-    /// and locked by the phone's data protection whenever the phone is locked.
+    /// Atomic, so a crash leaves the old record or the new one, never half of each.
+    /// Encrypted by data protection until the phone is first unlocked after a restart:
+    /// the strictest class (locked whenever the phone is) would fail when iOS
+    /// pre-launches the app before the user unlocks, and lock them out of their record.
     private static func write(_ json: String, to file: URL) throws {
-        try Data(json.utf8).write(to: file, options: [.atomic, .completeFileProtection])
+        try Data(json.utf8).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+
+    /// The first record: written whole beside the file, then moved into place. The move
+    /// fails if a file is already there, so a first record never replaces one, and a
+    /// crash leaves no half-written record that would lock the app out of saving.
+    private static func create(_ json: String, at file: URL) throws {
+        let staged = file.deletingLastPathComponent().appending(path: ".\(UUID().uuidString).json")
+        try write(json, to: staged)
+        do {
+            try FileManager.default.moveItem(at: staged, to: file)
+        } catch {
+            try? FileManager.default.removeItem(at: staged)
+            throw error
+        }
     }
 }

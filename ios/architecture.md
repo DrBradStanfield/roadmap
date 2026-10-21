@@ -57,6 +57,11 @@ or a Swift `StorageAdapter` that keeps `SyncManager` and merge in JavaScript. Th
 preferred: less bridge, and the merge stays single. JavaScriptCore is single-threaded, so
 every callback returns on one serial queue.
 
+Bridged so far: `console` (silenced, so no health value reaches a log) and
+`crypto.randomUUID` (the phone's `UUID`; health-core gives every new row one, and without
+it the first saved value failed with "Can't find variable: crypto"). The bundle is 432 KB
+since the My data writes joined it (`updateProfile` brings the connector's tool module).
+
 ### D3 · Clinical fixes ship over the air, signed (Brad, 2026-10-21)
 
 The engine bundle can be updated without an App Store release. Apple's developer agreement
@@ -93,7 +98,19 @@ confirm or reject here.
 
 ### D5 · Storage: on the phone by default, Dropbox or Google Drive optional (Brad, 2026-10-21)
 
-- **Default: a file in the app's container**, with iOS Data Protection.
+- **Default: a file in the app's container**, with iOS Data Protection. Built 2026-10-21
+  (`MyData/RecordStore.swift`): `Application Support/health-roadmap.json`, the web's schema,
+  written atomically, and only after the engine accepted the edit. Data protection is
+  "until first unlock" (the strictest class would fail when iOS pre-launches the app
+  before the user unlocks). The first record is staged beside the file and moved into
+  place, which fails if a file is already there. A record the app cannot open or read,
+  including JSON that is not a record, is kept as it is and never written over.
+  Dates are always Gregorian and numbers are read by health-core's
+  `parseLocalisedNumber`, whatever the phone's calendar and number format. Gotcha (2026-10-21): `URL.path()`
+  percent-encodes, so the existence check on "Application Support" looked for
+  "Application%20Support", missed the file, and a relaunch started an empty record over
+  the user's data; the check uses `path(percentEncoded: false)`, and the store's tests run
+  in a folder with a space in its name.
 - **Dropbox:** OAuth with PKCE through `ASWebAuthenticationSession`, the same Dropbox app as
   the web (the `/Apps/Health Plan by Dr Brad` app folder), so the phone sees the web's file.
   The Dropbox app need not be installed. Tokens live in the Keychain, this-device-only.
@@ -183,7 +200,12 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
 ## Build and test
 
 **Layout.**
-- `engine/entry.ts`: the one door Swift calls (`planJson`), JSON in and out.
+- `engine/entry.ts`: the one door Swift calls, JSON in and out: `planJson`,
+  `sectionsJson`, and for My data `newRecordJson`, `myDataJson`, `applyEditJson`.
+- `engine/my-data.ts`: what the My data tab shows and every write it makes, each one
+  health-core's own (`createEmptyFile`, `updateProfile`, `stampFields`,
+  `appendMeasurement`, `correctValue`), with values in the user's units. Tested in Node by
+  `engine/my-data.test.ts`, which the web's `test:all` runs.
 - `scripts/build-engine.mjs`: bundles health-core with esbuild (target Safari 17, iOS 17's
   JavaScriptCore) into `HealthRoadmap/Engine/health-engine.js`, and writes the parity
   goldens. Run it before any Xcode build: `node ios/scripts/build-engine.mjs`. Its outputs
@@ -198,11 +220,15 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   added to `HealthRoadmap/` or `HealthRoadmapTests/` joins its target with no project edit.
   No project generator, so no new dependency.
 - `HealthRoadmap/`: the SwiftUI app, one folder per feature:
-  - `App/`: the entry point.
+  - `App/`: the entry point (`AppParts` makes the engine and the record once) and
+    `RootView`, the two tabs: My data first, then My plan, the web's mobile order.
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext`; the generated
     bundle sits beside it.
-  - `Plan/`: the plan screen. `Plan.swift` is the slice of the engine's JSON the app
-    reads, evidence included. The layout (sections, card order, grouped cards) is not
+  - `MyData/`: the record and its tab. `RecordStore` keeps the file and applies edits
+    through the engine; `MyData.swift` is the engine's view of the record and the
+    `RecordEdit` the tab sends; `MyDataView`, `ValueEntrySheet` and `DayText` draw it.
+  - `Plan/`: the plan screen, planned from the stored record whenever it changes.
+    `Plan.swift` is the slice of the engine's JSON the app reads, evidence included. The layout (sections, card order, grouped cards) is not
     Swift: it is health-core's `planSections` (packages/health-core/src/plan-sections.ts),
     which the web's results panel calls too. `PlanView.swift` and `PlanCardView.swift`
     draw it.
@@ -211,7 +237,9 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   from source on each to make the goldens.
 - `HealthRoadmapTests/`: XCTest. `EngineParityTests` is US-25 AC1 (every fixture, plan and
   layout, byte for byte); `PlanLayoutTests` pins the sample's web layout and checks that
-  no card loses its evidence or ingredients.
+  no card loses its evidence or ingredients; `RecordEditTests` runs the My data writes in
+  JavaScriptCore; `RecordStoreTests` covers the file (AC4) and the plan following it
+  (AC6); `DayTextTests` pins the local day.
 
 **Code for AI agents to read (HARD, Brad 2026-10-21).** This app is written and maintained
 by AI agents, so the code is shaped for a reader with no memory of how it got here:
@@ -230,7 +258,10 @@ by AI agents, so the code is shaped for a reader with no memory of how it got he
   above in the same commit.
 
 **Bundle ID:** `com.drbrad.healthroadmap` is a placeholder until the Apple Developer
-account exists; it is permanent once the app is on the App Store.
+account exists; it is permanent once the app is on the App Store. Enrolment: DR BRAD, INC.
+under brad@drstanfield.com, Enrollment ID 726UVSY5YZ, waiting on Apple's check of signing
+authority (2026-10-21). The 2015 team (Caddy Limited, b.d.stanfield@gmail.com) expired in
+2020 and is not used.
 
 **Measured 2026-10-21 in macOS JavaScriptCore** (the same engine iOS ships): the bundle
 gives Node's plan byte for byte in UTC and Pacific/Auckland, at a pinned instant that
