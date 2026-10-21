@@ -323,7 +323,8 @@ async function processOne(c: YouTubeComment, blogPost: BlogPost): Promise<DryRun
   }
 
   // As production (US-50 AC14): older posts give way to their masters, except this video's post or one the comment names.
-  const main = await callMainLLM(c.text, blogPost, preferMasters(handles, loadBlogIndex(), c.text, { keep: [blogPost.entry.handle] }).handles);
+  const routedTurn = cls.classification === 'ROUTE' || cls.classification === 'ERROR';
+  const main = await callMainLLM(c.text, blogPost, routedTurn ? preferMasters(handles, loadBlogIndex(), c.text, { keep: [blogPost.entry.handle] }).handles : handles);
 
   let willPost = !!main.text && !main.error;
   let skipReason: string | undefined;

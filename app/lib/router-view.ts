@@ -30,22 +30,44 @@ const slugsOf = (e: BlogIndexEntry) => [e.handle, e.commerceUrl?.split(/[?#]/)[0
 const isArticle = (e: BlogIndexEntry) => (e.type ?? 'article') === 'article';
 
 /**
- * The posts a message names (US-50 AC14): any article whose handle or
- * microvitamin.com slug it gives in a /blogs/<blog>/<slug> path, or as a bare
- * hyphenated word of at least 4 words ("calcium-rich-foods" names nothing).
- * Callers pass the whole message, not the router's 2,000-character cut.
+ * The posts a message names (US-50 AC14), in the order it names them: any
+ * article whose handle or microvitamin.com slug it gives in a
+ * /blogs/<blog>/<slug> path, or as a bare hyphenated word of at least 4 words
+ * ("calcium-rich-foods" names nothing). Callers pass the whole message, not
+ * the router's 2,000-character cut. Linear in the message: the lookbehind
+ * stops the bare-word pattern restarting inside a run.
  */
 export function namedArticles(index: BlogIndexEntry[], message: string): Set<string> {
   const text = message.toLowerCase();
-  const said = new Set([...text.matchAll(/\/blogs\/[^/\s]+\/([a-z0-9-]+)/g)].map(m => m[1]));
-  for (const word of text.match(/[a-z0-9]+(?:-[a-z0-9]+){3,}/g) ?? []) said.add(word);
-  return new Set(index.filter(e => isArticle(e) && slugsOf(e).some(s => !!s && said.has(s))).map(e => e.handle));
+  const said = new Map<string, number>();
+  for (const m of text.matchAll(/\/blogs\/[^/\s]+\/([a-z0-9-]+)/g)) if (!said.has(m[1])) said.set(m[1], m.index!);
+  for (const m of text.matchAll(/(?<![a-z0-9])[a-z0-9]+(?:-[a-z0-9]+){3,}/g)) if (!said.has(m[0])) said.set(m[0], m.index!);
+  const at = (e: BlogIndexEntry) => Math.min(...slugsOf(e).map(s => (s && said.has(s) ? said.get(s)! : Infinity)));
+  return new Set(index.filter(e => isArticle(e) && at(e) < Infinity).sort((a, b) => at(a) - at(b)).map(e => e.handle));
 }
 
-/** Patterns for the names a message gives a master's topic: its title before the colon, without parentheses, each side of an "and", a final "s" optional. */
-const topicNames = (e: BlogIndexEntry) => e.title.split(':')[0].replace(/\([^)]*\)/g, '').toLowerCase().split(/\s+and\s+/)
-  .map(n => n.trim().replace(/s$/, '')).filter(Boolean)
-  .map(n => new RegExp(`(?<![a-z0-9])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}s?(?![a-z0-9])`));
+/** Trailing words that name no topic on their own; "fish oil" still names its master. */
+const GENERIC_TAIL = /\s+(supplements|boosters|powders|powder|fish oil|oil|peptides|extract)$/;
+
+/**
+ * Patterns for the names a message gives a master's topic (round 2, N2): each
+ * part of its title before the colon, split on "(", ")", ",", "/" and " and ";
+ * each part also without its generic trailing words, and its first word when
+ * that has a digit or hyphen or is in capitals (omega-3, NAD, NMN). A final
+ * "s" is optional.
+ */
+const topicNames = (e: BlogIndexEntry) => {
+  const names = new Set<string>();
+  for (const part of e.title.split(':')[0].split(/[(),/]|\s+and\s+/).map(p => p.trim()).filter(Boolean)) {
+    let name = part.toLowerCase();
+    names.add(name);
+    for (let tail; (tail = GENERIC_TAIL.exec(name)); name = name.slice(0, tail.index)) if (tail[1] === 'fish oil') names.add('fish oil');
+    names.add(name);
+    const word = part.split(/\s+/)[0];
+    if (/[\d-]/.test(word) || (word.length > 1 && word === word.toUpperCase() && /[A-Z]/.test(word))) names.add(word.toLowerCase());
+  }
+  return [...names].map(n => new RegExp(`(?<![a-z0-9])${n.replace(/s$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}s?(?![a-z0-9])`));
+};
 
 /**
  * The post the storefront chat is open on (US-50 AC14): the article whose
@@ -62,16 +84,19 @@ export function openArticle(index: BlogIndexEntry[], value: unknown): string | u
  * its slot (US-50 AC14). An article gives way only when every one of its
  * `topics` is a master reviewed on or after its publish day (covered(), the
  * routerView test, US-50 AC3 and AC5). A post's masters rank by where the message
- * names their topic, earliest first, then by its `topics` order. A post the
- * message names, the `open` one or one in `keep` (the YouTube video's own
- * post) stays when picked, its masters after it. At most 3 handles, in passes:
- * (1) every pick that stays, in its own slot; (2) per replaced pick, its
- * first-ranked master not yet in, in that slot (each pick owns a slot, so one
- * always fits); (3) the open post when the router picked nothing or one of its
- * masters is in, and each post the message names that the router did not pick
- * (not one in `keep`), each with its first master if none is in; (4) the other
- * masters, in slot order. The list is in slot order; a pass-3 post sits after
- * the first of its own masters in the final list, else at the end.
+ * names their topic (topicNames), earliest first, then by its `topics` order.
+ * A post the message names, the `open` one or one in `keep` (the YouTube
+ * video's own post) stays when picked. Call it only on a turn the router ran.
+ * At most 3 handles, in passes: (1) every pick that stays, in its own slot;
+ * (2) per replaced pick, its first-ranked master not yet in, in that slot
+ * (each pick owns a slot, so one always fits); (3) the open post when the
+ * router picked nothing or one of its masters is in, then each post the
+ * message names that the router did not pick (not one in `keep`), in the
+ * order the message names them; (4) the ranked masters of every named, open
+ * or kept post that stays, picked ones in slot order, then pass-3 ones;
+ * (5) the other masters of replaced picks, in slot order. The list is in slot
+ * order; a pass-3 post sits after the first of its own masters in the final
+ * list, else at the end.
  */
 export function preferMasters(picks: string[], index: BlogIndexEntry[], message: string, opts: { open?: string; keep?: string[] } = {}): { handles: string[]; replaced: string[] } {
   const { open, keep = [] } = opts;
@@ -92,13 +117,14 @@ export function preferMasters(picks: string[], index: BlogIndexEntry[], message:
   const replaced: string[] = [];
   const unique = [...new Set(picks)];
   const toReplace: [string[], number][] = [];
+  const staying: [string, number][] = [];
   unique.forEach((pick, slot) => {
     const masters = mastersOf(pick);
     const entry = byHandle.get(pick);
-    const mastered = !!entry && isArticle(entry) && covered(entry, byHandle);
-    if (mastered && !named.has(pick) && pick !== open && !keep.includes(pick)) { replaced.push(pick); toReplace.push([masters, slot]); return; }
+    const isNamed = named.has(pick) || pick === open || keep.includes(pick);
+    if (!isNamed && !!entry && isArticle(entry) && covered(entry, byHandle)) { replaced.push(pick); toReplace.push([masters, slot]); return; }
     take(pick, slot * 100);
-    if (mastered) masters.forEach((m, j) => rest.push([m, slot * 100 + 1 + j]));
+    if (isNamed) staying.push([pick, slot * 100]);
   });
   for (const [masters, slot] of toReplace) {
     const first = masters.find(m => !chosen.has(m));
@@ -111,9 +137,9 @@ export function preferMasters(picks: string[], index: BlogIndexEntry[], message:
     if (unique.includes(post) || chosen.has(post) || chosen.size >= 3) continue;
     chosen.set(post, LAST);
     forced.push(post);
-    const masters = mastersOf(post);
-    if (masters.length > 0 && !masters.some(m => chosen.has(m))) take(masters[0], LAST + chosen.size);
+    staying.push([post, LAST]);
   }
+  for (const [post, key] of staying) mastersOf(post).forEach((m, j) => take(m, key === LAST ? LAST + chosen.size : key + 1 + j));
   for (const [m, key] of rest.sort((a, b) => a[1] - b[1])) take(m, key);
   const handles = [...chosen].filter(([h]) => !forced.includes(h)).sort((a, b) => a[1] - b[1]).map(([h]) => h);
   for (const post of forced) {

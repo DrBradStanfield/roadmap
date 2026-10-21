@@ -519,13 +519,14 @@ async function chatAction(request: Request, app: boolean) {
 
       const routerSkipped = classifierResult.routerSkipped;
       const effectiveHandles = routerResult?.handles ?? [];
-      // US-50 AC14: an older post gives way to its topic masters, unless the
-      // chat is open on it (`articleHandle`, untrusted, a lookup only; forced
-      // in only on a routed turn) or the message gives its URL or handle. The
+      // US-50 AC14, only on a turn the router ran: an older post gives way to
+      // its topic masters, unless the chat is open on it (`articleHandle`,
+      // untrusted, a lookup only) or the message gives its URL or handle. The
       // whole message is read here (Codex C2), a lookup only, never logged.
       const index = loadBlogIndex();
-      const open = routerResult ? openArticle(index, body.articleHandle) : undefined;
-      const routed = preferMasters(effectiveHandles, index, message, { open });
+      const routed = routerResult
+        ? preferMasters(effectiveHandles, index, message, { open: openArticle(index, body.articleHandle) })
+        : { handles: [], replaced: [] };
 
       reportRouterFailure(routerResult);
 
@@ -580,7 +581,7 @@ async function chatAction(request: Request, app: boolean) {
         }
       }
 
-      // Load content from router handles — [] when classifier said SKIP (router never ran).
+      // Load content from the routed handles after AC14's filter — [] when classifier said SKIP (router never ran).
       // The stream names the articles loaded, by their index titles (US-15 AC20),
       // except crisis pathways and population pathways the text gives no signal
       // of (AC25). Every routed article still loads.

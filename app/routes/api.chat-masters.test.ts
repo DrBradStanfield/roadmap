@@ -45,8 +45,10 @@ vi.mock('../lib/chat-router.server', async (original) => ({
   routeQuery: mocks.route, reportRouterFailure: vi.fn(),
 }));
 vi.mock('../lib/chat-classifier.server', () => ({
-  classifyMessage: async () => ({ routerSkipped: false, classification: 'ROUTE', latencyMs: 0 }),
-  shouldFireRouter: () => true,
+  classifyMessage: async (text: string) => (text.startsWith('Thanks')
+    ? { routerSkipped: true, classification: 'SKIP', latencyMs: 0 }
+    : { routerSkipped: false, classification: 'ROUTE', latencyMs: 0 }),
+  shouldFireRouter: (r: { routerSkipped: boolean }) => !r.routerSkipped,
 }));
 
 import { action } from './api.chat';
@@ -57,6 +59,7 @@ let inserts: Array<{ table: string; row: Record<string, unknown> }>;
 beforeEach(() => {
   inserts = [];
   mocks.load.mockClear();
+  mocks.route.mockClear();
   mocks.route.mockResolvedValue({ handles: ['tm-d-video'], rawJson: null, usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 }, latencyMs: 1, cacheHit: false, error: null });
   mocks.auth.mockResolvedValue({ client: { from: mocks.from }, userId: id, customerId: null, admin: null });
   mocks.from.mockReset().mockImplementation((table: string) => {
@@ -125,6 +128,12 @@ describe('US-50 AC14: the storefront chat loads the master, not the older post',
   it('a URL after the router\'s first 2,000 characters still names the post (Codex C2)', async () => {
     await post({ message: `${'Some context. '.repeat(200)}About microvitamin.com/blogs/articles/tm-d-video-commerce: still right?`, localFirst: true });
     expect(loaded()).toEqual(['tm-d-video', 'tm-d']);
+  });
+
+  it('a post the message names is not forced in when the router did not run (round 2, N3)', async () => {
+    await post({ message: 'Thanks! microvitamin.com/blogs/articles/tm-d-video-commerce was great', localFirst: true, articleHandle: 'tm-d-video-commerce' });
+    expect(mocks.route).not.toHaveBeenCalled();
+    expect(loaded()).toEqual([]);
   });
 
   it('an articleHandle that is not an index handle is ignored and never stored', async () => {

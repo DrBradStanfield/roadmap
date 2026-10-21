@@ -170,6 +170,22 @@ describe('preferMasters (US-50 AC14)', () => {
       .toEqual({ handles: ['multivitamins-old-post'], replaced: [] });
   });
 
+  // Round 2, Codex R1 / N4: a named post that stays loads its masters, covered or not.
+  it('a picked post the message names loads with its masters, even when not covered (round 2, N4)', () => {
+    const three = ['multi-m', 'bvit-m', 'omega-m'].map(h => master(h, '2026-10-20'));
+    const notYet = [master('vit-a-ref'), master('lutein-ref')];
+    const mv = post('multivitamins-are-no-longer-expensive-urine', { topics: ['multi-m', 'vit-a-ref', 'lutein-ref', 'bvit-m', 'omega-m'] });
+    expect(pm(['multivitamins-are-no-longer-expensive-urine'], { message: 'about /blogs/articles/multivitamins-are-no-longer-expensive-urine' }, [...index, ...three, ...notYet, mv]))
+      .toEqual({ handles: ['multivitamins-are-no-longer-expensive-urine', 'multi-m', 'bvit-m'], replaced: [] });
+  });
+
+  it('forced named posts go in the order the message names them (round 2, N4)', () => {
+    const x = post('x-post-with-long-handle');
+    const y = post('y-post-with-long-handle');
+    expect(pm(['plain-article'], { message: 'see /blogs/a/y-post-with-long-handle and /blogs/a/x-post-with-long-handle' }, [...index, x, y]).handles)
+      .toEqual(['plain-article', 'y-post-with-long-handle', 'x-post-with-long-handle']);
+  });
+
   // Review R1: the open post's masters once took every free slot, so a second
   // replaced post vanished with nothing in its place yet was logged as replaced.
   it('a replaced pick always gets a master slot before the open post\'s other masters (review R1)', () => {
@@ -211,9 +227,9 @@ describe('preferMasters (US-50 AC14)', () => {
         .toEqual({ handles: ['vitamin-d', 'vitamin-d-video', 'plain-article'], replaced: [] });
     });
 
-    it('loads with its first master when the router picked nothing', () => {
+    it('loads with its masters when the router picked nothing (round 2, N4)', () => {
       expect(pm([], { open: 'd-and-k-video' }))
-        .toEqual({ handles: ['vitamin-d', 'd-and-k-video'], replaced: [] });
+        .toEqual({ handles: ['vitamin-d', 'd-and-k-video', 'vitamin-k'], replaced: [] });
       expect(pm([], { open: 'plain-article' }))
         .toEqual({ handles: ['plain-article'], replaced: [] });
     });
@@ -292,5 +308,51 @@ describe('namedArticles (US-50 AC14)', () => {
 
   it('reads the whole message, past the router\'s 2,000 characters (Codex C2)', () => {
     expect(named(`${'x '.repeat(1_500)}see why-arent-cardiologists-prescribing-vitamin-k2`)).toEqual([video.handle]);
+  });
+
+  it('lists posts in the order the message names them (round 2, N4)', () => {
+    expect(named('see /blogs/a/lipoproteina then why-arent-cardiologists-prescribing-vitamin-k2')).toEqual([one.handle, video.handle]);
+    expect(named('see why-arent-cardiologists-prescribing-vitamin-k2 then /blogs/a/lipoproteina')).toEqual([video.handle, one.handle]);
+  });
+
+  // Round 2, N1: the bare-word pattern was quadratic on a long alphanumeric run (about 520 ms on 8,000 characters).
+  it('stays fast on a long alphanumeric run (round 2, N1)', () => {
+    for (const n of [8_000, 10_000]) {
+      const text = 'a'.repeat(n);
+      const runs = [0, 1, 2].map(() => { const t0 = performance.now(); namedArticles(index, text); return performance.now() - t0; });
+      expect(Math.min(...runs)).toBeLessThan(50);
+    }
+  });
+});
+
+// Round 2, N2: a master is named by any part of its title before the colon,
+// with generic trailing words dropped, and by a first word with a digit, a
+// hyphen or capitals (omega-3, NAD, NMN).
+describe('preferMasters ranks masters by the names the message uses (round 2, N2)', () => {
+  const titled = (handle: string, title: string) => ({ ...master(handle, '2026-10-20'), title });
+  const omega = titled('omega-m', 'Omega-3 Fish Oil: Benefits, Best Forms, Dosing, and Side Effects');
+  const bvit = titled('bvit-m', 'B Vitamins: Benefits, Best Forms, Dosing, and Side Effects');
+  const nad = titled('nad-m', 'NAD Boosters (NMN, NR, NADH): Benefits, Forms, Dosing, and Side Effects');
+  const mag = titled('mag-m', 'Magnesium: Benefits, Best Forms, Dosing, and Side Effects');
+  const brain = post('brain-supplements-old-post', { topics: ['bvit-m', 'omega-m'] });
+  const energy = post('energy-supplements-old-post', { topics: ['bvit-m', 'nad-m'] });
+  const three = post('three-masters-old-post', { topics: ['bvit-m', 'omega-m', 'mag-m'] });
+  const filler = [post('plain-one'), post('plain-two')];
+  const index = [omega, bvit, nad, mag, brain, energy, three, ...filler];
+  const first = (pick: string, message: string) => preferMasters([pick, 'plain-one', 'plain-two'], index, message).handles[0];
+
+  it('omega-3 and fish oil both name the Omega-3 Fish Oil master', () => {
+    expect(first('brain-supplements-old-post', 'Is omega-3 better than B vitamins for the brain?')).toBe('omega-m');
+    expect(first('brain-supplements-old-post', 'fish oil or B vitamins for focus?')).toBe('omega-m');
+    expect(first('brain-supplements-old-post', 'are B vitamins worth it?')).toBe('bvit-m');
+  });
+
+  it('NMN names the NAD Boosters master', () => {
+    expect(first('energy-supplements-old-post', 'does NMN help energy?')).toBe('nad-m');
+  });
+
+  it('masters the message names come first; the rest keep topics order', () => {
+    expect(preferMasters(['three-masters-old-post'], index, 'what about magnesium? see /blogs/a/three-masters-old-post').handles)
+      .toEqual(['three-masters-old-post', 'mag-m', 'bvit-m']);
   });
 });

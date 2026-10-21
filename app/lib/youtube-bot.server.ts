@@ -900,7 +900,7 @@ export async function runPipeline(
   // US-50 AC14: an older post gives way to its topic masters, unless it is
   // this video's own post or the comment gives its URL or handle.
   const index = loadBlogIndex();
-  const routed = preferMasters(routerHandles, index, thread.text, { keep: [entry.handle] });
+  const routed = routerResult ? preferMasters(routerHandles, index, thread.text, { keep: [entry.handle] }) : { handles: [], replaced: [] };
   const matched = loadMatchedArticlesFromHandles(routed.handles);
   const blogArticles = matched?.content ?? null;
   // Master views skip only masters that actually loaded, not ones the cap skipped (US-50 AC6).

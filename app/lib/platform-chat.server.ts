@@ -91,7 +91,7 @@ export async function platformChatCompletion(params: {
 
   // US-50 AC14: an older post gives way to its topic masters unless the message gives its URL or handle.
   const index = loadBlogIndex();
-  const routed = preferMasters(routerResult?.handles ?? [], index, message);
+  const routed = routerResult ? preferMasters(routerResult.handles, index, message) : { handles: [], replaced: [] };
   const matched = loadMatchedArticlesFromHandles(routed.handles);
   const blogArticles = matched?.content ?? null;
 
