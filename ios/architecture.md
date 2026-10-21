@@ -188,19 +188,122 @@ no email. iOS holds at most 64 pending notifications, so the app schedules the n
 and refills on launch and on new data. What a lock-screen notification says ("Colonoscopy
 due") is visible to anyone holding the phone: the wording is a decision for the build.
 
-### D8 · Chat: wanted; no user sign-in, but the app proves itself (proposed)
+### D8 · Chat and lab upload: no user sign-in; the app proves itself with App Attest (Brad, 2026-10-21; designed 2026-10-21, US-52)
 
-Brad wants chat in the app. Chat runs on Brad's server, because it calls Anthropic with a
-key the phone must never hold. The user does not sign in. But "it runs on iOS" does not
-secure the server: the endpoint is on the public internet, and anyone who copies its address
-could spend the Anthropic budget. The web stops that with Shopify's app-proxy signature,
-which the app cannot have.
+Chat and lab extraction run on Brad's server, because they call Anthropic with a key the
+phone must never hold. The user does not sign in. The web stops strangers spending the
+Anthropic budget with Shopify's app-proxy signature, which the app cannot produce. The
+app's endpoints are on the public internet, so "it runs on iOS" secures nothing. The design
+below is the gate: Apple's **App Attest** plus limits.
 
-Proposed: Apple's **App Attest**. The phone proves each request comes from a genuine copy of
-this app on a real Apple device, with no account. Add a per-device rate limit on the server.
-Before the first message, a consent screen names Anthropic and what is sent (App Review
-5.1.2(i), November 2025). This is security design: written up, then adversary plus Codex,
-before code. Lab upload follows the same path, later.
+**Endpoints** (on the education app, `health-tool-edu`, so chat gets the doctor posture).
+Under `/api/app/v1/`, not `/app/...`: `app.tsx` is the Shopify admin layout, and a route
+nested under it would sit behind admin auth.
+- `POST attest/challenge` → `{ challenge }`.
+- `POST attest/register` `{ keyId, attestation, challenge }` → `{ ok }`.
+- `POST chat` (NDJSON stream, the widget's events) and `POST lab-import` (JSON).
+
+**Threat model.**
+- *Asset:* the Anthropic budget and the server's capacity. Secondary: the health context
+  in transit (TLS; never stored), and the key table (public keys only).
+- *A1, a script that copied the URL:* has no attested key, so every request is a 401 and
+  no model is called. This is the case the gate exists for.
+- *A2, a replayed or altered request:* TLS hides it; the assertion signs the method, path
+  and body hash, so an altered body fails; the counter must rise, so a replay fails.
+- *A3, a genuine device driven by a script* (a jailbroken phone hooking the app, or a
+  person with a device farm): App Attest cannot tell. Each device can mint many keys.
+  Bounded by limits: registrations per IP, turns and files per key and per IP, and a daily
+  ceiling per machine. The ceiling is the worst case Brad pays, by design.
+- *A4, the dev bypass left on in production:* the bypass needs two things, an explicit flag
+  AND `NODE_ENV !== 'production'`; Fly's Dockerfile sets `NODE_ENV=production`, and a test
+  proves production refuses the header with the flag on.
+- *A5, abuse of the model itself* (prompt injection, crisis text): the same pipeline and
+  guardrails as the web's widget turn, unchanged.
+- *Not defended:* an attacker with many real devices on many IPs can spend up to the daily
+  ceiling. Apple's attestation receipt carries a fraud-risk metric (how many keys a device
+  minted); using it is a later step.
+
+**Registration flow.**
+1. The app asks for a challenge. It is stateless: 16 random bytes, an expiry 5 minutes
+   on, and an HMAC over both with a key derived (HKDF, label `app-attest-challenge/v1`)
+   from `SHOPIFY_API_SECRET`, as the guest IP hash derives its key. No table.
+2. The app makes a key (`DCAppAttestService.generateKey`), keeps its id in the Keychain
+   (this-device-only), and attests it over `clientDataHash = SHA256(challenge)`.
+3. The server checks, in order: the challenge's HMAC and expiry; the CBOR shape
+   (`fmt: apple-appattest`); the x5c chain (leaf, intermediate) up to the **pinned** Apple
+   App Attestation Root CA (SHA-256 fingerprint
+   `1C:B9:82:3B:A2:8B:A6:AD:2D:33:A0:06:94:1D:E2:AE:4F:51:3E:F1:D4:E8:31:B9:F7:E0:FA:7B:62:42:C9:32`),
+   each certificate in its validity window; the leaf's extension
+   `1.2.840.113635.100.8.2` equals `SHA256(authData || clientDataHash)`; the key id
+   equals `SHA256` of the leaf's uncompressed public key; `authData.rpIdHash` equals
+   `SHA256(teamId + "." + bundleId)`; the counter is 0; the AAGUID is the environment's
+   (`appattest` + 7 zero bytes for production; `appattestdevelop` only when
+   `APP_ATTEST_ALLOW_DEVELOPMENT=1`); the credential id equals the key id.
+4. It stores the key. A key id already stored is refused (409): a replayed attestation
+   cannot reset a counter. Challenges are not single-use; the 5-minute expiry plus the
+   key-id uniqueness is the replay bound, and a stolen challenge is useless without a
+   genuine device to attest with it.
+
+**Request flow.** Every chat or lab request carries `X-App-Attest-Key` (the key id) and
+`X-App-Attest-Assertion` (base64 CBOR `{ signature, authenticatorData }`). The app signs
+`clientDataHash = SHA256("<METHOD>\n<path>\n<hex SHA256 of the body>")`. The server
+reads the body (capped) once, recomputes that hash, loads the key, checks
+`authenticatorData.rpIdHash`, verifies the ECDSA P-256 signature over
+`SHA256(authenticatorData || clientDataHash)` with the stored public key, and then
+advances the stored counter only if the new one is higher, in one SQL statement
+(`app_attest_advance`, which returns whether it moved). Only then do the limits run, and
+only then the model. The app sends one request at a time per key (an actor), so a slow
+request never makes the next one's counter arrive first.
+
+**Storage** (Supabase, operational only; migration
+`supabase/app-attest-2026-10.sql`, not run by agents): `app_attest_keys` with `key_id`
+(primary key), `public_key` (PEM), `sign_count`, `environment`, `created_at`,
+`last_used_at`. No IP, no device name, no health value, no request content. RLS on with no
+policies: only the server's service role reads it. Rows are never deleted by the app;
+pruning keys unused for a year is an ops job for later.
+
+**Limits** (in memory, per machine, like the web's lab caps; env-tunable):
+- Registrations: 10 per IP per day.
+- Chat: 60 turns per key per day, 200 per IP per day, `APP_CHAT_DAILY_CAP` (default 2000)
+  turns per machine per day. A turn is up to three model calls (classifier, router, answer).
+- Lab: 30 files per key per day, the web's per-IP file cap, and the web's own per-machine
+  file cap (`machineFiles`, `AI_DAILY_FILE_CAP`), so the extraction dollar ceiling stays
+  one number across web, connector and app.
+- In memory means the true ceiling is cap × machines and resets on deploy: the accepted
+  approximation the lab route already makes. A shared counter is a later step if abuse
+  shows up.
+
+**What the server keeps.** Nothing of a turn or a file: no conversation, message, guest
+session, match-event or audit row (D9), and no health value in a log. The chat timing log
+line (numbers and flags only) and Sentry's fallback report stay as on the web. Refusals
+log a closed reason word, never the key id or IP.
+
+**Failure modes.**
+- App Attest unsupported (`isSupported` false: simulator, some old devices): release builds
+  say chat and upload are not available on this device. DEBUG builds on the simulator use
+  the dev header instead (AC3).
+- Apple's service unavailable at attest time: "try again later"; no fallback.
+- Key lost (app reinstalled: the Keychain id survives, the key does not) or unknown to the
+  server (401 `unknown_key`): the app drops the id, attests a new key, and retries once.
+- Counter stale (401 `stale_counter`): one retry with a fresh assertion.
+- Key store down, or `APP_ATTEST_TEAM_ID` unset: 503. Never open.
+- Over a limit: 429 with a plain message; no model call.
+
+**Config.** `APP_ATTEST_TEAM_ID` (no default: Apple enrolment pending; until set, the
+endpoints answer 503), `APP_ATTEST_BUNDLE_ID` (default `com.drbrad.healthroadmap`, the
+placeholder above), `APP_ATTEST_ALLOW_DEVELOPMENT`, `APP_ATTEST_DEV_BYPASS`,
+`APP_CHAT_DAILY_CAP`. The app's server address is a build setting; the release value is a
+placeholder until Brad picks the host.
+
+**Consent** (App Review 5.1.2(i)): before the first chat message, and before the first lab
+upload, a screen names Anthropic, says what is sent and that Brad's server keeps none of
+it, and sends nothing until the user agrees. The agreement is kept on the phone with a
+version, so changed wording asks again.
+
+**The record stays the app's.** Lab extraction returns proposed values; the app shows them
+for confirmation and writes the ticked ones itself, through health-core's
+`bulkAppendValues` in the engine. Chat history is the web's `chat-history.json`, written
+by health-core's `ChatSession` in the engine, kept beside the record.
 
 ### D9 · No server telemetry (Brad, 2026-10-21)
 
