@@ -73,6 +73,13 @@ its one line as the `ENGINE_SIGNING_KEY` secret of the `engine-signing` environm
 (below), then `rm -P` that file. No agent has seen either. The daily key stays only in
 your Keychain.
 
+- **Moving to another Mac:** on the old Mac, in Terminal (macOS asks you to allow the read),
+  `/usr/bin/security find-generic-password -s health-roadmap-engine-signing -a daily -w`.
+  Put the line it prints in a 1Password item "Health Roadmap engine signing key (daily)".
+  On the new Mac:
+  `/usr/bin/security add-generic-password -s health-roadmap-engine-signing -a daily -T "" -w`
+  and paste the line when it asks (typed there, it stays out of your shell history).
+  Run both yourself; never paste the line into a chat.
 - **Lost Mac or Keychain:** build for the cold key, then sign with it in the signer
   only, so the key never reaches the build:
   `npm run engine:build -- --if-changed --key cold`, then

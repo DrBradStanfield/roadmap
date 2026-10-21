@@ -24,7 +24,7 @@ enum EngineRelease {
         "applyEditJson", "chatContextJson", "chatDeleteJson", "chatListJson", "chatMessagesJson",
         "chatRecordExchangeJson", "cloudClose", "cloudEdit", "cloudErase", "cloudFlush", "cloudHidden",
         "cloudOpen", "cloudRefresh", "cloudVisible", "erasePhoneJson", "healthWritesJson", "historyJson",
-        "labReviewJson", "labSaveSummaryJson", "mergeJson", "myDataJson", "newRecordJson", "numberJson",
+        "labFile", "labFilesJson", "labReviewJson", "labSaveSummaryJson", "mergeJson", "myDataJson", "newRecordJson", "numberJson",
         "planJson", "remindersJson", "sectionsJson", "settledJson",
     ]
 
