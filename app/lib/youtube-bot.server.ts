@@ -185,6 +185,8 @@ interface YouTubeThread {
   authorChannelId: string | null;
   text: string;
   publishedAt: string;
+  /** commentThreads snippet.canReply; absent on follow-up pseudo-threads. */
+  canReply?: boolean;
 }
 
 async function listRecentThreads(token: string): Promise<YouTubeThread[]> {
@@ -206,6 +208,7 @@ async function listRecentThreads(token: string): Promise<YouTubeThread[]> {
     items?: Array<{
       snippet: {
         videoId: string;
+        canReply?: boolean;
         topLevelComment: {
           id: string;
           snippet: {
@@ -228,6 +231,7 @@ async function listRecentThreads(token: string): Promise<YouTubeThread[]> {
       authorChannelId: top.snippet.authorChannelId?.value ?? null,
       text: top.snippet.textOriginal,
       publishedAt: top.snippet.publishedAt,
+      canReply: item.snippet.canReply,
     };
   });
 }
@@ -350,6 +354,11 @@ async function postReply(token: string, parentCommentId: string, text: string): 
   }
   const data = await res.json() as { id: string };
   return data.id;
+}
+
+/** The 400 YouTube sends when the thread cannot take replies (canReply false). */
+export function isNotReplyableError(err: unknown): boolean {
+  return err instanceof Error && err.message.includes('YouTube post failed: 400') && err.message.includes('Not all comments can be replied to');
 }
 
 // ---------------------------------------------------------------------------
@@ -674,7 +683,8 @@ function loadVideoBody(videoId: string): { entry: BlogIndexEntry; body: string }
   return { entry, body: stripFrontmatter(fullContent) };
 }
 
-function filterThread(thread: YouTubeThread): FilterResult {
+export function filterThread(thread: YouTubeThread): FilterResult {
+  if (thread.canReply === false) return { pass: false, reason: 'cannot reply' };
   if (!thread.text || !thread.text.trim()) return { pass: false, reason: 'empty' };
   const words = wordCount(thread.text);
   if (words < MIN_WORDS) return { pass: false, reason: `too short (${words} words)` };
@@ -1009,7 +1019,7 @@ async function processFollowUps(
     try {
       postedId = await postReply(token, threadId, replyText);
     } catch (err) {
-      logTickError(err);
+      if (!isNotReplyableError(err)) logTickError(err);
       skipped++;
       continue;
     }
@@ -1133,7 +1143,7 @@ async function tick(): Promise<void> {
     try {
       postedId = await postReply(token, thread.topLevelCommentId, outcome.replyText!);
     } catch (err) {
-      logTickError(err);
+      if (!isNotReplyableError(err)) logTickError(err);
       // Row stays as posted=FALSE — won't retry, but post failure is visible
       // via the audit. Could become retry-able later via a status column.
       skippedThisTick++;
