@@ -14,6 +14,8 @@ import type { RecordHost } from '../../packages/health-core/src/record-host';
 import { RecordSession, saveRecordInto } from '../../packages/health-core/src/record-session';
 import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/record-transfer';
 import { describeStorageFailure } from '../../packages/health-core/src/sync-manager';
+import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
+import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { applyEdit, type Edit } from './my-data';
 
 export type Provider = 'dropbox' | 'google-drive';
@@ -168,10 +170,22 @@ class PhoneFileAdapter implements StorageAdapter {
     if (fileName !== ROADMAP_FILE_NAME) throw new StorageError(`This iPhone keeps only ${ROADMAP_FILE_NAME}.`);
     const now = this.text();
     if ((now === null ? null : fingerprint(now)) !== expectedVersion) throw new ConflictError();
-    const text = JSON.stringify(body);
+    return { version: this.writeText(JSON.stringify(body)) };
+  }
+
+  /** Writes the file now; answers its version, throws when the phone refused. */
+  writeText(text: string): string {
     const error = __native.phoneWrite(text);
     if (error) throw new StorageError(error);
-    return { version: fingerprint(text) };
+    return fingerprint(text);
+  }
+
+  /** Merge `file` into the phone's record now, before anything else runs: the
+   *  same merge saveRecordInto makes, without its awaits. Throws when the
+   *  phone's file cannot be read (it is never written over then) or written. */
+  mergeNow(file: RoadmapFile, ctx: { deviceId: string; now: string }): void {
+    const body = this.body();
+    this.writeText(JSON.stringify(body === null ? file : ROADMAP_DOC.merge(file, ROADMAP_DOC.migrate(body, ctx), ctx)));
   }
 
   async readDocument(): Promise<Blob> {
@@ -187,7 +201,10 @@ type CloudHost = Extract<RecordHost, { tier: 'cloud' }>;
 /** What went wrong, as one word Swift turns into plain words (SyncStatus.swift). */
 export function failureKind(error: unknown): 'sign-in' | 'too-new' | 'unreachable' {
   if (error instanceof SignInError) return 'sign-in';
-  if (error instanceof StorageError && (error.status === 401 || error.status === 403)) return 'sign-in';
+  if (error instanceof StorageError && error.status === 401) return 'sign-in';
+  // A 403 is a refusal, except a rate limit (Drive's userRateLimitExceeded and
+  // rateLimitExceeded), which passes: retry it, never send the user to sign in.
+  if (error instanceof StorageError && error.status === 403) return /ratelimitexceeded/i.test(error.message) ? 'unreachable' : 'sign-in';
   if (error instanceof SchemaTooNewError) return 'too-new';
   return 'unreachable';
 }
@@ -294,7 +311,7 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
     throw new Error(failed(provider, error));
   }
   const at: Open = { provider, host, phone, session, live: null!, visible: true, unflushed: waiting ? 1 : 0 };
-  at.live = new LiveRefresh(session, host, { reread: () => session.refreshFromRemote(), isVisible: () => at.visible });
+  at.live = new LiveRefresh(session, host, { reread: () => reread(at), isVisible: () => at.visible });
   open = at;
   at.live.start();
   keepPhoneCopy(at);
@@ -309,17 +326,32 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
  * marker are written first, so an edit that has not reached the cloud yet
  * survives the app being closed (US-09 AC4).
  */
-export function cloudEdit(editJson: string, erase: string, nowIso: string): string {
-  if (!open) return JSON.stringify({ ok: false, reason: 'not-open', message: 'The cloud record is not open.' });
-  const { session } = open;
-  const outcome = applyEdit(session.file, JSON.parse(editJson) as Edit, nowIso);
-  if (!outcome.ok) return JSON.stringify(outcome);
-  if (!session.edit(() => outcome.file, erase)) {
-    return JSON.stringify({ ok: false, reason: 'erased', message: 'Your record was erased on another device, so this was not saved. Try again.' });
+export function cloudEdit(editJson: string, erase: string, shownUnits: string, nowIso: string): string {
+  const refuse = (reason: string, message: string) => JSON.stringify({ ok: false, reason, message });
+  const at = open;
+  if (!at) return refuse('not-open', 'The cloud record is not open.');
+  const { session } = at;
+  const edit = JSON.parse(editJson) as Edit;
+  // A number is read in the units the screen showed. If another device has
+  // changed the units since, the same number would be stored in the wrong ones.
+  if (edit.kind !== 'units' && shownUnits !== (session.file.profile.unitSystem ?? 'si')) {
+    return refuse('units-changed', 'Your units were changed on another device, so this was not saved. Check the value and enter it again.');
   }
-  open.unflushed += 1;
-  open.host.mirror.pending.set();
-  keepPhoneCopy(open);
+  if (session.refuses(erase)) {
+    return refuse('erased', 'Your record was erased on another device, so this was not saved. Try again.');
+  }
+  const outcome = applyEdit(session.file, edit, nowIso);
+  if (!outcome.ok) return JSON.stringify(outcome);
+  // On the phone first, marked for the cloud: only then is the edit taken. A
+  // phone that cannot keep it refuses it, and nothing changes (US-09 AC4).
+  at.host.mirror.pending.set();
+  try {
+    at.phone.mergeNow(outcome.file, { deviceId: at.host.deviceId(), now: nowIso });
+  } catch (error) {
+    return refuse('phone-write', `This iPhone could not save it, so nothing changed. ${(error as Error).message}`);
+  }
+  session.edit(() => outcome.file, erase);
+  at.unflushed += 1;
   return JSON.stringify({ ok: true, record: JSON.stringify(session.file), erase: session.eraseIdentity });
 }
 
@@ -340,10 +372,26 @@ export function cloudHidden(): string {
   return '';
 }
 
-/** Re-read now ("Sync now"): answers 'changed' or 'same'. */
+/** Re-read now ("Sync now"): answers 'changed' or 'same'. A failure rejects
+ *  with its kind, as an open does. */
 export async function cloudRefresh(): Promise<string> {
   if (!open) return 'same';
-  return (await open.session.refreshFromRemote()) ? 'changed' : 'same';
+  return (await reread(open)) ? 'changed' : 'same';
+}
+
+/** Every re-read, asked for or on the minute, tells Swift how it went: a
+ *  revoked grant must show "Sign in again" even when no save is waiting, and a
+ *  re-read that works clears a passing failure. */
+async function reread(at: Open): Promise<boolean> {
+  try {
+    const changed = await at.session.refreshFromRemote();
+    __native.notify('synced', '');
+    return changed;
+  } catch (error) {
+    const why = failed(at.provider, error);
+    __native.notify('failed', why);
+    throw new Error(why);
+  }
 }
 
 /** Save what is waiting, now (the app is going to the background). */

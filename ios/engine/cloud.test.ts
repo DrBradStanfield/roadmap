@@ -62,7 +62,8 @@ interface Engine {
   newRecordJson(now: string, device: string, locale: string, zone: string): string;
   applyEditJson(record: string, edit: string, now: string, device: string): string;
   cloudOpen(provider: string, device: string, first: boolean): Promise<string>;
-  cloudEdit(edit: string, erase: string, now: string): string;
+  cloudEdit(edit: string, erase: string, units: string, now: string): string;
+  cloudVisible(): string;
   cloudFlush(): Promise<string>;
   cloudRefresh(): Promise<string>;
   cloudClose(copyDown: boolean): Promise<string>;
@@ -74,16 +75,22 @@ afterEach(async () => {
 });
 
 /** The engine in an empty context, with the fake natives. */
-async function phone(dropbox: FakeDropbox, phoneText: string | null = null) {
-  const state = { phoneText, pending: false, events: [] as Array<[string, string]>, tokenRefreshes: 0, signedOut: false };
+/** A provider behind the HTTP native: the fake Dropbox, or the fake Drive. */
+interface Server {
+  online: boolean;
+  answer(url: string, headers: Record<string, string>, body: string | null, method: string): { status: number; headers: Record<string, string>; body: string };
+}
+
+async function phone(dropbox: Server, phoneText: string | null = null) {
+  const state = { phoneText, pending: false, events: [] as Array<[string, string]>, tokenRefreshes: 0, signedOut: false, phoneWriteError: '' };
   const encode = (text: string) => new Uint8Array(Buffer.from(text, 'utf8')).buffer;
   const decode = (bytes: ArrayBuffer) => Buffer.from(new Uint8Array(bytes)).toString('utf8');
   let next = 1;
   const native = {
-    http(_method: string, url: string, headers: string, body: ArrayBuffer | null, done: (s: number, t: string, h: string, b: ArrayBuffer | null, e: string | null) => void) {
+    http(method: string, url: string, headers: string, body: ArrayBuffer | null, done: (s: number, t: string, h: string, b: ArrayBuffer | null, e: string | null) => void) {
       setImmediate(() => {
         if (!dropbox.online) return done(0, '', '{}', null, 'The Internet connection appears to be offline.');
-        const answer = dropbox.answer(url, JSON.parse(headers) as Record<string, string>, body ? decode(body) : null);
+        const answer = dropbox.answer(url, JSON.parse(headers) as Record<string, string>, body ? decode(body) : null, method);
         done(answer.status, '', JSON.stringify(answer.headers), encode(answer.body), null);
       });
       return next++;
@@ -101,6 +108,7 @@ async function phone(dropbox: FakeDropbox, phoneText: string | null = null) {
     },
     phoneRead: () => JSON.stringify({ text: state.phoneText }),
     phoneWrite: (text: string) => {
+      if (state.phoneWriteError) return state.phoneWriteError;
       state.phoneText = text;
       return '';
     },
@@ -153,7 +161,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
     const web = await recordWith(['2026-10-03'], 'web');
     dropbox.beforeNextUpload = () => dropbox.put(web);
-    const outcome = JSON.parse(engine.cloudEdit(add('2026-10-04'), erase, NOW)) as { ok: boolean };
+    const outcome = JSON.parse(engine.cloudEdit(add('2026-10-04'), erase, 'si', NOW)) as { ok: boolean };
     expect(outcome.ok).toBe(true);
     expect(await engine.cloudFlush()).toBe('saved');
     expect(days(dropbox.record)).toEqual(['2026-10-03', '2026-10-04']);
@@ -187,8 +195,8 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(record.meta.eraseEpoch).toBe(1);
     expect(days(record)).toEqual([]);
     // The screen still showed the old erase: the engine refuses the write (US-16 AC2a).
-    expect((JSON.parse(engine.cloudEdit(add('2026-10-06'), erase, NOW)) as { reason: string }).reason).toBe('erased');
-    expect((JSON.parse(engine.cloudEdit(add('2026-10-06'), view.erase, NOW)) as { ok: boolean }).ok).toBe(true);
+    expect((JSON.parse(engine.cloudEdit(add('2026-10-06'), erase, 'si', NOW)) as { reason: string }).reason).toBe('erased');
+    expect((JSON.parse(engine.cloudEdit(add('2026-10-06'), view.erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
   });
 
   it('AC11d: a save the cloud cannot take waits on the phone, marked pending, and goes up with the next session', async () => {
@@ -197,7 +205,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const first = await phone(dropbox);
     const { erase } = JSON.parse(await first.engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
     dropbox.online = false;
-    first.engine.cloudEdit(add('2026-10-07'), erase, NOW);
+    first.engine.cloudEdit(add('2026-10-07'), erase, 'si', NOW);
     expect(await first.engine.cloudFlush()).toBe('failed');
     const failed = first.state.events.filter(([event]) => event === 'failed').at(-1)!;
     expect(JSON.parse(failed[1])).toMatchObject({ kind: 'unreachable' });
@@ -247,4 +255,173 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     signedOut.state.signedOut = true;
     await expect(signedOut.engine.cloudOpen('dropbox', 'ios-1', false)).rejects.toThrow('"kind":"sign-in"');
   });
+
+  it('R2: an edit typed in the units the screen showed is refused after another device changed the units', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine } = await phone(dropbox);
+    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; record: string };
+    // The web switches the record to US units.
+    const us = JSON.parse(engine.applyEditJson(record, JSON.stringify({ kind: 'units', unitSystem: 'conventional' }), '2026-10-21T09:00:00.000Z', 'web')) as { record: string };
+    dropbox.put(JSON.parse(us.record) as RoadmapFile);
+    expect(await engine.cloudRefresh()).toBe('changed');
+    // A sheet opened in metric saves 80 (kg): refused, never stored as 80 lb. The replace path too.
+    expect(JSON.parse(engine.cloudEdit(add('2026-10-02'), erase, 'si', NOW))).toMatchObject({ ok: false, reason: 'units-changed' });
+    const rowId = (JSON.parse(us.record) as RoadmapFile).measurements[0].id;
+    expect(JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: rowId, value: 79 }), erase, 'si', NOW))).toMatchObject({ reason: 'units-changed' });
+    // An edit made in the units now shown goes through.
+    expect((JSON.parse(engine.cloudEdit(add('2026-10-02'), erase, 'conventional', NOW)) as { ok: boolean }).ok).toBe(true);
+  });
+
+  it('R3: an edit is refused, and nothing changes, when the phone copy cannot be written', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    state.phoneWriteError = 'The disk is full.';
+    const outcome = JSON.parse(engine.cloudEdit(add('2026-10-08'), erase, 'si', NOW)) as { ok: boolean; reason: string; message: string };
+    expect(outcome).toMatchObject({ ok: false, reason: 'phone-write' });
+    expect(outcome.message).toContain('The disk is full.');
+    // The session never took it: no save carries it.
+    state.phoneWriteError = '';
+    await engine.cloudClose(false);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(days(dropbox.record)).toEqual([]);
+  });
+
+  it('R3: an accepted edit is on the phone, marked pending, before cloudEdit answers', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    expect((JSON.parse(engine.cloudEdit(add('2026-10-09'), erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
+    // Synchronously: no await between the answer and these checks.
+    expect(state.pending).toBe(true);
+    expect(days(JSON.parse(state.phoneText!) as RoadmapFile)).toEqual(['2026-10-09']);
+  });
+
+  it('R6: a refresh with a revoked grant says sign-in', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false);
+    state.signedOut = true;
+    dropbox.answer = () => ({ status: 401, headers: {}, body: 'invalid_access_token' });
+    await expect(engine.cloudRefresh()).rejects.toThrow('"kind":"sign-in"');
+  });
+
+  it('R6: an idle re-read on return with a revoked grant says sign-in', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false);
+    state.signedOut = true;
+    dropbox.answer = () => ({ status: 401, headers: {}, body: 'invalid_access_token' });
+    state.events.length = 0;
+    engine.cloudVisible();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const failed = state.events.filter(([event]) => event === 'failed');
+    expect(failed.length).toBeGreaterThan(0);
+    expect(JSON.parse(failed.at(-1)![1])).toMatchObject({ kind: 'sign-in' });
+  });
+
+  it('R6: a re-read that works says synced, so a passing failure clears', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false);
+    state.events.length = 0;
+    await engine.cloudRefresh();
+    expect(state.events.map(([event]) => event)).toContain('synced');
+  });
+
+  it.each([
+    ['userRateLimitExceeded', 'unreachable'],
+    ['rateLimitExceeded', 'unreachable'],
+    ['insufficientPermissions', 'sign-in'],
+  ])('A8: a 403 with reason %s is %s', async (reason, kind) => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false);
+    dropbox.answer = () => ({ status: 403, headers: {}, body: `{"error":{"errors":[{"reason":"${reason}"}]}}` });
+    await expect(engine.cloudRefresh()).rejects.toThrow(`"kind":"${kind}"`);
+  });
+
+  it('A10: Google Drive through the shim: the first save makes the folder and file, a moved version re-merges, a web change is taken in', async () => {
+    const drive = new FakeDrive();
+    const { engine } = await phone(drive);
+    const { erase } = JSON.parse(await engine.cloudOpen('google-drive', 'ios-1', false)) as { erase: string };
+    expect((JSON.parse(engine.cloudEdit(add('2026-10-01'), erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(drive.folderMade).toBe(true);
+    expect(days(drive.record)).toEqual(['2026-10-01']);
+
+    // Another device writes after the phone read and before its version check:
+    // the check refuses (design §7 step 2) and the save re-reads and merges.
+    const web = await recordWith(['2026-10-02'], 'web');
+    const merged = { ...web, measurements: [...drive.record.measurements, ...web.measurements] };
+    drive.beforeVersionCheck = () => drive.put(merged);
+    expect((JSON.parse(engine.cloudEdit(add('2026-10-03'), erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(days(drive.record)).toEqual(['2026-10-01', '2026-10-02', '2026-10-03']);
+
+    const later = await recordWith(['2026-10-04'], 'web');
+    drive.put({ ...drive.record, measurements: [...drive.record.measurements, ...later.measurements] });
+    expect(await engine.cloudRefresh()).toBe('changed');
+  });
 });
+
+/** Google Drive v3's files endpoints, in memory: one folder, one record, a version counter. */
+class FakeDrive implements Server {
+  online = true;
+  folderMade = false;
+  file: { text: string; version: number } | null = null;
+  /** Runs at the version read that comes right before an upload. */
+  beforeVersionCheck: (() => void) | null = null;
+  private versionReads = 0;
+
+  put(record: RoadmapFile): void {
+    this.file = { text: JSON.stringify(record), version: (this.file?.version ?? 0) + 1 };
+  }
+  get record(): RoadmapFile {
+    return JSON.parse(this.file!.text) as RoadmapFile;
+  }
+
+  answer(url: string, headers: Record<string, string>, body: string | null, method: string) {
+    const ok = (json: unknown) => ({ status: 200, headers: {}, body: JSON.stringify(json) });
+    expect(headers.authorization).toBe('Bearer token-1');
+    const u = new URL(url);
+    const q = u.searchParams.get('q') ?? '';
+    if (method === 'GET' && u.pathname === '/drive/v3/files' && q.includes('application/vnd.google-apps.folder')) {
+      return ok({ files: this.folderMade ? [{ id: 'folder-1', name: 'Health Plan by Dr Brad' }] : [] });
+    }
+    if (method === 'GET' && u.pathname === '/drive/v3/files') return ok({ files: this.file ? [{ id: 'file-1' }] : [] });
+    if (method === 'POST' && u.pathname === '/drive/v3/files') {
+      this.folderMade = true;
+      return ok({ id: 'folder-1' });
+    }
+    if (method === 'GET' && u.pathname === '/drive/v3/files/file-1') {
+      if (u.searchParams.get('alt') !== 'media') {
+        // The save reads the version twice: with the bytes, then before the upload.
+        if (this.beforeVersionCheck && ++this.versionReads === 2) {
+          this.beforeVersionCheck();
+          this.beforeVersionCheck = null;
+          this.versionReads = 0;
+        }
+        return this.file ? ok({ version: String(this.file.version) }) : { status: 404, headers: {}, body: '' };
+      }
+      return this.file ? { status: 200, headers: {}, body: this.file.text } : { status: 404, headers: {}, body: '' };
+    }
+    if (method === 'POST' && u.pathname === '/upload/drive/v3/files') {
+      const json = body!.split('\r\n\r\n')[2].split('\r\n--')[0];
+      this.file = { text: json, version: 1 };
+      return ok({ id: 'file-1', version: '1' });
+    }
+    if (method === 'PATCH' && u.pathname === '/upload/drive/v3/files/file-1') {
+      this.file = { text: body!, version: (this.file?.version ?? 0) + 1 };
+      return ok({ id: 'file-1', version: String(this.file.version) });
+    }
+    throw new Error(`FakeDrive has no ${method} ${url}`);
+  }
+}
