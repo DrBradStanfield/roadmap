@@ -20,10 +20,13 @@ final class HealthEngine {
     }
 
     private let context: JSContext
-    /// The bundle's exports: planJson, sectionsJson, newRecordJson, myDataJson, applyEditJson, numberJson (ios/engine/entry.ts).
+    /// The bundle's exports (ios/engine/entry.ts): the plan, My data and the cloud doors.
     private let exports: JSValue
+    /// HTTP, timers and the cloud calls the engine reaches Swift through.
+    let natives: EngineNatives
 
-    init(bundle: Bundle = .main) throws {
+    /// `session`: the URLSession the engine's fetch runs on; tests pass a stubbed one.
+    init(bundle: Bundle = .main, session: URLSession = .shared) throws {
         guard let url = bundle.url(forResource: "health-engine", withExtension: "js"),
               let source = try? String(contentsOf: url, encoding: .utf8),
               let context = JSContext()
@@ -36,6 +39,9 @@ final class HealthEngine {
         // `crypto.randomUUID()` (FHIR rule 5). The phone's own UUID stands in.
         let randomUUID: @convention(block) () -> String = { UUID().uuidString.lowercased() }
         context.setObject(["randomUUID": randomUUID], forKeyedSubscript: "crypto" as NSString)
+        // fetch, timers and text coding for the cloud adapters (ios/engine/shim.ts).
+        natives = EngineNatives(session: session)
+        natives.install(in: context)
         context.evaluateScript(source, withSourceURL: url)
         if let exception = context.exception { throw EngineError.loadFailed(exception.toString()) }
 
@@ -93,6 +99,45 @@ final class HealthEngine {
 
     /// Calls an engine function that returns text, turning a JavaScript exception into a Swift error.
     func call(_ name: String, _ arguments: [Any]) throws -> String {
+        let result = try callValue(name, arguments)
+        guard result.isString, let text = result.toString() else {
+            throw EngineError.callFailed("the engine returned no text")
+        }
+        return text
+    }
+
+    /// Calls an engine function that returns a Promise of text, and waits for it.
+    /// A rejection becomes `EngineError.callFailed` with the error's message.
+    @MainActor
+    func callAsync(_ name: String, _ arguments: [Any]) async throws -> String {
+        try await settle(callValue(name, arguments))
+    }
+
+    /// Runs a script in the engine's context; tests use it to reach the shim directly.
+    func evaluate(_ script: String) throws -> JSValue {
+        let result = context.evaluateScript(script)
+        if let exception = context.exception {
+            context.exception = nil
+            throw EngineError.callFailed(exception.toString())
+        }
+        return result ?? JSValue(undefinedIn: context)
+    }
+
+    /// Waits for a Promise (or takes a plain value) and answers it as text.
+    @MainActor
+    func settle(_ value: JSValue) async throws -> String {
+        try await withCheckedThrowingContinuation { (done: CheckedContinuation<String, Error>) in
+            let fulfilled: @convention(block) (JSValue) -> Void = { done.resume(returning: $0.isUndefined ? "" : $0.toString()) }
+            let rejected: @convention(block) (JSValue) -> Void = { error in
+                let message = error.isObject ? error.objectForKeyedSubscript("message")?.toString() : nil
+                done.resume(throwing: EngineError.callFailed(message ?? error.toString()))
+            }
+            let promise = context.objectForKeyedSubscript("Promise").invokeMethod("resolve", withArguments: [value])
+            promise?.invokeMethod("then", withArguments: [unsafeBitCast(fulfilled, to: AnyObject.self), unsafeBitCast(rejected, to: AnyObject.self)])
+        }
+    }
+
+    private func callValue(_ name: String, _ arguments: [Any]) throws -> JSValue {
         guard let function = exports.objectForKeyedSubscript(name), !function.isUndefined else {
             throw EngineError.callFailed("HealthEngine.\(name) is not defined")
         }
@@ -101,10 +146,7 @@ final class HealthEngine {
             context.exception = nil
             throw EngineError.callFailed(exception.toString())
         }
-        guard let result, result.isString, let text = result.toString() else {
-            throw EngineError.callFailed("the engine returned no text")
-        }
-        return text
+        return result ?? JSValue(undefinedIn: context)
     }
 
     /// "en-US": the language and region only. The full identifier can end in a keyword

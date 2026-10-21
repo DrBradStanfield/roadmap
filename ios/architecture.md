@@ -1,7 +1,8 @@
 # iOS app — architecture and decisions
 
 Status: **Phase 1 spike started** (2026-10-21): the shared engine runs in the app and
-matches Node byte for byte (US-25 AC1, AC2). This file records what we decided for the
+matches Node byte for byte (US-25 AC1, AC2); Dropbox sync runs on the shared sync engine
+(US-25 AC11); Google Drive waits on its iOS client id. This file records what we decided for the
 native iPhone app and why. It is the entry point for anyone, human or agent, working in
 `ios/`.
 
@@ -62,6 +63,30 @@ Bridged so far: `console` (silenced, so no health value reaches a log) and
 it the first saved value failed with "Can't find variable: crypto"). The bundle is 432 KB
 since the My data writes joined it (`updateProfile` brings the connector's tool module).
 
+**Shape chosen for sync (2026-10-21, cloud sync build): the polyfill.** The second shape (a
+Swift `StorageAdapter`) would have kept merge in JavaScript but rewritten the Dropbox and
+Drive request shapes, the conditional write and Drive's version check in Swift: the code
+whose drift loses rows (dropbox-rest.ts's own header says so). The polyfill keeps all of
+it shared, so a fix to `dropbox-rest.ts`, `drive-rest.ts`, `SyncManager` or
+`RecordSession` reaches the phone with the next engine build. The bridge is small:
+- Swift (`Engine/EngineNatives.swift`) supplies five primitives, installed as the global
+  `__native` before the bundle runs: `http` (one URLSession request, body and answer as
+  ArrayBuffers, headers as JSON) with `cancelHttp`, `setTimer`/`clearTimer` on the main
+  queue, and `utf8Encode`/`utf8Decode`. Plus the cloud calls (`CloudPort`): an access
+  token, the phone's record file, the pending marker, and `notify`.
+- `ios/engine/shim.ts` builds on them exactly what the adapters touch: `fetch`,
+  `Response`, `Headers`, `Blob`, `AbortController`, `AbortSignal` (`timeout`, `any`),
+  `DOMException`, `setTimeout`/`clearTimeout`, `TextEncoder`/`TextDecoder`. A global the
+  runtime already has is never replaced. Not shimmed, because nothing on the sync path
+  uses them: `URL`, `URLSearchParams`, `atob`/`btoa`, `crypto.getRandomValues` (the token
+  exchange is Swift's). Tested in Node (`shim.test.ts`, an empty vm context) and in
+  JavaScriptCore (`ShimTests.swift`).
+- Every JavaScript call, timer and answer runs on the main queue; URLSession answers hop
+  there before they touch a JSValue (`MainQueueOnly` marks the one place Swift 6 is told
+  rather than shown). Async engine doors return Promises; `HealthEngine.callAsync` awaits
+  them with a continuation, and JavaScriptCore runs the promise jobs when each call from
+  Swift returns. The bundle is 510 KB with sync.
+
 ### D3 · Clinical fixes ship over the air, signed (Brad, 2026-10-21)
 
 The engine bundle can be updated without an App Store release. Apple's developer agreement
@@ -106,10 +131,14 @@ on connect and the copy-down (`record-transfer.ts`), chat history (`chat-session
 host interface the app implements (`record-host.ts`) and the storage self-test
 (`storage-self-test.ts`). `engine-portability.test.ts` runs them in an empty JavaScript
 context, as JavaScriptCore will. Still to move: the row-write rules (D4b). The My data
-tab (`ios/engine/my-data.ts`) writes through health-core's `record-edits` directly today,
-one pure edit per call; once the app keeps a session open it should run each edit through
-`RecordSession.edit` with the page's erase stamp, so its writes get the save loop, the
-merge on conflict and the erase guard.
+tab (`ios/engine/my-data.ts`) writes through health-core's `record-edits` directly when the
+record is the phone's file, one pure edit per call. **When a cloud is connected (built
+2026-10-21):** each edit runs `applyEdit` on the session's working copy and then
+`RecordSession.edit` with the erase stamp the screen showed (`ios/engine/cloud.ts`
+`cloudEdit`; Swift keeps the stamp in `RecordStore.cloudErase`), so it gets the save loop,
+the merge on conflict and the erase guard. The phone-file path stays outside a session:
+the device tier has one writer, and a session there would add a second copy of the file in
+memory for no gain. Revisit when Apple Health import becomes a second writer (D6).
 
 **The form's questions moved too (2026-10-21, US-25 AC8).** The medication, screening and
 supplement questions (labels, hints, option lists, show-when rules and what each answer
@@ -149,9 +178,79 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   in a folder with a space in its name.
 - **Dropbox:** OAuth with PKCE through `ASWebAuthenticationSession`, the same Dropbox app as
   the web (the `/Apps/Health Plan by Dr Brad` app folder), so the phone sees the web's file.
-  The Dropbox app need not be installed. Tokens live in the Keychain, this-device-only.
+  The Dropbox app need not be installed. Tokens live in the Keychain, this-device-only
+  (`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`). Built 2026-10-21: app key
+  `xf96vqvjotm5xhx` (the web's), redirect `db-xf96vqvjotm5xhx://2/token` (the Dropbox iOS
+  SDK's convention), `token_access_type=offline`, no `scope` parameter (the web sends none
+  either, so the token carries the app's registered scopes). The callback scheme is not
+  registered in Info.plist: `ASWebAuthenticationSession` catches it itself, and a
+  registered scheme would only let other apps and links open this app with a code.
 - **Google Drive:** PKCE with an iOS client in the **same** Google Cloud project as the web,
   because `drive.file` only shows files the project created. No server token exchange.
+  Built 2026-10-21 but off: `CloudProvider.googleIOSClientId` is empty until Brad creates
+  the iOS client (project 687809032623); the redirect is the client's reversed id,
+  `com.googleusercontent.apps.<id>:/oauth2redirect`. Scope `drive.file` only (the web also
+  asks `openid email`, for server reminders the app does not use, D7). A grant without
+  `drive.file` is refused at sign-in.
+- **How sync runs (built 2026-10-21, US-25 AC11).** One cloud session at a time, health-core's
+  own `RecordSession` over a `RecordHost` that `ios/engine/cloud.ts` builds: the store is the
+  cloud through health-core's `DropboxAdapter`/`DriveAdapter`, re-made per access token
+  (Swift refreshes the token; a 401 refreshes once and retries); the device mirror is the
+  phone's own record file (`Record/health-roadmap.json`) through the natives, with the
+  pending marker as a file beside it (`sync-pending`); the connected provider is a file
+  there too (`sync-provider`), so a phone restored from a backup comes back unconnected,
+  matching the Keychain's this-device-only tokens. First connect lifts the phone's record
+  into the cloud (`liftDeviceCopy`, a merge). Launch and every return to the foreground
+  re-read (`LiveRefresh.visible`), and a minute poll runs while on screen; going to the
+  background flushes inside a background task. Disconnect flushes, merges the cloud down
+  onto the phone (`copyCloudDown`), drops the tokens and goes back to the phone file; it
+  does not revoke the token at Dropbox (the web does not either). A cloud that cannot be
+  read at Disconnect does not stop it (the web stops a switch then): the phone already
+  holds every edit made here, and the Sync screen says the newest changes from other
+  devices may be missing. Erase from another device arrives through the merge (the higher
+  `eraseEpoch` wins), and `RecordSession`'s erase guard refuses an edit typed against the
+  pre-erase screen.
+- **The phone keeps a copy while connected (decision, 2026-10-21, cloud sync build).** The
+  web keeps nothing locally on a cloud except a failed save. The app does more, for two
+  reasons: it must open with the user's data when there is no network, and an edit must
+  survive the app being killed in the 800 ms before its save. So every edit is merged into
+  the phone file and marks it pending before the save goes up (write-ahead); a successful
+  save clears the marker (the session's own rule); every re-read or open that brings
+  something in is merged into the phone file without the marker. A launch that cannot reach
+  the cloud shows the phone copy, takes edits there (marking them pending), and the next
+  open merges them up. All of it is health-core's merge, so rows are never lost and an
+  erase still wins. Cost: the phone file holds the record while connected, under the same
+  protection and backup exclusion as before. Brad may prefer the web's leaner rule.
+- **Review fixes (2026-10-21, Codex R1-R6 and Opus adversary A3-A10).** Edit sheets pin the
+  erase and the units they opened on (`MyData/RecordPin.swift`, `RecordStore.Screen`); the
+  engine's `cloudEdit` refuses a value typed in units another device has since changed, and
+  `RecordSession.refuses` refuses one typed before a remote erase. `cloudEdit` merges the edit
+  into the phone's file synchronously and refuses it if the phone cannot write it, so
+  "saved" is true on the phone before the save goes up. CloudSync tracks its session
+  explicitly (`sessionOpen`); a failed reopen falls back to the phone's file; a generation
+  number makes a Disconnect beat an open still in flight; edits that land while the cloud
+  opens make the open run again so the session merges them. Every re-read reports to Swift
+  (`synced` or `failed` with its kind). A 403 whose reason is a rate limit is a retry, not a
+  sign-in. The account a sign-in belongs to is kept (`sync-account`); signing in again as
+  another account is refused, because merging would put one person's record into
+  another's: the user disconnects first, then connects the other account (a fresh connect
+  then lifts the phone's record, as any first connect does). After a Disconnect,
+  `sync-history` remembers the cloud, and the words say a copy stays there. The background
+  save has an expiration handler. Drive runs through the shim in Node against a fake
+  Drive (`cloud.test.ts`), so its path is tested before the iOS client id exists.
+  Re-check fixes, same day (F1-F7): each engine session has a number, carried on every
+  event; Swift acts only on the session it shows. An open that finishes after a newer open
+  or a close began closes itself and rejects ("superseded"), so two racing opens never
+  orphan a session. "Synced" is said only when the pending marker is clear. A unit change
+  refuses only edits whose number is in units (a value, a correction, a height), and a
+  refusal re-pins the sheet so a corrected retry saves. After three opens interrupted by
+  edits, the last session is closed and the app says why. Disconnect's copy-down reports
+  only a real copy. Drive's storageQuotaExceeded says the Drive is full; dailyLimitExceeded
+  retries.
+- **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
+  live in `widget-src/`, not health-core; moving them in would give the app push for free
+  (US-34). Until then the app polls each minute while on screen. Documents are not synced
+  by the app (its adapter refuses them).
 - **Not the iOS Files picker.** File Provider writes have no version check, which breaks
   US-10 AC4 (two overlapping saves must keep both rows).
 - **iCloud: open.** A website cannot read iCloud Drive, so an iCloud user could not use the
@@ -439,6 +538,10 @@ The plan screen said "No health data left your device". That was true only while
 had no network code; D8's chat and upload re-derived it to "Worked out on this iPhone"
 (2026-10-21). The first network call (D3's update check, D5's sync, D8's chat)
 must re-derive that sentence in the same commit.
+With D5's sync (2026-10-21) the plan line stays as it is: it claims only where the
+plan was worked out. Where the record is kept is said on My data
+(`SyncStatusText.myDataFooter`): the connected cloud, or after a Disconnect that a copy
+stays in the cloud synced earlier, or only this iPhone.
 
 ### D10 · Old app versions stay safe
 
@@ -453,6 +556,10 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   `sectionsJson`, and for My data `newRecordJson`, `myDataJson`, `applyEditJson`,
   `numberJson`. Every door reads the record through health-core's `ROADMAP_DOC.migrate`
   (shape check, then migration), as the web, CLI and connector do.
+- `engine/shim.ts`: fetch, timers and friends over Swift's natives (D2). `engine/cloud.ts`:
+  the phone's `RecordHost` and the cloud doors Swift calls (`cloudOpen`, `cloudEdit`,
+  `cloudVisible`, `cloudHidden`, `cloudRefresh`, `cloudFlush`, `cloudClose`), D5. Both
+  tested in Node by `shim.test.ts` and `cloud.test.ts`, which `test:all` runs.
 - `engine/reminders.ts`: the phone's reminders, `remindersJson` in `entry.ts`: health-core's
   schedule plus the notification days (D7). Tested by `engine/reminders.test.ts`.
 - `engine/my-data.ts`: what the My data tab shows and every write it makes, each one
@@ -481,8 +588,14 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
 - `HealthRoadmap/`: the SwiftUI app, one folder per feature:
   - `App/`: the entry point (`AppParts` makes the engine and the record once) and
     `RootView`, the two tabs: My data first, then My plan, the web's mobile order.
-  - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext`; the generated
-    bundle sits beside it.
+  - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext` and awaits its
+    Promises; `EngineNatives.swift` is the bridge (D2); `HealthEngine+Cloud.swift` the
+    typed cloud doors. The generated bundle sits beside them.
+  - `Sync/`: cloud sync (D5, US-25 AC11). `CloudProvider` (client ids, redirects),
+    `PKCE`, `TokenStore` (Keychain), `OAuthClient` (sign-in and refresh), `CloudSync`
+    (opens the engine's session, follows the app on and off screen, answers the engine's
+    `CloudPort` calls), `SyncProblem` and `SyncStatusText` (the words), `SyncView` (the
+    screen, from My data's toolbar).
   - `MyData/`: the record and its tab. `RecordStore` keeps the file and applies edits
     through the engine; `MyData.swift` is the engine's view of the record and the
     `RecordEdit` the tab sends; `MyDataView`, `ValueEntrySheet` and `DayText` draw it.
@@ -508,7 +621,11 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   no card loses its evidence or ingredients; `RecordEditTests` runs the My data writes in
   JavaScriptCore; `RecordStoreTests` covers the file (AC4) and the plan following it
   (AC6); `DayTextTests` pins the local day; `FormEditTests` runs the form answers,
-  supplements and history in JavaScriptCore (AC8, AC9); `ReminderSchedulerTests` is AC12.
+  supplements and history in JavaScriptCore (AC8, AC9). Sync (AC11): `ShimTests` (the
+  shim in JavaScriptCore over a URLProtocol stub, `StubHTTP`), `SignInTests` (Keychain,
+  PKCE, code exchange, refresh), `CloudSyncTests` (the whole path against a stubbed
+  Dropbox with its rev rules), `SyncStatusTextTests`, `LiveDropboxTests` (real Dropbox,
+  scratch account, skipped without a token); `ReminderSchedulerTests` is AC12.
 
 **Code for AI agents to read (HARD, Brad 2026-10-21).** This app is written and maintained
 by AI agents, so the code is shaped for a reader with no memory of how it got here:

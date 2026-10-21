@@ -108,4 +108,6 @@ struct EditOutcome: Decodable {
     let message: String?
     /// On "slot-occupied": the row that already holds that day.
     let existingId: String?
+    /// In the cloud (US-25 AC11): the erase the new record is at.
+    var erase: String? = nil
 }

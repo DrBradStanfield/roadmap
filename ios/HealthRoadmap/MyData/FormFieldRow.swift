@@ -148,6 +148,10 @@ struct MonthPickerSheet: View {
     @State private var message: String?
 
     var body: some View {
+        sheet.pinsRecord()
+    }
+
+    private var sheet: some View {
         NavigationStack {
             Form {
                 Picker(title, selection: $picked) {

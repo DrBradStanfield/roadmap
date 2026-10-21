@@ -10,6 +10,7 @@ struct RootView: View {
 
     let engine: HealthEngine
     let store: RecordStore
+    let sync: CloudSync
     @State private var tab = Tab.data
     @State private var reviewPrompt = ReviewPrompt()
     @Environment(\.requestReview) private var requestReview
@@ -22,7 +23,7 @@ struct RootView: View {
     var body: some View {
         TabView(selection: $tab) {
             titled("My data") {
-                MyDataView(store: store)
+                MyDataView(store: store, sync: sync)
                     .toolbar { ToolbarItem(placement: .topBarTrailing) { LabUploadButton(engine: engine, store: store) } }
             }
                 .tabItem { Label("My data", systemImage: "list.bullet.clipboard") }
@@ -36,6 +37,8 @@ struct RootView: View {
                 .tag(Tab.chat)
         }
         .sensoryFeedback(.selection, trigger: tab)
+        // Edit sheets pin the record they opened on (MyData/RecordPin.swift).
+        .environment(store)
         .fullScreenCover(isPresented: Binding(get: { !welcomed }, set: { welcomed = !$0 })) {
             WelcomeView { welcomed = true }
         }
