@@ -261,7 +261,6 @@ export {
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
   createMeasurement,
-  stableStringify,
   type RoadmapFile,
   type RoadmapFileMeta,
   type RoadmapProfile,
@@ -278,8 +277,16 @@ export {
   type HistoryChangeType,
 } from './roadmap-file';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
-export { mergeFiles, stampFields, CLOCK_KEYS, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
+export { mergeFiles, stampFields, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
 export { buildErasedFile, type EraseInputs } from './erase';
+export {
+  contentOf,
+  visibleContentOf,
+  eraseIdentityOf,
+  PERSIST_DEBOUNCE_MS,
+  REMOTE_POLL_MS,
+  REMOTE_THROTTLE_MS,
+} from './record-session';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 

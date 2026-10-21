@@ -26,7 +26,12 @@ import {
   buildDocumentRef,
   buildErasedFile,
   type BulkRow,
-  CLOCK_KEYS,
+  contentOf,
+  eraseIdentityOf,
+  PERSIST_DEBOUNCE_MS,
+  REMOTE_THROTTLE_MS,
+  REMOTE_POLL_MS,
+  visibleContentOf,
   bulkAppendValues,
   splitDocumentRef,
   classifyMedicationChange,
@@ -48,7 +53,6 @@ import {
   PREFILL_FIELDS,
   SchemaTooNewError,
   screeningFieldName,
-  stableStringify,
   stampFields,
   type ApiMeasurement,
   type ApiMedication,
@@ -243,20 +247,6 @@ export interface BulkLabValueInput {
   recordedAt: string; source?: string; correctsId?: string;
 }
 
-const PERSIST_DEBOUNCE_MS = 800;
-
-/**
- * How the open page keeps up with a record something else is writing (US-34).
- * The provider says so when it can — the adapter's `watch` — and the two
- * moments a user comes back to the tab catch whatever a watch missed. The
- * slow poll is the fallback for backends with no change signal at all; a
- * watch-capable one never runs it. The throttle stops focus and
- * visibilitychange (which fire together on a tab switch) from making two round
- * trips out of one return.
- */
-const REMOTE_POLL_MS = 60_000;
-const REMOTE_THROTTLE_MS = 5_000;
-
 // --- small pure helpers ---
 
 const NUMERIC_SCREENING_KEYS = new Set(['lung_pack_years', 'prostate_psa_value']);
@@ -266,42 +256,6 @@ function newId(): string {
 }
 function activeOnly<T extends { status: string }>(rows: T[]): T[] {
   return rows.filter((r) => r.status === 'active');
-}
-
-/** Which erase the record is at. It lives in `meta` beside the clocks but is
- *  not one: an erase that leaves the record as empty as it was is still a
- *  change, and the page drops the chat's banners for it (US-16 AC2a). */
-function eraseOf(file: RoadmapFile): [number, string | null] {
-  return [file.meta.eraseEpoch ?? 0, file.meta.erasedAt ?? null];
-}
-
-/** The record minus its own clocks — what a person would call a change. Keys
- *  are sorted, as everywhere else content is compared: a merge rebuilds the
- *  objects it touches, and a reordered key is not a change anyone made. */
-function contentOf(file: RoadmapFile): string {
-  const { meta: _clocks, ...rest } = file;
-  return stableStringify([eraseOf(file), rest]);
-}
-
-/**
- * What a person would SEE of the record: `contentOf` with each list read as a
- * set and every record's own clocks (`updatedAt`, `lamport`, `fieldStamps`)
- * left out. A merge re-sorts rows by id, and against an empty backend it
- * trades one singleton's stamp for the other's; neither is a change anyone
- * made. This decides only what is ANNOUNCED (US-34 AC3). Taking a merge in
- * still goes by `contentOf`: a skipped clock-only lead would leave the profile
- * lamport behind the cloud's, and the next profile edit would lose the merge.
- */
-function visibleContentOf(file: RoadmapFile): string {
-  // The erase list is bookkeeping too, and so is the version it raises: a
-  // change to them alone is nothing a person sees (US-09 AC23). The erase
-  // itself is: it drops the chat's banners (US-16 AC2a).
-  const { meta: _clocks, erasedRows: _list, schemaVersion: _version, ...rest } = file;
-  const seen: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(rest)) {
-    seen[key] = Array.isArray(value) ? value.map((row) => stableStringify(row, CLOCK_KEYS)).sort() : value;
-  }
-  return stableStringify([eraseOf(file), seen], CLOCK_KEYS);
 }
 
 export class RoadmapStore {
@@ -398,7 +352,7 @@ export class RoadmapStore {
 
   /** Which erase this copy is at, as one comparable string (US-16 AC2a). */
   get eraseIdentity(): string {
-    return JSON.stringify(eraseOf(this.file));
+    return eraseIdentityOf(this.file);
   }
 
   /** The erase the page shows: the stamp of a write that brings none. */
@@ -1125,7 +1079,7 @@ export class RoadmapStore {
   private adopt(merged: RoadmapFile): boolean {
     const seen = visibleContentOf(this.file);
     // An erase from elsewhere, a later one at the same epoch included (adversary R6).
-    if (JSON.stringify(eraseOf(merged)) !== this.eraseIdentity) {
+    if (eraseIdentityOf(merged) !== this.eraseIdentity) {
       clearMatrixDrafts();
       safeRemoveItem(LPA_CHECK_KEPT_KEY);
     }
