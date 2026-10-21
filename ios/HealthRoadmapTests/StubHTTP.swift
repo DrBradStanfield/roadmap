@@ -29,8 +29,7 @@ final class StubHTTP: URLProtocol {
     nonisolated(unsafe) static var stopped = 0
 
     /// A session whose every request comes here.
-    static func session() -> URLSession {
-        let configuration = URLSessionConfiguration.ephemeral
+    static func session(configuration: URLSessionConfiguration = .ephemeral) -> URLSession {
         configuration.protocolClasses = [StubHTTP.self]
         return URLSession(configuration: configuration)
     }
@@ -59,6 +58,11 @@ final class StubHTTP: URLProtocol {
             return
         }
         let response = HTTPURLResponse(url: request.url!, statusCode: answer.status, httpVersion: "HTTP/1.1", headerFields: answer.headers)!
+        // A 3xx with a Location is offered to the session as a redirect; a session that
+        // follows it sends the new request back here, one that refuses gets the 3xx.
+        if (300..<400).contains(answer.status), let location = answer.headers["Location"], let target = URL(string: location) {
+            client?.urlProtocol(self, wasRedirectedTo: URLRequest(url: target), redirectResponse: response)
+        }
         let deliver = { [self] in
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
             client?.urlProtocol(self, didLoad: answer.body)

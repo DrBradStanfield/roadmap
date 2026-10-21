@@ -7,8 +7,14 @@ import XCTest
 /// a fake native in ios/engine/shim.test.ts.
 @MainActor
 final class ShimTests: XCTestCase {
+    private let port = TokenPort()
+
+    /// The engine on a stubbed session. Requests go to an allowed Dropbox call with the
+    /// sentinel, as the adapters send them (EngineHTTP, US-25 AC17).
     private func engine() throws -> HealthEngine {
-        try HealthEngine(session: StubHTTP.session())
+        let engine = try HealthEngine(session: StubHTTP.session())
+        engine.natives.cloud = port
+        return engine
     }
 
     func testFetchSendsTheRequestAndReadsTheAnswer() async throws {
@@ -20,12 +26,12 @@ final class ShimTests: XCTestCase {
         let engine = try engine()
         let answer = try await engine.settle(engine.evaluate("""
             fetch('https://content.dropboxapi.com/2/files/upload', {
-              method: 'POST', headers: { Authorization: 'Bearer t' }, body: '{"value":"é"}',
+              method: 'POST', headers: { Authorization: 'Bearer native-token:dropbox' }, body: '{"value":"é"}',
             }).then(async (res) => [res.ok, res.status, res.headers.get('dropbox-api-result'), await res.text()].join('|'))
             """))
         XCTAssertEqual(answer, #"true|201|{"rev":"r1"}|ok µmol ✓"#)
         XCTAssertEqual(seen?.method, "POST")
-        XCTAssertEqual(seen?.headers["authorization"], "Bearer t")
+        XCTAssertEqual(seen?.headers["authorization"], "Bearer real-token")
         XCTAssertEqual(seen.map { String(decoding: $0.body, as: UTF8.self) }, #"{"value":"é"}"#)
     }
 
@@ -36,14 +42,14 @@ final class ShimTests: XCTestCase {
             return .init()
         }
         let engine = try engine()
-        _ = try await engine.settle(engine.evaluate("fetch('https://x.test/u', { method: 'POST', body: new Blob(['--b\\r\\n', 'é', new Uint8Array([33])]) }).then(r => r.status)"))
+        _ = try await engine.settle(engine.evaluate("fetch('https://content.dropboxapi.com/2/files/upload', { method: 'POST', headers: { Authorization: 'Bearer native-token:dropbox' }, body: new Blob(['--b\\r\\n', 'é', new Uint8Array([33])]) }).then(r => r.status)"))
         XCTAssertEqual(body, "--b\r\né!")
     }
 
     func testANetworkFailureIsATypeError() async throws {
         StubHTTP.handler = { _ in .init(offline: true) }
         let engine = try engine()
-        let answer = try await engine.settle(engine.evaluate("fetch('https://x.test').then(() => 'ok', (e) => String(e instanceof TypeError))"))
+        let answer = try await engine.settle(engine.evaluate("fetch('https://content.dropboxapi.com/2/files/download', { method: 'POST', headers: { Authorization: 'Bearer native-token:dropbox' } }).then(() => 'ok', (e) => String(e instanceof TypeError))"))
         XCTAssertEqual(answer, "true")
     }
 
@@ -53,7 +59,7 @@ final class ShimTests: XCTestCase {
         let engine = try engine()
         let pending = try engine.evaluate("""
             globalThis.c = new AbortController();
-            fetch('https://x.test/slow', { signal: c.signal }).then(() => 'ok', (e) => e.name)
+            fetch('https://content.dropboxapi.com/2/files/download', { method: 'POST', headers: { Authorization: 'Bearer native-token:dropbox' }, signal: c.signal }).then(() => 'ok', (e) => e.name)
             """)
         try await Task.sleep(for: .milliseconds(50))
         _ = try engine.evaluate("c.abort()")

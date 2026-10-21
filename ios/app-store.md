@@ -71,6 +71,10 @@ a short time to run the service and then deleted; your chat history lives in you
 record. Anthropic does not use this data to train its models. You are asked before
 your first chat message.
 
+**Engine updates.** The app checks GitHub for updates to the engine that works out
+your plan. GitHub sees your IP address when the app checks for engine updates; the
+check carries no health data.
+
 **No tracking.** The app has no advertising, no analytics and no tracking. Apple tells
 us install and crash counts if you share them with developers.
 
@@ -96,6 +100,11 @@ against a fake Health store; confirm on a real iPhone.)
   details in the notes field, never in this file.
 - Chat and lab upload use Apple's App Attest to prove the request comes from this
   app; there is no user account.
+- Over-the-air engine updates: the app downloads updates to its JavaScript engine (run
+  in JavaScriptCore) from GitHub, signed with our key and checked before use. They
+  change computation and text only (thresholds, suggestions, wording); the native
+  code, what the app can reach on the network and its purpose never change without
+  an App Store update.
 - Guideline 1.4.1: the app gives educational information drawn from published
   guidelines (each step cites them), shows a medical disclaimer on the first screen
   and under every plan, and tells users to talk to their doctor. It does not diagnose,

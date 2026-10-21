@@ -1,7 +1,9 @@
 // The engine the iOS app runs in JavaScriptCore (ios/architecture.md D2).
 // The same health-core the web runs; this file only gives Swift a
 // string-in, string-out door, because JSON is the one shape both sides share.
+import { mergeFiles } from '../../packages/health-core/src/merge';
 import { computePlan, type Plan } from '../../packages/health-core/src/plan';
+import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-file';
 import { planSections } from '../../packages/health-core/src/plan-sections';
 import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
 import { metricHistory } from './my-data-forms';
@@ -12,6 +14,23 @@ import { installShim, type Natives } from './shim';
 // in Node, where the parity goldens run the bundle with nothing but ECMAScript.
 declare const __native: Natives | undefined;
 if (typeof __native !== 'undefined') installShim(globalThis as unknown as Record<string, unknown>, __native);
+
+// Over-the-air updates (ios/architecture.md D3, US-25 AC17). The build stamps
+// the version (scripts/build-engine.mjs); the app checks both against the
+// signed manifest before it trusts a downloaded engine.
+declare const __ENGINE_VERSION__: number | undefined;
+/** This bundle's version, UTC yyyymmddHHMM; 0 when run from source. */
+export const engineVersion: number = typeof __ENGINE_VERSION__ === 'number' ? __ENGINE_VERSION__ : 0;
+/** The record schema this engine writes; an update may never change it (D3). */
+export const schemaVersion: number = CURRENT_SCHEMA_VERSION;
+
+/** health-core's merge of two records, as JSON: the app's self-test runs it on a
+ *  downloaded engine before trusting it (rows kept, entered-in-error sticky, the
+ *  higher eraseEpoch). */
+export function mergeJson(localJson: string, remoteJson: string, nowIso: string, deviceId: string): string {
+  const ctx = { deviceId, now: nowIso };
+  return JSON.stringify(mergeFiles(readRecord(localJson, nowIso, deviceId), readRecord(remoteJson, nowIso, deviceId), ctx));
+}
 
 // Cloud sync (cloud.ts): every call but cloudEdit is async and answers a Promise.
 export { cloudClose, cloudEdit, cloudErase, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible } from './cloud';

@@ -26,6 +26,8 @@ const LABELS: Record<Provider, string> = { dropbox: 'Dropbox', 'google-drive': '
 /** What Swift gives the sync (CloudSync.swift, EngineNatives.swift). */
 export interface CloudNatives {
   /** A current access token. `force` after the provider refused the last one.
+   *  The token is the sentinel `native-token:<provider>`: Swift keeps the real one
+   *  and swaps it in on an allowed call only (EngineHTTP.swift, US-25 AC17).
    *  On failure, `error` says why and `signIn` whether only signing in again
    *  fixes it (a refresh token the provider refused) or a retry may (no network). */
   accessToken(provider: Provider, force: boolean, done: (token: string | null, error: string | null, signIn: boolean) => void): void;

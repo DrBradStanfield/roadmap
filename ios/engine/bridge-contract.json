@@ -1,0 +1,51 @@
+{
+  "about": "The contract between the native app and its JavaScript engine (ios/architecture.md D3, US-25 AC17). The app's bridge id is the first 16 hex digits of this file's SHA-256 (EngineRelease.bridge in Swift); a downloaded engine is accepted only for the same id. Any change here is a new bridge, so an engine that needs it waits for an app update. bridge.test.ts and EngineBridgeContractTests.swift fail if either side drifts from this file.",
+  "natives": {
+    "http": "(method, url, headersJson, body ArrayBuffer|null, done(status, statusText, headersJson, body ArrayBuffer|null, error|null)) -> id. Swift sends only the allow-listed provider calls; an Authorization header must be 'Bearer native-token:<provider>', which Swift swaps for the real token.",
+    "cancelHttp": "(id) -> void",
+    "setTimer": "(ms, run) -> id",
+    "clearTimer": "(id) -> void",
+    "utf8Encode": "(text) -> ArrayBuffer",
+    "utf8Decode": "(ArrayBuffer) -> text",
+    "accessToken": "(provider 'dropbox'|'google-drive', force, done(token|null, error|null, signIn)). The token is the sentinel 'native-token:<provider>', never the real one.",
+    "phoneRead": "() -> '{\"text\": string|null}' or '{\"error\": string}'",
+    "phoneWrite": "(text) -> '' when written, else the error",
+    "phoneRemove": "() -> void",
+    "pending": "('get'|'set'|'clear') -> boolean",
+    "notify": "(event, payload, session) -> void"
+  },
+  "events": ["changed", "failed", "saved", "saving", "synced"],
+  "values": {
+    "engineVersion": "number, UTC yyyymmddHHMM",
+    "schemaVersion": "number, the record schema the engine writes"
+  },
+  "doors": {
+    "applyEditJson": { "args": ["recordJson", "editJson", "nowIso", "deviceId"], "returns": "{ok:true, record} or {ok:false, reason, message}" },
+    "chatContextJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "chat context JSON" },
+    "chatDeleteJson": { "args": ["historyText", "conversationId", "nowIso", "deviceId"], "returns": "settle handle; read with settledJson" },
+    "chatListJson": { "args": ["historyText", "nowIso", "deviceId"], "returns": "conversation list JSON" },
+    "chatMessagesJson": { "args": ["historyText", "conversationId", "nowIso", "deviceId"], "returns": "messages JSON" },
+    "chatRecordExchangeJson": { "args": ["historyText", "exchangeJson", "nowIso", "deviceId"], "returns": "settle handle; read with settledJson" },
+    "cloudClose": { "args": ["copyDown"], "returns": "Promise of JSON" },
+    "cloudEdit": { "args": ["editJson", "erase", "shownUnits", "nowIso"], "returns": "JSON outcome" },
+    "cloudErase": { "args": ["historyText", "nowIso", "keepChat"], "returns": "Promise of JSON" },
+    "cloudFlush": { "args": [], "returns": "Promise of JSON" },
+    "cloudHidden": { "args": [], "returns": "JSON" },
+    "cloudOpen": { "args": ["provider", "deviceId", "firstConnect"], "returns": "Promise of JSON" },
+    "cloudRefresh": { "args": [], "returns": "Promise of JSON" },
+    "cloudVisible": { "args": [], "returns": "JSON" },
+    "erasePhoneJson": { "args": ["recordText", "historyText", "nowIso", "deviceId"], "returns": "settle handle; read with settledJson" },
+    "healthWritesJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "[HealthWrite] JSON" },
+    "historyJson": { "args": ["recordJson", "metric", "nowIso", "deviceId"], "returns": "MetricHistory JSON" },
+    "labReviewJson": { "args": ["extractionJson", "nowIso"], "returns": "lab review JSON" },
+    "labSaveSummaryJson": { "args": ["recordJson", "extractionJson", "refsJson", "reportDay", "nowIso", "deviceId"], "returns": "summary JSON" },
+    "mergeJson": { "args": ["localJson", "remoteJson", "nowIso", "deviceId"], "returns": "merged record JSON" },
+    "myDataJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "MyData JSON" },
+    "newRecordJson": { "args": ["nowIso", "deviceId", "locale", "timeZone"], "returns": "record JSON" },
+    "numberJson": { "args": ["text"], "returns": "number or null JSON" },
+    "planJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "Plan JSON" },
+    "remindersJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "PhoneReminders JSON" },
+    "sectionsJson": { "args": ["planJson"], "returns": "[PlanSection] JSON" },
+    "settledJson": { "args": [], "returns": "the last settled async door's answer" }
+  }
+}
