@@ -8439,7 +8439,7 @@
       "[Ss]pace (?:them|it|the doses) (?:out|apart)",
       "\\b[Tt]ake (?:them|it|vitamin C|the vitamin C) (?:at least )?\\d+ hours? (?:apart|before|after)"
     ],
-    "notes": "US-50 AC5, pre-registered 2026-10-21 (masters answers round 2, Opus adversary R3 + Codex); not run. Drug interaction table: vitamin C may increase levothyroxine absorption (studies used about 500 mg to 1 g a day; Jubiz 2014, PMID 24601693, found 500 mg taken with levothyroxine improved thyroid levels); talk to your prescriber before starting, stopping or changing vitamin C, as thyroid levels may need checking. The previous wording told readers to take high-dose vitamin C at a different time of day; must_not_match fails a reply that repeats that timing instruction."
+    "notes": "US-50 AC5, pre-registered 2026-10-21 (masters answers round 2, Opus adversary R3 + Codex); not run. Drug interaction table: vitamin C may increase levothyroxine absorption (studies used about 500 mg to 1 g a day; Jubiz 2014, reference [155], found 500 mg taken with levothyroxine improved thyroid levels); talk to your prescriber before starting, stopping or changing vitamin C, as thyroid levels may need checking. The previous wording told readers to take high-dose vitamin C at a different time of day; must_not_match fails a reply that repeats that timing instruction."
   },
   {
     "query": "How many ingredients are in MicroVitamin+ Powder?",
