@@ -5,6 +5,7 @@ import { computePlan, type Plan } from '../../packages/health-core/src/plan';
 import { planSections } from '../../packages/health-core/src/plan-sections';
 import { applyEdit, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
 import { metricHistory } from './my-data-forms';
+import { phoneReminders } from './reminders';
 
 /** The plan for a record, as JSON. `nowIso` is passed in so tests can pin it. */
 export function planJson(recordJson: string, nowIso: string, deviceId: string): string {
@@ -47,3 +48,7 @@ export function historyJson(recordJson: string, metric: string, nowIso: string, 
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
+/** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON. */
+export function remindersJson(recordJson: string, nowIso: string, deviceId: string): string {
+  return JSON.stringify(phoneReminders(readRecord(recordJson, nowIso, deviceId), new Date(nowIso)));
+}

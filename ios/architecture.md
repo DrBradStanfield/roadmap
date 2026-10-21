@@ -203,6 +203,55 @@ no email. iOS holds at most 64 pending notifications, so the app schedules the n
 and refills on launch and on new data. What a lock-screen notification says ("Colonoscopy
 due") is visible to anyone holding the phone: the wording is a decision for the build.
 
+**Built 2026-10-21 (US-25 AC12).** Decisions taken while Brad slept, for him to revisit:
+- **What is due is the engine's.** `ios/engine/reminders.ts` calls health-core's
+  `computeReminderSchedule`, the schedule the web pushes for its emails (per-category
+  preferences, annual floor, nothing for a minor), and adds only the notification days.
+  Swift compares no dates.
+- **When it notifies.** On the due day at 9:00 on the phone's clock, then again every
+  cooldown of its group (the email cron's `GROUP_COOLDOWNS`: screenings 90 days, blood
+  tests 180, reviews and the annual check-in 365) while it stays due, up to two years
+  ahead. The phone keeps no "last sent", so repeats count from the due day: the same
+  record gives the same days on every refill, and an item already overdue waits for its
+  next step instead of firing on every launch. Today is kept (review fix): opening the
+  app that morning must not drop the 9:00 reminder, and iOS never fires a one-off trigger
+  whose hour has passed. The in-app list shows due items as "Due now", the rest as "Mar
+  2027" (health-core's `formatReminderDate`, the web's email format).
+- **The annual check-in slides**, as on the web: it is a year from the last time the app
+  computed it, so a user who opens the app once a year never gets it. A user enrolled in
+  the web's emails who also turns on phone reminders is reminded twice; no dedupe.
+- **Lock-screen words: generic.** Title "Health Roadmap", body "A check-up is due. Open
+  the app to see which." The procedure's name is shown only inside the app. Revisit if
+  Brad prefers the name ("Colonoscopy due") on the lock screen.
+- **Rebuilt from scratch** on launch, on return to the foreground and on every record
+  change: remove our pending ones (ids start `reminder.`), add the soonest 64. One
+  notification a day, however many things fall due on it (the words are generic, so two
+  would be the same banner twice); ids are `reminder.<day>`, stable across refills.
+- **The opt-in is this phone's, not the record's.** It is a small file
+  (`reminders-opt-in`) beside the record, in the folder backups leave out (D5), holding
+  the record's erase epoch when it was given. A phone restored from a backup starts a new
+  record and so starts with reminders off (UserDefaults would have carried a stale
+  opt-in across; review finding). Not keyed on `meta.createdAt`: a merge takes the
+  earliest across devices, so cloud sync would silently turn reminders off. The task asked for health-core's `setReminderOptIn`, but that
+  singleton is the web's email enrolment: it carries a server token, an address and a
+  cloud provider, and the web reads `status: 'active'` as "this address gets emails". A
+  phone writing it would put a fake enrolment in a synced record. Notification permission
+  is per device anyway. If Brad wants one switch for both, it needs its own field in the
+  schema (a merge and schema call, so the orchestrator's).
+- **No per-category switches.** The web has none since its v1 settings went; the schedule
+  still honours any `reminderPreferences` already in the record.
+- **Erase (US-11).** When the record's erase epoch moves (an erase here or one synced in),
+  the opt-in ends and every pending reminder is cancelled; the user turns reminders on
+  again. This assumes an erase bumps the epoch and never deletes the file for a fresh
+  one at epoch 0: the in-app erase, when built, must use health-core's `erase.ts`. An
+  unreadable record cancels them all for that round but keeps the opt-in; the next good
+  read schedules again.
+- **Permission.** A refusal points to Settings; "not asked yet" (Settings has no switch
+  for the app until it asks) offers "Allow notifications" instead.
+- **A tap opens My plan**, cold start included (`ReminderTaps` is the notification
+  delegate from launch, with the completion-handler callbacks). Not yet checked on a
+  device: the agent's simulator could not tap Allow.
+
 ### D8 · Chat and lab upload: no user sign-in; the app proves itself with App Attest (Brad, 2026-10-21; designed 2026-10-21, US-52)
 
 Chat and lab extraction run on Brad's server, because they call Anthropic with a key the
@@ -404,6 +453,8 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   `sectionsJson`, and for My data `newRecordJson`, `myDataJson`, `applyEditJson`,
   `numberJson`. Every door reads the record through health-core's `ROADMAP_DOC.migrate`
   (shape check, then migration), as the web, CLI and connector do.
+- `engine/reminders.ts`: the phone's reminders, `remindersJson` in `entry.ts`: health-core's
+  schedule plus the notification days (D7). Tested by `engine/reminders.test.ts`.
 - `engine/my-data.ts`: what the My data tab shows and every write it makes, each one
   health-core's own (`createEmptyFile`, `updateProfile`, `stampProfile`,
   `appendMeasurement`, `correctValue`, `upsertMedication`, `upsertSupplement`), with
@@ -440,6 +491,10 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
     `FormSectionsList`, `MedicationsSection`, `ScreeningsSection`, `SupplementsSection`
     with `SupplementSheet`. Value history (AC9): `MetricSheet` (history, or entry when
     empty) and `HistoryView` (Swift Charts trend, tap to correct, no delete).
+  - `Reminders/`: on-device reminders (D7). `PhoneReminders` is the engine's answer,
+    `ReminderScheduler` keeps the pending notifications equal to it behind
+    `NotificationScheduling` (a fake in the tests), `ReminderTaps` sends a tap to My plan,
+    and `RemindersSection` is the switch and list in My data.
   - `Plan/`: the plan screen, planned from the stored record whenever it changes.
     `Plan.swift` is the slice of the engine's JSON the app reads, evidence included. The layout (sections, card order, grouped cards) is not
     Swift: it is health-core's `planSections` (packages/health-core/src/plan-sections.ts),
@@ -453,7 +508,7 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   no card loses its evidence or ingredients; `RecordEditTests` runs the My data writes in
   JavaScriptCore; `RecordStoreTests` covers the file (AC4) and the plan following it
   (AC6); `DayTextTests` pins the local day; `FormEditTests` runs the form answers,
-  supplements and history in JavaScriptCore (AC8, AC9).
+  supplements and history in JavaScriptCore (AC8, AC9); `ReminderSchedulerTests` is AC12.
 
 **Code for AI agents to read (HARD, Brad 2026-10-21).** This app is written and maintained
 by AI agents, so the code is shaped for a reader with no memory of how it got here:

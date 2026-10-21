@@ -34,6 +34,7 @@ struct MyDataView: View {
                     MedicationsSection(store: store, data: data, saved: saved)
                     ScreeningsSection(store: store, data: data, saved: saved)
                     SupplementsSection(store: store, supplements: data.supplements, saved: saved)
+                    RemindersSection()
                     Section {
                     } footer: {
                         Label("Saved on this iPhone and left out of its backups. Until cloud sync arrives, a new phone starts empty.", systemImage: "lock.shield")
