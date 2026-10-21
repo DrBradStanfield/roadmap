@@ -18,6 +18,8 @@ const surface: RpcSurface = {
     name === 'boom' ? { errorMessage: 'That tool failed inside this server.' } : { answer: { text: 'done', isError: false } },
 };
 
+const PUBLISHED = ['name', '_meta', 'title', 'description', 'inputSchema', 'outputSchema', 'annotations'];
+
 function send(method: string, params: object = {}) {
   return dispatchRpc({ jsonrpc: '2.0', id: 1, method, params }, surface) as
     Promise<{ result?: Record<string, never> & Record<string, unknown>; error?: { code: number } } | null>;
@@ -31,7 +33,7 @@ describe('US-32 — the shared dispatch', () => {
     expect((await send('initialize', { protocolVersion: '1999-01-01' }))!.result!.protocolVersion).toBe('2025-11-25');
   });
 
-  it('lists the tools with the two words ChatGPT shows, and never the write cost or the run mode', async () => {
+  it('lists the tools with the two words ChatGPT shows, and none of the server\'s own fields (US-32 AC51)', async () => {
     const listed = (await send('tools/list'))!.result!.tools as Array<Partial<(typeof MCP_TOOLS)[number]>>;
     expect(listed).toHaveLength(MCP_TOOLS.length);
     for (const tool of listed) {
@@ -39,6 +41,9 @@ describe('US-32 — the shared dispatch', () => {
       // mode; neither is a tool fact (US-35 live verify 2026-09-05 saw `run` leak).
       expect(Object.keys(tool), tool.name).not.toContain('cost');
       expect(Object.keys(tool), tool.name).not.toContain('run');
+      // US-32 AC51 (2026-10-21): `nudge`, `twoPhase` and `imports` leaked too
+      // (found while adding AC50). Only the spec's Tool fields are published.
+      expect(Object.keys(tool).sort(), tool.name).toEqual([...PUBLISHED].sort());
       expect(tool._meta!['openai/toolInvocation/invoking'].length, tool.name).toBeLessThanOrEqual(64);
       expect(tool._meta!['openai/toolInvocation/invoked'].length, tool.name).toBeLessThanOrEqual(64);
     }
@@ -62,6 +67,16 @@ describe('US-32 — the shared dispatch', () => {
     }
     // The definitions themselves stay as they were: the title is added on the wire only.
     expect(MCP_TOOLS.every((t) => !('title' in t.annotations))).toBe(true);
+  });
+
+  // The list names fields one by one, so a NEW definition field (MCP `icons`,
+  // say) would be dropped silently: every definition key is published or is
+  // one of the server's own (US-32 AC51).
+  it('publishes every definition field that is not the server\'s own (US-32 AC51)', () => {
+    const serverOnly = ['cost', 'run', 'imports', 'twoPhase', 'canonicalArgs', 'nudge'];
+    for (const tool of MCP_TOOLS) {
+      for (const key of Object.keys(tool)) expect([...PUBLISHED, ...serverOnly], `${tool.name}.${key}`).toContain(key);
+    }
   });
 
   it('offers the four prompts by name, and hands back the words behind one', async () => {

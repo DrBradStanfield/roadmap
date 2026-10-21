@@ -18,8 +18,8 @@ Answers for each step of the submission form at **claude.ai/directory/manage →
 
 Anthropic's checklist asks every tool for a title plus `readOnlyHint: true` or `destructiveHint: true`. Seven tools carry one of the two set true. `add_measurement` and `add_lab_values` carry explicit `readOnlyHint: false` and `destructiveHint: false`, because they only ever add a row and never change or remove one. Brad decided to keep them that way.
 
-- **Mark both destructive.** Claude then asks before every add. It is the conservative reading, and it passes the check. ChatGPT reads the same labels, so its approval prompt changes too, and OpenAI's tool scan would differ from the 1.0.2 submission while it is in review.
-- **Leave them.** The portal flags them. A reviewer may accept the explanation in the form (append-only, refused on a duplicate day), or may ask for the change.
+- **Considered and declined: mark both destructive.** Claude would then ask before every add. It is the conservative reading, and it passes the check. ChatGPT reads the same labels, so its approval prompt changes too, and OpenAI's tool scan would differ from the 1.0.2 submission while it is in review.
+- **Chosen: leave them.** The portal flags them. A reviewer may accept the explanation in the form (append-only, refused on a duplicate day), or may ask for the change.
 
 Decision: submit with them unchanged and the explanation below. Flip them after OpenAI's verdict only if Anthropic asks.
 
@@ -32,9 +32,9 @@ Checked live 2026-10-20: an unauthenticated request answers 401 with `WWW-Authen
 
 ## 2. Tools
 
-Synced from the server. Nine tools, all titled.
+Synced from the server. Nine tools, each with a top-level title.
 
-The form reads the title from each tool's `annotations` (MCP `ToolAnnotations.title`), not the tool's top-level `title`, and on 2026-10-21 it flagged all nine "Missing title annotation". `tools/list` now copies each display title into `annotations.title` (US-32 AC50). That change waits on the held branch `claude/mcp-annotation-title` until OpenAI's 1.0.2 verdict, because it changes the published tool list. Refresh the form's tool sync after it deploys.
+On 2026-10-21 the form flagged all nine "Missing title annotation". We infer from that wording that it reads the title from each tool's `annotations` (MCP `ToolAnnotations.title`), not the top-level `title`; Anthropic's review criteria say only "Every tool must include a `title` and the applicable hint". `tools/list` now copies each display title into `annotations.title` (US-32 AC50). That change waits on the held branch `claude/mcp-annotation-title` until OpenAI's 1.0.2 verdict, because it changes the published tool list. Refresh the form's tool sync after it deploys.
 
 | Tool | Read-only | Destructive |
 | --- | --- | --- |

@@ -9,7 +9,7 @@
  *
  * US-32 AC50 (2026-10-21): the definitions are not the wire. `tools/list` is
  * hashed too, as the shared dispatch answers it, so a change made while
- * serializing (annotations.title) moves a pin. Re-pinned on the held branch
+ * serializing (annotations.title; AC51's field strip) moves a pin. Re-pinned on the held branch
  * claude/mcp-annotation-title, merged only after OpenAI's 1.0.2 verdict.
  */
 import { describe, expect, it } from 'vitest';
@@ -39,6 +39,6 @@ describe('US-32 AC50 — the tools/list answer itself is pinned', () => {
       instructions: INSTRUCTIONS,
       callTool: async () => ({ errorMessage: 'not called' }),
     })) as { result: { tools: unknown } };
-    expect(sha256(answer.result.tools)).toBe('65adb4c8a72596466d2084b637584a5543660b1b3de09ee4eaf42be78795a6ab');
+    expect(sha256(answer.result.tools)).toBe('2eebcb9e795cd1c0b525330b200fc7fb4c49679ababf5fde37cf4fa1e328c8dc');
   });
 });
