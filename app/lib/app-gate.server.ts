@@ -127,7 +127,7 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     // AC3: the simulator's header, only where the bypass is allowed. Anywhere else it is a 401.
     if (!devBypassAllowed(env) || !/^[A-Za-z0-9-]{1,64}$/.test(dev)) { logRefusal(kind, 'dev_bypass_refused'); return unauthorized('dev_bypass_refused'); }
     const body = await readBody(request, opts.bodyCap);
-    if (!body) return refuse(413, 'too_large', 'Request too large');
+    if (!body || body === 'too_large') return refuse(413, 'too_large', 'Request too large');
     if (!appLimits.dev[kind].take(dev, 1)) return overLimit();
     return takeShared(kind, ip) ? { body } : overLimit();
   }
@@ -162,12 +162,14 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   if (!config.environments.includes(key.environment)) { appLimits.failures.take(ip, 1); logRefusal(kind, 'environment_refused'); return unauthorized('unknown_key'); }
 
   const body = await readBody(request, opts.bodyCap);
-  if (!body) {
+  if (body === 'too_large') {
     // Charged like any refused signed request, so it cannot repeat forever (Codex re-check R2).
     appLimits.failures.take(ip, 1);
     logRefusal(kind, 'too_large');
     return refuse(413, 'too_large', 'Request too large');
   }
+  // A dropped upload is the network's fault, not abuse: refused, not charged.
+  if (!body) { logRefusal(kind, 'body_read_failed'); return refuse(400, 'body_read_failed', 'The request did not arrive whole. Please try again.'); }
   if (!assertionSignatureValid(assertion, requestClientData(request.method, path, body), key.publicKey)) return failed('bad_signature');
 
   let outcome: UseOutcome;
@@ -192,11 +194,11 @@ function takeShared(kind: AppUseKind, ip: string): boolean {
   return false;
 }
 
-/** The raw bytes, as the app hashed them (R2: never a UTF-8 round trip). Null past the cap. */
-async function readBody(request: Request, cap: number): Promise<Buffer | null> {
+/** The raw bytes, as the app hashed them (R2: never a UTF-8 round trip): 'too_large' past the cap, null when the stream failed. */
+async function readBody(request: Request, cap: number): Promise<Buffer | 'too_large' | null> {
   try {
     return await readCappedBytes(request, cap);
-  } catch {
-    return null;
+  } catch (error) {
+    return error instanceof Error && error.message === 'body too large' ? 'too_large' : null;
   }
 }

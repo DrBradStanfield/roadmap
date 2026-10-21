@@ -215,6 +215,17 @@ describe('US-52 AC1/AC2: the gate', () => {
     expect(mocks.getChatCompletion).not.toHaveBeenCalled();
   });
 
+  it('does not charge a dropped upload to the failure budget (re-check adversary R1)', async () => {
+    await registered();
+    const ok = signed('/api/app/v1/chat', chatBody);
+    const broken = () => new Request(ok.url, {
+      method: 'POST', headers: ok.headers, duplex: 'half',
+      body: new ReadableStream({ pull(c) { c.error(new Error('connection reset')); } }),
+    } as RequestInit);
+    for (let i = 0; i < 60; i++) expect((await appChat(broken(), store)).status).toBe(400);
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(50);
+  });
+
   it('answers 503, never a pass, with no team id, a store outage or on the brand surface', async () => {
     await registered();
     delete process.env.APP_ATTEST_TEAM_ID;
