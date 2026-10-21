@@ -238,6 +238,15 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   `sync-history` remembers the cloud, and the words say a copy stays there. The background
   save has an expiration handler. Drive runs through the shim in Node against a fake
   Drive (`cloud.test.ts`), so its path is tested before the iOS client id exists.
+  Re-check fixes, same day (F1-F7): each engine session has a number, carried on every
+  event; Swift acts only on the session it shows. An open that finishes after a newer open
+  or a close began closes itself and rejects ("superseded"), so two racing opens never
+  orphan a session. "Synced" is said only when the pending marker is clear. A unit change
+  refuses only edits whose number is in units (a value, a correction, a height), and a
+  refusal re-pins the sheet so a corrected retry saves. After three opens interrupted by
+  edits, the last session is closed and the app says why. Disconnect's copy-down reports
+  only a real copy. Drive's storageQuotaExceeded says the Drive is full; dailyLimitExceeded
+  retries.
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free
   (US-34). Until then the app polls each minute while on screen. Documents are not synced

@@ -36,9 +36,10 @@ export interface CloudNatives {
   phoneRemove(): void;
   /** The marker that says the phone holds changes the cloud lacks (US-09 AC4). */
   pending(op: 'get' | 'set' | 'clear'): boolean;
-  /** Tells Swift what happened: 'saving', 'saved', 'failed' or 'changed'. Never a
-   *  log: the payload is the record for 'changed', which Swift only shows. */
-  notify(event: 'saving' | 'saved' | 'failed' | 'changed', payload: string): void;
+  /** Tells Swift what happened in session `session`: 'saving', 'saved',
+   *  'synced', 'failed' or 'changed'. Swift drops news from any session but the
+   *  one it shows. Never a log: 'changed' carries the record, which Swift only shows. */
+  notify(event: 'saving' | 'saved' | 'synced' | 'failed' | 'changed', payload: string, session: number): void;
 }
 
 declare const __native: CloudNatives;
@@ -72,7 +73,7 @@ class PhoneCloudAdapter implements StorageAdapter {
   readonly label: string;
   private current: { token: string; adapter: StorageAdapter } | null = null;
 
-  constructor(private readonly provider: Provider) {
+  constructor(private readonly provider: Provider, private readonly session: number) {
     this.id = provider;
     this.label = LABELS[provider];
   }
@@ -88,9 +89,9 @@ class PhoneCloudAdapter implements StorageAdapter {
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
-    __native.notify('saving', '');
+    __native.notify('saving', '', this.session);
     const written = await this.run((cloud) => cloud.write(fileName, body, expectedVersion, signal));
-    __native.notify('saved', '');
+    __native.notify('saved', '', this.session);
     return written;
   }
 
@@ -199,12 +200,17 @@ class PhoneFileAdapter implements StorageAdapter {
 type CloudHost = Extract<RecordHost, { tier: 'cloud' }>;
 
 /** What went wrong, as one word Swift turns into plain words (SyncStatus.swift). */
-export function failureKind(error: unknown): 'sign-in' | 'too-new' | 'unreachable' {
+export function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | 'unreachable' {
   if (error instanceof SignInError) return 'sign-in';
   if (error instanceof StorageError && error.status === 401) return 'sign-in';
-  // A 403 is a refusal, except a rate limit (Drive's userRateLimitExceeded and
-  // rateLimitExceeded), which passes: retry it, never send the user to sign in.
-  if (error instanceof StorageError && error.status === 403) return /ratelimitexceeded/i.test(error.message) ? 'unreachable' : 'sign-in';
+  // A 403 is a refusal of access, except Drive's limits, read from the body's
+  // reason: a rate or daily limit passes (retry later), a full Drive needs space.
+  // Neither is fixed by signing in again.
+  if (error instanceof StorageError && error.status === 403) {
+    if (/ratelimitexceeded|dailylimitexceeded/i.test(error.message)) return 'unreachable';
+    if (/storagequotaexceeded/i.test(error.message)) return 'storage-full';
+    return 'sign-in';
+  }
   if (error instanceof SchemaTooNewError) return 'too-new';
   return 'unreachable';
 }
@@ -213,10 +219,10 @@ function failed(provider: Provider, error: unknown): string {
   return JSON.stringify({ kind: failureKind(error), detail: describeStorageFailure(error, `The record in ${LABELS[provider]}`).message });
 }
 
-function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter): CloudHost {
+function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, id: number): CloudHost {
   return {
     tier: 'cloud',
-    store: new PhoneCloudAdapter(provider),
+    store: new PhoneCloudAdapter(provider, id),
     mirror: {
       adapter: phone,
       pending: {
@@ -240,15 +246,19 @@ function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter):
       set: (run, ms) => setTimeout(run, ms),
       clear: (handle) => clearTimeout(handle as number),
     },
-    remoteChanged: () => announce(),
+    remoteChanged: () => {
+      if (open?.id === id) announce(open);
+    },
     failureCause: () => 'other',
     report(error, at) {
-      if (at.op === 'persist') __native.notify('failed', failed(provider, error));
+      if (at.op === 'persist') __native.notify('failed', failed(provider, error), id);
     },
   };
 }
 
 interface Open {
+  /** This session's number: Swift acts only on news from the one it shows. */
+  id: number;
   provider: Provider;
   host: CloudHost;
   phone: PhoneFileAdapter;
@@ -262,18 +272,21 @@ interface Open {
 }
 
 let open: Open | null = null;
+/** The newest open or close asked for. An open that finishes after a newer
+ *  open or a close began is out of date: it closes itself and rejects, so two
+ *  opens racing never leave one session orphaned and the other shown. */
+let latest = 0;
 
-/** The record and the erase it is at, as Swift keeps them. */
-function view(session: RecordSession): string {
-  return JSON.stringify({ record: JSON.stringify(session.file), erase: session.eraseIdentity });
+/** The record, the erase it is at and the session, as Swift keeps them. */
+function view(at: { id: number; session: RecordSession }): string {
+  return JSON.stringify({ record: JSON.stringify(at.session.file), erase: at.session.eraseIdentity, session: at.id });
 }
 
 /** A re-read or a save brought something in: Swift shows it, and the phone's
  *  copy takes it too, so the app opens with it when the cloud cannot be reached. */
-function announce(): void {
-  if (!open) return;
-  __native.notify('changed', view(open.session));
-  keepPhoneCopy(open);
+function announce(at: Open): void {
+  __native.notify('changed', view(at), at.id);
+  keepPhoneCopy(at);
 }
 
 /** Merge the working copy into the phone's file. Best effort: the phone's copy
@@ -291,8 +304,9 @@ function keepPhoneCopy(at: Open): void {
  */
 export async function cloudOpen(provider: Provider, deviceId: string, firstConnect: boolean): Promise<string> {
   await cloudClose(false);
+  const id = ++latest;
   const phone = new PhoneFileAdapter();
-  const host = hostFor(provider, deviceId, phone);
+  const host = hostFor(provider, deviceId, phone, id);
   if (firstConnect) {
     try {
       await liftDeviceCopy(host);
@@ -310,12 +324,25 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
     // Swift reads the kind from the message (CloudSync.swift).
     throw new Error(failed(provider, error));
   }
-  const at: Open = { provider, host, phone, session, live: null!, visible: true, unflushed: waiting ? 1 : 0 };
+  const at: Open = { id, provider, host, phone, session, live: null!, visible: true, unflushed: waiting ? 1 : 0 };
   at.live = new LiveRefresh(session, host, { reread: () => reread(at), isVisible: () => at.visible });
+  if (id !== latest) {
+    // A newer open or a close began while this one read: this one gives way.
+    // Its save, if the open merged a pending phone copy, still settles.
+    await session.flush().catch(() => {});
+    throw new Error('superseded');
+  }
+  if (open) await closeAt(open, false); // an older open that finished first
   open = at;
   at.live.start();
   keepPhoneCopy(at);
-  return view(session);
+  return view(at);
+}
+
+/** Only edits whose number is read in the user's units can be misread after a
+ *  unit change: a value, a correction, a height. */
+function dependsOnUnits(edit: Edit): boolean {
+  return edit.kind === 'add' || edit.kind === 'correct' || (edit.kind === 'profile' && edit.height !== undefined);
 }
 
 /**
@@ -334,8 +361,8 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
   const edit = JSON.parse(editJson) as Edit;
   // A number is read in the units the screen showed. If another device has
   // changed the units since, the same number would be stored in the wrong ones.
-  if (edit.kind !== 'units' && shownUnits !== (session.file.profile.unitSystem ?? 'si')) {
-    return refuse('units-changed', 'Your units were changed on another device, so this was not saved. Check the value and enter it again.');
+  if (dependsOnUnits(edit) && shownUnits !== (session.file.profile.unitSystem ?? 'si')) {
+    return refuse('units-changed', 'Your units were changed on another device, so this was not saved. Check the value and its unit, then save again.');
   }
   if (session.refuses(erase)) {
     return refuse('erased', 'Your record was erased on another device, so this was not saved. Try again.');
@@ -383,13 +410,18 @@ export async function cloudRefresh(): Promise<string> {
  *  revoked grant must show "Sign in again" even when no save is waiting, and a
  *  re-read that works clears a passing failure. */
 async function reread(at: Open): Promise<boolean> {
+  // A save that failed is retried first; while it waits the session does not
+  // re-read (its working copy is ahead of the cloud).
+  at.session.flushSync();
   try {
     const changed = await at.session.refreshFromRemote();
-    __native.notify('synced', '');
+    // "Synced" only when nothing waits on the phone: the session clears the
+    // pending marker when a save lands, and never before (review F1).
+    if (!__native.pending('get')) __native.notify('synced', '', at.id);
     return changed;
   } catch (error) {
     const why = failed(at.provider, error);
-    __native.notify('failed', why);
+    __native.notify('failed', why, at.id);
     throw new Error(why);
   }
 }
@@ -421,9 +453,15 @@ async function flush(at: Open): Promise<'saved' | 'failed'> {
  * made here: answers 'unreachable'. The cloud file is never written.
  */
 export async function cloudClose(copyDown: boolean): Promise<string> {
+  latest += 1; // an open still reading gives way (see `latest`)
   const at = open;
   if (!at) return 'none';
   open = null;
+  return closeAt(at, copyDown);
+}
+
+async function closeAt(at: Open, copyDown: boolean): Promise<string> {
+  if (open === at) open = null;
   at.live.stop();
   await flush(at);
   if (!copyDown) return 'closed';

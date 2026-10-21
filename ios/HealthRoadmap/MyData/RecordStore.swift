@@ -24,6 +24,8 @@ final class RecordStore {
     /// edit then goes through the engine's session, which refuses one made for
     /// another erase. Nil: the record is the phone's file, written here.
     private(set) var cloudErase: String?
+    /// The engine session the cloud record came from.
+    private var cloudSession: Int?
     /// Told after each edit: in the cloud, that a save is on its way; on the
     /// phone, that the file moved (CloudSync marks it for the cloud then).
     var onEdit: (() -> Void)?
@@ -47,6 +49,12 @@ final class RecordStore {
     func pinScreen() {
         if pins == 0 { pinned = screen }
         pins += 1
+    }
+
+    /// After a refusal for a changed record: the user has now been told and sees
+    /// the new record, so the open sheet takes it as its own (review F5).
+    private func repin() {
+        if pins > 0 { pinned = screen }
     }
 
     /// That sheet closed.
@@ -103,6 +111,7 @@ final class RecordStore {
         myData = shown
         problem = nil
         cloudErase = view.erase
+        cloudSession = view.session
     }
 
     /// Back to the phone's own file (Disconnect, or a cloud that could not open).
@@ -168,6 +177,7 @@ final class RecordStore {
         let seen = pinned ?? screen
         // An erase taken in, or sync turned on or off, since the sheet opened.
         guard seen.erase == cloudErase else {
+            repin()
             return .refused(message: "Your record changed while this was open, so this was not saved. Check it and try again.", existingId: nil)
         }
         if let erase = seen.erase { return applyInCloud(edit, erase: erase, units: seen.units) }
@@ -193,9 +203,10 @@ final class RecordStore {
         do {
             let outcome = try engine.cloudEdit(edit, erase: erase, units: units, now: .now)
             guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
+                if outcome.reason == "units-changed" || outcome.reason == "erased" { repin() }
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
             }
-            showCloud(HealthEngine.CloudView(record: next, erase: nextErase))
+            showCloud(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0))
             onEdit?()
             return .saved
         } catch {

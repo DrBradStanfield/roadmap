@@ -14,8 +14,9 @@ protocol CloudPort: AnyObject, Sendable {
     func phoneRemove()
     /// "get", "set" or "clear" the marker that says the phone holds changes the cloud lacks.
     func pending(_ op: String) -> Bool
-    /// "saving", "saved", "failed" (payload: kind and detail) or "changed" (payload: the record).
-    func notify(_ event: String, _ payload: String)
+    /// "saving", "saved", "synced", "failed" (payload: kind and detail) or
+    /// "changed" (payload: the record), from engine session `session`.
+    func notify(_ event: String, _ payload: String, session: Int)
 }
 
 enum TokenAnswer: Sendable {
@@ -172,8 +173,8 @@ final class EngineNatives {
         let pending: @convention(block) (String) -> Bool = { op in
             MainActor.assumeIsolated { owner.value.cloud?.pending(op) ?? false }
         }
-        let notify: @convention(block) (String, String) -> Void = { event, payload in
-            MainActor.assumeIsolated { owner.value.cloud?.notify(event, payload) }
+        let notify: @convention(block) (String, String, Int) -> Void = { event, payload, session in
+            MainActor.assumeIsolated { owner.value.cloud?.notify(event, payload, session: session) }
         }
         return [
             "accessToken": accessToken, "phoneRead": phoneRead, "phoneWrite": phoneWrite,

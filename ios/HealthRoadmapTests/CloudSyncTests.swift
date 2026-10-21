@@ -17,6 +17,8 @@ final class CloudSyncTests: XCTestCase {
         var online = true
         /// Seconds every download waits before it answers.
         var downloadDelay: TimeInterval = 0
+        /// Runs on the main queue as each download starts, before its answer.
+        var onDownload: (@MainActor () -> Void)?
         /// Runs once, just before the next upload lands: another device writing first.
         var beforeNextUpload: (() -> Void)?
 
@@ -37,6 +39,7 @@ final class CloudSyncTests: XCTestCase {
             guard request.headers["authorization"] == "Bearer token-1" else { return .init(status: 401) }
             let arg = try! JSONSerialization.jsonObject(with: Data(request.headers["dropbox-api-arg"]!.utf8)) as! [String: Any]
             if request.url.path.hasSuffix("/files/download") {
+                if let hook = onDownload { DispatchQueue.main.async { MainActor.assumeIsolated { hook() } } }
                 guard let file else { return .init(status: 409, body: Data(#"{"error_summary":"path/not_found/"}"#.utf8), delay: downloadDelay) }
                 return .init(headers: ["Dropbox-API-Result": #"{"rev":"r\#(file.rev)"}"#], body: Data(file.text.utf8), delay: downloadDelay)
             }
@@ -246,11 +249,14 @@ final class CloudSyncTests: XCTestCase {
         dropbox.put(try JSONSerialization.jsonObject(with: Data(try XCTUnwrap(us.record).utf8)) as! [String: Any])
         await sync.syncNow()
         XCTAssertEqual(store.myData?.unitSystem, "conventional")
-        guard case .refused = store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) else { return XCTFail("80 typed as kg must not be saved as 80 lb") }
-        guard case .refused = store.apply(.correct(id: rowId, value: 79)) else { return XCTFail("the replace path too") }
+        XCTAssertEqual(store.apply(.profile(sex: "female")), .saved, "an edit with no number in units still saves (F5)")
+        guard case .refused = store.apply(.correct(id: rowId, value: 79)) else { return XCTFail("the replace path: 79 kg must not be 79 lb") }
+        // The refusal re-pins the sheet to what is now shown, so a value checked
+        // and typed again in the new units saves without closing the sheet (F5).
+        XCTAssertEqual(store.apply(.add(metric: "weight", value: 176, day: "2026-10-02")), .saved)
         store.unpinScreen()
         await sync.background()
-        XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01"])
+        XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"])
     }
 
     func testR4AReopenThatFailsGoesBackToThePhoneAndKeepsEdits() async throws {
@@ -276,7 +282,8 @@ final class CloudSyncTests: XCTestCase {
         let (store, sync, _) = try app()
         let opening = Task { await sync.start() }
         try await Task.sleep(for: .milliseconds(100))
-        await sync.disconnect()
+        let copied = await sync.disconnect()
+        XCTAssertFalse(copied, "nothing was open to copy down, so the warning must show (F6)")
         await opening.value
         try await Task.sleep(for: .milliseconds(600))
         XCTAssertNil(store.cloudErase, "the late open did not switch the app back to the cloud")
@@ -328,5 +335,56 @@ final class CloudSyncTests: XCTestCase {
         await sync.disconnect()
         XCTAssertEqual(sync.syncedBefore, .dropbox)
         XCTAssertTrue(SyncStatusText.planPrivacy(provider: nil, earlier: sync.syncedBefore).contains("Dropbox"))
+    }
+
+    // MARK: Re-check findings (F2, F3, F7)
+
+    func testF2AConnectWhileAnOlderOpenIsStillReadingShowsTheNewSessionOnly() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        dropbox.downloadDelay = 0.5
+        let (store, sync, _) = try app()
+        let stale = Task { await sync.start() }
+        try await Task.sleep(for: .milliseconds(100))
+        await sync.disconnect()
+        dropbox.downloadDelay = 0
+        try await sync.connect(.dropbox, authenticate: signIn())
+        guard case .synced = sync.status else { return XCTFail("the new connect is open: \(sync.status)") }
+        await stale.value
+        try await Task.sleep(for: .milliseconds(700)) // the stale read lands and gives way
+        XCTAssertNotNil(store.cloudErase)
+        XCTAssertEqual(store.apply(.add(metric: "weight", value: 81, day: "2026-10-03")), .saved)
+        await sync.background()
+        XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-03"], "the shown session is the one the engine saves through")
+    }
+
+    func testF3EditsThatKeepArrivingWhileOpeningLeaveNoSessionBehind() async throws {
+        dropbox.put(try record(days: [], device: "web"))
+        let (store, sync, engine) = try app()
+        var day = 0
+        dropbox.onDownload = {
+            day += 1
+            _ = store.apply(.add(metric: "weight", value: 80, day: "2026-10-0\(day)"))
+        }
+        await sync.start()
+        dropbox.onDownload = nil
+        XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .busy)))
+        XCTAssertNil(store.cloudErase)
+        let probe = try engine.cloudEdit(.add(metric: "weight", value: 80, day: "2026-10-09"), erase: "x", units: "si", now: .now)
+        XCTAssertEqual(probe.reason, "not-open", "the engine holds no session that would poll and say Synced")
+        XCTAssertNotNil(SyncProblem(kind: .busy).words(.dropbox).range(of: "on this iPhone"))
+    }
+
+    func testF7ADisconnectDuringSyncNowEndsOnThePhone() async throws {
+        dropbox.put(try record(days: [], device: "web"))
+        let (store, sync, _) = try app()
+        await sync.start()
+        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-04")), .saved)
+        dropbox.downloadDelay = 0.3
+        let syncing = Task { await sync.syncNow() }
+        try await Task.sleep(for: .milliseconds(50))
+        await sync.disconnect()
+        await syncing.value
+        XCTAssertEqual(sync.status, .onPhone)
+        XCTAssertNil(sync.provider)
     }
 }

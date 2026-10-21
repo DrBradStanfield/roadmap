@@ -28,6 +28,9 @@ async function engineSource(): Promise<string> {
 class FakeDropbox {
   file: { text: string; rev: number } | null = null;
   online = true;
+  delay = 0;
+  /** False: uploads fail with a 500; reads still work. */
+  uploadsWork = true;
   uploads = 0;
   /** Runs once, just before the next upload lands: another device writing first. */
   beforeNextUpload: (() => void) | null = null;
@@ -47,6 +50,7 @@ class FakeDropbox {
       if (!this.file) return { status: 409, headers: {}, body: '{"error_summary":"path/not_found/"}' };
       return { status: 200, headers: { 'Dropbox-API-Result': JSON.stringify({ rev: `r${this.file.rev}` }) }, body: this.file.text };
     }
+    if (!this.uploadsWork) return { status: 500, headers: {}, body: 'internal_error' };
     this.beforeNextUpload?.();
     this.beforeNextUpload = null;
     const expected = arg.mode?.['.tag'] === 'update' ? arg.mode.update : null;
@@ -79,20 +83,23 @@ afterEach(async () => {
 interface Server {
   online: boolean;
   answer(url: string, headers: Record<string, string>, body: string | null, method: string): { status: number; headers: Record<string, string>; body: string };
+  /** Milliseconds every answer waits (an open still in flight). */
+  delay?: number;
 }
 
 async function phone(dropbox: Server, phoneText: string | null = null) {
-  const state = { phoneText, pending: false, events: [] as Array<[string, string]>, tokenRefreshes: 0, signedOut: false, phoneWriteError: '' };
+  const state = { phoneText, pending: false, events: [] as Array<[string, string]>, tokenRefreshes: 0, signedOut: false, phoneWriteError: '', sessions: [] as number[] };
   const encode = (text: string) => new Uint8Array(Buffer.from(text, 'utf8')).buffer;
   const decode = (bytes: ArrayBuffer) => Buffer.from(new Uint8Array(bytes)).toString('utf8');
   let next = 1;
   const native = {
     http(method: string, url: string, headers: string, body: ArrayBuffer | null, done: (s: number, t: string, h: string, b: ArrayBuffer | null, e: string | null) => void) {
-      setImmediate(() => {
+      const wait = dropbox.delay ?? 0;
+      setTimeout(() => {
         if (!dropbox.online) return done(0, '', '{}', null, 'The Internet connection appears to be offline.');
         const answer = dropbox.answer(url, JSON.parse(headers) as Record<string, string>, body ? decode(body) : null, method);
         done(answer.status, '', JSON.stringify(answer.headers), encode(answer.body), null);
-      });
+      }, wait);
       return next++;
     },
     cancelHttp() {},
@@ -120,7 +127,10 @@ async function phone(dropbox: Server, phoneText: string | null = null) {
       if (op === 'clear') state.pending = false;
       return state.pending;
     },
-    notify: (event: string, payload: string) => state.events.push([event, payload]),
+    notify: (event: string, payload: string, session: number) => {
+      state.events.push([event, payload]);
+      state.sessions.push(session);
+    },
   };
   // crypto.randomUUID is HealthEngine.swift's, as in the app.
   const ctx = vm.createContext({ __native: native, crypto: { randomUUID: () => crypto.randomUUID() } });
@@ -370,6 +380,74 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     drive.put({ ...drive.record, measurements: [...drive.record.measurements, ...later.measurements] });
     expect(await engine.cloudRefresh()).toBe('changed');
   });
+  it('F1: a re-read never says synced while an edit waits on the phone', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    dropbox.uploadsWork = false;
+    engine.cloudEdit(add('2026-10-10'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    state.events.length = 0;
+    await engine.cloudRefresh();
+    expect(state.events.map(([event]) => event)).not.toContain('synced');
+    expect(state.pending).toBe(true);
+  });
+
+  it('F2/F4: of two opens, the newer wins whichever finishes last; the older closes itself and its events carry its own id', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    dropbox.delay = 80;
+    const older = engine.cloudOpen('dropbox', 'ios-1', false);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    dropbox.delay = 0;
+    const newer = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; session: number };
+    await expect(older).rejects.toThrow('superseded');
+    // The newer session is the open one: an edit goes through it and reaches the cloud.
+    state.sessions.length = 0;
+    expect((JSON.parse(engine.cloudEdit(add('2026-10-11'), newer.erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(days(dropbox.record)).toEqual(['2026-10-11']);
+    expect(new Set(state.sessions)).toEqual(new Set([newer.session]));
+  });
+
+  it('F2: a close while an open is in flight makes that open close itself', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine } = await phone(dropbox);
+    dropbox.delay = 50;
+    const opening = engine.cloudOpen('dropbox', 'ios-1', false);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(await engine.cloudClose(true)).toBe('none');
+    await expect(opening).rejects.toThrow('superseded');
+    expect(JSON.parse(engine.cloudEdit(add('2026-10-12'), 'x', 'si', NOW))).toMatchObject({ reason: 'not-open' });
+  });
+
+  it('F5: a unit change refuses only edits whose number depends on units', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine } = await phone(dropbox);
+    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; record: string };
+    const us = JSON.parse(engine.applyEditJson(record, JSON.stringify({ kind: 'units', unitSystem: 'conventional' }), '2026-10-21T09:00:00.000Z', 'web')) as { record: string };
+    dropbox.put(JSON.parse(us.record) as RoadmapFile);
+    await engine.cloudRefresh();
+    expect((JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'profile', sex: 'female' }), erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
+    expect(JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'profile', height: 170 }), erase, 'si', NOW))).toMatchObject({ reason: 'units-changed' });
+  });
+
+  it.each([
+    ['storageQuotaExceeded', 'storage-full'],
+    ['dailyLimitExceeded', 'unreachable'],
+  ])('Drive 403 %s is %s, never a sign-in', async (reason, kind) => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false);
+    dropbox.answer = () => ({ status: 403, headers: {}, body: `{"error":{"errors":[{"reason":"${reason}"}]}}` });
+    await expect(engine.cloudRefresh()).rejects.toThrow(`"kind":"${kind}"`);
+  });
+
 });
 
 /** Google Drive v3's files endpoints, in memory: one folder, one record, a version counter. */

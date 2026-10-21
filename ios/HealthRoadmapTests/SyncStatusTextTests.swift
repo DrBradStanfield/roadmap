@@ -19,12 +19,14 @@ final class SyncStatusTextTests: XCTestCase {
     }
 
     func testAProblemSaysTheChangesAreSafeOnThePhone() {
-        for kind in [SyncProblem.Kind.unreachable, .signIn, .tooNew] {
+        for kind in [SyncProblem.Kind.unreachable, .signIn, .tooNew, .storageFull, .busy] {
             let words = SyncStatusText.detail(.problem(SyncProblem(kind: kind)), provider: .dropbox) ?? ""
             XCTAssertTrue(words.contains("on this iPhone"), words)
         }
         XCTAssertEqual(SyncProblem(json: #"{"kind":"sign-in","detail":"x"}"#).kind, .signIn)
         XCTAssertEqual(SyncProblem(json: "not json").kind, .unreachable)
+        XCTAssertEqual(SyncProblem(json: #"{"kind":"storage-full"}"#).kind, .storageFull)
+        XCTAssertFalse(SyncProblem(kind: .storageFull).words(.googleDrive).contains("sign in"))
     }
 
     /// Adversary A3: after Disconnect the record is still in the cloud, so the

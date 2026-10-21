@@ -10,6 +10,10 @@ struct SyncProblem: Equatable {
         case tooNew = "too-new"
         /// No network, or the provider did not answer: it retries by itself.
         case unreachable
+        /// The cloud has no room left (Drive's storageQuotaExceeded).
+        case storageFull = "storage-full"
+        /// Edits kept landing while the app opened the cloud record; it tries again later.
+        case busy
     }
 
     let kind: Kind
@@ -41,6 +45,8 @@ struct SyncProblem: Equatable {
         case .signIn: "\(provider.label) needs you to sign in again. Your changes are on this iPhone until then."
         case .tooNew: "A newer version of Health Roadmap wrote this record. Update the app to sync. Your changes are on this iPhone."
         case .unreachable: "\(provider.label) could not be reached. Your changes are on this iPhone, and go up when it answers."
+        case .storageFull: "Your \(provider.label) is full, so changes cannot go up. Free some space there. Your changes are on this iPhone."
+        case .busy: "Changes kept arriving while the app opened your \(provider.label) record. They are on this iPhone, and go up when you come back to the app."
         }
     }
 }

@@ -30,9 +30,11 @@ final class CloudSync: CloudPort {
     private let store: RecordStore
     private let oauth: OAuthClient
     private let files: SyncFiles
-    /// True only while the engine holds an open session and the store sends it
-    /// edits. Everything that talks to the session checks this, never the store.
-    private var sessionOpen = false
+    /// The engine session the app shows and sends edits to; nil when none is
+    /// open. Everything that talks to the session checks this, never the store,
+    /// and news from any other session is dropped (review F2, F4).
+    private var shownSession: Int?
+    private var sessionOpen: Bool { shownSession != nil }
     /// Moves on every Disconnect. An open that finishes under an older one is
     /// closed, not shown: Disconnect wins (review R5).
     private var generation = 0
@@ -94,14 +96,15 @@ final class CloudSync: CloudPort {
     /// "Sync now": save what waits and read the cloud again.
     func syncNow() async {
         guard provider != nil else { return }
-        guard sessionOpen else { return await open(firstConnect: false) }
+        guard let session = shownSession else { return await open(firstConnect: false) }
         status = .saving
         do {
             let saved = try await engine.cloudFlush()
             _ = try await engine.cloudRefresh()
-            if saved { status = .synced(.now) }
+            // A Disconnect or reopen during the awaits owns the status now (review F7).
+            if saved, shownSession == session { status = .synced(.now) }
         } catch {
-            status = .problem(SyncProblem(error))
+            if shownSession == session { status = .problem(SyncProblem(error)) }
         }
     }
 
@@ -112,7 +115,7 @@ final class CloudSync: CloudPort {
     func disconnect() async -> Bool {
         guard let provider else { return true }
         generation += 1
-        sessionOpen = false
+        shownSession = nil
         self.provider = nil
         let copied = (try? await engine.cloudClose(copyDown: true)) ?? false
         oauth.signOut(provider)
@@ -135,7 +138,7 @@ final class CloudSync: CloudPort {
         // The phone's file holds every edit (write-ahead), so the screen falls back
         // to it while the session is closed, and edits made meanwhile wait there.
         if sessionOpen {
-            sessionOpen = false
+            shownSession = nil
             store.showPhone()
         }
         status = .connecting
@@ -144,15 +147,12 @@ final class CloudSync: CloudPort {
             editsWhileOpening = 0
             do {
                 let view = try await engine.cloudOpen(provider: provider, deviceId: store.deviceId, firstConnect: first)
-                guard mine == generation else {
-                    // Disconnected meanwhile: close what this open made, show nothing.
-                    _ = try? await engine.cloudClose(copyDown: false)
-                    return
-                }
+                // Disconnected meanwhile: the Disconnect closed what this open made.
+                guard mine == generation else { return }
                 first = false
                 if editsWhileOpening > 0 { continue }
                 store.showCloud(view)
-                sessionOpen = true
+                shownSession = view.session
                 status = .synced(.now)
                 syncedBefore = provider
                 try? files.write(provider.rawValue, to: files.history)
@@ -163,8 +163,11 @@ final class CloudSync: CloudPort {
                 return
             }
         }
-        // Edits kept arriving: stay on the phone; the next foreground opens again.
-        status = .problem(SyncProblem(kind: .unreachable))
+        // Edits kept arriving: close the session the last try opened, so nothing
+        // polls behind the phone's record, and try again on the next foreground (F3).
+        _ = try? await engine.cloudClose(copyDown: false)
+        guard mine == generation else { return }
+        status = .problem(SyncProblem(kind: .busy))
     }
 
     private func edited() {
@@ -211,7 +214,8 @@ final class CloudSync: CloudPort {
         return files.exists(files.pending)
     }
 
-    func notify(_ event: String, _ payload: String) {
+    func notify(_ event: String, _ payload: String, session: Int) {
+        guard session == shownSession else { return }
         switch event {
         case "saving": status = .saving
         case "saved": status = .synced(.now)
@@ -219,7 +223,7 @@ final class CloudSync: CloudPort {
         case "synced": if case .problem = status { status = .synced(.now) }
         case "failed": status = .problem(SyncProblem(json: payload))
         case "changed":
-            if sessionOpen, let view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) { store.showCloud(view) }
+            if let view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) { store.showCloud(view) }
         default: break
         }
     }

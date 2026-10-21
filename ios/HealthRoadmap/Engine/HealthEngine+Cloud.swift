@@ -8,6 +8,8 @@ extension HealthEngine {
     struct CloudView: Decodable, Equatable {
         let record: String
         let erase: String
+        /// The engine session it came from; news from any other is dropped.
+        let session: Int
     }
 
     /// Open the cloud record. `firstConnect` merges the phone's record up first.
@@ -44,10 +46,11 @@ extension HealthEngine {
     }
 
     /// Close the session. With `copyDown`, merge the cloud record onto the phone
-    /// first; false when the cloud could not be read for that.
+    /// first; true only when that copy happened. No open session (an open still in
+    /// flight, or none) copies nothing, and says so (review F6).
     @MainActor
     @discardableResult
     func cloudClose(copyDown: Bool) async throws -> Bool {
-        try await callAsync("cloudClose", [copyDown]) != "unreachable"
+        try await callAsync("cloudClose", [copyDown]) == "copied"
     }
 }
