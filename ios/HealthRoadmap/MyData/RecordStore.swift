@@ -51,12 +51,6 @@ final class RecordStore {
         pins += 1
     }
 
-    /// After a refusal for a changed record: the user has now been told and sees
-    /// the new record, so the open sheet takes it as its own (review F5).
-    private func repin() {
-        if pins > 0 { pinned = screen }
-    }
-
     /// That sheet closed.
     func unpinScreen() {
         pins = max(0, pins - 1)
@@ -183,9 +177,11 @@ final class RecordStore {
 
     private func apply(_ edit: RecordEdit, as seen: Screen) -> ApplyResult {
         // An erase taken in, or sync turned on or off, since the sheet opened.
+        // The sheet keeps refusing until it closes: it still shows the old record,
+        // its unit and the typed number, so a second Save would store that number
+        // in a record or units it never showed (re-check R1).
         guard seen.erase == cloudErase else {
-            repin()
-            return .refused(message: "Your record changed while this was open, so this was not saved. Check it and try again.", existingId: nil)
+            return .refused(message: "Your record changed while this was open, so this was not saved. Close this and enter the value again.", existingId: nil)
         }
         if let erase = seen.erase { return applyInCloud(edit, erase: erase, units: seen.units) }
         if let problem { return .refused(message: problem, existingId: nil) }
@@ -212,7 +208,6 @@ final class RecordStore {
         do {
             let outcome = try engine.cloudEdit(edit, erase: erase, units: units, now: .now)
             guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
-                if outcome.reason == "units-changed" || outcome.reason == "erased" { repin() }
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
             }
             if next == recordJSON { return .saved }

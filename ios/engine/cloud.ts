@@ -228,7 +228,12 @@ function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, 
       pending: {
         get: () => __native.pending('get'),
         set: () => void __native.pending('set'),
-        clear: () => void __native.pending('clear'),
+        // The session clears the marker only when a save has landed and been
+        // verified: the one moment the record is in sync (re-check R3).
+        clear: () => {
+          __native.pending('clear');
+          __native.notify('synced', '', id);
+        },
       },
       // The phone never logs off underneath an open session: Disconnect closes
       // the session first (cloudClose).
@@ -303,8 +308,14 @@ function keepPhoneCopy(at: Open): void {
  * Rejects when the cloud cannot be read; the app then stays on the phone.
  */
 export async function cloudOpen(provider: Provider, deviceId: string, firstConnect: boolean): Promise<string> {
-  await cloudClose(false);
+  // The number is taken before any await, so the order of the calls decides
+  // which open wins, never the order their awaits finish in (re-check R2).
   const id = ++latest;
+  const superseded = () => id !== latest;
+  const previous = open;
+  open = null;
+  if (previous) await closeAt(previous, false);
+  if (superseded()) throw new Error('superseded');
   const phone = new PhoneFileAdapter();
   const host = hostFor(provider, deviceId, phone, id);
   if (firstConnect) {
@@ -313,6 +324,7 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
     } catch {
       /* the pending marker is set; the session below merges the phone copy in */
     }
+    if (superseded()) throw new Error('superseded');
   }
   // A pending phone copy is merged in by the session's open and saved on its
   // debounce; counted here so a flush on going to the background sends it too.
@@ -326,13 +338,12 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
   }
   const at: Open = { id, provider, host, phone, session, live: null!, visible: true, unflushed: waiting ? 1 : 0 };
   at.live = new LiveRefresh(session, host, { reread: () => reread(at), isVisible: () => at.visible });
-  if (id !== latest) {
+  if (superseded()) {
     // A newer open or a close began while this one read: this one gives way.
     // Its save, if the open merged a pending phone copy, still settles.
     await session.flush().catch(() => {});
     throw new Error('superseded');
   }
-  if (open) await closeAt(open, false); // an older open that finished first
   open = at;
   at.live.start();
   keepPhoneCopy(at);
@@ -362,10 +373,10 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
   // A number is read in the units the screen showed. If another device has
   // changed the units since, the same number would be stored in the wrong ones.
   if (dependsOnUnits(edit) && shownUnits !== (session.file.profile.unitSystem ?? 'si')) {
-    return refuse('units-changed', 'Your units were changed on another device, so this was not saved. Check the value and its unit, then save again.');
+    return refuse('units-changed', 'Your units changed on another device, so this was not saved. Close this and enter the value again.');
   }
   if (session.refuses(erase)) {
-    return refuse('erased', 'Your record was erased on another device, so this was not saved. Try again.');
+    return refuse('erased', 'Your record was erased on another device, so this was not saved. Close this and enter the value again.');
   }
   const outcome = applyEdit(session.file, edit, nowIso);
   if (!outcome.ok) return JSON.stringify(outcome);

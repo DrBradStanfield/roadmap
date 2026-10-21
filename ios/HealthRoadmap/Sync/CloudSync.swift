@@ -102,7 +102,7 @@ final class CloudSync: CloudPort {
             let saved = try await engine.cloudFlush()
             _ = try await engine.cloudRefresh()
             // A Disconnect or reopen during the awaits owns the status now (review F7).
-            if saved, shownSession == session { status = .synced(.now) }
+            if saved, shownSession == session { status = settled() }
         } catch {
             if shownSession == session { status = .problem(SyncProblem(error)) }
         }
@@ -153,7 +153,7 @@ final class CloudSync: CloudPort {
                 if editsWhileOpening > 0 { continue }
                 store.showCloud(view)
                 shownSession = view.session
-                status = .synced(.now)
+                status = settled()
                 syncedBefore = provider
                 try? files.write(provider.rawValue, to: files.history)
                 return
@@ -168,6 +168,14 @@ final class CloudSync: CloudPort {
         _ = try? await engine.cloudClose(copyDown: false)
         guard mine == generation else { return }
         status = .problem(SyncProblem(kind: .busy))
+    }
+
+    /// The one rule for "Synced": nothing waits on the phone, the pending marker
+    /// clear. The marker is set before every edit is taken and cleared by the
+    /// session only once a save has landed, so it is the session's unsaved state
+    /// too (re-check R3). While it is set the app says "Saving…".
+    private func settled() -> Status {
+        files.exists(files.pending) ? .saving : .synced(.now)
     }
 
     private func edited() {
@@ -218,9 +226,11 @@ final class CloudSync: CloudPort {
         guard session == shownSession else { return }
         switch event {
         case "saving": status = .saving
-        case "saved": status = .synced(.now)
-        // A re-read worked: a passing failure is over. Never over "Saving…".
-        case "synced": if case .problem = status { status = .synced(.now) }
+        // A write landed, but the save may still verify or go round again:
+        // "Synced" waits for the marker to clear (the 'synced' event).
+        case "saved": status = settled()
+        // The pending marker cleared, or a re-read worked with nothing waiting.
+        case "synced": status = settled()
         case "failed": status = .problem(SyncProblem(json: payload))
         case "changed":
             if let view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) { store.showCloud(view) }
