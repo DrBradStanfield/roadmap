@@ -39,3 +39,6 @@ export function applyEditJson(recordJson: string, editJson: string, nowIso: stri
 export function numberJson(text: string): string {
   return JSON.stringify(readNumber(text) ?? null);
 }
+
+// Chat and lab upload (US-52): app-doors.ts.
+export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';

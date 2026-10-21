@@ -5,7 +5,8 @@
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
-import { appendMeasurement, correctValue, validDay } from '../../packages/health-core/src/record-edits';
+import { appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
+import { labRows, type Extraction } from './lab-review';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, supplementSchema } from '../../packages/health-core/src/validation';
@@ -46,7 +47,9 @@ export type Edit =
   /** A medication's current state (US-06): the web's write, history row included. */
   | { kind: 'medication'; medicationKey: string; drugName: string; doseValue?: number | null; doseUnit?: string | null }
   /** A supplement's current state; `status: 'stopped'` is the soft stop (US-06). */
-  | { kind: 'supplement'; supplementKey: string; supplementName: string; doseValue?: number | null; doseUnit?: string | null; status: 'active' | 'stopped'; startedAt?: string };
+  | { kind: 'supplement'; supplementKey: string; supplementName: string; doseValue?: number | null; doseUnit?: string | null; status: 'active' | 'stopped'; startedAt?: string }
+  /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
+  | { kind: 'labImport'; extractionJson: string; refs: string[]; reportDay: string };
 
 /** A refusal leaves the record as it was. `existingId` names the row holding the day. */
 export type EditOutcome =
@@ -175,6 +178,12 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
         return { ok: false, reason: 'not-found', message: 'There is no such supplement to stop.' };
       }
       return { ok: true, file: upsertSupplement(file, { supplementKey, supplementName, doseValue, doseUnit, status, startedAt }, now).file };
+    }
+    case 'labImport': {
+      const rows = labRows(JSON.parse(edit.extractionJson) as Extraction, edit.refs, edit.reportDay, now);
+      if (!rows.ok) return rows;
+      // A held day is skipped and a refused unit left out: labSaveSummary says which, beforehand.
+      return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
   }
 }
