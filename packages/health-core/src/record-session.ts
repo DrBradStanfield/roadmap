@@ -6,13 +6,13 @@
  * announce lives here too. The device itself comes in as a RecordHost.
  * No DOM and no Node: engine-portability.test.ts checks.
  */
-import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
+import { ConflictError, ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { buildErasedFile } from './erase';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import type { RecordHost } from './record-host';
+import type { RecordHost, SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
-import { stableStringify, type RoadmapFile } from './roadmap-file';
+import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
 
 /** How long a burst of edits waits before one save carries them all. */
@@ -79,6 +79,20 @@ export const ERASE_UNREACHABLE = 'Your cloud storage could not be reached, so no
  *  leaves these (US-09 AC20, AC23; US-11 AC6). */
 function liveOriginals(file: RoadmapFile): Set<string> {
   return new Set(file.documents.filter((d) => !d.deleted && d.fileRef).map((d) => d.fileRef));
+}
+
+/** The refusal for a stored record a newer app wrote, read from its raw
+ *  `schemaVersion` before any shape check; null for bytes that do not parse,
+ *  or a version this app knows (US-11 AC9). */
+function newerSchema(store: SyncStorage): SchemaTooNewError | null {
+  let body: unknown;
+  try {
+    ({ body } = store.readSync(ROADMAP_FILE_NAME));
+  } catch {
+    return null;
+  }
+  const version = (body as { schemaVersion?: unknown } | null)?.schemaVersion;
+  return typeof version === 'number' && version > CURRENT_SCHEMA_VERSION ? new SchemaTooNewError(version, CURRENT_SCHEMA_VERSION) : null;
 }
 
 /** What an awaited save that failed says. */
@@ -271,10 +285,17 @@ export class RecordSession {
     // cloud an unreadable record refuses the erase, and the change on the
     // debounce goes back on it. On this device an unreadable record leaves
     // this copy's epoch, as before: there is no other copy to list.
-    const stored = await this.sync.load().catch(() => null);
-    if (!stored && this.host.tier === 'cloud') {
+    // On this device, the revision of the bytes read: an unreadable record is
+    // replaced only at it, so another tab's repair is never written over (AC9).
+    const revision = this.host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
+    let readError: unknown = null;
+    const stored = await this.sync.load().catch((error) => { readError = error; return null; });
+    // A newer app's record is never written over, whatever else fails in it:
+    // update first (US-11 AC9).
+    const tooNew = readError && this.host.tier === 'device' ? newerSchema(this.host.sync) : null;
+    if (!stored && (this.host.tier === 'cloud' || tooNew)) {
       if (debounced) this.touch();
-      return { success: false, error: ERASE_UNREACHABLE };
+      return { success: false, error: tooNew ? tooNew.message : ERASE_UNREACHABLE };
     }
     await beforeErase?.();
     // From here every failure comes back as a refusal, never a rejection: the
@@ -297,7 +318,8 @@ export class RecordSession {
       this.current = buildErasedFile({ stored, own: this.current, device, ctx: this.ctx() });
       this.touch(); // a change like any other: a failed flush leaves it for a hide to retry
       try {
-        await this.flush();
+        if (readError && host.tier === 'device') await this.replaceUnreadable(host.sync, revision);
+        else await this.flush();
       } finally {
         this.erasing = false;
       }
@@ -480,6 +502,20 @@ export class RecordSession {
       /* unreadable: it names nothing */
     }
     this.host.clearOffFileData(liveOriginals(kept));
+  }
+
+  /** Device tier: write the erased record over bytes no record reads, at the
+   *  revision they were read at. Another tab that wrote since wins the race:
+   *  the save then reads its record and merges, as any save does (US-11 AC9). */
+  private async replaceUnreadable(store: SyncStorage, revision: string | null): Promise<void> {
+    this.cancelDebounce();
+    try {
+      this.revisionSeen = store.writeSync(ROADMAP_FILE_NAME, this.current, revision).version;
+      this.savedChanges = this.changes;
+    } catch (error) {
+      if (!(error instanceof ConflictError)) throw error;
+      await this.flush();
+    }
   }
 
   /** The merge context: this device, and now. */

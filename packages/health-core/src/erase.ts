@@ -25,16 +25,21 @@ export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): Road
   // Bump the erase epoch so the empty file BEATS the merge — persist goes
   // through read-merge-write, whose never-lose-data semantics would otherwise
   // resurrect every record from the stored copy (and any other device's).
-  // Bump past the stored epoch as well (US-11 AC7).
-  const eraseEpoch = Math.max(stored?.meta.eraseEpoch ?? 0, own.meta.eraseEpoch ?? 0) + 1;
+  // Bump past the stored epoch as well (US-11 AC7), and past the device
+  // copy's: a failed save mirrors the erase there, and must win (AC9).
+  const eraseEpoch = Math.max(...[stored, own, device].map((file) => file?.meta.eraseEpoch ?? 0)) + 1;
   // WHICH rows, so the merge drops them on every copy and keeps every row no
   // erase saw (US-09 AC23): the stored record's, this copy's and, on a
   // cloud, this device's file, where other tabs' failed saves wait.
   const copies = [stored, own, device].filter((file): file is RoadmapFile => file !== null);
-  // The list keeps the claim the merge of the stored and own copies makes:
-  // every erase from `fromEpoch` on listed its ids. With no list there, this
-  // erase is the first to list.
-  const before = stored ? mergeErasedRows(own, stored) : own.erasedRows;
+  // The list keeps the claim the merge of every copy read makes: every erase
+  // from `fromEpoch` on listed its ids. The device copy's history counts too,
+  // so a legacy erase there that listed nothing keeps its gap (AC9). With no
+  // list anywhere, this erase is the first to list.
+  const before = [stored, device].reduce<Pick<RoadmapFile, 'meta' | 'erasedRows'>>((acc, file) => file ? {
+    meta: { ...acc.meta, eraseEpoch: Math.max(acc.meta.eraseEpoch ?? 0, file.meta.eraseEpoch ?? 0) },
+    erasedRows: mergeErasedRows(acc as RoadmapFile, file),
+  } : acc, own).erasedRows;
   const ids = new Set(copies.flatMap((file) => [...rowRootIds(file), ...(file.erasedRows?.ids ?? [])]));
   const erasedRows = { fromEpoch: before?.fromEpoch ?? eraseEpoch, ids: [...ids].sort() };
   // An erase must not silently re-consent the user. Under US-17's default-on
