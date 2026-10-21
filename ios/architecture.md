@@ -706,6 +706,28 @@ sorts on read (`ChatSession.getMessages`), so a file an older client writes stil
 in the right order, and nothing can be lost or duplicated. A bump would have cut every
 open web tab, Pages fork and CLI off from its chat history until it updated.
 
+Decided 2026-10-22 by the orchestrator, after Codex and an adversary reviewed it:
+last-write-wins now reads clock time first and the lamport counter only on a tie (US-10
+AC8). No bump, accepted with the residuals below stated. An
+older app merges the old way, which is exactly today's behaviour: it can put back an
+older value, the bug AC8 fixes, but nothing a current app writes breaks it, and nothing it
+writes breaks a current app. The file's shape is unchanged, and the field-stamp invariant
+reads the same either way (each side treats the other's merged object as not stale and
+reads its field stamps). The cost of no bump: a mixed fleet, older and current clients
+syncing one record, can settle a scalar (a medication, a supplement, a reminder setting, a
+profile or screening field) on a value that is neither the newest edit nor the highest
+counter, and the cloud copy may switch between values on each save until the older client
+updates. No rows are lost: append-only arrays, history and erases merge as before. Old
+GitHub Pages forks and local CLI or stdio MCP installs may never update, so for them this
+residual may never end. Where the file's meta was hand-edited with an offset spelling, an
+older client clamps a row to that spelling and a current one does not, so a mixed fleet can
+hold the row twice, the second as an `id#dup-…` copy. Nothing is lost. A second residual, from the new rule itself: after one write from a
+fast clock to any profile or screening field, the WHOLE object orders by counter until real
+time passes that stamp, because each later write stamps past every clock the object holds.
+The cost of a
+bump: every open web tab, Pages fork, local CLI and stdio MCP refuses the record until it
+updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.md) moves.
+
 ### D11 · My data: no title bar, one blood pressure, Apple Health's metric page (Brad, 2026-10-22, US-25 AC17)
 
 - **No title bar.** It cost a line for a word the tab bar already says. The "+" and Sync
@@ -745,28 +767,6 @@ open web tab, Pages fork and CLI off from its chat history until it updated.
 - **Two Charts traps:** a material background inside a chart annotation renders black, so
   the callout uses a solid system fill; and the newest axis label clips unless the marks
   use the `.aligned` preset.
-
-Decided 2026-10-22 by the orchestrator, after Codex and an adversary reviewed it:
-last-write-wins now reads clock time first and the lamport counter only on a tie (US-10
-AC8). No bump, accepted with the residuals below stated. An
-older app merges the old way, which is exactly today's behaviour: it can put back an
-older value, the bug AC8 fixes, but nothing a current app writes breaks it, and nothing it
-writes breaks a current app. The file's shape is unchanged, and the field-stamp invariant
-reads the same either way (each side treats the other's merged object as not stale and
-reads its field stamps). The cost of no bump: a mixed fleet, older and current clients
-syncing one record, can settle a scalar (a medication, a supplement, a reminder setting, a
-profile or screening field) on a value that is neither the newest edit nor the highest
-counter, and the cloud copy may switch between values on each save until the older client
-updates. No rows are lost: append-only arrays, history and erases merge as before. Old
-GitHub Pages forks and local CLI or stdio MCP installs may never update, so for them this
-residual may never end. Where the file's meta was hand-edited with an offset spelling, an
-older client clamps a row to that spelling and a current one does not, so a mixed fleet can
-hold the row twice, the second as an `id#dup-…` copy. Nothing is lost. A second residual, from the new rule itself: after one write from a
-fast clock to any profile or screening field, the WHOLE object orders by counter until real
-time passes that stamp, because each later write stamps past every clock the object holds.
-The cost of a
-bump: every open web tab, Pages fork, local CLI and stdio MCP refuses the record until it
-updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.md) moves.
 
 ## Build and test
 
