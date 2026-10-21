@@ -18,6 +18,7 @@ enum EraseText {
         }
         if let provider {
             text += " It also erases your record in \(provider.label). The file stays there with your values erased from it, so your other devices erase their copies when they next sync."
+            text += " It also deletes the website's chat history in \(provider.label), if the app can reach it."
             text += "\n\nA value another device has not synced yet is kept, and arrives later."
         } else if let earlier {
             // A later connect lifts this erase up: its higher epoch and its list of rows win
@@ -30,18 +31,29 @@ enum EraseText {
     }
 
     /// The erase reached everywhere it was meant to.
-    static func done(provider: CloudProvider?, chatErased: Bool) -> String {
+    static func done(provider: CloudProvider?, chatErased: Bool, cloudChatErased: Bool = true) -> String {
         var text = chatErased
             ? "Your health record, chat history and reminders are deleted."
             : "Your health record and reminders are deleted. Your chat history could not be deleted, so it is still on this iPhone. Try again to delete it."
-        if let provider { text += " Your other devices erase their copies when they next sync with \(provider.label)." }
+        if let provider {
+            text += websiteChat(provider, erased: cloudChatErased)
+            text += " Your other devices erase their copies when they next sync with \(provider.label)."
+        }
         return text
     }
 
+    /// The website's chat history in the cloud: deleted, or still there (adversary R2).
+    private static func websiteChat(_ provider: CloudProvider, erased: Bool) -> String {
+        erased
+            ? " Any website chat history in \(provider.label) is deleted too."
+            : " Your website conversations in \(provider.label) are still there. Try again to delete them."
+    }
+
     /// Erased here, but the cloud has not taken it yet: the app sends it later.
-    static func notSent(provider: CloudProvider, chatErased: Bool) -> String {
+    static func notSent(provider: CloudProvider, chatErased: Bool, cloudChatErased: Bool) -> String {
         var text = "Your record is erased on this iPhone, but \(provider.label) could not take the erase just now. The app sends it when \(provider.label) answers; until then the copy there is unchanged."
         text += chatErased ? " Your chat history and reminders are deleted." : " Your reminders are deleted. Your chat history could not be deleted, so it is still on this iPhone."
+        text += websiteChat(provider, erased: cloudChatErased)
         return text
     }
 

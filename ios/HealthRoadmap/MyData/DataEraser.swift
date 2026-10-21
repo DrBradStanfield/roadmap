@@ -103,8 +103,8 @@ final class DataEraser {
         }
         let chatErased = chatReadable && result.chatErased
         return result.success
-            ? .erased(EraseText.done(provider: provider, chatErased: chatErased))
-            : .notSent(EraseText.notSent(provider: provider, chatErased: chatErased))
+            ? .erased(EraseText.done(provider: provider, chatErased: chatErased, cloudChatErased: result.cloudChatErased))
+            : .notSent(EraseText.notSent(provider: provider, chatErased: chatErased, cloudChatErased: result.cloudChatErased))
     }
 
     /// The chat file's text, and whether it could be read: one that is there but

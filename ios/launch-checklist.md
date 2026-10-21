@@ -50,6 +50,8 @@ Two website changes ride along and ship at the next deploy:
    iOS with the bundle id above, then paste its client id into
    `ios/HealthRoadmap/Sync/CloudProvider.swift` (`googleIOSClientId`). Until then the
    button says Drive is not set up.
+   Keep the iOS client in the website's project (687809032623): `drive.file` shows an app
+   only the files its own project created, so a client elsewhere sees no record and no chat.
 4. **Server, for chat and lab upload.**
    - Paste the whole of `supabase/rls-policies.sql` into the Supabase SQL editor and run it (it now holds the App Attest table).
    - Set `APP_ATTEST_TEAM_ID` on `health-tool-edu` (until then the routes answer 503).

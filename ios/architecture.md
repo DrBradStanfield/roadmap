@@ -290,8 +290,10 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   - **Chat history** (a phone-only file) is tombstoned by the engine's `ChatSession.eraseAll`
     and written only when that step ran. With a cloud open, the `chat-history.json` the
     website saved there is tombstoned first, by `ChatSession` on the cloud host, as the web's
-    erase does (2026-10-22). A failure there leaves the phone's chat as well, so the words
-    "still on this iPhone" stay true and a retry runs both. **Gap:** an erase made on the web reaches this
+    erase does (2026-10-22). It is best effort and reported on its own (`cloudChatErased`):
+    a corrupt file or a newer website's schema never blocks the phone's chat erase
+    (adversary R1). The confirmation names the website's chat in the cloud, and the result
+    says whether it is gone or still there (R2). Its writes send no sync status (R3). **Gap:** an erase made on the web reaches this
     phone's record and reminders but not its chat history. Closing it needs the phone to
     remember the erase epoch its chat last saw, as the reminders opt-in does; not built.
   - **Units are kept** (a setting; the web keeps its unit preference through an erase), the

@@ -119,14 +119,20 @@ software development kit, and it does not follow you across other apps or websit
 choose to share analytics with app developers in your iPhone's settings, Apple may send us
 crash reports and usage counts.
 
+The App Store privacy label lists what the app sends. Health data and what you type or
+upload are listed as linked to you: a lab report carries your name, and Anthropic may keep
+what we send for a time. The App Attest key id and the daily count of chat questions and
+uploads are listed as not linked. None of it is used for tracking.
+
 ## Deleting your data
 
 **Delete all my data**, in the app, deletes your record, your chat history and your
 reminders on this iPhone, and deletes the readings this app wrote to Apple Health. Readings
 from other apps and devices stay in Apple Health. With a cloud connected, it also erases your
 record there: the file stays, with your values erased, so your other devices erase their
-copies when they next sync. It also deletes the chat history the website saved there. A
-value another device has not synced yet is kept, and arrives later.
+copies when they next sync. It also deletes the chat history the website saved there, when
+it can reach it. If it cannot, the app says so, and you can try again. A value another
+device has not synced yet is kept, and arrives later.
 
 It cannot reach copies you exported or shared, your cloud provider's version history, or
 chat questions already sent.
@@ -157,10 +163,6 @@ time.
 - [VERIFY] Engine updates (D3) are not in the code at b3a4789f. The paragraph states what
   the orchestrator specified. When D3 merges, check the host, that the request carries no
   record data or device id, and what headers it sends.
-- [VERIFY] `ios/HealthRoadmap/PrivacyInfo.xcprivacy` declares Health and Other User
-  Content (app functionality, not linked, no tracking), matching `ios/app-store.md`.
-  Open: whether the App Attest row (a per-install key id with daily counts, "How the app
-  proves itself") must be declared as Device ID and Product Interaction.
 - [VERIFY] The chat consent screen (`AIConsent.swift`) lists the record summary but does not
   name Apple Health. architecture.md calls this a 5.1.3 disclosure question.
 - [VERIFY] `ServerConfig.swift` still points at the placeholder host

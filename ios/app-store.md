@@ -61,22 +61,28 @@ three together.
 - **Do you or your third-party partners collect data from this app?** Yes. Chat and lab
   upload send data through our server to Anthropic. The record itself never leaves the
   phone except to the user's own Dropbox or Google Drive, which is not collection by us.
+Brad's rule (2026-10-22): over-declare rather than under-declare.
+
 - **Health & Fitness > Health.** Collected. The record summary each chat question carries
   (including values from Apple Health), and the lab values read from an uploaded report.
-  Purpose: App Functionality only. Linked to the user's identity: No. Used for tracking: No.
+  Purpose: App Functionality only. Linked to the user's identity: Yes, because an uploaded
+  report carries the patient's name and Anthropic may keep API inputs for a time. Used for
+  tracking: No.
 - **Health & Fitness > Fitness.** Not collected. The app reads no workouts or motion data.
 - **User Content > Other User Content.** Collected. Chat questions and the conversation so
   far, and the pages of an uploaded lab report. Purpose: App Functionality only. Linked:
-  No. Tracking: No.
+  Yes, for the same reason. Tracking: No.
 - **User Content > Customer Support.** Not collected. The chat answers health questions;
   it is not a support channel.
-- **Everything else** (contact info, location, identifiers, usage data, diagnostics,
-  purchases, financial info, contacts, browsing, search, sensitive info): Not collected.
-  The app sends no analytics or crash reports, and our server keeps no IP address.
-  Open question for Brad: the App Attest row (a per-install key id with that day's chat
-  and upload counts) may count as Identifiers > Device ID and Usage Data > Product
-  Interaction. If he declares them, add both to the manifest too (App Functionality, not
-  linked, no tracking).
+- **Identifiers > Device ID.** Collected. The App Attest key id our server keeps for each
+  copy of the app. Purpose: App Functionality only. Linked: No. Tracking: No.
+- **Usage Data > Product Interaction.** Collected. The count of chat questions and uploads
+  on the day the key was last used, kept with that row to cap daily use. Purpose: App
+  Functionality only. Linked: No. Tracking: No.
+- **Everything else** (contact info, location, other identifiers, other usage data,
+  diagnostics, purchases, financial info, contacts, browsing, search, sensitive info): Not
+  collected. The app sends no analytics or crash reports, and our server keeps no IP
+  address.
 
 ## App Review notes
 

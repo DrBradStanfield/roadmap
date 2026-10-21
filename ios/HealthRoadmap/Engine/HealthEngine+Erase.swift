@@ -28,8 +28,10 @@ extension HealthEngine {
         let error: String?
         /// The session's working copy is the erased record, sent or not.
         let erased: Bool
-        /// The chat tombstones were made and written (by `keepChat`).
+        /// The phone's chat tombstones were made and written (by `keepChat`).
         let chatErased: Bool
+        /// The website's chat history in the cloud was tombstoned (or there was none).
+        let cloudChatErased: Bool
         /// The erased record to show, when `erased`.
         let view: CloudView?
     }

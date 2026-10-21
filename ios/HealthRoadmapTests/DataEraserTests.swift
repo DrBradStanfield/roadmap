@@ -167,12 +167,32 @@ final class DataEraserTests: XCTestCase {
         guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
 
         XCTAssertTrue(words.contains("chat history and reminders are deleted"), words)
+        XCTAssertTrue(words.contains("website chat history in Dropbox is deleted"), words)
         let cloudChat = try XCTUnwrap(dropbox.chat).text
         XCTAssertFalse(cloudChat.contains(websiteQuestion), "the website's chat in Dropbox is tombstoned")
         let conversations = try XCTUnwrap(object(cloudChat)["conversations"] as? [[String: Any]])
         XCTAssertEqual(conversations.count, 1)
         XCTAssertEqual(conversations.first?["deleted"] as? Bool, true)
         XCTAssertFalse(try String(contentsOf: chatFile, encoding: .utf8).contains(question), "the phone's own chat is erased as before")
+        XCTAssertEqual(epoch(dropbox.record), 1)
+    }
+
+    /// Adversary R1/R2: a cloud chat file the app cannot erase never blocks the
+    /// phone's chat erase, and the words say the website's conversations are still there.
+    func testACloudChatTheAppCannotEraseStillErasesThePhoneChatAndSaysSo() async throws {
+        dropbox.put(try record(days: ["2026-10-01"]))
+        dropbox.chat = ("{not json", 1)
+        let app = try app(connected: true)
+        await app.sync.start()
+        seedChat(app.chat)
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+
+        XCTAssertTrue(words.contains("chat history and reminders are deleted"), words)
+        XCTAssertTrue(words.contains("website conversations in Dropbox are still there"), words)
+        XCTAssertTrue(words.contains("Try again"), words)
+        XCTAssertFalse(try String(contentsOf: chatFile, encoding: .utf8).contains(question), "the phone's chat is erased")
+        XCTAssertEqual(dropbox.chat?.text, "{not json")
         XCTAssertEqual(epoch(dropbox.record), 1)
     }
 
@@ -312,10 +332,25 @@ final class DataEraserTests: XCTestCase {
         XCTAssertFalse(phone.contains("Dropbox"))
         let cloud = EraseText.confirm(provider: .dropbox, earlier: .dropbox)
         XCTAssertTrue(cloud.contains("in Dropbox"))
+        XCTAssertTrue(cloud.contains("website's chat history in Dropbox"), cloud)
+        XCTAssertFalse(phone.contains("website"))
         XCTAssertTrue(cloud.contains("other devices"))
         let before = EraseText.confirm(provider: nil, earlier: .dropbox)
         XCTAssertTrue(before.contains("copy in Dropbox"))
         XCTAssertTrue(before.contains("connect Dropbox again"), "connecting again carries the erase there (R3), and the user is told")
+    }
+
+    func testTheResultNamesTheWebsitesChatInTheCloud() {
+        XCTAssertTrue(EraseText.done(provider: .googleDrive, chatErased: true, cloudChatErased: true).contains("website chat history in Google Drive is deleted"))
+        let left = EraseText.done(provider: .googleDrive, chatErased: true, cloudChatErased: false)
+        XCTAssertTrue(left.contains("website conversations in Google Drive are still there"), left)
+        XCTAssertTrue(left.contains("Try again"), left)
+        XCTAssertTrue(EraseText.notSent(provider: .dropbox, chatErased: true, cloudChatErased: true).contains("website chat history in Dropbox is deleted"))
+        XCTAssertTrue(EraseText.notSent(provider: .dropbox, chatErased: true, cloudChatErased: false).contains("website conversations in Dropbox are still there"))
+        XCTAssertFalse(EraseText.done(provider: nil, chatErased: true).contains("website"))
+        for text in [left, EraseText.confirm(provider: .dropbox, earlier: nil)] {
+            XCTAssertFalse(text.contains("\u{2014}"), "no em dashes")
+        }
     }
 
     func testTheExportIsTheRecordFileUnderTheWebsName() async throws {
