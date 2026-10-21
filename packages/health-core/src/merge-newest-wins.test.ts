@@ -275,4 +275,14 @@ describe('US-10 AC8 review fixes (2026-10-22)', () => {
     expect(stampInstant('2026-05-02')).toBe(Date.parse('2026-05-02T00:00:00.000Z'));
     expect(stampInstant('May 2, 2026')).toBeNaN(); // engine-specific forms are not stamps
   });
+
+  it('N1: an impossible day, a leap second and an hour of 24 are no time, on every engine', () => {
+    // V8 rolls 2026-02-30 over to March 2 and JavaScriptCore does not; both must read NaN.
+    for (const form of [
+      '2026-02-30', '2026-02-29', '2026-02-29T00:00:00Z', '2026-04-31T10:00:00Z', '2026-13-01',
+      '2026-05-01T10:00:60Z', '2026-05-01T24:00:00Z', '2026-05-01T10:60:00Z', '2026-05-01 10:00:60+00',
+    ]) expect(stampInstant(form), form).toBeNaN();
+    expect(stampInstant('2028-02-29')).toBe(Date.parse('2028-02-29T00:00:00.000Z'));
+    expect(stampInstant('2026-05-01T23:59:59Z')).toBe(Date.parse('2026-05-01T23:59:59.000Z'));
+  });
 });

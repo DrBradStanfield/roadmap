@@ -574,13 +574,20 @@ const STAMP_PARTS = /^(\d{4}-\d{2}-\d{2})(?:(?:[Tt](\d{2}:\d{2}(?::\d{2})?)(?:\.
  * An ISO stamp as an instant; NaN when it is not a string or not a stamp, and
  * NaN compares false. A date-time with no zone reads as UTC, as a date-only
  * string already does, never as this machine's local time. The stamp is
- * rebuilt in the one form ECMAScript defines before parsing, so V8 and the
- * iPhone's JavaScriptCore read every spelling alike (US-10 AC8 review, R3).
+ * rebuilt in the one form ECMAScript defines before parsing, and a day the
+ * calendar lacks or a time past 23:59:59 is NaN, so V8 and the iPhone's
+ * JavaScriptCore give the same answer for every string (US-10 AC8 review, R3, N1).
  */
 export function stampInstant(iso: unknown): number {
   const m = typeof iso === 'string' ? STAMP_PARTS.exec(iso) : null;
   if (!m) return NaN;
   const [day, time, fraction, zone] = [m[1], m[2] ?? m[5], m[3] ?? m[6], m[4] ?? m[7]];
+  // Engines differ on what they roll over (V8 reads 2026-02-30 as March 2),
+  // so a day the calendar lacks, an hour of 24 or a leap second is no time.
+  const [y, mo, d] = day.split('-').map(Number);
+  const [h, mi, s = 0] = (time ?? '00:00').split(':').map(Number);
+  const utc = new Date(Date.UTC(y, mo - 1, d));
+  if (utc.getUTCFullYear() !== y || utc.getUTCMonth() !== mo - 1 || utc.getUTCDate() !== d || h > 23 || mi > 59 || s > 59) return NaN;
   if (time === undefined) return Date.parse(day);
   const offset = !zone || /^[Zz]$/.test(zone) ? 'Z' : `${zone.slice(0, 3)}:${zone.slice(3).replace(':', '') || '00'}`;
   return Date.parse(`${day}T${time}${fraction ? `.${fraction.padEnd(3, '0').slice(0, 3)}` : ''}${offset}`);

@@ -711,7 +711,9 @@ profile or screening field) on a value that is neither the newest edit nor the h
 counter, and the cloud copy may switch between values on each save until the older client
 updates. No rows are lost: append-only arrays, history and erases merge as before. Old
 GitHub Pages forks and local CLI or stdio MCP installs may never update, so for them this
-residual may never end. A second residual, from the new rule itself: after one write from a
+residual may never end. Where the file's meta was hand-edited with an offset spelling, an
+older client clamps a row to that spelling and a current one does not, so a mixed fleet can
+hold the row twice, the second as an `id#dup-…` copy. Nothing is lost. A second residual, from the new rule itself: after one write from a
 fast clock to any profile or screening field, the WHOLE object orders by counter until real
 time passes that stamp, because each later write stamps past every clock the object holds.
 The cost of a
