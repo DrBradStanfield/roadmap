@@ -184,6 +184,12 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   JavaScriptCore) into `HealthRoadmap/Engine/health-engine.js`, and writes the parity
   goldens. Run it before any Xcode build: `node ios/scripts/build-engine.mjs`. Its outputs
   are generated and ignored by git.
+- `scripts/test.sh`: builds the engine and runs the tests once in UTC and once in
+  Pacific/Auckland. Gotcha (2026-10-21): JavaScriptCore reads the time zone once per
+  process, so `setenv("TZ")` inside a test does not reach the engine; the first
+  parity test passed in Auckland and failed in UTC for that reason. The zone is set at
+  launch with `TEST_RUNNER_TZ`, and a zone with no golden skips (a Tokyo run proved
+  the pin reaches the test).
 - `HealthRoadmap.xcodeproj`: hand-written, using Xcode's synchronized folders, so a file
   added to `HealthRoadmap/` or `HealthRoadmapTests/` joins its target with no project edit.
   No project generator, so no new dependency.
