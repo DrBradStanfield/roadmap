@@ -5,7 +5,7 @@
  * the serialisations a merge spends.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mergeFiles, stampFields } from './merge';
+import { mergeFiles, stampFields, stampInstant } from './merge';
 import { createEmptyFile, stableStringify, type RoadmapFile, type RoadmapProfile, type SyncStamp } from './roadmap-file';
 
 vi.mock('./roadmap-file', async (original) => {
@@ -72,12 +72,14 @@ describe('comparing clocks serialises nothing (US-10 AC6)', () => {
   });
 });
 
-/** -1, 0 or 1: lamport first, then time — the order the merge reads stamps in. */
+/** -1, 0 or 1: time as an instant first (an unknown time lowest), then
+ *  lamport — the order the merge reads stamps in (US-10 AC8). */
 function cmp(a: SyncStamp, b: SyncStamp): number {
+  const time = (s: SyncStamp) => (Number.isNaN(stampInstant(s.updatedAt)) ? -Infinity : stampInstant(s.updatedAt));
+  if (time(a) !== time(b)) return time(a) < time(b) ? -1 : 1;
   const la = a.lamport ?? 0;
   const lb = b.lamport ?? 0;
-  if (la !== lb) return la < lb ? -1 : 1;
-  return a.updatedAt === b.updatedAt ? 0 : a.updatedAt < b.updatedAt ? -1 : 1;
+  return la === lb ? 0 : la < lb ? -1 : 1;
 }
 
 /** The stamp invariant: the object's own stamp is at or above every field stamp. */
@@ -152,7 +154,8 @@ describe('the per-field merge is a join: commutative, associative and idempotent
     const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)];
     const FIELDS = ['sex', 'heightCm', 'birthYear'] as const;
     // Few times and small lamports, so ties are common.
-    const TIMES = ['2026-05-01T00:00:00Z', '2026-05-02T00:00:00Z', '2026-05-03T00:00:00Z'];
+    // Two spellings of one instant and an unknown time too (US-10 AC8 review, R2).
+    const TIMES = ['2026-05-01T00:00:00Z', '2026-05-02T00:00:00Z', '2026-05-03T00:00:00Z', '2026-05-02T12:00:00+12:00', ''];
     const VALUES = [1, 2, 50, 'a', null];
 
     const base = (): Record<string, unknown> => {

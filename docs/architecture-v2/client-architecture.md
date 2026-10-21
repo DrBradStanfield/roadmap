@@ -102,7 +102,7 @@ The [SyncManager](../../packages/health-core/src/sync-manager.ts) runs one optim
 Two devices editing the same cloud file must converge without losing data and without a CRDT library. The model is append-dominant, so the merge is simple and deterministic:
 
 - **Measurements & lab values** — slot-keyed by `(metric, day)`; at most one `active` row per slot; `entered-in-error` is monotonic (never reverts).
-- **Current-state singletons** (profile, screenings, reminder prefs) — per-key last-write-wins by logical clock. **Wall-clock is only a tiebreak**, so two devices with skewed clocks still converge.
+- **Current-state singletons** (profile, screenings, reminder prefs) — per-key last-write-wins: **the newer edit by clock time wins, the lamport counter only breaks a tie** (US-10 AC8, Brad 2026-10-22; before, the counter decided and a device offline a while could revert a newer edit). The merge reads no clock of its own, so devices still converge; a device whose clock runs ahead wins until real time passes it or an edit made after seeing it, which stamps no earlier (`laterStamp`).
 - **Logs** (medication/supplement history) — unioned. **Snapshots** — deduped. **`eraseEpoch`** — highest wins the whole file.
 
 ```mermaid

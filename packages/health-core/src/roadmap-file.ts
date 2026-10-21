@@ -16,8 +16,9 @@
  *    mutated or hard-deleted; corrections add a row and flip the prior row to
  *    `entered-in-error`.
  *  - Mutable current-state objects (profile, screenings, medications, supplements,
- *    reminderPreferences) carry a logical-clock `lamport` + `updatedAt` so merge
- *    is last-write-wins by *logical* clock, not wall-clock (avoids device skew).
+ *    reminderPreferences) carry `updatedAt` + a `lamport` counter so merge is
+ *    last-write-wins: the newer edit by clock time, the counter on a tie
+ *    (US-10 AC8).
  *    Profile and screenings also stamp each field (`fieldStamps`), so they
  *    merge field by field.
  */
@@ -37,11 +38,12 @@ export const CURRENT_SCHEMA_VERSION = 2;
 
 /** Sync bookkeeping carried on every mutable record so merge can pick a winner. */
 export interface SyncStamp {
-  /** ISO 8601 wall-clock of the last write (informational + merge tiebreak). */
+  /** ISO 8601 wall-clock of the last write: the primary merge key (US-10 AC8). */
   updatedAt: string;
   /**
-   * Logical clock at write time (primary merge key — skew-proof). Optional so
-   * migrated/legacy rows without it still compare (treated as 0).
+   * Counter at write time, one past the stamp the write replaced: breaks a
+   * tie in time. Optional so migrated/legacy rows without it still compare
+   * (treated as 0).
    */
   lamport?: number;
 }

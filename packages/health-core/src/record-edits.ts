@@ -34,7 +34,7 @@ import {
 } from './lab-catalog';
 import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
-import { dayOf, localDay } from './merge';
+import { dayOf, latestStamp, localDay } from './merge';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
@@ -266,7 +266,8 @@ function withRow(file: RoadmapFile, key: 'measurements' | 'labValues', rows: Arr
  * merge it just won.
  */
 export function stampUpdatedAt(file: RoadmapFile, now: string): RoadmapFile {
-  return now > file.meta.updatedAt ? { ...file, meta: { ...file.meta, updatedAt: now } } : file;
+  const updatedAt = latestStamp(file.meta.updatedAt, now);
+  return updatedAt === file.meta.updatedAt ? file : { ...file, meta: { ...file.meta, updatedAt } };
 }
 
 export type SlotKind = 'measurement' | 'lab';

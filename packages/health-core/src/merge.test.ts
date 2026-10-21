@@ -230,7 +230,7 @@ describe('mergeFiles — labValues slot resolution (keyed by metricName)', () =>
   });
 });
 
-describe('mergeFiles — current-state by logical clock (skew-proof LWW)', () => {
+describe('mergeFiles — current-state last-write-wins by clock time (US-10 AC8)', () => {
   function med(p: Partial<FileMedication> & { medicationKey: string; drugName: string; lamport: number; updatedAt: string }): FileMedication {
     return { id: `med_${p.medicationKey}`, doseValue: null, doseUnit: null, ...p };
   }
@@ -244,22 +244,22 @@ describe('mergeFiles — current-state by logical clock (skew-proof LWW)', () =>
     expect(merged.medications.map((m) => m.medicationKey).sort()).toEqual(['metformin', 'statin']);
   });
 
-  it('same key: higher lamport wins EVEN IF its wall-clock is older (clock skew)', () => {
+  it('same key: the later updatedAt wins EVEN IF its lamport is lower (US-10 AC8)', () => {
     const a = emptyFile();
     const b = emptyFile();
-    // Device A has a fast clock (later updatedAt) but is causally OLDER (lower lamport).
+    // Device A was offline: a later edit, a lower counter. Before AC8 the counter won.
     a.medications = [med({ medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', lamport: 2, updatedAt: '2026-05-09T00:00:00Z' })];
     b.medications = [med({ medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg', lamport: 5, updatedAt: '2026-05-01T00:00:00Z' })];
     const merged = mergeFiles(a, b, OPTS);
     expect(merged.medications).toHaveLength(1);
-    expect(merged.medications[0].drugName).toBe('rosuvastatin'); // higher lamport wins despite older clock
+    expect(merged.medications[0].drugName).toBe('atorvastatin');
   });
 
-  it('falls back to updatedAt when lamports tie', () => {
+  it('falls back to lamport when the times tie', () => {
     const a = emptyFile();
     const b = emptyFile();
-    a.medications = [med({ medicationKey: 'statin', drugName: 'atorvastatin', lamport: 5, updatedAt: '2026-05-09T00:00:00Z' })];
-    b.medications = [med({ medicationKey: 'statin', drugName: 'rosuvastatin', lamport: 5, updatedAt: '2026-05-01T00:00:00Z' })];
+    a.medications = [med({ medicationKey: 'statin', drugName: 'atorvastatin', lamport: 5, updatedAt: '2026-05-01T00:00:00Z' })];
+    b.medications = [med({ medicationKey: 'statin', drugName: 'rosuvastatin', lamport: 2, updatedAt: '2026-05-01T00:00:00Z' })];
     expect(mergeFiles(a, b, OPTS).medications[0].drugName).toBe('atorvastatin');
   });
 
@@ -283,20 +283,20 @@ describe('mergeFiles — current-state by logical clock (skew-proof LWW)', () =>
 });
 
 describe('mergeFiles — singletons (profile, screenings)', () => {
-  it('profile: higher lamport wins', () => {
+  it('profile: the later time wins over a higher lamport (US-10 AC8)', () => {
     const a = emptyFile();
     const b = emptyFile();
     a.profile = { sex: 'male', heightCm: 180, updatedAt: '2026-05-01T00:00:00Z', lamport: 2 };
     b.profile = { sex: 'male', heightCm: 181, updatedAt: '2026-04-01T00:00:00Z', lamport: 5 };
-    expect(mergeFiles(a, b, OPTS).profile.heightCm).toBe(181);
+    expect(mergeFiles(a, b, OPTS).profile.heightCm).toBe(180);
   });
 
-  it('screenings: higher lamport wins', () => {
+  it('screenings: the later time wins over a higher lamport (US-10 AC8)', () => {
     const a = emptyFile();
     const b = emptyFile();
     a.screenings = { colorectalMethod: 'fit_annual', updatedAt: '2026-05-01T00:00:00Z', lamport: 1 };
     b.screenings = { colorectalMethod: 'colonoscopy_10yr', updatedAt: '2026-04-01T00:00:00Z', lamport: 9 };
-    expect(mergeFiles(a, b, OPTS).screenings.colorectalMethod).toBe('colonoscopy_10yr');
+    expect(mergeFiles(a, b, OPTS).screenings.colorectalMethod).toBe('fit_annual');
   });
 });
 
@@ -338,29 +338,29 @@ describe('mergeFiles — profile and screenings merge field by field (US-10 AC6)
     }
   });
 
-  it('the same field changed on both: the newer stamp wins, by lamport first, then by time', () => {
+  it('the same field changed on both: the newer stamp wins, by time first, then by lamport (US-10 AC8)', () => {
     const a = emptyFile();
     const b = emptyFile();
     a.profile = { heightCm: 181, updatedAt: T2, lamport: 2, fieldStamps: { heightCm: at(2, T2) } };
     b.profile = { heightCm: 182, updatedAt: T1, lamport: 3, fieldStamps: { heightCm: at(3, T1) } };
-    expect(mergeFiles(a, b, OPTS).profile.heightCm).toBe(182);
-    expect(mergeFiles(b, a, OPTS).profile.heightCm).toBe(182);
-
-    b.profile = { heightCm: 182, updatedAt: T1, lamport: 2, fieldStamps: { heightCm: at(2, T1) } };
     expect(mergeFiles(a, b, OPTS).profile.heightCm).toBe(181);
     expect(mergeFiles(b, a, OPTS).profile.heightCm).toBe(181);
+
+    b.profile = { heightCm: 182, updatedAt: T2, lamport: 3, fieldStamps: { heightCm: at(3, T2) } };
+    expect(mergeFiles(a, b, OPTS).profile.heightCm).toBe(182);
+    expect(mergeFiles(b, a, OPTS).profile.heightCm).toBe(182);
   });
 
   it('two copies from before field stamps merge field by field: the union, the newer value where both hold one', () => {
     // Before 2026-09-26 the newer object won whole, which made the result
     // depend on merge order once a stamped third copy met them.
     const cases: Array<[RoadmapFile['profile'], RoadmapFile['profile'], RoadmapFile['profile']]> = [
-      // Higher lamport, even with the older time.
+      // The later time, even with the lower lamport (US-10 AC8).
       [{ heightCm: 180, birthYear: 1971, updatedAt: T2, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 5 },
-        { heightCm: 181, birthYear: 1971, updatedAt: T1, lamport: 5, fieldStamps: { heightCm: at(5, T1), birthYear: at(2, T2) } }],
-      // Tied lamport: the later time.
-      [{ heightCm: 180, birthYear: 1971, updatedAt: T2, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 2 },
         { heightCm: 180, birthYear: 1971, updatedAt: T2, lamport: 2, fieldStamps: { heightCm: at(2, T2), birthYear: at(2, T2) } }],
+      // Tied time: the higher lamport.
+      [{ heightCm: 180, birthYear: 1971, updatedAt: T1, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 5 },
+        { heightCm: 181, birthYear: 1971, updatedAt: T1, lamport: 5, fieldStamps: { heightCm: at(5, T1), birthYear: at(2, T1) } }],
       // Tied stamps: the larger value, the tiebreak `stampIsNewer` always had.
       [{ heightCm: 180, updatedAt: T1, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 2 },
         { heightCm: 181, updatedAt: T1, lamport: 2, fieldStamps: { heightCm: at(2, T1) } }],
@@ -382,7 +382,8 @@ describe('mergeFiles — profile and screenings merge field by field (US-10 AC6)
   it('a copy from before field stamps against a stamped one: every field of the old copy carries its object stamp', () => {
     const a = emptyFile(); // an older app's whole-profile write: it changed the birth year
     const b = emptyFile(); // this app changed the height, stamping that field alone
-    a.profile = { sex: 'male', heightCm: 178, birthYear: 1972, updatedAt: T2, lamport: 2 };
+    // Written between T0 and the height change at T1.
+    a.profile = { sex: 'male', heightCm: 178, birthYear: 1972, updatedAt: '2026-05-02T08:00:00Z', lamport: 2 };
     b.profile = {
       sex: 'male', heightCm: 180, birthYear: 1971, updatedAt: T1, lamport: 3,
       fieldStamps: { sex: at(1, T0), heightCm: at(3, T1), birthYear: at(1, T0) },
@@ -393,9 +394,9 @@ describe('mergeFiles — profile and screenings merge field by field (US-10 AC6)
 
     // The residual, stated: an old copy stamped after the height was changed
     // takes the height too, as the whole-object merge always did.
-    a.profile.lamport = 4;
+    a.profile.updatedAt = T2;
     for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
-      expect(merged.profile).toMatchObject({ heightCm: 178, birthYear: 1972, lamport: 4 });
+      expect(merged.profile).toMatchObject({ heightCm: 178, birthYear: 1972, lamport: 2 });
     }
   });
 

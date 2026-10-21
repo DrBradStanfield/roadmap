@@ -83,12 +83,15 @@ export function asArray<T>(v: unknown): T[] {
 const MAX_COUNTER = 1e12;
 
 /**
- * A timestamp from an untrusted writer. Shape-checked, not range-checked: the
- * merge only ever COMPARES these strings, so all that matters is that a garbage
- * value cannot sort outside the real ones.
+ * A meta timestamp from an untrusted writer. Shape-checked, not range-checked,
+ * and rewritten in UTC when it parses and is not already a UTC `Z` stamp: the merge takes the
+ * later of two by instant, and one spelling keeps the file's clock and every
+ * row clamped to it in step (US-10 AC8 review, R1).
  */
 function isoOr(value: unknown, fallback: string): string {
-  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) ? value : fallback;
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T/.test(value)) return fallback;
+  const at = stampInstant(value);
+  return Number.isNaN(at) || /^[^a-z]*Z$/.test(value) ? value : new Date(at).toISOString();
 }
 
 /** `a` is later than `b`: as instants when both parse, so an offset or a
