@@ -1,10 +1,9 @@
 # CLAUDE.md
 
-Context for Claude Code in this repo. Depth lives in on-demand docs:
-[docs/reference.md](docs/reference.md) (FHIR detail, file inventory, data model,
-A/B, endpoints, gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md)
-(manual deploy, build flags, two-app split, env vars, scaling) ·
-[docs/architecture-v2.md](docs/architecture-v2.md) (visual system map; the entry point for new threads).
+Context for Claude Code in this repo. Depth lives in on-demand docs: [docs/reference.md](docs/reference.md) (FHIR detail,
+file inventory, data model, A/B, endpoints, gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md) (manual deploy, build flags, two-app split, env vars, scaling) ·
+[docs/architecture-v2.md](docs/architecture-v2.md) (visual system map; the entry point for new threads) ·
+[docs/ai-discoverability.md](docs/ai-discoverability.md) (AI visibility: what's live, listings, rules; update it with every change).
 
 ## Project Overview
 
