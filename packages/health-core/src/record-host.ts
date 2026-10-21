@@ -20,7 +20,8 @@ export interface SyncStorage {
 /** On a cloud: the copy on this device that holds a save the cloud refused,
  *  and the marker that says it is there (US-09 AC4). */
 export interface DeviceMirror {
-  adapter: StorageAdapter;
+  /** `revision`: so an erase can replace bytes no record reads (US-11 AC9). */
+  adapter: StorageAdapter & Pick<SyncStorage, 'revision'>;
   pending: { get(): boolean; set(): void; clear(): void };
   /** True once this device has logged off: no write may recreate the record
    *  here (US-09 AC2c). */

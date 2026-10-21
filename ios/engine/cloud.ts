@@ -167,6 +167,12 @@ class PhoneFileAdapter implements StorageAdapter {
     return { body, version: body === null ? null : fingerprint(this.text()!) };
   }
 
+  /** The file's version, readable or not; null when there is none (US-11 AC9). */
+  revision(fileName: string): string | null {
+    const text = fileName === ROADMAP_FILE_NAME ? this.text() : null;
+    return text === null ? null : fingerprint(text);
+  }
+
   async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
     if (fileName !== ROADMAP_FILE_NAME) throw new StorageError(`This iPhone keeps only ${ROADMAP_FILE_NAME}.`);
     const now = this.text();

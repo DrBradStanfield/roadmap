@@ -192,6 +192,23 @@ export class RecordSession {
           mirror.pending.clear();
         }
       }
+    } else if (mirror) {
+      // An erase made here that the cloud has not caught up with (the
+      // provider still serves the pre-erase file): the device copy is at a
+      // higher epoch, so the normal merge drops the stale rows, and the save
+      // pushes the erase again (US-11 AC9). Any other device copy waits, as
+      // before: an ordinary open reads only the cloud.
+      try {
+        const ctx = session.ctx();
+        const { body } = await mirror.adapter.read(ROADMAP_FILE_NAME);
+        const device = body == null ? null : ROADMAP_DOC.migrate(body, ctx);
+        if (device && (device.meta.eraseEpoch ?? 0) > (session.current.meta.eraseEpoch ?? 0)) {
+          session.current = ROADMAP_DOC.merge(device, session.current, ctx);
+          session.touch();
+        }
+      } catch {
+        /* unreadable: the cloud copy stands */
+      }
     }
     return session;
   }
@@ -309,13 +326,23 @@ export class RecordSession {
       // because no erase listed it (US-11 AC9, US-09 AC23). The marker
       // clears: the cloud holds the erase. On a failed flush the session
       // mirrored the ERASED file under the marker instead, and the next
-      // session carries it up. A device copy no record reads cannot take the
-      // merge: the cleanup below still runs, and the erase warns.
+      // session carries it up. A device copy no record reads (bad JSON, a
+      // shape migrate refuses) cannot take the merge: the erased record
+      // replaces its bytes. A write that still fails leaves the cleanup below
+      // to run, and the erase warns.
       let deviceFailure: unknown = null;
       if (host.tier === 'cloud') {
         host.mirror.pending.clear();
         if (!host.mirror.writesStopped()) {
-          await saveRecordInto(host.mirror.adapter, this.current, this.ctx()).catch((e) => { deviceFailure = e; });
+          const ctx = this.ctx();
+          const adapter = host.mirror.adapter;
+          const readable = await adapter.read(ROADMAP_FILE_NAME)
+            .then(({ body }) => (body == null || ROADMAP_DOC.migrate(body, ctx), true))
+            .catch(() => false);
+          await (readable
+            ? saveRecordInto(adapter, this.current, ctx)
+            : adapter.write(ROADMAP_FILE_NAME, this.current, adapter.revision(ROADMAP_FILE_NAME))
+          ).catch((e) => { deviceFailure = e; });
         }
       }
       // Document blobs and the unsaved drafts sit outside the record file, so

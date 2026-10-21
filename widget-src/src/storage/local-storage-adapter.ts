@@ -156,10 +156,11 @@ export class LocalStorageAdapter implements StorageAdapter {
     return { version: next };
   }
 
-  /** The file's stored revision, null when there is none. One getItem, so a
-   *  tab can ask each time it comes back (US-34 AC6). */
+  /** The file's stored revision, null when there is none: the version
+   *  writeSync checks, so an erase can replace bytes no record reads (US-11
+   *  AC9). Cheap, so a tab can ask each time it comes back (US-34 AC6). */
   revision(fileName: string): string | null {
-    return safeGetItem(versionKey(fileName));
+    return safeGetItem(fileKey(fileName)) == null ? null : safeGetItem(versionKey(fileName)) ?? '0';
   }
 
   /** Another tab's save. The browser fires `storage` in every OTHER tab of

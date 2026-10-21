@@ -1300,10 +1300,12 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
     const bad = { ...createEmptyFile({ deviceId: 'tab', now: '2026-06-01T00:00:00.000Z' }), measurements: 'not an array' };
     localStorage.setItem('health_roadmap_file_v2', JSON.stringify(bad));
 
-    // The erased record cannot be merged into bytes no record reads, so they
-    // stay, and the erase says so as a warning (US-11 AC9, AC3b).
-    expect(await store.deleteAllData()).toEqual({ success: true, chatErased: true, warning: expect.any(String) });
+    expect(await store.deleteAllData()).toEqual({ success: true, chatErased: true });
     expect(readCloudFile(cloud).erasedRows).toEqual({ fromEpoch: 1, ids: [id] });
+    // The erased record replaces bytes no record reads (US-11 AC9).
+    const device = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!) as RoadmapFile;
+    expect(device.meta.eraseEpoch).toBe(1);
+    expect(device.measurements).toEqual([]);
   });
 
   it('over a stored erase at its own epoch that listed nothing, the list claims only this erase (adversary R1)', async () => {

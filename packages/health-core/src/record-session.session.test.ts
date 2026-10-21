@@ -299,6 +299,54 @@ describe('RecordSession: erase (US-09 AC23, US-11)', () => {
     expect(fake.kept.at(-1)).toEqual(['Lab results/late.pdf']);
   });
 
+  it('a reload while the provider still serves the pre-erase file shows no old rows, and pushes the erase again (US-11 AC9)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    const stale = { ...store.cloud.files.get(ROADMAP_FILE_NAME)! };
+    expect((await session.erase()).success).toBe(true);
+    store.cloud.files.set(ROADMAP_FILE_NAME, stale);
+
+    fake.timers.length = 0;
+    const reloaded = await RecordSession.open(fake.host);
+    expect(reloaded.file.meta.eraseEpoch).toBe(1);
+    expect(reloaded.file.measurements).toEqual([]);
+    expect(fake.timers).toHaveLength(1); // the push is queued
+    await reloaded.flush();
+    expect(stored(store.cloud).meta.eraseEpoch).toBe(1);
+    expect(stored(store.cloud).measurements).toEqual([]);
+  });
+
+  it('an ordinary open never takes in a device copy at the same erase', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const device = await RecordSession.open(fakeHost(new TestStore(fake.mirrorCloud)).host);
+    add(device, 'device-only');
+    await device.flush();
+    fake.timers.length = 0;
+    const session = await RecordSession.open(fake.host);
+    expect(session.file.measurements).toEqual([]);
+    expect(fake.timers).toHaveLength(0);
+  });
+
+  it('replaces a device copy no record reads with the erased record (US-11 AC9)', async () => {
+    for (const bytes of ['{not valid json', JSON.stringify({ schemaVersion: 1, measurements: 'not a list' })]) {
+      const store = new TestStore();
+      const fake = fakeHost(store);
+      const session = await RecordSession.open(fake.host);
+      add(session, 'a');
+      await session.flush();
+      fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: bytes, version: 3 });
+      expect(await session.erase()).toEqual({ success: true });
+      const device = stored(fake.mirrorCloud);
+      expect(device.meta.eraseEpoch).toBe(1);
+      expect(device.measurements).toEqual([]);
+      expect(fake.calls).toEqual(expect.arrayContaining(['clearOffFileData', 'clearNamedFiles']));
+    }
+  });
+
   it('still clears the off-file data and named files when the device copy cannot take the erased record, and warns (US-11 AC9)', async () => {
     const store = new TestStore();
     const fake = fakeHost(store);
