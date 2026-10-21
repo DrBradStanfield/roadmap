@@ -2,7 +2,7 @@
 title: "An open-source health record you can connect to your AI"
 description: "The code is public and MIT licensed. Your record is one file in your own cloud, so the website, the command line and an AI with file access can all read it."
 slug: "ai-health-record"
-updated: "2026-10-21"
+updated: "2026-10-22"
 stories: ["US-29", "US-30", "US-31", "US-32", "US-38"]
 ---
 
@@ -113,7 +113,7 @@ You need an AI that can open files on your computer. [Claude Code](https://claud
 
 Your cloud folder has to be synced to disk, so the file is really there. Dropbox does this by default, though a file set to online-only needs "Make available offline" first. For Google Drive, mark the folder "Available offline", or Drive streams the file instead of storing it.
 
-If you have never connected a cloud provider, there is no file on disk at all: the tool is holding your record in your browser. Connect a provider, or export the file from the app, before pointing an AI at it.
+If you have never connected a cloud provider, there is no file on disk at all: the tool is holding your record in your browser. Connect Dropbox or Google Drive in the tool first: that moves your record into a file there.
 
 Then paste the setup prompt below into that AI and answer its questions.
 
