@@ -7,6 +7,22 @@ import { BASE_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION, createEmptyFile, createMea
 
 const OPTS = { deviceId: 'dev_x', now: '2026-06-08T00:00:00Z' };
 
+/** Row stamps that are not a time (US-23 AC6a): garbage, impossible dates, a
+ *  real day with a broken time, offset or trailing junk, mistyped values. */
+const INVALID_STAMPS: unknown[] = [
+  'not-a-date', 'zzzz', '2026-02-30', '2026-02-30T00:00:00Z', '', null, 1780000000000,
+  '2099-01-01T99:00:00Z', '2026-05-01 junk', '2026-05-01Tjunk', '2026-05-01T10:60:00Z',
+  '2026-05-01T10:00:00+99:00', '2026-05-01T10:00:00+13', '2026-05-01T10:00:00Zjunk',
+];
+/** Every shape a real writer emits, all before the fixtures' anchor: toISOString,
+ *  a date-only day, offsets (+13:00, compact +0530), fractional seconds,
+ *  lowercase t/z, and a zone-less time, which the merge reads as UTC. */
+const VALID_STAMPS = [
+  '2026-05-01T10:00:00.000Z', '2026-05-01', '2026-05-01T10:00:00+13:00', '2026-05-01T10:00:00-08:00',
+  '2026-05-01T10:00:00+0530', '2026-05-01T10:00:00.123456Z', '2026-05-01t10:00:00z',
+  '2026-05-01T10:00:00', '2026-05-01T10:00Z',
+];
+
 describe('migrateFile', () => {
   it('returns a fresh empty file for null / non-object input', () => {
     for (const bad of [null, undefined, 42, 'nope', []]) {
@@ -398,14 +414,33 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
   // anchor, a real date the reminder schedule then used as a review date. A
   // stamp that is not a real calendar date is an unknown time, the bottom.
   it('reads a row updatedAt that is not a real calendar date as the bottom, never the anchor', () => {
-    for (const updatedAt of ['not-a-date', 'zzzz', '2026-02-30', '2026-02-30T00:00:00Z', '', null]) {
+    for (const updatedAt of INVALID_STAMPS) {
       const f = migrateFile(rawFile({ medications: [medRow({ updatedAt })] }), OPTS);
-      expect(f.medications[0].updatedAt).toBe('');
+      expect(f.medications[0].updatedAt, String(updatedAt)).toBe('');
     }
-    const valid = migrateFile(rawFile({ medications: [medRow({ updatedAt: '2026-05-01T00:00:00+02:00' })] }), OPTS);
-    expect(valid.medications[0].updatedAt).toBe('2026-05-01T00:00:00+02:00');
+    for (const updatedAt of VALID_STAMPS) {
+      const f = migrateFile(rawFile({ medications: [medRow({ updatedAt })] }), OPTS);
+      expect(f.medications[0].updatedAt).toBe(updatedAt);
+    }
     const future = migrateFile(rawFile({ medications: [medRow({ updatedAt: '2099-01-01T00:00:00Z' })] }), OPTS);
     expect(future.medications[0].updatedAt).toBe(META.updatedAt);
+  });
+
+  // US-23 AC6a, Codex R1 (2026-10-21): the whole stamp is checked, not only
+  // its day: a valid day with a broken time or offset, or trailing junk, is
+  // not a time either, and must not reach the clamp or the day extraction.
+  // And createdAt gets the same validate-first rule as updatedAt.
+  it('reads a row createdAt that is not a complete stamp as the bottom, never the anchor', () => {
+    for (const createdAt of INVALID_STAMPS) {
+      const f = migrateFile(rawFile({ measurements: [{ ...MEAS, createdAt }] }), OPTS);
+      expect(f.measurements[0].createdAt, String(createdAt)).toBe('');
+    }
+    for (const createdAt of VALID_STAMPS) {
+      const f = migrateFile(rawFile({ measurements: [{ ...MEAS, createdAt }] }), OPTS);
+      expect(f.measurements[0].createdAt).toBe(createdAt);
+    }
+    const future = migrateFile(rawFile({ measurements: [{ ...MEAS, createdAt: '2099-01-01T00:00:00Z' }] }), OPTS);
+    expect(future.measurements[0].createdAt).toBe(META.updatedAt);
   });
 });
 

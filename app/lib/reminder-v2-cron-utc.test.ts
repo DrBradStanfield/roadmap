@@ -28,6 +28,10 @@ const optin: ReminderV2Optin = {
 };
 
 describe('the cron cooldown counts UTC days (US-23 AC6b)', () => {
+  it('runs in Auckland, ahead of UTC', () => {
+    expect(new Date('2026-06-15T12:00:00Z').getDate()).toBe(16);
+  });
+
   it('re-sends a screening 90 UTC days after the last send, not a day early', () => {
     expect(dueItemsFor(optin, '2026-11-29').due).toEqual([]);
     expect(dueItemsFor(optin, '2026-11-30').due).toEqual(optin.schedule);

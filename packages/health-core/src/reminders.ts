@@ -9,6 +9,7 @@ import type { ScreeningInputs } from './types';
 import { getPostFollowupDueDate, getScreeningNextDueDate } from './types';
 import { isTakingDrug } from './history-change';
 import { isEscalationKey } from './validation';
+import { dayOf, localDay } from './merge';
 
 // ===== Types =====
 
@@ -99,9 +100,17 @@ function isOlderThanMonths(dateStr: string, months: number, now: Date = new Date
  * Uses shared getScreeningNextDueDate() from types.ts.
  */
 function isScreeningOverdue(lastDate: string | undefined, method: string | undefined, now: Date = new Date()): boolean {
-  const nextDue = getScreeningNextDueDate(lastDate, method);
-  if (!nextDue) return false;
-  return now > nextDue;
+  return isPastDue(getScreeningNextDueDate(lastDate, method), now);
+}
+
+/**
+ * Due on or before the UTC day of `now` (US-23 AC6b), as the v2 cron reads
+ * `dueAt <= today`. types.ts builds the due date at LOCAL midnight on the 1st,
+ * so its local calendar day is the due day in every zone; comparing instants
+ * made it due up to 14 hours early east of Greenwich.
+ */
+function isPastDue(due: Date | null, now: Date): boolean {
+  return due !== null && localDay(due) <= dayOf(now.toISOString());
 }
 
 /**
@@ -115,8 +124,7 @@ function isPostFollowupOverdue(
   followupDate: string | undefined,
   now: Date = new Date(),
 ): boolean {
-  const nextDue = getPostFollowupDueDate(type, method, result, followupStatus, followupDate);
-  return nextDue !== null && now > nextDue;
+  return isPastDue(getPostFollowupDueDate(type, method, result, followupStatus, followupDate), now);
 }
 
 /**

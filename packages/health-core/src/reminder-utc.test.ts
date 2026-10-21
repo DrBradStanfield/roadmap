@@ -61,4 +61,25 @@ describe('reminder dates are UTC calendar arithmetic (US-23 AC6b)', () => {
     expect(due('2025-02-28T23:00:00Z')).not.toContain('medication_review');
     expect(due('2025-03-01T12:00:01Z')).toContain('medication_review');
   });
+
+  // Codex R2 (2026-10-21): v1's screening checks compared the instant with the
+  // local midnight types.ts builds, so in Auckland a PSA due 1 September read
+  // overdue at 2026-08-31T13:00Z, still 31 August in UTC.
+  it('v1 reads a screening as overdue on its UTC due day, in every zone', () => {
+    const screenings = { prostateDiscussion: 'will_screen' as const, prostateLastDate: '2025-09' };
+    const male = { sex: 'male' as const, age: 60 };
+    const psa = (iso: string) => computeDueReminders(male, screenings, {}, [], new Date(iso))
+      .reminders.some((r) => r.category === 'screening_prostate');
+    try {
+      for (const zone of ['UTC', 'Pacific/Auckland', 'America/Los_Angeles']) {
+        process.env.TZ = zone; // a forks child re-reads it on the next Date call
+        expect(computeNextDueDates(male, screenings, {}, [])[0].dueAt, zone).toBe('2026-09-01');
+        expect(psa('2026-08-31T13:00:00Z'), zone).toBe(false);
+        expect(psa('2026-08-31T23:59:59Z'), zone).toBe(false);
+        expect(psa('2026-09-01T00:00:01Z'), zone).toBe(true);
+      }
+    } finally {
+      process.env.TZ = 'Pacific/Auckland';
+    }
+  });
 });
