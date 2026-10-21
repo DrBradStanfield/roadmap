@@ -9,6 +9,9 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
+// Already a root devDependency: ios/scripts/build-engine.mjs bundles with it.
+import { build } from 'esbuild';
 
 const SRC = dirname(fileURLToPath(import.meta.url));
 
@@ -70,8 +73,54 @@ describe('engine portability (ios/architecture.md D4)', () => {
     expect(found).toEqual([]);
   });
 
-  it('loads with no browser globals', async () => {
-    expect(typeof (globalThis as { window?: unknown }).window).toBe('undefined');
-    for (const entry of ENGINE_ENTRIES) await import(`./${entry.replace(/\.ts$/, '')}`);
+  // The grep above cannot see a global reached at load (fetch, setTimeout,
+  // Blob, TextEncoder, self...). So each entry is bundled the way
+  // ios/scripts/build-engine.mjs bundles the engine, and run in an empty vm
+  // context: ECMAScript built-ins and nothing else, as in JavaScriptCore.
+  it.each(ENGINE_ENTRIES)('%s loads in an empty context, as in JavaScriptCore', async (entry) => {
+    const ctx = vm.createContext({});
+    vm.runInContext(await bundle(entry), ctx);
+    expect(Object.keys((ctx as { Engine: object }).Engine).length).toBeGreaterThan(0);
+  });
+
+  it('runs the storage self-test in an empty context', async () => {
+    const ctx = vm.createContext({});
+    vm.runInContext(await bundle('storage-self-test.ts'), ctx);
+    const results = await (ctx as { Engine: { runStorageSelfTest(): Promise<Array<{ pass: boolean }>> } }).Engine.runStorageSelfTest();
+    expect(results.length).toBe(3);
+    expect(results.every((r) => r.pass)).toBe(true);
+  });
+
+  it('opens, edits, saves and erases a record session in an empty context, every device need met by the host', async () => {
+    const ctx = vm.createContext({});
+    vm.runInContext(await bundle(null, "export { RecordSession } from './record-session'; export { MemoryAdapter, MemoryCloud } from './memory-adapter';"), ctx);
+    const { RecordSession, MemoryAdapter, MemoryCloud } = (ctx as { Engine: typeof import('./index') }).Engine;
+    const store = new MemoryAdapter(new MemoryCloud());
+    const host = {
+      tier: 'device' as const, store, deviceId: () => 'phone', clock: { now: () => Date.parse('2026-10-21T10:00:00.000Z') },
+      timers: { set: () => 1, clear: () => {} },
+      remoteChanged: () => {}, failureCause: () => 'other', report: () => {}, clearOffFileData: () => {}, clearNamedFiles: () => {},
+    };
+    const session = await RecordSession.open(host);
+    expect(session.edit((file) => void (file.profile.sex = 'female'))).toBe(true);
+    await session.flush();
+    expect((await session.erase()).success).toBe(true);
+    expect(session.file.meta.eraseEpoch).toBe(1);
   });
 });
+
+async function bundle(entry: string | null, contents?: string): Promise<string> {
+  const out = await build({
+    ...(entry ? { entryPoints: [join(SRC, entry)] } : { stdin: { contents: contents!, resolveDir: SRC, loader: 'ts' as const } }),
+    bundle: true,
+    format: 'iife',
+    globalName: 'Engine',
+    target: 'safari17',
+    platform: 'neutral',
+    mainFields: ['module', 'main'],
+    write: false,
+    logLevel: 'silent',
+  });
+  // A type-only module bundles to nothing; give it a name so the check reads it.
+  return `${out.outputFiles[0].text}\nif (typeof Engine === 'undefined' || Object.keys(Engine).length === 0) var Engine = { typeOnly: true };`;
+}

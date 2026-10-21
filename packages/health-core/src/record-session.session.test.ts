@@ -11,7 +11,7 @@ import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ERASE_UNREACHABLE, RecordSession, PERSIST_DEBOUNCE_MS } from './record-session';
 import type { RecordHost } from './record-host';
 import { ROADMAP_FILE_NAME, StorageError } from './adapter';
-import { createMeasurement, type RoadmapFile } from './roadmap-file';
+import { createMeasurement, type FileDocument, type RoadmapFile } from './roadmap-file';
 
 /** A store whose writes can be made to fail, and whose reads can be held. */
 class TestStore extends MemoryAdapter {
@@ -38,6 +38,8 @@ interface Fake {
   reports: Array<{ cause?: string; repeat: boolean }>;
   mirrorCloud: MemoryCloud;
   pending: { value: boolean };
+  /** The originals each off-file clear was told to keep. */
+  kept: string[][];
 }
 
 let clock = Date.parse('2026-10-21T10:00:00.000Z');
@@ -48,9 +50,10 @@ function fakeHost(store: TestStore, tier: 'device' | 'cloud' = 'cloud'): Fake {
   const reports: Fake['reports'] = [];
   const mirrorCloud = new MemoryCloud();
   const pending = { value: false };
+  const kept: string[][] = [];
   const base = {
     store,
-    clearOffFileData: () => calls.push('clearOffFileData'),
+    clearOffFileData: (keep: ReadonlySet<string>) => { calls.push('clearOffFileData'); kept.push([...keep].sort()); },
     deviceId: () => 'phone',
     clock: { now: () => clock },
     timers: {
@@ -78,7 +81,7 @@ function fakeHost(store: TestStore, tier: 'device' | 'cloud' = 'cloud'): Fake {
           opened: () => calls.push('opened'),
         },
       };
-  return { host, timers, calls, reports, mirrorCloud, pending };
+  return { host, timers, calls, reports, mirrorCloud, pending, kept };
 }
 
 const weight = (id: string, value: number, day: string) =>
@@ -86,6 +89,10 @@ const weight = (id: string, value: number, day: string) =>
 const add = (session: RecordSession, id: string, value = 80, day = '2026-10-01', erase?: string) =>
   session.edit((file) => void file.measurements.push(weight(id, value, day)), erase);
 const stored = (cloud: MemoryCloud): RoadmapFile => JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+const doc = (id: string, fileRef: string): FileDocument => ({
+  id, title: id, type: 'pathology_report', date: '2026-10-20', fileRef, contentHash: 'sha256-x', mimeType: 'application/pdf',
+  extractedText: '', addedAt: new Date(clock).toISOString(), metadata: {}, sourceFileName: `${id}.pdf`,
+});
 const ids = (file: RoadmapFile) => file.measurements.map((m) => m.id).sort();
 
 describe('RecordSession: saves', () => {
@@ -261,5 +268,42 @@ describe('RecordSession: an erase made elsewhere (US-11 AC6, O5)', () => {
     clock += 60_000;
     expect(await session.refreshFromRemote()).toBe(false);
     expect(fake.calls).toEqual(['clearOffFileData', 'remoteChanged']);
+  });
+
+  it('keeps the originals of documents the erase did not remove (US-11 AC6, US-09 AC20)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    session.edit((file) => void file.documents.push(doc('before', 'Lab results/before.pdf')));
+    await session.flush();
+    const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+    clock += 60_000;
+    // Added after the erase, so its row survives every merge.
+    other.edit((file) => void file.documents.push(doc('after', 'Lab results/after.pdf')), other.eraseIdentity);
+    await other.flush();
+    clock += 60_000;
+    expect(await session.refreshFromRemote()).toBe(true);
+    expect(session.file.documents.map((d) => d.id)).toEqual(['after']);
+    expect(fake.kept).toEqual([['Lab results/after.pdf']]);
+  });
+});
+
+describe('RecordSession: host timer ids', () => {
+  it('cancels a debounce whose timer id is 0 (iOS timer ids may start there)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const live = new Map<number, () => void>();
+    let next = 0;
+    fake.host.timers = {
+      set: (run) => { live.set(next, run); return next++; },
+      clear: (handle) => void live.delete(handle as number),
+    };
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    expect([...live.keys()]).toEqual([0]);
+    await session.flush(); // saves now, so the debounced save must be gone
+    expect(live.size).toBe(0);
   });
 });

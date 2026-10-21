@@ -77,7 +77,7 @@ purpose; Expo Updates and CodePush rely on the same rule. Conditions we hold our
 This is security work: its design gets a fresh adversary and a Codex review before it is
 built.
 
-### D4 · Shared store logic moves into health-core (proposed, Brad to confirm)
+### D4 · Shared store logic moves into health-core (Brad, 2026-10-21)
 
 Part of the sync logic is not in health-core. It lives in the web widget's
 `widget-src/src/storage/roadmap-store.ts`: the erase-epoch arithmetic, the erased-rows
@@ -88,8 +88,17 @@ needs all of it.
 Proposal: move the parts with no browser in them into health-core, so both clients run the
 same code and both get the over-the-air fixes. The web's speed does not change: it is the
 same TypeScript in another folder. The alternative, a Swift copy, brings back the two-engine
-problem D2 exists to avoid. Brad objected on performance grounds before this was explained;
-confirm or reject here.
+problem D2 exists to avoid.
+
+**Confirmed by Brad on 2026-10-21:** "the sync and erase logic should go into the shared
+engine." His earlier speed objection is answered by measurement: it is the same TypeScript,
+and moving it grew the web bundle (`health-plan-v2.js`) by about 2.1 KB, 1.1 KB gzipped,
+on 871 KB (steps 1 to 5 of branch `claude/d4-engine-move` and their review fix). The engine now holds the erase
+(`erase.ts`), the record session with its save loop, re-read and erase guard
+(`record-session.ts`), the host interface the app implements (`record-host.ts`) and the
+storage self-test (`storage-self-test.ts`). `engine-portability.test.ts` runs them in an
+empty JavaScript context, as JavaScriptCore will. Still to move: the live re-read's timing,
+the guest lift and copy-down, chat history, then the row-write rules (D4b).
 
 ### D5 · Storage: on the phone by default, Dropbox or Google Drive optional (Brad, 2026-10-21)
 
@@ -267,7 +276,7 @@ then about 1 ms each.
 - **Regulatory: we don't know.** Personalised medication and screening suggestions may count
   as software as a medical device in some markets (FDA, MHRA, EU MDR, NZ). Get advice before
   submission. App Review 1.4.1 asks medical apps to disclose their method.
-- **D4** awaits Brad. **iCloud** (D5) awaits the guideline check.
+- **D4** confirmed by Brad 2026-10-21; the move is under way (see D4). **iCloud** (D5) awaits the guideline check.
 - **Hardware:** the build Mac is Intel. macOS 26 is the last Intel release, so a later
   required Xcode may need Apple silicon.
 - **Two release paths:** binary changes still go through App Review; plan for it.

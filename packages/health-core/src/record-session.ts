@@ -75,6 +75,12 @@ export function visibleContentOf(file: RoadmapFile): string {
  *  it removes, so it removes nothing (US-09 AC23). */
 export const ERASE_UNREACHABLE = 'Your cloud storage could not be reached, so nothing was deleted. Try again once it answers.';
 
+/** The stored originals of the documents still live in `file`: an erase
+ *  leaves these (US-09 AC20, AC23; US-11 AC6). */
+function liveOriginals(file: RoadmapFile): Set<string> {
+  return new Set(file.documents.filter((d) => !d.deleted && d.fileRef).map((d) => d.fileRef));
+}
+
 /** What an awaited save that failed says. */
 const SAVE_FAILED = 'Cloud sync failed — your latest changes are still on this device.';
 
@@ -296,8 +302,9 @@ export class RecordSession {
       // Document blobs and the unsaved drafts sit outside the record file, so
       // the erased file alone doesn't reach them. They go in every mode — a
       // device-tier user gets no wipe below (it would delete the erased file
-      // just written), and used to keep them.
-      host.clearOffFileData();
+      // just written), and used to keep them — except the originals of
+      // documents the erase did not remove (another tab's, saved meanwhile).
+      host.clearOffFileData(liveOriginals(this.current));
       if (host.tier === 'device') {
         // The other record files (chat history): their contents are already
         // tombstoned (the caller's beforeErase erases chat history first).
@@ -418,11 +425,12 @@ export class RecordSession {
    *  something a person would see, for the caller to announce. One that
    *  carries an erase made on another device clears this device's off-file
    *  health data, as the erase clears it where it is made (US-11 AC1, AC6;
-   *  orchestrator O5, 2026-10-21: one clear for both). */
+   *  one clear for both, O5) — but never the original of a document the
+   *  merge keeps (US-09 AC20, AC23). */
   private adopt(merged: RoadmapFile): boolean {
     const seen = visibleContentOf(this.current);
     // An erase from elsewhere, a later one at the same epoch included (adversary R6).
-    if (eraseIdentityOf(merged) !== this.eraseIdentity) this.host.clearOffFileData();
+    if (eraseIdentityOf(merged) !== this.eraseIdentity) this.host.clearOffFileData(liveOriginals(merged));
     this.current = merged;
     return visibleContentOf(merged) !== seen;
   }
@@ -440,7 +448,8 @@ export class RecordSession {
 
   /** Cancel the debounced save: the caller saves now, or throws the change away. */
   private cancelDebounce(): void {
-    if (this.persistTimer) this.host.timers.clear(this.persistTimer);
+    // `!== null`, as writePending reads it: a host's timer id may be 0.
+    if (this.persistTimer !== null) this.host.timers.clear(this.persistTimer);
     this.persistTimer = null;
   }
 

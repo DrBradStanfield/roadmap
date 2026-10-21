@@ -39,8 +39,11 @@ interface HostBase {
   sync?: SyncStorage;
   /** Health data this device keeps outside the record (drafts, kept answers,
    *  stored originals), cleared by an erase made here (US-11 AC1) or taken in
-   *  from another device (AC6). */
-  clearOffFileData(): void;
+   *  from another device (AC6). `keepOriginals`: the `fileRef`s of documents
+   *  still live in the record after the erase (added after it, or never seen
+   *  by it: US-09 AC20, AC23), whose stored originals stay. The host also
+   *  keeps any original another copy on this device still names. */
+  clearOffFileData(keepOriginals: ReadonlySet<string>): void;
   /** This device's id, for the merge's `lastDeviceId`. Read once, at open. */
   deviceId(): string;
   /** Read at each use, never captured, so a test's fake clock applies. */
