@@ -165,18 +165,22 @@ function keySafetyPoints(md: string): { text: string | null; dropped?: string } 
 /**
  * A master cut to what must reach the answer model when the whole page would
  * pass the chat's content cap (US-50 AC13): its current view (unless over
- * MAX_VIEW_CHARS, malformed as in masterViews), key safety points, every safety
- * section and, with `dosing`, its Recommended Dosing section (where the upper
- * limits live), demoted, then the reference line of every [n] they cite. The
- * markers stay, unlike YouTube's key points: each has its line here. Null when
- * it has none of them.
+ * MAX_VIEW_CHARS), key safety points (unless malformed as in AC12), every
+ * safety section and, with `dosing`, its Recommended Dosing section (where the
+ * upper limits live), demoted, then the reference line of every [n] they cite.
+ * A malformed view or key points are dropped and logged with `handle`, as in
+ * masterViews. The markers stay, unlike YouTube's key points: each has its line
+ * here. Null when it has none of them.
  */
-export function reducedMaster(md: string, dosing = false): string | null {
+export function reducedMaster(md: string, dosing = false, handle = ''): string | null {
   const body = stripFrontmatter(md);
   const view = sectionOf(body, VIEW_HEADING);
+  if (view && view.length >= MAX_VIEW_CHARS) console.warn(`Chat reduced master: current view over ${MAX_VIEW_CHARS} characters, dropped: ${handle}`);
+  const points = keySafetyPoints(md);
+  if (points.dropped) console.warn(`Chat reduced master: key safety points ${points.dropped}, dropped: ${handle}`);
   const parts = [
     view && view.length < MAX_VIEW_CHARS ? view : null,
-    sectionOf(body, KEY_POINTS_HEADING),
+    points.text ? sectionOf(body, KEY_POINTS_HEADING) : null,
     ...safetyBodies(body),
     dosing ? sectionOf(body, DOSING_HEADING) : null,
   ].filter((p): p is string => !!p);

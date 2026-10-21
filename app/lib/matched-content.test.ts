@@ -95,6 +95,42 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     expect(content).toContain('Internal note, do not quote: this page is shortened to fit.');
   });
 
+  // A large non-master routed before or between masters must leave the later
+  // masters their room too (the re-check: 197 of 1,140 pairs with one between,
+  // 42 with it first, dropped a master whole).
+  const LITHIUM = 'lithium-benefits-forms-dosing-and-side-effects';
+  const PROBIOTICS = 'probiotics-benefits-strains-dosing-and-side-effects';
+  const warfarin = (content: string | null) => {
+    expect(content).toMatch(/^#+ Warfarin and Vitamin K Antagonists$/m);
+    expect(content).toContain('Vitamin K can have a serious and potentially dangerous interaction with warfarin');
+  };
+
+  it('[lithium, probiotics, vitamin K]: vitamin K loads with its warfarin lines', () => {
+    const { content, skipped } = loadMatchedContent([LITHIUM, PROBIOTICS, K]);
+    expect(skipped).not.toContain(K);
+    expect(skipped).not.toContain(LITHIUM);
+    expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
+    warfarin(content);
+  });
+
+  it('[probiotics, vitamin C, B vitamins]: a non-master first leaves both masters their room', () => {
+    const C = 'vitamin-c-benefits-forms-dosing-and-side-effects';
+    const B = 'b-vitamins-benefits-forms-dosing-and-side-effects';
+    const { content, skipped } = loadMatchedContent([PROBIOTICS, C, B]);
+    expect(skipped).not.toContain(C);
+    expect(skipped).not.toContain(B);
+    expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
+    expect(lastPart(content!)).toMatch(/^title: .*B Vitamins/m);
+    expect(lastPart(content!)).toMatch(/^#+ \d+\. Safety and Side Effects$/m);
+  });
+
+  it('a non-master that fits alongside the later masters\' reserve still loads', () => {
+    const { content, skipped } = loadMatchedContent([PROBIOTICS, LITHIUM]);
+    expect(skipped).toEqual([]);
+    expect(content).toContain('title: Probiotics: Benefits');
+    expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
+  });
+
   it('magnesium + vitamin D: both load, vitamin D reduced with its safety and interactions', () => {
     const { content, skipped } = loadMatchedContent([MG, D]);
     expect(skipped).toEqual([]);
@@ -180,6 +216,24 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
       expect(skipped, `${a} + ${b}`).toEqual([]);
       expect(content!.length, `${a} + ${b}`).toBeLessThanOrEqual(MAX_BLOG_CHARS);
       for (const part of parts(content!)) expect(part, `${a} + ${b}`).toMatch(/^#+ .*Safety/m);
+    }
+  });
+
+  it('every ordered pair of masters with a large non-master first or between: no master skipped, inside the cap', async () => {
+    vi.resetModules();
+    const { loadMatchedContent, loadBlogArticle, contentBlock } = await import('./matched-content');
+    const masters = loadBlogIndex().filter(isMaster).map(e => e.handle);
+    const large = loadBlogIndex().filter(e => !isMaster(e))
+      .map(e => ({ handle: e.handle, size: contentBlock(e.handle, loadBlogArticle(e.handle) ?? '').length }))
+      .sort((x, y) => y.size - x.size).slice(0, 3).map(e => e.handle);
+    expect(large).toContain(PROBIOTICS);
+    for (const n of large) for (const a of masters) for (const b of masters) {
+      if (a === b) continue;
+      for (const order of [[a, n, b], [n, a, b]]) {
+        const { content, skipped } = loadMatchedContent(order);
+        expect(skipped.filter(h => h !== n), order.join(' + ')).toEqual([]);
+        expect(content!.length, order.join(' + ')).toBeLessThanOrEqual(MAX_BLOG_CHARS);
+      }
     }
   });
 });

@@ -19,7 +19,7 @@ const fakes = vi.hoisted(() => {
     ref('tm-nad'),
     ref('tm-empty'),
     ref('tm-big', '2026-10-20'),
-    ref('tm-huge'),
+    ref('tm-huge', '2026-10-20'),
     ref('tm-master-long', '2026-10-20'),
     ref('tm-safe'), ref('tm-mid1'), ref('tm-mid2'), ref('tm-cited'), ref('tm-numbered'), ref('tm-malformed'), ref('tm-rule'), ref('tm-ix'), ref('tm-dup1'), ref('tm-dup2'),
     ref('tm-keyed'), ref('tm-keylong'), ref('tm-kp-head'), ref('tm-kp-tbw'), ref('tm-kp-rule'), ref('tm-kp-two'), ref('tm-kp-indent'), ref('tm-kp-summary'),
@@ -70,8 +70,9 @@ const files: Record<string, string> = {
   'tm-dup2': `---\ntitle: "Dup2"\n---\n\n## Current view (reviewed 20 October 2026)\n\nDup two.\n\n## Safety\n\n${'d'.repeat(MAX_MASTER_VIEW_CHARS * 0.6)}\n`,
   'tm-cited':`---\ntitle: "Cited"\n---\n\n## Current view (reviewed 20 October 2026)\n\nCited view [1].\n\n## 3. Evidence\n\nBenefit [1].\n\n## 5. Safety and Side Effects\n\nRare rash [2]. Liver note [3, 5]. Range [6–7]. A DOI link [10.1000/xyz].\n\n## 9. References\n\n[1] Ref one.\n\n[2] Ref two.\n\n[3] Ref three.\n\n[4] Ref four.\n\n[5] Ref five.\n\n[6] Ref six.\n\n[7] Ref seven.\n`,
   'tm-numbered': `---\ntitle: "Numbered"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNumbered view.\n\n## 6. Drug Interactions\n\nWarfarin [2].\n\n## 8. References\n\n1. Ref A.\n2. Ref B.\n`,
-  // Leaves no room even for tm-master-long reduced (US-50 AC13).
-  'tm-huge': `---\ntitle: "Huge"\n---\n\n${'h'.repeat(119_900)}\n`,
+  // A master whose smallest form still nearly fills the cap: it loads that
+  // form and leaves no room even for tm-master-long reduced (US-50 AC13).
+  'tm-huge': `---\ntitle: "Huge"\n---\n\n## Current view (reviewed 20 October 2026)\n\nHuge view.\n\n## 5. Safety and Side Effects\n\n${'h'.repeat(119_750)}\n`,
   'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
   'tm-article': `---\ntitle: "An article"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNot a master.\n`,
 };
@@ -494,9 +495,42 @@ describe('youtube-comment-dryrun uses the router view (US-50 AC3)', () => {
 describe('reducedMaster keeps the malformed-view check (US-50 AC13)', () => {
   it('drops a view over MAX_VIEW_CHARS and keeps the safety sections with their reference lines', () => {
     const md = `---\ntitle: "X"\nreviewed: "2026-10-20"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'v'.repeat(MAX_VIEW_CHARS)}\n\n## 5. Safety and Side Effects\n\nSafe [1].\n\n## 8. References\n\n[1] A ref.\n`;
-    const reduced = reducedMaster(md)!;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const reduced = reducedMaster(md, false, 'tm-x')!;
     expect(reduced).not.toContain('vvv');
     expect(reduced).toContain('Safe [1].');
     expect(reduced).toMatch(/^\[1\] A ref\.$/m);
+    expect(warn.mock.calls.map(([m]) => String(m))).toContain(`Chat reduced master: current view over ${MAX_VIEW_CHARS} characters, dropped: tm-x`);
+    warn.mockRestore();
+  });
+
+  // AC12's checks hold on this path too: key points over MAX_KEY_POINTS_CHARS,
+  // or with fewer than 3 bullets, are dropped and logged; sound ones keep their markers.
+  const withPoints = (points: string) => `---\ntitle: "X"\nreviewed: "2026-10-20"\n---\n\n## Current view (reviewed 20 October 2026)\n\nView.\n\n## Key safety points\n\n${points}\n\n## 5. Safety and Side Effects\n\nSafe [1].\n\n## 8. References\n\n[1] A ref.\n`;
+  it('drops key safety points over MAX_KEY_POINTS_CHARS, and logs it', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const reduced = reducedMaster(withPoints(`- a\n- b\n- ${'k'.repeat(MAX_KEY_POINTS_CHARS)}`), false, 'tm-long')!;
+    expect(reduced).not.toContain('Key safety points');
+    expect(reduced).toContain('Safe [1].');
+    expect(warn.mock.calls.map(([m]) => String(m))).toContain(`Chat reduced master: key safety points over ${MAX_KEY_POINTS_CHARS} characters, dropped: tm-long`);
+    warn.mockRestore();
+  });
+
+  it('drops key safety points with fewer than 3 bullets, and logs it', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const reduced = reducedMaster(withPoints('- a [1]\n- b'), false, 'tm-few')!;
+    expect(reduced).not.toContain('Key safety points');
+    expect(warn.mock.calls.map(([m]) => String(m))).toContain('Chat reduced master: key safety points malformed, dropped: tm-few');
+    warn.mockRestore();
+  });
+
+  it('keeps sound key safety points, markers and reference lines included', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const reduced = reducedMaster(withPoints('- a [1]\n- b\n- c'), false, 'tm-ok')!;
+    expect(reduced).toContain('Key safety points');
+    expect(reduced).toContain('- a [1]');
+    expect(reduced).toMatch(/^\[1\] A ref\.$/m);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
