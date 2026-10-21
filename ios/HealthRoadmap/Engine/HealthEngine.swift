@@ -20,7 +20,7 @@ final class HealthEngine {
     }
 
     private let context: JSContext
-    /// The bundle's exports: planJson, sectionsJson, newRecordJson, myDataJson, applyEditJson (ios/engine/entry.ts).
+    /// The bundle's exports: planJson, sectionsJson, newRecordJson, myDataJson, applyEditJson, numberJson (ios/engine/entry.ts).
     private let exports: JSValue
 
     init(bundle: Bundle = .main) throws {

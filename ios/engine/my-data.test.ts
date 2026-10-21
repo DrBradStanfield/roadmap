@@ -116,12 +116,25 @@ describe('readNumber (AC5, adversary R2)', () => {
     expect(readNumber('80kg')).toBeUndefined();
     expect(readNumber('')).toBeUndefined();
   });
+
+  it('reads the digits an Arabic or Persian keypad types (adversary re-check F2)', () => {
+    expect(readNumber('٣٫٤')).toBe(3.4);
+    expect(readNumber('۸۰')).toBe(80);
+    expect(readNumber('٣.٤')).toBe(3.4);
+  });
 });
 
 describe('readRecord (AC4, adversary R4)', () => {
   it('refuses a file that is JSON but not a record, so the app never writes over it', () => {
     for (const raw of ['null', '[]', '"text"', '42']) {
       expect(() => readRecord(raw, NOW, 'phone'), raw).toThrow();
+    }
+  });
+
+  it('refuses a record whose parts are broken, as every other writer does (Codex R2)', () => {
+    const record = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    for (const broken of [{}, { hello: 1 }, { ...record, measurements: 'not a list' }, { ...record, schemaVersion: undefined }]) {
+      expect(() => readRecord(JSON.stringify(broken), NOW, 'phone')).toThrow();
     }
   });
 

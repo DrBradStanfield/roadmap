@@ -101,10 +101,12 @@ confirm or reject here.
 - **Default: a file in the app's container**, with iOS Data Protection. Built 2026-10-21
   (`MyData/RecordStore.swift`): `Application Support/health-roadmap.json`, the web's schema,
   written atomically, and only after the engine accepted the edit. Data protection is
-  "until first unlock" (the strictest class would fail when iOS pre-launches the app
-  before the user unlocks). The first record is staged beside the file and moved into
+  "until first unlock", Apple's default (the strictest class, which HealthKit uses, would
+  fail when iOS pre-launches the app before the user unlocks; a read that fails still
+  stays failed until the next launch). Open for Brad: keep this, or the strictest class
+  with a re-read when the phone unlocks. The first record is staged beside the file and moved into
   place, which fails if a file is already there. A record the app cannot open or read,
-  including JSON that is not a record, is kept as it is and never written over.
+  including JSON that fails health-core's record shape check, is kept as it is and never written over.
   Dates are always Gregorian and numbers are read by health-core's
   `parseLocalisedNumber`, whatever the phone's calendar and number format. Gotcha (2026-10-21): `URL.path()`
   percent-encodes, so the existence check on "Application Support" looked for
@@ -121,7 +123,11 @@ confirm or reject here.
 - **iCloud: open.** A website cannot read iCloud Drive, so an iCloud user could not use the
   web app (CloudKit JS would need its own sign-in and work). App Review has also restricted
   health data in iCloud (guideline 5.1.3). Brad is checking. Same question for iOS device
-  backups of the app's file.
+  backups of the app's file: today the backup includes it (standard iCloud Backup is not
+  end-to-end encrypted unless the user turns on Advanced Data Protection), and My data
+  says "Saved on this iPhone and in its backups". Excluding it (`isExcludedFromBackup`)
+  keeps it off Apple's servers but loses it when the user moves to a new phone without
+  cloud sync. Codex raised it 2026-10-21; Brad's call.
 - **Erase (US-11)** runs as on the web, and also deletes the samples this app wrote to
   Apple Health and cancels its notifications. A phone that takes in an erase made on another
   device does the same.
@@ -201,7 +207,9 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
 
 **Layout.**
 - `engine/entry.ts`: the one door Swift calls, JSON in and out: `planJson`,
-  `sectionsJson`, and for My data `newRecordJson`, `myDataJson`, `applyEditJson`.
+  `sectionsJson`, and for My data `newRecordJson`, `myDataJson`, `applyEditJson`,
+  `numberJson`. Every door reads the record through health-core's `ROADMAP_DOC.migrate`
+  (shape check, then migration), as the web, CLI and connector do.
 - `engine/my-data.ts`: what the My data tab shows and every write it makes, each one
   health-core's own (`createEmptyFile`, `updateProfile`, `stampFields`,
   `appendMeasurement`, `correctValue`), with values in the user's units. Tested in Node by

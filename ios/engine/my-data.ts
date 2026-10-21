@@ -3,7 +3,7 @@
 // connector use, so the app follows the record's rules without copying them.
 // Values come in and go out in the user's units; the record stores SI.
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { migrateFile } from '../../packages/health-core/src/migrate';
+import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
 import { appendMeasurement, correctValue, stampUpdatedAt } from '../../packages/health-core/src/record-edits';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
@@ -49,21 +49,30 @@ export type EditOutcome =
   | { ok: false; reason: string; message: string; existingId?: string };
 
 /**
- * The record on disk, migrated as the web reads it. Text that is JSON but not an
- * object is refused: the migration would turn it into an empty record, and the
- * app's first save would then write over whatever the file was.
+ * The record on disk, read as every other writer reads it (ROADMAP_DOC: the
+ * shape check, then the migration). JSON that is not an object, or a record
+ * with a broken part, is refused: the migration would quietly empty it, and
+ * the app's next save would write over whatever the file held.
  */
 export function readRecord(text: string, now: string, deviceId: string): RoadmapFile {
   const raw: unknown = JSON.parse(text);
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     throw new Error('This file is not a health record.');
   }
-  return migrateFile(raw, { deviceId, now });
+  return ROADMAP_DOC.migrate(raw, { deviceId, now });
 }
 
-/** A typed number, read by the web's rule: either decimal mark, nothing else. */
+/**
+ * A typed number, read by the web's rule: either decimal mark, nothing else.
+ * An Arabic or Persian keypad types its own digits and the Arabic decimal
+ * mark (٫); they become ASCII first, or Save would never light up.
+ */
 export function readNumber(text: string): number | undefined {
-  return parseLocalisedNumber(text);
+  const ascii = text
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/٫/g, '.');
+  return parseLocalisedNumber(ascii);
 }
 
 /** A first-launch record. Units follow the phone's region, as the web's do. */
