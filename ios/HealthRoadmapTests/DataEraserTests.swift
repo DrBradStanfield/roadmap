@@ -2,7 +2,7 @@ import UniformTypeIdentifiers
 import XCTest
 @testable import HealthRoadmap
 
-/// US-25 AC13 (US-11 on the iPhone): "Delete all my data" and "Export my record".
+/// US-25 AC16 (US-11 on the iPhone): "Delete all my data" and "Export my record".
 /// The erase is the engine's: health-core's buildErasedFile on the phone's file,
 /// RecordSession.deleteAllData with a cloud open (ios/engine/erase.ts, cloud.ts).
 /// These tests pin what the app does around it: the web's order and guard, the
@@ -13,6 +13,8 @@ final class DataEraserTests: XCTestCase {
     private var tokens: TokenStore!
     private var dropbox: CloudSyncTests.FakeDropbox!
     private var center: FakeNotificationCenter!
+    private var health: FakeHealthStore!
+    private var healthDefaults: UserDefaults!
     private let question = "Is my LDL of 4.2 high?"
 
     override func setUp() async throws {
@@ -24,6 +26,8 @@ final class DataEraserTests: XCTestCase {
         let fake = dropbox!
         StubHTTP.handler = { fake.answer($0) }
         center = FakeNotificationCenter()
+        health = FakeHealthStore()
+        healthDefaults = UserDefaults(suiteName: "test.\(UUID().uuidString)")
     }
 
     override func tearDown() async throws {
@@ -37,6 +41,7 @@ final class DataEraserTests: XCTestCase {
         let chat: ChatHistoryStore
         let reminders: ReminderScheduler
         let eraser: DataEraser
+        let health: AppleHealthSync
     }
 
     /// The app's parts, as AppParts makes them, on the test folder and the stub.
@@ -49,8 +54,9 @@ final class DataEraserTests: XCTestCase {
         let reminders = ReminderScheduler(center: center, folder: folder) {
             try engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         }
-        let eraser = DataEraser(engine: engine, store: store, sync: sync, chat: chat, reminders: reminders)
-        return App(store: store, sync: sync, chat: chat, reminders: reminders, eraser: eraser)
+        let appleHealth = AppleHealthSync(store: store, engine: engine, client: health, memory: HealthSyncMemory(defaults: healthDefaults))
+        let eraser = DataEraser(engine: engine, store: store, sync: sync, chat: chat, reminders: reminders, health: appleHealth)
+        return App(store: store, sync: sync, chat: chat, reminders: reminders, eraser: eraser, health: appleHealth)
     }
 
     private func record(days: [String]) throws -> [String: Any] {
@@ -244,9 +250,41 @@ final class DataEraserTests: XCTestCase {
         XCTAssertEqual(screen.conversations.count, 1)
     }
 
+    // MARK: Apple Health (D6)
+
+    func testTheEraseDeletesTheSamplesThisAppWroteToAppleHealthAndForgetsThem() async throws {
+        let app = try app(connected: false)
+        await app.health.connect()
+        XCTAssertEqual(app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")), .saved)
+        await app.health.refresh()
+        XCTAssertFalse(health.saved.isEmpty, "the typed weight went out to Health")
+        XCTAssertNotNil(healthDefaults.dictionary(forKey: "appleHealth.written"))
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+        XCTAssertEqual(health.ownDeletes, 1, "the app's own samples are deleted from Health")
+        XCTAssertNil(healthDefaults.dictionary(forKey: "appleHealth.written"), "and their written versions forgotten")
+        XCTAssertFalse(words.contains("Apple Health could not"), words)
+    }
+
+    func testAnAppleHealthDeleteThatFailsIsSaidAndTheRecordIsStillErased() async throws {
+        let app = try app(connected: false)
+        await app.health.connect()
+        health.deleteFails = true
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the record erase still stands") }
+        XCTAssertTrue(words.contains("Apple Health could not"), words)
+        XCTAssertEqual(epoch(object(app.store.recordJSON)), 1)
+    }
+
+    func testWithAppleHealthNeverConnectedNothingIsAskedOfIt() async throws {
+        let app = try app(connected: false)
+        guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+        XCTAssertEqual(health.ownDeletes, 0)
+    }
+
     // MARK: Words and export
 
     func testTheConfirmationSaysWhatGoesAndWhere() {
+        XCTAssertTrue(EraseText.confirm(provider: nil, earlier: nil, appleHealth: true).contains("Apple Health"))
         let phone = EraseText.confirm(provider: nil, earlier: nil)
         XCTAssertTrue(phone.contains("chat history"))
         XCTAssertTrue(phone.contains("reminders"))

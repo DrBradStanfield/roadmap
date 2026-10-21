@@ -84,8 +84,8 @@ Deleting the app also deletes the record on this iPhone.
 
 (Before publishing: check the chat retention sentence against what the server
 really keeps; US-15 AC7 purges chat text on a schedule.)
-(Before publishing: the Apple Health clause is true only once D6 ships with its
-erase step; the erase built 2026-10-21, US-25 AC16, has the hook but no Apple Health.)
+(Before publishing: the Apple Health clause is built (US-25 AC16) but checked only
+against a fake Health store; confirm on a real iPhone.)
 
 ## App Review notes
 

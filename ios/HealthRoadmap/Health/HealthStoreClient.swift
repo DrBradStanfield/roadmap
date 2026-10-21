@@ -18,6 +18,9 @@ protocol HealthStoreClient: AnyObject {
     func save(_ write: HealthWrite) async throws
     /// Calls `onChange` whenever Health gets new data of these kinds, in the background too.
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void)
+    /// "Delete all my data" (US-25 AC16): deletes every sample this app wrote to Health.
+    /// Readings other apps and devices wrote stay: they are not ours to delete.
+    func deleteOwnSamples() async throws
 }
 
 enum HealthStoreError: LocalizedError {

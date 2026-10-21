@@ -280,8 +280,11 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   - **Units are kept** (a setting; the web keeps its unit preference through an erase), the
     welcome flag and the AI consent are kept, the sync connection is kept.
   - **Reminders** need no step of their own: the opt-in ends when the epoch moves (D7).
-  - **Apple Health** is not on main yet: `DataEraser.eraseAll` has the marked hook, and
-    `EraseText.confirm` the marked line, for D6 to fill.
+  - **Apple Health** (merged in the same evening): after the record erase, `AppleHealthSync.
+    eraseOwnSamples` deletes every sample this app wrote (HealthKit's source predicate, kinds
+    it may write) and clears `HealthSyncMemory`'s written versions. The import anchors stay,
+    so other apps' readings from before the erase are not imported again. A refused delete
+    never undoes the record erase; the words say so. Not checked on a real iPhone.
   - **Export** is the record as shown (`store.recordJSON`) through the share sheet, written by
     the share sheet itself (`RecordExport`, a `DataRepresentation`), so the app keeps no
     stray copy. The website has no "load a file" flow; that would be a web feature.
@@ -383,9 +386,9 @@ asked for during one loops once more. Its decisions:
   Diastolic…Systolic)"), but the simulator's permission sheet leaves them out ("Ordered
   read" lists only height, waist and weight), so blood pressure is neither read nor
   written there. Weight in and waist out were checked; blood pressure needs a real iPhone.
-- **Erase (D5) does not yet delete our samples from Health**: the app has no erase yet.
-  Whoever builds it deletes samples whose sync identifier starts `healthroadmap:` and
-  clears `HealthSyncMemory`'s written versions.
+- **Erase (D5, US-25 AC16) deletes our samples from Health** (built 2026-10-21): every
+  sample whose source is this app, which is every `healthroadmap:` sync id, and clears
+  `HealthSyncMemory`'s written versions. Checked against a fake store only.
 
 **Entitlement.** `ios/HealthRoadmap.entitlements` (HealthKit, with background delivery, no
 Health Records access) is set as `CODE_SIGN_ENTITLEMENTS`; the purpose strings are

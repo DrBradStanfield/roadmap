@@ -37,7 +37,7 @@ private struct EraseView: View {
     var body: some View {
         List {
             Section {
-                Text(EraseText.confirm(provider: sync.provider, earlier: sync.syncedBefore))
+                Text(EraseText.confirm(provider: sync.provider, earlier: sync.syncedBefore, appleHealth: eraser.appleHealthConnected))
             }
             Section {
                 Button(role: .destructive) {

@@ -11,9 +11,11 @@ enum EraseText {
     static let deleteButton = "Delete everything"
 
     /// The first step: what goes, where, and what the erase cannot reach.
-    // When Apple Health lands (D6), the samples this app wrote join the list here.
-    static func confirm(provider: CloudProvider?, earlier: CloudProvider?) -> String {
+    static func confirm(provider: CloudProvider?, earlier: CloudProvider?, appleHealth: Bool = false) -> String {
         var text = "This deletes your health record, your chat history and your reminders on this iPhone."
+        if appleHealth {
+            text += " It also deletes the readings this app wrote to Apple Health. Readings from other apps and devices stay in Apple Health."
+        }
         if let provider {
             text += " It also erases your record in \(provider.label). The file stays there with your values erased from it, so your other devices erase their copies when they next sync."
             text += "\n\nA value another device has not synced yet is kept, and arrives later."
@@ -55,6 +57,9 @@ enum EraseText {
             ? "Your record was not erased. \(reason) Your chat history was deleted."
             : "Nothing was deleted. \(reason)"
     }
+
+    /// Apple Health refused to delete the app's samples: the record erase still stands.
+    static let healthNotErased = " The readings this app wrote to Apple Health could not be deleted. You can delete them in the Health app."
 
     static func unreachable(_ provider: CloudProvider) -> String {
         "\(provider.label) could not be reached, so nothing was deleted. An erase must read the record it erases. Try again once you are online."

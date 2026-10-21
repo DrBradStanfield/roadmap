@@ -31,14 +31,19 @@ final class DataEraser {
     private let sync: CloudSync
     private let chat: ChatHistoryStore
     private let reminders: ReminderScheduler?
+    private let health: AppleHealthSync?
 
-    init(engine: HealthEngine, store: RecordStore, sync: CloudSync, chat: ChatHistoryStore, reminders: ReminderScheduler?) {
+    init(engine: HealthEngine, store: RecordStore, sync: CloudSync, chat: ChatHistoryStore, reminders: ReminderScheduler?, health: AppleHealthSync?) {
         self.engine = engine
         self.store = store
         self.sync = sync
         self.chat = chat
         self.reminders = reminders
+        self.health = health
     }
+
+    /// Whether the confirmation names Apple Health.
+    var appleHealthConnected: Bool { health?.connected ?? false }
 
     func eraseAll() async -> Outcome {
         guard !erasing else { return .refused("An erase is already running.") }
@@ -47,11 +52,17 @@ final class DataEraser {
         let units = store.myData?.unitSystem
         let outcome = if let provider = sync.provider { await eraseInCloud(provider) } else { eraseOnPhone() }
         if case .refused = outcome { return outcome }
-        // Apple Health (D6) is not built yet. When it lands, the samples this app
-        // wrote to Apple Health are deleted here, and EraseText.confirm names them.
+        // After the record: an erase refused there must change nothing, and Health's
+        // copies of typed values are only copies (D6).
+        let healthErased = await health?.eraseOwnSamples() ?? true
         keepUnits(units)
         await reminders?.refresh()
-        return outcome
+        guard !healthErased else { return outcome }
+        switch outcome {
+        case .erased(let text): return .erased(text + EraseText.healthNotErased)
+        case .notSent(let text): return .notSent(text + EraseText.healthNotErased)
+        case .refused: return outcome
+        }
     }
 
     private func eraseOnPhone() -> Outcome {

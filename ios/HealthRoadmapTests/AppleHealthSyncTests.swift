@@ -299,4 +299,14 @@ final class FakeHealthStore: HealthStoreClient {
     }
 
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {}
+
+    /// How many times the app asked Health to delete its own samples (US-25 AC16).
+    private(set) var ownDeletes = 0
+    var deleteFails = false
+
+    func deleteOwnSamples() async throws {
+        if deleteFails { throw HealthStoreError.locked }
+        ownDeletes += 1
+        saved = []
+    }
 }

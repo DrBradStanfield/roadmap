@@ -84,12 +84,12 @@ struct AppParts {
         reminders = ReminderScheduler(center: UNUserNotificationCenter.current(), folder: folder) {
             try engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         }
-        let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
-        eraser = DataEraser(engine: engine, store: store, sync: sync, chat: chat, reminders: reminders)
         // Before launch finishes, so a tap that starts the app still reaches My plan.
         UNUserNotificationCenter.current().delegate = reminderTaps
         let sync = self.sync
         health = AppleHealthSync(store: store, engine: engine, client: HealthKitClient()) { await sync.syncNow() }
         health.start()
+        let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
+        eraser = DataEraser(engine: engine, store: store, sync: sync, chat: chat, reminders: reminders, health: health)
     }
 }
