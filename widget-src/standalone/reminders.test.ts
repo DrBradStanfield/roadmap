@@ -28,7 +28,8 @@ import type { FileReminderOptIn } from '@roadmap/health-core';
 type FetchMock = ReturnType<typeof vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>>;
 
 const getReminderOptIn = vi.fn<() => FileReminderOptIn | undefined>(() => undefined);
-const setReminderOptIn = vi.fn<(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>) => boolean>(() => true);
+const setReminderOptIn = vi.fn<(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, erase?: string) => boolean>(() => true);
+const getShownErase = vi.fn(() => '[0,null]');
 const flushRoadmapStore = vi.fn(async () => {});
 const computeCurrentReminderSchedule = vi.fn(() => [
   { category: 'blood_test_lipids', group: 'blood_test', label: 'Lipid panel blood test', dueAt: '2027-05-12' },
@@ -41,7 +42,8 @@ const githubAccountEmail = vi.fn<() => Promise<string | null>>(async () => 'gh@e
 
 vi.mock('../src/lib/roadmap-data', () => ({
   getReminderOptIn: () => getReminderOptIn(),
-  setReminderOptIn: (fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>) => setReminderOptIn(fields),
+  setReminderOptIn: (...args: Parameters<typeof setReminderOptIn>) => setReminderOptIn(...args),
+  getShownErase: () => getShownErase(),
   flushRoadmapStore: () => flushRoadmapStore(),
   computeCurrentReminderSchedule: () => computeCurrentReminderSchedule(),
   isKnownMinorNow: () => isKnownMinorNow(),
@@ -111,6 +113,8 @@ async function loadReminders(shopifySurface = true) {
 beforeEach(() => {
   vi.clearAllMocks();
   getReminderOptIn.mockReturnValue(undefined);
+  getShownErase.mockReturnValue('[0,null]');
+  setReminderOptIn.mockImplementation(() => true);
   isKnownMinorNow.mockReturnValue(false);
   getReminderIdToken.mockResolvedValue('signed-id-token');
   driveAccountEmail.mockReturnValue(null);
@@ -145,7 +149,7 @@ describe('US-17 AC1/AC7 — a cloud connect enrols you, with no user action and 
 
     expect(setReminderOptIn).toHaveBeenCalledWith({
       status: 'active', token: 'new-cap-token', email: 'user@example.com', provider: 'google-drive',
-    });
+    }, '[0,null]');
     expect(flushRoadmapStore).toHaveBeenCalledTimes(1);
   });
 
@@ -158,6 +162,42 @@ describe('US-17 AC1/AC7 — a cloud connect enrols you, with no user action and 
     await expect(optInToReminders('google-drive')).rejects.toThrow(/superseded/);
     expect(postedBody(f, 1)).toEqual({ op: 'cancel', token: 'new-cap-token', idToken: 'signed-id-token' });
     expect(flushRoadmapStore).not.toHaveBeenCalled();
+  });
+
+  // Codex R1: the enrolment is stamped as it begins. Its reply lands after the
+  // record was erased and the page showed it: the store, at the new erase,
+  // refuses the old stamp, so reminders stay off and the new row is cancelled.
+  it('a reply that lands after an erase the page has shown is refused by its stamp, and its row cancelled', async () => {
+    let release!: () => void;
+    const answered = new Promise<void>((r) => { release = r; });
+    const f = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(async (_input, init) => {
+      if (JSON.parse(init!.body as string).op === 'optin') await answered;
+      return new Response(JSON.stringify({ token: 'new-cap-token', email: 'user@example.com' }), { status: 200 });
+    });
+    vi.stubGlobal('fetch', f);
+    getShownErase.mockReturnValue('[0,null]');
+    setReminderOptIn.mockImplementation((_fields, erase) => erase === '[1,"2026-10-21T00:00:00.000Z"]');
+    const { optInToReminders } = await loadReminders();
+    const pending = optInToReminders('google-drive');
+    getShownErase.mockReturnValue('[1,"2026-10-21T00:00:00.000Z"]'); // erased, and the page caught up
+    release();
+    await expect(pending).rejects.toThrow(/superseded/);
+    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ token: 'new-cap-token' }), '[0,null]');
+    expect(postedBody(f, 1)).toEqual({ op: 'cancel', token: 'new-cap-token', idToken: 'signed-id-token' });
+    expect(flushRoadmapStore).not.toHaveBeenCalled();
+  });
+
+  // Adversary R1: Google's lane hands back the token the file already holds.
+  // A refusal must never cancel the user's own live row, nor drop its marker.
+  it('a refused reply carrying the token the file already holds active cancels nothing', async () => {
+    const f = mockFetchOk({ token: 'cap-token', email: 'user@example.com' });
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    localStorage.setItem('hr_reminders_switch_cancelled', 'cap-token');
+    setReminderOptIn.mockReturnValueOnce(false);
+    const { optInToReminders } = await loadReminders();
+    await expect(optInToReminders('google-drive')).rejects.toThrow(/superseded/);
+    expect(f.mock.calls.map((_, n) => postedBody(f, n).op)).toEqual(['optin']);
+    expect(localStorage.getItem('hr_reminders_switch_cancelled')).toBe('cap-token');
   });
 
   it('never counts the enrolment here — the server counts it when the row lands', async () => {
@@ -287,7 +327,7 @@ describe('US-17 AC1 — auto-enrolment is silent: no error, no retry storm; the 
 
     // A typed address is never dressed up as the cloud lane it was typed on.
     expect(postedBody(f)).toMatchObject({ provider: 'typed', email: 'typed@example.com' });
-    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'active', email: 'typed@example.com', provider: 'github' }));
+    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'active', email: 'typed@example.com', provider: 'github' }), '[0,null]');
   });
 
   it('swallows a failing server — an enrolment nobody asked for cannot raise an error', async () => {
@@ -399,7 +439,7 @@ describe('US-17 — switching clouds moves the reminders, it does not duplicate 
     await autoEnrolReminders('dropbox');
     expect(postedBody(next, 0)).toEqual({ op: 'cancel', token: 'cap-token', idToken: 'signed-id-token' });
     expect(postedBody(next, 1)).toMatchObject({ op: 'optin', provider: 'dropbox' });
-    expect(setReminderOptIn).toHaveBeenCalledWith({ status: 'active', token: 'new-cap-token', email: 'user@example.com', provider: 'dropbox' });
+    expect(setReminderOptIn).toHaveBeenCalledWith({ status: 'active', token: 'new-cap-token', email: 'user@example.com', provider: 'dropbox' }, '[0,null]');
   });
 
   it('a cancel that never reaches the server stops the switch too', async () => {

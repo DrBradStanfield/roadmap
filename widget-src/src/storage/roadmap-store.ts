@@ -804,8 +804,8 @@ export class RoadmapStore {
   }
 
   /** Set/replace the opt-in singleton (status flips included), stamped + persisted. */
-  setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>): boolean {
-    if (this.refuses()) return false;
+  setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, erase?: string): boolean {
+    if (this.refuses(erase)) return false;
     const prev = this.file.reminderOptIn;
     this.file.reminderOptIn = {
       ...fields,

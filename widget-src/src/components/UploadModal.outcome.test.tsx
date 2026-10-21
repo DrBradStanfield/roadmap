@@ -11,13 +11,13 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { UploadModal } from './UploadModal';
 import { checkLabImportQuota, labImport, labImportBatch, pollBatchStatus } from '../lib/upload-api';
 import { attachOriginals } from '../lib/archive-payloads';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues } from '../lib/roadmap-data';
+import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getEraseIdentity } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 import type { FileResult } from './ReviewTable';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn() }));
+vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), attachOriginals: vi.fn(async results => results), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -690,5 +690,39 @@ describe('US-12 AC15, AC16: refused and guessed units are shown and counted', ()
     expect(reasonFor('acr.pdf')).toBeNull();
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 1, unitsRefused: 1 });
+  });
+});
+
+// US-16 AC2a (Codex R2): a screening date rides with the upload that read it.
+// The record was erased, and the page showed it, while that upload saved: the
+// date belongs to the erased record, so it is not written.
+describe('US-16 AC2a: a screening date from an upload the erase overtook', () => {
+  const screeningLetter: Import = { result: { ...letterOnly.result!, document: { ...letterOnly.result!.document!, classification: 'scan_result', metadata: { screeningType: 'colorectal' } } } } as unknown as Import;
+  const renderWithScreenings = (onScreeningUpdate: (key: string, value: string, erase: string) => void) =>
+    render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={history} onComplete={() => {}} age={60} sex="male" onScreeningUpdate={onScreeningUpdate} />);
+
+  it('writes the date, stamped with the save\'s start, when nothing moved', async () => {
+    vi.mocked(labImport).mockResolvedValue(screeningLetter);
+    const onScreeningUpdate = vi.fn();
+    renderWithScreenings(onScreeningUpdate);
+    pick(pdf('scope.pdf'));
+    fireEvent.click(await screen.findByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(onScreeningUpdate).toHaveBeenCalledWith('colorectal_last_date', expect.any(String), '');
+  });
+
+  it('writes no date when the document save finished after an erase the page has shown', async () => {
+    vi.mocked(labImport).mockResolvedValue(screeningLetter);
+    vi.mocked(bulkSaveDocuments).mockImplementation(async () => {
+      vi.mocked(getEraseIdentity).mockReturnValue('[1,"erased meanwhile"]'); // the erase lands while the blob uploads
+      return { saved: [], errorCount: 1 };
+    });
+    const onScreeningUpdate = vi.fn();
+    renderWithScreenings(onScreeningUpdate);
+    pick(pdf('scope.pdf'));
+    fireEvent.click(await screen.findByRole('button', { name: /^Save / }));
+    await screen.findByText(/Failed to save/);
+    expect(onScreeningUpdate).not.toHaveBeenCalled();
+    vi.mocked(getEraseIdentity).mockReturnValue('');
   });
 });

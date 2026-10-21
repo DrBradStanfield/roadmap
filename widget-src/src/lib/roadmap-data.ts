@@ -115,8 +115,8 @@ export function setLpaUnit(unit: LpaUnit): boolean {
 export function getReminderOptIn(): FileReminderOptIn | undefined {
   return store?.getReminderOptIn();
 }
-export function setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>): boolean {
-  return store?.setReminderOptIn(fields) ?? false;
+export function setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, erase?: string): boolean {
+  return store?.setReminderOptIn(fields, erase) ?? false;
 }
 export function computeCurrentReminderSchedule(): ReminderScheduleItem[] {
   return store?.computeReminderScheduleNow() ?? [];

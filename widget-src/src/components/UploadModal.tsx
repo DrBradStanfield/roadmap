@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, zipMemberName, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
+import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
 import { labUnitRefusalLine, measurementRefusalLine } from '../lib/lab-value-labels';
@@ -59,7 +59,8 @@ interface UploadModalProps {
   onComplete: () => void;
   onStart?: () => Promise<void>;
   onClose: () => void;
-  onScreeningUpdate?: (screeningKey: string, value: string) => void;
+  /** `erase`: the erase the page showed as the save began (US-16 AC2a). */
+  onScreeningUpdate?: (screeningKey: string, value: string, erase: string) => void;
   /** The plan's age, for the review's screening eligibility (US-06 AC5). */
   age?: number;
   sex?: 'male' | 'female';
@@ -712,6 +713,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     // The last save's refusals belong to it: never beside a new error.
     setRefusedLabUnits([]);
     setRefusedMeasurements([]);
+    const erase = getShownErase(); // the record this save was asked for
     try {
       // Save core measurements, additional lab values, and documents in parallel
       const measurements = selectedValues.map(v => ({
@@ -784,10 +786,11 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       const totalSaved = savedValues.saved.length + savedDocs.saved.length + savedLabValues.saved.length;
       const saveFailed = threw || saveErrors > 0;
 
-      // Update screening dates for documents with screening mappings
-      for (const doc of documents) {
+      // Update screening dates for documents with screening mappings, unless
+      // the record was erased while the save ran: the date belongs to it.
+      for (const doc of getEraseIdentity() === erase ? documents : []) {
         if (doc.screeningUpdate && onScreeningUpdate) {
-          onScreeningUpdate(doc.screeningUpdate.key, doc.screeningUpdate.date);
+          onScreeningUpdate(doc.screeningUpdate.key, doc.screeningUpdate.date, erase);
         }
       }
 

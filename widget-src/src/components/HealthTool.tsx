@@ -186,8 +186,7 @@ async function mirrorSavedLists(): Promise<void> {
 /** One save per key, 300 ms after its last change: rapid dropdown changes
  *  would otherwise race. The save carries the erase the page showed when the
  *  change was made, not when the timer fires (US-16 AC2a). */
-function debounceSave(timers: Map<string, ReturnType<typeof setTimeout>>, key: string, save: (erase: string) => void): void {
-  const erase = getShownErase();
+function debounceSave(timers: Map<string, ReturnType<typeof setTimeout>>, key: string, save: (erase: string) => void, erase = getShownErase()): void {
   const existing = timers.get(key);
   if (existing) clearTimeout(existing);
   timers.set(key, setTimeout(() => {
@@ -526,8 +525,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // one after another, so two asked for at once (a press on Save as PDF
   // leaves a matrix, and saves the fields) both land. Resolves with what was
   // refused, slot by slot, so the caller keeps only that.
-  const handleSaveLongitudinal = useCallback((tasks?: SaveTask[]): Promise<Refused> => {
-    const erase = getShownErase(); // as asked for, not as the queued save runs
+  // `erase`: as asked for, not as the queued save runs (US-16 AC2a).
+  const handleSaveLongitudinal = useCallback((tasks?: SaveTask[], erase = getShownErase()): Promise<Refused> => {
     // The first-time vitals fields: a weight, a waist, a blood pressure, each
     // naming the row the page shows for today ("Replaces 82 kg"), in the unit
     // it was typed in (mmHg either way). What a matrix's draft lends the plan
@@ -620,7 +619,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   handleSaveLongitudinalRef.current = handleSaveLongitudinal;
   const longitudinalDebounce = useDebouncedSave(500);
   const scheduleLongitudinalSave = useCallback(() => {
-    longitudinalDebounce.schedule(() => { void handleSaveLongitudinalRef.current(); });
+    const erase = getShownErase(); // as the field was left, not as the timer fires
+    longitudinalDebounce.schedule(() => { void handleSaveLongitudinalRef.current(undefined, erase); });
   }, [longitudinalDebounce]);
   const flushLongitudinalSave = useCallback(() => {
     longitudinalDebounce.commit(() => { void handleSaveLongitudinalRef.current(); });
@@ -822,6 +822,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setProfileProposal(null);
       setMedUndo(null);
       markEraseShown(getEraseIdentity());
+      // A refusal of this erase's own leftovers is not news (adversary R3).
+      refusedFor.current = getEraseIdentity();
+      longitudinalDebounce.cancel();
       // A save the form scheduled before the erase is pre-erase (US-16 AC2a).
       for (const timers of [medSaveTimers, screeningSaveTimers, supSaveTimers]) {
         for (const timer of timers.current.values()) clearTimeout(timer);
@@ -836,7 +839,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }
     return result.success;
-  }, []);
+  }, [longitudinalDebounce]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
@@ -880,7 +883,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       (erase) => void saveMedication(medicationKey, drugName, doseValue, doseUnit, erase).then(afterListSave));
   }, [afterListSave]);
 
-  const handleScreeningChange = useCallback((screeningKey: string, value: string) => {
+  // `erase`: a caller that asked before now, such as an upload (US-16 AC2a).
+  const handleScreeningChange = useCallback((screeningKey: string, value: string, erase?: string) => {
     setScreenings(prev => {
       const idx = prev.findIndex(s => s.screeningKey === screeningKey);
       const updated: ApiScreening = {
@@ -893,7 +897,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     });
 
     debounceSave(screeningSaveTimers.current, screeningKey,
-      (erase) => void saveScreening(screeningKey, value, erase).then(afterListSave));
+      (stamp) => void saveScreening(screeningKey, value, stamp).then(afterListSave), erase);
   }, [afterListSave]);
 
   const supSaveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
