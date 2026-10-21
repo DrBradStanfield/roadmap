@@ -287,6 +287,7 @@ export {
 } from './record-session';
 export type { RecordHost } from './record-host';
 export { LiveRefresh, type LiveRefreshOptions } from './live-refresh';
+export { liftDeviceCopy, copyCloudDown } from './record-transfer';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 

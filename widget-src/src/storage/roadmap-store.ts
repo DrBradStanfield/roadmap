@@ -68,8 +68,7 @@ import {
   type RoadmapProfile,
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
-import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core';
-import { LocalStorageAdapter } from './local-storage-adapter';
+import { ROADMAP_DOC } from '@roadmap/health-core';
 import { type EraseResult, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
@@ -710,25 +709,12 @@ export class RoadmapStore {
 }
 
 /**
- * Merge a raw roadmap-file body into `target` (migrate + read-merge-write).
- * The one cross-adapter transfer primitive: the connect-time lift-up and the
- * pre-switch copy-down (standalone/connect.ts) both delegate here, so
- * DocumentSpec/SyncManager knowledge stays in this schema-owning module.
+ * Merge a raw roadmap-file body into `target` (migrate + read-merge-write),
+ * by health-core's one transfer (saveRecordInto). The connect-time lift and
+ * the pre-switch copy-down call health-core's record-transfer.ts directly.
  */
 export async function saveRoadmapFileInto(target: StorageAdapter, body: unknown): Promise<void> {
   await saveRecordInto(target, body, { deviceId: getDeviceId(), now: new Date().toISOString() });
-}
-
-/**
- * Copy a cloud body DOWN onto this device, merged. A plain merge: against an
- * erased cloud file, the rows a fallback session is still holding survive
- * because no erase listed them (US-09 AC23).
- */
-export async function copyCloudDownToDevice(body: unknown): Promise<void> {
-  const deviceId = getDeviceId();
-  const ctx: SyncContext = { deviceId, now: new Date().toISOString() };
-  const sync = new SyncManager(new LocalStorageAdapter(), deviceId, ROADMAP_DOC);
-  await sync.save(ROADMAP_DOC.merge(await sync.load(), ROADMAP_DOC.migrate(body, ctx), ctx));
 }
 
 function toApiDocument(d: FileDocument): ApiDocument {

@@ -15,10 +15,9 @@ export {
 export { SyncManager, type SaveResult } from '@roadmap/health-core';
 // RoadmapStore + its Api* types are imported directly from './roadmap-store' by
 // the data shim (lib/roadmap-data.ts) — not re-exported here to avoid a second
-// canonical copy of the Api* type names (api.ts owns those). The cross-adapter
-// transfer helper IS exported: it's how standalone/ lifts/copies the record
-// without ever touching DocumentSpec/SyncManager internals.
-export { saveRoadmapFileInto, copyCloudDownToDevice, markSyncPending, isSyncPending, SYNC_PENDING_EVENT } from './roadmap-store';
+// canonical copy of the Api* type names (api.ts owns those). standalone/ lifts
+// and copies the record through health-core's record-transfer.ts.
+export { markSyncPending, isSyncPending, SYNC_PENDING_EVENT } from './roadmap-store';
 // Thrown by SyncManager (via migrate) when the cloud file is from a newer app
 // version — surfaced here so UI can show "update the app", not a generic error.
 export { SchemaTooNewError } from '@roadmap/health-core';
