@@ -278,7 +278,8 @@ export {
   type HistoryChangeType,
 } from './roadmap-file';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
-export { mergeFiles, stampFields, CLOCK_KEYS, mergeErasedRows, rowRootIds, stampInstant, dayOf, localDay, type MergeOptions } from './merge';
+export { mergeFiles, stampFields, CLOCK_KEYS, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
+export { buildErasedFile, type EraseInputs } from './erase';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 

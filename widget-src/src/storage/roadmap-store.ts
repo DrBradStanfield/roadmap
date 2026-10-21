@@ -24,6 +24,7 @@
 import { sha256Blob } from '../lib/archive-payloads';
 import {
   buildDocumentRef,
+  buildErasedFile,
   type BulkRow,
   CLOCK_KEYS,
   bulkAppendValues,
@@ -34,12 +35,8 @@ import {
   computeReminderSchedule,
   correctValue as correctRecordValue,
   createMeasurement,
-  CURRENT_SCHEMA_VERSION,
   dayOf,
   diffInputsToMeasurements,
-  mergeErasedRows,
-  rowRootIds,
-  stampInstant,
   fileProfileToApi,
   fileScreeningRows,
   isClinicalDay,
@@ -47,7 +44,6 @@ import {
   localDay,
   measurementsToInputs,
   mergeFiles,
-  migrateFile,
   parseLocalisedNumber,
   PREFILL_FIELDS,
   SchemaTooNewError,
@@ -855,62 +851,18 @@ export class RoadmapStore {
     let erased = false;
     try {
       this.cancelDebounce();
-      // Bump the erase epoch so the empty file BEATS the merge — persist goes
-      // through read-merge-write, whose never-lose-data semantics would otherwise
-      // resurrect every record from the stored copy (and any other device's).
-      // Bump past the stored epoch as well (US-11 AC7).
-      const eraseEpoch = Math.max(stored?.meta.eraseEpoch ?? 0, this.file.meta.eraseEpoch ?? 0) + 1;
-      // WHICH rows, so the merge drops them on every copy and keeps every row no
-      // erase saw (US-09 AC23): the stored record's, this copy's and, on a
-      // cloud, this browser's device file, where other tabs' failed saves wait.
-      // A device file that cannot be read, or read into a record, lists
-      // nothing; a successful erase removes it below.
+      // The erased file: epoch, the list of rows it removes, its time and the
+      // reminders decision are health-core's (erase.ts), shared with the app.
+      // The device file, on a cloud, is where other tabs' failed saves wait.
+      // One that cannot be read, or read into a record, lists nothing; a
+      // successful erase removes it below.
       const device = this.adapter.id === 'local'
         ? null
         : await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)
           .then(({ body }) => (body == null ? null : ROADMAP_DOC.migrate(body, this.ctx())))
           .catch(() => null);
-      const copies = [stored, this.file, device].filter((file): file is RoadmapFile => file !== null);
-      // The list keeps the claim the merge of the stored and own copies makes:
-      // every erase from `fromEpoch` on listed its ids. With no list there, this
-      // erase is the first to list.
-      const before = stored ? mergeErasedRows(this.file, stored) : this.file.erasedRows;
-      const ids = new Set(copies.flatMap((file) => [...rowRootIds(file), ...(file.erasedRows?.ids ?? [])]));
-      const erasedRows = { fromEpoch: before?.fromEpoch ?? eraseEpoch, ids: [...ids].sort() };
-      // An erase must not silently re-consent the user. Under US-17's default-on
-      // model the empty file reads as "never decided", so the next app load would
-      // enrol them again — undoing an explicit opt-out (AC4), and for an ENROLLED
-      // user refilling the server row the pre-erase hook just tore down, with no
-      // token left here to cancel it. So anyone who HAD an opt-in, active or
-      // cancelled, comes out of the erase with reminders off; the manual toggle
-      // still re-enrols, because that is the user asking. A higher eraseEpoch
-      // wins the merge, and a losing copy keeps only rows the erase did not list
-      // (US-09 AC23), never its opt-in, so the record on their other devices
-      // can't save them either. Carry the decision, never the identity: no
-      // token, no email address.
-      const priorProvider = this.file.reminderOptIn?.provider ?? null;
-      const ctx = this.ctx();
-      // WHEN, beside WHICH: read only by a copy that missed an earlier erase
-      // that listed nothing (US-09 AC20, AC23). Floored 1 ms past the last
-      // write this eraser has seen, so a slow clock here cannot let through a
-      // row it already erased. A clock more than a day past now is broken, not
-      // slow: it reads as now, so it cannot push the erase out over later rows.
-      const now = stampInstant(ctx.now);
-      const seen = [stored?.meta.updatedAt, this.file.meta.updatedAt].map(stampInstant);
-      const floor = seen.filter((t) => t <= now + 86_400_000); // NaN fails too
-      const erasedAt = new Date(Math.max(now, ...floor) + 1).toISOString();
       this.erasing = true;
-      this.file = migrateFile(null, ctx);
-      this.file.schemaVersion = CURRENT_SCHEMA_VERSION;
-      this.file.erasedRows = erasedRows;
-      this.file.meta.eraseEpoch = eraseEpoch;
-      this.file.meta.erasedAt = erasedAt;
-      if (priorProvider) {
-        this.file.reminderOptIn = {
-          status: 'cancelled', token: '', email: '', provider: priorProvider,
-          updatedAt: new Date().toISOString(), lamport: 1,
-        };
-      }
+      this.file = buildErasedFile({ stored, own: this.file, device, ctx: this.ctx() });
       this.touch(); // a change like any other: a failed flush leaves it for a hide to retry
       try {
         await this.flush();
