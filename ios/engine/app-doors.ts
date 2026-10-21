@@ -80,18 +80,10 @@ export function chatListJson(historyText: string | null, nowIso: string, deviceI
   return settle(ChatSession.open(host).then((s) => s.listConversations()));
 }
 
-/**
- * One conversation's messages, in reading order. Settles to the messages.
- * The file keeps them sorted by (createdAt, id), and one exchange's question
- * and answer share a createdAt with ids `u-<t>` and `a-<t>`, so the answer
- * sorts first. Reading order puts the question first within an instant.
- * (A health-core finding for the web's own reload; reported, not changed here.)
- */
+/** One conversation's messages, question before answer (health-core's merge order). Settles to the messages. */
 export function chatMessagesJson(historyText: string | null, conversationId: string, nowIso: string, deviceId: string): string {
   const { host } = memoryHost(historyText, nowIso, deviceId);
-  const rank = (role: string) => (role === 'user' ? 0 : 1);
-  return settle(ChatSession.open(host).then((s) => [...s.getMessages(conversationId)]
-    .sort((x, y) => (x.createdAt < y.createdAt ? -1 : x.createdAt > y.createdAt ? 1 : rank(x.role) - rank(y.role)))));
+  return settle(ChatSession.open(host).then((s) => s.getMessages(conversationId)));
 }
 
 /** Records one question and answer (the web's rule: title, cap, tombstones). Settles to the new file's text. */

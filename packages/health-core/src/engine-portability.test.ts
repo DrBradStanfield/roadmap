@@ -16,7 +16,7 @@ import { build } from 'esbuild';
 const SRC = dirname(fileURLToPath(import.meta.url));
 
 /** The modules the web store and the app share. Add each one as it moves. */
-const ENGINE_ENTRIES = ['chat-session.ts', 'input-form.ts','state-edits.ts', 'erase.ts', 'live-refresh.ts', 'record-host.ts', 'record-session.ts', 'record-transfer.ts', 'storage-self-test.ts'];
+const ENGINE_ENTRIES = ['chat-session.ts', 'device-export.ts', 'device-import.ts', 'input-form.ts', 'state-edits.ts', 'erase.ts', 'live-refresh.ts', 'record-host.ts', 'record-session.ts', 'record-transfer.ts', 'storage-self-test.ts'];
 
 const FORBIDDEN: Array<[string, RegExp]> = [
   ['a node: import', /from\s+['"]node:|require\(\s*['"]node:/],

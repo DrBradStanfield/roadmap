@@ -1,6 +1,6 @@
 import Foundation
 
-/// The engine's "Delete all my data" doors (US-25 AC13, US-11): ios/engine/erase.ts
+/// The engine's "Delete all my data" doors (US-25 AC16, US-11): ios/engine/erase.ts
 /// for the phone's own file, cloud.ts `cloudErase` with a cloud open. The erase is
 /// health-core's; these only carry text across. DataEraser decides which to call.
 extension HealthEngine {

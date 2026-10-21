@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// "Delete all my data" (US-25 AC13; US-11 on the iPhone). It decides which erase
+/// "Delete all my data" (US-25 AC16; US-11 on the iPhone). It decides which erase
 /// runs and keeps the files and views around it in step; the erase itself is the
 /// engine's (HealthEngine+Erase.swift):
 /// - No cloud: the phone's file, by health-core's buildErasedFile.

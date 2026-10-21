@@ -12,7 +12,7 @@ struct HealthRoadmapApp: App {
             switch parts {
             case .success(let parts):
                 RootView(engine: parts.engine, store: parts.store, sync: parts.sync)
-                    .environment(parts.reminders).environment(parts.reminderTaps).environment(parts.eraser)
+                    .environment(parts.reminders).environment(parts.reminderTaps).environment(parts.health).environment(parts.eraser)
                     .task { await parts.sync.start() }
                     .onChange(of: scenePhase) { _, phase in follow(phase, parts.sync) }
             case .failure(let error):
@@ -70,6 +70,9 @@ struct AppParts {
     let sync: CloudSync
     let reminders: ReminderScheduler
     let reminderTaps = ReminderTaps()
+    /// Apple Health in and out (ios/architecture.md D6). Started at launch, so its
+    /// observers are in place when iOS wakes the app for new Health data.
+    let health: AppleHealthSync
     let eraser: DataEraser
 
     init() throws {
@@ -85,5 +88,8 @@ struct AppParts {
         eraser = DataEraser(engine: engine, store: store, sync: sync, chat: chat, reminders: reminders)
         // Before launch finishes, so a tap that starts the app still reaches My plan.
         UNUserNotificationCenter.current().delegate = reminderTaps
+        let sync = self.sync
+        health = AppleHealthSync(store: store, engine: engine, client: HealthKitClient()) { await sync.syncNow() }
+        health.start()
     }
 }

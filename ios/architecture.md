@@ -260,7 +260,7 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
 - **Erase (US-11)** runs as on the web, and also deletes the samples this app wrote to
   Apple Health and cancels its notifications. A phone that takes in an erase made on another
   device does the same.
-  **Built 2026-10-21 (US-25 AC13)**, with "Export my record" beside it. Decisions taken
+  **Built 2026-10-21 (US-25 AC16)**, with "Export my record" beside it. Decisions taken
   while Brad slept, for him to revisit:
   - **One engine erase per mode.** No cloud: the phone's file through health-core's
     `buildErasedFile` (`ios/engine/erase.ts`; the stored record and the working copy are the
@@ -304,6 +304,106 @@ exact list matched to `types.ts` in the spike).
 - Merge orders rows by when they were written, not when they were measured. Rules such as
   "the latest reading of the day wins across devices" would need the sample time in the
   record and a merge change: merge-class work, adversary plus Codex.
+
+**Built 2026-10-21 (engine).** The rules above are health-core code, so Swift only reads
+HealthKit and hands readings over: `device-import.ts` (`importDeviceSamples`, the My data
+edit `appleHealth`) and `device-export.ts` (`deviceWrites`, the door `healthWritesJson`).
+Decisions made building it (agent, 2026-10-21; Brad to confirm):
+- **The row's `recordedAt` is the reading's real instant with the UTC offset of where it
+  was taken** (`2026-10-21T08:30:00.000+13:00`), in the zone HealthKit recorded
+  (`HKMetadataKeyTimeZone`), else the phone's. `dayOf` gives the day the person lived
+  there; the web shows it as a moment (`formatShortDate` treats only `T00:00:00Z` as a day),
+  so a viewer in another zone may see the neighbouring date. Within a day the latest
+  reading wins, compared as instants: a later reading replaces an earlier Apple Health row
+  (a correction with its own `recordedAt`, same day), an earlier one is skipped. Without
+  the time, the winner would depend on arrival order and a full re-import could swap it.
+  First built as wall-clock time labelled Z; the adversary review found the web showed it
+  on the wrong day, so it fell before any real data (2026-10-21).
+- **A blood pressure lands whole or not at all.** Its halves carry the correlation's id
+  (`pairId`); a pair with a half refused (out of range, a typed half, a later reading) or
+  missing (Health shows only the half the person allowed) lands neither.
+- **Single device only.** These rules hold on one phone. Across devices the merge keeps the
+  newest-written row of a slot, so a phone import written after a web-typed value for the
+  same day can win the merge, and a later-written earlier reading can stay active. The write
+  version (below) has the same limit: when a merge picks another device's correction with a
+  shorter chain, its version does not rise, so Health keeps the old value. Fixing these is
+  merge-class work for the cloud-sync slice (adversary plus Codex); a version of (chain
+  length, write time) or a lamport clock would rise across both.
+- **"Not yet happened" compares instants**, with five minutes for a device clock running
+  ahead: a reading's day is the day where it was taken, which in a zone ahead of the phone's
+  is already the phone's tomorrow (fix-scoped re-check, 2026-10-21).
+- **Height** is the profile's: Apple Health fills an empty height and never replaces one.
+  It is not written back: the profile has no source, so an imported height would echo.
+- **Blood glucose is not read.** It is a catalogue lab value, and lab rows have no
+  `externalId` to dedup on; it waits for the Health Records work. HbA1c has no HealthKit
+  quantity type.
+- **Blood pressure** is written as one correlation per day, both halves present, keyed by
+  the systolic chain's root; a day with an imported half is not written.
+- **The write version is the correction chain's length** (the sum of both chains for a
+  blood pressure), not a clock: a phone clock set back would otherwise give a correction a
+  lower version, and Health would keep the old value (Codex review 2026-10-21).
+
+**Built 2026-10-21 (app).** `HealthRoadmap/Health/`: `HealthKitClient` is the only file that
+touches HealthKit (types, SI units, anchored queries, observer queries, saves), behind the
+`HealthStoreClient` protocol so the tests run on a fake. `AppleHealthSync` runs it on the
+main actor, as `RecordStore` does, so an import and a typed save never overlap; a refresh
+asked for during one loops once more. Its decisions:
+- **An import takes the typed values' path** (`RecordStore.applyNow`, 2026-10-21, after the
+  merge with cloud sync): in the cloud it goes through `cloudEdit`, so the session's save
+  loop, merge and erase guard apply. It is checked against the erase and units shown at
+  that moment, not a sheet's pin (D5's sheet rule; an import is not a sheet). A refusal
+  asks cloud sync to re-read and tries once more; a second keeps the anchor. A batch that
+  changes nothing is not saved, on the phone or in the cloud (`cloudEdit` returns early).
+- **Anchors and the written versions live in UserDefaults** (`HealthSyncMemory`), not the
+  record: they are this phone's bookkeeping. An anchor moves only after the record holding
+  that batch is on disk; a refused or failed save reads the batch again.
+- **No anchor is kept until a kind has given a whole reading** (for blood pressure, both
+  halves). iOS answers a refused read with an empty result, not an error; keeping that
+  anchor would skip every older reading once the person allows it in Settings (found on the
+  simulator 2026-10-21). Limits: a read turned off and on again later misses what arrived
+  while it was off; a kind holding only our own samples re-reads its history each time
+  (cost only); a reading the engine skips (out of range, or timed ahead of the phone) is not
+  offered again; and once blood pressure has an anchor, readings that arrive while the
+  person has turned one half off are refused as half pairs and not offered again.
+  Simulator gotcha: versions written before the chain-length rule were milliseconds, so a
+  simulator that ran an earlier build needs the app deleted before testing corrections.
+- **Our own samples are never read back:** our bundle id, or our `healthroadmap:` sync
+  identifier prefix (a sample our app wrote on the person's other iPhone, synced by Health).
+- **Locked phone:** HealthKit's `errorDatabaseInaccessible` becomes "waiting for unlock";
+  the anchor stays, and the next unlock (`protectedDataDidBecomeAvailable`) or return to
+  the foreground retries. Observer queries with background delivery wake the app for new
+  data; iOS is told the work is done only after the import saved (a refresh asked for
+  during one waits for it).
+- **Writes**: once per (sync id, version); a kind the person did not allow is skipped; one
+  that Health refuses is retried next time and does not hold back the others. A typed
+  value has a day, not a time, so Health gets noon of that day, or now if noon has not
+  come. Height is read, never written, and the sheet does not ask to write it.
+- **Blood pressure on the simulator (iOS 26.5): not checkable.** The app asks for both
+  halves (HealthKit's log: "Requesting prompting authorization to share (…BloodPressure
+  Diastolic…Systolic)"), but the simulator's permission sheet leaves them out ("Ordered
+  read" lists only height, waist and weight), so blood pressure is neither read nor
+  written there. Weight in and waist out were checked; blood pressure needs a real iPhone.
+- **Erase (D5) does not yet delete our samples from Health**: the app has no erase yet.
+  Whoever builds it deletes samples whose sync identifier starts `healthroadmap:` and
+  clears `HealthSyncMemory`'s written versions.
+
+**Entitlement.** `ios/HealthRoadmap.entitlements` (HealthKit, with background delivery, no
+Health Records access) is set as `CODE_SIGN_ENTITLEMENTS`; the purpose strings are
+`INFOPLIST_KEY_NSHealthShareUsageDescription` and `...UpdateUsageDescription`. The simulator
+build signs it locally with no team. **For Brad, once the Apple Developer team exists:** set
+the team in Xcode (Signing & Capabilities), confirm the App ID `com.drbrad.healthroadmap`
+has the HealthKit capability (Xcode adds it when signing automatically), and test the
+background delivery and blood pressure both ways on a real iPhone: the simulator shows
+neither. App Store Connect's privacy answers must list Health data (read and written, not
+linked to tracking, kept on the device), the review notes should say why the app reads
+Health, and a HealthKit app needs a privacy policy URL. The read purpose string says the
+values go only into the person's record, on the iPhone or in the Dropbox or Google Drive
+they connect (changed at the cloud-sync merge, 2026-10-21). Health values reaching chat, as
+part of the record's summary, are a guideline 5.1.3 disclosure question for the chat consent. Whether a device backup counts as "iCloud"
+under 5.1.3 is the D5 backup question, still open.
+
+**Out of scope 2026-10-21: blood tests from Health Records** (`HKClinicalRecord`). Below
+is the plan for them, not built.
 
 **Blood tests** mostly are not HealthKit quantity types. They arrive as Health Records
 (`HKClinicalRecord`), which needs Apple's entitlement and, to our knowledge, works only in
@@ -367,7 +467,7 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
 - **Erase (US-11).** When the record's erase epoch moves (an erase here or one synced in),
   the opt-in ends and every pending reminder is cancelled; the user turns reminders on
   again. This assumes an erase bumps the epoch and never deletes the file for a fresh
-  one at epoch 0: the in-app erase (built, D5, US-25 AC13) uses health-core's `erase.ts`. An
+  one at epoch 0: the in-app erase (built, D5, US-25 AC16) uses health-core's `erase.ts`. An
   unreadable record cancels them all for that round but keeps the opt-in; the next good
   read schedules again.
 - **Permission.** A refusal points to Settings; "not asked yet" (Settings has no switch
@@ -540,13 +640,12 @@ owed as a fixture before release; until then the first real device is the test.
 
 **Reviews (2026-10-21).** Design: adversary R1 to R14 fixed, Codex no findings. Code: a
 fresh adversary (no blocker; R2 to R7 fixed) and Codex (R2 to R7 fixed; R1 "not wired into
-RootView" is by design: the orchestrator wires `ChatView` and `LabUploadButton`). Found
-and NOT fixed here (merge-class, the orchestrator's call): health-core's `mergeMessages`
-sorts by (createdAt, id), and `recordExchange` stamps a question and its answer with one
-createdAt and ids `u-<t>` / `a-<t>`, so from the second exchange the stored history puts
-each answer above its question; the web widget reads it back that way after a reload and
-the Pages BYOK chat sends it to the model mispaired. The app re-sorts on read
-(`chatMessagesJson`); that re-sort goes once health-core is fixed.
+RootView" is by design: the orchestrator wires `ChatView` and `LabUploadButton`). The chat
+history order bug it found was then fixed in health-core (orchestrator's call,
+2026-10-21): `mergeMessages` orders a question before its answer at an equal
+createdAt (ids `u-<t>` / `a-<t>` used to put the answer first from the second exchange),
+and `ChatSession.getMessages` reads in that order, so a file saved the old way reads
+right before its next save. The app's own re-sort was deleted.
 
 **The record stays the app's.** Lab extraction returns proposed values; the app shows them
 for confirmation and writes the ticked ones itself, through health-core's
@@ -573,6 +672,14 @@ stays in the cloud synced earlier, or only this iPhone.
 Any change to merge behaviour bumps the schema version, so an older app refuses the file
 (`SchemaTooNewError`) and asks for an update instead of merging the old way. Over-the-air
 engine updates (D3) close most of this gap; the bump covers what they cannot reach.
+
+The rule is for merges that could lose or change data. A change that only orders what
+merges already keep does not bump. Decided 2026-10-21 by the orchestrator, for Brad to
+revisit: `mergeMessages` now sorts question before answer at an equal `createdAt`
+(US-52). Codex asked for a chat-history version bump. Not done, because every reader
+sorts on read (`ChatSession.getMessages`), so a file an older client writes still reads
+in the right order, and nothing can be lost or duplicated. A bump would have cut every
+open web tab, Pages fork and CLI off from its chat history until it updated.
 
 ## Build and test
 
@@ -633,6 +740,9 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
     `ReminderScheduler` keeps the pending notifications equal to it behind
     `NotificationScheduling` (a fake in the tests), `ReminderTaps` sends a tap to My plan,
     and `RemindersSection` is the switch and list in My data.
+  - `Health/`: Apple Health (D6). `HealthKitClient` is HealthKit; `AppleHealthSync` runs
+    the import and the writes; `HealthReading.swift` is what crosses to the engine;
+    `HealthSyncMemory` the anchors; `AppleHealthSection` the row in My data.
   - `Plan/`: the plan screen, planned from the stored record whenever it changes.
     `Plan.swift` is the slice of the engine's JSON the app reads, evidence included. The layout (sections, card order, grouped cards) is not
     Swift: it is health-core's `planSections` (packages/health-core/src/plan-sections.ts),

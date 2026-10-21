@@ -1,4 +1,4 @@
-// "Delete all my data" while the record is the phone's own file (US-25 AC13,
+// "Delete all my data" while the record is the phone's own file (US-25 AC16,
 // US-11). The erase is health-core's buildErasedFile, the rule the web's
 // RecordSession.erase writes with; the chat history's is ChatSession.eraseAll.
 // The order is the web's (RecordSession.deleteAllData): read the record first,

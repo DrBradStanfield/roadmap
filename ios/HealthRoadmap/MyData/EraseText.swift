@@ -1,6 +1,6 @@
 import Foundation
 
-/// What "Delete all my data" says, before and after (US-25 AC13, US-11 AC5: the
+/// What "Delete all my data" says, before and after (US-25 AC16, US-11 AC5: the
 /// caveats belong in the confirmation, where they are still a decision). The web's
 /// words are HealthTool.tsx `ERASE_CONFIRM`; the app has fewer copies to name: no
 /// documents, no command-line backups, and Dr Brad's server keeps no app chat (D8).

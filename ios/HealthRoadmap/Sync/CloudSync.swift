@@ -115,7 +115,7 @@ final class CloudSync: CloudPort {
         }
     }
 
-    /// "Delete all my data" through the open session (US-25 AC13; the erase is the
+    /// "Delete all my data" through the open session (US-25 AC16; the erase is the
     /// engine's RecordSession.deleteAllData). Nil when no session is open: the phone
     /// then cannot read the cloud record, so it cannot list what it erases, and
     /// refuses as the web does (US-09 AC23).

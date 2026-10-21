@@ -1,4 +1,4 @@
-// US-25 AC13 (US-11 on the iPhone): "Delete all my data" while the record is
+// US-25 AC16 (US-11 on the iPhone): "Delete all my data" while the record is
 // the phone's own file. The erase is health-core's (erase.ts), the chat
 // history's is ChatSession.eraseAll; this door only runs them in the web's
 // order. The cloud erase is in cloud.test.ts.
@@ -25,7 +25,7 @@ async function historyWithOneChat(): Promise<string> {
   return settled.value;
 }
 
-describe('eraseOnPhone (US-25 AC13, US-11)', () => {
+describe('eraseOnPhone (US-25 AC16, US-11)', () => {
   it('erases the record by the engine rule: epoch bumped, every row listed, no row left', async () => {
     const before = recordWithWeight();
     const result = await eraseOnPhone(JSON.stringify(before), null, LATER, 'ios-1');

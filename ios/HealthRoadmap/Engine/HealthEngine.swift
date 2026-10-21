@@ -84,6 +84,12 @@ final class HealthEngine {
         return try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
     }
 
+    /// The values a person entered that belong in Apple Health (US-25 AC14, device-export.ts).
+    func healthWrites(recordJSON: String, now: Date, deviceId: String) throws -> [HealthWrite] {
+        let json = try call("healthWritesJson", [recordJSON, now.formatted(Self.iso), deviceId])
+        return try JSONDecoder().decode([HealthWrite].self, from: Data(json.utf8))
+    }
+
     /// Every value recorded for one metric, newest first, corrections included (US-25 AC9).
     func history(recordJSON: String, metric: String, now: Date, deviceId: String) throws -> MetricHistory {
         let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId])

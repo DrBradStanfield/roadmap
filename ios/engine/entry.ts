@@ -3,7 +3,7 @@
 // string-in, string-out door, because JSON is the one shape both sides share.
 import { computePlan, type Plan } from '../../packages/health-core/src/plan';
 import { planSections } from '../../packages/health-core/src/plan-sections';
-import { applyEdit, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
+import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { phoneReminders } from './reminders';
 import { installShim, type Natives } from './shim';
@@ -51,6 +51,11 @@ export function applyEditJson(recordJson: string, editJson: string, nowIso: stri
 /** A typed number as JSON: the number, or null when it is not a plain decimal. */
 export function numberJson(text: string): string {
   return JSON.stringify(readNumber(text) ?? null);
+}
+
+/** The values to write to Apple Health, as JSON (US-25 AC14, device-export.ts). */
+export function healthWritesJson(recordJson: string, nowIso: string, deviceId: string): string {
+  return JSON.stringify(healthWrites(readRecord(recordJson, nowIso, deviceId)));
 }
 
 /** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */

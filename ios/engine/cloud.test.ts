@@ -451,9 +451,9 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
 
 });
 
-// US-25 AC13 (US-11 on the iPhone): "Delete all my data" with a cloud open.
+// US-25 AC16 (US-11 on the iPhone): "Delete all my data" with a cloud open.
 // The engine runs RecordSession.deleteAllData, the web's own order and guard.
-describe('cloudErase (US-25 AC13, US-11)', () => {
+describe('cloudErase (US-25 AC16, US-11)', () => {
   interface Erased { success: boolean; error?: string; chatErased: boolean; chatHistory: string | null; erased: boolean; view: { record: string; erase: string; session: number } | null }
   const chat = JSON.stringify({ schemaVersion: 1, conversations: [{ id: 'c1', title: 'Is my LDL high?', createdAt: NOW, updatedAt: NOW, messages: [{ id: 'u-1', role: 'user', content: 'Is my LDL high?', createdAt: NOW }] }], meta: { updatedAt: NOW, lamport: 1, lastDeviceId: 'ios-1' } });
 

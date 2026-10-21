@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The last section of My data (US-25 AC13): "Export my record" and "Delete all my
+/// The last section of My data (US-25 AC16): "Export my record" and "Delete all my
 /// data". The delete is two steps: a page that says what goes and what stays,
 /// then iOS's own "Delete everything?" alert.
 struct RecordSection: View {

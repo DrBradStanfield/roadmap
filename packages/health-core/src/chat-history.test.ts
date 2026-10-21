@@ -4,6 +4,7 @@ import {
   cutText,
   createEmptyChatHistoryFile,
   mergeChatHistoryFiles,
+  mergeMessages,
   migrateChatHistoryFile,
   type ChatFileConversation,
   type ChatHistoryFile,
@@ -156,5 +157,24 @@ describe('US-15 AC26 — cutText', () => {
   it('US-15 AC26: keeps an emoji that ends exactly at the cut, and short text whole', () => {
     expect(cutText('a'.repeat(498) + '😀b', 500)).toBe('a'.repeat(498) + '😀');
     expect(cutText('short', 500)).toBe('short');
+  });
+});
+
+describe('US-52 AC6 / US-15 AC7: mergeMessages order', () => {
+  // One exchange shares a createdAt; ids are `u-<t>` and `a-<t>`, and 'a' < 'u'.
+  const t1 = '2026-10-21T08:00:00.000Z';
+  const t2 = '2026-10-21T08:01:00.000Z';
+  const msg = (id: string, role: 'user' | 'assistant', createdAt: string) => ({ id, role, content: id, createdAt });
+
+  it('puts the question before its answer at an equal createdAt', () => {
+    const merged = mergeMessages([msg('u-1', 'user', t1), msg('a-1', 'assistant', t1)], [msg('u-2', 'user', t2), msg('a-2', 'assistant', t2)]);
+    expect(merged.map((m) => m.id)).toEqual(['u-1', 'a-1', 'u-2', 'a-2']);
+  });
+
+  it('repairs a history already saved in the old order when it is merged', () => {
+    const saved = [msg('a-1', 'assistant', t1), msg('u-1', 'user', t1), msg('a-2', 'assistant', t2), msg('u-2', 'user', t2)];
+    expect(mergeMessages(saved, []).map((m) => m.id)).toEqual(['u-1', 'a-1', 'u-2', 'a-2']);
+    // The same order whichever side holds which copy: merge stays commutative.
+    expect(mergeMessages([], saved).map((m) => m.id)).toEqual(mergeMessages(saved, []).map((m) => m.id));
   });
 });

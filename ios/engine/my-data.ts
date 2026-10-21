@@ -11,6 +11,8 @@ import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, supplementSchema } from '../../packages/health-core/src/validation';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
+import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
+import { deviceWrites, type DeviceWrite } from '../../packages/health-core/src/device-export';
 import { applyFormEdit, customSupplement, formsOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import {
@@ -51,6 +53,8 @@ export type Edit =
   | { kind: 'medication'; medicationKey: string; drugName: string; doseValue?: number | null; doseUnit?: string | null }
   /** A supplement's current state; `status: 'stopped'` is the soft stop (US-06). */
   | { kind: 'supplement'; supplementKey: string; supplementName: string; doseValue?: number | null; doseUnit?: string | null; status: 'active' | 'stopped'; startedAt?: string }
+  /** Readings from Apple Health (US-25 AC13): health-core's device-import decides what lands. */
+  | { kind: 'appleHealth'; samples: DeviceSample[] }
   /** Medication and screening answers and a typed supplement (my-data-forms.ts, US-25 AC8). */
   | FormEdit
   /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
@@ -186,6 +190,10 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
       }
       return { ok: true, file: upsertSupplement(file, { supplementKey, supplementName, doseValue, doseUnit, status, startedAt }, now).file };
     }
+    case 'appleHealth': {
+      if (!Array.isArray(edit.samples)) return { ok: false, reason: 'invalid-value', message: 'Apple Health readings come as a list.' };
+      return { ok: true, file: importDeviceSamples(file, edit.samples, { now, source: 'apple_health' }).file };
+    }
     case 'customSupplement':
       return applyEdit(file, { kind: 'supplement', ...customSupplement(edit.name), status: 'active' }, now);
     case 'medicationField':
@@ -198,4 +206,9 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
   }
+}
+
+/** What the app writes to Apple Health (US-25 AC14): the values a person entered, never its own imports. */
+export function healthWrites(file: RoadmapFile): DeviceWrite[] {
+  return deviceWrites(file, 'apple_health');
 }

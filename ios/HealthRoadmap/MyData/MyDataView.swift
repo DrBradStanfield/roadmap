@@ -57,6 +57,7 @@ struct MyDataView: View {
                     ScreeningsSection(store: store, data: data, saved: saved)
                     SupplementsSection(store: store, supplements: data.supplements, saved: saved)
                     RemindersSection()
+                    AppleHealthSection()
                     RecordSection(store: store, sync: sync)
                     Section {
                     } footer: {
