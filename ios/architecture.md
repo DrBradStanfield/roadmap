@@ -111,6 +111,16 @@ one pure edit per call; once the app keeps a session open it should run each edi
 `RecordSession.edit` with the page's erase stamp, so its writes get the save loop, the
 merge on conflict and the erase guard.
 
+**The form's questions moved too (2026-10-21, US-25 AC8).** The medication, screening and
+supplement questions (labels, hints, option lists, show-when rules and what each answer
+writes) lived as JSX in `InputPanel.tsx`. They now live in health-core's `input-form.ts`
+as data (`medicationForm`, `screeningForm`, `medicationWrites`, `screeningWrites`); the web
+form imports the text and write rules (net -204 lines there, DOM unchanged, a parity test
+renders it against the descriptions) and the app renders the same descriptions natively.
+Decided in the night session because the alternative, Swift or a second TypeScript copy of
+the cascade steps, is the drift D2 exists to stop. The web still lays its fields out in
+JSX: rendering the web from the descriptions too is a possible follow-up, not needed for parity.
+
 ### D5 · Storage: on the phone by default, Dropbox or Google Drive optional (Brad, 2026-10-21)
 
 - **Default: a file in the app's container**, with iOS Data Protection. Built 2026-10-21
@@ -228,7 +238,12 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
 - `engine/my-data.ts`: what the My data tab shows and every write it makes, each one
   health-core's own (`createEmptyFile`, `updateProfile`, `stampProfile`,
   `appendMeasurement`, `correctValue`, `upsertMedication`, `upsertSupplement`), with
-  values in the user's units (US-25 AC7). Not yet through `RecordSession.edit` (D4). Tested in Node by
+  values in the user's units (US-25 AC7). Not yet through `RecordSession.edit` (D4).
+- `engine/my-data-forms.ts`: the medication, screening and supplement questions
+  (health-core `input-form.ts`) for the plan's age, sex and cascades, their answers
+  (only a shown question, only an offered answer, then the web's writes), and
+  `metricHistory` (every row of a metric, entered-in-error included). Entry door:
+  `historyJson`. Tested in Node by
   `engine/my-data.test.ts`, which the web's `test:all` runs.
 - `scripts/build-engine.mjs`: bundles health-core with esbuild (target Safari 17, iOS 17's
   JavaScriptCore) into `HealthRoadmap/Engine/health-engine.js`, and writes the parity
@@ -251,6 +266,11 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   - `MyData/`: the record and its tab. `RecordStore` keeps the file and applies edits
     through the engine; `MyData.swift` is the engine's view of the record and the
     `RecordEdit` the tab sends; `MyDataView`, `ValueEntrySheet` and `DayText` draw it.
+    The form sections (US-25 AC8): `FormModels` (the engine's question JSON and `FormEdit`),
+    `FormFieldRow` (one question: menu, month wheel, number or dated value),
+    `FormSectionsList`, `MedicationsSection`, `ScreeningsSection`, `SupplementsSection`
+    with `SupplementSheet`. Value history (AC9): `MetricSheet` (history, or entry when
+    empty) and `HistoryView` (Swift Charts trend, tap to correct, no delete).
   - `Plan/`: the plan screen, planned from the stored record whenever it changes.
     `Plan.swift` is the slice of the engine's JSON the app reads, evidence included. The layout (sections, card order, grouped cards) is not
     Swift: it is health-core's `planSections` (packages/health-core/src/plan-sections.ts),
@@ -263,7 +283,8 @@ engine updates (D3) close most of this gap; the bump covers what they cannot rea
   layout, byte for byte); `PlanLayoutTests` pins the sample's web layout and checks that
   no card loses its evidence or ingredients; `RecordEditTests` runs the My data writes in
   JavaScriptCore; `RecordStoreTests` covers the file (AC4) and the plan following it
-  (AC6); `DayTextTests` pins the local day.
+  (AC6); `DayTextTests` pins the local day; `FormEditTests` runs the form answers,
+  supplements and history in JavaScriptCore (AC8, AC9).
 
 **Code for AI agents to read (HARD, Brad 2026-10-21).** This app is written and maintained
 by AI agents, so the code is shaped for a reader with no memory of how it got here:
