@@ -22,8 +22,8 @@ struct MetricEntrySheet: View {
 
 /// One blood pressure: systolic and diastolic side by side, one day. The engine
 /// saves both halves or neither (`bloodPressure` in ios/engine/blood-pressure.ts).
-/// A day that already holds one asks first; replacing it corrects the half that
-/// changed, the old row kept as entered in error. The web twin is the BP cell of
+/// A day that already holds one asks first; replacing it corrects both halves,
+/// the old rows kept as entered in error, so the history shows whole pairs. The web twin is the BP cell of
 /// StartingInfoVitals.tsx, which commits the pair together.
 struct BloodPressureSheet: View {
     let store: RecordStore

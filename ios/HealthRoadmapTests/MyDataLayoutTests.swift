@@ -29,7 +29,7 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(shown.vitals.last?.latest?.value, "120/80")
     }
 
-    func testReplacingABloodPressureAsksFirstThenCorrectsTheChangedHalf() throws {
+    func testReplacingABloodPressureAsksFirstThenCorrectsBothHalves() throws {
         let engine = try HealthEngine()
         let first = try XCTUnwrap(engine.apply(.bloodPressure(systolic: 120, diastolic: 80, day: "2026-10-20", replace: false), to: try record(engine), now: now, deviceId: "test").record)
         let held = try engine.apply(.bloodPressure(systolic: 125, diastolic: 80, day: "2026-10-20", replace: false), to: first, now: now, deviceId: "test")
@@ -38,12 +38,14 @@ final class MyDataLayoutTests: XCTestCase {
 
         let fixed = try XCTUnwrap(engine.apply(.bloodPressure(systolic: 125, diastolic: 80, day: "2026-10-20", replace: true), to: first, now: now, deviceId: "test").record)
         let after = try rows(fixed)
-        XCTAssertEqual(after.count, 3)
+        XCTAssertEqual(after.count, 4)
         XCTAssertEqual(after[0]["status"] as? String, "entered-in-error")
+        XCTAssertEqual(after[1]["status"] as? String, "entered-in-error")
+        XCTAssertEqual(after[3]["correctsId"] as? String, after[1]["id"] as? String)
         XCTAssertEqual(after[2]["correctsId"] as? String, after[0]["id"] as? String)
 
         let history = try engine.history(recordJSON: fixed, metric: MyData.bloodPressure, now: now, deviceId: "test")
-        XCTAssertEqual(history.rows.map(\.value), ["125/80", "120/–"])
+        XCTAssertEqual(history.rows.map(\.value), ["125/80", "120/80"])
         XCTAssertEqual(history.rows.first?.systolic, "125")
         XCTAssertEqual(history.rows.first?.diastolic, "80")
     }

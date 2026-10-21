@@ -53,16 +53,31 @@ describe('blood pressure, one reading (US-25 AC17)', () => {
     expect(outcome).toMatchObject({ ok: false, reason: 'slot-occupied', existingId: half.measurements[0].id });
   });
 
-  it('replacing corrects only the half that changed: a correctsId row, the old one entered-in-error', () => {
+  it('replacing corrects both halves, so history keeps a whole struck pair (orchestrator, 2026-10-22)', () => {
     const file = edited(nz(), NOW, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
     const [sys, dia] = file.measurements;
     const fixed = edited(file, LATER, { kind: 'bloodPressure', systolic: 125, diastolic: 80, day: '2026-10-20', replace: true });
-    expect(fixed.measurements).toHaveLength(3);
+    expect(fixed.measurements).toHaveLength(4);
     expect(fixed.measurements[0]).toMatchObject({ id: sys.id, status: 'entered-in-error', value: 120 });
-    expect(fixed.measurements[1]).toEqual(dia);
+    expect(fixed.measurements[1]).toMatchObject({ id: dia.id, status: 'entered-in-error', value: 80 });
     expect(fixed.measurements[2]).toMatchObject({ metricType: 'systolic_bp', value: 125, correctsId: sys.id, status: 'active', recordedAt: '2026-10-20' });
-    // The same pair again changes nothing.
+    expect(fixed.measurements[3]).toMatchObject({ metricType: 'diastolic_bp', value: 80, correctsId: dia.id, status: 'active', recordedAt: '2026-10-20' });
+    expect(metricHistory(fixed, 'blood_pressure', LATER).rows.map((row) => [row.value, row.status])).toEqual([
+      ['125/80', 'active'],
+      ['120/80', 'entered-in-error'],
+    ]);
+    // The exact same pair again writes nothing.
     expect(applyEdit(fixed, { kind: 'bloodPressure', systolic: 125, diastolic: 80, day: '2026-10-20', replace: true }, LATER)).toEqual({ ok: true, file: fixed });
+  });
+
+  it('replacing a day that holds one half corrects it and adds the other', () => {
+    const half = edited(nz(), NOW, { kind: 'add', metric: 'diastolic_bp', value: 80, day: '2026-10-20' });
+    const fixed = edited(half, LATER, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20', replace: true });
+    expect(fixed.measurements.map((row) => [row.metricType, row.value, row.status, row.correctsId ?? null])).toEqual([
+      ['diastolic_bp', 80, 'entered-in-error', null],
+      ['systolic_bp', 120, 'active', null],
+      ['diastolic_bp', 80, 'active', half.measurements[0].id],
+    ]);
   });
 
   it('a replacement with one half out of range corrects neither', () => {

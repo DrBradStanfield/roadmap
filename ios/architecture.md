@@ -709,8 +709,10 @@ open web tab, Pages fork and CLI off from its chat history until it updated.
   runs health-core's `appendMeasurement` or `correctValue` for each half on one record and
   returns the first refusal, so both rows land or neither. Two Swift calls in a row would
   save a lone systolic when the diastolic is refused. The record keeps two rows per day,
-  as the web pairs them; no new row shape. Replacing corrects only the half that changed,
-  the fewest new rows. A held day is asked about before any half is written.
+  as the web pairs them; no new row shape. Replacing corrects both halves, the unchanged
+  one too, so the history always shows a whole struck pair (orchestrator, 2026-10-22: one
+  redundant row is fine under append-only); the exact same pair writes nothing. A held
+  day is asked about before any half is written.
 - **Feet and inches in the engine.** `profile` takes `heightFeet` and `heightInches` and
   calls health-core's `feetInchesToCm`; My data gets `cmToFeetInches`. Same maths and
   rounding as the web's form, no Swift copy (D2). Not unit-dependent, so the cloud's

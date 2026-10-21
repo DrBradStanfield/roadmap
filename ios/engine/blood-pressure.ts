@@ -46,10 +46,13 @@ export function applyPressure(file: RoadmapFile, edit: PressureEdit, now: string
   if (taken && !edit.replace) {
     return { ok: false, reason: 'slot-occupied', message: `Blood pressure already has a value on ${day}.`, existingId: taken.id };
   }
+  // The exact pair the day already holds writes nothing.
+  if (held.every((row, index) => row && Math.abs(row.value - values[index]) < 1e-9)) return { ok: true, file };
+  // Otherwise every held half is corrected, an unchanged one too, so the history
+  // keeps whole pairs: the struck pair reads 120/80, never 120/– (orchestrator, 2026-10-22).
   let next = file;
   for (const [index, metricType] of HALVES.entries()) {
     const old = held[index];
-    if (old && Math.abs(old.value - values[index]) < 1e-9) continue;
     const result = old
       ? correctValue(next, { id: old.id, newValue: values[index], unit: UNIT, now })
       : appendMeasurement(next, { metricType, value: values[index], unit: UNIT, recordedAt: day, now });
