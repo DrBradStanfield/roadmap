@@ -51,11 +51,11 @@ describe('routerView (US-50 AC3)', () => {
     expect(handles(view)).toEqual(['collagen', 'nad-nmn', 'two-masters', 'missing-master', 'article-as-master', 'an-article', 'no-topics']);
   });
 
-  it('hides only article entries: a reference, pathway or guideline marked hidden stays (M1)', () => {
+  it('hides only article entries: a reference or guideline marked hidden stays (M1)', () => {
     const asRef = master('other-ref', '2026-10-20');
     const hiddenRef: BlogIndexEntry = { ...asRef, topics: ['collagen'], router: 'hidden' };
-    const hiddenPathway = post('a-pathway', { type: 'pathway', topics: ['collagen'], router: 'hidden' });
-    expect(handles(routerView([collagen, hiddenRef, hiddenPathway], true))).toEqual(['collagen', 'other-ref', 'a-pathway']);
+    const hiddenGuideline = post('a-guideline', { type: 'guideline', topics: ['collagen'], router: 'hidden' });
+    expect(handles(routerView([collagen, hiddenRef, hiddenGuideline], true))).toEqual(['collagen', 'other-ref', 'a-guideline']);
   });
 
   it('a hidden post with no publish date stays, and does not throw (L1)', () => {

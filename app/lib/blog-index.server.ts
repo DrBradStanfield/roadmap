@@ -15,7 +15,7 @@ export interface BlogIndexEntry {
   publishedAt: string;
   youtube?: string;
   summary?: string;
-  type?: 'reference' | 'article' | 'guideline' | 'pathway';
+  type?: 'reference' | 'article' | 'guideline';
   /** Master handles this post is about (US-50 AC2). */
   topics?: string[];
   /** Set only on a single-subject post: the router drops it once its masters are up to date (US-50 AC3). */

@@ -27,7 +27,8 @@ import { cutText } from '../../packages/health-core/src/chat-history';
 
 // 2: router model Haiku 4.5 -> Sonnet 5.5 and the rule 7 rework (2026-09-29).
 // 3: the router view drops hidden posts whose masters are up to date (US-50 AC3).
-export const ROUTER_VERSION = 3;
+// 4: HealthPathways removed: no pathway entries, rule 1 rewritten, no US→UK spelling step (2026-10-22).
+export const ROUTER_VERSION = 4;
 
 // The router's view, not the full index: the allow-list, the index block and
 // {{ENTRY_COUNT}} all come from it (US-50 AC3). loadBlogIndex() stays whole.
@@ -60,7 +61,7 @@ export const VALID_HANDLES = new Set(ROUTER_VIEW.map(e => e.handle));
  */
 export function repairHandle(h: string): string {
   if (VALID_HANDLES.has(h)) return h;
-  for (const t of ['pathway', 'guideline', 'reference', 'article']) {
+  for (const t of ['guideline', 'reference', 'article']) {
     if (h.startsWith(`${t}-`)) {
       const stripped = h.slice(t.length + 1);
       if (VALID_HANDLES.has(stripped)) return stripped;
@@ -151,46 +152,6 @@ export function redactForWidget(row: MatchEventRow): Record<string, unknown> {
 }
 
 // ---------------------------------------------------------------------------
-// US → UK spelling normalisation. Our index (Auckland HealthPathways) uses
-// UK spelling. US-spelled queries miss on literal text match despite any
-// "understand spelling variants" rule in the prompt — Haiku scans the index
-// as text, not by semantic meaning. Normalise once, server-side, before the
-// Anthropic call: one lookup, all handles covered, zero per-summary edits.
-//
-// When a new variant shows up in chat_match_events, add a line here.
-// ---------------------------------------------------------------------------
-
-const US_TO_UK_SPELLINGS: Record<string, string> = {
-  apnea: 'apnoea',
-  estrogen: 'oestrogen',
-  diarrhea: 'diarrhoea',
-  anemia: 'anaemia',
-  hemorrhage: 'haemorrhage',
-  edema: 'oedema',
-  tumor: 'tumour',
-  fiber: 'fibre',
-  pediatric: 'paediatric',
-  gynecology: 'gynaecology',
-  orthopedic: 'orthopaedic',
-  leukemia: 'leukaemia',
-  celiac: 'coeliac',
-  esophagus: 'oesophagus',
-  esophageal: 'oesophageal',
-  hematoma: 'haematoma',
-  hemoglobin: 'haemoglobin',
-};
-
-export function normaliseSpellings(msg: string): string {
-  let out = msg;
-  for (const [us, uk] of Object.entries(US_TO_UK_SPELLINGS)) {
-    out = out.replace(new RegExp(`\\b${us}\\b`, 'gi'), m =>
-      /^[A-Z]/.test(m) ? uk[0].toUpperCase() + uk.slice(1) : uk,
-    );
-  }
-  return out;
-}
-
-// ---------------------------------------------------------------------------
 // Output types
 // ---------------------------------------------------------------------------
 
@@ -231,16 +192,6 @@ export function sanitizeRawHandles(handles: unknown): unknown {
     .slice(0, 3);
 }
 
-/**
- * The user text the router reads, spelling-normalised as routeQuery does: the
- * first and recent user turns, then the current one. The chat's title rule
- * (US-15 AC25) reads its signals here.
- */
-export function routerText(currentMessage: string, firstMessage?: string, recentUserMessages?: string[]): string {
-  return [firstMessage, ...(recentUserMessages ?? []), currentMessage]
-    .filter((m): m is string => !!m).map(normaliseSpellings).join('\n');
-}
-
 // ---------------------------------------------------------------------------
 // Core routing function
 // ---------------------------------------------------------------------------
@@ -252,19 +203,12 @@ export async function routeQuery(
 ): Promise<RouterResult> {
   const t0 = Date.now();
 
-  // Normalise US → UK spelling so the index (UK-spelled) matches on literal
-  // text. The user never sees this transformation; it only affects what the
-  // router LLM reads.
-  const normCurrent = normaliseSpellings(currentMessage);
-  const normFirst = firstMessage ? normaliseSpellings(firstMessage) : undefined;
-  const normRecent = recentUserMessages?.map(normaliseSpellings);
-
   // Build the context block — all user-sourced strings stay inside a labeled
   // user-role block; no string concatenation that could let them escape context.
   const contextLines: string[] = [];
-  if (normFirst) contextLines.push(`First: ${normFirst}`);
-  if (normRecent?.length) {
-    contextLines.push(`Recent:\n${normRecent.map(m => `    - ${m}`).join('\n')}`);
+  if (firstMessage) contextLines.push(`First: ${firstMessage}`);
+  if (recentUserMessages?.length) {
+    contextLines.push(`Recent:\n${recentUserMessages.map(m => `    - ${m}`).join('\n')}`);
   }
   const contextBlock = contextLines.length > 0
     ? `Conversation context:\n${contextLines.map(l => `  ${l}`).join('\n')}\n\n`
@@ -274,7 +218,8 @@ export async function routeQuery(
   // the second system block, each with its own cache marker. The cache is by
   // prefix, so an index change keeps the prompt entry, but a prompt edit also
   // rewrites the index entry behind it (about 75K tokens on Sonnet 5.5 by
-  // count_tokens, 2026-09-29).
+  // count_tokens, 2026-09-29; about a third of that by character count since
+  // the pathways left, 2026-10-22).
   const routerPrompt = getRouterPrompt();
 
   const body = {
@@ -294,7 +239,7 @@ export async function routeQuery(
     messages: [
       {
         role: 'user',
-        content: `${contextBlock}Current query: ${normCurrent}`,
+        content: `${contextBlock}Current query: ${currentMessage}`,
       },
     ],
   };

@@ -113,11 +113,11 @@ describe("US-42 AC2/AC11 report schema and CLI", () => {
 
 // ---- batch runs against a throwaway git repo ----
 
-let root: string, reports: string, exclusions: string;
+let root: string, reports: string;
 const sh = (args: string[]) => execFileSync("git", args, { cwd: root, stdio: "pipe" });
 const put = (rel: string, text: string) => { mkdirSync(dirname(join(root, rel)), { recursive: true }); writeFileSync(join(root, rel), text); };
 const INDEX = JSON.stringify([{ handle: "alpha", summary: "Alpha summary, 200 mg in adults.", title: "Alpha", type: "reference" },
-  { handle: "beta", summary: "Clinical pathway for beta.", title: "Beta", type: "pathway" }, { handle: "other", summary: "x", title: "O" }], null, 2);
+  { handle: "beta", summary: "Guideline for beta.", title: "Beta", type: "guideline" }, { handle: "other", summary: "x", title: "O" }], null, 2);
 
 interface Reps { alpha: Report; beta: Report }
 let reps: Reps;
@@ -127,7 +127,7 @@ function writeReports() {
 }
 const run = (over: Partial<Parameters<typeof runBatch>[0]> = {}) => {
   writeReports();
-  const { results } = runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports], ...over });
+  const { results } = runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, base: "HEAD", rawRoots: [reports], ...over });
   return Object.fromEntries(results.map((r) => [r.id, r])) as Record<string, Result>;
 };
 const fails = (r: Result) => r.evidence.filter((e) => e.startsWith("FAIL "));
@@ -135,15 +135,13 @@ const fails = (r: Result) => r.evidence.filter((e) => e.startsWith("FAIL "));
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), "kb-repo-"));
   reports = mkdtempSync(join(tmpdir(), "kb-rep-"));
-  exclusions = join(reports, "exclusions.json");
-  writeFileSync(exclusions, JSON.stringify({ excluded: ["legacy-slug"], excludedIds: ["1"], excludedReasons: { 1: { slug: "excluded-page", reason: "nav" } } }));
   sh(["init", "-q"]); sh(["config", "user.email", "t@t"]); sh(["config", "user.name", "t"]);
   put("docs/blog/alpha.md", fx("alpha.base.md"));
-  put("docs/pathway/beta.md", fx("beta.base.md"));
+  put("docs/guideline/beta.md", fx("beta.base.md"));
   put("docs/blog/index.json", INDEX);
   sh(["add", "-A"]); sh(["commit", "-q", "-m", "base"]);
   put("docs/blog/alpha.md", fx("alpha.new.md"));
-  put("docs/pathway/beta.md", fx("beta.new.md"));
+  put("docs/guideline/beta.md", fx("beta.new.md"));
   const alphaRaw = join(reports, "alpha.raw.txt"), betaRaw = join(reports, "beta.raw.txt");
   writeFileSync(alphaRaw, fx("alpha.raw.txt")); writeFileSync(betaRaw, fx("beta.raw.txt"));
   const base = { old_raw_path: null, headings_before: [], headings_after: [], proposed_summary_correction: null, notes: "" };
@@ -152,9 +150,9 @@ beforeEach(() => {
       changed_tokens: [{ body_line: "Trials used 300 mg in adults [1].", raw_quote: "participants took 300 mg in adults" }],
       deleted_sentences: [{ sentence: "Trials used 200 mg in adults [1].", justification: "The new raw says 300 mg." }],
       product_mentions_before: 1, product_mentions_after: 1 },
-    beta: { ...base, handle: "beta", type: "pathway", raw_path: betaRaw, raw_sha256: sha256(fx("beta.raw.txt")),
+    beta: { ...base, handle: "beta", type: "guideline", raw_path: betaRaw, raw_sha256: sha256(fx("beta.raw.txt")),
       changed_tokens: [{ body_line: "Review again in 6 weeks.", raw_quote: "please review again in 6 weeks if symptoms persist" }],
-      deleted_sentences: [{ sentence: "Source: Auckland Region HealthPathways", justification: "Review date added." }],
+      deleted_sentences: [{ sentence: "Source: Beta guideline", justification: "Review date added." }],
       product_mentions_before: 0, product_mentions_after: 0 },
   };
 });
@@ -163,7 +161,7 @@ afterEach(() => { rmSync(root, { recursive: true, force: true }); rmSync(reports
 describe("US-42 AC1-AC7 clean batch", () => {
   it("passes every check", () => {
     const r = run();
-    for (const id of ["AC1", "AC2", "AC3", "AC4", "AC6", "AC7", "PATHWAY"]) expect(fails(r[id]), id).toEqual([]);
+    for (const id of ["AC1", "AC2", "AC3", "AC4", "AC6", "AC7"]) expect(fails(r[id]), id).toEqual([]);
     expect(Object.values(r).every((x) => x.status !== "FAIL")).toBe(true);
     expect(r.AC6.evidence.join("\n")).toContain("Shopify updated_at snapshot: separate tool");
   });
@@ -262,7 +260,7 @@ describe("US-42 AC2 raw fidelity", () => {
     expect(fails(run().AC2).join()).toContain("raw file not found");
     rmSync(join(reports, "beta.json"), { force: true });
     writeFileSync(join(reports, "alpha.json"), JSON.stringify(reps.alpha));
-    const { results } = runBatch({ root, batch: "t", handles: ["beta"], reportsDir: join(reports, "none"), exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports] });
+    const { results } = runBatch({ root, batch: "t", handles: ["beta"], reportsDir: join(reports, "none"), base: "HEAD", rawRoots: [reports] });
     expect(results.find((r) => r.id === "AC2")!.evidence.join()).toContain("diff report missing");
   });
   it("matches a plain-text quote against a raw with no-break spaces and non-breaking hyphens", () => {
@@ -428,13 +426,6 @@ describe("US-42 AC7 identifiers", () => {
   });
 });
 
-describe("US-42 AC7 exclusions file", () => {
-  it("FAILs when the exclusions file is missing unless --no-exclusions", () => {
-    expect(fails(run({ exclusionsPath: join(reports, "none.json") }).AC7).join()).toContain("exclusions file not found");
-    expect(fails(run({ exclusionsPath: join(reports, "none.json"), noExclusions: true }).AC7)).toEqual([]);
-  });
-});
-
 describe("US-42 AC3 hedging", () => {
   it("allows a hedge total to fall only inside sentences declared deleted, as a WARN", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Some evidence suggests benefit.\n", ""));
@@ -449,10 +440,10 @@ describe("US-42 AC3 hedging", () => {
     expect(f).toContain("hedge tokens fell 3 -> 1");
     expect(f).not.toContain("body shrank");
   });
-  it("keeps the hard FAIL for a pathway", () => {
-    put("docs/pathway/beta.md", fx("beta.base.md").replace("severe.", "severe. It may help."));
-    sh(["add", "docs/pathway/beta.md"]); sh(["commit", "-q", "-m", "beta hedge", "--", "docs/pathway/beta.md"]);
-    put("docs/pathway/beta.md", fx("beta.new.md"));
+  it("keeps the hard FAIL for a guideline", () => {
+    put("docs/guideline/beta.md", fx("beta.base.md").replace("severe.", "severe. It may help."));
+    sh(["add", "docs/guideline/beta.md"]); sh(["commit", "-q", "-m", "beta hedge", "--", "docs/guideline/beta.md"]);
+    put("docs/guideline/beta.md", fx("beta.new.md"));
     expect(fails(run().AC3).join()).toContain("hedge tokens fell 1 -> 0");
   });
   it("fails a hedge lost from a sentence that survives undeclared", () => {
@@ -505,8 +496,8 @@ describe("US-42 AC4 references and patterns", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("[1] Smith A. Synthetic trial. 2019.", "[1] Smith A. Synthetic trial, revised edition. 2019.\n\n[PubMed](https://pubmed.ncbi.nlm.nih.gov/1/)"));
     expect(fails(run().AC4)).toEqual([]);
   });
-  it("still checks body sentences of a pathway, references section aside", () => {
-    put("docs/pathway/beta.md", fx("beta.new.md").replace("Go to the emergency department if symptoms are severe.\n", ""));
+  it("still checks body sentences of a guideline, references section aside", () => {
+    put("docs/guideline/beta.md", fx("beta.new.md").replace("Go to the emergency department if symptoms are severe.\n", ""));
     expect(fails(run().AC4).join()).toContain("sentence removed and not in deleted_sentences");
   });
   it("counts base sentences matching a pattern entry as justified and prints how many", () => {
@@ -702,13 +693,6 @@ describe("US-42 AC7 reference hygiene", () => {
     expect(f).toContain('banned phrase "Top Pick"');
     expect(f).toContain("brand ranking phrase");
   });
-  it("fails for an excluded handle in the batch or a new excluded file", () => {
-    put("docs/pathway/excluded-page.md", "# x");
-    const f = fails(run().AC7).join();
-    expect(f).toContain("excluded-page: excluded handle gained a file");
-    const { results } = runBatch({ root, batch: "t", handles: ["legacy-slug"], reportsDir: reports, exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports] });
-    expect(results.find((r) => r.id === "AC7")!.evidence.join()).toContain("legacy-slug: handle is on the HealthPathways exclusion list");
-  });
 });
 
 describe("US-42 AC11 exceptions", () => {
@@ -759,7 +743,7 @@ describe("US-42 AC11 exceptions", () => {
     process.chdir(root);
     try {
       const out = join(root, "docs", "b.md");
-      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out, "--no-exclusions", "--base", "HEAD"];
+      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out, "--base", "HEAD"];
       const ov = { rawRoots: [reports] };
       expect(main([...args, "--exceptions", join(reports, "missing.json")], ov)).toBe(2);
       writeFileSync(join(reports, "exc.json"), JSON.stringify([exc("")]));
@@ -883,8 +867,8 @@ describe("US-42 AC6 and AC2 batch scope (R5, R6, R12)", () => {
     expect(fails(r.AC6).join()).toContain("nothing to check for ghost");
   });
   it("allows only the directory matching the entry's type", () => {
-    put("docs/pathway/alpha.md", "# x");
-    expect(fails(run().AC6).join()).toContain("docs/pathway/alpha.md");
+    put("docs/guideline/alpha.md", "# x");
+    expect(fails(run().AC6).join()).toContain("docs/guideline/alpha.md");
   });
   it("takes the type from the index and fails a report that disagrees", () => {
     reps.alpha.type = "video";
@@ -899,7 +883,7 @@ describe("US-42 AC6 and AC2 batch scope (R5, R6, R12)", () => {
     const f = fails(run({ handles: ["gamma"] }).AC2).join();
     expect(f).not.toContain("not in docs/blog/index.json");
     expect(f).not.toContain("does not match");
-    writeFileSync(join(reports, "gamma.json"), JSON.stringify({ ...g, new: true, type: "pathway" }));
+    writeFileSync(join(reports, "gamma.json"), JSON.stringify({ ...g, new: true, type: "guideline" }));
     expect(fails(run({ handles: ["gamma"] }).AC2).join()).toContain("does not match frontmatter type");
   });
   it("fails an unparseable reference URL", () => {
@@ -1336,61 +1320,17 @@ describe("US-42 AC2 primary study cited without its abstract (R14d)", () => {
   });
 });
 
-describe("US-42 AC9 pathway source line (R14c)", () => {
-  it("requires Last reviewed: <month> <year> on the source line", () => {
-    const src = (line: string) => put("docs/pathway/beta.md", fx("beta.new.md").replace(/^\*Source:.*$/m, line));
-    src("*Source: Auckland Region HealthPathways*");
-    expect(fails(run().PATHWAY).join()).toContain('Last reviewed: <month> <year>');
-    src("*Source: Auckland Region HealthPathways. Last reviewed: 2026*");
-    expect(fails(run().PATHWAY).join()).toContain('Last reviewed: <month> <year>');
-    src("*Source: Auckland Region HealthPathways. Last reviewed: March 2026*");
-    expect(fails(run().PATHWAY)).toEqual([]);
-    src("*Source: Auckland Region HealthPathways. Last reviewed: Mar 2026*");
-    expect(fails(run().PATHWAY)).toEqual([]);
-  });
-});
-
-describe("US-42 AC9 pathway rules", () => {
-  it("fails without the source line or deferral blockquote", () => {
-    put("docs/pathway/beta.md", fx("beta.new.md").replace("*Source: Auckland Region HealthPathways. Last reviewed: January 2026*", "Source elsewhere").replace(/^>.*$/m, ""));
-    const f = fails(run().PATHWAY).join();
-    expect(f).toContain("missing \"*Source: Auckland Region HealthPathways\"");
-    expect(f).toContain("missing doctor-deferral blockquote");
-  });
-  it("normalises no-break spaces, matches plural and prefix forms, and finds phone numbers outside URLs", () => {
-    put("docs/pathway/beta.md", fx("beta.new.md").replace("Review again", "Ask Te\u00a0Whatu\u00a0Ora about DHBs and eReferrals. Ring 09 373 1599 or 0508 123 456.\n\nSee [x](https://a.org/0900123456789).\n\nReview again"));
-    const f = fails(run().PATHWAY).join("\n");
-    for (const t of ["Te Whatu Ora", "DHB", "eReferral", "phone number"]) expect(f).toContain(t);
-    expect(f).not.toContain("a.org");
-    put("docs/pathway/beta.md", fx("beta.new.md").replace("*Source: Auckland Region HealthPathways", "*Source:\u00a0Auckland Region HealthPathways"));
-    expect(fails(run().PATHWAY)).toEqual([]);
-  });
-  it("fails funding criteria, but not a bare 'funded' or 'fully funded'", () => {
-    const withLine = (l: string) => put("docs/pathway/beta.md", fx("beta.new.md").replace("Review again", `${l} Review again`));
-    for (const bad of ["Special Authority applies.", "Check the funding criteria.", "Eligible for public funding.", "Eligibility for funding is limited.", "It is funded only if the patient has diabetes.", "Funded when the test is abnormal.", "Subsidised only for adults.", "PHARMAC decides.", "Subsidized if ordered by a specialist."]) {
-      withLine(bad);
-      expect(fails(run().PATHWAY).join("\n"), bad).toContain("forbidden term");
-    }
-    for (const ok of ["This medicine is funded.", "Fully funded in New Zealand.", "The test is subsidised.", "Take it to the pharmacy.", "Ask your pharmacist."]) {
-      withLine(ok);
-      expect(fails(run().PATHWAY), ok).toEqual([]);
-    }
-  });
+describe("US-42 AC7 banned phrases", () => {
   it("normalises no-break spaces before the banned-phrase check", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it", "Our Top\u00a0Pick. Take it"));
     expect(fails(run().AC7).join()).toContain('banned phrase "Top Pick"');
-  });
-  it("fails on NZ logistics", () => {
-    put("docs/pathway/beta.md", fx("beta.new.md").replace("Review again", "Call 0800 123 456 or send an eReferral to POAC at Te Whatu Ora. Review again"));
-    const f = fails(run().PATHWAY).join();
-    for (const t of ["0800", "eReferral", "POAC", "Te Whatu Ora"]) expect(f).toContain(`forbidden term "${t}"`);
   });
 });
 
 describe("US-42 AC8 batch report", () => {
   it("holds counts and hashes only, under 150 lines", () => {
     writeReports();
-    const { results, rows, baseSha } = runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports] });
+    const { results, rows, baseSha } = runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, base: "HEAD", rawRoots: [reports] });
     const md = renderReport("t", "HEAD", baseSha, results, rows, false);
     expect(md.split("\n").length).toBeLessThan(150);
     expect(md).toContain("AC8 sign-off (Brad): PENDING");
@@ -1423,7 +1363,7 @@ describe("US-42 AC1-AC7 CLI end to end", () => {
     process.chdir(root);
     try {
       const out = join(root, "docs", "batch-t.md");
-      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out, "--no-exclusions", "--base", "HEAD"];
+      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out, "--base", "HEAD"];
       const ov = { rawRoots: [reports] };
       expect(main(args, ov)).toBe(0);
       expect(readFileSync(out, "utf8")).toContain("# Knowledge batch report: t");
@@ -1440,11 +1380,11 @@ describe("US-42 AC1-AC7 CLI end to end", () => {
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     process.chdir(root);
     try {
-      const base = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--no-exclusions"];
+      const base = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports];
       const ov = { rawRoots: [reports] };
       expect(main(base, ov)).toBe(2);
       expect(main([...base, "--base", "HEAD", "--out", join(root, "docs/blog/report.md")], ov)).toBe(2);
-      expect(main([...base, "--base", "HEAD", "--out", join(root, "docs/pathway/beta.md")], ov)).toBe(2);
+      expect(main([...base, "--base", "HEAD", "--out", join(root, "docs/guideline/beta.md")], ov)).toBe(2);
     } finally { process.chdir(cwd); err.mockRestore(); }
   });
 });
@@ -1663,7 +1603,7 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
       put("docs/blog/other.md", post([]));
       sh(["add", "-A"]); sh(["commit", "-q", "--allow-empty", "-m", "post"]);
       put("docs/blog/other.md", post(extra));
-      const { results } = runBatch({ root, batch: "t", handles: ["other"], reportsDir: reports, exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports], masters: true });
+      const { results } = runBatch({ root, batch: "t", handles: ["other"], reportsDir: reports, base: "HEAD", rawRoots: [reports], masters: true });
       return Object.fromEntries(results.map((x) => [x.id, x])) as Record<string, Result>;
     };
     it("allows added topics and router: hidden", () => {
@@ -1894,7 +1834,7 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
       vi.spyOn(process, "cwd").mockReturnValue(root);
       const err = vi.spyOn(console, "error").mockImplementation(() => {});
       vi.spyOn(console, "log").mockImplementation(() => {});
-      const code = main(["--batch", "t", "--handles", join(root, "handles.txt"), "--base", "HEAD", "--reports", reports, "--no-exclusions", "--masters", ...(ex ? ["--exceptions", ex] : [])]);
+      const code = main(["--batch", "t", "--handles", join(root, "handles.txt"), "--base", "HEAD", "--reports", reports, "--masters", ...(ex ? ["--exceptions", ex] : [])]);
       const msg = err.mock.calls.map((c) => String(c[0])).join("\n");
       vi.restoreAllMocks();
       return { code, msg };
@@ -1994,7 +1934,7 @@ describe("US-50 AC1 masters: Brad's posts and positions as raw, drstanfield.com 
     expect(f7(run({ masters: true }))).toContain("unknown host drstanfield.com");
     refAlpha("https://drstanfield.com/blogs/articles/some-post"); // not in the index
     expect(f7(run({ masters: true }))).toContain("unknown host drstanfield.com");
-    refAlpha("https://drstanfield.com/blogs/articles/beta"); // a pathway, not a video post
+    refAlpha("https://drstanfield.com/blogs/articles/beta"); // a guideline, not a video post
     expect(f7(run({ masters: true }))).toContain("unknown host drstanfield.com");
     refAlpha("https://drstanfield.com/blogs/articles/alpha"); // a reference, not a video post
     expect(f7(run({ masters: true }))).toContain("unknown host drstanfield.com");
@@ -2025,7 +1965,7 @@ describe("US-42 AC2 report addenda: reports stay append-only, corrections go in 
   const good = { body_line: "Trials used 300 mg in adults [1].", raw_quote: "participants took 300 mg in adults" };
   const batch = (over: Partial<Parameters<typeof runBatch>[0]> = {}) => {
     writeReports();
-    return runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports], ...over });
+    return runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, base: "HEAD", rawRoots: [reports], ...over });
   };
 
   const fileSha = (n: string) => sha256(readFileSync(join(reports, n)));
@@ -2269,7 +2209,7 @@ describe("US-42 AC2 report addenda: reports stay append-only, corrections go in 
       process.chdir(root);
       try {
         const seen: string[] = [];
-        const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--no-exclusions", "--base", "HEAD", "--check-ids"];
+        const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--base", "HEAD", "--check-ids"];
         const ov = { rawRoots: [reports], headStatus: (u: string) => { seen.push(u); return 200; }, delayMs: 0 };
         main([...args, "--check-ids-cap", "2"], ov);
         expect(seen.length).toBe(2);

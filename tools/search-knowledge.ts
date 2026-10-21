@@ -3,14 +3,14 @@
  * search_knowledge — Dr Brad's knowledge base, searched from the shell (US-41).
  *
  * A lexical ranker (BM25) over `docs/blog/index.json`: every article,
- * reference, guideline and pathway, scored on its summary, its `keywords`, its
- * title and its handle. No model, no embeddings, no network. An assistant with
+ * reference and guideline, scored on its summary, its `keywords`, its title
+ * and its handle. No model, no embeddings, no network. An assistant with
  * a shell runs it beside `get-plan.ts` and cites what it finds by handle.
  *
  * Usage:
  *   npx tsx tools/search-knowledge.ts "statins and muscle pain"
  *   npx tsx tools/search-knowledge.ts "ferritin" --k 5 --excerpt
- *   npx tsx tools/search-knowledge.ts --article hypertension-in-adults
+ *   npx tsx tools/search-knowledge.ts --article diet
  *
  * The query is read from argv and goes nowhere else: no log, no file, no
  * error message repeats it. Run from the repo root: the index and bodies are
@@ -81,7 +81,7 @@ export interface Entry {
   title: string;
   summary?: string;
   keywords?: string[];
-  type?: 'reference' | 'article' | 'guideline' | 'pathway';
+  type?: 'reference' | 'article' | 'guideline';
 }
 
 /** How much one occurrence in each field counts; a missing field is not read. */
@@ -213,8 +213,8 @@ const HELP = `search_knowledge — search Dr Brad's knowledge base, offline, no 
   npx tsx tools/search-knowledge.ts "<question or keywords>" [--k 3] [--excerpt] [--max-chars 6000] [--json]
   npx tsx tools/search-knowledge.ts --article <handle> [--max-chars 120000] [--json]
 
-search      Ranks every article, supplement reference, guideline and clinical
-            pathway by its summary, keywords, title and handle (BM25), and
+search      Ranks every article, supplement reference and guideline by its
+            summary, keywords, title and handle (BM25), and
             prints the best --k (default ${DEFAULT_K}, at most ${MAX_K}).
             --excerpt adds the section of each body that best matches
             the query, up to --max-chars (default ${count(DEFAULT_EXCERPT_CHARS)}) per entry.

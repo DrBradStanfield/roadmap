@@ -12,7 +12,7 @@ import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.serve
 
 const index = loadBlogIndex();
 const video = index.find(e => e.youtube && e.commerceUrl)!;
-const pathway = index.find(e => e.type === 'pathway')!;
+const guideline = index.find(e => e.type === 'guideline')!;
 
 describe('frontmatter stripped before the model (US-50 AC4)', () => {
   it('a loaded entry carries its body, never its frontmatter block', () => {
@@ -55,7 +55,7 @@ describe('block headers (US-50 AC5)', () => {
     expect(contentHeader({ ...base, type: 'reference' }, {})).toBe('[reference — published 2025-03-12]');
     expect(contentHeader({ ...base, youtube: 'https://youtu.be/x' }, {})).toBe('[video post — published 2025-03-12]');
     expect(contentHeader(base, {})).toBe('[article — published 2025-03-12]');
-    expect(contentHeader({ ...base, type: 'pathway', publishedAt: '' }, {})).toBe('[pathway]');
+    expect(contentHeader({ ...base, type: 'guideline', publishedAt: '' }, {})).toBe('[guideline]');
     expect(contentHeader(undefined, {})).toBe('[article]');
   });
 
@@ -64,10 +64,10 @@ describe('block headers (US-50 AC5)', () => {
       .toBe('[article — published 2025-03-12]\ntitle: A post\nurl: https://d/a\ncommerceUrl: https://m/a\nyoutube: https://youtu.be/x');
   });
 
-  it('a loaded video post opens with its header; a pathway gets no link it never had', () => {
-    const { content } = loadMatchedContent([video.handle, pathway.handle]);
+  it('a loaded video post opens with its header; a guideline gets no link it never had', () => {
+    const { content } = loadMatchedContent([video.handle, guideline.handle]);
     expect(content!.startsWith(`[video post — published ${video.publishedAt.slice(0, 10)}]\ntitle: ${video.title}\nurl: ${video.url}\ncommerceUrl: ${video.commerceUrl}\nyoutube: ${video.youtube}\n\n`)).toBe(true);
-    expect(content).toContain(`\n\n---\n\n[pathway]\ntitle: ${pathway.title}\n\n`);
+    expect(content).toContain(`\n\n---\n\n[guideline]\ntitle: ${guideline.title}\n\n`);
   });
 });
 

@@ -182,9 +182,9 @@ function capSummary(s: string, max: number): string {
   return cut.trimEnd();
 }
 
-// Type order: pathway, guideline, reference, article (clinical first).
-const TYPE_ORDER: Record<string, number> = { pathway: 0, guideline: 1, reference: 2, article: 3 };
-const typeRank = (e: BlogIndexEntry) => TYPE_ORDER[e.type ?? 'article'] ?? 3;
+// Type order: guideline, reference, article (clinical first).
+const TYPE_ORDER: Record<string, number> = { guideline: 0, reference: 1, article: 2 };
+const typeRank = (e: BlogIndexEntry) => TYPE_ORDER[e.type ?? 'article'] ?? 2;
 
 /**
  * The router's index block: one line per entry, sorted by type then handle for

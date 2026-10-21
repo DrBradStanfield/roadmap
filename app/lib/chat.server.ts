@@ -108,7 +108,6 @@ function buildKnowledgeOverview(): string {
   const blogCount = BLOG_INDEX.filter(a => !a.type || a.type === 'article').length;
   const refCount = BLOG_INDEX.filter(a => a.type === 'reference').length;
   const guidelines = BLOG_INDEX.filter(a => a.type === 'guideline');
-  const pathwayCount = BLOG_INDEX.filter(a => a.type === 'pathway').length;
 
   const guidelineLines = guidelines.map(g => {
     let line = `- ${g.title}`;
@@ -119,24 +118,6 @@ function buildKnowledgeOverview(): string {
     return line;
   }).join('\n');
 
-  // Load pathway categories if available
-  let pathwaySection = '';
-  if (pathwayCount > 0) {
-    try {
-      const catRaw = fs.readFileSync(path.join(process.cwd(), 'docs/pathway/categories.json'), 'utf-8');
-      const categories: Record<string, string[]> = JSON.parse(catRaw);
-      const catLines = Object.entries(categories)
-        .sort((a, b) => b[1].length - a[1].length)
-        .map(([cat, names]) => {
-          const examples = names.slice(0, 5).join(', ');
-          return `- ${cat} (${names.length}): ${examples}${names.length > 5 ? '...' : ''}`;
-        });
-      pathwaySection = `### Clinical Pathways (${pathwayCount} conditions)\nEvidence-based clinical pathways from Auckland Region HealthPathways, organized by specialty:\n${catLines.join('\n')}`;
-    } catch {
-      pathwaySection = `### Clinical Pathways (${pathwayCount} conditions)\nEvidence-based pathways covering cardiovascular, respiratory, endocrine, GI, dermatology, musculoskeletal, neurology, haematology, infectious disease, and more. Source: Auckland Region HealthPathways.`;
-    }
-  }
-
   return `## Knowledge Base
 
 You have access to a health knowledge base with ${BLOG_INDEX.length} entries. When the user asks about a topic, a retrieval step loads relevant content if available. You do not need to search or request content — if it's relevant, it will appear below.
@@ -146,8 +127,6 @@ ${blogCount} video-based articles and ${refCount} supplement reference articles 
 
 ### Clinical Guidelines
 ${guidelineLines}
-
-${pathwaySection}
 
 If matched content appears below, use it to inform your answer. If no content is loaded for a topic, answer from the algorithm, evidence, and product knowledge above.`;
 }
@@ -295,13 +274,13 @@ export function matchDocumentTitle(
 /**
  * The router's handles as answer context (loadMatchedContent in
  * matched-content.ts), plus a Sentry warning for a handle with no file.
- * `titled` limits the titles named, never the content. Null when nothing loaded.
+ * Null when nothing loaded.
  */
-export function loadMatchedArticlesFromHandles(handles: string[], titled = handles): { content: string; titles: string[]; skipped: string[]; reduced: string[] } | null {
+export function loadMatchedArticlesFromHandles(handles: string[]): { content: string; titles: string[]; skipped: string[]; reduced: string[] } | null {
   for (const handle of handles) {
     if (!loadBlogArticle(handle)) Sentry.captureMessage(`Router picked handle with no content: ${handle}`, { level: 'warning' });
   }
-  const { content, ...rest } = loadMatchedContent(handles, titled);
+  const { content, ...rest } = loadMatchedContent(handles);
   return content ? { content, ...rest } : null;
 }
 

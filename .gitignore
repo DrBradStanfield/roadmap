@@ -75,3 +75,6 @@ docs/chatgpt-review/demo/out/
 .artifacts/
 # Review demo frames and clips copied by docs/chatgpt-review/demo/build-timeline.mjs
 demo-video/public/review/
+
+# Third-party clinical pathways (HealthPathways) left this public repo and the chatbot (Brad, 2026-10-22; US-15 AC39)
+docs/pathway/

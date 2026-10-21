@@ -5885,34 +5885,6 @@
    "last_checked": "2026-10-17"
   },
   {
-   "id": "6447bda5dd66",
-   "rule": "dose-mismatch",
-   "side": "knowledge",
-   "handles": [
-    "suspected-b12-deficiency"
-   ],
-   "fix_handle": "suspected-b12-deficiency",
-   "item": "110 pmol/L",
-   "first_seen": "2026-10-03",
-   "last_seen": "2026-10-17",
-   "status": "open",
-   "last_checked": "2026-10-17"
-  },
-  {
-   "id": "0c7a1389d9e8",
-   "rule": "dose-mismatch",
-   "side": "knowledge",
-   "handles": [
-    "suspected-b12-deficiency"
-   ],
-   "fix_handle": "suspected-b12-deficiency",
-   "item": "170 pmol/L",
-   "first_seen": "2026-10-03",
-   "last_seen": "2026-10-17",
-   "status": "open",
-   "last_checked": "2026-10-17"
-  },
-  {
    "id": "9ee3d064ad80",
    "kind": "reference-vs-reference",
    "side": "knowledge",
@@ -6397,44 +6369,6 @@
    "last_checked": "2026-10-10"
   },
   {
-   "id": "43e1071a7a2a",
-   "kind": "pathway-vs-reference",
-   "side": "knowledge",
-   "handles": [
-    "heart-failure",
-    "electrolytes-benefits-dosing-and-side-effects"
-   ],
-   "fix_handle": "electrolytes-benefits-dosing-and-side-effects",
-   "quote_a": "potassium greater than 5 mmol/L",
-   "quote_b": "Patients on ACE inhibitors or ARBs (which reduce aldosterone and renal potassium excretion)",
-   "severity": "low",
-   "summary": "The heart-failure pathway lists potassium above 5 mmol/L as a contraindication or precaution for ACE inhibitors, while the electrolyte reference lists ACE-inhibitor users as only needing monitoring, with no threshold given.",
-   "suggested_fix": "This is largely a difference in scope rather than a direct contradiction. The electrolyte reference could note that ACE inhibitors are contraindicated or need caution when potassium is above 5 mmol/L, in line with the pathway.",
-   "first_seen": "2026-10-10",
-   "last_seen": "2026-10-10",
-   "status": "open",
-   "last_checked": "2026-10-10"
-  },
-  {
-   "id": "1c29a76597db",
-   "kind": "pathway-vs-reference",
-   "side": "knowledge",
-   "handles": [
-    "hypertension-in-pregnancy-and-postpartum",
-    "magnesium-benefits-best-forms-dosing"
-   ],
-   "fix_handle": "magnesium-benefits-best-forms-dosing",
-   "quote_a": "Magnesium sulphate to control or prevent further seizures (2.5 g into each buttock if actively seizing, total 5 g)",
-   "quote_b": "In the Magpie Trial, magnesium sulphate for pre-eclampsia halved the risk of eclampsia, but 24% of women reported side effects versus 5% on placebo [40].",
-   "severity": "low",
-   "summary": "The magnesium excerpt states the 58% reduction in eclampsia risk and also says it 'halved' the risk, which are not the same figure.",
-   "suggested_fix": "Use one consistent figure for the Magpie eclampsia risk reduction (58% as given in the trial summary), or describe it as 'more than halved', so the two statements agree.",
-   "first_seen": "2026-10-10",
-   "last_seen": "2026-10-10",
-   "status": "open",
-   "last_checked": "2026-10-10"
-  },
-  {
    "id": "b80842a6f402",
    "kind": "reference-vs-reference",
    "side": "knowledge",
@@ -6773,44 +6707,6 @@
    "last_checked": "2026-10-17"
   },
   {
-   "id": "721d8e5eb746",
-   "kind": "pathway-vs-reference",
-   "side": "knowledge",
-   "handles": [
-    "antenatal-consult-initial-assessment",
-    "calcium-benefits-best-forms-dosing-and-side-effects"
-   ],
-   "fix_handle": "calcium-benefits-best-forms-dosing-and-side-effects",
-   "quote_a": "**Calcium carbonate, 2 tablets once daily**, each giving 500 mg of elemental calcium (1.25 g calcium carbonate), from booking until birth.",
-   "quote_b": "**Preeclampsia prevention (low-calcium pregnant women):** 1,500-2,000 mg/day [79][80][81]",
-   "severity": "medium",
-   "summary": "The pathway prescribes 1,000 mg/day elemental calcium (2 x 500 mg) for pre-eclampsia prevention, while the reference gives 1,500-2,000 mg/day for the same purpose.",
-   "suggested_fix": "Reconcile the two pre-eclampsia calcium doses, or state explicitly which population or guideline each figure applies to. The reference's range should not stand alone if the pathway's 1,000 mg/day is the intended dose.",
-   "first_seen": "2026-10-17",
-   "last_seen": "2026-10-17",
-   "status": "open",
-   "last_checked": "2026-10-17"
-  },
-  {
-   "id": "5bd163c27e7b",
-   "kind": "pathway-vs-reference",
-   "side": "knowledge",
-   "handles": [
-    "antenatal-consult-initial-assessment",
-    "vitamin-d-benefits-forms-dosing-and-side-effects"
-   ],
-   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
-   "quote_a": "With 1 to 2 common risk factors, your doctor may prescribe **colecalciferol 400 to 800 international units a day** (1 to 2 drops of oral liquid).",
-   "quote_b": "**Pregnancy:** 600-1,000 IU D3 daily. Higher doses (up to 4,000 IU/day) may be indicated in deficient women but should be discussed with a healthcare provider [4].",
-   "severity": "medium",
-   "summary": "The pathway's pregnancy dose range for at-risk women (400-800 IU/day) differs from the reference's pregnancy dose (600-1,000 IU/day); the ranges only partly overlap and set different floors and ceilings.",
-   "suggested_fix": "Have a clinician confirm which pregnancy dose range applies and align the two excerpts, or state the population each range is for (for example, risk-factor-based prescribing versus general supplementation).",
-   "first_seen": "2026-10-17",
-   "last_seen": "2026-10-17",
-   "status": "open",
-   "last_checked": "2026-10-17"
-  },
-  {
    "id": "a1e51b0c24ec",
    "kind": "reference-vs-reference",
    "side": "knowledge",
@@ -6830,25 +6726,6 @@
    "last_checked": "2026-10-17"
   },
   {
-   "id": "7eb89cb2b9f8",
-   "kind": "pathway-vs-reference",
-   "side": "knowledge",
-   "handles": [
-    "calcium-supplementation-in-osteoporosis",
-    "vitamin-d-benefits-forms-dosing-and-side-effects"
-   ],
-   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
-   "quote_a": "Until more data is available, international recommendations suggest offering calcium supplements only to people who do not get enough calcium from their diet.",
-   "quote_b": "Taking with calcium (800-1,200 mg/day from food and supplements combined) improves bone outcomes [1][6].",
-   "severity": "medium",
-   "summary": "The pathway says calcium supplements lack fracture-reduction efficacy and should be offered only to people with inadequate dietary intake, while the vitamin D reference says taking vitamin D with calcium (food plus supplements) improves bone outcomes.",
-   "suggested_fix": "Reword the vitamin D dosing line so it does not imply routine calcium supplementation improves bone outcomes, or qualify it as applying only where dietary calcium is inadequate, in line with the pathway.",
-   "first_seen": "2026-10-17",
-   "last_seen": "2026-10-17",
-   "status": "open",
-   "last_checked": "2026-10-17"
-  },
-  {
    "id": "8e023ce312e2",
    "kind": "reference-vs-reference",
    "side": "knowledge",
@@ -6862,25 +6739,6 @@
    "severity": "low",
    "summary": "The collagen excerpt describes a skin study where adding 500 mg vitamin C gave no extra benefit, but the vitamin C excerpt treats 500 mg as a standard purpose-driven dose, which is a loose tension rather than a hard conflict.",
    "suggested_fix": "No change is clearly required; if kept, the collagen excerpt could note that the null result applies only to skin outcomes with collagen tripeptides.",
-   "first_seen": "2026-10-17",
-   "last_seen": "2026-10-17",
-   "status": "open",
-   "last_checked": "2026-10-17"
-  },
-  {
-   "id": "4e06812d2a08",
-   "kind": "pathway-vs-reference",
-   "side": "knowledge",
-   "handles": [
-    "dyspepsia-and-heartburn-gord",
-    "alginates-benefits-forms-dosing-and-side-effects"
-   ],
-   "fix_handle": "alginates-benefits-forms-dosing-and-side-effects",
-   "quote_a": "Antacids containing aluminium or calcium are safe. Avoid antacids containing sodium bicarbonate and magnesium trisilicate.",
-   "quote_b": "Products like Gaviscon contain alginate plus antacid components (sodium bicarbonate, calcium carbonate).",
-   "severity": "medium",
-   "summary": "The pathway says to avoid sodium bicarbonate antacids in pregnancy, while the alginate reference lists sodium bicarbonate-containing Gaviscon as an acceptable pregnancy heartburn product at standard dose.",
-   "suggested_fix": "The pregnancy row and Special Populations section in the alginate reference should note that combined alginate products containing sodium bicarbonate conflict with the pathway's advice to avoid sodium bicarbonate antacids in pregnancy. Either the pathway or the reference needs to be reconciled.",
    "first_seen": "2026-10-17",
    "last_seen": "2026-10-17",
    "status": "open",

@@ -1,5 +1,5 @@
-// Frontmatter on the knowledge-base .md files (docs/blog, docs/guideline,
-// docs/pathway): one `key: value` per line, JSON arrays on one line. Sentry-free,
+// Frontmatter on the knowledge-base .md files (docs/blog, docs/guideline):
+// one `key: value` per line, JSON arrays on one line. Sentry-free,
 // so scripts and tsx tools can import it.
 
 /** The frontmatter keys, quotes stripped and one-line JSON arrays parsed. Null with no block. */

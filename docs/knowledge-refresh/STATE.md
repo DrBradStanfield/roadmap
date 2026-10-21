@@ -1,5 +1,7 @@
 # Knowledge refresh: state and resume runbook (2026-10-15)
 
+**2026-10-22: pathway batches closed.** Brad removed all HealthPathways content from this repo and the chatbot after an IP complaint (US-15 AC39). The pathway contract, briefs, batch reports, sign-offs, exceptions and answer fixtures moved to the private claude_business repo (`licensed/roadmap/docs/knowledge-refresh/`). Pathway steps below are history; do not run them.
+
 Read this first after a compaction. Story: US-42 (docs/user-stories.md). Lessons: LESSONS.md beside this file.
 
 ## Where things live

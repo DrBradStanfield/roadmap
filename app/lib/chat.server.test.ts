@@ -486,7 +486,7 @@ describe('loadMatchedArticlesFromHandles cap (US-15 AC23)', () => {
   });
 
   it('the largest entry in the corpus loads on its own', () => {
-    const dirOf = (t?: string) => (t === 'guideline' ? 'docs/guideline' : t === 'pathway' ? 'docs/pathway' : 'docs/blog');
+    const dirOf = (t?: string) => (t === 'guideline' ? 'docs/guideline' : 'docs/blog');
     const sized = loadBlogIndex().flatMap((e) => {
       try { return [{ e, n: fs.readFileSync(path.join(process.cwd(), dirOf(e.type), `${e.handle}.md`), 'utf-8').length }]; } catch { return []; }
     });

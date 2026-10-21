@@ -4,11 +4,10 @@ Saved 2026-10-03. These are the re-authored and new knowledge-base bodies from t
 
 | Patch | Base commit | Contents |
 |---|---|---|
-| `wt-pathways.patch` | 05d52d99 | pilot: 10 re-authored pathways |
-| `wt-pathways-2.patch` | daa2b667 | batch 2: 20 re-authored pathways |
-| `wt-pathways-new.patch` | daa2b667 | 40 new pathways |
 | `wt-references.patch` | 05d52d99 | 5 re-authored blog references |
 | `wt.patch` | 8869cfb5 | 1 file from a chat-loader working copy |
+
+The three pathway patches left this repo on 2026-10-22 with the rest of the HealthPathways content (Brad; US-15 AC39). They are in the private claude_business repo, `licensed/roadmap/archive/`.
 
 Each patch was verified on 2026-10-03 to restore byte-identical files when applied to its base commit.
 

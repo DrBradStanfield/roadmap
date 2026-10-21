@@ -325,7 +325,7 @@ describe('queueCovered (Codex round 2, finding 1)', () => {
   it('covers every other deterministic rule on a full run, and no model item', () => {
     const covered = queueCovered({ links: null });
     expect(covered({ rule: 'dose-mismatch', handles: ['a'], fix_handle: 'a', item: '5 mg' })).toBe(true);
-    expect(covered({ kind: 'pathway-vs-reference', handles: ['a', 'b'], fix_handle: 'b' })).toBe(false);
+    expect(covered({ kind: 'reference-vs-reference', handles: ['a', 'b'], fix_handle: 'b' })).toBe(false);
   });
 });
 
@@ -349,7 +349,7 @@ describe('appendFixQueue unverified (Codex round 4, finding 1)', () => {
   it('keeps an item open and marks it unverified this run when the covering run could not see its evidence', () => {
     const dir = mkdtempSync(join(tmpdir(), 'kqueue-'));
     const file = join(dir, 'q.json');
-    const f = { id: 'model0000001', kind: 'pathway-vs-reference', side: 'knowledge', handles: ['a', 'b'], fix_handle: 'b', quote_a: 'x', quote_b: 'y' };
+    const f = { id: 'model0000001', kind: 'reference-vs-reference', side: 'knowledge', handles: ['a', 'b'], fix_handle: 'b', quote_a: 'x', quote_b: 'y' };
     appendFixQueue(file, [f], '2026-10-04');
     const r = appendFixQueue(file, [], '2026-10-11', () => 'unverified');
     expect(r.counts).toEqual({ open: 1, regressed: 0, resolved: 0 });
@@ -362,7 +362,7 @@ describe('renderReport (LOOP.md: reports ≤150 lines, counts first)', () => {
   it('stays within 150 lines when findings run to thousands, and opens with the counts table', () => {
     const findings: Finding[] = Array.from({ length: 3000 }, (_, i) => ({ rule: 'uncited-reference', handle: `h-${i % 400}`, item: `[${i}]` }));
     const md = renderReport({
-      date: '2026-09-29', corpus: { total: 400, pathway: 0, reference: 400, article: 0, guideline: 0 },
+      date: '2026-09-29', corpus: { total: 400, reference: 400, article: 0, guideline: 0 },
       findings, suppressed: 2, allowEntries: 1,
       stats: { grokBodies: 1, grokRefs: 2, grokVia: 1, grokMentions: 3, grokOnlyDirect: 4, grokOnlyAny: 5, productBodies: 1, productMentions: 2 },
       due: [{ handle: 'a', reasons: ['slice'] }], cursor: 0, stateMissing: false, links: null,
@@ -377,13 +377,13 @@ describe('renderReport (LOOP.md: reports ≤150 lines, counts first)', () => {
 describe('main on a scratch corpus', () => {
   const setup = () => {
     const root = mkdtempSync(join(tmpdir(), 'klint-'));
-    for (const d of ['docs/blog', 'docs/pathway', 'docs/guideline', 'docs/loops/chat-health']) mkdirSync(join(root, d), { recursive: true });
+    for (const d of ['docs/blog', 'docs/guideline', 'docs/loops/chat-health']) mkdirSync(join(root, d), { recursive: true });
     writeFileSync(join(root, 'docs/blog/index.json'), JSON.stringify([
       { handle: 'r1', type: 'reference', title: 'R1: x', summary: 'Take 5 mg.', keywords: ['r1'] },
-      { handle: 'p1', type: 'pathway', title: 'P1', summary: 'Clinical pathway for p1.', keywords: ['p1'] },
+      { handle: 'p1', type: 'guideline', title: 'P1', summary: 'Guideline for p1.', keywords: ['p1'] },
     ]));
     writeFileSync(join(root, 'docs/blog/r1.md'), '---\ntitle: "R1"\n---\nClaim [1]. Take 10 mg.\n\n## References\n[1] Grokipedia. https://grokipedia.com/page/R1\n');
-    writeFileSync(join(root, 'docs/pathway/p1.md'), '---\ntitle: "P1"\n---\nNo citations.\n');
+    writeFileSync(join(root, 'docs/guideline/p1.md'), '---\ntitle: "P1"\n---\nNo citations.\n');
     writeFileSync(join(root, 'health_roadmap_algorithm.md'), '### LDL\nLDL < 1.4\n');
     writeFileSync(join(root, 'docs/loops/chat-health/lint-topics.json'), JSON.stringify({ topics: [{ topic: 'lipids', headings: ['LDL'], handles: ['p1'] }] }));
     return root;

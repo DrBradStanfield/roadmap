@@ -375,13 +375,12 @@ describe('US-41 AC11 — only what is public under Brad\'s name: video articles 
   const notServed = index.filter((e) => !isServed(e));
 
   it('serves the two sets and nothing else', () => {
-    expect(notServed.filter((e) => e.type === 'pathway').length).toBeGreaterThan(700);
     expect(notServed.filter((e) => e.type === 'guideline').map((e) => e.handle).sort()).toEqual(['diet', 'exercise', 'sleep']);
-    expect(notServed.every((e) => e.type === 'pathway' || e.type === 'guideline' || (e.type === 'reference' && !e.reviewed))).toBe(true);
+    expect(notServed.every((e) => e.type === 'guideline' || (e.type === 'reference' && !e.reviewed))).toBe(true);
     expect(index.filter(isServed).every((e) => (e.type ?? 'article') === 'article' || (e.type === 'reference' && !!e.reviewed))).toBe(true);
   });
 
-  it('never returns a pathway, guideline or non-master reference, searched by each one\'s own title', () => {
+  it('never returns a guideline or non-master reference, searched by each one\'s own title', () => {
     const banned = new Set(notServed.map((e) => e.handle));
     for (const e of notServed) {
       const results = (callKnowledgeTool('search_knowledge', { query: e.title.slice(0, 200) }).structured as { results: Array<{ handle: string }> }).results;
@@ -389,7 +388,7 @@ describe('US-41 AC11 — only what is public under Brad\'s name: video articles 
     }
   });
 
-  it('refuses to read any pathway, guideline or non-master reference', () => {
+  it('refuses to read any guideline or non-master reference', () => {
     for (const e of notServed) {
       const answer = callKnowledgeTool('get_article', { handle: e.handle });
       expect(answer.isError, e.handle).toBe(true);

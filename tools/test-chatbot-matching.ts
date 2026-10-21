@@ -21,7 +21,7 @@
  *   expected: string[]        handles; any one in the intersection passes ([] = must route nothing)
  *   must_not_route?: string[] handles the case must NEVER get: one in ANY run fails the case,
  *                             reported "✗ routed forbidden handle X". `expected` cannot fail an
- *                             extra handle (2026-09-29: anticoagulant pathways leaked next to the
+ *                             extra handle (2026-09-29: anticoagulant entries leaked next to the
  *                             vitamin K reference and the run still scored 299/304). Each must be
  *                             a real index handle, or the harness exits before any API call.
  *   category, source?, notes?, must_mention?, must_not_mention?, max_length_chars? (below)
@@ -99,7 +99,7 @@
  *
  * --answer-check: for entries with must_mention/must_not_mention/max_length_chars,
  * also calls the main LLM (CHAT_MODEL; --answer-model overrides) with the full production context: blocks 1-3
- * (system prompt + algorithm + products knowledge) PLUS matched pathway/blog content
+ * (system prompt + algorithm + products knowledge) PLUS matched blog content
  * loaded from the handles the router returned, or from `answer_handles` (block 4). The check runs N times
  * (matching --answer-check-runs, default = --runs) and requires majority pass so
  * a single stochastic blip doesn't flip the test. Loads user data only from a fixture's user_context.
@@ -164,7 +164,7 @@ const categoryFilter = args.includes('--category') ? getArg('--category', '') : 
 const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
 // When set, entries with must_mention/must_not_mention/max_length_chars also call
 // the main LLM to verify generated content. Loads blocks 1-3 (system prompt +
-// algorithm + products) AND matched pathway/blog content (block 4) so the bot has
+// algorithm + products) AND matched blog content (block 4) so the bot has
 // the same context production does. Runs --answer-check-runs times (default = --runs,
 // usually 3) and requires majority pass. Set --answer-check-runs 1 to cut API spend.
 const fixedHandlesOnly = args.includes('--fixed-handles-only');
@@ -187,7 +187,7 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 // Static portion: prompt cache blocks 1 and 3 (system prompt + algorithm, then
 // products with writing-style.md and the answer bank, the block every surface gets,
 // US-15 AC29). Blocks 2 (evidence) and 4 (knowledge overview) are not sent, as before.
-// Dynamic portion (per-query, in checkAnswer): block 4 matched pathway/blog
+// Dynamic portion (per-query, in checkAnswer): block 4 matched blog
 // content, loaded via loadMatchedContent() from the routing intersection
 // (or a fixture's answer_handles).
 // User data comes only from a fixture's made-up user_context (see the header).
@@ -258,7 +258,7 @@ const SUMMARY_CAP = args.includes('--summary-cap') ? parseInt(getArg('--summary-
 // pass rate, which is exactly what happened on the protein queries.
 function repairHandle(h: string): string {
   if (VALID_HANDLES.has(h)) return h;
-  for (const t of ['pathway', 'guideline', 'reference', 'article']) {
+  for (const t of ['guideline', 'reference', 'article']) {
     if (h.startsWith(`${t}-`)) {
       const stripped = h.slice(t.length + 1);
       if (VALID_HANDLES.has(stripped)) return stripped;

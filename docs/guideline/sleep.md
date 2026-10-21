@@ -3,12 +3,12 @@ title: "Sleep: Clinical Insomnia Guidance"
 type: "guideline"
 tags: ["Guideline"]
 keywords: ["sleep", "insomnia", "sleep hygiene", "CBT-I", "cognitive behavioural therapy", "melatonin", "zopiclone", "zolpidem", "benzodiazepine", "DORA", "suvorexant", "lemborexant", "doxepin", "ramelteon", "trazodone", "magnesium glycinate", "glycine", "sleep restriction", "stimulus control", "sleep duration", "PSQI", "ISI", "Epworth", "ICSD-3", "sleep apnea", "restless legs", "circadian rhythm", "shift work", "sleep supplement", "valerian", "L-theanine", "GABA", "tryptophan", "5-HTP"]
-summary: "Sleep and insomnia — can't sleep, trouble staying asleep, sleep hygiene, CBT-I as first-line, melatonin dosing, magnesium glycinate, glycine. Covers ICSD-3-TR diagnosis, CBT-I techniques, pharmacotherapy drug classes (DORAs, Z-drugs, doxepin, trazodone) with dosing tables, and supplement evidence. Brad's key divergence: 0.8mg sustained-release melatonin vs typical 3–5mg immediate-release OTC. Compiled from UpToDate 2025–2026 insomnia articles, Auckland HealthPathways, and Brad's clinical framework."
+summary: "Sleep and insomnia — can't sleep, trouble staying asleep, sleep hygiene, CBT-I as first-line, melatonin dosing, magnesium glycinate, glycine. Covers ICSD-3-TR diagnosis, CBT-I techniques, pharmacotherapy drug classes (DORAs, Z-drugs, doxepin, trazodone) with dosing tables, and supplement evidence. Brad's key divergence: 0.8mg sustained-release melatonin vs typical 3–5mg immediate-release OTC. Compiled from UpToDate 2025–2026 insomnia articles and Brad's clinical framework."
 ---
 
 # Sleep: Clinical Insomnia Guidance
 
-*Sources: UpToDate — Overview of Treatment of Insomnia in Adults (Dec 2025), Evaluation and Diagnosis of Insomnia in Adults (Jul 2025), Pharmacotherapy for Insomnia in Adults (Feb 2026), Cognitive Behavioral Therapy for Insomnia in Adults (Mar 2026), Risk Factors, Comorbidities, and Consequences of Insomnia in Adults (Mar 2026). Auckland Region Community HealthPathways — Insomnia (2026). Centre for Clinical Interventions (CCI) — Sleep Hygiene.*
+*Sources: UpToDate — Overview of Treatment of Insomnia in Adults (Dec 2025), Evaluation and Diagnosis of Insomnia in Adults (Jul 2025), Pharmacotherapy for Insomnia in Adults (Feb 2026), Cognitive Behavioral Therapy for Insomnia in Adults (Mar 2026), Risk Factors, Comorbidities, and Consequences of Insomnia in Adults (Mar 2026). Centre for Clinical Interventions (CCI) — Sleep Hygiene.*
 
 This guideline covers the clinical management of insomnia in adults, cross-referenced with Dr. Stanfield's Health Roadmap algorithm and Sleep by Dr Brad product.
 
@@ -34,7 +34,7 @@ A large meta-analysis of over 1.3 million participants confirmed a U-shaped rela
 
 **Guideline position:** Sleep hygiene refers to a set of behavioural and environmental practices that promote healthy sleep. Considerable research supports these guidelines as long-term solutions to sleep difficulties. Crucially, sleep hygiene alone is not an effective treatment for established insomnia disorder — it is incorporated as one component of CBT-I. However, it is appropriate as initial counselling for mild or short-term sleep difficulties.
 
-Core sleep hygiene recommendations (from CCI, UpToDate, and HealthPathways, consolidated):
+Core sleep hygiene recommendations (from CCI and UpToDate, consolidated):
 
 1. **Consistent schedule** — go to bed and wake at the same time every day, including weekends. A fixed rise time is the anchor.
 2. **Sleep only when sleepy** — go to bed only when actually feeling drowsy, not just tired.
@@ -59,7 +59,6 @@ Core sleep hygiene recommendations (from CCI, UpToDate, and HealthPathways, cons
 **References:**
 - CCI Sleep Hygiene guidelines (Government of Western Australia)
 - UpToDate Table 3: "Sleep hygiene guidelines"
-- HealthPathways Insomnia — Section: Education about good sleep habits
 
 ---
 
@@ -84,7 +83,7 @@ In practice, difficulty falling asleep is defined as sleep latency >30 minutes; 
 ### Screening tools
 
 - **Pittsburgh Sleep Quality Index (PSQI)**: global score >5/21 indicates significant sleep disturbance.
-- **Insomnia Severity Index (ISI)**: easy to use; useful for monitoring treatment progress. Preferred in HealthPathways.
+- **Insomnia Severity Index (ISI)**: easy to use; useful for monitoring treatment progress.
 - **Epworth Sleepiness Scale (ESS)**: assesses excessive daytime sleepiness. A low ESS score does not rule out severe insomnia — many insomnia patients feel fatigued but paradoxically cannot nap.
 - **Sleep diary**: 2-week daily record of sleep times, awakenings, and quality. Essential when history is variable or recall is unreliable.
 - **PHQ-2/PHQ-9**: screen for depression (highly comorbid with insomnia).
@@ -105,7 +104,6 @@ Refer to sleep medicine when:
 - Insomnia does not respond to primary care management and significantly affects the patient's life or work.
 - Profound daytime sleepiness, or symptoms of another sleep disorder (narcolepsy, parasomnias, circadian disorders, PLMS).
 - Safety concern (unexplained excessive daytime sleepiness, risk of falling asleep while driving).
-- Insomnia not seen in public sector (NZ context) — consider private referral to a clinical psychologist with CBT-I expertise.
 
 **Brad's position:** Aligns. Brad would use ISI or PSQI for monitoring progress. Screening for depression and anxiety in all insomnia presentations aligns with the algorithm's general mental health awareness.
 
@@ -113,7 +111,6 @@ Refer to sleep medicine when:
 - ICSD-3-TR, American Academy of Sleep Medicine, 2023
 - UpToDate: Evaluation and Diagnosis of Insomnia in Adults (Topic 7676, Version 53.0)
 - Buysse DJ et al. 1989, PSQI (DOI: 10.1016/0165-1781(89)90047-4)
-- HealthPathways Insomnia — Assessment Section
 
 ---
 
@@ -142,11 +139,7 @@ Steps:
    - SE <85%: reduce TIB by 15–30 minutes (later bedtime).
 6. Repeat at each visit until sleep goals achieved.
 
-*Note:* HealthPathways NZ uses a slightly lower sleep efficiency target (80–85%) compared with the UpToDate threshold (85–90%) above. Either is clinically reasonable — the key principle is extending TIB when efficiency is consistently high and reducing when consistently low.
-
 *Precautions:* Sleep restriction should not be used in patients with epilepsy, untreated bipolar disorder (with manic episode history), significant sleep deprivation, or high-risk occupations (pilots, surgeons, commercial drivers) without adaptation. Sleep compression (gradual reduction in TIB) is an alternative for high-risk patients.
-
-Example (HealthPathways): Patient spends 9 hours in bed but sleeps only 5 hours. Advised to go to bed at 11 PM and wake at 6 AM (7 hours in bed). After 2 weeks, sleep efficiency reviewed and TIB adjusted.
 
 **3. Stimulus control therapy**
 Retrains the conditioned association between the bed/bedroom and arousal, anxiety, and wakefulness.
@@ -188,7 +181,6 @@ Moderate-quality evidence: multicomponent CBT-I produces clinically significant 
 - UpToDate: Cognitive Behavioral Therapy for Insomnia in Adults (Topic Version 29.0, Mar 2026)
 - Qaseem 2016 – ACP Guideline on Chronic Insomnia (DOI: 10.7326/M15-2175)
 - Riemann 2023 – European Insomnia Guideline update (DOI: 10.1111/jsr.14035)
-- HealthPathways Insomnia — Management Section
 
 ---
 
@@ -233,7 +225,7 @@ Moderate-quality evidence: multicomponent CBT-I produces clinically significant 
 | Estazolam | 10–24 hours | 0.5–2 mg | Avoid in elderly |
 | Flurazepam | 40–250 hours | 15–30 mg | Very long half-life; generally avoid |
 
-In NZ, zopiclone 3.75–7.5 mg and temazepam 10 mg are the preferred short-acting hypnotics (HealthPathways). Lower doses in older patients due to falls, fractures, cognitive impairment risk. All BZRAs carry dependence/habituation risk with prolonged use; rebound insomnia occurs on cessation. FDA 2019 boxed warning for nonbenzodiazepines: risk of rare but serious complex sleep-related behaviours (sleepwalking, sleep-driving) — contraindicated after any such episode.
+Lower doses in older patients due to falls, fractures, cognitive impairment risk. All BZRAs carry dependence/habituation risk with prolonged use; rebound insomnia occurs on cessation. FDA 2019 boxed warning for nonbenzodiazepines: risk of rare but serious complex sleep-related behaviours (sleepwalking, sleep-driving) — contraindicated after any such episode.
 
 **Efficacy:** Meta-analyses confirm BZRAs decrease sleep latency by ~10 minutes and increase total sleep time by 30–60 minutes vs placebo.
 
@@ -261,17 +253,17 @@ Ramelteon 8 mg is FDA-approved for sleep-onset insomnia. MT1/MT2 agonist — fac
 
 **Trazodone** (50–100 mg nightly): most widely used off-label medication for insomnia despite AASM guideline recommending against it due to limited evidence. A systematic review identified 7 trials (429 patients total); the largest RCT (306 nondepressed patients) found benefit at 1 week but not at 2 weeks vs placebo. Use is pragmatic in practice. Key risks: orthostatic hypotension, QT prolongation, priapism (males), serotonin syndrome risk with serotonergic drugs.
 
-**Amitriptyline** (10–25 mg nightly, NZ HealthPathways): tricyclic antidepressant. May help patients with comorbid neuropathic pain, depression, or anxiety. Sedating but has more side effects than alternatives above 10 mg — anticholinergic effects (dry mouth, urinary retention, blurred vision), cardiac conduction risks.
+**Amitriptyline** (10–25 mg nightly): tricyclic antidepressant. May help patients with comorbid neuropathic pain, depression, or anxiety. Sedating but has more side effects than alternatives above 10 mg — anticholinergic effects (dry mouth, urinary retention, blurred vision), cardiac conduction risks.
 
 **Mirtazapine** (7.5–15 mg nightly): sedating antidepressant. Limited evidence in insomnia without comorbid depression; benefits may not be sustained chronically. Side effects: significant weight gain, somnolence, increased appetite.
 
-**Quetiapine** (6.25–25 mg nightly): low-dose antipsychotic. Not approved for insomnia; use only with psychiatric comorbidity. Little evidence in primary insomnia. Long-term risks: weight gain, diabetes, tardive dyskinesia, QT prolongation. NZ HealthPathways notes: always consider alternatives first, discuss adverse effects with patient.
+**Quetiapine** (6.25–25 mg nightly): low-dose antipsychotic. Not approved for insomnia; use only with psychiatric comorbidity. Little evidence in primary insomnia. Long-term risks: weight gain, diabetes, tardive dyskinesia, QT prolongation.
 
 **Gabapentin** (limited evidence): may help in patients with comorbid pain syndromes or alcohol use disorder. Avoid in renal impairment (renally eliminated).
 
 ### OTC antihistamines
 
-Diphenhydramine 25–50 mg and doxylamine 25 mg. Only modest evidence: diphenhydramine reduces sleep onset by ~8 minutes vs placebo. Tolerance develops with extended use. Anticholinergic effects are significant (confusion, delirium, urinary retention) — particularly dangerous in older adults. HealthPathways advises against sedating antihistamines. UpToDate notes: avoid in older adults, use very cautiously and only short-term.
+Diphenhydramine 25–50 mg and doxylamine 25 mg. Only modest evidence: diphenhydramine reduces sleep onset by ~8 minutes vs placebo. Tolerance develops with extended use. Anticholinergic effects are significant (confusion, delirium, urinary retention) — particularly dangerous in older adults. UpToDate notes: avoid in older adults, use very cautiously and only short-term.
 
 ### Safe prescribing principles
 
@@ -290,7 +282,6 @@ Diphenhydramine 25–50 mg and doxylamine 25 mg. Only modest evidence: diphenhyd
 - Sateia MJ et al. 2017 – AASM Clinical Practice Guideline for Pharmacologic Treatment of Chronic Insomnia (DOI: 10.5664/jcsm.6470)
 - De Crescenzo et al. 2022 – Network meta-analysis of insomnia medications, Lancet (DOI: 10.1016/S0140-6736(22)00831-8)
 - UpToDate: Pharmacotherapy for Insomnia in Adults (Feb 2026)
-- HealthPathways Insomnia — Medication Section
 
 ---
 
@@ -319,7 +310,7 @@ At 0.8 mg the dose stays below the 1 mg threshold UpToDate identifies as potenti
 
 ### Magnesium glycinate
 
-**Guideline position:** HealthPathways lists magnesium as having "equivocal evidence of efficacy" for sleep. UpToDate notes magnesium among the "many other dietary supplements marketed for insomnia" with insufficient evidence. It is listed as generally safe.
+**Guideline position:** UpToDate notes magnesium among the "many other dietary supplements marketed for insomnia" with insufficient evidence. It is listed as generally safe.
 
 **Evidence:** A 2023 systematic review without meta-analysis (Arab et al.; 9 cross-sectional, cohort and randomized studies, 7,582 participants) found that observational studies linked magnesium status with sleep quality, while its randomized trials gave contradictory results and an uncertain association between magnesium supplementation and sleep. A 2025 randomized, double-blind, placebo-controlled trial (Schuster et al.; 155 adults aged 18–65 reporting poor sleep, 250 mg elemental magnesium as bisglycinate daily) found a greater fall in Insomnia Severity Index score than placebo at 4 weeks (−3.9 vs −2.3; p = 0.049; Cohen's d 0.2, a small effect). In an exploratory subgroup analysis of the Schuster trial, participants reporting lower dietary magnesium intake improved more; this is hypothesis-generating, not confirmed. Low magnesium intake is common in Western diets (40–50% of adults fall below recommended intake).
 
@@ -364,11 +355,11 @@ Mechanism: glycine lowers core body temperature at sleep onset (via peripheral v
 
 ### Valerian
 
-**Evidence:** 11 of 14 trials in a meta-analysis studied valerian; no significant difference from placebo on any of 13 insomnia outcome measures. Additionally, valerian may cause severe liver injury in rare cases. HealthPathways and UpToDate both classify it as no evidence of efficacy with hepatotoxicity risk. Not recommended.
+**Evidence:** 11 of 14 trials in a meta-analysis studied valerian; no significant difference from placebo on any of 13 insomnia outcome measures. Additionally, valerian may cause severe liver injury in rare cases. UpToDate classifies it as no evidence of efficacy with hepatotoxicity risk. Not recommended.
 
 ### Tryptophan / 5-HTP
 
-**Evidence:** Tryptophan is a melatonin and serotonin precursor. Some studies show modest sleep-onset benefits at doses of 1–2 g. 5-HTP (5-hydroxytryptophan) may have similar effects. HealthPathways classifies 5-HTP as having "no evidence of efficacy." Interactions with serotonergic drugs (SSRIs, SNRIs) are a safety concern (serotonin syndrome risk). Not included in clinical guidelines.
+**Evidence:** Tryptophan is a melatonin and serotonin precursor. Some studies show modest sleep-onset benefits at doses of 1–2 g. 5-HTP (5-hydroxytryptophan) may have similar effects. Interactions with serotonergic drugs (SSRIs, SNRIs) are a safety concern (serotonin syndrome risk). Not included in clinical guidelines.
 
 ### Brad's Sleep product summary
 
@@ -388,7 +379,7 @@ Brad's rationale for this combination: addresses three complementary mechanisms 
 
 ## Section 7: Risk Factors and Consequences
 
-**Guideline position:** Insomnia affects approximately 15% of adults as a disorder (with daytime consequences); up to two-thirds report at least some insomnia symptoms. In NZ, 13% of adults meet criteria for insomnia disorder (HealthPathways), with Māori adults having higher burden (19.1% vs non-Māori 8.9%). Insomnia has a heritability of ~40%.
+**Guideline position:** Insomnia affects approximately 15% of adults as a disorder (with daytime consequences); up to two-thirds report at least some insomnia symptoms. Insomnia has a heritability of ~40%.
 
 ### Key risk factors
 
@@ -436,15 +427,6 @@ Advanced sleep-wake phase disorder (ASWPD) is more common in older adults and mi
 ### Shift workers
 
 Shift work sleep disorder (SWD) affects 10–23% of shift workers. Criteria: insomnia, excessive daytime sleepiness, and reduced total sleep time specifically because the work schedule overlaps with the preferred sleep schedule.
-
-Management (HealthPathways):
-- Aim for 7–9 hours sleep per 24-hour period across all shifts.
-- Consistent sleep/wake times during consecutive similar shifts.
-- Optimise sleep environment (dark, cool, quiet, particularly if sleeping during day).
-- Strategic napping: naps of 40 minutes or less, allowing time for sleep inertia to dissipate before safety-critical activities.
-- Light management: bright light during shift, light avoidance (blackout blinds) when sleeping.
-- Medications if non-pharmacological approaches inadequate: melatonin 2 mg taken 1–2 hours before intended sleep time. Caffeine strategically early in shift (100–300 mg; avoid late in shift). Modafinil for excessive sleepiness in moderate-to-severe SWD (specialist-only in NZ).
-- Discuss driving risks — fatigue impairs driving equivalently to alcohol.
 
 ### Pregnancy
 

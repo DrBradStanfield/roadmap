@@ -38,4 +38,4 @@ more", "go on".
 
 Borderline rule — supplement + symptom queries ("does MicroVitamin help my
 fatigue?", "is creatine safe for kidney disease?") are ROUTE, not PRODUCT —
-the matched clinical pathway is more useful than the cached product page.
+the matched evidence entry is more useful than the cached product page.

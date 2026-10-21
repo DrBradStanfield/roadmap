@@ -42,6 +42,6 @@ describe('router view in the router call (US-50 AC3)', () => {
   });
 
   it('ROUTER_VERSION is bumped for the view change', () => {
-    expect(ROUTER_VERSION).toBe(3);
+    expect(ROUTER_VERSION).toBeGreaterThanOrEqual(3);
   });
 });

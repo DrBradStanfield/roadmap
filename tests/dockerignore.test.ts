@@ -72,7 +72,6 @@ describe('.dockerignore covers the .gitignore data patterns', () => {
       'docs/products.md',
       'docs/writing-style.md',
       'docs/chatbot/answer-bank.md',
-      'docs/pathway/categories.json',
       'health_roadmap_algorithm.md',
       'instrument.server.mjs',
       'instrument-scrub.mjs',

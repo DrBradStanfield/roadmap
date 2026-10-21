@@ -2,8 +2,8 @@
  * Weekly knowledge lint, deterministic half (US-43; knowledge-refresh plan
  * Phase 3 and decision 6). No model, no network unless --check-links.
  *
- * Rules, over docs/blog (references and video articles), docs/pathway and
- * docs/guideline, every entry every week (they are cheap):
+ * Rules, over docs/blog (references and video articles) and docs/guideline,
+ * every entry every week (they are cheap):
  *   unresolved-marker / uncited-reference / uncited-list   every [n] resolves (AC7)
  *   doi-shape / pmid-shape / id-mismatch / link-dead        identifiers (AC7)
  *   grokipedia                                             no body cites Grokipedia (AC7, F6)
@@ -53,13 +53,13 @@ export const PATHS = {
   metrics: `${LOOP_DIR}/metrics.csv`,
 };
 
-export type EntryType = 'pathway' | 'guideline' | 'reference' | 'article';
+export type EntryType = 'guideline' | 'reference' | 'article';
 export interface Entry { handle: string; type: EntryType; title: string; summary: string; keywords: string[]; raw: string; body: string }
 export type RuleId =
   | 'unresolved-marker' | 'uncited-reference' | 'uncited-list' | 'doi-shape' | 'pmid-shape' | 'id-mismatch'
   | 'link-dead' | 'grokipedia' | 'dose-mismatch' | 'product-rise'
   | 'topic-no-master' | 'master-front' | 'master-gate' | 'master-doi' | 'master-key-points' | 'master-stale' | 'source-stale' | 'master-places' | 'master-overlap'
-  | 'entry-vs-algorithm' | 'pathway-vs-reference' | 'reference-vs-reference';
+  | 'entry-vs-algorithm' | 'reference-vs-reference';
 /** `view` (master-places only): the current-view hash the finding was raised against; a waiver covers that view only. */
 export interface Finding { rule: RuleId; handle: string; pair?: [string, string]; item: string; detail?: string; view?: string }
 export interface AllowEntry { rule?: string; handle?: string; pair?: [string, string]; item?: string; reason: string; date: string; who: string; view?: string }
@@ -82,13 +82,13 @@ export const bucketOf = (handle: string) => parseInt(sha(handle).slice(0, 8), 16
 const readJson = (file: string) => JSON.parse(readFileSync(file, 'utf8'));
 
 export function entryFrom(meta: Meta, raw: string): Entry {
-  const type = (['pathway', 'guideline', 'reference'].includes(meta.type ?? '') ? meta.type : 'article') as EntryType;
+  const type = (['guideline', 'reference'].includes(meta.type ?? '') ? meta.type : 'article') as EntryType;
   const body = raw.replace(/^---\n[\s\S]*?\n---\n?/, '');
   return { handle: meta.handle, type, title: meta.title ?? '', summary: meta.summary ?? '', keywords: meta.keywords ?? [], raw, body };
 }
 
 export function loadCorpus(root: string): Entry[] {
-  const dirOf = (t?: string) => t === 'pathway' ? 'docs/pathway' : t === 'guideline' ? 'docs/guideline' : 'docs/blog';
+  const dirOf = (t?: string) => t === 'guideline' ? 'docs/guideline' : 'docs/blog';
   return (readJson(join(root, PATHS.index)) as Meta[])
     .map(m => entryFrom(m, readFileSync(join(root, dirOf(m.type), `${m.handle}.md`), 'utf8')));
 }
@@ -663,7 +663,7 @@ export interface LintResult {
 
 export async function runLint(root: string, opts: { checkLinks?: { cap: number; delayMs: number; fetchImpl: Fetch } }): Promise<LintResult> {
   const { entries, state, allow, topics, masters, algo } = loadInputs(root);
-  const corpus = { total: entries.length, pathway: 0, guideline: 0, reference: 0, article: 0 };
+  const corpus = { total: entries.length, guideline: 0, reference: 0, article: 0 };
   const stats: Stats = { grokBodies: 0, grokRefs: 0, grokVia: 0, grokMentions: 0, grokOnlyDirect: 0, grokOnlyAny: 0, productBodies: 0, productMentions: 0 };
   const all: Finding[] = [];
   for (const e of entries) {
@@ -713,7 +713,7 @@ export function renderReport(r: LintResult, maxLines = 150): string {
   const byRule = (rule: RuleId) => r.findings.filter(f => f.rule === rule);
   const head = [
     `# Knowledge lint, ${r.date}`, '',
-    `Corpus: ${r.corpus.total} entries (${r.corpus.pathway} pathways, ${r.corpus.reference} references, ${r.corpus.article} video articles, ${r.corpus.guideline} guidelines). ` +
+    `Corpus: ${r.corpus.total} entries (${r.corpus.reference} references, ${r.corpus.article} video articles, ${r.corpus.guideline} guidelines). ` +
       `Allow-list: ${r.allowEntries} entries, ${r.suppressed} findings suppressed.`, '',
     '## Counts', '', '| Rule | Findings | Entries |', '|---|---|---|',
     ...RULE_ORDER.map(rule => `| ${rule} | ${byRule(rule).length} | ${new Set(byRule(rule).map(f => f.handle)).size} |`), '',

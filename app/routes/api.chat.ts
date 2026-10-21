@@ -27,8 +27,7 @@ import {
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, routerText, ROUTER_VERSION } from '../lib/chat-router.server';
-import { titledHandles } from '../lib/chat-router-guard';
+import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, ROUTER_VERSION } from '../lib/chat-router.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { openArticle, preferMasters } from '../lib/router-view';
 import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../packages/health-core/src/chat-history';
@@ -582,11 +581,8 @@ async function chatAction(request: Request, app: boolean) {
       }
 
       // Load content from the routed handles after AC14's filter — [] when classifier said SKIP (router never ran).
-      // The stream names the articles loaded, by their index titles (US-15 AC20),
-      // except crisis pathways and population pathways the text gives no signal
-      // of (AC25). Every routed article still loads.
-      const titled = titledHandles(routed.handles, routerText(sanitizedCurrent, sanitizedFirst, sanitizedRecent));
-      const articles = loadMatchedArticlesFromHandles(routed.handles, titled);
+      // The stream names the articles loaded, by their index titles (US-15 AC20).
+      const articles = loadMatchedArticlesFromHandles(routed.handles);
       if (articles?.titles.length) write({ type: 'sources', titles: articles.titles });
 
       // Build system blocks + messages, call LLM

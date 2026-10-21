@@ -39,7 +39,7 @@ function captureRun(argv: string[]): { code: number; stdout: string; stderr: str
 }
 
 const CORPUS = [
-  { handle: 'iron-deficiency', type: 'pathway' as const, title: 'Iron Deficiency', summary: 'Low ferritin and anaemia in adults.', keywords: ['ferritin', 'iron'] },
+  { handle: 'iron-deficiency', type: 'guideline' as const, title: 'Iron Deficiency', summary: 'Low ferritin and anaemia in adults.', keywords: ['ferritin', 'iron'] },
   { handle: 'omega-3-benefits', type: 'reference' as const, title: 'Omega-3', summary: 'Fish oil, EPA and DHA dosing.', keywords: ['fish oil', 'triglycerides'] },
   { handle: 'statins-explained', title: 'Statins Explained', summary: 'What a statin does to LDL cholesterol.', keywords: ['statin', 'ldl'] },
   { handle: 'sleep', type: 'guideline' as const, title: 'Sleep', summary: 'Insomnia and sleep hygiene.', keywords: ['insomnia'] },
@@ -83,8 +83,8 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
   });
 
   it('expands a clinical abbreviation from the map before ranking', () => {
-    const corpus = [...CORPUS, { handle: 'hypertension-in-adults', title: 'Hypertension', summary: 'High blood pressure in adults.' }];
-    expect(search(buildIndex(corpus), 'What does HTN mean?')[0].handle).toBe('hypertension-in-adults');
+    const corpus = [...CORPUS, { handle: 'high-blood-pressure', title: 'Hypertension', summary: 'High blood pressure in adults.' }];
+    expect(search(buildIndex(corpus), 'What does HTN mean?')[0].handle).toBe('high-blood-pressure');
   });
 
   it('keeps the abbreviation map small and unambiguous: under 60 single-token keys', () => {
@@ -126,31 +126,16 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
     expect(search(index, 'vitamin d', 50)).toHaveLength(MAX_K);
   });
 
-  it('a blood pressure reading in mm Hg does not pull in hyperemesis gravidarum', () => {
-    const hits = search(buildIndex(loadBlogIndex()), 'my blood pressure is 150/95 mm Hg').map((h) => h.handle);
-    expect(hits).not.toContain('nausea-and-vomiting-in-pregnancy');
-  });
-
-  it('value-bearing questions find the clinical entry', () => {
+  it('the values in a value-bearing question change nothing', () => {
     const index = buildIndex(loadBlogIndex());
     const top = (q: string, k = 3) => search(index, q, k).map((h) => h.handle);
-    expect(top('ldl 4.2 mmol/L')).toContain('hyperlipidaemia');
-    expect(top('hba1c 48 mmol/mol')).toContain('diabetes-screening-and-diagnosis-in-adults');
-    // The values change nothing; the lay "blood pressure" miss is the ranker's
-    // own (the pathway sits 8th behind Brad's blood pressure videos).
     expect(top('blood pressure 150/95')).toEqual(top('blood pressure'));
-    expect(top('blood pressure 150/95', 8)).toContain('hypertension-in-adults');
   });
 
   it('indexes every entry in docs/blog/index.json', () => {
     const entries = loadBlogIndex();
-    expect(entries.length).toBeGreaterThanOrEqual(1024);
+    expect(entries.length).toBeGreaterThanOrEqual(300);
     expect(buildIndex(entries).docs).toHaveLength(entries.length);
-  });
-
-  it('finds the chest pain pathway for a lay question on the real index', () => {
-    const hits = search(buildIndex(loadBlogIndex()), 'My chest hurts when I walk up stairs');
-    expect(hits[0].handle).toBe('chest-pain');
   });
 
   it('imports no network module and no model client', () => {
@@ -204,9 +189,9 @@ describe('US-41 AC3/AC4 — posture first, bodies under a cap', () => {
   });
 
   it('prints handle, type, title, summary and score for each hit', () => {
-    const { stdout } = captureRun(['My chest hurts when I walk up stairs', '--k', '2']);
-    expect(stdout).toMatch(/^1\. \[pathway\] chest-pain \(score \d+\.\d\)$/m);
-    expect(stdout).toMatch(/^   Pathway: Chest Pain\n   \S/m);
+    const { stdout } = captureRun(['vitamin c side effects', '--k', '2']);
+    expect(stdout).toMatch(/^1\. \[reference\] vitamin-c-benefits-forms-dosing-and-side-effects \(score \d+\.\d\)$/m);
+    expect(stdout).toMatch(/^   Vitamin C: Benefits, Best Forms, Dosing, and Side Effects\n   \S/m);
     expect(stdout).not.toMatch(/^3\. /m);
   });
 
@@ -218,11 +203,11 @@ describe('US-41 AC3/AC4 — posture first, bodies under a cap', () => {
   });
 
   it('adds the best-matching section under the default cap, frontmatter stripped', () => {
-    const { stdout } = captureRun(['chest pain red flags', '--excerpt', '--k', '1']);
+    const { stdout } = captureRun(['vitamin c side effects', '--excerpt', '--k', '1']);
     const excerpt = stdout.split('--- excerpt ')[1];
     expect(excerpt).toBeDefined();
     expect(excerpt).not.toMatch(/^keywords:/m);
-    expect(excerpt.split('\n')[1]).toMatch(/^## Red Flags/);
+    expect(excerpt.split('\n')[1]).toMatch(/^## /);
     expect(excerpt.length).toBeLessThan(DEFAULT_EXCERPT_CHARS + 200);
     expect(stdout).toMatch(/--- excerpt \([\d,]+ of [\d,]+ chars\) ---/);
   });
@@ -245,11 +230,11 @@ describe('US-41 AC3/AC4 — posture first, bodies under a cap', () => {
   });
 
   it('--article prints one full body under the posture line', () => {
-    const { code, stdout } = captureRun(['--article', 'hypertension-in-adults']);
+    const { code, stdout } = captureRun(['--article', 'diet']);
     expect(code).toBe(0);
     const lines = stdout.split('\n');
     expect(lines[0]).toBe(POSTURE);
-    expect(stdout).toContain('[pathway] hypertension-in-adults: ');
+    expect(stdout).toContain('[guideline] diet: ');
     expect(stdout).not.toMatch(/truncated/);
   });
 
@@ -272,24 +257,24 @@ describe('US-41 AC3/AC4 — posture first, bodies under a cap', () => {
   }, 30_000);
 
   it('--article --json prints the posture, handle, title and body as data', () => {
-    const { code, stdout } = captureRun(['--article', 'hypertension-in-adults', '--json', '--max-chars', '400']);
+    const { code, stdout } = captureRun(['--article', 'diet', '--json', '--max-chars', '400']);
     expect(code).toBe(0);
     const parsed = JSON.parse(stdout);
     expect(Object.keys(parsed).sort()).toEqual(['body', 'handle', 'posture', 'title']);
-    expect(parsed).toMatchObject({ posture: POSTURE, handle: 'hypertension-in-adults' });
+    expect(parsed).toMatchObject({ posture: POSTURE, handle: 'diet' });
     expect(parsed.body.startsWith('# ')).toBe(true);
   });
 
   it('--article refuses --k and --excerpt with a usage line', () => {
     for (const flag of [['--k', '2'], ['--excerpt']]) {
-      const result = captureRun(['--article', 'hypertension-in-adults', ...flag]);
+      const result = captureRun(['--article', 'diet', ...flag]);
       expect(result.code).toBe(1);
       expect(result.stderr).toMatch(/^search_knowledge: --article takes only --max-chars and --json\n/);
     }
   });
 
   it('--article caps a long body and says so', () => {
-    const { stdout } = captureRun(['--article', 'hypertension-in-adults', '--max-chars', '1000']);
+    const { stdout } = captureRun(['--article', 'diet', '--max-chars', '1000']);
     expect(stdout).toMatch(/\[truncated: 1,000 of [\d,]+ chars; raise --max-chars for more\]/);
   });
 
