@@ -131,6 +131,22 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
   });
 
+  it('[vitamin K, vitamin A post, lithium]: a master shrinks so the post after it loads too (review S1)', () => {
+    const A = 'vitamin-a-benefits-forms-dosing-and-side-effects';
+    expect(index.find(e => e.handle === A) && isMaster(index.find(e => e.handle === A)!)).toBe(false);
+    const { content, skipped } = loadMatchedContent([K, A, LITHIUM]);
+    expect(skipped).toEqual([]);
+    expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
+    expect(content!.split('\n\n---\n\n')[0]).toContain('Internal note, do not quote');
+    warfarin(content);
+  });
+
+  it('a handle routed twice loads once (review N1)', () => {
+    const { content, titles } = loadMatchedContent([D, D]);
+    expect(titles).toHaveLength(1);
+    expect(content!.match(/^title: /gm)).toHaveLength(1);
+  });
+
   it('magnesium + vitamin D: both load, vitamin D reduced with its safety and interactions', () => {
     const { content, skipped } = loadMatchedContent([MG, D]);
     expect(skipped).toEqual([]);
@@ -186,7 +202,7 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
 
   it('a non-master entry that would overflow is still skipped whole', () => {
     vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
-      if (path.basename(String(p), '.md') === 'cap-test-post') return `## Safety\n\n${'p'.repeat(60_000)}`;
+      if (path.basename(String(p), '.md') === 'cap-test-post') return `## Safety\n\n${'p'.repeat(117_000)}`;
       return (realRead as (...a: unknown[]) => unknown)(p, ...rest);
     }) as typeof fs.readFileSync);
     const { content, skipped } = loadMatchedContent([D, 'cap-test-post']);
@@ -221,7 +237,8 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
 
   it('every ordered pair of masters with a large non-master first or between: no master skipped, inside the cap', async () => {
     vi.resetModules();
-    const { loadMatchedContent, loadBlogArticle, contentBlock } = await import('./matched-content');
+    const { loadMatchedContent, loadBlogArticle, contentBlock, contentForms } = await import('./matched-content');
+    const minimum = (h: string) => Math.min(...contentForms(h, loadBlogArticle(h)!).map(f => f.length));
     const masters = loadBlogIndex().filter(isMaster).map(e => e.handle);
     const large = loadBlogIndex().filter(e => !isMaster(e))
       .map(e => ({ handle: e.handle, size: contentBlock(e.handle, loadBlogArticle(e.handle) ?? '').length }))
@@ -232,8 +249,27 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
       for (const order of [[a, n, b], [n, a, b]]) {
         const { content, skipped } = loadMatchedContent(order);
         expect(skipped.filter(h => h !== n), order.join(' + ')).toEqual([]);
+        // Masters shrink before a post between them is dropped (review S1).
+        if (order[0] === a && minimum(a) + minimum(n) + minimum(b) + 2 * '\n\n---\n\n'.length <= MAX_BLOG_CHARS) expect(skipped, order.join(' + ')).toEqual([]);
         expect(content!.length, order.join(' + ')).toBeLessThanOrEqual(MAX_BLOG_CHARS);
       }
     }
+  });
+
+  it('a reduced master logs what it dropped once, and a whole one logs nothing (review S2)', async () => {
+    vi.resetModules();
+    const real = String(realRead(path.join('docs/blog', `${K}.md`), 'utf-8'));
+    vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
+      if (path.basename(String(p), '.md') === K) return real.replace(/^(## Current view.*)$/m, `$1\n\n${'v'.repeat(6_000)}`);
+      return (realRead as (...a: unknown[]) => unknown)(p, ...rest);
+    }) as typeof fs.readFileSync);
+    const { loadMatchedContent } = await import('./matched-content');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const logged = () => warn.mock.calls.map(([m]) => String(m)).filter(m => m.startsWith('Chat reduced master'));
+    loadMatchedContent([K]);
+    expect(logged()).toEqual([]);
+    loadMatchedContent([D, K]);
+    expect(logged()).toEqual([`Chat reduced master: current view over 6000 characters, dropped: ${K}`]);
+    vi.resetModules();
   });
 });

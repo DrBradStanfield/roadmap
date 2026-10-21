@@ -168,23 +168,31 @@ function keySafetyPoints(md: string): { text: string | null; dropped?: string } 
  * MAX_VIEW_CHARS), key safety points (unless malformed as in AC12), every
  * safety section and, with `dosing`, its Recommended Dosing section (where the
  * upper limits live), demoted, then the reference line of every [n] they cite.
- * A malformed view or key points are dropped and logged with `handle`, as in
- * masterViews. The markers stay, unlike YouTube's key points: each has its line
+ * reducedDrops() names what a malformed view or key points cost, for the
+ * caller to log, as masterViews does. The markers stay, unlike YouTube's key points: each has its line
  * here. Null when it has none of them.
  */
-export function reducedMaster(md: string, dosing = false, handle = ''): string | null {
+export function reducedMaster(md: string, dosing = false): string | null {
   const body = stripFrontmatter(md);
   const view = sectionOf(body, VIEW_HEADING);
-  if (view && view.length >= MAX_VIEW_CHARS) console.warn(`Chat reduced master: current view over ${MAX_VIEW_CHARS} characters, dropped: ${handle}`);
-  const points = keySafetyPoints(md);
-  if (points.dropped) console.warn(`Chat reduced master: key safety points ${points.dropped}, dropped: ${handle}`);
   const parts = [
     view && view.length < MAX_VIEW_CHARS ? view : null,
-    points.text ? sectionOf(body, KEY_POINTS_HEADING) : null,
+    keySafetyPoints(md).text ? sectionOf(body, KEY_POINTS_HEADING) : null,
     ...safetyBodies(body),
     dosing ? sectionOf(body, DOSING_HEADING) : null,
   ].filter((p): p is string => !!p);
   return parts.length > 0 ? withCitations(parts.join('\n\n'), bibliography(body)) : null;
+}
+
+/** What reducedMaster() leaves out as malformed: a view of MAX_VIEW_CHARS or
+ *  more, key safety points failing AC12's checks. Empty when nothing. */
+export function reducedDrops(md: string): string[] {
+  const view = sectionOf(stripFrontmatter(md), VIEW_HEADING);
+  const points = keySafetyPoints(md);
+  return [
+    ...(view && view.length >= MAX_VIEW_CHARS ? [`current view over ${MAX_VIEW_CHARS} characters`] : []),
+    ...(points.dropped ? [`key safety points ${points.dropped}`] : []),
+  ];
 }
 
 /**

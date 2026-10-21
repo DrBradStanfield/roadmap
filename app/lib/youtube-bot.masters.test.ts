@@ -49,7 +49,7 @@ vi.mock('./chat.server', async (orig) => ({
 
 import { runPipeline } from './youtube-bot.server';
 import { platformChatCompletion } from './platform-chat.server';
-import { currentViewSection, safetySections, masterViews, reducedMaster, MAX_VIEW_CHARS, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_KEY_POINTS_CHARS, BULLET_LINE } from './youtube-context';
+import { currentViewSection, safetySections, masterViews, reducedMaster, reducedDrops, MAX_VIEW_CHARS, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_KEY_POINTS_CHARS, BULLET_LINE } from './youtube-context';
 import { MAX_KEY_POINTS_CHARS as CHECKER_MAX_KEY_POINTS_CHARS, BULLET_LINE as CHECKER_BULLET_LINE, keySafetyErrors } from '../../tools/knowledge-batch-check';
 import { getChatCompletion } from './chat.server';
 import { routeQuery } from './chat-router.server';
@@ -493,44 +493,40 @@ describe('youtube-comment-dryrun uses the router view (US-50 AC3)', () => {
 // US-50 AC13 (R6): the chat's reduced form applies masterViews' malformed-view
 // rule, so a view over MAX_VIEW_CHARS never reaches the model by that path either.
 describe('reducedMaster keeps the malformed-view check (US-50 AC13)', () => {
+  // reducedMaster leaves the logging to its caller: reducedDrops() names what
+  // was dropped, and loadMatchedContent logs it once, only when a reduced form loads.
   it('drops a view over MAX_VIEW_CHARS and keeps the safety sections with their reference lines', () => {
     const md = `---\ntitle: "X"\nreviewed: "2026-10-20"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'v'.repeat(MAX_VIEW_CHARS)}\n\n## 5. Safety and Side Effects\n\nSafe [1].\n\n## 8. References\n\n[1] A ref.\n`;
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const reduced = reducedMaster(md, false, 'tm-x')!;
+    const reduced = reducedMaster(md)!;
     expect(reduced).not.toContain('vvv');
     expect(reduced).toContain('Safe [1].');
     expect(reduced).toMatch(/^\[1\] A ref\.$/m);
-    expect(warn.mock.calls.map(([m]) => String(m))).toContain(`Chat reduced master: current view over ${MAX_VIEW_CHARS} characters, dropped: tm-x`);
-    warn.mockRestore();
+    expect(reducedDrops(md)).toEqual([`current view over ${MAX_VIEW_CHARS} characters`]);
   });
 
   // AC12's checks hold on this path too: key points over MAX_KEY_POINTS_CHARS,
-  // or with fewer than 3 bullets, are dropped and logged; sound ones keep their markers.
+  // or with fewer than 3 bullets, are dropped and named; sound ones keep their markers.
   const withPoints = (points: string) => `---\ntitle: "X"\nreviewed: "2026-10-20"\n---\n\n## Current view (reviewed 20 October 2026)\n\nView.\n\n## Key safety points\n\n${points}\n\n## 5. Safety and Side Effects\n\nSafe [1].\n\n## 8. References\n\n[1] A ref.\n`;
-  it('drops key safety points over MAX_KEY_POINTS_CHARS, and logs it', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const reduced = reducedMaster(withPoints(`- a\n- b\n- ${'k'.repeat(MAX_KEY_POINTS_CHARS)}`), false, 'tm-long')!;
+  it('drops key safety points over MAX_KEY_POINTS_CHARS, and names it', () => {
+    const md = withPoints(`- a\n- b\n- ${'k'.repeat(MAX_KEY_POINTS_CHARS)}`);
+    const reduced = reducedMaster(md)!;
     expect(reduced).not.toContain('Key safety points');
     expect(reduced).toContain('Safe [1].');
-    expect(warn.mock.calls.map(([m]) => String(m))).toContain(`Chat reduced master: key safety points over ${MAX_KEY_POINTS_CHARS} characters, dropped: tm-long`);
-    warn.mockRestore();
+    expect(reducedDrops(md)).toEqual([`key safety points over ${MAX_KEY_POINTS_CHARS} characters`]);
   });
 
-  it('drops key safety points with fewer than 3 bullets, and logs it', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const reduced = reducedMaster(withPoints('- a [1]\n- b'), false, 'tm-few')!;
-    expect(reduced).not.toContain('Key safety points');
-    expect(warn.mock.calls.map(([m]) => String(m))).toContain('Chat reduced master: key safety points malformed, dropped: tm-few');
-    warn.mockRestore();
+  it('drops key safety points with fewer than 3 bullets, and names it', () => {
+    const md = withPoints('- a [1]\n- b');
+    expect(reducedMaster(md)!).not.toContain('Key safety points');
+    expect(reducedDrops(md)).toEqual(['key safety points malformed']);
   });
 
   it('keeps sound key safety points, markers and reference lines included', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const reduced = reducedMaster(withPoints('- a [1]\n- b\n- c'), false, 'tm-ok')!;
+    const md = withPoints('- a [1]\n- b\n- c');
+    const reduced = reducedMaster(md)!;
     expect(reduced).toContain('Key safety points');
     expect(reduced).toContain('- a [1]');
     expect(reduced).toMatch(/^\[1\] A ref\.$/m);
-    expect(warn).not.toHaveBeenCalled();
-    warn.mockRestore();
+    expect(reducedDrops(md)).toEqual([]);
   });
 });
