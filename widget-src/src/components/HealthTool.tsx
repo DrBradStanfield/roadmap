@@ -61,6 +61,7 @@ import {
   saveToLocalStorage,
   patchMirror,
   clearLocalStorage,
+  clearMatrixDrafts,
   saveUnitPreference,
   loadUnitPreference,
   safeSetItem,
@@ -791,6 +792,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     // refused erase moved nothing, whatever else the screen is behind.
     if (result.success || getEraseIdentity() !== before) {
       clearLocalStorage();
+      // Both matrices' drafts too, kept on the device and on screen: a failed
+      // write's store holds the erased copy, and a draft would be saved into it.
+      clearMatrixDrafts();
       setInputs({});
       setPreviousMeasurements([]);
       setHistory([]);
@@ -929,6 +933,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     | Array<{ key: string; drugName: string; doseValue: number | null; doseUnit: string | null }>
     | null
   >(null);
+  // The form's medications, unsaved changes included: a chat change is
+  // judged against these as well as the saved ones (US-06 AC12).
+  const medicationsRef = useRef(medications);
+  medicationsRef.current = medications;
   const isMobileRef = useRef(isMobile);
   isMobileRef.current = isMobile;
 
@@ -975,8 +983,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     // An answer the form holds but has not saved yet was about the old drug
     // too: it is reset as well, and only the saved one is Undo's to restore.
     const escalationKey = (ESCALATION_KEY_OF as Partial<Record<string, string>>)[edit.medicationKey];
-    if (escalationKey && !stated.has(escalationKey)
-      && (edit.drugName !== undo[0].drugName || edit.doseValue !== undo[0].doseValue)) {
+    const onForm = medicationsRef.current.find(m => m.medicationKey === edit.medicationKey);
+    const changes = (row: { drugName: string; doseValue: number | null } | undefined) =>
+      !!row && (edit.drugName !== row.drugName || edit.doseValue !== row.doseValue);
+    if (escalationKey && !stated.has(escalationKey) && (changes(undo[0]) || changes(onForm))) {
       const answer = saved.find(m => m.medicationKey === escalationKey && m.drugName !== 'not_yet');
       if (answer) undo.unshift({ key: answer.medicationKey, drugName: answer.drugName, doseValue: answer.doseValue, doseUnit: answer.doseUnit });
       if (answer || medSaveTimers.current.has(escalationKey)) handleMedicationChange(escalationKey, 'not_yet', null, null);

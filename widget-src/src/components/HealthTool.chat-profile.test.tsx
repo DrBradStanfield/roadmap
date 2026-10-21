@@ -16,7 +16,7 @@ import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storag
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import { MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
 
 const chat = vi.hoisted(() => ({
   proposeEdit: null as null | ((edits: ProposedEdit[]) => void),
@@ -653,6 +653,45 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     const meds = ((await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile).medications;
     expect(meds.find(m => m.medicationKey === 'statin')?.drugName).toBe('atorvastatin');
     expect(meds.find(m => m.medicationKey === 'statin_escalation')?.drugName ?? 'not_yet').toBe('not_yet');
+  });
+
+  it('US-06 AC12: a chat dose equal to the saved one still resets an answer given after a form dose change not yet saved', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuestOnStatin(new HeldCloud(cloud), async () => {
+      await addMeasurement('ldl', 4.2, '2026-09-01');
+      await saveMedication('statin_escalation', 'not_yet');
+    });
+    // Saved: rosuvastatin 10 mg. The form moves to 20 mg and answers the
+    // escalation; both saves wait 300 ms. The chat then states 10 mg.
+    fireEvent.change(view.container.querySelector('#statin-dose')!, { target: { value: '20' } });
+    fireEvent.change(view.container.querySelector('#statin-escalation')!, { target: { value: 'not_tolerated' } });
+    act(() => chat.proposeEdit!([{ kind: 'medication', medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' }]));
+    await wait(1500);
+    await act(async () => { await flushRoadmapStore(); });
+    const meds = ((await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile).medications;
+    expect(meds.find(m => m.medicationKey === 'statin')?.doseValue).toBe(10);
+    expect(meds.find(m => m.medicationKey === 'statin_escalation')?.drugName).toBe('not_yet');
+  });
+
+  it('after an erase whose write failed, a matrix draft the chat filled in is gone from the device and the screen', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await cloudGuestOnStatin(adapter);
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'ldlC', displayValue: 3.2, unitSystem: 'si', date: null }]));
+    await wait(600);
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').toContain('3.2');
+    const erase = adapter.hold(true);
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await erase.reached;
+    erase.release();
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    adapter.open();
+    await wait(600);
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
+    expect(JSON.stringify(chat.context!())).not.toContain('3.2');
   });
 
   it('a medication save scheduled before this tab\'s erase does not land in the erased record', async () => {
