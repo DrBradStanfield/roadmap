@@ -10,6 +10,8 @@ import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, supplementSchema } from '../../packages/health-core/src/validation';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
+import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
+import { deviceWrites, type DeviceWrite } from '../../packages/health-core/src/device-export';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import {
   detectUnitSystem, formatDisplayValue, getDisplayLabel, toCanonicalValue,
@@ -46,7 +48,9 @@ export type Edit =
   /** A medication's current state (US-06): the web's write, history row included. */
   | { kind: 'medication'; medicationKey: string; drugName: string; doseValue?: number | null; doseUnit?: string | null }
   /** A supplement's current state; `status: 'stopped'` is the soft stop (US-06). */
-  | { kind: 'supplement'; supplementKey: string; supplementName: string; doseValue?: number | null; doseUnit?: string | null; status: 'active' | 'stopped'; startedAt?: string };
+  | { kind: 'supplement'; supplementKey: string; supplementName: string; doseValue?: number | null; doseUnit?: string | null; status: 'active' | 'stopped'; startedAt?: string }
+  /** Readings from Apple Health (US-25 AC8): health-core's device-import decides what lands. */
+  | { kind: 'appleHealth'; samples: DeviceSample[] };
 
 /** A refusal leaves the record as it was. `existingId` names the row holding the day. */
 export type EditOutcome =
@@ -176,5 +180,14 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
       }
       return { ok: true, file: upsertSupplement(file, { supplementKey, supplementName, doseValue, doseUnit, status, startedAt }, now).file };
     }
+    case 'appleHealth': {
+      if (!Array.isArray(edit.samples)) return { ok: false, reason: 'invalid-value', message: 'Apple Health readings come as a list.' };
+      return { ok: true, file: importDeviceSamples(file, edit.samples, { now, source: 'apple_health' }).file };
+    }
   }
+}
+
+/** What the app writes to Apple Health (US-25 AC9): the values a person entered, never its own imports. */
+export function healthWrites(file: RoadmapFile): DeviceWrite[] {
+  return deviceWrites(file, 'apple_health');
 }

@@ -2,7 +2,7 @@
 // health-core's own write functions. The app runs this same code in
 // JavaScriptCore; these tests run it in Node.
 import { describe, expect, it } from 'vitest';
-import { applyEdit, myData, newRecord, readNumber, readRecord } from './my-data';
+import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord } from './my-data';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
 const NOW = '2026-10-21T08:00:00.000Z';
@@ -193,5 +193,33 @@ describe('medications and supplements (US-06, D4b)', () => {
     const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
     expect(applyEdit(file, { kind: 'supplement', supplementKey: 'Omega 3!', supplementName: 'Omega-3', status: 'active' }, NOW)).toMatchObject({ ok: false });
     expect(applyEdit(file, { kind: 'supplement', supplementKey: 'omega3', supplementName: 'Omega-3' } as never, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+  });
+});
+
+// US-25 AC8/AC9 (ios/architecture.md D6): Apple Health in and out, through
+// health-core's device-import and device-export (their rules are tested there).
+describe('Apple Health (AC8, AC9)', () => {
+  const reading = { externalId: 'hk-1', metricType: 'weight', value: 80, measuredAt: '2026-10-20T19:30:00.000Z', localTime: '2026-10-21T08:30:00' };
+
+  it('takes readings in as apple_health rows, shown in My data', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'appleHealth', samples: [reading] });
+    expect(file.measurements[0]).toMatchObject({ source: 'apple_health', externalId: 'hk-1', value: 80 });
+    expect(myData(file).vitals[0].latest).toMatchObject({ value: '80.0', day: '2026-10-21' });
+  });
+
+  it('hands back the record it was given when nothing is new, so the app writes nothing', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'appleHealth', samples: [reading] });
+    const again = applyEdit(file, { kind: 'appleHealth', samples: [reading] }, LATER);
+    expect(again).toEqual({ ok: true, file });
+  });
+
+  it('refuses a batch that is not a list', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    expect(applyEdit(file, { kind: 'appleHealth', samples: 'nope' } as never, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+  });
+
+  it('lists a typed weight as a write to Apple Health, and an imported one not', () => {
+    const typed = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'weight', value: 80, day: '2026-10-20' }, { kind: 'appleHealth', samples: [reading] });
+    expect(healthWrites(typed)).toEqual([{ syncId: typed.measurements[0].id, version: Date.parse(NOW), day: '2026-10-20', values: { weight: 80 } }]);
   });
 });

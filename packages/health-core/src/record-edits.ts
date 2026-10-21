@@ -237,8 +237,8 @@ function checkMeasurementValue(metricType: string, value: number): EditRejection
   return fault?.reason === 'out-of-range' ? { ...fault, message: `${fault.message} (got ${value})` } : fault;
 }
 
-/** Rule 8's refusal without the number, for a bulk refusal (US-35 AC17). */
-function measurementValueFault(metricType: string, value: number): EditRejection | null {
+/** Rule 8's refusal without the number, for a bulk refusal (US-35 AC17) and a device import (device-import.ts). */
+export function measurementValueFault(metricType: string, value: number): EditRejection | null {
   if (!Number.isFinite(value)) return reject('invalid-value', 'A value must be a finite number');
   const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean; error?: { issues: Array<{ message: string }> } } }>;
   const field = METRIC_TO_FIELD[metricType];

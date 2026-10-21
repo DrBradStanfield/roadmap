@@ -166,6 +166,24 @@ exact list matched to `types.ts` in the spike).
   "the latest reading of the day wins across devices" would need the sample time in the
   record and a merge change: merge-class work, adversary plus Codex.
 
+**Built 2026-10-21 (engine).** The rules above are health-core code, so Swift only reads
+HealthKit and hands readings over: `device-import.ts` (`importDeviceSamples`, the My data
+edit `appleHealth`) and `device-export.ts` (`deviceWrites`, the door `healthWritesJson`).
+Decisions made building it (agent, 2026-10-21; Brad to confirm):
+- **The row's `recordedAt` carries the reading's wall-clock time**, in the web's
+  local-day shape (`2026-10-21T08:30:00.000Z` is 8:30 on the phone's clock, not UTC), so
+  `dayOf` gives the day the person lived and the time orders a day's readings. Within a
+  day the latest reading wins: a later reading replaces an earlier Apple Health row (a
+  correction), an earlier one is skipped. Without the time, the winner would depend on
+  arrival order and a full re-import could swap it.
+- **Height** is the profile's: Apple Health fills an empty height and never replaces one.
+  It is not written back: the profile has no source, so an imported height would echo.
+- **Blood glucose is not read.** It is a catalogue lab value, and lab rows have no
+  `externalId` to dedup on; it waits for the Health Records work. HbA1c has no HealthKit
+  quantity type.
+- **Blood pressure** is written as one correlation per day, both halves present, keyed by
+  the systolic chain's root; a day with an imported half is not written.
+
 **Blood tests** mostly are not HealthKit quantity types. They arrive as Health Records
 (`HKClinicalRecord`), which needs Apple's entitlement and, to our knowledge, works only in
 the US, UK and Canada (verify). Records come in FHIR DSTU2 or R4: decode by version, with
