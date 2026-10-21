@@ -418,6 +418,6 @@ export {
 } from './drive-rest';
 
 // US-35: the slot rule and the bulk save the website and the connector share.
-export { bulkAppendValues, correctValue, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type SlotState } from './record-edits';
+export { bulkAppendValues, correctValue, placeMeasurement, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type SlotState } from './record-edits';
 export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, UNDATED_PREVIOUS, type RefusedLabValue } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';

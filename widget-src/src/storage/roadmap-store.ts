@@ -31,13 +31,12 @@ import {
   RecordSession,
   bulkAppendValues,
   splitDocumentRef,
+  placeMeasurement,
   upsertMedication,
   upsertSupplement,
   isEscalationKey,
   computeReminderSchedule,
   correctValue as correctRecordValue,
-  createMeasurement,
-  dayOf,
   diffInputsToMeasurements,
   fileProfileToApi,
   fileScreeningRows,
@@ -295,21 +294,12 @@ export class RoadmapStore {
     const when = recordedAt ?? ensureIsoDatetime(localDay(new Date()));
     // US-29 AC4a: the reader drops a row without a real day; storing one fails every later save.
     if (!isClinicalDay(when)) return { status: 'error' };
-    // Slot rule: one active value per (metric, day) — mirrors the server 409.
-    const exists = activeOnly(this.file.measurements).some(
-      (m) => m.metricType === metricType && dayOf(m.recordedAt) === dayOf(when),
-    );
-    if (exists) return { status: 'duplicate' };
-
-    const row = createMeasurement({
-      id: newId(),
-      metricType,
-      value,
-      recordedAt: when,
-      createdAt: new Date().toISOString(),
-    });
-    this.session.edit((file) => void file.measurements.push(row), erase);
-    return { status: 'inserted', row: row as ApiMeasurement };
+    // health-core's slot rule and row (record-edits placeMeasurement, shared
+    // with every other writer): one active value per (metric, day).
+    const result = placeMeasurement(this.file, { metricType, value, recordedAt: when, now: new Date().toISOString() });
+    if (!result.ok) return { status: 'duplicate' };
+    this.session.edit(() => result.file, erase);
+    return { status: 'inserted', row: result.row as ApiMeasurement };
   }
 
   /** Correct one saved value, core or lab, by record-edits' one rule: append

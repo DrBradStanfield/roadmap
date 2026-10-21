@@ -355,13 +355,27 @@ export function appendMeasurement(file: RoadmapFile, request: AppendMeasurementR
   if (invalid) return invalid;
   const recordedAt = resolveRecordedAt(request.recordedAt, request);
   if (typeof recordedAt !== 'string') return recordedAt;
+  return placeMeasurement(file, { metricType, value, recordedAt, now, source: request.source });
+}
 
+/**
+ * Rule 3 and the row, for a value already checked: refuse a slot an active
+ * row holds, else append a fresh row (rule 5) and move the file clock (rule
+ * 6). `appendMeasurement` reaches it after its own checks (metric, unit,
+ * range, a past day). The web form reaches it directly, after only its
+ * clinical-day check, so its rows keep the timestamp it stores and no range
+ * refusal it never had (D4b, 2026-10-21): the slot rule is the one both share.
+ */
+export function placeMeasurement(
+  file: RoadmapFile,
+  request: { metricType: string; value: number; recordedAt: string; now: string; source?: MeasurementSource },
+): EditResult<FileMeasurement> {
+  const { metricType, value, recordedAt, now, source } = request;
   const taken = findActiveInSlot(file, 'measurement', metricType, recordedAt);
   if (taken) {
     return reject('slot-occupied', `${metricType} already has a value on ${dayOf(recordedAt)}`, taken);
   }
-
-  const row = createMeasurement({ id: newId(), metricType, value, recordedAt, createdAt: now, ...(request.source ? { source: request.source } : null) });
+  const row = createMeasurement({ id: newId(), metricType, value, recordedAt, createdAt: now, ...(source ? { source } : null) });
   return { ok: true, file: withRow(file, 'measurements', [...file.measurements, row], now), row };
 }
 
