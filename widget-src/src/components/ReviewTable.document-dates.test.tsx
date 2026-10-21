@@ -127,6 +127,31 @@ describe('US-13 AC6: reviewed document dates', () => {
     expect(view.save().documents[0]).toMatchObject({ documentDate: '2024-06-10' });
   });
 
+  // US-14 AC4: a re-upload replaces a failed row of its own kind, so the card
+  // starts from that row: the user sees the earlier edits, and can change them.
+  it('starts from the failed row the upload will replace, and saves what the card shows', () => {
+    const letter: FileResult = { fileName: 'synthetic-letter.pdf', reportDate: null, values: [], additionalValues: [],
+      file: new Blob(['synthetic']), contentHash: 'sha256-synthetic',
+      document: { classification: 'clinic_letter', title: 'Extracted title', documentDate: '2024-06-01', contentMarkdown: 'Synthetic', metadata: {} } };
+    const row = (over: object) => ({ id: 'r1', documentType: 'clinic_letter', title: 'Earlier title', documentDate: '2024-05-20', contentMd: 'Synthetic',
+      metadata: {}, sourceFileName: 'synthetic-letter.pdf', contentHash: 'sha256-synthetic', fileRef: null, createdAt: '2024-06-02T00:00:00Z', ...over });
+    const onSave = vi.fn();
+    const view = render(<ReviewTable results={[letter]} history={{ measurements: [], labValues: [], documents: [row({})] }}
+      unitSystem="si" grading={{}} onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+    expect(view.getByDisplayValue('Earlier title')).toBeTruthy();
+    expect((view.getByLabelText('Document date') as HTMLInputElement).value).toBe('2024-05-20');
+    fireEvent.click(view.getByRole('button', { name: /^Save / }));
+    expect(onSave.mock.lastCall![0].reviewed[0].document).toMatchObject({ title: 'Earlier title', documentDate: '2024-05-20' });
+    cleanup();
+    // An archived row, or a lab-archive row, is not one it replaces: the extraction stands.
+    for (const other of [row({ fileRef: 'Letters/a.pdf' }), row({ documentType: 'pathology_report', title: 'Blood test results', contentMd: '' })]) {
+      const again = render(<ReviewTable results={[letter]} history={{ measurements: [], labValues: [], documents: [other] }}
+        unitSystem="si" grading={{}} onSave={() => {}} onCancel={() => {}} isSaving={false} error={null} />);
+      expect(again.getByDisplayValue('Extracted title')).toBeTruthy();
+      cleanup();
+    }
+  });
+
   it('hands back every result as reviewed: title, document date and report column day', () => {
     const view = review('2024-06', '2023-02-18', true);
     fireEvent.change(view.getByDisplayValue('Synthetic colonoscopy'), { target: { value: 'Reviewed title' } });

@@ -26,7 +26,7 @@ import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
 import type { RefusedLabValue } from '@roadmap/health-core';
 import { labUnitRefusalLine, labValueLabel } from '../lib/lab-value-labels';
-import { unarchivedOriginals } from '../lib/archive-payloads';
+import { isLabArchiveDocument, unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
 import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
@@ -677,7 +677,12 @@ export function ReviewTable({
   // A document's date is its own, never the blood-test column's: the day it
   // saves, null until known or picked. A month alone still dates its
   // screening update (US-13 AC6).
-  const extractedDocDates = useMemo(() => results.map(r => readDocumentDate(r.document?.documentDate)), [results]);
+  // A document whose bytes a metadata-only shown-document row holds (a failed
+  // upload, or the connector's) replaces that row, so its card starts from it:
+  // the user sees the earlier title and date, and can change them (US-14 AC4).
+  const [heldRows] = useState(() => results.map(r => r.document && r.contentHash
+    ? history.documents.find(d => d.contentHash === r.contentHash && !d.fileRef && !isLabArchiveDocument(d)) : undefined));
+  const extractedDocDates = useMemo(() => results.map((r, fi) => readDocumentDate(heldRows[fi]?.documentDate ?? r.document?.documentDate)), [results, heldRows]);
   const [documentDates, setDocumentDates] = useState<Record<number, string | null>>(() =>
     Object.fromEntries(extractedDocDates.map((d, fi) => [fi, d.day])));
   const screeningDateFor = (fi: number) => documentDates[fi] ?? extractedDocDates[fi]?.month ?? null;
@@ -685,7 +690,7 @@ export function ReviewTable({
   // Per-document: editable title
   const [docTitles, setDocTitles] = useState<Record<number, string>>(() => {
     const map: Record<number, string> = {};
-    results.forEach((r, fi) => { if (r.document) map[fi] = r.document.title; });
+    results.forEach((r, fi) => { if (r.document) map[fi] = heldRows[fi]?.title ?? r.document.title; });
     return map;
   });
 

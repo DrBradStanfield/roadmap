@@ -352,7 +352,8 @@ describe('US-13 AC6: the archive-only path files what the review shows', () => {
     const connectorRow = { id: 'c1', documentType: 'clinic_letter', title: 'Connector title', documentDate: letter.documentDate, contentMd: '',
       metadata: { importedVia: 'connector' }, sourceFileName: 'test.pdf', contentHash: 'sha256-synthetic', fileRef: null, createdAt: '2024-06-02T00:00:00Z' };
     render(<Harness initialHistory={{ ...emptyHistory, documents: [connectorRow] }} />); selectFile();
-    fireEvent.change(await screen.findByDisplayValue('Synthetic letter'), { target: { value: 'Reviewed letter' } });
+    // The card starts from the row it replaces (US-14 AC4).
+    fireEvent.change(await screen.findByDisplayValue('Connector title'), { target: { value: 'Reviewed letter' } });
     fireEvent.change(screen.getByLabelText('Document date'), { target: { value: '2024-07-12' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save 1 Original' }));
     await waitFor(() => expect(bulkSaveDocuments).toHaveBeenCalledOnce());
