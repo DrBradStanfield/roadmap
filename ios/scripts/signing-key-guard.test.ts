@@ -12,8 +12,9 @@ const repo = join(__dirname, '../..');
 const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: repo }).toString().split('\0').filter(Boolean);
 const coldFile = join(homedir(), '.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt');
 
-// PKCS#8 Ed25519 private key header, as DER hex and as base64 (PEM body).
-const ED25519_PRIVATE = ['302e020100300506032b657004220420', 'MC4CAQAwBQYDK2VwBCIEI'];
+// A PKCS#8 Ed25519 private key: its header followed by the 32 key bytes, as DER hex
+// or as base64 (a PEM body). The bare header (engine-signing.mjs) is not a key.
+const ED25519_PRIVATE = [/302e020100300506032b657004220420[0-9a-f]{64}/i, /MC4CAQAwBQYDK2VwBCIEI[A-Za-z0-9+/]{22}/];
 
 function contents(): Array<[string, string]> {
   return tracked
@@ -28,7 +29,7 @@ describe('engine signing key guard (US-25 AC17)', () => {
   });
 
   it('no tracked file holds an Ed25519 private key', () => {
-    const found = contents().filter(([file, text]) => !file.endsWith('signing-key-guard.test.ts') && ED25519_PRIVATE.some((marker) => text.includes(marker)));
+    const found = contents().filter(([file, text]) => !file.endsWith('signing-key-guard.test.ts') && ED25519_PRIVATE.some((key) => key.test(text)));
     expect(found.map(([file]) => file)).toEqual([]);
   });
 
