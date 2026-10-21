@@ -31,6 +31,7 @@ struct MyDataView: View {
                     units(data)
                     metrics("Vitals", data.vitals)
                     metrics("Blood tests", data.bloodTests)
+                    RemindersSection()
                     Section {
                     } footer: {
                         Label("Saved on this iPhone and left out of its backups. Until cloud sync arrives, a new phone starts empty.", systemImage: "lock.shield")

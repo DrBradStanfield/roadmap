@@ -86,7 +86,7 @@ final class HealthEngine {
     }
 
     /// Calls an engine function that returns text, turning a JavaScript exception into a Swift error.
-    private func call(_ name: String, _ arguments: [Any]) throws -> String {
+    func call(_ name: String, _ arguments: [Any]) throws -> String {
         guard let function = exports.objectForKeyedSubscript(name), !function.isUndefined else {
             throw EngineError.callFailed("HealthEngine.\(name) is not defined")
         }
@@ -111,5 +111,5 @@ final class HealthEngine {
     }
 
     /// The instant format JavaScript's `toISOString` writes, milliseconds included.
-    private static let iso = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
+    static let iso = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
 }
