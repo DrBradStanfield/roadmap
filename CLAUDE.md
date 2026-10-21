@@ -129,7 +129,9 @@ Deploy secrets live ONLY in GitHub's gated `production` environment, which
 since 2026-09-02 has NO wait timer and NO required reviewer: the gate is the
 only check, and the notification issue is a heads-up, not a veto. Trigger:
 Actions → Deploy → Run workflow, or the Tier 3 pipeline (claude-review →
-auto-ship → dispatch). Agents cannot trigger deploys (auto-mode blocks it).
+auto-ship → dispatch). **Standing deploy permission (Brad 2026-10-22):** the main session may run the CI
+Deploy (`gh workflow run deploy.yml`) once test:all passes and the required reviews are done, then
+reports each deploy (sha, result, live checks) to Brad.
 **Commit before any deploy** — `fly deploy` ships the working tree. `.env`
 has every variable; the list and per-Fly-app secrets: docs/deploy-runbook.md
 § Environment variables. ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
