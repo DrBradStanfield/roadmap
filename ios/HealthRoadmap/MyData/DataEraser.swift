@@ -74,10 +74,16 @@ final class DataEraser {
 
     private func eraseInCloud(_ provider: CloudProvider) async -> Outcome {
         let (history, chatReadable) = chatText()
-        guard let result = try? await sync.erase(chatHistory: history), result.erased else {
-            return .refused(EraseText.unreachable(provider))
+        let answer: HealthEngine.CloudErase?
+        do {
+            answer = try await sync.erase(chatHistory: history) { [chat] in chat.keepErased($0) }
+        } catch {
+            return .refused(EraseText.failed(error.localizedDescription))
         }
-        let chatErased = chatReadable && result.chatErased && chat.keepErased(result.chatHistory)
+        guard let result = answer, result.erased else {
+            return .refused(EraseText.refusal(answer?.error, provider: provider))
+        }
+        let chatErased = chatReadable && result.chatErased
         return result.success
             ? .erased(EraseText.done(provider: provider, chatErased: chatErased))
             : .notSent(EraseText.notSent(provider: provider, chatErased: chatErased))

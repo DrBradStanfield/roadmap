@@ -53,7 +53,7 @@ struct SyncView: View {
                         if signingIn == provider { ProgressView() }
                     }
                 }
-                .disabled(signingIn != nil || !provider.isConfigured)
+                .disabled(signingIn != nil || !provider.isConfigured || sync.erasing)
             }
         } footer: {
             VStack(alignment: .leading, spacing: 8) {
@@ -90,6 +90,7 @@ struct SyncView: View {
 
         Section {
             Button("Disconnect from \(provider.label)", role: .destructive) { confirmDisconnect = true }
+                .disabled(sync.erasing)
                 .confirmationDialog("Disconnect from \(provider.label)?", isPresented: $confirmDisconnect, titleVisibility: .visible) {
                     Button("Disconnect", role: .destructive) { Task { await disconnect(provider) } }
                 } message: {

@@ -25,6 +25,10 @@ final class CloudSync: CloudPort {
     /// The cloud the record was last synced with, kept after Disconnect: the copy
     /// there stays, so the app never says the record never left the phone (review A3).
     private(set) var syncedBefore: CloudProvider?
+    /// True while "Delete all my data" runs on the open session. Connect and
+    /// Disconnect wait: either would swap the session the erase writes under, and
+    /// the screen and the phone's file would keep the old record (review R2).
+    private(set) var erasing = false
 
     private let engine: HealthEngine
     private let store: RecordStore
@@ -64,6 +68,7 @@ final class CloudSync: CloudPort {
     /// into the cloud's. Signing in again as a different account is refused:
     /// it would merge one person's record into another's (review A6).
     func connect(_ provider: CloudProvider, authenticate: OAuthClient.Authenticate) async throws {
+        guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
         let signedIn = try await oauth.signIn(provider, authenticate: authenticate)
         if self.provider == provider, let known = files.read(files.account), known != signedIn.account {
             throw OAuthClient.Failure.refused("That is a different \(provider.label) account from the one this iPhone syncs with. To use it, disconnect first, then connect it.")
@@ -112,10 +117,18 @@ final class CloudSync: CloudPort {
     /// engine's RecordSession.deleteAllData). Nil when no session is open: the phone
     /// then cannot read the cloud record, so it cannot list what it erases, and
     /// refuses as the web does (US-09 AC23).
-    func erase(chatHistory: String?) async throws -> HealthEngine.CloudErase? {
+    func erase(chatHistory: String?, keepChat: @escaping @MainActor (String) -> Bool) async throws -> HealthEngine.CloudErase? {
         guard let session = shownSession else { return nil }
+        erasing = true
+        defer { erasing = false }
         status = .saving
-        let result = try await engine.cloudErase(historyJSON: chatHistory, now: .now)
+        let result: HealthEngine.CloudErase
+        do {
+            result = try await engine.cloudErase(historyJSON: chatHistory, now: .now, keepChat: keepChat)
+        } catch {
+            if shownSession == session { status = .problem(SyncProblem(error)) }
+            throw error
+        }
         // A Disconnect or reopen during the await owns the screen now (review F7).
         guard shownSession == session else { return result }
         if result.erased, let view = result.view { store.showErased(view) }
@@ -133,6 +146,7 @@ final class CloudSync: CloudPort {
     @discardableResult
     func disconnect() async -> Bool {
         guard let provider else { return true }
+        guard !erasing else { return false }
         generation += 1
         shownSession = nil
         self.provider = nil

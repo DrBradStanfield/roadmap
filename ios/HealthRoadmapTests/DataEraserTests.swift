@@ -196,6 +196,23 @@ final class DataEraserTests: XCTestCase {
         XCTAssertEqual(rows(dropbox.record), 0)
     }
 
+    func testR2ADisconnectDuringACloudEraseWaitsItsTurnAndTheEraseLands() async throws {
+        dropbox.put(try record(days: ["2026-10-01"]))
+        let app = try app(connected: true)
+        await app.sync.start()
+        dropbox.downloadDelay = 0.3
+        let erase = Task { await app.eraser.eraseAll() }
+        try await Task.sleep(for: .milliseconds(50))
+        XCTAssertTrue(app.sync.erasing)
+        let copied = await app.sync.disconnect()
+        XCTAssertFalse(copied, "Disconnect is refused while the erase runs")
+        XCTAssertNotNil(app.sync.provider, "still connected")
+        guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
+        XCTAssertEqual(epoch(dropbox.record), 1)
+        XCTAssertEqual(epoch(object(app.store.recordJSON)), 1, "the screen shows the erase")
+        XCTAssertFalse(app.sync.erasing)
+    }
+
     // MARK: Words and export
 
     func testTheConfirmationSaysWhatGoesAndWhere() {
@@ -207,7 +224,8 @@ final class DataEraserTests: XCTestCase {
         XCTAssertTrue(cloud.contains("in Dropbox"))
         XCTAssertTrue(cloud.contains("other devices"))
         let before = EraseText.confirm(provider: nil, earlier: .dropbox)
-        XCTAssertTrue(before.contains("copy in Dropbox"), "a cloud left behind by Disconnect is not erased, and the user is told")
+        XCTAssertTrue(before.contains("copy in Dropbox"))
+        XCTAssertTrue(before.contains("connect Dropbox again"), "connecting again carries the erase there (R3), and the user is told")
     }
 
     func testTheExportIsTheRecordFileUnderTheWebsName() async throws {

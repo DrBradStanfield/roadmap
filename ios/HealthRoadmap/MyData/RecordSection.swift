@@ -52,6 +52,8 @@ private struct EraseView: View {
                 .disabled(eraser.erasing)
             }
         }
+        // Leaving mid-erase would reach Sync's Disconnect; CloudSync refuses it then too (review R2).
+        .navigationBarBackButtonHidden(eraser.erasing)
         .navigationTitle(EraseText.title)
         .navigationBarTitleDisplayMode(.inline)
         .alert(EraseText.finalTitle, isPresented: $confirming) {

@@ -387,8 +387,9 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
  * "Delete all my data" with a cloud open (US-25 AC13, US-11): health-core's
  * RecordSession.deleteAllData, the web's order and guard. The cloud record is
  * read first; one that cannot be read refuses, and nothing changes anywhere,
- * the chat history included. Then the chat tombstones (the phone's own file:
- * Swift writes `chatHistory` when `chatErased`), then the erased record, by a
+ * the chat history included. Then the chat tombstones, written by Swift's
+ * `keepChat` inside that step (the phone's own file; it answers '' or why not),
+ * so they land before the record goes up (Codex R3). Then the erased record, by a
  * higher eraseEpoch: the file stays in the cloud with the erase in it, so other
  * devices take it in (US-11 AC6). The app's reminders have no server to tear
  * down: they follow the epoch (ReminderScheduler).
@@ -399,13 +400,19 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
  * the cloud still has to take it. On success the session wiped the pre-erase
  * mirror; the erased record goes in its place, so an offline launch opens on it.
  */
-export async function cloudErase(historyText: string | null, nowIso: string): Promise<string> {
+export async function cloudErase(historyText: string | null, nowIso: string, keepChat?: (text: string) => string): Promise<string> {
   const at = open;
   if (!at) return JSON.stringify({ success: false, error: ERASE_UNREACHABLE, chatErased: false, chatHistory: null, erased: false, view: null });
   const before = at.session.eraseIdentity;
   let chatHistory: string | null = null;
   const result = await at.session.deleteAllData({
-    chat: async () => ({ eraseAll: async () => { chatHistory = await eraseChatText(historyText, nowIso, at.host.deviceId()); } }),
+    chat: async () => ({
+      eraseAll: async () => {
+        chatHistory = await eraseChatText(historyText, nowIso, at.host.deviceId());
+        const refused = chatHistory === null ? '' : keepChat?.(chatHistory);
+        if (refused) throw new Error(refused);
+      },
+    }),
   });
   const erased = at.session.eraseIdentity !== before;
   if (result.success) {

@@ -129,6 +129,9 @@ struct ChatView: View {
         let earlier = lines.filter { !$0.failed }.map { ChatClient.Turn(role: $0.role == .user ? "user" : "assistant", content: $0.text) }
         let isNew = lines.isEmpty
         let conversation = conversationId
+        // An erase while the answer streams empties `lines` and the history: from then on
+        // this turn is dropped, never indexed into the new lines or saved (review R1).
+        let erasures = store.erasures
         draft = ""
         error = nil
         sending = true
@@ -142,6 +145,7 @@ struct ChatView: View {
             let body = try ChatClient.body(message: question, conversationId: conversation, history: earlier, contextJSON: context)
             var finished = false
             for try await event in ChatClient().ask(body: body) {
+                guard store.erasures == erasures else { return }
                 switch event {
                 case .status(let text): status = text
                 case .text(let text): lines[answerIndex].text += text
@@ -156,8 +160,10 @@ struct ChatView: View {
                 }
             }
             // A stream that ended with no `done` line was cut off: never history.
+            guard store.erasures == erasures else { return }
             if !finished { throw AppAttestClient.Failure.server(status: 0, message: "The answer was cut off. Please ask again.") }
         } catch {
+            guard store.erasures == erasures else { return }
             lines[answerIndex].failed = true
             if lines[answerIndex].text.isEmpty { lines[answerIndex].text = "No answer." }
             self.error = error.localizedDescription

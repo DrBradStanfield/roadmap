@@ -2,8 +2,8 @@ import CoreTransferable
 import UniformTypeIdentifiers
 
 /// "Export my record" (US-25 AC13): the record as the one file the web keeps,
-/// `health-roadmap.json`, in the web's schema, for the share sheet. The share
-/// sheet writes the file itself, so the app leaves no copy of it lying around.
+/// `health-roadmap.json`, in the web's schema, for the share sheet. The app
+/// saves no copy itself: the bytes go to the share sheet, which writes the file.
 struct RecordExport: Transferable {
     static let fileName = "health-roadmap.json"
 

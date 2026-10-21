@@ -71,7 +71,7 @@ interface Engine {
   cloudFlush(): Promise<string>;
   cloudRefresh(): Promise<string>;
   cloudClose(copyDown: boolean): Promise<string>;
-  cloudErase(historyText: string | null, now: string): Promise<string>;
+  cloudErase(historyText: string | null, now: string, keepChat?: (text: string) => string): Promise<string>;
 }
 
 const opened: Engine[] = [];
@@ -465,8 +465,16 @@ describe('cloudErase (US-25 AC13, US-11)', () => {
     engine.cloudEdit(add('2026-10-02'), erase, 'si', NOW);
     expect(state.pending).toBe(true);
 
-    const result = JSON.parse(await engine.cloudErase(chat, NOW)) as Erased;
+    // The chat tombstones are written by Swift inside the erase's own step, after
+    // the read and before the record goes up (Codex R3): a kill between the two
+    // never leaves the record erased and the chat whole.
+    const kept: Array<{ text: string; cloudEpoch: number | undefined }> = [];
+    const keepChat = (text: string) => { kept.push({ text, cloudEpoch: dropbox.record.meta.eraseEpoch }); return ''; };
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, keepChat)) as Erased;
     expect(result).toMatchObject({ success: true, erased: true, chatErased: true });
+    expect(kept).toHaveLength(1);
+    expect(kept[0].cloudEpoch ?? 0).toBe(0);
+    expect(kept[0].text).not.toContain('Is my LDL high?');
     // The file stays, with the erase in it, so other devices take it in (US-11 AC6).
     expect(dropbox.record.meta.eraseEpoch).toBe(1);
     expect(dropbox.record.measurements).toEqual([]);
@@ -482,6 +490,16 @@ describe('cloudErase (US-25 AC13, US-11)', () => {
     expect(result.chatHistory).not.toContain('Is my LDL high?');
     // A write made for the screen before the erase is refused (US-16 AC2a).
     expect(JSON.parse(engine.cloudEdit(add('2026-10-03'), erase, 'si', NOW))).toMatchObject({ reason: 'erased' });
+  });
+
+  it('a chat file the phone refuses to write is reported, and the record erase still goes on', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false);
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, () => 'disk full')) as Erased;
+    expect(result).toMatchObject({ success: true, erased: true, chatErased: false });
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
   });
 
   it('another device takes the erase in on its next re-read', async () => {
@@ -509,8 +527,10 @@ describe('cloudErase (US-25 AC13, US-11)', () => {
     const phoneBefore = state.phoneText;
     dropbox.online = false;
 
-    const result = JSON.parse(await engine.cloudErase(chat, NOW)) as Erased;
+    const kept: string[] = [];
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, (text) => { kept.push(text); return ''; })) as Erased;
     expect(result).toMatchObject({ success: false, erased: false, chatErased: false, chatHistory: null, view: null });
+    expect(kept).toEqual([]);
     expect(result.error).toMatch(/could not be reached, so nothing was deleted/);
     dropbox.online = true;
     expect(days(dropbox.record)).toEqual(['2026-10-01']);
