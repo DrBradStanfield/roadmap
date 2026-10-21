@@ -21,6 +21,17 @@ final class DayTextTests: XCTestCase {
         }
     }
 
+    /// US-25 AC8/AC9: a screening month and a chart day are calendar dates, never shifted by the zone.
+    func testAScreeningMonthAndAChartDayAreNotShifted() throws {
+        XCTAssertTrue(DayText.month("2025-03").contains("2025"))
+        XCTAssertEqual(DayText.month("not a month"), "not a month")
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = .gmt
+        let date = try XCTUnwrap(DayText.date("2026-10-01"))
+        XCTAssertEqual(utc.dateComponents([.year, .month, .day], from: date), DateComponents(year: 2026, month: 10, day: 1))
+        XCTAssertNil(DayText.date("2026-10"))
+    }
+
     func testBirthYearsAreGregorian() throws {
         let now = try Date("2026-10-21T00:00:00Z", strategy: .iso8601)
         let years = DayText.birthYears(now: now)

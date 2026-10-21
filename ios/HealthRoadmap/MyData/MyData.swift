@@ -36,6 +36,14 @@ struct MyData: Decodable {
     let profile: Profile
     let vitals: [Row]
     let bloodTests: [Row]
+    // US-25 AC8: health-core's form questions (FormModels.swift).
+    let psa: Row
+    let medications: [FormSection]
+    let screenings: [FormSection]
+    /// Why there are no screening questions; nil when there are.
+    let screeningNote: String?
+    let supplements: SupplementsView
+    let months: ScreeningMonths
 }
 
 /// One change the My data tab asks for (`Edit` in ios/engine/my-data.ts).
@@ -47,6 +55,8 @@ enum RecordEdit: Encodable, Equatable {
     case add(metric: String, value: Double, day: String)
     /// Replaces the value in row `id`: a FHIR correction, never a removal.
     case correct(id: String, value: Double)
+    /// A medication, screening or supplement answer (FormModels.swift).
+    case form(FormEdit)
 
     private enum Key: String, CodingKey {
         case kind, sex, birthYear, birthMonth, height, unitSystem, metric, value, day, id
@@ -73,6 +83,8 @@ enum RecordEdit: Encodable, Equatable {
             try json.encode("correct", forKey: .kind)
             try json.encode(id, forKey: .id)
             try json.encode(value, forKey: .value)
+        case .form(let edit):
+            try edit.encode(to: encoder)
         }
     }
 }

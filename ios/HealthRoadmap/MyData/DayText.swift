@@ -31,6 +31,21 @@ enum DayText {
         return date.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: .gmt))
     }
 
+    /// Midnight UTC of YYYY-MM-DD, for placing a value on a chart; nil if it is not a day.
+    static func date(_ day: String) -> Date? {
+        let parts = day.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = .gmt
+        return utc.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
+    }
+
+    /// "March 2025" from YYYY-MM (a screening date), in the phone's language; the text as given if it is not a month.
+    static func month(_ month: String) -> String {
+        guard let date = date("\(month)-01") else { return month }
+        return date.formatted(Date.FormatStyle(timeZone: .gmt).month(.wide).year())
+    }
+
     /// Birth years a picker offers, newest first.
     static func birthYears(now: Date) -> [Int] {
         Array((1900...gregorian.component(.year, from: now)).reversed())

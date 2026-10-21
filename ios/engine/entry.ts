@@ -4,6 +4,7 @@
 import { computePlan, type Plan } from '../../packages/health-core/src/plan';
 import { planSections } from '../../packages/health-core/src/plan-sections';
 import { applyEdit, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
+import { metricHistory } from './my-data-forms';
 
 /** The plan for a record, as JSON. `nowIso` is passed in so tests can pin it. */
 export function planJson(recordJson: string, nowIso: string, deviceId: string): string {
@@ -26,7 +27,7 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
 
 /** What the My data tab shows, as JSON. */
 export function myDataJson(recordJson: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(myData(readRecord(recordJson, nowIso, deviceId)));
+  return JSON.stringify(myData(readRecord(recordJson, nowIso, deviceId), nowIso));
 }
 
 /** One edit, as JSON: `{ ok: true, record }` with the new record as text, or the refusal. */
@@ -38,4 +39,9 @@ export function applyEditJson(recordJson: string, editJson: string, nowIso: stri
 /** A typed number as JSON: the number, or null when it is not a plain decimal. */
 export function numberJson(text: string): string {
   return JSON.stringify(readNumber(text) ?? null);
+}
+
+/** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */
+export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string): string {
+  return JSON.stringify(metricHistory(readRecord(recordJson, nowIso, deviceId), metric, nowIso));
 }
