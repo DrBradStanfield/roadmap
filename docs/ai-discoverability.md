@@ -67,6 +67,7 @@ change below. The original plan and its reasoning:
 | Claude directory | Submitted 2026-10-21, in review | [claude-directory-listing.md](claude-directory-listing.md) |
 | Glama | Server and connector listed, claimed, build passes; profile 83% (2026-10-21), tools A, maintenance B | glama.ai/mcp/servers/DrBradStanfield/roadmap (Admin → score) |
 | mcp.so | Live, paid ($39) | mcp.so/servers/health-by-dr-brad |
+| mcprush | Listed by them from a public index 2026-10-22, unclaimed; points straight at mcp.drstanfield.com (not proxied); category wrong (Lifestyle & Local) | mcprush.com/drbradstanfield/health-by-dr-brad-mcp |
 | awesome-mcp-servers | PR open, Glama badge added | punkpeye/awesome-mcp-servers#17137 |
 | Wikidata | Item created | Q141797039 (developer Q141452826) |
 | Smithery | Closed to new servers (403, shutting down) | none |
