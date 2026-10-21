@@ -153,8 +153,8 @@ export const ERASE_DONE_CHAT_PENDING =
 export const WRITE_REFUSED = 'That change was not saved: your data was just deleted, here or on another device. The page now shows your record as it is.';
 
 /** A correction the store answered; a success is counted (name only). */
-const countedCorrection: CorrectFn = async (id, newValue) => {
-  const status = await correctValue(id, newValue);
+const countedCorrection = async (id: string, newValue: number, erase?: string) => {
+  const status = await correctValue(id, newValue, erase);
   if (status === 'ok') trackProductEvent('correction_made');
   return status;
 };
@@ -184,13 +184,15 @@ async function mirrorSavedLists(): Promise<void> {
 }
 
 /** One save per key, 300 ms after its last change: rapid dropdown changes
- *  would otherwise race. */
-function debounceSave(timers: Map<string, ReturnType<typeof setTimeout>>, key: string, save: () => void): void {
+ *  would otherwise race. The save carries the erase the page showed when the
+ *  change was made, not when the timer fires (US-16 AC2a). */
+function debounceSave(timers: Map<string, ReturnType<typeof setTimeout>>, key: string, save: (erase: string) => void): void {
+  const erase = getShownErase();
   const existing = timers.get(key);
   if (existing) clearTimeout(existing);
   timers.set(key, setTimeout(() => {
     timers.delete(key);
-    save();
+    save(erase);
   }, 300));
 }
 
@@ -373,11 +375,14 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const eraseUnshown = useCallback(() => getEraseIdentity() !== getShownErase(), []);
   // True while this tab's erase runs.
   const erasingRef = useRef(false);
+  const refusedFor = useRef(''); // the erase whose refusal was last said
   // A save the store refused. Outside this tab's own erase, which throws the
   // change away anyway, say so and show the record the store holds; that also
   // releases a remote change the relay held behind the edit (US-34 AC4).
   const writeRefused = useCallback(() => {
-    if (erasingRef.current) return;
+    // One alert per erase, however many saves it refuses (adversary R5).
+    if (erasingRef.current || refusedFor.current === getEraseIdentity()) return;
+    refusedFor.current = getEraseIdentity();
     window.alert(WRITE_REFUSED);
     void applyRemoteRef.current();
   }, []);
@@ -461,7 +466,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
   // Save any unsaved profile/demographic fields (height, sex, birthYear, birthMonth, unitSystem).
   // Returns true if saved or nothing to save; false on failure.
-  async function flushPendingProfileSave(): Promise<boolean> {
+  async function flushPendingProfileSave(erase?: string): Promise<boolean> {
     const autoSaveFields = [...PREFILL_FIELDS, 'unitSystem' as keyof HealthInputs];
     const currentPrefill: Partial<HealthInputs> = {};
     const previousPrefill: Partial<HealthInputs> = {};
@@ -473,7 +478,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     const hasChanges = autoSaveFields.some(f => inputs[f] !== previousInputsRef.current[f]);
     if (!hasChanges) return true;
 
-    const success = await saveChangedMeasurements(currentPrefill, previousPrefill);
+    const success = await saveChangedMeasurements(currentPrefill, previousPrefill, erase);
     if (success) {
       for (const field of autoSaveFields) {
         (previousInputsRef.current as any)[field] = inputs[field];
@@ -494,13 +499,14 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   useEffect(() => {
     if (!hasApiResponse) return;
 
+    const erase = getShownErase(); // as the edit was made, not as the timer fires
     const timeout = setTimeout(async () => {
       // Check if there are unsaved profile changes before showing status
       const autoSaveFields = [...PREFILL_FIELDS, 'unitSystem' as keyof HealthInputs];
       const hasChanges = autoSaveFields.some(f => inputs[f] !== previousInputsRef.current[f]);
       if (!hasChanges) return;
 
-      await flushPendingProfileSave();
+      await flushPendingProfileSave(erase);
     }, 500);
 
     return () => clearTimeout(timeout);
@@ -521,6 +527,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // leaves a matrix, and saves the fields) both land. Resolves with what was
   // refused, slot by slot, so the caller keeps only that.
   const handleSaveLongitudinal = useCallback((tasks?: SaveTask[]): Promise<Refused> => {
+    const erase = getShownErase(); // as asked for, not as the queued save runs
     // The first-time vitals fields: a weight, a waist, a blood pressure, each
     // naming the row the page shows for today ("Replaces 82 kg"), in the unit
     // it was typed in (mmHg either way). What a matrix's draft lends the plan
@@ -547,7 +554,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
     const save = async (): Promise<Refused> => {
       // Keep the profile and saved measurements consistent across the debounce.
-      await flushPendingProfileSave();
+      await flushPendingProfileSave(erase);
       const toSave = tasks ?? fromForm();
       if (toSave.length === 0) return new Map();
 
@@ -557,10 +564,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
           toSave,
           await loadAllHistory(), // the store's rows, as it writes: never the page's copy
           async (date, metric, value) => {
-            const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date));
+            const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase);
             return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : 'error';
           },
-          countedCorrection,
+          (id, newValue) => countedCorrection(id, newValue, erase),
         );
         await reloadValues();
 
@@ -667,6 +674,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       previousInputsRef.current = { ...result.inputs };
       setMedications(result.medications);
       setScreenings(result.screenings);
+      if (result.supplements) setSupplements(result.supplements);
       setDocumentHistory(result.documents);
     }
     // Another device erased the record (US-16 AC2a / US-09): a chat banner
@@ -810,6 +818,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setDocumentHistory([]);
       setMedications([]);
       setScreenings([]);
+      setSupplements([]);
       setProfileProposal(null);
       setMedUndo(null);
       markEraseShown(getEraseIdentity());
@@ -868,7 +877,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     });
 
     debounceSave(medSaveTimers.current, medicationKey,
-      () => void saveMedication(medicationKey, drugName, doseValue, doseUnit).then(afterListSave));
+      (erase) => void saveMedication(medicationKey, drugName, doseValue, doseUnit, erase).then(afterListSave));
   }, [afterListSave]);
 
   const handleScreeningChange = useCallback((screeningKey: string, value: string) => {
@@ -884,7 +893,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     });
 
     debounceSave(screeningSaveTimers.current, screeningKey,
-      () => void saveScreening(screeningKey, value).then(afterListSave));
+      (erase) => void saveScreening(screeningKey, value, erase).then(afterListSave));
   }, [afterListSave]);
 
   const supSaveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
@@ -914,7 +923,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     });
 
     debounceSave(supSaveTimers.current, supplementKey,
-      () => void saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt).then(saved => { if (!saved) writeRefused(); }));
+      (erase) => void saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt, erase).then(saved => { if (!saved) writeRefused(); }));
   }, [writeRefused]);
 
   const handleSupplementDelete = useCallback((supplementKey: string) => {

@@ -99,24 +99,24 @@ export function getInitialInputsSync(): Partial<HealthInputs> {
 export function getReportEmailCaptured(): boolean {
   return store?.getReportEmailCaptured() ?? false;
 }
-export function markReportEmailCaptured(): void {
-  store?.markReportEmailCaptured();
+export function markReportEmailCaptured(): boolean {
+  return store?.markReportEmailCaptured() ?? false;
 }
 
 // --- Lp(a)'s field unit, a profile preference (US-05 AC2; lpa-unit.ts reads it) ---
 export function getLpaUnit(): unknown {
   return store?.getLpaUnit();
 }
-export function setLpaUnit(unit: LpaUnit): void {
-  store?.setLpaUnit(unit);
+export function setLpaUnit(unit: LpaUnit): boolean {
+  return store?.setLpaUnit(unit) ?? false;
 }
 
 // --- email reminders (§10) — used by the standalone RemindersControl ---
 export function getReminderOptIn(): FileReminderOptIn | undefined {
   return store?.getReminderOptIn();
 }
-export function setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>): void {
-  store?.setReminderOptIn(fields);
+export function setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>): boolean {
+  return store?.setReminderOptIn(fields) ?? false;
 }
 export function computeCurrentReminderSchedule(): ReminderScheduleItem[] {
   return store?.computeReminderScheduleNow() ?? [];
@@ -151,27 +151,29 @@ export async function loadLabValues(): Promise<ApiLabValue[] | null> {
 }
 
 // --- writes ---
-export async function addMeasurement(metricType: string, value: number, recordedAt?: string): Promise<AddMeasurementResult> {
-  return store ? store.addMeasurement(metricType, value, recordedAt) : { status: 'error' };
+// `erase`: the erase the page showed when the write was asked for (US-16
+// AC2a); without it, the one it shows now.
+export async function addMeasurement(metricType: string, value: number, recordedAt?: string, erase?: string): Promise<AddMeasurementResult> {
+  return store ? store.addMeasurement(metricType, value, recordedAt, erase) : { status: 'error' };
 }
 /** Correct a saved core or lab value; `newValue` is in the unit it is stored in. */
-export async function correctValue(id: string, newValue: number): Promise<CorrectStatus> {
-  return store ? store.correctValue(id, newValue) : 'error';
+export async function correctValue(id: string, newValue: number, erase?: string): Promise<CorrectStatus> {
+  return store ? store.correctValue(id, newValue, erase) : 'error';
 }
-export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>): Promise<boolean> {
-  return store ? store.saveChangedMeasurements(current, previous) : false;
+export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): Promise<boolean> {
+  return store ? store.saveChangedMeasurements(current, previous, erase) : false;
 }
-export async function saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null): Promise<boolean> {
-  return store ? store.saveMedication(medicationKey, drugName, doseValue, doseUnit) : false;
+export async function saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): Promise<boolean> {
+  return store ? store.saveMedication(medicationKey, drugName, doseValue, doseUnit, erase) : false;
 }
-export async function saveSupplement(supplementKey: string, supplementName: string, doseValue: number | null = null, doseUnit: string | null = null, status = 'active', startedAt?: string): Promise<boolean> {
-  return store ? store.saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt) : false;
+export async function saveSupplement(supplementKey: string, supplementName: string, doseValue: number | null = null, doseUnit: string | null = null, status = 'active', startedAt?: string, erase?: string): Promise<boolean> {
+  return store ? store.saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt, erase) : false;
 }
 export async function deleteSupplementApi(supplementKey: string): Promise<boolean> {
   return store ? store.deleteSupplementApi(supplementKey) : false;
 }
-export async function saveScreening(screeningKey: string, value: string): Promise<boolean> {
-  return store ? store.saveScreening(screeningKey, value) : false;
+export async function saveScreening(screeningKey: string, value: string, erase?: string): Promise<boolean> {
+  return store ? store.saveScreening(screeningKey, value, erase) : false;
 }
 export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[]): Promise<BulkSaveResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };

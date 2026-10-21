@@ -8,7 +8,9 @@
  * method's own error answer, never a throw, and leaves the record as it was.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, migrateFile, rowRootIds, type FileDocument, type RoadmapFile } from '@roadmap/health-core';
+import { sha256Blob } from '../lib/archive-payloads';
+import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from './roadmap-store';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -67,9 +69,9 @@ const WRITES: Array<[string, (s: RoadmapStore, ids: { weightId: string; document
     contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'another.pdf',
   }]), { saved: [], errorCount: 1 }],
   ['deleteDocument', (s, ids) => s.deleteDocument(ids.documentId), false],
-  ['setLpaUnit', (s) => s.setLpaUnit('mg/dL'), undefined],
-  ['markReportEmailCaptured', (s) => s.markReportEmailCaptured(), undefined],
-  ['setReminderOptIn', (s) => s.setReminderOptIn({ status: 'active', token: 't', email: 'a@example.com', provider: 'dropbox' }), undefined],
+  ['setLpaUnit', (s) => s.setLpaUnit('mg/dL'), false],
+  ['markReportEmailCaptured', (s) => s.markReportEmailCaptured(), false],
+  ['setReminderOptIn', (s) => s.setReminderOptIn({ status: 'active', token: 't', email: 'a@example.com', provider: 'dropbox' }), false],
 ];
 
 beforeEach(() => localStorage.clear());
@@ -116,6 +118,112 @@ describe('US-16 AC2a: the store refuses a write made against an erase it no long
 
 // Adversary R3: a pass that folds a remote change in, then a later pass that
 // fails, left the page unaware of the change until a reload.
+/** Another device erases the shared record: `sameEpoch` for a later erase
+ *  at the epoch already held (an older app's). It lists only the rows it saw. */
+async function otherDeviceErases(cloud: MemoryCloud, sameEpoch = false) {
+  const adapter = new MemoryAdapter(cloud);
+  const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
+  const now = new Date(Date.now() + 1000).toISOString();
+  const prior = migrateFile(body, { deviceId: 'other', now });
+  const erased = migrateFile(null, { deviceId: 'other', now });
+  const epoch = (prior.meta.eraseEpoch ?? 0) + (sameEpoch ? 0 : 1);
+  erased.schemaVersion = prior.schemaVersion > 1 ? prior.schemaVersion : 2;
+  erased.erasedRows = { fromEpoch: prior.erasedRows?.fromEpoch ?? epoch, ids: [...new Set([...rowRootIds(prior), ...(prior.erasedRows?.ids ?? [])])].sort() };
+  erased.meta.eraseEpoch = epoch;
+  erased.meta.erasedAt = now;
+  await adapter.write(ROADMAP_FILE_NAME, erased, version);
+}
+
+// Codex R3, adversary R3: a page mark cannot tell a stale request from a
+// fresh one. A write carries the erase the page showed when it was asked for.
+describe('US-16 AC2a: a write carries the erase it was asked for under', () => {
+  it('a write asked for before an erase is refused after the page has shown that erase; a fresh one lands', async () => {
+    const cloud = new MemoryCloud();
+    const { store } = await seeded(new MemoryAdapter(cloud));
+    store.showErase(store.eraseIdentity);
+    const asked = store.shownErase; // a timer armed now
+    expect((await store.deleteUserData()).success).toBe(true);
+    store.showErase(store.eraseIdentity); // the page shows the erase
+    expect(store.saveMedication('statin', 'atorvastatin', 20, 'mg', asked)).toBe(false);
+    expect(store.addMeasurement('waist', 90, '2026-09-02', asked)).toEqual({ status: 'error' });
+    expect(store.saveMedication('statin', 'atorvastatin', 20, 'mg', store.shownErase)).toBe(true);
+  });
+});
+
+// Codex R1/R2, adversary R4: an upload stands for the erase it started under.
+describe('US-16 AC2a: a document upload refused at its commit', () => {
+  class HeldBlobs extends MemoryAdapter {
+    private gate: Promise<void> | null = null;
+    private entered: () => void = () => {};
+    hold() {
+      let release!: () => void;
+      this.gate = new Promise<void>((r) => { release = r; });
+      const reached = new Promise<void>((r) => { this.entered = r; });
+      return { reached, release };
+    }
+    async writeDocument(ref: string, bytes: Blob) {
+      if (this.gate) { this.entered(); await this.gate; }
+      return super.writeDocument(ref, bytes);
+    }
+  }
+  const upload = (bytes: Blob) => [{
+    documentType: 'lab_report', title: 'Held report', documentDate: '2026-09-03',
+    contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'held.pdf', file: bytes,
+  }];
+
+  it('a blob upload that lands after the erase appends nothing', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldBlobs(cloud);
+    const { store } = await seeded(adapter);
+    const held = adapter.hold();
+    const pending = store.bulkSaveDocuments(upload(new Blob(['held bytes'], { type: 'application/pdf' })));
+    await held.reached;
+    expect((await store.deleteUserData()).success).toBe(true);
+    held.release();
+    expect(await pending).toEqual({ saved: [], errorCount: 1 });
+    expect(fileOf(store).documents).toEqual([]);
+    await store.flush();
+    expect(cloudFile(cloud).documents).toEqual([]);
+  });
+
+  it('a refused archive upgrade leaves the connector\'s metadata-only row as it was', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldBlobs(cloud);
+    const store = await RoadmapStore.create(adapter);
+    const bytes = new Blob(['connector bytes'], { type: 'application/pdf' });
+    const row: FileDocument = {
+      id: 'connector-row', title: 'Connector report', type: 'pathology_report', date: '2026-09-01',
+      fileRef: '', contentHash: await sha256Blob(bytes), mimeType: '', extractedText: 'Synthetic fixture',
+      addedAt: new Date().toISOString(), metadata: {}, sourceFileName: 'connector.pdf',
+    };
+    fileOf(store).documents.push(row); // never seen by the other device, so its erase does not list it
+    const held = adapter.hold();
+    const pending = store.bulkSaveDocuments(upload(bytes));
+    await held.reached;
+    await otherDeviceErases(cloud);
+    expect(await store.refreshFromRemote()).toBe(true);
+    held.release();
+    expect(await pending).toEqual({ saved: [], errorCount: 1 });
+    const kept = fileOf(store).documents.filter((d) => d.id === 'connector-row');
+    expect(kept).toHaveLength(1);
+    expect(kept[0].deleted).toBeFalsy();
+  });
+});
+
+// Adversary R6: an erase from elsewhere at the epoch already held moves the
+// erase too, and the matrices' drafts belong to the record it erased.
+describe('US-11: a later erase at the same epoch clears the matrices\' drafts', () => {
+  it('drops the drafts when the re-read takes it in', async () => {
+    const cloud = new MemoryCloud();
+    const { store } = await seeded(new MemoryAdapter(cloud));
+    expect((await store.deleteUserData()).success).toBe(true);
+    localStorage.setItem(BT_TIMELINE_DRAFT_KEY, '{"draft":{"values":{"ldl":"3.2"}}}');
+    await otherDeviceErases(cloud, true);
+    expect(await store.refreshFromRemote()).toBe(true);
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
+  });
+});
+
 describe('US-34 AC1: a save that folds a remote change in announces it even when a later pass fails', () => {
   it('fires the remote-change event when the second pass throws', async () => {
     const cloud = new MemoryCloud();

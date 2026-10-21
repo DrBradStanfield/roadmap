@@ -14,7 +14,7 @@ import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@te
 import { parseProposedEdit, ROADMAP_FILE_NAME, CURRENT_SCHEMA_VERSION, MemoryAdapter, MemoryCloud, migrateFile, rowRootIds, type ProposedEdit, type RoadmapFile, type StorageAdapter } from '@roadmap/health-core';
 import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication } from '../lib/roadmap-data';
+import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
 
@@ -495,6 +495,97 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value ?? '').toBe('');
     const stored = (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
     expect(stored.profile).not.toHaveProperty('birthYear');
+  });
+
+  /** A cloud guest on a statin and an omega-3, with the page shown. */
+  async function cloudGuestOnLists(cloud: MemoryCloud) {
+    vi.spyOn(RoadmapStore, 'create');
+    await initRoadmapStore(new MemoryAdapter(cloud));
+    await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+    await saveSupplement('omega3', 'Omega-3', 1, 'g');
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    await wait(600);
+    return view;
+  }
+  const supplementsShown = (view: RenderResult) => Array.from(view.container.querySelectorAll('.supplement-name'), (e) => e.textContent);
+  /** The user starts again on the erased record, and the page re-reads it:
+   *  the form is back at the stage that shows the supplements. */
+  async function startAgain() {
+    await act(async () => {
+      await saveChangedMeasurements({ birthYear: 1980, birthMonth: 1, sex: 'female', heightCm: 165 }, {});
+      await addMeasurement('weight', 70, '2026-09-03');
+    });
+    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await wait(600);
+  }
+  const cloudRecord = async (cloud: MemoryCloud) => (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+
+  // Codex R3, adversary R3: a save armed before the page showed an erase
+  // carries the erase it was asked for under, so it is refused even once the
+  // page has caught up.
+  it('a chat medication change armed before another device\'s erase is shown does not land after it', async () => {
+    const cloud = new MemoryCloud();
+    await cloudGuestOnLists(cloud);
+    const alert = vi.fn();
+    vi.stubGlobal('alert', alert);
+    act(() => chat.proposeEdit!([
+      { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
+      { kind: 'medication', medicationKey: 'ezetimibe', drugName: 'ezetimibe', doseValue: 10, doseUnit: 'mg' },
+    ]));
+    await otherDeviceErases(cloud); // within the saves' 300 ms
+    await act(async () => { await (await thisTabsStore()).refreshFromRemote(); });
+    await wait(1500);
+    expect(JSON.stringify((await cloudRecord(cloud)).medications)).not.toContain('atorvastatin');
+    expect(JSON.stringify((await cloudRecord(cloud)).medications)).not.toContain('ezetimibe');
+    expect(alert).toHaveBeenCalledTimes(1); // two refused saves, one alert (adversary R5)
+    expect(alert).toHaveBeenCalledWith(WRITE_REFUSED);
+  });
+
+  // Adversary R1: the supplements on screen follow the record too.
+  it('this tab\'s erase clears the supplements on screen', async () => {
+    const view = await cloudGuestOnLists(new MemoryCloud());
+    expect(supplementsShown(view)).toEqual(['Omega-3']);
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', () => {});
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await wait(1500);
+    await startAgain();
+    expect(view.container.querySelector('.supplement-chips')).not.toBeNull();
+    expect(supplementsShown(view)).toEqual([]);
+  });
+
+  it('another device\'s erase, once re-read, clears the supplements on screen', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuestOnLists(cloud);
+    await otherDeviceErases(cloud);
+    await refreshThisTab();
+    await startAgain();
+    expect(view.container.querySelector('.supplement-chips')).not.toBeNull();
+    expect(supplementsShown(view)).toEqual([]);
+  });
+
+  it('a supplement edit refused behind a held remote erase says so, shows the erased record and saves nothing', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuestOnLists(cloud);
+    const alert = vi.fn();
+    vi.stubGlobal('alert', alert);
+    const swallow = (e: Event) => e.stopImmediatePropagation();
+    window.addEventListener(REMOTE_CHANGED_EVENT, swallow, { capture: true });
+    try {
+      await otherDeviceErases(cloud);
+      await refreshThisTab();
+    } finally {
+      window.removeEventListener(REMOTE_CHANGED_EVENT, swallow, { capture: true });
+    }
+    fireEvent.change(view.container.querySelector('.supplement-dose')!, { target: { value: '2' } });
+    await wait(1500);
+    expect(alert).toHaveBeenCalledWith(WRITE_REFUSED);
+    expect(supplementsShown(view)).toEqual([]);
+    expect((await cloudRecord(cloud)).supplements).toEqual([]);
   });
 
   it('US-09 AC23: an erase refused because the cloud cannot be read leaves the medications and screenings on screen', async () => {

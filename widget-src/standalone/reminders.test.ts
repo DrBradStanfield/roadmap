@@ -28,7 +28,7 @@ import type { FileReminderOptIn } from '@roadmap/health-core';
 type FetchMock = ReturnType<typeof vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>>;
 
 const getReminderOptIn = vi.fn<() => FileReminderOptIn | undefined>(() => undefined);
-const setReminderOptIn = vi.fn();
+const setReminderOptIn = vi.fn<(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>) => boolean>(() => true);
 const flushRoadmapStore = vi.fn(async () => {});
 const computeCurrentReminderSchedule = vi.fn(() => [
   { category: 'blood_test_lipids', group: 'blood_test', label: 'Lipid panel blood test', dueAt: '2027-05-12' },
@@ -41,7 +41,7 @@ const githubAccountEmail = vi.fn<() => Promise<string | null>>(async () => 'gh@e
 
 vi.mock('../src/lib/roadmap-data', () => ({
   getReminderOptIn: () => getReminderOptIn(),
-  setReminderOptIn: (fields: unknown) => setReminderOptIn(fields),
+  setReminderOptIn: (fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>) => setReminderOptIn(fields),
   flushRoadmapStore: () => flushRoadmapStore(),
   computeCurrentReminderSchedule: () => computeCurrentReminderSchedule(),
   isKnownMinorNow: () => isKnownMinorNow(),
@@ -147,6 +147,17 @@ describe('US-17 AC1/AC7 — a cloud connect enrols you, with no user action and 
       status: 'active', token: 'new-cap-token', email: 'user@example.com', provider: 'google-drive',
     });
     expect(flushRoadmapStore).toHaveBeenCalledTimes(1);
+  });
+
+  // US-16 AC2a (adversary R2): the record was erased under the page and
+  // refuses the token. The new row must not outlive that erase.
+  it('a token the record refuses is cancelled on the server, and the enrolment fails', async () => {
+    const f = mockFetchOk();
+    setReminderOptIn.mockReturnValueOnce(false);
+    const { optInToReminders } = await loadReminders();
+    await expect(optInToReminders('google-drive')).rejects.toThrow(/superseded/);
+    expect(postedBody(f, 1)).toEqual({ op: 'cancel', token: 'new-cap-token', idToken: 'signed-id-token' });
+    expect(flushRoadmapStore).not.toHaveBeenCalled();
   });
 
   it('never counts the enrolment here — the server counts it when the row lands', async () => {
@@ -458,6 +469,7 @@ describe('US-17 AC12 — a switch to a cloud with the same email keeps the row',
     getReminderOptIn.mockImplementation(() => file);
     setReminderOptIn.mockImplementationOnce((fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>) => {
       file = { ...fields, updatedAt: '2026-10-14T00:00:00.000Z', lamport: 4 };
+      return true;
     });
     const f = mockFetchOk();
     const { autoEnrolReminders, pushReminderSchedule } = await loadReminders();
@@ -679,6 +691,7 @@ describe('US-17 AC12 — a switch\'s cancel is remembered across visits', () => 
     getReminderOptIn.mockImplementation(() => file);
     setReminderOptIn.mockImplementationOnce((fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>) => {
       file = { ...fields, updatedAt: '2026-10-14T00:00:00.000Z', lamport: 4 };
+      return true;
     });
     githubAccountEmail.mockResolvedValue('other@example.com');
     const seen: Array<string | null> = [];
