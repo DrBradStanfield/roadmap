@@ -698,6 +698,18 @@ sorts on read (`ChatSession.getMessages`), so a file an older client writes stil
 in the right order, and nothing can be lost or duplicated. A bump would have cut every
 open web tab, Pages fork and CLI off from its chat history until it updated.
 
+Decided 2026-10-22 by an Opus worker, for the orchestrator to confirm: last-write-wins now
+reads clock time first and the lamport counter only on a tie (US-10 AC8). No bump. An
+older app merges the old way, which is exactly today's behaviour: it can put back an
+older value, the bug AC8 fixes, but nothing a current app writes breaks it, and nothing it
+writes breaks a current app. The file's shape is unchanged, and the field-stamp invariant
+reads the same either way (each side treats the other's merged object as not stale and
+reads its field stamps). The cost of no bump: while an older client still syncs, it and a
+current one can disagree on a field whose time and counter point opposite ways, and the
+cloud copy may switch between the two values on each save until it updates. The cost of a
+bump: every open web tab, Pages fork, local CLI and stdio MCP refuses the record until it
+updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.md) moves.
+
 ## Build and test
 
 **Layout.**

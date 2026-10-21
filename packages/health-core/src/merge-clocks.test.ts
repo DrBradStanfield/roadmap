@@ -72,12 +72,13 @@ describe('comparing clocks serialises nothing (US-10 AC6)', () => {
   });
 });
 
-/** -1, 0 or 1: lamport first, then time — the order the merge reads stamps in. */
+/** -1, 0 or 1: time first, then lamport — the order the merge reads stamps in
+ *  (US-10 AC8). Every time here is a UTC `Z` string, so string order is time order. */
 function cmp(a: SyncStamp, b: SyncStamp): number {
+  if (a.updatedAt !== b.updatedAt) return a.updatedAt < b.updatedAt ? -1 : 1;
   const la = a.lamport ?? 0;
   const lb = b.lamport ?? 0;
-  if (la !== lb) return la < lb ? -1 : 1;
-  return a.updatedAt === b.updatedAt ? 0 : a.updatedAt < b.updatedAt ? -1 : 1;
+  return la === lb ? 0 : la < lb ? -1 : 1;
 }
 
 /** The stamp invariant: the object's own stamp is at or above every field stamp. */

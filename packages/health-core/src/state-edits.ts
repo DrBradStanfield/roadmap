@@ -9,8 +9,9 @@
  * The rules, as `record-edits.ts` states them for clinical values:
  *  - the file passed in is never mutated; a new one comes back;
  *  - a current-state row carries the sync clock the merge reads: `updatedAt`
- *    is the write clock and `lamport` goes up by one on every edit (a new row
- *    starts at 0), so the last write wins on every device;
+ *    is the write clock, never earlier than the stamp it replaces
+ *    (`laterStamp`, US-10 AC8), and `lamport` goes up by one on every edit (a
+ *    new row starts at 0), so the last write wins on every device;
  *  - a history row is appended, never edited, and only when the change
  *    classifies (history-change.ts): an identical re-save writes none;
  *  - `meta.updatedAt` moves forward to the write clock (rule 6), or
@@ -21,7 +22,7 @@
  */
 import { screeningFieldName } from './file-inputs';
 import { classifyMedicationChange, classifySupplementChange } from './history-change';
-import { stampFields } from './merge';
+import { laterStamp, stampFields } from './merge';
 import { parseLocalisedNumber } from './parseNumber';
 import { newId, stampUpdatedAt } from './record-edits';
 import type { FileMedication, FileReminderOptIn, FileScreenings, FileSupplement, HistoryChangeType, RoadmapFile, RoadmapProfile } from './roadmap-file';
@@ -44,7 +45,7 @@ function upsert<T extends { id: string; updatedAt: string; lamport?: number }>(
   const index = rows.findIndex(matches);
   if (index === -1) return [...rows, { ...(make() as T), updatedAt: now, lamport: 0 }];
   const row = rows[index];
-  const next = { ...row, ...update(row), updatedAt: now, lamport: (row.lamport ?? 0) + 1 };
+  const next = { ...row, ...update(row), updatedAt: laterStamp(now, row.updatedAt), lamport: (row.lamport ?? 0) + 1 };
   return rows.map((r, i) => (i === index ? next : r));
 }
 
@@ -146,6 +147,6 @@ export function setScreening(file: RoadmapFile, screeningKey: string, value: str
  * included: lamport one past the copy it replaces, so the last write wins.
  */
 export function setReminderOptIn(file: RoadmapFile, fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, now: string): RoadmapFile {
-  const reminderOptIn = { ...fields, updatedAt: now, lamport: (file.reminderOptIn?.lamport ?? 0) + 1 };
+  const reminderOptIn = { ...fields, updatedAt: laterStamp(now, file.reminderOptIn?.updatedAt), lamport: (file.reminderOptIn?.lamport ?? 0) + 1 };
   return stampUpdatedAt({ ...file, reminderOptIn }, now);
 }

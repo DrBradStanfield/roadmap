@@ -782,7 +782,7 @@ export function updateProfile(
   // The app's own write rule: the changed fields alone take a new stamp, one
   // past the copy it read. Jumping to the FILE's clock instead would make every
   // connector write beat a concurrent one made in the app, whenever it was
-  // made; tied lamports fall through to wall-clock time, which is the honest
+  // made. The merge reads wall-clock time first (US-10 AC8), the honest
   // answer to "who wrote last".
   return {
     status: 'ok',

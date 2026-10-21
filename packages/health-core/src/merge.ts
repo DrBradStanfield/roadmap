@@ -15,9 +15,10 @@
  *    flipped to `entered-in-error`. Status is MONOTONIC (active→error, never back),
  *    so a correction seen by one device is never undone by the other.
  *  - medications / supplements / reminderPreferences → current-state, keyed by
- *    their natural key, last-write-wins by LOGICAL clock (lamport), not wall-clock.
- *  - profile / screenings → singletons, the same logical-clock LWW field by
- *    field (`mergeFields`).
+ *    their natural key, last-write-wins: the newer edit by clock time, the
+ *    lamport counter only on a tie (`cmpClock`, US-10 AC8).
+ *  - profile / screenings → singletons, the same LWW field by field
+ *    (`mergeFields`).
  *  - medicationHistory / supplementHistory / documents → append-only logs, union
  *    by (id, content); documents also OR the `deleted` tombstone.
  *  - recommendationSnapshots → deduped by date.
@@ -292,16 +293,12 @@ function mergeSlotted<T extends SlottableRow>(
 }
 
 /**
- * Logical-clock recency for a mutable record. lamport is primary (skew-proof);
- * wall-clock `updatedAt` then deterministic content hash break ties.
- * Returns true if `a` should win over `b`.
+ * Recency for a mutable record: the clock order (`cmpClock`), then the
+ * deterministic content tie-break. Returns true if `a` should win over `b`.
  */
 function stampIsNewer(a: SyncStamp, b: SyncStamp): boolean {
-  const la = a.lamport ?? 0;
-  const lb = b.lamport ?? 0;
-  if (la !== lb) return la > lb;
-  if (a.updatedAt !== b.updatedAt) return a.updatedAt > b.updatedAt;
-  return stableStringify(a) > stableStringify(b);
+  const order = cmpClock(clockOf(a), clockOf(b));
+  return order !== 0 ? order > 0 : stableStringify(a) > stableStringify(b);
 }
 
 /** Per-key last-write-wins for current-state lists (medications, supplements, prefs). */
@@ -365,7 +362,7 @@ function mergeSnapshots(
   return [...map.values()].sort((a, b) => cmpStr(a.date, b.date));
 }
 
-/** The newer of two OPTIONAL singletons by logical clock: present always
+/** The newer of two OPTIONAL singletons by `cmpClock`: present always
  *  beats absent. */
 function pickNewerOptional<T extends SyncStamp>(
   local: T | undefined,
@@ -386,11 +383,36 @@ function clockOf(stamp: SyncStamp): Clock {
   return { lamport: stamp.lamport ?? 0, updatedAt: stamp.updatedAt };
 }
 
-/** -1, 0 or 1: lamport first, then time. A Clock holds nothing else, so two
- *  that compare 0 are the same clock. */
+/** A stamp's time as the merge orders it: the instant, or -Infinity for a
+ *  time that is unknown (`""` after migrate) or does not parse. */
+function timeOf(iso: string | undefined): number {
+  const t = stampInstant(iso);
+  return Number.isNaN(t) ? -Infinity : t;
+}
+
+/**
+ * -1, 0 or 1: the newer edit by clock time wins (US-10 AC8, Brad 2026-10-22);
+ * the lamport only breaks a tie in time, then the spelling, so two spellings of
+ * one instant order the same way everywhere. A Clock holds nothing else, so
+ * two that compare 0 are the same clock. Wall-clock time is not skew-proof:
+ * a device whose clock runs ahead wins until real time passes it, or until an
+ * edit made after seeing it, which stamps no earlier (`laterStamp`).
+ */
 function cmpClock(a: Clock, b: Clock): number {
+  const [ta, tb] = [timeOf(a.updatedAt), timeOf(b.updatedAt)];
+  if (ta !== tb) return ta < tb ? -1 : 1;
   if (a.lamport !== b.lamport) return a.lamport < b.lamport ? -1 : 1;
   return cmpStr(a.updatedAt, b.updatedAt);
+}
+
+/**
+ * The time a write stamps: `now`, or the stamp it replaces when that is later
+ * (US-10 AC8). With the counter one past it too, an edit always beats the
+ * value it was made on, even one a clock running ahead stamped. The merge
+ * itself cannot read `now` and stay pure, so this is the skew guard.
+ */
+export function laterStamp(now: string, replaced: string | undefined): string {
+  return timeOf(replaced) > timeOf(now) ? (replaced as string) : now;
 }
 
 /** A field's value, own properties only: a field named `__proto__` in a
@@ -485,8 +507,9 @@ function mergeFields<T extends FieldStamped>(local: T, remote: T): T {
 /**
  * A write to some fields of a profile or the screening answers (US-10 AC6).
  * The fields written take one new stamp, a lamport past every clock the
- * object holds; every other field keeps the clock the merge reads for it now,
- * so the object's new stamp is not taken for theirs. Pass only the fields
+ * object holds, at `now` or the latest of those clocks if later (AC8); every
+ * other field keeps the clock the merge reads for it now, so the object's new
+ * stamp is not taken for theirs. Pass only the fields
  * that changed. Returns a new object; the one given is untouched.
  */
 export function stampFields<T extends FieldStamped>(obj: T, changes: Partial<T>, now: string): T {
@@ -495,7 +518,11 @@ export function stampFields<T extends FieldStamped>(obj: T, changes: Partial<T>,
     const clock = at(field);
     return clock ? [[field, clock]] : [];
   });
-  const stamp = { lamport: 1 + Math.max(obj.lamport ?? 0, ...kept.map(([, clock]) => clock.lamport)), updatedAt: now };
+  const clocks = [clockOf(obj), ...kept.map(([, clock]) => clock)];
+  const stamp = {
+    lamport: 1 + Math.max(...clocks.map((clock) => clock.lamport)),
+    updatedAt: clocks.reduce((time, clock) => laterStamp(time, clock.updatedAt), now),
+  };
   return {
     ...obj,
     ...changes,
