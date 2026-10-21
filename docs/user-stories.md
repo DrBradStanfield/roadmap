@@ -1113,6 +1113,13 @@ As an app user, I ask Dr Brad's chatbot about my plan and upload a lab report, w
 - Not yet: replacing a held value from the review (the web's "Replace"), filing documents and originals, chat proposing form edits, Apple's fraud-risk metric from the attestation receipt.
 - Tests: ✅ `app/lib/app-attest.server.test.ts` (attestation and assertion verification against a test CA built with openssl, every refusal), `app/lib/app-routes.server.test.ts` (the gate, the key read before the body, the bypass refused in production and with NODE_ENV unset, limits incl. the per-IP failure budget, the chat pipeline called with the widget's shape and nothing stored, lab extraction reused), `ios/engine/app-doors.test.ts` (chat context, chat history through `ChatSession`, the lab review with the extractor's question, the save through `bulkAppendValues`), `ios/HealthRoadmapTests/AppChatLabTests.swift` (the same doors in JavaScriptCore, the NDJSON reader, the signed client data, PDF and ZIP reading), `ios/HealthRoadmapTests/AppServerE2ETests.swift` (opt-in: one real chat turn and one synthetic lab report against a local server, passed 2026-10-21). Owed: a real-device attestation and assertion (D8 Test vectors); the screens checked by hand (the simulator could not be driven in this session).
 
+### US-53 · The YouTube bot skips a comment it cannot reply to, and never reports that as an error — **added 2026-10-22 (Brad approved; Sentry JAVASCRIPT-REMIX-74)**
+As Brad, I do not want Sentry errors for comments YouTube will not let anyone reply to (comments held for review, disabled threads).
+- AC1: A thread whose `snippet.canReply` is false (already in the `commentThreads` list response; no extra call) is skipped by the first-pass filter before any LLM call or post.
+- AC2: If `comments.insert` still answers 400 "Not all comments can be replied to" (canReply changed between fetch and post), the bot counts a skip and does not report an error; any other post failure still reports.
+- Tests: ✅ `youtube-bot.server.test.ts`.
+- Origin: Sentry JAVASCRIPT-REMIX-74, 2026-10-21.
+
 ### US-26 · Action links — every reminder pairs the "what" with a "where" (stub)
 As a user told a lipid panel is due, the reminder also tells me where to get one — direct-to-consumer lab links (Quest/Ulta-style, US), supplement refills via Brad's store, later pharmacy integration. Start affiliate-grade (plain links, zero API work); the click-through data is the evidence needed before building any real integration. This is the monetization seam, honestly labeled — and it must never gate the reminder itself.
 

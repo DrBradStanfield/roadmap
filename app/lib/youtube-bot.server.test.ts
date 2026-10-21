@@ -8,6 +8,8 @@ import {
   completionOutcome,
   shouldUnclaim,
   persistYouTubeTurn,
+  filterThread,
+  isNotReplyableError,
   type YouTubeReply,
 } from './youtube-bot.server';
 
@@ -350,5 +352,26 @@ describe('US-15 AC37: router_output_tokens on the YouTube row', () => {
     supa.inserts.length = 0;
     await persistYouTubeTurn({ thread, outcome: { posted: false, skipReason: 'classifier-skip' }, postedYoutubeId: null });
     expect(row()?.router_output_tokens).toBeNull();
+  });
+});
+
+describe('US-53: a comment YouTube will not let us reply to is skipped, not an error', () => {
+  const thread = {
+    topLevelCommentId: 'c1', videoId: 'v1', authorDisplayName: 'A', authorChannelId: null,
+    text: 'How much magnesium should I take for sleep, and which form is best?',
+    publishedAt: new Date().toISOString(),
+  };
+
+  it('AC1: canReply false fails the filter; true or absent passes', () => {
+    expect(filterThread({ ...thread, canReply: false })).toEqual({ pass: false, reason: 'cannot reply' });
+    expect(filterThread({ ...thread, canReply: true }).pass).toBe(true);
+    expect(filterThread(thread).pass).toBe(true);
+  });
+
+  it('AC2: only the canReply 400 counts as not replyable', () => {
+    const body = '{"error":{"code":400,"message":"Not all comments can be replied to. Check the comment thread\'s canReply field."}}';
+    expect(isNotReplyableError(new Error(`YouTube post failed: 400 ${body}`))).toBe(true);
+    expect(isNotReplyableError(new Error('YouTube post failed: 403 quota'))).toBe(false);
+    expect(isNotReplyableError(new Error('YouTube post failed: 400 other'))).toBe(false);
   });
 });
