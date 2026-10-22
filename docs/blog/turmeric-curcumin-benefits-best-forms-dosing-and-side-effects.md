@@ -21,7 +21,7 @@ Brad tends to encourage his patients not to take curcumin supplements, because o
 
 - Avoid combining turmeric or curcumin supplements with blood thinners such as warfarin, rivaroxaban, aspirin or clopidogrel unless your doctor agrees, and mention it before any surgery. In one case report, turmeric was linked to a raised INR, a sign of slower blood clotting, in a person taking a vitamin K antagonist [128].
 - Curcumin may strengthen the effect of diabetes medicines and has changed blood levels of drugs such as tacrolimus and tamoxifen [130][131][134]. If you take prescription medicines, check with your doctor or pharmacist before starting.
-- Liver injury has been reported, including with highly bioavailable products, and one case in a US series was fatal [2][117]. Stop and talk to your doctor if you notice fatigue, nausea, poor appetite, dark urine or yellow skin or eyes; Brad advises regular liver blood tests while taking it [2][140].
+- Liver injury has been reported, including with highly bioavailable products, and one case in a US series was fatal [2][117][142]. Stop and talk to your doctor if you notice fatigue, nausea, poor appetite, dark urine or yellow skin or eyes; Brad advises regular liver blood tests while taking it [2][140].
 - In people with gallstones, curcumin might cause pain, because even small doses make the gallbladder contract [121].
 - Turmeric supplements may be unsafe during pregnancy, and little is known about their safety while breastfeeding [2].
 - Turmeric is high in oxalate, so people prone to calcium oxalate kidney stones should limit it [122].
@@ -55,25 +55,24 @@ In a small crossover study, healthy men ate a meal of mashed potato and cream th
 
 ### Bioavailability-Enhanced Formulations
 
-Due to curcumin's poor natural bioavailability, numerous special formulations have been developed. An independent analysis of bioavailability studies concluded that, compared to unformulated curcumin, relative bioavailability was approximately: NovaSol 185x, CurcuWin 136x, Longvida 100x, Meriva 48x, BCM-95 27x, Curcumin C3 Complex + Bioperine 20x, and Theracurmin 16x [6].
+Because plain curcumin is so poorly absorbed, manufacturers have developed many special formulations. A review of bioavailability studies in healthy volunteers found three that raised blood levels more than 100-fold compared with unformulated curcumin: NovaSol (185-fold), CurcuWin (136-fold) and Longvida (100-fold) [6]. In single studies, Meriva raised total curcuminoid absorption about 29-fold [10] and Theracurmin about 27-fold [13].
 
 A 2021 crossover trial in 12 healthy adults compared a single 207 mg dose of curcumin in eight forms. Only micellar curcumin (NovaSol, 57-fold) and a gamma-cyclodextrin complex (30-fold) raised blood levels significantly above plain curcumin; both stayed more stable and better dissolved after digestion. Forms with turmeric oils, with piperine and other additives, as liposomes, as submicron particles or as phytosomes did not raise levels significantly in this study, and the authors judged that blocking curcumin's breakdown after absorption appears ineffective [7].
 
 ### Comparison of Major Formulations
 
-| Formulation | Technology | Curcuminoid Content | Relative Bioavailability | Key Notes |
-|---|---|---|---|---|
-| Unformulated curcumin (95% extract) | None | ~95% | 1x (baseline) | Very poor absorption without fat-containing meal [4] |
-| C3 Complex + Bioperine (piperine) | Metabolism inhibitor | ~95% + 5 mg piperine | ~20x | Piperine blocks intestinal and liver metabolism of curcumin [8] |
-| BCM-95 | Reconstituted with turmeric oils | ~86-88% | ~7-27x | Approximately 7x in one study, 27x in independent analysis [6][9] |
-| Meriva | Phosphatidylcholine phytosome | ~18% curcuminoids | ~29-48x | 1,000 mg Meriva = 180 mg curcuminoids. Good clinical data for joint pain and NAFLD [10][11] |
-| Longvida | Solid lipid curcumin particle | ~20% curcumin | ~100x (free curcumin) | Good short-term cognitive data. Did NOT reduce muscle soreness after exercise [6][12] |
-| Theracurmin | Nanoparticle with gum ghatti | ~30% curcumin | ~16-27x | 60 mg Theracurmin = 18 mg curcumin. Used in Alzheimer's and knee surgery studies [6][13] |
-| NovaSol | Micellar with polysorbate 80 | ~7% curcumin | ~57-185x | Highest bioavailability in multiple comparison studies. Note: polysorbate 80 can cause allergic reactions in dogs [6][7] |
-| CurcuWin | Hydrophilic carrier | ~20% curcuminoids | ~136x (total curcuminoids) | Half-life 6-7 hours. Used in DOMS studies [6][14] |
-| CurcuWin Ultra+ | Encapsulated with polymer matrix | ~20% curcuminoids | ~98x (total curcuminoids) | Absorbed 40% faster than regular curcumin [15] |
-| CurQfen | Fenugreek galactomannan fiber | ~35-39% curcuminoids | ~45x | Extended curcuminoid presence in blood (3.7 hrs vs <1 hr) [16] |
-| Curcugen | Turmeric essential oils + polysaccharides | ~50% curcuminoids | ~31x | 98.5% turmeric-derived [17] |
+| Formulation | How it is made | Rise in blood levels vs. unformulated curcumin | Notes |
+|---|---|---|---|
+| Unformulated curcumin | None | 1x (baseline) | Very poor absorption without a fat-containing meal [4] |
+| Curcumin with piperine | Piperine slows curcumin's breakdown in the liver and gut wall | 2,000% with 20 mg piperine and 2 g curcumin in one early study [8] | No significant rise in a 2021 comparison of eight forms [7] |
+| BCM-95 | Curcumin recombined with the non-curcuminoid parts of turmeric | About 6.93-fold [9] | One small crossover study [9] |
+| Meriva | Lecithin (phospholipid) formulation, also called a phytosome | About 29-fold for total curcuminoids [10]; 7.9-fold for a phytosome form in another study [14] | Blood levels were still well below those needed to block most of curcumin's anti-inflammatory targets [10]. Improved liver fat on ultrasound in a fatty liver trial [11] |
+| Longvida | Solid lipid curcumin | 100-fold [6] | Improved attention and working memory in a short trial in older adults [12]. No effect on muscle soreness after leg exercise [55] |
+| Theracurmin | Curcumin dispersed as colloidal nanoparticles | 27-fold [13] | Used in an 18-month memory trial in adults without dementia [59] and after knee cartilage surgery [29] |
+| NovaSol | Micellar curcumin | 185-fold [6]; 57-fold for micellar curcumin in a 2021 comparison [7] | The largest rise in both analyses [6][7] |
+| CurcuWin | Curcumin with a hydrophilic carrier, cellulose derivatives and antioxidants | 136-fold [6]; 45.9-fold for total curcuminoids in a head-to-head study [14] | Also 5.8-fold higher than a phytosome form in that study [14] |
+| CurcuWin Ultra+ | Designed to protect curcuminoids from breakdown in the gut | 99 and 113 times higher exposure from 250 mg and 500 mg than from 1,900 mg of a 95% turmeric extract [15] | Absorbed 40% faster [15] |
+| Curcugen | Dispersible turmeric oleoresin extract with 50% curcuminoids | 52.5-fold for total curcuminoids [17] | 39-fold for free curcumin [17] |
 
 **Fed versus fasted:** A 2026 laboratory study of eight commercial turmeric supplements found that none released more than 40% of its curcuminoids. Release was lowest under fasted conditions and a little better under fed conditions, and a phytosome product released the most despite its lower dose [18].
 
@@ -87,7 +86,7 @@ Curcumin from turmeric cooked into everyday foods still reaches the blood, thoug
 
 ### Fermented Turmeric
 
-Fermented turmeric is marketed as better absorbed, but there is no strong evidence for this.
+Fermented turmeric products are also sold. How well people absorb curcumin from them is unclear.
 
 ## 3. Evidence for Benefits
 
@@ -107,7 +106,7 @@ Osteoarthritis is the condition with the most clinical evidence supporting curcu
 
 **No benefit in older adults with overweight or obesity:** In a 16-week trial in 152 sedentary older adults with overweight or obesity, most of whom had chronic pain, curcumin (160 mg a day), alone or with fish oil, did not reduce pain [26].
 
-**Turmeric extracts low in curcumin:** A water extract of turmeric (NR-INF-02) contains almost no curcuminoids [57]. In a 42-day trial in 120 people with knee osteoarthritis, 500 mg of it twice daily improved pain and knee function more than placebo, which suggests other turmeric compounds may also be active [27]. A separate 12-week trial in 70 people found that a turmeric extract (2 capsules a day) improved knee pain by 9.1 mm on a visual pain scale more than placebo but did not reduce joint swelling on MRI [28].
+**Turmeric extracts low in curcumin:** A water extract of turmeric (NR-INF-02) contains almost no curcuminoids [57]. In a 42-day trial in 120 people with knee osteoarthritis, 500 mg of it twice daily improved pain and knee function more than placebo, which suggests that compounds in turmeric other than curcumin may also play a part [27]. A separate 12-week trial in 70 people found that a turmeric extract (2 capsules a day) improved knee pain by 9.1 mm on a visual pain scale more than placebo but did not reduce joint swelling on MRI [28].
 
 **After knee cartilage surgery:** In 43 people followed for a year after knee cartilage repair (mosaicplasty), Theracurmin (180 mg curcumin a day) did not improve pain or knee scores more than placebo. At follow-up arthroscopy, though, the cartilage was stiffer and smoother in the Theracurmin group [29].
 
@@ -123,7 +122,7 @@ Small trials suggest curcumin may ease rheumatoid arthritis symptoms, with mixed
 
 **High-dose curcumin (1,200 mg/day):** An older study found 1,200 mg curcumin reduced symptoms, but not as effectively as the NSAID phenylbutazone [35].
 
-**For maintaining remission:** Curcumin (1,000 mg plus 5 mg piperine twice daily) did NOT help maintain or prolong flare-free remission in a study of 185 men and women who tapered their standard DMARDs over one year. A similar percentage remained in remission in both groups (60% curcumin vs. 64% placebo), and median days until flare was also similar [36].
+**For maintaining remission:** In 200 adults with rheumatoid arthritis in lasting remission whose usual DMARDs were tapered and stopped, curcumin (1 g with 5 mg piperine twice a day) did not keep more people free of flares. At 52 weeks, 60% on curcumin and 64% on placebo had stayed flare-free, and the median time to a flare was alike in both groups. The per-protocol analysis included 92 people on curcumin and 93 on placebo [36].
 
 ### Back Pain
 
@@ -148,10 +147,10 @@ A few small, short trials suggest curcumin may ease indigestion, and two found i
 
 Curcumin may be helpful as an adjunct to standard medication for ulcerative colitis, though results vary by formulation and dose:
 
-- **High-dose curcumin (3 g/day) for active UC:** 1.5 g curcumin twice daily plus mesalamine for one month achieved remission in 53.8% of patients versus 0% with placebo — a striking result [44].
+- **High-dose curcumin (3 g/day) for active UC:** In 50 people whose mild to moderate ulcerative colitis had not responded to mesalamine alone, adding curcumin capsules for one month brought 53.8% into remission, against none on placebo [44].
 - **Nanomicelle curcumin (240 mg/day):** In 56 people with mild or moderate ulcerative colitis, 80 mg three times daily added to mesalamine for 4 weeks reduced urgency, improved well-being and lowered overall disease activity scores compared with placebo [45].
 - **Maintenance of remission:** In people with ulcerative colitis in remission, 1 g of curcumin after breakfast and 1 g after the evening meal, added to sulfasalazine or mesalamine for 6 months, led to fewer relapses than placebo (2 of 43 against 8 of 39) [46].
-- **Low dose for active colitis:** A lower dose (450 mg a day) for 8 weeks did not bring mild to moderate ulcerative colitis into remission more often than placebo [47].
+- **Low dose for active colitis:** At 450 mg a day for 8 weeks, curcumin brought no more people with mild or moderate ulcerative colitis into remission than placebo did [47].
 - **Crohn's disease:** In 62 people who had bowel surgery for Crohn's disease and were taking azathioprine, 3 g of curcumin a day for 6 months did not prevent recurrence better than placebo. Severe recurrence was more common with curcumin (55%) than with placebo (26%) [48].
 
 #### Familial Adenomatous Polyposis
@@ -168,7 +167,7 @@ Results are mixed. Curcumin taken before hard exercise may dampen inflammation, 
 
 **Positive findings:**
 - **Theracurmin (180 mg/day):** In healthy men, curcumin taken for 7 days before an arm exercise did not reduce soreness, though it blunted one inflammation marker 12 hours later. In other men who took it for 7 days after the exercise, soreness and creatine kinase, a sign of muscle damage, were lower, and strength and range of motion recovered faster [50].
-- **Meriva (200 mg curcumin/day):** Taken at breakfast and dinner for 4 days, significantly reduced thigh soreness 48 hours after intense treadmill exercise compared to placebo [51].
+- **Meriva (1 g twice daily, giving 200 mg curcumin twice daily):** In 20 healthy men, Meriva taken from 48 hours before to 24 hours after a downhill running test (4 days in all) eased leg pain compared with placebo, though the difference was significant only in the front of the thighs. Fewer men on curcumin had MRI signs of muscle injury at the back or inner side of the thighs [51].
 - **High-dose curcumin (5,000 mg/day):** In a crossover trial in men, 2.5 g twice daily from 2 days before to 3 days after hard leg exercise caused moderate to large reductions in leg pain at 24 and 48 hours, with small falls in creatine kinase and mixed effects on the inflammation marker IL-6 [52].
 - **Standard curcumin (500 mg twice daily):** In 22 adults, curcumin taken for 6 days before, on the day of and 3 days after jumping exercise reduced soreness at 48 and 72 hours and preserved jump height, but did not change creatine kinase or the inflammation marker ESR compared with placebo [54].
 
@@ -192,7 +191,7 @@ Some trials found small cognitive benefits [12][58][59], while others found none
 - **Curcumin (160 mg/day):** In 152 sedentary older adults with overweight or obesity, 16 weeks of curcumin did not improve blood vessel responses in the brain [26].
 - **BCM-95 (1,500 mg/day):** In 96 older adults followed for 12 months, BCM-95 (Biocurcumax) made no difference on most memory and thinking tests. Scores on one screening test fell at 6 months in the placebo group but not in the curcumin group [61].
 
-**Alzheimer's disease trials:** Results have been disappointing. In trials in people with Alzheimer's disease, curcumin did not improve memory or thinking more than placebo [62][63]. A report of three people with severe Alzheimer's found that turmeric capsules eased agitation, anxiety and irritability after 12 weeks [64]. A 2016 review said clinical studies have shown limited effects so far, most likely because curcumin is poorly absorbed and because trials enrolled people whose disease was already advanced [65].
+**Alzheimer's disease trials:** Results have been disappointing. In trials in people with Alzheimer's disease, curcumin did not improve memory or thinking more than placebo [62][63]. A case report described three patients with severe Alzheimer's whose agitation, anxiety and irritability eased after 12 weeks of turmeric capsules [64]. A 2016 review said clinical studies have shown limited effects so far, most likely because curcumin is poorly absorbed and because trials enrolled people whose disease was already advanced [65].
 
 ### Depression
 
@@ -204,7 +203,7 @@ Curcumin may help treat depression; in one trial its benefits appeared only afte
 
 **Long-term in diabetic adults with depression:** In 227 adults with obesity and type 2 diabetes, 12 months of curcumin improved depression severity more than placebo [69].
 
-**No effect in postmenopausal women:** In 74 postmenopausal women, taking 500 mg of curcumin twice a day for 8 weeks left depression scores no better than with placebo [70].
+**No effect in postmenopausal women:** In 74 postmenopausal women, 500 mg of curcumin twice a day for 8 weeks did no better than placebo on depression scores [70].
 
 ### Insulin Resistance and Diabetes
 
@@ -215,7 +214,7 @@ Curcumin may help treat depression; in one trial its benefits appeared only afte
 **Prediabetes prevention:** In a 9-month trial in 240 people with prediabetes, none of those taking curcumin developed type 2 diabetes, against 16.4% of those on placebo. Curcumin also appeared to improve the function of the insulin-making beta cells [73].
 
 **Type 2 diabetes — mixed results:**
-- Theracurmin 180 mg/day for 6 months did not lower HbA1c versus placebo in 33 people with impaired glucose tolerance or type 2 diabetes [74].
+- In 33 people with impaired glucose tolerance or type 2 diabetes, Theracurmin 180 mg/day for 6 months left HbA1c no lower than placebo [74].
 - Curcuma longa 500 mg/day with 5 mg piperine for 120 days lowered blood glucose, HbA1c, insulin resistance (HOMA) and triglycerides in the curcuma group of a 71-person trial in type 2 diabetes [75].
 - Curcuminoids 1,500 mg/day for 12 months in 272 adults with type 2 diabetes lowered fasting blood sugar and HbA1c and reduced insulin resistance compared with placebo [76].
 
@@ -239,7 +238,7 @@ Multiple meta-analyses of RCTs support modest benefits for liver enzymes and som
 
 Evidence is mixed. A 2017 meta-analysis found modest falls in LDL cholesterol and triglycerides [89], but turmeric did not lower LDL cholesterol in a trial that compared it with a low-dose statin [91].
 
-**No benefit with regular curcumin:** A 2014 meta-analysis of five trials found no significant effect of curcumin on total, LDL or HDL cholesterol or triglycerides [87]. An 8-week study of 1 g curcumin (with or without probiotics) in overweight adults with metabolic syndrome on a calorie-restricted diet also showed no benefit [88].
+**Regular curcumin showed no benefit:** A 2014 meta-analysis of five trials found no significant effect of curcumin on total, LDL or HDL cholesterol or triglycerides [87]. An 8-week study of 1 g curcumin (with or without probiotics) in overweight adults with metabolic syndrome on a calorie-restricted diet also showed no benefit [88].
 
 **Modest benefit in people at heart risk:** A 2017 meta-analysis of 7 trials (649 patients) found that turmeric and curcumin lowered LDL cholesterol and triglycerides in people with cardiovascular risk factors [89]. Adding 200 mg of curcumin a day to phytosterols for 4 weeks lowered total and LDL cholesterol by 11.0% and 14.4% (against 4.8% and 8.1% with phytosterols alone); curcumin alone gave small, non-significant falls [90].
 
@@ -263,7 +262,7 @@ Human evidence is limited to small trials with mixed results [96][100][101].
 
 **Colon cancer prevention:** In an open-label trial in 44 smokers, 4 g of curcumin a day for 30 days cut the number of aberrant crypt foci (possible early precancerous changes in the colon) by 40%; the 2 g dose did not [96].
 
-**Myeloma precursors (MGUS/SMM):** In 36 people with these precursor conditions, curcumin (a 4 g dose, then an 8 g dose in an open extension) lowered the free light-chain ratio, a marker linked to disease progression [97]. Another study using 4-8 g daily for up to one year reduced certain inflammatory markers and a myeloma growth-promoting protein, though without clinical improvements [98]. A case report described a woman with myeloma who began daily curcumin as she approached her third relapse; without further myeloma treatment, her disease stayed stable for 5 years [99].
+**Myeloma precursors (MGUS/SMM):** In 36 people with these precursor conditions, curcumin (a 4 g dose, then an 8 g dose in an open extension) lowered the free light-chain ratio, a marker linked to disease progression [97]. Another study gave 4-8 g daily for as long as a year; it lowered some inflammatory markers and a protein that drives myeloma growth, but clinical outcomes did not improve [98]. A case report described a woman with myeloma who began daily curcumin as she approached her third relapse; without further myeloma treatment, her disease stayed stable for 5 years [99].
 
 **Pancreatic cancer:** In 21 patients taking 8 g curcumin daily, only 2 showed a positive biological response [100].
 
@@ -301,7 +300,7 @@ Curcumin may block xanthine oxidase, the enzyme that makes uric acid. Yet in 39 
 
 ### Parkinson's Disease
 
-In people with Parkinson's disease (30 per group) whose symptoms were controlled on standard treatment, 80 mg a day of nanomicelle curcumin for 9 months did not improve symptoms or quality of life more than placebo [112].
+In people with Parkinson's disease (30 per group) whose symptoms were controlled on standard treatment, 80 mg a day of nanomicelle curcumin for 9 months gave no greater gain in symptoms or quality of life than placebo [112].
 
 ### Psoriasis
 
@@ -321,20 +320,20 @@ There is no standard guidance on the best dose of curcumin for any condition [13
 
 | Condition | Dosage | Duration | Formulation | Key Study |
 |---|---|---|---|---|
-| Indigestion | 500 mg turmeric powder 4x/day (2 g/day) | 7 days | Regular turmeric | [40] |
-| Ulcerative colitis (active) | 1,500 mg curcumin 2x/day (3 g/day) | 1 month | 95% curcumin extract | [44] |
+| Indigestion | 2 capsules of turmeric four times a day | 7 days | Turmeric rhizome capsules | [40] |
+| Ulcerative colitis (active) | 3 g curcumin/day | 1 month | Curcumin capsules | [44] |
 | UC (maintenance) | 1 g curcumin 2x/day (2 g/day) | 6 months | Standard curcumin | [46] |
-| Knee osteoarthritis | 500 mg curcuminoids 3x/day (1,500 mg/day) | 6 weeks | C3 Complex + Bioperine | [20] |
-| Knee OA (low-dose) | 187-280 mg turmeric extract/day | 3 months | Enhanced absorption | [22] |
-| Rheumatoid arthritis | 500 mg BCM-95 2x/day (1,000 mg/day) | 8 weeks | BCM-95 | [33] |
-| Depression | 250-500 mg BCM-95 2x/day | 8-12 weeks | BCM-95 | [66][67] |
-| Prediabetes prevention | 750 mg curcuminoids 2x/day (1,500 mg/day) | 9 months | Standard curcuminoids | [73] |
-| Blood sugar (after meals) | 180 mg curcumin (from 1 g Meriva) | With meal | Meriva | [71] |
-| NAFLD | 500 mg curcumin/day (+ 5 mg Bioperine) | 3 months | C3 Complex | [79] |
-| Muscle soreness prevention | 200 mg curcumin (from 1 g Meriva) 2x/day | 2 days before + day of exercise | Meriva | [51] |
-| Cognition (short-term) | 80-400 mg curcumin/day | 4 weeks | Longvida | [12] |
-| Memory (long-term) | 90 mg Theracurmin 2x/day (180 mg/day) | 18 months | Theracurmin | [59] |
-| Colon cancer prevention | 4,000 mg curcumin/day | 30 days | Micronized 98% | [96] |
+| Knee osteoarthritis | 1,500 mg curcuminoids/day in 3 doses | 6 weeks | Curcuminoids | [20] |
+| Knee osteoarthritis (turmeric extract) | Low or high dose | 3 months | Bio-optimized turmeric extract | [22] |
+| Rheumatoid arthritis | 500 mg curcumin | Not given | Curcumin | [33] |
+| Depression | 250 mg or 500 mg curcumin extract twice daily | 8 to 12 weeks | Curcumin extract | [66][67] |
+| Prediabetes prevention | Curcumin extract capsules | 9 months | Curcumin extract | [73] |
+| Blood sugar (after meals) | 180 mg curcumin tablets | Single dose before a meal | Curcumin | [71] |
+| NAFLD | 500 mg curcuminoids/day with 5 mg piperine | 12 weeks | Curcuminoids with piperine | [79] |
+| Muscle soreness prevention | 1 g Meriva twice daily (200 mg curcumin twice daily) | 48 hours before to 24 hours after exercise (4 days) | Meriva | [51] |
+| Cognition (short-term) | 400 mg Longvida/day | 4 weeks | Longvida | [12] |
+| Memory (long-term) | Theracurmin with 90 mg curcumin 2x/day (180 mg/day) | 18 months | Theracurmin | [59] |
+| Colon cancer prevention | 4,000 mg curcumin/day | 30 days | Curcumin | [96] |
 
 ### General Dosing Principles
 
@@ -346,7 +345,7 @@ There is no standard guidance on the best dose of curcumin for any condition [13
 ### How to Read a Supplement Label
 
 When comparing products, pay attention to:
-- The weight of the total formulation vs. the weight of curcuminoids — e.g., 1,000 mg Meriva contains only 180 mg curcuminoids [10].
+- The weight of the total formulation vs. the weight of curcuminoids.
 - Whether the product lists total curcuminoids or just curcumin.
 - Whether a bioavailability enhancer is included (piperine/Bioperine, phospholipids, etc.).
 
@@ -364,7 +363,6 @@ The NCCIH states that conventionally formulated oral turmeric or curcumin (not m
 - Yellow stool [77]
 - Headache [77]
 - Allergic skin reactions (oral use); hives or itching (topical use) [2]
-- Higher blood levels of the enzymes alkaline phosphatase and lactate dehydrogenase
 
 GI side effects may be dose-dependent. In a 24-week Alzheimer's trial of curcumin, 5 of 24 people on curcumin withdrew, 3 of them because of stomach or bowel symptoms [63]. In a knee trial, a higher dose of a turmeric extract caused more product-related side effects than placebo [22]. Starting with a lower dose may reduce this risk [22].
 
@@ -378,11 +376,13 @@ This is the most serious safety concern. Even though curcumin is studied for fat
 - 8 of the 10 were women; median age 56 years
 - Liver injury typically appeared 1 to 4 months after starting turmeric
 - 3 of the 7 products tested also contained piperine (black pepper)
-- Symptoms: jaundice, nausea, abdominal pain
+- In 9 of the 10, the injury mainly affected liver cells (hepatocellular)
 - Five people needed hospital care, and one died of acute liver failure
 - 7 of the 10 carried the HLA-B*35:01 gene variant
 
-**Additional case review:** A pathology review of 11 other cases found that 10 (91%) were women, with a median age of 58 years. More than half had no symptoms and were found only through abnormal liver tests. After they stopped the supplements (four also received steroids), liver tests returned to normal in all of them [118].
+**Additional case review:** In a pathology series of 11 further cases, 10 (91%) were women, and the median age was 58 years. More than half had no symptoms and were found only through abnormal liver tests. After they stopped the supplements (four also received steroids), liver tests returned to normal in all of them [118].
+
+**LiverTox:** The NIH's LiverTox database says turmeric and curcumin have a long history of safety and are linked to a low rate of brief rises in liver enzymes, but some turmeric products have recently been implicated in several dozen cases of clinically apparent acute liver injury [142].
 
 **Population exposure:** A study estimated the exposure to potentially hepatotoxic botanicals in U.S. adults, identifying turmeric/curcumin as one of the most commonly used supplements with liver injury reports [119].
 
@@ -390,13 +390,15 @@ This is the most serious safety concern. Even though curcumin is studied for fat
 
 **Liver tests:** Brad advises anyone taking curcumin supplements to have regular blood tests of liver function, because liver injury from curcumin is rare but serious [140]. In a series of 11 people with liver injury linked to turmeric supplements, more than half (six of the 11) had no symptoms and were found only through abnormal liver tests [118].
 
-**Warning signs:** Fatigue, nausea, poor appetite, dark urine, jaundice (yellowing of skin/eyes), or pale stools. Stop supplementation immediately and consult a healthcare provider if any occur [2][117].
+**Warning signs:** The NCCIH lists fatigue, nausea, poor appetite, dark urine and jaundice (yellow skin or eyes) as signs of liver damage. If any occur, stop turmeric or curcumin products straight away and talk with your doctor [2].
+
+**Methotrexate:** One report in the WHO VigiBase database described raised liver enzymes in a person taking methotrexate with curcuminoids [132].
 
 **Drug interaction risk:** Use of GLP-1 agonists (e.g., semaglutide/Ozempic) may increase liver injury risk from turmeric, as GLP-1 drugs slow intestinal transit and could increase curcumin absorption [120].
 
 ### Gallbladder Effects
 
-Even small doses of curcumin (20-80 mg) can stimulate gallbladder contractions and could increase pain during stone passage or potentially increase perforation risk in people with gallstones [121].
+In 12 healthy volunteers, single doses of 20, 40 and 80 mg of curcumin made the gallbladder contract within 2 hours, and 40 mg was enough to shrink it by half [121]. In people with gallstones, curcumin might therefore cause pain, so check with your doctor before taking it.
 
 ### Kidney Stones
 
@@ -408,11 +410,11 @@ Rarely, turmeric consumption can cause yellow skin discoloration without liver i
 
 ### Lowering Iron Levels
 
-Curcumin may bind iron and reduce its availability. A case report described iron deficiency anemia in a man taking high-dose turmeric extract, which resolved within 2 weeks of stopping it [125]. However, a controlled trial in 155 healthy adults found that 500 mg of bioavailability-enhanced curcumin taken at the same time as an iron supplement did not impair acute iron absorption [126]. As a precaution, people with anemia or low iron stores may want to avoid taking curcumin at the same time as iron.
+Curcumin may bind iron and reduce its availability. A case report described iron deficiency anemia in a man taking high-dose turmeric extract, which resolved within 2 weeks of stopping it [125]. However, in a controlled trial in 155 healthy adults, 500 mg of bioavailability-enhanced curcumin taken alongside an iron supplement did not impair acute iron absorption [126]. As a precaution, people with anemia or low iron stores may want to avoid taking curcumin at the same time as iron.
 
 ### Tooth Staining
 
-Turmeric may stain teeth, and laboratory research suggests freshly bleached teeth can take up turmeric stain [127].
+Turmeric may stain teeth. A laboratory study suggests that freshly bleached teeth can take up the stain [127].
 
 ### Pregnancy and Nursing
 
@@ -422,7 +424,7 @@ Turmeric supplements may be unsafe during pregnancy, and little is known about t
 
 ### Anticoagulants and Antiplatelet Drugs
 
-**Avoid combining** turmeric or curcumin supplements with blood thinners, including aspirin, clopidogrel (Plavix), warfarin (Coumadin) and rivaroxaban (Xarelto), unless your doctor agrees, because curcumin might add to their effect. A case report linked turmeric to a raised INR, a sign of slower blood clotting, in a person taking the vitamin K antagonist fluindione [128]. Turmeric might also raise bleeding risk during surgery or other procedures, so tell your doctor you take it beforehand; they may advise stopping it for a time.
+**Avoid combining** turmeric or curcumin supplements with blood thinners, including aspirin, clopidogrel (Plavix), warfarin (Coumadin) and rivaroxaban (Xarelto), unless your doctor agrees, because curcumin might add to their effect. A case report linked turmeric to a raised INR, a sign of slower blood clotting, in a person taking the vitamin K antagonist fluindione [128]. Turmeric might also raise bleeding risk during surgery or other procedures, so tell your doctor you take it beforehand; they may advise stopping it for a time. Reports in the WHO VigiBase database also describe bleeding in people taking the leukemia drug ibrutinib with curcumin or curcuminoids; the authors suggested curcumin might raise ibrutinib levels [132].
 
 ### Blood Sugar-Lowering Medications
 
@@ -434,11 +436,11 @@ Curcumin may interfere with the CYP3A4 enzyme system that metabolizes many drugs
 
 **Drugs with increased levels (potentially dangerous):**
 - **Tacrolimus.** A case report described a liver transplant patient whose tacrolimus level rose sharply, with kidney damage, after eating large amounts of turmeric with food; kidney function improved after tacrolimus was withheld [131].
-- **Bortezomib (Velcade)** — Reported increased toxicity including constipation, decreased red blood cells, peripheral nerve pain [132].
+- **Bortezomib (Velcade).** One report in VigiBase, the WHO pharmacovigilance database, described constipation, fewer red blood cells, night sweats, nerve damage in the hands or feet (peripheral neuropathy) and a rash in a person with myeloma taking bortezomib with curcuminoids. The authors suggested curcuminoids might raise bortezomib levels [132].
 - Curcumin might, in theory, affect other drugs broken down by CYP3A4. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 **Drugs with decreased levels:**
-- **Everolimus** — Two cases of significantly decreased blood levels at curcumin doses as low as 12 mg with 0.3 mg piperine, resolving after curcumin discontinuation [133].
+- **Everolimus.** A 2018 report raised concern that curcumin supplements might lower blood levels of everolimus, a cancer drug [133].
 - **Tamoxifen.** In breast cancer patients, high-dose curcumin (1,200 mg three times daily) lowered exposure to endoxifen, tamoxifen's active form, by 7.7% (not significant) and by 12.4% with piperine; the authors estimate this could push endoxifen below the effective level in 20-40% of patients [134].
 - **Talinolol** — Some evidence curcumin may decrease bioavailability of this beta-blocker [135].
 
@@ -448,15 +450,15 @@ Curcumin may increase the effects of this anti-inflammatory drug [136].
 
 ### Testosterone (Oral)
 
-Curcumin can raise blood levels of oral testosterone (testosterone undecanoate) by blocking the gut enzyme UGT2B17. In a small crossover study in men, taking it with curcumin raised testosterone exposure over the first 6 hours by 50% and the peak level by 80% [137].
+Curcumin can raise blood levels of oral testosterone (testosterone undecanoate) by blocking the gut enzyme UGT2B17. In a small crossover study in men, taking it with curcumin raised testosterone exposure by 50% in the first 6 hours and the peak level by 80% [137].
 
 ### Piperine Interactions
 
-Piperine (black pepper extract) in curcumin supplements might also raise blood levels of other compounds and medicines. Products containing piperine warrant additional caution regarding drug interactions.
+Piperine, the black pepper extract added to some curcumin supplements, might also raise blood levels of some medicines. If you take prescription medicines, check with your doctor or pharmacist before choosing a product that contains it.
 
 ### Chemotherapy
 
-There is concern that curcumin's antioxidant effects may decrease the efficacy of alkylating chemotherapy drugs (e.g., melphalan), though this has not been reported clinically [138].
+In a study of 202 older adults having cancer treatment, pharmacists judged 6 possible herb-drug interactions clinically relevant, and turmeric was one of the four herbs involved [138]. If you are having cancer treatment, tell your cancer team before taking turmeric or curcumin.
 
 ## 7. Dietary Sources
 
@@ -464,10 +466,7 @@ Turmeric is the primary dietary source of curcumin.
 
 ### Turmeric Content
 
-| Source | Approximate Curcumin Content | Notes |
-|---|---|---|
-| Fresh turmeric root (1 inch, ~5 g) | ~10-15 mg curcumin | Lower bioavailability vs. powder [5] |
-| Yellow mustard (1 tablespoon) | Trace amounts | Turmeric used mainly as colorant |
+The curcuminoids make up about 3 to 5% of turmeric, though products vary considerably in their make-up [132].
 
 ### Practical Notes
 
@@ -505,8 +504,6 @@ Turmeric is the primary dietary source of curcumin.
 [14] Jager R, et al. "Comparative absorption of curcumin formulations." *Nutr J*. 2014;13:11. doi: [10.1186/1475-2891-13-11](https://doi.org/10.1186/1475-2891-13-11)
 
 [15] Kothaplly S, et al. "Superior Bioavailability of a Novel Curcumin Formulation in Healthy Humans Under Fasting Conditions." *Adv Ther*. 2022;39(5):2128-2138. doi: [10.1007/s12325-022-02081-w](https://doi.org/10.1007/s12325-022-02081-w)
-
-[16] Kumar D, et al. "Enhanced bioavailability and relative distribution of free (unconjugated) curcuminoids following the oral administration of a food-grade formulation with fenugreek dietary fibre." *J Funct Foods*. 2016;22:578-587. doi: [10.1016/j.jff.2016.01.039](https://doi.org/10.1016/j.jff.2016.01.039)
 
 [17] Panda SK, et al. "The enhanced bioavailability of free curcumin and bioactive-metabolite tetrahydrocurcumin from a dispersible, oleoresin-based turmeric formulation." *Medicine (Baltimore)*. 2021;100(27):e26601. doi: [10.1097/MD.0000000000026601](https://doi.org/10.1097/MD.0000000000026601)
 
@@ -749,3 +746,5 @@ Turmeric is the primary dietary source of curcumin.
 [140] Stanfield B. "FAQ: What's the Difference Between Curcumin and Turmeric?" drstanfield.com. 13 September 2024. [https://drstanfield.com/blogs/articles/difference-between-curcumin-turmeric](https://drstanfield.com/blogs/articles/difference-between-curcumin-turmeric)
 
 [141] Sugawara J, et al. "Effect of endurance exercise training and curcumin intake on central arterial hemodynamics in postmenopausal women: pilot study." *Am J Hypertens*. 2012;25(6):651-656. doi: [10.1038/ajh.2012.24](https://doi.org/10.1038/ajh.2012.24). PMID: [22421908](https://pubmed.ncbi.nlm.nih.gov/22421908/)
+
+[142] National Institute of Diabetes and Digestive and Kidney Diseases. "Turmeric." *LiverTox: Clinical and Research Information on Drug-Induced Liver Injury*. Bethesda (MD); 2012-. Updated 16 June 2025. NCBI Bookshelf ID: NBK548561. PMID: [31643876](https://pubmed.ncbi.nlm.nih.gov/31643876/)
