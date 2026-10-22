@@ -6,16 +6,25 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["electrolytes", "sodium", "potassium", "magnesium", "calcium", "chloride", "bicarbonate", "phosphate", "hydration", "exercise", "rehydration", "blood pressure", "hypertension", "heart health", "muscle", "cramps", "dehydration", "hyponatremia", "hyperkalemia", "kidney", "insulin resistance", "diabetes", "bone density", "osteoporosis", "cardiovascular", "strength training", "resistance training", "sleep", "aging", "longevity", "gut health", "mediterranean diet"]
-summary: "Reference on electrolytes (sodium, potassium, magnesium, calcium and more). Water is enough for an hour of exercise; replace electrolytes, mainly sodium, after 90+ minutes of strenuous exercise or for diarrhea. Talk to your doctor first with kidney disease, high blood pressure or ACE inhibitors."
+summary: "Reference on electrolytes (sodium, potassium, magnesium, calcium and more). Fluid needs for recreational exercise may be low; drinks with sodium and carbohydrate may help in longer or hotter sessions, and oral rehydration solution suits diarrhea. Talk to your doctor first with kidney disease, high blood pressure, or on ACE inhibitors, ARBs or potassium-sparing diuretics."
 reviewed: "2026-10-20"
-sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/electrolytes-sports-rehydration/electrolytes/","checked":"2026-09-29","fingerprint":"sha256:89228e38dbd31f35ceb271dc289200fba142ba9ca49f180ebe2847fe6c85e2d7"}]
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Potassium-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:984be3a8b4747e11aea6d8fed9620fa27038cc4ae3b2fafc5f9d10b01121f4cb"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/electrolytes-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/electrolytes-benefits-dosing-and-side-effects)*
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. If you are fairly healthy, eat a balanced diet and exercise for about an hour, water is enough; replacing electrolytes, mainly sodium, matters mostly after strenuous exercise lasting 90 minutes or more, and sports drinks can help then, but so can water with food that supplies those electrolytes and some sugar [6]. Drinking too much plain water without electrolytes can dilute the sodium in your blood (hyponatremia), which can cause headache, vomiting and confusion and, as sodium falls further, seizures, coma and death [6]. If someone becomes confused, has a seizure or cannot stay awake, call your local emergency number or go to the emergency department. Diarrhea needs a different mix, closer to the WHO oral rehydration solution, which has about three times the sodium of a sports drink and much more potassium and chloride [6]. Extra sodium you do not need can raise blood pressure, and too much potassium can be dangerous, so people with kidney disease or high blood pressure, or who take ACE inhibitors or potassium-sparing diuretics, should talk to their doctor before using electrolyte products [6].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreational exercise may be low and aggressive fluid replacement may not be needed, but drinks with electrolytes and carbohydrate can help more than water alone in some circumstances, and carbohydrate may benefit longer sessions of an hour or more [5][7]. Drinking too much fluid during long exercise, water or sports drinks, can dilute the sodium in your blood (hyponatremia), which in severe cases can affect the brain (hyponatremic encephalopathy) and lead to coma or death [9][52][60][61]. If someone becomes confused, has a seizure or cannot stay awake, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department. Diarrhea needs a different drink: WHO's oral rehydration solution carries more sodium than a sports drink, plus potassium and glucose [7][42]. Extra sodium you do not need can raise blood pressure, more so when blood pressure is already high [30], and too much potassium can be dangerous with kidney disease or with ACE inhibitors, ARBs or potassium-sparing diuretics [12], so people in these groups should talk to their doctor before using electrolyte products.
+
+## Key safety points
+
+- People who take ACE inhibitors, ARBs or potassium-sparing diuretics (such as spironolactone) can develop dangerously high potassium (hyperkalemia) [10][12]. Experts advise monitoring potassium if you have kidney disease or take these medicines [12].
+- With kidney disease, the body may not clear extra potassium and magnesium, and they can build up to dangerous levels. Talk to your doctor before using electrolyte products [12][14].
+- Extra sodium you do not need can raise blood pressure, more so when it is already high. If you have high blood pressure, check with your doctor first [30].
+- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which in severe cases can affect the brain (hyponatremic encephalopathy) and lead to coma or death. If someone becomes confused, has a seizure or cannot stay awake, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [9][52][60][61].
+- Potassium supplements can cause minor gastrointestinal side effects, and some potassium chloride products have been linked to small-bowel lesions [12].
+- Magnesium supplements can cause diarrhea, more often as oxide, sulfate or hydroxide [14].
 
 ## Brad's videos on this topic
 
@@ -29,7 +38,7 @@ The distribution of electrolytes across cell membranes is not random — it is a
 
 Electrolyte imbalances — whether from inadequate dietary intake, excessive losses through sweat, vomiting, diarrhea, or kidney dysfunction — can produce symptoms ranging from mild fatigue and muscle cramps to life-threatening cardiac arrhythmias and seizures [1][3]. Exercise-induced electrolyte depletion is particularly common: sweat contains 900-1,500 mg/L of sodium on average, along with smaller quantities of potassium, calcium, and magnesium, meaning a single hour of intense exercise in heat can deplete substantial amounts of these minerals [4][5].
 
-Despite the proliferation of commercial electrolyte products, the most critical point is that most people who exercise at moderate intensity for less than 60-90 minutes and have access to water and food do not require supplemental electrolytes [6]. The need for electrolyte supplementation increases substantially during prolonged endurance exercise (>90 minutes), exercise in hot and humid environments, occupational heat exposure, and clinical scenarios involving significant fluid loss [4][5][7].
+At recreational paces, fluid needs may be low and aggressive fluid replacement may not be necessary [5]. The need for electrolyte supplementation increases substantially during prolonged endurance exercise (an hour or more), exercise in hot and humid environments, occupational heat exposure, and clinical scenarios involving significant fluid loss [4][5][7].
 
 Each of the seven primary electrolytes has distinct physiological roles, dietary requirements, and clinical significance. This article examines the evidence for each electrolyte individually, covers forms and bioavailability relevant to supplementation, reviews dosing recommendations for both general health and exercise contexts, and addresses safety considerations including drug interactions.
 
@@ -120,12 +129,12 @@ In the context of exercise, bicarbonate has been studied as an ergogenic aid. So
 
 #### When Are Supplemental Electrolytes Actually Needed?
 
-The evidence supports a nuanced, need-based approach rather than universal supplementation [6][4][5]:
+The evidence supports a nuanced, need-based approach rather than universal supplementation [4][5]:
 
-- **Exercise <60 minutes at moderate intensity:** Water alone is sufficient for most people. Electrolyte products are unnecessary and may contribute unwanted calories (from sugars) or excess sodium [6].
-- **Exercise 60-90 minutes:** Water is generally adequate. A small snack containing sodium (e.g., salted crackers, pretzels) can replace losses if desired [6].
-- **Exercise >90 minutes or in hot/humid conditions:** Electrolyte-containing beverages become increasingly important. Sweat rates of 1-2 L/hour are common in heat, with sodium losses of 900-1,500 mg/L [4][5]. A sports drink with 20-30 mmol/L sodium (approximately 460-690 mg/L) can help maintain plasma volume and delay fatigue [5][7].
-- **Ultra-endurance events (>4 hours):** Sodium supplementation is particularly important to prevent exercise-associated hyponatremia. Guidelines recommend drinking to thirst rather than on a fixed schedule, consuming 400-800 mL/hour and not exceeding thirst [5][9].
+- **Exercise <60 minutes at moderate intensity:** Fluid needs for recreational activity may be low, so water alone is usually enough [5].
+- **Less intense exercise of an hour or more:** Fluid needs may still be low, but carbohydrate (sports drinks, gels or bars) may help in less intense sessions of an hour or more [5].
+- **Exercise of an hour or more, or in hot/humid conditions:** Electrolyte-containing beverages become increasingly important. Sweat rates of 1-2 L/hour are common in heat, with sodium losses of 900-1,500 mg/L [4][5]. A sports drink with 20-30 mmol/L sodium (approximately 460-690 mg/L) can help maintain plasma volume and delay fatigue [5][7].
+- **Ultra-endurance events (>4 hours):** In a study of Boston Marathon runners, hyponatremia was linked to considerable weight gain while running and a long racing time, not to the composition of the fluids drunk [60]. Avoiding overhydration can prevent it [61]. Guidelines recommend drinking to thirst rather than on a fixed schedule, consuming 400-800 mL/hour and not exceeding thirst [5][9].
 
 #### Sodium and Exercise Performance
 
@@ -282,9 +291,9 @@ Sources: National Academies of Sciences (Dietary Reference Intakes); NIH Office 
 | Scenario | Sodium | Potassium | Fluid |
 |----------|:-:|:-:|-------|
 | Moderate exercise <60 min | Not needed | Not needed | Water to thirst |
-| Moderate-intense exercise 60-90 min | Optional 200-400 mg | Not needed | Water to thirst; snack if desired |
-| Prolonged exercise >90 min | 460-690 mg/L of fluid (20-30 mmol/L) | 75-150 mg/L | 400-800 mL/hour to thirst [5][7] |
-| Ultra-endurance >4 hours | 500-1,000 mg/hour | 150-300 mg/hour | Drink to thirst; never exceed thirst [5][9] |
+| Less intense exercise of an hour or more | — | Not needed | Water to thirst; carbohydrate (sports drink, gel or bar) may help [5] |
+| Exercise of an hour or more, or hot/humid conditions | 460-690 mg/L of fluid (20-30 mmol/L) | 75-150 mg/L | 400-800 mL/hour to thirst [5][7] |
+| Ultra-endurance >4 hours | — | — | Drink to thirst; never exceed thirst [5][9] |
 | Heavy sweater / hot climate | 1,000+ mg/hour | 200-400 mg/hour | Individualized based on sweat testing [4][5] |
 
 The Wilderness Medical Society advises against fixed hydration schedules, emphasizing individualized intake to avoid both dehydration and overhydration (which causes hyponatremia) [9].
@@ -352,10 +361,10 @@ Calcium absorption is most efficient at single doses of 500 mg or less. Higher s
 Commercial electrolyte products vary widely in composition:
 
 - **Sports drinks (e.g., Gatorade, Powerade):** Typically contain 20-30 mmol/L sodium (460-690 mg/L) with 3-8% carbohydrates. Designed for exercise >60 minutes. The carbohydrate serves dual purposes: provides energy and activates SGLT1 for enhanced sodium and water absorption [7].
-- **Low/zero-calorie electrolyte supplements:** Provide sodium and potassium without carbohydrates. Appropriate for general rehydration or low-intensity exercise where additional calories are unnecessary [6].
+- **Low/zero-calorie electrolyte supplements:** Provide sodium and potassium without carbohydrates.
 - **Oral rehydration solutions:** Higher sodium (75 mmol/L) and glucose content specifically formulated for clinical dehydration from illness [42].
-- **Electrolyte tablets/capsules:** Concentrated sodium and potassium for endurance athletes who need electrolytes without large fluid volumes [6].
-- **Coconut water:** Natural source providing approximately 600 mg potassium and 250 mg sodium per 500 mL. Provides more potassium than sodium, making it suboptimal as a sole rehydration source for heavy sweaters [51]. ConsumerLab's figures for pure coconut water are about 100 mg sodium and 800 mg potassium per 16 fl oz [6].
+- **Electrolyte tablets/capsules:** Concentrated sodium and potassium.
+- **Coconut water:** A natural source of carbohydrate and electrolytes. One trial report cites about 51 mEq/L potassium, 33 mEq/L sodium and 52 mEq/L chloride, though this may vary with the species of coconut palm. In that trial of 12 trained men, coconut water rehydrated about as well as a sports drink, but caused more bloating and stomach upset [51].
 
 ## 6. Safety and Side Effects
 
@@ -410,10 +419,9 @@ In individuals with normal kidney function, excess dietary phosphate from proces
 
 ### Electrolyte Products and Unnecessary Use
 
-A key safety consideration is that consuming electrolyte products when they are not needed is of particular concern to people with:
-- **Poor kidney function:** Inability to excrete excess sodium, potassium, and magnesium can lead to dangerous accumulation [6].
-- **High blood pressure:** Additional sodium from electrolyte products can worsen hypertension [6].
-- **Normal activity levels:** The sugars in some products contribute unnecessary calories if electrolyte replacement is not warranted [6].
+Taking electrolyte products you do not need carries most risk for people with:
+- **Poor kidney function:** The kidneys may not clear excess potassium and magnesium, which can build up to dangerous levels [12][14].
+- **High blood pressure:** Extra sodium can raise blood pressure, and the effect is larger when blood pressure is already high [30].
 
 ## 7. Drug Interactions
 
@@ -551,8 +559,6 @@ Phosphorus additives in processed foods (phosphoric acid in cola, sodium phospha
 
 [5] Kenefick RW, Cheuvront SN. "Hydration for recreational sport and physical activity." *Nutr Rev*. 2012;70(Suppl 2):S137-S142. doi: [10.1111/j.1753-4887.2012.00523.x](https://doi.org/10.1111/j.1753-4887.2012.00523.x)
 
-[6] ConsumerLab. "Electrolytes (Sports Rehydration) Review." Accessed 2026. [https://www.consumerlab.com/reviews/electrolytes-sports-rehydration/electrolytes/](https://www.consumerlab.com/reviews/electrolytes-sports-rehydration/electrolytes/)
-
 [7] Sawka MN, Burke LM, Eichner ER, et al. "American College of Sports Medicine position stand. Exercise and fluid replacement." *Med Sci Sports Exerc*. 2007;39(2):377-390. doi: [10.1249/mss.0b013e31802ca597](https://doi.org/10.1249/mss.0b013e31802ca597)
 
 [8] U.S. Department of Agriculture and U.S. Department of Health and Human Services. "Dietary Guidelines for Americans, 2020-2025." 9th Edition. December 2020. [https://www.dietaryguidelines.gov/](https://www.dietaryguidelines.gov/)
@@ -658,3 +664,7 @@ Phosphorus additives in processed foods (phosphoric acid in cola, sodium phospha
 [58] U.S. Department of Agriculture, FoodData Central. [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
 
 [59] Clausen T. Na+-K+ pump regulation and skeletal muscle contractility. Physiol Rev. 2003;83(4):1269-324. PMID: 14506306. https://pubmed.ncbi.nlm.nih.gov/14506306/
+
+[60] Almond CS, Shin AY, Fortescue EB, et al. "Hyponatremia among runners in the Boston Marathon." *N Engl J Med*. 2005;352(15):1550-1556. doi: [10.1056/NEJMoa043901](https://doi.org/10.1056/NEJMoa043901). PMID: 15829535.
+
+[61] Buck E, McAllister R, Schroeder JD. "Exercise-Associated Hyponatremia." In: *StatPearls*. Treasure Island (FL): StatPearls Publishing; 2023. PMID: 34283494. [https://www.ncbi.nlm.nih.gov/books/NBK572128/](https://www.ncbi.nlm.nih.gov/books/NBK572128/)
