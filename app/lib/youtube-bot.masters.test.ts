@@ -132,14 +132,27 @@ describe('safetySections (US-50 AC6)', () => {
 // The six masters published on 2026-10-20: every one adds its view plus its
 // "Safety and Side Effects" and "Drug Interactions" sections, within the caps.
 describe('masterViews on the published masters (US-50 AC6)', () => {
+  // Magnesium, creatine and vitamin C gained Key safety points in masters-cleanup-1
+  // (2026-10-22), so they now add those points instead (next test).
   const MASTERS = [
     'collagen-benefits-best-forms-dosing-and-side-effects',
     'vitamin-k-benefits-forms-dosing-and-side-effects',
-    'magnesium-benefits-best-forms-dosing',
     'taurine-benefits-forms-dosing-and-side-effects',
+  ];
+  const KEYED = [
+    'magnesium-benefits-best-forms-dosing',
     'creatine-benefits-best-forms-dosing-and-side-effects',
     'vitamin-c-benefits-forms-dosing-and-side-effects',
   ];
+  it.each(KEYED)('%s adds its view and key safety points, not its whole safety sections (US-50 AC12)', (handle) => {
+    const block = masterViews([handle], [])!;
+    expect(block).not.toBeNull();
+    const view = block.indexOf('### Current view (reviewed');
+    expect(view).toBeGreaterThan(-1);
+    expect(block.indexOf('### Key safety points')).toBeGreaterThan(view);
+    expect(block).not.toMatch(/^### \d+\. (?:Safety and Side Effects|Drug Interactions|References)/m);
+    expect(block).not.toContain("Brad's videos on this topic");
+  });
   it.each(MASTERS)('%s adds its view, then its interaction and safety sections', (handle) => {
     const block = masterViews([handle], [])!;
     expect(block).not.toBeNull();
