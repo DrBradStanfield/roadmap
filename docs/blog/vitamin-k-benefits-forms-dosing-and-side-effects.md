@@ -8,7 +8,7 @@ tags: ["Supplements"]
 keywords: ["vitamin k", "vitamin k2", "mk-7", "mk-4", "menaquinone", "phylloquinone", "bone density", "osteoporosis", "cardiovascular", "arterial calcification", "coronary artery calcium", "osteocalcin", "matrix gla protein", "warfarin", "blood clotting", "nocturnal leg cramps", "calcium", "vitamin d3", "bone health", "arterial stiffness", "fracture risk", "postmenopausal", "natto", "fermented foods"]
 summary: "Reference on vitamin K. Brad's view: high-dose K2 (360-720 mcg MK-7) slowed coronary calcium in trials, but no trial shows fewer heart attacks. Aim for the 90-120 mcg adequate intake; avoid megadoses. 180 mcg slowed bone density loss; fractures unproven. Warfarin: extreme caution."
 reviewed: "2026-10-20"
-sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/vitamin-k-supplements-review/vitamin-k/","checked":"2026-09-29","fingerprint":"sha256:4df6c8fd2890b327679d282691233b18cc9bcc17681967103e051b83c596f8cd"},{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/VitaminK-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:62847a21114ffa6ad152d50339277fc272edd28f3f8e6633ca4e702aed75719f"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/why-arent-cardiologists-prescribing-vitamin-k2","checked":"2026-10-20","fingerprint":"publishedAt:2026-09-03T20:14:01Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/does-vitamin-k2-actually-protect-your-heart-new-trial","checked":"2026-10-20","fingerprint":"publishedAt:2026-06-29T12:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-supplements-that-actually-work","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-05T20:31:48Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30T20:38:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/do-this-daily-to-stop-bone-loss-after-40","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-03T02:07:16Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/vitamin-k2-d3-together","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-25T20:42:35Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/vitamin-d3-k2-benefits-differences","checked":"2026-10-20","fingerprint":"publishedAt:2024-06-20T20:21:11Z"}]
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/VitaminK-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:62847a21114ffa6ad152d50339277fc272edd28f3f8e6633ca4e702aed75719f"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/why-arent-cardiologists-prescribing-vitamin-k2","checked":"2026-10-20","fingerprint":"publishedAt:2026-09-03T20:14:01Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/does-vitamin-k2-actually-protect-your-heart-new-trial","checked":"2026-10-20","fingerprint":"publishedAt:2026-06-29T12:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-supplements-that-actually-work","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-05T20:31:48Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30T20:38:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/do-this-daily-to-stop-bone-loss-after-40","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-03T02:07:16Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/vitamin-k2-d3-together","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-25T20:42:35Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/vitamin-d3-k2-benefits-differences","checked":"2026-10-20","fingerprint":"publishedAt:2024-06-20T20:21:11Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/vitamin-k-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/vitamin-k-benefits-forms-dosing-and-side-effects)*
@@ -16,6 +16,16 @@ sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/vitam
 ## Current view (reviewed 20 October 2026)
 
 Two trials found that high-dose vitamin K2 as MK-7 (360 to 720 mcg a day) slowed the build-up of calcium in the coronary arteries, but soft, non-calcified plaque did not differ from placebo, and nobody has shown whether these doses reduce heart attacks ([Brad, 3 Sep 2026](https://drstanfield.com/blogs/articles/why-arent-cardiologists-prescribing-vitamin-k2)). On current evidence, there is no compelling reason to take vitamin K2 for heart health ([Brad, 29 Jun 2026](https://drstanfield.com/blogs/articles/does-vitamin-k2-actually-protect-your-heart-new-trial)). As with other vitamins, the aim is the adequate intake of total vitamin K, 90 to 120 mcg a day; people who do not eat leafy greens, cheese, natto or eggs could consider a low-dose K2 supplement, but Brad advises against taking more than about 90 to 120 mcg ([Brad, 3 Sep 2026](https://drstanfield.com/blogs/articles/why-arent-cardiologists-prescribing-vitamin-k2)). At doses like the 720 mcg used in the Danish trials, he says K2 should be thought of as a drug, not a vitamin, and a drug has to show that it is safe and that it reduces heart attacks before anyone prescribes it ([Brad, 3 Sep 2026](https://drstanfield.com/blogs/articles/why-arent-cardiologists-prescribing-vitamin-k2)). Meeting vitamin K needs is a good idea for bone strength: 180 mcg a day for three years slowed bone density loss at the spine and the neck of the hip in postmenopausal women, but fewer fractures have not been shown ([Brad, 3 Sep 2026](https://drstanfield.com/blogs/articles/why-arent-cardiologists-prescribing-vitamin-k2)). People on warfarin should be extremely cautious with K2, because MK-7 changed the clotting test in at least 40 percent of volunteers at just 10 mcg a day and some specialists advise avoiding it; apixaban, rivaroxaban and dabigatran are not affected ([Brad, 3 Sep 2026](https://drstanfield.com/blogs/articles/why-arent-cardiologists-prescribing-vitamin-k2)).
+
+## Key safety points
+
+- If you take warfarin or another vitamin K antagonist, keep your vitamin K intake from food and supplements steady [1], and do not start, stop or change a vitamin K supplement without your anticoagulation clinic [38].
+- Vitamin K intake is not expected to change the effect of newer blood thinners such as apixaban, rivaroxaban and dabigatran [45][46][55].
+- Orlistat taken with warfarin might cause a significant increase in prothrombin time, and orlistat, bile acid sequestrants and long courses of antibiotics can lower vitamin K status [1][50].
+- MK-7 is often made from natto, a fermented soybean food, so people with a soy allergy should check the source on the label [1][6].
+- Vitamin K3 (menadione) damaged liver cells in laboratory studies and is no longer used in supplements [1].
+- There is no upper limit for vitamin K and no reported harm from food or supplements, but Brad advises against taking more than about 90 to 120 mcg [1][55].
+- In trials, K1 and MK-7 supplements caused no more side effects than placebo; drug-level doses of MK-4 may cause stomach discomfort and diarrhea [20][31][57].
 
 ## Brad's videos on this topic
 
@@ -33,10 +43,10 @@ Vitamin K is the generic name for a family of fat-soluble compounds with a commo
 
 The designation "K" comes from the German word "Koagulation," because Danish biochemist Henrik Dam discovered it in the 1920s as an anti-hemorrhagic factor essential for blood clotting [2]. In 1943, Dam and American biochemist Edward Doisy shared the Nobel Prize in Physiology or Medicine for discovering vitamin K and elucidating its chemical structure [2].
 
-The vitamin K family includes two naturally occurring forms [1][3]:
+The vitamin K family includes two naturally occurring forms [1]:
 
-- **Vitamin K1 (phylloquinone):** The primary plant form, found at high levels in green leafy vegetables and at lower levels in vegetable oils. Phytonadione is a man-made form of K1 [3][1].
-- **Vitamin K2 (menaquinones):** A group of compounds, mostly of bacterial origin, designated MK-4 through MK-13 based on the length of their side chains. MK-4, MK-7, and MK-9 are the most well-studied. Menaquinones are present in modest amounts in various animal-based and fermented foods. Gut bacteria also produce menaquinones, though it is unclear how much this contributes to the body's vitamin K [1][3].
+- **Vitamin K1 (phylloquinone):** The main plant form, present mostly in green leafy vegetables and also in vegetable oils and some fruits. Phytonadione is a man-made form of K1 [1].
+- **Vitamin K2 (menaquinones):** A group of compounds, mostly of bacterial origin, designated MK-4 through MK-13 based on the length of their side chains. MK-4, MK-7, and MK-9 are the most well-studied. Menaquinones are present in modest amounts in various animal-based and fermented foods. Gut bacteria also produce menaquinones, though it is unclear how much this contributes to the body's vitamin K [1].
 
 A third form, menadione, sometimes called vitamin K3, is synthetic. It was shown to damage liver cells in laboratory studies conducted during the 1980s and 1990s, so it is no longer used in dietary supplements or fortified foods [1].
 
@@ -48,15 +58,15 @@ Key vitamin K-dependent proteins include:
 
 - **Coagulation factors:** Vitamin K is a cofactor in the production of blood coagulation factors in the liver [6]. Prothrombin (clotting factor II) is a vitamin K-dependent protein in plasma that is directly involved in blood clotting [1].
 - **Osteocalcin:** A vitamin K-dependent protein present in bone that may be involved in bone mineralization or turnover [1]. In humans, the percentage of circulating osteocalcin that is not carboxylated (percent ucOC) is used as a biomarker of vitamin K status [7].
-- **Matrix Gla protein (MGP):** Present in vascular smooth muscle, bone, and cartilage. MGP is the focus of considerable research because it might help reduce abnormal calcification [1][8]. A blood marker of low vitamin K levels, dp-ucMGP, is measured in some studies [3].
+- **Matrix Gla protein (MGP):** Present in vascular smooth muscle, bone, and cartilage. MGP is the focus of considerable research because it might help reduce abnormal calcification [1][8]. Some studies measure dp-ucMGP, the uncarboxylated form of MGP in blood, which rises when vitamin K status is low [28][35].
 
 ### Absorption, Transport, and Metabolism
 
-Like other fat-soluble vitamins, ingested vitamin K is incorporated into mixed micelles via the action of bile and pancreatic enzymes, and it is absorbed by enterocytes of the small intestine [1][9]. Because vitamin K is fat soluble, more of it is absorbed when it is taken with a meal that has fats or oils [3].
+Like other fat-soluble vitamins, ingested vitamin K is incorporated into mixed micelles via the action of bile and pancreatic enzymes, and it is absorbed by enterocytes of the small intestine [1][9]. Because vitamin K is fat soluble, eating vegetables with some fat improves absorption of their vitamin K [1].
 
 Vitamin K is then incorporated into chylomicrons, secreted into the lymphatic capillaries, transported to the liver, and repackaged into very low-density lipoproteins [1][9]. It is present in the liver and other body tissues, including the brain, heart, pancreas, and bone [1][10].
 
-MK-7 has a longer half-life than K1 and MK-4, which gives more stable serum levels and 7- to 8-fold higher accumulation during prolonged intake [3][6]. MK-4 is absorbed as well as MK-7 but has a shorter half-life [3].
+MK-7 has a much longer half-life than K1, which gives more stable serum levels and 7- to 8-fold higher accumulation during prolonged intake [6]. At nutritional doses, MK-4 was not detectable in the blood of healthy women after a single dose or a week of daily doses, while MK-7 was well absorbed and raised blood levels [56].
 
 The body converts phylloquinone to MK-4 through a process that does not involve bacterial action [1].
 
@@ -80,21 +90,19 @@ The absorption rate of phylloquinone in its free form is about 80%, but its abso
 
 ### Vitamin K2 as MK-7 (Menaquinone-7)
 
-MK-7 is typically obtained from natto, a Japanese food made from fermented soybeans that has high amounts of menaquinones [3][1]. In supplements, natto-derived MK-7 is sometimes called "natural MK-7." Newer synthetic forms made from flower extracts such as geraniol or farnesol also have a long half-life, but it is not clear whether they have the same bioactivity as MK-7 from natto [3].
+Natto, a Japanese food made from fermented soybeans, has high amounts of menaquinones [1], and the MK-7 in supplements is often derived from natto [6].
 
-Because MK-7 stays in the body longer, a study by Schurgers et al. (2007) suggested that if taken on a daily basis, 25 mcg of MK-7 might be more potent than 100 mcg of K1 [3].
+In a study by Schurgers et al. (2007), MK-7 stayed in the blood much longer than K1 and induced more complete carboxylation of osteocalcin [6].
 
 According to the NIH fact sheet, limited research suggests that long-chain menaquinones may have higher absorption rates than phylloquinone from green vegetables [1].
-
-Most MK-7 forms of vitamin K are derived from soy. MenaQ7 is derived from chickpeas, and its manufacturer claims it is soy free. A similar-sounding ingredient, MenaQ7 Natto MK-7, is derived from soy, so label reading is important [3].
 
 Dr Brad Stanfield's MicroVitamin includes 90 mcg of vitamin K2 as MK-7 — the long-acting form with superior bioavailability for bone and cardiovascular support ([shop MicroVitamin](https://drstanfield.com/products/microvitamin)). This dose works synergistically with the included Vitamin D3 (1,000 IU) and Boron (1 mg) to support calcium metabolism and bone density.
 
 ### Vitamin K2 as MK-4 (Menaquinone-4)
 
-MK-4 is produced in certain animal tissues and occurs in small amounts in meats and egg yolk. The MK-4 in supplements is typically produced synthetically [3]. MK-4 is unique in that the body makes it from phylloquinone through a conversion process that does not involve bacterial action [1]. Laboratory work has identified UBIAD1 as a human MK-4 biosynthetic enzyme [13].
+MK-4 occurs in small amounts in meat and eggs [1]. Menatetrenone, the MK-4 used as an osteoporosis drug in Japan, is synthetic [57]. MK-4 is unique in that the body makes it from phylloquinone through a conversion process that does not involve bacterial action [1]. Laboratory work has identified UBIAD1 as a human MK-4 biosynthetic enzyme [13].
 
-MK-4 is absorbed as well as MK-7 but has a shorter half-life [3]. At pharmacological doses it is used to treat osteoporosis in parts of Asia (see Bone Health).
+At nutritional doses, MK-4 taken by mouth did not raise blood MK-4 levels in one study [56]. At pharmacological doses it is used to treat osteoporosis in parts of Asia (see Bone Health).
 
 ### Other Menaquinone Forms
 
@@ -104,14 +112,14 @@ Almost all menaquinones, in particular the long-chain forms, are produced by bac
 
 | Property | K1 (Phylloquinone) | K2 as MK-4 | K2 as MK-7 |
 |----------|-------------------|-------------|-------------|
-| Half-life | Shorter than MK-7 | Shorter than MK-7 | Longer; 7- to 8-fold higher serum accumulation during prolonged intake |
-| Absorption | Free form about 80%; much lower from foods | Absorbed as well as MK-7 | Well absorbed as a supplement |
+| Half-life | Shorter than MK-7 | No data | Longer; 7- to 8-fold higher serum accumulation during prolonged intake |
+| Absorption | Free form about 80%; much lower from foods | Not detectable in blood at nutritional doses in one study [56] | Well absorbed as a supplement |
 
-A longer half-life does not always mean greater clinical activity [3]. MK-4 at an extremely high dose (45,000 mcg daily) has shown some benefit in helping to prevent bone loss in small studies in Asia, while effects of MK-7 seem less promising for that use [3].
+In small trials in postmenopausal women with osteoporosis, mostly in Japan, a drug dose of MK-4 (45,000 mcg a day) modestly raised spine density and lowered fracture rates [57]; MK-7 trials have given mixed results [24][61][62].
 
 ### Fat-Soluble Vitamin Interactions
 
-A laboratory experiment using intestinal cells found that uptake of vitamin K was reduced by approximately half by vitamins A, D, and E, likely due to competition for absorption among fat-soluble vitamins [3]. In that experiment, vitamins D, E, and K competed with each other for uptake, and vitamin A also lowered uptake of the others [15]. Vitamin K did not significantly reduce uptake of the other fat-soluble vitamins [3]. There do not appear to be studies showing reduced vitamin K absorption in people due to vitamin D, but it may be best to take vitamin K at least 3 hours apart from vitamin D and not from formulas that include vitamin D [3]. Combined formulas are rarely tested in people for ingredient absorption [3]. Large doses of vitamin E may antagonize vitamin K and reduce its effectiveness [3].
+A laboratory study in intestinal cells found that vitamins D, E, and K competed with each other for uptake, and vitamin A also lowered uptake of the others [15]. Vitamin E may interfere with vitamin K activity, especially blood clotting, and vitamin E supplements cause bleeding in some people for reasons that are not understood [58].
 
 ## 3. Evidence for Benefits
 
@@ -119,39 +127,39 @@ A laboratory experiment using intestinal cells found that uptake of vitamin K wa
 
 #### Overview of the Vitamin K–Bone Connection
 
-Low vitamin K consumption or impaired vitamin K status is associated with lower bone mass and higher risk of hip fracture in older individuals [3][16][17]. Vitamin K is required for the carboxylation of osteocalcin, one of the main proteins in bone, so deficiency could reduce bone mineralization [1]. According to the NIH fact sheet, some research indicates that high serum levels of undercarboxylated osteocalcin are associated with lower bone mineral density (BMD) [1]. However, it is not well established that supplementing with vitamin K strengthens bones or reduces the risk of fractures, and results have been mixed [3].
+In observational studies, postmenopausal women with low bone density had lower blood vitamin K levels [16], and people with low vitamin K intake had more hip fractures [17][73]. Vitamin K is required for the carboxylation of osteocalcin, one of the main proteins in bone, so deficiency could reduce bone mineralization [1]. According to the NIH fact sheet, some research indicates that high serum levels of undercarboxylated osteocalcin are associated with lower bone mineral density (BMD) [1]. However, it is unclear whether supplementing with any form of vitamin K reduces the risk of osteoporosis, and trial results have been mixed [1].
 
 A systematic review and meta-analysis by Cockayne et al. included 13 randomized controlled trials. Most were conducted in Japan in postmenopausal women, and trial duration ranged from 6 to 36 months. Twelve of the 13 trials found that supplementation with either phytonadione (K1) or MK-4 improved bone mineral density. Seven trials had fracture data for meta-analysis, and all of them used MK-4 at either 15 mg/day (1 trial) or 45 mg/day (6 trials) [1]. MK-4 supplementation significantly reduced rates of hip fractures, vertebral fractures, and all nonvertebral fractures [1][18].
 
-However, later trials have produced more mixed results, particularly when participants also received calcium and vitamin D [1][3].
+However, later trials have produced more mixed results, particularly when participants also received calcium and vitamin D [1].
 
 #### Vitamin K1 Bone Trials
 
-**Braam et al. (2003):** A study of 162 healthy postmenopausal women in the Netherlands found that very high-dose vitamin K1 (1,000 mcg) plus calcium, vitamin D (320 IU), and magnesium for three years resulted in less bone loss than the same supplements without K1 or placebo [3].
+**Braam et al. (2003):** In a placebo-controlled trial of 181 healthy postmenopausal women aged 50 to 60 years, adding daily vitamin K1 (1,000 mcg) to calcium, magnesium, zinc and vitamin D (320 IU) for three years reduced bone loss at the femoral neck compared with placebo or the same minerals and vitamin D alone; the lumbar spine showed no difference [59].
 
-**Booth et al. (2008):** A subsequent, large, 3-year study using a lower daily dose of K1 (500 mcg) plus calcium (600 mg) and vitamin D (400 IU) did not show benefit for bone loss compared with the same calcium and vitamin D without vitamin K [3].
+**Booth et al. (2008):** In 452 men and women aged 60 to 80 who took daily vitamin D (400 IU) and calcium (600 mg), a multivitamin with 500 mcg of K1 for three years made no difference to bone density at the hip, spine or whole body compared with the same multivitamin without K1 [60].
 
 **Binkley et al.:** In one trial, 381 postmenopausal women received either 1 mg K1, 45 mg MK-4, or placebo daily for 12 months, all with calcium and vitamin D supplements [1]. Both vitamin K groups had significantly lower undercarboxylated osteocalcin, but there were no significant differences in BMD at the lumbar spine or proximal femur among any groups [1][19].
 
-**Cheung et al. (2008):** A study of 440 postmenopausal women in Canada (average age 59) found that extremely high-dose K1 (5,000 mcg daily) for two to four years did not prevent bone loss compared with placebo, but it did reduce the incidence of vertebral fractures, a secondary focus of the study. Only nine women in the vitamin K group had a fracture, compared with 20 in the placebo group [3]. No adverse events were reported [3][20].
+**Cheung et al. (2008):** In a trial of 440 postmenopausal women with osteopenia, 5,000 mcg of K1 a day did not change bone density compared with placebo over two to four years [20]. Fewer women taking K1 had clinical fractures (nine versus 20), but fractures were a secondary outcome the trial was not powered to examine [20]. Vitamin K was well tolerated, with no significant differences in adverse effects [20].
 
-**Crohn's disease:** Vitamin K deficiency can occur in people with Crohn's disease, which can cause malabsorption, and low vitamin K levels have been associated with low BMD in this population. However, a study giving vitamin K1 to people with Crohn's, low bone mass, and vitamin K deficiency found no improvement in bone mass [3][21].
+**Crohn's disease:** Vitamin K deficiency is common in inflammatory bowel disease, more so in Crohn's disease than in ulcerative colitis, but its link with bone disease is controversial [21].
 
 #### Vitamin K2 (MK-4) Bone Trials
 
-Several small clinical trials in Japan, Indonesia, and China found that very high-dose MK-4 (45,000 mcg) taken for one to three years improved bone mineral density and reduced fracture risk in postmenopausal women with osteoporosis, without toxic effects. One of these studies showed that 45,000 mcg of MK-4 was the minimum dose required for this effect, with a lower dose of 15,000 mcg not showing a benefit [3][22].
+Eight randomized trials, six in Japan and one each in Indonesia and China, gave postmenopausal women with osteoporosis 45,000 mcg of MK-4 a day for one to three years. In these mostly small trials, MK-4 alone modestly raised spine bone density and lowered fracture rates, mainly of the spine, and no toxic effects of this dose have been reported [57]. A Japanese dose-finding study compared daily doses of 15, 45, 90, and 135 mg and found 45 mg the lowest dose that improved bone measures [22][57].
 
 In Japan and other parts of Asia, a pharmacological dose of MK-4 (45 mg) is used as a treatment for osteoporosis [1]. The European Food Safety Authority has approved a health claim stating that "a cause and effect relationship has been established between the dietary intake of vitamin K and the maintenance of normal bone" [1][23]. The U.S. FDA has not authorized a health claim for vitamin K [1].
 
 #### Vitamin K2 (MK-7) Bone Trials
 
-**Knapen et al. (2013):** A three-year, placebo-controlled study of MK-7 (180 mcg per day) in healthy postmenopausal women in the Netherlands found that it decreased the age-related decline in bone mineral content and density at the lumbar spine and femoral neck, but not the total hip [3].
+**Knapen et al. (2013):** Healthy postmenopausal women who took 180 mcg of MK-7 a day for three years kept more bone at the lumbar spine and femoral neck, by both mineral content and density, than those taking placebo; the total hip showed no difference [24].
 
-The trial enrolled 244 healthy postmenopausal women, who took placebo or MK-7 for 3 years [24]. Bone strength was also favorably affected [24]. Improvements were statistically significant after 3 years, but not earlier, and calcium and vitamin D supplements were not given as part of this study [3].
+The trial enrolled 244 healthy postmenopausal women, who took placebo or MK-7 for 3 years [24]. Bone strength was also favorably affected [24].
 
-**Ronn et al. (2020):** A study in Denmark of 142 postmenopausal women with osteopenia found that 375 mcg/day of MK-7 plus vitamin D3 (1,520 IU) and calcium (800 mg) for 3 years did not slow the decrease in BMD at the hip, femoral neck, or lumbar spine compared with vitamin D3 and calcium alone. Markers of bone turnover and bone microarchitecture were also similar between groups after 3 years [3].
+**Ronn et al. (2020):** In 142 postmenopausal women with osteopenia, all taking vitamin D3 (1,520 IU) and calcium (800 mg) a day, adding 375 mcg of MK-7 for three years made no difference to bone density, which fell at every site in both groups [61]. Bone turnover markers and bone microarchitecture also changed alike with MK-7 and placebo [61].
 
-**Zhang et al. (2020):** A study of 311 older men and women in China using MK-7 at 90 mcg/day found no bone density benefit for men, nor for men and women combined. Among women, there was no benefit at the lumbar spine or hip, but loss of density at the femoral neck was slightly less than in the placebo group. The study found no additional benefit from adding vitamin D (400 IU) and calcium (500 mg) to vitamin K, nor benefit from a lower daily dose (50 mcg). A weakness was that the study was only single-blind [3].
+**Zhang et al. (2020):** A one-year trial in China randomized 311 men and postmenopausal women aged 50 to 75 years to placebo, MK-7 at 50 mcg/day or 90 mcg/day, or 90 mcg/day with calcium (500 mg) and vitamin D (400 IU). Loss of density at the femoral neck was smaller in postmenopausal women given 90 mcg/day than with placebo, but there was no effect in men, and adding vitamin D and calcium brought no extra benefit [62].
 
 #### Summary of Bone Evidence
 
@@ -163,7 +171,7 @@ Giving vitamin D and/or calcium along with vitamin K could partly explain why so
 
 #### Observational Evidence
 
-Low serum vitamin K levels have been associated with atherosclerosis. Higher intake of vitamin K2 from the diet (mainly from cheese) is associated with reduced risk of coronary calcification and of death from coronary heart disease [3].
+In Dutch observational studies, people who ate more vitamin K2 had less coronary calcification and were less likely to die of coronary heart disease [25][26].
 
 In the Rotterdam Study, a prospective cohort of 4,807 men and women age 55 years and older from the Netherlands, menaquinone intake was inversely associated with severe aortic calcification [1].
 
@@ -175,69 +183,69 @@ Vascular calcification is one of the risk factors for coronary heart disease bec
 
 #### MK-7 Cardiovascular Trials
 
-ConsumerLab notes that many studies indicate MK-7 does not reduce coronary artery calcification, but it may modestly slow the progression of existing coronary artery calcification in some people [3]:
+The MK-7 trials below differ in who took part, the dose and what they measured. Two of them, and a subgroup of a third, found that coronary calcium scores rose more slowly with MK-7 (given with vitamin D in [69][70]) in people who already had coronary calcification [64][69][70]:
 
-**Knapen et al. (2015):** A double-blind study found that 180 mcg of MK-7 (MenaQ7, NattoPharma ASA) taken daily for three years reduced arterial stiffness in healthy postmenopausal women, especially in those with high arterial stiffness [3]. However, there was no effect on endothelial dysfunction, which is closely associated with cardiovascular events such as heart attack [3][28].
+**Knapen et al. (2015):** In a double-blind trial of 244 healthy postmenopausal women, 180 mcg of MK-7 (MenaQ7) a day for three years lowered arterial stiffness compared with placebo, and the effect was larger in women whose arteries were stiffest at the start [28]. MK-7 lowered dp-ucMGP by 50% but did not change blood markers of inflammation or endothelial dysfunction [28].
 
-**de Vries et al. (2025):** The same dose of MK-7 did not show much benefit in a one-year study of 87 postmenopausal women (average age 64). Although vascular stiffness did not worsen as much with MK-7 as with placebo based on one measure (Young's modulus), there were no improvements in vascular stiffness index, pulse wave velocity, blood pressure, carotid artery wall thickness, or carotid artery diameter. A separate group of 78 pre- and perimenopausal women (average age 57) also showed no significant improvements in any of these measures [3].
+**de Vries et al. (2025):** In 165 women with low vitamin K status who took MK-7 at that dose or placebo for one year, MK-7 attenuated vascular stiffness in the 87 post-menopausal women, measured as Young's modulus (adjusted p = 0.035) [63]. This was a post hoc analysis, and Young's modulus was the only stiffness measure that differed: the other vascular measures, and all vascular measures in the 78 pre- or peri-menopausal women, did not differ significantly from placebo [63]. The supplement maker Gnosis by Lesaffre funded the study, and three of the authors were employed by Lesaffre [63].
 
-**Vossen et al. (2026):** A double-blind study in the Netherlands of 150 adults (average age 60) with symptomatic coronary artery disease and moderate calcification (CAC scores of 50 to 400 AU) found that 360 mcg of MK-7 once daily for two years modestly slowed coronary artery calcification progression versus placebo (CAC scores rose 36% vs 48%). There was no difference in the proportion of fast progressors or in stenosis severity, and the study did not assess cardiovascular events [3]. The number of soft, non-calcified plaques did not differ significantly between the groups [55].
+**Vossen et al. (2026):** In a Dutch placebo-controlled trial, 180 people with coronary artery disease symptoms and calcium scores between 50 and 400 AU took 360 mcg of MK-7 or placebo daily for two years; calcium scores rose less with MK-7, and there were no significant adverse effects [64]. The number of soft, non-calcified plaques did not differ significantly between the groups [55].
 
-**Bartstra et al. (2021):** A post-hoc analysis of a shorter (6 month) study among people with type 2 diabetes and a history of cardiovascular disease found that 360 mcg of MK-7 daily did not slow the progression of arterial calcification compared with placebo [3].
+**Bartstra et al. (2021):** In a pre-specified post hoc analysis of a six-month trial in 68 people with type 2 diabetes and cardiovascular disease, a daily dose of 360 mcg of vitamin K2 neither reduced the progression of arterial calcification nor slowed bone density loss compared with placebo [65].
 
-**Witham et al. (2020):** A double-blind randomized study of 159 people with stage 3 or 4 chronic kidney disease (average age 66) found that 400 mcg of MK-7 once daily for 12 months did not reduce vascular stiffness or calcification, or improve blood pressure, compared with placebo [3].
+**Witham et al. (2020):** In a double-blind trial in 159 adults with stage 3b or 4 chronic kidney disease, mean age 66, a year of 400 mcg of vitamin K2 a day did not improve pulse wave velocity, a measure of arterial stiffness, or blood pressure compared with placebo; an updated meta-analysis in the same paper found no effect of vitamin K on vascular stiffness or calcification [66].
 
-**Kurnatowska et al. (2015):** A study of 40 people (average age 58) with chronic kidney disease (stage 3-5) showed that 90 mcg of MK-7 plus 400 IU of vitamin D daily for about 9 months lessened the increase in carotid artery intima-media thickness by about 7.9% compared with 400 IU of vitamin D alone, but there was no significant difference in progression of coronary artery calcification [3].
+**Kurnatowska et al. (2015):** In 42 people with stage 3 to 5 chronic kidney disease not on dialysis, carotid intima-media thickness (thickening of the artery wall) rose less over about 270 days with 90 mcg of MK-7 a day added to 400 IU of vitamin D daily than with the vitamin D alone, but coronary calcification did not differ significantly between the groups [67].
 
-**Diederichsen et al. (2022):** Despite improving vitamin K status to near normal ranges, daily supplementation with 720 mcg of MK-7 plus 1,000 IU of vitamin D for two years did not slow the progression of aortic valve calcification or stenosis in a study in Denmark of people with mild aortic valve calcification and stenosis [3]. The trial enrolled 365 men, average age 71 [29]. Supplementation also did not reduce the rate of heart valve replacement, cardiovascular events, or all-cause mortality [3][29]. Most participants were also taking statin and/or ACE inhibitor or beta-blocker drugs [3].
+**Diederichsen et al. (2022):** In 365 men (mean age 71) with aortic valve calcification, 720 mcg of MK-7 plus 1,000 IU of vitamin D a day for two years lowered dp-ucMGP but did not slow the build-up of valve calcium or the narrowing of the valve compared with placebo [29]. Rates of valve surgery, cardiovascular events and death from any cause were similar in both groups [29].
 
-**Hasific et al. (2025):** Further analysis of the same trial found that MK-7 plus vitamin D for two years did not reduce inflammation of epicardial or pericoronary adipose tissue, nor did it significantly reduce blood markers of general inflammation [3].
+**Hasific et al. (2025):** A substudy of the same trial found that two years of MK-7 plus vitamin D, despite lowering dp-ucMGP, had no effect on inflammation in the fat around the heart and coronary arteries or on blood markers of inflammation [68].
 
-**Hasific et al. (2023), subgroup analysis:** Another analysis of the same trial suggested a benefit among people who started with the highest levels of coronary artery calcification. In this group, MK-7 plus vitamin D reduced the progression of calcification compared with placebo, and fewer people had adverse cardiovascular events (myocardial infarction, coronary revascularization, all-cause mortality): 1.9% vs. 6.7% with placebo [3]. The trial authors called this a safety endpoint the study was not powered for, so it may be a chance finding [55].
+**Hasific et al. (2023), subgroup analysis:** Another analysis of the same trial, in 304 men without known ischemic heart disease, found no significant reduction in coronary calcium progression overall, but slower progression in those who started with CAC scores ≥400 AU [69]. Across the whole group, fewer people given supplements had a safety event, counted as a heart attack, a coronary revascularization or a death from any cause: 1.9% vs. 6.7% with placebo [69]. The trial authors called this a safety endpoint the study was not powered for, so it may be a chance finding [55].
 
-**Hasific et al. (2026):** In 356 adults (average age 71) with severe coronary calcification (CAC score 400 AU or higher), 720 mcg of MK-7 plus 1,000 IU of vitamin D for two years slightly slowed calcification progression versus placebo (CAC scores rose 22% vs 27%) [3]. The volume of non-calcified plaque did not differ significantly between the groups [3][55].
+**Hasific et al. (2026):** In 398 adults (median age 71) whose coronary calcium score was at least 400 AU, the score rose by a mean of 196 AU in two years with daily MK-7 (720 mcg) and vitamin D (1,000 IU), against 248 AU with placebo [70]. The volume of non-calcified plaque did not differ significantly between the groups [55][70].
 
 #### Vitamin K1 Cardiovascular Trials
 
-**Shea et al. (2009):** A study in Boston showed that people with pre-existing coronary artery calcification who took a multivitamin including vitamin K1 along with a calcium and vitamin D supplement for three years had 6% less progression of calcification than those who received the same calcium and vitamin D supplement plus a multivitamin without K1. However, among people without pre-existing calcification, an equal percentage developed calcification whether or not they received K1 [3]. Across all participants, there was no significant difference in coronary artery calcification between the groups [1][30].
+**Shea et al. (2009):** In a three-year trial in 388 healthy older men and women, calcification progressed 6% less in those with existing coronary calcification who took a multivitamin with 500 mcg of K1 a day than in those given the multivitamin alone [1][30]. Across all participants, there was no significant difference in coronary artery calcification between the groups [1][30].
 
-**Bellinge et al. (2021):** A study in Australia gave vitamin K1 to men and women (average age 66) with type 1 or type 2 diabetes and moderate coronary artery calcification, half of whom also took the anti-inflammatory drug colchicine. Taking 10 mg of K1 once daily for three months decreased the risk of developing new calcified lesions in the coronary arteries and aorta by 65% and 73%, respectively, compared with placebo. These decreases were similar for those taking or not taking colchicine [3].
+**Bellinge et al. (2021):** A post hoc analysis of a double-blind trial in Western Australia gave people with diabetes and existing coronary calcification 10 mg of K1 or placebo daily for three months. K1 lowered the odds of new calcifying lesions on PET scans in the coronary arteries (OR 0.35, 95% CI 0.16 to 0.78) and the aorta (OR 0.27, 95% CI 0.08 to 0.94) compared with placebo [71].
 
 #### Summary of Cardiovascular Evidence
 
-Higher dietary K2 intake has been associated with less coronary calcification and lower coronary heart disease mortality in observational studies [3][1]. These benefits have generally not been proven with vitamin K supplements, although there is limited evidence of benefit among people with existing, or extensive, coronary artery calcification [3]. That evidence is a slower rise in calcium score, not fewer heart attacks: no trial has shown that slowing coronary calcium reduces cardiovascular events, and soft plaque, the kind that can rupture, did not differ from placebo in the two dedicated trials [55]. In people without existing calcification, K1 supplementation did not prevent it from developing in one trial [3].
+In observational studies, diets richer in K2 were associated with less coronary calcification and fewer deaths from coronary heart disease [1]. Most supplement trials found no overall effect on calcification or arterial stiffness [29][30][65][66][69]. The positive results came from narrower groups: calcium scores rose more slowly with MK-7 (given with vitamin D in [69][70]) in people with symptoms of coronary artery disease and in people whose scores were already high, and with K1 in people who already had some calcification [30][64][69][70]. That evidence is a slower rise in calcium score, not fewer heart attacks: no trial has shown that slowing coronary calcium reduces cardiovascular events, and soft plaque, the kind that can rupture, did not differ from placebo in the two dedicated trials [55].
 
 ### Nocturnal Leg Cramps
 
-A placebo-controlled trial by Tan et al. (2024) studied 199 older adults in China who took 180 mcg of MK-7 every night for eight weeks. Compared with placebo, those given MK-7 had fewer nocturnal leg cramps: down to about 1 per week from 2.6 per week at baseline, with reductions in cramp severity and duration (down to under 10 seconds from over 1 minute at baseline). Reductions were apparent within one week, with further improvements over the first four weeks that continued for the rest of the study [3]. No adverse events related to vitamin K2 were identified [3][31].
+In a placebo-controlled trial by Tan et al. (2024), 199 people in China aged 65 and older who had night cramps took 180 mcg of MK-7 or placebo daily for eight weeks [31]. With MK-7, cramps fell from a mean of 2.60 to 0.96 a week, while the placebo group averaged 3.63 a week, and cramps were also less severe and shorter [31]. The trial found no adverse events related to vitamin K2 [31].
 
-Vitamin K may relieve muscle cramps by affecting calcium channels in cells and reducing muscular contractions [3]; one study showed this effect in animal tissue [32].
+How vitamin K might ease cramps is unclear; in one laboratory study, vitamin K3 relaxed mouse uterine muscle by acting on calcium and potassium channels [32].
 
 ### Cancer
 
-Observational evidence on vitamin K and cancer risk is mixed and does not establish cause and effect [3]:
+Observational evidence on vitamin K and cancer risk is mixed and does not establish cause and effect [33][34]:
 
-**Nimptsch et al. (2010):** A multi-year population study in Germany found that people who consumed larger amounts of foods known to contain vitamin K2 (such as cheese) had a statistically lower risk of dying from cancer [3]. Men (but not women) also had a significant decrease in cancer incidence, particularly prostate and lung cancers [3][33].
+**Nimptsch et al. (2010):** In the EPIC-Heidelberg cohort in Germany, people who ate the most vitamin K2 (menaquinones), mostly from cheese, were less likely to die of cancer [33]. The link with lower cancer incidence was stronger in men than in women, mainly for prostate and lung cancers [33].
 
-**Wang et al. (2020):** A larger population study in the U.S. among 51,662 women followed for a median of 13.6 years found that higher dietary intake of K2 (from butter and cheeses) was associated with a 26% higher risk of breast cancer and a 71% increased risk of death from breast cancer [3]. The study's authors said the findings would need to be replicated in other studies [34].
+**Wang et al. (2020):** A larger U.S. cohort study found that higher dietary intake of K2 was associated with a higher risk of breast cancer (HR 1.26, 95% CI 1.05 to 1.52) and of death from breast cancer (HR 1.71, 95% CI 0.97 to 3.01) [34]. The study's authors said the findings would need to be replicated in other studies [34].
 
-In both studies, no such associations were found for foods containing K1. These studies show only associations and do not establish cause-and-effect relationships [3].
+Neither study found a link with phylloquinone (K1) intake. Observational studies like these cannot show cause and effect [33][34].
 
 ### COVID-19
 
-A blood marker of low vitamin K levels (dp-ucMGP) has been associated with COVID-19 infection and unfavorable outcomes [3]:
+High blood levels of dp-ucMGP, which point to low vitamin K status, have been linked with COVID-19 and with poor outcomes in people in hospital [35][72]:
 
-**Dofferhoff et al. (2020):** Patients with COVID-19 had significantly higher dp-ucMGP levels (indicating low vitamin K) than a control group without COVID-19, and levels were significantly higher in patients with unfavorable outcomes (ventilation and/or death) than in those discharged without ventilation. This was true even after factoring for age, gender, or use of medications that may lower vitamin K levels. Reduced vitamin K status was also associated with accelerated breakdown of elastin [3].
+**Dofferhoff et al. (2020):** Patients in hospital with COVID-19 had higher dp-ucMGP levels (indicating low vitamin K) than historic controls, and levels were higher still in patients with poor outcomes [72]. Higher dp-ucMGP was also linked with faster breakdown of elastic fibers [72].
 
-**Linneberg et al. (2020, preprint):** In a Danish study, average dp-ucMGP levels were significantly higher among people admitted to hospital with COVID-19 (1,022 pmol/L) than in controls (509 pmol/L). Those who died had levels of 1,445 pmol/L versus 877 pmol/L in those who survived. Every doubling of dp-ucMGP increased the risk of death by 50% [3]. In the published version of the study, this link weakened and was no longer statistically significant after adjustment for other health conditions [35].
+**Linneberg et al. (2020, preprint):** In a cohort of 138 patients in hospital with COVID-19 and 138 population controls, average dp-ucMGP levels were higher in patients (1,022 pmol/L) than in controls (509 pmol/L) [35]. Those who died had levels of 1,445 pmol/L versus 877 pmol/L in those who survived [35]. After adjustment for sex and age, each doubling of dp-ucMGP was linked with a higher risk of death (HR 1.49, 95% CI 1.03 to 2.24), but in the published version this link weakened and was no longer statistically significant after adjustment for other health conditions [35].
 
-Proposed mechanisms include greater use of vitamin K during severe illness, which may deplete it, and a possible increase in the risk of abnormal blood clotting, venous thromboembolism, and elastin breakdown, which occurs with lung damage [3]. However, there is currently no direct evidence that vitamin K supplementation can prevent or treat COVID-19. Other conditions common in COVID-19 patients with poor outcomes (such as type 2 diabetes and high blood pressure) are also associated with reduced vitamin K levels [3].
+The authors of the first study suggested that pneumonia may deplete vitamin K outside the liver, speeding elastic fiber damage and blood clots [72]. The authors of the second study said randomized trials would be needed to show whether vitamin K plays any role in the course of COVID-19 [35].
 
 ### Blood Clotting
 
-Vitamin K1 is known to be effective in preventing and treating poor blood clotting (hypoprothrombinemia) caused by vitamin K deficiency or induced by certain medications. Vitamin K2 has also been shown to be effective and, apparently, more potent [3]. Symptomatic vitamin K deficiency is rare, resulting from severe malnutrition or malabsorption, or prolonged therapy with some antibiotics [3].
+Bleeding is the classic sign of vitamin K deficiency, though it occurs only in severe cases [1]. Clinically significant vitamin K deficiency in adults is very rare and is usually limited to people with malabsorption disorders or those taking drugs that interfere with vitamin K metabolism [1].
 
-Among people on warfarin with unexplained INR instability, daily low-dose oral vitamin K (100 to 200 mcg of K1) was previously recommended to improve clotting stability under medical supervision [3]. An earlier guideline on warfarin-type drugs gave specific advice for managing INR results outside the target range [36]. However, ConsumerLab reports that experts now advise against low-dose vitamin K supplementation for people taking warfarin, after an analysis of clinical trials showed that vitamin K did not reduce major bleeding events or other complications related to blood clotting [3][37][38].
+An earlier guideline on warfarin-type drugs gave specific advice for managing INR results outside the target range [36]. Current guidance suggests against routine daily low-dose vitamin K supplements for people taking warfarin, because studies have not shown that they improve INR control or clinical outcomes [38]. A later American College of Chest Physicians guideline also addresses vitamin K supplementation for people on these drugs [37].
 
 ## 4. Recommended Dosing
 
@@ -260,7 +268,7 @@ Data were insufficient to set an Estimated Average Requirement or Recommended Di
 
 The European Food Safety Authority (EFSA) sets a different AI of 1 mcg per kg body weight per day, equating to approximately 70 mcg/day for average adults [40]. In Germany, the Deutsche Gesellschaft fur Ernahrung recommends 60-80 mcg/day for adults [41].
 
-There is no Tolerable Upper Intake Level (UL) for vitamin K because of its low potential for toxicity. The FNB stated that "no adverse effects associated with vitamin K consumption from food or supplements have been reported in humans or animals" [1].
+The FNB set no Tolerable Upper Intake Level (UL) because vitamin K has a low potential for toxicity [1]. The FNB stated that "no adverse effects associated with vitamin K consumption from food or supplements have been reported in humans or animals" [1].
 
 ### Typical Intake in Populations
 
@@ -272,28 +280,26 @@ Some analyses of NHANES data from 2003-2006 and 2007-2010 found that only about 
 
 ### Doses Used in Clinical Research
 
-The doses used in clinical trials far exceed the AI and vary by form. Studies of K1 or the MK-4 form of K2 tend to use very high doses (500 mcg to 45,000 mcg), while studies of MK-7 have used more moderate doses, such as 180 mcg [3]:
+Most trial doses are well above the AI, and they vary widely by form, from 50 mcg a day of MK-7 to 45 mg a day of MK-4 [57][62]:
 
 **Vitamin K1 (phylloquinone):**
-- Bone health: 5,000 mcg/day, which did not improve bone density but may have reduced the risk of vertebral fractures over 2 to 4 years [3]
-- Cardiovascular (calcification): 10 mg of vitamin K1 taken once daily for three months [3]
+- Bone health: 5,000 mcg/day, which did not improve bone density but may have reduced the risk of fractures over 2 to 4 years [20]
+- Cardiovascular (calcification): 10 mg a day for three months in people with diabetes [71]
 - Newborn prophylaxis: a single intramuscular dose of 0.5 to 1 mg at birth [1]
 
 **Vitamin K2 as MK-4:**
 - Bone health (pharmacological): 45 mg/day, the dose used to treat osteoporosis in Japan and other parts of Asia [1]
-- In one study, 45,000 mcg of MK-4 was the minimum effective dose for bone; 15,000 mcg showed no benefit [3]
+- Dose finding: in one Japanese study, 45,000 mcg a day was the lowest dose that improved bone measures, and 15,000 mcg was not enough [22][57]
 
 **Vitamin K2 as MK-7:**
-- Bone health: 90-375 mcg/day [3]
-- Cardiovascular health, lowest trial dose: 90 mcg of MK-7 plus 400 IU of vitamin D daily for about 9 months [3]
-- Cardiovascular health, highest trial dose: daily supplementation with 720 mcg of MK-7 plus 1,000 IU of vitamin D for two years [3]
-- Nocturnal leg cramps: 180 mcg every night for eight weeks [3]
+- Bone health: 90-375 mcg/day [24][61][62]
+- Cardiovascular health, lowest trial dose: 90 mcg of MK-7 with 400 IU of vitamin D daily over about 270 days in kidney disease [67]
+- Cardiovascular health, highest trial dose: 720 mcg of MK-7 with vitamin D (1,000 IU) for two years [29][70]
+- Nocturnal leg cramps: 180 mcg every day for eight weeks [31]
 
 ### Practical Dosing Considerations
 
-Higher dietary vitamin K intake is associated with a lower risk of hip fractures, though not with higher bone density. This decrease in fractures has been seen among older men and women consuming about 250 mcg per day of vitamin K [3].
-
-Because MK-7 has a longer half-life, dosages may need to be adjusted when switching between forms of vitamin K, though a longer half-life does not always translate into greater clinical activity [3].
+Higher dietary vitamin K intake is associated with a lower risk of hip fractures, though not with higher bone density [73]. In one cohort of older men and women, those with the highest intake (a median of 254 mcg a day) had a lower risk of hip fracture than those with the lowest [73].
 
 Brad advises against taking more than about 90 to 120 mcg a day. The 360 to 720 mcg doses that slowed coronary calcium are three to eight times the adequate intake [55].
 
@@ -305,21 +311,21 @@ Supplements containing only vitamin K, or vitamin K with a few other nutrients, 
 
 ### General Safety Profile
 
-Vitamins K1 and K2 are generally safe when used appropriately in healthy individuals [3]. No Tolerable Upper Intake Level has been established because of vitamin K's low potential for toxicity [1].
+The Food and Nutrition Board reported no adverse effects from vitamin K in food or supplements in humans or animals [1]. No Tolerable Upper Intake Level has been established because of vitamin K's low potential for toxicity [1].
 
-In small trials in Japan, Indonesia, and China, MK-4 at 45,000 mcg taken for one to three years showed no toxic effects [3].
+In small trials in Japan, Indonesia, and China, MK-4 was given at 45,000 mcg a day for one to three years, and no toxic effects of this dose have been reported [57]. Possible side effects of this drug-level dose are stomach discomfort and diarrhea, and it should not be used with warfarin [57].
 
-Vitamin K3 (menadione) is different: it may cause toxicity and is not sold as a supplement [3]. It damaged liver cells in laboratory studies, so it is no longer used in dietary supplements or fortified foods [1].
+Vitamin K3 (menadione) is different: it damaged liver cells in laboratory studies, so it is no longer used in dietary supplements or fortified foods [1].
 
 ### Specific Safety Considerations
 
-**Soy allergy:** The MK-7 form of vitamin K2 is often derived from natto, which is made from soy. MenaQ7 is derived from chickpeas, and its manufacturer claims it is soy free. Labels should be read carefully, as "MenaQ7 Natto MK-7" is derived from soy [3].
+**Soy allergy:** The MK-7 in supplements is often derived from natto [6], which is made from fermented soybeans [1]. If you have a soy allergy, check the label or ask the maker about the source before starting.
 
-**Sleep concerns:** Despite anecdotal reports that MK-7 may worsen sleep, a clinical study in Japan of 115 adults (average age 47) who took 100 mcg of MK-7 daily for 12 weeks showed no worsening of sleep parameters compared with people who did not supplement. Some research has linked short sleep (less than 7 hours per night) with inadequate vitamin K intake from foods and supplements among women aged 19 to 50, though no such association was found in men [3]. In that analysis of U.S. survey data, women with short sleep were more likely to have inadequate intake of several nutrients, including vitamin K [42].
+**Sleep concerns:** Short sleep (less than 7 hours per night) has been linked with lower vitamin K intake from foods and supplements in adults aged 19 to 50 [42]. In that analysis of U.S. survey data, women with short sleep were more likely to have inadequate intake of several nutrients, including vitamin K [42].
 
-**Breast cancer:** A U.S. population study found an association between higher dietary K2 intake (from butter and cheeses) and increased breast cancer risk. The link, if any, does not prove cause and effect. There does not appear to be convincing evidence that supplementation with soy-based MK-7 increases the risk of breast cancer or breast cancer recurrence [3].
+**Breast cancer:** A U.S. cohort study found an association between higher dietary K2 intake and increased breast cancer risk [34]. An association does not prove cause and effect, and the authors said the findings need to be replicated [34].
 
-**Thyroid function:** Although there is some concern that soy can affect thyroid function, there does not appear to be evidence of soy-based vitamin K supplements affecting thyroid function [3][43].
+**Thyroid function:** A review found little evidence that soy foods or soy isoflavones harm thyroid function in healthy people with adequate iodine, though soy foods may increase the dose of thyroid hormone that people with hypothyroidism need [43].
 
 ### Newborn Vitamin K Prophylaxis
 
@@ -335,19 +341,19 @@ To prevent VKDB, the American Academy of Pediatrics recommends a single intramus
 
 Vitamin K can have a serious and potentially dangerous interaction with warfarin (Coumadin) and similar anticoagulants such as phenprocoumon, acenocoumarol, and tioclomarol [1]. These drugs antagonize the activity of vitamin K, leading to depletion of vitamin K-dependent clotting factors [1]. Vitamin K epoxide reductase (VKOR), the enzyme that recycles vitamin K, is the target of warfarin [5].
 
-Vitamin K may reduce the effectiveness of warfarin. This interference may occur with doses as low as 10 mcg per day of MK-7 because of its long half-life [3]. As a result, ConsumerLab notes that some experts suggest people taking warfarin should avoid MK-7 supplements [3][44].
+Vitamin K may reduce the effectiveness of warfarin and similar drugs [1]. In a study of healthy volunteers taking acenocoumarol, a warfarin-like drug, MK-7 at 10 mcg a day lowered the INR to a clinically relevant degree in at least 40% of them, and the authors concluded that people on these drugs should avoid MK-7 supplements [44].
 
-Although supplements providing up to 100 mcg of K1 per day may not cause clinically relevant disturbances, ConsumerLab reports that experts now recommend against low-dose vitamin K supplementation for warfarin users because of limited evidence of benefit and potential for interaction at the doses used in research (100 to 200 mcg per day) [3]. People taking warfarin should not begin supplementing with vitamin K unless advised to do so by their doctor [3].
+Guidance for warfarin care suggests against routine daily low-dose vitamin K supplements, and says a significant change in dietary vitamin K should prompt more frequent INR checks [38]. People on warfarin should check with their anticoagulation clinic or doctor before starting, stopping or changing a vitamin K supplement, because a change in vitamin K intake should prompt more frequent INR checks [38]. The authors of the MK-7 dose study advise that people on vitamin K antagonists avoid MK-7 supplements [44], and MK-4 at the drug dose used for osteoporosis is contraindicated with warfarin [57].
 
-People taking warfarin should keep their vitamin K intake from food consistent, without large fluctuations. NIH advises keeping vitamin K intake from both food and supplements consistent, because sudden changes can increase or decrease warfarin's anticoagulant effect [1]. One study found that people who got less than 250 mcg of vitamin K daily from food were maintained on 4.4 mg of warfarin, while those consuming more needed 5.8 mg [3][39].
+People taking warfarin should keep their vitamin K intake from food consistent, without large fluctuations [38]. NIH advises keeping vitamin K intake from both food and supplements consistent, because sudden changes can increase or decrease warfarin's anticoagulant effect [1].
 
 ### Direct Oral Anticoagulants (DOACs)
 
-Newer blood-thinning drugs such as dabigatran (Pradaxa) and rivaroxaban (Xarelto) are not thought to be affected by vitamin K intake [3][45][46].
+Vitamin K intake is not expected to change the effect of newer blood thinners such as dabigatran (Pradaxa), rivaroxaban (Xarelto) and apixaban [45][46][55].
 
 ### Antiplatelet Drugs
 
-Aspirin and clopidogrel (Plavix) work differently from warfarin, by preventing platelets from sticking together to form clots. There is no evidence of vitamin K interacting with these drugs [3][47].
+Aspirin and clopidogrel (Plavix) work differently from warfarin: they stop platelets from clumping rather than acting on vitamin K, so vitamin K is not expected to change their effect [47].
 
 ### Antibiotics
 
@@ -363,13 +369,13 @@ Orlistat (Alli, Xenical), a weight-loss drug, reduces the body's absorption of d
 
 ### Statins
 
-A review by Okuyama and colleagues suggests that statins may decrease vitamin K levels [3][53]. However, taking vitamin K does not appear to improve heart-related outcomes (including coronary artery calcification and aortic valve calcification) in most statin users, although it may reduce the progression of calcification among people with the highest levels of existing coronary artery calcification [3].
+A review by Okuyama and colleagues suggests that statins may inhibit the body's synthesis of vitamin K2 [53].
 
 ## 7. Dietary Sources
 
 ### Vitamin K1 (Phylloquinone) — Plant Sources
 
-Green leafy vegetables are major food sources of vitamin K1. The following values are from the NIH fact sheet, which draws on USDA data; the prune value is from ConsumerLab [1][3]:
+Green leafy vegetables are major food sources of vitamin K1. The following values are from the NIH fact sheet, which draws on USDA data [1]:
 
 | Food | Serving | Vitamin K1 (mcg) | % Daily Value* |
 |------|---------|------------------|---------------|
@@ -391,7 +397,6 @@ Green leafy vegetables are major food sources of vitamin K1. The following value
 | Iceberg lettuce, raw | 1 cup | 14 | 12% |
 | Canola oil | 1 tablespoon | 10 | 8% |
 | Olive oil | 1 tablespoon | 8 | 7% |
-| Prunes | 100 g (~10 prunes) | 59.5 | 50% |
 
 *Daily Value = 120 mcg for adults and children age 4+.
 
@@ -399,7 +404,7 @@ The most common sources of vitamin K in the U.S. diet are spinach, broccoli, ice
 
 ### Vitamin K2 (Menaquinones) — Animal and Fermented Sources
 
-Meat, dairy foods, and eggs contain low levels of phylloquinone but modest amounts of menaquinones [1][54]. Dairy values below are total vitamin K, mostly as K2 [3]; meat and egg values are MK-4 from the NIH fact sheet [1].
+Meat, dairy foods, and eggs contain low levels of phylloquinone but modest amounts of menaquinones [1][54]. Dairy values below are total vitamin K, mostly as K2 [74]; meat and egg values are MK-4 from the NIH fact sheet [1].
 
 | Food | Serving | Vitamin K (mcg) | Form |
 |------|---------|------------------|-------------|
@@ -408,11 +413,12 @@ Meat, dairy foods, and eggs contain low levels of phylloquinone but modest amoun
 | Semi-soft cheeses (Gouda, Havarti, Swiss) | 100 g | ~289 | Mostly K2 |
 | Hard cheeses (cheddar, parmesan) | 100 g | ~282 | Mostly K2 |
 | Processed American cheese | 100 g | ~98 | Mostly K2 |
-| Full-fat yogurt | 100 g | ~27 | Mostly K2 |
+| Full-fat yogurt | 100 g | ~26.3 | Mostly K2 |
+| Full-fat Greek yogurt | 100 g | ~28.2 | Mostly K2 |
 | Full-fat milk | 100 g | ~38 | Mostly K2 |
 | 2% milk | 100 g | ~19 | Mostly K2 |
-| 1% milk | 100 g | ~12 | Mostly K2 |
-| Fat-free milk | 100 g | ~5 | Mostly K2 |
+| 1% milk | 100 g | ~12.9 | Mostly K2 |
+| Fat-free milk | 100 g | ~7.7 | Mostly K2 |
 | Low-fat kefir | 100 g | ~10.2 | Mostly K2 |
 | Chicken breast, rotisserie | 3 oz | 13 | MK-4 |
 | Egg, hard boiled | 1 large | 4 | MK-4 |
@@ -421,7 +427,7 @@ Meat, dairy foods, and eggs contain low levels of phylloquinone but modest amoun
 | Ham, roasted | 3 oz | 4 | MK-4 |
 | Cheddar cheese | 1.5 oz | 4 | MK-4 |
 
-Vitamin K is fat soluble, so full-fat dairy products contain significantly more vitamin K than reduced-fat or non-fat versions. Full-fat cheddar cheese contains about 281 mcg total vitamin K per 100 g, while reduced-fat cheddar contains just 49 mcg. In general, reduced-fat or non-fat dairy products contain just 5-22% of the vitamin K found in their full-fat counterparts [3].
+Fu and colleagues measured vitamin K in U.S. dairy foods and found that the amount was proportional to fat content: products with reduced or no fat had about 5 to 22% as much vitamin K as their full-fat equivalents [74]. Cheddar is an example, with 49 mcg per 100 g in the reduced-fat version against 281 mcg in full-fat [74].
 
 ### Impact of Gut Microbiota
 
@@ -431,7 +437,6 @@ Substantial quantities of long-chain menaquinones made by gut bacteria are prese
 
 1. National Institutes of Health, Office of Dietary Supplements. Vitamin K: Health Professional Fact Sheet. Updated March 29, 2021. [NIH ODS](https://ods.od.nih.gov/factsheets/VitaminK-HealthProfessional/)
 2. Dam H. The discovery of vitamin K, its biological functions and therapeutical application. Nobel Lecture, 12 December 1946 (Nobel Prize in Physiology or Medicine 1943). [Nobel Prize](https://www.nobelprize.org/prizes/medicine/1943/dam/lecture/)
-3. ConsumerLab.com. Vitamin K Supplements Review. Medically reviewed by Tod Cooperman, MD. Updated August 31, 2026. [ConsumerLab](https://www.consumerlab.com/reviews/vitamin-k-supplements-review/vitamin-k/)
 4. Stafford DW. The vitamin K cycle. *J Thromb Haemost*. 2005;3(8):1873-1878. [PubMed](https://pubmed.ncbi.nlm.nih.gov/16102054/)
 5. Li T, Chang CY, Jin DY, et al. Identification of the gene for vitamin K epoxide reductase. *Nature*. 2004;427(6974):541-544. [PubMed](https://pubmed.ncbi.nlm.nih.gov/14765195/)
 6. Schurgers LJ, Teunissen KJ, Hamulyak K, et al. Vitamin K-containing dietary supplements: comparison of synthetic vitamin K1 and natto-derived menaquinone-7. *Blood*. 2007;109(8):3279-3283. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17158229/)
@@ -484,3 +489,22 @@ Substantial quantities of long-chain menaquinones made by gut bacteria are prese
 53. Okuyama H, Langsjoen PH, Hamazaki T, et al. Statins stimulate atherosclerosis and heart failure: pharmacological mechanisms. *Expert Rev Clin Pharmacol*. 2015;8(2):189-199. PMID: 25655639. https://pubmed.ncbi.nlm.nih.gov/25655639/
 54. Elder SJ, Haytowitz DB, Howe J, et al. Vitamin K contents of meat, dairy, and fast food in the U.S. diet. *J Agric Food Chem*. 2006;54(2):463-467. [PubMed](https://pubmed.ncbi.nlm.nih.gov/16417305/)
 55. Stanfield B. Why aren't cardiologists prescribing vitamin K2? drstanfield.com. 3 September 2026. [Brad's article](https://drstanfield.com/blogs/articles/why-arent-cardiologists-prescribing-vitamin-k2)
+56. Sato T, Schurgers LJ, Uenishi K. Comparison of menaquinone-4 and menaquinone-7 bioavailability in healthy women. *Nutr J*. 2012;11:93. DOI: 10.1186/1475-2891-11-93. PMID: 23140417. https://pubmed.ncbi.nlm.nih.gov/23140417/
+57. Iwamoto J. Vitamin K2 therapy for postmenopausal osteoporosis. *Nutrients*. 2014;6(5):1971-1980. DOI: 10.3390/nu6051971. PMID: 24841104. https://pubmed.ncbi.nlm.nih.gov/24841104/
+58. Traber MG. Vitamin E and K interactions: a 50-year-old problem. *Nutr Rev*. 2008;66(11):624-629. DOI: 10.1111/j.1753-4887.2008.00123.x. PMID: 19019024. https://pubmed.ncbi.nlm.nih.gov/19019024/
+59. Braam LA, Knapen MH, Geusens P, et al. Vitamin K1 supplementation retards bone loss in postmenopausal women between 50 and 60 years of age. *Calcif Tissue Int*. 2003;73(1):21-26. DOI: 10.1007/s00223-002-2084-4. PMID: 14506950. https://pubmed.ncbi.nlm.nih.gov/14506950/
+60. Booth SL, Dallal G, Shea MK, et al. Effect of vitamin K supplementation on bone loss in elderly men and women. *J Clin Endocrinol Metab*. 2008;93(4):1217-1223. DOI: 10.1210/jc.2007-2490. PMID: 18252784. https://pubmed.ncbi.nlm.nih.gov/18252784/
+61. Rønn SH, Harsløf T, Oei L, et al. The effect of vitamin MK-7 on bone mineral density and microarchitecture in postmenopausal women with osteopenia, a 3-year randomized, placebo-controlled clinical trial. *Osteoporos Int*. 2021;32(1):185-191. DOI: 10.1007/s00198-020-05638-z. PMID: 33030563. https://pubmed.ncbi.nlm.nih.gov/33030563/
+62. Zhang Y, Liu Z, Duan L, et al. Effect of low-dose vitamin K2 supplementation on bone mineral density in middle-aged and elderly Chinese: a randomized controlled study. *Calcif Tissue Int*. 2020;106(5):476-485. DOI: 10.1007/s00223-020-00669-4. PMID: 32060566. https://pubmed.ncbi.nlm.nih.gov/32060566/
+63. de Vries F, Bittner R, Maresz K, et al. Effects of one-year menaquinone-7 supplementation on vascular stiffness and blood pressure in post-menopausal women. *Nutrients*. 2025;17(5):815. DOI: 10.3390/nu17050815. PMID: 40077685. https://pubmed.ncbi.nlm.nih.gov/40077685/
+64. Vossen LM, de Leeuw PW, Schurgers LJ, et al. Two years of menaquinone-7 supplementation and coronary artery calcification: a randomized clinical trial. *JAMA Cardiol*. 2026;11(8):719-726. DOI: 10.1001/jamacardio.2026.1279. PMID: 42268593. https://pubmed.ncbi.nlm.nih.gov/42268593/
+65. Bartstra JW, Draaisma F, Zwakenberg SR, et al. Six months vitamin K treatment does not affect systemic arterial calcification or bone mineral density in diabetes mellitus 2. *Eur J Nutr*. 2021;60(3):1691-1699. DOI: 10.1007/s00394-020-02412-z. PMID: 33068157. https://pubmed.ncbi.nlm.nih.gov/33068157/
+66. Witham MD, Lees JS, White M, et al. Vitamin K supplementation to improve vascular stiffness in CKD: the K4Kidneys randomized controlled trial. *J Am Soc Nephrol*. 2020;31(10):2434-2445. DOI: 10.1681/ASN.2020020225. PMID: 32817311. https://pubmed.ncbi.nlm.nih.gov/32817311/
+67. Kurnatowska I, Grzelak P, Masajtis-Zagajewska A, et al. Effect of vitamin K2 on progression of atherosclerosis and vascular calcification in nondialyzed patients with chronic kidney disease stages 3-5. *Pol Arch Med Wewn*. 2015;125(9):631-640. DOI: 10.20452/pamw.3041. PMID: 26176325. https://pubmed.ncbi.nlm.nih.gov/26176325/
+68. Hasific S, Ravn EJ, Rasmussen LM, et al. Effects of vitamin K2 and D3 supplementation on epicardial adipose tissue and systemic inflammation: a substudy of the AVADEC trial. *Atherosclerosis*. 2025;410:120540. DOI: 10.1016/j.atherosclerosis.2025.120540. PMID: 41100911. https://pubmed.ncbi.nlm.nih.gov/41100911/
+69. Hasific S, Oevrehus KA, Lindholt JS, et al. Effects of vitamin K2 and D supplementation on coronary artery disease in men: a RCT. *JACC Adv*. 2023;2(9):100643. DOI: 10.1016/j.jacadv.2023.100643. PMID: 38938724. https://pubmed.ncbi.nlm.nih.gov/38938724/
+70. Hasific S, Øvrehus KA, Mejldal A, et al. Vitamin K2 and D3 supplementation in patients with severe coronary artery calcification: the DANCODE trial. *Circulation*. 2026 (published online 28 August 2026). DOI: 10.1161/CIRCULATIONAHA.126.082363. PMID: 42661461. https://pubmed.ncbi.nlm.nih.gov/42661461/
+71. Bellinge JW, Francis RJ, Lee SC, et al. The effect of vitamin K1 on arterial calcification activity in subjects with diabetes mellitus: a post hoc analysis of a double-blind, randomized, placebo-controlled trial. *Am J Clin Nutr*. 2022;115(1):45-52. DOI: 10.1093/ajcn/nqab306. PMID: 34637494. https://pubmed.ncbi.nlm.nih.gov/34637494/
+72. Dofferhoff ASM, Piscaer I, Schurgers LJ, et al. Reduced vitamin K status as a potentially modifiable risk factor of severe coronavirus disease 2019. *Clin Infect Dis*. 2021;73(11):e4039-e4046. DOI: 10.1093/cid/ciaa1258. PMID: 32852539. https://pubmed.ncbi.nlm.nih.gov/32852539/
+73. Booth SL, Tucker KL, Chen H, et al. Dietary vitamin K intakes are associated with hip fracture but not with bone mineral density in elderly men and women. *Am J Clin Nutr*. 2000;71(5):1201-1208. DOI: 10.1093/ajcn/71.5.1201. PMID: 10799384. https://pubmed.ncbi.nlm.nih.gov/10799384/
+74. Fu X, Harshman SG, Shen X, et al. Multiple vitamin K forms exist in dairy foods. *Curr Dev Nutr*. 2017;1(6):e000638. DOI: 10.3945/cdn.117.000638. PMID: 29955705. https://pubmed.ncbi.nlm.nih.gov/29955705/

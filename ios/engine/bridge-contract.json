@@ -34,10 +34,11 @@
     "cloudOpen": { "args": ["provider", "deviceId", "firstConnect"], "returns": "Promise of JSON" },
     "cloudRefresh": { "args": [], "returns": "Promise of JSON" },
     "cloudVisible": { "args": [], "returns": "JSON" },
+    "documentSave": { "args": ["recordJson", "extractionJson", "choiceJson", "original", "erase", "nowIso", "deviceId"], "returns": "Promise of JSON: {ok, record, erase?, saved, unstored, stored} or {ok:false, reason, message}; files one document or a lab report's original through health-core's saveDocuments (US-52 AC13d)" },
     "erasePhoneJson": { "args": ["recordText", "historyText", "nowIso", "deviceId"], "returns": "settle handle; read with settledJson" },
     "healthWritesJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "[HealthWrite] JSON" },
     "historyJson": { "args": ["recordJson", "metric", "nowIso", "deviceId", "unitsJson"], "returns": "MetricHistory JSON" },
-    "labReviewJson": { "args": ["extractionJson", "nowIso"], "returns": "lab review JSON" },
+    "labReviewJson": { "args": ["extractionJson", "nowIso", "recordJson", "sourceFileName", "contentHash", "deviceId"], "returns": "lab review JSON, with the document card (US-52 AC13d)" },
     "labSaveSummaryJson": { "args": ["recordJson", "extractionJson", "refsJson", "reportDay", "nowIso", "deviceId"], "returns": "summary JSON" },
     "mergeJson": { "args": ["localJson", "remoteJson", "nowIso", "deviceId"], "returns": "merged record JSON" },
     "labFile": { "args": ["id"], "returns": "{name, bytes} of a file the fresh listing offers as a lab file, or throws {refused} (US-52 AC11)" },
@@ -48,6 +49,7 @@
     "planJson": { "args": ["recordJson", "nowIso", "deviceId", "unitsJson"], "returns": "Plan JSON" },
     "remindersJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "PhoneReminders JSON" },
     "sectionsJson": { "args": ["planJson"], "returns": "[PlanSection] JSON" },
+    "fileNamesJson": { "args": ["filesJson"], "returns": "JSON array: each file's sourceFileName by health-core's rules (zipMemberName for {zip, path}, fileNameLine and the 255 cap for {name}), one call per read (US-52 AC13d)" },
     "settledJson": { "args": [], "returns": "the last settled async door's answer" }
   }
 }

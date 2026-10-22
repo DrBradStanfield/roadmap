@@ -88,8 +88,9 @@ class FakeDrive {
       const names = [...q.matchAll(/name='([^']*)'/g)].map((m) => m[1]);
       const mimeType = /mimeType='([^']*)'/.exec(q)?.[1];
       const parent = /'([^']*)' in parents/.exec(q)?.[1];
-      const hit = names.map((name) => this.find(name, mimeType, parent)).find(Boolean);
-      return Response.json({ files: hit ? [{ id: hit.id, name: hit.name }] : [] });
+      const hits = [...this.files.values()].filter((f) => names.includes(f.name) && (!mimeType || f.mimeType === mimeType) && (!parent || f.parents.includes(parent)));
+      const pageSize = Number(url.searchParams.get('pageSize') ?? 100);
+      return Response.json({ files: hits.slice(0, pageSize).map((f) => ({ id: f.id, name: f.name })) });
     }
 
     // Create a folder (metadata only).
@@ -109,7 +110,7 @@ class FakeDrive {
       }
       const version = String(file.version);
       this.onVersionRead?.();
-      return Response.json({ version });
+      return Response.json({ version, parents: file.parents, name: file.name, mimeType: file.mimeType, trashed: false });
     }
 
     // Multipart create: metadata part, then the content part.
@@ -452,6 +453,30 @@ describe('documents: refused by default, written only on opt-in', () => {
     expect([...drive.files.values()].filter((f) => f.mimeType === FOLDER_MIME)).toHaveLength(2); // one app folder, one subfolder
     expect(drive.find('2026-01-01 Blood test results.pdf', undefined, labs.id)?.content).toBe('pdf bytes');
     expect(await (await adapter.readDocument('Lab results/2026-01-01 Blood test results.pdf')).text()).toBe('pdf bytes');
+  });
+
+  it('US-52 AC13d (R4): an opted-in write files into the folder that holds the record, not the first folder of that name', async () => {
+    const drive = new FakeDrive();
+    drive.install();
+    drive.create(DRIVE_FOLDER_NAME, '', FOLDER_MIME); // a stray folder of the same name, found first by name
+    const home = drive.create(DRIVE_FOLDER_NAME, '', FOLDER_MIME);
+    drive.create(ROADMAP_FILE_NAME, '{}', 'application/json', [home.id]);
+    const adapter = new DriveAdapter('token', { documents: 'write' });
+    await adapter.writeDocument('Letters/2026-01-01 Clinic letter.pdf', new Blob(['letter']));
+    const letters = drive.find('Letters', FOLDER_MIME)!;
+    expect(letters.parents).toEqual([home.id]);
+    expect(drive.find('2026-01-01 Clinic letter.pdf', undefined, letters.id)?.content).toBe('letter');
+  });
+
+  it('US-52 AC13d (R4): a record at the Drive root does not pull documents there; they go to the app folder by name', async () => {
+    const drive = new FakeDrive();
+    drive.install();
+    const root = drive.create('My Drive', '', FOLDER_MIME);
+    drive.create(ROADMAP_FILE_NAME, '{}', 'application/json', [root.id]);
+    const adapter = new DriveAdapter('token', { documents: 'write' });
+    await adapter.writeDocument('Letters/a.pdf', new Blob(['a']));
+    const app = drive.find(DRIVE_FOLDER_NAME, FOLDER_MIME)!;
+    expect(drive.find('Letters', FOLDER_MIME)!.parents).toEqual([app.id]);
   });
 
   it('two concurrent first writes into a new folder share one find-or-create', async () => {

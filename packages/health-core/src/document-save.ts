@@ -98,6 +98,23 @@ export function isLabArchiveDocument(doc: {
   );
 }
 
+/**
+ * The hidden row that keeps a lab report's original in the user's cloud: the
+ * extracted values live in the record, so this row carries no text. One shape
+ * for the website (archive-payloads.ts) and the iPhone app.
+ */
+export function labArchivePayload<F>(sourceFileName: string | null, reportDate: string | null, file: F | undefined): DocumentPayload<F> {
+  return {
+    documentType: 'pathology_report',
+    title: LAB_ARCHIVE_TITLE,
+    documentDate: reportDate,
+    contentMd: '',
+    metadata: { [LAB_ARCHIVE_FLAG]: true },
+    sourceFileName,
+    file,
+  };
+}
+
 /** A stored row as the archive step reads it. */
 export type ExistingDoc = Pick<DocumentView, 'documentType' | 'title' | 'contentMd' | 'metadata'> & {
   contentHash?: string | null;

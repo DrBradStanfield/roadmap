@@ -7,7 +7,7 @@
  * Blobs are only attached to results when the backend can archive them
  * (getDocumentArchiveMode() === 'cloud'), so off-cloud this returns [].
  */
-import { LAB_ARCHIVE_FLAG, LAB_ARCHIVE_TITLE, pendingRowsFor, type DocumentPayload, type ExistingDoc } from '@roadmap/health-core';
+import { labArchivePayload, pendingRowsFor, type DocumentPayload, type ExistingDoc } from '@roadmap/health-core';
 import type { FileResult } from '../components/ReviewTable';
 
 /** 'sha256-<hex>' content fingerprint — names the blob + detects corruption. */
@@ -80,15 +80,7 @@ export function synthesizeLabArchiveEntries(
   const out: DocumentPayload<Blob>[] = [];
   for (const r of results) {
     if (r.document || !isArchivableFile(r, alreadyCovered)) continue;
-    out.push({
-      documentType: 'pathology_report',
-      title: LAB_ARCHIVE_TITLE,
-      documentDate: r.reportDate,
-      contentMd: '',
-      metadata: { [LAB_ARCHIVE_FLAG]: true },
-      sourceFileName: r.fileName,
-      file: r.file,
-    });
+    out.push(labArchivePayload(r.fileName, r.reportDate, r.file));
   }
   return out;
 }

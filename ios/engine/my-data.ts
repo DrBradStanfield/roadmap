@@ -4,6 +4,7 @@
 // Values come in and go out in the user's units; the record stores SI.
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
+import { hasStampShape } from '../../packages/health-core/src/migrate';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
 import { appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
 import { labRows, type Extraction } from './lab-review';
@@ -88,11 +89,47 @@ export type EditOutcome =
  * the app's next save would write over whatever the file held.
  */
 export function readRecord(text: string, now: string, deviceId: string): RoadmapFile {
+  if (kept && kept.text === text && kept.deviceId === deviceId) return kept.file;
   const raw: unknown = JSON.parse(text);
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     throw new Error('This file is not a health record.');
   }
-  return ROADMAP_DOC.migrate(raw, { deviceId, now });
+  const file = ROADMAP_DOC.migrate(raw, { deviceId, now });
+  kept = nowFree(raw) ? { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file } : null;
+  return file;
+}
+
+/**
+ * The last record read, so the next call on the same text skips the parse and
+ * migration (US-25 AC2, D2: they are most of a call's time). Every door treats a
+ * read record as read-only: the slot hands the same object to the next call.
+ * Only reads are kept, never a door's own output: a written record need not be
+ * what its text reads back as (migration clamps counters), so the next call reads
+ * that text once, cold (Codex R1).
+ * `deviceId` is in the key because the migration falls back to it for a missing
+ * `meta.lastDeviceId`. `now` is not: the migration reads it only as the fallback
+ * for a `meta.createdAt` or `meta.updatedAt` that does not start yyyy-mm-ddT
+ * (migrate.ts isoOr), so a record whose two stamps both do migrates the same at
+ * any `now`. Any other record is not kept.
+ */
+let kept: { text: string; deviceId: string; file: RoadmapFile } | null = null;
+
+/** Whether the record's meta carries both stamps, so `now` cannot change its migration. */
+function nowFree(raw: object): boolean {
+  const meta = (raw as { meta?: Record<string, unknown> }).meta;
+  return typeof meta === 'object' && meta !== null && hasStampShape(meta.createdAt) && hasStampShape(meta.updatedAt);
+}
+
+/** Under the tests the kept record is frozen, so every engine test checks the
+ *  read-only rule on every branch it runs (adversary R1). Never in the app. */
+const FREEZE_KEPT = typeof process !== 'undefined' && !!process.env?.VITEST;
+
+function deepFreeze<T>(value: T): T {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const inner of Object.values(value)) deepFreeze(inner);
+  }
+  return value;
 }
 
 /**

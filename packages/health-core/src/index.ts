@@ -318,6 +318,7 @@ export {
   documentView,
   isLabArchiveDocument,
   LAB_ARCHIVE_FLAG,
+  labArchivePayload,
   pendingRowsFor,
   saveDocuments,
   type DocumentPayload,

@@ -161,9 +161,8 @@ struct LabUploadSheet: View {
         await read {
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            return try url.hasDirectoryPath
-                ? LabFileReader.documents(inFolder: url)
-                : LabFileReader.documents(from: Data(contentsOf: url), name: url.lastPathComponent)
+            let read = try url.hasDirectoryPath ? LabFileReader.documents(inFolder: url) : LabFileReader.documents(picked: url)
+            return await engine.named(read)
         }
     }
 
@@ -193,7 +192,7 @@ struct LabUploadSheet: View {
                 throw DropboxFailure(error)
             }
             // Read under the name Dropbox gives it now, not the one the list showed (re-check R3).
-            return try LabFileReader.documents(from: fetched.data, name: fetched.name)
+            return await engine.named(try LabFileReader.documents(from: fetched.data, name: fetched.name))
         }
     }
 
@@ -207,7 +206,8 @@ struct LabUploadSheet: View {
             step = .working("Reading the values in \(document.name)", .init(done: n, total: documents.count, started: .now))
             do {
                 let extraction = try await LabUploadClient().extract(document, unitSystem: units)
-                results.append(LabResult(name: document.name, truncated: document.truncated, extractionJSON: extraction, failure: nil))
+                results.append(LabResult(name: document.name, truncated: document.truncated, extractionJSON: extraction, failure: nil,
+                                         original: document.original))
             } catch let AppAttestClient.Failure.server(status, message) where status == 422 {
                 _ = message
                 results.append(LabResult(name: document.name, truncated: false, extractionJSON: nil, failure: "The AI could not read this file."))
@@ -268,4 +268,6 @@ struct LabResult: Sendable {
     let truncated: Bool
     let extractionJSON: String?
     let failure: String?
+    /// The picked file, to keep in the person's cloud (US-52 AC13d); the engine keeps it only there.
+    var original: LabFileReader.Original? = nil
 }

@@ -283,6 +283,70 @@ final class RecordStore {
         }
     }
 
+    // MARK: Documents (US-52 AC13d)
+
+    /// What filing a document did.
+    enum DocumentResult: Equatable {
+        /// `stored`: the original reached the cloud (nil: none was offered to one).
+        /// `unstored`: held originals that still could not be stored. `stale`: the original
+        /// changed or could not be read after the review, so only its text was saved.
+        case saved(count: Int, stored: Bool?, unstored: Int, stale: Bool)
+        case refused(String)
+    }
+
+    /// Files one reviewed document, or a lab report's original, by health-core's
+    /// saveDocuments, the web's one save path. In the cloud: the original goes up first,
+    /// then the rows through the engine's session, with the erase the screen showed.
+    /// On the phone: a text-only row (no original), written to the file as an edit is.
+    func saveDocument(extractionJSON: String, choice: DocumentChoice, original: LabFileReader.Original?) async -> DocumentResult {
+        let seen = pinned ?? screen
+        guard seen.erase == cloudErase else {
+            return .refused("Your record changed while this was open, so this was not saved. Close this and try again.")
+        }
+        if seen.erase == nil, let problem { return .refused(problem) }
+        let before = recordJSON
+        do {
+            // The engine decides whether an original is kept (only in a cloud); off-cloud
+            // the file is not even read, since it would go nowhere. Read now, it must be
+            // the bytes the review read (their hash), or it is left out.
+            let bytes = seen.erase == nil ? nil : original?.verifiedData()
+            let answer = try await engine.documentSave(
+                recordJSON: seen.erase == nil ? before : "", extractionJSON: extractionJSON, choice: choice,
+                original: bytes, erase: seen.erase ?? "", now: .now, deviceId: deviceId)
+            guard answer.ok, let next = answer.record else { return .refused(answer.message ?? "That could not be saved.") }
+            let result = DocumentResult.saved(count: answer.saved ?? 0, stored: answer.stored, unstored: answer.unstored ?? 0, stale: answer.stale ?? false)
+            if let erase = seen.erase {
+                // The engine's session took it; the screen follows unless it has moved on to another record.
+                guard cloudErase == erase, let nextErase = answer.erase else { return result }
+                if next != recordJSON {
+                    showCloud(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0))
+                    onEdit?()
+                }
+                return result
+            }
+            guard try commitPhoneDocument(next, over: before) else {
+                return .refused("Your record changed while this was saving, so it was not saved. Save again.")
+            }
+            return result
+        } catch {
+            return .refused(error.localizedDescription)
+        }
+    }
+
+    /// A document save's record, onto the phone's file: written only over the record the
+    /// save began from (`before`), never over an edit made while it ran. False when refused.
+    func commitPhoneDocument(_ next: String, over before: String) throws -> Bool {
+        guard cloudErase == nil, recordJSON == before else { return false }
+        if next != recordJSON {
+            let shown = try engine.myData(recordJSON: next, now: .now, deviceId: deviceId, units: unitChoices.json)
+            try Self.write(next, to: file)
+            recordJSON = next
+            myData = shown
+            onEdit?()
+        }
+        return true
+    }
+
     // MARK: Per-test units (US-25 AC17e)
 
     /// One test to the other units, as the web's unit chip does. Back to the record's

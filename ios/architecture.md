@@ -64,6 +64,8 @@ blood pressure history quadratic, 17 s at ten years; fixed (one pass, same outpu
 of daily readings already costs a frame or more per call on the main thread. Brad wants
 engine work off the main thread (2026-10-22); that change is next.
 
+**The parsed-record slot (2026-10-22, stage 1 of moving engine work off the main thread).** Every engine call took the record as text and parsed and migrated it; migration is most of a call's time (Node, ten years of rows: parse about 3 ms, migrate about 18 ms). `readRecord` (ios/engine/my-data.ts) now keeps one slot: the last text read, its device id and its parsed record, served again only for the identical text and device id, and only for a record whose meta carries both stamps, so the migration cannot have read `now` (health-core `hasStampShape`, the check `isoOr` uses). Only reads are kept, never a door's own output: a written record need not equal what its text reads back as, since migration clamps counters (Codex R1). The rule this binds every door, and every health-core function a door reaches, to: **a record from `readRecord` is read-only.** A function that writes in place gets a copy first (the phone document save copies before `saveDocuments`' commit). Under the tests the kept record is deep-frozen, so every engine test checks the rule on every branch it runs; never in the app. No bridge change. Next: the engine on its own serial queue, edits applied in order, sheets awaiting their save (stages 2 to 4).
+
 The runtime needs a bridge for what a bare JSContext lacks: `fetch`, `Response`, `Headers`,
 `URL`, `AbortController` with `AbortSignal.timeout`/`any`, `Blob`, `TextEncoder`/`Decoder`,
 `crypto.getRandomValues`/`randomUUID`, `setTimeout` (adapter.ts, drive-rest.ts,
@@ -412,8 +414,15 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   "Saving…", on open, after a write and after Sync now.
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free
-  (US-34). Until then the app polls each minute while on screen. Documents are not synced
-  by the app (its adapter refuses them).
+  (US-34). Until then the app polls each minute while on screen.
+- **Documents (US-52 AC13d, 2026-10-22):** the app files letters and lab originals
+  through health-core's `saveDocuments`, the web's one path, with the shared adapters
+  built `{ documents: 'write' }`. The rows commit like any cloud edit (phone copy and
+  pending marker, then `RecordSession.edit` with the erase), one save at a time. Swift
+  hashes each original with CryptoKit as it reads it (JavaScriptCore has no
+  `crypto.subtle`) and checks the hash again at Save; the engine takes that hash as the
+  row's `contentHash`. On Drive the originals go to the folder that holds the record, so
+  web and phone share one archive. The app never reads an original back yet.
 - **Not the iOS Files picker.** File Provider writes have no version check, which breaks
   US-10 AC4 (two overlapping saves must keep both rows).
 - **iCloud: open.** A website cannot read iCloud Drive, so an iCloud user could not use the

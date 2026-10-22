@@ -210,4 +210,40 @@ final class RecordStoreTests: XCTestCase {
         try store.showErased(HealthEngine().newRecord(now: .now, deviceId: "test"))
         XCTAssertTrue(store.unitChoices.isEmpty)
     }
+
+    /// US-52 AC13d: with no cloud, a letter is a text-only row, as the web saves one
+    /// off-cloud: no original, no hash, its text kept. On disk before the screen.
+    func testALetterOnThePhoneAloneIsATextOnlyRow() async throws {
+        let store = try store()
+        let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
+        let original = LabFileReader.Original(Data("%PDF".utf8), mimeType: "application/pdf")
+        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "application/pdf", contentHash: original.contentHash)
+        let result = await store.saveDocument(extractionJSON: letter, choice: choice, original: original)
+        XCTAssertEqual(result, .saved(count: 1, stored: nil, unstored: 0, stale: false))
+        let onDisk = try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any]
+        let row = try XCTUnwrap((onDisk?["documents"] as? [[String: Any]])?.first)
+        XCTAssertEqual(row["fileRef"] as? String, "")
+        XCTAssertEqual(row["contentHash"] as? String, "")
+        XCTAssertEqual(row["mimeType"] as? String, "")
+        XCTAssertEqual(row["extractedText"] as? String, "# Letter")
+        XCTAssertTrue(row["date"] is NSNull)
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), store.recordJSON)
+        // The review of the same file now says it is already saved (the web's sourceFileName dedup).
+        let engine = try HealthEngine()
+        XCTAssertEqual(try engine.labReview(extractionJSON: letter, now: .now, recordJSON: store.recordJSON, sourceFileName: "Letter.pdf", deviceId: "test").document?.alreadySaved, true)
+    }
+
+    /// US-52 AC13d (R5): a document save's record lands on the phone's file only over the
+    /// record the save began from; an edit made while it ran is never written over.
+    func testADocumentSaveNeverWritesOverAnEditMadeWhileItRan() throws {
+        let store = try store()
+        let before = store.recordJSON
+        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")), .saved)
+        let edited = store.recordJSON
+        // A save that began on `before` answers a record without the edit: refused.
+        XCTAssertFalse(try store.commitPhoneDocument(before, over: before))
+        XCTAssertEqual(store.recordJSON, edited)
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), edited)
+        XCTAssertTrue(try store.commitPhoneDocument(edited, over: edited))
+    }
 }
