@@ -7,15 +7,24 @@ type: "reference"
 tags: ["Supplements"]
 keywords: ["creatine", "creatine monohydrate", "creatine hydrochloride", "creatine hcl", "bcaa", "branched-chain amino acids", "leucine", "isoleucine", "valine", "muscle", "strength training", "resistance training", "exercise", "cognitive", "brain health", "energy", "sarcopenia", "aging", "longevity", "depression", "sleep", "collagen", "taurine", "hmb", "glutamine", "insulin resistance", "diabetes", "heart health", "cardiovascular", "bone density", "osteoporosis", "fibromyalgia", "weight loss"]
 summary: "Reference on creatine. Brad's view: worth considering for body and brain. With resistance training it raises strength and lean mass in older adults; meta-analyses found memory gains, notably in women. Take 5 g/day of monohydrate, no loading. Not advised with severe kidney problems."
-reviewed: "2026-10-20"
+reviewed: "2026-10-22"
 sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/review-creatine/creatine/","checked":"2026-09-29","fingerprint":"sha256:2d8545d21a72a758f870c48d82107f53aa07bfbf4f033911cc0df320e33d6eb6"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-15T20:07:54Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-supplements-that-actually-work","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-05T20:31:48Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30T20:38:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/creatine-fails-in-new-study-don-t-be-misled","checked":"2026-10-20","fingerprint":"publishedAt:2025-04-02T06:54:33Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking","checked":"2026-10-20","fingerprint":"publishedAt:2025-03-26T19:59:34Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-19T03:13:05Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/older-adults-seniors-creatine-supplements","checked":"2026-10-20","fingerprint":"publishedAt:2024-07-01T01:37:47Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/creatine-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/creatine-benefits-best-forms-dosing-and-side-effects)*
 
-## Current view (reviewed 20 October 2026)
+## Current view (reviewed 22 October 2026)
 
-Brad sees creatine as worth considering for both body and brain performance, and says the evidence for its performance and cognitive benefits is clear and consistent ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). Used with resistance training, creatine improves upper and lower body strength and increases lean mass in older adults, and Brad recommends it for anyone interested in healthy aging, not only athletes ([Brad, 5 Oct 2025](https://drstanfield.com/blogs/articles/5-supplements-that-actually-work)). The newest meta-analysis he cites, of 16 randomised trials, found gains in memory, attention time and processing speed, with particular benefit for women, adults aged 18 to 60 and people with underlying conditions ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). A trial of 60 adults found that creatine's extra lean mass came in the first week, probably as water, with no significant extra gain over 12 weeks of exercise, but it did not measure muscle performance, which is the main reason Brad takes creatine ([Brad, 2 Apr 2025](https://drstanfield.com/blogs/articles/creatine-fails-in-new-study-don-t-be-misled)). Brad recommends 5 g of creatine monohydrate a day with no loading phase: loading raises the chance of tummy upset, and 5 g also saturates the muscles, only more slowly ([Brad, 26 Mar 2025](https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking)). The evidence suggests creatine is not a problem for people with normal kidney function, but it raises blood creatinine, which makes kidney tests look worse than they are, and Brad does not recommend creatine for people with severe kidney problems; with significant kidney disease he reduces the dose or stops it ([Brad, 26 Mar 2025](https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking)).
+Brad sees creatine as worth considering for both body and brain performance, and says the evidence for its performance and cognitive benefits is clear and consistent ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). Used with resistance training, creatine improves upper and lower body strength and increases lean mass in older adults, and Brad recommends it for anyone interested in healthy aging, not only athletes ([Brad, 5 Oct 2025](https://drstanfield.com/blogs/articles/5-supplements-that-actually-work)). The newest meta-analysis he cites, of 16 randomised trials, found gains in memory, attention time and processing speed, with particular benefit for women, adults aged 18 to 60 and people with underlying conditions ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). Brad considers the memory evidence clear and consistent, but this is his judgement, not a trial finding, and formal reviews are more mixed: the meta-analyses counted several tests from the same people as separate results (Brad's current guidance, 22 Oct 2026). Reanalysed by its authors, one found no clear overall memory benefit except in older adults aged 66 to 76, the newest found no effect on overall cognition or executive function, and in 2024 the European Food Safety Authority concluded that a cause-and-effect link between creatine and better cognitive function has not been established (Brad's current guidance, 22 Oct 2026). A trial of 60 adults found that creatine's extra lean mass came in the first week, probably as water, with no significant extra gain over 12 weeks of exercise, but it did not measure muscle performance, which is the main reason Brad takes creatine ([Brad, 2 Apr 2025](https://drstanfield.com/blogs/articles/creatine-fails-in-new-study-don-t-be-misled)). Brad recommends 5 g of creatine monohydrate a day with no loading phase: loading raises the chance of tummy upset, and 5 g also saturates the muscles, only more slowly ([Brad, 26 Mar 2025](https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking)). The evidence suggests creatine is not a problem for people with normal kidney function, but it raises blood creatinine, which makes kidney tests look worse than they are, and Brad does not recommend creatine for people with severe kidney problems; with significant kidney disease he reduces the dose or stops it ([Brad, 26 Mar 2025](https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking)).
+
+## Key safety points
+
+- If you take prescription medicines, check with your doctor or pharmacist before starting. Avoid combining creatine with ephedra: one athlete had a stroke while taking both with caffeine [88].
+- Long-term safety with existing kidney disease is unclear, so talk to your doctor first. Brad does not recommend creatine for people with severe kidney problems [93].
+- Creatine raises blood creatinine, which can make kidney tests look worse than they are. Tell your doctor you take it before a kidney blood test [77].
+- Single doses over 10 g may cause diarrhea, so split any loading phase into smaller servings [4].
+- The most common effect is water retention in the first several days, which can add some weight [4].
+- Creatine may affect the airways, mainly in people with allergies [97].
 
 ## Brad's videos on this topic
 
@@ -29,108 +38,108 @@ Brad sees creatine as worth considering for both body and brain performance, and
 
 ## 1. Overview
 
-Creatine is a non-essential amino acid naturally produced in the human body from other amino acids, primarily in the kidneys and liver [1]. Approximately 95% of the body's creatine is stored in skeletal muscle tissue, with the remainder distributed across the heart, brain, and other tissues [1]. It helps supply muscles with energy, particularly for short-term, maximal exercise such as weightlifting and sprinting [1]. Through the phosphocreatine system, it acts as an immediately available energy buffer for cells and tissues with high and intermittent energy demands [2].
+Creatine is formed in the body from the amino acids arginine, glycine and methionine in the kidneys and liver [4]. About 95% of the body's creatine is found in skeletal muscle, with small amounts in the brain and testes [72]. It helps maintain the muscle's energy (ATP) supply, particularly during maximal-effort, sprint-type exercise [72]. Through the phosphocreatine system, it acts as an immediately available energy buffer for cells and tissues with high and intermittent energy demands [2].
 
-When creatine is metabolized, the body creates a waste product called creatinine, which is normally removed by the kidneys [1].
+When creatine is broken down, the body creates a waste product called creatinine, which is excreted in the urine [72].
 
-Creatine monohydrate is the most common and best-studied supplemental form [1][3], and there are over 500 peer-reviewed publications on creatine supplementation [4]. As a dietary supplement, it is classified as Generally Recognized as Safe (GRAS) by the U.S. FDA at levels up to 5 grams per serving [5].
+Creatine monohydrate is the most common and best-studied supplemental form [3], and there are over 500 peer-reviewed publications on creatine supplementation [4]. As a dietary supplement, it is classified as Generally Recognized as Safe (GRAS) by the U.S. FDA at levels up to 5 grams per serving [5].
 
-Creatine may also improve exercise tolerance in people with congestive heart failure (CHF) and muscle strength in people with muscular dystrophies. It does not improve memory in young adults and has shown very limited benefits on cognition in older adults, including menopausal women [1]. Brad reads the memory research more positively: he cites two meta-analyses that found memory gains, the first particularly in older adults and the later one with greater benefit in women [91].
+Creatine has also been studied in medical conditions, including muscular dystrophy, Parkinson's and Huntington's disease, fibromyalgia and osteoarthritis [72]. For memory, two meta-analyses found benefits, but one found them mainly in older adults and the other found no effect on overall cognition or executive function [33][45]. The European Food Safety Authority concluded in 2024 that a cause-and-effect link between creatine and better cognitive function has not been established [35]. Brad reads the memory research more positively: he cites two meta-analyses that found memory gains, the first particularly in older adults and the later one with greater benefit in women [91].
 
-This article also covers branched-chain amino acids (BCAAs: leucine, isoleucine, and valine), which are often marketed alongside creatine as muscle-enhancing supplements. BCAAs are essential amino acids that make up approximately one-third of skeletal muscle protein. They are precursors in the synthesis of alanine and glutamine and are involved in several metabolic processes. During prolonged aerobic exercise, the body may break down muscle to release BCAAs for energy, which is the rationale behind BCAA supplementation for preventing muscle breakdown [6].
+This article also covers branched-chain amino acids (BCAAs: leucine, isoleucine, and valine), which are often marketed alongside creatine as muscle-enhancing supplements. BCAAs are essential amino acids, which the body cannot make. Exercise speeds the breakdown of BCAAs in muscle, which may raise BCAA needs, and BCAA supplements taken before exercise have been reported to reduce muscle protein breakdown during exercise [55].
 
 ## 2. Forms and Bioavailability
 
 ### Creatine Forms
 
-Not all creatine supplements deliver the same amount of usable creatine. Different chemical forms yield different percentages of free creatine per gram of compound. Creatine monohydrate yields the largest amount of free, usable creatine compared to other forms [1].
+Not all creatine supplements deliver the same amount of usable creatine. Different chemical forms yield different percentages of free creatine per gram of compound. Apart from creatine anhydrous, creatine monohydrate powder contains the highest percentage of creatine (87.9%) [4].
 
 ### Comparison Table
 
 | Form | Free Creatine (%) | Solubility | Evidence Base | Key Notes |
 |------|:-:|:-:|:-:|------|
-| Creatine Monohydrate | 88% | Low in cold water; dissolves in warm water | Extensive | Most common and most studied form [1]. Micronized powders have shown no clear advantage over standard powders [1]. |
-| Creatine Hydrochloride (HCl) | 79% | More soluble than monohydrate in cool water | Limited | No evidence of better absorption or greater muscle creatine storage vs. monohydrate. About 10% less creatine per gram [1]. |
-| Creatine Ethyl Ester | 86% | Moderate | Limited | One study found effects similar to the hydrochloride form. May be more likely to increase creatinine. Not recommended [1][9]. |
-| Dicreatine Malate / Tricreatine Malate | ~70% | Moderate | Minimal | Significantly less creatine per gram. Limited evidence of any advantage [1]. |
-| Creatine AKG (Alpha-Ketoglutarate) | 47.5% | Variable | Minimal | Least creatine per gram. No evidence of superior performance [1]. |
-| Creatine Nitrate | N/A | Higher than monohydrate | Limited | One manufacturer-funded study showed 33.5% higher blood creatine levels vs. monohydrate at equal doses [1]. Drawbacks include unpleasant odor and possible negative effect on kidney function [10]. |
-| Magnesium Creatine Chelate (Creatine MagnaPower) | Variable | Moderate | Minimal | 3 g creatine from this form delivers 600 mg magnesium, which exceeds the UL for supplemental magnesium and risks GI side effects [1]. No advantage over monohydrate for work capacity [11]. |
+| Creatine Monohydrate | 87.9 | Low in cold water; dissolves in warm water | Extensive | Most common and most studied form [3]. |
+| Creatine Hydrochloride (HCl) | Not reported | More soluble than monohydrate in cool water | Limited | Head-to-head trials found no advantage over monohydrate for strength or body composition [7][8]. |
+| Creatine Ethyl Ester | 82.4 | Moderate | Limited | Less creatine per gram than monohydrate [3]; no evidence of greater creatine retention [72]. Raised blood creatinine in a case report [9]. |
+| Dicreatine Malate / Tricreatine Malate | 66 (2:1); 74.7 (3:1) | Moderate | Minimal | Less creatine per gram than monohydrate; little to no evidence of any advantage [3]. |
+| Creatine AKG (Alpha-Ketoglutarate) | 53.8 | Variable | Minimal | Least creatine per gram of the forms listed here; little to no evidence of any advantage [3]. |
+| Creatine Nitrate | N/A | Higher than monohydrate | Limited | In one trial, a single dose of creatine nitrate raised blood creatine more than the same dose of monohydrate [10]. Drawbacks include unpleasant odor and possible negative effect on kidney function [10]. |
+| Magnesium Creatine Chelate (Creatine MagnaPower) | Variable | Moderate | Minimal | Also supplies magnesium, which may cause diarrhea at high intakes. No advantage over monohydrate for work capacity [11]. |
 | Buffered Creatine (Kre-Alkalyn) | Unclear | Moderate | Negative | Marketed as "up to 10x more powerful." A study showed it was no better than creatine monohydrate for muscle creatine, body composition, strength, or anaerobic capacity [12]. |
 
 ### Key Principles for Form Selection
 
-**Creatine monohydrate is the recommended form.** It yields the most free, usable creatine per gram among common forms and is the most extensively studied [1][3].
+**Creatine monohydrate is the recommended form.** It yields the most free, usable creatine per gram among common forms and is the most extensively studied [3].
 
-**Creatine HCl** dissolves better than monohydrate at room temperature, but there doesn't appear to be evidence that it is better absorbed or leads to greater muscle creatine storage [1]. Head-to-head studies in trained athletes show no significant differences in strength, body composition, or performance compared to monohydrate, even when the monohydrate group included a loading phase [7][8].
+**Creatine HCl:** Head-to-head studies in trained athletes show no significant differences in strength, body composition, or performance compared to monohydrate, even when the monohydrate group included a loading phase [7][8].
 
-**Avoid creatine ethyl ester.** It may be more likely to increase creatinine levels, including a case report of elevated creatinine in a healthy person taking high doses [1][9].
+**Avoid creatine ethyl ester.** In a case report, it raised blood creatinine to levels that mimicked kidney failure, although kidney function was normal; the levels returned to normal after it was stopped [9].
 
 ### Absorption and Bioavailability Factors
 
 Creatine monohydrate does not appear to be broken down during normal digestion, and nearly 99% of an oral dose is either taken up by muscle or excreted in urine [3].
 
-**Co-ingestion with carbohydrates:** In a 5-day study of 24 men, taking 93 g of simple sugars 30 minutes after each 5 g creatine dose raised muscle total creatine 60% more than creatine alone, an effect that appears to be insulin mediated [13]. Other studies report that creatine uptake depends on sodium rather than carbohydrates, which suggests adding sugars or carbohydrates may not be necessary [1].
+**Co-ingestion with carbohydrates:** In a 5-day study of 24 men, taking 93 g of simple sugars 30 minutes after each 5 g creatine dose raised muscle total creatine 60% more than creatine alone, an effect that appears to be insulin mediated [13].
 
-**Caffeine interaction:** A review of 20 clinical studies found that a single dose of caffeine taken approximately one hour before exercise does not interfere with creatine's ergogenic effects, and may even improve performance [1]. However, chronic high-dose caffeine intake may blunt creatine's benefits, possibly by affecting muscle relaxation time or causing GI discomfort [14]. Prudent advice: avoid chronic high-dose caffeine if maximizing creatine's effects is a priority.
+**Caffeine interaction:** Chronic high-dose caffeine intake may blunt creatine's benefits, possibly by affecting muscle relaxation time or causing GI discomfort [14]. Prudent advice: avoid chronic high-dose caffeine if maximizing creatine's effects is a priority.
 
-**Stability in solution:** Creatine monohydrate dissolved in water at neutral pH (6.5–7.5) remains stable for at least 8 hours at room temperature with no sign of conversion to creatinine, and about 1% or less converts by 24 hours. At refrigerated temperatures, only 0.6–1.4% converts after 52 days. Even in slightly acidic solutions (pH 4.5–5.5), only 4–12% converts after 3 days [1][15]. Even so, ConsumerLab advises drinking it soon after mixing, since creatine begins to break down once in liquid [1].
+**Stability in solution:** Creatine monohydrate dissolved in water at neutral pH (6.5–7.5) remains stable for at least 8 hours at room temperature with no sign of conversion to creatinine, and about 1% or less converts by 24 hours. At refrigerated temperatures, only 0.6–1.4% converts after 52 days. Even in slightly acidic solutions (pH 4.5–5.5), only 4–12% converts after 3 days [15]. If you do not drink it straight away, store the mixed drink cold to slow its breakdown [3].
 
-**Creatine monohydrate powder** stored in the dark at room temperature maintains stability for years, with no detectable creatinine formation at temperatures up to 140°F (60°C) for up to 44 months [1][16].
+**Creatine monohydrate powder** stored in the dark at room temperature maintains stability for years, with no detectable creatinine formation at temperatures up to 140°F (60°C) for up to 44 months [16].
 
 ### Vegetarian and Vegan Considerations
 
-There are no plant sources of creatine. Vegetarians and vegans tend to have lower creatine levels in skeletal muscle than omnivores [1]. In one study, muscle total creatine at baseline was 117 mmol/kg in vegetarians and 130 mmol/kg in non-vegetarians [17]. Creatine supplementation appears to be more effective for improving muscle size and strength in people with low initial creatine levels [1]. All creatine monohydrate supplements are synthetically produced (from sarcosine and cyanamide) and are therefore inherently vegan [5].
+There are no plant sources of creatine. Vegetarians tend to have lower creatine levels in skeletal muscle than non-vegetarians [17]. In one study, muscle total creatine at baseline was 117 mmol/kg in vegetarians and 130 mmol/kg in non-vegetarians [17]. In that study, vegetarians, who started with less muscle creatine, responded more to supplementation [17]. All creatine monohydrate supplements are synthetically produced (from sarcosine and cyanamide) and are therefore inherently vegan [5].
 
 ### BCAA Composition
 
-BCAA supplements designed for muscle recovery typically use a 2:1:1 ratio of leucine to isoleucine to valine. Leucine plays the most significant role in stimulating muscle protein synthesis [6][18]. Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and legumes [6].
+BCAA supplements designed for muscle recovery typically use a 2:1:1 ratio of leucine to isoleucine to valine. Leucine plays the most significant role in stimulating muscle protein synthesis [18].
 
 ## 3. Evidence for Benefits
 
 ### Muscle Strength and Size
 
-Creatine may temporarily increase muscle size and, according to some (but not all) studies, improve muscle strength and endurance during repeated high-intensity exercise of short duration, such as weightlifting and sprinting [1]. It is not of benefit in purely aerobic exercise such as distance running or cycling [1].
+Creatine may increase muscle size and improve strength and power during short bursts of high-intensity exercise, such as weightlifting and sprinting [3]. Reviews report consistent gains for high-intensity bouts of 30 seconds or less [14], and greater gains in strength, power, and muscle mass with training [3].
 
-**Muscle hypertrophy in trained men:** An 8-week study in resistance-trained men found that creatine combined with a 4-day/week resistance program increased upper body muscle size by 7.1% vs. 1.6% with placebo, lower body by 3.2% vs. 0.7%, and trunk size by 2.1% vs. 0.7% (Nunes, *Nutr Health* 2017) [19]. The men took a loading dose of about 5.5 g four times daily for the first week, then 2.2 g/day [1].
+**Muscle hypertrophy in trained men:** An 8-week study in resistance-trained men found that creatine combined with a 4-day/week resistance program increased upper body muscle size by 7.1% vs. 1.6% with placebo, lower body by 3.2% vs. 0.7%, and trunk size by 2.1% vs. 0.7% (Nunes, *Nutr Health* 2017) [19]. The men took a loading dose of 0.3 g/kg per day, in four doses, for the first week, then 0.03 g/kg per day [19].
 
-**Strength in older adults (positive):** An RCT of adults over 65 found that creatine monohydrate (5 g/day) combined with resistance training 3x/week for 14 weeks increased total body mass, lean body mass, and muscle strength vs. placebo (Brose, *J Gerontol A Biol Sci Med Sci* 2003) [20]. A study of older men (mean age 58) found that creatine (0.1 g/kg/day, ~9.5 g) with 2x/week resistance training for 2 months produced greater increases in leg press strength (54% vs. 35%) and total lower body strength (43% vs. 30%) than placebo, though upper body improvements were similar between groups [1]. The trial used high-velocity resistance training, and creatine added only to lower-body strength gains (Bernat, *Appl Physiol Nutr Metab* 2019) [21].
+**Strength in older adults (positive):** An RCT of adults over 65 found that creatine monohydrate (5 g/day) combined with resistance training 3x/week for 14 weeks increased total body mass, lean body mass, and muscle strength vs. placebo (Brose, *J Gerontol A Biol Sci Med Sci* 2003) [20]. A study of untrained older men found that creatine (0.1 g/kg a day) with 8 weeks of high-velocity resistance training produced greater gains in leg press and total lower-body strength than placebo, with no other differences between groups (Bernat, *Appl Physiol Nutr Metab* 2019) [21].
 
-**Strength in older adults (negative):** A 12-month study in 35 older men (mean age 57) using similar creatine doses in two divided doses daily found no strength advantage over placebo when both groups performed resistance exercise; both groups improved comparably [1]. The trial also found no added effect on bone or muscle measures (Candow, *Nutr Health* 2020) [22]. A 16-week study in 35 healthy untrained older adults (mean age 62) found that 5 g/day creatine with high-repetition resistance training did not significantly increase work capacity, muscle strength, balance, or muscle thickness vs. placebo plus exercise (Rusterholz, *Adv Exer Health Sci* 2026) [1][23].
+**Strength in older adults (negative):** A 12-month trial in older men (18 taking creatine at 0.1 g/kg a day, aged 49 to 69 years, and 20 taking placebo) during supervised resistance training found similar gains in strength in both groups [22]. The trial also found no added effect on bone or muscle measures (Candow, *Nutr Health* 2020) [22].
 
-**Prostate cancer patients on ADT:** A 12-week RCT in 30 previously untrained men (mean age 70) with prostate cancer undergoing androgen deprivation therapy found that creatine (5 g loading 4x daily for 5 days, then 5 g/day maintenance) with resistance exercise 3x/week did not result in greater increases in lean muscle mass, strength, or function compared to placebo [1]. The trial found that resistance exercise alone brought meaningful gains, with no added effect from creatine (Fairman, *J Sci Med Sport* 2024) [24].
+**Prostate cancer patients on ADT:** A 12-week trial in 30 men aged 59 to 84 years with prostate cancer on androgen deprivation therapy found that adding creatine to resistance exercise 3 days a week did not increase lean mass, strength, or physical function more than placebo [24]. The trial found that resistance exercise alone brought meaningful gains, with no added effect from creatine (Fairman, *J Sci Med Sport* 2024) [24].
 
-**Older adults without exercise:** Short-term supplementation (10 days) with daily doses ranging from 8 g to 25 g without resistance exercise did not improve strength, endurance, or functionality in older adults (mean age 58) [1]. The trial's authors concluded that short-term creatine without resistance training had no effect on aging muscle performance, whatever the dose (Chami, *J Nutr Health Aging* 2019) [25].
+**Older adults without exercise:** Taking creatine for 10 days at 0.1 g/kg/day or 0.3 g/kg/day, without resistance training, did not improve strength, endurance, or balance in older adults compared with placebo [25]. The trial's authors concluded that short-term creatine without resistance training had no effect on aging muscle performance, whatever the dose (Chami, *J Nutr Health Aging* 2019) [25].
 
 **Psychological component:** A study of 15 men found that those told they were receiving creatine (but actually receiving placebo) completed the same total volume in squat press as those receiving actual creatine, and both outperformed a group told they were receiving placebo. This suggests that belief of benefit may partially account for some of creatine's strength effects (Aguiar, *Res Sports Med* 2022) [26].
 
-**Body composition effects:** Creatine may cause some weight gain from water retention. The gain may be small (about 1 lb or less) and is temporary [1]. In a trial of 60 adults, creatine alone added about half a kilogram of lean mass in its first week, before exercise began, and no significant extra gain over the next 12 weeks of supervised exercise; the trial did not measure muscle performance [94].
+**Body composition effects:** Creatine may cause some weight gain from water retention, mainly in the first several days [4]. In a trial of 60 adults, creatine alone added about half a kilogram of lean mass in its first week, before exercise began, and no significant extra gain over the next 12 weeks of supervised exercise; the trial did not measure muscle performance [94].
 
 ### Sarcopenia and Aging
 
-Creatine combined with resistance training has been studied as a way to counter age-related muscle loss. A meta-analysis of RCTs involving 721 participants reported a mean gain of 1.37 kg in lean body mass over 7–52 weeks of combined creatine and resistance training [27]. Another meta-analysis of 357 older adults found greater gains in fat-free mass, chest press and leg press strength, and 30-second chair stand performance than resistance training alone [28]. Still, the evidence is mixed on whether creatine helps older adults who do resistance training. If it does, the benefits are modest [1]. Brad reads the first of these meta-analyses [27] as showing that creatine with resistance training improves upper and lower body strength and increases lean mass in older adults [92].
+Creatine combined with resistance training has been studied as a way to counter age-related muscle loss. A meta-analysis of RCTs involving 721 participants reported a mean gain of 1.37 kg in lean body mass over 7–52 weeks of combined creatine and resistance training [27]. Another meta-analysis of 357 older adults found greater gains in fat-free mass, chest press and leg press strength, and 30-second chair stand performance than resistance training alone [28]. Not all trials agree: a 12-month trial in older men and a trial in men with prostate cancer found no added benefit from creatine [22][24]. Brad reads the first of these meta-analyses [27] as showing that creatine with resistance training improves upper and lower body strength and increases lean mass in older adults [92].
 
 ### Bone Density
 
-Despite marketing claims, creatine has not been shown to increase bone density. Three studies of women given 1–5 g/day of creatine monohydrate for up to two years showed no bone benefits [1]. A narrative review describes the research on creatine alone for bone in older adults as a small body of work (Forbes, *J Diet Suppl* 2022) [29]. An RCT of older men performing resistance exercise 3x/week found no greater increase in bone density with creatine (6 g/day for 12 weeks with initial loading) vs. placebo [1]. That trial suggested creatine may add a small gain in arm bone mineral content (Chilibeck, *J Nutr Health Aging* 2005) [30]. One study reported decreased bone resorption markers in urine with creatine plus resistance training (Candow, *Med Sci Sports Exerc* 2008), but this was based on a surrogate marker, not direct bone density measurement [31]. No studies have assessed whether creatine increases bone strength or reduces fracture risk.
+Despite marketing claims, creatine has not been shown to increase bone density. A narrative review describes the research on creatine alone for bone in older adults as a small body of work (Forbes, *J Diet Suppl* 2022) [29]. A trial in older men doing resistance training for 12 weeks found that bone density rose similarly with creatine (0.3 g/kg for 5 days, then 0.07 g/kg a day) and placebo [30]. That trial suggested creatine may add a small gain in arm bone mineral content (Chilibeck, *J Nutr Health Aging* 2005) [30]. One study reported decreased bone resorption markers in urine with creatine plus resistance training (Candow, *Med Sci Sports Exerc* 2008), but this was based on a surrogate marker, not direct bone density measurement [31]. No studies have assessed whether creatine reduces fracture risk.
 
 ### Memory and Cognition
 
-Creatine helps supply energy to brain cells [1]. One review reports that females have 70–80% lower endogenous creatine stores than males and suggests supplementation may be even more effective for females by supporting brain energy [32].
+Creatine plays a key role in the brain's energy supply, and there is some evidence that supplements can raise brain creatine stores [33]. One review reports that females have 70–80% lower endogenous creatine stores than males and suggests supplementation may be even more effective for females by supporting brain energy [32].
 
-**Healthy young adults:** Systematic reviews and meta-analyses have not found convincing evidence that creatine generally improves cognition in healthy, rested young adults (Prokopidis, *Nutr Rev* 2023; Avgerinos, *Exp Geront* 2018) [33][34]. Supplementing with 2–20 g/day for 5 days to 6 weeks does not appear to broadly improve brain function in this population [1]. The European Food Safety Authority (EFSA) concluded there was insufficient evidence for a cause-and-effect relationship between creatine intake and cognitive improvement in healthy people (EFSA, *EFSA J* 2024) [35].
+**Healthy young adults:** Systematic reviews and meta-analyses have not found convincing evidence that creatine generally improves cognition in healthy, rested young adults (Prokopidis, *Nutr Rev* 2023; Avgerinos, *Exp Geront* 2018) [33][34]. The European Food Safety Authority (EFSA) concluded in 2024 that a cause-and-effect relationship has not been established between creatine supplementation and better cognitive function in any of its domains. It noted that a working-memory effect seen in two studies at 20 g/day for 5–7 days was not seen at lower doses (2.2–14 g/day) (EFSA, *EFSA J* 2024) [35].
 
 **Selective benefits after mental fatigue:** A study in healthy young adults (mean age 24) found that 20 g/day for 7 days improved accuracy by 4.9% during a long, mentally fatiguing task, but did not prevent the fatigue-related decline in visuomotor response time (Van Cutsem, *Med Sci Sports Exerc* 2020) [36].
 
-**Sleep deprivation:** Evidence is mixed, and any benefit appears to be modest [1]. In elite rugby athletes, a single dose of ~4.5 or 9 g creatine 1.5 hours before testing prevented the declines in passing accuracy caused by sleep deprivation [1]. The trial's authors concluded that a single dose of creatine may help ease the drop in skill performance that comes with sleep loss (Cook, *J Int Soc Sports Nutr* 2011) [37]. In young adults, 5 g four times daily for 7 days before 24 hours of sleep deprivation lessened declines in random movement generation, choice reaction time, balance and mood (McMorris, *Psychopharmacology* 2006) [38]. However, a subsequent study by the same group using 36 hours of sleep deprivation found improvement only on complex central executive tasks, not on other cognitive measures (McMorris, *Physiol Behav* 2007) [39]. A single high dose (0.35 g/kg) taken during sleep deprivation improved cognitive performance and processing speed in tests at 3, 5.5, and 7.5 h after the dose and changed brain high-energy phosphate measures (Gordji-Nejad, *Sci Rep* 2024) [40].
+**Sleep deprivation:** In elite rugby players, a single dose of 50 or 100 mg/kg creatine 1.5 hours before testing prevented the fall in passing accuracy caused by sleep deprivation [37]. The trial's authors concluded that a single dose of creatine may help ease the drop in skill performance that comes with sleep loss (Cook, *J Int Soc Sports Nutr* 2011) [37]. In young adults, 5 g four times daily for 7 days before 24 hours of sleep deprivation lessened declines in random movement generation, choice reaction time, balance and mood (McMorris, *Psychopharmacology* 2006) [38]. However, a subsequent study by the same group using 36 hours of sleep deprivation found improvement only on complex central executive tasks, not on other cognitive measures (McMorris, *Physiol Behav* 2007) [39]. A single high dose (0.35 g/kg) taken during sleep deprivation improved cognitive performance and processing speed in tests at 3, 5.5, and 7.5 h after the dose and changed brain high-energy phosphate measures (Gordji-Nejad, *Sci Rep* 2024) [40].
 
-**Older adults:** A small study in the UK found that creatine monohydrate (5 g of Creapure 4x daily for 7 days) slightly improved long-term memory and certain intelligence tasks in elderly adults, but not attention, executive function, word fluency, reaction time, or mental fatigue [1]. The trial's authors concluded that creatine may aid cognition in older people (McMorris, *Aging Neuro Cog* 2007) [41]. A study of 36 healthy perimenopausal and menopausal women (mean age 50) found that 750 mg creatine HCl daily for 8 weeks improved alertness, executive control, and reaction time vs. placebo, but did not improve test accuracy, information processing, or cognitive inhibition [1]. In the same trial, 1,500 mg/day improved reaction time and raised frontal brain creatine levels more than placebo (Korovljev, *J Am Nutr Assoc* 2025) [42].
+**Older adults:** A small placebo-controlled trial in elderly people found that 5 g of creatine four times a day for 1 week improved random number generation, forward number and spatial recall, and long-term memory, but not backward number recall [41]. The trial's authors concluded that creatine may aid cognition in older people (McMorris, *Aging Neuro Cog* 2007) [41]. In a trial of 36 perimenopausal and menopausal women (mean age 50.1), 1,500 mg/day of creatine HCl for 8 weeks improved reaction time and raised frontal brain creatine levels more than placebo (Korovljev, *J Am Nutr Assoc* 2025) [42].
 
 **Vegetarians:** A double-blind crossover trial in 45 young adult vegetarians found that 5 g/day for 6 weeks significantly improved working memory (backward digit span) and intelligence/reasoning (Raven's Advanced Progressive Matrices, p < 0.0001) (Rae et al., 2003) [43].
 
 **Mental fatigue reduction:** In a double-blind study, 8 g/day for 5 days reduced mental fatigue during repeated simple mathematical calculations and reduced the task-evoked rise in cerebral oxygenated hemoglobin, which is compatible with greater oxygen use in the brain [44].
 
-**Meta-analytic summary:** A 2024 meta-analysis of 16 RCTs found significant positive effects on memory (SMD = 0.31), attention time, and processing speed, but no improvements in overall cognitive function or executive function. Benefits were more pronounced in individuals with diseases, those aged 18–60, and females [45]. A 2023 meta-analysis found creatine enhanced memory performance especially in older adults (ages 66–76) with no significant effect in younger groups [33].
+**Meta-analytic summary:** A 2024 meta-analysis of 16 RCTs found significant positive effects on memory (SMD = 0.31), attention time, and processing speed, but no improvements in overall cognitive function or executive function. Benefits were more pronounced in individuals with diseases, those aged 18–60 years, and females [45]. A 2023 meta-analysis found creatine enhanced memory performance especially in older adults (aged 66–76 years) with no significant effect in younger groups [33]. Both meta-analyses counted several memory tests from the same people as separate results, which inflates precision [95]. Reanalysed by its authors with an appropriate method, the 2023 meta-analysis no longer found a significant overall effect on memory, except in older adults [95]. The 2024 meta-analysis rated the certainty of evidence as moderate for memory and low for attention and processing speed [45].
 
 ### Depression
 
@@ -138,27 +147,27 @@ Creatine has been investigated as an adjunctive therapy for major depressive dis
 
 ### Fibromyalgia
 
-An RCT of people with fibromyalgia found that creatine (loading dose of 5 g four times daily for 5 days, then 5 g once daily) for 16 weeks increased upper- and lower-body muscle strength by up to ~10% compared to placebo [1]. However, other symptoms of fibromyalgia such as pain, sleep quality, and overall quality of life were not improved (Alves, *Arthritis Care Res* 2013) [46].
+A 16-week trial in people with fibromyalgia found that creatine increased leg press and chest press strength more than placebo (+9.8% and +1.2% vs. -0.5% and -7.2%) [46]. However, other symptoms of fibromyalgia such as pain, sleep quality, and overall quality of life were not improved (Alves, *Arthritis Care Res* 2013) [46].
 
 ### Osteoarthritis
 
-A small study of 40 adults (mean age 58) with knee osteoarthritis found that creatine (20 g/day for 1 week, then 5 g/day for 3 weeks) with physical therapy and daily exercise reduced pain by ~1 point (on a 0–10 scale) more than placebo [1]. Creatine also slightly improved symptom severity (15 points out of 100), activities of daily living (~8 points out of 100), and ability to participate in recreational activities (~10 points out of 100) [1]. It did not improve quality of life or range of motion, but the trial reported greater gains in muscle strength with creatine (Osama, *J Clin Med* 2025) [47].
+A trial in 40 adults aged 40 to 70 with knee osteoarthritis found that creatine, added to 4 weeks of physical therapy and resistance exercise, reduced pain and improved overall knee symptom and function scores more than placebo [47]. It did not improve quality of life or range of motion, but the trial reported greater gains in muscle strength with creatine (Osama, *J Clin Med* 2025) [47].
 
 ### Heart Failure and Cardiac Function
 
-Creatine may improve exercise tolerance in congestive heart failure (CHF) patients [1].
+Researchers have studied whether creatine can protect heart function during ischemia, because creatine and phosphocreatine help maintain the heart muscle's energy supply [72].
 
 ### Other Clinical Conditions
 
-**McArdle disease:** Low-dose creatine supplementation (~4–5 g/day) has demonstrated minor improvements in exercise tolerance. One regimen used 150 mg/kg daily for 5 days followed by 60 mg/kg per day [1]. A review suggests higher doses may worsen symptoms [48].
+**McArdle disease:** A Cochrane review found minimal subjective benefit with low-dose creatine (60 mg/kg/day), while high-dose creatine (150 mg/kg/day) worsened muscle pain [48].
 
-**COPD:** Creatine (15 g/day for 14 days followed by 5 g/day for 10 weeks) may improve lean body mass and quality of life in COPD patients [1]. In one trial during pulmonary rehabilitation, creatine increased fat-free mass, muscle strength and health status, but not exercise capacity (Fuld, *Thorax* 2005) [49].
+**COPD:** In a trial of 38 people with COPD, creatine (5.7 g three times a day for 2 weeks, then once a day during pulmonary rehabilitation) increased fat-free mass, muscle strength and health status, but not exercise capacity (Fuld, *Thorax* 2005) [49].
 
-**Muscular dystrophies:** Creatine may improve muscle strength in people with muscular dystrophies [1].
+**Muscular dystrophies:** A study of 30 children with Duchenne muscular dystrophy reported gains in fat-free mass and hand grip strength after 4 months of creatine [4].
 
-**Post-COVID-19 fatigue:** A small study of 12 people found that 4 g/day creatine for 6 months did not reduce fatigue or improve time to exhaustion vs. placebo, despite increasing creatine levels in muscle and brain [1]. Some improvements in body aches and concentration difficulties were noted (Slankamenac, *Food Sci Nutr* 2023) [50].
+**Post-COVID-19 fatigue:** A small trial in 12 people with post-COVID-19 fatigue found that 4 g/day of creatine for 6 months raised creatine levels in muscle and brain more than placebo, and general fatigue fell from baseline after 3 months [50]. Some improvements in body aches and concentration difficulties were noted (Slankamenac, *Food Sci Nutr* 2023) [50].
 
-**Parkinson's disease:** A large, multi-year RCT of nearly 1,000 patients receiving 10 g/day creatine (also taking dopaminergic drugs) was terminated early after interim results showed no benefit after at least 5 years of therapy [1]. No detectable differences in adverse events were observed (NET-PD, *JAMA* 2015) [51].
+**Parkinson's disease:** A multi-year trial of 1,741 people with early, treated Parkinson's disease, given 10 g/day of creatine or placebo, was stopped early for futility after an interim analysis of 955 participants found no benefit [51]. No detectable differences in adverse events were observed (NET-PD, *JAMA* 2015) [51].
 
 **Huntington's disease:** In a 16-week trial of 64 people with Huntington disease, 8 g/day was well tolerated and raised serum and brain creatine levels [52].
 
@@ -170,37 +179,37 @@ The evidence for BCAA supplementation for muscle building is mixed and depends h
 
 **Around exercise:** BCAA supplementation before and after exercise may help reduce or delay muscle soreness, improve muscle recovery, and improve immune function after intense exercise (Negro, *J Sports Med Phys Fitness* 2008; Shimomura, *J Nutr* 2006) [54][55].
 
-**Peri-surgical:** A study of adults aged 60–80 found that 20 g of essential amino acids (including 8 g BCAAs) twice daily for 1 week before and 2 weeks after total knee replacement reduced postoperative muscle loss and accelerated return of functional mobility vs. placebo [6]. In that trial, the supplement also limited muscle loss in the non-operated leg (Dreyer, *J Clin Invest* 2013) [56]. A repeat study with longer supplementation (6 weeks post-surgery) showed reduced muscle loss in the quadriceps (-8.5% vs. -13.4%) and hamstrings (-7.4% vs. -12.2%) but no differences in functional mobility or strength (Dreyer, *JB JS Open Access* 2018) [57]. However, a Japanese study of 80 older individuals after lumbar spinal surgery found that 6 g EAAs (including 2.5 g BCAAs) plus vitamin D twice daily for 3 weeks post-surgery did not improve symptoms, physical function, muscle mass, or mobility [6]. In that trial, knee muscle strength improved more with the supplement than with the control (Minetama, *Spine J* 2023) [58].
+**Peri-surgical:** A trial in 28 older adults found that 20 g of essential amino acids twice daily for 1 week before and 2 weeks after total knee replacement reduced muscle loss and sped the return of functional mobility compared with placebo [56]. In that trial, the supplement also limited muscle loss in the non-operated leg (Dreyer, *J Clin Invest* 2013) [56]. A repeat study with longer supplementation (6 weeks post-surgery) showed reduced muscle loss in the quadriceps (-8.5% vs. -13.4%) and hamstrings (-7.4% vs. -12.2%) but no differences in functional mobility or strength (Dreyer, *JB JS Open Access* 2018) [57]. However, a trial of 80 patients after lumbar spinal surgery found that BCAAs plus vitamin D twice daily for 3 weeks after surgery did not improve symptoms, muscle mass, gait speed, or mobility [58]. In that trial, knee muscle strength improved more with the supplement than with the control (Minetama, *Spine J* 2023) [58].
 
-**Prolonged bed rest:** A well-controlled study in 19 active middle-aged adults found that leucine with each meal during 14 days of continuous bed rest partially protected knee function (-7% vs. -15%) and endurance (-2% vs. -14%) vs. alanine control (English, *Am J Clin Nutr* 2016) [59]. The dose was about 4 g leucine with each of three meals a day [6]. However, two studies using single-leg immobilization (5 g leucine 3x daily) found no protection against muscle loss in either young or older adults (Edwards, *Am J Clin Nutr* 2020; Churchward-Venne, *Am J Clin Nutr* 2026) [60][61].
+**Prolonged bed rest:** A well-controlled study in 19 active middle-aged adults found that leucine with each meal during 14 days of continuous bed rest partially protected knee function (-7% vs. -15%) and endurance (-2% vs. -14%) vs. alanine control (English, *Am J Clin Nutr* 2016) [59]. The dose was 0.06 g of leucine per kg of body weight with each meal [59]. However, two studies using single-leg immobilization (5 g leucine 3x daily) found no protection against muscle loss in either young or older adults (Edwards, *Am J Clin Nutr* 2020; Churchward-Venne, *Am J Clin Nutr* 2026) [60][61].
 
-**Critically ill patients:** A study of 36 ICU patients found that 40 g BCAAs daily for 10 days, added to standard nutrition and electrical muscle stimulation, reduced muscle loss by about 13% compared to standard nutrition and electrical stimulation alone [6]. The trial's authors concluded that high-leucine BCAAs may help limit muscle loss in critically ill patients (Wulandari, *Clin Nutr ESPEN* 2025) [62].
+**Critically ill patients:** A trial in 40 critically ill patients found that 40 g/day of BCAAs for 10 days limited loss of thigh muscle thickness compared with a control group (0 vs. -13%) [62]. The trial's authors concluded that high-leucine BCAAs may help limit muscle loss in critically ill patients (Wulandari, *Clin Nutr ESPEN* 2025) [62].
 
-**Age-related muscle loss:** Leucine supplementation (7.5 g/day for 6–12 months) did NOT improve lower limb strength, balance, muscle mass, grip strength, walking speed, or quality of life in 109 adults aged 70+ with age-related muscle loss [6]. A meta-analysis in the same report also found no evidence that leucine improves physical performance (Achison, *J Cachexia Sarcopenia Muscle* 2022) [63].
+**Age-related muscle loss:** In 145 adults aged ≥70 years with sarcopenia, leucine 2.5 g three times a day did NOT improve physical performance or muscle mass over 12 months [63]. A meta-analysis in the same report also found no evidence that leucine improves physical performance (Achison, *J Cachexia Sarcopenia Muscle* 2022) [63].
 
 **Resistance training in older women:** 9 g BCAAs 3x/week (split pre- and post-exercise) for 8 weeks did NOT improve muscle strength in 30 sedentary postmenopausal women beyond placebo, though both groups improved from baseline (Bagheri, *Exp Gerontol* 2021) [64].
 
-**Fatigue:** In a study of older adults performing resistance training, ConsumerLab reads the registered primary outcome as a negligible effect of BCAAs on fatigue, while the placebo group actually showed a larger decrease in fatigue, and calls the abstract highly misleading [6]. The study's authors report that fatigue fell with BCAAs and rose with placebo (Robbins, *Dietetics* 2025) [65].
+**Fatigue:** In a pilot trial of older adults doing exercise training, the authors report that fatigue fell with BCAAs and rose with placebo (Robbins, *Dietetics* 2025) [65].
 
 ### Other Muscle-Enhancing Supplements
 
-**L-Glutamine:** Does not improve exercise performance but may reduce infection incidence in overtrained athletes (Castell, *Eur J Appl Physiol* 1996) and reduce markers of muscle damage after strenuous exercise (Cordova-Martinez, *Nutrients* 2021) [66][67][68].
+**L-Glutamine:** Does not improve exercise performance but may reduce infection incidence in overtrained athletes (Castell, *Eur J Appl Physiol* 1996) and reduce markers of muscle damage after strenuous exercise (Cordova-Martinez, *Nutrients* 2021) [66][67].
 
-**Taurine with BCAAs:** One study found that 2 g taurine plus 3.2 g BCAAs three times a day for 2 weeks before and 3 days after intense exercise reduced delayed-onset muscle soreness and muscle damage compared to placebo, although neither supplement alone provided benefit (Ra, *J Int Soc Sports Nutr* 2013) [69][70].
+**Taurine with BCAAs:** One study found that 2 g taurine plus 3.2 g BCAAs three times a day for 2 weeks before and 3 days after intense exercise reduced delayed-onset muscle soreness and muscle damage compared to placebo, although neither supplement alone provided benefit (Ra, *J Int Soc Sports Nutr* 2013) [69].
 
 ## 4. Recommended Dosing
 
 ### Creatine Dosing Protocols
 
-**Loading protocol (fastest saturation):** A common approach is a loading dose of 15 to 20 g of creatine per day for 5 to 14 days, followed by a maintenance dose. On this regimen, maximum creatine storage should occur within 2 to 4 weeks [1]. In one study, 20 g/day for 6 days raised muscle total creatine by about 20% [71].
+**Loading protocol (fastest saturation):** The quickest way to raise muscle creatine stores may be about 0.3 g/kg/day for 5–7 days (for example, 5 g four times daily), followed by 3–5 g/day [72]. In one study, 20 g/day for 6 days raised muscle total creatine by about 20% [71].
 
-**Maintenance dose:** 2 to 5 g of creatine per day [1]. In the same study, 2 g/day maintained the higher level for a further 30 days [71].
+**Maintenance dose:** Once muscle stores are full, 3–5 g/day generally maintains them [72]. In the same study, 2 g/day maintained the higher level for a further 30 days [71].
 
-**Loading-free protocol:** In the same study, 3 g/day produced a similar 20% rise in muscle total creatine, more gradually, over a period of 28 days [71]. Some studies have shown benefit using a constant dose (such as 5 grams daily) rather than a larger loading dose [1]. Brad advises 5 g a day without loading, which saturates the muscles more slowly and with less chance of tummy upset [93].
+**Loading-free protocol:** In the same study, 3 g/day produced a similar 20% rise in muscle total creatine, more gradually, over a period of 28 days [71]. Lower daily doses without loading (3–5 g/day) also improve muscle mass and performance compared with placebo, but need a minimum of 4 weeks to saturate the muscles [4]. Brad advises 5 g a day without loading, which saturates the muscles more slowly and with less chance of tummy upset [93].
 
 **General health dose:** The ISSN position stand suggests that habitual low dietary creatine intake (for example, 3 g/day) throughout life may provide significant health benefits [72].
 
-**Higher doses:** A maintenance dose of 10 g/day has been used safely long-term in clinical studies [1].
+**Higher doses:** In a Parkinson's disease trial, 10 g/day for at least 5 years caused no more adverse events than placebo [51].
 
 ### Timing and Practical Recommendations
 
@@ -208,11 +217,11 @@ The evidence for BCAA supplementation for muscle building is mixed and depends h
 
 **Missing doses:** Once supplementation stops, muscle creatine falls gradually and returns to baseline after about 30 days, so missing an occasional dose probably has little impact [71].
 
-**How to take:** Creatine monohydrate dissolves poorly in cold water. Mixing into warm water improves dissolution. Creatine HCl dissolves readily in cold liquids. Either can be added to protein shakes, smoothies, or warm beverages [1].
+**How to take:** Creatine dissolves poorly in cold water, and its solubility rises with temperature, so warm water helps it dissolve [3].
 
-**How to store:** Store creatine monohydrate powder in the dark at room temperature. Avoid exposure to high temperatures above 140°F (60°C) and direct light to minimize conversion to creatinine [1][16].
+**How to store:** Store creatine monohydrate powder in the dark at room temperature. Avoid exposure to high temperatures above 140°F (60°C) and direct light to minimize conversion to creatinine [16].
 
-**Hydration:** ConsumerLab advises drinking about 8 cups (64 ounces) of plain water per day while taking creatine, on top of water from other drinks, fruits, and vegetables [1]. Creatine increases water retention in muscle but generally does not seem to cause dehydration [1][75].
+**Hydration:** Creatine increases water retention in muscle but generally does not seem to cause dehydration [4][75].
 
 ### Creatine in MicroVitamin+ Powder
 
@@ -222,65 +231,55 @@ Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/micr
 
 | Condition | Loading | Maintenance | Duration |
 |-----------|---------|-------------|----------|
-| Exercise performance | 15 to 20 g of creatine per day for 5 to 14 days (optional) | 2 to 5 g of creatine per day | Ongoing |
-| COPD | 15 g/day for 14 days | 5 g/day | 10 weeks |
-| Fibromyalgia | 20 g/day for 5 days | 5 g/day | 16 weeks |
-| Heart failure | 20 g/day for 5–10 days | Not stated | Not stated |
-| McArdle disease | 150 mg/kg for 5 days | 60 mg/kg/day | Ongoing |
-| Muscular dystrophies | None | 10 g/day (adults), 5 g/day (children) | Ongoing |
-| Gyrate atrophy | — | 1.5 g/day | Ongoing |
+| Exercise performance | About 0.3 g/kg/day for 5–7 days (optional) [72] | 3–5 g/day [72] | Ongoing |
+| COPD | 5.7 g three times a day for 2 weeks [49] | 5.7 g once a day [49] | During pulmonary rehabilitation |
+| McArdle disease | None | 60 mg/kg/day (low dose) [48] | Not stated |
 
 Brad recommends 5 g a day with no loading phase [93].
 
 ### BCAA Dosing
 
-**For muscle recovery and soreness prevention:** 1–5 grams daily [6].
+**Around surgery (knee replacement):** 20 g of essential amino acids twice daily, starting 1 week before and continuing 2 weeks after surgery (6 weeks in a repeat study) [56][57].
 
-**Around surgery (knee replacement):** 20 g of essential amino acids (including ~8 g BCAAs) twice daily, starting 1 week before and continuing 2 weeks after surgery (6 weeks in a repeat study) [6].
-
-**During bed rest:** ~4 g leucine with each meal (three times daily) [6].
-
-**BCAA ratio:** A 2:1:1 ratio of leucine:isoleucine:valine is generally recommended for muscle-related applications [6].
+**During bed rest:** 0.06 g of leucine per kg of body weight with each meal [59].
 
 ### Safety Thresholds
 
 **EFSA and Spanish Agency for Food Safety:** Both have concluded that doses up to 3 g/day of creatine are likely safe for the general population. EFSA advises against high loading doses because there is insufficient evidence to confirm their safety (EFSA, *EFSA J* 2004; AESAN, *Food Risk Assess Eur* 2024) [76].
 
-**ISSN position:** The ISSN position stand describes short- and long-term creatine supplementation as safe and well tolerated in healthy people [72]. However, much of the research has been done in athletes, and ConsumerLab notes that some experts believe evidence of safety in athletes cannot be extrapolated to the general population [1].
+**ISSN position:** The ISSN position stand describes short- and long-term creatine supplementation as safe and well tolerated in healthy people [72].
 
 ## 5. Safety and Side Effects
 
 ### Creatine Safety
 
-Little is known about potential long-term adverse effects of creatine, and there is some concern that long-term use at high doses (20 grams/day) may adversely affect the kidneys and cardiovascular system [1]. Creatine monohydrate has been used safely in clinical studies in daily doses of 2–10 g for durations ranging from 7 weeks to 5 years [1]. The primary side effects are:
+Long-term safety at high doses is less studied, so if you plan to take more than the usual dose for a long time, check with your doctor first. The ISSN position stand concludes that short- and long-term supplementation, up to 30 g/day for 5 years, is safe and well tolerated in healthy people and in a number of patient groups [72]. The primary side effects are:
 
-**Weight gain from water retention:** The most common effect. Creatine draws water into muscle cells (intracellular retention), causing weight gain, primarily during the loading phase. The gain may be small (about 1 lb or less) [1]. This is not fat gain and is generally temporary. In women, bloating from water retention of nearly 1 liter, without weight gain, has been reported during the second half of the menstrual cycle with creatine compared to placebo (Moore, *Nutrients* 2023) [1].
+**Weight gain from water retention:** The most common effect is water retention in the first several days of supplementation [4]. Creatine draws water into muscle cells (intracellular retention), causing weight gain, primarily during the loading phase. This is not fat gain and is generally temporary. In a trial in women, creatine loading (5 g four times a day for 5 days) in the second half of the menstrual cycle increased total body water by 0.83 L, without a change in body weight (Moore, *Nutrients* 2023) [96].
 
-**Gastrointestinal symptoms:** Despite anecdotal reports, creatine generally does not seem to cause diarrhea [1].
+**Gastrointestinal symptoms:** Creatine generally does not seem to cause stomach upset at usual doses [72], but single doses over 10 g may cause diarrhea, so a loading phase is best split into smaller servings [4].
 
-**Creatinine levels:** Creatine supplementation increases serum creatinine (a marker used to assess kidney function), but this usually reflects creatine turnover rather than kidney damage; a rise still needs checking by your doctor. A 2025 meta-analysis of 12 studies (177 people taking creatine and 263 controls) found a small but statistically significant rise in serum creatinine, likely due to metabolic turnover rather than kidney impairment. Creatine did not significantly change glomerular filtration rate (GFR), a more reliable measure of kidney function (Naeini, *BMC Nephrol* 2025) [77]. A blood test for cystatin C, instead of or in addition to a creatinine test, can be more accurate in some people because it is less affected by age, sex, and muscle size [1]. If you take creatine, inform your physician before blood tests measuring creatinine, or stop supplementation 2 weeks beforehand.
+**Creatinine levels:** Creatine supplementation increases serum creatinine (a marker used to assess kidney function), but this usually reflects creatine turnover rather than kidney damage; a rise still needs checking by your doctor. A 2025 meta-analysis of 12 studies (177 people taking creatine and 263 controls) found a small but statistically significant rise in serum creatinine, likely due to metabolic turnover rather than kidney impairment. Creatine did not significantly change glomerular filtration rate (GFR), a more reliable measure of kidney function (Naeini, *BMC Nephrol* 2025) [77]. Ask your doctor whether a cystatin C blood test, which may be less affected by muscle size, would help. If you take creatine, tell your doctor before blood tests that measure creatinine.
 
-**Hair loss concerns:** A 2009 study in rugby players found creatine increased DHT levels by 56% after a loading phase (van der Merwe, *Clin J Sport Med* 2009) [78]. However, the creatine group started with 23% lower DHT than placebo, and levels only increased to within the normal range [1]. This finding has NOT been replicated. A subsequent 2025 RCT of 45 resistance-trained men given 5 g/day for 12 weeks found no differences in DHT levels, DHT-to-testosterone ratio, or hair growth between creatine and placebo groups (Lak, *J Int Soc Sports Nutr* 2025) [79]. A 2021 review noted that no clinical study of creatine has reported hair loss or balding as a side effect (Antonio, *J Int Soc Sports Nutr* 2021) [1][4].
+**Hair loss concerns:** A 2009 study in rugby players found creatine increased DHT levels by 56% after a loading phase (van der Merwe, *Clin J Sport Med* 2009) [78]. However, the creatine group started with 23% lower DHT than placebo, and levels only increased to within the normal range [4]. This finding has NOT been replicated. A subsequent 2025 RCT of 45 resistance-trained men given 5 g/day for 12 weeks found no differences in DHT levels, DHT-to-testosterone ratio, or hair growth between creatine and placebo groups (Lak, *J Int Soc Sports Nutr* 2025) [79]. A 2021 review noted that no study has reported hair loss or balding in humans (Antonio, *J Int Soc Sports Nutr* 2021) [4].
 
-**Sleep disturbance:** Despite anecdotal reports, placebo-controlled studies using 5 to 6 g daily for 6 to 8 weeks, or 20 g daily for 1 week, have not shown creatine to cause insomnia or sleep disturbances [1][80].
+**Sleep disturbance:** Some people report poor sleep on creatine. In placebo-controlled trials of 5 g daily for 8 weeks and 6 g daily for 6 weeks, side effects were no more common with creatine than with placebo [80].
 
-**Muscle cramping and dehydration:** Despite anecdotal reports, creatine generally does not seem to cause muscle cramping or dehydration [1]. A systematic review found no evidence that creatine hinders the body's ability to dissipate heat or harms body fluid balance during exercise [75].
+**Muscle cramping and dehydration:** Despite anecdotal reports, creatine generally does not seem to cause muscle cramping or dehydration [72]. A systematic review found no evidence that creatine hinders the body's ability to dissipate heat or harms body fluid balance during exercise [75].
 
 **Arrhythmia:** A single case report of atrial fibrillation was associated with creatine use in a 30-year-old man (Kammer, *Pharmacotherapy* 2005) [81].
 
-**Airways, allergies and sinusitis:** Creatine may cause some reduction in airflow, which may matter mainly for people with allergies, asthma, or sinusitis. In a study of 19 young male soccer players taking a 5-gram daily maintenance dose for 8 weeks, airway inflammation rose mildly and was significant only in players with allergic conditions (Simpson, *Med Sci Sports Exerc* 2019) [1]. A pulmonologist also reported a patient whose severe sinusitis with polyps worsened while taking creatine [1].
+**Airways, allergies and sinusitis:** Creatine may cause some reduction in airflow, which may matter mainly for people with allergies, asthma, or sinusitis. In a trial of 19 elite youth soccer players (loading for 1 week, then 5 g a day for 7 weeks), creatine showed a trend toward mild airway inflammation and a larger fall in lung function after a breathing challenge, more pronounced in players with allergies (Simpson, *Med Sci Sports Exerc* 2019) [97].
 
 ### Kidney Function
 
-Creatine supplementation is generally safe for kidneys in healthy individuals. Clinical studies of up to 30 g/day for 1 year and 10 g/day for 5 years have not shown significant kidney damage (Pline, *Ann Pharmacother* 2005) [1]. In one study, kidney function in long-term creatine users was normal compared with a control group (Poortmans, *Med Sci Sports Exerc* 1999) [82].
+Creatine supplementation is generally safe for kidneys in healthy individuals. Studies of 20 g/day for 5 days and up to 10 g/day for 10 months to 5 years found no effect on measures of kidney function such as glomerular filtration rate [72]. In one study, kidney function in long-term creatine users was normal compared with a control group (Poortmans, *Med Sci Sports Exerc* 1999) [82].
 
-**Kidney disease:** ConsumerLab reports that many experts consider the risk of kidney injury from short-term creatine use to be low even among people with existing kidney problems, but long-term safety in this group remains unclear, so it seems prudent to consult your doctor before using creatine [1]. The Mayo Clinic states it "might be unsafe" for people with kidney issues [83]. Brad does not recommend creatine for people with severe kidney problems, and for patients with significant kidney disease he reduces the dose or stops it [93].
-
-**Kidney stones:** There is no evidence creatine causes kidney stones. The speculation stems from the shared observation of elevated creatinine levels, but creatinine does not cause stones [1].
+**Kidney disease:** Long-term safety in people with existing kidney problems is unclear, so if you have kidney disease, talk to your doctor before using creatine. The Mayo Clinic states it "might be unsafe" for people with kidney issues [83]. Brad does not recommend creatine for people with severe kidney problems, and for patients with significant kidney disease he reduces the dose or stops it [93].
 
 ### BCAA Safety
 
-BCAAs are generally considered safe at standard doses [6]. Potential concerns include:
+If you take prescription medicines, check with your doctor or pharmacist before starting BCAAs. Possible concerns include:
 
 - Possible interference with Parkinson's disease medications
 - Possible additive effects with type 2 diabetes medications
@@ -288,9 +287,9 @@ BCAAs are generally considered safe at standard doses [6]. Potential concerns in
 
 ### Safety of Other Supplements
 
-**Glutamine:** Generally safe. GI symptoms (upset stomach, gas, diarrhea) at doses of 10 g or more. In a small trial of single doses, GI symptoms rose with the dose but were mostly mild (Ogden, *Nutrients* 2020) [85]. Dry mouth, headache, and dizziness reported at 30 g/day or more. May trigger mania in people with bipolar disorder (2 case reports at up to 4 g/day). May cause MSG-like symptoms at 3 g or more without food in sensitive individuals [68].
+**Glutamine:** Glutamine may cause gut symptoms such as upset stomach, gas, or diarrhea at higher doses, and very high doses may cause dry mouth, headache, or dizziness. In a small trial of single doses, GI symptoms rose with the dose but were mostly mild (Ogden, *Nutrients* 2020) [85]. Case reports have raised a possible link with mania in people with bipolar disorder, so if you have bipolar disorder, check with your doctor before taking it.
 
-**Warning about contaminated supplements:** Muscle-enhancement supplements have been found to contain undisclosed steroids and stimulants. Compared to men who never used such supplements, the risk of testicular cancer was 65% higher among those who had, 121% higher if used before age 25, and 177% higher if two or more supplements were used (Li, *Brit J Cancer* 2015) [6]. Stick to single-ingredient, third-party-tested products [86][6].
+**Muscle-building supplements and testicular cancer:** In a case-control study, men who had ever used muscle-building supplements had higher odds of testicular cancer (odds ratio 1.65), and the link was stronger in early users, men who used more types of supplement, and those who used them for longer (Li, *Brit J Cancer* 2015) [86]. Some muscle-building supplements may contain undeclared ingredients, so choose single-ingredient products; independent testers such as consumerlab.com and Labdoor publish product test results.
 
 ### Special Populations
 
@@ -304,23 +303,23 @@ BCAAs are generally considered safe at standard doses [6]. Potential concerns in
 
 | Interacting Substance | Concern | Recommendation |
 |---|---|---|
-| Caffeine (chronic high-dose) | May blunt creatine's ergogenic effects through altered muscle relaxation or GI discomfort | Acute caffeine use (~1 hour pre-exercise) appears safe; avoid chronic high-dose caffeine [1] |
+| Caffeine (chronic high-dose) | May blunt creatine's ergogenic effects through altered muscle relaxation or GI discomfort [14] | Evidence is scarce; consider avoiding chronic high-dose caffeine if you want the most from creatine |
 | Ephedra + Caffeine | A single case report of ischemic stroke in an athlete using all three | Avoid combining creatine with ephedra [88] |
 | Nephrotoxic drugs (NSAIDs, aminoglycosides, ACE inhibitors, ciclosporin) | Theoretically increased kidney stress | Consult physician if using creatine with nephrotoxic medications |
-| Drugs that raise creatinine (trimethoprim, cimetidine) | Creatine further raises creatinine, potentially confusing kidney function assessment | Inform physician about creatine use before blood tests [1] |
+| Drugs that raise creatinine (trimethoprim, cimetidine) | Creatine also raises creatinine, which may confuse kidney function assessment [77] | Tell your doctor you take creatine before blood tests |
 
 ### BCAA Interactions
 
 | Interacting Substance | Concern | Recommendation |
 |---|---|---|
-| Parkinson's disease medications | BCAAs might interfere with some medications used to treat Parkinson disease | Avoid concurrent use or separate timing [6] |
-| Type 2 diabetes medications | BCAAs might have additive effects with some type 2 diabetes medications | Monitor glucose more closely [6] |
+| Parkinson's disease medications | BCAAs might interfere with some medications used to treat Parkinson disease | Check with your doctor or pharmacist first |
+| Type 2 diabetes medications | BCAAs might have additive effects with some type 2 diabetes medications | Check with your doctor; you may need closer glucose monitoring |
 
 ## 7. Dietary Sources
 
 ### Creatine in Food
 
-Food sources of creatine include meat, poultry, and fish [1].
+Creatine is found mainly in red meat and seafood [72].
 
 ### Impact of Cooking
 
@@ -332,11 +331,9 @@ A single 5 g dose of creatine equals the creatine in about 1.1 kg of fresh, unco
 
 ### BCAA Sources
 
-Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and legumes [6].
+Because BCAAs are essential amino acids, they must come from protein in the diet.
 
 ## 8. References
-
-[1] ConsumerLab. "Creatine Supplements Review." Updated September 17, 2026. [https://www.consumerlab.com/reviews/review-creatine/creatine/](https://www.consumerlab.com/reviews/review-creatine/creatine/)
 
 [2] Wallimann T, Tokarska-Schlattner M, Schlattner U. "The creatine kinase system and pleiotropic effects of creatine." *Amino Acids*. 2011. PMID: 21448658. [https://pubmed.ncbi.nlm.nih.gov/21448658/](https://pubmed.ncbi.nlm.nih.gov/21448658/)
 
@@ -345,8 +342,6 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 [4] Antonio J, et al. "Common questions and misconceptions about creatine supplementation: what does the scientific evidence really show?" *J Int Soc Sports Nutr*. 2021;18:13. doi: [10.1186/s12970-021-00412-w](https://doi.org/10.1186/s12970-021-00412-w) PMID: 33557850. [https://pubmed.ncbi.nlm.nih.gov/33557850/](https://pubmed.ncbi.nlm.nih.gov/33557850/)
 
 [5] U.S. Food and Drug Administration. "GRAS Notice No. GRN 000931: Creatine Monohydrate." 2020. [https://www.fda.gov/food/generally-recognized-safe-gras/gras-notice-inventory](https://www.fda.gov/food/generally-recognized-safe-gras/gras-notice-inventory)
-
-[6] ConsumerLab. "Muscle & Workout Supplements Review: Branched-Chain Amino Acids (BCAAs)." Updated June 1, 2026. [https://www.consumerlab.com/reviews/branched-chain-amino-acids/bcaas/](https://www.consumerlab.com/reviews/branched-chain-amino-acids/bcaas/)
 
 [7] Eghbali E, et al. "Supplementing With Which Form of Creatine (Hydrochloride or Monohydrate) Alongside Resistance Training Can Have More Impacts on Anabolic/Catabolic Hormones, Strength and Body Composition?" *Physiol Res*. 2024;73(5):739-753. doi: [10.33549/physiolres.935323](https://doi.org/10.33549/physiolres.935323) PMID: 39545789. https://pubmed.ncbi.nlm.nih.gov/39545789/
 
@@ -380,8 +375,6 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 
 [22] Candow DG, et al. "Effect of 12 months of creatine supplementation and whole-body resistance training on measures of bone, muscle and strength in older males." *Nutr Health*. 2021;27(2):151-159 (published online 2020). doi: [10.1177/0260106020975247](https://doi.org/10.1177/0260106020975247) PMID: 33234019. https://pubmed.ncbi.nlm.nih.gov/33234019/
 
-[23] Rusterholz F, Candow DG, et al. "Effects of different creatine monohydrate supplementation strategies and resistance-band training in untrained healthy adults (≥ 50 years of age)." *Adv Exer Health Sci*. 2026;3(1):57-68. doi: [10.1016/j.aehs.2026.01.001](https://doi.org/10.1016/j.aehs.2026.01.001)
-
 [24] Fairman CM, et al. "Creatine supplementation does not add to resistance training effects in prostate cancer patients under androgen deprivation therapy: A double-blind randomized trial." *J Sci Med Sport*. 2025;28(2):118-124 (published online 2024). doi: [10.1016/j.jsams.2024.09.002](https://doi.org/10.1016/j.jsams.2024.09.002) PMID: 39366880. https://pubmed.ncbi.nlm.nih.gov/39366880/
 
 [25] Chami J, Candow DG. "Effect of Creatine Supplementation Dosing Strategies on Aging Muscle Performance." *J Nutr Health Aging*. 2019;23(3):281-285. doi: [10.1007/s12603-018-1148-8](https://doi.org/10.1007/s12603-018-1148-8) PMID: 30820517. https://pubmed.ncbi.nlm.nih.gov/30820517/
@@ -404,7 +397,7 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 
 [34] Avgerinos KI, et al. "Effects of creatine supplementation on cognitive function of healthy individuals: a systematic review of randomized controlled trials." *Exp Gerontol*. 2018;108:166-173. doi: [10.1016/j.exger.2018.04.013](https://doi.org/10.1016/j.exger.2018.04.013) PMID: 29704637. https://pubmed.ncbi.nlm.nih.gov/29704637/
 
-[35] EFSA Panel on Nutrition, Novel Foods and Food Allergens (NDA). "Creatine and cognitive function." *EFSA J*. 2024.
+[35] EFSA Panel on Nutrition, Novel Foods and Food Allergens (NDA), Turck D, et al. "Creatine and improvement in cognitive function: Evaluation of a health claim pursuant to article 13(5) of regulation (EC) No 1924/2006." *EFSA J*. 2024;22(11):e9100. doi: [10.2903/j.efsa.2024.9100](https://doi.org/10.2903/j.efsa.2024.9100) PMID: 39564533. [https://pubmed.ncbi.nlm.nih.gov/39564533/](https://pubmed.ncbi.nlm.nih.gov/39564533/)
 
 [36] Van Cutsem J, et al. "Can Creatine Combat the Mental Fatigue-associated Decrease in Visuomotor Skills?" *Med Sci Sports Exerc*. 2020;52(1):120-130. doi: [10.1249/MSS.0000000000002122](https://doi.org/10.1249/MSS.0000000000002122) PMID: 31403610. https://pubmed.ncbi.nlm.nih.gov/31403610/
 
@@ -424,7 +417,7 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 
 [44] Watanabe A, Kato N, Kato T. "Effects of creatine on mental fatigue and cerebral hemoglobin oxygenation." *Neurosci Res*. 2002. PMID: 11985880. [https://pubmed.ncbi.nlm.nih.gov/11985880/](https://pubmed.ncbi.nlm.nih.gov/11985880/)
 
-[45] Xu W, et al. "The effects of creatine supplementation on cognitive function in adults: a systematic review and meta-analysis." *Front Nutr*. 2024. PMID: 39070254. [https://pubmed.ncbi.nlm.nih.gov/39070254/](https://pubmed.ncbi.nlm.nih.gov/39070254/)
+[45] Xu C, et al. "The effects of creatine supplementation on cognitive function in adults: a systematic review and meta-analysis." *Front Nutr*. 2024;11:1424972. doi: [10.3389/fnut.2024.1424972](https://doi.org/10.3389/fnut.2024.1424972) PMID: 39070254. [https://pubmed.ncbi.nlm.nih.gov/39070254/](https://pubmed.ncbi.nlm.nih.gov/39070254/)
 
 [46] Alves CR, et al. "Creatine supplementation in fibromyalgia: a randomized, double-blind, placebo-controlled trial." *Arthritis Care Res*. 2013;65(9):1449-1459. doi: [10.1002/acr.22020](https://doi.org/10.1002/acr.22020) PMID: 23554283. https://pubmed.ncbi.nlm.nih.gov/23554283/
 
@@ -470,11 +463,7 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 
 [67] Cordova-Martinez A, et al. "Effect of glutamine supplementation on muscular damage biomarkers in professional basketball players." *Nutrients*. 2021;13(6):2073. doi: [10.3390/nu13062073](https://doi.org/10.3390/nu13062073) PMID: 34204359. https://pubmed.ncbi.nlm.nih.gov/34204359/
 
-[68] ConsumerLab. "Glutamine Supplement Review." Updated July 7, 2026. [https://www.consumerlab.com/reviews/glutamine-review-comparisons/glutamine/](https://www.consumerlab.com/reviews/glutamine-review-comparisons/glutamine/)
-
 [69] Ra SG, et al. "Combined effect of branched-chain amino acids and taurine supplementation on delayed onset muscle soreness and muscle damage in high-intensity eccentric exercise." *J Int Soc Sports Nutr*. 2013;10(1):51. doi: [10.1186/1550-2783-10-51](https://doi.org/10.1186/1550-2783-10-51) PMID: 24195702. https://pubmed.ncbi.nlm.nih.gov/24195702/
-
-[70] ConsumerLab. "Taurine Supplements Review." Updated August 24, 2026. [https://www.consumerlab.com/reviews/taurine-supplements-review/taurine/](https://www.consumerlab.com/reviews/taurine-supplements-review/taurine/)
 
 [71] Hultman E, Soderlund K, Timmons JA, et al. "Muscle creatine loading in men." *J Appl Physiol*. 1996. PMID: 8828669. [https://pubmed.ncbi.nlm.nih.gov/8828669/](https://pubmed.ncbi.nlm.nih.gov/8828669/)
 
@@ -522,3 +511,9 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 [93] Stanfield B. "Why Creatine Is The ONE Supplement All Longevity Researchers Are Taking." drstanfield.com. 26 March 2025. [https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking](https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking)
 
 [94] Stanfield B. "Creatine “FAILS” in New Study - Don’t Be Misled!" drstanfield.com. 2 April 2025. [https://drstanfield.com/blogs/articles/creatine-fails-in-new-study-don-t-be-misled](https://drstanfield.com/blogs/articles/creatine-fails-in-new-study-don-t-be-misled)
+
+[95] Citherlet T. "Commentary: The effects of creatine supplementation on cognitive function in adults: a systematic review and meta-analysis." *Front Nutr*. 2026;13:1716285. doi: [10.3389/fnut.2026.1716285](https://doi.org/10.3389/fnut.2026.1716285) PMID: 42039906. [https://pubmed.ncbi.nlm.nih.gov/42039906/](https://pubmed.ncbi.nlm.nih.gov/42039906/)
+
+[96] Moore SR, et al. "A Randomized Controlled Trial of Changes in Fluid Distribution across Menstrual Phases with Creatine Supplementation." *Nutrients*. 2023;15(2):429. doi: [10.3390/nu15020429](https://doi.org/10.3390/nu15020429) PMID: 36678300. [https://pubmed.ncbi.nlm.nih.gov/36678300/](https://pubmed.ncbi.nlm.nih.gov/36678300/)
+
+[97] Simpson AJ, et al. "Effect of Creatine Supplementation on the Airways of Youth Elite Soccer Players." *Med Sci Sports Exerc*. 2019;51(8):1582-1590. doi: [10.1249/MSS.0000000000001979](https://doi.org/10.1249/MSS.0000000000001979) PMID: 30913162. [https://pubmed.ncbi.nlm.nih.gov/30913162/](https://pubmed.ncbi.nlm.nih.gov/30913162/)

@@ -17,6 +17,15 @@ sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/magne
 
 Many people do not get enough magnesium, and a normal blood test does not rule this out, because only about 1% of the body's magnesium is in the blood; most of the evidence linking higher intake with less heart disease, stroke and type 2 diabetes comes from observational studies, which show association, not cause ([Brad, 1 Jul 2025](https://drstanfield.com/blogs/articles/what-is-the-best-magnesium-dose-form-14-studies-later)). Brad's advice is to reach the RDA, 420 mg a day for men and 320 mg for women, from food first (leafy greens, legumes, nuts, seeds and whole grains), and to use a low-dose supplement only to fill the gap; he includes 126 mg in his own supplements, about 30% of the RDA ([Brad, 1 Jul 2025](https://drstanfield.com/blogs/articles/what-is-the-best-magnesium-dose-form-14-studies-later)). He favours magnesium glycinate and magnesium taurate, which are bound to amino acids and well absorbed, over magnesium oxide, which is poorly absorbed, and he is not convinced that L-threonate offers extra benefit, given its high cost ([Brad, 1 Jul 2025](https://drstanfield.com/blogs/articles/what-is-the-best-magnesium-dose-form-14-studies-later)). For sleep the evidence is modest: a 2021 review found that people fell asleep about 17 minutes sooner, but the evidence was rated low to very low quality, and a 2025 trial of 250 mg a day as bisglycinate found a small improvement on a sleep-difficulty questionnaire (Brad's current guidance, 14 Oct 2026). If you take any medicine, especially a prescription one, ask your doctor about interactions before starting magnesium, and keep magnesium at least two hours apart from drugs such as rosuvastatin (Crestor), some antibiotics, sotalol, gabapentin and levothyroxine ([Brad, 12 Jun 2024](https://drstanfield.com/blogs/articles/magnesium-l-threonate-effects-sleep)). People with kidney disease should check with their doctor before taking magnesium supplements (Brad's current guidance, 29 Sep 2026).
 
+## Key safety points
+
+- Magnesium can reduce the absorption of some medicines, such as bisphosphonates, tetracycline and quinolone antibiotics, rosuvastatin, sotalol and gabapentin [1][48][49][50]. Take them apart, and ask your pharmacist how long a gap your medicine needs.
+- Long-term proton pump inhibitors and loop or thiazide diuretics can lower magnesium, while potassium-sparing diuretics reduce its loss [1]. If you take digoxin, ask your doctor before taking magnesium [53].
+- The risk of magnesium toxicity rises when kidney function is impaired [1]. People with kidney disease should check with their doctor before taking magnesium supplements.
+- The daily upper limit for supplemental magnesium is 350 mg for adults [1]. Higher doses, such as those used for migraine, belong under a doctor's supervision [1].
+- Very large doses can cause magnesium toxicity, with muscle weakness, difficulty breathing or an irregular heartbeat [1]. If these appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- The most common side effect is diarrhea, which can come with nausea and abdominal cramping, mainly at high doses [1].
+
 ## Brad's videos on this topic
 
 - 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drstanfield.com/blogs/articles/5-supplements-that-actually-work): magnesium is one of the multivitamin ingredients Brad highlights; he recommends 420 mg a day for men and 320 mg for women and uses magnesium taurate to also get taurine's potential benefits. Superseded on sleep: he said magnesium improves sleep and increased sleep time in older adults, but his October 2026 guidance calls the sleep evidence modest and of low to very low quality.
@@ -35,12 +44,12 @@ Many people do not get enough magnesium, and a normal blood test does not rule t
 
 Magnesium is an essential mineral involved in over 300 enzymatic reactions in the human body [1]. It is a cofactor in ATP production, DNA and RNA synthesis, protein synthesis, muscle contraction, nerve impulse conduction, blood glucose regulation, and blood pressure control [1][2][43]. Approximately 50-60% of the body's magnesium resides in bone, where it contributes to bone structure, with most of the rest in soft tissues [1].
 
-Low magnesium intake is widespread [4]. Approximately 48% of the US population consumes less than the Estimated Average Requirement from food alone [1][3]. Groups at highest risk include the elderly, adolescents, individuals with chronic alcohol use, those with type 2 diabetes, and patients with gastrointestinal diseases such as Crohn's disease and celiac disease [1]. Serum magnesium holds less than 1% of total body magnesium and is a poor marker of whole-body status [1][3]. Subclinical deficiency can exist despite a normal serum level [5]. Red blood cell (RBC) magnesium gives an idea of recent magnesium status, but it also does not reflect total body magnesium [3].
+Low magnesium intake is widespread [4]. Approximately 48% of the US population consumes less than the Estimated Average Requirement from food alone [1]. Groups at highest risk include the elderly, adolescents, individuals with chronic alcohol use, those with type 2 diabetes, and patients with gastrointestinal diseases such as Crohn's disease and celiac disease [1]. Serum magnesium holds less than 1% of total body magnesium and is a poor marker of whole-body status [1]. Subclinical deficiency can exist despite a normal serum level [5]. Other tests, such as red blood cell magnesium, are also used, but no single method is considered satisfactory [1].
 
-Symptoms of deficiency progress from mild to severe [1][3]:
+Symptoms of deficiency progress from mild to severe [1]:
 - **Early:** Loss of appetite, nausea, fatigue, weakness
 - **Moderate:** Numbness, tingling, muscle cramps, personality changes
-- **Severe:** Tetany, tremors, cardiac arrhythmias, seizures, hypocalcemia, hypokalemia
+- **Severe:** Cardiac arrhythmias, seizures, hypocalcemia, hypokalemia
 
 Absorption efficiency is typically 30-40% of dietary magnesium [1].
 
@@ -50,38 +59,38 @@ Not all magnesium supplements are equivalent. The form determines three critical
 
 ### Comparison Table
 
-| Form | Elemental Mg (%) | Absorption (%) | Laxative Effect | Primary Uses |
-|------|:-:|:-:|:-:|------|
-| Magnesium Oxide | 60% | ~4% | Strong | Antacid, osmotic laxative. Highest Mg per pill but poorest absorption. Poor choice for correcting deficiency [3][7]. |
-| Magnesium Citrate | 11-16% | ~30% | Moderate-High | Well-studied, reasonably absorbed. Common in clinical trials. Causes loose stools at higher doses [3][7]. |
-| Magnesium Glycinate (Bisglycinate) | 14% | ~24% | Minimal | Chelated to glycine. Good tolerance and absorption. Preferred for raising levels without GI distress [3][7]. |
-| Magnesium Chloride | 12% | 20-42% | Moderate | Better absorbed as a liquid. Absorption varies by study conditions [3][7]. |
-| Magnesium Aspartate | 7-16% | ~42% | Low-Moderate | Highest absorption in available studies. Aspartate is an excitatory amino acid; long-term safety at high doses has been questioned [3]. |
-| Magnesium Taurate | 9% | Uncertain | Minimal | Chelated to taurine. Low elemental content but well tolerated [3]. |
-| Magnesium L-Threonate (Magtein) | 8% | Uncertain | Minimal | Patented form marketed for cognition. Very low elemental Mg. Animal data on brain penetration not convincingly replicated in human outcomes [3][9]. |
-| Magnesium Malate | 16% | Uncertain | Low-Moderate | Chelated to malic acid (Krebs cycle intermediate). Sometimes promoted for energy. Limited human bioavailability data [3]. |
-| Magnesium Gluconate | 5% | ~19%+ | Low-Moderate | Low elemental content. Reasonable absorption [3]. |
-| Magnesium Hydroxide | 42% | Low | Strong | Milk of magnesia. High elemental content but poorly absorbed. Used as antacid and laxative [3]. |
-| Magnesium Sulfate (Epsom Salt) | 20% | ~4% | Strong | Used IV for eclampsia and torsades de pointes. Potent osmotic laxative orally. Poor oral absorption [1][3]. |
-| Magnesium Carbonate | 29% | Low | Low-Moderate | Used primarily as an antacid. Poor absorption for raising systemic levels [3]. |
+| Form | Absorption | Notes |
+|------|------|------|
+| Magnesium Oxide | Poor, about 4% in one study [6] | Used in antacids and laxatives. One of the forms most often reported to cause diarrhea [1]. Brad notes it is 60% elemental magnesium but poorly absorbed [45]. |
+| Magnesium Citrate | Higher than oxide [1][7] | Brad notes it is better absorbed than oxide but only 11% elemental magnesium, and it has a laxative effect [45]. |
+| Magnesium Glycinate (Bisglycinate) | Uncertain | Bound to the amino acid glycine. Brad calls it well absorbed [45]. Used in the most recent sleep trial [17]. |
+| Magnesium Chloride | Higher than oxide [1][6] | One of the forms most often reported to cause diarrhea [1]. |
+| Magnesium Aspartate | Higher than oxide [1][6] | |
+| Magnesium Taurate | Uncertain | Bound to the amino acid taurine. Brad calls it well absorbed [45]. |
+| Magnesium L-Threonate (Magtein) | Uncertain | Patented form marketed for cognition. Animal data on the brain [9]; human results are mixed [45]. |
+| Magnesium Malate | Uncertain | Bound to malic acid. |
+| Magnesium Gluconate | Uncertain | One of the forms most often reported to cause diarrhea [1]. |
+| Magnesium Hydroxide | Uncertain | Milk of magnesia. Used as an antacid and laxative [1]. |
+| Magnesium Sulfate (Epsom Salt) | Lower than citrate or chloride [1] | Given by injection for pre-eclampsia [40]. |
+| Magnesium Carbonate | Uncertain | One of the forms most often reported to cause diarrhea [1]. |
 
-Sources for absorption and elemental data: Ranade, *Am J Ther* 2001; Guerrera, *Am Fam Physician* 2009; Firoz, *Magnes Res* 2001; Schuchardt, *Curr Nutr Food Sci* 2017 [3][6][7].
+Sources for absorption data: NIH ODS; Firoz, *Magnes Res* 2001; Schuchardt, *Curr Nutr Food Sci* 2017 [1][6][7].
 
 ### Key Principles for Form Selection
 
-**For correcting deficiency or raising levels:** Glycinate (bisglycinate) and citrate have the best-supported absorption data. Glycinate is preferred when GI tolerance is a concern [3][7].
+**For correcting deficiency or raising levels:** In small studies, the aspartate, citrate, lactate and chloride forms were absorbed better than oxide [1][6]. A review found that the type of salt appears less relevant than is often thought; the dose and a person's magnesium status matter more [7].
 
-**For cardiovascular support:** Taurate is promoted for heart health, but the main evidence is a rat study in which magnesium taurate restored blood pressure and reduced heart damage [8]. ConsumerLab lists the absorption of taurate as uncertain [3]. Brad, who calls both glycinate and taurate well absorbed [45], uses taurate to also get the potential benefits of taurine itself [46].
+**For cardiovascular support:** Taurate is promoted for heart health, but the main evidence is a rat study in which magnesium taurate restored blood pressure and reduced heart damage [8]. Brad, who calls both glycinate and taurate well absorbed [45], uses taurate to also get the potential benefits of taurine itself [46].
 
-**For sleep and relaxation:** Citrate or bisglycinate is a reasonable choice because both are relatively well absorbed [3]. Glycine itself may improve subjective sleep quality, possibly by lowering core body temperature, based largely on rat studies [10][11]. L-threonate (Magtein) does NOT appear to improve sleep per available evidence [3][12].
+**For sleep and relaxation:** The most recent sleep trial used bisglycinate [17]. Glycine itself may improve subjective sleep quality, possibly by lowering core body temperature, based largely on rat studies [10][11]. L-threonate (Magtein) has a single sleep trial, which lasted 21 days [12].
 
-**For cognitive function:** L-threonate (Magtein) is marketed for brain health, but human evidence is minimal (see Section 3). Ensuring adequate systemic magnesium via better-absorbed forms may be equally effective [3][9].
+**For cognitive function:** L-threonate (Magtein) is marketed for brain health, but human results are mixed (see Section 3). Brad is not convinced it offers extra benefit, given its high cost [45].
 
-**For constipation relief:** Poorly absorbed forms work best as laxatives. Hydroxide (milk of magnesia) acts fastest and sulfate (Epsom salt) is the most potent [3].
+**For constipation relief:** Magnesium is a main ingredient in some laxatives, such as milk of magnesia (magnesium hydroxide) [1].
 
 ### Magnesium Orotate: A Safety Note
 
-Magnesium orotate is sometimes marketed as a "highly bioavailable" form. However, the European Food Safety Authority (EFSA) has raised safety concerns about orotic acid due to its tumor-promoting effects at high doses [3]. This form should be avoided until safety data is more complete.
+Magnesium orotate is sometimes marketed as a "highly bioavailable" form. If you are thinking of taking it, check with your doctor or pharmacist first.
 
 ## 3. Evidence for Health Benefits
 
@@ -91,33 +100,25 @@ Magnesium orotate is sometimes marketed as a "highly bioavailable" form. However
 
 **In those already on BP medications:** A subsequent meta-analysis of 38 trials found substantially larger effects in hypertensive patients already taking antihypertensive drugs: SBP reduction of 7.68 mmHg and DBP reduction of 2.96 mmHg. In normotensive groups, the effect did not reach statistical significance (Argeros et al., *Hypertension*, 2025) [14]. The authors concluded that the findings support a benefit in people with high blood pressure or low magnesium, interpreted with caution because the studies varied widely [14].
 
-**FDA position:** In January 2022, the FDA authorized a qualified health claim: "Consuming diets with adequate magnesium may reduce the risk of high blood pressure," but requires the qualifier "the evidence is inconsistent and inconclusive" [3].
+**FDA position:** In 2022, the FDA approved a qualified health claim: "Consuming diets with adequate magnesium may reduce the risk of high blood pressure (hypertension)," with the qualifier that "the evidence is inconsistent and inconclusive" [1].
 
 ### Sleep
 
-Rat studies suggest magnesium may increase melatonin production by raising the activity of N-acetyltransferase, an enzyme involved in making melatonin [3].
+**Older adults with insomnia:** An RCT in 46 elderly subjects found that a daily dose of 500 mg of magnesium for 8 weeks significantly decreased sleep onset latency (P=0.02) and increased serum melatonin and renin levels compared to placebo (Abbasi et al., *J Res Med Sci*, 2012) [15].
 
-**Older adults with insomnia:** An RCT in 46 elderly subjects found that a daily dose of 500 mg of magnesium (as magnesium oxide) for 8 weeks significantly decreased sleep onset latency (P=0.02) and increased serum melatonin and renin levels compared to placebo (Abbasi et al., *J Res Med Sci*, 2012) [3][15].
+**Meta-analysis in older adults:** A meta-analysis of 3 RCTs (n=151 older adults) found that magnesium reduced sleep onset latency by 17.36 minutes (95% CI: -27.27 to -7.44, P=0.0006) (Mah & Pitre, *BMC Complement Med Ther*, 2021) [16]. Brad notes that the review's authors judged the trials to be at moderate to high risk of bias, with small benefits not well supported by quality evidence [47].
 
-**Meta-analysis in older adults:** A meta-analysis of 3 RCTs (n=151 older adults) found that 320-729 mg magnesium daily reduced sleep onset latency by 17.36 minutes (95% CI: -27.27 to -7.44, P=0.0006). The most common side effect was soft stools (Mah & Pitre, *BMC Complement Med Ther*, 2021) [3][16]. Brad notes that the review's authors judged the trials to be at moderate to high risk of bias, with small benefits not well supported by quality evidence [47].
+**Magnesium bisglycinate:** An RCT of 155 adults found that 250 mg elemental magnesium as bisglycinate for 4 weeks modestly reduced insomnia severity (ISI score), with a small effect size (Cohen's d=0.2). Exploratory analyses suggested greater benefit in those with lower baseline magnesium intake (Schuster et al., *Nat Sci Sleep*, 2025) [17].
 
-**Magnesium bisglycinate:** An RCT of 134 participants found that 250 mg elemental magnesium as bisglycinate for 4 weeks modestly reduced insomnia severity (ISI score), with a small effect size (Cohen's d=0.2). Greater benefit was observed in those with lower baseline magnesium intake (Schuster et al., *Nat Sci Sleep*, 2025) [3][17].
-
-**Magnesium L-threonate (Magtein) for sleep:** An industry-funded RCT of 1 g/day Magtein for 21 days reported improved deep sleep and REM sleep scores via Oura ring and improved daytime functioning (Hausenblas et al., *Sleep Med X*, 2024) [12]. ConsumerLab reports 76 participants [3]. However, the study was small, short, industry-funded, has a published corrigendum, and questionnaire-based sleep measures did not consistently improve. Per ConsumerLab's assessment, Magtein does NOT appear to reliably improve sleep [3].
-
-**Deficiency and sleep disorders:** Magnesium deficiency is NOT associated with insomnia per se but IS associated with approximately 3-fold increased risk of sleep apnea [3].
-
-**Practical recommendation:** For sleep, citrate or bisglycinate in the 250-300 mg elemental range, taken 30 to 60 minutes before bed, has the best evidence [3].
+**Magnesium L-threonate (Magtein) for sleep:** An RCT of 1 g/day Magtein for 21 days in 80 adults reported improved deep sleep and REM sleep scores via Oura ring and improved daytime functioning (Hausenblas et al., *Sleep Med X*, 2024) [12]. This is a single trial, and Brad is not convinced that L-threonate offers extra benefit, given its high cost [45].
 
 ### Cognitive Function
 
-**Calcium-to-magnesium ratio:** A placebo-controlled study of 240 adults in Tennessee found that reducing the dietary calcium-to-magnesium ratio improved cognition by 9.1% in those aged 65+ [3]. The trial linked this effect partly to changes at the APOE gene (Zhu et al., *J Alzheimers Dis*, 2020) [18]. The ratio should not be reduced below 1.7 [3].
+**Calcium-to-magnesium ratio:** A randomized trial that enrolled 250 participants at Vanderbilt University Medical Center found that lowering a high dietary calcium-to-magnesium ratio to around 2.3 with personalized magnesium supplements improved cognitive function by 9.1% in those aged over 65 years [18]. The trial linked this effect partly to changes at the APOE gene (Zhu et al., *J Alzheimers Dis*, 2020) [18].
 
-**Long-term observational data:** A 20-year follow-up of 6,473 women starting at around 70 years of age found that those consuming 257-317 mg/day of magnesium had 37% lower risk of mild cognitive impairment compared to those with lower intakes (Lo et al., *BMJ Open*, 2019) [3]. The authors concluded that total magnesium intake between the estimated average requirement and the recommended dietary allowance may be associated with a lower risk of mild cognitive impairment [19].
+**Long-term observational data:** A follow-up of more than 20 years of 6,473 women aged 65-79 years found that those in the middle fifth of magnesium intake had a lower risk of mild cognitive impairment than those in the lowest fifth (hazard ratio 0.63) (Lo et al., *BMJ Open*, 2019) [19]. The authors concluded that total magnesium intake between the estimated average requirement and the recommended dietary allowance may be associated with a lower risk of mild cognitive impairment [19].
 
-**Magnesium L-threonate (Magtein):** Three human studies exist, all showing minimal benefit. The original animal study demonstrated enhanced synaptic plasticity and memory in rats (Slutsky et al., *Neuron*, 2010) [9]. However, the dose used was equivalent to approximately 7 g/day in humans, 20 times the tolerable upper limit [3]. Human trials have not convincingly replicated these findings. Given L-threonate's very low elemental magnesium content (8%), achieving adequate systemic magnesium via better-absorbed forms (glycinate, citrate) may be equally or more effective for brain health at a fraction of the cost [3].
-
-**Synthesis:** Clinical trial evidence does not yet support recommending magnesium specifically for cognitive enhancement over general adequacy [3].
+**Magnesium L-threonate (Magtein):** The original animal study demonstrated enhanced synaptic plasticity and memory in rats (Slutsky et al., *Neuron*, 2010) [9]. Human results are mixed: one small, manufacturer-funded study showed a small improvement in one cognitive task but no other benefits, and a study in people with dementia showed no meaningful improvement [45]. Brad is not convinced it offers extra benefit, given its high cost [45].
 
 ### Diabetes and Insulin Resistance
 
@@ -127,15 +128,15 @@ Diabetes increases urinary magnesium losses, and the resulting magnesium inadequ
 
 **Metabolic syndrome with low magnesium:** The same research group found that after 16 weeks of the same dose and form (magnesium chloride), only 48% of the magnesium group still met criteria for metabolic syndrome versus 77.5% of placebo (Rodriguez-Moran et al., *Adv Chronic Kidney Dis*, 2018) [21].
 
-**Established type 2 diabetes:** An RCT in 14 people with insulin-treated type 2 diabetes and low magnesium found that 6 weeks of oral magnesium did NOT improve insulin sensitivity (Drenthen et al., *Diabetologia*, 2024) [22]. ConsumerLab reports the dose as 360 mg of magnesium per day, as magnesium gluconate [3].
+**Established type 2 diabetes:** An RCT in 14 people with insulin-treated type 2 diabetes and low magnesium found that 6 weeks of oral magnesium did NOT improve insulin sensitivity (Drenthen et al., *Diabetologia*, 2024) [22]. The dose was 15 mmol of magnesium a day [22].
 
 ### Bone Health
 
 Approximately 50-60% of body magnesium resides in bone, where it is involved in bone formation and influences osteoblast and osteoclast activity [1].
 
-**Bone mineral density:** An analysis of approximately 2,000 adults aged 70-79 found that higher magnesium intake was associated with higher whole-body bone mineral density (BMD) in white women and men, but not in Black participants (Ryder et al., *J Am Geriatr Soc*, 2005) [23]. In white women, meeting the RDA for magnesium was associated with 2% higher BMD [3].
+**Bone mineral density:** An analysis of approximately 2,000 adults aged 70-79 found that higher magnesium intake was associated with higher whole-body bone mineral density (BMD) in white women and men, but not in Black participants (Ryder et al., *J Am Geriatr Soc*, 2005) [23].
 
-**Fracture risk:** A US study of older adults followed for 8 years found that the highest magnesium intake was associated with 53% lower fracture risk in men and 62% lower fracture risk in women [3]. Women meeting the RDA had 27% lower fracture risk (Veronese et al., *Br J Nutr*, 2017) [3][24].
+**Fracture risk:** A US study of 3,765 adults followed for 8 years found that those in the highest fifth of magnesium intake had a lower fracture risk than those in the lowest fifth (hazard ratio 0.47 in men and 0.38 in women) [24]. Women meeting the RDA had 27% lower fracture risk (Veronese et al., *Br J Nutr*, 2017) [24].
 
 **Mechanism:** Magnesium affects the concentrations of both parathyroid hormone and the active form of vitamin D, which are major regulators of bone homeostasis. Severe magnesium deficiency can disrupt mineral homeostasis and cause hypocalcemia [1].
 
@@ -143,13 +144,13 @@ Approximately 50-60% of body magnesium resides in bone, where it is involved in 
 
 Magnesium is involved in the active transport of calcium and potassium ions across cell membranes, a process important to nerve impulse conduction, muscle contraction, and normal heart rhythm [1].
 
-**Muscle soreness in low-Mg individuals:** In a crossover trial of nine male runners on low-magnesium diets, 500 mg/day of magnesium for 7 days reduced muscle soreness after a downhill run but did not improve performance (Steward et al., *Eur J Appl Physiol*, 2019) [25]. With magnesium oxide as the source, soreness was 32% lower at 24 hours and 53% lower three days after the run than with placebo [3].
+**Muscle soreness in low-Mg individuals:** In a crossover trial of nine male runners on low-magnesium diets, 500 mg/day of magnesium for 7 days reduced muscle soreness after a downhill run but did not improve performance (Steward et al., *Eur J Appl Physiol*, 2019) [25].
 
-**Glycinate for DOMS:** A double-blind, placebo-controlled trial in 9 men and 13 women of college age found that 350 mg/day of magnesium for 10 days modestly reduced delayed-onset muscle soreness (Reno et al., *J Strength Cond Res*, 2022) [26]. ConsumerLab reports that the form was magnesium glycinate [3].
+**Delayed-onset muscle soreness:** A double-blind, placebo-controlled trial in 9 men and 13 women of college age found that 350 mg/day of magnesium for 10 days modestly reduced delayed-onset muscle soreness (Reno et al., *J Strength Cond Res*, 2022) [26].
 
 **Performance in adequate-Mg adults:** An RCT of 15 adults with adequate magnesium levels found that 300 mg magnesium chloride twice a day for 9 days modestly WORSENED cycling performance (Bomar et al., *Nutrients*, 2025) [27]. The mechanism may relate to magnesium's muscle-relaxing properties interfering with optimal contraction force.
 
-**Elderly women:** An RCT enrolled healthy women older than 65 who took part in a mild, weekly exercise program [3]. Those given 300 mg magnesium oxide for 12 weeks improved walking speed and chair-rise performance compared with an untreated control group (Veronese et al., *AJCN*, 2014) [28].
+**Elderly women:** An RCT enrolled 139 healthy older women, with a mean age of 71.5, who attended a mild fitness program. Those given 300 mg magnesium oxide for 12 weeks improved walking speed and chair-rise performance compared with an untreated control group (Veronese et al., *AJCN*, 2014) [28].
 
 **Practical implication:** Athletes should ensure adequate dietary magnesium but should not megadose, as supplementation in replete individuals may worsen performance [25][26][27].
 
@@ -157,35 +158,35 @@ Magnesium is involved in the active transport of calcium and potassium ions acro
 
 Despite being one of the most commonly cited reasons for taking magnesium, the evidence is disappointing.
 
-A Cochrane systematic review concluded that magnesium supplementation is unlikely to provide clinically meaningful benefit for skeletal muscle cramps regardless of form or dose (Garrison et al., *Cochrane Database Syst Rev*, 2020) [3][29].
+A Cochrane systematic review concluded that magnesium supplementation is unlikely to provide clinically meaningful benefit for skeletal muscle cramps regardless of form or dose (Garrison et al., *Cochrane Database Syst Rev*, 2020) [29].
 
-A subsequent RCT in Finland (n=109) confirmed that magnesium hydrochloride taken daily for 4 weeks did NOT reduce cramp frequency compared with placebo (Kuusipalo et al., *Trials*, 2026) [30]. ConsumerLab reports a dose of 250 mg of magnesium (as magnesium hydrochloride) once daily [3].
+A subsequent RCT in Finland (n=109) confirmed that magnesium hydrochloride taken daily for 4 weeks did NOT reduce cramp frequency compared with placebo (Kuusipalo et al., *Trials*, 2026) [30].
 
 **Pregnancy cramps:** Results are mixed, but the overall meta-analysis indicates magnesium is NOT effective for pregnancy-related leg cramps (Liu et al., *Taiwan J Obstet Gynecol*, 2021) [31].
 
-**Synthesis:** Cramps may respond to magnesium only when deficiency is the underlying cause, and even then, the evidence is weak [3][29][30].
+**Synthesis:** Trials in older adults with leg cramps have not found a meaningful benefit from magnesium [29][30].
 
 ### Migraine Prevention
 
-**Positive evidence:** An RCT of 600 mg magnesium citrate daily in divided doses reduced migraine frequency (Koseoglu et al., *Magnes Res*, 2008) [3][32]. Another trial using 600 mg trimagnesium dicitrate found a 41.6% reduction in migraine frequency versus 15.8% for placebo (Peikert et al., *Cephalalgia*, 1996) [33].
+**Positive evidence:** An RCT of 600 mg magnesium citrate daily reduced migraine frequency (Koseoglu et al., *Magnes Res*, 2008) [32]. Another trial using 600 mg trimagnesium dicitrate found a 41.6% reduction in migraine frequency versus 15.8% for placebo (Peikert et al., *Cephalalgia*, 1996) [33].
 
 **Negative evidence:** A trial combining 300 mg magnesium citrate/oxide with riboflavin and feverfew was NOT better than placebo (Maizels et al., *Headache*, 2004) [34].
 
-**Practical note:** Migraine trials have used up to 600 mg/day, well above the 350 mg supplement UL. GI side effects (diarrhea) are common at these doses. This indication should be discussed with a healthcare provider [1][3].
+**Practical note:** Migraine trials have used up to 600 mg/day, well above the 350 mg supplement UL. GI side effects (diarrhea) are common at these doses. This indication should be discussed with a healthcare provider [1].
 
 ### Depression
 
 **Epidemiological data:** In a cross-sectional study of 8,894 US adults, very low magnesium intake was associated with depression (risk ratio 1.16), mainly in adults younger than 65; in older adults low intake appeared protective [36].
 
-**Interventional evidence:** The best evidence comes from a small RCT (n=60) in Iran finding that 250 mg magnesium oxide twice daily produced modest reductions in depression scores compared with placebo (Rajizadeh et al., 2017) [3][37]. Earlier preliminary studies were not placebo-controlled, so their true efficacy cannot be judged [3].
+**Interventional evidence:** The best evidence comes from a small RCT (n=60) in depressed people with low magnesium, finding that 250 mg magnesium oxide twice daily produced modest reductions in depression scores compared with placebo (Rajizadeh et al., 2017) [37].
 
 **Mechanism:** How magnesium might act against depression is not fully understood; it probably influences several systems linked to depression [35].
 
-**Synthesis:** Correcting deficiency is reasonable in depressed patients, but magnesium should not be used as a substitute for established treatments [3][35][36].
+**Synthesis:** In depressed people with low magnesium, correcting the deficiency may help [37]. Magnesium is not a substitute for established depression treatment.
 
 ### Cardiovascular Disease (Beyond Blood Pressure)
 
-**Arrhythmia:** Low tissue magnesium may be a contributing risk factor for torsades de pointes [3]. In 3,530 Framingham Offspring participants followed for up to 20 years, those in the lowest quartile of serum magnesium were about 50% more likely to develop atrial fibrillation (Khan et al., *Circulation*, 2013) [38].
+**Arrhythmia:** In 3,530 Framingham Offspring participants followed for up to 20 years, those in the lowest quartile of serum magnesium were about 50% more likely to develop atrial fibrillation (Khan et al., *Circulation*, 2013) [38].
 
 **Heart failure:** In 1,569 patients with chronic heart failure, serum magnesium of 2 mEq/L or less was associated with higher cardiovascular mortality (hazard ratio 1.38) but not with more hospitalizations (Adamopoulos et al., *Int J Cardiol*, 2009) [39].
 
@@ -214,17 +215,17 @@ The UL for supplemental magnesium (not including food sources) is **350 mg/day**
 
 ### Practical Dosing by Indication
 
-**General supplementation (to fill dietary gaps):** A dose of about 100 to 200 mg elemental magnesium is typically used [1][3]. Brad includes 126 mg in his own supplements, about 30% of the RDA, as a top-up to a healthy diet, not a replacement for it [45].
+**General supplementation (to fill dietary gaps):** Brad includes 126 mg in his own supplements, about 30% of the RDA, as a top-up to a healthy diet, not a replacement for it [45].
 
-**Blood pressure support:** The two main meta-analyses used median doses of 368 mg/day [13] and 365 mg/day [14]. Both are just above the 350 mg/day upper limit for supplemental magnesium [1][3]. Talk to your doctor before taking more than that limit.
+**Blood pressure support:** The two main meta-analyses used median doses of 368 mg/day [13] and 365 mg/day [14]. Both are just above the 350 mg/day upper limit for supplemental magnesium [1]. Talk to your doctor before taking more than that limit.
 
-**Sleep:** 250-300 mg elemental, taken 30 to 60 minutes before bed. Glycinate (bisglycinate) or citrate [3][16][17].
+**Sleep:** The trials used 250 mg a day as bisglycinate [17] and 500 mg a day [15].
 
-**Migraine prevention:** Up to 600 mg/day in divided doses (exceeds UL; discuss with healthcare provider) [1][3].
+**Migraine prevention:** Up to 600 mg/day (exceeds UL; discuss with healthcare provider) [1].
 
 **Prediabetes/insulin resistance with low magnesium:** The main trial used a daily dose of 382 mg as magnesium chloride [20].
 
-**Muscle recovery (athletes with low Mg):** The main soreness trial used 500 mg/day for 7 days, which is above the UL [3][25].
+**Muscle recovery (athletes with low Mg):** The main soreness trial used 500 mg/day for 7 days, which is above the UL [1][25].
 
 ### How to Read a Supplement Label
 
@@ -234,7 +235,7 @@ The weight of the magnesium compound and the weight of elemental magnesium are d
 - 500 mg magnesium oxide = approximately 300 mg elemental magnesium (but only ~4% absorbed = ~12 mg used)
 - 1,000 mg magnesium citrate = approximately 110-160 mg elemental magnesium
 
-Look for "elemental magnesium" or check the "% Daily Value" on the Supplement Facts label. If a product lists 420 mg at 100% DV, it contains 420 mg elemental magnesium regardless of compound weight [3].
+The Supplement Facts panel on a US supplement label declares the amount of elemental magnesium, not the weight of the whole compound [1].
 
 ## 5. Dietary Sources
 
@@ -255,33 +256,29 @@ Magnesium is found in a wide range of foods. Green leafy vegetables, legumes, nu
 | Plain yogurt | 8 oz | 42 | 10% |
 | Banana | 1 medium | 32 | 8% |
 
-Source: NIH ODS, USDA FoodData Central [1][3][41].
+Source: NIH ODS, USDA FoodData Central [1][41].
 
 ### Practical Notes on Dietary Magnesium
 
 - **Refining grains removes magnesium.** White bread has much less magnesium than whole wheat bread. White rice has about a quarter of the magnesium of brown rice [1].
 - **Water can be a significant source.** Tap water magnesium content varies widely (1 mg/L to more than 120 mg/L) depending on the source. Hard water areas can contribute meaningfully to daily intake [1].
 - **Cooking reduces magnesium content**, particularly boiling (magnesium leaches into cooking water). Steaming and roasting preserve more magnesium [1].
-- **Food-first approach:** Meeting the RDA through diet alone is achievable with consistent intake of nuts/seeds, leafy greens, legumes, and whole grains (providing 400+ mg/day). However, the typical Western diet falls short, which is why supplementation is common [1][3].
+- **Food-first approach:** Brad advises reaching the RDA from food first (leafy greens, legumes, nuts, seeds and whole grains) and using a supplement only to fill the gap [45].
 
 ## 6. Safety and Side Effects
 
 ### Common Side Effects
 
-The primary side effect of oral magnesium supplementation is **osmotic diarrhea**, caused by unabsorbed magnesium drawing water into the intestinal lumen [1][3]. Risk varies by form:
-
-- **High laxative risk:** Oxide, sulfate, hydroxide
-- **Moderate laxative risk:** Citrate (especially above 350 mg elemental), chloride, aspartate, malate, gluconate (at higher doses)
-- **Low/no laxative risk:** Glycinate/bisglycinate, taurate, threonate
+The primary side effect of oral magnesium supplementation is **osmotic diarrhea**, caused by unabsorbed magnesium drawing water into the intestinal lumen [1]. Risk varies by form: the forms most commonly reported to cause diarrhea are magnesium carbonate, chloride, gluconate and oxide [1]. Brad notes that citrate has a laxative effect [45].
 
 Other reported side effects include nausea and abdominal cramping at high doses [1].
 
-If you use a magnesium powder, dissolve it completely in water before taking it, to avoid injury to the esophagus [3].
+If you use a magnesium powder, dissolve it completely in water before taking it.
 
 ### Toxicity (Hypermagnesemia)
 
-Magnesium toxicity from oral supplements is rare in individuals with normal kidney function because the kidneys efficiently excrete excess magnesium [1][3]. However, hypermagnesemia can occur with:
-- **Renal impairment:** Reduced magnesium clearance makes supplementation potentially dangerous [1][42]. Individuals with severe kidney disease should not take magnesium supplements [3].
+Magnesium toxicity from oral supplements is rare in individuals with normal kidney function because the kidneys efficiently excrete excess magnesium [1]. However, hypermagnesemia can occur with:
+- **Renal impairment:** Reduced magnesium clearance makes supplementation potentially dangerous [1][42]. People with kidney disease should check with their doctor before taking magnesium supplements.
 - **Massive oral doses** from magnesium-containing laxatives or antacids used in excess [1].
 - **Intravenous administration errors.**
 
@@ -289,15 +286,15 @@ Symptoms of hypermagnesemia usually develop once serum magnesium exceeds 1.74 to
 - **Early:** Hypotension, nausea, vomiting, facial flushing, urine retention, ileus, depression, lethargy
 - **Later:** Muscle weakness, difficulty breathing, extreme hypotension, irregular heartbeat, cardiac arrest
 
-If these later symptoms appear, call 111 or go to the emergency department. A few cases of fatal hypermagnesemia have been reported [1].
+If these later symptoms appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department. A few cases of fatal hypermagnesemia have been reported [1].
 
 ### Special Populations
 
 **Pregnancy:** Magnesium needs increase to 350-360 mg/day [1]. In the Magpie Trial, magnesium sulphate for pre-eclampsia halved the risk of eclampsia, but 24% of women reported side effects versus 5% on placebo [40].
 
-**Elderly:** At higher risk of deficiency due to reduced absorption, lower dietary intake, and increased use of medications (PPIs, diuretics) that deplete magnesium [1][3].
+**Elderly:** At higher risk of deficiency due to reduced absorption, lower dietary intake, and increased use of medications (PPIs, diuretics) that deplete magnesium [1].
 
-**Kidney disease:** Individuals with severe kidney disease should not take magnesium supplements, because the ability to remove excess magnesium is reduced or lost [1][3].
+**Kidney disease:** The risk of magnesium toxicity increases with impaired kidney function, because the ability to remove excess magnesium is reduced or lost [1]. Check with your doctor before taking magnesium supplements.
 
 ## 7. Drug Interactions
 
@@ -305,65 +302,60 @@ Magnesium supplements can interact with numerous medications. The interactions f
 
 ### Magnesium Reduces Drug Absorption
 
-These medications should be **separated from magnesium supplements** [1][3]:
+These medications should be **separated from magnesium supplements** [1]:
 
 | Drug Class | Examples | Separation Time | Notes |
 |-----------|---------|:-:|----------|
 | Bisphosphonates | Alendronate, risedronate | 2+ hours | Magnesium-rich supplements can decrease bisphosphonate absorption [1] |
-| Tetracycline antibiotics | Doxycycline, minocycline | 1h before or 2h after | Forms insoluble complexes [1][3] |
-| Fluoroquinolone antibiotics | Ciprofloxacin, levofloxacin | 2h before or 6h after | Reduces ciprofloxacin absorption up to 90% [3] |
-| Levothyroxine | Synthroid, Levoxyl | 2-4 hours (4h for antacid forms) | ALL forms of magnesium affect absorption [3] |
-| Statins (rosuvastatin) | Crestor | 2+ hours | Antacid forms (oxide, hydroxide) reduce rosuvastatin absorption by 54%. Non-antacid forms (glycinate, taurate) are less likely to cause this interaction [3] |
-| Sotalol | Betapace | 2+ hours | Magnesium reduces blood levels [3] |
-| Gabapentin | Neurontin | At least two hours | Magnesium hydroxide reduces bioavailability by 20% [3] |
+| Tetracycline antibiotics | Doxycycline, demeclocycline | 2h before or 4-6h after | Forms insoluble complexes [1] |
+| Fluoroquinolone antibiotics | Ciprofloxacin, levofloxacin | 2h before or 4-6h after | Forms insoluble complexes [1] |
+| Levothyroxine | Synthroid, Levoxyl | Ask your pharmacist | Brad advises keeping magnesium apart from levothyroxine [47]. |
+| Statins (rosuvastatin) | Crestor | 2+ hours | An aluminium and magnesium hydroxide antacid taken at the same time reduced rosuvastatin exposure by 54%; taken 2 hours after rosuvastatin, by 22% [48] |
+| Sotalol | Betapace | 2+ hours | A magnesium hydroxide antacid lowered sotalol blood levels; a two-hour interval avoided the interaction [49] |
+| Gabapentin | Neurontin | Ask your pharmacist | Magnesium oxide lowered gabapentin bioavailability by 32% in one study [50]. Brad advises keeping magnesium apart from gabapentin [47] |
 
-Two hours is not enough for every medicine: ciprofloxacin should be taken either 2 hours before or 6 hours after magnesium, other quinolone antibiotics have their own intervals, and magnesium antacids at least four hours before or after levothyroxine. Ask your pharmacist about the gap for your medicine [3].
+Two hours is not enough for every medicine: tetracycline and quinolone antibiotics, such as ciprofloxacin, should be taken at least 2 hours before or 4 to 6 hours after a magnesium-containing supplement [1]. Ask your pharmacist about the gap for your medicine.
 
 ### Drugs That Affect Magnesium Levels
 
 | Drug Class | Effect on Magnesium | Clinical Implication |
 |-----------|:---:|----------|
-| Proton pump inhibitors (PPIs) | Deplete | Long-term use (>1 year) can cause clinically significant hypomagnesemia. FDA issued a safety communication in 2011 [1][3][44]. |
-| Loop diuretics | Deplete | Furosemide, bumetanide increase renal magnesium excretion. Supplementation often necessary [1][3]. |
+| Proton pump inhibitors (PPIs) | Deplete | Long-term use (>1 year) can cause clinically significant hypomagnesemia. FDA issued a safety communication in 2011 [1][44]. |
+| Loop diuretics | Deplete | Furosemide, bumetanide increase renal magnesium excretion [1]. |
 | Thiazide diuretics | Mild depletion | Less magnesium-wasting than loop diuretics but can contribute to deficiency with prolonged use [1]. |
-| Potassium-sparing diuretics | May increase | Triamterene and spironolactone may increase magnesium levels in the blood [3]. Do NOT combine amiloride with magnesium supplements [3]. |
-| SGLT2 inhibitors | May increase | Empagliflozin, dapagliflozin may modestly increase serum magnesium. Monitor if supplementing [3]. |
-| Digoxin | Bidirectional | Digoxin lowers magnesium levels, which can increase the risk of digoxin toxicity and heart arrhythmias. Your physician should monitor your magnesium levels and supervise any use of magnesium. Magnesium hydroxide and magnesium trisilicate may reduce digoxin absorption [3]. |
+| Potassium-sparing diuretics | May increase | Amiloride and spironolactone reduce magnesium excretion [1]. If you take one, check with your doctor before taking magnesium supplements. |
+| SGLT2 inhibitors | May increase | Empagliflozin, dapagliflozin and other SGLT2 inhibitors marginally increased serum magnesium in a meta-analysis of trials [52]. Ask your doctor before supplementing. |
+| Digoxin | May deplete | Digoxin increased urinary magnesium loss in a small study, and low magnesium is a known risk factor for digoxin toxicity [53]. Ask your doctor before taking magnesium; they may want to check your levels. |
 | High-dose zinc | May impair Mg | Very high doses of zinc supplements can interfere with the body's ability to absorb and regulate magnesium [1]. |
 
 ## 8. Frequently Asked Questions
 
 **Which form of magnesium is best?**
-There is no single best form. For general supplementation and correcting deficiency, glycinate (bisglycinate) offers the best balance of absorption and tolerance. For sleep, glycinate or citrate. For constipation, hydroxide or sulfate. For migraine prevention, citrate has the most trial data [3][6][7].
+There is no single best form; it remains unclear which form is absorbed best [7]. Brad favours glycinate and taurate, which he calls well absorbed, over poorly absorbed oxide [45]. Migraine trials have mostly used citrate [32][33].
 
 **Can I take too much magnesium?**
-The upper limit for supplemental magnesium is 350 mg/day for adults. The main risk of excess is diarrhea, not systemic toxicity, in individuals with normal kidney function. Individuals with severe kidney disease should not take magnesium supplements [1][3].
-
-**Should I take magnesium with food?**
-Yes. Taking magnesium with food can reduce the occurrence of diarrhea [3].
+The upper limit for supplemental magnesium is 350 mg/day for adults. The main risk of excess is diarrhea, not systemic toxicity, in individuals with normal kidney function. The risk of toxicity rises with impaired kidney function, so people with kidney disease should check with their doctor first [1].
 
 **How long does magnesium take to work?**
-Sleep trials that found benefits lasted 3 to 8 weeks [3]. In the main blood pressure meta-analysis, people took magnesium for about three months [3][13].
+Sleep trials that found benefits lasted 3 to 8 weeks [12][15][17]. In the main blood pressure meta-analysis, people took magnesium for about three months [13].
 
 **Is magnesium L-threonate (Magtein) worth the premium price?**
-The evidence does not support it. Magtein provides only 8% elemental magnesium, human cognitive trials have shown minimal benefit, and it has failed to reliably improve sleep. The original animal data used doses equivalent to 20 times the human upper limit. Better-absorbed forms like glycinate provide more elemental magnesium at lower cost [3][9][12].
+Brad does not think so. Human results for memory and thinking are mixed, and he is not convinced it offers extra benefit, given its high cost [45]. The animal data are promising [9], and the sleep evidence is a single 21-day trial [12].
 
 **Does magnesium help with leg cramps?**
 Probably not. A Cochrane systematic review concluded that magnesium supplementation is unlikely to provide meaningful benefit for muscle cramps regardless of form or dose [29][30].
 
 **Do Epsom salt baths or topical magnesium creams work?**
-Evidence for transdermal magnesium absorption is weak. A placebo-controlled study found no statistically significant increase in blood magnesium levels from applying magnesium chloride cream to the skin daily for two weeks [3]. Magnesium "oil" sprays, lotions, and bath soaks lack rigorous evidence of meaningful systemic absorption. Any perceived benefits may be attributable to the relaxation effects of warm baths or massage rather than magnesium uptake [3].
+Evidence for transdermal magnesium absorption is weak. A small placebo-controlled pilot study found no statistically significant overall increase in blood magnesium from applying a magnesium cream to the skin daily for two weeks; the rise was significant only in a subgroup of non-athletes [51].
 
 **Can I combine different forms of magnesium?**
-Yes, provided total elemental magnesium from supplements stays within the 350 mg/day UL. A common approach is one form in the morning and another at night [3].
+Yes, provided total elemental magnesium from supplements stays within the 350 mg/day UL [1].
 
 ## 9. References
 
 [1] National Institutes of Health, Office of Dietary Supplements. "Magnesium -- Health Professional Fact Sheet." Updated January 6, 2026. [https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/](https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/)
 
 [2] de Baaij JHF, et al. Magnesium in man: implications for health and disease. *Physiol Rev*. 2015;95(1):1-46. doi: [10.1152/physrev.00012.2014](https://doi.org/10.1152/physrev.00012.2014) PMID: 25540137. https://pubmed.ncbi.nlm.nih.gov/25540137/
-
-[3] ConsumerLab. "Magnesium Supplements Review." Updated June 25, 2026. [https://www.consumerlab.com/reviews/magnesium-supplement-review/magnesium/](https://www.consumerlab.com/reviews/magnesium-supplement-review/magnesium/). Absorption data from: Ranade VV, *Am J Ther* 2001; Guerrera MP et al., *Am Fam Physician* 2009; Firoz M, Graber M, *Magnes Res* 2001; Schuchardt JP, Hahn A, *Curr Nutr Food Sci* 2017.
 
 [4] Rosanoff A, Weaver CM, Rude RK. "Suboptimal magnesium status in the United States: are the health consequences underestimated?" *Nutr Rev*. 2012;70(3):153-164. doi: [10.1111/j.1753-4887.2011.00465.x](https://doi.org/10.1111/j.1753-4887.2011.00465.x) PMID: 22364157. https://pubmed.ncbi.nlm.nih.gov/22364157/
 
@@ -452,3 +444,15 @@ Yes, provided total elemental magnesium from supplements stays within the 350 mg
 [46] Stanfield B. 5 supplements that actually work. drstanfield.com. 5 October 2025. [https://drstanfield.com/blogs/articles/5-supplements-that-actually-work](https://drstanfield.com/blogs/articles/5-supplements-that-actually-work)
 
 [47] Stanfield B. Magnesium L-threonate and its effects on sleep quality. drstanfield.com. 12 June 2024. [https://drstanfield.com/blogs/articles/magnesium-l-threonate-effects-sleep](https://drstanfield.com/blogs/articles/magnesium-l-threonate-effects-sleep)
+
+[48] Martin PD, Schneck DW, Dane AL, Warwick MJ. "The effect of a combination antacid preparation containing aluminium hydroxide and magnesium hydroxide on rosuvastatin pharmacokinetics." *Curr Med Res Opin*. 2008;24(4):1231-1235. doi: [10.1185/030079908x280662](https://doi.org/10.1185/030079908x280662) PMID: 18355422. https://pubmed.ncbi.nlm.nih.gov/18355422/
+
+[49] Läer S, Neumann J, Scholz H. "Interaction between sotalol and an antacid preparation." *Br J Clin Pharmacol*. 1997;43(3):269-272. doi: [10.1111/j.1365-2125.1997.00506.x](https://doi.org/10.1111/j.1365-2125.1997.00506.x) PMID: 9088581. https://pubmed.ncbi.nlm.nih.gov/9088581/
+
+[50] Yagi T, Naito T, Mino Y, Umemura K, Kawakami J. "Impact of concomitant antacid administration on gabapentin plasma exposure and oral bioavailability in healthy adult subjects." *Drug Metab Pharmacokinet*. 2012;27(2):248-254. doi: [10.2133/dmpk.dmpk-11-rg-108](https://doi.org/10.2133/dmpk.dmpk-11-rg-108) PMID: 22240839. https://pubmed.ncbi.nlm.nih.gov/22240839/
+
+[51] Kass L, Rosanoff A, Tanner A, et al. "Effect of transdermal magnesium cream on serum and urinary magnesium levels in humans: A pilot study." *PLoS One*. 2017;12(4):e0174817. doi: [10.1371/journal.pone.0174817](https://doi.org/10.1371/journal.pone.0174817) PMID: 28403154. https://pubmed.ncbi.nlm.nih.gov/28403154/
+
+[52] Tang H, Zhang X, Zhang J, et al. "Elevated serum magnesium associated with SGLT2 inhibitor use in type 2 diabetes patients: a meta-analysis of randomised controlled trials." *Diabetologia*. 2016;59(12):2546-2551. doi: [10.1007/s00125-016-4101-6](https://doi.org/10.1007/s00125-016-4101-6) PMID: 27628105. https://pubmed.ncbi.nlm.nih.gov/27628105/
+
+[53] Abu-Amer N, Priel E, Karlish SJD, et al. "Hypermagnesuria in Humans Following Acute Intravenous Administration of Digoxin." *Nephron*. 2018;138(2):113-118. doi: [10.1159/000481468](https://doi.org/10.1159/000481468) PMID: 29169235. https://pubmed.ncbi.nlm.nih.gov/29169235/

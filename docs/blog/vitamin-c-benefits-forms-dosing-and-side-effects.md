@@ -17,6 +17,16 @@ sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/vitam
 
 Most adults need 75 to 90 mg of vitamin C a day, and Brad advises against megadosing by default, because taking a lot of one antioxidant has, again and again, done nothing useful and sometimes done real harm ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). In a 2026 trial in people with severe burns, high-dose intravenous vitamin C (50 mg per kg every six hours for four days, roughly 14 to 16 g a day) was stopped early because deaths roughly doubled, though the exact size is uncertain; the same dose had already raised death or lasting organ failure in sepsis, 44.5% versus 38.5% ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). If you are young, healthy and training, big doses of antioxidant vitamins around workouts are a mistake, because they blunt the signal exercise uses to adapt; in older adults, antioxidants with exercise did slightly better than exercise alone, but the effects were small and their real-world significance is unclear ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). Brad advises avoiding IV drip clinics: the evidence is too weak to recommend IV vitamin C for cancer or fatigue, and people with a history of kidney disease have developed kidney failure after it ([Brad, 20 Nov 2025](https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick)). Liposomal vitamin C is absorbed somewhat better, but it has no proven benefit over regular vitamin C and costs about 10 times as much ([Brad, 9 Dec 2024](https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth)). Very high doses, in the thousands of milligrams, can cause nausea, diarrhea and stomach cramps and can contribute to kidney stones, and in people with hemochromatosis excess vitamin C can make iron overload worse ([Brad, 9 Dec 2024](https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth)).
 
+## Key safety points
+
+- Vitamin C may increase levothyroxine absorption, so if you take levothyroxine, talk to your prescriber before starting, stopping or changing vitamin C [155]. High doses may reduce the effect of the HIV drug indinavir [148].
+- Current evidence does not support a clinically significant interaction with warfarin, but if you take warfarin, check with your doctor or pharmacist before starting high-dose vitamin C [146][147].
+- If you are having chemotherapy or radiation, ask your oncologist before taking vitamin C [87].
+- People with hemochromatosis should avoid high-dose vitamin C, because it could make iron overload worse [4][9][12].
+- High-dose vitamin C supplements have been linked to kidney stones in men and to oxalate kidney damage, so men and people with a history of kidney stones may be wise to keep supplements close to the RDA [125][128][50].
+- High-dose intravenous vitamin C raised deaths in a burns trial and death or organ failure in a sepsis trial, and it has caused kidney failure in people with kidney disease [151][152].
+- Large doses can cause diarrhea, nausea and stomach cramps [4][9][12].
+
 ## Brad's videos on this topic
 
 - 8 Jul 2026, [They Had to Stop This Vitamin C Trial Early](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial): high-dose IV vitamin C raised deaths in a burns trial and death or organ failure in a sepsis trial; megadosing antioxidants keeps backfiring, and big doses around workouts blunt training gains in young people.
@@ -36,7 +46,7 @@ Vitamin C serves several critical physiological functions [1][2][3]:
 - **Immune function:** Vitamin C accumulates in leukocytes (white blood cells) at concentrations 10- to 100-fold higher than in plasma, supporting both innate and adaptive immunity. It enhances neutrophil chemotaxis, phagocytosis, and microbial killing, and supports lymphocyte proliferation [4].
 - **Neurotransmitter synthesis:** Vitamin C is a cofactor for dopamine beta-hydroxylase, the enzyme that converts dopamine to norepinephrine. It also participates in the synthesis of other neurotransmitters and neuromodulators [1][2].
 - **L-carnitine synthesis:** Vitamin C is required for the biosynthesis of L-carnitine, which is essential for fatty acid transport into mitochondria for energy production [1][2].
-- **Iron absorption:** Vitamin C enhances the absorption of nonheme iron (the form present in plant-based foods) by reducing ferric iron (Fe3+) to ferrous iron (Fe2+) in the gut, making it more bioavailable [5]. However, research suggests that this effect may be clinically modest [6].
+- **Iron absorption:** Vitamin C enhances the absorption of nonheme iron (the form present in plant-based foods) by reducing ferric iron (Fe3+) to ferrous iron (Fe2+) in the gut, making it more bioavailable [5].
 - **Protein metabolism:** Vitamin C is involved in the metabolism of several amino acids and the amidation of peptide hormones [1][2].
 
 ### Absorption and Pharmacokinetics
@@ -52,19 +62,18 @@ Pharmacokinetic studies show that the relationship between dose and plasma conce
 
 The total body content of vitamin C ranges from approximately 300 mg (at near-scurvy levels) to about 2 g [4]. Cells appear to become saturated at daily intakes of approximately 100 mg, and plasma concentrations plateau at intakes of 200 mg or more [4][7]. The highest concentrations are maintained in leukocytes, adrenal glands, the pituitary gland, the eyes, and the brain [4].
 
-Vitamin C status is typically assessed by measuring plasma vitamin C levels [4][9]. A plasma level below 11.4 micromoles/L (0.2 mg/dL) indicates deficiency (scurvy risk). Levels of 23-49 micromoles/L indicate hypovitaminosis C (suboptimal status). Levels of 50-70 micromoles/L are considered adequate, and levels above 70 micromoles/L indicate saturation. To convert micromoles/L to mg/dL, multiply by 0.0176 (56.82 micromoles/L = 1 mg/dL) [6].
+Vitamin C status is typically assessed by measuring plasma vitamin C levels [4][9]. A plasma level below 11.4 micromoles/L (0.2 mg/dL) indicates deficiency (scurvy risk). Levels of 23-49 micromoles/L indicate hypovitaminosis C (suboptimal status). Levels of 50-70 micromoles/L are considered adequate, and levels above 70 micromoles/L indicate saturation.
 
 ### Deficiency: Scurvy and Beyond
 
 Prolonged vitamin C deficiency causes scurvy, which can appear within 1 month of consuming less than about 10 mg/day [1][10][11]. Symptoms progress from initial fatigue, malaise, and gum inflammation to petechiae (tiny red dots from capillary bleeding), ecchymoses (bruises), purpura, joint pain, poor wound healing, hyperkeratosis, and corkscrew hairs [1][2][4][10][11]. If untreated, scurvy is fatal. Children can develop bone disease [10]. Iron deficiency anemia may co-occur due to increased bleeding and decreased nonheme iron absorption [10][12].
 
-Scurvy is rare in developed countries today, but several populations remain at risk [6][10]:
+Scurvy is rare in developed countries today, but several populations remain at risk [10][12]:
 
 - People with alcohol use disorder
 - Smokers (who have increased oxidative stress depleting vitamin C stores)
-- Long-term users of proton pump inhibitors
+- Long-term users of proton pump inhibitors [156]
 - Those with highly restrictive or poor-quality diets
-- Patients who have undergone bariatric surgery without adequate nutritional follow-up (a case report described a man in Australia diagnosed with scurvy and undetectable vitamin C levels eight years after gastric sleeve surgery; his condition improved with 1,000 mg/day vitamin C plus a multivitamin and nutritional counseling [6])
 - People with severe intestinal malabsorption or cachexia
 - Patients with end-stage renal disease on chronic hemodialysis [13]
 
@@ -82,25 +91,25 @@ Vitamin C supplements are available in several chemical forms. The key differenc
 
 | Form | Description | Bioavailability | GI Tolerance | Key Notes |
 |------|-------------|:-:|:-:|------|
-| Ascorbic acid | Standard form; the chemical name for vitamin C. Both natural and synthetic forms are the same "L" isomer and are equally used by the body [6][17]. | Reference standard (~70-90% at moderate doses) | Acidic; may cause heartburn or stomach upset at high doses | Lowest cost. No reason to pay more for "natural" or "fully reduced" products, as properly manufactured vitamin C is already in a fully reduced state [6]. |
-| Calcium ascorbate (Ester-C) | Non-acidic form; vitamin C combined with calcium. A patented form that also contains metabolites (dehydroascorbate, calcium threonate, xylonate, lyxonate) [18]. | Plasma absorption similar to ascorbic acid; one sponsored study found leukocyte levels remained elevated for 24 hours [19]. | Better for acid-sensitive stomachs; non-acidic | Does not reduce diarrhea risk (which is unrelated to acidity). The claim of superior absorption is not supported by reliable independent evidence [6][18]. |
-| Sodium ascorbate | Non-acidic form; vitamin C combined with sodium. Sometimes marketed as "buffered vitamin C" when combined with ascorbic acid. | Similar to ascorbic acid [17][18] | Non-acidic; gentler on the stomach | Contains sodium — may be a concern for those restricting sodium intake [6]. |
-| Ascorbyl palmitate | Fat-soluble form; often found in softgel capsules. | Mixed evidence; may improve absorption slightly but not clearly demonstrated [6]. | Good | Useful for oil-based formulations. |
-| Liposomal vitamin C | Vitamin C encapsulated in a phospholipid (fat) layer, designed to enhance absorption through cell membranes. | One manufacturer-conducted study found a single 500 mg dose increased blood levels 21% more than non-liposomal vitamin C and 8% more in white blood cells [20]. However, an earlier study at 5 g found no advantage [21]. | Good | Significantly more expensive (~50 cents per 500 mg vs. a few cents for regular ascorbic acid). The modest absorption advantage does not justify the cost premium for most people [6]. |
+| Ascorbic acid | Standard form; the chemical name for vitamin C. Both natural and synthetic forms are the same "L" isomer and are equally used by the body [17]. | Reference standard (~70-90% at moderate doses) | Acidic; may cause heartburn or stomach upset at high doses | Lowest cost. |
+| Calcium ascorbate (Ester-C) | Non-acidic form; vitamin C combined with calcium. A patented form that also contains metabolites (dehydroascorbate, calcium threonate, xylonate, lyxonate) [18]. | Plasma absorption similar to ascorbic acid; one sponsored study found leukocyte levels remained elevated for 24 hours [19]. | Better for acid-sensitive stomachs; non-acidic | Does not reduce diarrhea risk (which is unrelated to acidity). The claim of superior absorption is not supported by reliable independent evidence [18]. |
+| Sodium ascorbate | Non-acidic form; vitamin C combined with sodium. Sometimes marketed as "buffered vitamin C" when combined with ascorbic acid. | Similar to ascorbic acid [17][18] | Non-acidic; gentler on the stomach | None. |
+| Ascorbyl palmitate | Fat-soluble form; often found in softgel capsules. | Not established. | Good | Useful for oil-based formulations. |
+| Liposomal vitamin C | Vitamin C encapsulated in a phospholipid (fat) layer, designed to enhance absorption through cell membranes. | One manufacturer-conducted study found a single 500 mg dose increased blood levels 21% more than non-liposomal vitamin C and 8% more in white blood cells [20]. However, an earlier study at 5 g found no advantage [21]. | Good | Costs more than regular vitamin C, with no proven benefit over it [157]. |
 | Liposomal hydrogel vitamin C | Liposomal vitamin C encased in a hydrogel matrix (e.g., galactomannan from fenugreek seed). | One manufacturer-conducted study found blood levels more than 7 times higher over 12 hours compared to unformulated vitamin C from a 1,000 mg tablet providing ~350 mg vitamin C [22]. | Good | Expensive (~33 cents per 500 mg). Study did not evaluate performance when taken with food. |
-| PureWay-C (ascorbic acid + fatty acids) | Vitamin C combined with lipid metabolites. | ConsumerLab reads the study as showing absorption from a 1 g dose similar to ascorbic acid and Ester-C after 4 hours [6]; the study itself reported the highest absolute serum vitamin C levels of the forms tested [23]. | Good | ConsumerLab sees no demonstrated absorption advantage over regular ascorbic acid [6]. |
+| PureWay-C (ascorbic acid + fatty acids) | Vitamin C combined with lipid metabolites. | One study reported the highest absolute serum vitamin C levels of the forms tested [23]. | Good | Evidence comes from one study [23]. |
 
 ### Key Principles for Form Selection
 
 **For most people:** Regular ascorbic acid is the preferred form due to its equivalent bioavailability and significantly lower cost. A comprehensive comparison study found no differences in plasma vitamin C levels or urinary excretion among ascorbic acid, Ester-C, and ascorbic acid with bioflavonoids, leading the authors to conclude that simple ascorbic acid is the preferred source of supplemental vitamin C [18].
 
-**For those with sensitive stomachs:** Calcium ascorbate (Ester-C) or sodium ascorbate are non-acidic alternatives that avoid the heartburn or gastric irritation that ascorbic acid can cause at higher doses. Note that diarrhea from high-dose vitamin C is caused by osmotic effects of unabsorbed vitamin C in the gut, not by acidity, so non-acidic forms do not prevent this side effect [6].
+**For those with sensitive stomachs:** Calcium ascorbate (Ester-C) or sodium ascorbate are non-acidic alternatives that avoid the heartburn or gastric irritation that ascorbic acid can cause at higher doses. Note that diarrhea from high-dose vitamin C is caused by the osmotic effect of unabsorbed vitamin C in the gut [12], so non-acidic forms may not prevent this side effect.
 
 **For maximizing absorption at high doses:** Pharmacokinetic data show that absorption of vitamin C decreases at higher doses [12].
 
-**Regarding "natural" vitamin C sources:** Rose hips powder is only about 2% vitamin C, so 500 mg of rose hips powder contributes only 10 mg of vitamin C. Products containing 10-20 mg of rose hips — an amount commonly listed on vitamin C supplement labels — provide less than 1 mg of vitamin C from this source, essentially a marketing ingredient. Acerola powder is approximately 1.5% vitamin C. Camu camu dried pulp powder is about 13-15% vitamin C, and extract may be up to 20%. All natural sources provide the same L-ascorbic acid that synthetic production yields [6].
+**Regarding "natural" vitamin C sources:** Vitamin C from oranges, orange juice and cooked broccoli appears to be as bioavailable as synthetic ascorbic acid [17].
 
-**Regarding bioflavonoids:** Some vitamin C supplements include citrus bioflavonoids (hesperidin, quercetin, rutin) based on a small 1988 study suggesting they increased vitamin C bioavailability by 35% [25]. These results have not been reliably replicated. Most products provide far less bioflavonoid per serving than the typical clinical dosage of 500 mg twice daily. Bioflavonoids may have independent therapeutic value (e.g., for hemorrhoids, venous insufficiency, leg ulcers), but they have not been conclusively shown to enhance vitamin C absorption in the body [6].
+**Regarding bioflavonoids:** Some vitamin C supplements include citrus bioflavonoids (hesperidin, quercetin, rutin) based on a small 1988 study suggesting they increased vitamin C bioavailability by 35% [25]. A later comparison found no difference in plasma vitamin C or urinary excretion between ascorbic acid alone and ascorbic acid with bioflavonoids [18].
 
 ### Topical Vitamin C for Skin
 
@@ -110,11 +119,11 @@ However, the evidence for topical vitamin C is limited:
 
 - Vitamin C cannot easily penetrate the outermost skin layer (stratum corneum). Applying vitamin C topically does not boost skin levels if the blood is already saturated, which occurs with daily oral intake of approximately 500 mg [28][29].
 - Laboratory research on animal skin found that best absorption required a pH below 3.5 and vitamin C concentrations of 10-20% [28]. Products containing vitamin E and ferulic acid may help increase formulation stability [30][31].
-- A small study of women (average age 55) with photo-aged skin found that applying 5% vitamin C cream daily for 6 months significantly improved investigator-rated skin properties, by 2.3 points on a 17-point scale versus 1.4 points with placebo [6][32].
-- ConsumerLab reports that several studies showed sunscreen containing vitamin C combined with vitamin E reduced UV-induced skin damage more than sunscreen alone [6][33][35]. One of those studies compared a vitamin C, E and ferulic acid solution with its vehicle rather than with sunscreen, and found significant photoprotection [34]. ConsumerLab also reports that applying 5% vitamin C alone did not prevent UV-induced skin redness compared to placebo [6]. The study itself reported a modest protective effect of the vitamins applied alone, and more protection from combinations [36].
+- A trial in women with photo-aged skin found that applying 5% vitamin C cream daily for 6 months significantly improved the global skin score compared with the placebo cream [32].
+- In pig skin, vitamin C alone or with vitamin E added to the protection a sunscreen gave against UV damage [33]. A study of a vitamin C, E and ferulic acid solution compared it with its vehicle rather than with sunscreen, and found significant photoprotection [34]. A human study found a modest protective effect of vitamins C and E applied alone before UV exposure, and more protection from combinations [36].
 - Phosphate derivatives are more stable but less well absorbed. Palmitate derivatives may improve absorption but evidence is mixed. Glucoside derivatives show greater stability and penetration, but it is unknown whether this form converts to active ascorbic acid after skin penetration. Dehydroascorbic acid does not appear to increase skin vitamin C levels when applied topically [28][26].
 
-Dr Brad Stanfield's MicroVitamin includes 45 mg of vitamin C as calcium ascorbate — a non-acidic form chosen for gentle absorption alongside the other 24 ingredients in the daily serving ([shop MicroVitamin](https://drstanfield.com/products/microvitamin)).
+Dr Brad Stanfield's MicroVitamin includes 45 mg of vitamin C as calcium ascorbate — a non-acidic form chosen for gentle absorption alongside the other 25 ingredients in the daily serving ([shop MicroVitamin](https://drstanfield.com/products/microvitamin)).
 
 ## 3. Evidence for Health Benefits
 
@@ -153,17 +162,15 @@ Blood pressure appears to be modestly reduced with vitamin C supplementation, at
 
 A meta-analysis of 29 short-term studies, most using 500-1,000 mg/day, found average decreases of 3.84 mmHg systolic and 1.48 mmHg diastolic [51]. In patients with hypertension, the reductions were somewhat larger: 4.85 mmHg systolic and 1.67 mmHg diastolic. The blood pressure reduction is minor compared to pharmaceutical treatments (ACE inhibitors and diuretics reduce pressures by approximately 10 mmHg), and the studies were short (2 weeks to 6 months), so effects on cardiovascular events were not assessed [51].
 
-Vitamin C's blood pressure-lowering mechanism may involve reducing endothelin-1 activity, thereby relaxing blood vessels. A 3-month US study found that 500 mg/day of timed-release vitamin C in overweight and obese individuals (who tend to have elevated endothelin-1 activity) reduced endothelin-1 activity as much as daily aerobic walking for 45-60 minutes. Participants were not vitamin C deficient at baseline (mean blood level 68 micromoles/L, rising to 85.2 micromoles/L with supplementation) [6].
-
 ### Blood Sugar and Type 2 Diabetes
 
-A cross-over trial that enrolled 31 adults with type 2 diabetes showed that 500 mg vitamin C twice daily for 4 months lowered blood pressure by an average 7 mmHg systolic and 5 mmHg diastolic compared to placebo, and reduced postprandial glucose by 36%, with a 2.8-hour reduction in daily elevated glucose duration [53]. ConsumerLab adds that there was no significant improvement in HbA1c, possibly due to the limited study size and duration [6].
+A cross-over trial that enrolled 31 adults with type 2 diabetes showed that 500 mg vitamin C twice daily for 4 months lowered blood pressure by an average 7 mmHg systolic and 5 mmHg diastolic compared to placebo, and reduced postprandial glucose by 36%, with a 2.8-hour reduction in daily elevated glucose duration [53].
 
 ### Cardiovascular Disease
 
 The evidence for vitamin C in cardiovascular disease prevention is mixed, with observational studies suggesting benefit but clinical trials largely negative.
 
-**Epidemiological data:** High intakes of fruits and vegetables are consistently associated with reduced CVD risk, partly attributed to antioxidant content [1][54][55]. Vitamin C can reduce monocyte adherence to the endothelium, improve nitric oxide production and vasodilation, and reduce vascular smooth muscle cell apoptosis, which helps prevent plaque instability in atherosclerosis [2][56]. Vitamin C may also help maintain the effectiveness of nitrate drugs such as nitroglycerin taken for chest pain and coronary artery disease [6].
+**Epidemiological data:** High intakes of fruits and vegetables are consistently associated with reduced CVD risk, partly attributed to antioxidant content [1][54][55]. Vitamin C can reduce monocyte adherence to the endothelium, improve nitric oxide production and vasodilation, and reduce vascular smooth muscle cell apoptosis, which helps prevent plaque instability in atherosclerosis [2][56].
 
 **Prospective cohort studies provide conflicting results:**
 
@@ -184,7 +191,7 @@ The evidence for vitamin C in cardiovascular disease prevention is mixed, with o
 
 **Mortality data — conflicting findings at higher blood levels:**
 
-- ConsumerLab reports that in a long-term US study (approximately 14-year follow-up), death risk was lowest when blood vitamin C levels exceeded the bottom 20% of the population (above 15.33 micromoles/L) and continued to decrease until 45.99-59.62 micromoles/L, with no further decrease beyond this. CVD mortality followed a similar pattern. Cancer mortality continued to decrease even at the highest blood levels (at or above 60.19 micromoles/L) [6]. The study's abstract reports a dose-response decrease in cancer and overall mortality with higher vitamin C levels [67].
+- A long-term US study (median follow-up 14.2 years) found a dose-response decrease in cancer and overall mortality with higher blood vitamin C levels [67].
 - However, an observational study of nearly 10,000 US adults (approximately 10-year follow-up) found that blood levels at or above approximately 60 micromoles/L were associated with a 33% greater risk of all-cause mortality and 60% greater risk of CVD mortality compared to lower levels [68]. This level is at the upper end of the adequate range and near saturation.
 - One study found that postmenopausal women with diabetes who took at least 300 mg/day of supplemental vitamin C were more likely to die from CVD [69]. No such association has been reported in other studies.
 
@@ -230,7 +237,6 @@ The role of vitamin C in cancer treatment remains controversial and under active
 
 - A UK study found that people with the highest dietary vitamin C intakes were 19% less likely to have nuclear cataracts and 33% less likely to experience 10-year cataract progression compared to those with the lowest intakes. Those who had taken supplements (including multivitamins) were also less likely to have cataracts, but this did not reduce subsequent progression risk [92].
 - Long-term studies (>10 years) suggest that the daily vitamin C intake needed to saturate the eye is only about 150-250 mg/day and that this modest dose may reduce cataract risk [93].
-- A long-term study of a moderate-dose multivitamin (containing 60 mg vitamin C) found reduced cataract risk, but adding a separate high-dose vitamin C supplement (500 mg/day — about 6 times the RDA) eliminated this benefit [6].
 - In a 5-year Japanese cohort of more than 30,000 adults aged 45-64, higher dietary vitamin C was associated with reduced cataract risk [94].
 - Case-control studies indicate that vitamin C intakes greater than 300 mg/day reduce cataract formation risk by 70-75% [2][4].
 - However, an 8-year Swedish study of 24,593 women found a 25% increase in cataract removals among those supplementing with approximately 1,000 mg/day. Women supplementing for 10+ years had a 46% increase [95].
@@ -250,7 +256,7 @@ Note that high-dose vitamin C (452-500 mg/day) is part of the AREDS formula, but
 
 In men, supplemental vitamin C intake is inversely associated with gout risk. Compared to men who did not supplement with vitamin C, intakes of 1,000-1,499 mg and more than 1,500 mg were associated with 34% and 45% reductions in gout risk, respectively [103]. This may result from lower serum uric acid levels, which decrease with vitamin C intakes up to 400-500 mg/day, with no further reduction at higher doses [104].
 
-A cross-over trial in 40 adults aged 21 to 78 with high serum uric acid found that a drink containing 600 mg vitamin C daily for two weeks lowered serum uric acid without changing uric acid excretion. The larger the rise in blood vitamin C, the bigger the fall in uric acid, with larger effects in those whose uric acid started higher [105]. ConsumerLab describes the trial as one week of a drink with 592 mg vitamin C in 40 adults (average age 49) with upper-normal uric acid, lowering serum uric acid by 0.48 mg/dL versus 0.10 mg/dL with the control drink, with the strongest effect in those with lower starting vitamin C levels [6].
+A cross-over trial in 40 adults aged 21 to 78 with high serum uric acid found that a drink containing 600 mg vitamin C daily for two weeks lowered serum uric acid without changing uric acid excretion. The larger the rise in blood vitamin C, the bigger the fall in uric acid, with larger effects in those whose uric acid started higher [105].
 
 ### Nonalcoholic Fatty Liver Disease (NAFLD)
 
@@ -262,7 +268,7 @@ Vitamin C plays a role in norepinephrine synthesis, depletion of which has been 
 
 - An observational study of 25,895 adults in the US (average age 49) found that dietary vitamin C intake above 92.95 mg/day was associated with 27% lower odds of depressive symptoms compared to low intake (<39.55 mg/day). The association was dose-dependent up to 126 mg/day, above which there was no additional benefit. Supplementing with vitamin C was associated with 22% lower risk. The association was significant for women and people aged 19-59, but not for men or people 60+ [110].
 - A study of 46 young adults in Korea (with inadequate but not deficient vitamin C levels) found that 500 mg twice daily for 4 weeks provided no benefit on measures of fatigue, depression, stress, positive and negative affect, or anxiety, though there was a small improvement (1.6 points on a 14-point scale) in attention [111].
-- ConsumerLab reports that in a study of 128 healthy young adults in New Zealand (not vitamin C deficient), 250 mg/day for 4 weeks did not improve mood disturbances (depressive symptoms, anxiety, anger), but slightly improved vitality measures (fatigue improved by approximately 3.8 points on a 120-point scale, mental well-being by 1.3 points on a 56-point scale). Similar improvements were seen with two daily kiwifruits providing the same amount of vitamin C. The study was funded by Zespri International Ltd., a kiwifruit marketer [6]. The trial itself enrolled young adults with low vitamin C levels (plasma vitamin C < 40 µmol/L) and reports improved well-being with vitamin C tablets, plus better mood and fatigue in those whose levels stayed low before the intervention. Allocation was a mix of random and non-random: early clinics were assigned without randomisation because the tablets arrived late [112].
+- A placebo-controlled trial in young adults with low vitamin C levels (plasma vitamin C < 40 µmol/L) reported improved well-being with vitamin C tablets, plus better mood and fatigue in those whose levels stayed low before the intervention. Allocation was a mix of random and non-random: early clinics were assigned without randomisation because the tablets arrived late [112].
 
 **Synthesis:** Observational data link adequate vitamin C intake with lower depression risk. In trials, supplementation has not consistently been shown to improve mood in people who are not vitamin C deficient: one trial found better attention but no change in mood [111], and another found better well-being, with better mood and fatigue only in those whose vitamin C levels stayed low before the trial [112]. Ensuring adequate intake (meeting the RDA) is reasonable, but supplementation beyond this for mood benefits is not well supported.
 
@@ -288,10 +294,6 @@ The relationship between vitamin C supplementation and exercise is complex. High
 ### Nail Health
 
 Vitamin C deficiency has been associated with nail changes including koilonychia (spoon nails) and hapalonychia (soft, thin nails that bend or break) [121]. However, no clinical studies demonstrate that vitamin C improves nail health or strength in people who are not deficient in vitamin C or iron [122].
-
-### Nickel Sensitivity
-
-Some research has shown that vitamin C can reduce the absorption of nickel, which may theoretically benefit people with nickel sensitivity, although no clinical research has demonstrated that vitamin C reduces eczema symptoms in nickel-sensitive individuals [6].
 
 ## 4. Recommended Dosing
 
@@ -348,7 +350,7 @@ Brad's view is to reach the RDA, mostly from food, and not to exceed it by defau
 
 ### How to Read a Supplement Label
 
-When looking for vitamin C dosage, be aware that 1,000 mcg (micrograms) = 1 mg (milligram), and 1,000 mg = 1 gram. The weight listed is typically the weight of the vitamin C itself [6]:
+When looking for vitamin C dosage, be aware that 1,000 mcg (micrograms) = 1 mg (milligram), and 1,000 mg = 1 gram:
 
 - "500 mg vitamin C as calcium ascorbate" means 500 mg of actual vitamin C, plus additional calcium weight.
 - Check the "% Daily Value" on the Supplement Facts label. The DV for vitamin C is 90 mg for adults and children aged 4+ [123].
@@ -357,8 +359,6 @@ When looking for vitamin C dosage, be aware that 1,000 mcg (micrograms) = 1 mg (
 
 - **Take with food** to slow gastrointestinal transit and reduce stomach upset from acidic forms.
 - **Divide doses** when taking more than 200 mg/day to maximize absorption, since fractional absorption declines at higher single doses. Ingestion of several smaller doses each day is preferable to a single large dose [7].
-- **Store properly:** Keep vitamin C in a closed container away from direct light. Exposure to air and light causes oxidation, converting some reduced vitamin C to dehydroascorbic acid, which may not function as effectively [6].
-
 ## 5. Dietary Sources
 
 Fruits and vegetables are the best sources of vitamin C. Consuming 5 varied servings of fruits and vegetables per day typically provides more than 200 mg [9][12].
@@ -404,7 +404,7 @@ The primary side effects of oral vitamin C supplementation are gastrointestinal 
 
 - **Diarrhea:** Caused by the osmotic effect of unabsorbed vitamin C drawing water into the intestinal lumen. This is dose-dependent and unrelated to the acidity of the supplement form. Non-acidic forms (calcium ascorbate, sodium ascorbate) prevent heartburn but do not prevent diarrhea.
 - **Nausea, abdominal cramps, and heartburn:** More common at higher doses, particularly with acidic ascorbic acid. Taking with food and dividing doses throughout the day reduces these effects.
-- **Dental enamel erosion:** Vitamin C (as ascorbic acid) is acidic and can damage teeth if held in the mouth for extended periods. Chewable tablets pose the highest risk [6].
+- **Dental enamel erosion:** Erosion of dental enamel has been reported with high vitamin C intakes [9][12]. Ascorbic acid is acidic, so it may be wise not to hold chewable tablets or vitamin C drinks in the mouth for long.
 
 The UL of 2,000 mg/day is based on these gastrointestinal effects, not on systemic toxicity. In general, vitamin C has low toxicity and is not believed to cause serious adverse effects at high intakes in healthy individuals [9][12].
 
@@ -420,7 +420,7 @@ This is the most significant safety concern for men taking high-dose vitamin C s
 
 ### Oxalate Nephropathy
 
-Vitamin C intake above 2,000 mg/day may cause oxalate crystal nephropathy — oxalate crystal deposition in kidney tubules and tissue, leading to kidney damage and/or failure. This may be more likely in people with [6][50]:
+Vitamin C supplements have been linked to oxalate nephropathy, in which oxalate crystals are deposited in the kidney and impair kidney function; in one series of biopsy-proven cases, many patients had pre-existing chronic kidney disease [50]. It may be more likely in people with:
 
 - Pre-existing kidney disease
 - Pancreatic insufficiency (which, due to fat malabsorption, allows increased oxalate absorption in the colon — a case report described a man in his 80s with pancreatic insufficiency who developed oxalate nephropathy and end-stage kidney disease requiring dialysis from 1,000-2,000 mg vitamin C [129])
@@ -450,11 +450,11 @@ Under certain conditions, vitamin C can act as a pro-oxidant, potentially contri
 
 ### Interference with Diagnostic Tests
 
-Vitamin C supplements at 250 mg or more can interfere with several diagnostic tests [6]:
+Vitamin C supplements can interfere with several diagnostic tests:
 
 - **Fecal occult blood tests (gFOBT):** Vitamin C can cause false-negative results on traditional guaiac-based tests (Hemoccult). Stop vitamin C (and other antioxidant supplements, red meat, and vegetables high in peroxidase such as broccoli, cauliflower, and radishes) 3 days before sample collection. Newer fecal immunochemical tests (FIT) such as Hema Select, FlexSure, and Insure are NOT affected by vitamin C and are recommended over gFOBT by the American College of Gastroenterology [137].
 - **Urine tests:** Vitamin C may interfere with dipstick and biochemical urine tests measuring bilirubin, glucose, leukocyte esterase, hemoglobin, nitrite, calcium, chloride, and magnesium. Reported at doses ranging from 350-1,000 mg/day [138][139][140][141].
-- **Blood tests:** Excess vitamin C may interfere with measurements of cholesterol and blood sugar levels [6].
+- **Blood tests:** If you take high-dose vitamin C, tell your doctor before a blood test, as it may affect some results.
 
 ### Other Reported Effects
 
@@ -480,15 +480,15 @@ Vitamin C supplements can interact with several medications. The most clinically
 
 | Drug | Interaction | Clinical Recommendation |
 |------|------------|------------------------|
-| **Levothyroxine (Synthroid)** | Vitamin C may increase how much levothyroxine is absorbed, possibly by increasing stomach acid [6]. Studies used about 500 mg to 1 g a day [6][155]. In one trial in people with gastritis, taking 500 mg of vitamin C with levothyroxine improved thyroid hormone levels [155]. This matters most with high-dose supplements, but lower doses have not been ruled out. | If you take levothyroxine, talk to your prescriber before starting, stopping or changing vitamin C supplements, as your thyroid levels may need checking. |
-| **Warfarin** | An early 1971 case report suggested interference [144], but subsequent research has not confirmed this. 1 g/day for 6 months did not affect warfarin requirements [6]. Doses of 3-10 g/day for 7 days in 19 adults on warfarin did not affect prothrombin ratios, though blood warfarin levels decreased by approximately 17.5% (not considered clinically significant) [146]. ConsumerLab reports that 2 g/day for 6 weeks did not increase bleeding risk in 18 healthy men [6]. The trial itself measured clotting and platelet markers, not bleeding, and found no striking effects [147]. | Current evidence does not support a clinically significant interaction. |
+| **Levothyroxine (Synthroid)** | Vitamin C may increase how much levothyroxine is absorbed, possibly by increasing stomach acid [155]. In one trial in people with gastritis, taking 500 mg of vitamin C with levothyroxine improved thyroid hormone levels [155]. This matters most with high-dose supplements, but lower doses have not been ruled out. | If you take levothyroxine, talk to your prescriber before starting, stopping or changing vitamin C supplements, as your thyroid levels may need checking. |
+| **Warfarin** | An early 1971 case report suggested interference [144], but subsequent research has not confirmed this. A later study reported no clinically important interaction between warfarin and vitamin C [146]. A crossover trial of 2 g a day in 18 healthy men measured clotting and platelet markers, not bleeding, and found no striking effects [147]. | Current evidence does not support a clinically significant interaction. If you take warfarin, check with your doctor or pharmacist before starting high-dose vitamin C. |
 | **Indinavir (HIV drug)** | High-dose vitamin C may reduce effectiveness [148]. | Discuss with prescriber. |
-| **Tricyclic antidepressants** | Vitamin C may reduce absorption [6]. | Consider separating dosing times. |
-| **Acetaminophen (Tylenol)** | The risk of liver damage from high acetaminophen doses may increase with very large (3 g) vitamin C doses [6]. | Avoid combining high doses of both. |
+| **Tricyclic antidepressants** | A possible effect on absorption has been raised, but no study confirming it is cited here. | If you take a tricyclic antidepressant, check with your doctor or pharmacist before starting vitamin C. |
+| **Acetaminophen (Tylenol)** | A possible higher risk of liver damage when high doses of both are taken has been raised, but no study confirming it is cited here. | Check with your doctor or pharmacist before combining high doses of both. |
 
 ### Vitamin C and Statins
 
-A study of people with heart disease and low HDL cholesterol found that 1,000 mg/day vitamin C combined with other antioxidants (800 IU vitamin E, 25 mg beta-carotene, 100 mcg selenium) reduced the cholesterol-lowering effects of simvastatin taken with high-dose niacin (2,000 mg) [149]. However, it is unclear whether vitamin C alone was responsible, whether this would occur with other statins, or without high-dose niacin. Current prescribing information for simvastatin, atorvastatin (Lipitor), lovastatin, and rosuvastatin (Crestor) does not note an interaction with vitamin C, but does warn against combining with high-dose niacin (>1,000 mg/day) due to rhabdomyolysis risk [6].
+A study of people with heart disease and low HDL cholesterol found that 1,000 mg/day vitamin C combined with other antioxidants (800 IU vitamin E, 25 mg beta-carotene, 100 mcg selenium) reduced the cholesterol-lowering effects of simvastatin taken with high-dose niacin (2,000 mg) [149]. However, it is unclear whether vitamin C alone was responsible, whether this would occur with other statins, or without high-dose niacin. If you take a statin, check with your doctor or pharmacist before starting high-dose antioxidant supplements.
 
 ### Chemotherapy and Radiation
 
@@ -499,11 +499,11 @@ The safety and efficacy of vitamin C during cancer treatment is controversial. S
 | Drug | Effect | Notes |
 |------|--------|-------|
 | **Aspirin (high-dose, 12+ tablets/day)** | May lower vitamin C levels | Supplementing with vitamin C normalizes levels [150]. |
-| **Proton pump inhibitors (long-term)** | Increase scurvy risk | Long-term PPI use has been implicated in vitamin C deficiency cases [6]. |
+| **Proton pump inhibitors (long-term)** | May lower vitamin C | These drugs lower vitamin C in gastric juice, and there is some evidence they may reduce how well ingested vitamin C is absorbed [156]. |
 
 ### Pycnogenol Interaction
 
-One study found that taking vitamin C along with Pycnogenol (pine bark extract/OPCs) might raise blood pressure in people with hypertension. The reasons are currently unclear [6].
+If you have high blood pressure and plan to take vitamin C with Pycnogenol (pine bark extract), check with your doctor or pharmacist first.
 
 ## 8. References
 
@@ -516,8 +516,6 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 [4] Jacob RA, Sotoudeh G. "Vitamin C function and status in chronic disease." *Nutr Clin Care*. 2002;5:66-74. [https://pubmed.ncbi.nlm.nih.gov/12134712/](https://pubmed.ncbi.nlm.nih.gov/12134712/)
 
 [5] Gershoff SN. "Vitamin C (ascorbic acid): new roles, new requirements?" *Nutr Rev*. 1993;51:313-26. [https://pubmed.ncbi.nlm.nih.gov/8108031/](https://pubmed.ncbi.nlm.nih.gov/8108031/)
-
-[6] ConsumerLab. "Vitamin C Supplements Review." Accessed 2025. [https://www.consumerlab.com/reviews/vitamin-c-supplement-review/vitaminc/](https://www.consumerlab.com/reviews/vitamin-c-supplement-review/vitaminc/)
 
 [7] Padayatty SJ, Sun H, Wang Y, et al. "Vitamin C pharmacokinetics: implications for oral and intravenous use." *Ann Intern Med*. 2004;140:533-7. [https://pubmed.ncbi.nlm.nih.gov/15068981/](https://pubmed.ncbi.nlm.nih.gov/15068981/)
 
@@ -572,8 +570,6 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 [33] Darr D, et al. "Effectiveness of antioxidants (vitamins C and E) with and without sunscreens as topical photoprotectants." *Acta Derm Venereol*. 1996.
 
 [34] Murray JC, Burch JA, Streilein RD, Iannacchione MA, et al. "A topical antioxidant solution containing vitamins C and E stabilized by ferulic acid provides protection for human skin against damage caused by ultraviolet irradiation." *J Am Acad Dermatol*. 2008;59:418-25. [https://pubmed.ncbi.nlm.nih.gov/18603326/](https://pubmed.ncbi.nlm.nih.gov/18603326/)
-
-[35] Grether-Beck S, et al. "Photoprotection of human skin beyond ultraviolet radiation." *Photochem Photobiol*. 2015.
 
 [36] Dreher F, Gabard B, Schwindt DA, Maibach HI. "Topical melatonin in combination with vitamins E and C protects skin from ultraviolet-induced erythema: a human study in vivo." *Br J Dermatol*. 1998;139:332-9. [https://pubmed.ncbi.nlm.nih.gov/9767255/](https://pubmed.ncbi.nlm.nih.gov/9767255/)
 
@@ -806,3 +802,7 @@ One study found that taking vitamin C along with Pycnogenol (pine bark extract/O
 [154] BioMed Research International. "Retracted: Extra dose of vitamin C based on a daily supplementation shortens the common cold: a meta-analysis of 9 randomized controlled trials." *Biomed Res Int*. 2023;2023:9848057. [https://pubmed.ncbi.nlm.nih.gov/37078007/](https://pubmed.ncbi.nlm.nih.gov/37078007/)
 
 [155] Jubiz W, Ramirez M. "Effect of vitamin C on the absorption of levothyroxine in patients with hypothyroidism and gastritis." *J Clin Endocrinol Metab*. 2014;99(6):E1031-4. [https://pubmed.ncbi.nlm.nih.gov/24601693/](https://pubmed.ncbi.nlm.nih.gov/24601693/)
+
+[156] McColl KE. "Effect of proton pump inhibitors on vitamins and iron." *Am J Gastroenterol*. 2009;104 Suppl 2:S5-9. doi: 10.1038/ajg.2009.45. [https://pubmed.ncbi.nlm.nih.gov/19262546/](https://pubmed.ncbi.nlm.nih.gov/19262546/)
+
+[157] Stanfield B. "Is Liposomal Vitamin C Worth the Money or a Useless Fad?" drstanfield.com. 9 December 2024. [https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth](https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth)
