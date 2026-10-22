@@ -19,10 +19,24 @@ enum ChartRange: String, CaseIterable, Identifiable {
         }
     }
 
+    /// A week's span in days, first to last: today and the six before it.
+    static let weekDays = 6
+
+    /// Values spanning less than a week, under All: a week around their middle. The
+    /// chart's own fit would span a day or two and label the axis by the hour.
+    static func atLeastAWeek(_ days: [Date]) -> ClosedRange<Date>? {
+        guard let first = days.min(), let last = days.max(),
+              let weekOn = DayText.utc.date(byAdding: .day, value: weekDays, to: first), last < weekOn
+        else { return nil }
+        let half = TimeInterval(weekDays) * 86_400 / 2
+        let middle = first.addingTimeInterval(last.timeIntervalSince(first) / 2)
+        return middle.addingTimeInterval(-half)...middle.addingTimeInterval(half)
+    }
+
     /// The first day the range shows, ending today; nil for All.
     func start(today: Date) -> Date? {
         let step: (Calendar.Component, Int)? = switch self {
-        case .week: (.day, -6)
+        case .week: (.day, -Self.weekDays)
         case .month: (.month, -1)
         case .sixMonths: (.month, -6)
         case .year: (.year, -1)

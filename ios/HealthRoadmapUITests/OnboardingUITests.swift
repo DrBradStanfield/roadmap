@@ -10,63 +10,67 @@ final class OnboardingUITests: XCTestCase {
 
     /// The app, flagged so its session never reaches Clarity (US-25 AC19).
     @MainActor
-    private func launch() -> XCUIApplication {
+    private func launch(textSize: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
+        if let textSize { app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize] }
         app.launch()
         return app
     }
 
-    /// Keeps a screenshot of each step in the test result, for checking the screens by eye.
     @MainActor
     private func snap(_ app: XCUIApplication, _ name: String) {
-        let shot = XCTAttachment(screenshot: app.screenshot())
-        shot.name = name
-        shot.lifetime = .keepAlways
-        add(shot)
+        keepScreenshot(app.screenshot(), named: name)
     }
 
-    /// Welcome, Apple Health ("Not now"), then sex, birth and height, leaving the weight screen up.
+    /// Welcome, Apple Health ("Not now"), then sex, birth and height, leaving the weight
+    /// screen up. With `reachable`, every button tapped must be on screen (AC8).
     @MainActor
-    private func answerUpToWeight(_ app: XCUIApplication) throws {
+    private func answerUpToWeight(_ app: XCUIApplication, reachable: Bool = false, shots prefix: String = "") throws {
+        func press(_ button: XCUIElement, _ what: String) {
+            if reachable { XCTAssertTrue(button.isHittable, "\(what) is reachable") }
+            button.tap()
+        }
         let start = app.buttons["welcome.start"]
         // A failure, never a skip, so a broken first run cannot pass unseen (Codex re-check R3).
         XCTAssertTrue(start.waitForExistence(timeout: 10), "the welcome screen shows on a fresh install (uninstall the app first)")
         XCTAssertTrue(app.buttons["welcome.existing"].exists, "the existing-user way in is offered (AC2)")
-        snap(app, "1 welcome")
-        start.tap()
+        snap(app, prefix + "1 welcome")
+        press(start, "Get started")
 
         // Apple Health: go on without it, so no system sheet is needed.
         let notNow = app.buttons["onboarding.notNow"]
         XCTAssertTrue(notNow.waitForExistence(timeout: 5))
-        snap(app, "2 apple health")
-        notNow.tap()
+        snap(app, prefix + "2 apple health")
+        if reachable { XCTAssertTrue(app.buttons["onboarding.allow"].isHittable, "Allow is reachable") }
+        press(notNow, "Not now")
 
         // Sex must be answered before Continue works (AC4).
         let next = app.buttons["onboarding.continue"]
         XCTAssertTrue(next.waitForExistence(timeout: 5))
         XCTAssertFalse(next.isEnabled, "Continue waits for an answer")
-        app.buttons["onboarding.female"].tap()
-        snap(app, "3 sex")
+        press(app.buttons["onboarding.female"], "Female")
+        snap(app, prefix + "3 sex")
         XCTAssertTrue(next.isEnabled)
-        next.tap()
+        press(next, "Continue")
 
         // Birth and height: a wheel's starting value is not an answer until it is moved (AC4).
-        XCTAssertTrue(app.staticTexts["When were you born?"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.pickerWheels.element(boundBy: 1).waitForExistence(timeout: 5))
         XCTAssertFalse(next.isEnabled, "the starting year is not an answer")
         // An exact year (age 46), so the plan's screenings are known: a swipe lands anywhere.
         app.pickerWheels.element(boundBy: 1).adjust(toPickerWheelValue: "1980")
-        snap(app, "4 birth")
+        snap(app, prefix + "4 birth")
         XCTAssertTrue(next.isEnabled)
-        next.tap()
+        press(next, "Continue")
         XCTAssertTrue(app.staticTexts["How tall are you?"].waitForExistence(timeout: 5))
         XCTAssertFalse(next.isEnabled, "the starting height is not an answer")
         app.pickerWheels.firstMatch.swipeUp()
-        snap(app, "5 height")
-        next.tap()
+        snap(app, prefix + "5 height")
+        press(next, "Continue")
 
         XCTAssertTrue(app.buttons["onboarding.skip"].waitForExistence(timeout: 5))
-        snap(app, "6 weight")
+        snap(app, prefix + "6 weight")
+        if reachable { XCTAssertTrue(app.buttons["onboarding.skip"].isHittable && next.isHittable, "Skip and Continue are reachable") }
     }
 
     @MainActor
@@ -100,6 +104,37 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Next Steps"].waitForExistence(timeout: 10) || app.staticTexts["Foundation"].waitForExistence(timeout: 5))
         XCTAssertFalse(cervical.exists, "the plan was worked out again for a man")
         snap(app, "8 plan after edit")
+    }
+
+    /// At the largest accessibility text size every screen still offers its buttons (AC8).
+    @MainActor
+    func testEveryStepWorksAtTheLargestTextSize_AC8() throws {
+        let app = launch(textSize: "UICTContentSizeCategoryAccessibilityXXXL")
+        let start = app.buttons["welcome.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 10))
+        // The size took: at the default size Get started is about 50 points tall.
+        XCTAssertGreaterThan(start.frame.height, 70, "the largest text size is applied")
+        try answerUpToWeight(app, reachable: true, shots: "large ")
+    }
+
+    /// "Allow" shows Apple's Health sheet, which asks to read sex and date of birth (AC3).
+    /// The sheet runs in Apple's own process and reports its buttons' positions only
+    /// inside their rows, so a test cannot answer it; answering it is checked by hand.
+    @MainActor
+    func testAllowShowsAppleHealthAskingForSexAndBirthDate_AC3() throws {
+        let app = launch()
+        let start = app.buttons["welcome.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 10))
+        start.tap()
+        let allow = app.buttons["onboarding.allow"]
+        XCTAssertTrue(allow.waitForExistence(timeout: 5))
+        allow.tap()
+        let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
+        XCTAssertTrue(sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 10), "Apple's Health sheet appears")
+        XCTAssertTrue(sheet.switches["UIA.Health.Read.Sex.SwitchCell.Switch"].exists, "it asks to read sex")
+        XCTAssertTrue(sheet.switches["UIA.Health.Read.DateofBirth.SwitchCell.Switch"].exists, "and date of birth")
+        XCTAssertTrue(sheet.switches["UIA.Health.Read.Weight.SwitchCell.Switch"].exists, "and weight")
+        snap(app, "health sheet")
     }
 
     /// Quitting at the weight question resumes there, not on My data (AC7).

@@ -61,7 +61,7 @@ struct MetricChart: View {
         .chartYScale(domain: .automatic(includesZero: false))
         // Aligned, so the newest month's label stays inside the card.
         .chartXAxis { AxisMarks(preset: .aligned, values: .automatic(desiredCount: textSize.isAccessibilitySize ? 2 : 4)) }
-        .modifier(XDomain(domain: domain))
+        .modifier(XDomain(domain: domain ?? ChartRange.atLeastAWeek(points.map(\.date))))
         .chartXSelection(value: $finger)
         .onChange(of: finger) {
             let day = finger.flatMap { ChartRange.nearest(to: $0, in: points.map(\.date)) }

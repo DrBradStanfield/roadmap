@@ -1001,7 +1001,9 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
   `engine/bridge-contract.json` is the native bridge's contract; its hash is the bridge id.
   Tested by `scripts/release-engine.test.ts`, `scripts/signing-key-guard.test.ts` and
   `engine/bridge.test.ts`.
-- `scripts/test.sh`: builds the engine and runs the tests once in UTC and once in
+- `scripts/ui-test.sh`: the UI tests, one at a time, each on a fresh install (US-54).
+- `scripts/app-store-shots.sh`: the App Store screenshots (US-25 AC10, app-store.md step 6).
+- `scripts/test.sh`: builds the engine and runs the unit tests (not the UI tests) once in UTC and once in
   Pacific/Auckland. Gotcha (2026-10-21): JavaScriptCore reads the time zone once per
   process, so `setenv("TZ")` inside a test does not reach the engine; the first
   parity test passed in Auckland and failed in UTC for that reason. The zone is set at
