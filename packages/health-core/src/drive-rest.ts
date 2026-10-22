@@ -74,22 +74,36 @@ async function fail(what: string, res: Response): Promise<never> {
   throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
 }
 
-/** Find one file by name, optionally inside one parent. Undefined = not there. */
+/** Find one file by name, optionally inside one parent. Undefined = not there.
+ * Record reads/writes require unique discovery, including verify-after-write:
+ * a cached id can otherwise confirm a private copy beside another device's.
+ * Blob reads keep the existing duplicate/orphan semantics. */
 export async function driveFindFileId(
   accessToken: string,
   name: string,
   parentId?: string,
   signal?: AbortSignal,
+  requireUnique = false,
 ): Promise<string | undefined> {
   const q = encodeURIComponent(
     `name='${quoted(name)}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
   );
-  const res = await request(`${DRIVE_API}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`, {
+  const fields = requireUnique ? 'files(id),nextPageToken,incompleteSearch' : 'files(id)';
+  const res = await request(`${DRIVE_API}/files?q=${q}&spaces=drive&fields=${fields}&pageSize=${requireUnique ? 2 : 1}`, {
     headers: auth(accessToken),
     signal,
   });
   if (!res.ok) await fail('lookup', res);
-  return (await jsonBody<{ files?: Array<{ id: string }> }>(res)).files?.[0]?.id;
+  const result = await jsonBody<{ files?: Array<{ id: string }>; nextPageToken?: string; incompleteSearch?: boolean }>(res);
+  // Do not select a winner, merge unseen files or delete duplicates here. An
+  // incomplete page cannot establish uniqueness either; refuse it safely.
+  if (requireUnique && ((result.files?.length ?? 0) > 1 || result.nextPageToken || result.incompleteSearch)) {
+    throw new StorageError(
+      `${PROVIDER} could not identify a unique record file.`,
+      'A save may already have landed. Keep your local copy. Check Drive for duplicate record files or an incomplete search before retrying; no files were removed.',
+    );
+  }
+  return result.files?.[0]?.id;
 }
 
 /**
@@ -185,19 +199,21 @@ async function driveUpdateFile(accessToken: string, fileId: string, json: string
     signal,
   });
   if (!res.ok) await fail('write', res);
-  return String((await jsonBody<{ version?: string }>(res)).version ?? '');
+  return JSON.stringify([fileId, String((await jsonBody<{ version?: string }>(res)).version ?? '')]);
 }
 
 /**
  * The file's change counter. Drive bumps it on every change, so it is the
  * closest thing to a rev — read-only, which is why it can only ever be
- * compared and never sent as a precondition.
+ * compared and never sent as a precondition. Return an opaque token binding
+ * that counter to this file ID: another read cannot rebind an older token.
  */
 export async function driveFileVersion(accessToken: string, fileId: string, signal?: AbortSignal): Promise<string | null> {
   const res = await request(`${DRIVE_API}/files/${fileId}?fields=version`, { headers: auth(accessToken), signal });
   if (res.status === 404) return null;
   if (!res.ok) await fail('version read', res);
-  return (await jsonBody<{ version?: string }>(res)).version ?? null;
+  const version = (await jsonBody<{ version?: string }>(res)).version;
+  return version == null ? null : JSON.stringify([fileId, version]);
 }
 
 /**
@@ -218,7 +234,7 @@ export async function driveUpdateIfVersion(
   const current = await driveFileVersion(accessToken, fileId, signal);
   if (current !== expectedVersion) {
     throw new ConflictError(
-      `${PROVIDER} changed since it was read (version ${expectedVersion ?? 'none'} → ${current ?? 'none'})`,
+      `${PROVIDER} file identity or version changed since it was read`,
     );
   }
   return driveUpdateFile(accessToken, fileId, json, signal);
@@ -272,7 +288,7 @@ export class DriveAdapter implements StorageAdapter {
    * save retries. A wasted round trip beats a silent lost update.
    */
   async read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
-    const fileId = await this.findFile(fileName, signal);
+    const fileId = await this.findFile(fileName, signal, true);
     if (!fileId) return { body: null, version: null };
     const version = await driveFileVersion(this.accessToken, fileId, signal);
     if (version == null) return { body: null, version: null }; // deleted between the two calls
@@ -285,7 +301,7 @@ export class DriveAdapter implements StorageAdapter {
    *  `SyncManager.save` round again. */
   async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
     const json = JSON.stringify(body);
-    const fileId = await this.findFile(fileName, signal);
+    const fileId = await this.findFile(fileName, signal, true);
 
     if (!fileId) {
       // A first-ever create. If the caller thought there was a version, the
@@ -298,7 +314,7 @@ export class DriveAdapter implements StorageAdapter {
       const created = await jsonBody<{ id?: string; version?: string }>(res);
       if (!created.id) throw new StorageError(`${PROVIDER} create returned no file id.`);
       this.fileIds.set(fileName, created.id);
-      return { version: String(created.version ?? '') };
+      return { version: JSON.stringify([created.id, String(created.version ?? '')]) };
     }
 
     return { version: await driveUpdateIfVersion(this.accessToken, fileId, json, expectedVersion, signal) };
@@ -325,13 +341,13 @@ export class DriveAdapter implements StorageAdapter {
     this.fileIds.delete(fileName);
   }
 
-  private async findFile(fileName: string, signal?: AbortSignal): Promise<string | undefined> {
+  private async findFile(fileName: string, signal?: AbortSignal, requireUnique = false): Promise<string | undefined> {
     const cached = this.fileIds.get(fileName);
-    if (cached) return cached;
+    if (cached && !requireUnique) return cached;
     // No parent filter, exactly as the browser adapter searches: `drive.file`
     // already limits the result set to this app's own files, and a record
     // created before the folder existed still lives at the Drive root.
-    const found = await driveFindFileId(this.accessToken, fileName, undefined, signal);
+    const found = await driveFindFileId(this.accessToken, fileName, undefined, signal, requireUnique);
     if (found) this.fileIds.set(fileName, found);
     return found;
   }

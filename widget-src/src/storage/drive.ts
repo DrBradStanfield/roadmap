@@ -407,7 +407,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   // --- file ops -------------------------------------------------------------
 
   async read(fileName: string): Promise<ReadResult> {
-    const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
+    const fileId = await this.findFileId(fileName, undefined, true);
     if (!fileId) return { body: null, version: null };
     this.rememberFileId(fileName, fileId);
     // Cosmetic, never blocks the read: adopt pre-folder files into the app folder.
@@ -421,7 +421,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
     const json = JSON.stringify(body);
-    const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
+    const fileId = await this.findFileId(fileName, undefined, true);
     if (fileId) {
       const version = await driveUpdateIfVersion(await this.getToken(), fileId, json, expectedVersion);
       this.rememberFileId(fileName, fileId);
@@ -436,7 +436,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const created = await jsonBody<{ id?: string; version?: string }>(res);
     if (!created.id) throw new StorageError('Google Drive create returned no file id.');
     this.rememberFileId(fileName, created.id);
-    return { version: String(created.version ?? '') };
+    return { version: JSON.stringify([created.id, String(created.version ?? '')]) };
   }
 
   async readDocument(ref: string): Promise<Blob> {
@@ -643,8 +643,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
     );
   }
 
-  private async findFileId(name: string, parentId?: string): Promise<string | undefined> {
-    return driveFindFileId(await this.getToken(), name, parentId);
+  private async findFileId(name: string, parentId?: string, requireUnique = false): Promise<string | undefined> {
+    return driveFindFileId(await this.getToken(), name, parentId, undefined, requireUnique);
   }
 
   private async authHeaders(): Promise<Record<string, string>> {
