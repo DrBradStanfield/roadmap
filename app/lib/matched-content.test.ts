@@ -83,8 +83,8 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   const POTASSIUM = 'potassium-benefits-forms-dosing-and-side-effects';
   const realRead = fs.readFileSync;
   afterEach(() => { vi.restoreAllMocks(); });
-  // A real page grown to `size` chars by a section its reduced forms leave out,
-  // so a test pins the cap's behaviour, not today's page sizes: the masters keep
+  // A real page grown to `size` chars, measured on the raw file with its
+  // frontmatter, by a section its reduced forms leave out, so a test pins the cap's behaviour, not today's page sizes: the masters keep
   // growing (omega-3 passed the old 120,000 cap on 2026-10-22).
   const grown = (raw: string, size: number) => `${raw}\n\n## Grown for the test\n\n${'z'.repeat(Math.max(0, size - raw.length))}\n`;
   const grow = (sizes: Record<string, number>) => (handle: string, raw: string) => (handle in sizes ? grown(raw, sizes[handle]) : raw);
