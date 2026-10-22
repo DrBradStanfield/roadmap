@@ -2985,8 +2985,13 @@ describe('Evidence attachment', () => {
     const { inputs, results } = createTestData({}, { bmi: 22 });
     const base = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-micronutrient-base')!;
     expect(base.ingredients).toContain('Vitamin D3 with K2');
-    expect(base.description).toContain('If you take warfarin or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.');
-    expect(SUGGESTION_EVIDENCE['supplement-micronutrient-base'].reason).toContain('vitamin K antagonist');
+    expect(base.description).toContain('If you take warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.');
+    const reason = SUGGESTION_EVIDENCE['supplement-micronutrient-base'].reason;
+    expect(reason).toContain('vitamin K antagonist');
+    // Review R2 (2026-10-22): the 45 mcg result and the authors' conclusion; no "below retail" framing.
+    expect(reason).toContain('45 mcg a day lowered the group\'s average INR by about 40%');
+    expect(reason).toContain('concluded that MK-7 supplements should be avoided');
+    expect(reason).not.toMatch(/retail/);
     expect(base.references!.map(r => r.url)).toContain('https://doi.org/10.1111/jth.12203');
   });
 
@@ -3000,6 +3005,11 @@ describe('Evidence attachment', () => {
     expect(line).not.toMatch(/\(7g\/day\)/);
     expect(line).toContain('0.33 mmol/L');
     expect(md).toContain('https://doi.org/10.1093/ajcn/nqy115');
+    // Review R1: the guideline's portfolio table, which the algorithm implements, agrees.
+    const diet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../docs/guideline/diet.md'), 'utf8');
+    const row = diet.split('\n').find(l => l.startsWith('| Psyllium husk |'))!;
+    expect(row).toContain('about 10 g/day husk (≈7 g soluble fibre)');
+    expect(row).toContain('0.33 mmol/L');
   });
 
   // US-07 AC1 (amended 2026-10-21, Brad): B vitamins' cognitive benefit may depend
