@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * Is there a Sonnet newer than the pinned chat model? (docs/chat-audit-2026-09-29.md §4.3)
+ * Is there a Sonnet newer than the pinned chat model? (claude_business docs/roadmap-chat/chat-audit-2026-09-29.md §4.3)
  *
  * Lists the Anthropic Models API and reports every `claude-sonnet-*` id whose
  * created_at is newer than the pinned CHAT_MODEL's, plus the harness commands

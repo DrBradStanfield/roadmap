@@ -14,9 +14,9 @@
  * documented — which strengthens the case for the serial classifier.
  *
  * Design docs:
- *   - chat-architecture.md § Pre-router classifier (full spec)
- *   - chat-knowledge-map-v2.md § Pre-router classifier (the "why")
- *   - chat-overview.md Diagram 6 (the picture)
+ *   - claude_business docs/chat-architecture.md § Pre-router classifier (full spec)
+ *   - claude_business docs/chat-knowledge-map-v2.md § Pre-router classifier (the "why")
+ *   - claude_business docs/chat-overview.md Diagram 6 (the picture)
  *
  * Failure mode is fail-safe: any classifier error → router still fires
  * (matches today's behavior). The classifier can only OMIT a router call,

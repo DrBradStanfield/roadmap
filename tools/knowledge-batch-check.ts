@@ -317,7 +317,7 @@ const quoteSource = (q: string) => {
 };
 /** The master's view heading (US-50 AC1), shared with knowledge-lint.ts; group 1 is set for a Current view. */
 export const VIEW_HEADING = /^##\s+(?:(Current view \(reviewed [^)]+\))|Current evidence position)\s*$/;
-/** The contract's first sentence of a Current evidence position (master-writer-contract.md). */
+/** The contract's first sentence of a Current evidence position (claude_business docs/roadmap-chat/knowledge-refresh/master-writer-contract.md). */
 export const EVIDENCE_OPENING = "Brad has not made a video on this topic; this is a summary of the evidence, not his view.";
 /** Frontmatter keys that appear more than once. */
 export const duplicateKeys = (front: string) => {

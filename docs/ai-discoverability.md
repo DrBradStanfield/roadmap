@@ -50,10 +50,9 @@ change below. The original plan and its reasoning:
   chloride and the other forms.
 - GitHub repo: description, homepage, 11 topics, `glama.json`, release v1.0.2.
 - `get-plan --from-values`: a plan from numbers with no record file (US-30 AC7).
-- No third-party clinical pathways (2026-10-22, US-15 AC39): HealthPathways content left the repo and the
-  chatbot after Streamliners wrote to Brad. No agent surface may describe the tool as built on
-  HealthPathways. Still to fix: claude_business `tools/shopify-llms-txt.js` line 177 lists HealthPathways
-  among the tool's sources, so the live `llms.txt` says it.
+- No third-party clinical pathways (2026-10-22, US-15 AC39): pathway content left the repo and the
+  chatbot after the publisher wrote to Brad. No agent surface may describe the tool as built on
+  third-party pathways. The live `llms.txt` credit was dropped and redeployed (claude_business 8fc2d9ed).
 
 ### The supplements (microvitamin.com)
 

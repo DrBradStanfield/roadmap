@@ -178,7 +178,7 @@ const SYSTEM_PROMPT_WITH_ALGORITHM = CHAT_SYSTEM_PROMPT + ALGORITHM_DOC;
 // byte-identical across surfaces so its Anthropic prompt cache is shared; the
 // posture block is small and uncached. DOCTOR is the strict default (used by
 // drstanfield.com web, Discord, and YouTube); BRAND loosens it for the
-// microvitamin.com store. See docs/chat-architecture.md → "Surface posture".
+// microvitamin.com store. See claude_business docs/chat-architecture.md → "Surface posture".
 // ---------------------------------------------------------------------------
 
 function loadPosture(file: string): string {

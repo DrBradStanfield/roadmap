@@ -1,5 +1,5 @@
 /**
- * US-15 AC39 (2026-10-22, Brad, after Streamliners' IP complaint): no
+ * US-15 AC39 (2026-10-22, Brad, after a pathway publisher's IP complaint): no
  * third-party clinical pathway content is loaded, routed or stored. Every
  * surface (web chat, blog bubble, embed, Discord, YouTube, MCP search and the
  * router harness) reads the one index and the one loader checked here.
@@ -14,7 +14,9 @@ import { buildSystemBlocks } from './chat.server';
 import { ROUTER_VERSION, VALID_HANDLES } from './chat-router.server';
 
 const ROOT = process.cwd();
-const THIRD_PARTY = /healthpathways|auckland region|communityhealthpathways/i;
+// Built from parts so this public repo never spells the publisher's name. The
+// name also matches its "community" variant.
+const THIRD_PARTY = new RegExp([['Health', 'Pathways'].join(''), ['Auckland', 'Region'].join(' ')].join('|'), 'i');
 // Handles that were pathways before 2026-10-22, crisis and red-flag ones among them.
 const FORMER_PATHWAYS = ['chest-pain', 'suicide-prevention-in-adults', 'stroke', 'pain-and-bleeding-in-early-pregnancy', 'febrile-illness-in-children'];
 
@@ -34,7 +36,7 @@ describe('US-15 AC39 — no third-party pathway content', () => {
     expect(script).not.toContain("'docs/pathway'");
   });
 
-  it('no knowledge file names HealthPathways as a source', () => {
+  it('no knowledge file names the pathway publisher as a source', () => {
     for (const dir of ['docs/blog', 'docs/guideline']) {
       for (const f of fs.readdirSync(path.join(ROOT, dir)).filter(n => n.endsWith('.md') || n.endsWith('.json'))) {
         expect(THIRD_PARTY.test(fs.readFileSync(path.join(ROOT, dir, f), 'utf-8')), `${dir}/${f}`).toBe(false);
@@ -57,7 +59,7 @@ describe('US-15 AC39 — no third-party pathway content', () => {
     expect(prompt).not.toMatch(/pathway/i);
   });
 
-  it('the answer prompt neither lists pathways nor cites HealthPathways', () => {
+  it('the answer prompt neither lists pathways nor cites the pathway publisher', () => {
     const text = buildSystemBlocks('{}').map(b => b.text).join('\n');
     expect(text).not.toMatch(THIRD_PARTY);
     expect(text).not.toMatch(/clinical pathway/i);

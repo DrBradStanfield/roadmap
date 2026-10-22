@@ -126,7 +126,7 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   v1.0.2, receipt 2026-10-13T23:55Z; v1.0.1 rejected 2026-09-30, v1.0.0
   2026-09-15). If it has moved (approved or rejected), lead the report with it
   as Brad's next action (#60 is closed as superseded).
-- **Newer-Sonnet check** (audit `docs/chat-audit-2026-09-29.md` §4.3, US-15
+- **Newer-Sonnet check** (audit `claude_business docs/roadmap-chat/chat-audit-2026-09-29.md` §4.3, US-15
   AC18). Run `npx tsx tools/check-newer-model.ts` (needs
   `ANTHROPIC_TEST_API_KEY`). Exit 0 = nothing newer; 1 = a named gap. On exit
   10, run the answer-hop commands it prints (`--answer-model … --answer-check`,

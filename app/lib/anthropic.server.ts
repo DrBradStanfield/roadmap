@@ -184,7 +184,7 @@ export interface AnthropicResult {
  * a single-tick capacity blip routinely clears in the next second. Without this
  * retry, a single Anthropic overload during a customer's chat turn produced a
  * fallback ("Sorry — I'm having trouble responding") that the customer saw as
- * a broken bot — see chat-knowledge-map-v2-changelog 2026-06-05 entry for the
+ * a broken bot — see claude_business docs/chat-knowledge-map-v2-changelog.md 2026-06-05 entry for the
  * precedent (a customer asked the same question twice in 30s and got fallback
  * both times during a brief 01:50 UTC June 4 outage). Real persistent errors
  * (auth, 4xx validation, malformed responses, 429 structural rate-limit) throw
