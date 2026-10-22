@@ -530,7 +530,7 @@ export function generateSuggestions(
       if (results.bmi !== undefined) {
         const lpaWhr = results.waistToHeightRatio;
         const onTarget = results.bmi < 25 || (results.bmi < 30 && lpaWhr !== undefined && !isWaistToHeightElevated(lpaWhr));
-        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} BMI: ${results.bmi} \u2014 target <25`);
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} BMI: ${results.bmi} \u2014 target <25, or <30 with a healthy waist-to-height ratio`);
       }
 
       // HbA1c
