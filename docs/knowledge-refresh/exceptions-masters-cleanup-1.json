@@ -422,5 +422,13 @@
   "reason": "Checker defect, orchestrator-approved (2026-10-22): the \"11%\" sits in the Forms table citrate row, in a sentence that cites Brad's post [45], which states it; the checker reads the row's first citation [7] (Schuchardt 2017) instead of the sentence's own [45].",
   "by": "orchestrator",
   "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \">96 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In two linked trials in people hospitalized with COVID-19, a dose of intravenous vitamin C every 6 hours, up to 16 ...\"",
+  "reason": "Checker tokenisation: the body's \"over 96 hours\" tokenises as \">96 hour\"; the Adhikari abstract (PMID 37877585) says \"every 6 hours for 96 hours (maximum of 16 doses)\", quoted in vitamin-c addendum-15. Same number and unit.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
  }
 ]
