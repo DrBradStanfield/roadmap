@@ -70,7 +70,7 @@ struct MetricChart: View {
         .sensoryFeedback(.selection, trigger: selected) { _, new in new != nil }
         // Days are midnight UTC (DayText.date): axis labels read them in UTC so no zone shifts a day.
         .environment(\.timeZone, .gmt)
-        .environment(\.calendar, Self.utc)
+        .environment(\.calendar, DayText.utc)
         .frame(minHeight: 220)
         .accessibilityChartDescriptor(MetricChartDescriptor(title: history.label, unit: history.unit, points: points))
     }
@@ -92,12 +92,6 @@ struct MetricChart: View {
         .padding(.vertical, 6)
         .background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
         .accessibilityHidden(true)
-    }
-
-    private static var utc: Calendar {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = .gmt
-        return calendar
     }
 }
 

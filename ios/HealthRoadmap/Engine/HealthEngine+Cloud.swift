@@ -24,7 +24,7 @@ extension HealthEngine {
     /// units the screen showed when the edit began (a sheet's opening).
     func cloudEdit(_ edit: RecordEdit, erase: String, units: String, now: Date) throws -> EditOutcome {
         let editJSON = String(decoding: try JSONEncoder().encode(edit), as: UTF8.self)
-        let json = try call("cloudEdit", [editJSON, erase, units, now.formatted(Date.ISO8601FormatStyle(includingFractionalSeconds: true))])
+        let json = try call("cloudEdit", [editJSON, erase, units, now.formatted(Self.iso)])
         return try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
     }
 

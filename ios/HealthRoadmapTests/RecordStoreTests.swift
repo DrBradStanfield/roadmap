@@ -64,6 +64,22 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(store.myData?.vitals.first?.latest?.value, "82.0")
     }
 
+    /// A value page asks for its history on every redraw; the answer is cached per
+    /// record, so a correction must show at once (US-25 AC9, the cache in RecordStore).
+    func testTheValueHistoryFollowsACorrection() throws {
+        let store = try store()
+        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")), .saved)
+        let first = try XCTUnwrap(store.history(for: "weight"))
+        XCTAssertEqual(first.rows.map(\.value), ["80.0"])
+        XCTAssertEqual(store.history(for: "weight"), first, "asked again: the same answer")
+        let id = try XCTUnwrap(first.rows.first?.id)
+        XCTAssertEqual(store.apply(.correct(id: id, value: 82)), .saved)
+        let after = try XCTUnwrap(store.history(for: "weight"))
+        XCTAssertEqual(after.rows.first { $0.status == "active" }?.value, "82.0", "the correction shows, not the cached history")
+        XCTAssertEqual(after.rows.count, 2)
+        XCTAssertNotNil(store.history(for: "waist"), "another metric is asked for afresh")
+    }
+
     func testThePlanFollowsTheStoredRecord() throws {
         let store = try store()
         let engine = try HealthEngine()

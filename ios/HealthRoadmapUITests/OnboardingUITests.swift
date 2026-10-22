@@ -54,7 +54,8 @@ final class OnboardingUITests: XCTestCase {
         // Birth and height: a wheel's starting value is not an answer until it is moved (AC4).
         XCTAssertTrue(app.staticTexts["When were you born?"].waitForExistence(timeout: 5))
         XCTAssertFalse(next.isEnabled, "the starting year is not an answer")
-        app.pickerWheels.element(boundBy: 1).swipeDown()
+        // An exact year (age 46), so the plan's screenings are known: a swipe lands anywhere.
+        app.pickerWheels.element(boundBy: 1).adjust(toPickerWheelValue: "1980")
         snap(app, "4 birth")
         XCTAssertTrue(next.isEnabled)
         next.tap()
@@ -82,6 +83,23 @@ final class OnboardingUITests: XCTestCase {
         let again = launch()
         XCTAssertFalse(again.buttons["welcome.start"].waitForExistence(timeout: 3))
         XCTAssertFalse(again.buttons["onboarding.continue"].exists)
+    }
+
+    /// The plan follows an edit made on My data while it was hidden (US-25 AC6): it
+    /// plans again on return, and never shows the older plan.
+    @MainActor
+    func testThePlanFollowsAnEditMadeOnMyData_US25_AC6() throws {
+        let app = launch()
+        try answerUpToWeight(app)
+        app.buttons["onboarding.skip"].tap()
+        let cervical = app.staticTexts["Start cervical cancer screening"]
+        XCTAssertTrue(cervical.waitForExistence(timeout: 10), "a woman's plan offers cervical screening")
+        app.tabBars.buttons["My data"].tap()
+        app.buttons["Male"].firstMatch.tap()
+        app.tabBars.buttons["My plan"].tap()
+        XCTAssertTrue(app.staticTexts["Next Steps"].waitForExistence(timeout: 10) || app.staticTexts["Foundation"].waitForExistence(timeout: 5))
+        XCTAssertFalse(cervical.exists, "the plan was worked out again for a man")
+        snap(app, "8 plan after edit")
     }
 
     /// Quitting at the weight question resumes there, not on My data (AC7).
