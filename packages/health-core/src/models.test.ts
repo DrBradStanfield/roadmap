@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MODEL, EXTRACTION_MODEL, EXTRACTION_STOP_CODES, PROMPT_CACHE, ROUTER_MODEL, extractionStopCode, getArg, modelParams, summaryLine, toStat } from './models';
 
-// Request shapes per model family (docs/chat-audit-2026-09-29.md F1, US-15 AC13).
+// Request shapes per model family (claude_business docs/roadmap-chat/chat-audit-2026-09-29.md F1, US-15 AC13).
 // Sonnet 5 and 5.5 400 on sampling params; 5.5 also 400s on `disabled` thinking.
 // Haiku 5.5 400s on sampling params too, and thinks unless told not to (US-15 AC34).
 describe('modelParams', () => {

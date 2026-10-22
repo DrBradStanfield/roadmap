@@ -40,7 +40,7 @@ function toRegExp(pattern: string): RegExp {
   return new RegExp(`^${body}${dir ? '(/|$)' : '(/|$)'}`);
 }
 
-// 'research' (US-09 AC18): docs/wiki/research/ holds raw ConsumerLab and other paywalled source text.
+// 'research' (US-09 AC18): docs/wiki/research/ holds raw paywalled third-party source text.
 const DATA_WORDS = ['health', 'backup', 'dump', 'export', 'research'];
 
 describe('.dockerignore covers the .gitignore data patterns', () => {

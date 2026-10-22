@@ -4,7 +4,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 vi.mock('../packages/health-core/src/models', () => ({ CHAT_MODEL: 'claude-sonnet-5' }));
 import { main, newerSonnets, qualificationLines } from './check-newer-model';
 
-// The catalogue as listed on 2026-09-29 (docs/chat-audit-2026-09-29.md §4.3),
+// The catalogue as listed on 2026-09-29 (claude_business docs/roadmap-chat/chat-audit-2026-09-29.md §4.3),
 // plus Opus and Haiku ids that must never count as a newer Sonnet.
 const CATALOGUE = [
   { id: 'claude-opus-5-5', created_at: '2026-09-28T00:00:00Z' },

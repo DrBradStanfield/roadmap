@@ -187,7 +187,7 @@ export function isKnowledgeTool(name: string): boolean {
 /**
  * What is already public under Brad's name (AC11): his video articles and the
  * topic masters, each published at its drstanfield.com url. The guidelines
- * (which quote UpToDate) and the other references (ConsumerLab-derived) stay
+ * (which quote UpToDate) and the other references (built from licensed third-party sources) stay
  * with the chatbot and are never served here.
  */
 export const isServed = (entry: BlogIndexEntry) => (entry.type ?? 'article') === 'article' || isMaster(entry);

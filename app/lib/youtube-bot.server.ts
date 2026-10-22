@@ -22,7 +22,7 @@
  *   FLY_APP_NAME set, OR YOUTUBE_BOT_FORCE_START=true   (avoids local-dev double-runs)
  *
  * See:
- *   docs/chat-architecture.md § YouTube comment replier
+ *   claude_business docs/chat-architecture.md § YouTube comment replier
  *   tools/youtube-comment-dryrun.ts (preview tool, same pipeline)
  */
 import * as Sentry from '@sentry/react-router';

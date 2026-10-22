@@ -20,7 +20,7 @@
  *
  * History: deleted in c024c08 (Apr 2026, "clean up scripts") — turned out
  * not to be obsolete; restored May 2026 after the aspirin orphan revealed
- * the gap. See docs/chat-architecture.md → "Source of truth: .md frontmatter".
+ * the gap. See claude_business docs/chat-architecture.md → "Source of truth: .md frontmatter".
  */
 
 import fs from 'fs';

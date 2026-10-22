@@ -1327,7 +1327,7 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_fallback
 -- ===== chat_match_events.classification + router_skipped (2026-05-15) =====
 -- Pre-router classifier columns. A dedicated Haiku classifier decides whether
 -- the v2 router needs to fire for this turn. See app/lib/chat-classifier.server.ts
--- and chat-architecture.md § Pre-router classifier.
+-- and claude_business docs/chat-architecture.md § Pre-router classifier.
 --
 -- classification: 'ROUTE' | 'GREETING' | 'PRODUCT' | 'ACCOUNT' | 'ERROR' | NULL
 --   NULL on rows from before the classifier shipped.

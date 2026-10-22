@@ -435,7 +435,7 @@ async function chatAction(request: Request, app: boolean) {
     }
 
     // Dedup: re-serve the previous reply if the user just double-sent the same
-    // message. See app/lib/chat-dedup.server.ts and chat-architecture.md §
+    // message. See app/lib/chat-dedup.server.ts and claude_business docs/chat-architecture.md §
     // Consecutive-duplicate dedup. Shared with the Discord handler. The widget
     // dedups from its own file (chat-api.ts) — its rows here carry no timestamp.
     // Never while subscription changes are on for a signed-in customer (US-49): a replayed reply would
@@ -507,7 +507,7 @@ async function chatAction(request: Request, app: boolean) {
       // Stage 2: router fires ONLY when the classifier didn't bypass it.
       // Trade-off: +150-300ms on ROUTE turns vs the previous parallel design,
       // since the router now waits for the classifier to return. See
-      // chat-architecture.md § Pre-router classifier for the timing analysis.
+      // claude_business docs/chat-architecture.md § Pre-router classifier for the timing analysis.
       const fireRouter = shouldFireRouter(classifierResult);
       if (fireRouter) write({ type: 'status', text: 'Finding relevant articles' });
       const routerResult = fireRouter
