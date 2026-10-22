@@ -76,7 +76,7 @@ interface Engine {
   newRecordJson(now: string, device: string, locale: string, zone: string): string;
   applyEditJson(record: string, edit: string, now: string, device: string): string;
   cloudOpen(provider: string, device: string, first: boolean): Promise<string>;
-  cloudEdit(edit: string, erase: string, units: string, now: string): string;
+  cloudEdit(edit: string, erase: string, units: string, now: string, unitsJson?: string): string;
   cloudVisible(): string;
   cloudFlush(): Promise<string>;
   cloudRefresh(): Promise<string>;
@@ -192,6 +192,19 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const changed = state.events.filter(([event]) => event === 'changed').at(-1)!;
     expect(days(JSON.parse((JSON.parse(changed[1]) as { record: string }).record) as RoadmapFile)).toEqual(['2026-10-03', '2026-10-04']);
     expect(state.pending).toBe(false);
+  });
+
+  it('AC17e: a value typed in a test\'s own units is stored right in the cloud record', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    // 180 lb on a metric record, weight switched to US: about 81.6 kg, never 180 kg.
+    const typed = JSON.stringify({ kind: 'add', metric: 'weight', value: 180, day: '2026-10-05' });
+    expect((JSON.parse(engine.cloudEdit(typed, erase, 'si', NOW, '{"weight":"conventional"}')) as { ok: boolean }).ok).toBe(true);
+    expect(await engine.cloudFlush()).toBe('saved');
+    const weight = dropbox.record.measurements.find((row) => row.recordedAt.startsWith('2026-10-05'))!;
+    expect(weight.value).toBeCloseTo(81.6, 1);
   });
 
   it('AC11c: a row the web added is taken in on a re-read', async () => {

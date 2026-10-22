@@ -28,6 +28,9 @@ struct OnboardingView: View {
 
     private var profile: MyData.Profile? { store.myData?.profile }
     private var usUnits: Bool { store.myData?.unitSystem == "conventional" }
+    /// Weight's own units, which may differ from the record's (US-25 AC17e): the engine
+    /// reads the wheel's number in them, so the wheel shows them (adversary R1).
+    private var usWeight: Bool { store.units(for: "weight") == "conventional" }
     private var weightRow: MyData.Row? { store.myData?.vitals.first { $0.metric == "weight" } }
 
     var body: some View {
@@ -124,10 +127,10 @@ struct OnboardingView: View {
                  detail: "Weight shapes much of your plan. You can add it later.", progress: step, fromHealth: fromHealth.contains(.weight), message: message) {
                 HStack(spacing: 0) {
                     Picker("Whole", selection: $answers.weightWhole) {
-                        ForEach(usUnits ? 60...600 : 25...300, id: \.self) { Text(String($0)).tag($0) }
+                        ForEach(usWeight ? 60...600 : 25...300, id: \.self) { Text(String($0)).tag($0) }
                     }
                     Picker("Tenths", selection: $answers.weightTenth) { ForEach(0...9, id: \.self) { Text(".\($0)").tag($0) } }
-                    Text(usUnits ? "lb" : "kg").font(.title3).padding(.leading, 4)
+                    Text(usWeight ? "lb" : "kg").font(.title3).padding(.leading, 4)
                 }
                 .pickerStyle(.wheel)
             } actions: {
@@ -229,7 +232,7 @@ struct OnboardingView: View {
         if let weight = recordWeight {
             answers.weightWhole = Int(weight)
             answers.weightTenth = Int(((weight - Double(Int(weight))) * 10).rounded()) % 10
-        } else if usUnits, answers.weightWhole < 60 {
+        } else if usWeight, answers.weightWhole < 60 {
             answers.weightWhole = 160
         }
     }

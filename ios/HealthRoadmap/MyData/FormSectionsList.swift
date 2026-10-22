@@ -8,6 +8,8 @@ struct FormSectionsList: View {
     let sections: [FormSection]
     let months: ScreeningMonths
     let read: (String) -> Double?
+    /// A card's title, drawn with its section's symbol.
+    let title: (String) -> SectionTitle
     /// Saves one answer to the question with this key.
     let answer: (_ key: String, _ value: String) -> RecordStore.ApplyResult
     /// For a dated value (PSA): its row, and how to open it.
@@ -22,7 +24,7 @@ struct FormSectionsList: View {
                     rows(group)
                 }
             } header: {
-                Text(section.title)
+                title(section.title)
             }
             ForEach(section.groups.filter { !$0.title.isEmpty }) { group in
                 Section(group.title) { rows(group) }

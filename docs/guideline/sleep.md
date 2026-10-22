@@ -38,7 +38,7 @@ Core sleep hygiene recommendations:
 
 1. **Consistent schedule** — go to bed and wake at the same time every day, including weekends. A fixed rise time is the anchor.
 2. **Sleep only when sleepy** — go to bed only when actually feeling drowsy, not just tired.
-3. **20-minute rule** — if unable to sleep after approximately 20 minutes, get out of bed and do something calm and non-stimulating (dim lights; do not use screens). Return to bed only when sleepy.
+3. **20-minute rule** — if sleep has not come after about 20 minutes, get up and spend some time on a quiet, relaxing activity in dim light, away from screens. Go back to bed only once sleepy again.
 4. **Avoid caffeine and nicotine** — for at least 4–6 hours before bedtime. Caffeine is a stimulant that directly interferes with sleep onset.
 5. **Avoid alcohol** — for at least 4–6 hours before bed. Alcohol may initially aid sleep onset but fragments sleep architecture and reduces sleep quality.
 6. **Bed is for sleep and sex only** — do not use the bed for screens, eating, reading, or working. This strengthens the conditioned association between bed and sleepiness.

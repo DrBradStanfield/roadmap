@@ -2,8 +2,10 @@
 // health-core's own write functions. The app runs this same code in
 // JavaScriptCore; these tests run it in Node.
 import { describe, expect, it } from 'vitest';
-import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord } from './my-data';
+import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord, TREND_POINTS } from './my-data';
 import { metricHistory } from './my-data-forms';
+import { readUnitChoices } from './unit-choices';
+import { planJson } from './entry';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
 const NOW = '2026-10-21T08:00:00.000Z';
@@ -45,6 +47,76 @@ describe('myData (AC5)', () => {
     file = edited(file, { kind: 'add', metric: 'ldl', value: 100, day: '2026-09-01' }, { kind: 'add', metric: 'ldl', value: 130, day: '2026-10-01' });
     const ldl = myData(file).bloodTests.find((row) => row.metric === 'ldl');
     expect(ldl).toMatchObject({ unit: 'mg/dL', latest: { value: '130', day: '2026-10-01' } });
+  });
+
+  it('gives each row its trend: one active value a day, oldest first, in the user\'s units (US-25 AC17d)', () => {
+    let file = newRecord(NOW, 'phone', 'en-US', 'America/New_York');
+    file = edited(file,
+      { kind: 'add', metric: 'ldl', value: 130, day: '2026-10-01' },
+      { kind: 'add', metric: 'ldl', value: 100, day: '2026-09-01' },
+      { kind: 'bloodPressure', systolic: 128, diastolic: 82, day: '2026-09-02', replace: false },
+      { kind: 'bloodPressure', systolic: 121, diastolic: 78, day: '2026-10-02', replace: false });
+    const wrong = file.measurements.find((row) => row.metricType === 'ldl' && row.recordedAt.startsWith('2026-10-01'))!;
+    file = edited(file, { kind: 'correct', id: wrong.id, value: 120 });
+    const data = myData(file);
+    // The corrected 130 is gone, its correction in its place.
+    expect(data.bloodTests.find((row) => row.metric === 'ldl')!.trend.map(Math.round)).toEqual([100, 120]);
+    expect(data.vitals.find((row) => row.metric === 'blood_pressure')!.trend).toEqual([128, 121]);
+    expect(data.vitals.find((row) => row.metric === 'waist')!.trend).toEqual([]);
+    // Metric units for the same record: mmol/L.
+    const si = edited(file, { kind: 'units', unitSystem: 'si' });
+    expect(myData(si).bloodTests.find((row) => row.metric === 'ldl')!.trend[0]).toBeCloseTo(2.59, 2);
+  });
+
+  it('keeps only the newest days of a long trend', () => {
+    let file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const days = Array.from({ length: TREND_POINTS + 5 }, (_, i) => new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10));
+    file = edited(file, ...days.map((day, i) => ({ kind: 'add' as const, metric: 'weight', value: 60 + i, day })));
+    const trend = myData(file).vitals.find((row) => row.metric === 'weight')!.trend;
+    expect(trend).toHaveLength(TREND_POINTS);
+    expect(trend.at(-1)).toBe(60 + TREND_POINTS + 4);
+  });
+
+  it('shows and takes a test in its own units, the rest in the record\'s (US-25 AC17e)', () => {
+    let file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const ldlInUs = { ldl: 'conventional' as const };
+    // Typed in mg/dL because LDL is switched to US; the record keeps SI.
+    file = edited(file, { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' });
+    const typed = applyEdit(file, { kind: 'add', metric: 'ldl', value: 116, day: '2026-09-01' }, NOW, ldlInUs);
+    if (!typed.ok) throw new Error(typed.message);
+    file = typed.file;
+    expect(file.measurements.find((row) => row.metricType === 'ldl')!.value).toBeCloseTo(3.0, 1);
+    const data = myData(file, NOW, ldlInUs);
+    expect(data.bloodTests.find((row) => row.metric === 'ldl')).toMatchObject({ unit: 'mg/dL', latest: { value: '116' }, switchable: true });
+    expect(data.vitals.find((row) => row.metric === 'weight')).toMatchObject({ unit: 'kg', switchable: true });
+    expect(data.vitals.find((row) => row.metric === 'blood_pressure')).toMatchObject({ switchable: false });
+    expect(data.bloodTests.find((row) => row.metric === 'lpa')).toMatchObject({ switchable: false });
+    expect(data.psa).toMatchObject({ switchable: false });
+    expect(metricHistory(file, 'ldl', NOW, ldlInUs).unit).toBe('mg/dL');
+    // A correction is read in the row's units too.
+    const ldlRow = file.measurements.find((row) => row.metricType === 'ldl')!;
+    const corrected = applyEdit(file, { kind: 'correct', id: ldlRow.id, value: 120 }, NOW, ldlInUs);
+    if (!corrected.ok) throw new Error(corrected.message);
+    expect(corrected.file.measurements.find((row) => row.correctsId === ldlRow.id)!.value).toBeCloseTo(3.1, 1);
+  });
+
+  it('keeps only real choices for switchable tests (US-25 AC17e)', () => {
+    expect(readUnitChoices('{"ldl":"conventional","lpa":"conventional","weight":"imperial","x":"si"}')).toEqual({ ldl: 'conventional' });
+    expect(readUnitChoices('not json')).toEqual({});
+    expect(readUnitChoices(undefined)).toEqual({});
+    expect(readUnitChoices('[1]')).toEqual({});
+  });
+
+  it('gives the plan the per-test units, and nothing changes without them (US-25 AC17e)', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 }, { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' },
+      { kind: 'add', metric: 'ldl', value: 3.5, day: '2026-09-01' });
+    const record = JSON.stringify(file);
+    const plain = JSON.parse(planJson(record, NOW, 'phone'));
+    expect(JSON.parse(planJson(record, NOW, 'phone', '{}'))).toEqual(plain);
+    const switched = JSON.stringify(JSON.parse(planJson(record, NOW, 'phone', '{"ldl":"conventional"}')).results.suggestions);
+    expect(JSON.stringify(plain.results.suggestions)).toContain('mmol/L');
+    expect(switched).toContain('mg/dL');
   });
 
   it('shows the profile, height in the user\'s units', () => {

@@ -32,11 +32,13 @@ import {
   fetchOrFail,
   jsonBody,
   StorageError,
+  type DocumentAccess,
   type ReadResult,
   type StorageAdapter,
   type StoredFile,
   type WriteResult,
 } from './adapter';
+import { splitDocumentRef } from './document-path';
 
 /** Exported for the browser adapter's two cosmetic PATCHes (rename, re-parent). */
 export const DRIVE_API = 'https://www.googleapis.com/drive/v3';
@@ -127,6 +129,12 @@ export async function driveCreateFolder(accessToken: string, name: string, paren
   return id;
 }
 
+/** Find-or-create the folder `name` inside `parentId`: a document folder
+ *  such as 'Lab results', for the browser adapter and the opted-in one. */
+export async function driveEnsureSubfolder(accessToken: string, name: string, parentId: string): Promise<string> {
+  return (await driveFindFolder(accessToken, [name], parentId))?.id ?? (await driveCreateFolder(accessToken, name, parentId));
+}
+
 /**
  * The app's own files whose name starts with `prefix` — the connector's
  * pending imports (US-35 AC7). Drive has no folders in a name, so
@@ -174,6 +182,31 @@ export function driveCreateFile(
     timeoutMs: Math.min(300_000, 30_000 + Math.round(body.size / 10_000) * 1_000),
     signal,
   });
+}
+
+/**
+ * Store one uploaded document inside `parentId`. Created directly, with no
+ * pre-write existence lookup (it halved every upload's round trips for a case
+ * that can't happen: refs are unique by construction, collision-suffixed
+ * against the file's refs + content-hash deduped). The one exception —
+ * retrying after an interrupted save left an orphan blob — produces a
+ * same-named duplicate with identical bytes, which Drive allows and
+ * `driveDownloadDocument` resolves by name; accepted orphan semantics (§5.3).
+ */
+export async function driveUploadDocument(accessToken: string, name: string, bytes: Blob, parentId: string): Promise<void> {
+  const res = await driveCreateFile(accessToken, name, bytes.type || 'application/octet-stream', bytes, parentId);
+  if (!res.ok) throw new StorageError(`${PROVIDER} document create failed (${res.status}).`, undefined, undefined, res.status);
+}
+
+/** The bytes of the document named `name` inside `parentId`. Bare `fetch` for
+ *  the download, as the browser always has: a large original must not be cut
+ *  at `fetchOrFail`'s 30-second bound. */
+export async function driveDownloadDocument(accessToken: string, name: string, parentId: string): Promise<Blob> {
+  const id = await driveFindFileId(accessToken, name, parentId);
+  if (!id) throw new StorageError(`${PROVIDER} document not found.`);
+  const res = await fetch(`${DRIVE_API}/files/${id}?alt=media`, { headers: auth(accessToken) });
+  if (!res.ok) throw new StorageError(`${PROVIDER} document read failed (${res.status}).`, undefined, undefined, res.status);
+  return res.blob();
 }
 
 /** Overwrite a file's bytes. Unconditional — Drive offers no precondition. */
@@ -245,14 +278,22 @@ export async function driveDownloadJson(accessToken: string, fileId: string, sig
  * anything to cache in, by design (§1).
  *
  * Documents (the uploaded PDFs) are deliberately unreachable: the hosted write
- * surface is append-only clinical values and nothing else.
+ * surface is append-only clinical values and nothing else. Only a caller that
+ * passes `{ documents: 'write' }` (the iPhone app's own save) can read or
+ * write one; the hosted server never does.
  */
 export class DriveAdapter implements StorageAdapter {
   readonly id = 'google-drive' as const;
   readonly label = PROVIDER;
   private readonly fileIds = new Map<string, string>();
+  /** Document folder ids by ref folder ('' = the app folder), opted-in only.
+   *  The promise is cached, so concurrent first writes share one find-or-create. */
+  private readonly documentFolders = new Map<string, Promise<string>>();
 
-  constructor(private readonly accessToken: string) {}
+  constructor(
+    private readonly accessToken: string,
+    private readonly options: DocumentAccess = {},
+  ) {}
 
   async connect(): Promise<void> {}
   isConnected(): boolean {
@@ -304,12 +345,14 @@ export class DriveAdapter implements StorageAdapter {
     return { version: await driveUpdateIfVersion(this.accessToken, fileId, json, expectedVersion, signal) };
   }
 
-  async readDocument(): Promise<Blob> {
-    throw new StorageError('The hosted server does not read uploaded documents.');
+  async readDocument(ref: string): Promise<Blob> {
+    const { name, parentId } = await this.docTarget(ref, 'read');
+    return driveDownloadDocument(this.accessToken, name, parentId);
   }
 
-  async writeDocument(): Promise<void> {
-    throw new StorageError('The hosted server does not write uploaded documents.');
+  async writeDocument(ref: string, bytes: Blob): Promise<void> {
+    const { name, parentId } = await this.docTarget(ref, 'write');
+    return driveUploadDocument(this.accessToken, name, bytes, parentId);
   }
 
   async list(folder: string, signal?: AbortSignal): Promise<StoredFile[]> {
@@ -334,6 +377,33 @@ export class DriveAdapter implements StorageAdapter {
     const found = await driveFindFileId(this.accessToken, fileName, undefined, signal);
     if (found) this.fileIds.set(fileName, found);
     return found;
+  }
+
+  /** Where a document ref lives, once the opt-in allows it. Without the
+   *  opt-in this is the hosted server's refusal, word for word. */
+  private async docTarget(ref: string, verb: 'read' | 'write'): Promise<{ name: string; parentId: string }> {
+    if (this.options.documents !== 'write') throw new StorageError(`The hosted server does not ${verb} uploaded documents.`);
+    const { folder, name } = splitDocumentRef(ref);
+    return { name, parentId: await this.documentFolder(folder) };
+  }
+
+  /** Find-or-create a document's folder ('Lab results') inside the app
+   *  folder, as the browser adapter does; Drive needs real folder objects. A
+   *  failed lookup is dropped from the cache, so the next call retries. */
+  private documentFolder(folder: string | null): Promise<string> {
+    const key = folder ?? '';
+    let pending = this.documentFolders.get(key);
+    if (!pending) {
+      pending = folder
+        ? this.documentFolder(null).then((root) => driveEnsureSubfolder(this.accessToken, folder, root))
+        : this.folderId();
+      this.documentFolders.set(key, pending);
+      const settled = pending;
+      settled.catch(() => {
+        if (this.documentFolders.get(key) === settled) this.documentFolders.delete(key);
+      });
+    }
+    return pending;
   }
 
   private async folderId(signal?: AbortSignal): Promise<string> {

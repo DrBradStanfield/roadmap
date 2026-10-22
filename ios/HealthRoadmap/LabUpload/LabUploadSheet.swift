@@ -2,26 +2,6 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The "+" that adds lab results (US-52 AC7, AC10), on My data's About you line.
-struct LabUploadButton: View {
-    let engine: HealthEngine
-    let store: RecordStore
-    let sync: CloudSync
-    @State private var showing = false
-
-    var body: some View {
-        Button {
-            showing = true
-        } label: {
-            Image(systemName: "plus")
-        }
-        .accessibilityLabel("Add lab results")
-        .sheet(isPresented: $showing) {
-            LabUploadSheet(engine: engine, store: store, sync: sync)
-        }
-    }
-}
-
 /// Where the report is (Dropbox, Google Drive, Files, Photos or the camera),
 /// then the file read on the phone, then consent before the first send, then
 /// each report sent and reviewed.
@@ -33,7 +13,8 @@ struct LabUploadSheet: View {
     private enum Step {
         case choose
         case consent([LabFileReader.Document])
-        case working(String)
+        /// What is happening now, and how far through the reports the send is (nil before it starts).
+        case working(String, LabReadingDiagram.Progress? = nil)
         case review([LabResult], index: Int)
         case failed(String)
     }
@@ -45,12 +26,13 @@ struct LabUploadSheet: View {
     @State private var path: [Source] = []
     @State private var importing = false
     @State private var scanning = false
+    @State private var picking = false
     @State private var photo: PhotosPickerItem?
 
     var body: some View {
         NavigationStack(path: $path) {
             content
-                .navigationTitle("Add lab results")
+                .navigationTitle("Add medical records")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
@@ -74,9 +56,12 @@ struct LabUploadSheet: View {
                     }
                 }
         }
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.pdf, .jpeg, .png, .zip], allowsMultipleSelection: false) { result in
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.folder, .pdf, .jpeg, .png, .zip], allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let url = urls.first { Task { await read(file: url) } }
         }
+        // Presented from the sheet's root, like Files: an inline PhotosPicker row took
+        // the whole sheet down with it when a photo was picked (iOS 27, seen 2026-10-22).
+        .photosPicker(isPresented: $picking, selection: $photo, matching: .images)
         .onChange(of: photo) {
             guard let item = photo else { return }
             photo = nil
@@ -97,8 +82,8 @@ struct LabUploadSheet: View {
             chooser
         case .consent(let documents):
             AIConsentView(consent: .labUpload) { Task { await send(documents) } }
-        case .working(let what):
-            LabReadingDiagram(step: what)
+        case .working(let what, let progress):
+            LabReadingDiagram(step: what, progress: progress)
         case .review(let results, let index):
             LabReviewView(engine: engine, store: store, result: results[index], position: (index + 1, results.count)) {
                 if index + 1 < results.count {
@@ -121,19 +106,20 @@ struct LabUploadSheet: View {
 
     private var chooser: some View {
         List {
+            Section { LabUploadExplainer() }
             Section {
                 NavigationLink(value: Source.dropbox) {
                     SourceRow(title: "From Dropbox", symbol: "shippingbox",
-                              detail: sync.provider == .dropbox ? "Reports in your Dropbox folder" : "Connect Dropbox, then pick a report")
+                              detail: "Pick a folder or files")
                 }
                 NavigationLink(value: Source.googleDrive) {
-                    SourceRow(title: "From Google Drive", symbol: "externaldrive", detail: sync.provider == .googleDrive ? "Pick a report through Files" : "Connect Google Drive, then pick a report through Files")
+                    SourceRow(title: "From Google Drive", symbol: "externaldrive", detail: "Pick a folder or files")
                 }
                 Button(action: browseFiles) {
-                    SourceRow(title: "From Files", symbol: "folder", detail: "A PDF, photo or ZIP on this iPhone or in iCloud Drive")
+                    SourceRow(title: "A folder or ZIP", symbol: "folder", detail: "From Files or iCloud Drive")
                 }
-                PhotosPicker(selection: $photo, matching: .images) {
-                    SourceRow(title: "From Photos", symbol: "photo.on.rectangle", detail: "A photo you took of a paper report")
+                Button { picking = true } label: {
+                    SourceRow(title: "From Photos", symbol: "photo.on.rectangle", detail: "A photo of a paper report")
                 }
                 if DocumentScanner.isAvailable {
                     Button { scanning = true } label: {
@@ -141,9 +127,7 @@ struct LabUploadSheet: View {
                     }
                 }
             } header: {
-                Text("Where is your lab report?")
-            } footer: {
-                Text("The app reads the values on it. You check them before anything is saved.")
+                Text("Where are your medical records?")
             }
         }
     }
@@ -160,7 +144,7 @@ struct LabUploadSheet: View {
     private func read(_ documents: () async throws -> [LabFileReader.Document]) async {
         guard case .choose = step else { return }
         path = []
-        step = .working("Reading the file")
+        step = .working("Reading the file on your iPhone")
         do {
             let read = try await documents()
             if AIConsent.labUpload.given {
@@ -177,7 +161,9 @@ struct LabUploadSheet: View {
         await read {
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            return try LabFileReader.documents(from: Data(contentsOf: url), name: url.lastPathComponent)
+            return try url.hasDirectoryPath
+                ? LabFileReader.documents(inFolder: url)
+                : LabFileReader.documents(from: Data(contentsOf: url), name: url.lastPathComponent)
         }
     }
 
@@ -218,7 +204,7 @@ struct LabUploadSheet: View {
         let units = store.myData?.unitSystem ?? "si"
         var results: [LabResult] = []
         for (n, document) in documents.enumerated() {
-            step = .working(documents.count > 1 ? "Reading report \(n + 1) of \(documents.count)" : "Reading the values")
+            step = .working("Reading the values in \(document.name)", .init(done: n, total: documents.count, started: .now))
             do {
                 let extraction = try await LabUploadClient().extract(document, unitSystem: units)
                 results.append(LabResult(name: document.name, truncated: document.truncated, extractionJSON: extraction, failure: nil))
@@ -252,7 +238,7 @@ struct DropboxFailure: LocalizedError {
     }
 }
 
-/// One way in to "Add lab results": a symbol, a title and a few words on what happens.
+/// One way in to "Add medical records": a symbol, a title and a few words on what happens.
 private struct SourceRow: View {
     let title: String
     let symbol: String

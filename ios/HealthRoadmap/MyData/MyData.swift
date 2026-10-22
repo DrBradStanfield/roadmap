@@ -38,6 +38,10 @@ struct MyData: Decodable {
         let label: String
         let unit: String
         let latest: Latest?
+        /// The newest days' values, oldest first, in the user's units (AC17d); nil from an older engine.
+        let trend: [Double]?
+        /// Whether this test has its own Metric/US choice (AC17e); nil from an older engine.
+        let switchable: Bool?
 
         var id: String { metric }
     }
