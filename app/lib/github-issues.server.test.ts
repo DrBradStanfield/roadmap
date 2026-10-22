@@ -13,6 +13,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   delete process.env.GITHUB_ISSUES_TOKEN;
 });
@@ -61,28 +62,122 @@ describe('concurrent reservations', () => {
     expect(fetcher).toHaveBeenCalledTimes(3);
   });
 
-  it('keeps capacity and dedupe after timeout or an unusable accepted body', async () => {
+  // US-32 AC23/AC31: a timeout may follow an accepted POST.
+  it('keeps both reservations and dedupe after timeout', { timeout: 15_000 }, async () => {
     const fetcher = vi.fn(async () => created(1));
     vi.stubGlobal('fetch', fetcher);
     const filer = githubFiler('dropbox', 'ambiguous')!;
-    for (let i = 0; i < 2; i++) await filer({ ...ISSUE, title: `Seed ${i}` });
+    for (let i = 0; i < ISSUES_PER_HOUR - 1; i++) {
+      await githubFiler('dropbox', i < 2 ? 'ambiguous' : `seed-${i}`)!({ ...ISSUE, title: `Seed ${i}` });
+    }
     fetcher.mockImplementation((_url, init: RequestInit) => new Promise((_resolve, reject) => {
       init.signal?.addEventListener('abort', () => reject(new Error('aborted')));
     }));
-    const timedOut = filer(ISSUE);
-    expect(await timedOut).toMatchObject({ ok: false });
-    fetcher.mockImplementation(async () => new Response(JSON.stringify({ html_url: '' }), { status: 200 }));
-    const unusable = await filer({ ...ISSUE, title: 'Different report' });
-    expect(unusable).toMatchObject({ ok: false });
-    fetcher.mockImplementation(async () => created(3));
+    const timedOut = await filer(ISSUE);
+    expect(timedOut).toMatchObject({ ok: false, refusal: expect.stringContaining('could not confirm') });
+    fetcher.mockImplementation(async () => created(21));
     expect(await filer({ ...ISSUE, title: 'No capacity remains' })).toMatchObject({
       ok: false,
       refusal: expect.stringContaining('three reports today'),
     });
-    expect(await filer(ISSUE)).toEqual(await timedOut);
+    expect(await githubFiler('google', 'other')!(ISSUE)).toMatchObject({
+      ok: false, refusal: expect.stringContaining('paused for an hour'),
+    });
+    expect(await filer(ISSUE)).toEqual(timedOut);
+    expect(fetcher).toHaveBeenCalledTimes(ISSUES_PER_HOUR);
   });
 
-  for (const status of [403, 503]) {
+  // US-32 AC39 proposal: a server error can follow an accepted POST.
+  it.each([500, 502, 503, 504])('retains both reservations and dedupe after HTTP %s', async (status) => {
+    const fetcher = vi.fn(async () => created(1));
+    vi.stubGlobal('fetch', fetcher);
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const filer = githubFiler('dropbox', 'server-error')!;
+    for (let i = 0; i < ISSUES_PER_HOUR - 1; i++) {
+      await githubFiler('dropbox', i < 2 ? 'server-error' : `seed-${i}`)!({ ...ISSUE, title: `Seed ${i}` });
+    }
+    const pending = deferred<Response>();
+    fetcher.mockImplementation(() => pending.promise);
+    const first = filer(ISSUE);
+    const duplicate = filer({ ...ISSUE, title: '  SYNC stalls on reconnect  ' });
+    pending.resolve(new Response('quoted report text', { status }));
+    const answer = await first;
+    expect(answer).toMatchObject({ ok: false, refusal: expect.stringContaining('could not confirm') });
+    expect(await duplicate).toEqual(answer);
+    fetcher.mockImplementation(async () => created(21));
+    expect(await filer(ISSUE)).toEqual(answer);
+    expect(await filer({ ...ISSUE, title: 'No daily capacity' })).toMatchObject({
+      ok: false, refusal: expect.stringContaining('three reports today'),
+    });
+    expect(await githubFiler('google', 'other')!(ISSUE)).toMatchObject({
+      ok: false, refusal: expect.stringContaining('paused for an hour'),
+    });
+    expect(fetcher).toHaveBeenCalledTimes(ISSUES_PER_HOUR);
+    expect(errors.mock.calls).toEqual([['[mcp] github issue refused', status]]);
+    errors.mockRestore();
+  });
+
+  // US-32 AC39: these failures occur before a connection sends the POST.
+  it.each(['ENOTFOUND', 'ECONNREFUSED'])('refunds both quotas after %s without caching an uncertain result', async (code) => {
+    const fetcher = vi.fn(async () => created(1));
+    vi.stubGlobal('fetch', fetcher);
+    const filer = githubFiler('dropbox', 'preconnect')!;
+    for (let i = 0; i < ISSUES_PER_HOUR - 1; i++) {
+      await githubFiler('dropbox', i < 2 ? 'preconnect' : `seed-${i}`)!({ ...ISSUE, title: `Seed ${i}` });
+    }
+    fetcher.mockRejectedValue(new TypeError('fetch failed', { cause: Object.assign(new Error('synthetic'), { code }) }));
+    // Repeated failures must not consume the hourly or daily last slot.
+    for (let i = 0; i < ISSUES_PER_HOUR + 1; i++) {
+      expect(await filer(ISSUE)).toEqual({ ok: false, refusal: 'Feedback could not be filed right now. Nothing was posted. Try again later.' });
+    }
+    fetcher.mockResolvedValue(created(21));
+    const retry = await filer(ISSUE);
+    expect(retry).toMatchObject({ ok: true, number: 21 });
+    expect(await filer(ISSUE)).toEqual(retry);
+    expect(fetcher).toHaveBeenCalledTimes(2 * ISSUES_PER_HOUR + 1);
+  });
+
+  // US-32 AC31a: refunds must edit the current bucket, not a stale snapshot.
+  it('refunds an overlapping refusal without discarding the other successful reservation', async () => {
+    const fetcher = vi.fn(async () => created(1));
+    vi.stubGlobal('fetch', fetcher);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const filer = githubFiler('dropbox', 'overlap')!;
+    await filer({ ...ISSUE, title: 'Seed' });
+    const refused = deferred<Response>();
+    const accepted = deferred<Response>();
+    fetcher.mockImplementationOnce(() => refused.promise).mockImplementationOnce(() => accepted.promise);
+    const first = filer({ ...ISSUE, title: 'Refused' });
+    const second = filer({ ...ISSUE, title: 'Accepted' });
+    refused.resolve(new Response(null, { status: 403 }));
+    expect(await first).toMatchObject({ ok: false });
+    accepted.resolve(created(2));
+    expect(await second).toMatchObject({ ok: true });
+    expect(await filer({ ...ISSUE, title: 'Replacement' })).toMatchObject({ ok: true });
+    expect(await filer({ ...ISSUE, title: 'Over quota' })).toMatchObject({ refusal: expect.stringContaining('three reports today') });
+    expect(fetcher).toHaveBeenCalledTimes(4);
+  });
+
+  it('expires uncertain hourly reservations before daily reservations and dedupe', async () => {
+    const start = Date.now();
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(start);
+    const fetcher = vi.fn<() => Promise<Response>>(async () => { throw new Error('synthetic lost response'); });
+    vi.stubGlobal('fetch', fetcher);
+    for (let i = 0; i < ISSUES_PER_HOUR; i++) {
+      await githubFiler('dropbox', i < 3 ? 'expiry' : `seed-${i}`)!({ ...ISSUE, title: `Seed ${i}` });
+    }
+    fetcher.mockImplementation(async () => created(21));
+    clock.mockReturnValue(start + 60 * 60 * 1000 + 1);
+    expect(await githubFiler('google', 'other')!(ISSUE)).toMatchObject({ ok: true });
+    const filer = githubFiler('dropbox', 'expiry')!;
+    expect(await filer(ISSUE)).toMatchObject({ refusal: expect.stringContaining('three reports today') });
+    expect(await filer({ ...ISSUE, title: 'Seed 0' })).toMatchObject({ refusal: expect.stringContaining('could not confirm') });
+    clock.mockReturnValue(start + 24 * 60 * 60 * 1000 + 1);
+    expect(await filer({ ...ISSUE, title: 'Seed 0' })).toMatchObject({ ok: true });
+    expect(fetcher).toHaveBeenCalledTimes(ISSUES_PER_HOUR + 2);
+  });
+
+  for (const status of [403]) {
     it(`releases both reservations after an explicit ${status} and retries without stale dedupe`, async () => {
       const fetcher = vi.fn(async () => created(1));
       vi.stubGlobal('fetch', fetcher);

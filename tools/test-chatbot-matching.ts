@@ -33,7 +33,7 @@
  *                             exit code only under --fixed-handles-only, so a plain
  *                             --answer-check (the model-bump qualification) never goes red on
  *                             them before a live baseline exists. Each handle must load and the list
- *                             must fit the 120K cap, or the harness exits before any API call.
+ *                             must fit MAX_BLOG_CHARS (160K), or the harness exits before any API call.
  *   must_not_claim?: string[]  answer check only: a phrase stated as fact fails. A negation (no, not,
  *                             never, cannot, without, nor, nothing, none, neither, n't) excuses it only
  *                             within the 12 words before it and inside its clause (a semicolon, dash,

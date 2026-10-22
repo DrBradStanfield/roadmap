@@ -3,8 +3,11 @@ import SwiftUI
 /// The extracted values for the user to confirm (US-52 AC8). Each shows its day;
 /// values without one take the test's day, which the user can change and must pick
 /// when the report printed none. Only ticked values are written, by the engine's
-/// `labImport` edit (health-core's bulkAppendValues). The web twin is
-/// widget-src/src/components/ReviewTable.tsx.
+/// `labImport` edit (health-core's bulkAppendValues). A letter or other document
+/// shows the web's card instead (AC13d): keep it or not, its title and date, its
+/// kind and a preview; it is filed by health-core's saveDocuments, the original in
+/// the person's cloud when one is connected. A lab report's original is kept there
+/// too. The web twin is widget-src/src/components/ReviewTable.tsx.
 struct LabReviewView: View {
     let engine: HealthEngine
     let store: RecordStore
@@ -19,6 +22,12 @@ struct LabReviewView: View {
     @State private var dayConfirmed = false
     @State private var outcome: String?
     @State private var problem: String?
+    /// The document card (AC13d): kept unless the record already holds one from this file.
+    @State private var keepDocument = false
+    @State private var documentTitle = ""
+    @State private var documentDateKnown = false
+    @State private var documentDate = Date.now
+    @State private var saving = false
 
     var body: some View {
         Form {
@@ -36,19 +45,41 @@ struct LabReviewView: View {
             if let outcome { Section("Saved") { Text(outcome) } }
             Section {
                 if outcome == nil, review?.isLabReport == true, result.failure == nil {
-                    Button("Save \(ticked.count) value\(ticked.count == 1 ? "" : "s")") { save() }
-                        .disabled(ticked.isEmpty || (review?.reportDay == nil && !dayConfirmed && needsTestDay))
+                    Button("Save \(ticked.count) value\(ticked.count == 1 ? "" : "s")") { Task { await save() } }
+                        .disabled(saving || ticked.isEmpty || (review?.reportDay == nil && !dayConfirmed && needsTestDay))
                 }
+                if outcome == nil, review?.document != nil, result.failure == nil {
+                    Button(keepDocument || !archiveOnly ? "Save the document" : "Save the original") { Task { await saveDocument() } }
+                        .disabled(saving || !(keepDocument || archiveOnly))
+                }
+                // Held while a save runs: leaving would drop its outcome, and a second save
+                // of the same file could start before this one has committed.
                 Button(outcome == nil ? "Skip" : (position.0 < position.1 ? "Next report" : "Done")) { onDone() }
+                    .disabled(saving)
             }
         }
-        .onAppear(perform: load)
+        // Values and documents are checked against the record this review opened on: an
+        // erase that arrives meanwhile refuses the save (the sheets' rule, US-25 AC11).
+        .onAppear {
+            store.pinScreen()
+            load()
+        }
+        .onDisappear { store.unpinScreen() }
+    }
+
+    /// The web's archive-only path (US-14 AC4, US-35 AC8): a document whose bytes a held
+    /// metadata-only row stands for has its original filed behind that row, with the
+    /// card's title and date, even when the keep tick is off.
+    private var archiveOnly: Bool {
+        review?.document?.held == true && store.cloudErase != nil && result.original != nil
     }
 
     @ViewBuilder
     private func reviewSections(_ review: LabReview) -> some View {
-        if !review.isLabReport {
-            Section { Text("This does not look like a lab report, so there are no values to save. Filing other documents is not in the app yet.") }
+        if let document = review.document {
+            documentCard(document)
+        } else if !review.isLabReport {
+            Section { Text("No blood test values or document were found in this file.") }
         } else {
             Section {
                 DatePicker("Day of the test", selection: $testDay, in: ...Date.now, displayedComponents: .date)
@@ -82,6 +113,44 @@ struct LabReviewView: View {
         }
     }
 
+    /// The web's document card: the keep tick, an editable title and date, the kind as a
+    /// read-only badge, and the first 300 characters of the text.
+    @ViewBuilder
+    private func documentCard(_ document: LabReview.Document) -> some View {
+        Section {
+            Toggle("Save this document", isOn: $keepDocument)
+            if document.alreadySaved {
+                Text("Already saved: your record has a document from this file. Tick it to save it again.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+            LabeledContent("Kind") {
+                Text(document.classification.replacingOccurrences(of: "_", with: " ").capitalized)
+                    .font(.footnote.weight(.semibold))
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(Color.purple.opacity(0.15), in: Capsule())
+            }
+            TextField("Document title", text: $documentTitle, axis: .vertical).analyticsMasked()
+            if documentDateKnown {
+                DatePicker("Date", selection: $documentDate, in: ...Date.now, displayedComponents: .date)
+                Button("Date unknown") { documentDateKnown = false }
+            } else {
+                LabeledContent("Date", value: "Date unknown")
+                Button("Set the date") { documentDateKnown = true }
+            }
+        } header: {
+            SectionTitle(title: "Document", symbol: "doc.text.fill", tint: .purple)
+        } footer: {
+            Text(store.cloudErase == nil ? "Saved to your record as text. With a cloud connected in Sync, the original file is kept there too."
+                 : result.original != nil ? "Saved to your record, with the original file kept in your cloud."
+                 : "Saved to your record as text.")
+        }
+        if !document.preview.isEmpty {
+            Section("Preview") {
+                Text(document.preview).font(.footnote).foregroundStyle(.secondary)
+            }
+        }
+    }
+
     /// A ticked value with no day of its own takes the test's day.
     private var needsTestDay: Bool {
         review?.items.contains { ticked.contains($0.ref) && $0.day == nil } ?? false
@@ -94,8 +163,17 @@ struct LabReviewView: View {
     private func load() {
         guard review == nil, let json = result.extractionJSON else { return }
         do {
-            let loaded = try engine.labReview(extractionJSON: json, now: .now)
+            let loaded = try engine.labReview(extractionJSON: json, now: .now, recordJSON: store.recordJSON, sourceFileName: result.name,
+                                              contentHash: result.original?.contentHash ?? "", deviceId: store.deviceId)
             review = loaded
+            if let document = loaded.document {
+                keepDocument = !document.alreadySaved
+                documentTitle = document.title
+                if let day = document.documentDate, let date = Self.localDate(day) {
+                    documentDateKnown = true
+                    documentDate = date
+                }
+            }
             // A value the extractor asked about starts unticked: never saved unnoticed.
             ticked = Set(loaded.items.filter { $0.question == nil }.map(\.ref))
             if let day = loaded.reportDay, let date = Self.localDate(day) { testDay = date }
@@ -104,8 +182,10 @@ struct LabReviewView: View {
         }
     }
 
-    private func save() {
-        guard let json = result.extractionJSON else { return }
+    private func save() async {
+        guard let json = result.extractionJSON, !saving else { return }
+        saving = true
+        defer { saving = false }
         let refs = review?.items.map(\.ref).filter { ticked.contains($0) } ?? []
         let day = DayText.iso(testDay)
         problem = nil
@@ -115,12 +195,58 @@ struct LabReviewView: View {
                 problem = refusal.message
             case .success(let summary):
                 switch store.apply(.labImport(extractionJSON: json, refs: refs, reportDay: day)) {
-                case .saved: outcome = Self.describe(summary)
+                case .saved:
+                    outcome = Self.describe(summary)
+                    await keepOriginal(json, day: day)
                 case .refused(let message, _): problem = message
                 }
             }
         } catch {
             problem = error.localizedDescription
+        }
+    }
+
+    /// The lab report's original, kept in the cloud as the web's hidden row (the engine
+    /// keeps it only there); the values are already saved.
+    private func keepOriginal(_ json: String, day: String) async {
+        guard let original = result.original else { return }
+        let choice = DocumentChoice(kind: .labArchive, sourceFileName: result.name, reportDay: day, mimeType: original.mimeType, contentHash: original.contentHash)
+        switch await store.saveDocument(extractionJSON: json, choice: choice, original: original) {
+        case .saved(let count, let stored, let unstored, let stale):
+            let line = Self.originalLine(count: count, stored: stored, unstored: unstored, stale: stale, kept: "The original report is kept in your cloud.")
+            outcome = [outcome, line].compactMap { $0 }.joined(separator: "\n")
+        case .refused(let message):
+            problem = message
+        }
+    }
+
+    private func saveDocument() async {
+        guard let json = result.extractionJSON, keepDocument || archiveOnly, !saving else { return }
+        saving = true
+        defer { saving = false }
+        problem = nil
+        let choice = DocumentChoice(kind: .document, sourceFileName: result.name, title: documentTitle,
+                                    documentDate: documentDateKnown ? DayText.iso(documentDate) : nil,
+                                    mimeType: result.original?.mimeType ?? "", contentHash: result.original?.contentHash)
+        switch await store.saveDocument(extractionJSON: json, choice: choice, original: result.original) {
+        case .saved(let count, let stored, let unstored, let stale):
+            let first = count > 0 ? "The document is saved to your record." : "Your record already holds this file, so nothing new was saved."
+            let line = Self.originalLine(count: count, stored: stored, unstored: unstored, stale: stale, kept: "The original file is kept in your cloud.")
+            outcome = [first, line].compactMap { $0 }.joined(separator: "\n")
+        case .refused(let message):
+            problem = message
+        }
+    }
+
+    /// What a save says of the original: `kept` when the cloud took it; that it changed
+    /// since the review read it; the web's words (US-14 AC4) when the cloud did not take
+    /// it; nothing when none was offered or nothing was new.
+    static func originalLine(count: Int, stored: Bool?, unstored: Int, stale: Bool, kept: String) -> String? {
+        if stale { return "The original changed or could not be read, so only its text was saved." }
+        return switch stored {
+        case true?: kept
+        case false? where count > 0 || unstored > 0: "The original file couldn't be stored; its details are saved."
+        default: nil
         }
     }
 

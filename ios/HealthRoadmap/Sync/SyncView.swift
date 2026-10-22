@@ -41,6 +41,7 @@ struct SyncView: View {
     @ViewBuilder
     private var connect: some View {
         Section("What sync does") {
+            SyncDiagram()
             Text("Sync keeps your record in your own Dropbox or Google Drive. The website and a new phone open the same file. Dr Brad's server never sees it.")
         }
         Section {

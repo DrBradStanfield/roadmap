@@ -211,7 +211,7 @@ const count = (n: number) => n.toLocaleString('en-US');
 const HELP = `search_knowledge — search Dr Brad's knowledge base, offline, no model.
 
   npx tsx tools/search-knowledge.ts "<question or keywords>" [--k 3] [--excerpt] [--max-chars 6000] [--json]
-  npx tsx tools/search-knowledge.ts --article <handle> [--max-chars 120000] [--json]
+  npx tsx tools/search-knowledge.ts --article <handle> [--max-chars 160000] [--json]
 
 search      Ranks every article, supplement reference and guideline by its
             summary, keywords, title and handle (BM25), and

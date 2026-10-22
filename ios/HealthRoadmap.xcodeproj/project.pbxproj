@@ -6,7 +6,18 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		7A1C0E5D2B8F4A6C9D3E1F12 /* Clarity in Frameworks */ = {isa = PBXBuildFile; productRef = 7A1C0E5D2B8F4A6C9D3E1F11 /* Clarity */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		7A1C0E5D2B8F4A6C9D3E1F0A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 313F993254B4919701C5D97C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0361677AABA0B42EB1F7D3E6;
+			remoteInfo = HealthRoadmap;
+		};
 		523B2A0D410F998A32B65AAD /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 313F993254B4919701C5D97C /* Project object */;
@@ -17,11 +28,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		7A1C0E5D2B8F4A6C9D3E1F01 /* HealthRoadmapUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HealthRoadmapUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9F31B267B44B4E0F7051874E /* HealthRoadmap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HealthRoadmap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		361C96A863DCFCB136124505 /* HealthRoadmapTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HealthRoadmapTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		7A1C0E5D2B8F4A6C9D3E1F02 /* HealthRoadmapUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = HealthRoadmapUITests;
+			sourceTree = "<group>";
+		};
 		D192DF628E1FD020927CF77C /* HealthRoadmap */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = HealthRoadmap;
@@ -35,10 +52,18 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		7A1C0E5D2B8F4A6C9D3E1F03 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		546F16B6BC0B6ACC632DABFD /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7A1C0E5D2B8F4A6C9D3E1F12 /* Clarity in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,6 +82,7 @@
 			children = (
 				D192DF628E1FD020927CF77C /* HealthRoadmap */,
 				9D4C77B513BC24E8D3014732 /* HealthRoadmapTests */,
+				7A1C0E5D2B8F4A6C9D3E1F02 /* HealthRoadmapUITests */,
 				5FE31048B8C6C2FE848F2B59 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -66,6 +92,7 @@
 			children = (
 				9F31B267B44B4E0F7051874E /* HealthRoadmap.app */,
 				361C96A863DCFCB136124505 /* HealthRoadmapTests.xctest */,
+				7A1C0E5D2B8F4A6C9D3E1F01 /* HealthRoadmapUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -73,6 +100,27 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		7A1C0E5D2B8F4A6C9D3E1F06 /* HealthRoadmapUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7A1C0E5D2B8F4A6C9D3E1F07 /* Build configuration list for PBXNativeTarget "HealthRoadmapUITests" */;
+			buildPhases = (
+				7A1C0E5D2B8F4A6C9D3E1F04 /* Sources */,
+				7A1C0E5D2B8F4A6C9D3E1F03 /* Frameworks */,
+				7A1C0E5D2B8F4A6C9D3E1F05 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7A1C0E5D2B8F4A6C9D3E1F0B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				7A1C0E5D2B8F4A6C9D3E1F02 /* HealthRoadmapUITests */,
+			);
+			name = HealthRoadmapUITests;
+			productName = HealthRoadmapUITests;
+			productReference = 7A1C0E5D2B8F4A6C9D3E1F01 /* HealthRoadmapUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		0361677AABA0B42EB1F7D3E6 /* HealthRoadmap */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 73C20831851A00595F36441B /* Build configuration list for PBXNativeTarget "HealthRoadmap" */;
@@ -90,6 +138,9 @@
 			);
 			name = HealthRoadmap;
 			productName = HealthRoadmap;
+			packageProductDependencies = (
+				7A1C0E5D2B8F4A6C9D3E1F11 /* Clarity */,
+			);
 			productReference = 9F31B267B44B4E0F7051874E /* HealthRoadmap.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -131,6 +182,10 @@
 						CreatedOnToolsVersion = 26.5;
 						TestTargetID = 0361677AABA0B42EB1F7D3E6;
 					};
+					7A1C0E5D2B8F4A6C9D3E1F06 = {
+						CreatedOnToolsVersion = 27.1;
+						TestTargetID = 0361677AABA0B42EB1F7D3E6;
+					};
 				};
 			};
 			buildConfigurationList = 43062DD402299672DA8145EC /* Build configuration list for PBXProject "HealthRoadmap" */;
@@ -142,6 +197,9 @@
 			);
 			mainGroup = 817F514976A2D9805333B5AA;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7A1C0E5D2B8F4A6C9D3E1F10 /* XCRemoteSwiftPackageReference "clarity-apps" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5FE31048B8C6C2FE848F2B59 /* Products */;
 			projectDirPath = "";
@@ -149,11 +207,19 @@
 			targets = (
 				0361677AABA0B42EB1F7D3E6 /* HealthRoadmap */,
 				1E42CD2F3337B8F3A27BF5B4 /* HealthRoadmapTests */,
+				7A1C0E5D2B8F4A6C9D3E1F06 /* HealthRoadmapUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		7A1C0E5D2B8F4A6C9D3E1F05 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9A0F2166F0ED184C279B4C12 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -171,6 +237,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		7A1C0E5D2B8F4A6C9D3E1F04 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		31DB011C4C9D4171B20B0C54 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -188,6 +261,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		7A1C0E5D2B8F4A6C9D3E1F0B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0361677AABA0B42EB1F7D3E6 /* HealthRoadmap */;
+			targetProxy = 7A1C0E5D2B8F4A6C9D3E1F0A /* PBXContainerItemProxy */;
+		};
 		8BE2AF2F5A2928B6338EEB63 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 0361677AABA0B42EB1F7D3E6 /* HealthRoadmap */;
@@ -196,6 +274,36 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		7A1C0E5D2B8F4A6C9D3E1F08 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.drbrad.healthroadmap.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = HealthRoadmap;
+			};
+			name = Debug;
+		};
+		7A1C0E5D2B8F4A6C9D3E1F09 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.drbrad.healthroadmap.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = HealthRoadmap;
+			};
+			name = Release;
+		};
 		DCD666E4A47061F5838EE163 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -256,7 +364,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Health Roadmap uses the camera to scan a paper lab report. With your agreement, the pages are sent to Dr Brad's server and an AI service to be read.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Roadmap reads your weight, height, waist and blood pressure from Apple Health, so your record and your plan stay up to date without typing. They go only into your record, on this iPhone or in the Dropbox or Google Drive you connect.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Roadmap reads your sex, month and year of birth, weight, height, waist and blood pressure from Apple Health, so your record and your plan stay up to date without typing. It never keeps your day of birth. They go only into your record, on this iPhone or in the Dropbox or Google Drive you connect.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Health Roadmap saves the weight, waist and blood pressure you type into the app to Apple Health.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -286,7 +394,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Health Roadmap uses the camera to scan a paper lab report. With your agreement, the pages are sent to Dr Brad's server and an AI service to be read.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Roadmap reads your weight, height, waist and blood pressure from Apple Health, so your record and your plan stay up to date without typing. They go only into your record, on this iPhone or in the Dropbox or Google Drive you connect.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Roadmap reads your sex, month and year of birth, weight, height, waist and blood pressure from Apple Health, so your record and your plan stay up to date without typing. It never keeps your day of birth. They go only into your record, on this iPhone or in the Dropbox or Google Drive you connect.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Health Roadmap saves the weight, waist and blood pressure you type into the app to Apple Health.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -338,6 +446,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		7A1C0E5D2B8F4A6C9D3E1F07 /* Build configuration list for PBXNativeTarget "HealthRoadmapUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7A1C0E5D2B8F4A6C9D3E1F08 /* Debug */,
+				7A1C0E5D2B8F4A6C9D3E1F09 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		43062DD402299672DA8145EC /* Build configuration list for PBXProject "HealthRoadmap" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -366,6 +483,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7A1C0E5D2B8F4A6C9D3E1F10 /* XCRemoteSwiftPackageReference "clarity-apps" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/microsoft/clarity-apps";
+			requirement = {
+				kind = exactVersion;
+				version = 3.5.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7A1C0E5D2B8F4A6C9D3E1F11 /* Clarity */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7A1C0E5D2B8F4A6C9D3E1F10 /* XCRemoteSwiftPackageReference "clarity-apps" */;
+			productName = Clarity;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 313F993254B4919701C5D97C /* Project object */;
 }

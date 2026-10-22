@@ -13,6 +13,13 @@ enum DayText {
         return calendar
     }
 
+    /// Gregorian in UTC, where the record's days live as dates (charts place them at midnight UTC). Made once.
+    static let utc: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .gmt
+        return calendar
+    }()
+
     /// The local day for a moment, as YYYY-MM-DD, in `calendar`'s time zone.
     static func iso(_ date: Date, calendar: Calendar = .current) -> String {
         var gregorian = Calendar(identifier: .gregorian)
@@ -23,20 +30,13 @@ enum DayText {
 
     /// "20 Oct 2026" from YYYY-MM-DD, in the phone's language; the text as given if it is not a day.
     static func short(_ day: String) -> String {
-        let parts = day.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3 else { return day }
-        var utc = Calendar(identifier: .gregorian)
-        utc.timeZone = .gmt
-        guard let date = utc.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) else { return day }
-        return date.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: .gmt))
+        date(day)?.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: .gmt)) ?? day
     }
 
     /// Midnight UTC of YYYY-MM-DD, for placing a value on a chart; nil if it is not a day.
     static func date(_ day: String) -> Date? {
         let parts = day.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 3 else { return nil }
-        var utc = Calendar(identifier: .gregorian)
-        utc.timeZone = .gmt
         return utc.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
     }
 
@@ -44,6 +44,11 @@ enum DayText {
     static func month(_ month: String) -> String {
         guard let date = date("\(month)-01") else { return month }
         return date.formatted(Date.FormatStyle(timeZone: .gmt).month(.wide).year())
+    }
+
+    /// "January" for 1, in the phone's language.
+    static func monthName(_ month: Int) -> String {
+        gregorian.monthSymbols[month - 1]
     }
 
     /// Birth years a picker offers, newest first.

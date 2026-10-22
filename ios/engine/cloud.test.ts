@@ -9,6 +9,7 @@ import vm from 'node:vm';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
+import { createHash } from 'node:crypto';
 import { buildErasedFile } from '../../packages/health-core/src/erase';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
@@ -39,6 +40,10 @@ class FakeDropbox {
   uploads = 0;
   /** Runs once, just before the next upload lands: another device writing first. */
   beforeNextUpload: (() => void) | null = null;
+  /** Originals the app filed, by path (US-52 AC13d). */
+  documents = new Map<string, string>();
+  /** False: document uploads fail with a 500; the record's still work. */
+  documentsWork = true;
 
   put(record: RoadmapFile): void {
     this.file = { text: JSON.stringify(record), rev: (this.file?.rev ?? 0) + 1 };
@@ -50,6 +55,12 @@ class FakeDropbox {
   answer(url: string, headers: Record<string, string>, body: string | null): { status: number; headers: Record<string, string>; body: string } {
     if (headers.authorization !== 'Bearer token-1') return { status: 401, headers: {}, body: 'expired' };
     const arg = JSON.parse(headers['dropbox-api-arg']) as { path: string; mode?: { '.tag': string; update?: string } };
+    if (url.endsWith('/files/upload') && !['/health-roadmap.json', '/chat-history.json'].includes(arg.path)) {
+      if (!this.documentsWork) return { status: 500, headers: {}, body: 'internal_error' };
+      expect(arg.mode).toEqual({ '.tag': 'overwrite' });
+      this.documents.set(arg.path, body!);
+      return { status: 200, headers: {}, body: '{}' };
+    }
     expect(['/health-roadmap.json', '/chat-history.json']).toContain(arg.path);
     const slot = arg.path === '/chat-history.json' ? 'chat' : 'file';
     const now = this[slot];
@@ -76,7 +87,7 @@ interface Engine {
   newRecordJson(now: string, device: string, locale: string, zone: string): string;
   applyEditJson(record: string, edit: string, now: string, device: string): string;
   cloudOpen(provider: string, device: string, first: boolean): Promise<string>;
-  cloudEdit(edit: string, erase: string, units: string, now: string): string;
+  cloudEdit(edit: string, erase: string, units: string, now: string, unitsJson?: string): string;
   cloudVisible(): string;
   cloudFlush(): Promise<string>;
   cloudRefresh(): Promise<string>;
@@ -84,6 +95,7 @@ interface Engine {
   cloudErase(historyText: string | null, now: string, keepChat?: (text: string) => string): Promise<string>;
   labFilesJson(): Promise<string>;
   labFile(id: string): Promise<{ name: string; bytes: ArrayBuffer }>;
+  documentSave(record: string, extraction: string, choice: string, original: ArrayBuffer | null, erase: string, now: string, device: string): Promise<string>;
 }
 
 const opened: Engine[] = [];
@@ -98,6 +110,8 @@ interface Server {
   answer(url: string, headers: Record<string, string>, body: string | null, method: string): { status: number; headers: Record<string, string>; body: string };
   /** Milliseconds every answer waits (an open still in flight). */
   delay?: number;
+  /** Milliseconds one request's answer waits, in place of `delay`. */
+  delayFor?(url: string, headers: Record<string, string>): number | undefined;
 }
 
 async function phone(dropbox: Server, phoneText: string | null = null) {
@@ -107,7 +121,7 @@ async function phone(dropbox: Server, phoneText: string | null = null) {
   let next = 1;
   const native = {
     http(method: string, url: string, headers: string, body: ArrayBuffer | null, done: (s: number, t: string, h: string, b: ArrayBuffer | null, e: string | null) => void) {
-      const wait = dropbox.delay ?? 0;
+      const wait = dropbox.delayFor?.(url, JSON.parse(headers) as Record<string, string>) ?? dropbox.delay ?? 0;
       setTimeout(() => {
         if (!dropbox.online) return done(0, '', '{}', null, 'The Internet connection appears to be offline.');
         const answer = dropbox.answer(url, JSON.parse(headers) as Record<string, string>, body ? decode(body) : null, method);
@@ -192,6 +206,19 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const changed = state.events.filter(([event]) => event === 'changed').at(-1)!;
     expect(days(JSON.parse((JSON.parse(changed[1]) as { record: string }).record) as RoadmapFile)).toEqual(['2026-10-03', '2026-10-04']);
     expect(state.pending).toBe(false);
+  });
+
+  it('AC17e: a value typed in a test\'s own units is stored right in the cloud record', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    // 180 lb on a metric record, weight switched to US: about 81.6 kg, never 180 kg.
+    const typed = JSON.stringify({ kind: 'add', metric: 'weight', value: 180, day: '2026-10-05' });
+    expect((JSON.parse(engine.cloudEdit(typed, erase, 'si', NOW, '{"weight":"conventional"}')) as { ok: boolean }).ok).toBe(true);
+    expect(await engine.cloudFlush()).toBe('saved');
+    const weight = dropbox.record.measurements.find((row) => row.recordedAt.startsWith('2026-10-05'))!;
+    expect(weight.value).toBeCloseTo(81.6, 1);
   });
 
   it('AC11c: a row the web added is taken in on a re-read', async () => {
@@ -848,5 +875,159 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
     const offline = await phone(folder);
     await expect(offline.engine.labFilesJson()).rejects.toThrow('"kind":"unreachable"');
     await expect(offline.engine.labFile('id:new')).rejects.toThrow('"kind":"unreachable"');
+  });
+});
+
+// US-52 AC13d: a clinic letter, and a lab report's original, filed as the web
+// files them, through health-core's saveDocuments, from the engine bundle.
+describe('documents from "Add medical records" (US-52 AC13d)', () => {
+  const letter = JSON.stringify({
+    classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [],
+    document: { classification: 'clinic_letter', title: 'Cardiology follow-up', documentDate: '2026-09-14', contentMarkdown: '# Letter text', metadata: { specialty: 'cardiology' } },
+  });
+  const labs = JSON.stringify({ classification: 'lab_report', reportDate: '2026-10-01', values: [], additionalValues: [] });
+  const bytes = (text: string) => new Uint8Array(Buffer.from(text, 'utf8')).buffer;
+  const hashOf = (text: string) => `sha256-${createHash('sha256').update(text).digest('hex')}`;
+  /** The review's choice; `of` names the original the phone read (its hash). */
+  const choice = (over: object = {}, of = '%PDF letter') => JSON.stringify({ kind: 'document', sourceFileName: 'Letter.pdf', title: 'Heart clinic', documentDate: null, mimeType: 'application/pdf', contentHash: hashOf(of), ...over });
+  type Answer = { ok: boolean; record: string; erase?: string; saved: number; unstored: number; stored: boolean | null; stale: boolean; reason?: string };
+  async function opened(dropbox = new FakeDropbox()) {
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    return { dropbox, engine, state, erase };
+  }
+
+  it('in the cloud: the original lands in the provider first, then the row, with the phone\'s hash, through the session', async () => {
+    const { dropbox, engine, state, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    expect(answer).toMatchObject({ ok: true, saved: 1, unstored: 0, stored: true, stale: false });
+    const ref = [...dropbox.documents.keys()][0];
+    // The review's title, and no day: the ref takes today's (buildDocumentRef), the row keeps null.
+    expect(ref).toMatch(/^\/Clinic letters\/\d{4}-\d{2}-\d{2} Heart clinic\.pdf$/);
+    expect(dropbox.documents.get(ref)).toBe('%PDF letter');
+    // On the phone first, marked pending, before the cloud save (US-09 AC4).
+    expect(state.pending).toBe(true);
+    expect((JSON.parse(state.phoneText!) as RoadmapFile).documents).toHaveLength(1);
+    expect(await engine.cloudFlush()).toBe('saved');
+    const [row] = dropbox.record.documents;
+    expect(row).toMatchObject({
+      type: 'clinic_letter', title: 'Heart clinic', date: null, fileRef: ref.slice(1), contentHash: hashOf('%PDF letter'),
+      mimeType: 'application/pdf', extractedText: '# Letter text', metadata: { specialty: 'cardiology' }, sourceFileName: 'Letter.pdf',
+    });
+    // The same bytes again are already archived: nothing new (the web's contentHash dedup).
+    const again = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    expect(again).toMatchObject({ ok: true, saved: 0 });
+    expect(dropbox.documents.size).toBe(1);
+  });
+
+  it('R1: two saves at once with the same title and day get two refs, and both originals survive', async () => {
+    const { dropbox, engine, erase } = await opened();
+    const day = { documentDate: '2026-09-14' };
+    const [a, b] = await Promise.all([
+      engine.documentSave('', letter, choice(day, 'first'), bytes('first'), erase, NOW, 'ios-1'),
+      engine.documentSave('', letter, choice({ ...day, sourceFileName: 'Letter 2.pdf' }, 'second'), bytes('second'), erase, NOW, 'ios-1'),
+    ]);
+    expect([JSON.parse(a), JSON.parse(b)]).toEqual([expect.objectContaining({ saved: 1, stored: true }), expect.objectContaining({ saved: 1, stored: true })]);
+    expect(Object.fromEntries(dropbox.documents)).toEqual({
+      '/Clinic letters/2026-09-14 Heart clinic.pdf': 'first',
+      '/Clinic letters/2026-09-14 Heart clinic (2).pdf': 'second',
+    });
+    await engine.cloudFlush();
+    expect(dropbox.record.documents.map((d) => d.fileRef).sort()).toEqual(['Clinic letters/2026-09-14 Heart clinic (2).pdf', 'Clinic letters/2026-09-14 Heart clinic.pdf']);
+  });
+
+  it('in the cloud: a lab report\'s original is kept as the web\'s hidden lab-archive row', async () => {
+    const { dropbox, engine, erase } = await opened();
+    const archive = JSON.stringify({ kind: 'labArchive', sourceFileName: 'Bloods.pdf', reportDay: '2026-10-01', mimeType: 'application/pdf', contentHash: hashOf('%PDF labs') });
+    expect(JSON.parse(await engine.documentSave('', labs, archive, bytes('%PDF labs'), erase, NOW, 'ios-1'))).toMatchObject({ ok: true, saved: 1, stored: true });
+    await engine.cloudFlush();
+    expect(dropbox.record.documents[0]).toMatchObject({
+      type: 'pathology_report', title: 'Blood test results', date: '2026-10-01', extractedText: '', metadata: { labArchive: true },
+      fileRef: 'Lab results/2026-10-01 Blood test results.pdf', contentHash: hashOf('%PDF labs'),
+    });
+  });
+
+  it('in the cloud: an original the provider refuses still files the row, metadata-only with its hash', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.documentsWork = false;
+    const { engine, erase } = await opened(dropbox);
+    expect(JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1'))).toMatchObject({ ok: true, saved: 1, stored: false, stale: false });
+    await engine.cloudFlush();
+    expect(dropbox.record.documents[0]).toMatchObject({ fileRef: '', mimeType: '', contentHash: hashOf('%PDF letter'), extractedText: '# Letter text' });
+  });
+
+  it('in the cloud: an original that changed or could not be read since the review is not uploaded; the row keeps the reviewed hash', async () => {
+    const { dropbox, engine, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), null, erase, NOW, 'ios-1')) as Answer;
+    expect(answer).toMatchObject({ ok: true, saved: 1, stored: false, stale: true });
+    expect(dropbox.documents.size).toBe(0);
+    await engine.cloudFlush();
+    expect(dropbox.record.documents[0]).toMatchObject({ fileRef: '', contentHash: hashOf('%PDF letter'), extractedText: '# Letter text' });
+  });
+
+  it('US-14 AC4: an upload behind a held metadata-only row lands the original and replaces that row', async () => {
+    const { dropbox, engine, erase } = await opened();
+    // A first save whose original could not be read leaves a held row with the hash.
+    await engine.documentSave('', letter, choice({ title: 'Edited' }), null, erase, NOW, 'ios-1');
+    const answer = JSON.parse(await engine.documentSave('', letter, choice({ title: 'Edited' }), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    expect(answer).toMatchObject({ saved: 1, stored: true });
+    await engine.cloudFlush();
+    const live = dropbox.record.documents.filter((d) => !d.deleted);
+    expect(live).toEqual([expect.objectContaining({ title: 'Edited', fileRef: expect.stringMatching(/^Clinic letters\//) })]);
+    expect(dropbox.record.documents.filter((d) => d.deleted)).toHaveLength(1);
+  });
+
+  it('in the cloud: a save made for an erase the record is no longer at is refused, and nothing is uploaded', async () => {
+    const { dropbox, engine } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), '{"stale":true}', NOW, 'ios-1')) as Answer;
+    expect(answer).toMatchObject({ ok: false, reason: 'erased' });
+    expect(dropbox.documents.size).toBe(0);
+  });
+
+  it('R5: an erase that arrives while the original uploads refuses the row', async () => {
+    const dropbox = new FakeDropbox();
+    const { engine, erase } = await opened(dropbox);
+    const before = dropbox.record;
+    dropbox.delayFor = (url, headers) => (url.endsWith('/files/upload') && headers['dropbox-api-arg']?.includes('Clinic letters') ? 50 : undefined);
+    const saving = engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1');
+    dropbox.put(buildErasedFile({ stored: before, own: before, device: null, ctx: { deviceId: 'web', now: '2026-10-21T09:00:00.000Z' } }));
+    expect(await engine.cloudRefresh()).toBe('changed');
+    expect(JSON.parse(await saving)).toMatchObject({ ok: false, reason: 'erased' });
+    await engine.cloudFlush();
+    expect(dropbox.record.documents).toEqual([]);
+  });
+
+  it('R5: a session that closes while the original uploads files no row', async () => {
+    const dropbox = new FakeDropbox();
+    const { engine, state, erase } = await opened(dropbox);
+    dropbox.delayFor = (url, headers) => (url.endsWith('/files/upload') && headers['dropbox-api-arg']?.includes('Clinic letters') ? 50 : undefined);
+    const saving = engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1');
+    await engine.cloudClose(false);
+    expect(JSON.parse(await saving)).toMatchObject({ ok: false, reason: 'not-open' });
+    expect((JSON.parse(state.phoneText!) as RoadmapFile).documents).toEqual([]);
+  });
+
+  it('on the phone alone: a text-only row (no original, no hash) added to the record Swift passed, as the web saves off-cloud', async () => {
+    const { engine } = await phone(new FakeDropbox());
+    const record = engine.newRecordJson(NOW, 'ios-1', 'en-NZ', 'Pacific/Auckland');
+    const answer = JSON.parse(await engine.documentSave(record, letter, choice({ documentDate: '2026-09-14' }), bytes('%PDF letter'), '', NOW, 'ios-1')) as Answer;
+    expect(answer).toMatchObject({ ok: true, saved: 1, stored: null, stale: false });
+    expect((JSON.parse(answer.record) as RoadmapFile).documents).toEqual([expect.objectContaining({
+      type: 'clinic_letter', title: 'Heart clinic', date: '2026-09-14', fileRef: '', contentHash: '', mimeType: '', extractedText: '# Letter text',
+    })]);
+    // A lab report's original is kept only in a cloud: off-cloud, nothing is filed.
+    const archive = JSON.stringify({ kind: 'labArchive', sourceFileName: 'Bloods.pdf', reportDay: '2026-10-01', mimeType: 'application/pdf', contentHash: hashOf('x') });
+    expect(JSON.parse(await engine.documentSave(record, labs, archive, bytes('x'), '', NOW, 'ios-1'))).toMatchObject({ ok: true, saved: 0, record });
+    // An empty title keeps the model's, as the web's `docTitles[fi] || title`; a future day is unknown.
+    const plain = JSON.parse(await engine.documentSave(record, letter, choice({ title: '', documentDate: '2099-01-01' }), null, '', NOW, 'ios-1')) as Answer;
+    expect((JSON.parse(plain.record) as RoadmapFile).documents[0]).toMatchObject({ title: 'Cardiology follow-up', date: null });
+  });
+
+  it('refuses a document save for a lab report, and a cloud save with no session open', async () => {
+    const { engine } = await phone(new FakeDropbox());
+    const record = engine.newRecordJson(NOW, 'ios-1', 'en-NZ', 'Pacific/Auckland');
+    expect(JSON.parse(await engine.documentSave(record, labs, choice(), null, '', NOW, 'ios-1'))).toMatchObject({ ok: false, reason: 'not-found' });
+    expect(JSON.parse(await engine.documentSave('', letter, choice(), null, '{}', NOW, 'ios-1'))).toMatchObject({ ok: false, reason: 'not-open' });
   });
 });

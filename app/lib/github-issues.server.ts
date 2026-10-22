@@ -53,7 +53,7 @@ const UNCERTAIN = { ok: false, refusal: 'We could not confirm whether GitHub fil
 type Reservation = { at: number };
 const filedAt: Reservation[] = [];
 type Recent = {
-  answer: { ok: true; url: string; number: number } | typeof UNAVAILABLE | typeof UNCERTAIN;
+  answer: { ok: true; url: string; number: number } | typeof UNCERTAIN;
   at: number;
 };
 const recent = new Map<string, Recent>();
@@ -128,6 +128,17 @@ async function fileIssue(
   // and it is what makes a report reproducible. It names a cloud, never a user.
   const body = `${issue.body}\nprovider: ${provider}`;
 
+  function releaseReservation(): void {
+    const hourly = filedAt.indexOf(reservation);
+    if (hourly !== -1) filedAt.splice(hourly, 1);
+    const current = perConnection.get(connection);
+    const daily = current?.indexOf(reservation) ?? -1;
+    if (current && daily !== -1) {
+      current.splice(daily, 1);
+      if (!current.length) perConnection.delete(connection);
+    }
+  }
+
   const sending = (async (): ReturnType<FeedbackFiler> => {
     let response: Response;
     try {
@@ -143,7 +154,15 @@ async function fileIssue(
         body: JSON.stringify({ title: issue.title, body, labels: issue.labels }),
         signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
       });
-    } catch {
+    } catch (error) {
+      // Native fetch exposes pre-connection failures through cause.code. A
+      // reset, abort, or unknown failure can happen after POST and stays uncertain.
+      const cause = error instanceof Error ? error.cause : null;
+      const code = cause && typeof cause === 'object' && 'code' in cause ? cause.code : null;
+      if (code === 'ENOTFOUND' || code === 'ECONNREFUSED') {
+        releaseReservation();
+        return UNAVAILABLE;
+      }
       remember(key, UNCERTAIN, now);
       return UNCERTAIN;
     }
@@ -151,16 +170,13 @@ async function fileIssue(
     if (!response.ok) {
       // The status alone: a GitHub error body can quote the report back at us.
       console.error('[mcp] github issue refused', response.status);
-      // Only an explicit refusal proves nothing was filed. Network/parse errors
-      // may follow an accepted POST and must keep their reserved capacity.
-      const hourly = filedAt.indexOf(reservation);
-      if (hourly !== -1) filedAt.splice(hourly, 1);
-      const current = perConnection.get(connection);
-      const daily = current?.indexOf(reservation) ?? -1;
-      if (current && daily !== -1) {
-        current.splice(daily, 1);
-        if (!current.length) perConnection.delete(connection);
+      // A server error can follow an accepted POST (including a proxy 502/504).
+      // Keep capacity and dedupe rather than inviting a duplicate issue.
+      if (response.status >= 500) {
+        remember(key, UNCERTAIN, now);
+        return UNCERTAIN;
       }
+      releaseReservation();
       return UNAVAILABLE;
     }
 

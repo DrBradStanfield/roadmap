@@ -12,6 +12,7 @@ struct SupplementSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var dose = ""
+    @FocusState private var editingDose: Bool
     @State private var unit = ""
     @State private var message: String?
     @State private var confirmingStop = false
@@ -26,7 +27,10 @@ struct SupplementSheet: View {
                 Section {
                     HStack {
                         TextField("Dose", text: $dose)
+                            .analyticsMasked()
                             .keyboardType(.decimalPad)
+                            .focused($editingDose)
+                            .typedNumber($dose, .dose, editing: editingDose)
                             .font(.title2.weight(.semibold))
                             .monospacedDigit()
                         Picker("Unit", selection: $unit) {

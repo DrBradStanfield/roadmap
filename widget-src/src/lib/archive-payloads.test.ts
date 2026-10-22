@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import { LAB_ARCHIVE_FLAG } from '@roadmap/health-core';
 import {
-  isLabArchiveDocument,
   synthesizeLabArchiveEntries,
   unarchivedOriginals,
   connectorDocumentEntries,
-  LAB_ARCHIVE_FLAG,
 } from './archive-payloads';
 import type { FileResult } from '../components/ReviewTable';
 
@@ -36,55 +35,6 @@ describe('synthesizeLabArchiveEntries', () => {
     expect(synthesizeLabArchiveEntries([result({ file: blob(), error: 'boom' })], new Set())).toHaveLength(0);
     expect(synthesizeLabArchiveEntries([result({})], new Set())).toHaveLength(0); // no file
     expect(synthesizeLabArchiveEntries([result({ file: blob() })], new Set(['lipids.pdf']))).toHaveLength(0);
-  });
-});
-
-describe('isLabArchiveDocument', () => {
-  it('hides synthesized blood-test archive entries (explicit flag)', () => {
-    expect(isLabArchiveDocument({
-      documentType: 'pathology_report',
-      title: 'Blood test results',
-      contentMd: '',
-      metadata: { [LAB_ARCHIVE_FLAG]: true },
-    })).toBe(true);
-  });
-
-  it('hides legacy synthesized entries via content signature (no flag)', () => {
-    expect(isLabArchiveDocument({
-      documentType: 'pathology_report',
-      title: 'Blood test results',
-      contentMd: '',
-      metadata: {},
-    })).toBe(true);
-  });
-
-  it('keeps real pathology reports (biopsy/histology with content)', () => {
-    expect(isLabArchiveDocument({
-      documentType: 'pathology_report',
-      title: 'Breast Core Biopsy — Histology',
-      contentMd: '## Histology\n\nInvasive ductal carcinoma...',
-      metadata: { specimenType: 'core biopsy', result: 'malignant' },
-    })).toBe(false);
-  });
-
-  it('keeps clinic letters, discharge summaries, scans, vaccination records', () => {
-    for (const documentType of ['clinic_letter', 'discharge_summary', 'scan_result', 'vaccination_record', 'other']) {
-      expect(isLabArchiveDocument({
-        documentType,
-        title: 'Blood test results', // even with a colliding title, non-pathology types stay
-        contentMd: '',
-        metadata: {},
-      })).toBe(false);
-    }
-  });
-
-  it('does not hide a pathology report whose title happens to match but has content', () => {
-    expect(isLabArchiveDocument({
-      documentType: 'pathology_report',
-      title: 'Blood test results',
-      contentMd: '## Bone marrow biopsy',
-      metadata: {},
-    })).toBe(false);
   });
 });
 

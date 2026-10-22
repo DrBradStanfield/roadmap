@@ -38,12 +38,18 @@ struct MyData: Decodable {
         let label: String
         let unit: String
         let latest: Latest?
+        /// The newest days' values, oldest first, in the user's units (AC17d); nil from an older engine.
+        let trend: [Double]?
+        /// Whether this test has its own Metric/US choice (AC17e); nil from an older engine.
+        let switchable: Bool?
 
         var id: String { metric }
     }
 
     /// "si" (metric) or "conventional" (US)
     let unitSystem: String
+    /// The record's erase count; nil from an engine older than US-54 AC7.
+    let eraseEpoch: Int?
     let profile: Profile
     let vitals: [Row]
     let bloodTests: [Row]

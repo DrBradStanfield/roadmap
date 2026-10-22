@@ -53,6 +53,7 @@ import { platformChatCompletion } from './platform-chat.server';
 import { currentViewSection, safetySections, masterViews, reducedMaster, reducedDrops, MAX_VIEW_CHARS, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_KEY_POINTS_CHARS, BULLET_LINE } from './youtube-context';
 import { MAX_KEY_POINTS_CHARS as CHECKER_MAX_KEY_POINTS_CHARS, BULLET_LINE as CHECKER_BULLET_LINE, keySafetyErrors } from '../../tools/knowledge-batch-check';
 import { getChatCompletion } from './chat.server';
+import { MAX_BLOG_CHARS } from './matched-content';
 import { routeQuery } from './chat-router.server';
 
 const VIEW = '## Current view (reviewed 20 October 2026)\n\nCollagen peptides may improve skin hydration [the-collagen-peptides-for-skin-story-is-changing].';
@@ -73,7 +74,7 @@ const files: Record<string, string> = {
   'tm-numbered': `---\ntitle: "Numbered"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNumbered view.\n\n## 6. Drug Interactions\n\nWarfarin [2].\n\n## 8. References\n\n1. Ref A.\n2. Ref B.\n`,
   // A master whose smallest form still nearly fills the cap: it loads that
   // form and leaves no room even for tm-master-long reduced (US-50 AC13).
-  'tm-huge': `---\ntitle: "Huge"\n---\n\n## Current view (reviewed 20 October 2026)\n\nHuge view.\n\n## 5. Safety and Side Effects\n\n${'h'.repeat(119_750)}\n`,
+  'tm-huge': `---\ntitle: "Huge"\n---\n\n## Current view (reviewed 20 October 2026)\n\nHuge view.\n\n## 5. Safety and Side Effects\n\n${'h'.repeat(MAX_BLOG_CHARS - 250)}\n`,
   'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
   'tm-article': `---\ntitle: "An article"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNot a master.\n`,
   'tm-collagen-video': `---\ntitle: "Collagen video"\n---\n\nThe old collagen video's text.\n`,
@@ -132,27 +133,25 @@ describe('safetySections (US-50 AC6)', () => {
 // The six masters published on 2026-10-20: every one adds its view plus its
 // "Safety and Side Effects" and "Drug Interactions" sections, within the caps.
 describe('masterViews on the published masters (US-50 AC6)', () => {
-  const MASTERS = [
-    'collagen-benefits-best-forms-dosing-and-side-effects',
-    'vitamin-k-benefits-forms-dosing-and-side-effects',
+  // All six now carry Key safety points (masters-cleanup-1 to -4, 2026-10-22), so each
+  // adds its view and those points. The path for a master without key points is
+  // covered by the synthetic tm-safe, tm-ix and tm-cited pages below.
+  const KEYED = [
     'magnesium-benefits-best-forms-dosing',
-    'taurine-benefits-forms-dosing-and-side-effects',
     'creatine-benefits-best-forms-dosing-and-side-effects',
     'vitamin-c-benefits-forms-dosing-and-side-effects',
+    'taurine-benefits-forms-dosing-and-side-effects',
+    'vitamin-k-benefits-forms-dosing-and-side-effects',
+    'collagen-benefits-best-forms-dosing-and-side-effects',
   ];
-  it.each(MASTERS)('%s adds its view, then its interaction and safety sections', (handle) => {
+  it.each(KEYED)('%s adds its view and key safety points, not its whole safety sections (US-50 AC12)', (handle) => {
     const block = masterViews([handle], [])!;
     expect(block).not.toBeNull();
     const view = block.indexOf('### Current view (reviewed');
-    const safety = block.search(/^### \d+\. Safety and Side Effects$/m);
-    const interactions = block.search(/^### \d+\. Drug Interactions$/m);
     expect(view).toBeGreaterThan(-1);
-    expect(interactions).toBeGreaterThan(view);
-    expect(safety).toBeGreaterThan(interactions);
-    expect(block).not.toMatch(/^### \d+\. (?:References|Overview|Recommended Dosing)/m);
+    expect(block.indexOf('### Key safety points')).toBeGreaterThan(view);
+    expect(block).not.toMatch(/^### \d+\. (?:Safety and Side Effects|Drug Interactions|References)/m);
     expect(block).not.toContain("Brad's videos on this topic");
-    expect(block).toMatch(/^\[\d+\] .+/m); // a cited bibliography line came with the safety text
-    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
   });
 
 });

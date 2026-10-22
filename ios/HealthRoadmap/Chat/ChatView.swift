@@ -105,6 +105,7 @@ struct ChatView: View {
             Divider()
             HStack(alignment: .bottom) {
                 TextField("Ask a question", text: $draft, axis: .vertical)
+                    .analyticsMasked()
                     .lineLimit(1...5)
                     .textFieldStyle(.roundedBorder)
                 Button {

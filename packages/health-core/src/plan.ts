@@ -168,8 +168,10 @@ export interface Plan extends PlanInputs {
 /**
  * The whole plan. Invalid fields are stripped before calculating (the widget
  * does the same), so one bad number costs its own suggestion, not the report.
+ * `unitOverrides`: per-metric display units, the web's per-field toggles (US-05), so a
+ * target reads in the unit the person chose for that test; absent, `unitSystem` throughout.
  */
-export function computePlan(file: RoadmapFile, now = new Date()): Plan {
+export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?: Partial<Record<MetricType, UnitSystem>>): Plan {
   const derived = derivePlanInputs(file);
   let inputs = derived.inputs;
   let excluded: string[] = [];
@@ -196,7 +198,7 @@ export function computePlan(file: RoadmapFile, now = new Date()): Plan {
     excluded,
     generatedAt: now.toISOString(),
     today: localDay(now),
-    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings, undefined, now),
+    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings, unitOverrides, now),
     due: computeReminderSchedule(file, now),
     labs: derivePlanLabs(file),
   };
