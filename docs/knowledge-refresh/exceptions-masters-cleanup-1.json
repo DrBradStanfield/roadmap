@@ -234,16 +234,16 @@
  {
   "check": "AC7",
   "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
-  "match": "product mentions rose 92 -> 156",
-  "reason": "Counting artefact: the product counter matches the generic word \"Omega-3\", which rose with 176 new PubMed reference titles; no new product promotion. The 0 -> 0 figure sits in the append-only base report.",
+  "match": "product mentions rose 92 -> 155",
+  "reason": "Counting artefact: the product counter matches the generic word \"Omega-3\", which rose with 176 new PubMed reference titles; no new product promotion. The 0 -> 0 figure sits in the append-only base report. Count moved 156 -> 155 in fix/clean1-omega3 (2026-10-22): the transplant rows and removed references [212] and [214] lost generic \"omega-3\" words, and three new reference titles added some; net one fewer.",
   "by": "orchestrator",
   "date": "2026-10-22"
  },
  {
   "check": "AC7",
   "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
-  "match": "report says product mentions 0 -> 0, recomputed 92 -> 156",
-  "reason": "Counting artefact: the product counter matches the generic word \"Omega-3\", which rose with 176 new PubMed reference titles; no new product promotion. The 0 -> 0 figure sits in the append-only base report.",
+  "match": "report says product mentions 0 -> 0, recomputed 92 -> 155",
+  "reason": "Counting artefact: the product counter matches the generic word \"Omega-3\", which rose with 176 new PubMed reference titles; no new product promotion. The 0 -> 0 figure sits in the append-only base report. Count moved 156 -> 155 in fix/clean1-omega3 (2026-10-22): the transplant rows and removed references [212] and [214] lost generic \"omega-3\" words, and three new reference titles added some; net one fewer.",
   "by": "orchestrator",
   "date": "2026-10-22"
  },
