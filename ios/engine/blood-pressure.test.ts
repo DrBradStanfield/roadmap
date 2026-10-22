@@ -278,3 +278,23 @@ describe('height in feet and inches (US-25 AC17)', () => {
     expect(applyEdit(file, { kind: 'profile', heightFeet: 9, heightInches: 0 }, NOW)).toMatchObject({ ok: false, message: expect.stringMatching(/250 cm/) });
   });
 });
+
+describe('blood pressure history at scale', () => {
+  // Ten years of daily readings took 17 s on an iPhone 15 Pro Max when each day
+  // re-scanned the record; it now takes one pass. Node's JIT ran the old code in 0.9 s.
+  it('ten years of daily pairs build in one pass', () => {
+    const file = nz();
+    for (let back = 1; back <= 3650; back++) {
+      const day = new Date(Date.parse(NOW) - back * 864e5).toISOString().slice(0, 10);
+      for (const [metricType, value] of [['systolic_bp', 120], ['diastolic_bp', 80]] as const) {
+        file.measurements.push({ id: `${metricType}-${day}`, metricType, value, recordedAt: day, createdAt: `${day}T08:00:00Z`,
+          source: 'manual', status: 'active', correctsId: null, externalId: null });
+      }
+    }
+    const start = performance.now();
+    const rows = metricHistory(file, 'blood_pressure', LATER).rows;
+    expect(performance.now() - start).toBeLessThan(300);
+    expect(rows).toHaveLength(3650);
+    expect(rows[0]).toMatchObject({ value: '120/80', status: 'active' });
+  });
+});

@@ -637,7 +637,11 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
   it('reads stdin for `-` and writes no file anywhere', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'get-plan-cwd-'));
     const script = join(dirname(fileURLToPath(import.meta.url)), 'get-plan.ts');
-    const result = spawnSync('npx', ['tsx', script, '--from-values', '-'], {
+    // The repo's own tsx, never `npx tsx`: from a temp cwd outside the repo
+    // npx cannot see node_modules and may fetch tsx from the registry, which
+    // timed out the CI deploy gate (2026-10-22).
+    const tsx = join(dirname(script), '..', 'node_modules', '.bin', 'tsx');
+    const result = spawnSync(tsx, [script, '--from-values', '-'], {
       cwd, encoding: 'utf8',
       input: JSON.stringify({ sex: 'male', age: 52, heightCm: 178, values: [{ metric: 'ldl', value: 3.2, unit: 'mmol/L' }] }),
     });

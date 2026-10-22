@@ -42,6 +42,9 @@ final class CloudSync: CloudPort {
     /// and news from any other session is dropped (review F2, F4).
     private var shownSession: Int?
     private var sessionOpen: Bool { shownSession != nil }
+    /// True once the cloud record is open and shown. A connect can succeed and
+    /// the open still fail (offline, a provider error): onboarding waits for this (US-54 AC2).
+    var recordOpen: Bool { sessionOpen }
     /// Moves on every Disconnect. An open that finishes under an older one is
     /// closed, not shown: Disconnect wins (review R5).
     private var generation = 0

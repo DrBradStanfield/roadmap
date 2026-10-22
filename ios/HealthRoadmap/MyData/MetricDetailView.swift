@@ -46,6 +46,19 @@ struct MetricDetailView: View {
         .navigationTitle(row.label)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            // This test's own units (AC17e), as the web's unit chip: My data's row as it is now.
+            if let live, live.switchable == true {
+                ToolbarItem(placement: .secondaryAction) {
+                    Picker("Units for \(row.label)", selection: Binding(
+                        get: { store.units(for: row.metric) },
+                        set: { store.switchUnits(for: live, to: $0) }
+                    )) {
+                        Text("Metric").tag("si")
+                        Text("US").tag("conventional")
+                    }
+                    .pickerStyle(.menu)
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button("Add Data") { editing = .add }
             }
@@ -53,6 +66,12 @@ struct MetricDetailView: View {
         .sheet(item: $editing) { editing in
             sheet(for: editing).presentationDetents([.medium, .large])
         }
+    }
+
+    /// This metric's row in My data now, so a units switch here shows at once.
+    private var live: MyData.Row? {
+        guard let data = store.myData else { return nil }
+        return (data.vitals + data.bloodTests + [data.psa]).first { $0.metric == row.metric }
     }
 
     // MARK: Chart
@@ -127,13 +146,15 @@ struct MetricDetailView: View {
 
     @ViewBuilder
     private func sheet(for editing: Editing) -> some View {
+        // The row as it is now: its unit is the one a typed value is read in (AC17e).
+        let shown = live ?? row
         switch editing {
         case .add:
-            MetricEntrySheet(store: store, row: row, saved: saved)
-        case .correct(let value) where row.metric == MyData.bloodPressure:
+            MetricEntrySheet(store: store, row: shown, saved: saved)
+        case .correct(let value) where shown.metric == MyData.bloodPressure:
             BloodPressureSheet(store: store, correcting: value, saved: saved)
         case .correct(let value):
-            ValueEntrySheet(title: "Correct \(DayText.short(value.day))", unit: row.unit, current: value.value, asksForDay: false, read: store.number) { number, _ in
+            ValueEntrySheet(title: "Correct \(DayText.short(value.day))", unit: shown.unit, current: value.value, asksForDay: false, read: store.number) { number, _ in
                 saved(store.apply(.correct(id: value.id, value: number)))
             }
         }

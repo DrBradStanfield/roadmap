@@ -9,11 +9,11 @@ import { reducedDrops, reducedMaster } from './youtube-context';
 // under tsx, which cannot follow chat.server.ts's server import chain. Paths
 // resolve from process.cwd(), so run those tools from the repo root.
 
-// ~30K tokens. Above the largest entry in the corpus (the B vitamins master,
-// about 106,000 body chars), so any single routed entry fits (US-15 AC23). Two
-// masters often pass it together (vitamin D + vitamin K, about 134,000): one
-// then loads reduced (US-50 AC13).
-export const MAX_BLOG_CHARS = 120_000;
+// ~40K tokens. Above the largest entry in the corpus (the omega-3 master, about
+// 141,200 chars as loaded, 2026-10-22), so any single routed entry loads whole
+// (US-15 AC23). Two masters often pass it together (omega-3 + vitamin K, about
+// 200,000): one then loads reduced (US-50 AC13).
+export const MAX_BLOG_CHARS = 160_000;
 const SEPARATOR = '\n\n---\n\n';
 
 const articleCache = new Map<string, string | null>();

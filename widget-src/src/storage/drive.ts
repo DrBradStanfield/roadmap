@@ -28,11 +28,14 @@ import {
   ConflictError,
   driveCreateFile,
   driveCreateFolder,
+  driveDownloadDocument,
   driveDownloadJson,
+  driveEnsureSubfolder,
   driveFileVersion,
   driveFindFileId,
   driveFindFolder,
   driveUpdateIfVersion,
+  driveUploadDocument,
   splitDocumentRef,
   DRIVE_API,
   DRIVE_FOLDER_NAME,
@@ -431,7 +434,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     // into a decision, so never silently re-create it here.
     if (expectedVersion !== null) throw new ConflictError(`${this.label} no longer holds that file`);
     // First write — create the file (multipart: metadata + content).
-    const res = await this.createMultipart(fileName, 'application/json', json);
+    const res = await driveCreateFile(await this.getToken(), fileName, 'application/json', json, await this.ensureFolderId());
     if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     const created = await jsonBody<{ id?: string; version?: string }>(res);
     if (!created.id) throw new StorageError('Google Drive create returned no file id.');
@@ -442,25 +445,13 @@ export class GoogleDriveAdapter implements StorageAdapter {
   async readDocument(ref: string): Promise<Blob> {
     const { folder, name } = splitDocumentRef(ref);
     const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
-    const id = await this.findFileId(name, parentId);
-    if (!id) throw new StorageError(`Google Drive document not found.`);
-    const res = await fetch(`${DRIVE_API}/files/${id}?alt=media`, { headers: await this.authHeaders() });
-    if (!res.ok) throw new StorageError(`Google Drive document read failed (${res.status}).`, undefined, undefined, res.status);
-    return res.blob();
+    return driveDownloadDocument(await this.getToken(), name, parentId);
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
     const { folder, name } = splitDocumentRef(ref);
     const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
-    const type = bytes.type || 'application/octet-stream';
-    // Create directly — no pre-write existence lookup (it halved every upload's
-    // round trips for a case that can't happen: refs are unique by construction,
-    // collision-suffixed against the file's refs + content-hash deduped). The
-    // one exception — retrying after an interrupted save left an orphan blob —
-    // produces a same-named duplicate with identical bytes, which Drive allows
-    // and readDocument resolves by name; accepted orphan semantics (§5.3).
-    const res = await this.createMultipart(name, type, bytes, parentId);
-    if (!res.ok) throw new StorageError(`Google Drive document create failed (${res.status}).`, undefined, undefined, res.status);
+    return driveUploadDocument(await this.getToken(), name, bytes, parentId);
   }
 
   // --- change signal (US-34) -------------------------------------------------
@@ -593,9 +584,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const cached = this.stored?.subfolders?.[folderName];
     if (cached) return cached;
     const parentId = await this.ensureFolderId();
-    const id =
-      (await driveFindFolder(await this.getToken(), [folderName], parentId))?.id ??
-      (await driveCreateFolder(await this.getToken(), folderName, parentId));
+    const id = await driveEnsureSubfolder(await this.getToken(), folderName, parentId);
     this.stored = {
       ...(this.stored ?? {}),
       subfolders: { ...(this.stored?.subfolders ?? {}), [folderName]: id },
@@ -627,24 +616,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
     }
   }
 
-  /** Create a new Drive file inside the app folder (metadata + content, one multipart POST). */
-  private async createMultipart(
-    name: string,
-    contentType: string,
-    content: Blob | string,
-    parentId?: string,
-  ): Promise<Response> {
-    return driveCreateFile(
-      await this.getToken(),
-      name,
-      contentType,
-      content,
-      parentId ?? (await this.ensureFolderId()),
-    );
-  }
-
-  private async findFileId(name: string, parentId?: string): Promise<string | undefined> {
-    return driveFindFileId(await this.getToken(), name, parentId);
+  private async findFileId(name: string): Promise<string | undefined> {
+    return driveFindFileId(await this.getToken(), name);
   }
 
   private async authHeaders(): Promise<Record<string, string>> {

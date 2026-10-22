@@ -313,6 +313,21 @@ export {
   splitDocumentRef,
 } from './document-path';
 
+// Saving reviewed documents — one rule for the web and the iPhone app
+export {
+  documentView,
+  isLabArchiveDocument,
+  LAB_ARCHIVE_FLAG,
+  labArchivePayload,
+  pendingRowsFor,
+  saveDocuments,
+  type DocumentPayload,
+  type DocumentSaveIO,
+  type DocumentSavePlan,
+  type DocumentView,
+  type ExistingDoc,
+} from './document-save';
+
 // v2 measurement recency — dated chat history + newest-active-row resolution
 export {
   buildMeasurementHistory,
@@ -382,6 +397,7 @@ export {
   sleepUntilAborted,
   type StorageAdapter,
   type StorageBackendId,
+  type DocumentAccess,
   type ReadResult,
   type WriteResult,
 } from './adapter';
@@ -396,18 +412,21 @@ export {
 export { ROADMAP_DOC } from './roadmap-doc';
 export { MemoryAdapter, MemoryCloud } from './memory-adapter';
 export { runStorageSelfTest, type SelfTestResult } from './storage-self-test';
-export { dropboxApiArg, dropboxDownload, dropboxListFolder, dropboxRead, dropboxWrite, DropboxAdapter, DROPBOX_TOKEN_URL } from './dropbox-rest';
+export { dropboxApiArg, dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument, dropboxWrite, DropboxAdapter, DROPBOX_TOKEN_URL } from './dropbox-rest';
 // Google Drive v3 as plain fetch calls: the folder/file discovery the browser
 // adapter and the hosted MCP server MUST agree on, plus the server's adapter.
 export {
   DriveAdapter,
   driveCreateFile,
   driveCreateFolder,
+  driveDownloadDocument,
   driveDownloadJson,
+  driveEnsureSubfolder,
   driveFileVersion,
   driveFindFileId,
   driveFindFolder,
   driveUpdateIfVersion,
+  driveUploadDocument,
   DRIVE_API,
   DRIVE_FOLDER_NAME,
   DRIVE_LEGACY_FOLDER_NAME,
@@ -424,6 +443,6 @@ export { IMPORT_LIMITS } from './import-hints';
 export {
   MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS,
   optionsShowing, escalationOptions, doseOptions, medicationForm, medicationWrites, screeningForm, screeningWrites,
-  screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, customSupplementKey,
+  screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, customSupplementKey, customSupplementAddKey,
   type FormOption, type FormField, type FormGroup, type FormSection, type MedicationBasis,
 } from './input-form';

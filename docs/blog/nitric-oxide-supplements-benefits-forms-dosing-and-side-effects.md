@@ -8,7 +8,7 @@ tags: ["Supplements"]
 keywords: ["nitric oxide", "l-arginine", "l-citrulline", "citrulline malate", "beetroot", "blood pressure", "hypertension", "exercise", "cardiovascular", "erectile dysfunction", "muscle", "strength training", "resistance training", "endurance", "heart health", "inflammation", "cognitive", "brain health"]
 summary: "Reference on nitric oxide supplements (L-arginine, L-citrulline, beetroot nitrate). Brad recommends none: the evidence is on dietary nitrate; rocket (arugula) is richest per gram. Trials used about 400 mg nitrate a day. Talk to your doctor first after a heart attack or on blood pressure medicines."
 reviewed: "2026-10-20"
-sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/nitric-oxide-supplements-review/nitric-oxide/","checked":"2026-09-29","fingerprint":"sha256:42b92108820154eda2443bc4d37710fc762dd6bda37a901c6ad692c1c1d10f3c"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement","checked":"2026-10-20","fingerprint":"publishedAt:2026-03-18T06:11:43Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-truth-about-nitric-oxide-supplements-nitralis","checked":"2026-10-20","fingerprint":"publishedAt:2026-02-25T02:32:08Z"}]
+sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement","checked":"2026-10-20","fingerprint":"publishedAt:2026-03-18T06:11:43Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-truth-about-nitric-oxide-supplements-nitralis","checked":"2026-10-20","fingerprint":"publishedAt:2026-02-25T02:32:08Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/nitric-oxide-supplements-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/nitric-oxide-supplements-benefits-forms-dosing-and-side-effects)*
@@ -17,6 +17,16 @@ sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/nitri
 
 Brad does not recommend a nitric oxide supplement of any kind, including L-arginine, L-citrulline and beetroot powder, and does not sell one (Brad's current guidance, 9 Aug 2026). L-arginine raises blood arginine levels but has not reliably improved athletic performance or raised nitric oxide, and L-citrulline has been underwhelming for performance too, although a 2019 meta-analysis found it seems to slightly lower blood pressure at doses of at least 6 g a day ([Brad, 18 Mar 2026](https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement)). For dietary nitrate the trial results are encouraging: in a 2014 trial in people with high blood pressure, beetroot juice with about 397 mg of nitrate a day lowered blood pressure by around 8 points, and about 300 mg per serving is considered the minimum for health effects ([Brad, 18 Mar 2026](https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement)). A pill cannot carry that much nitrate, so Brad eats rocket (arugula) instead: it has about 4,825 mg of nitrate per kg against about 3,000 mg for beetroot, so a salad of about 63 g reaches 300 mg ([Brad, 18 Mar 2026](https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement)). Beetroot, spinach, chard and lettuce are also high in nitrate; eat them raw or lightly cooked, because long boiling reduces nitrate (Brad's current guidance, 9 Aug 2026). Beetroot is one of the highest food sources of oxalate, which can lead to kidney stones in susceptible people, while rocket is low in oxalate ([Brad, 18 Mar 2026](https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement)).
 
+## Key safety points
+
+- L-arginine may raise the risk of death after a heart attack, so do not take L-arginine supplements after a heart attack [34].
+- Check with your doctor before combining L-arginine with nitrate heart medicines such as nitroglycerin or isosorbide mononitrate, or with blood pressure medicines, because it may raise the risk of side effects [6].
+- Check with your doctor before combining L-arginine with PDE5 inhibitors such as sildenafil or tadalafil [6].
+- L-arginine might increase the risk of bleeding if taken with blood thinners; ask your doctor before combining them [36].
+- If you have heart, blood vessel, kidney or liver problems, or high blood pressure, talk to your doctor before taking L-arginine [6].
+- Beetroot is high in oxalate, which can lead to kidney stones in susceptible people; if you have had kidney stones or have kidney disease, check with your doctor first [26][30].
+- Diarrhea and an upset stomach are the most common side effects of L-arginine, and they are more likely at high doses [6][35].
+
 ## Brad's videos on this topic
 
 - 18 Mar 2026, [This $2 Food Beats Every Nitric Oxide Supplement](https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement): L-arginine and L-citrulline disappoint, beetroot juice trials used about 400 mg of nitrate but beets are high in oxalate, tadalafil's survival data are only observational, and Brad eats a rocket (arugula) salad of about 63 g instead.
@@ -24,7 +34,7 @@ Brad does not recommend a nitric oxide supplement of any kind, including L-argin
 
 ## 1. Overview
 
-Nitric oxide (NO) is a highly reactive, short-lived gaseous free radical that functions as one of the most critical signaling molecules in human physiology. It is produced endogenously by nitric oxide synthase (NOS) enzymes in various cell types and plays essential roles in regulating vascular tone, platelet function, neurotransmission, immune responses, and numerous other biological processes [1][2][3]. NO has a half-life of only 3-5 seconds in biological systems due to its rapid reactivity with oxygen, hemoglobin, and other molecules, confining its actions to local environments and requiring continuous production for sustained effects [2]. Inside blood vessels its half-life is approximately 2 milliseconds [26].
+Nitric oxide (NO) is a highly reactive, short-lived gaseous free radical that functions as one of the most critical signaling molecules in human physiology. It is produced endogenously by nitric oxide synthase (NOS) enzymes in various cell types and plays essential roles in regulating vascular tone, platelet function, neurotransmission, immune responses, and numerous other biological processes [2][3]. NO has a half-life of only 3-5 seconds in biological systems due to its rapid reactivity with oxygen, hemoglobin, and other molecules, confining its actions to local environments and requiring continuous production for sustained effects [2]. Inside blood vessels its half-life is approximately 2 milliseconds [26].
 
 NO is synthesized by three main NOS isoforms. Endothelial NOS (eNOS/NOS3) is constitutively expressed primarily in endothelial cells lining blood vessels, where it responds to mechanical shear stress and humoral stimuli to produce NO that maintains vascular homeostasis. Neuronal NOS (nNOS/NOS1) is highly expressed in neurons of the central and peripheral nervous systems. Inducible NOS (iNOS/NOS2) is induced in macrophages, leukocytes, and other immune cells during inflammatory or immune activation, generating much higher NO levels for host defense. All isoforms oxidize the guanidino nitrogen of L-arginine to produce NO and L-citrulline, requiring cofactors such as NADPH, oxygen, tetrahydrobiopterin (BH4), and heme [2][3].
 
@@ -34,11 +44,11 @@ In the nervous system, NO functions as a nonconventional neurotransmitter and ne
 
 Beyond these primary roles, NO participates in angiogenesis, wound healing, and regulation of apoptosis, often through classical sGC-cGMP-dependent pathways as well as non-classical mechanisms including S-nitrosylation of protein thiols, which alters protein function in a manner analogous to phosphorylation [2][3].
 
-Nitric oxide supplements do not contain nitric oxide itself — NO is a gas that cannot be delivered in pill form. Instead, these supplements provide precursor compounds that the body converts into NO through endogenous biochemical pathways. The most common precursors are L-arginine, L-citrulline, and inorganic nitrates (typically derived from beetroot). These supplements are marketed mainly to athletes and the weight-training crowd [1].
+Nitric oxide supplements do not contain nitric oxide itself — NO is a gas that cannot be delivered in pill form. Instead, these supplements provide precursor compounds that the body converts into NO through endogenous biochemical pathways. The most common precursors are L-arginine, L-citrulline, and inorganic nitrates (typically derived from beetroot).
 
 Nitric oxide production declines with age, and this decline is linked to problems in heart, brain, reproductive and muscle health [26].
 
-It is important to distinguish nitric oxide (NO) from nitrous oxide (N2O, or "laughing gas"), which is a completely different compound used as an anesthetic agent. These supplements are also distinct from pharmaceutical nitric oxide donors such as nitroglycerin (used to treat angina) and from inhaled nitric oxide therapy, a prescription medical gas administered in hospital settings to treat conditions like pulmonary hypertension in newborns [1][4].
+It is important to distinguish nitric oxide (NO) from nitrous oxide (N2O, or "laughing gas"), which is a completely different compound used as an anesthetic agent. These supplements are also distinct from pharmaceutical nitric oxide donors such as nitroglycerin (used to treat angina) and from inhaled nitric oxide therapy, a prescription medical gas administered in hospital settings to treat conditions like pulmonary hypertension in newborns [4].
 
 ## 2. Forms and Bioavailability
 
@@ -46,29 +56,29 @@ Nitric oxide supplements primarily contain precursors that support the body's pr
 
 ### Biochemical Pathways
 
-**The L-arginine-NOS pathway:** L-arginine, a semi-essential amino acid, is the direct substrate for nitric oxide synthase enzymes. NOS catalyzes the oxidation of L-arginine to produce NO and L-citrulline as a byproduct. This reaction is oxygen-dependent and requires multiple cofactors including NADPH, tetrahydrobiopterin (BH4), and heme [1][2].
+**The L-arginine-NOS pathway:** L-arginine, a semi-essential amino acid, is the direct substrate for nitric oxide synthase enzymes. NOS catalyzes the oxidation of L-arginine to produce NO and L-citrulline as a byproduct. This reaction is oxygen-dependent and requires multiple cofactors including NADPH, tetrahydrobiopterin (BH4), and heme [2].
 
-**The citrulline-arginine recycling pathway:** L-citrulline contributes indirectly by serving as a precursor for L-arginine regeneration. L-citrulline is converted to L-arginine via two key enzymes: argininosuccinate synthase (ASS), which condenses L-citrulline with aspartate to form argininosuccinate using ATP, and argininosuccinate lyase (ASL), which cleaves argininosuccinate to yield L-arginine and fumarate. The regenerated L-arginine then becomes available for the NOS-catalyzed reaction to produce NO. This recycling pathway sustains local L-arginine availability, particularly in endothelial cells, and is more efficient than direct L-arginine supplementation because L-citrulline bypasses hepatic first-pass metabolism and arginase degradation [1][5].
+**The citrulline-arginine recycling pathway:** L-citrulline contributes indirectly by serving as a precursor for L-arginine regeneration. L-citrulline is converted to L-arginine via two key enzymes: argininosuccinate synthase (ASS), which condenses L-citrulline with aspartate to form argininosuccinate using ATP, and argininosuccinate lyase (ASL), which cleaves argininosuccinate to yield L-arginine and fumarate. The regenerated L-arginine then becomes available for the NOS-catalyzed reaction to produce NO. This recycling pathway sustains local L-arginine availability, particularly in endothelial cells, and is more efficient than direct L-arginine supplementation because L-citrulline is readily absorbed, while intestinal arginase breaks down much of an oral L-arginine dose before it reaches the blood [5].
 
-**The nitrate-nitrite-NO pathway:** Dietary nitrates, such as those from beetroot, undergo conversion to NO via a NOS-independent pathway. Ingested nitrate is absorbed into the bloodstream and actively concentrated in saliva by salivary glands. Facultative anaerobic bacteria on the tongue surface reduce nitrate to nitrite using nitrate reductase. Swallowed nitrite is partly converted to NO in the acidic stomach environment, while the remainder enters circulation and is further reduced to NO in tissues, especially under hypoxic (low-oxygen) conditions where this pathway becomes more active compared to the oxygen-dependent NOS pathway [1][2].
+**The nitrate-nitrite-NO pathway:** Dietary nitrates, such as those from beetroot, undergo conversion to NO via a NOS-independent pathway. Ingested nitrate is absorbed into the bloodstream and actively concentrated in saliva by salivary glands. Facultative anaerobic bacteria on the tongue surface reduce nitrate to nitrite using nitrate reductase. Swallowed nitrite is partly converted to NO in the acidic stomach environment, while the remainder enters circulation and is further reduced to NO in tissues, especially under hypoxic (low-oxygen) conditions where this pathway becomes more active compared to the oxygen-dependent NOS pathway [2].
 
 ### Comparison of Precursor Forms
 
 | Form | Typical Dose | Bioavailability | Onset | Primary Uses | Key Advantage |
 |------|:-:|:-:|:-:|------|------|
-| L-Arginine | 3-6 g/serving | Low (significant first-pass hepatic metabolism and intestinal arginase degradation) | 30-60 min | Blood pressure, erectile function, exercise | Direct NOS substrate; most human evidence for erectile function |
-| L-Citrulline | 3-6 g pure; 6-8 g as citrulline malate | Superior (bypasses hepatic metabolism; raises plasma arginine more effectively than arginine itself) | 45-90 min | Exercise performance, blood pressure, vascular function | Better bioavailability than L-arginine; fewer GI side effects |
+| L-Arginine | 3-6 g/serving | Low (intestinal arginase breaks down much of an oral dose) | 30-60 min | Blood pressure, erectile function, exercise | Direct NOS substrate; most human evidence for erectile function |
+| L-Citrulline | 3 g or more in trials [32]; 6-8 g as citrulline malate [31] | Superior (readily absorbed; raises plasma arginine more effectively than arginine itself) | 45-90 min | Exercise performance, blood pressure, vascular function | Better bioavailability than L-arginine; fewer GI side effects |
 | Beetroot-derived Nitrates | 300-600 mg nitrate (~5-10 mmol) | High (well-absorbed; conversion depends on oral microbiome) | 2-3 hours | Blood pressure, endurance exercise, vascular health | Strongest evidence for blood pressure reduction; works via NOS-independent pathway |
 
 ### L-Arginine
 
-L-arginine is the most widely included amino acid in "nitric oxide" supplements, often in standalone form or combined with other compounds such as alpha-ketoglutarate. However, L-arginine has relatively poor oral bioavailability for NO production because it undergoes significant first-pass metabolism in the gut and liver, where the enzyme arginase rapidly breaks it down before it can be used by NOS in endothelial cells [1][5]. This is known as the "arginine paradox" — despite normal plasma arginine levels being well above the Km of eNOS, supplemental arginine can still sometimes enhance NO production, possibly through effects on cellular arginine pools or competition with endogenous NOS inhibitors like asymmetric dimethylarginine (ADMA) [2].
+L-arginine is the most widely included amino acid in "nitric oxide" supplements, often in standalone form or combined with other compounds such as alpha-ketoglutarate. However, L-arginine has relatively poor oral bioavailability for NO production because the enzyme arginase in the gut breaks down much of an oral dose before it reaches the circulation [5]. This is known as the "arginine paradox" — despite normal plasma arginine levels being well above the Km of eNOS, supplemental arginine can still sometimes enhance NO production, possibly through effects on cellular arginine pools or competition with endogenous NOS inhibitors like asymmetric dimethylarginine (ADMA) [2].
 
-Doses in studies typically range from 1.5 to 18 g per day. Gastrointestinal side effects (nausea, diarrhea, bloating) become more common above 9-10 g in a single dose [1][6].
+Trial doses vary widely. In a review of arginine trials, single doses of 3-6 g rarely caused side effects, while most gut side effects (nausea, vomiting and diarrhea) occurred at single doses above 9 g [35].
 
 ### L-Citrulline
 
-L-citrulline is frequently provided as citrulline malate (a combination with malic acid, approximately 1.76 g citrulline malate per 1 g of L-citrulline) or as pure L-citrulline. L-citrulline has emerged as the preferred arginine-pathway precursor because it bypasses hepatic first-pass metabolism entirely and raises plasma L-arginine levels more effectively and for a longer duration than direct L-arginine supplementation [1][5].
+L-citrulline is frequently provided as citrulline malate (a combination with malic acid, approximately 1.76 g citrulline malate per 1 g of L-citrulline) or as pure L-citrulline. L-citrulline has emerged as the preferred arginine-pathway precursor because it is readily absorbed and raises plasma L-arginine levels more effectively than L-arginine itself [5].
 
 A pharmacokinetic study demonstrated that oral L-citrulline produces a more sustained elevation of plasma arginine than an equivalent dose of L-arginine itself, making it the more efficient precursor for endothelial NO production [5]. L-citrulline also causes fewer gastrointestinal side effects than L-arginine at equivalent doses.
 
@@ -76,19 +86,15 @@ Strength-training studies have given 6-8 g of citrulline malate 40-60 minutes be
 
 ### Beetroot-Derived Nitrates
 
-Beetroot juice and beetroot extract are the most studied dietary nitrate sources. They supply inorganic nitrate that is converted to NO via the nitrate-nitrite-NO pathway, which is completely independent of the NOS enzyme system. This pathway is particularly active under low-oxygen conditions (such as during intense exercise), making it complementary to the NOS-dependent pathway [1][2].
+Beetroot juice and beetroot extract are the most studied dietary nitrate sources. They supply inorganic nitrate that is converted to NO via the nitrate-nitrite-NO pathway, which is completely independent of the NOS enzyme system. This pathway is particularly active under low-oxygen conditions (such as during intense exercise), making it complementary to the NOS-dependent pathway [2].
 
 The effectiveness of beetroot-derived nitrate depends on the oral microbiome — antibacterial mouthwashes can abolish the nitrate-to-nitrite conversion step by killing the tongue bacteria responsible for nitrate reduction. This is a clinically relevant concern, as chronic use of chlorhexidine mouthwash has been shown to reduce oral nitrite production and attenuate the blood pressure-lowering effects of dietary nitrate [2].
 
-Typical effective doses provide 300-600 mg of nitrate (~5-10 mmol), with peak plasma nitrite levels occurring 2-3 hours after ingestion [1][8].
+Typical effective doses provide 300-600 mg of nitrate (~5-10 mmol), with peak plasma nitrite levels occurring 2-3 hours after ingestion [8].
 
 ### Combination Supplementation
 
 Studies on combined supplementation suggest potential synergistic effects. One study found that 3 g/day L-citrulline combined with nitrate-rich beetroot extract (providing ~300 mg nitrate) for 9 weeks produced superior improvements in aerobic power (estimated VO2max), maximal and endurance strength, and running distance compared to either precursor alone [9]. The rationale is that the two pathways — NOS-dependent (citrulline/arginine) and NOS-independent (nitrate/nitrite) — can operate complementarily, potentially sustaining NO production across a wider range of physiological conditions.
-
-### Delivery Formats
-
-Many nitric oxide supplements list L-arginine within a proprietary blend of other ingredients without giving the amount of L-arginine [1].
 
 ## 3. Evidence for Benefits
 
@@ -110,7 +116,7 @@ Evidence for L-citrulline alone is more limited than for nitrate and L-arginine.
 
 #### Older Adults and Combined Supplementation
 
-Studies using an L-arginine/L-citrulline blend (5.2 g total) in elderly cyclists (aged 50-73) demonstrated improved exercise tolerance, which may partly reflect improved blood pressure regulation during exercise [13].
+A 2010 trial in older male cyclists found that a supplement combining L-arginine with antioxidants raised the anaerobic threshold compared with placebo [13].
 
 #### Summary
 
@@ -138,11 +144,11 @@ For endurance exercise, L-citrulline shows some benefits but with less consisten
 
 #### L-Arginine
 
-L-arginine generally shows minimal to no benefits for strength, power, or exercise performance outcomes in well-controlled studies. This is largely attributed to its poor oral bioavailability — extensive first-pass metabolism limits the amount of arginine reaching the endothelium to boost NO production [1][8].
+L-arginine generally shows minimal to no benefits for strength, power, or exercise performance outcomes in well-controlled studies [16][17]. This is largely attributed to its poor oral bioavailability: arginase in the gut breaks down much of an oral dose before it can boost NO production [5].
 
-A 2009 study of well-trained male athletes found that 6 grams of L-arginine supplementation for three days raised serum arginine levels but had no effect on nitric oxide production or intermittent anaerobic exercise performance [16]. A 2011 study of eight healthy young men found no evidence that a beverage containing 10 grams of L-arginine improved blood flow to muscles or did anything to speed muscle buildup after weight lifting [17]. A 2010 study testing three different commercially available "nitric oxide" supplements found that none significantly improved weight-lifting performance or muscle "pump" in resistance-trained men [18].
+In a 2009 crossover trial in elite male judo athletes, 6 g of arginine a day for 3 days raised blood arginine, but nitric oxide markers, lactate and peak power did not differ from placebo [16]. A 2011 crossover study in eight healthy young men found that a drink with 10 g of L-arginine plus 10 g of essential amino acids, taken with leg resistance exercise, did not raise nitric oxide markers, leg blood flow or muscle protein synthesis more than a control drink [17]. A 2010 crossover trial in 19 resistance-trained men found that three pre-workout "nitric oxide" products did not improve bench press performance, and the authors concluded that the products did not increase blood flow [18].
 
-However, L-arginine may have benefits for certain subpopulations. A 2010 study by UCLA researchers found that a supplement containing 5.2 grams of an L-arginine and L-citrulline blend increased the time that older male cyclists (aged 50-73) could work out before reaching the anaerobic threshold [13]. Another 2010 study found that a beverage containing 6 grams of L-arginine improved stamina in healthy, recreationally active men, permitting approximately two extra minutes of intense exercise before exhaustion compared to placebo [19].
+Two 2010 trials did find benefits. A 2010 randomized trial in older male cyclists found that a supplement combining L-arginine with antioxidants raised the anaerobic threshold at week 1 and week 3, with no change in VO2 max [13]. In another 2010 crossover trial in nine healthy men, a drink with 6 g of L-arginine taken 1 hour before exercise extended time to exhaustion in severe-intensity exercise to 707 seconds, against 562 seconds on placebo [19].
 
 #### Training Status Matters
 
@@ -166,11 +172,9 @@ A 2019 systematic review and meta-analysis of 10 randomized controlled trials in
 
 A 2022 multicenter, double-blind, randomized, placebo-controlled trial examined high-dose L-arginine (6 g/day for 3 months) in 98 men with vasculogenic erectile dysfunction. The intervention significantly increased IIEF-6 scores (from median 20 to 24) and cavernous artery peak systolic velocity, with 74% of participants showing category improvement in ED severity. Benefits were more pronounced in mild-to-moderate cases, with limited changes in severe ED [21].
 
-Several studies also suggest that L-arginine supplements may be helpful in people with cardiovascular conditions such as angina or atherosclerosis — conditions that share underlying endothelial dysfunction with ED [1].
-
 #### L-Citrulline for Erectile Dysfunction
 
-L-citrulline has shown promise due to its superior bioavailability compared to L-arginine, as it bypasses hepatic metabolism to raise plasma L-arginine levels more effectively. A 2011 single-blind trial in 24 men with mild erectile dysfunction found that 1.5 g/day of oral L-citrulline for 1 month improved erection hardness score from 3 (mild ED) to 4 (normal function) in 50% of participants, compared to 8.3% during the placebo phase. Intercourse frequency increased significantly, with high treatment satisfaction and no reported adverse events. The study concluded L-citrulline is safe and well-tolerated but less potent than phosphodiesterase type 5 (PDE5) inhibitors for short-term use [22].
+L-citrulline has shown promise due to its superior bioavailability compared to L-arginine, as it is readily absorbed and raises plasma L-arginine levels more effectively. A 2011 single-blind trial in 24 men with mild erectile dysfunction found that 1.5 g/day of oral L-citrulline for 1 month improved erection hardness score from 3 (mild ED) to 4 (normal function) in 50% of participants, compared to 8.3% during the placebo phase. Intercourse frequency increased significantly, with high treatment satisfaction and no reported adverse events. The study concluded L-citrulline is safe and well-tolerated but less potent than phosphodiesterase type 5 (PDE5) inhibitors for short-term use [22].
 
 #### Beetroot-Derived Nitrates for Erectile Function
 
@@ -190,7 +194,7 @@ Nitric oxide supplements are purported to support broader cardiovascular health 
 
 **Anti-platelet effects:** NO inhibits platelet activation, aggregation, and adhesion to the endothelium, thereby contributing to the prevention of thrombosis and maintaining blood fluidity. This anti-thrombotic effect is one of the fundamental protective mechanisms of endothelial NO [2][3].
 
-**Important caution — L-arginine after heart attack:** L-arginine supplementation may increase the risk of death in patients recovering from a heart attack. This finding from clinical trials represents a serious contraindication, and L-arginine supplements should be avoided in the post-myocardial infarction period [1][6].
+**Important caution — L-arginine after heart attack:** L-arginine supplements may raise the risk of death after a heart attack, and they should be avoided at that time [34]. In the VINTAGE MI trial, deaths occurred only in the L-arginine group, and its authors concluded that L-arginine should not be recommended after a heart attack [34].
 
 ### Cognitive Function
 
@@ -218,10 +222,9 @@ Brad's own nitric oxide booster is rocket (arugula), not a supplement, so the do
 
 #### L-Arginine
 
-- **General cardiovascular support / blood pressure:** 3-6 g per day, divided into 2-3 doses [1][12]
 - **Erectile dysfunction:** 1.5-6 g per day; the 2022 RCT showing category improvement in ED severity used 6 g/day for 3 months [20][21]
 - **Exercise performance:** 6 g taken before exercise, though evidence for ergogenic benefit in trained individuals is weak [16][19]
-- **Upper range in studies:** Up to 15-18 g/day in divided doses to maintain elevated levels, though gastrointestinal side effects increase substantially above 9-10 g in a single dose [1][6]
+- **Upper range in studies:** Most gastrointestinal side effects occurred at single doses above 9 g, and they seemed to disappear when the daily amount was taken in divided doses [35]
 - **Minimum effective dose for blood pressure:** 4 g/day or above, based on meta-analysis subgroup data [12]
 
 #### L-Citrulline
@@ -250,10 +253,7 @@ Older adults who take medicines or have conditions affecting blood pressure or t
 
 ### Label Reading and Quality
 
-Many "nitric oxide booster" products use proprietary blends that do not disclose individual ingredient amounts, making it impossible to determine whether effective doses are included [1].
-
 Consumers should:
-- Select products that list actual amounts of each ingredient (not proprietary blends)
 - Look for third-party certification (NSF Certified for Sport, Informed-Sport, or USP Verified)
 - Be wary of products claiming to contain "nitric oxide" — they contain precursors, not NO itself
 
@@ -261,13 +261,11 @@ Consumers should:
 
 ### Common Side Effects
 
-Nitric oxide supplements are generally well-tolerated at the doses used in studies, but side effects can occur, particularly at higher intakes [1][6].
+Nitric oxide supplements can cause side effects, and the side effects of L-arginine are more likely at high doses [6][35].
 
-**Gastrointestinal issues** are the most frequently reported side effects across all precursor types. These include nausea, diarrhea, bloating, stomach pain, and heartburn. Such symptoms are often dose-dependent, with higher intakes of L-arginine (typically above 9-10 g per day) or L-citrulline more likely to provoke gut discomfort [1][6].
+**Gastrointestinal issues** are the most common side effects of L-arginine, mainly diarrhea and an upset stomach, and they are more likely at high doses [6]. Large single doses of L-arginine seem to cause diarrhea, and splitting the daily amount into divided doses seemed to prevent it [35].
 
-**Headaches** are commonly experienced, likely attributable to the blood vessel dilation induced by increased nitric oxide production [6].
-
-**Low blood pressure (hypotension)** may manifest as dizziness or lightheadedness, particularly in individuals sensitive to hypotensive changes or those already taking antihypertensive medications. This is a direct consequence of the vasodilatory properties of increased NO [6].
+**Low blood pressure (hypotension)** may cause dizziness or lightheadedness. L-arginine and beetroot nitrate both lower blood pressure [10][12], so the risk may be higher if you already take blood pressure medicines.
 
 **Beetroot-specific effects:** Beetroot is one of the highest food sources of oxalate, which can lead to kidney stones, particularly in susceptible people [26]. Beetroot can also turn urine pink to deep red (beeturia). This happens in about 10% to 14% of people and is more common in people who are iron deficient or have a malabsorption disorder [25]. The red pigment can colour stool too [28].
 
@@ -276,28 +274,25 @@ Nitric oxide supplements are generally well-tolerated at the doses used in studi
 | Side Effect | L-Arginine | L-Citrulline | Beetroot Nitrate |
 |-------------|:-:|:-:|:-:|
 | GI distress (nausea, diarrhea) | Common at >9g | Less common | Uncommon |
-| Headache | Possible | Possible | Possible |
 | Hypotension/dizziness | Possible | Possible | Possible |
 | Urine/stool discoloration | No | No | Yes |
 | Kidney stone risk | No | No | Possible (oxalates) |
 
 ### Serious Risks and Contraindications
 
-**Post-heart attack:** L-arginine supplementation may increase the risk of death and adverse cardiac events in patients recovering from a heart attack. This is a serious contraindication supported by clinical trial data [1][6].
+**Post-heart attack:** L-arginine supplementation may raise the risk of death after a heart attack [34]. In the VINTAGE MI trial, 6 people given L-arginine after a heart attack died within 6 months, against none on placebo, and the safety committee closed enrollment [34]. Do not take L-arginine supplements after a heart attack.
 
-**Herpes simplex virus:** Individuals with a history of herpes simplex virus infections (cold sores or genital herpes) should avoid L-arginine-containing supplements, as excess L-arginine may promote viral reactivation and trigger outbreaks. L-arginine promotes HSV replication, while L-lysine (which competes with L-arginine for absorption) may inhibit it [1][6].
+**Low blood pressure:** These supplements lower blood pressure [10][12], so people whose blood pressure is already low should ask their doctor before taking them.
 
-**Hypotension:** People with already low blood pressure should not take these supplements, as they can further reduce blood pressure through vasodilation, potentially leading to symptomatic hypotension [1][6].
+**Pre-surgery:** These supplements may affect blood pressure during surgery, so consider stopping them at least two weeks before planned surgery and ask your surgeon.
 
-**Pre-surgery:** These supplements should be discontinued at least two weeks before scheduled surgery, as they may interfere with blood pressure regulation during the procedure [6].
+**Kidney disease:** If you have kidney or liver problems, talk to your doctor before taking L-arginine [6]. Beetroot is high in oxalate, which can lead to kidney stones in susceptible people [26]. A review of diet and kidney stones concluded that people who form kidney stones are likely to benefit from eating less oxalate [30]. If you have had kidney stones or have kidney disease, check with your doctor before taking beetroot products.
 
-**Kidney disease:** L-arginine may cause electrolyte imbalances or irregular heart rhythms in individuals with kidney disease [6]. Beetroot is high in oxalate, which can lead to kidney stones in susceptible people [26]. A review of diet and kidney stones concluded that people who form kidney stones are likely to benefit from eating less oxalate [30]. If you have had kidney stones or have kidney disease, check with your doctor before taking beetroot products.
+**Allergic reactions:** L-arginine may cause allergic reactions, which can be serious. If you have signs such as breathing problems or wheezing, or swelling of the face, lips, tongue or throat, stop taking it and call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [6].
 
-**Cirrhosis:** L-arginine may worsen liver function in individuals with cirrhosis [6].
+**Allergies and asthma:** L-arginine can worsen allergies or asthma, so use it with caution if you have either condition [36].
 
-**Asthma:** L-arginine-containing supplements may worsen asthma symptoms or allergic reactions in some individuals [6].
-
-**Rare genetic disorders:** Guanidinoacetate methyltransferase (GAMT) deficiency renders nitric oxide supplements unsafe due to metabolic disruptions [1][6].
+**Other conditions:** If you have a long-term health condition or take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Kidney Function and Creatinine Levels
 
@@ -319,28 +314,27 @@ Nitric oxide supplements containing precursors such as L-arginine, L-citrulline,
 
 | Drug Class | Examples | Interaction | Clinical Implication |
 |-----------|---------|:-:|----------|
-| Antihypertensive drugs | ACE inhibitors, ARBs, calcium channel blockers, beta-blockers | Additive blood pressure lowering | Monitor blood pressure closely; may cause excessive hypotension [6] |
-| Nitrates | Nitroglycerin, isosorbide mononitrate | Enhanced vasodilation | L-arginine may potentiate vasodilatory actions; increased risk of severe hypotension [6] |
-| PDE5 inhibitors | Sildenafil (Viagra), tadalafil (Cialis) | Additive NO/cGMP pathway activation | Many individuals tolerate the combination, but risk of excessive hypotension exists; use caution [6] |
-| Diuretics | Furosemide, hydrochlorothiazide | Additive blood pressure lowering | Monitor for hypotension, especially at initiation [6] |
+| Antihypertensive drugs | ACE inhibitors, ARBs, calcium channel blockers, beta-blockers | Additive blood pressure lowering | Ask your doctor before combining [6] |
+| Nitrates | Nitroglycerin, isosorbide mononitrate | Enhanced vasodilation | Ask your doctor before combining [6] |
+| PDE5 inhibitors | Sildenafil (Viagra), tadalafil (Cialis) | Additive NO/cGMP pathway activation | Check with your doctor before combining L-arginine with PDE5 inhibitors [6] |
+| Diuretics | Furosemide, hydrochlorothiazide | Additive blood pressure lowering | L-arginine lowers blood pressure; ask your doctor before combining [12] |
 
 ### Other Interactions
 
 | Drug/Condition | Interaction | Clinical Implication |
 |----------------|:-:|----------|
-| Diabetes medications | Potential additive blood glucose lowering | Monitor blood glucose more frequently when using NO precursors concurrently [6] |
 | Anticoagulants and antiplatelets | NO has intrinsic anti-platelet effects | Theoretical increased bleeding risk; monitor if combining [2][3] |
-| Herpes antivirals | L-arginine promotes HSV replication | L-arginine may counteract antiviral therapy; avoid L-arginine in active HSV [6] |
-| Potassium-sparing diuretics | L-arginine may affect electrolyte balance | Risk of hyperkalemia in renal impairment [6] |
+| Potassium-sparing diuretics | Amiloride, spironolactone and triamterene can raise potassium levels, increasing the risk of a high blood potassium level (hyperkalemia) | Do not take L-arginine with these medicines [36] |
+| Diabetes medicines | L-arginine might decrease blood sugar levels in people with diabetes | Your dose of diabetes medicines might need adjusting; ask your doctor [36] |
 | Chlorhexidine mouthwash | Kills oral bacteria needed for nitrate-to-nitrite conversion | May negate benefits of beetroot-derived nitrate supplements [2] |
 
 ### Practical Recommendations
 
 - Consult a healthcare provider before starting NO supplements if taking any prescription medications, particularly blood pressure medications, nitrates, or PDE5 inhibitors
 - If combining NO supplements with antihypertensives, start with the lowest supplement dose and monitor blood pressure at home
-- Discontinue NO supplements at least 2 weeks before scheduled surgery
+- Consider stopping NO supplements at least 2 weeks before scheduled surgery, and ask your surgeon
 - Avoid chlorhexidine mouthwash if relying on beetroot-derived nitrate supplements for cardiovascular benefit
-- Report any symptoms of excessive blood pressure lowering (dizziness, lightheadedness, fainting) to a healthcare provider immediately
+- Report any symptoms of excessive blood pressure lowering (dizziness, lightheadedness, fainting) to a healthcare provider immediately; if you faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK)
 
 ## 7. Dietary Sources
 
@@ -404,8 +398,6 @@ Note: The amount of L-citrulline in dietary sources is far below the doses used 
 
 ## 8. References
 
-[1] ConsumerLab. "Nitric Oxide Supplements Review." Accessed 2026. [https://www.consumerlab.com/reviews/nitric-oxide-supplements-review/nitric-oxide/](https://www.consumerlab.com/reviews/nitric-oxide-supplements-review/nitric-oxide/)
-
 [2] Forstermann U, Sessa WC. "Nitric oxide synthases: regulation and function." *Eur Heart J*. 2012;33(7):829-837. doi: [10.1093/eurheartj/ehr304](https://doi.org/10.1093/eurheartj/ehr304)
 
 [3] Lundberg JO, Weitzberg E, Gladwin MT. "The nitrate-nitrite-nitric oxide pathway in physiology and therapeutics." *Nat Rev Drug Discov*. 2008;7(2):156-167. doi: [10.1038/nrd2466](https://doi.org/10.1038/nrd2466)
@@ -467,3 +459,9 @@ Note: The amount of L-citrulline in dietary sources is far below the doses used 
 [32] Trexler ET, Persky AM, Ryan ED, et al. "Acute Effects of Citrulline Supplementation on High-Intensity Strength and Power Performance: A Systematic Review and Meta-Analysis." *Sports Med*. 2019;49(5):707-718. doi: [10.1007/s40279-019-01091-z](https://doi.org/10.1007/s40279-019-01091-z). PMID: 30895562.
 
 [33] Rhim HC, Kim SJ, Park J, et al. "Effect of citrulline on post-exercise rating of perceived exertion, muscle soreness, and blood lactate levels: A systematic review and meta-analysis." *J Sport Health Sci*. 2020;9(6):553-561. doi: [10.1016/j.jshs.2020.02.003](https://doi.org/10.1016/j.jshs.2020.02.003). PMID: 33308806.
+
+[34] Schulman SP, Becker LC, Kass DA, et al. "L-arginine therapy in acute myocardial infarction: the Vascular Interaction With Age in Myocardial Infarction (VINTAGE MI) randomized clinical trial." *JAMA*. 2006;295(1):58-64. doi: [10.1001/jama.295.1.58](https://doi.org/10.1001/jama.295.1.58). PMID: 16391217.
+
+[35] Grimble GK. "Adverse gastrointestinal effects of arginine and related amino acids." *J Nutr*. 2007;137(6 Suppl 2):1693S-1701S. doi: [10.1093/jn/137.6.1693S](https://doi.org/10.1093/jn/137.6.1693S). PMID: 17513449.
+
+[36] L-arginine. Mayo Clinic. 16 Mar 2026. [https://www.mayoclinic.org/drugs-supplements-l-arginine/art-20364681](https://www.mayoclinic.org/drugs-supplements-l-arginine/art-20364681)

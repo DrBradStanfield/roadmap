@@ -96,4 +96,15 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(ChartRange.nearest(to: day("2026-12-01"), in: dates), day("2026-10-20"))
         XCTAssertNil(ChartRange.nearest(to: day("2026-10-14"), in: []))
     }
+
+    /// Values spanning less than a week get a week around their middle, not an axis
+    /// labelled by the hour (AC17).
+    func testValuesWithinAWeekGetAWeekAroundThem() {
+        let week = day("2026-08-15")...day("2026-08-21")
+        XCTAssertEqual(ChartRange.atLeastAWeek([day("2026-08-18")]), week)
+        XCTAssertEqual(ChartRange.atLeastAWeek(["2026-08-18", "2026-08-18"].map(day)), week, "both halves of one blood pressure")
+        XCTAssertEqual(ChartRange.atLeastAWeek(["2026-08-18", "2026-08-20"].map(day)), day("2026-08-16")...day("2026-08-22"), "two days apart: a week around their middle")
+        XCTAssertNil(ChartRange.atLeastAWeek(["2026-08-18", "2026-09-01"].map(day)), "two weeks apart: the chart's own fit")
+        XCTAssertNil(ChartRange.atLeastAWeek([]))
+    }
 }

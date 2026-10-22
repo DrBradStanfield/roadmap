@@ -2,9 +2,12 @@
 // health-core's own write functions. The app runs this same code in
 // JavaScriptCore; these tests run it in Node.
 import { describe, expect, it } from 'vitest';
-import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord } from './my-data';
+import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord, TREND_POINTS } from './my-data';
 import { metricHistory } from './my-data-forms';
+import { readUnitChoices } from './unit-choices';
+import { planJson } from './entry';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { supplementSchema } from '../../packages/health-core/src/validation';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const LATER = '2026-10-21T09:00:00.000Z';
@@ -27,6 +30,12 @@ describe('newRecord (AC4)', () => {
 });
 
 describe('myData (AC5)', () => {
+  it('carries the record\'s erase count, so every phone sees an erase (US-54 AC7)', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    expect(myData(file).eraseEpoch).toBe(0);
+    expect(myData({ ...file, meta: { ...file.meta, eraseEpoch: 3 } }).eraseEpoch).toBe(3);
+  });
+
   it('lists the web\'s vitals and blood tests, PSA left to screening', () => {
     const data = myData(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'));
     expect(data.vitals.map((row) => row.metric)).toEqual(['weight', 'waist', 'blood_pressure']);
@@ -39,6 +48,76 @@ describe('myData (AC5)', () => {
     file = edited(file, { kind: 'add', metric: 'ldl', value: 100, day: '2026-09-01' }, { kind: 'add', metric: 'ldl', value: 130, day: '2026-10-01' });
     const ldl = myData(file).bloodTests.find((row) => row.metric === 'ldl');
     expect(ldl).toMatchObject({ unit: 'mg/dL', latest: { value: '130', day: '2026-10-01' } });
+  });
+
+  it('gives each row its trend: one active value a day, oldest first, in the user\'s units (US-25 AC17d)', () => {
+    let file = newRecord(NOW, 'phone', 'en-US', 'America/New_York');
+    file = edited(file,
+      { kind: 'add', metric: 'ldl', value: 130, day: '2026-10-01' },
+      { kind: 'add', metric: 'ldl', value: 100, day: '2026-09-01' },
+      { kind: 'bloodPressure', systolic: 128, diastolic: 82, day: '2026-09-02', replace: false },
+      { kind: 'bloodPressure', systolic: 121, diastolic: 78, day: '2026-10-02', replace: false });
+    const wrong = file.measurements.find((row) => row.metricType === 'ldl' && row.recordedAt.startsWith('2026-10-01'))!;
+    file = edited(file, { kind: 'correct', id: wrong.id, value: 120 });
+    const data = myData(file);
+    // The corrected 130 is gone, its correction in its place.
+    expect(data.bloodTests.find((row) => row.metric === 'ldl')!.trend.map(Math.round)).toEqual([100, 120]);
+    expect(data.vitals.find((row) => row.metric === 'blood_pressure')!.trend).toEqual([128, 121]);
+    expect(data.vitals.find((row) => row.metric === 'waist')!.trend).toEqual([]);
+    // Metric units for the same record: mmol/L.
+    const si = edited(file, { kind: 'units', unitSystem: 'si' });
+    expect(myData(si).bloodTests.find((row) => row.metric === 'ldl')!.trend[0]).toBeCloseTo(2.59, 2);
+  });
+
+  it('keeps only the newest days of a long trend', () => {
+    let file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const days = Array.from({ length: TREND_POINTS + 5 }, (_, i) => new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10));
+    file = edited(file, ...days.map((day, i) => ({ kind: 'add' as const, metric: 'weight', value: 60 + i, day })));
+    const trend = myData(file).vitals.find((row) => row.metric === 'weight')!.trend;
+    expect(trend).toHaveLength(TREND_POINTS);
+    expect(trend.at(-1)).toBe(60 + TREND_POINTS + 4);
+  });
+
+  it('shows and takes a test in its own units, the rest in the record\'s (US-25 AC17e)', () => {
+    let file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const ldlInUs = { ldl: 'conventional' as const };
+    // Typed in mg/dL because LDL is switched to US; the record keeps SI.
+    file = edited(file, { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' });
+    const typed = applyEdit(file, { kind: 'add', metric: 'ldl', value: 116, day: '2026-09-01' }, NOW, ldlInUs);
+    if (!typed.ok) throw new Error(typed.message);
+    file = typed.file;
+    expect(file.measurements.find((row) => row.metricType === 'ldl')!.value).toBeCloseTo(3.0, 1);
+    const data = myData(file, NOW, ldlInUs);
+    expect(data.bloodTests.find((row) => row.metric === 'ldl')).toMatchObject({ unit: 'mg/dL', latest: { value: '116' }, switchable: true });
+    expect(data.vitals.find((row) => row.metric === 'weight')).toMatchObject({ unit: 'kg', switchable: true });
+    expect(data.vitals.find((row) => row.metric === 'blood_pressure')).toMatchObject({ switchable: false });
+    expect(data.bloodTests.find((row) => row.metric === 'lpa')).toMatchObject({ switchable: false });
+    expect(data.psa).toMatchObject({ switchable: false });
+    expect(metricHistory(file, 'ldl', NOW, ldlInUs).unit).toBe('mg/dL');
+    // A correction is read in the row's units too.
+    const ldlRow = file.measurements.find((row) => row.metricType === 'ldl')!;
+    const corrected = applyEdit(file, { kind: 'correct', id: ldlRow.id, value: 120 }, NOW, ldlInUs);
+    if (!corrected.ok) throw new Error(corrected.message);
+    expect(corrected.file.measurements.find((row) => row.correctsId === ldlRow.id)!.value).toBeCloseTo(3.1, 1);
+  });
+
+  it('keeps only real choices for switchable tests (US-25 AC17e)', () => {
+    expect(readUnitChoices('{"ldl":"conventional","lpa":"conventional","weight":"imperial","x":"si"}')).toEqual({ ldl: 'conventional' });
+    expect(readUnitChoices('not json')).toEqual({});
+    expect(readUnitChoices(undefined)).toEqual({});
+    expect(readUnitChoices('[1]')).toEqual({});
+  });
+
+  it('gives the plan the per-test units, and nothing changes without them (US-25 AC17e)', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 }, { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' },
+      { kind: 'add', metric: 'ldl', value: 3.5, day: '2026-09-01' });
+    const record = JSON.stringify(file);
+    const plain = JSON.parse(planJson(record, NOW, 'phone'));
+    expect(JSON.parse(planJson(record, NOW, 'phone', '{}'))).toEqual(plain);
+    const switched = JSON.stringify(JSON.parse(planJson(record, NOW, 'phone', '{"ldl":"conventional"}')).results.suggestions);
+    expect(JSON.stringify(plain.results.suggestions)).toContain('mmol/L');
+    expect(switched).toContain('mg/dL');
   });
 
   it('shows the profile, height in the user\'s units', () => {
@@ -290,6 +369,74 @@ describe('forms (AC8)', () => {
     const data = myData(file, NOW);
     expect(data.screenings[0].groups.find((g) => g.id === 'prostate')!.fields[1]).toMatchObject({ kind: 'measurement', metric: 'psa' });
     expect(data.psa.latest).toMatchObject({ value: '1.2', day: '2026-10-02' });
+  });
+
+  // US-06 AC1a: accepted names must produce keys accepted by the real native writer.
+  it.each([93, 100])('saves long native names and collisions without losing identity (%i characters)', length => {
+    const name = 'a'.repeat(length);
+    const other = length === 93 ? name + '+' : 'a'.repeat(99) + 'b';
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'customSupplement', name });
+    const original = file.supplements[0];
+    const history = [...file.supplementHistory];
+    const added = applyEdit(file, { kind: 'customSupplement', name: other }, LATER);
+    expect(added).toMatchObject({ ok: true });
+    if (!added.ok) throw new Error(added.message);
+    file = added.file;
+    expect(file.supplements).toHaveLength(2);
+    expect(file.supplements[0]).toEqual(original);
+    expect(file.supplementHistory.slice(0, history.length)).toEqual(history);
+    expect(new Set(file.supplements.map(s => s.supplementKey)).size).toBe(2);
+    for (const row of file.supplements) {
+      expect(row.supplementKey.length).toBeLessThanOrEqual(100);
+      expect(supplementSchema.shape.supplementKey.safeParse(row.supplementKey).success).toBe(true);
+    }
+    const second = file.supplements[1];
+    file = edited(readRecord(JSON.stringify(file), LATER, 'phone'), {
+      kind: 'supplement', supplementKey: second.supplementKey, supplementName: second.supplementName,
+      doseValue: 2, doseUnit: 'g', status: 'active',
+    });
+    expect(file.supplements[0]).toEqual(original);
+    expect(file.supplements[1]).toMatchObject({ id: second.id, supplementKey: second.supplementKey, doseValue: 2 });
+    expect(file.supplementHistory.at(-1)).toMatchObject({ supplementKey: second.supplementKey, changeType: 'dose_changed' });
+    const readded = edited(file, { kind: 'customSupplement', name: name.toUpperCase() });
+    expect(readded.supplements).toHaveLength(2);
+    expect(readded.supplements[0]).toMatchObject({ id: original.id, supplementKey: original.supplementKey, startedAt: original.startedAt });
+    expect(readded.supplements[1]).toEqual(file.supplements[1]);
+    expect(readded.supplementHistory.slice(0, file.supplementHistory.length)).toEqual(file.supplementHistory);
+  });
+
+  it('reuses the stored 100-character name at a truncation boundary (US-06 AC1a)', () => {
+    const name = 'Taurine' + ' '.repeat(93) + 'x';
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'customSupplement', name });
+    const original = file.supplements[0];
+    file = edited(file, { kind: 'customSupplement', name: name.toUpperCase() });
+    expect(file.supplements).toHaveLength(1);
+    expect(file.supplements[0]).toMatchObject({ id: original.id, supplementKey: original.supplementKey, startedAt: original.startedAt });
+  });
+
+  // US-06 AC1a / US-25 AC8: the actual typed-name command must preserve identities.
+  it('keeps normalized collisions distinct through native form add, stop, reload and restart', () => {
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'customSupplement', name: 'alanine+' });
+    file = edited(file, { kind: 'supplement', supplementKey: 'custom_alanine', supplementName: 'alanine+', doseValue: 3, doseUnit: 'g', status: 'active' });
+    const original = file.supplements[0];
+    file = edited(file, { kind: 'customSupplement', name: 'alanine' });
+    expect(file.supplements).toHaveLength(2);
+    expect(file.supplements[0]).toEqual(original);
+    expect(file.supplements[1]).toMatchObject({ supplementKey: 'custom_alanine_2', supplementName: 'alanine' });
+    file = edited(file, { kind: 'supplement', supplementKey: original.supplementKey, supplementName: original.supplementName, doseValue: 3, doseUnit: 'g', status: 'stopped' });
+    const history = file.supplementHistory;
+    // A fresh engine invocation receives the serialized record, not a helper fixture.
+    file = edited(JSON.parse(JSON.stringify(file)) as RoadmapFile, { kind: 'customSupplement', name: '  ALANINE+  ' });
+    expect(file.supplements).toHaveLength(2);
+    expect(file.supplements[0]).toMatchObject({ id: original.id, supplementKey: original.supplementKey, startedAt: original.startedAt, status: 'active' });
+    expect(file.supplementHistory.slice(0, history.length)).toEqual(history);
+    expect(file.supplementHistory.at(-1)).toMatchObject({ supplementKey: original.supplementKey, changeType: 'started' });
+    const count = file.supplementHistory.length;
+    file = edited(file, { kind: 'customSupplement', name: 'ALANINE+' });
+    expect(file.supplements).toHaveLength(2);
+    expect(file.supplementHistory).toHaveLength(count);
+    expect(myData(file, NOW).supplements.active.map(s => s.key)).toEqual(['custom_alanine', 'custom_alanine_2']);
   });
 
   it('lists supplements: quick-add first, a typed one keyed by the web\'s rule, a stopped one kept', () => {

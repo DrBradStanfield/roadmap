@@ -335,7 +335,7 @@ The Portfolio Diet is a targeted LDL-lowering dietary pattern. Brad's algorithm 
 | Ground flaxseed | Soluble fibre + ALA omega-3 | ~30g | 5-10% |
 | Edamame | Soy protein replacing animal protein | — | 3-5% |
 | Extra-virgin olive oil | Monounsaturated fat replacing saturated fat | — | Modest |
-| Psyllium husk | Soluble, gel-forming fibre | 7g/day | 5-10% |
+| Psyllium husk | Soluble, gel-forming fibre | about 10 g/day husk (≈7 g soluble fibre) | about 0.33 mmol/L (13 mg/dL) lower [Jovanovski 2018] |
 
 **Combined effect:** These dietary changes can reduce LDL cholesterol by 15-25% [Jenkins 2011].
 
@@ -347,6 +347,7 @@ The Portfolio Diet is a targeted LDL-lowering dietary pattern. Brad's algorithm 
 - Jenkins 2011, Portfolio Diet, JAMA (DOI: 10.1001/jama.2011.1202)
 - Sabaté 2010, nut consumption and lipids (DOI: 10.1001/archinternmed.2010.79)
 - Wei 2009, psyllium and cholesterol (DOI: 10.1038/ejcn.2008.49)
+- Jovanovski 2018, psyllium, LDL, non-HDL and apoB meta-analysis, Am J Clin Nutr (DOI: 10.1093/ajcn/nqy115)
 
 ---
 

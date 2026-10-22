@@ -476,7 +476,7 @@ async function loadConversationHistory(conversationId: string): Promise<ChatHist
     .from('chat_messages')
     .select('role, content, created_at, is_fallback, failure_mode')
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(HISTORY_MSG_LIMIT);
 
   if (error || !data) {
@@ -484,7 +484,9 @@ async function loadConversationHistory(conversationId: string): Promise<ChatHist
     return [];
   }
 
+  // Select the newest turns first, then restore chronological order for model + dedup.
   return data
+    .reverse()
     .filter(r => r.role === 'user' || r.role === 'assistant')
     // Purged turns are gone, not empty: past 30 days the cron nulls `content`
     // (US-15 AC8). Drop those rows so the model never sees a blank turn and the

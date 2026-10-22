@@ -55,6 +55,11 @@ final class AppleHealthSync {
     /// True once the person connected Apple Health on this phone.
     var connected: Bool { memory.connected }
 
+    /// Sex and birth month and year from Health, for onboarding (US-54 AC3).
+    func characteristics() -> HealthCharacteristics {
+        memory.connected && client.isAvailable ? client.characteristics() : .none
+    }
+
     /// "Delete all my data" (US-25 AC16): deletes the samples this app wrote to Health
     /// and forgets their versions. The import anchors stay, so readings already in
     /// Health from before the erase are not imported again (D6). False when Health

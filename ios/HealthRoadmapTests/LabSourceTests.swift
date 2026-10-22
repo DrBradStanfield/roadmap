@@ -163,4 +163,27 @@ final class LabSourceTests: XCTestCase {
         XCTAssertTrue(scan.truncated)
         XCTAssertThrowsError(try LabFileReader.pictures([], name: "Nothing"))
     }
+
+    /// US-52 AC13c: a picked folder gives every report in it and its folders, in name
+    /// order, named by their place in the folder; other and hidden files are left out.
+    func testAFolderGivesEveryReportInsideItInNameOrder() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Records-\(UUID().uuidString)")
+        let inner = folder.appending(path: "2025")
+        try FileManager.default.createDirectory(at: inner, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let png = UIGraphicsImageRenderer(size: CGSize(width: 20, height: 20)).pngData { context in
+            UIColor.gray.setFill(); context.fill(CGRect(x: 0, y: 0, width: 20, height: 20))
+        }
+        try png.write(to: folder.appending(path: "b.png"))
+        try png.write(to: inner.appending(path: "a.PNG"))
+        try png.write(to: folder.appending(path: ".hidden.png"))
+        try Data("notes".utf8).write(to: folder.appending(path: "notes.txt"))
+        let names = try LabFileReader.documents(inFolder: folder).map(\.name)
+        XCTAssertEqual(names, ["\(folder.lastPathComponent)/2025/a.PNG", "\(folder.lastPathComponent)/b.png"])
+
+        let empty = FileManager.default.temporaryDirectory.appending(path: "Empty-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: empty) }
+        XCTAssertThrowsError(try LabFileReader.documents(inFolder: empty))
+    }
 }

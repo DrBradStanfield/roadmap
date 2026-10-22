@@ -5,7 +5,7 @@ import { InfoTooltip } from './InfoTooltip';
 import { DocumentLightbox } from './DocumentLightbox';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format';
 import { openHistoryLightbox } from '../lib/roadmap-data';
-import { isLabArchiveDocument } from '../lib/archive-payloads';
+import { isLabArchiveDocument } from '@roadmap/health-core';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, type Grading } from '../lib/blood-test-cell';
 import type { ApiDocument, ApiLabValue, ApiSupplement } from '../lib/api-types';
@@ -74,7 +74,7 @@ import {
   followupDateLabel,
   anyScreeningEligible,
   dexaEligible,
-  customSupplementKey,
+  customSupplementAddKey,
   type FormOption,
   type MedicationInputs,
 } from '@roadmap/health-core';
@@ -2005,11 +2005,7 @@ export function InputPanel({
                     type="button"
                     className="supplement-dropdown-item supplement-custom"
                     onClick={() => {
-                      const baseKey = customSupplementKey(trimmedSearch);
-                      let key = baseKey;
-                      // Only additions allocate a key; dose/unit edits keep the recorded key.
-                      for (let suffix = 2; supplements.some(s => s.supplementKey === key); suffix++) key = `${baseKey}_${suffix}`;
-                      addSupplement(key, trimmedSearch.slice(0, 100));
+                      addSupplement(customSupplementAddKey(trimmedSearch, supplements), trimmedSearch.slice(0, 100));
                     }}
                   >
                     + Add "{trimmedSearch}"

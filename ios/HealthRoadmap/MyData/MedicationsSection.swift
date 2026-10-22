@@ -13,13 +13,15 @@ struct MedicationsSection: View {
 
     var body: some View {
         if data.medications.isEmpty {
-            Section("Medications") {
+            Section {
                 Label("Medication questions appear once you add a cholesterol, HbA1c or triglyceride value, or your weight and height.", systemImage: "pills")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+            } header: {
+                SectionTitle.medications()
             }
         } else {
-            FormSectionsList(sections: data.medications, months: data.months, read: store.number) { field, value in
+            FormSectionsList(sections: data.medications, months: data.months, read: store.number, title: SectionTitle.medications) { field, value in
                 saved(store.apply(.form(.medicationField(field: field, value: value))))
             }
         }

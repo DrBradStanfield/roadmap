@@ -1,9 +1,9 @@
 // US-14 AC4. Based on Austin Bell's PR #164 (robertaustinbell). Synthetic bytes only.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { LAB_ARCHIVE_TITLE, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { LAB_ARCHIVE_FLAG, LAB_ARCHIVE_TITLE, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from './index';
-import { LAB_ARCHIVE_FLAG, sha256Blob, unarchivedOriginals } from '../lib/archive-payloads';
+import { sha256Blob, unarchivedOriginals } from '../lib/archive-payloads';
 import type { FileResult } from '../components/ReviewTable';
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 afterEach(() => vi.restoreAllMocks());

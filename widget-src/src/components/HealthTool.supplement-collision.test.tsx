@@ -106,6 +106,40 @@ describe('US-06: collision-safe custom supplement additions', () => {
       .toEqual([expect.objectContaining({ supplementName: 'alanine', changeType: 'dose_changed' })]);
   });
 
+  // US-06 AC1a: adding the same name updates its row, not a second history series.
+  it('reuses the same custom name across repeated add, stop, restart and reload', async () => {
+    await seed();
+    const view = await page();
+    addCustom(view.container, 'Taurine');
+    dose(view.container, 'Taurine', 1, 'g');
+    await settle();
+    const before = await persisted();
+    const original = before.supplements[0];
+    addCustom(view.container, 'Taurine');
+    expect(view.container.querySelectorAll('.supplement-row')).toHaveLength(1);
+    dose(view.container, 'Taurine', 2, 'g');
+    await settle();
+    fireEvent.click(row(view.container, 'Taurine').querySelector('.supplement-remove')!);
+    addCustom(view.container, 'Taurine');
+    dose(view.container, 'Taurine', 3, 'g');
+    await settle();
+    view.unmount();
+    await initRoadmapStore(new LocalStorageAdapter());
+    const reloaded = await page();
+    expect(reloaded.container.querySelectorAll('.supplement-row')).toHaveLength(1);
+    dose(reloaded.container, 'Taurine', 4, 'g');
+    await settle();
+    const after = await persisted();
+    expect(after.supplements).toEqual([expect.objectContaining({
+      id: original.id, supplementKey: original.supplementKey, startedAt: original.startedAt,
+      status: 'active', doseValue: 4, doseUnit: 'g',
+    })]);
+    expect(after.supplementHistory).toEqual(expect.arrayContaining(before.supplementHistory));
+    expect(new Set(after.supplementHistory.map(s => s.supplementKey))).toEqual(new Set([original.supplementKey]));
+    expect(after.supplementHistory.map(s => s.changeType)).toEqual(expect.arrayContaining(['stopped', 'dose_changed']));
+    expect(after.supplementHistory.filter(s => s.changeType === 'started')).toHaveLength(2);
+  });
+
   it('keeps noncolliding names on their existing normalized keys', async () => {
     await seed();
     const view = await page();

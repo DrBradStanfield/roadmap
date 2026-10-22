@@ -1,0 +1,786 @@
+[
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "changed_tokens[129] raw_quote shares no number with its body_line: The RDA while breastfeeding is 1.3 g/kg a day [115]. Brad's view (October 2026) is that about 1.3...",
+  "reason": "Checker tokenisation (Brad's answer 2026-10-21, relayed by the orchestrator): the Weiler 2023 full-text excerpt [115] (PMID 36839196, extra_raw, ruling 16) writes the lactation RDA as '1.3 g/kg/d'; the body writes '1.3 g/kg a day', which the checker reads as a different unit. Ruling 10: the text stays as it should read. (carried over unchanged from exceptions-masters-answers-2026-10-21.json)",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"21 nmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Both forms raise serum 25(OH)D levels, but most evidence indicates that D3 raises levels more and keeps them higher f...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.96 ng/mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a crossover trial in India, adults took 1,000 IU of D3 daily for 30 days as a buccal (cheek) spray or as a softgel...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4.06 ng/mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a crossover trial in India, adults took 1,000 IU of D3 daily for 30 days as a buccal (cheek) spray or as a softgel...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"60 nmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**U-shaped relationship:** A cohort study of 1,662 men aged 70 to 97 found a U-shaped link between vitamin D levels a...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): comparator mismatch: the raw writes ≥60 to ≤72, ≤36, ≥70 or \"maximally 24 months\" and the body writes the same values in words (\"60 to 72\", \"at or below\", \"aged 70 and older\", \"up to 24 months\", \"over 12 months\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"72 nmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**U-shaped relationship:** A cohort study of 1,662 men aged 70 to 97 found a U-shaped link between vitamin D levels a...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): comparator mismatch: the raw writes ≥60 to ≤72, ≤36, ≥70 or \"maximally 24 months\" and the body writes the same values in words (\"60 to 72\", \"at or below\", \"aged 70 and older\", \"up to 24 months\", \"over 12 months\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<36 nmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**U-shaped relationship:** A cohort study of 1,662 men aged 70 to 97 found a U-shaped link between vitamin D levels a...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): comparator mismatch: the raw writes ≥60 to ≤72, ≤36, ≥70 or \"maximally 24 months\" and the body writes the same values in words (\"60 to 72\", \"at or below\", \"aged 70 and older\", \"up to 24 months\", \"over 12 months\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"14.4 ng/mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**U-shaped relationship:** A cohort study of 1,662 men aged 70 to 97 found a U-shaped link between vitamin D levels a...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \">12 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Bone mineral density in generally healthy adults:** In a VITAL substudy of 771 adults not selected for low vitamin ...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): comparator mismatch: the raw writes ≥60 to ≤72, ≤36, ≥70 or \"maximally 24 months\" and the body writes the same values in words (\"60 to 72\", \"at or below\", \"aged 70 and older\", \"up to 24 months\", \"over 12 months\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"45 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Vegan women:** In a North American cohort of adults aged 45 and older, female vegans had a higher risk of hip fract...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): raw abbreviation or layout the tokeniser does not join to the body's unit (\"45 y\", \"5.3 y\", \"700 U/day\", \"days/year\", \"min/day\", \"2400,3200 IU\", \"monthly … 24,000 IU\", \"week 24\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"24000 IU/month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Falls — U-shaped dose response:** In a 12-month trial in older women with levels below 20 ng/mL, falls decreased on...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): raw abbreviation or layout the tokeniser does not join to the body's unit (\"45 y\", \"5.3 y\", \"700 U/day\", \"days/year\", \"min/day\", \"2400,3200 IU\", \"monthly … 24,000 IU\", \"week 24\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"25 ng/mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Colorectal cancer:** In a pooled analysis of 17 cohorts, levels of 30-40 ng/mL went with 19-27% lower colorectal ca...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"79.8 nmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Respiratory infections:** A meta-analysis of 25 trials found vitamin D supplementation protected against acute resp...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤24 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Graves' disease:** 2,800 IU/day, given alongside anti-thyroid medication (for up to 24 months) and for 12 months af...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): comparator mismatch: the raw writes ≥60 to ≤72, ≤36, ≥70 or \"maximally 24 months\" and the body writes the same values in words (\"60 to 72\", \"at or below\", \"aged 70 and older\", \"up to 24 months\", \"over 12 months\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \">6 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 40 adults with significant liver fat and low vitamin D (mean 11.8 ng/mL), 20,000 IU vitamin D weekly reduced liver...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number or span out (\"Thirty-nine\", \"six months\", \"over one month\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"45 ng/mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a small pilot study of mild-moderate Crohn's disease with low vitamin D (mean 16 ng/mL), raising levels to a mean ...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<46 ng/mL\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<1.42\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<95 %\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<1.31\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<1.53\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<1.29\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<1.03\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<1.61\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<2 year\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<1.24\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<1.01\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<1.54\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<2013\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<2016\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the list intro \"Even below classic toxicity thresholds\" is carried as \"<\" onto every bullet's numbers. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \">1 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In Korean adults with low vitamin D, 30-60 minutes of summer sunlight 3 times per week raised levels by only 0.9 ng/m...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number or span out (\"Thirty-nine\", \"six months\", \"over one month\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"32 ng/mL\": Both forms raise serum 25(OH)D levels, but most evidence indicates that D3 raises levels more and keeps them higher f...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"<50 nmol/L\": Dose-response: People with obesity might need more vitamin D to reach the same 25(OH)D level as people of normal weig...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"<12 ng/mL\", \"25\": VITAL trial (bone substudy): Among 25,871 generally healthy adults (mean age 67.1), 2,000 IU/day D3 for a median of 5...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): \"25\" is read from \"25(OH)D\", not a count. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"<50 nmol/L\": Bone mineral density in generally healthy adults: In a VITAL substudy of 771 adults not selected for low vitamin D, 2...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3200 IU/day\": Falls — U-shaped dose response: In a 12-month trial in older women with levels below 20 ng/mL, falls decreased on 1,6...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): raw abbreviation or layout the tokeniser does not join to the body's unit (\"45 y\", \"5.3 y\", \"700 U/day\", \"days/year\", \"min/day\", \"2400,3200 IU\", \"monthly … 24,000 IU\", \"week 24\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"70 year\": Mortality: Three meta-analyses of clinical trials found vitamin D supplementation significantly reduces total cancer ...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): comparator mismatch: the raw writes ≥60 to ≤72, ≤36, ≥70 or \"maximally 24 months\" and the body writes the same values in words (\"60 to 72\", \"at or below\", \"aged 70 and older\", \"up to 24 months\", \"over 12 months\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"≥30 ng/mL\": Pancreatic cancer: In a pooled analysis of five large cohorts, levels of 20-29 ng/mL (OR 0.75, 95% CI 0.58 to 0.98) a...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5.3 year\": VITAL trial (diabetes substudy): 2,000 IU/day D3 for a median of 5.3 years did not reduce type 2 diabetes risk in ove...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): raw abbreviation or layout the tokeniser does not join to the body's unit (\"45 y\", \"5.3 y\", \"700 U/day\", \"days/year\", \"min/day\", \"2400,3200 IU\", \"monthly … 24,000 IU\", \"week 24\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"≥20 ng/mL\": Dementia risk: A study of 1,658 older US adults found those with 25(OH)D below 10 ng/mL had a higher risk of dementia...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"32 ng/mL\": In an Indian trial, supplementing pregnant women with vitamin D (dose based on their starting level) raised average l...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"24\": Prenatal vitamin D may reduce childhood asthma risk, though the evidence is uncertain. In a secondary analysis of a t...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): raw abbreviation or layout the tokeniser does not join to the body's unit (\"45 y\", \"5.3 y\", \"700 U/day\", \"days/year\", \"min/day\", \"2400,3200 IU\", \"monthly … 24,000 IU\", \"week 24\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"≥20 ng/mL\": There is no target level to dose toward: the 2024 Endocrine Society guideline has not identified 25(OH)D concentratio...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"25\": Black Americans: Common genetic variants likely explain why many Black Americans have lower levels of vitamin D bindi...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): \"25\" is read from \"25(OH)D\", not a count. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"60 min\": In Korean adults with low vitamin D, 30-60 minutes of summer sunlight 3 times per week raised levels by only 0.9 ng/m...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): raw abbreviation or layout the tokeniser does not join to the body's unit (\"45 y\", \"5.3 y\", \"700 U/day\", \"days/year\", \"min/day\", \"2400,3200 IU\", \"monthly … 24,000 IU\", \"week 24\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"142251\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Prostate cancer concern:** Casein makes up most of the protein in milk, and studies of dairy and prostate cancer gi...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): space thousands separator (\"142 251\") or middle-dot decimal (\"9·2\") in the abstract. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"7.01 mcg/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Bone broth protein supplements are dried broth, usually made from chicken bones. A protein extract made from chicken ...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): unit spelling the tokeniser does not equate (μg L(-1), d/wk, g/kg/d, ≥65 years, ≥50 y, 18 mo, \"over 12 weeks\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"9.5 mcg/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Bone broth protein supplements are dried broth, usually made from chicken bones. A protein extract made from chicken ...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): unit spelling the tokeniser does not equate (μg L(-1), d/wk, g/kg/d, ≥65 years, ≥50 y, 18 mo, \"over 12 weeks\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"0.89 mcg/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Bone broth protein supplements are dried broth, usually made from chicken bones. A protein extract made from chicken ...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): unit spelling the tokeniser does not equate (μg L(-1), d/wk, g/kg/d, ≥65 years, ≥50 y, 18 mo, \"over 12 weeks\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"5 day/week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 10-week trial, 22 young adults did high-volume resistance training 5 days a week on a high-protein diet that was...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): unit spelling the tokeniser does not equate (μg L(-1), d/wk, g/kg/d, ≥65 years, ≥50 y, 18 mo, \"over 12 weeks\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"2.6 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 10-week trial, 22 young adults did high-volume resistance training 5 days a week on a high-protein diet that was...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): a ± or range in the raw splits the number from its unit. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"3.1 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 10-week trial, 22 young adults did high-volume resistance training 5 days a week on a high-protein diet that was...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): a ± or range in the raw splits the number from its unit. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"50 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2025 network meta-analysis of 38 trials in 2,610 adults aged 50 and over found that protein plus resistance trainin...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): unit spelling the tokeniser does not equate (μg L(-1), d/wk, g/kg/d, ≥65 years, ≥50 y, 18 mo, \"over 12 weeks\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"850 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 128 healthy adults aged 65 and over (average age 74) whose usual protein intake was about 0.85 g/kg a day, raising...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): a ± or range in the raw splits the number from its unit. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1500 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 128 healthy adults aged 65 and over (average age 74) whose usual protein intake was about 0.85 g/kg a day, raising...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): unit spelling the tokeniser does not equate (μg L(-1), d/wk, g/kg/d, ≥65 years, ≥50 y, 18 mo, \"over 12 weeks\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"32\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 32 older women already used to resistance training, 35 g of whey protein after each session for 12 weeks increased...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number out (for example \"Twenty-four women\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"0.1 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Caloric restriction with exercise:** In young men eating about 40% fewer calories than they needed and doing resist...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): a ± or range in the raw splits the number from its unit. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"3.5 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Caloric restriction with exercise:** In young men eating about 40% fewer calories than they needed and doing resist...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): a ± or range in the raw splits the number from its unit. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"9.2 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 13 centrally obese men with insulin resistance, 20 g of whey protein taken 15 minutes before breakfast lowered the...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): space thousands separator (\"142 251\") or middle-dot decimal (\"9·2\") in the abstract. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"98 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Diabetes reversal:** In 30 people with type 2 diabetes, an 8-week very low calorie diet, with all diabetes medicine...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): a ± or range in the raw splits the number from its unit. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"83.8 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Diabetes reversal:** In 30 people with type 2 diabetes, an 8-week very low calorie diet, with all diabetes medicine...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): a ± or range in the raw splits the number from its unit. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"12\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Diabetes reversal:** In 30 people with type 2 diabetes, an 8-week very low calorie diet, with all diabetes medicine...\" | \"| Eggs | 2 large | 12 | 140 |\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number out (for example \"Twenty-four women\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"105100 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a study of 40 young, 40 middle-aged and 40 older adults, the older group ate less protein a day than young adults ...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): a ± or range in the raw splits the number from its unit. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"≥18 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In sealed bags, whey protein concentrate kept for at least 18 months at lower temperatures but only 9 months at 35°C ...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): unit spelling the tokeniser does not equate (μg L(-1), d/wk, g/kg/d, ≥65 years, ≥50 y, 18 mo, \"over 12 weeks\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"30\": Egg white (albumen) protein powder is a complete protein. In 30 female college athletes, 15 g of egg white protein be...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number out (for example \"Twenty-four women\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"19\": In a 12-week trial, 19 young vegan men taking soy protein and 19 young omnivorous men taking whey did supervised resi...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number out (for example \"Twenty-four women\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"15\": Pea protein is a complete protein. In 15 healthy adults, the overall digestibility of pea protein isolate (93.6%) did...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number out (for example \"Twenty-four women\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"15\": In a placebo-controlled trial, 161 men aged 18 to 35 years took 25 g of pea protein, whey protein or placebo twice a ...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number out (for example \"Twenty-four women\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": Mycoprotein is protein made from the fungus Fusarium venenatum and sold as Quorn. It is high in protein and fiber and...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number out (for example \"Twenty-four women\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"65 year\": In 128 healthy adults aged 65 and over (average age 74) whose usual protein intake was about 0.85 g/kg a day, raising...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): unit spelling the tokeniser does not equate (μg L(-1), d/wk, g/kg/d, ≥65 years, ≥50 y, 18 mo, \"over 12 weeks\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"12 week\": In 32 older women already used to resistance training, 35 g of whey protein after each session for 12 weeks increased...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): unit spelling the tokeniser does not equate (μg L(-1), d/wk, g/kg/d, ≥65 years, ≥50 y, 18 mo, \"over 12 weeks\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": In 20 healthy older adults on 7 days of bed rest, a diet with part of its protein replaced by whey, at the same calor...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number out (for example \"Twenty-four women\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"65 year\": In malnourished adults aged 65 and over in hospital for heart failure, heart attack, pneumonia or COPD, a high-protei...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): unit spelling the tokeniser does not equate (μg L(-1), d/wk, g/kg/d, ≥65 years, ≥50 y, 18 mo, \"over 12 weeks\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"36\": Protein distribution and weight loss: In 36 older adults with overweight or obesity on an activity and weight loss pr...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number out (for example \"Twenty-four women\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"13\": In 13 centrally obese men with insulin resistance, 20 g of whey protein taken 15 minutes before breakfast lowered the...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number out (for example \"Twenty-four women\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"24\": In 24 healthy older adults, spreading protein evenly over three meals led to faster amino acid absorption and a more ...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number out (for example \"Twenty-four women\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"24\": Calcium: It has been suggested that extra protein may harm bone mineral, but in a 6-month trial in 24 exercise-traine...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number out (for example \"Twenty-four women\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "product mentions rose 3 -> 5",
+  "reason": "Checker tokenisation: \"Omega-3 Trial\" in two new reference titles (VITAL substudies) is read as a product mention; bibliographic text, no product added",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "report says product mentions 3 -> 3, recomputed 3 -> 5",
+  "reason": "Checker tokenisation: \"Omega-3 Trial\" in two new reference titles (VITAL substudies) is read as a product mention; bibliographic text, no product added",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"200 mg/day\": Meriva (1 g twice daily, giving 200 mg curcumin twice daily): In 20 healthy men, Meriva taken from 48 hours before to...",
+  "reason": "Checker tokenisation (proposed, pass 3): the Drobnic 2014 [51] abstract (PubMed 24982601, extra_raw) writes '1 g twice daily (200 mg curcumin b.i.d.)'; the body writes 'twice daily', which the checker reads as 200 mg/day while 'b.i.d.' stays a bare 200 mg. Same dose. Ruling 10: the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"200 mg/day\": Muscle soreness prevention | 1 g Meriva twice daily (200 mg curcumin twice daily) | 48 hours before to 24 hours after...",
+  "reason": "Checker tokenisation (proposed, pass 3): same as the Drobnic body line; abstract 'b.i.d.' versus table 'twice daily'. Ruling 10: the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2 hour\": Standard curcumin has extremely low oral bioavailability. Taken with water alone, little of it reaches the blood, bec...",
+  "reason": "Counting artefact, not tokenisation (orchestrator to decide): this line is byte-identical to the pre-pass-3 text that passed. Pass 3 added a sourced '2 hours' in the gallbladder line (Rasyid 2002 [121], '2 h after administration', entry present), which raised the body count of '2 hour', so every non-base line holding it now needs a quote. This line's 'two hours' half-life rests on [4] (Suresh 2018, CrystEngComm), which is not on PubMed, so no abstract can be quoted. Alternative: drop 'within 2 hours' from the gallbladder line, which ruling 10 forbids.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2 hour\": Split doses may help, because standard curcumin has a short half-life (~2 hours) [4].",
+  "reason": "Counting artefact (orchestrator to decide): line byte-identical to the pre-pass-3 text; same cause as the line above ([4] not on PubMed; the new Rasyid '2 hours' raised the token count).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"82000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Older adults (50+) | 0.45–0.55 | 1.0–1.2 | 68–82 g/day |\"",
+  "reason": "Derived arithmetic (review R9, orchestrator 2026-10-22): 1.2 g/kg x 68.0 kg (150 lb) = 82 g/day; no source states a per-person gram figure, and the old ConsumerLab quote may not be used.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"109000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Point beyond which a 49-study review found no added muscle benefit | 0.73 | 1.6 | 109 g/day |\"",
+  "reason": "Derived arithmetic (review R9, orchestrator 2026-10-22): 1.6 g/kg (Morton 2018 [48]) x 68.0 kg (150 lb) = 109 g/day; the old ConsumerLab quote (109.5 g) may not be used.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2 year\": Extra protein without exercise has shown little benefit. In 92 older men with physical limitations, 6 months of a hig...",
+  "reason": "Checker tokenisation: the Zhu 2015 abstract [59] writes '2 y' ('In this 2 y randomized, double-blind, placebo-controlled trial'); the line is unchanged, and the FAIL appears because the new Iuliano line adds a second '2-year' token (Iuliano abstract: 'Two year cluster randomised controlled trial').",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1.2\": Older adults (50+) | 0.45–0.55 | 1.0–1.2 | 68–82 g/day |",
+  "reason": "Checker tokenisation: the Deutz 2014 abstract [3] writes the range as '1.0-1.2 g protein/kg body weight/day', which the tokeniser does not split into 1.2; the row's figure is unchanged from base, only its 150 lb example changed (R9).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"700 IU/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Fracture healing:** Low vitamin D may slow fracture healing. A case report described a man aged 44 whose thighbone ...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): raw abbreviation or layout the tokeniser does not join to the body's unit (\"45 y\", \"5.3 y\", \"700 U/day\", \"days/year\", \"min/day\", \"2400,3200 IU\", \"monthly … 24,000 IU\", \"week 24\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.1\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**High-dose risk:** A large Australian trial in older adults (D-Health) found that high monthly doses of vitamin D3 d...\"",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the D-Health abstract writes decimals with a middle dot (1·10). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<2021\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker tokenisation: a citation year '(Appel, Ann Intern Med 2021)' inherits the comparator 'below' from earlier in the line; the year is bibliographic (R4 aligned it with ref [28], Ann Intern Med 2021;174(2)). Ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"39\": In younger adults: In 39 young men with low vitamin D on a 12-week resistance training program, 8,000 IU/day lifted l...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the abstract spells the number or span out (\"Thirty-nine\", \"six months\", \"over one month\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"<12 ng/mL\", \"95 %\": Prediabetes with vitamin D deficiency: In a large 2.5-year trial, 4,000 IU/day D3 in people with prediabetes whose vi...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1.01\", \"1.2\": High-dose risk: A large Australian trial in older adults (D-Health) found that high monthly doses of vitamin D3 did n...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): the D-Health abstract writes decimals with a middle dot (1·10). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays. (Line now also lists 1.01: HR 1.10, 95% CI 1.01 to 1.20, as in the abstract.)",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"25\", \"<12 ng/mL\": Multiple sclerosis: In observational studies, lower 25(OH)D levels are consistently associated with higher MS risk. A...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): \"25\" is read from \"25(OH)D\", not a count. The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"120000 IU\": COPD: In a UK trial of people with COPD, 3 mg (120,000 IU) of vitamin D3 given every 2 months for a year did not redu...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): exact unit conversion of a number the abstract or NIH states (nmol/L ÷ 2.5 = ng/mL; mcg × 40 = IU), or a number whose unit the raw separates from it with a CI or SD (orchestrator ruling 2026-10-22: exact conversions stay). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"45300\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In a Norwegian cohort of 85,176 children, mothers' use of folic acid from 4 weeks before to 8 weeks after the start...\"",
+  "reason": "Checker tokenisation: Levine 2018 (PMID 29299606, extra_raw) writes the cohort size as '45&#x202f;300' with a narrow no-break space, which the checker does not read as 45300; the body's '45,300' is the abstract's number. Ruling 10, the text stays.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host who.int: [208] World Health Organization. *Risk reduction of cognitive decline and dementia: WHO guideline...",
+  "reason": "Host false positive: [208] is the WHO 2026 dementia guideline, the same source health_roadmap_algorithm.md, evidence.ts and roadmap_text.html cite (orchestrator finding R13).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host tga.gov.au: [209] Therapeutic Goods Administration. \"Medicines containing vitamin B6 (pyridoxine, pyridoxal o...",
+  "reason": "Host false positive: [209] is the TGA's own safety update on vitamin B6 scheduling, verified 2026-10-22 (orchestrator finding R11); raw saved in knowledge-map-raw/refresh-2026-09-29/regulator/.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ }
+]

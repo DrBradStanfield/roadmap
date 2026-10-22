@@ -112,17 +112,30 @@ The part of the app that builds your plan can be updated without a new version o
 To find an update, the app checks GitHub (`raw.githubusercontent.com`). GitHub sees your IP
 address when the app checks for engine updates; the check carries no health data.
 
+## How we learn what to improve
+
+The app uses Microsoft Clarity, as our website does, to see how people use its screens:
+where they tap, where they scroll, and where they get stuck. Every screen is masked before
+Clarity starts, and Clarity's own rules mask what you type in a text box, so Clarity
+records the shape of each screen and where you tap, not the words or numbers on it. One
+limit: where you tap can hint at an answer, such as which of two buttons (Female or Male)
+you chose, or roughly how far you turned a wheel.
+Clarity does not see your record, your cloud or Apple Health. It sees your network (IP)
+address, from which Microsoft works out a rough location such as your country. Clarity is
+run by Microsoft under [Microsoft's privacy statement](https://privacy.microsoft.com/privacystatement).
+
+If you choose to share analytics with app developers in your iPhone's settings, Apple may
+also send us crash reports and usage counts.
+
 ## No tracking, no ads
 
-The app shows no advertising. It has no analytics, no tracking code and no third-party
-software development kit, and it does not follow you across other apps or websites. If you
-choose to share analytics with app developers in your iPhone's settings, Apple may send us
-crash reports and usage counts.
+The app shows no advertising and does not follow you across other apps or websites.
 
 The App Store privacy label lists what the app sends. Health data and what you type or
 upload are listed as linked to you: a lab report carries your name, and Anthropic may keep
-what we send for a time. The App Attest key id and the daily count of chat questions and
-uploads are listed as not linked. None of it is used for tracking.
+what we send for a time. The App Attest key id, the daily count of chat questions and
+uploads, and Clarity's masked usage recordings are listed as not linked. None of it is used
+for tracking.
 
 ## Deleting your data
 

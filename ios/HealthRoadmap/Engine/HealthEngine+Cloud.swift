@@ -22,9 +22,10 @@ extension HealthEngine {
 
     /// One My data edit through the open session, checked against the erase and the
     /// units the screen showed when the edit began (a sheet's opening).
-    func cloudEdit(_ edit: RecordEdit, erase: String, units: String, now: Date) throws -> EditOutcome {
+    /// `choices`: the per-test units the sheet showed (US-25 AC17e), as JSON.
+    func cloudEdit(_ edit: RecordEdit, erase: String, units: String, now: Date, choices: String = "{}") throws -> EditOutcome {
         let editJSON = String(decoding: try JSONEncoder().encode(edit), as: UTF8.self)
-        let json = try call("cloudEdit", [editJSON, erase, units, now.formatted(Date.ISO8601FormatStyle(includingFractionalSeconds: true))])
+        let json = try call("cloudEdit", [editJSON, erase, units, now.formatted(Self.iso), choices])
         return try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
     }
 
