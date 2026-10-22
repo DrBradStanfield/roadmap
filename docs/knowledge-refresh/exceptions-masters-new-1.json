@@ -542,5 +542,21 @@
     "reason": "AC7 product-regex false positive (orchestrator 2026-10-23, masters-new-1): \"Male Reproductive Health\" is a clinical section, not a product section.",
     "by": "orchestrator",
     "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"28 min\": In children with ASD given 1 mg (n = 65), 4 mg (n = 65) or placebo (n = 66) before bedtime, sleep onset latency short...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-23, masters-new-1): the unit appears only at the end of the list; the source writes \"- 22.0, - 28.0, and - 5.0 min\", the body \"22.0, 28.0 and 5.0 min\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "vitamin-a-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Groups at Risk of Vitamin A Inadequacy",
+    "reason": "AC4 heading rename (orchestrator 2026-10-23, masters-new-1): renamed \"### Who Tends to Run Low on Vitamin A\"; a deficiency section, not a safety one, so it no longer matches the US-41 AC8 risk-heading pattern. Body unchanged (vitamin A addendum-3).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
   }
 ]
