@@ -82,9 +82,13 @@ const extraction = {
   droppedValueCount: 1,
 };
 
+/** The review door on an empty record, as Swift calls it. */
+const reviewOf = (x: object, file: RoadmapFile = record(), name = 'Bloods.pdf', hash = '') => labReviewJson(JSON.stringify(x), NOW, JSON.stringify(file), name, hash, DEVICE);
+
 describe('US-52 AC8: the lab review and the write', () => {
   it('shows each value with its own day or the report\'s, and what was not saved', () => {
-    const review = JSON.parse(labReviewJson(JSON.stringify(extraction), NOW));
+    const review = JSON.parse(reviewOf(extraction));
+    expect(review.document).toBeNull();
     expect(review.isLabReport).toBe(true);
     expect(review.reportDay).toBe('2026-10-01');
     expect(review.items.map((i: { ref: string; day: string | null; check: boolean }) => [i.ref, i.day, i.check])).toEqual([
@@ -94,11 +98,11 @@ describe('US-52 AC8: the lab review and the write', () => {
     expect(review.items[0].question).toBeUndefined();
     // The extractor's own question reaches the review (resolveLabValues: "Was this a blood test?").
     const asked = { ...extraction, values: [{ ...extraction.values[0], metric: 'creatinine', question: 'Was this a blood test?' }] };
-    expect(JSON.parse(labReviewJson(JSON.stringify(asked), NOW)).items[0].question).toBe('Was this a blood test?');
+    expect(JSON.parse(reviewOf(asked)).items[0].question).toBe('Was this a blood test?');
     expect(review.notSaved).toEqual([{ label: 'Creatinine', reason: 'unit unknown' }]);
     expect(review.unreadCount).toBe(1);
     // A report with no full day asks the user.
-    expect(JSON.parse(labReviewJson(JSON.stringify({ ...extraction, reportDate: '2026-10' }), NOW)).reportDay).toBeNull();
+    expect(JSON.parse(reviewOf({ ...extraction, reportDate: '2026-10' })).reportDay).toBeNull();
   });
 
   it('writes only the ticked values through bulkAppendValues, skipping a held day and refusing a bad unit', () => {
@@ -128,5 +132,95 @@ describe('US-52 AC8: the lab review and the write', () => {
     expect(refuse(['v9'], '2026-10-01')).toMatchObject({ ok: false, reason: 'not-found' });
     // A value with its own day does not need the report's.
     expect(refuse(['v1'], '')).toMatchObject({ ok: true });
+  });
+});
+
+const letter = {
+  classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [],
+  document: {
+    classification: 'clinic_letter', title: 'Cardiology follow-up', documentDate: '2026-09-14',
+    contentMarkdown: `# Letter\n${'x'.repeat(400)}`, metadata: { specialty: 'cardiology' },
+  },
+};
+
+describe('US-52 AC13d: a clinic letter is offered as the web offers it', () => {
+  it('shows the document card: classification, title, a past day, a 300-character preview', () => {
+    const review = JSON.parse(reviewOf(letter, record(), 'Letter.pdf'));
+    expect(review.isLabReport).toBe(false);
+    expect(review.document).toEqual({
+      classification: 'clinic_letter', title: 'Cardiology follow-up', documentDate: '2026-09-14',
+      preview: `${letter.document.contentMarkdown.slice(0, 300)}...`, alreadySaved: false, held: false,
+    });
+  });
+
+  it('a month alone, a future day or none is an unknown date, as the web reads it', () => {
+    for (const documentDate of ['2026-09', '2027-01-01', null]) {
+      expect(JSON.parse(reviewOf({ ...letter, document: { ...letter.document, documentDate } })).document.documentDate).toBeNull();
+    }
+  });
+
+  it('starts unticked when the record already holds a live document from a file of that name (the web\'s dedup)', () => {
+    const held = record();
+    held.documents.push({
+      id: 'd1', title: 'Old', type: 'clinic_letter', date: null, fileRef: '', contentHash: '', mimeType: '',
+      extractedText: 'x', addedAt: NOW, metadata: {}, sourceFileName: 'Letter.pdf',
+    } as RoadmapFile['documents'][number]);
+    expect(JSON.parse(reviewOf(letter, held, 'Letter.pdf')).document.alreadySaved).toBe(true);
+    expect(JSON.parse(reviewOf(letter, held, 'Other.pdf')).document.alreadySaved).toBe(false);
+    held.documents[0].deleted = true;
+    expect(JSON.parse(reviewOf(letter, held, 'Letter.pdf')).document.alreadySaved).toBe(false);
+  });
+
+  it('a lab report offers no document card even when the model sent one', () => {
+    expect(JSON.parse(reviewOf({ ...extraction, document: letter.document })).document).toBeNull();
+  });
+});
+
+describe('US-52 AC13d: every stored file name is health-core\'s', () => {
+  it('one call names a read: a ZIP member by zipMemberName, any other file on one line and capped', async () => {
+    const entry = await import('./entry');
+    const { zipMemberName } = await import('../../packages/health-core/src/lab-extraction');
+    const long = `${'d'.repeat(260)}/letter.png`;
+    const names = JSON.parse(entry.fileNamesJson(JSON.stringify([
+      { zip: 'Records.zip', path: 'a/b.png' }, { zip: 'Records.zip', path: long },
+      { name: 'Letter\u0007 one\n.pdf' }, { name: `Folder/${'e'.repeat(300)}.pdf` },
+    ]))) as string[];
+    expect(names[0]).toBe('Records.zip/a/b.png');
+    expect(names[1]).toBe(zipMemberName('Records.zip', long));
+    expect(names[1]).toBe(`~635451cb/${'d'.repeat(234)}/letter.png`);
+    expect(names[2]).toBe('Letter one .pdf');
+    expect(names[3]).toHaveLength(255);
+  });
+});
+
+/** A metadata-only row holding `hash`: a failed save's or the connector's (US-14 AC4). */
+function heldRow(over: Partial<RoadmapFile['documents'][number]>): RoadmapFile['documents'][number] {
+  return {
+    id: crypto.randomUUID(), title: 'Held', type: 'clinic_letter', date: null, fileRef: '', contentHash: 'sha256-aa', mimeType: '',
+    extractedText: 'x', addedAt: NOW, metadata: {}, sourceFileName: 'Letter.pdf', ...over,
+  } as RoadmapFile['documents'][number];
+}
+
+describe('US-52 AC13d / US-14 AC4: a held metadata-only row, as the web\'s card reads it', () => {
+  it('a retry after a failed save with edits starts from the newest held row: its title, and its date even when cleared', () => {
+    const file = record();
+    file.documents.push(
+      heldRow({ title: 'Older edit', date: '2026-01-01', addedAt: '2026-10-01T00:00:00.000Z' }),
+      heldRow({ title: 'Edited title', date: null, addedAt: '2026-10-02T00:00:00.000Z' }),
+    );
+    const review = JSON.parse(reviewOf(letter, file, 'Letter.pdf', 'sha256-aa')).document;
+    expect(review).toMatchObject({ title: 'Edited title', documentDate: null, held: true, alreadySaved: true });
+    // Other bytes: the model's own title and date, nothing held.
+    expect(JSON.parse(reviewOf(letter, file, 'Letter.pdf', 'sha256-bb')).document).toMatchObject({ title: 'Cardiology follow-up', documentDate: '2026-09-14', held: false });
+  });
+
+  it('a connector\'s held row is held; a lab archive or an archived row is not', () => {
+    const file = record();
+    file.documents.push(heldRow({ title: 'From the assistant', date: '2026-08-01', metadata: { importedVia: 'connector' } }));
+    expect(JSON.parse(reviewOf(letter, file, 'Letter.pdf', 'sha256-aa')).document).toMatchObject({ title: 'From the assistant', documentDate: '2026-08-01', held: true });
+    const other = record();
+    other.documents.push(heldRow({ type: 'pathology_report', title: 'Blood test results', extractedText: '', metadata: { labArchive: true } }), heldRow({ fileRef: 'Clinic letters/x.pdf', contentHash: 'sha256-cc' }));
+    expect(JSON.parse(reviewOf(letter, other, 'Letter.pdf', 'sha256-aa')).document.held).toBe(false);
+    expect(JSON.parse(reviewOf(letter, other, 'Letter.pdf', 'sha256-cc')).document.held).toBe(false);
   });
 });

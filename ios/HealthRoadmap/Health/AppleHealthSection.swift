@@ -21,7 +21,7 @@ struct AppleHealthSection: View {
                         .foregroundStyle(.secondary)
                 }
             } header: {
-                Text("Apple Health")
+                SectionTitle.appleHealth()
             } footer: {
                 VStack(alignment: .leading, spacing: 4) {
                     if case .failed(let why) = health.status { Text(why).foregroundStyle(.red) }

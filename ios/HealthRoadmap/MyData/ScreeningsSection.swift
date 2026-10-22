@@ -14,14 +14,16 @@ struct ScreeningsSection: View {
 
     var body: some View {
         if let note = data.screeningNote {
-            Section("Screening") {
+            Section {
                 Label(note, systemImage: "stethoscope")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+            } header: {
+                SectionTitle.screening()
             }
         } else {
             FormSectionsList(
-                sections: data.screenings, months: data.months, read: store.number,
+                sections: data.screenings, months: data.months, read: store.number, title: SectionTitle.screening,
                 answer: { key, value in saved(store.apply(.form(.screening(key: key, value: value)))) },
                 measurement: { $0 == data.psa.metric ? data.psa : nil },
                 openMeasurement: { _ in open(data.psa) }

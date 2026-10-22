@@ -29,6 +29,7 @@ struct MyDataView: View {
     /// The metric whose page is pushed.
     @State private var detail: MyData.Row?
     @State private var showSync = false
+    @State private var addingLabs = false
     @State private var refusal: String?
     @State private var saves = 0
 
@@ -45,6 +46,9 @@ struct MyDataView: View {
                 MetricDetailView(store: store, row: row, saved: saved)
             }
             .sheet(isPresented: $showSync) { SyncView(sync: sync) }
+            // Here, not on the header's "+": a sheet declared in a section header took
+            // its grey text, large font and icon-only labels (seen 2026-10-22).
+            .sheet(isPresented: $addingLabs) { LabUploadSheet(engine: engine, store: store, sync: sync) }
     }
 
     private var content: some View {
@@ -52,8 +56,8 @@ struct MyDataView: View {
             if let data = store.myData {
                 List {
                     aboutYou(data)
-                    metrics(data.vitals) { header("Vitals") { units(data) } }
-                    metrics(data.bloodTests) { Text("Blood tests") }
+                    metrics(data.vitals) { header(.vitals()) { units(data) } }
+                    metrics(data.bloodTests) { SectionTitle.bloodTests() }
                     MedicationsSection(store: store, data: data, saved: saved)
                     ScreeningsSection(store: store, data: data, saved: saved, open: open)
                     SupplementsSection(store: store, supplements: data.supplements, saved: saved)
@@ -102,7 +106,7 @@ struct MyDataView: View {
 
             Picker("Birth month", selection: binding(data.profile.birthMonth ?? 0) { .profile(birthMonth: $0) }) {
                 if data.profile.birthMonth == nil { Text("Not set").tag(0) }
-                ForEach(1...12, id: \.self) { Text(DayText.gregorian.monthSymbols[$0 - 1]).tag($0) }
+                ForEach(1...12, id: \.self) { Text(DayText.monthName($0)).tag($0) }
             }
 
             Button { entry = .height } label: {
@@ -110,8 +114,10 @@ struct MyDataView: View {
             }
             .tint(.primary)
         } header: {
-            header("About you") {
-                LabUploadButton(engine: engine, store: store, sync: sync)
+            header(.aboutYou()) {
+                Button { addingLabs = true } label: {
+                    Label("Add medical records", systemImage: "plus")
+                }
                 Button { showSync = true } label: {
                     Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
                 }
@@ -120,9 +126,9 @@ struct MyDataView: View {
     }
 
     /// A section title with controls at its trailing end, large enough to hit easily.
-    private func header(_ title: String, @ViewBuilder trailing: () -> some View) -> some View {
+    private func header(_ title: SectionTitle, @ViewBuilder trailing: () -> some View) -> some View {
         HStack(spacing: 14) {
-            Text(title)
+            title
             Spacer()
             trailing()
                 .labelStyle(.iconOnly)
@@ -145,7 +151,8 @@ struct MyDataView: View {
         Section {
             ForEach(rows) { row in
                 Button { open(row) } label: {
-                    ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day)
+                    ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
+                             trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0])
                 }
                 .tint(.primary)
             }
@@ -206,7 +213,14 @@ private struct ValueRow: View {
     let day: String?
     /// A US height, shown as 5 ft 10 in in place of the value (AC17).
     var feetInches: MyData.FeetInches?
+    /// The recent days, drawn small beside the value (AC17d).
+    var trend: [Double] = []
+    var tint: Color = .blue
     @Environment(\.dynamicTypeSize) private var textSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Counts the value's own changes: a new value in the same unit, not a units switch (review R3).
+    @State private var bounces = 0
+    @State private var shownUnit: String?
 
     var body: some View {
         LabelValue.layout(textSize).callAsFunction {
@@ -218,6 +232,8 @@ private struct ValueRow: View {
             }
             Spacer(minLength: 0)
             HStack(alignment: .firstTextBaseline) {
+                Sparkline(points: trend, tint: tint)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 2 }
                 if let feetInches {
                     number(String(feetInches.feet), unit: "ft")
                     number(String(feetInches.inches), unit: "in")
@@ -229,6 +245,11 @@ private struct ValueRow: View {
             }
         }
         .animation(.snappy, value: value)
+        .onChange(of: value) {
+            if shownUnit == nil || shownUnit == unit { bounces += 1 }
+            shownUnit = unit
+        }
+        .onAppear { shownUnit = unit }
         .contentShape(Rectangle())
     }
 
@@ -238,6 +259,14 @@ private struct ValueRow: View {
             .font(.body.weight(.semibold))
             .monospacedDigit()
             .contentTransition(.numericText())
+            // A small spring when a new value arrives, saved here or synced in (AC17d); not on a
+            // units switch. Still under Reduce Motion.
+            .keyframeAnimator(initialValue: 1.0, trigger: bounces) { content, scale in
+                content.scaleEffect(reduceMotion ? 1 : scale, anchor: .trailing)
+            } keyframes: { _ in
+                SpringKeyframe(1.15, duration: 0.15, spring: .snappy)
+                SpringKeyframe(1.0, spring: .bouncy)
+            }
         Text(unit).font(.subheadline).foregroundStyle(.secondary)
     }
 }

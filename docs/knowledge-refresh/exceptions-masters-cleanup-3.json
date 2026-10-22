@@ -1,0 +1,378 @@
+[
+  {
+    "check": "AC2",
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Too much lithium can be toxic, causing tremor, nausea, vomiting and unsteadiness, and in severe cases confusion, se...\" | \"Mild signs of lithium toxicity include a fine tremor, lightheadedness, poor coordination and weakness; moderate signs...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-3): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Too much lithium can be toxic, causing tremor, nausea, vomiting and unsteadiness, and in severe cases confusion, se...\" | \"Mild signs of lithium toxicity include a fine tremor, lightheadedness, poor coordination and weakness; moderate signs...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-3): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Too much lithium can be toxic, causing tremor, nausea, vomiting and unsteadiness, and in severe cases confusion, se...\" | \"Mild signs of lithium toxicity include a fine tremor, lightheadedness, poor coordination and weakness; moderate signs...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-3): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Too much lithium can be toxic, causing tremor, nausea, vomiting and unsteadiness, and in severe cases confusion, se...\" | \"Mild signs of lithium toxicity include a fine tremor, lightheadedness, poor coordination and weakness; moderate signs...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-3): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"195 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Negative trial (lower-dose lithium):** A pilot trial gave daily low-dose lithium carbonate or placebo for 2 years t...\"",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): the Gildengers abstract writes the dose with its SD, 'mean (SD) daily dose of lithium was 195 (150) mg' (addendum-8); the body writes '195 mg'. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"195 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In the 2-year Gildengers trial of low-dose lithium carbonate in older adults (mean dose 195 mg a day), these side eff...\"",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): the Gildengers abstract writes '195 (150) mg' with its SD (addendum-8); the body writes 'mean dose 195 mg a day'. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "match": "token \">4 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"### Low-Dose Lithium Over 4 Years in Older Adults\"",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): the heading 'Over 4 Years' reads as '>4 year'; the 4-year duration is in the cited trial. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "taurine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[97] raw_quote shares no number with its body_line: - If you take blood-pressure medicines or have low blood pressure, check with your doctor first, ...",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): 'about 3 to 4 mmHg' rounds Tzang's WMD -3.999 mmHg [6] and Waldron's ~3 mmHg [8], both quoted in addendum-3. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "taurine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[99] raw_quote shares no number with its body_line: Taking taurine may lower systolic blood pressure by about 3 to 4 mmHg on average [6][8]. In a tri...",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): 'about 3 to 4 mmHg' rounds Tzang's WMD -3.999 mmHg [6] and Waldron's ~3 mmHg [8], both quoted in addendum-3. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "taurine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[106] raw_quote shares no number with its body_line: - **Blood pressure lowering:** Taurine may lower systolic blood pressure by about 3 to 4 mmHg on ...",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): 'about 3 to 4 mmHg' rounds Tzang's WMD -3.999 mmHg [6] and Waldron's ~3 mmHg [8], both quoted in addendum-3. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "taurine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"4 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- If you take blood-pressure medicines or have low blood pressure, check with your doctor first, because taurine may ...\" | \"Taking taurine may lower systolic blood pressure by about 3 to 4 mmHg on average [6][8]. In a trial in people with pr...\" | \"- **Blood pressure lowering:** Taurine may lower systolic blood pressure by about 3 to 4 mmHg on average [6][8]. That...\"",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): 'about 3 to 4 mmHg' rounds Tzang's WMD -3.999 mmHg [6] and Waldron's ~3 mmHg [8], both quoted in addendum-3. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "electrolytes-benefits-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreationa...\" | \"- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which...\" | \"**Hyponatremia** (serum sodium <136 mEq/L) is the most common electrolyte disorder in clinical practice, and exercise...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-3): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays. The same FAIL also covers the chia seeds row (111 mg magnesium per 1 oz), a food-table value unchanged since BASE.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "electrolytes-benefits-dosing-and-side-effects",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreationa...\" | \"- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which...\" | \"**Hyponatremia** (serum sodium <136 mEq/L) is the most common electrolyte disorder in clinical practice, and exercise...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-3): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "electrolytes-benefits-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreationa...\" | \"- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which...\" | \"**Hyponatremia** (serum sodium <136 mEq/L) is the most common electrolyte disorder in clinical practice, and exercise...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-3): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "electrolytes-benefits-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreationa...\" | \"- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which...\" | \"**Hyponatremia** (serum sodium <136 mEq/L) is the most common electrolyte disorder in clinical practice, and exercise...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-3): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"1330 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Gelatin, dry powder, unsweetened (FDC 169599) | 19.0 g | 1 envelope (7 g) | 1.33 g |\"",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): per-serving glycine is the USDA per-100 g value times the USDA portion weight, both in the row; the checker reads the g value as a new mg token. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"3370 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Pork skins, plain snack (FDC 167961) | 11.9 g | 1 oz (28.35 g) | 3.37 g |\"",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): per-serving glycine is the USDA per-100 g value times the USDA portion weight, both in the row; the checker reads the g value as a new mg token. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"1820 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Chicken skin, roasted (FDC 171055) | 3.25 g | Skin of half a chicken (56 g) | 1.82 g |\"",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): per-serving glycine is the USDA per-100 g value times the USDA portion weight, both in the row; the checker reads the g value as a new mg token. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"1580 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Top sirloin steak, lean, broiled (FDC 168634) | 1.86 g | 3 oz (85 g) | 1.58 g |\"",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): per-serving glycine is the USDA per-100 g value times the USDA portion weight, both in the row; the checker reads the g value as a new mg token. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"1310 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Chicken breast, roasted (FDC 171477) | 1.52 g | Half a breast (86 g) | 1.31 g |\"",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): per-serving glycine is the USDA per-100 g value times the USDA portion weight, both in the row; the checker reads the g value as a new mg token. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"900 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Atlantic salmon, farmed, cooked (FDC 175168) | 1.06 g | 3 oz (85 g) | 0.90 g |\"",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): per-serving glycine is the USDA per-100 g value times the USDA portion weight, both in the row; the checker reads the g value as a new mg token. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"1050 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Pork top loin roast, lean, roasted (FDC 168254) | 1.23 g | 3 oz (85 g) | 1.05 g |\"",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): per-serving glycine is the USDA per-100 g value times the USDA portion weight, both in the row; the checker reads the g value as a new mg token. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"520 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Pumpkin seed kernels, dried (FDC 170556) | 1.84 g | 1 oz (28.35 g) | 0.52 g |\"",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): per-serving glycine is the USDA per-100 g value times the USDA portion weight, both in the row; the checker reads the g value as a new mg token. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"430 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Egg, whole, raw (FDC 171287) | 0.432 g | 2 large (2 × 50 g) | 0.43 g |\"",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): per-serving glycine is the USDA per-100 g value times the USDA portion weight, both in the row; the checker reads the g value as a new mg token. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"730 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Lentils, boiled (FDC 172421) | 0.367 g | 1 cup (198 g) | 0.73 g |\"",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): per-serving glycine is the USDA per-100 g value times the USDA portion weight, both in the row; the checker reads the g value as a new mg token. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"1\": Clinical trial 1, Yamadera et al. (2007): In 11 adults unhappy with their sleep, 3 grams of glycine one hour before b...",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): '1' is trial numbering ('Clinical trial 1'), not a study number. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"3\": Clinical trial 3, Bannai et al. (2012): In healthy volunteers whose sleep was cut by 25% for three nights, 3 g of gly...",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): '3' is trial numbering ('Clinical trial 3'), not a study number. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"800 mg/kg\": Heresco-Levy et al. (2004): In a double-blind, placebo-controlled crossover trial in 17 people with schizophrenia tak...",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): the Heresco-Levy 2004 abstract writes 'with.8 g/kg/day glycine' (addendum-3); the body writes '0.8 g/kg'. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"1\": Overactive bladder symptoms | 3 g twice daily (6 g total) | Morning and evening | 1 small non-randomised placebo-firs...",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): bare '1' in the glycine dosing table counts studies ('1 small non-randomised placebo-first study'). Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+    "match": "token \"350 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- High doses may raise LDL cholesterol. 1,000 mg a day raised total and LDL cholesterol, and a trial group on 350 mg ...\" | \"- In a 2-year trial in 120 healthy adults with an average age of 71.7, the group taking 350 mg of resveratrol twice d...\" | \"- 350 mg twice daily (with TA-65) raised LDL cholesterol in healthy older adults, and that trial group was stopped at...\"",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): the abstract writes 'resveratrol 350 mg bid' (addendum-9); the body writes '350 mg twice daily'. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+    "match": "token \"4.8 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**In older inactive men:** 27 healthy, physically inactive men with an average age of 65 took 250 mg/day of trans-res...\"",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): the Gliemann abstract writes '-4.8 ± 1.7 mmHg' (addendum-9); the body writes '4.8 mmHg'. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"75 mg/day\": In 125 healthy postmenopausal women in the same research program, 75 mg of resveratrol twice daily reduced overall pa...",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): the abstract writes '75 mg BID' (addendum-9); the body writes '75 mg twice daily'. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"16\": In young men doing HIIT: 16 recreationally active men aged about 22 did 4 weeks of high-intensity interval training, ...",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): the abstract (PMID 25211703, raw saved) writes 'Sixteen recreationally active'; the body writes '16'. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Lithium Orotate: The Dominant Supplement Form",
+    "reason": "Heading removal or rename (orchestrator 2026-10-22, masters-cleanup-3): the section was restructured in the cleanup and its content kept or deliberately cut with justified deleted_sentences.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### At Very Low Supplement Doses (1–5 mg Elemental Lithium)",
+    "reason": "Heading removal or rename (orchestrator 2026-10-22, masters-cleanup-3): the section was restructured in the cleanup and its content kept or deliberately cut with justified deleted_sentences.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### At Low-to-Moderate Supplement Doses (5–20 mg Elemental Lithium)",
+    "reason": "Heading removal or rename (orchestrator 2026-10-22, masters-cleanup-3): the section was restructured in the cleanup and its content kept or deliberately cut with justified deleted_sentences.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### At Moderate Doses (28–56 mg Elemental Lithium, From Prescription Lithium Carbonate)",
+    "reason": "Heading removal or rename (orchestrator 2026-10-22, masters-cleanup-3): the section was restructured in the cleanup and its content kept or deliberately cut with justified deleted_sentences.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### At Higher Doses (28–113 mg Elemental Lithium, Prescription Range)",
+    "reason": "Heading removal or rename (orchestrator 2026-10-22, masters-cleanup-3): the section was restructured in the cleanup and its content kept or deliberately cut with justified deleted_sentences.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Overactive Bladder and Chronic Prostatitis",
+    "reason": "Heading removal or rename (orchestrator 2026-10-22, masters-cleanup-3): the section was restructured in the cleanup and its content kept or deliberately cut with justified deleted_sentences.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Notable Researcher Dosing",
+    "reason": "Heading removal or rename (orchestrator 2026-10-22, masters-cleanup-3): the section was restructured in the cleanup and its content kept or deliberately cut with justified deleted_sentences.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Emodin Contamination",
+    "reason": "Heading removal or rename (orchestrator 2026-10-22, masters-cleanup-3): the section was restructured in the cleanup and its content kept or deliberately cut with justified deleted_sentences.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC7",
+    "handle": "electrolytes-benefits-dosing-and-side-effects",
+    "match": "product section changed: ### Electrolyte Product Types",
+    "reason": "Product-heading false positive (orchestrator 2026-10-22, masters-cleanup-3): 'Electrolyte Product Types' names product categories; no Brad product is in the section.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC7",
+    "handle": "electrolytes-benefits-dosing-and-side-effects",
+    "match": "product section changed: ### Electrolyte Products and Unnecessary Use",
+    "reason": "Product-heading false positive (orchestrator 2026-10-22, masters-cleanup-3): 'Electrolyte Products and Unnecessary Use' names product categories; no Brad product is in the section.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC7",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host auanet.org: [19] Cameron AP, Chung DE, Dielubanza EJ, et al. The AUA/SUFU guideline on the diagnosis and trea...",
+    "reason": "Host false positive (orchestrator 2026-10-22, masters-cleanup-3): auanet.org is the American Urological Association, publisher of the AUA/SUFU overactive bladder guideline [19].",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC7",
+    "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host clinicaltrials.gov: [87] ClinicalTrials.gov. A Clinical Study to Assess the Safety and Activity of SRT501 Alone or in...",
+    "reason": "Host false positive (orchestrator 2026-10-22, masters-cleanup-3): clinicaltrials.gov is the NIH trial registry; [87] is the SRT501 trial record.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"3\": Powder versus capsules: At a dose of 3 g/day, powder is more practical than capsules (3 g = 3–6 capsules depending on...",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): BASE text; '3 g = 3–6 capsules' follows from the forms table's 500–1,000 mg per capsule. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+    "match": "token \"250 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review:** Some have suggested resveratrol might help with type 2 diabetes, but a Cochrane analysis found...\" | \"**In older inactive men:** 27 healthy, physically inactive men with an average age of 65 took 250 mg/day of trans-res...\" | \"| Exercise training | 150-250 mg/day | 4-8 weeks | May blunt exercise adaptations [60][61] |\"",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): BASE text; the Gliemann abstract writes 'daily intake of either 250 mg trans-resveratrol' (addendum-9); the body writes '250 mg/day'. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  }
+]

@@ -1,0 +1,434 @@
+[
+  {
+    "check": "AC2",
+    "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+    "match": "token \"20 mcg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Other effects:** In rheumatoid arthritis trials of oral type II collagen at very small doses, one (20 to 2,500 µg...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): the abstract writes 'microg', the body 'µg'; same 20 to 2,500 µg dose (Barnett 1998 [64]).",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+    "match": "changed_tokens[259] raw_quote shares no number with its body_line: A 2000 review advised treating nicotinamide doses above 3 g a day in adults as potentially toxic,...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Knip 2000 [67] writes '3 gm/day', the body '3 g a day'; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+    "match": "changed_tokens[269] raw_quote shares no number with its body_line: - Very high doses of nicotinamide can harm the liver; a review advised treating adult doses above...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Knip 2000 [67] writes '3 gm/day', the body '3 g a day'; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+    "match": "changed_tokens[287] raw_quote shares no number with its body_line: All NAD boosters are sources of vitamin B3. In the United States, the upper limit for vitamin B3 ...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): NIH niacin UL table gives '35 mg' under a per-day column header; the body writes '35 mg a day' (NIH table column-header units).",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+    "match": "token \">3000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Very high doses of nicotinamide can harm the liver; a review advised treating adult doses above 3 g a day as potent...\" | \"A 2000 review advised treating nicotinamide doses above 3 g a day in adults as potentially toxic, and discouraged uns...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Knip 2000 [67] writes '3 gm/day', the body '3 g a day'; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+    "match": "token \"300\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Recreational runners (n=48):** In a 6-week trial, 48 recreational runners training 5 to 6 times a week took placebo...\" | \"- **Exercise performance:** 300, 600 or 1,200 mg a day [38]\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): bare list numbers: the body lists '300, 600 or 1,200 mg a day'; Liao 2021 [38] writes '300 mg/day' and '600 mg/day'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+    "match": "token \"600\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Recreational runners (n=48):** In a 6-week trial, 48 recreational runners training 5 to 6 times a week took placebo...\" | \"- **Exercise performance:** 300, 600 or 1,200 mg a day [38]\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): bare list numbers: the body lists '300, 600 or 1,200 mg a day'; Liao 2021 [38] writes '300 mg/day' and '600 mg/day'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+    "match": "token \"26 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Mouse study:** In aged (26-month-old) male mice, 8 weeks of NMN raised kidney markers of inflammation (IL-1beta and...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Saleh 2024 [49] writes '26-mo'; the body '26-month-old'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"12\": Controlled trial with active comparator (n=31): In a trial of 31 people with CFS randomised to NADH or to nutritional...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): number word: Santaella 2004 [14] writes 'twelve patients who received NADH'; the body writes '12'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[60] raw_quote shares no number with its body_line: | L-Citrulline | 3 g or more in trials [32]; 6-8 g as citrulline malate [31] | Superior (readily ...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): '3 g or more' is Trexler 2019 [32]'s inclusion threshold, quoted through its 'less than 3 g' exclusion clause.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"≥3000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| L-Citrulline | 3 g or more in trials [32]; 6-8 g as citrulline malate [31] | Superior (readily absorbed; raises pla...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): '3 g or more' is Trexler 2019 [32]'s inclusion threshold, quoted through its 'less than 3 g' exclusion clause.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"707 sec\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Two 2010 trials did find benefits. A 2010 randomized trial in older male cyclists found that a supplement combining L...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Bailey 2010 [19] reports '707 ± 232 ... s' and '562 ± 145 s'; the body writes seconds.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"562 sec\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Two 2010 trials did find benefits. A 2010 randomized trial in older male cyclists found that a supplement combining L...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Bailey 2010 [19] reports '707 ± 232 ... s' and '562 ± 145 s'; the body writes seconds.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Allergic reactions:** L-arginine may cause allergic reactions, which can be serious. If you have signs such as brea...\" | \"- Report any symptoms of excessive blood pressure lowering (dizziness, lightheadedness, fainting) to a healthcare pro...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-4): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Allergic reactions:** L-arginine may cause allergic reactions, which can be serious. If you have signs such as brea...\" | \"- Report any symptoms of excessive blood pressure lowering (dizziness, lightheadedness, fainting) to a healthcare pro...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-4): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Allergic reactions:** L-arginine may cause allergic reactions, which can be serious. If you have signs such as brea...\" | \"- Report any symptoms of excessive blood pressure lowering (dizziness, lightheadedness, fainting) to a healthcare pro...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-4): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Allergic reactions:** L-arginine may cause allergic reactions, which can be serious. If you have signs such as brea...\" | \"- Report any symptoms of excessive blood pressure lowering (dizziness, lightheadedness, fainting) to a healthcare pro...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-4): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[67] raw_quote shares no number with its body_line: - **GLP-1 receptor agonists:** A case report described two women, aged 48 and 45, admitted to hos...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Grennan [10] writes '48-year-old' and '45-year-old'; the body 'aged 48 and 45'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[68] raw_quote shares no number with its body_line: - **GLP-1 receptor agonists:** A case report described two women, aged 48 and 45, admitted to hos...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Grennan [10] writes '48-year-old' and '45-year-old'; the body 'aged 48 and 45'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[75] raw_quote shares no number with its body_line: Replacing regular salt with a potassium-enriched substitute lowers blood pressure modestly. A rev...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Greer 2020 [46] writes 'in mm Hg: -5.58 ... -2.88'; the body '5.58 mmHg' and '2.88 mmHg'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[102] raw_quote shares no number with its body_line: Potassium phosphate has also been tested: in a 4-year open trial in 25 people with absorptive hyp...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Heller 1998 [21] writes '264 to 181 mg. daily'; the body '264 to 181 mg a day'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[161] number cited to a primary study without its abstract in reach: In a trial of 201 healthy adults 65 or older, potassium citrate (2,346 mg potassium a day) for 2 ...",
+    "reason": "AC2 figures from an NIH sheet cited beside a PubMed study (orchestrator 2026-10-22, masters-cleanup-4): potassium L207, Jehle [60] plus NIH [14]; the NIH quote carries 201, 65 or older, 2,346 mg and 2 years, and Jehle's abstract is not in reach.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Severe hyperkalemia can cause muscle weakness, paralysis and dangerous heart rhythms. For a new irregular or racing...\" | \"- Signs of high potassium: muscle weakness, or a burning or prickling feeling in the hands or feet [14]. Stop the sup...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-4): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Severe hyperkalemia can cause muscle weakness, paralysis and dangerous heart rhythms. For a new irregular or racing...\" | \"- Signs of high potassium: muscle weakness, or a burning or prickling feeling in the hands or feet [14]. Stop the sup...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-4): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Severe hyperkalemia can cause muscle weakness, paralysis and dangerous heart rhythms. For a new irregular or racing...\" | \"- Signs of high potassium: muscle weakness, or a burning or prickling feeling in the hands or feet [14]. Stop the sup...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-4): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Severe hyperkalemia can cause muscle weakness, paralysis and dangerous heart rhythms. For a new irregular or racing...\" | \"- Signs of high potassium: muscle weakness, or a burning or prickling feeling in the hands or feet [14]. Stop the sup...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-4): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"45\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Potassium is an essential nutrient and the most abundant intracellular cation in the body. It is required for normal ...\" | \"- **GLP-1 receptor agonists:** A case report described two women, aged 48 and 45, admitted to hospital with hypokalem...\" | \"Serum potassium levels were inversely associated with fasting glucose levels in 5,415 participants aged 45-84 from th...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Grennan [10] writes '48-year-old' and '45-year-old'; the body 'aged 48 and 45'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"5.58 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The AHRQ systematic review found that reducing sodium intake decreased blood pressure, but adding potassium via food ...\" | \"Replacing regular salt with a potassium-enriched substitute lowers blood pressure modestly. A review of these product...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Greer 2020 [46] writes 'in mm Hg: -5.58 ... -2.88'; the body '5.58 mmHg' and '2.88 mmHg'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"2.88 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The AHRQ systematic review found that reducing sodium intake decreased blood pressure, but adding potassium via food ...\" | \"Replacing regular salt with a potassium-enriched substitute lowers blood pressure modestly. A review of these product...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Greer 2020 [46] writes 'in mm Hg: -5.58 ... -2.88'; the body '5.58 mmHg' and '2.88 mmHg'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"264 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Potassium phosphate has also been tested: in a 4-year open trial in 25 people with absorptive hypercalciuria, a major...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Heller 1998 [21] writes '264 to 181 mg. daily'; the body '264 to 181 mg a day'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"181 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Potassium phosphate has also been tested: in a 4-year open trial in 25 people with absorptive hypercalciuria, a major...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Heller 1998 [21] writes '264 to 181 mg. daily'; the body '264 to 181 mg a day'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"65\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a trial of 201 healthy adults 65 or older, potassium citrate (2,346 mg potassium a day) for 2 years significantly ...\" | \"**Negative finding:** A trial in 276 postmenopausal women aged 55-65 found that potassium citrate at 723 mg or 2,170 ...\"",
+    "reason": "AC2 figures from an NIH sheet cited beside a PubMed study (orchestrator 2026-10-22, masters-cleanup-4): potassium L207, Jehle [60] plus NIH [14]; the NIH quote carries 201, 65 or older, 2,346 mg and 2 years, and Jehle's abstract is not in reach.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"48\": GLP-1 receptor agonists: A case report described two women, aged 48 and 45, admitted to hospital with hypokalemia whi...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Grennan [10] writes '48-year-old' and '45-year-old'; the body 'aged 48 and 45'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "potassium-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"2346 mg\", \"2 year\": In a trial of 201 healthy adults 65 or older, potassium citrate (2,346 mg potassium a day) for 2 years significantly ...",
+    "reason": "AC2 figures from an NIH sheet cited beside a PubMed study (orchestrator 2026-10-22, masters-cleanup-4): potassium L207, Jehle [60] plus NIH [14]; the NIH quote carries 201, 65 or older, 2,346 mg and 2 years, and Jehle's abstract is not in reach.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Iron-containing products are a leading cause of fatal poisoning in children under 6. Keep them out of reach, and if...\" | \"Keep multivitamins and iron supplements out of reach of children, and close the lid properly after each use. If a chi...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-4): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Iron-containing products are a leading cause of fatal poisoning in children under 6. Keep them out of reach, and if...\" | \"**Carotid stenosis (conference abstract):** In a COSMOS analysis, 16,027 participants filled in a yearly questionnair...\" | \"Keep multivitamins and iron supplements out of reach of children, and close the lid properly after each use. If a chi...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-4): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays. The '0' also sits in the COSMOS line's 'from 0 to 100', which Brad's post [60] writes as 'zero to one hundred' (number word).",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Iron-containing products are a leading cause of fatal poisoning in children under 6. Keep them out of reach, and if...\" | \"Keep multivitamins and iron supplements out of reach of children, and close the lid properly after each use. If a chi...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-4): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Iron-containing products are a leading cause of fatal poisoning in children under 6. Keep them out of reach, and if...\" | \"Keep multivitamins and iron supplements out of reach of children, and close the lid properly after each use. If a chi...\"",
+    "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-4): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "token \"≥50 mcg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Vitamin K:** In healthy volunteers, vitamin K1 and the menaquinone-7 (MK-7) form of vitamin K2 were both well absor...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Theuwissen 2013 [85] and Schurgers 2007 [73] write '&#x3bc;g'/µg; the body writes mcg.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "token \"10 mcg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Vitamin K:** In healthy volunteers, vitamin K1 and the menaquinone-7 (MK-7) form of vitamin K2 were both well absor...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): Theuwissen 2013 [85] and Schurgers 2007 [73] write '&#x3bc;g'/µg; the body writes mcg.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "token \">1000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Vitamin C:** The RDA is 90 mg for men and 75 mg for women, and the UL is 2,000 mg [75]. At doses above 1 gram a day...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): NIH vitamin C sheet [75] writes '1 gram (g)/day'; the body '1 gram a day'.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "token \"7.5 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Chromium | Grape juice (1 cup: 7.5 mcg), ham (3 oz: 3.6 mcg), whole wheat English muffin (1: 3.6 mcg), brewer's yea...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): NIH chromium sheet [83] Table 2 gives values under a 'Micrograms (mcg) per serving' column header.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "token \"3.6 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Chromium | Grape juice (1 cup: 7.5 mcg), ham (3 oz: 3.6 mcg), whole wheat English muffin (1: 3.6 mcg), brewer's yea...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): NIH chromium sheet [83] Table 2 gives values under a 'Micrograms (mcg) per serving' column header.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "token \"3.3 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Chromium | Grape juice (1 cup: 7.5 mcg), ham (3 oz: 3.6 mcg), whole wheat English muffin (1: 3.6 mcg), brewer's yea...\"",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): NIH chromium sheet [83] Table 2 gives values under a 'Micrograms (mcg) per serving' column header.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"1\": Vitamin D: The RDA is 800 IU for people 71+ and 600 IU for ages 1-70, and the UL for adults is 4,000 IU [76]. Brad no...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): NIH age bounds (vitamin D ages 1-70, calcium over age 50, chromium 14-50 and 19-50) are unchanged from base and appear only in NIH tables.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"50\": Calcium: The RDA is 1,000-1,300 mg depending on age and sex. The UL is 2,500 mg for most adults and 2,000 mg over age...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): NIH age bounds (vitamin D ages 1-70, calcium over age 50, chromium 14-50 and 19-50) are unchanged from base and appear only in NIH tables.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"50\": Chromium: AI is 35 mcg for men 14-50 and 25 mcg for women 19-50 [83]. The FNB set no UL because no adverse effects ha...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-22, masters-cleanup-4): NIH age bounds (vitamin D ages 1-70, calcium over age 50, chromium 14-50 and 19-50) are unchanged from base and appear only in NIH tables.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Calcium Myth",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-22, masters-cleanup-4): '### Calcium Myth' removed in the ConsumerLab cleanup.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Calcium-Containing Medications",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-22, masters-cleanup-4): '### Calcium-Containing Medications' removed in the ConsumerLab cleanup.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Depression — NADH",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-22, masters-cleanup-4): '### Depression — NADH' removed in the ConsumerLab cleanup.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Delivery Formats",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-22, masters-cleanup-4): '### Delivery Formats' removed in the ConsumerLab cleanup.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC4",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Dark Spots on Tablets",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-22, masters-cleanup-4): '### Dark Spots on Tablets' removed in the ConsumerLab cleanup.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC7",
+    "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+    "match": "report says product mentions 2 -> 0, recomputed 0 -> 0",
+    "reason": "AC7 base report artefact (orchestrator 2026-10-22, masters-cleanup-4): the base report recorded product mentions 2 -> 0; the checker recomputes 0 -> 0 and the batch did not change any product mention.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC7",
+    "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "match": "product section changed: ### Product Mention — MicroVitamin",
+    "reason": "AC7 orchestrator-ordered factual correction (orchestrator 2026-10-22, masters-cleanup-4): the MicroVitamin product mention's 43% claim now covers zinc only, per docs/products.md:28.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  }
+]

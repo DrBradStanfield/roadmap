@@ -104,27 +104,36 @@ export class SyncManager<T extends SyncedFile> {
    */
   async save(local: T, signal?: AbortSignal): Promise<SaveResult<T>> {
     let lastError: unknown;
+    let mayHaveWritten = false;
     for (let attempt = 0; attempt < MAX_SAVE_ATTEMPTS; attempt++) {
-      const { body: remoteRaw, version } = await this.adapter.read(this.doc.fileName, signal);
-      const base = this.doc.migrate(remoteRaw, this.ctx());
-      const merged = this.doc.merge(local, base, this.ctx());
       try {
-        const { version: newVersion } = await this.adapter.write(this.doc.fileName, merged, version, signal);
-        if (this.doc.verify !== false) await this.verifyAfterWrite(merged, signal);
-        return { file: merged, version: newVersion, attempts: attempt };
+        const { body: remoteRaw, version } = await this.adapter.read(this.doc.fileName, signal);
+        const base = this.doc.migrate(remoteRaw, this.ctx());
+        const merged = this.doc.merge(local, base, this.ctx());
+        try {
+          const { version: newVersion } = await this.adapter.write(this.doc.fileName, merged, version, signal);
+          mayHaveWritten = true;
+          if (this.doc.verify !== false) await this.verifyAfterWrite(merged, signal);
+          return { file: merged, version: newVersion, attempts: attempt };
+        } catch (error) {
+          lastError = error;
+          if (error instanceof LostUpdateError) mayHaveWritten = true;
+          if (error instanceof ConflictError) continue; // remote moved — re-read & re-merge
+          throw error;
+        }
       } catch (error) {
-        lastError = error;
-        if (error instanceof ConflictError) continue; // remote moved — re-read & re-merge
-        throw error;
+        // Later reads, schema gates and access failures cannot undo an earlier
+        // write. Preserve the cause, but not its no-write/status certainty.
+        if (!mayHaveWritten || signal?.aborted || (error instanceof Error && error.name === 'AbortError')) throw error;
+        throw new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', VERIFY_HINT, error);
       }
     }
     throw new StorageError(
       `Save failed after ${MAX_SAVE_ATTEMPTS} attempts — a sync conflict storm`,
-      // A lost update is the one conflict where something DID happen: the write
-      // landed and was then overwritten. Saying "nothing was written" there
-      // would be the comfortable answer and the false one.
-      lastError instanceof LostUpdateError
-        ? 'Another writer overwrote this change each time. Some of it may have landed. Read the record again before retrying.'
+      // Any earlier attempt may have written, even if the final conflict
+      // refused its upload. Track the whole save, not just the last error.
+      mayHaveWritten
+        ? 'Some of it may have landed. Read the record again before retrying.'
         : 'Your data is unharmed and nothing was written. Try again.',
       lastError,
     );
@@ -149,30 +158,7 @@ export class SyncManager<T extends SyncedFile> {
     } catch (error) {
       throw new StorageError('Verify-after-write failed: the written file did not parse', VERIFY_HINT, error);
     }
-    // A revision older than the one we just wrote means somebody overwrote it
-    // (or the backend answered from a stale replica). Both are lost updates and
-    // both are fixed the same way — re-read, re-merge, write again — so this is
-    // retryable, not fatal.
-    if (parsed.meta.lamport < expected.meta.lamport) {
-      throw new LostUpdateError('Verify-after-write failed: the written revision is older than expected');
-    }
-    // Lamport alone cannot see a lost update: a concurrent writer that dropped
-    // our rows advances it. The rows themselves are append-only, so every id we
-    // wrote must still be there — this is what makes a lost edit REPORTED
-    // rather than confirmed (mcp-architecture.md §7, Drive step 3).
-    if (this.doc.rowIds) {
-      const present = new Set(this.doc.rowIds(parsed));
-      const missing = this.doc.rowIds(expected).filter((id) => !present.has(id));
-      if (missing.length > 0) {
-        // Retryable on purpose: re-reading and re-merging puts the rows back,
-        // and the merge is append-only so writing them twice is the same as
-        // writing them once. On Drive this is the ONLY thing that sees a writer
-        // who landed between the version check and the upload (§7 step 3 → 4).
-        throw new LostUpdateError(
-          `Verify-after-write failed: ${missing.length} row(s) that were just written are not in the file`,
-        );
-      }
-    }
+    verifyPersistedFile(this.doc, expected, parsed);
   }
 }
 
@@ -246,4 +232,32 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
 export function isStorageFailure(error: unknown): boolean {
   return error instanceof StorageError || error instanceof ConflictError
     || error instanceof SchemaTooNewError || error instanceof RecordShapeError;
+}
+
+/** Shared exact-target verification: aggregate reads must not mask a lost row. */
+export function verifyPersistedFile<T extends SyncedFile>(doc: DocumentSpec<T>, expected: T, parsed: T): void {
+  // A revision older than the one we just wrote means somebody overwrote it
+  // (or the backend answered from a stale replica). Both are lost updates and
+  // both are fixed the same way — re-read, re-merge, write again — so this is
+  // retryable, not fatal.
+  if (parsed.meta.lamport < expected.meta.lamport) {
+    throw new LostUpdateError('Verify-after-write failed: the written revision is older than expected');
+  }
+  // Lamport alone cannot see a lost update: a concurrent writer that dropped
+  // our rows advances it. The rows themselves are append-only, so every id we
+  // wrote must still be there — this is what makes a lost edit REPORTED
+  // rather than confirmed (mcp-architecture.md §7, Drive step 3).
+  if (doc.rowIds) {
+    const present = new Set(doc.rowIds(parsed));
+    const missing = doc.rowIds(expected).filter((id) => !present.has(id));
+    if (missing.length > 0) {
+      // Retryable on purpose: re-reading and re-merging puts the rows back,
+      // and the merge is append-only so writing them twice is the same as
+      // writing them once. On Drive this is the ONLY thing that sees a writer
+      // who landed between the version check and the upload (§7 step 3 → 4).
+      throw new LostUpdateError(
+        `Verify-after-write failed: ${missing.length} row(s) that were just written are not in the file`,
+      );
+    }
+  }
 }

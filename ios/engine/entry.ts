@@ -5,8 +5,10 @@ import { mergeFiles } from '../../packages/health-core/src/merge';
 import { computePlan, type Plan } from '../../packages/health-core/src/plan';
 import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-file';
 import { planSections } from '../../packages/health-core/src/plan-sections';
+import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
 import { metricHistory } from './my-data-forms';
+import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
 import { installShim, type Natives } from './shim';
 
@@ -33,13 +35,23 @@ export function mergeJson(localJson: string, remoteJson: string, nowIso: string,
 }
 
 // Cloud sync (cloud.ts): every call but cloudEdit is async and answers a Promise.
-export { cloudClose, cloudEdit, cloudErase, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible, labFile, labFilesJson } from './cloud';
+export { cloudClose, cloudEdit, cloudErase, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible, documentSave, labFile, labFilesJson } from './cloud';
 // "Delete all my data" on the phone's own file (erase.ts); a cloud's is cloudErase.
 export { erasePhoneJson } from './erase';
+/** The `sourceFileName` of each file read, as JSON (US-52 AC13d): the document
+ *  dedup key, by health-core's own rules, one call per read. A ZIP member
+ *  (`{ zip, path }`) by zipMemberName, the web's rule and cap; any other file
+ *  (`{ name }`) on one line and cut to the cap, as the connector stores one. */
+export function fileNamesJson(filesJson: string): string {
+  const files = JSON.parse(filesJson) as Array<{ name: string } | { zip: string; path: string }>;
+  return JSON.stringify(files.map((f) => ('zip' in f ? zipMemberName(f.zip, f.path) : fileNameLine(f.name).slice(0, MAX_FILE_NAME_LENGTH))));
+}
 
-/** The plan for a record, as JSON. `nowIso` is passed in so tests can pin it. */
-export function planJson(recordJson: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(computePlan(readRecord(recordJson, nowIso, deviceId), new Date(nowIso)));
+/** The plan for a record, as JSON. `nowIso` is passed in so tests can pin it. `unitsJson`,
+ *  here and on the doors below: the phone's per-test units (unit-choices.ts); an app older
+ *  than them sends nothing, and every metric shows in the record's units. */
+export function planJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
+  return JSON.stringify(computePlan(readRecord(recordJson, nowIso, deviceId), new Date(nowIso), readUnitChoices(unitsJson)));
 }
 
 /** A plan's on-screen layout, as JSON: the web's results panel uses the same function. */
@@ -57,13 +69,13 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
 }
 
 /** What the My data tab shows, as JSON. */
-export function myDataJson(recordJson: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(myData(readRecord(recordJson, nowIso, deviceId), nowIso));
+export function myDataJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
+  return JSON.stringify(myData(readRecord(recordJson, nowIso, deviceId), nowIso, readUnitChoices(unitsJson)));
 }
 
 /** One edit, as JSON: `{ ok: true, record }` with the new record as text, or the refusal. */
-export function applyEditJson(recordJson: string, editJson: string, nowIso: string, deviceId: string): string {
-  const outcome = applyEdit(readRecord(recordJson, nowIso, deviceId), JSON.parse(editJson) as Edit, nowIso);
+export function applyEditJson(recordJson: string, editJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
+  const outcome = applyEdit(readRecord(recordJson, nowIso, deviceId), JSON.parse(editJson) as Edit, nowIso, readUnitChoices(unitsJson));
   return JSON.stringify(outcome.ok ? { ok: true, record: JSON.stringify(outcome.file) } : outcome);
 }
 
@@ -78,8 +90,8 @@ export function healthWritesJson(recordJson: string, nowIso: string, deviceId: s
 }
 
 /** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */
-export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(metricHistory(readRecord(recordJson, nowIso, deviceId), metric, nowIso));
+export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string): string {
+  return JSON.stringify(metricHistory(readRecord(recordJson, nowIso, deviceId), metric, nowIso, readUnitChoices(unitsJson)));
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';

@@ -37,6 +37,16 @@ struct MetricChart: View {
     @State private var finger: Date?
     @Environment(\.dynamicTypeSize) private var textSize
 
+    /// Apple Health's colours (Brad 2026-10-22): heart readings red, body measurements
+    /// purple. Blood tests blue: Apple gives lab results no colour of its own that we know of.
+    static func colors(for metric: String) -> [Color] {
+        switch metric {
+        case MyData.bloodPressure: [.red, .pink]
+        case "weight", "waist", "height": [.purple]
+        default: [.blue]
+        }
+    }
+
     var body: some View {
         Chart {
             ForEach(points) { point in
@@ -56,12 +66,12 @@ struct MetricChart: View {
                     }
             }
         }
-        .chartForegroundStyleScale(range: history.metric == MyData.bloodPressure ? [Color.accentColor, Color.teal] : [Color.accentColor])
+        .chartForegroundStyleScale(range: Self.colors(for: history.metric))
         .chartLegend(history.metric == MyData.bloodPressure ? .visible : .hidden)
         .chartYScale(domain: .automatic(includesZero: false))
         // Aligned, so the newest month's label stays inside the card.
         .chartXAxis { AxisMarks(preset: .aligned, values: .automatic(desiredCount: textSize.isAccessibilitySize ? 2 : 4)) }
-        .modifier(XDomain(domain: domain))
+        .modifier(XDomain(domain: domain ?? ChartRange.atLeastAWeek(points.map(\.date))))
         .chartXSelection(value: $finger)
         .onChange(of: finger) {
             let day = finger.flatMap { ChartRange.nearest(to: $0, in: points.map(\.date)) }
@@ -70,7 +80,7 @@ struct MetricChart: View {
         .sensoryFeedback(.selection, trigger: selected) { _, new in new != nil }
         // Days are midnight UTC (DayText.date): axis labels read them in UTC so no zone shifts a day.
         .environment(\.timeZone, .gmt)
-        .environment(\.calendar, Self.utc)
+        .environment(\.calendar, DayText.utc)
         .frame(minHeight: 220)
         .accessibilityChartDescriptor(MetricChartDescriptor(title: history.label, unit: history.unit, points: points))
     }
@@ -92,12 +102,6 @@ struct MetricChart: View {
         .padding(.vertical, 6)
         .background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
         .accessibilityHidden(true)
-    }
-
-    private static var utc: Calendar {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = .gmt
-        return calendar
     }
 }
 

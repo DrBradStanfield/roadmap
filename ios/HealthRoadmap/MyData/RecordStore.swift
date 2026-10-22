@@ -32,6 +32,8 @@ final class RecordStore {
     /// Moves each time "Delete all my data" erases the record here (US-25 AC16),
     /// so a view holding health data outside the record, the open chat, drops it.
     private(set) var erasures = 0
+    /// Per-test units (US-25 AC17e): this phone's preference, as the web's are its browser's.
+    private(set) var unitChoices = UnitChoices.saved()
 
     /// What the screen showed when an edit began: the erase it was at (nil on the
     /// phone's file) and its units. A sheet pins it as it opens (`pinsRecord`),
@@ -40,18 +42,26 @@ final class RecordStore {
     struct Screen: Equatable {
         let erase: String?
         let units: String
+        /// The per-test units it showed (US-25 AC17e): a typed value is read in them.
+        let choices: String
     }
     private var pinned: Screen?
     private var pins = 0
 
     var screen: Screen {
-        Screen(erase: cloudErase, units: myData?.unitSystem ?? "si")
+        Screen(erase: cloudErase, units: myData?.unitSystem ?? "si", choices: unitChoices.json)
     }
 
     /// A sheet that edits the record opened.
     func pinScreen() {
         if pins == 0 { pinned = screen }
         pins += 1
+    }
+
+    /// A screen that stays open across several edits (onboarding) takes the record now
+    /// shown as the one its next edit is checked against.
+    func repinScreen() {
+        if pins > 0 { pinned = screen }
     }
 
     /// That sheet closed.
@@ -102,7 +112,7 @@ final class RecordStore {
             try Self.create(recordJSON, at: file)
         }
         do {
-            myData = try engine.myData(recordJSON: recordJSON, now: .now, deviceId: deviceId)
+            myData = try engine.myData(recordJSON: recordJSON, now: .now, deviceId: deviceId, units: unitChoices.json)
         } catch {
             // A damaged file, or one a newer app wrote: keep it as it is for a later fix.
             problem = "Your saved record could not be read, so nothing will be saved over it. \(error.localizedDescription)"
@@ -114,7 +124,7 @@ final class RecordStore {
     /// Show the cloud record the engine opened or took in, and send edits to it.
     /// A record the screen cannot draw is not shown; the last good one stays.
     func showCloud(_ view: HealthEngine.CloudView) {
-        guard let shown = try? engine.myData(recordJSON: view.record, now: .now, deviceId: deviceId) else { return }
+        guard let shown = try? engine.myData(recordJSON: view.record, now: .now, deviceId: deviceId, units: unitChoices.json) else { return }
         recordJSON = view.record
         myData = shown
         problem = nil
@@ -136,16 +146,19 @@ final class RecordStore {
 
     /// The phone's own file, erased by the engine (DataEraser): written, then shown.
     func showErased(_ erased: String) throws {
-        let shown = try engine.myData(recordJSON: erased, now: .now, deviceId: deviceId)
+        // A fresh start: no per-test choice, published only once the erase is on disk (Codex R1).
+        let shown = try engine.myData(recordJSON: erased, now: .now, deviceId: deviceId, units: UnitChoices().json)
         try Self.write(erased, to: file)
         recordJSON = erased
         myData = shown
+        publish(UnitChoices())
         problem = nil
         erasures += 1
     }
 
     /// The cloud record, erased by the engine's session: shown like any record it sends.
     func showErased(_ view: HealthEngine.CloudView) {
+        publish(UnitChoices())
         showCloud(view)
         erasures += 1
     }
@@ -196,10 +209,23 @@ final class RecordStore {
     /// Every value recorded for one metric (US-25 AC9); nil while the record cannot be read.
     func history(for metric: String) -> MetricHistory? {
         guard problem == nil else { return nil }
-        return try? engine.history(recordJSON: recordJSON, metric: metric, now: .now, deviceId: deviceId)
+        // A value page asks on every redraw (a sheet opening, a range picked): the engine
+        // runs once per record and metric. Not observed: a cache, not state.
+        let units = unitChoices.json
+        if let cached = historyCache, cached.record == recordJSON, cached.metric == metric, cached.units == units { return cached.history }
+        let history = try? engine.history(recordJSON: recordJSON, metric: metric, now: .now, deviceId: deviceId, units: units)
+        historyCache = (recordJSON, metric, units, history)
+        return history
     }
 
+    @ObservationIgnored private var historyCache: (record: String, metric: String, units: String, history: MetricHistory?)?
+
     func apply(_ edit: RecordEdit) -> ApplyResult { apply(edit, as: pinned ?? screen) }
+
+    /// The units the row for `metric` shows: its per-test choice, else the record's (AC17e).
+    func units(for metric: String) -> String {
+        unitChoices.system(for: metric, record: myData?.unitSystem ?? "si")
+    }
 
     /// An edit no sheet opened, such as an Apple Health import (D6): checked against
     /// the record as it is now, never against a sheet's pin, so an open sheet cannot
@@ -215,19 +241,23 @@ final class RecordStore {
         guard seen.erase == cloudErase else {
             return .refused(message: "Your record changed while this was open, so this was not saved. Close this and enter the value again.", existingId: nil)
         }
-        if let erase = seen.erase { return applyInCloud(edit, erase: erase, units: seen.units) }
+        if let erase = seen.erase { return applyInCloud(edit, erase: erase, seen: seen) }
         if let problem { return .refused(message: problem, existingId: nil) }
         do {
-            let outcome = try engine.apply(edit, to: recordJSON, now: .now, deviceId: deviceId)
+            let outcome = try engine.apply(edit, to: recordJSON, now: .now, deviceId: deviceId, units: seen.choices)
             guard outcome.ok, let next = outcome.record else {
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
             }
             // An edit that changed nothing (an Apple Health batch with nothing new) writes nothing.
             if next == recordJSON { return .saved }
-            let shown = try engine.myData(recordJSON: next, now: .now, deviceId: deviceId)
+            // The master switch clears every choice, published only with the record it
+            // changed: a failed write keeps both as they were (Codex R1).
+            let choices = Self.clearsChoices(edit) ? UnitChoices() : unitChoices
+            let shown = try engine.myData(recordJSON: next, now: .now, deviceId: deviceId, units: choices.json)
             try Self.write(next, to: file)
             recordJSON = next
             myData = shown
+            publish(choices)
             onEdit?()
             return .saved
         } catch {
@@ -236,19 +266,112 @@ final class RecordStore {
     }
 
     /// Through the engine's open session: the save loop sends it to the cloud.
-    private func applyInCloud(_ edit: RecordEdit, erase: String, units: String) -> ApplyResult {
+    private func applyInCloud(_ edit: RecordEdit, erase: String, seen: Screen) -> ApplyResult {
         do {
-            let outcome = try engine.cloudEdit(edit, erase: erase, units: units, now: .now)
+            let outcome = try engine.cloudEdit(edit, erase: erase, units: seen.units, now: .now, choices: seen.choices)
             guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
             }
             if next == recordJSON { return .saved }
+            // The session has taken the edit: the choices follow it.
+            if Self.clearsChoices(edit) { publish(UnitChoices()) }
             showCloud(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0))
             onEdit?()
             return .saved
         } catch {
             return .refused(message: error.localizedDescription, existingId: nil)
         }
+    }
+
+    // MARK: Documents (US-52 AC13d)
+
+    /// What filing a document did.
+    enum DocumentResult: Equatable {
+        /// `stored`: the original reached the cloud (nil: none was offered to one).
+        /// `unstored`: held originals that still could not be stored. `stale`: the original
+        /// changed or could not be read after the review, so only its text was saved.
+        case saved(count: Int, stored: Bool?, unstored: Int, stale: Bool)
+        case refused(String)
+    }
+
+    /// Files one reviewed document, or a lab report's original, by health-core's
+    /// saveDocuments, the web's one save path. In the cloud: the original goes up first,
+    /// then the rows through the engine's session, with the erase the screen showed.
+    /// On the phone: a text-only row (no original), written to the file as an edit is.
+    func saveDocument(extractionJSON: String, choice: DocumentChoice, original: LabFileReader.Original?) async -> DocumentResult {
+        let seen = pinned ?? screen
+        guard seen.erase == cloudErase else {
+            return .refused("Your record changed while this was open, so this was not saved. Close this and try again.")
+        }
+        if seen.erase == nil, let problem { return .refused(problem) }
+        let before = recordJSON
+        do {
+            // The engine decides whether an original is kept (only in a cloud); off-cloud
+            // the file is not even read, since it would go nowhere. Read now, it must be
+            // the bytes the review read (their hash), or it is left out.
+            let bytes = seen.erase == nil ? nil : original?.verifiedData()
+            let answer = try await engine.documentSave(
+                recordJSON: seen.erase == nil ? before : "", extractionJSON: extractionJSON, choice: choice,
+                original: bytes, erase: seen.erase ?? "", now: .now, deviceId: deviceId)
+            guard answer.ok, let next = answer.record else { return .refused(answer.message ?? "That could not be saved.") }
+            let result = DocumentResult.saved(count: answer.saved ?? 0, stored: answer.stored, unstored: answer.unstored ?? 0, stale: answer.stale ?? false)
+            if let erase = seen.erase {
+                // The engine's session took it; the screen follows unless it has moved on to another record.
+                guard cloudErase == erase, let nextErase = answer.erase else { return result }
+                if next != recordJSON {
+                    showCloud(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0))
+                    onEdit?()
+                }
+                return result
+            }
+            guard try commitPhoneDocument(next, over: before) else {
+                return .refused("Your record changed while this was saving, so it was not saved. Save again.")
+            }
+            return result
+        } catch {
+            return .refused(error.localizedDescription)
+        }
+    }
+
+    /// A document save's record, onto the phone's file: written only over the record the
+    /// save began from (`before`), never over an edit made while it ran. False when refused.
+    func commitPhoneDocument(_ next: String, over before: String) throws -> Bool {
+        guard cloudErase == nil, recordJSON == before else { return false }
+        if next != recordJSON {
+            let shown = try engine.myData(recordJSON: next, now: .now, deviceId: deviceId, units: unitChoices.json)
+            try Self.write(next, to: file)
+            recordJSON = next
+            myData = shown
+            onEdit?()
+        }
+        return true
+    }
+
+    // MARK: Per-test units (US-25 AC17e)
+
+    /// One test to the other units, as the web's unit chip does. Back to the record's
+    /// units drops the choice; nothing is written to the record.
+    func switchUnits(for row: MyData.Row, to system: String) {
+        guard row.switchable == true, let data = myData else { return }
+        let choices = unitChoices.setting(row.metric, to: system == data.unitSystem ? nil : system)
+        // Drawn first: a choice the screen cannot show is not kept, so labels and reading agree.
+        guard let shown = try? engine.myData(recordJSON: recordJSON, now: .now, deviceId: deviceId, units: choices.json) else { return }
+        myData = shown
+        publish(choices)
+    }
+
+    /// The master switch clears every per-test choice, as the web's does, on the phone's
+    /// file and in the cloud alike.
+    private static func clearsChoices(_ edit: RecordEdit) -> Bool {
+        if case .units = edit { true } else { false }
+    }
+
+    /// The choices now in force, kept on the phone. An erase and the master switch publish
+    /// none: a fresh start whose onboarding asks in the record's units (adversary R1).
+    private func publish(_ choices: UnitChoices) {
+        guard choices != unitChoices else { return }
+        unitChoices = choices
+        unitChoices.save()
     }
 
     /// Atomic, so a crash leaves the old record or the new one, never half of each.

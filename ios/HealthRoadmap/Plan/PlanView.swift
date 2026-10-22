@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The plan screen (US-25 AC2, AC6): the user's own record, planned on the phone
 /// by the shared engine and laid out by the web's own `planSections`. It plans
-/// again whenever the record changes.
+/// while on screen: on each return to the tab, and on every record change then.
 struct PlanView: View {
     private enum LoadState {
         case loading
@@ -16,8 +16,13 @@ struct PlanView: View {
     /// Switches to the My data tab.
     let showMyData: () -> Void
     @State private var state = LoadState.loading
+    /// Plans only while on screen: a tab once opened stays alive, and re-planning on
+    /// every My data edit behind it cost the main thread for nothing.
+    @State private var visible = false
 
     var body: some View {
+        // Read once per render, so the task runs once with the value its id names.
+        let planKey = visible ? PlanKey(record: store.recordJSON, units: store.unitChoices.json) : nil
         Group {
             switch state {
             case .loading:
@@ -28,7 +33,7 @@ struct PlanView: View {
                 } description: {
                     Text(reason)
                 } actions: {
-                    Button("Go to My data", action: showMyData)
+                    Button(action: showMyData) { Text("Go to My data").onAccentLabel() }
                         .buttonStyle(.borderedProminent)
                 }
             case .loaded(let sections, let planMs):
@@ -37,8 +42,15 @@ struct PlanView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
-        .task(id: store.recordJSON) {
-            let (next, planned) = load(store.recordJSON)
+        .onAppear { visible = true }
+        .onDisappear {
+            visible = false
+            // Never show a plan from an older record on return, even for a frame.
+            state = .loading
+        }
+        .task(id: planKey) {
+            guard let planKey else { return }
+            let (next, planned) = load(planKey)
             state = next
             // A downloaded engine on trial has planned the user's own record (US-25 AC18).
             // Never when it threw: that is the failure the trial exists to catch (review R5).
@@ -48,13 +60,17 @@ struct PlanView: View {
 
     /// The screen's state, and whether the engine planned the record: a plan, or
     /// health-core's own PlanError (no height or sex). Any other throw is not.
-    private func load(_ record: String) -> (LoadState, planned: Bool) {
+    /// What a plan is computed from: the record, and the per-test units its targets read in (AC17e).
+    private struct PlanKey: Equatable { let record: String; let units: String }
+
+    private func load(_ key: PlanKey) -> (LoadState, planned: Bool) {
         let clock = ContinuousClock()
         do {
             let start = clock.now
-            let json = try engine.plan(recordJSON: record, now: .now, deviceId: store.deviceId)
-            let elapsed = clock.now - start
+            let json = try engine.plan(recordJSON: key.record, now: .now, deviceId: store.deviceId, units: key.units)
             let sections = try engine.sections(planJSON: json)
+            // The whole plan: the engine's plan, its layout and their decoding (D2's budget).
+            let elapsed = clock.now - start
             let ms = Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15
             return (.loaded(sections: sections, planMs: ms), true)
         } catch HealthEngine.EngineError.callFailed(let why) where why.hasPrefix("PlanError: ") {
