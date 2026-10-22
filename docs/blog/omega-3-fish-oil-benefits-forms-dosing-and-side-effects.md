@@ -119,7 +119,7 @@ Higher blood levels of omega-3s have been associated with lower total mortality,
 
 **End-stage kidney disease (n=1,228, 3.5 years):** Fish oil (4 g/day providing 1,600 mg EPA + 800 mg DHA) reduced serious cardiovascular events by 43% in adults on hemodialysis compared to corn oil placebo (Lok, N Engl J Med 2025) [17].
 
-**UK Biobank observational study (n=427,678):** Fish oil supplement users had a 13% lower risk of all-cause mortality, 16% lower risk of cardiovascular death, and 7% lower risk of any cardiovascular event compared to non-users (Li, BMJ 2020) [16].
+**UK Biobank observational study (n=427,678):** Compared with non-users, fish oil supplement users had a hazard ratio of 0.87 (95% CI 0.83-0.90) for all-cause mortality, 0.84 (95% CI 0.78-0.91) for cardiovascular death and 0.93 (95% CI 0.90-0.96) for any cardiovascular event (Li, BMJ 2020) [16].
 
 **Japan EPA Lipid Intervention Study (n=18,645, 4.6 years):** Among people with hypercholesterolemia, 1.8 g/day EPA plus a statin reduced major coronary events by 19% versus statin alone. Benefits were concentrated in those with existing coronary artery disease (28% reduction in unstable angina, 19% reduction in major coronary events) [10].
 
@@ -164,7 +164,7 @@ However, among patients with coronary artery disease on statins with well-contro
 
 ### Triglyceride Reduction
 
-The American Heart Association has concluded that prescription omega-3s (EPA+DHA or EPA-only) at 4 g/day (providing >3 g/day total EPA+DHA) are an effective and safe option for reducing triglycerides, as monotherapy or as an adjunct to other lipid-lowering agents (Skulas-Ray, Circulation 2019) [7].
+The American Heart Association has concluded that prescription omega-3s (EPA+DHA or EPA-only) at 4 g/day (providing >3 g/day total EPA+DHA) are an effective and safe option for reducing triglycerides, as monotherapy or as an adjunct to other lipid-lowering agents (Skulas-Ray, Circulation 2019) [8].
 
 In people with very high triglycerides, 4 g/day of prescription EPA+DHA products such as Lovaza lowers triglycerides by 30% or more, with increases in LDL cholesterol [8].
 
@@ -172,7 +172,7 @@ Prescription Epanova (free fatty acid form) lowered triglycerides by 30.9% at th
 
 Prescription Vascepa (icosapent ethyl, 4 g/day) lowered triglycerides by a placebo-corrected 33.1% in people with very high triglycerides (MARINE) and 21.5% in statin users with high triglycerides (ANCHOR) in 12-week trials, without raising LDL cholesterol (Nelson, Ann Pharmacother 2013) [73].
 
-A meta-analysis found a dose-response relationship: each increase of 1 g/day of long-chain omega-3 intake reduced triglycerides by 5.9 mg/dL, with stronger effects in people with higher baseline triglyceride levels [10].
+A meta-analysis found a dose-response relationship: each increase of 1 g/day of long-chain omega-3 intake reduced triglycerides by 5.9 mg/dL, with stronger effects in people with higher baseline triglyceride levels [1].
 
 ### Depression and Anxiety
 
@@ -288,13 +288,13 @@ People with the highest DHA intake had a lower risk of developing ulcerative col
 
 #### Prevention
 
-A 3-year study of 2,157 generally healthy people aged 70+ in five European countries found 1 g/day omega-3s alone was linked to 30% fewer invasive cancers, a difference that was not statistically significant, and 48% fewer when combined with a simple home strength exercise program. Combined with vitamin D, the risk was 47% lower, and with both vitamin D and the exercise program, 61% lower. There were 81 invasive cancers in total (Bischoff-Ferrari, Front Aging 2022) [24].
+A 3-year study of 2,157 generally healthy people aged 70+ in five European countries found a hazard ratio for invasive cancer of 0.70 (95% CI 0.44-1.09) with 1 g/day omega-3s alone, a difference that was not statistically significant, and 0.52 (95% CI 0.28-0.97) when combined with a simple home strength exercise program. Combined with vitamin D, the hazard ratio was 0.53 (95% CI 0.28-1.00), and with both vitamin D and the exercise program, 0.39 (95% CI 0.18-0.85). There were 81 invasive cancers in total (Bischoff-Ferrari, Front Aging 2022) [24].
 
 The VITAL trial found fish oil did not reduce overall cancer risk [12]. In a VITAL substudy, fish oil did not lower the risk of precancerous colorectal growths overall. Secondary analyses suggested fewer adenomas in African American participants (odds ratio 0.59, 95% CI 0.35-1.00) and in those with low baseline omega-3 levels (odds ratio 0.76, 95% CI 0.57-1.02), but the authors say these possible benefits need further confirmation (Song, JAMA Oncol 2019) [25]. People diagnosed with colorectal cancer who consumed at least 300 mg/day of marine omega-3s had a 41% lower risk of dying from the disease, a borderline result (Song, Gut 2016) [122]. However, high-dose omega-3s for 6 months did not clearly affect rectal cell replication or cell death in people with a history of colorectal adenomas (Murff, Nutr Cancer 2021) [123].
 
 For breast cancer, current use of fish oil supplements was associated with a 32% reduction in risk among postmenopausal women, a finding that held for ductal but not lobular cancers (Brasky, Canc Epidemiol Biomarkers Prev 2010) [124]. Women with early-stage breast cancer with higher intakes of EPA and DHA from food had about a 25% lower risk of further breast cancer events, while intake from fish oil supplements was not linked to outcomes (Patterson, J Nutr 2011) [125]. High intake of fish and long-chain omega-3s was associated with a 16% to 34% lower risk of death from all causes in women with breast cancer (Khankari, Cancer 2015) [126].
 
-Evidence for prostate cancer is mixed and concerning. A cohort study found no association between fish oil use and prostate cancer development (Brasky, Nutr Cancer 2011) [127]. However, men with the highest blood levels of long-chain omega-3s (EPA, DPA and DHA) were 44% and 71% more likely to develop low-grade and high-grade prostate cancers, respectively (Brasky, JNCI 2013) [128]. A study of 100 men on active surveillance for prostate cancer found a high omega-3, low omega-6 diet with fish oil for 1 year lowered the Ki-67 index (a marker of tumor cell division) compared with controls, but had no effect on cancer grade or PSA levels (Aronson, J Clin Oncol 2024) [129].
+Evidence for prostate cancer is mixed and concerning. A cohort study found no association between fish oil use and prostate cancer development (Brasky, Nutr Cancer 2011) [127]. However, men with the highest blood levels of long-chain omega-3s (EPA, DPA and DHA) had a higher risk of low-grade prostate cancer (hazard ratio 1.44, 95% CI 1.08-1.93) and high-grade prostate cancer (hazard ratio 1.71, 95% CI 1.00-2.94) than men with the lowest levels (Brasky, JNCI 2013) [128]. A study of 100 men on active surveillance for prostate cancer found a high omega-3, low omega-6 diet with fish oil for 1 year lowered the Ki-67 index (a marker of tumor cell division) compared with controls, but had no effect on cancer grade or PSA levels (Aronson, J Clin Oncol 2024) [129].
 
 #### During Chemotherapy
 
@@ -304,7 +304,7 @@ Fish oil may prevent weight loss during chemotherapy. Patients with non-small ce
 
 #### Preterm Birth
 
-DHA supplementation during pregnancy may reduce the risk of premature birth, especially among women with low omega-3 levels. A Cochrane Review of 70 RCTs (n=19,927) concluded that long-chain omega-3s reduced the risk of preterm birth (<37 weeks) by 11% and early preterm birth (<34 weeks) by 42%, and reduced the risk of low birthweight (Middleton, Cochrane Database Syst Rev 2018) [37][1][10].
+DHA supplementation during pregnancy may reduce the risk of premature birth, especially among women with low omega-3 levels. A Cochrane Review of 70 RCTs (n=19,927) concluded that long-chain omega-3s reduced the risk of preterm birth (<37 weeks) by 11% and early preterm birth (<34 weeks) by 42%, and reduced the risk of low birthweight (Middleton, Cochrane Database Syst Rev 2018) [37][1].
 
 In a US study, women with low baseline DHA levels who took 1,000 mg/day DHA had half the rate of early preterm birth compared to those on 200 mg/day (2% vs 4.1%). Women with already-high DHA levels showed no dose effect, suggesting supplementation may not provide additional benefit when levels are adequate (Carlson, EClinicalMedicine 2021) [29].
 
@@ -476,7 +476,7 @@ The doses below are those used in trials or advised by expert groups for each co
 
 **General cardiovascular support:** The AHA does not recommend omega-3 supplements for people without a high cardiovascular risk. For people with existing coronary heart disease, it recommends about 1 g/day of EPA plus DHA, preferably from oily fish, with supplements an option under a doctor's direction [1].
 
-**Triglyceride reduction:** Trials used 2,000-4,000 mg EPA+DHA per day to lower triglycerides, under physician supervision. The AHA recommends prescription omega-3s at 4 g/day as effective and safe for reducing triglycerides (Skulas-Ray, Circulation 2019) [7].
+**Triglyceride reduction:** Trials used 2,000-4,000 mg EPA+DHA per day to lower triglycerides, under physician supervision. The AHA recommends prescription omega-3s at 4 g/day as effective and safe for reducing triglycerides (Skulas-Ray, Circulation 2019) [8].
 
 **Depression (adjunctive therapy):** The International Society for Nutritional Psychiatry Research recommends 1-2 g of net EPA daily, from pure EPA or an EPA:DHA formula with a ratio above 2:1 (Guu, Psychother Psychosom 2019) [19].
 
