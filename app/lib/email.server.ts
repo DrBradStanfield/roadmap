@@ -519,10 +519,8 @@ export function buildPlanReadyEmailHtml(
     unsubscribeUrl?: string;
   } = {},
 ): string {
-  const calendar = options.schedule?.length
-    ? scheduleSection(options.schedule) +
-      (options.unsubscribeUrl ? prominentUnsubscribeBlock(options.unsubscribeUrl) : '')
-    : '';
+  const calendar = (options.schedule?.length ? scheduleSection(options.schedule) : '') +
+    (options.unsubscribeUrl ? prominentUnsubscribeBlock(options.unsubscribeUrl) : '');
   const whereItLives = WHERE_YOUR_PLAN_LIVES[lane]
     .map((text) => `<p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">${text}</p>`)
     .join('\n      ');

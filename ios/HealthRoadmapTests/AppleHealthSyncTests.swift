@@ -292,6 +292,9 @@ final class FakeHealthStore: HealthStoreClient {
 
     func canWrite(_ kind: HealthKind) -> Bool { writable.contains(kind) }
 
+    var characteristicsGiven = HealthCharacteristics.none
+    func characteristics() -> HealthCharacteristics { characteristicsGiven }
+
     func save(_ write: HealthWrite) async throws {
         if locked { throw HealthStoreError.locked }
         if refusing.contains(write.syncId) { throw CocoaError(.validationNumberTooLarge) }

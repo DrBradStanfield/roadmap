@@ -44,14 +44,14 @@ struct LabSaveSummary: Decodable, Equatable, Sendable {
 extension HealthEngine {
     /// The review of the server's extraction (the `data` object, as JSON text).
     func labReview(extractionJSON: String, now: Date) throws -> LabReview {
-        let json = try call("labReviewJson", [extractionJSON, now.formatted(Self.instant)])
+        let json = try call("labReviewJson", [extractionJSON, now.formatted(Self.iso)])
         return try JSONDecoder().decode(LabReview.self, from: Data(json.utf8))
     }
 
     /// What saving `refs` on `reportDay` would do, or the engine's refusal. The record is not changed.
     func labSaveSummary(recordJSON: String, extractionJSON: String, refs: [String], reportDay: String, now: Date, deviceId: String) throws -> Result<LabSaveSummary, LabRefusal> {
         let refsJSON = String(decoding: try JSONEncoder().encode(refs), as: UTF8.self)
-        let json = try call("labSaveSummaryJson", [recordJSON, extractionJSON, refsJSON, reportDay, now.formatted(Self.instant), deviceId])
+        let json = try call("labSaveSummaryJson", [recordJSON, extractionJSON, refsJSON, reportDay, now.formatted(Self.iso), deviceId])
         let answer = try JSONDecoder().decode(SummaryAnswer.self, from: Data(json.utf8))
         if answer.ok, let summary = answer.summary { return .success(summary) }
         return .failure(LabRefusal(message: answer.message ?? "These values could not be saved."))

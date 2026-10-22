@@ -54,6 +54,12 @@ final class RecordStore {
         pins += 1
     }
 
+    /// A screen that stays open across several edits (onboarding) takes the record now
+    /// shown as the one its next edit is checked against.
+    func repinScreen() {
+        if pins > 0 { pinned = screen }
+    }
+
     /// That sheet closed.
     func unpinScreen() {
         pins = max(0, pins - 1)
@@ -196,8 +202,15 @@ final class RecordStore {
     /// Every value recorded for one metric (US-25 AC9); nil while the record cannot be read.
     func history(for metric: String) -> MetricHistory? {
         guard problem == nil else { return nil }
-        return try? engine.history(recordJSON: recordJSON, metric: metric, now: .now, deviceId: deviceId)
+        // A value page asks on every redraw (a sheet opening, a range picked): the engine
+        // runs once per record and metric. Not observed: a cache, not state.
+        if let cached = historyCache, cached.record == recordJSON, cached.metric == metric { return cached.history }
+        let history = try? engine.history(recordJSON: recordJSON, metric: metric, now: .now, deviceId: deviceId)
+        historyCache = (recordJSON, metric, history)
+        return history
     }
+
+    @ObservationIgnored private var historyCache: (record: String, metric: String, history: MetricHistory?)?
 
     func apply(_ edit: RecordEdit) -> ApplyResult { apply(edit, as: pinned ?? screen) }
 

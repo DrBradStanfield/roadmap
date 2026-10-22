@@ -4,6 +4,13 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-10-22 (orchestrator): masters cleanup batch 1 (omega-3, cholesterol,
+  magnesium, vitamin C, creatine). ConsumerLab findings are removed and
+  re-sourced to primary studies. Each master gains Key safety points. The
+  omega-3 Current view matches the clinical files. Creatine gains a bipolar
+  caution. Red yeast rice interactions match the lovastatin label. Ruling 17
+  emergency numbers apply. Unreviewed after the review cap: the five touch-up
+  commits (omega-3, vitamin C, magnesium, cholesterol, creatine).
 - 2026-10-22 (Brad): what reached main today.
   - cf8ea1d2 (dc018de3, 098cadde): the creatine card's memory claim now
     names Dr Stanfield as its source; reviews are mixed. Refs [114]-[117]

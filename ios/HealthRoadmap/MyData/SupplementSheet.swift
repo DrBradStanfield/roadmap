@@ -26,6 +26,7 @@ struct SupplementSheet: View {
                 Section {
                     HStack {
                         TextField("Dose", text: $dose)
+                            .analyticsMasked()
                             .keyboardType(.decimalPad)
                             .font(.title2.weight(.semibold))
                             .monospacedDigit()

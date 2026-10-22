@@ -78,10 +78,13 @@ private struct EraseView: View {
         }
     }
 
-    /// Back to the empty My data after an erase; a refusal stays here to try again.
+    /// After an erase, the new-user questions on the empty record (US-54 AC7);
+    /// a refusal stays here to try again.
     private func finish() {
-        let erased = if case .refused = outcome { false } else { true }
+        guard let shown = outcome else { return }
         outcome = nil
-        if erased { dismiss() }
+        if case .refused = shown { return }
+        dismiss()
+        eraser.erasedAndSeen()
     }
 }

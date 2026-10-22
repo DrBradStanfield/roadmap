@@ -14,7 +14,9 @@ final class HealthKitClient: HealthStoreClient {
     var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
     func requestAuthorization() async throws {
-        let read = Set(HealthKind.allCases.flatMap(Self.quantityTypes))
+        // Sex and date of birth too, for onboarding to preselect (US-54 AC3).
+        let characteristics: Set<HKObjectType> = [HKCharacteristicType(.biologicalSex), HKCharacteristicType(.dateOfBirth)]
+        let read = Set<HKObjectType>(HealthKind.allCases.flatMap(Self.quantityTypes)).union(characteristics)
         // Height is read, never written (see `save`), so the sheet does not ask to write it.
         let share = Set(HealthKind.allCases.filter { $0 != .height }.flatMap(Self.quantityTypes))
         try await store.requestAuthorization(toShare: share, read: read)
@@ -47,6 +49,19 @@ final class HealthKitClient: HealthStoreClient {
                 _ = try await store.deleteObjects(of: type, predicate: mine)
             }
         }
+    }
+
+    func characteristics() -> HealthCharacteristics {
+        // Each throws when not allowed; iOS never says which.
+        let sex = (try? store.biologicalSex().biologicalSex).map { value -> String in
+            switch value {
+            case .female: "female"
+            case .male: "male"
+            case .other: "other"
+            default: "notSet"
+            }
+        }
+        return HealthCharacteristics(sex: sex, birth: try? store.dateOfBirthComponents())
     }
 
     func canWrite(_ kind: HealthKind) -> Bool {

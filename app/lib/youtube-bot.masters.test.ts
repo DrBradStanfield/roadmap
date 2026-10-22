@@ -53,6 +53,7 @@ import { platformChatCompletion } from './platform-chat.server';
 import { currentViewSection, safetySections, masterViews, reducedMaster, reducedDrops, MAX_VIEW_CHARS, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_KEY_POINTS_CHARS, BULLET_LINE } from './youtube-context';
 import { MAX_KEY_POINTS_CHARS as CHECKER_MAX_KEY_POINTS_CHARS, BULLET_LINE as CHECKER_BULLET_LINE, keySafetyErrors } from '../../tools/knowledge-batch-check';
 import { getChatCompletion } from './chat.server';
+import { MAX_BLOG_CHARS } from './matched-content';
 import { routeQuery } from './chat-router.server';
 
 const VIEW = '## Current view (reviewed 20 October 2026)\n\nCollagen peptides may improve skin hydration [the-collagen-peptides-for-skin-story-is-changing].';
@@ -73,7 +74,7 @@ const files: Record<string, string> = {
   'tm-numbered': `---\ntitle: "Numbered"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNumbered view.\n\n## 6. Drug Interactions\n\nWarfarin [2].\n\n## 8. References\n\n1. Ref A.\n2. Ref B.\n`,
   // A master whose smallest form still nearly fills the cap: it loads that
   // form and leaves no room even for tm-master-long reduced (US-50 AC13).
-  'tm-huge': `---\ntitle: "Huge"\n---\n\n## Current view (reviewed 20 October 2026)\n\nHuge view.\n\n## 5. Safety and Side Effects\n\n${'h'.repeat(119_750)}\n`,
+  'tm-huge': `---\ntitle: "Huge"\n---\n\n## Current view (reviewed 20 October 2026)\n\nHuge view.\n\n## 5. Safety and Side Effects\n\n${'h'.repeat(MAX_BLOG_CHARS - 250)}\n`,
   'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
   'tm-article': `---\ntitle: "An article"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNot a master.\n`,
   'tm-collagen-video': `---\ntitle: "Collagen video"\n---\n\nThe old collagen video's text.\n`,
@@ -129,18 +130,31 @@ describe('safetySections (US-50 AC6)', () => {
   });
 });
 
-// The masters published on 2026-10-20 without key safety points: every one adds
-// its view plus its "Safety and Side Effects" and "Drug Interactions" sections,
-// within the caps. Vitamin K gained key safety points in masters-cleanup-2, so
-// the AC12 published-masters test below covers it now.
+// The six masters published on 2026-10-20: every one adds its view plus its
+// "Safety and Side Effects" and "Drug Interactions" sections, within the caps.
 describe('masterViews on the published masters (US-50 AC6)', () => {
+  // Magnesium, creatine and vitamin C gained Key safety points in masters-cleanup-1
+  // (2026-10-22), and vitamin K in masters-cleanup-2, so they now add those points
+  // instead (next test).
   const MASTERS = [
     'collagen-benefits-best-forms-dosing-and-side-effects',
-    'magnesium-benefits-best-forms-dosing',
     'taurine-benefits-forms-dosing-and-side-effects',
+  ];
+  const KEYED = [
+    'magnesium-benefits-best-forms-dosing',
     'creatine-benefits-best-forms-dosing-and-side-effects',
     'vitamin-c-benefits-forms-dosing-and-side-effects',
+    'vitamin-k-benefits-forms-dosing-and-side-effects',
   ];
+  it.each(KEYED)('%s adds its view and key safety points, not its whole safety sections (US-50 AC12)', (handle) => {
+    const block = masterViews([handle], [])!;
+    expect(block).not.toBeNull();
+    const view = block.indexOf('### Current view (reviewed');
+    expect(view).toBeGreaterThan(-1);
+    expect(block.indexOf('### Key safety points')).toBeGreaterThan(view);
+    expect(block).not.toMatch(/^### \d+\. (?:Safety and Side Effects|Drug Interactions|References)/m);
+    expect(block).not.toContain("Brad's videos on this topic");
+  });
   it.each(MASTERS)('%s adds its view, then its interaction and safety sections', (handle) => {
     const block = masterViews([handle], [])!;
     expect(block).not.toBeNull();

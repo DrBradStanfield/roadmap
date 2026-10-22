@@ -31,6 +31,8 @@ export interface MyDataRow {
 
 export interface MyData {
   unitSystem: UnitSystem;
+  /** How many times the record was erased, anywhere: a rise starts the phone's questions again (US-54 AC7). */
+  eraseEpoch: number;
   profile: {
     sex: 'male' | 'female' | null;
     birthYear: number | null;
@@ -124,6 +126,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString()): MyDat
   const { sex, birthYear, birthMonth, heightCm } = file.profile;
   return {
     unitSystem: system,
+    eraseEpoch: file.meta.eraseEpoch ?? 0,
     profile: {
       sex: sex ?? null,
       birthYear: birthYear ?? null,

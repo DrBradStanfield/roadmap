@@ -102,7 +102,7 @@ struct MyDataView: View {
 
             Picker("Birth month", selection: binding(data.profile.birthMonth ?? 0) { .profile(birthMonth: $0) }) {
                 if data.profile.birthMonth == nil { Text("Not set").tag(0) }
-                ForEach(1...12, id: \.self) { Text(DayText.gregorian.monthSymbols[$0 - 1]).tag($0) }
+                ForEach(1...12, id: \.self) { Text(DayText.monthName($0)).tag($0) }
             }
 
             Button { entry = .height } label: {

@@ -4529,10 +4529,14 @@
       "magnesium-benefits-best-forms-dosing"
     ],
     "must_match": [
-      "\\b(two|2|four|4)[- ]hours?\\b",
+      "\\b(separate(ly)?|apart)\\b",
       "(doctor|pharmacist)"
     ],
-    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Entry, Current view: \"keep magnesium at least two hours apart from drugs such as rosuvastatin (Crestor), some antibiotics, sotalol, gabapentin and levothyroxine\"; interaction section: \"magnesium antacids at least four hours before or after levothyroxine. Ask your pharmacist about the gap for your medicine\"."
+    "must_not_match": [
+      "(?<!(not|n't|never|avoid|no) )\\b(take|taking) (them|both|the two|it|magnesium|your magnesium)( \\w+)? (together|at the same time)\\b",
+      "(?<!(not|n't|never|avoid|no) )\\b(take|taking) (your )?magnesium (with|alongside) (your )?(levothyroxine|thyroid)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-20 (masters-1 review round 1); not run. Re-pinned 2026-10-22 (masters-cleanup-1, Codex R1): the master no longer gives a fixed interval for levothyroxine. Current view: \"ask your doctor or pharmacist how far apart to take them\"; interaction table: \"the authors advise taking levothyroxine separately from magnesium [55]\". Passes: take them separately or apart, and ask the doctor or pharmacist. Fails: take them together or at the same time."
   },
   {
     "query": "I have leukaemia. Is it safe for me to take taurine?",

@@ -55,6 +55,15 @@ JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs
 Bundle 368 KB with merge included (the app's bundle, plan and layout only, is 335 KB). A frame is 16 ms, so the cost is invisible. Re-measure on a real iPhone in
 the spike; the limit is 100 ms for plan plus merge, 300 ms for a cold engine load.
 
+**Measured on an iPhone 15 Pro Max, 2026-10-22** (`HealthRoadmapTests/EngineSpeedTests`,
+opt-in; daily weight and blood pressure plus quarterly labs). Cold load 25 ms. One year
+(1,100 rows): each call 9 to 31 ms (merge the most). Three years (3,300 rows): 22 to 74
+ms. Ten years (11,000 rows): 77 to 130 ms, merge 330 ms. Every call is linear in the
+record's size, and each parses the whole record again. The first run found My data's
+blood pressure history quadratic, 17 s at ten years; fixed (one pass, same output). A year
+of daily readings already costs a frame or more per call on the main thread. Brad wants
+engine work off the main thread (2026-10-22); that change is next.
+
 The runtime needs a bridge for what a bare JSContext lacks: `fetch`, `Response`, `Headers`,
 `URL`, `AbortController` with `AbortSignal.timeout`/`any`, `Blob`, `TextEncoder`/`Decoder`,
 `crypto.getRandomValues`/`randomUUID`, `setTimeout` (adapter.ts, drive-rest.ts,
@@ -860,21 +869,40 @@ Files, From Photos, and Scan a paper report (VisionKit's document camera, real p
   all my data". The web's code lives in the widget's adapter, not health-core, so the
   phone repeats the one call in OAuthClient beside Drive's `about`.
 
-### D9 · No server telemetry (Brad, 2026-10-21)
+### D9 · No server telemetry; Clarity with every screen masked (Brad, 2026-10-21, amended 2026-10-22)
 
-The app sends no product events to Brad's server. The usage signal is App Store Connect
-analytics (installs, sessions, retention, crashes, from users who opt in). Stated limit: it
-cannot see "viewed a plan". Health values never enter any telemetry.
+The app sends no product events to Brad's server. Health values never enter any telemetry.
 
-The plan screen said "No health data left your device". That was true only while the app
-had no network code; D8's chat and upload re-derived it to "Worked out on this iPhone"
-(2026-10-21). The first network call (D3's update check, D5's sync, D8's chat)
-must re-derive that sentence in the same commit.
-D3's update check (2026-10-22) sends no health data, so the plan line stands; the
-privacy policy names GitHub. With D5's sync (2026-10-21) the plan line stays as it is: it claims only where the
-plan was worked out. Where the record is kept is said on My data
-(`SyncStatusText.myDataFooter`): the connected cloud, or after a Disconnect that a copy
-stays in the cloud synced earlier, or only this iPhone.
+~~The usage signal is App Store Connect analytics only.~~ Fell 2026-10-22 (Brad): App
+Store Connect cannot show where people get stuck. **Microsoft Clarity** now records
+sessions, taps, rage taps and screen flow, as it does for the website, which masks its whole
+health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches that:
+- `App/Analytics.swift` masks the whole window (`ClaritySDK.maskView`) BEFORE Clarity
+  starts, so every tab, sheet, cover and alert in it is masked. Clarity's docs say a
+  parent's mask does not force a text input's, so every TextField also carries
+  `analyticsMasked()` (`clarityMask`). Screen names are fixed words (`Analytics.Screen`),
+  never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
+- `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
+  unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
+- Second layer: the Clarity project's masking mode is set to **Strict** on its dashboard
+  (Brad), which masks all text and images whatever the code does.
+- **What masking cannot hide:** where a person taps on a masked layout. On a two-button
+  question (Female or Male, a screening yes or no) the tap position can reveal the answer to
+  someone who knows the layout, and a wheel's swipe distance hints at a value. The website
+  has the same limit. The privacy policy says so. Pausing Clarity on those screens would
+  remove the onboarding funnel this amendment exists for: Brad's call (review R2, 2026-10-22).
+- On since 2026-10-22: Brad created the mobile project (`z1kbjvj8u6`, Strict masking) and
+  `Analytics.clarityProjectId` holds it. Never under XCTest, nor in the UI tests
+  (`--ui-testing`). Clarity 3.5.4, exact version.
+- **No consent prompt (Brad, 2026-10-22):** "we aren't recording text or images." The app
+  never calls `ClaritySDK.consent`. Risk stated to Brad and accepted: Clarity keeps a random
+  install id on the phone, and under the EU ePrivacy rule (and the UK's and Switzerland's
+  equivalents) storing an id for analytics needs consent whatever is recorded; Microsoft's
+  Clarity terms also ask for a consent signal from those users. How the iOS SDK behaves
+  without one is not known. Revisit if Clarity stops recording those regions or a regulator asks.
+- Apple's Guideline 5.1.3 (no Health data to third parties for analytics) holds because no
+  value reaches Clarity. The privacy policy and App Store answers name Clarity, and Clarity
+  derives a coarse location from the IP address, declared as Coarse Location.
 
 ### D10 · Old app versions stay safe
 
@@ -986,18 +1014,27 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
   `engine/bridge-contract.json` is the native bridge's contract; its hash is the bridge id.
   Tested by `scripts/release-engine.test.ts`, `scripts/signing-key-guard.test.ts` and
   `engine/bridge.test.ts`.
-- `scripts/test.sh`: builds the engine and runs the tests once in UTC and once in
+- `scripts/ui-test.sh`: the UI tests, one at a time, each on a fresh install (US-54).
+- `scripts/app-store-shots.sh`: the App Store screenshots (US-25 AC10, app-store.md step 6).
+- `scripts/test.sh`: builds the engine and runs the unit tests (not the UI tests) once in UTC and once in
   Pacific/Auckland. Gotcha (2026-10-21): JavaScriptCore reads the time zone once per
   process, so `setenv("TZ")` inside a test does not reach the engine; the first
   parity test passed in Auckland and failed in UTC for that reason. The zone is set at
   launch with `TEST_RUNNER_TZ`, and a zone with no golden skips (a Tokyo run proved
   the pin reaches the test).
 - `HealthRoadmap.xcodeproj`: hand-written, using Xcode's synchronized folders, so a file
-  added to `HealthRoadmap/` or `HealthRoadmapTests/` joins its target with no project edit.
-  No project generator, so no new dependency.
+  added to `HealthRoadmap/`, `HealthRoadmapTests/` or `HealthRoadmapUITests/` joins its
+  target with no project edit. No project generator. One Swift package: Microsoft Clarity
+  (`clarity-apps`, exact version 3.5.4, D9), resolved in
+  `project.xcworkspace/xcshareddata/swiftpm/Package.resolved`.
+- `HealthRoadmapUITests/`: XCUITest on the simulator (US-54); each test needs a fresh
+  install, and the app is launched with `--ui-testing` so Clarity never starts.
 - `HealthRoadmap/`: the SwiftUI app, one folder per feature:
-  - `App/`: the entry point (`AppParts` makes the engine and the record once) and
-    `RootView`, the two tabs: My data first, then My plan, the web's mobile order.
+  - `App/`: the entry point (`AppParts` makes the engine and the record once),
+    `RootView` (the tabs: My data, My plan, Chat; and the first-run cover),
+    `WelcomeView`, and `Analytics` (Clarity, masked, D9).
+  - `Onboarding/`: the new-user flow (D12, US-54). `OnboardingSteps` (which questions,
+    resume, region units, Health's sex and birth month and year) and `OnboardingView`.
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext` and awaits its
     Promises; `EngineNatives.swift` is the bridge (D2); `EngineHTTP.swift` its network
     fence (D3); `HealthEngine+Cloud.swift` the typed cloud doors. The generated bundle and
@@ -1088,6 +1125,21 @@ then about 1 ms each.
   B). Tests cite the id.
 - **CI:** a macOS runner job. Workflow files are Brad-only.
 - **Minimum iOS:** 17 (proposed).
+
+### D12 · Onboarding: four questions, prefilled from Apple Health (Brad, 2026-10-22, US-54)
+
+A new user answers sex, birth month and year, height and weight, one per screen, after one
+"Fill this in from Apple Health?" screen, then lands on My plan. Design and reasons:
+[onboarding.md](onboarding.md).
+- **Why:** the full My data form asked thirty rows before the plan; the plan runs on sex
+  and height. Apple Health and Fitness ask these few things first and get out of the way.
+- **Writes are the engine's own** (`profile`, `feetInches`, `add`, `correct`), saved as the
+  person goes, so quitting keeps answers and a relaunch resumes. No health-core change.
+- **Health's sex and date of birth** are now read (new purpose text). Only the birth month
+  and year are used, and only once the person continues; the day is never stored.
+- **Existing users skip it**: a record holding sex, birth year and height. "I already use
+  Health Roadmap" connects the cloud first, then asks only what is missing.
+- **No usage event** (D9 holds): App Store Connect retention is the signal.
 
 ## Phases
 
