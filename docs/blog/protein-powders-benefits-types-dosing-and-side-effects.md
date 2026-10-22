@@ -8,14 +8,25 @@ tags: ["Supplements"]
 keywords: ["protein powder", "whey protein", "casein", "pea protein", "soy protein", "rice protein", "collagen", "creatine", "muscle", "strength training", "resistance training", "exercise", "sarcopenia", "weight loss", "obesity", "diabetes", "insulin resistance", "blood sugar", "cardiovascular", "bone density", "aging", "longevity", "amino acids", "leucine", "bcaa", "hemp protein", "egg protein", "plant protein"]
 summary: "Reference on protein powders. Brad's view: pea protein powder can help when whole foods fall short; his own target is 1.2 g/kg of ideal body weight a day, and with resistance training extra benefit shrinks after 1.3 g/kg. Covers whey, casein, plant types. Kidney disease? Talk to your doctor first."
 reviewed: "2026-10-20"
-sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/protein-powders-shakes-drinks-sports/nutritiondrinks/","checked":"2026-09-29","fingerprint":"sha256:d6c65b80cd69109c3c64c22194dc4204e039058a46683f09aa03cabd0fda14db"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders","checked":"2026-10-20","fingerprint":"publishedAt:2025-11-04T20:37:47Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-19T03:13:05Z"}]
+sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders","checked":"2026-10-20","fingerprint":"publishedAt:2025-11-04T20:37:47Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-19T03:13:05Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects](https://drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects)*
 
 ## Current view (reviewed 20 October 2026)
 
-For people who struggle to meet their protein target from whole foods alone, Brad suggests a pea protein powder, because it is relatively low in methionine (an amino acid flagged in cancer research) and free of the saturated fat found in whey-based products (Brad's current guidance, 19 Feb 2026). Brad pays close attention to lead test results for protein powders, but he bases his decisions on FDA safety thresholds, which are already very conservative and grounded in known clinical risk ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)). Protein supplementation combined with resistance exercise improves strength and lean mass, with muscle gains possible up to about 1.6 g/kg a day, but a dose-response meta-analysis found the rate of benefit diminishes rapidly after 1.3 g/kg a day (Brad's current guidance, 31 Jul 2026). For strength in particular, protein supplementation beyond about 1.2 g/kg a day shows minimal additional benefit (Brad's current guidance, 15 Apr 2026). Brad's own daily target is 1.2 g of protein per kg of ideal body weight, and people with chronic kidney disease (stages 3 to 5) should consult their doctor about protein intake (Brad's current guidance, 31 Jul 2026). Protein powder is a supplement, meant to complement, not replace, whole foods such as lentils, beans, chickpeas and nuts, which also provide fibre ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)). Brad's taking a supplement does not mean you should, and he advises talking to a healthcare professional before adding any new supplement ([Brad, 19 Nov 2024](https://drstanfield.com/blogs/articles/only-supplements-work-2025)).
+For people who struggle to meet their protein target from whole foods alone, Brad suggests a pea protein powder, because it is relatively low in methionine (an amino acid flagged in cancer research) and free of the saturated fat found in whey-based products (Brad's current guidance, 19 Feb 2026). Brad pays close attention to lead test results for protein powders, but he bases his decisions on FDA safety thresholds, which are already very conservative and grounded in known clinical risk ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)). Protein supplementation combined with resistance exercise improves strength and lean mass, with muscle gains possible up to about 1.6 g/kg a day, but a dose-response meta-analysis found the rate of benefit diminishes rapidly after 1.3 g/kg a day (Brad's current guidance, 31 Jul 2026). For strength in particular, protein supplementation beyond about 1.2 g/kg a day shows minimal additional benefit (Brad's current guidance, 15 Apr 2026). Brad's own daily target is 1.2 g of protein per kg of ideal body weight, and people with chronic kidney disease (stages 3 to 5) should consult their doctor about protein intake (Brad's current guidance, 31 Jul 2026). Protein powder is a supplement, meant to complement, not replace, whole foods such as lentils, beans, chickpeas and nuts, which also provide fibre ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)).
+
+## Key safety points
+
+- Soy protein may reduce absorption of thyroid hormone medicine, dietary protein can reduce levodopa absorption, and dairy reduces tetracycline absorption; ask your doctor or pharmacist about timing [33][107][108].
+- If you have chronic kidney disease, ask your doctor how much protein suits you before using a protein powder; high protein intake may speed its progression [104][105].
+- People allergic to milk should avoid whey and casein, including laboratory-made whey, which still contains the milk allergen beta-lactoglobulin [10]. Soy protein can also cause severe allergic reactions, and concentrated pea protein may be an allergy concern [122].
+- Mycoprotein (Quorn) has been linked with allergic reactions, including anaphylaxis, one of them fatal [117].
+- In people with a urea cycle disorder, a rare genetic condition, a large rise in protein intake can trigger high blood ammonia and brain dysfunction [125].
+- Protein powders can contain heavy metals such as lead; a risk assessment of published test results suggested typical servings would not harm health [119].
+- In older men, whey drinks lowered blood pressure, most clearly between 120 and 180 minutes after drinking [123].
+- Whey protein supplements have been linked with acne in teenagers and young adults [120][121].
 
 ## Brad's videos on this topic
 
@@ -24,13 +35,11 @@ For people who struggle to meet their protein target from whole foods alone, Bra
 
 ## 1. Overview
 
-Protein is an essential macronutrient required to build, maintain, and repair muscle tissue, and it plays a central role in virtually every metabolic process in the human body. Protein powders offer a concentrated source of protein without the significant saturated fat, cholesterol, or excess carbohydrates that can accompany whole-food protein sources such as meats and dairy [1]. However, protein powders are ultra-processed foods, and the whole foods from which they are derived provide important nutrients beyond protein — including vitamins, minerals, healthful fats, complex carbohydrates, and fiber — that powders typically lack [1].
+Protein is an essential macronutrient required to build, maintain, and repair muscle tissue, and it plays a central role in virtually every metabolic process in the human body.
 
-The Recommended Dietary Allowance (RDA) for adults is 0.8 g/kg (0.36 g/lb) of body weight, which is 54 g a day for a 150 lb person [1]. In pregnancy the RDA is 1.1 g/kg a day [114]. The International Society of Sports Nutrition took the position in 2007 that exercising people need more, about 1.4 to 2.0 g/kg (0.64 to 0.91 g/lb) a day depending on the type and intensity of exercise [1]. Daily protein should not be eaten in one sitting, as the usable amount for muscle building from a single meal is believed to be roughly 30 g [1].
+The recommended protein intake (RDA) for adults is 0.8 g/kg of body weight a day [2]. In pregnancy the RDA is 1.1 g/kg a day [114]. The International Society of Sports Nutrition took the position in 2007 that physically active people need more, about 1.4 to 2.0 g/kg a day [116].
 
 Many older adults fail to meet even basic protein requirements. Analysis of NHANES data (2005–2014) found that among men, 31% of 51–60 year-olds, 37% of 61–70 year-olds, and 42% of those over 70 did not consume the minimum 0.36 g/lb recommended. For women, the figures were even higher: 45%, 48%, and 50% respectively (Krok-Schoen, *J Nutr Health Aging*, 2019) [2]. There is evidence that protein intake in older adults may need to be 25–50% above current recommendations — approximately 0.45 to 0.55 g/lb — to better stimulate muscle creation and reduce muscle loss (Deutz, *Clin Nutr*, 2014) [3]. A study among people aged 60+ in South Florida found that those with the lowest average protein intakes were African Americans (0.29 g/lb), followed by European Americans (0.38 g/lb), while Hispanic Americans had the highest protein intakes (0.44 g/lb) (Gropper, *J Nutr Geron Geriat*, 2019) [4].
-
-Protein powders typically come in canisters or packets ready to be mixed with water, milk, juice, or other beverages. They are marketed as dieting aids, meal replacements, endurance and recovery products, and concentrated protein sources — primarily for athletes seeking to build muscle and strength [1].
 
 ## 2. Forms and Bioavailability
 
@@ -40,36 +49,23 @@ Not all protein powders are equivalent. The protein source, processing method, a
 
 #### Whey Protein
 
-Whey is the most widely used protein source in commercial protein powders. It is derived from the liquid portion of milk during cheese production and is a complete protein containing all nine essential amino acids. Whey has the highest branched-chain amino acid (BCAA) content found in nature — the BCAAs valine, leucine, and isoleucine become depleted following exercise and are needed for muscle tissue maintenance [1]. Whey protein is believed to be digested faster than casein and more completely than soy protein [1].
-
-**Forms of whey protein:**
-
-- **Whey concentrate** — Contains 25–80% protein by weight, with residual lactose, fat, and cholesterol. If concentrated without heat ("cold process"), it may retain immunostimulant immunoglobulins [1].
-- **Whey isolate** — Lower in lactose, fat, and cholesterol than concentrate. Suitable for lactose-intolerant individuals as it contains minimal lactose (Kalman, *Foods*, 2014) [1][5].
-- **Whey hydrolysate** — Pre-digested protein that is assimilated more quickly than non-hydrolyzed forms. Well suited for post-exercise recovery due to increased bioavailability and reduced digestive energy requirements [1].
-- **Ion-exchange purified whey** — The purest form, but may have reduced immunostimulant properties due to chemical processing [1].
-
-Isolates, hydrolysates, and other purified forms are typically more expensive than standard concentrates due to additional processing [1].
+Whey is the most widely used protein source in commercial protein powders. It is derived from the liquid portion of milk during cheese production and is a complete protein containing all nine essential amino acids. Whey is digested faster than casein: in a single-meal study it caused a sharp but short rise in blood amino acids [102].
 
 Any whey protein product will contain cysteine, which — along with glycine and glutamic acid — can be converted to glutathione, a key antioxidant (Tsutsumi, *Austin J Nutri Food Sci*, 2014) [6]. One trial found that a standard whey protein was actually more effective as a glutathione precursor than a patented "immunoenhancing" whey product (Micke, *Eur J Clinical Investigation*, 2001) [7].
 
 Whey protein may contain trace amounts of estrogens from cow's milk, but amounts are extremely small and likely inconsequential — estradiol is bound to fat in milk and there is little fat in whey protein powders (Pape-Zambito, *J Dairy Sci*, 2007) [8]. Due to soy in cattle feed, whey powders may also contain very small amounts of soy isoflavones. Analysis of a whey protein supplement found less than 1 mg each of daidzein and genistein per 26.3 g serving (Haun, *Sci Rep*, 2018) [9].
 
-A laboratory-produced form of whey protein (Perfect Day), made via fermentation by the fungus *Trichoderma reesei*, is marketed as non-animal whey protein. It has a similar amino acid profile to cow-derived whey, including 5 g of BCAAs per 32 g serving, and is considered suitable for vegans, lactose-free, and cholesterol-free. However, it contains at least 90% beta-lactoglobulin — a major milk allergen — and products must bear the allergen statement "Contains Milk Protein" (FDA, GRAS Notice No. 863) [1][10].
+A laboratory-produced form of whey protein (Perfect Day), made via fermentation by the fungus *Trichoderma reesei*, is marketed as non-animal whey protein. However, it still contains beta-lactoglobulin, a major milk allergen (FDA, GRAS Notice No. 863) [10].
 
 #### Casein Protein
 
-Casein is the other major milk protein (milk protein is 80% casein and 20% whey). It is also a complete protein, extremely high in the amino acid glutamine — the predominant amino acid in muscles. However, casein has a lower biological value than whey, meaning a lower percentage of consumed protein is absorbed and utilized [1]. Casein is digested more slowly than whey, releasing amino acids over a longer period [1]. This sustained amino acid release makes casein theoretically beneficial for overnight muscle maintenance.
+Casein is the other major milk protein. It is digested more slowly than whey, releasing amino acids over a longer period, probably because it leaves the stomach slowly [102]. This sustained amino acid release makes casein theoretically beneficial for overnight muscle maintenance.
 
 In a single-meal tracer study in healthy adults, whey caused a sharp but short rise in blood amino acids, while casein produced a prolonged, moderate rise, probably because it leaves the stomach slowly [102].
 
 A study among healthy, active young men in a resistance training program found that after 3 months, average increases in muscle strength and lean mass were similar whether 35 g of casein was consumed at bedtime or earlier in the day (at least 6 hours before bedtime). Both groups also consumed 25 g of whey protein immediately after resistance training. Increases in lean mass (approximately 5 lbs) and muscle soreness were similar (Joy, *J Int Soc Sports Nutr*, 2018) [11].
 
-A study funded by Immunotec found that among sedentary older adults (average age 71) who began resistance exercise 3 times per week, taking 20 g of a patented whey isolate (Immunocal) or 20 g of casein daily for 4.5 months produced increases in strength in both groups but no significant change in lean body mass, with lower body strength increases approximately 10% greater with the whey isolate (Karelis, *J Nutr Health Aging*, 2015) [12]. However, given casein's lower bioavailability, the comparison is not particularly impressive.
-
-**Forms of casein:**
-- **Micellar casein** — Natural, un-denatured form; more slowly absorbed [1].
-- **Caseinates** (e.g., calcium caseinate) — Chemically treated forms that are more readily absorbed and provide a good source of calcium [1].
+A study funded by Immunotec found that among sedentary older adults (average age 71) who began resistance exercise 3 times per week, taking 20 g of a patented whey isolate (Immunocal) or 20 g of casein daily for 4.5 months produced increases in strength in both groups but no significant change in lean body mass, with lower body strength increases approximately 10% greater with the whey isolate (Karelis, *J Nutr Health Aging*, 2015) [12].
 
 **Prostate cancer concern:** Because casein is the main protein in milk and dairy, and the National Cancer Institute notes that "a diet high in dairy foods and calcium may cause a small increase in the risk of prostate cancer," there is some concern. A laboratory study showed that casein protein promoted growth of certain prostate cancer cells (but not breast cancer cells) (Park, *World J Mens Health*, 2014) [13]. An observational study of 500,000 men from ten European countries found a 17% increased risk of prostate cancer among those consuming the most yogurt (median 57 g/day) compared to the least (median 15 g/day), though there was no increased risk from milk or cheese in general (Allen, *Br J Cancer*, 2008) [14]. However, other dairy components such as fat content may play a role. Among men with localized prostate cancer, highest versus lowest whole milk intake doubled the risk of progression to lethal prostate cancer, while highest low-fat dairy intake showed the opposite effect (Pettersson, *Cancer Epidemiol Biomarkers Prev*, 2012) [15]. At this point it is not possible to know whether casein protein itself increases prostate cancer risk in men, but it would seem best to use it in moderation.
 
@@ -77,11 +73,11 @@ A study funded by Immunotec found that among sedentary older adults (average age
 
 #### Egg White Protein
 
-Egg white (albumen) protein powder is a complete protein. Although sometimes promoted for very high biological value, this applies only at lower intake levels (approximately 14 g/day) (Srikantia, FAO, 1981) [1]. There is a lack of clinical studies comparing egg white protein with other types. A small 8-week study in female athletes (ages 18–22) taking 15 g of egg white protein before exercise found no significant increase in muscle strength compared to a carbohydrate control (Hida, *Nutrients*, 2012) [20].
+Egg white (albumen) protein powder is a complete protein. There is a lack of clinical studies comparing egg white protein with other types. A small 8-week study in female athletes (ages 18–22) taking 15 g of egg white protein before exercise found no significant increase in muscle strength compared to a carbohydrate control (Hida, *Nutrients*, 2012) [20].
 
 #### Collagen Protein
 
-Collagen is not a preferred protein source for building muscle [1]. A study among 22 women aged 60–80 who performed resistance exercise showed whey protein to be much more effective at building muscle than collagen protein (Oikawa, *Am J Clin Nutr*, 2020) [1][21]. Collagen should not be expected to provide the muscular benefits of a complete protein powder, though it may provide modest benefits for wrinkles and osteoarthritis.
+Collagen appears to be a weaker choice than whey for building muscle. In 22 healthy older women (average age 69), whey protein raised muscle protein synthesis more than collagen protein, with and without resistance exercise (Oikawa, *Am J Clin Nutr*, 2020) [21]. Collagen should not be expected to provide the muscular benefits of a complete protein powder, though it may provide modest benefits for wrinkles and osteoarthritis.
 
 #### Bone Broth Protein
 
@@ -89,7 +85,7 @@ Bone broth protein supplements consist of dehydrated broth typically from chicke
 
 #### Cricket Protein
 
-Cricket powder (made from washed, dried, and ground crickets) is approximately 60% protein, rich in vitamin B-12, and considered a more environmentally friendly animal protein source. About 20–25% of the powder is fat (some saturated), with minimal carbohydrate (mainly fiber) and no sugar [1]. A European Food Safety Authority safety review (2018) noted bioaccumulation of heavy metals — particularly cadmium, arsenic, lead, and tin — as a concern of "considerable" importance [26]. Additional concerns include high bacterial counts, spore-forming bacteria survival after thermal processing, and allergenicity (people allergic to insects or shellfish may react) [26].
+Cricket powder is made from washed, dried, and ground crickets. A European Food Safety Authority safety review (2018) noted bioaccumulation of heavy metals — particularly cadmium, arsenic, lead, and tin — as a concern of "considerable" importance [26]. Additional concerns include high bacterial counts, spore-forming bacteria survival after thermal processing, and allergenicity (people allergic to insects or shellfish may react) [26].
 
 ### Plant-Based Proteins
 
@@ -110,15 +106,15 @@ Individual plant proteins can be low in specific essential amino acids. Key limi
 
 Sources: Craig, *J Am Diet Assoc*, 2009; Marsh, *Med J Aust*, 2013; Gorissen, *Amino Acids*, 2018 [27][28][29].
 
-Despite these limitations, studies show that soy, rice, pea protein, and mycoprotein can be just as effective as whey protein for maintaining or building muscle mass when combined with routine resistance exercise [1].
+Despite these limitations, trials show that soy protein, pea protein, and mycoprotein can be as effective as animal protein for building muscle when combined with resistance exercise [30][38][46].
 
 #### Soy Protein
 
-Soy protein is a complete protein acceptable to vegetarians and vegans, containing little fat or cholesterol, particularly in isolate form. Soy protein is considered equivalent to human protein, though it contains little of the sulfur-containing amino acid methionine — a deficiency that is not a problem in normal adult nutrition (Gorissen, *Amino Acids*, 2018) [27]. In 1999, the FDA authorized the health claim that eating 25 g of soy protein daily, combined with a low-fat, low-cholesterol diet, can reduce heart disease risk [1]. However, in October 2017, the FDA proposed revoking this claim due to inconsistent findings since 1999 regarding whether soy protein lowers LDL cholesterol [1].
+Soy protein is a complete protein acceptable to vegetarians and vegans, containing little fat or cholesterol, particularly in isolate form. Soy protein is considered equivalent to human protein, though it contains little of the sulfur-containing amino acid methionine — a deficiency that is not a problem in normal adult nutrition (Gorissen, *Amino Acids*, 2018) [27].
 
 A study among 38 men (average age 26) compared soy protein supplementation with a plant-based diet and whey protein supplementation with a mixed diet, combined with resistance exercise twice weekly for 12 weeks. Both groups achieved similar, modest increases in lean muscle mass. The total daily protein intake for all participants was standardized at 1.6 g/kg body weight (Hevia-Larrain, *Sports Med*, 2021) [30].
 
-Soy protein contains isoflavones with weak estrogen-like effects, but concentrations are much lower than in soy flour (approximately 200 mg aglycone isoflavones per 100 g). Soy protein concentrate contains only 12 mg per 100 g if produced by alcohol extraction, or approximately 100 mg if produced by water extraction [1]. Analysis of a supplement containing 80% soy protein concentrate found 14 mg daidzein and 18 mg genistein per 39 g serving, and consuming two servings daily for 3 months had no effect on blood estradiol levels in healthy college-aged men (Haun, *Sci Rep*, 2018) [9]. Other clinical studies show no impact on estrogen levels or gynecomastia risk among men taking up to 150 mg of isoflavones daily (Messina, *Nutrients*, 2016) [31]. Although animal research has linked excessive soy intake with reduced fertility, a study among women found that higher intake of soy or soy isoflavones was not associated with having fewer eggs [1].
+Soy protein contains isoflavones with weak estrogen-like effects. Analysis of a supplement containing 80% soy protein concentrate found 14 mg daidzein and 18 mg genistein per 39 g serving, and consuming two servings daily for 3 months had no effect on blood estradiol levels in healthy college-aged men (Haun, *Sci Rep*, 2018) [9]. Other clinical studies show no impact on estrogen levels or gynecomastia risk among men taking up to 150 mg of isoflavones daily (Messina, *Nutrients*, 2016) [31].
 
 **Thyroid concern:** Anyone with thyroid disease or predisposition to thyroid dysfunction should limit soy protein intake. Isoflavones in soy can affect thyroid hormone levels. A study in adults with normal thyroid function found that 15 g of soy protein containing approximately 33 mg aglycone isoflavones daily increased TSH and rT3 and decreased fT4 after 3 months — though levels returned to normal by 6 months (Sathyapalan, *Front Endocrinol*, 2018) [32]. Soy isoflavones may also inhibit absorption of thyroid hormone medication (Messina, *Thyroid*, 2006) [33].
 
@@ -136,7 +132,7 @@ A placebo-controlled study comparing pea protein isolate to whey protein found n
 
 **Phytate concern:** Pea protein powder may contain high concentrations of the antinutrient phytate, which can bind minerals (iron, zinc, calcium) in the gastrointestinal tract and form insoluble complexes that cannot be absorbed. A laboratory study found one pea protein preparation was 2% phytate by weight — a 33 g serving would contain 660 mg of phytate (Naczk, *J Food Sci*, 1986) [40]. Phytate levels were somewhat lower in soy protein isolate (1.69%) and concentrate (1.17%), and much lower in wheat gluten (0.27%). However, amounts vary widely; NOW Foods reports their pea protein contains only 0.61% phytate, comparable to dried peas (2.2–12.2 mg/g) (Schlemmer, *Mol Nutr Food Res*, 2009) [41]. The average daily phytate intake in the US is estimated at 750 mg, with significantly higher intakes among vegetarians (1,250–1,550 mg) [41]. Consuming pea protein 2–3 hours apart from mineral-rich meals or supplements can reduce phytate effects.
 
-**Kidney stone risk:** In a small crossover study, nine young adults without kidney stones took 60 g of protein a day as shakes for 5 days. Compared with whey, pea protein raised urine oxalate, and pea and soy protein lowered urine calcium and raised urine pH; calcium oxalate supersaturation did not differ (Wong, *Urology*, 2026) [42]. ConsumerLab reports that pea protein also raised calcium phosphate supersaturation and lowered uric acid supersaturation, so it may suit people prone to uric acid or cystine stones better than those at risk of calcium phosphate or calcium oxalate stones, although taking it with calcium might reduce the effect on calcium oxalate stone risk [1]. The study was short-term and did not include people with a history of kidney stones [42].
+**Kidney stone risk:** In a small crossover study, nine young adults without kidney stones took 60 g of protein a day as shakes for 5 days. Compared with whey, pea protein raised urine oxalate, and pea and soy protein lowered urine calcium and raised urine pH; calcium oxalate supersaturation did not differ (Wong, *Urology*, 2026) [42]. The study was short-term and did not include people with a history of kidney stones [42].
 
 #### Hemp Protein
 
@@ -152,15 +148,11 @@ Mycoprotein is protein derived from the fungus *Fusarium venenatum*. By dry weig
 
 A 10-week study found that mycoprotein supplementation plus resistance training was as beneficial for increasing muscle mass and strength as milk-based protein. In the study, 22 young adults participated in resistance exercise 5 times weekly. Those on a vegan diet supplemented with mycoprotein (15.3 g post-exercise, 30.7 g before sleep) and those on an omnivorous diet supplemented with equivalent milk-based protein both increased lean mass by approximately 6.8 lbs and showed significantly increased strength for deadlift, squat, and bench press (Monteyne, *J Nutr*, 2023) [46]. However, the lack of a no-supplement control group means the protein's specific contribution cannot be confirmed.
 
-Mycoprotein may cause gastrointestinal distress due to high fiber content (Finnigan, *Curr Dev Nutr*, 2019) [47]. Other reported adverse reactions include vomiting, nausea, diarrhea, hives, and breathing difficulties [1]. Two deaths from anaphylactic reactions have occurred among people with asthma who consumed mycoprotein-based products [1]. Note that many Quorn products are not vegan because they also contain egg albumin as a binding ingredient [47].
+Mycoprotein may cause gastrointestinal distress due to high fiber content (Finnigan, *Curr Dev Nutr*, 2019) [47]. In self-reports of reactions to Quorn products, people described gut symptoms such as vomiting and diarrhea, and allergic reactions including hives and anaphylaxis, one of them fatal (Jacobson, *Ann Allergy Asthma Immunol*, 2018) [117]. Note that many Quorn products are not vegan because they also contain egg albumin as a binding ingredient [47].
 
 ### Protein Purity and Essential Amino Acid Content
 
-Serving sizes vary widely, from about 10 g to more than 90 g of powder, but are typically 30 to 45 g [1]. A 45 g serving of a high-protein mix might provide about 30 g of protein, 10 g of carbohydrate and 2 g of fat, or 178 calories [1].
-
-To compare products, look at what share of each serving is protein. Since protein has 4 calories per gram, the leanest products start at about 80 calories per 20 g of protein, while more complex products reach 200 calories per 20 g [1].
-
-**Amino acid spiking** means adding cheaper amino acids to fool the standard protein test, which breaks protein down into amino acids and reports the total as protein [1].
+To compare products, look at what share of each serving is protein. For independent product testing, see consumerlab.com or Labdoor.
 
 ## 3. Evidence for Benefits
 
@@ -277,7 +269,7 @@ Combining protein supplementation with high-intensity interval training (HIIT) d
 | Exercising people (ISSN, 2007) | 0.64–0.91 | 1.4–2.0 | – |
 | Point beyond which a 49-study review found no added muscle benefit | 0.73 | 1.6 | 109.5 g/day |
 
-Sources: National Academies, 2005; International Society of Sports Nutrition, 2007; Deutz, *Clin Nutr*, 2014; Morton, *Br J Sports Med*, 2017 [1][3][48].
+Sources: Krok-Schoen, *J Nutr Health Aging*, 2019; Campbell, *J Int Soc Sports Nutr*, 2007; Deutz, *Clin Nutr*, 2014; Morton, *Br J Sports Med*, 2017 [2][116][3][48].
 
 These are trial and guideline figures. Brad's own view on how much is useful is in the Current view above.
 
@@ -285,7 +277,7 @@ The RDA while breastfeeding is 1.3 g/kg a day [115]. Brad's view (October 2026) 
 
 ### Per-Meal Protein
 
-The usable amount of protein from a single meal for muscle synthesis is believed to be roughly 30 g [1]. Protein taken after, rather than before, exercise may be more beneficial [1]. It has been suggested that dividing daily protein intake over three meals may best stimulate muscle growth (Paddon-Jones, *Curr Opin Clin Nutr Metab Care*, 2009) [89].
+Protein taken after, rather than before, exercise may be more beneficial [63]. It has been suggested that dividing daily protein intake over three meals may best stimulate muscle growth (Paddon-Jones, *Curr Opin Clin Nutr Metab Care*, 2009) [89].
 
 The International Society of Sports Nutrition's position stand suggests about 0.25 g of high-quality protein per kg of body weight per serving, or 20 to 40 g, spread evenly every 3 to 4 hours across the day [103]. It sets no strict post-workout window: protein before or after exercise helps, and the muscle-building effect of exercise lasts at least 24 hours, though it likely fades with time [103].
 
@@ -301,7 +293,7 @@ For blood sugar control, consuming 20 g whey protein 15 minutes before or during
 
 ### Plant-Based Protein Adjustments
 
-Plant proteins have a lower ratio of essential amino acids to total protein, so a larger serving is needed to match whey: about 37 g of pea protein provides the 10.9 g of essential amino acids in 25 g of whey [1][27]. Pairing complementary plant proteins (for example pea with rice) helps meet each essential amino acid requirement [1][27].
+Plant proteins have a lower ratio of essential amino acids to total protein, so a larger serving is needed to match whey: about 37 g of pea protein provides the 10.9 g of essential amino acids in 25 g of whey [27]. Pairing complementary plant proteins (for example pea with rice) helps meet each essential amino acid requirement [27].
 
 ### Protein Powder as Part of MicroVitamin+ Powder
 
@@ -313,17 +305,17 @@ Protein powders can be mixed into hot food or beverages without reducing protein
 
 ### Storage
 
-Protein powder is quite stable in dry form with a shelf life of 9–18 months (up to 2 years) at room temperature (Tunick, *J Dairy Sci*, 2016; Sithole, *J Dairy Sci*, 2005) [98]. Store in a closed container at room temperature, away from light. Fats and oils in protein powders can form volatile compounds over time; exposure to ambient light can worsen off-flavors in pea protein, leading to rancid and sulfurous odor as well as color changes (Fischer, *Molecules*, 2022) [99]. Similar degradation occurs in whey protein stored at high temperatures (113°F) (Javidipour, *Dairy Sci Technol*, 2008) [100]. Proteins stored at very high temperatures (140°F) may not mix as well due to protein clumping (Paul, *J Food Eng*, 2022) [101]. Refrigeration is not necessary and may cause moisture accumulation from condensation. To reduce moisture exposure in humid climates, store in several small containers rather than one large one [1].
+Protein powder is quite stable in dry form with a shelf life of 9–18 months (up to 2 years) at room temperature (Tunick, *J Dairy Sci*, 2016; Sithole, *J Dairy Sci*, 2005) [98]. Store in a closed container at room temperature, away from light. Fats and oils in protein powders can form volatile compounds over time; exposure to ambient light can worsen off-flavors in pea protein, leading to rancid and sulfurous odor as well as color changes (Fischer, *Molecules*, 2022) [99]. Similar degradation occurs in whey protein stored at high temperatures (113°F) (Javidipour, *Dairy Sci Technol*, 2008) [100]. Proteins stored at very high temperatures (140°F) may not mix as well due to protein clumping (Paul, *J Food Eng*, 2022) [101]. Refrigeration is not necessary and may cause moisture accumulation from condensation.
 
 ## 5. Safety and Side Effects
 
 ### Digestive Issues
 
-Whey protein contains lactose, which can cause bloating, gas, cramps, and diarrhea in lactose-intolerant individuals. Whey concentrates contain up to 5% lactose, while isolates contain minimal lactose and are generally well tolerated (Kalman, *Foods*, 2014) [5][1]. Plant-based protein powders may contain anti-nutrients like phytic acid, which can bind minerals (iron, zinc, calcium) and reduce their absorption when consumed in large amounts [40][41].
+Whey protein contains lactose, which can cause bloating, gas, cramps, and diarrhea in lactose-intolerant individuals. Whey isolates may contain less lactose than concentrates, so they may be easier to tolerate. Plant-based protein powders may contain anti-nutrients like phytic acid, which can bind minerals (iron, zinc, calcium) and reduce their absorption when consumed in large amounts [40][41].
 
 ### Kidney Strain
 
-Increasing protein intake is not associated with a decrease in kidney function in healthy adults, but people with, or at high risk of, kidney disease may be advised to limit protein intake [1]. Reduced protein intake may help slow the progression of severe kidney disease, while for mild or slowly progressing kidney disease it may not be necessary; talk with your doctor to be sure [1]. A 10-year study of 1,324 adults (average age 64) that measured kidney function found that higher protein intake was not linked with decreased kidney function, even in people at higher risk for chronic kidney disease [1]. Excessive cricket protein intake may also not be advisable for people with impaired kidney function [26].
+A study of 1,324 adults (average age 64) followed for a median of 10 years, which measured kidney function directly, found that higher habitual protein intake was not linked with decline in kidney function (Rinde, *Clin Kidney J*, 2026) [118]. Excessive cricket protein intake may also not be advisable for people with impaired kidney function [26].
 
 The 2020 KDOQI nutrition guideline for chronic kidney disease, written with the Academy of Nutrition and Dietetics, gives advice on dietary protein intake and nutritional supplements; it covers people with advanced or end-stage kidney disease, people with stages 1 to 5 disease who are not on dialysis, and people with a kidney transplant [104]. A recent narrative review concluded that in adults, high protein intake may speed the progression of chronic kidney disease, and that protein advice should be personalised to age and kidney function [105]. If you have chronic kidney disease, ask your doctor how much protein suits you before using a protein powder.
 
@@ -331,25 +323,25 @@ In adults without chronic kidney disease, a meta-analysis of 22 randomised trial
 
 ### Heavy Metal Contamination
 
-Testing by the Clean Label Project of 160 top-selling protein powders, published in 2025, found that almost half exceeded at least one of California's Proposition 65 limits for heavy metals [1]. On average, plant-based powders contained three times more lead and five times more cadmium than whey-based powders, organic powders three times more lead and twice the cadmium of non-organic ones, and chocolate powders four times more lead and 110 times more cadmium than vanilla ones [1]. The Proposition 65 warning level for lead, 0.5 mcg per daily serving, is set for reproductive and developmental harm and matters most for young children and women who are pregnant or breastfeeding [1]. An analysis of earlier test data concluded that protein powders at their recommended servings did not pose an increased health risk from heavy metals, though it did not assess cancer risk or combined exposure to several metals [1].
+A 2020 risk assessment of published heavy-metal test results for protein powders found that one or three servings a day did not pose an increased health risk, with the lowest risk in whey powders (Bandara, *Toxicol Rep*, 2020) [119]. In the Consumer Reports test that Brad discussed, plant-based protein powders tended to contain more lead, though animal-based products were also affected ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)). For independent testing of named products, see consumerlab.com or Labdoor.
 
 Brad bases his decisions on FDA safety limits, which are over 17 times higher than the Consumer Reports threshold; the worst powder in the Consumer Reports test, at 7.7 mcg of lead per serving, still fell within typical daily dietary exposure and just under the FDA's safety limit ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)).
 
 ### Acne
 
-Whey protein supplementation has been linked with acne on the back and chest in teenagers and young adults; lesions typically appeared within about 1 to 3 months of starting and cleared after stopping and acne treatment [1]. Whey and other milk derivatives can raise insulin-like growth factor 1 (IGF-1), a hormone that may trigger acne by increasing oil (sebum) production [1].
+Whey protein supplements have been linked with acne on the trunk in teenage boys who used them for bodybuilding (Cengiz, *Health Promot Perspect*, 2017) [120]. In a small study of young adults, acne started or worsened in a two-month period of using protein-calorie supplements, and whey contains growth factors that may be related to acne (Pontes, *An Bras Dermatol*, 2013) [121].
 
 ### Allergic Reactions
 
-People allergic to milk should avoid whey, and whey supplements have caused allergic reactions (gut upset, hives, skin swelling, feeling faint) even in some people who are not allergic to milk [1]. Allergies to soy, egg and pea protein also occur; peas share some cross-reactivity with soy and peanuts [1]. People allergic to insects or shellfish may react to cricket protein [26]. Mycoprotein (Quorn) has caused anaphylactic reactions, including two deaths in people with asthma [1].
+People allergic to milk should avoid whey and casein; even laboratory-made whey contains the milk allergen beta-lactoglobulin [10]. Whey supplements may also cause allergic reactions in some people without a known milk allergy. Plant proteins can cause allergy too: in adults, most allergens behind food anaphylaxis come from plants, mainly pulses (such as soy and peas) and nuts, and concentrated plant protein isolates such as pea are of particular concern (Präger, *J Dtsch Dermatol Ges*, 2023) [122]. People allergic to egg should avoid egg white protein. People allergic to insects or shellfish may react to cricket protein [26]. Mycoprotein (Quorn) has been linked with anaphylaxis, including one fatal reaction [117].
 
 ### Blood Pressure in Older Adults
 
-Some older adults may temporarily experience low blood pressure 2–3 hours after consuming whey protein [1]. People taking medicines that slow heart rate, such as beta blockers, or with heart conditions that slow heart rate may be at greater risk and should take care when standing up from sitting in the two to three hours after whey [1].
+In a small study of older men, whey protein drinks, even at 30 g, lowered systolic blood pressure, most clearly between 120 and 180 minutes after drinking (Oberoi, *Nutrients*, 2022) [123]. People taking medicines that slow heart rate, such as beta blockers, or with heart conditions that slow heart rate may be at greater risk and should take care when standing up from sitting in the two to three hours after whey.
 
 ### Unexpected Ingredients
 
-Some products — particularly those promoted for "energy" — contain caffeine-containing ingredients such as coffee extract, guarana, mate, or cocoa. Many powders are also fortified with vitamins and minerals. Products should be carefully evaluated before use by children, pregnant or nursing women, or people with diabetes [1].
+Some products, particularly those promoted for "energy", may contain caffeine-containing ingredients such as coffee extract, guarana, mate, or cocoa, and many are fortified with vitamins and minerals. Check the label, and ask your doctor first before giving a protein powder to a child or using one while pregnant, breastfeeding, or living with diabetes.
 
 ## 6. Drug Interactions
 
@@ -357,9 +349,9 @@ Some products — particularly those promoted for "energy" — contain caffeine-
 
 | Drug | Interaction | Recommendation |
 |------|------|------|
-| Beta blockers and other medicines that slow heart rate | Whey may lower blood pressure two to three hours after intake, particularly in older adults | Take care when standing up from sitting in that window [1] |
+| Beta blockers and other medicines that slow heart rate | Whey may lower blood pressure two to three hours after intake, particularly in older adults [123] | Take care when standing up from sitting in that window |
 | Thyroid hormone medication | Soy isoflavones may inhibit its absorption | People with thyroid disease should limit soy protein [33] |
-| Stimulants | Caffeine-containing ingredients in some "energy" powders (coffee extract, guarana, mate, cocoa) can enhance the action and side effects of other stimulants | Check the label [1] |
+| Stimulants | Caffeine-containing ingredients in some "energy" powders (coffee extract, guarana, mate, cocoa) may add to the effects and side effects of other stimulants | Check the label |
 | Tetracycline antibiotics | Milk and other dairy products reduce tetracycline absorption [107]; dairy protein powders have not been studied directly | Ask your pharmacist how to time doses around whey or casein powders |
 | Levodopa (Parkinson's disease) | Dietary protein is a major factor that can reduce levodopa absorption [108] | If you have motor fluctuations, ask your doctor or dietitian whether changing when you eat protein could help [108][109] |
 
@@ -367,19 +359,19 @@ If you take prescription medicines, check with your doctor or pharmacist before 
 
 ### Interactions with Other Supplements
 
-- **Calcium:** It has been hypothesized that high-protein diets increase calcium loss from bone, but several studies found no negative effect on bone from extra protein [1].
+- **Calcium:** It has been suggested that extra protein may harm bone mineral, but in a 6-month trial in 24 exercise-trained women, a high-protein diet had no effect on bone mineral density (Antonio, *J Int Soc Sports Nutr*, 2018) [124].
 - **Iron, zinc, calcium:** Phytate-rich plant proteins (especially pea) may reduce absorption of these minerals when consumed together [40][41].
 - **Creatine:** Kidney function was normal in healthy athletes who had taken creatine for 10 months to 5 years [110]. A meta-analysis of randomised trials found that creatine raised blood creatinine but did not change urea or eGFR, and called for trials longer than 1 year [111]. Concerns remain about creatine in people with impaired kidney function, so ask your doctor first if you have kidney disease [112].
 
 ### Conditions Requiring Caution
 
-- **Kidney disease:** People with, or at high risk of, kidney disease may be advised to limit protein intake; talk with your doctor about a safe amount [1]. High protein intake may speed the progression of chronic kidney disease [105].
-- **Urea cycle disorder:** In this rare genetic disorder, protein can cause dangerously high blood ammonia, which can lead to brain damage, coma or death [1].
+- **Kidney disease:** People with chronic kidney disease may be given advice on how much protein to eat; talk with your doctor about a safe amount [104]. High protein intake may speed the progression of chronic kidney disease [105].
+- **Urea cycle disorder:** In this rare genetic disorder, a large rise in protein intake can trigger dangerously high blood ammonia and brain dysfunction (hyperammonaemic encephalopathy), even in adults who did not know they had it [125].
 - **Phenylketonuria (PKU):** In this inherited disorder the body cannot properly break down the amino acid phenylalanine, which builds up and can harm the brain if untreated; it needs lifelong dietary management [113]. Use a protein powder only if your metabolic team approves it.
 - **Thyroid disease:** Soy protein may affect thyroid hormone levels and inhibit thyroid medication absorption (Messina, *Thyroid*, 2006) [33].
 - **Milk allergy:** All whey and casein products should be avoided. Laboratory-produced whey (Perfect Day) still contains the major milk allergen beta-lactoglobulin [10].
-- **Soy allergy:** Soy protein isolates and concentrates should be avoided [1].
-- **Gout/uric acid kidney stones:** Whey protein does not appear to affect uric acid levels, but pea and soy protein may lower uric acid supersaturation [1].
+- **Soy allergy:** Soy protein isolates and concentrates should be avoided; soy allergy can cause severe anaphylactic reactions [122].
+- **Kidney stones:** In a short study of people without kidney stones, pea protein raised urine oxalate compared with whey [42]. If you have had kidney stones, ask your doctor which protein powder suits you.
 
 ## 7. Dietary Sources
 
@@ -405,9 +397,9 @@ Source: USDA FoodData Central.
 
 ### Practical Notes on Dietary Protein
 
-- **Whole foods provide nutrients beyond protein.** Protein powders lack many vitamins, minerals, fiber, and phytonutrients found in whole-food protein sources [1].
+- **Whole foods provide nutrients beyond protein.** Protein powder is meant to complement, not replace, whole foods such as lentils, beans, chickpeas and nuts, which also provide fibre ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)).
 - **Protein from food is sufficient for most people.** If daily intake from diet meets requirements (including during exercise), additional protein powder does not provide measurable benefit [48][51][53][54].
-- **All protein sources are effective.** Studies consistently show that whey, soy, casein, pea, rice, and mycoprotein can all support muscle maintenance and growth when combined with resistance exercise [1][48].
+- **Plant and animal proteins can both work.** Trials found that soy protein, pea protein, and a mycoprotein-rich diet supported muscle gains similar to whey or an omnivorous diet with resistance exercise [30][38][46].
 - **For plant-based diets:** Combining complementary plant proteins (e.g., pea + rice, soy + corn) ensures a complete amino acid profile [27][28].
 - **Protein distribution matters.** Distributing protein across at least 3 meals may be more effective for muscle synthesis than consuming the majority at one meal [89][92].
 
@@ -421,11 +413,9 @@ Source: USDA FoodData Central.
 | Orange juice | 110 | 25 g | 1 g | 2 g |
 | Apple juice | 117 | 29 g | 0 g | 0 g |
 
-Source: USDA Nutrient Database [1].
+Source: USDA Nutrient Database.
 
 ## 8. References
-
-[1] ConsumerLab. "Protein Powders, Shakes and Drinks Review." Accessed 2026. [https://www.consumerlab.com/reviews/protein-powders-shakes-drinks-sports/nutritiondrinks/](https://www.consumerlab.com/reviews/protein-powders-shakes-drinks-sports/nutritiondrinks/)
 
 [2] Krok-Schoen JL, Archdeacon Price A, Luo M, et al. "Low Dietary Protein Intakes and Associated Dietary Patterns and Functional Limitations in an Aging Population: A NHANES analysis." *J Nutr Health Aging*. 2019;23(4):338-347. doi: [10.1007/s12603-019-1174-1](https://doi.org/10.1007/s12603-019-1174-1) PMID: 30932132. https://pubmed.ncbi.nlm.nih.gov/30932132/
 
@@ -654,3 +644,23 @@ Source: USDA Nutrient Database [1].
 [114] Elango R, Ball RO. "Protein and Amino Acid Requirements during Pregnancy." *Adv Nutr*. 2016;7(4):839S-844S. doi: [10.3945/an.115.011817](https://doi.org/10.3945/an.115.011817). PMID: 27422521.
 
 [115] Weiler M, Hertzler SR, Dvoretskiy S. "Is It Time to Reconsider the U.S. Recommendations for Dietary Protein and Amino Acid Intake?" *Nutrients*. 2023;15(4):838. doi: [10.3390/nu15040838](https://doi.org/10.3390/nu15040838). PMID: 36839196.
+
+[116] Campbell B, Kreider RB, Ziegenfuss T, et al. "International Society of Sports Nutrition position stand: protein and exercise." *J Int Soc Sports Nutr*. 2007;4:8. doi: [10.1186/1550-2783-4-8](https://doi.org/10.1186/1550-2783-4-8) PMID: 17908291. https://pubmed.ncbi.nlm.nih.gov/17908291/
+
+[117] Jacobson MF, DePorter J. "Self-reported adverse reactions associated with mycoprotein (Quorn-brand) containing foods." *Ann Allergy Asthma Immunol*. 2018;120(6):626-630. doi: [10.1016/j.anai.2018.03.020](https://doi.org/10.1016/j.anai.2018.03.020) PMID: 29567357. https://pubmed.ncbi.nlm.nih.gov/29567357/
+
+[118] Rinde LB, Hopstock LA, Lundblad MW, et al. "Higher habitual protein intake is not linked to decline of iohexol-measured GFR in adults ≥40 years." *Clin Kidney J*. 2026;19(8):sfag235. doi: [10.1093/ckj/sfag235](https://doi.org/10.1093/ckj/sfag235) PMID: 42549120. https://pubmed.ncbi.nlm.nih.gov/42549120/
+
+[119] Bandara SB, Towle KM, Monnot AD. "A human health risk assessment of heavy metal ingestion among consumers of protein powder supplements." *Toxicol Rep*. 2020;7:1255-1262. doi: [10.1016/j.toxrep.2020.08.001](https://doi.org/10.1016/j.toxrep.2020.08.001) PMID: 33005567. https://pubmed.ncbi.nlm.nih.gov/33005567/
+
+[120] Cengiz FP, Cevirgen Cemil B, Emiroglu N, et al. "Acne located on the trunk, whey protein supplementation: Is there any association?" *Health Promot Perspect*. 2017;7(2):106-108. doi: [10.15171/hpp.2017.19](https://doi.org/10.15171/hpp.2017.19) PMID: 28326292. https://pubmed.ncbi.nlm.nih.gov/28326292/
+
+[121] Pontes TdC, Fernandes Filho GM, Trindade AdS, Sobral Filho JF. "Incidence of acne vulgaris in young adult users of protein-calorie supplements in the city of João Pessoa--PB." *An Bras Dermatol*. 2013;88(6):907-912. doi: [10.1590/abd1806-4841.20132024](https://doi.org/10.1590/abd1806-4841.20132024) PMID: 24474098. https://pubmed.ncbi.nlm.nih.gov/24474098/
+
+[122] Präger L, Simon JC, Treudler R. "Food allergy - New risks through vegan diet? Overview of new allergen sources and current data on the potential risk of anaphylaxis." *J Dtsch Dermatol Ges*. 2023;21(11):1308-1313. doi: [10.1111/ddg.15157](https://doi.org/10.1111/ddg.15157) PMID: 37723909. https://pubmed.ncbi.nlm.nih.gov/37723909/
+
+[123] Oberoi A, Giezenaar C, Lange K, et al. "Blood Pressure and Heart Rate Responses following Dietary Protein Intake in Older Men." *Nutrients*. 2022;14(9):1913. doi: [10.3390/nu14091913](https://doi.org/10.3390/nu14091913) PMID: 35565880. https://pubmed.ncbi.nlm.nih.gov/35565880/
+
+[124] Antonio J, Ellerbroek A, Evans C, et al. "High protein consumption in trained women: bad to the bone?" *J Int Soc Sports Nutr*. 2018;15:6. doi: [10.1186/s12970-018-0210-6](https://doi.org/10.1186/s12970-018-0210-6) PMID: 29434529. https://pubmed.ncbi.nlm.nih.gov/29434529/
+
+[125] Barkovich E, Gropman AL. "Late Onset Ornithine Transcarbamylase Deficiency Triggered by an Acute Increase in Protein Intake: A Review of 10 Cases Reported in the Literature." *Case Rep Genet*. 2020;2020:7024735. doi: [10.1155/2020/7024735](https://doi.org/10.1155/2020/7024735) PMID: 32373372. https://pubmed.ncbi.nlm.nih.gov/32373372/

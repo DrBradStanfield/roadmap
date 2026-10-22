@@ -8,7 +8,7 @@ tags: ["Supplements"]
 keywords: ["vitamin b", "vitamin b1", "vitamin b2", "vitamin b3", "vitamin b5", "vitamin b6", "vitamin b7", "vitamin b12", "folate", "folic acid", "niacin", "biotin", "b complex", "thiamine", "riboflavin", "pantothenic acid", "pyridoxine", "cobalamin", "methylcobalamin", "methylfolate", "cognitive", "brain health", "depression", "energy", "homocysteine", "cardiovascular", "heart health", "neuropathy", "anemia", "neural tube defects", "cholesterol", "nad+", "nmn", "nicotinamide riboside", "choline", "inflammation", "diabetes", "metformin", "blood pressure", "migraine", "skin", "aging"]
 summary: "Reference on B vitamins. Brad: diet first, reach the recommended intake, skip megadoses; Australia warns on B6 over 10 mg a day. B vitamins may slow brain shrinkage with high omega-3. Avoid high-dose niacin and folic acid (outside pregnancy). Talk to your doctor first if pregnant or on medicines."
 reviewed: "2026-10-20"
-sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/review-best-b-vitamins-and-complexes-energy-b6-b12-biotin-niacin-folic-acid/bvitamins/","checked":"2026-09-29","fingerprint":"sha256:55c06813a9b91698e9adbcf8fa858ce4aa2a8d42bd8730185de22430f741ff5b"},{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:351f6d3c66805965aaeb68918451132fe0328e3698a08d0e625da1608ce8459a"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine","checked":"2026-10-20","fingerprint":"publishedAt:2026-08-19T00:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study","checked":"2026-10-20","fingerprint":"publishedAt:2026-05-20T12:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-supplements-that-actually-work","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-05T20:31:48Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30T20:38:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/zma-supplements-benefits-research","checked":"2026-10-20","fingerprint":"publishedAt:2025-01-29T16:30:23Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/methylated-multivitamin-regular-ones","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-28T07:00:07Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/tmg-betaine-exploding-popularity","checked":"2026-10-20","fingerprint":"publishedAt:2024-10-09T13:30:02Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/brain-omega-3-discovery","checked":"2026-10-20","fingerprint":"publishedAt:2024-09-26T00:17:19Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/multivitamin-contains-enough-riboflavin","checked":"2026-10-20","fingerprint":"publishedAt:2024-09-18T03:06:10Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-supplements-try-avoid","checked":"2026-10-20","fingerprint":"publishedAt:2024-08-11T19:43:34Z"}]
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:351f6d3c66805965aaeb68918451132fe0328e3698a08d0e625da1608ce8459a"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine","checked":"2026-10-20","fingerprint":"publishedAt:2026-08-19T00:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study","checked":"2026-10-20","fingerprint":"publishedAt:2026-05-20T12:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-supplements-that-actually-work","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-05T20:31:48Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30T20:38:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/zma-supplements-benefits-research","checked":"2026-10-20","fingerprint":"publishedAt:2025-01-29T16:30:23Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/methylated-multivitamin-regular-ones","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-28T07:00:07Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/tmg-betaine-exploding-popularity","checked":"2026-10-20","fingerprint":"publishedAt:2024-10-09T13:30:02Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/brain-omega-3-discovery","checked":"2026-10-20","fingerprint":"publishedAt:2024-09-26T00:17:19Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/multivitamin-contains-enough-riboflavin","checked":"2026-10-20","fingerprint":"publishedAt:2024-09-18T03:06:10Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-supplements-try-avoid","checked":"2026-10-20","fingerprint":"publishedAt:2024-08-11T19:43:34Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/b-vitamins-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/b-vitamins-benefits-forms-dosing-and-side-effects)*
@@ -16,6 +16,15 @@ sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/revie
 ## Current view (reviewed 20 October 2026)
 
 Brad's view is that a good diet comes first and that the dose decides whether a supplement helps: reaching the recommended intake is one thing, megadosing is an entirely different proposition, and plenty of B-complex products contain riboflavin doses orders of magnitude above the recommended 1.3 mg ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). Vitamin B6 shows that the wrong dose can harm: Australia has required a warning label on products supplying more than 10 mg of B6 a day since 2022 after reports of nerve damage, against a recommended intake of 1.7 mg; the symptoms of too much B6 look like the symptoms of too little, and he would not rely on switching to the P5P form to avoid the problem ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). For the brain, he points to the VITACOG trial: in older people with mild memory problems, two years of high-dose B vitamins slowed brain shrinkage by 40% compared with placebo in those with high omega-3 levels and gave no benefit in those with low omega-3, which he calls a lead worth following rather than a finished answer ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). The July 2026 WHO dementia guideline recommends against B vitamins for reducing dementia risk unless you have a diagnosed deficiency; Brad notes that it did not reassess supplements and never mentions the COSMOS trial, so it answers an older question rather than being wrong ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). He would avoid high-dose folic acid outside pregnancy, and high-dose niacin, which a 2018 meta-analysis linked to a 10% increase in all-cause death ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). He sees little evidence that methylated B vitamins beat standard forms, and says people with an MTHFR gene variant need testing by a doctor and a plan made with their healthcare team ([Brad, 28 Nov 2024](https://drstanfield.com/blogs/articles/methylated-multivitamin-regular-ones)).
+
+## Key safety points
+
+- High-dose or extended-release niacin should be used with caution alongside warfarin and other anticoagulants; in one case a dose increase sent the INR sharply higher [149].
+- High-dose niacin is not recommended with statins: added to statins in trials, it did not reduce cardiovascular events and increased serious side effects [24][25].
+- High-dose biotin can give falsely high or low results in blood tests such as troponin and thyroid tests; one patient died after a falsely low troponin result. Stop high-dose biotin before blood tests [36][37][38].
+- Folic acid can correct the anemia of B12 deficiency while nerve damage progresses, which can hide the deficiency [43][59]. Brad would avoid high-dose folic acid outside pregnancy [183].
+- Too much vitamin B6 can cause nerve damage, in rare cases even from a multivitamin containing 6 mg of B6 [83][84][85]. Australia requires a warning on products supplying more than 10 mg of B6 a day [182].
+- High-dose niacin can injure the liver, and extended-release forms may be more toxic than immediate-release ones [32][145].
 
 ## Brad's videos on this topic
 
@@ -32,7 +41,7 @@ Brad's view is that a good diet comes first and that the dose decides whether a 
 
 ## 1. Overview
 
-The B vitamins are a family of eight water-soluble nutrients that serve as essential coenzymes in cellular metabolism, energy production, DNA synthesis, neurotransmitter formation, and red blood cell development [1][2]. Unlike fat-soluble vitamins, B vitamins are not stored in the body in significant quantities (with the notable exception of vitamin B12, which accumulates in the liver with stores lasting several years), and excess intake is generally excreted in urine [1][3]. This means consistent dietary or supplemental intake is required to maintain adequate status.
+The B vitamins are a family of eight water-soluble nutrients that serve as essential coenzymes in cellular metabolism, energy production, DNA synthesis, neurotransmitter formation, and red blood cell development [2]. Unlike fat-soluble vitamins, B vitamins dissolve in water, and the body clears much of any excess in urine: it absorbs large doses of vitamin B6 well but quickly eliminates most of it in the urine [3]. This means consistent dietary or supplemental intake is required to maintain adequate status.
 
 The eight B vitamins are:
 
@@ -45,7 +54,7 @@ The eight B vitamins are:
 - **Folate (B9)** — cell division, DNA synthesis, neural tube development
 - **Cobalamin (B12)** — myelin formation, red blood cell production, DNA synthesis
 
-These vitamins function synergistically. For example, vitamins B6, B12, and folate collaborate in one-carbon metabolism and homocysteine regulation, while riboflavin-dependent enzymes assist in the synthesis of niacin's active form (NAD) [2][4]. Deficiency in one B vitamin often co-occurs with deficiencies in others, particularly among populations with poor nutritional intake, chronic alcohol use, malabsorption conditions (celiac disease, Crohn's disease, inflammatory bowel disease), or use of medications that deplete B vitamins (proton pump inhibitors, metformin, certain anticonvulsants) [1][5][6].
+These vitamins function synergistically. For example, vitamins B6, B12, and folate collaborate in one-carbon metabolism and homocysteine regulation, while riboflavin-dependent enzymes assist in the synthesis of niacin's active form (NAD) [2][4]. Deficiency in one B vitamin often co-occurs with deficiencies in others, particularly among populations with poor nutritional intake, chronic alcohol use, malabsorption conditions (celiac disease, Crohn's disease, inflammatory bowel disease), or use of medications that deplete B vitamins (proton pump inhibitors, metformin, certain anticonvulsants) [3][5][6][173].
 
 B-complex supplements are widely available but two of the most common reasons for taking them — reducing cardiovascular risk and boosting energy — are not well supported in the absence of deficiency. Despite evidence that B6, B12, and folate can lower homocysteine (a cardiovascular risk factor), clinical trials have failed to show that this combination reduces cardiovascular events themselves, leading the American Heart Association to conclude that the evidence is "inadequate to recommend folate and other B vitamin supplements as a means to reduce cardiovascular disease risk" [7]. Similarly, supplementing with B vitamins does not improve energy or performance in individuals who are not deficient [8].
 
@@ -77,9 +86,9 @@ Standard riboflavin and riboflavin 5'-phosphate (the active coenzyme form) are a
 ### Niacin (B3) Forms
 
 - **Nicotinic acid (niacin)** — causes flushing at doses above the UL (35 mg). Used at high doses (1,000-4,000 mg) for cholesterol management, though clinical trials have not shown cardiovascular benefit when added to statins [24][25].
-- **Niacinamide (nicotinamide)** — does not cause flushing and does not lower cholesterol. Better tolerated. The UK has set a UL of 500 mg and the EU 900 mg for adults. A review by a UK Food Standards Agency expert group concluded that 560 mg per day "would not be expected to result in any adverse effects" [1][26].
+- **Niacinamide (nicotinamide)** — does not cause flushing and does not lower cholesterol. Better tolerated. The UK has set a UL of 500 mg for adults. A review by a UK Food Standards Agency expert group concluded that 560 mg per day "would not be expected to result in any adverse effects" [26].
 - **Inositol hexanicotinate (hexaniacinate)** — reportedly causes less flushing than regular niacin. About 85% niacin by weight. One small study found 4 g/day significantly reduced attacks in people with Raynaud's disease compared to placebo [27]. May reduce cholesterol levels based on limited data.
-- **Nicotinamide riboside (NR)** — a precursor to NAD+. Sold as Niagen. Several studies show it raises blood NAD+ levels: 100 mg, 300 mg, and 1,000 mg daily doses increased whole blood NAD+ by 22%, 51%, and 142% respectively within two weeks, with increases maintained through 8 weeks [28]. A study in 24 healthy older adults (ages 55-79) found 500 mg twice daily for six weeks increased NAD+ by 60% compared to placebo [29]. However, clinical benefits remain unproven — a study in 40 overweight men with insulin resistance found 1,000 mg twice daily for 3 months did not improve fasting blood sugar, HbA1c, or insulin sensitivity [30]. The National Advertising Division (NAD/BBB) recommended discontinuing broad "clinically proven" health benefit claims [1]. Theoretical concerns exist about promoting growth of existing cancers [31]. There are no long-term safety studies.
+- **Nicotinamide riboside (NR)** — a precursor to NAD+. Sold as Niagen. Several studies show it raises blood NAD+ levels: 100 mg, 300 mg, and 1,000 mg daily doses increased whole blood NAD+ by 22%, 51%, and 142% respectively within two weeks, with increases maintained through 8 weeks [28]. A study in 24 healthy older adults (ages 55-79) found 500 mg twice daily for six weeks increased NAD+ by 60% compared to placebo [29]. However, clinical benefits remain unproven — a study in 40 overweight men with insulin resistance found 1,000 mg twice daily for 3 months did not improve fasting blood sugar, HbA1c, or insulin sensitivity [30]. Theoretical concerns exist about promoting growth of existing cancers [31]. There are no long-term safety studies.
 - **Extended-release niacin** — may be more hepatotoxic than immediate-release forms at equivalent doses [32].
 
 ### Vitamin B6 Forms
@@ -120,7 +129,7 @@ Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin
 
 The relationship between B vitamins and cognitive health centers on homocysteine metabolism. Elevated homocysteine is an established risk factor for cognitive decline and dementia, and vitamins B6, B12, and folate are essential cofactors in homocysteine metabolism [4][51].
 
-**B vitamins and omega-3 (VITACOG):** A 2-year placebo-controlled study of people aged 70 or older with mild cognitive impairment found that daily folic acid (800 mcg), vitamin B12 (500 mcg) and vitamin B6 (20 mg) slowed cognitive decline, mainly in those who started with plasma homocysteine over 11.3 micromoles/L [1]. In a similar study, the same combination reduced shrinkage in brain regions affected by Alzheimer's disease, but only in people who started with high homocysteine [1]. Further analyses found larger benefits when blood omega-3 levels were in the upper range of normal, and people with low omega-3 did not benefit [1]. Brad's reading of these VITACOG analyses is that B vitamins slowed brain shrinkage by 40% in people with high omega-3 levels and gave no benefit with low omega-3; he calls this a lead worth following rather than a finished answer [182]. A 3-year study in the Netherlands among 791 cognitively healthy older people with high homocysteine found a different pattern: 800 mcg of folic acid a day improved global cognition and processing speed only in those with low omega-3 status [1]. The World Health Organization (July 2026) recommends against B vitamin complexes to reduce the risk of cognitive decline or dementia in people without a confirmed deficiency, as it judges that possible harms outweigh any benefit [1]; Brad notes that the guideline did not reassess supplements and does not mention the COSMOS trial [182].
+**B vitamins and omega-3 (VITACOG):** A 2-year placebo-controlled study of people aged 70 or older with mild cognitive impairment found that daily folic acid (800 mcg), vitamin B12 (500 mcg) and vitamin B6 (20 mg) appeared to slow cognitive decline, mainly in those who started with plasma homocysteine above 11.3 micromoles/L [186]. In the same trial, the combination reduced shrinkage in brain regions affected by Alzheimer's disease, but only in people who started with high homocysteine [187]. Further analyses found larger benefits when blood omega-3 levels were in the upper range of normal, and people with low omega-3 did not benefit [188][189]. Brad's reading of these VITACOG analyses is that B vitamins slowed brain shrinkage by 40% in people with high omega-3 levels and gave no benefit with low omega-3; he calls this a lead worth following rather than a finished answer [182]. A 3-year trial among 791 adults aged 50-70 with high homocysteine found a different pattern: 800 mcg of folic acid a day helped global cognition and processing speed in people with lower omega-3 status, but not in those with higher status [190]. The World Health Organization (July 2026) recommends against B vitamins for reducing dementia risk unless you have a diagnosed deficiency; Brad notes that the guideline did not reassess supplements and does not mention the COSMOS trial [182].
 
 **Folic acid and cognitive function in low-folate populations:** A study among adults in China with low blood folate levels (~5.5 ng/mL) and mild to moderate Alzheimer's disease found that 1,250 mcg of folic acid plus standard medication (donepezil) daily for 6 months resulted in less inflammation and slightly better maintained cognitive function compared to medication alone [52]. However, participants achieved average blood folate levels similar to US adults (10-12 ng/mL), so it is uncertain whether supplementation would benefit people with already adequate levels.
 
@@ -136,7 +145,7 @@ The relationship between B vitamins and cognitive health centers on homocysteine
 
 **Methylfolate as antidepressant adjunct:** Very high-dose methylfolate (15 mg/day as Metafolin) for 60 days improved response rates in patients with major depressive disorder who did not respond to SSRI therapy alone: 32.3% response rate vs. 14.6% for placebo. A lower starting dose of 7.5 mg was not effective [63]. A subsequent one-year open-label study suggested sustained efficacy [64]. Agitation or manic symptoms have developed in some patients, resolving days after discontinuation — the mechanism may relate to methylfolate increasing brain levels of norepinephrine, dopamine, and serotonin [65].
 
-**B vitamins and stress/mood:** Supplementation with B-complex vitamins has been shown to improve mood, reduce perceived stress, and enhance neurocognitive function under demanding conditions, with benefits most notable in individuals experiencing high stress or with suboptimal B vitamin status. These effects typically become noticeable after consistent daily supplementation over 28-90 days [2][66]. However, supplementation with B6, B12 and/or folate, even in high doses, has generally not been found to reduce depression or improve mood, particularly in people who are not deficient [1].
+**B vitamins and stress/mood:** Supplementation with B-complex vitamins has been shown to improve mood, reduce perceived stress, and enhance neurocognitive function under demanding conditions, with benefits most notable in individuals experiencing high stress or with suboptimal B vitamin status. These effects typically become noticeable after consistent daily supplementation over 28-90 days [2][66]. However, supplementation with B6, B12 and/or folate, even in high doses, has generally not been found to reduce depression or improve mood [191][192][193].
 
 **Vitamin B6 and depression:** Deficiency in B6 can cause depression and confusion. B6 plays a key role in the biosynthesis of serotonin, dopamine, and GABA [4][67].
 
@@ -289,11 +298,11 @@ The doses below come from trials or from treating specific conditions, often und
 
 **Riboflavin for MTHFR-related hypertension:** 1.6-10 mg/day [14][71].
 
-**Niacin for cholesterol (under medical supervision only):** Effects on cholesterol are documented at 1,000-4,000 mg/day [1]. Liver function monitoring required. NOT recommended alongside statins based on clinical trial data [24][25]. Brad would avoid high-dose niacin [183]. A 2018 meta-analysis linked niacin taken with a statin to an increased risk of death from any cause [184].
+**Niacin for cholesterol (under medical supervision only):** Niacin lowers LDL cholesterol and triglycerides and raises HDL cholesterol; the median dose in trials was 2 g/day [185]. Liver function monitoring required. NOT recommended alongside statins based on clinical trial data [24][25]. Brad would avoid high-dose niacin [183]. A 2018 meta-analysis linked niacin taken with a statin to an increased risk of death from any cause [184].
 
 **Nicotinamide for skin cancer prevention (in those with history):** 500 mg twice daily [96][97].
 
-**Pyridoxine for morning sickness:** 30 mg/day [1][127].
+**Pyridoxine for morning sickness:** 30-75 mg/day reduced nausea in two placebo-controlled trials. Pregnant women should check with a doctor first, as doses could approach the UL [3].
 
 **Pyridoxine to counter levodopa-related B6 depletion:** 25 mg/day under physician supervision (only with carbidopa/levodopa, not levodopa alone) [107].
 
@@ -309,7 +318,7 @@ The doses below come from trials or from treating specific conditions, often und
 
 ### Label Reading Notes
 
-Be aware that Daily Value (DV) percentages on supplement labels changed in 2016 and labels were not required to reflect this until 2020-2021. Products with older labels may show higher DVs. The change of most concern relates to folate, as older labels can mislead people into taking far more than recommended [1]. Remember that 1,000 mcg = 1 mg, and 1,000 mg = 1 gram.
+The FDA revised the Daily Values (DVs) used on supplement labels in 2016; the DV for vitamin B6, for example, is now 1.7 mg for adults and children aged 4 years and older [3]. Remember that 1,000 mcg = 1 mg, and 1,000 mg = 1 gram.
 
 ## 5. Dietary Sources
 
@@ -413,7 +422,7 @@ Soaking dry beans for 12 hours can more than double folate content; boiling for 
 | Beef, top loin | 1 fillet | 4.82 mcg |
 | Yogurt, vanilla, non-fat | 1 cup | 1.30 mcg |
 
-Plant-based foods are generally not adequate sources of B12 unless fortified. The Academy of Nutrition and Dietetics states that non-fortified nutritional yeast, tempeh, nori, spirulina, and chlorella are not adequate or practical B12 sources [136]. Fortified nutritional yeast can provide substantial B12: a 5-gram portion of fortified nutritional yeast provides 7.5 mcg of B12 (310% DV) along with significant amounts of riboflavin, niacin, and B6 [1].
+Plant-based foods are generally not adequate sources of B12 unless fortified. The Academy of Nutrition and Dietetics states that non-fortified nutritional yeast, tempeh, nori, spirulina, and chlorella are not adequate or practical B12 sources [136].
 
 ## 6. Safety and Side Effects
 
@@ -423,15 +432,15 @@ No UL established. Appears to be non-toxic at all studied doses. Deficiency can 
 
 ### Riboflavin (B2)
 
-No UL established. Excess causes harmless bright yellow urine. May affect urinary dipstick tests. Deficiency is extremely rare in the US due to food fortification, but can occur in people with thyroid disease, women taking birth control pills, and those on vegan diets [142]. Severe deficiency can impair metabolism of other B vitamins and, if prolonged, can cause anemia and cataracts [1]. A case of severe riboflavin deficiency causing life-threatening hypoglycemia and lactic acidosis was reported in a one-day-old infant whose mother maintained a strict vegan diet without riboflavin supplementation [143].
+No UL established. Excess causes harmless bright yellow urine. May affect urinary dipstick tests. Deficiency is extremely rare in the US due to food fortification, but can occur in people with thyroid disease, women taking birth control pills, and those on vegan diets [142]. A case of severe riboflavin deficiency causing life-threatening hypoglycemia and lactic acidosis was reported in a one-day-old infant whose mother maintained a strict vegan diet without riboflavin supplementation [143].
 
 ### Niacin (B3)
 
-**Flushing:** The most common side effect, occurring at doses above the UL (35 mg). Involves reddening, burning, tingling, itching, and pain. Starting with lower doses and gradually increasing may help, as may taking with food [1]. Rarely, severe reactions including diffuse rash, hives, lip swelling, and difficulty breathing have occurred [144].
+**Flushing:** The most common side effect, occurring at doses above the UL (35 mg). Involves reddening, burning, tingling, itching, and pain. Starting with lower doses and gradually increasing may help, as may taking with food. Rarely, severe reactions including diffuse rash, hives, lip swelling, and difficulty breathing have occurred [144].
 
 **Liver toxicity:** At doses at or above 1,500 mg of niacin or 3,000 mg of nicotinamide per day, liver toxicity can occur. Extended-release forms may be more hepatotoxic — a case of fatal acute liver failure occurred when a 74-year-old woman was switched from immediate-release to extended-release niacin at the same dose (500 mg three times daily) [32]. Another case: a 24-year-old woman taking 2-3 g daily for two months, with up to 5 g on several days, developed liver failure requiring ICU treatment for a week [145]. Elevated liver enzymes may occur without symptoms in up to 20% of people taking >500 mg/day [146].
 
-**Glucose control:** High-dose niacin can impair glucose control and elevate blood glucose levels [1].
+**Glucose control:** High-dose niacin can impair glucose control: in the HPS2-THRIVE trial, extended-release niacin with laropiprant increased serious disturbances in diabetes control and new diabetes diagnoses [25].
 
 **Gout:** High-dose niacin (typically 2,000 mg+) is associated with increased uric acid and gout risk. Experts recommend monitoring uric acid while increasing to maintenance dose, then every 6 months [147].
 
@@ -443,7 +452,7 @@ No UL established. Excess causes harmless bright yellow urine. May affect urinar
 
 ### Pantothenic Acid (B5)
 
-No UL established. Deficiency is rare and found mainly in alcoholics. Very high doses (900 mg/day) of the related pantothenate have been used for cholesterol and triglyceride management [150].
+No UL established. Deficiency is rare and found mainly in alcoholics.
 
 ### Vitamin B6
 
@@ -460,11 +469,11 @@ The most important safety concern among B vitamins. Excessive pyridoxine causes 
 
 P-5-P (pyridoxal-5-phosphate) may be safer than pyridoxine at higher doses based on in-vitro data, as pyridoxine itself appears to inhibit the active P-5-P form [34]. Brad would not rely on switching forms to avoid the problem [182].
 
-**Regulation:** Australia and Canada require products with more than 10 mg of vitamin B6 to carry a warning about the risk of peripheral neuropathy [1][182]. In Australia, after 30 May 2027, products with more than 50 mg will be available only after consultation with a pharmacist, and products with more than 200 mg will need a prescription [1].
+**Regulation:** Australia has required a warning label on products supplying more than 10 mg of B6 a day since 2022, after reports of nerve damage [182]. From 1 June 2027, oral B6 products in Australia containing more than 50 mg but not more than 200 mg per recommended daily dose become Pharmacist Only Medicines [182].
 
 **Cancer risk:** Men supplementing with >20 mg B6 daily for 10 years had 82% greater lung cancer risk (even greater among smokers). No increased risk in women [10]. Higher B6 intake was associated with 97% greater rectal cancer risk in one study of older women [153]. B6 intake >8.6 mg/day was associated with lower survival in nasopharyngeal carcinoma patients receiving radiation [154].
 
-**Hip fracture risk:** In older adults with cardiovascular disease, 40 mg B6 daily for 1-3 years was associated with a 42% increased hip fracture risk over the extended follow-up, though not during the trials themselves [1][155]. Postmenopausal nurses taking >35 mg B6 had 29% increased hip fracture risk, increasing to 47% when combined with high B12 (≥20 mcg) [156].
+**Hip fracture risk:** In older adults with cardiovascular disease, 40 mg B6 daily for 1-3 years was associated with a 42% increased hip fracture risk over the extended follow-up, though not during the trials themselves [155]. Postmenopausal nurses taking >35 mg B6 had 29% increased hip fracture risk, increasing to 47% when combined with high B12 (≥20 mcg) [156].
 
 ### Biotin (B7)
 
@@ -484,7 +493,7 @@ No UL established but high doses create serious practical problems.
 
 **Peripheral neuropathy risk:** Even with normal B12, high folate intake (>800 mcg DFE) dramatically increases neuropathy risk in people with a TCN2 gene variant (found in ~25% of older Americans), with seven-fold higher odds [162].
 
-**Kidney damage:** Prolonged excessive folic acid intake can cause kidney damage [1].
+**Kidney damage:** Prolonged excessive folic acid intake may harm the kidneys.
 
 **Allergic reactions:** Rare but serious anaphylactic reactions to synthetic folic acid have been reported (15 cases of anaphylaxis and 16 serious non-anaphylactic reactions in Canada, 2008-2013). The reaction does not appear to occur with naturally-occurring dietary folate but may be more common in people allergic to antifolate drugs such as methotrexate [163].
 
@@ -515,7 +524,7 @@ No UL established. Generally very safe, but important associations at high level
 | High-dose aspirin (3,900 mg/day) | B9 | May increase folate excretion. Low-dose aspirin does not have this effect [141]. |
 | Levodopa (high-dose, >2 g/day) | B6, B12 | B6 depleted during dopamine conversion. B12 may also decline [107]. |
 | Cycloserine (Seromycin) | B6 | Increases B6 requirements [179]. |
-| Isoniazid | B3, B6 | Interferes with tryptophan-to-niacin conversion and depletes B6 [1]. |
+| Isoniazid | B3, B6 | Depletes B6 [179]. May also interfere with the conversion of tryptophan to niacin. |
 | Birth control pills | B2 | May inhibit riboflavin absorption [142]. |
 | Nitrous oxide (N2O) | B12, B9 | Inactivates B12 and interferes with folate metabolism. Even a single dental exposure can inactivate B12 for several days. AAPD guidelines advise against N2O use in children with untreated B12 deficiency [180]. |
 | Penicillamine (Cuprimine) | B6 | Increases B6 requirements [179]. |
@@ -532,8 +541,6 @@ No UL established. Generally very safe, but important associations at high level
 | High-dose biotin (>5 mg) | Laboratory tests | Interferes with biotin-based immunoassays. Stop 8+ hours before testing (3+ days for very high doses) [36][37][38]. |
 
 ## 8. References
-
-[1] ConsumerLab. "B Vitamins Review." Accessed 2025. https://www.consumerlab.com/reviews/review-best-b-vitamins-and-complexes-energy-b6-b12-biotin-niacin-folic-acid/bvitamins/
 
 [2] Kennedy DO. "B Vitamins and the Brain: Mechanisms, Dose and Efficacy — A Review." *Nutrients*. 2016;8(2):68. doi: [10.3390/nu8020068](https://doi.org/10.3390/nu8020068)
 
@@ -783,8 +790,6 @@ No UL established. Generally very safe, but important associations at high level
 
 [126] Oudman E, Wijnia JW, Oey MJ, et al. "Wernicke's encephalopathy in Crohn's disease and ulcerative colitis." *Nutrition*. 2021;86:111182. doi: [10.1016/j.nut.2021.111182](https://doi.org/10.1016/j.nut.2021.111182). PMID: [33611107](https://pubmed.ncbi.nlm.nih.gov/33611107/)
 
-[127] Institute of Medicine (US) Standing Committee on the Scientific Evaluation of Dietary Reference Intakes. *Dietary Reference Intakes for Thiamin, Riboflavin, Niacin, Vitamin B6, Folate, Vitamin B12, Pantothenic Acid, Biotin, and Choline*. National Academies Press; 1998. doi: [10.17226/6015](https://doi.org/10.17226/6015) (Vitamin B6 chapter)
-
 [128] Del Bo' C, Riso P, Gardana C, et al. "Effect of two different sublingual dosages of vitamin B12 on cobalamin nutritional status in vegans and vegetarians with a marginal deficiency: A randomized controlled trial." *Clin Nutr*. 2019;38(2):575-583. doi: [10.1016/j.clnu.2018.02.008](https://doi.org/10.1016/j.clnu.2018.02.008). PMID: [29499976](https://pubmed.ncbi.nlm.nih.gov/29499976/)
 
 [129] Sanz-Cuesta T, Escortell-Mayor E, Cura-Gonzalez I, et al. "Oral versus intramuscular administration of vitamin B12 for vitamin B12 deficiency in primary care: a pragmatic, randomised, non-inferiority clinical trial (OB12)." *BMJ Open*. 2020;10(8):e033687. doi: [10.1136/bmjopen-2019-033687](https://doi.org/10.1136/bmjopen-2019-033687). PMID: [32819927](https://pubmed.ncbi.nlm.nih.gov/32819927/)
@@ -826,8 +831,6 @@ No UL established. Generally very safe, but important associations at high level
 [148] Huang J, Ahmed I, Balogun A, et al. "Niacin-Induced Syncope in a Middle-Aged Male: When an Over-the-Counter Vitamin Goes Wrong." *Cureus*. 2023;15(12):e50454. doi: [10.7759/cureus.50454](https://doi.org/10.7759/cureus.50454). PMID: [38222212](https://pubmed.ncbi.nlm.nih.gov/38222212/)
 
 [149] O'Connell C, Horwood K, Nadamuni M. "Correction of refractory thrombocytopenia and anemia following withdrawal of extended release niacin." *Am J Hematol*. 2016;91(7):E318. doi: [10.1002/ajh.24371](https://doi.org/10.1002/ajh.24371). PMID: [27012809](https://pubmed.ncbi.nlm.nih.gov/27012809/); Christopher A. "Critically elevated INR in a patient on warfarin after increase in extended-release niacin dose." *Ann Pharmacother*. 2011;45(11):e58. doi: [10.1345/aph.1Q242](https://doi.org/10.1345/aph.1Q242). PMID: [22010004](https://pubmed.ncbi.nlm.nih.gov/22010004/)
-
-[150] ConsumerLab. "B Vitamins Review" (pantothenic acid section). Accessed 2025. https://www.consumerlab.com/reviews/review-best-b-vitamins-and-complexes-energy-b6-b12-biotin-niacin-folic-acid/bvitamins/
 
 [151] O'Sullivan F, Yu J, Wu B, et al. "A case of burning feet." *Aust J Gen Pract*. 2025;54(1-2):70-72. doi: [10.31128/AJGP-08-24-7384](https://doi.org/10.31128/AJGP-08-24-7384). PMID: [39909003](https://pubmed.ncbi.nlm.nih.gov/39909003/)
 
@@ -894,3 +897,19 @@ No UL established. Generally very safe, but important associations at high level
 [184] Jenkins DJA, Spence JD, Giovannucci EL, et al. "Supplemental vitamins and minerals for CVD prevention and treatment." *J Am Coll Cardiol*. 2018;71(22):2570-2584. PMID: 29852980. [https://pubmed.ncbi.nlm.nih.gov/29852980/](https://pubmed.ncbi.nlm.nih.gov/29852980/)
 
 [185] Schandelmaier S, Briel M, Saccilotto R, et al. "Niacin for primary and secondary prevention of cardiovascular events." *Cochrane Database Syst Rev*. 2017;6(6):CD009744. doi: [10.1002/14651858.CD009744.pub2](https://doi.org/10.1002/14651858.CD009744.pub2). PMID: [28616955](https://pubmed.ncbi.nlm.nih.gov/28616955/)
+
+[186] de Jager CA, Oulhaj A, Jacoby R, et al. "Cognitive and clinical outcomes of homocysteine-lowering B-vitamin treatment in mild cognitive impairment: a randomized controlled trial." *Int J Geriatr Psychiatry*. 2012;27(6):592-600. doi: [10.1002/gps.2758](https://doi.org/10.1002/gps.2758). PMID: [21780182](https://pubmed.ncbi.nlm.nih.gov/21780182/)
+
+[187] Douaud G, Refsum H, de Jager CA, et al. "Preventing Alzheimer's disease-related gray matter atrophy by B-vitamin treatment." *Proc Natl Acad Sci U S A*. 2013;110(23):9523-8. doi: [10.1073/pnas.1301816110](https://doi.org/10.1073/pnas.1301816110). PMID: [23690582](https://pubmed.ncbi.nlm.nih.gov/23690582/)
+
+[188] Oulhaj A, Jernerén F, Refsum H, et al. "Omega-3 Fatty Acid Status Enhances the Prevention of Cognitive Decline by B Vitamins in Mild Cognitive Impairment." *J Alzheimers Dis*. 2016;50(2):547-57. doi: [10.3233/JAD-150777](https://doi.org/10.3233/JAD-150777). PMID: [26757190](https://pubmed.ncbi.nlm.nih.gov/26757190/)
+
+[189] Jernerén F, Elshorbagy AK, Oulhaj A, et al. "Brain atrophy in cognitively impaired elderly: the importance of long-chain ω-3 fatty acids and B vitamin status in a randomized controlled trial." *Am J Clin Nutr*. 2015;102(1):215-21. doi: [10.3945/ajcn.114.103283](https://doi.org/10.3945/ajcn.114.103283). PMID: [25877495](https://pubmed.ncbi.nlm.nih.gov/25877495/)
+
+[190] van Soest APM, van de Rest O, Witkamp RF, et al. "Positive effects of folic acid supplementation on cognitive aging are dependent on ω-3 fatty acid status: a post hoc analysis of the FACIT trial." *Am J Clin Nutr*. 2021;113(4):801-809. doi: [10.1093/ajcn/nqaa373](https://doi.org/10.1093/ajcn/nqaa373). PMID: [33564824](https://pubmed.ncbi.nlm.nih.gov/33564824/)
+
+[191] Ford AH, Flicker L, Thomas J, et al. "Vitamins B12, B6, and folic acid for onset of depressive symptoms in older men: results from a 2-year placebo-controlled randomized trial." *J Clin Psychiatry*. 2008;69(8):1203-9. doi: [10.4088/jcp.v69n0801](https://doi.org/10.4088/jcp.v69n0801). PMID: [18557664](https://pubmed.ncbi.nlm.nih.gov/18557664/)
+
+[192] Bryan J, Calvaresi E, Hughes D. "Short-term folate, vitamin B-12 or vitamin B-6 supplementation slightly affects memory performance but not mood in women of various ages." *J Nutr*. 2002;132(6):1345-56. doi: [10.1093/jn/132.6.1345](https://doi.org/10.1093/jn/132.6.1345). PMID: [12042457](https://pubmed.ncbi.nlm.nih.gov/12042457/)
+
+[193] Hvas AM, Juul S, Lauritzen L, et al. "No effect of vitamin B-12 treatment on cognitive function and depression: a randomized placebo controlled study." *J Affect Disord*. 2004;81(3):269-73. doi: [10.1016/S0165-0327(03)00169-1](https://doi.org/10.1016/S0165-0327(03)00169-1). PMID: [15337331](https://pubmed.ncbi.nlm.nih.gov/15337331/)
