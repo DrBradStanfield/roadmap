@@ -21,10 +21,10 @@ Brad's view is that a good diet comes first and that the dose decides whether a 
 
 - Take care combining high-dose or extended-release niacin with warfarin or other blood thinners: in one patient, the INR rose above 12.3 after the extended-release niacin dose was doubled, which the authors judged a probable interaction [195].
 - High-dose niacin is not recommended with statins: added to statins in trials, it did not reduce cardiovascular events and increased serious side effects [24][25].
-- High-dose biotin can give falsely high or low results in blood tests such as troponin and thyroid tests; one patient died after a falsely low troponin result. Stop high-dose biotin before blood tests [36][37][38][204].
-- In people with diabetic kidney disease, a daily tablet of folic acid, B6 and B12 at high doses made kidney function fall faster than placebo and was linked to more vascular events (HR 2.0, 95% CI 1.0 to 4.0) [69].
-- Large amounts of folic acid may correct the anemia of B12 deficiency but not the nerve damage, which can hide the deficiency; this concern underlies the folic acid upper limit [40][199]. Brad would avoid high-dose folic acid outside pregnancy [183].
 - Too much vitamin B6 can cause nerve damage, in rare cases even from a multivitamin containing 6 mg of B6 [3][85]. Australia requires a warning on products supplying more than 10 mg of B6 a day [182].
+- High-dose biotin can give falsely high or low results in blood tests such as troponin and thyroid tests; one patient died after a falsely low troponin result. Stop high-dose biotin before blood tests [36][37][38][204].
+- Large amounts of folic acid may correct the anemia of B12 deficiency but not the nerve damage, which can hide the deficiency; this concern underlies the folic acid upper limit [40][199]. Brad would avoid high-dose folic acid outside pregnancy [183].
+- In people with diabetic kidney disease, a daily tablet of folic acid, B6 and B12 at high doses made kidney function fall faster than placebo and was linked to more vascular events (HR 2.0, 95% CI 1.0 to 4.0) [69].
 - High-dose niacin can injure the liver, and extended-release forms may be more toxic than immediate-release ones [32][145][202].
 
 ## Brad's videos on this topic
@@ -169,7 +169,7 @@ Vitamins B6, B12 and folic acid lower homocysteine, a cardiovascular risk marker
 
 At high doses, niacin lowers LDL cholesterol and triglycerides and raises HDL cholesterol [185]. However:
 
-- In the AIM-HIGH trial of 3,414 people with heart disease on statins, 1,500 to 2,000 mg of extended-release niacin a day raised HDL cholesterol and lowered triglycerides but gave no extra clinical benefit, and the trial was stopped for lack of efficacy after a mean of 3 years [24].
+- In the AIM-HIGH trial of 3,414 people with heart disease on statins, 1,500 to 2,000 mg of extended-release niacin a day raised HDL cholesterol and lowered triglycerides but gave no extra clinical benefit, and the trial was stopped for lack of efficacy after a mean of 3 years [24]. NIH notes that people taking niacin in this trial had a higher risk of ischemic stroke [202].
 - In the HPS2-THRIVE trial of 25,673 adults already taking statins, 2 g of extended-release niacin with laropiprant a day did not reduce major vascular events over a median of 3.9 years, and it increased serious problems with diabetes control (3.7 percentage points more than placebo), new diabetes diagnoses, infections, bleeding, and gastrointestinal, muscle and skin side effects [25].
 - A 2018 meta-analysis found about 10% higher all-cause mortality when extended-release niacin (1 to 3 g a day) was given alongside a statin, a borderline result from three trials (relative risk 1.10, p = 0.05) [184]. A 2017 Cochrane review of niacin trials found no significant increase in overall mortality (relative risk 1.05, 95% CI 0.97 to 1.12) [185]. The HPS2-THRIVE trial, the laropiprant study above, found excess serious side effects, including disturbed diabetes control, infections and bleeding [25].
 - Doses of 1,000 to 3,000 mg a day of nicotinic acid can cause blurred vision and macular edema, a build-up of fluid in the centre of the retina [202].
@@ -445,7 +445,7 @@ No UL established. Generally very safe, but important associations at high level
 | Drug | B Vitamin Affected | Clinical Implications |
 |------|:-:|----------|
 | Proton pump inhibitors (PPIs) | B12 | Long-term use reduces stomach acid needed for B12 absorption from food. 38-59% of PPI users may be B12 deficient depending on specific PPI. People taking PPIs daily for >3 years should be monitored [173][174]. |
-| Metformin | B12, B6 | In a long-term trial, metformin use was linked to B12 deficiency, and each year of use raised the odds (OR 1.13 per year, 95% CI 1.06 to 1.20); the authors advise considering routine B12 testing [175]. In laboratory work, metformin helped bacteria take up B12, which may in theory reduce the supply to the patient [176]. |
+| Metformin | B12 | In a long-term trial, metformin use was linked to B12 deficiency, and each year of use raised the odds (OR 1.13 per year, 95% CI 1.06 to 1.20); the authors advise considering routine B12 testing [175]. In laboratory work, metformin helped bacteria take up B12, which may in theory reduce the supply to the patient [176]. |
 | Loop diuretics (furosemide) | B1 | Long-term furosemide can cause thiamine loss in the urine; in heart failure, the deficiency may impair heart function [200][205]. |
 | Anticonvulsants (phenytoin, carbamazepine, valproic acid) | B6 | These drugs speed the breakdown of B6 and can lower blood levels of its active form [3]. |
 | Cycloserine (Seromycin) | B6 | Increases B6 requirements [179]. |
@@ -459,7 +459,7 @@ No UL established. Generally very safe, but important associations at high level
 | B Vitamin | Drug | Interaction |
 |-----------|------|----------|
 | B6 | Levodopa (without carbidopa) | Can reverse levodopa's benefit by speeding its conversion outside the brain; not seen in people also taking a dopa decarboxylase inhibitor such as carbidopa [206]. |
-| B6 (200 mg) | Phenytoin (Dilantin) | Pyridoxine at 200 mg a day can lower blood levels of phenytoin and phenobarbital [3]. |
+| B6 (200 mg) | Phenytoin (Dilantin) | Some research suggests pyridoxine at 200 mg a day can lower blood levels of phenytoin and phenobarbital [3]. |
 | B9 (folic acid) | Methotrexate | May partially counteract methotrexate's antifolate activity (intentional in some protocols). Cross-reactivity allergies possible [163]. |
 | High-dose niacin | Warfarin | In one case report, the INR rose above 12.3 (from 2.4) a week after extended-release niacin was raised from 500 to 1,000 mg/day. More frequent INR checks may be advised when high-dose or extended-release niacin is taken with an anticoagulant [195]. |
 | High-dose biotin (>5 mg) | Laboratory tests | Interferes with biotin-based immunoassays. Stop 8+ hours before testing (3+ days for very high doses) [36][37][38][204]. |

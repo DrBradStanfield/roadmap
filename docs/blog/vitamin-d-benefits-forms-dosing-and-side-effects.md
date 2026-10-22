@@ -20,12 +20,11 @@ Brad's view is that most adults gain little from vitamin D supplements: in the V
 ## Key safety points
 
 - Thiazide diuretics taken with vitamin D might lead to high blood calcium, especially in older adults and people with reduced kidney function or hyperparathyroidism [1].
-- Too much vitamin D raises blood calcium, and in people taking digoxin high calcium can make heart rhythm problems more likely [1][176].
 - High vitamin D intakes might reduce the potency of atorvastatin, lovastatin and simvastatin [1]. If you take a statin or other prescription medicines, check with your doctor or pharmacist before starting high-dose vitamin D.
-- If you have kidney disease or sarcoidosis, or are pregnant, ask your doctor before taking more than the RDA (600 IU a day in pregnancy) [1]. In sarcoidosis, vitamin D may cause high blood calcium [174].
+- The RDA in pregnancy is 600 IU a day [1]. If you are pregnant or have kidney disease or sarcoidosis, ask your doctor before taking more than the RDA; in sarcoidosis, vitamin D may cause high blood calcium [174].
 - For adults the tolerable upper intake level is 4,000 IU a day [1]. In one trial, high daily doses for 3 years lowered bone density compared with a low dose [29].
 - Large infrequent doses may be harmful: a yearly 500,000 IU dose increased falls in older women [154].
-- Too much vitamin D raises blood calcium. Symptoms range from nausea and weakness to dehydration and kidney stones, and in extreme cases kidney failure, heart rhythm problems and death [1].
+- Too much vitamin D raises blood calcium. Symptoms range from nausea and weakness to dehydration and kidney stones, and in extreme cases kidney failure, heart rhythm problems and death [1]; in people taking digoxin, high calcium can make heart rhythm problems more likely [176].
 - In the WHI trial, high calcium intake with moderate vitamin D raised kidney stone risk [1].
 
 ## Brad's videos on this topic
@@ -170,7 +169,7 @@ Vitamin D regulates calcium and phosphorus absorption, maintains serum mineral c
 
 **VITAL trial:** 2,000 IU/day D3 for a median of 5.3 years produced no significant reduction in heart attacks, strokes, coronary revascularization, or cardiovascular deaths in 25,871 adults (Manson, NEJM 2019) [1][17].
 
-**Other trials:** A New Zealand trial (5,110 adults, 100,000 IU monthly, median 3.3 years) found no effect on any cardiovascular endpoint [1]. In long-term follow-up of the WHI trial, women assigned to calcium plus vitamin D had more cardiovascular deaths over a median 22.3 years (HR 1.06, 95% CI 1.01 to 1.12) (Thomson, Ann Intern Med 2024) [173]. In heart failure patients with low vitamin D given 4,000 IU/day for 3 years, deaths did not fall and more patients needed a mechanical circulatory support implant (Zittermann, Eur Heart J 2017) [37]. In another heart failure trial (229 patients with levels below 20 ng/mL), 4,000 IU/day for a year did not improve walking distance but did improve the heart's pumping function (Witte, J Am Coll Cardiol 2016) [75].
+**Other trials:** A New Zealand trial (5,110 adults, 100,000 IU monthly, median 3.3 years) found no effect on any cardiovascular endpoint [1]. In a post hoc analysis of long-term WHI follow-up, CVD deaths were slightly higher (HR 1.06, 95% CI 1.01 to 1.12); CVD data covered only some of the women, and the result varied with earlier supplement use [173]. In heart failure patients with low vitamin D given 4,000 IU/day for 3 years, deaths did not fall and more patients needed a mechanical circulatory support implant (Zittermann, Eur Heart J 2017) [37]. In another heart failure trial (229 patients with levels below 20 ng/mL), 4,000 IU/day for a year did not improve walking distance but did improve the heart's pumping function (Witte, J Am Coll Cardiol 2016) [75].
 
 **Blood pressure:** A meta-analysis of 46 trials found no effect of vitamin D on systolic or diastolic blood pressure, and no baseline factor predicted a better response; the authors concluded it should not be used to treat high blood pressure (Beveridge, JAMA Intern Med 2015) [21]. However, in a Chinese trial in people with high blood pressure already taking nifedipine, 2,000 IU/day D3 for 6 months raised mean levels from 19.4 to 34.1 ng/mL and lowered systolic blood pressure by 6.2 mmHg and diastolic by 4.2 mmHg more than placebo (Chen, Atherosclerosis 2014) [76].
 
@@ -190,7 +189,7 @@ Vitamin D regulates calcium and phosphorus absorption, maintains serum mineral c
 
 **Insulin resistance:** In vitamin D-deficient older Lebanese adults, 30,000 IU D3 weekly for 6 months slightly lowered insulin resistance and fasting blood sugar compared with placebo (El Hajj, J Nutr Health Aging 2018) [83]. In healthy Japanese adults, 420 IU/day for 1 year cut fasting glucose from 88.3 to 85.3 mg/dL and lowered an index of insulin resistance (Sun, Nutr Res 2016) [84].
 
-**Established type 2 diabetes:** In a US trial, 48 weeks of 4,000 IU/day left insulin secretion and HbA1c unchanged in people with well-controlled type 2 diabetes who were not selected for low vitamin D (mean 26.6 ng/mL) (Angellotti, J Endocrine Society 2018) [85]. A systematic review and meta-analysis of 35 trials (43,407 adults) found vitamin D had no significant effects on glucose homeostasis, insulin secretion or resistance, or HbA1c, irrespective of population or dose [1].
+**Established type 2 diabetes:** A US trial enrolled people with well-controlled type 2 diabetes, recruited regardless of their vitamin D status (average 26.6 ng/mL at baseline); 48 weeks of 4,000 IU/day changed neither insulin secretion nor HbA1c compared with placebo (Angellotti, J Endocrine Society 2018) [85]. A systematic review and meta-analysis of 35 trials (43,407 adults) found vitamin D had no significant effects on glucose homeostasis, insulin secretion or resistance, or HbA1c, irrespective of population or dose [1].
 
 **VITAL trial (diabetes substudy):** 2,000 IU/day D3 for a median of 5.3 years did not reduce type 2 diabetes risk in over 22,000 generally healthy older adults, and results did not differ by baseline vitamin D level (Tobias, Nat Commun 2025) [86].
 
@@ -222,7 +221,7 @@ Brad notes a meta-analysis in which supplements improved symptoms in people with
 
 **No cognitive benefit in other trials:** A 2-year trial in 620 older adults with mild to moderate vitamin D deficiency and early cognitive impairment, daily vitamin D left cognitive function unchanged (Corbett, J Am Med Dir Assoc 2025) [100]. Vitamin D at 10,000 IU three times a week for 20 weeks did not improve cognition in people with MCI (Montero-Odasso, JAMA Netw Open 2023) [101]. In an Australian trial in older adults, most with adequate vitamin D, 60,000 IU monthly for 5 years had no effect on cognition (Pham, J Am Geriatr Soc 2023) [102].
 
-**Calcitriol concern:** In Taiwanese insurance records, dementia-free older adults who took calcitriol (a prescription form of active vitamin D, not the D3 sold as a supplement) on more than 146 days a year had 1.8 times the dementia risk of non-users (Lai, Aging Cell 2022) [103]. This is an observational finding about a prescription drug, and it may not apply to ordinary vitamin D3 supplements.
+**Calcitriol concern:** In Taiwanese insurance records, dementia-free older adults who took calcitriol (a prescription form of active vitamin D, not the D3 sold as a supplement; the paper's abstract calls it vitamin D3) at more than 146 capsules (0.25 mcg) a year had 1.8 times the dementia risk of non-users (Lai, Aging Cell 2022) [103]. This is an observational finding about a prescription drug, and it may not apply to ordinary vitamin D3 supplements.
 
 **Synthesis:** Low vitamin D levels are linked with a higher risk of dementia in observational studies, but most trials of supplements have not improved cognition. One trial in people with MCI found better cognitive scores with low-dose vitamin D [99]. High doses have shown no cognitive benefit, and long-term prescription calcitriol may carry risks [103].
 
@@ -266,7 +265,7 @@ In several studies of people with low vitamin D, supplements reduced repeat atta
 
 ### NAFLD (Non-Alcoholic Fatty Liver Disease)
 
-In 40 adults with significant liver fat and low vitamin D (mean 11.8 ng/mL), 20,000 IU vitamin D weekly reduced liver fat by approximately 5% after 4 weeks, and the improvement held over 6 months of supplementation (Papapostoli, J Gastrointestin Liver Dis 2016) [133]. A 6-month study found 2,000 IU/day raised levels to 30 ng/mL or above in 75% of NAFLD patients with simple fatty liver but in only 15% of people with steatohepatitis; only those who reached adequate levels showed improvements in ALT (a liver enzyme) and insulin resistance (Dasarathy, J Nutr 2017) [134].
+In 40 adults with significant liver fat and low vitamin D (mean 11.8 ng/mL), 20,000 IU vitamin D weekly reduced liver fat by approximately 5% after 4 weeks, and the improvement held over 6 months of supplementation (Papapostoli, J Gastrointestin Liver Dis 2016) [133]. In a 6-month study of NAFLD patients with low vitamin D, 2,000 IU/day brought levels to at least 30 ng/mL in 75% of those with simple fatty liver, against 15.4% of those with steatohepatitis; ALT (a liver enzyme) and insulin resistance improved only in those who reached that level (Dasarathy, J Nutr 2017) [134].
 
 ### Pregnancy
 
@@ -429,7 +428,6 @@ The combination of high calcium intake (~2,100 mg/day) with moderate vitamin D (
 | Corticosteroids (prednisone) | Reduce calcium absorption and impair vitamin D metabolism. Deficiency was more than twice as common in oral steroid users (11%) vs. nonusers (5%) [1] | If you take steroids long term, ask your doctor whether you need vitamin D testing or supplements |
 | Proton pump inhibitors (PPIs) | Long-term use associated with lower vitamin D levels. In one study, 100% of pantoprazole users were deficient vs. 30% of non-users (Losurdo, J Clin Med 2023) [164] | If you take a PPI long term, ask your doctor whether vitamin D testing makes sense |
 | Anticonvulsants | Long-term phenobarbital can cause vitamin D deficiency or osteomalacia, likely through faster breakdown of vitamin D (Pascussi, J Clin Invest 2005) [177]; carbamazepine users had lower vitamin D levels than non-users (LoPinto-Khoury, Epilepsy Res 2021) [178] | If you take an anticonvulsant long term, ask your doctor whether you need vitamin D testing or supplements |
-| Cholestyramine | May reduce vitamin D absorption | Ask your pharmacist how to time vitamin D around it |
 | Combined oral contraceptives | Some formulations may raise vitamin D binding protein and lower bioavailable vitamin D, while total levels change little | Effects differ by formulation; levonorgestrel alone made no significant difference (Stanczyk, J Steroid Biochem Mol Biol 2021) [165] |
 
 ## 7. Dietary Sources

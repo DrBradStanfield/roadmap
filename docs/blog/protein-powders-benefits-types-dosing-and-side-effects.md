@@ -22,7 +22,7 @@ For people who struggle to meet their protein target from whole foods alone, Bra
 - Soy protein may reduce absorption of thyroid hormone medicine, dietary protein can reduce levodopa absorption, and dairy reduces tetracycline absorption; ask your doctor or pharmacist about timing [33][107][108].
 - If you have chronic kidney disease, ask your doctor how much protein suits you before using a protein powder; high protein intake may speed its progression [104][105].
 - People allergic to milk should avoid whey and casein, including laboratory-made whey, which still contains the milk allergen beta-lactoglobulin [10]. Soy protein can also cause severe allergic reactions, and concentrated pea protein may be an allergy concern [122].
-- Allergic reactions to mycoprotein (Quorn) appear to be very rare [47], but self-reports sent to an advocacy group's website included anaphylaxis, one case fatal [117].
+- Allergic reactions to mycoprotein (Quorn) can happen. A manufacturer-authored review judged them rare [47], but self-reports sent to an advocacy group's website included anaphylaxis, one case fatal [117].
 - In people with a rare inherited urea cycle disorder, a large rise in protein intake can trigger high blood ammonia and brain dysfunction [125].
 - Protein powders can contain lead and other heavy metals; a risk assessment of published test results suggested typical servings would not harm health [119].
 - In older men, whey drinks lowered blood pressure, most clearly between 120 and 180 minutes after drinking [123].
@@ -85,7 +85,7 @@ Bone broth protein supplements are dried broth, usually made from chicken bones.
 
 #### Cricket Protein
 
-Cricket powder is made from dried, ground crickets. In its opinion on one house cricket powder, a European Food Safety Authority panel could not establish that it was safe: it found mineral oil hydrocarbons, phthalates and variable microbial quality. The panel also warned that eating cricket protein may cause new allergies, and that people allergic to crustaceans, dust mites or molluscs may react to it through cross-reactivity [127].
+Cricket powder is made from dried, ground crickets. In its opinion on one house cricket powder, a European Food Safety Authority panel could not establish that it was safe: it found mineral oil aromatic hydrocarbons, phthalates and variable microbial quality. The panel also warned that eating cricket protein may cause new allergies, and that people allergic to crustaceans, mites or molluscs may react to it through cross-reactivity [127].
 
 ### Plant-Based Proteins
 
@@ -146,7 +146,7 @@ Mycoprotein is protein made from the fungus *Fusarium venenatum* and sold as Quo
 
 In a 10-week trial, 22 young adults did high-volume resistance training 5 days a week on a high-protein diet that was either omnivorous or vegan and rich in mycoprotein. Lean mass rose by a similar amount (2.6 kg omnivorous, 3.1 kg vegan), as did thigh muscle volume and strength (Monteyne, *J Nutr*, 2023) [46]. Both groups ate plenty of protein, so the trial compared protein sources rather than testing extra protein.
 
-Self-reports of reactions to Quorn products, collected through an advocacy group's website, described gut symptoms such as vomiting and diarrhea, and allergic reactions including hives and anaphylaxis, one of them fatal (Jacobson, *Ann Allergy Asthma Immunol*, 2018) [117]. A symposium review, drawing on a systematic evidence review, judged allergic reactions to mycoprotein exceptionally rare (Finnigan, *Curr Dev Nutr*, 2019) [47].
+Self-reports of reactions to Quorn products, collected through an advocacy group's website, described gut symptoms such as vomiting and diarrhea, and allergic reactions including hives and anaphylaxis, one of them fatal (Jacobson, *Ann Allergy Asthma Immunol*, 2018) [117]. A symposium review written by the manufacturer's scientists, drawing on a systematic evidence review, judged allergic reactions to mycoprotein exceptionally rare (Finnigan, *Curr Dev Nutr*, 2019) [47].
 
 ### Protein Purity and Essential Amino Acid Content
 
@@ -160,7 +160,7 @@ Extra protein can add to the muscle and strength gains from regular resistance e
 
 **Meta-analyses and systematic reviews:**
 
-A meta-analysis of 49 trials with 1,863 participants found that protein supplements added to gains in strength and muscle size during resistance training lasting 6 weeks or more. The effect on lean mass was smaller in older people and larger in people already trained, and total protein intakes above about 1.6 g/kg a day brought no further gain (Morton, *Br J Sports Med*, 2017) [48]. A later dose-response meta-analysis pooling 105 papers on randomised trials found that each extra 0.1 g/kg a day of protein added 0.39 kg of lean mass below a total intake of 1.3 g/kg a day, but only 0.12 kg above it (Tagawa, *Nutr Rev*, 2021) [126].
+A meta-analysis of 49 trials with 1,863 participants found that protein supplements added to gains in strength and muscle size during resistance training lasting 6 weeks or more. The effect on lean mass was smaller in older people and larger in people already trained, and total protein intakes above about 1.6 g/kg a day brought no further gain (Morton, *Br J Sports Med*, 2017) [48]. A later dose-response meta-analysis pooling 105 papers on randomised trials found that each extra 0.1 g/kg a day of protein was associated with 0.39 kg more lean mass below a total intake of 1.3 g/kg a day, but only 0.12 kg above it (Tagawa, *Nutr Rev*, 2021) [126].
 
 A 2025 network meta-analysis of 38 trials in 2,610 adults aged 50 and over found that protein plus resistance training increased lean body mass more than protein alone. Resistance training, with or without protein, improved strength compared with controls and physical function compared with protein alone, and the authors judged the combination the most effective approach (Tian, *J Nutr*, 2025) [49].
 
@@ -311,7 +311,7 @@ Whey protein contains lactose, which can cause bloating, gas, cramps, and diarrh
 
 ### Kidney Strain
 
-A study of 1,324 adults (average age 64) followed for a median of 10 years, which measured kidney function directly, found no link between higher habitual protein intake and decline in kidney function (Rinde, *Clin Kidney J*, 2026) [118]. If your kidney function is reduced, it may be wise to ask your doctor before taking cricket protein in large amounts.
+A study of 1,324 adults (average age 64) followed for a median of 10 years, which measured kidney function directly, found no link between higher habitual protein intake and decline in kidney function (Rinde, *Clin Kidney J*, 2026) [118].
 
 The 2020 KDOQI nutrition guideline for chronic kidney disease, written with the Academy of Nutrition and Dietetics, gives advice on dietary protein intake and nutritional supplements; it covers people with advanced or end-stage kidney disease, people with stages 1 to 5 disease who are not on dialysis, and people with a kidney transplant [104]. A recent narrative review concluded that in adults, high protein intake may speed the progression of chronic kidney disease, and that protein advice should be personalised to age and kidney function [105]. If you have chronic kidney disease, ask your doctor how much protein suits you before using a protein powder.
 
@@ -329,11 +329,11 @@ Whey protein supplements have been linked with acne on the trunk in teenage boys
 
 ### Allergic Reactions
 
-People allergic to milk should avoid whey and casein; even laboratory-made whey contains the milk allergen beta-lactoglobulin [10]. Whey supplements may also cause allergic reactions in some people without a known milk allergy. Plant proteins can cause allergy too: in adults, most allergens behind food anaphylaxis come from plants, mainly pulses (such as soy and peas) and nuts, and concentrated plant protein isolates such as pea are of particular concern (Präger, *J Dtsch Dermatol Ges*, 2023) [122]. People allergic to egg should avoid egg white protein. People allergic to crustaceans such as shrimp, to dust mites or to molluscs may react to cricket protein [127]. Allergy to mycoprotein (Quorn) appears to be very rare [47], but self-reports sent to an advocacy group's website included anaphylaxis, one case fatal [117].
+People allergic to milk should avoid whey and casein; even laboratory-made whey contains the milk allergen beta-lactoglobulin [10]. Whey supplements may also cause allergic reactions in some people without a known milk allergy. Plant proteins can cause allergy too: in adults, most allergens behind food anaphylaxis come from plants, mainly pulses (such as soy and peas) and nuts, and concentrated plant protein isolates such as pea are of particular concern (Präger, *J Dtsch Dermatol Ges*, 2023) [122]. People allergic to egg should avoid egg white protein. People allergic to crustaceans such as shrimp, to mites or to molluscs may react to cricket protein [127]. A review written by the manufacturer's scientists judged allergy to mycoprotein (Quorn) rare [47], but self-reports sent to an advocacy group's website included anaphylaxis, one case fatal [117].
 
 ### Blood Pressure in Older Adults
 
-In a small study in older men, whey protein drinks, even at 30 g, lowered systolic blood pressure, most clearly between 120 and 180 minutes after drinking (Oberoi, *Nutrients*, 2022) [123]. If you tend to feel light-headed when you stand up, it may be wise to take care in the hours after a whey drink.
+In a small pilot study in eight older men, whey protein drinks, even at 30 g, lowered systolic blood pressure compared with a control drink, most clearly between 120 and 180 minutes after drinking. Systolic pressure fell by 20 mmHg or more in 63% of the men after 30 g of whey, against 38% after the control drink. The authors concluded that even modest protein loads may cause a fall in blood pressure after eating (postprandial hypotension) in older men (Oberoi, *Nutrients*, 2022) [123]. If you tend to feel light-headed when you stand up, it may be wise to take care in the hours after a whey drink.
 
 ### Unexpected Ingredients
 

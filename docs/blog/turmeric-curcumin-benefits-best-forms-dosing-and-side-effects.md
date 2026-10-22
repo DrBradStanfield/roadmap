@@ -65,9 +65,9 @@ A 2021 crossover trial in 12 healthy adults compared a single 207 mg dose of cur
 |---|---|---|---|
 | Unformulated curcumin | None | 1x (baseline) | Very poor absorption without a fat-containing meal [4] |
 | Curcumin with piperine | Piperine slows curcumin's breakdown in the liver and gut wall | 2,000% with 20 mg piperine and 2 g curcumin in one early study [8] | No significant rise in a 2021 comparison of eight forms [7] |
-| BCM-95 | Curcumin recombined with the non-curcuminoid parts of turmeric | About 6.93-fold [9] | One small crossover study [9] |
-| Meriva | Lecithin (phospholipid) formulation, also called a phytosome | About 29-fold for total curcuminoids [10]; 7.9-fold for a phytosome form in another study [14] | Blood levels were still well below those needed to block most of curcumin's anti-inflammatory targets [10]. Improved liver fat on ultrasound in a fatty liver trial [11] |
-| Longvida | Solid lipid curcumin | 100-fold [6] | Improved attention and working memory in a short trial in older adults [12]. No effect on muscle soreness after leg exercise [55] |
+| BCM-95 | Curcumin recombined with the non-curcuminoid parts of turmeric | About 6.93-fold [9] | One crossover study [9] |
+| Meriva | Lecithin (phospholipid) formulation, also called a phytosome | About 29-fold for total curcuminoids [10]; 7.9-fold for a phytosome form in another study [14] | Blood levels were still lower than those needed to block most of curcumin's anti-inflammatory targets [10]. Improved liver fat on ultrasound in a fatty liver trial [11] |
+| Longvida | Solid lipid curcumin | 100-fold [6] | Improved attention and working memory in a short trial in older adults [12]. No significant effect on thigh muscle soreness in a small trial [55] |
 | Theracurmin | Curcumin dispersed as colloidal nanoparticles | 27-fold [13] | Used in an 18-month memory trial in adults without dementia [59] and after knee cartilage surgery [29] |
 | NovaSol | Micellar curcumin | 185-fold [6]; 57-fold for micellar curcumin in a 2021 comparison [7] | The largest rise in both analyses [6][7] |
 | CurcuWin | Curcumin with a hydrophilic carrier, cellulose derivatives and antioxidants | 136-fold [6]; 45.9-fold for total curcuminoids in a head-to-head study [14] | Also 5.8-fold higher than a phytosome form in that study [14] |
@@ -324,8 +324,6 @@ There is no standard guidance on the best dose of curcumin for any condition [13
 | Ulcerative colitis (active) | 3 g curcumin/day | 1 month | Curcumin capsules | [44] |
 | UC (maintenance) | 1 g curcumin 2x/day (2 g/day) | 6 months | Standard curcumin | [46] |
 | Knee osteoarthritis | 1,500 mg curcuminoids/day in 3 doses | 6 weeks | Curcuminoids | [20] |
-| Knee osteoarthritis (turmeric extract) | Low or high dose | 3 months | Bio-optimized turmeric extract | [22] |
-| Rheumatoid arthritis | 500 mg curcumin | Not given | Curcumin | [33] |
 | Depression | 250 mg or 500 mg curcumin extract twice daily | 8 to 12 weeks | Curcumin extract | [66][67] |
 | Prediabetes prevention | Curcumin extract capsules | 9 months | Curcumin extract | [73] |
 | Blood sugar (after meals) | 180 mg curcumin tablets | Single dose before a meal | Curcumin | [71] |
@@ -440,9 +438,11 @@ Curcumin may interfere with the CYP3A4 enzyme system that metabolizes many drugs
 - Curcumin might, in theory, affect other drugs broken down by CYP3A4. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 **Drugs with decreased levels:**
-- **Everolimus.** A 2018 report raised concern that curcumin supplements might lower blood levels of everolimus, a cancer drug [133].
 - **Tamoxifen.** In breast cancer patients, high-dose curcumin (1,200 mg three times daily) lowered exposure to endoxifen, tamoxifen's active form, by 7.7% (not significant) and by 12.4% with piperine; the authors estimate this could push endoxifen below the effective level in 20-40% of patients [134].
 - **Talinolol** — Some evidence curcumin may decrease bioavailability of this beta-blocker [135].
+
+**Drugs with levels that might go up or down:**
+- **Everolimus.** Curcumin supplements might change blood levels of everolimus, a cancer drug [132][133].
 
 ### Sulfasalazine
 

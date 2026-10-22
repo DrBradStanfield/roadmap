@@ -714,14 +714,6 @@
  {
   "check": "AC2",
   "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
-  "match": "token \">146 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Calcitriol concern:** In Taiwanese insurance records, dementia-free older adults who took calcitriol (a prescriptio...\"",
-  "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-2): raw abbreviation or layout the tokeniser does not join to the body's unit (\"45 y\", \"5.3 y\", \"700 U/day\", \"days/year\", \"min/day\", \"2400,3200 IU\", \"monthly … 24,000 IU\", \"week 24\"). The writer confirmed the number in the cited abstract or NIH text; ruling 10, the text stays.",
-  "by": "orchestrator",
-  "date": "2026-10-22"
- },
- {
-  "check": "AC2",
-  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
   "match": "token \"<2021\" is new in the body and no entry has a body line and a source quote that both carry it",
   "reason": "Checker tokenisation: a citation year '(Appel, Ann Intern Med 2021)' inherits the comparator 'below' from earlier in the line; the year is bibliographic (R4 aligned it with ref [28], Ann Intern Med 2021;174(2)). Ruling 10, the text stays.",
   "by": "orchestrator",

@@ -19,7 +19,7 @@ Two trials found that high-dose vitamin K2 as MK-7 (360 to 720 mcg a day) slowed
 
 ## Key safety points
 
-- If you take warfarin or another vitamin K antagonist, keep your vitamin K intake from food and supplements steady, and do not start, stop or change a vitamin K supplement without your anticoagulation clinic [1][38].
+- If you take warfarin or another vitamin K antagonist, keep your vitamin K intake from food and supplements steady [1], and do not start, stop or change a vitamin K supplement without your anticoagulation clinic [38].
 - Vitamin K intake is not expected to change the effect of newer blood thinners such as apixaban, rivaroxaban and dabigatran [45][46][55].
 - Orlistat taken with warfarin might cause a significant increase in prothrombin time, and orlistat, bile acid sequestrants and long courses of antibiotics can lower vitamin K status [1][50].
 - MK-7 is often made from natto, a fermented soybean food, so people with a soy allergy should check the source on the label [1][6].
@@ -183,11 +183,11 @@ Vascular calcification is one of the risk factors for coronary heart disease bec
 
 #### MK-7 Cardiovascular Trials
 
-The MK-7 trials below differ in who took part, the dose and what they measured. Two of them, and a subgroup of a third, found that coronary calcium scores rose more slowly with MK-7 in people who already had coronary calcification [64][69][70]:
+The MK-7 trials below differ in who took part, the dose and what they measured. Two of them, and a subgroup of a third, found that coronary calcium scores rose more slowly with MK-7 (given with vitamin D in [69][70]) in people who already had coronary calcification [64][69][70]:
 
 **Knapen et al. (2015):** In a double-blind trial of 244 healthy postmenopausal women, 180 mcg of MK-7 (MenaQ7) a day for three years lowered arterial stiffness compared with placebo, and the effect was larger in women whose arteries were stiffest at the start [28]. MK-7 lowered dp-ucMGP by 50% but did not change blood markers of inflammation or endothelial dysfunction [28].
 
-**de Vries et al. (2025):** A post hoc analysis of a one-year trial looked at 165 women with low vitamin K status who took the same dose of MK-7 or placebo [63]. Only one stiffness measure, Young's modulus, rose less with MK-7 than with placebo, and only in the 87 post-menopausal women; the other vascular measures, and all vascular measures in the 78 pre- or peri-menopausal women, did not differ significantly from placebo [63]. The supplement maker Gnosis by Lesaffre funded the study, and three of the authors were employed by Lesaffre [63].
+**de Vries et al. (2025):** In 165 women with low vitamin K status who took MK-7 at that dose or placebo for one year, MK-7 attenuated vascular stiffness in the 87 post-menopausal women, measured as Young's modulus (adjusted p = 0.035) [63]. This was a post hoc analysis, and Young's modulus was the only stiffness measure that differed: the other vascular measures, and all vascular measures in the 78 pre- or peri-menopausal women, did not differ significantly from placebo [63]. The supplement maker Gnosis by Lesaffre funded the study, and three of the authors were employed by Lesaffre [63].
 
 **Vossen et al. (2026):** In a Dutch placebo-controlled trial, 180 people with coronary artery disease symptoms and calcium scores between 50 and 400 AU took 360 mcg of MK-7 or placebo daily for two years; calcium scores rose less with MK-7, and there were no significant adverse effects [64]. The number of soft, non-calcified plaques did not differ significantly between the groups [55].
 
@@ -213,7 +213,7 @@ The MK-7 trials below differ in who took part, the dose and what they measured. 
 
 #### Summary of Cardiovascular Evidence
 
-In observational studies, diets richer in K2 were associated with less coronary calcification and fewer deaths from coronary heart disease [1]. Most supplement trials found no overall effect on calcification or arterial stiffness [29][30][65][66][69]. The positive results came from narrower groups: calcium scores rose more slowly with MK-7 in people with symptoms of coronary artery disease and in people whose scores were already high, and with K1 in people who already had some calcification [30][64][69][70]. That evidence is a slower rise in calcium score, not fewer heart attacks: no trial has shown that slowing coronary calcium reduces cardiovascular events, and soft plaque, the kind that can rupture, did not differ from placebo in the two dedicated trials [55].
+In observational studies, diets richer in K2 were associated with less coronary calcification and fewer deaths from coronary heart disease [1]. Most supplement trials found no overall effect on calcification or arterial stiffness [29][30][65][66][69]. The positive results came from narrower groups: calcium scores rose more slowly with MK-7 (given with vitamin D in [69][70]) in people with symptoms of coronary artery disease and in people whose scores were already high, and with K1 in people who already had some calcification [30][64][69][70]. That evidence is a slower rise in calcium score, not fewer heart attacks: no trial has shown that slowing coronary calcium reduces cardiovascular events, and soft plaque, the kind that can rupture, did not differ from placebo in the two dedicated trials [55].
 
 ### Nocturnal Leg Cramps
 
@@ -343,7 +343,7 @@ Vitamin K can have a serious and potentially dangerous interaction with warfarin
 
 Vitamin K may reduce the effectiveness of warfarin and similar drugs [1]. In a study of healthy volunteers taking acenocoumarol, a warfarin-like drug, MK-7 at 10 mcg a day lowered the INR to a clinically relevant degree in at least 40% of them, and the authors concluded that people on these drugs should avoid MK-7 supplements [44].
 
-Guidance for warfarin care suggests against routine daily low-dose vitamin K supplements, and says a significant change in dietary vitamin K should prompt more frequent INR checks [38]. People on warfarin should check with their anticoagulation clinic or doctor before starting, stopping or changing a vitamin K supplement [38]. The authors of the MK-7 dose study advise that people on vitamin K antagonists avoid MK-7 supplements [44], and MK-4 at the drug dose used for osteoporosis is contraindicated with warfarin [57].
+Guidance for warfarin care suggests against routine daily low-dose vitamin K supplements, and says a significant change in dietary vitamin K should prompt more frequent INR checks [38]. People on warfarin should check with their anticoagulation clinic or doctor before starting, stopping or changing a vitamin K supplement, because a change in vitamin K intake should prompt more frequent INR checks [38]. The authors of the MK-7 dose study advise that people on vitamin K antagonists avoid MK-7 supplements [44], and MK-4 at the drug dose used for osteoporosis is contraindicated with warfarin [57].
 
 People taking warfarin should keep their vitamin K intake from food consistent, without large fluctuations [38]. NIH advises keeping vitamin K intake from both food and supplements consistent, because sudden changes can increase or decrease warfarin's anticoagulant effect [1].
 
