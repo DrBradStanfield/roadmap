@@ -6,7 +6,8 @@ import Observation
 /// and turns what the engine reports into a status the Sync screen draws. It
 /// decides nothing about what is written: that is health-core's RecordSession,
 /// run in the engine (ios/engine/cloud.ts). It also answers the engine's calls
-/// for tokens, the phone's file and the pending marker (`CloudPort`).
+/// for tokens and its news (`CloudPort`); the phone's file and the pending marker
+/// are `PhoneFiles`, which the engine reads and writes on its own queue.
 @MainActor
 @Observable
 final class CloudSync: CloudPort {
@@ -37,6 +38,7 @@ final class CloudSync: CloudPort {
     private let store: RecordStore
     private let oauth: OAuthClient
     private let files: SyncFiles
+    private let phone: PhoneFiles
     /// The engine session the app shows and sends edits to; nil when none is
     /// open. Everything that talks to the session checks this, never the store,
     /// and news from any other session is dropped (review F2, F4).
@@ -58,10 +60,12 @@ final class CloudSync: CloudPort {
         self.store = store
         self.oauth = oauth
         files = SyncFiles(folder: store.file.deletingLastPathComponent())
+        phone = PhoneFiles(record: store.file, pending: files.pending)
         provider = files.read(files.provider).flatMap(CloudProvider.init(rawValue:))
+        if provider != nil { store.marksPending = phone }
         syncedBefore = files.read(files.history).flatMap(CloudProvider.init(rawValue:))
         accountEmail = provider == nil ? nil : files.read(files.email)
-        engine.natives.cloud = self
+        engine.blocking { [phone] in $0.attach(self, phone: phone) }
         store.onEdit = { [weak self] in self?.edited() }
         if provider != nil { status = .connecting }
     }
@@ -89,6 +93,7 @@ final class CloudSync: CloudPort {
         if let email = signedIn.email { try files.write(email, to: files.email) } else { files.remove(files.email) }
         accountEmail = signedIn.email
         self.provider = provider
+        store.marksPending = phone
         await open(firstConnect: first)
     }
 
@@ -96,7 +101,7 @@ final class CloudSync: CloudPort {
     func foreground() async {
         guard provider != nil else { return }
         if sessionOpen {
-            try? engine.cloudVisible()
+            try? await engine.cloudVisible()
         } else {
             await open(firstConnect: false)
         }
@@ -105,7 +110,7 @@ final class CloudSync: CloudPort {
     /// The app is leaving the screen: stop re-reading, and save what waits.
     func background() async {
         guard sessionOpen else { return }
-        try? engine.cloudHidden()
+        try? await engine.cloudHidden()
         _ = try? await engine.cloudFlush()
     }
 
@@ -128,7 +133,7 @@ final class CloudSync: CloudPort {
     /// engine's RecordSession.deleteAllData). Nil when no session is open: the phone
     /// then cannot read the cloud record, so it cannot list what it erases, and
     /// refuses as the web does (US-09 AC23).
-    func erase(chatHistory: String?, keepChat: @escaping @MainActor (String) -> Bool) async throws -> HealthEngine.CloudErase? {
+    func erase(chatHistory: String?, keepChat: @escaping @Sendable (String) -> Bool) async throws -> HealthEngine.CloudErase? {
         guard let session = shownSession else { return nil }
         erasing = true
         defer { erasing = false }
@@ -144,12 +149,14 @@ final class CloudSync: CloudPort {
         if result.erased { forgetEmail() }
         // A Disconnect or reopen during the await owns the screen now (review F7).
         guard shownSession == session else { return result }
-        if result.erased, let view = result.view { store.showErased(view) }
+        let shown = result.erased ? result.view.map { store.showErased($0) } : nil
         if result.success {
             status = .synced(.now)
         } else if status == .saving {
             status = .problem(SyncProblem(kind: .unreachable))
         }
+        // Done once the screen shows the erased record.
+        await shown?.value
         return result
     }
 
@@ -163,14 +170,16 @@ final class CloudSync: CloudPort {
         generation += 1
         shownSession = nil
         self.provider = nil
+        store.marksPending = nil
         let copied = (try? await engine.cloudClose(copyDown: true)) ?? false
         oauth.signOut(provider)
         files.remove(files.provider)
         files.remove(files.account)
         forgetEmail()
         files.remove(files.pending)
-        store.showPhone()
+        let shown = store.showPhone()
         status = .onPhone
+        await shown.value
         return copied
     }
 
@@ -196,13 +205,19 @@ final class CloudSync: CloudPort {
                 let view = try await engine.cloudOpen(provider: provider, deviceId: store.deviceId, firstConnect: first)
                 // Disconnected meanwhile: the Disconnect closed what this open made.
                 guard mine == generation else { return }
+                // An edit asked for while the open ran may still be landing on the phone's
+                // file: let it land and be counted before deciding (US-09 AC4).
+                await store.drained()
+                guard mine == generation else { return }
                 first = false
                 if editsWhileOpening > 0 { continue }
-                store.showCloud(view)
+                let shown = store.showCloud(view)
                 shownSession = view.session
                 status = settled()
                 syncedBefore = provider
                 try? files.write(provider.rawValue, to: files.history)
+                // Done once the screen shows the cloud record.
+                await shown.value
                 return
             } catch {
                 guard mine == generation else { return }
@@ -234,9 +249,10 @@ final class CloudSync: CloudPort {
         if sessionOpen {
             status = .saving
         } else if provider != nil {
-            // Connected, but no session is open: this edit waits on the phone.
-            _ = pending("set")
-            if openingFor != nil { editsWhileOpening += 1 }
+            // Connected, but no session is open: this edit waits on the phone, marked
+            // pending by the engine step that wrote it (RecordStore.marksPending). An open
+            // under way counts it and opens again (it waits for edits to land first).
+            editsWhileOpening += 1
         }
     }
 
@@ -253,28 +269,7 @@ final class CloudSync: CloudPort {
         }
     }
 
-    func phoneRead() throws -> String? {
-        try store.phoneText()
-    }
-
-    func phoneWrite(_ text: String) throws {
-        try store.writePhone(text)
-    }
-
-    func phoneRemove() {
-        store.removePhone()
-    }
-
-    func pending(_ op: String) -> Bool {
-        switch op {
-        case "set": try? files.write("", to: files.pending)
-        case "clear": files.remove(files.pending)
-        default: break
-        }
-        return files.exists(files.pending)
-    }
-
-    func notify(_ event: String, _ payload: String, session: Int) {
+    func notify(_ event: String, _ payload: String, session: Int, order: Int) {
         guard session == shownSession else { return }
         switch event {
         case "saving": status = .saving
@@ -285,7 +280,9 @@ final class CloudSync: CloudPort {
         case "synced": status = settled()
         case "failed": status = .problem(SyncProblem(json: payload))
         case "changed":
-            if let view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) { store.showCloud(view) }
+            guard var view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) else { return }
+            view.order = order
+            store.showCloud(view)
         default: break
         }
     }

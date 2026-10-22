@@ -39,12 +39,12 @@ final class ReminderScheduler {
 
     private let center: NotificationScheduling
     private let optInFile: URL
-    private let compute: @MainActor () throws -> PhoneReminders
+    private let compute: @MainActor () async throws -> PhoneReminders
     /// Refreshes run one after another, so two never interleave their removes and adds.
     private var last: Task<Void, Never>?
 
     /// `folder` is the record's (RecordStore.appFolder), left out of backups.
-    init(center: NotificationScheduling, folder: URL, compute: @escaping @MainActor () throws -> PhoneReminders) {
+    init(center: NotificationScheduling, folder: URL, compute: @escaping @MainActor () async throws -> PhoneReminders) {
         self.center = center
         self.compute = compute
         optInFile = folder.appending(path: "reminders-opt-in")
@@ -70,7 +70,7 @@ final class ReminderScheduler {
     /// Asks iOS for permission, and on a yes turns reminders on under the record's current epoch.
     func optIn() async -> Bool {
         let granted = (try? await center.requestPermission()) ?? false
-        if granted, let epoch = (try? compute())?.eraseEpoch { optedInEpoch = epoch }
+        if granted, let epoch = (try? await compute())?.eraseEpoch { optedInEpoch = epoch }
         await refresh()
         return optedIn
     }
@@ -81,7 +81,7 @@ final class ReminderScheduler {
     }
 
     private func reschedule() async {
-        let next = try? compute()
+        let next = try? await compute()
         reminders = next
         // An erase since the opt-in ends it. A failed read is not an erase: it only
         // cancels this round, and the next good read schedules again.

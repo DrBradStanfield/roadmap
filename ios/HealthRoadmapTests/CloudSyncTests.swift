@@ -117,9 +117,9 @@ final class CloudSyncTests: XCTestCase {
     /// A record from the engine with one weight row per day, written by `device`.
     private func record(days: [String], device: String) throws -> [String: Any] {
         let engine = try HealthEngine()
-        var json = try engine.newRecord(now: now, deviceId: device, locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!)
+        var json = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: device, locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
         for day in days {
-            json = try XCTUnwrap(engine.apply(.add(metric: "weight", value: 80, day: day), to: json, now: now, deviceId: device).record)
+            json = try XCTUnwrap(engine.blocking { [now] in try $0.apply(.add(metric: "weight", value: 80, day: day), to: json, now: now, deviceId: device) }.record)
         }
         return try JSONSerialization.jsonObject(with: Data(json.utf8)) as! [String: Any]
     }
@@ -143,7 +143,7 @@ final class CloudSyncTests: XCTestCase {
         let web = try record(days: ["2026-10-03"], device: "web")
         dropbox.beforeNextUpload = { [dropbox] in dropbox!.put(web) }
 
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 81, day: "2026-10-04")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 81, day: "2026-10-04")))
         XCTAssertEqual(sync.status, .saving)
         await sync.background()
 
@@ -194,14 +194,14 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(dropbox.uploads, uploads, "the cloud file was not written")
         let onPhone = try String(contentsOf: folder.appending(path: "health-roadmap.json"), encoding: .utf8)
         XCTAssertEqual(activeDays(onPhone), ["2026-10-01", "2026-10-02"])
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 82, day: "2026-10-05")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 82, day: "2026-10-05")))
         XCTAssertEqual(dropbox.uploads, uploads)
     }
 
     func testFirstConnectMergesThePhoneRecordUp() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
         let (store, sync, _) = try app(connected: false)
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
         try await sync.connect(.dropbox) { url, _ in
             let state = URLComponents(url: url, resolvingAgainstBaseURL: false)!.queryItems!.first { $0.name == "state" }!.value!
             return URL(string: "db-xf96vqvjotm5xhx://2/token?code=c&state=\(state)")!
@@ -212,11 +212,12 @@ final class CloudSyncTests: XCTestCase {
 
     func testACloudThatCannotBeReachedLeavesThePhoneRecordAndMarksEditsForLater() async throws {
         StubHTTP.handler = { _ in .init(offline: true) }
-        let (store, sync, _) = try app()
+        let (store, sync, engine) = try app()
         await sync.start()
         XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)))
         XCTAssertNil(store.cloudErase)
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-06")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-06")))
+        engine.blocking { _ in } // the marker is set on the engine's queue, in line with its own reads and clears
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appending(path: "sync-pending").path(percentEncoded: false)))
 
         // Back online: the next open merges the phone's edit up.
@@ -260,13 +261,13 @@ final class CloudSyncTests: XCTestCase {
         dropbox.put(erased(before))
         await sync.syncNow()
         XCTAssertEqual(activeDays(store.recordJSON), [], "the erase reached the phone")
-        guard case .refused = store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) else {
+        guard case .refused = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) else {
             return XCTFail("the old sheet's value must not land in the erased record")
         }
         store.unpinScreen()
         await sync.background()
         XCTAssertEqual(activeDays(dropbox.record), [])
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")), .saved, "a sheet opened after the erase saves")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")), "a sheet opened after the erase saves")
     }
 
     func testR2ASheetOpenedInMetricIsRefusedAfterTheWebSwitchesToUSUnits() async throws {
@@ -275,22 +276,23 @@ final class CloudSyncTests: XCTestCase {
         await sync.start()
         let rowId = try XCTUnwrap(store.myData?.vitals.first?.latest?.id)
         store.pinScreen()
-        let us = try engine.apply(.units("conventional"), to: dropbox.file!.text, now: .now, deviceId: "web")
+        let web = dropbox.file!.text
+        let us = try engine.blocking { try $0.apply(.units("conventional"), to: web, now: .now, deviceId: "web") }
         dropbox.put(try JSONSerialization.jsonObject(with: Data(try XCTUnwrap(us.record).utf8)) as! [String: Any])
         await sync.syncNow()
         XCTAssertEqual(store.myData?.unitSystem, "conventional")
-        XCTAssertEqual(store.apply(.profile(sex: "female")), .saved, "an edit with no number in units still saves (F5)")
-        guard case .refused = store.apply(.correct(id: rowId, value: 79)) else { return XCTFail("the replace path: 79 kg must not be 79 lb") }
+        await XCTAssertSaved(await store.apply(.profile(sex: "female")), "an edit with no number in units still saves (F5)")
+        guard case .refused = await store.apply(.correct(id: rowId, value: 79)) else { return XCTFail("the replace path: 79 kg must not be 79 lb") }
         // The sheet still shows kg and still holds the typed 80: a second Save in it
         // is refused too, and says to close it (Codex re-check R1).
-        guard case .refused(let message, _) = store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) else {
+        guard case .refused(let message, _) = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) else {
             return XCTFail("a second Save in the same sheet must not store 80 lb")
         }
         XCTAssertTrue(message.contains("Close this"), message)
         store.unpinScreen()
         // A sheet opened now shows lb: its value saves.
         store.pinScreen()
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 176, day: "2026-10-02")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 176, day: "2026-10-02")))
         store.unpinScreen()
         await sync.background()
         XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"])
@@ -298,14 +300,15 @@ final class CloudSyncTests: XCTestCase {
 
     func testR4AReopenThatFailsGoesBackToThePhoneAndKeepsEdits() async throws {
         dropbox.put(try record(days: [], device: "web"))
-        let (store, sync, _) = try app()
+        let (store, sync, engine) = try app()
         await sync.start()
         XCTAssertNotNil(store.cloudErase)
         dropbox.online = false
         try await sync.connect(.dropbox, authenticate: signIn())
         XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)))
         XCTAssertNil(store.cloudErase, "edits go to the phone, not to a closed session")
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-06")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-06")))
+        engine.blocking { _ in } // the marker is set on the engine's queue, in line with its own reads and clears
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appending(path: "sync-pending").path(percentEncoded: false)))
         dropbox.online = true
         await sync.syncNow()
@@ -327,7 +330,7 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertNil(sync.provider)
         XCTAssertEqual(sync.status, .onPhone)
         let uploads = dropbox.uploads
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 82, day: "2026-10-05")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 82, day: "2026-10-05")))
         try await Task.sleep(for: .milliseconds(1200))
         XCTAssertEqual(dropbox.uploads, uploads, "nothing reaches the cloud after Disconnect")
     }
@@ -338,7 +341,7 @@ final class CloudSyncTests: XCTestCase {
         let (store, sync, _) = try app()
         let opening = Task { await sync.start() }
         try await Task.sleep(for: .milliseconds(50))
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")), .saved, "the phone takes it meanwhile")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")), "the phone takes it meanwhile")
         await opening.value
         dropbox.downloadDelay = 0
         XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01", "2026-10-02"], "and the screen still shows it")
@@ -408,7 +411,7 @@ final class CloudSyncTests: XCTestCase {
         await stale.value
         try await Task.sleep(for: .milliseconds(700)) // the stale read lands and gives way
         XCTAssertNotNil(store.cloudErase)
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 81, day: "2026-10-03")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 81, day: "2026-10-03")))
         await sync.background()
         XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-03"], "the shown session is the one the engine saves through")
     }
@@ -419,22 +422,45 @@ final class CloudSyncTests: XCTestCase {
         var day = 0
         dropbox.onDownload = {
             day += 1
-            _ = store.apply(.add(metric: "weight", value: 80, day: "2026-10-0\(day)"))
+            let day = day
+            Task { _ = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-0\(day)")) }
         }
         await sync.start()
         dropbox.onDownload = nil
         XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .busy)))
         XCTAssertNil(store.cloudErase)
-        let probe = try engine.cloudEdit(.add(metric: "weight", value: 80, day: "2026-10-09"), erase: "x", units: "si", now: .now)
+        let probe = try engine.blocking { try $0.cloudEdit(.add(metric: "weight", value: 80, day: "2026-10-09"), erase: "x", units: "si", now: .now) }
         XCTAssertEqual(probe.reason, "not-open", "the engine holds no session that would poll and say Synced")
         XCTAssertNotNil(SyncProblem(kind: .busy).words(.dropbox).range(of: "on this iPhone"))
+    }
+
+    /// US-09 AC4, US-25 AC20: an edit asked for while the cloud opens, whose write lands
+    /// on the phone only as the open resolves, is neither hidden nor left behind: it
+    /// reaches the cloud file and the screen.
+    func testAnEditLandingAsTheOpenResolvesReachesTheCloudAndTheScreen() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync, engine) = try app()
+        var asked = false
+        dropbox.onDownload = {
+            guard !asked else { return }
+            asked = true
+            // Held on the engine's queue until the open's own download has been answered.
+            engine.queue.async { Thread.sleep(forTimeInterval: 0.05) }
+            Task { _ = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) }
+        }
+        await sync.start()
+        dropbox.onDownload = nil
+        XCTAssertNotNil(store.cloudErase, "the cloud record is open")
+        XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01", "2026-10-02"], "the screen shows the edit")
+        await sync.background()
+        XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"], "the edit reached the cloud")
     }
 
     func testF7ADisconnectDuringSyncNowEndsOnThePhone() async throws {
         dropbox.put(try record(days: [], device: "web"))
         let (store, sync, _) = try app()
         await sync.start()
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-04")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-04")))
         dropbox.downloadDelay = 0.3
         let syncing = Task { await sync.syncNow() }
         try await Task.sleep(for: .milliseconds(50))
@@ -452,7 +478,7 @@ final class CloudSyncTests: XCTestCase {
         dropbox.online = false
         let (store, sync, _) = try app()
         await sync.start()
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-06")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-06")))
         dropbox.online = true
         dropbox.uploadsWork = false
         await sync.foreground()
@@ -538,7 +564,7 @@ final class CloudSyncTests: XCTestCase {
         let original = LabFileReader.Original(Data("%PDF".utf8), mimeType: "application/pdf")
         let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Letter", documentDate: nil, mimeType: "application/pdf", contentHash: original.contentHash)
         guard case .refused = await store.saveDocument(extractionJSON: cloudLetter, choice: choice, original: original) else { return XCTFail("a pre-erase document was saved") }
-        guard case .refused = store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) else { return XCTFail("a pre-erase value was saved") }
+        guard case .refused = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) else { return XCTFail("a pre-erase value was saved") }
         XCTAssertEqual(dropbox.documents, [:])
     }
 }

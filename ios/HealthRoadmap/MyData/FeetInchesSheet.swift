@@ -5,12 +5,14 @@ import SwiftUI
 /// `feetInchesToCm` and stores centimetres; the 50 to 250 cm range is its own.
 struct FeetInchesSheet: View {
     let current: MyData.FeetInches?
-    let save: (MyData.FeetInches) -> RecordStore.ApplyResult
+    let save: (MyData.FeetInches) async -> RecordStore.ApplyResult
 
     @Environment(\.dismiss) private var dismiss
     @State private var feet = 5
     @State private var inches = 7
     @State private var message: String?
+    /// A save is under way: the sheet stays open and its buttons wait.
+    @State private var saving = false
 
     var body: some View {
         NavigationStack {
@@ -31,14 +33,13 @@ struct FeetInchesSheet: View {
             .navigationTitle("Height")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        switch save(MyData.FeetInches(feet: feet, inches: inches)) {
-                        case .saved: dismiss()
-                        case .refused(let why, _): message = why
-                        }
+                        let height = MyData.FeetInches(feet: feet, inches: inches)
+                        SheetSave.run($saving, { await save(height) }) { SheetSave.close($0, dismiss, $message) }
                     }
+                    .disabled(saving)
                 }
             }
             .onAppear {
@@ -50,6 +51,7 @@ struct FeetInchesSheet: View {
             .onChange(of: feet) { message = nil }
             .onChange(of: inches) { message = nil }
         }
+        .interactiveDismissDisabled(saving)
         .pinsRecord()
     }
 

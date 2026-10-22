@@ -50,7 +50,9 @@ struct PlanView: View {
         }
         .task(id: planKey) {
             guard let planKey else { return }
-            let (next, planned) = load(planKey)
+            let (next, planned) = await load(planKey)
+            // The record moved on while the engine worked: the newer task draws it.
+            guard !Task.isCancelled else { return }
             state = next
             // A downloaded engine on trial has planned the user's own record (US-25 AC18).
             // Never when it threw: that is the failure the trial exists to catch (review R5).
@@ -63,16 +65,11 @@ struct PlanView: View {
     /// What a plan is computed from: the record, and the per-test units its targets read in (AC17e).
     private struct PlanKey: Equatable { let record: String; let units: String }
 
-    private func load(_ key: PlanKey) -> (LoadState, planned: Bool) {
-        let clock = ContinuousClock()
+    /// Off the main thread, on the engine's queue.
+    private func load(_ key: PlanKey) async -> (LoadState, planned: Bool) {
         do {
-            let start = clock.now
-            let json = try engine.plan(recordJSON: key.record, now: .now, deviceId: store.deviceId, units: key.units)
-            let sections = try engine.sections(planJSON: json)
-            // The whole plan: the engine's plan, its layout and their decoding (D2's budget).
-            let elapsed = clock.now - start
-            let ms = Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15
-            return (.loaded(sections: sections, planMs: ms), true)
+            let plan = try await engine.planSections(record: key.record, units: key.units, now: .now, deviceId: store.deviceId)
+            return (.loaded(sections: plan.sections, planMs: plan.ms), true)
         } catch HealthEngine.EngineError.callFailed(let why) where why.hasPrefix("PlanError: ") {
             // health-core's one PlanError: no usable height or sex (plan.ts). Its own
             // words are written for connectors, so people get a plain sentence.

@@ -13,7 +13,7 @@ final class ShimTests: XCTestCase {
     /// sentinel, as the adapters send them (EngineHTTP, US-25 AC18).
     private func engine() throws -> HealthEngine {
         let engine = try HealthEngine(session: StubHTTP.session())
-        engine.natives.cloud = port
+        engine.blocking { [port] in $0.attach(port, phone: PhoneFiles(record: nil, pending: nil)) }
         return engine
     }
 
@@ -24,11 +24,11 @@ final class ShimTests: XCTestCase {
             return .init(status: 201, headers: ["Dropbox-API-Result": #"{"rev":"r1"}"#], body: Data("ok µmol ✓".utf8))
         }
         let engine = try engine()
-        let answer = try await engine.settle(engine.evaluate("""
+        let answer = try await engine.settleScript("""
             fetch('https://content.dropboxapi.com/2/files/upload', {
               method: 'POST', headers: { Authorization: 'Bearer native-token:dropbox' }, body: '{"value":"é"}',
             }).then(async (res) => [res.ok, res.status, res.headers.get('dropbox-api-result'), await res.text()].join('|'))
-            """))
+            """)
         XCTAssertEqual(answer, #"true|201|{"rev":"r1"}|ok µmol ✓"#)
         XCTAssertEqual(seen?.method, "POST")
         XCTAssertEqual(seen?.headers["authorization"], "Bearer real-token")
@@ -42,14 +42,14 @@ final class ShimTests: XCTestCase {
             return .init()
         }
         let engine = try engine()
-        _ = try await engine.settle(engine.evaluate("fetch('https://content.dropboxapi.com/2/files/upload', { method: 'POST', headers: { Authorization: 'Bearer native-token:dropbox' }, body: new Blob(['--b\\r\\n', 'é', new Uint8Array([33])]) }).then(r => r.status)"))
+        _ = try await engine.settleScript("fetch('https://content.dropboxapi.com/2/files/upload', { method: 'POST', headers: { Authorization: 'Bearer native-token:dropbox' }, body: new Blob(['--b\\r\\n', 'é', new Uint8Array([33])]) }).then(r => r.status)")
         XCTAssertEqual(body, "--b\r\né!")
     }
 
     func testANetworkFailureIsATypeError() async throws {
         StubHTTP.handler = { _ in .init(offline: true) }
         let engine = try engine()
-        let answer = try await engine.settle(engine.evaluate("fetch('https://content.dropboxapi.com/2/files/download', { method: 'POST', headers: { Authorization: 'Bearer native-token:dropbox' } }).then(() => 'ok', (e) => String(e instanceof TypeError))"))
+        let answer = try await engine.settleScript("fetch('https://content.dropboxapi.com/2/files/download', { method: 'POST', headers: { Authorization: 'Bearer native-token:dropbox' } }).then(() => 'ok', (e) => String(e instanceof TypeError))")
         XCTAssertEqual(answer, "true")
     }
 
@@ -57,13 +57,13 @@ final class ShimTests: XCTestCase {
         StubHTTP.handler = { _ in .init(hang: true) }
         StubHTTP.stopped = 0
         let engine = try engine()
-        let pending = try engine.evaluate("""
+        _ = try await engine.settleScript("""
             globalThis.c = new AbortController();
-            fetch('https://content.dropboxapi.com/2/files/download', { method: 'POST', headers: { Authorization: 'Bearer native-token:dropbox' }, signal: c.signal }).then(() => 'ok', (e) => e.name)
+            globalThis.p = fetch('https://content.dropboxapi.com/2/files/download', { method: 'POST', headers: { Authorization: 'Bearer native-token:dropbox' }, signal: c.signal }).then(() => 'ok', (e) => e.name); 0
             """)
         try await Task.sleep(for: .milliseconds(50))
-        _ = try engine.evaluate("c.abort()")
-        let answer = try await engine.settle(pending)
+        _ = try await engine.settleScript("c.abort()")
+        let answer = try await engine.settleScript("p")
         XCTAssertEqual(answer, "AbortError")
         try await Task.sleep(for: .milliseconds(50))
         XCTAssertEqual(StubHTTP.stopped, 1, "the URLSession task was cancelled")
@@ -71,15 +71,15 @@ final class ShimTests: XCTestCase {
 
     func testAbortSignalTimeoutFiresOnTheNativeTimer() async throws {
         let engine = try engine()
-        let answer = try await engine.settle(engine.evaluate("""
+        let answer = try await engine.settleScript("""
             new Promise((done) => { const s = AbortSignal.timeout(10); s.addEventListener('abort', () => done(s.reason.name)); })
-            """))
+            """)
         XCTAssertEqual(answer, "TimeoutError")
     }
 
     func testTimersRunInOrderAndClearTimeoutStopsOne() async throws {
         let engine = try engine()
-        let answer = try await engine.settle(engine.evaluate("""
+        let answer = try await engine.settleScript("""
             new Promise((done) => {
               const seen = [];
               setTimeout(() => seen.push('b'), 30);
@@ -87,13 +87,13 @@ final class ShimTests: XCTestCase {
               clearTimeout(setTimeout(() => seen.push('never'), 10));
               setTimeout(() => done(seen.join(',')), 80);
             })
-            """))
+            """)
         XCTAssertEqual(answer, "a,b")
     }
 
     func testTextCodingRoundTripsUTF8() throws {
         let engine = try engine()
-        XCTAssertEqual(try engine.evaluate("Array.from(new TextEncoder().encode('é')).join(',')").toString(), "195,169")
-        XCTAssertEqual(try engine.evaluate("new TextDecoder().decode(new TextEncoder().encode('µmol/L ✓'))").toString(), "µmol/L ✓")
+        XCTAssertEqual(try engine.blocking { try $0.evaluate("Array.from(new TextEncoder().encode('é')).join(',')").toString() }, "195,169")
+        XCTAssertEqual(try engine.blocking { try $0.evaluate("new TextDecoder().decode(new TextEncoder().encode('µmol/L ✓'))").toString() }, "µmol/L ✓")
     }
 }

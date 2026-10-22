@@ -13,8 +13,8 @@ final class AppServerE2ETests: XCTestCase {
     func testOneChatTurnStreamsFromTheLocalServer() async throws {
         try XCTSkipUnless(enabled, "set TEST_RUNNER_HEALTH_ROADMAP_E2E=1 with a local server running")
         let engine = try HealthEngine()
-        let record = try engine.newRecord(now: .now, deviceId: "e2e", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!)
-        let context = try engine.chatContext(recordJSON: record, now: .now, deviceId: "e2e")
+        let record = try engine.blocking { try $0.newRecord(now: .now, deviceId: "e2e", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
+        let context = try engine.blocking { try $0.chatContext(recordJSON: record, now: .now, deviceId: "e2e") }
         let body = try ChatClient.body(message: "In one sentence, what is ApoB?", conversationId: UUID().uuidString.lowercased(), history: [], contextJSON: context)
         var statuses: [String] = []
         var streamed = ""
@@ -54,16 +54,16 @@ final class AppServerE2ETests: XCTestCase {
         let extraction = try await LabUploadClient().extract(document, unitSystem: "si")
 
         let engine = try HealthEngine()
-        let review = try engine.labReview(extractionJSON: extraction, now: .now)
+        let review = try engine.blocking { try $0.labReview(extractionJSON: extraction, now: .now) }
         XCTAssertTrue(review.isLabReport)
         XCTAssertGreaterThanOrEqual(review.items.count, 5)
-        let record = try engine.newRecord(now: .now, deviceId: "e2e", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!)
+        let record = try engine.blocking { try $0.newRecord(now: .now, deviceId: "e2e", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
         let day = review.reportDay ?? "2026-10-01"
         let refs = review.items.map(\.ref)
-        let summary = try engine.labSaveSummary(recordJSON: record, extractionJSON: extraction, refs: refs, reportDay: day, now: .now, deviceId: "e2e").get()
-        let outcome = try engine.apply(.labImport(extractionJSON: extraction, refs: refs, reportDay: day), to: record, now: .now, deviceId: "e2e")
+        let summary = try engine.blocking { try $0.labSaveSummary(recordJSON: record, extractionJSON: extraction, refs: refs, reportDay: day, now: .now, deviceId: "e2e") }.get()
+        let outcome = try engine.blocking { try $0.apply(.labImport(extractionJSON: extraction, refs: refs, reportDay: day), to: record, now: .now, deviceId: "e2e") }
         XCTAssertTrue(outcome.ok, outcome.message ?? "")
-        let data = try engine.myData(recordJSON: try XCTUnwrap(outcome.record), now: .now, deviceId: "e2e")
+        let data = try engine.blocking { try $0.myData(recordJSON: try XCTUnwrap(outcome.record), now: .now, deviceId: "e2e") }
         XCTAssertEqual(data.bloodTests.first { $0.metric == "ldl" }?.latest?.day, day)
         print("E2E lab: \(review.items.count) values found, report day \(review.reportDay ?? "none"), saved \(summary.saved), skipped \(summary.skipped), refused \(summary.refused.count)")
     }

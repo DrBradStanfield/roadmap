@@ -156,9 +156,9 @@ final class AppleHealthSync {
     /// sheet, so a sheet's pin never refuses it. A refusal reads the record again and
     /// tries once more; a second refusal keeps the anchor, so the batch comes again.
     private func save(_ samples: [HealthSample]) async throws {
-        if case .saved = store.applyNow(.appleHealth(samples)) { return }
+        if case .saved = await store.applyNow(.appleHealth(samples)) { return }
         await reread()
-        if case .refused(let message, _) = store.applyNow(.appleHealth(samples)) {
+        if case .refused(let message, _) = await store.applyNow(.appleHealth(samples)) {
             throw ImportRefused(message: message)
         }
     }
@@ -166,7 +166,7 @@ final class AppleHealthSync {
     /// Each value once per version. One Health refuses does not hold back the rest:
     /// it is tried again next time, and the first refusal is reported after the others.
     private func writeTyped() async throws {
-        let writes = try engine.healthWrites(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+        let writes = try await engine.healthWrites(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         var refused: Error?
         for write in writes where write.version > memory.writtenVersion(write.syncId) {
             guard let kind = write.kind, client.canWrite(kind) else { continue }

@@ -40,19 +40,21 @@ extension HealthEngine {
             cloudChatErased ? .erased : cloudChatProblem == "unreadable" ? .unreadable : .unreachable
         }
         /// The erased record to show, when `erased`.
-        let view: CloudView?
+        var view: CloudView?
     }
 
     /// Erases the open cloud record: the cloud file is read first, and one that
     /// cannot be read refuses with nothing changed, chat included. `keepChat` writes
     /// the tombstoned chat file inside the erase, after the read and before the
-    /// record goes up (Codex R3); false when the phone refused it.
-    @MainActor
-    func cloudErase(historyJSON: String?, now: Date, keepChat: @escaping @MainActor (String) -> Bool) async throws -> CloudErase {
+    /// record goes up (Codex R3); false when the phone refused it. It runs on the
+    /// engine's queue, so it writes the file there and never waits on the main thread.
+    func cloudErase(historyJSON: String?, now: Date, keepChat: @escaping @Sendable (String) -> Bool) async throws -> CloudErase {
         let block: @convention(block) (String) -> String = { text in
-            MainActor.assumeIsolated { keepChat(text) ? "" : "The chat history could not be written." }
+            keepChat(text) ? "" : "The chat history could not be written."
         }
-        let json = try await callAsync("cloudErase", [historyJSON ?? NSNull(), now.formatted(Self.iso), unsafeBitCast(block, to: AnyObject.self)])
-        return try JSONDecoder().decode(CloudErase.self, from: Data(json.utf8))
+        let (json, order) = try await callAsync("cloudErase", [historyJSON ?? NSNull(), now.formatted(Self.iso), unsafeBitCast(block, to: AnyObject.self)], read: stamped)
+        var answer = try JSONDecoder().decode(CloudErase.self, from: Data(json.utf8))
+        answer.view?.order = order
+        return answer
     }
 }

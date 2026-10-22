@@ -11,7 +11,7 @@ struct FormSectionsList: View {
     /// A card's title, drawn with its section's symbol.
     let title: (String) -> SectionTitle
     /// Saves one answer to the question with this key.
-    let answer: (_ key: String, _ value: String) -> RecordStore.ApplyResult
+    let answer: (_ key: String, _ value: String) async -> RecordStore.ApplyResult
     /// For a dated value (PSA): its row, and how to open it.
     var measurement: (String) -> MyData.Row? = { _ in nil }
     var openMeasurement: (String) -> Void = { _ in }
@@ -40,7 +40,7 @@ struct FormSectionsList: View {
                 .foregroundStyle(.secondary)
         }
         ForEach(group.fields) { field in
-            FormFieldRow(field: field, months: months, answer: { value in answer(key(field), value) }, read: read,
+            FormFieldRow(field: field, months: months, answer: { value in await answer(key(field), value) }, read: read,
                          measurement: metric(field).flatMap(measurement), openMeasurement: { metric(field).map(openMeasurement) })
         }
     }

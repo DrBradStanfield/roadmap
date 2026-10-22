@@ -22,7 +22,7 @@ struct MedicationsSection: View {
             }
         } else {
             FormSectionsList(sections: data.medications, months: data.months, read: store.number, title: SectionTitle.medications) { field, value in
-                saved(store.apply(.form(.medicationField(field: field, value: value))))
+                saved(await store.apply(.form(.medicationField(field: field, value: value))))
             }
         }
     }

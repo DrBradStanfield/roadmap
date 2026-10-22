@@ -36,60 +36,62 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path(percentEncoded: false)), ["health-roadmap.json"])
     }
 
-    func testAnAddedValueIsOnDiskAndSurvivesARelaunch() throws {
+    func testAnAddedValueIsOnDiskAndSurvivesARelaunch() async throws {
         let first = try store()
-        XCTAssertEqual(first.apply(.add(metric: "weight", value: 80, day: "2026-10-20")), .saved)
+        await XCTAssertSaved(await first.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
         XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), first.recordJSON)
 
         let relaunched = try store()
         XCTAssertEqual(relaunched.myData?.vitals.first?.latest?.day, "2026-10-20")
     }
 
-    func testARefusedEditLeavesTheFileUntouched() throws {
+    func testARefusedEditLeavesTheFileUntouched() async throws {
         let store = try store()
         let before = try Data(contentsOf: file)
-        guard case .refused(let message, _) = store.apply(.add(metric: "systolic_bp", value: 400, day: "2026-10-20")) else {
+        guard case .refused(let message, _) = await store.apply(.add(metric: "systolic_bp", value: 400, day: "2026-10-20")) else {
             return XCTFail("a systolic of 400 must be refused")
         }
         XCTAssertFalse(message.isEmpty)
         XCTAssertEqual(try Data(contentsOf: file), before)
     }
 
-    func testAHeldDayNamesItsRowSoTheAppCanAskBeforeCorrecting() throws {
+    func testAHeldDayNamesItsRowSoTheAppCanAskBeforeCorrecting() async throws {
         let store = try store()
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")), .saved)
-        guard case .refused(_, let existingId?) = store.apply(.add(metric: "weight", value: 82, day: "2026-10-20")) else {
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        guard case .refused(_, let existingId?) = await store.apply(.add(metric: "weight", value: 82, day: "2026-10-20")) else {
             return XCTFail("a second weight for the day must name the row that holds it")
         }
-        XCTAssertEqual(store.apply(.correct(id: existingId, value: 82)), .saved)
+        await XCTAssertSaved(await store.apply(.correct(id: existingId, value: 82)))
         XCTAssertEqual(store.myData?.vitals.first?.latest?.value, "82.0")
     }
 
     /// A value page asks for its history on every redraw; the answer is cached per
     /// record, so a correction must show at once (US-25 AC9, the cache in RecordStore).
-    func testTheValueHistoryFollowsACorrection() throws {
+    func testTheValueHistoryFollowsACorrection() async throws {
         let store = try store()
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
         let first = try XCTUnwrap(store.history(for: "weight"))
         XCTAssertEqual(first.rows.map(\.value), ["80.0"])
         XCTAssertEqual(store.history(for: "weight"), first, "asked again: the same answer")
         let id = try XCTUnwrap(first.rows.first?.id)
-        XCTAssertEqual(store.apply(.correct(id: id, value: 82)), .saved)
+        await XCTAssertSaved(await store.apply(.correct(id: id, value: 82)))
         let after = try XCTUnwrap(store.history(for: "weight"))
         XCTAssertEqual(after.rows.first { $0.status == "active" }?.value, "82.0", "the correction shows, not the cached history")
         XCTAssertEqual(after.rows.count, 2)
         XCTAssertNotNil(store.history(for: "waist"), "another metric is asked for afresh")
     }
 
-    func testThePlanFollowsTheStoredRecord() throws {
+    func testThePlanFollowsTheStoredRecord() async throws {
         let store = try store()
         let engine = try HealthEngine()
-        XCTAssertThrowsError(try engine.plan(recordJSON: store.recordJSON, now: .now, deviceId: "test"), "an empty record has no height or sex")
+        let shown = store.recordJSON
+        XCTAssertThrowsError(try engine.blocking { try $0.plan(recordJSON: shown, now: .now, deviceId: "test") }, "an empty record has no height or sex")
 
-        XCTAssertEqual(store.apply(.profile(sex: "male", birthYear: 1975, birthMonth: 6, height: 178)), .saved)
-        XCTAssertEqual(store.apply(.add(metric: "systolic_bp", value: 150, day: "2026-10-20")), .saved)
-        XCTAssertEqual(store.apply(.add(metric: "diastolic_bp", value: 95, day: "2026-10-20")), .saved)
-        let sections = try engine.sections(planJSON: engine.plan(recordJSON: store.recordJSON, now: .now, deviceId: "test"))
+        await XCTAssertSaved(await store.apply(.profile(sex: "male", birthYear: 1975, birthMonth: 6, height: 178)))
+        await XCTAssertSaved(await store.apply(.add(metric: "systolic_bp", value: 150, day: "2026-10-20")))
+        await XCTAssertSaved(await store.apply(.add(metric: "diastolic_bp", value: 95, day: "2026-10-20")))
+        let record = store.recordJSON
+        let sections = try engine.blocking { try $0.sections(planJSON: $0.plan(recordJSON: record, now: .now, deviceId: "test")) }
         let ids = sections.flatMap(\.cards).flatMap(\.suggestions).map(\.id)
         XCTAssertTrue(ids.contains { $0.hasPrefix("bp-") }, "a 150/95 reading must reach the plan: \(ids)")
     }
@@ -116,23 +118,23 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertNotEqual(try RecordStore.deviceId(in: restored), id, "a folder without the id is a new device")
     }
 
-    func testJSONThatIsNotARecordIsNeverOverwritten() throws {
+    func testJSONThatIsNotARecordIsNeverOverwritten() async throws {
         // Adversary R4: the engine's migration turned `null` into an empty record.
         try Data("null".utf8).write(to: file)
         let store = try store()
         XCTAssertNotNil(store.problem)
-        if case .saved = store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")) {
+        if case .saved = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")) {
             XCTFail("an edit must not write over a file that is not a record")
         }
         XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "null")
     }
 
-    func testAnUnreadableRecordIsNeverOverwritten() throws {
+    func testAnUnreadableRecordIsNeverOverwritten() async throws {
         try Data("not a record".utf8).write(to: file)
         let store = try store()
         XCTAssertNil(store.myData)
         XCTAssertNotNil(store.problem)
-        if case .saved = store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")) {
+        if case .saved = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")) {
             XCTFail("an edit must not write over a record the app cannot read")
         }
         XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "not a record")
@@ -152,62 +154,63 @@ final class RecordStoreTests: XCTestCase {
         return try XCTUnwrap(rows.last { $0["metricType"] as? String == "weight" && $0["status"] as? String == "active" }?["value"] as? Double)
     }
 
-    func testAValueIsReadInTheUnitsTheSheetShowedWhenItOpened() throws {
+    func testAValueIsReadInTheUnitsTheSheetShowedWhenItOpened() async throws {
         let store = try store()
         let (_, other) = otherUnits(store)
         let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
-        store.switchUnits(for: weight, to: other)
+        await store.switchUnits(for: weight, to: other).value
         XCTAssertEqual(store.units(for: "weight"), other)
         store.pinScreen()
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
         store.unpinScreen()
         // 80 typed in the weight's own units: 80 kg, or 80 lb (36.3 kg).
         XCTAssertEqual(try storedWeight(store), other == "si" ? 80 : 36.287, accuracy: 0.01)
     }
 
-    func testTheMasterSwitchClearsEveryChoice() throws {
+    func testTheMasterSwitchClearsEveryChoice() async throws {
         let store = try store()
         let (record, other) = otherUnits(store)
         let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
-        store.switchUnits(for: weight, to: other)
+        await store.switchUnits(for: weight, to: other).value
         XCTAssertFalse(store.unitChoices.isEmpty)
-        XCTAssertEqual(store.apply(.units(other)), .saved)
+        await XCTAssertSaved(await store.apply(.units(other)))
         XCTAssertTrue(store.unitChoices.isEmpty)
         XCTAssertEqual(store.units(for: "weight"), other)
         _ = record
     }
 
-    func testSwitchingBackToTheRecordsUnitsDropsTheChoice() throws {
+    func testSwitchingBackToTheRecordsUnitsDropsTheChoice() async throws {
         let store = try store()
         let (record, other) = otherUnits(store)
         let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
-        store.switchUnits(for: weight, to: other)
-        store.switchUnits(for: weight, to: record)
+        await store.switchUnits(for: weight, to: other).value
+        await store.switchUnits(for: weight, to: record).value
         XCTAssertTrue(store.unitChoices.isEmpty)
     }
 
     /// Codex R1: a master switch that cannot be saved keeps the choices with the record
     /// they belong to, so labels and reading still agree.
-    func testAFailedMasterSwitchKeepsEveryChoice() throws {
+    func testAFailedMasterSwitchKeepsEveryChoice() async throws {
         let store = try store()
         let (record, other) = otherUnits(store)
         let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
-        store.switchUnits(for: weight, to: other)
+        await store.switchUnits(for: weight, to: other).value
         // A folder where the record file was: the write fails.
         try FileManager.default.removeItem(at: file)
         try FileManager.default.createDirectory(at: file, withIntermediateDirectories: false)
-        guard case .refused = store.apply(.units(other)) else { return XCTFail("the switch was saved") }
+        guard case .refused = await store.apply(.units(other)) else { return XCTFail("the switch was saved") }
         XCTAssertEqual(store.myData?.unitSystem, record)
         XCTAssertEqual(store.units(for: "weight"), other)
         XCTAssertFalse(store.unitChoices.isEmpty)
     }
 
-    func testAnEraseClearsEveryChoice() throws {
+    func testAnEraseClearsEveryChoice() async throws {
         let store = try store()
         let (_, other) = otherUnits(store)
         let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
-        store.switchUnits(for: weight, to: other)
-        try store.showErased(HealthEngine().newRecord(now: .now, deviceId: "test"))
+        await store.switchUnits(for: weight, to: other).value
+        let erased = try HealthEngine().blocking { try $0.newRecord(now: .now, deviceId: "test") }
+        try await store.showErased(erased)
         XCTAssertTrue(store.unitChoices.isEmpty)
     }
 
@@ -230,20 +233,23 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), store.recordJSON)
         // The review of the same file now says it is already saved (the web's sourceFileName dedup).
         let engine = try HealthEngine()
-        XCTAssertEqual(try engine.labReview(extractionJSON: letter, now: .now, recordJSON: store.recordJSON, sourceFileName: "Letter.pdf", deviceId: "test").document?.alreadySaved, true)
+        let shown = store.recordJSON
+        XCTAssertEqual(try engine.blocking { try $0.labReview(extractionJSON: letter, now: .now, recordJSON: shown, sourceFileName: "Letter.pdf", deviceId: "test") }.document?.alreadySaved, true)
     }
 
     /// US-52 AC13d (R5): a document save's record lands on the phone's file only over the
     /// record the save began from; an edit made while it ran is never written over.
-    func testADocumentSaveNeverWritesOverAnEditMadeWhileItRan() throws {
+    func testADocumentSaveNeverWritesOverAnEditMadeWhileItRan() async throws {
         let store = try store()
         let before = store.recordJSON
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
         let edited = store.recordJSON
         // A save that began on `before` answers a record without the edit: refused.
-        XCTAssertFalse(try store.commitPhoneDocument(before, over: before))
+        let stale = try await store.commitPhoneDocument(before, over: before)
+        XCTAssertFalse(stale)
         XCTAssertEqual(store.recordJSON, edited)
         XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), edited)
-        XCTAssertTrue(try store.commitPhoneDocument(edited, over: edited))
+        let current = try await store.commitPhoneDocument(edited, over: edited)
+        XCTAssertTrue(current)
     }
 }

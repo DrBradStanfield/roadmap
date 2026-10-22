@@ -32,6 +32,8 @@ struct MyDataView: View {
     @State private var addingLabs = false
     @State private var refusal: String?
     @State private var saves = 0
+    /// A picker's edit is landing: the pickers wait, so a quick change back is never lost.
+    @State private var picking = false
 
     var body: some View {
         // The tab's NavigationStack is RootView's; this screen hides its bar.
@@ -98,16 +100,19 @@ struct MyDataView: View {
                 Text("Male").tag("male")
             }
             .pickerStyle(.segmented)
+            .disabled(picking)
 
             Picker("Birth year", selection: binding(data.profile.birthYear ?? 0) { .profile(birthYear: $0) }) {
                 if data.profile.birthYear == nil { Text("Not set").tag(0) }
                 ForEach(DayText.birthYears(now: .now), id: \.self) { Text(String($0)).tag($0) }
             }
+            .disabled(picking)
 
             Picker("Birth month", selection: binding(data.profile.birthMonth ?? 0) { .profile(birthMonth: $0) }) {
                 if data.profile.birthMonth == nil { Text("Not set").tag(0) }
                 ForEach(1...12, id: \.self) { Text(DayText.monthName($0)).tag($0) }
             }
+            .disabled(picking)
 
             Button { entry = .height } label: {
                 ValueRow(label: "Height", value: data.profile.height, unit: data.profile.heightUnit, day: nil, feetInches: data.profile.feetInches)
@@ -144,6 +149,7 @@ struct MyDataView: View {
             Text("US").tag("conventional")
         }
         .pickerStyle(.segmented)
+        .disabled(picking)
         .fixedSize()
     }
 
@@ -177,12 +183,12 @@ struct MyDataView: View {
         switch entry {
         case .height where store.myData?.unitSystem == "conventional":
             FeetInchesSheet(current: store.myData?.profile.feetInches) { height in
-                saved(store.apply(.feetInches(feet: height.feet, inches: height.inches)))
+                saved(await store.apply(.feetInches(feet: height.feet, inches: height.inches)))
             }
         case .height:
             let profile = store.myData?.profile
             ValueEntrySheet(title: "Height", unit: profile?.heightUnit ?? "", current: profile?.height, asksForDay: false, read: store.number) { value, _ in
-                saved(store.apply(.profile(height: value)))
+                saved(await store.apply(.profile(height: value)))
             }
         case .metric(let row):
             MetricEntrySheet(store: store, row: row, saved: saved)
@@ -193,7 +199,11 @@ struct MyDataView: View {
     private func binding<Value: Equatable>(_ shown: Value, _ edit: @escaping (Value) -> RecordEdit) -> Binding<Value> {
         Binding(get: { shown }, set: { picked in
             guard picked != shown else { return }
-            if case .refused(let message, _) = saved(store.apply(edit(picked))) { refusal = message }
+            picking = true
+            Task {
+                if case .refused(let message, _) = saved(await store.apply(edit(picked))) { refusal = message }
+                picking = false
+            }
         })
     }
 

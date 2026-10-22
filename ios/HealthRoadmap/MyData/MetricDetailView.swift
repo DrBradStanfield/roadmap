@@ -155,7 +155,7 @@ struct MetricDetailView: View {
             BloodPressureSheet(store: store, correcting: value, saved: saved)
         case .correct(let value):
             ValueEntrySheet(title: "Correct \(DayText.short(value.day))", unit: shown.unit, current: value.value, asksForDay: false, read: store.number) { number, _ in
-                saved(store.apply(.correct(id: value.id, value: number)))
+                saved(await store.apply(.correct(id: value.id, value: number)))
             }
         }
     }

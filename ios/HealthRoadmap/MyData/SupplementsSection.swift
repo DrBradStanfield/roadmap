@@ -13,6 +13,8 @@ struct SupplementsSection: View {
     @State private var editing: SupplementsView.Row?
     @State private var adding = false
     @State private var refusal: String?
+    /// A quick add or "Taking again" is under way: one at a time.
+    @State private var saving = false
 
     var body: some View {
         Section {
@@ -28,12 +30,12 @@ struct SupplementsSection: View {
         }
         .sheet(item: $editing) { row in
             SupplementSheet(row: row, units: supplements.units, read: store.number) { edit in
-                saved(store.apply(.form(edit)))
+                saved(await store.apply(.form(edit)))
             }
             .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $adding) {
-            AddSupplementSheet(choices: supplements.choices) { edit in saved(store.apply(.form(edit))) }
+            AddSupplementSheet(choices: supplements.choices) { edit in saved(await store.apply(.form(edit))) }
         }
         .alert("Not saved", isPresented: Binding(get: { refusal != nil }, set: { if !$0 { refusal = nil } })) {
             Button("OK", role: .cancel) {}
@@ -47,6 +49,7 @@ struct SupplementsSection: View {
                     HStack {
                         SupplementRow(row: row).foregroundStyle(.secondary)
                         Button("Taking again") { take(row) }
+                            .disabled(saving)
                             .buttonStyle(.bordered)
                             .controlSize(.small)
                     }
@@ -68,6 +71,7 @@ struct SupplementsSection: View {
                 HStack {
                     ForEach(featured) { choice in
                         Button { add(choice) } label: { Label(choice.name, systemImage: "plus") }
+                            .disabled(saving)
                             .buttonStyle(.bordered)
                             .buttonBorderShape(.capsule)
                     }
@@ -79,13 +83,20 @@ struct SupplementsSection: View {
     }
 
     private func add(_ choice: SupplementsView.Choice) {
-        let result = saved(store.apply(.form(.supplement(key: choice.key, name: choice.name, dose: choice.dose, unit: choice.unit, stopped: false))))
-        if case .refused(let why, _) = result { refusal = why }
+        submit(.supplement(key: choice.key, name: choice.name, dose: choice.dose, unit: choice.unit, stopped: false))
     }
 
     private func take(_ row: SupplementsView.Row) {
-        let result = saved(store.apply(.form(.supplement(key: row.key, name: row.name, dose: row.dose, unit: row.unit, stopped: false))))
-        if case .refused(let why, _) = result { refusal = why }
+        submit(.supplement(key: row.key, name: row.name, dose: row.dose, unit: row.unit, stopped: false))
+    }
+
+    private func submit(_ edit: FormEdit) {
+        saving = true
+        Task {
+            let result = saved(await store.apply(.form(edit)))
+            saving = false
+            if case .refused(let why, _) = result { refusal = why }
+        }
     }
 }
 

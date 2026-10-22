@@ -23,20 +23,20 @@ final class EngineSpeedTests: XCTestCase {
             // A new device id each run misses the engine's parsed-record slot (my-data.ts keepRecord):
             // the cold read. The lines below repeat one text, so all but the first run are served from it.
             var run = 0
-            print("ENGINE-SPEED \(label) plan cold \(try median { run += 1; _ = try engine.plan(recordJSON: record, now: now, deviceId: "cold\(run)") }) ms")
-            print("ENGINE-SPEED \(label) plan \(try median { plan = try engine.plan(recordJSON: record, now: now, deviceId: "t") }) ms")
-            print("ENGINE-SPEED \(label) sections \(try median { _ = try engine.sections(planJSON: plan) }) ms")
-            print("ENGINE-SPEED \(label) myData \(try median { _ = try engine.myData(recordJSON: record, now: now, deviceId: "t") }) ms")
-            print("ENGINE-SPEED \(label) history \(try median { _ = try engine.history(recordJSON: record, metric: "weight", now: now, deviceId: "t") }) ms")
-            print("ENGINE-SPEED \(label) apply \(try median { XCTAssertTrue(try engine.apply(.add(metric: "weight", value: 70, day: DayText.iso(now)), to: record, now: now, deviceId: "t").ok) }) ms")
-            print("ENGINE-SPEED \(label) merge \(try median { _ = try engine.call("mergeJson", [record, record, now.formatted(HealthEngine.iso), "t"]) }) ms")
-            print("ENGINE-SPEED \(label) reminders \(try median { _ = try engine.reminders(recordJSON: record, now: now, deviceId: "t") }) ms")
+            print("ENGINE-SPEED \(label) plan cold \(try median { run += 1; _ = try engine.blocking { [now] in try $0.plan(recordJSON: record, now: now, deviceId: "cold\(run)") } }) ms")
+            print("ENGINE-SPEED \(label) plan \(try median { plan = try engine.blocking { [now] in try $0.plan(recordJSON: record, now: now, deviceId: "t") } }) ms")
+            print("ENGINE-SPEED \(label) sections \(try median { _ = try engine.blocking { try $0.sections(planJSON: plan) } }) ms")
+            print("ENGINE-SPEED \(label) myData \(try median { _ = try engine.blocking { [now] in try $0.myData(recordJSON: record, now: now, deviceId: "t") } }) ms")
+            print("ENGINE-SPEED \(label) history \(try median { _ = try engine.blocking { [now] in try $0.history(recordJSON: record, metric: "weight", now: now, deviceId: "t") } }) ms")
+            print("ENGINE-SPEED \(label) apply \(try median { XCTAssertTrue(try engine.blocking { [now] in try $0.apply(.add(metric: "weight", value: 70, day: DayText.iso(now)), to: record, now: now, deviceId: "t") }.ok) }) ms")
+            print("ENGINE-SPEED \(label) merge \(try median { _ = try engine.blocking { [now] in try $0.call("mergeJson", [record, record, now.formatted(HealthEngine.iso), "t"]) } }) ms")
+            print("ENGINE-SPEED \(label) reminders \(try median { _ = try engine.blocking { [now] in try $0.reminders(recordJSON: record, now: now, deviceId: "t") } }) ms")
         }
     }
 
     /// A daily weight and blood pressure, and a lipid panel and HbA1c every quarter, for `years`.
     private func padded(_ engine: HealthEngine, years: Int) throws -> String {
-        var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(engine.newRecord(now: now, deviceId: "t").utf8)) as? [String: Any])
+        var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "t") }.utf8)) as? [String: Any])
         var rows: [[String: Any]] = []
         for back in 1...(365 * years) {
             let day = DayText.iso(Calendar.current.date(byAdding: .day, value: -back, to: now)!)

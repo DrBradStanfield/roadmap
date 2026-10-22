@@ -4,7 +4,6 @@ import Foundation
 /// run in a quarantined context (no network, no token, an in-memory phone file).
 /// It catches accidents, a broken build or a door that drifted, not malice: a
 /// hostile engine could pass it. The signature is what keeps hostile engines out.
-@MainActor
 enum EngineSelfTest {
     struct Failure: Error, Equatable {
         let step: String
@@ -14,7 +13,7 @@ enum EngineSelfTest {
     private static let device = "self-test"
 
     /// Throws `Failure` naming the first step that did not hold.
-    static func run(_ engine: HealthEngine, version: Int, schemaVersion: Int) throws {
+    static func run(_ engine: isolated HealthEngine, version: Int, schemaVersion: Int) throws {
         func check(_ ok: Bool, _ step: String) throws { if !ok { throw Failure(step: step) } }
         func value(_ name: String) -> Int? { try? engine.evaluate("HealthEngine.\(name)").toNumber()?.intValue }
 
@@ -43,7 +42,7 @@ enum EngineSelfTest {
 
     /// Merge goldens: no row lost or invented, entered-in-error stays sticky, the
     /// higher eraseEpoch wins, whichever side is local.
-    private static func merges(_ engine: HealthEngine, _ a: String) throws {
+    private static func merges(_ engine: isolated HealthEngine, _ a: String) throws {
         func check(_ ok: Bool, _ step: String) throws { if !ok { throw Failure(step: step) } }
         guard let first = rows(a, "measurements")?.first(where: { $0["recordedAt"] as? String ?? "" < "2026-10-20" }),
               let firstId = first["id"] as? String
@@ -76,21 +75,4 @@ enum EngineSelfTest {
     private static func rows(_ json: String, _ key: String) -> [[String: Any]]? {
         (try? JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])?[key] as? [[String: Any]]
     }
-}
-
-/// The phone side a quarantined engine sees: no token, and a phone file in memory only.
-@MainActor
-final class QuarantinePort: CloudPort {
-    private var file: String?
-    private var marker = false
-
-    func accessToken(provider: String, force: Bool) async -> TokenAnswer { .failed("Quarantined.", signIn: true) }
-    func phoneRead() throws -> String? { file }
-    func phoneWrite(_ text: String) throws { file = text }
-    func phoneRemove() { file = nil }
-    func pending(_ op: String) -> Bool {
-        if op == "set" { marker = true } else if op == "clear" { marker = false }
-        return marker
-    }
-    func notify(_ event: String, _ payload: String, session: Int) {}
 }

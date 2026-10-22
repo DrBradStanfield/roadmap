@@ -95,9 +95,10 @@ struct EngineBoot {
 
         // Quarantine first: no network, no token, a phone file in memory.
         let quarantine = try HealthEngine(source: source, sourceURL: nil, session: session, quarantined: true)
-        let port = QuarantinePort()
-        quarantine.natives.cloud = port
-        try EngineSelfTest.run(quarantine, version: manifest.version, schemaVersion: manifest.schemaVersion)
+        try quarantine.blocking { engine in
+            engine.attach(nil, phone: PhoneFiles(record: nil, pending: nil))
+            try EngineSelfTest.run(engine, version: manifest.version, schemaVersion: manifest.schemaVersion)
+        }
         // Then the real context, from the same bytes.
         return try HealthEngine(source: source, sourceURL: folder?.url.appending(path: "\(manifest.version).js"), session: session)
     }
@@ -123,7 +124,7 @@ final class EngineTrial {
 
     /// Whether the engine plans `recordJSON`: a plan, or health-core's own PlanError
     /// (no height or sex), which is the engine working. Any other throw is a failure.
-    static func planned(_ engine: HealthEngine, recordJSON: String, deviceId: String) -> Bool {
+    static func planned(_ engine: isolated HealthEngine, recordJSON: String, deviceId: String) -> Bool {
         do {
             _ = try engine.plan(recordJSON: recordJSON, now: .now, deviceId: deviceId)
             return true

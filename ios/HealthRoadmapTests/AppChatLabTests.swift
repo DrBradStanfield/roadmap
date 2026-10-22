@@ -11,9 +11,9 @@ final class AppChatLabTests: XCTestCase {
     private let now = try! Date("2026-10-21T08:00:00.000Z", strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true))
 
     private func record(_ engine: HealthEngine, _ edits: RecordEdit...) throws -> String {
-        var record = try engine.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!)
+        var record = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
         for edit in edits {
-            let outcome = try engine.apply(edit, to: record, now: now, deviceId: "test")
+            let outcome = try engine.blocking { [now] in try $0.apply(edit, to: record, now: now, deviceId: "test") }
             XCTAssertTrue(outcome.ok, outcome.message ?? "")
             record = try XCTUnwrap(outcome.record)
         }
@@ -24,7 +24,8 @@ final class AppChatLabTests: XCTestCase {
 
     func testTheChatContextIsTheWidgetsPayload() throws {
         let engine = try HealthEngine()
-        let json = try engine.chatContext(recordJSON: try record(engine, .profile(sex: "female", birthYear: 1970, birthMonth: 3, height: 165), .add(metric: "ldl", value: 2.9, day: "2026-09-10")), now: now, deviceId: "test")
+        let start = try record(engine, .profile(sex: "female", birthYear: 1970, birthMonth: 3, height: 165), .add(metric: "ldl", value: 2.9, day: "2026-09-10"))
+        let json = try engine.blocking { [now] in try $0.chatContext(recordJSON: start, now: now, deviceId: "test") }
         let context = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
         XCTAssertEqual(context["unitSystem"] as? String, "si")
         XCTAssertEqual(context["sex"] as? String, "female")
@@ -36,12 +37,12 @@ final class AppChatLabTests: XCTestCase {
 
     func testChatHistoryRecordsListsAndDeletesInJavaScriptCore() throws {
         let engine = try HealthEngine()
-        let first = try engine.recordChatExchange(historyJSON: nil, exchange: ChatExchange(conversationId: "c1", isNew: true, userText: "What is ApoB?", assistantText: "A particle count.", isFallback: false), now: now, deviceId: "test")
-        let second = try engine.recordChatExchange(historyJSON: first, exchange: ChatExchange(conversationId: "c1", isNew: false, userText: "And LDL?", assistantText: "Related.", isFallback: false), now: now.addingTimeInterval(60), deviceId: "test")
-        XCTAssertEqual(try engine.chatConversations(historyJSON: second, now: now, deviceId: "test").map(\.title), ["What is ApoB?"])
-        XCTAssertEqual(try engine.chatMessages(historyJSON: second, conversationId: "c1", now: now, deviceId: "test").map(\.content), ["What is ApoB?", "A particle count.", "And LDL?", "Related."])
-        let deleted = try engine.deleteChat(historyJSON: second, conversationId: "c1", now: now, deviceId: "test")
-        XCTAssertEqual(try engine.chatConversations(historyJSON: deleted, now: now, deviceId: "test"), [])
+        let first = try engine.blocking { [now] in try $0.recordChatExchange(historyJSON: nil, exchange: ChatExchange(conversationId: "c1", isNew: true, userText: "What is ApoB?", assistantText: "A particle count.", isFallback: false), now: now, deviceId: "test") }
+        let second = try engine.blocking { [now] in try $0.recordChatExchange(historyJSON: first, exchange: ChatExchange(conversationId: "c1", isNew: false, userText: "And LDL?", assistantText: "Related.", isFallback: false), now: now.addingTimeInterval(60), deviceId: "test") }
+        XCTAssertEqual(try engine.blocking { [now] in try $0.chatConversations(historyJSON: second, now: now, deviceId: "test") }.map(\.title), ["What is ApoB?"])
+        XCTAssertEqual(try engine.blocking { [now] in try $0.chatMessages(historyJSON: second, conversationId: "c1", now: now, deviceId: "test") }.map(\.content), ["What is ApoB?", "A particle count.", "And LDL?", "Related."])
+        let deleted = try engine.blocking { [now] in try $0.deleteChat(historyJSON: second, conversationId: "c1", now: now, deviceId: "test") }
+        XCTAssertEqual(try engine.blocking { [now] in try $0.chatConversations(historyJSON: deleted, now: now, deviceId: "test") }, [])
     }
 
     // MARK: AC5: the streamed answer
@@ -78,24 +79,24 @@ final class AppChatLabTests: XCTestCase {
 
     func testTheLabReviewAndSaveRunTheWebsBulkRule() throws {
         let engine = try HealthEngine()
-        let review = try engine.labReview(extractionJSON: extraction, now: now)
+        let review = try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }
         XCTAssertEqual(review.reportDay, "2026-10-01")
         XCTAssertEqual(review.items.map(\.ref), ["v0", "v1", "a0"])
         XCTAssertEqual(review.items[1].day, "2025-04-02")
         XCTAssertEqual(review.notSaved.first?.label, "Creatinine")
 
         let held = try record(engine, .add(metric: "ldl", value: 2.5, day: "2026-10-01"))
-        let summary = try engine.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test").get()
+        let summary = try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
         XCTAssertEqual(summary, LabSaveSummary(saved: 2, skipped: 1, refused: []))
 
-        let outcome = try engine.apply(.labImport(extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01"), to: held, now: now, deviceId: "test")
+        let outcome = try engine.blocking { [now, extraction] in try $0.apply(.labImport(extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01"), to: held, now: now, deviceId: "test") }
         XCTAssertTrue(outcome.ok, outcome.message ?? "")
         let file = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(try XCTUnwrap(outcome.record).utf8)) as? [String: Any])
         let rows = try XCTUnwrap(file["measurements"] as? [[String: Any]])
         XCTAssertEqual(rows.filter { $0["source"] as? String == "lab_import" }.count, 1)
         XCTAssertEqual((file["labValues"] as? [Any])?.count, 1)
 
-        XCTAssertThrowsError(try engine.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0"], reportDay: "2099-01-01", now: now, deviceId: "test").get())
+        XCTAssertThrowsError(try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0"], reportDay: "2099-01-01", now: now, deviceId: "test") }.get())
     }
 
     // MARK: AC13d: documents
@@ -103,10 +104,11 @@ final class AppChatLabTests: XCTestCase {
     func testALetterGetsTheWebsDocumentCard() throws {
         let engine = try HealthEngine()
         let letter = #"{"classification":"discharge_summary","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"discharge_summary","title":"Discharge","documentDate":"2026-09","contentMarkdown":"Short text","metadata":{}}}"#
-        let review = try engine.labReview(extractionJSON: letter, now: now, recordJSON: try record(engine), sourceFileName: "d.pdf", deviceId: "test")
+        let start = try record(engine)
+        let review = try engine.blocking { [now] in try $0.labReview(extractionJSON: letter, now: now, recordJSON: start, sourceFileName: "d.pdf", deviceId: "test") }
         XCTAssertFalse(review.isLabReport)
         XCTAssertEqual(review.document, LabReview.Document(classification: "discharge_summary", title: "Discharge", documentDate: nil, preview: "Short text", alreadySaved: false, held: false))
-        XCTAssertNil(try engine.labReview(extractionJSON: extraction, now: now).document)
+        XCTAssertNil(try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }.document)
     }
 
     func testAReadFileKeepsItsOriginalBytes() throws {

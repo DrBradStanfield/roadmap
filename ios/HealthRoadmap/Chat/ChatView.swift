@@ -174,7 +174,7 @@ struct ChatView: View {
         lines.append(ChatLine(role: .assistant, text: ""))
 
         do {
-            let context = try engine.chatContext(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+            let context = try await engine.chatContext(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
             let body = try ChatClient.body(message: question, conversationId: conversation, history: earlier, contextJSON: context)
             var finished = false
             for try await event in ChatClient().ask(body: body) {

@@ -92,7 +92,7 @@ struct AppParts {
         sync = CloudSync(engine: engine, store: store, oauth: OAuthClient())
         let (engine, store) = (engine, store)
         reminders = ReminderScheduler(center: UNUserNotificationCenter.current(), folder: folder) {
-            try engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+            try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         }
         // Before launch finishes, so a tap that starts the app still reaches My plan.
         UNUserNotificationCenter.current().delegate = reminderTaps

@@ -11,8 +11,8 @@ final class ChatContextGuardTests: XCTestCase {
 
     func testTheEnginesContextIsSent() throws {
         let engine = try HealthEngine()
-        let record = try engine.newRecord(now: .now, deviceId: "test")
-        let context = try engine.chatContext(recordJSON: record, now: .now, deviceId: "test")
+        let record = try engine.blocking { try $0.newRecord(now: .now, deviceId: "test") }
+        let context = try engine.blocking { try $0.chatContext(recordJSON: record, now: .now, deviceId: "test") }
         let sent = try JSONSerialization.jsonObject(with: body(context)) as? [String: Any]
         XCTAssertNotNil(sent?["guestInputs"] as? [String: Any])
     }

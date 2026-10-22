@@ -10,7 +10,7 @@ struct FormFieldRow: View {
     /// The months a past or future date may name.
     let months: ScreeningMonths
     /// Saves an answer ('' clears it) and says whether it was saved.
-    let answer: (String) -> RecordStore.ApplyResult
+    let answer: (String) async -> RecordStore.ApplyResult
     /// Reads a typed number by the web's rule.
     let read: (String) -> Double?
     /// A dated value's current row (PSA), and how to open it.
@@ -20,6 +20,8 @@ struct FormFieldRow: View {
     @State private var asking: Asking?
     /// Why a menu answer was not saved, in the engine's words.
     @State private var refusal: String?
+    /// A menu answer is landing: the menu waits, so a quick change back is never lost.
+    @State private var answering = false
 
     private enum Asking: String, Identifiable {
         case month, number
@@ -72,7 +74,7 @@ struct FormFieldRow: View {
             case (.number, .number(_, let label, _, let value)):
                 ValueEntrySheet(title: label, unit: "", current: value.isEmpty ? nil : value, asksForDay: false, read: read) { number, _ in
                     // Sent as typed; the engine refuses what the question does not offer (a whole number in range).
-                    answer(SupplementSheet.doseText(number))
+                    await answer(SupplementSheet.doseText(number))
                 }
                 .presentationDetents([.medium])
             default:
@@ -95,7 +97,11 @@ struct FormFieldRow: View {
             Menu {
                 Picker(label, selection: Binding(get: { value }, set: { picked in
                     guard picked != value else { return }
-                    if case .refused(let why, _) = answer(picked) { refusal = why }
+                    answering = true
+                    Task {
+                        if case .refused(let why, _) = await answer(picked) { refusal = why }
+                        answering = false
+                    }
                 })) {
                     ForEach(pickable, id: \.value) { Text($0.label).tag($0.value) }
                 }
@@ -105,6 +111,7 @@ struct FormFieldRow: View {
                     Image(systemName: "chevron.up.chevron.down").font(.caption)
                 }
             }
+            .disabled(answering)
             .accessibilityLabel(label)
             .accessibilityValue(shown)
         }
@@ -141,11 +148,13 @@ struct MonthPickerSheet: View {
     /// A booked follow-up, not a past screening.
     let future: Bool
     let current: String
-    let save: (String) -> RecordStore.ApplyResult
+    let save: (String) async -> RecordStore.ApplyResult
 
     @Environment(\.dismiss) private var dismiss
     @State private var picked = ""
     @State private var message: String?
+    /// A save is under way: the sheet stays open and its buttons wait.
+    @State private var saving = false
 
     var body: some View {
         sheet.pinsRecord()
@@ -163,26 +172,24 @@ struct MonthPickerSheet: View {
                     Text(message).foregroundStyle(.red)
                 }
                 if !current.isEmpty {
-                    Button("Clear this date") { finish(save("")) }
+                    Button("Clear this date") { submit("") }.disabled(saving)
                 }
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Save") { finish(save(picked)) }.disabled(picked.isEmpty) }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
+                ToolbarItem(placement: .confirmationAction) { Button("Save") { submit(picked) }.disabled(picked.isEmpty || saving) }
             }
             .onAppear { picked = months.contains(current) ? current : ordered.first ?? "" }
         }
+        .interactiveDismissDisabled(saving)
     }
 
     /// A past date lists the latest month first; a future one the soonest.
     private var ordered: [String] { future ? months : months.reversed() }
 
-    private func finish(_ result: RecordStore.ApplyResult) {
-        switch result {
-        case .saved: dismiss()
-        case .refused(let why, _): message = why
-        }
+    private func submit(_ month: String) {
+        SheetSave.run($saving, { await save(month) }) { SheetSave.close($0, dismiss, $message) }
     }
 }

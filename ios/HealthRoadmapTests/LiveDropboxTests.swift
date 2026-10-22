@@ -70,9 +70,9 @@ final class LiveDropboxTests: XCTestCase {
         // Two days back: never the future in any zone.
         let day = Date.now.addingTimeInterval(-2 * 86_400).formatted(.iso8601.year().month().day())
         let before = rows(try await download().record, metric: "hdl").count
-        let saved = store.apply(.add(metric: "hdl", value: 1.4, day: day))
+        let saved = await store.apply(.add(metric: "hdl", value: 1.4, day: day))
         if case .refused(_, let existing?) = saved {
-            XCTAssertEqual(store.apply(.correct(id: existing, value: 1.4)), .saved)
+            await XCTAssertSaved(await store.apply(.correct(id: existing, value: 1.4)))
         } else {
             XCTAssertEqual(saved, .saved)
         }
@@ -83,7 +83,7 @@ final class LiveDropboxTests: XCTestCase {
 
         // 2. Another device adds a row to the cloud file; a re-read brings it to the phone.
         let cloudJSON = String(decoding: try JSONSerialization.data(withJSONObject: afterPhone.record), as: UTF8.self)
-        let other = try engine.apply(.add(metric: "ldl", value: 2.6, day: "2026-01-02"), to: cloudJSON, now: .now, deviceId: "web-e2e")
+        let other = try engine.blocking { try $0.apply(.add(metric: "ldl", value: 2.6, day: "2026-01-02"), to: cloudJSON, now: .now, deviceId: "web-e2e") }
         if let next = other.record {
             try await upload(next, rev: afterPhone.rev)
         } else {

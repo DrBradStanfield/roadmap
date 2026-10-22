@@ -42,10 +42,10 @@ final class EngineParityTests: XCTestCase {
             let record = try String(contentsOf: recordURL, encoding: .utf8)
 
             do {
-                let plan = try engine.plan(recordJSON: record, now: now, deviceId: Self.pinnedDevice)
+                let plan = try engine.blocking { [now] in try $0.plan(recordJSON: record, now: now, deviceId: Self.pinnedDevice) }
                 XCTAssertNil(golden.error, "\(name): the source refused to plan, the app did not")
                 XCTAssertEqual(plan, golden.plan, "\(name): the plan differs in \(zone)")
-                XCTAssertEqual(try engine.sectionsJSON(planJSON: plan), golden.sections, "\(name): the layout differs in \(zone)")
+                XCTAssertEqual(try engine.blocking { try $0.sectionsJSON(planJSON: plan) }, golden.sections, "\(name): the layout differs in \(zone)")
             } catch HealthEngine.EngineError.callFailed(let message) {
                 XCTAssertEqual(message, golden.error, "\(name): the refusal differs in \(zone)")
             }
@@ -61,7 +61,7 @@ final class EngineParityTests: XCTestCase {
         let start = clock.now
         let engine = try HealthEngine(bundle: .main)
         let loaded = clock.now
-        _ = try engine.plan(recordJSON: record, now: .now, deviceId: Self.pinnedDevice)
+        _ = try engine.blocking { try $0.plan(recordJSON: record, now: .now, deviceId: Self.pinnedDevice) }
         let planned = clock.now
 
         XCTAssertLessThan(loaded - start, .milliseconds(300), "cold engine load")

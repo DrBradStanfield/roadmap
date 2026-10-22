@@ -20,7 +20,7 @@ final class EngineBootTests: XCTestCase {
     }
 
     private func version(_ choice: EngineBoot.Choice) throws -> Int? {
-        try choice.engine.evaluate("HealthEngine.engineVersion").toNumber()?.intValue
+        try choice.engine.blocking { try $0.evaluate("HealthEngine.engineVersion").toNumber()?.intValue }
     }
 
     func testAStagedEngineRunsAfterItsSelfTest() throws {
@@ -79,7 +79,8 @@ final class EngineBootTests: XCTestCase {
         let records = FileManager.default.temporaryDirectory.appending(path: "plan throws \(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
         let store = try RecordStore(folder: records, engine: choice.engine, deviceId: "test")
-        XCTAssertThrowsError(try choice.engine.plan(recordJSON: store.recordJSON, now: .now, deviceId: "test"))
+        let shown = store.recordJSON
+        XCTAssertThrowsError(try choice.engine.blocking { try $0.plan(recordJSON: shown, now: .now, deviceId: "test") })
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
         window.rootViewController = UIHostingController(rootView: PlanView(engine: choice.engine, store: store, showMyData: {}))
         window.makeKeyAndVisible()
@@ -99,7 +100,7 @@ final class EngineBootTests: XCTestCase {
         XCTAssertNil(state.trying)
     }
 
-    func testACorruptStateStartsAgainAboveTheBundledEngine() throws {
+    func testACorruptStateStartsAgainAboveTheBundledEngine() async throws {
         let release = fixture.staged(daysAfterBundled: 2)
         try folder.stage(release)
         try Data("{not json".utf8).write(to: folder.url.appending(path: "state.json"))
@@ -113,7 +114,7 @@ final class EngineBootTests: XCTestCase {
 
     /// Review N5: the watermarks live in the Keychain too, so a corrupt state file
     /// cannot lower the floor or bring back a revoked version.
-    func testACorruptStateKeepsTheFloorAndRunsNoRevokedVersion() throws {
+    func testACorruptStateKeepsTheFloorAndRunsNoRevokedVersion() async throws {
         let revoked = fixture.staged(daysAfterBundled: 2)
         let newer = fixture.version(daysAfterBundled: 3).version
         try folder.stage(revoked)
@@ -253,12 +254,13 @@ final class EngineBootTests: XCTestCase {
         let engine = try HealthEngine(source: fixture.bundled.source, sourceURL: nil, session: StubHTTP.session(), quarantined: true)
         var asked = 0
         StubHTTP.handler = { _ in asked += 1; return .init() }
-        let answer = try await engine.settle(engine.evaluate("""
+        let answer = try await engine.settleScript("""
             fetch('https://content.dropboxapi.com/2/files/download', { method: 'POST', headers: { Authorization: 'Bearer native-token:dropbox' } })
               .then(() => 'sent', (e) => 'refused')
-            """))
+            """)
         XCTAssertEqual(answer, "refused")
         XCTAssertEqual(asked, 0)
-        try EngineSelfTest.run(engine, version: fixture.bundled.facts.version, schemaVersion: fixture.bundled.facts.schemaVersion)
+        let facts = fixture.bundled.facts
+        try engine.blocking { try EngineSelfTest.run($0, version: facts.version, schemaVersion: facts.schemaVersion) }
     }
 }

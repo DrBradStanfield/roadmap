@@ -25,6 +25,8 @@ struct OnboardingView: View {
     @State private var answered: Set<OnboardingStep> = []
     /// Today's weight row a changed weight would replace, while the person decides (AC5).
     @State private var replacing: String?
+    /// An answer is being saved: the page waits for it before moving on.
+    @State private var saving = false
 
     private var profile: MyData.Profile? { store.myData?.profile }
     private var usUnits: Bool { store.myData?.unitSystem == "conventional" }
@@ -38,6 +40,7 @@ struct OnboardingView: View {
             Group {
                 if let step {
                     page(step)
+                        .disabled(saving)
                         .id(step)
                         .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)).combined(with: .opacity))
                 } else {
@@ -48,13 +51,14 @@ struct OnboardingView: View {
                 if let step, let back = previous(step) {
                     ToolbarItem(placement: .topBarLeading) {
                         Button("Back", systemImage: "chevron.left") { go(back) }
+                            .disabled(saving)
                             .accessibilityIdentifier("onboarding.back")
                     }
                 }
             }
         }
         .interactiveDismissDisabled()
-        .onAppear(perform: begin)
+        .task { await begin() }
         // Pinned in begin(); a run that never began never pinned.
         .onDisappear { if step != nil { store.unpinScreen() } }
         .confirmationDialog("Today already has a weight", isPresented: Binding(get: { replacing != nil }, set: { if !$0 { replacing = nil } }), titleVisibility: .visible) {
@@ -174,7 +178,7 @@ struct OnboardingView: View {
 
     // MARK: Flow
 
-    private func begin() {
+    private func begin() async {
         guard step == nil else { return }
         // An unreadable record: My data says why, so never strand the person here (review R13).
         guard let data = store.myData else { finish(); return }
@@ -186,7 +190,9 @@ struct OnboardingView: View {
         let hasValues = data.profile.sex != nil || data.profile.birthYear != nil || data.profile.height != nil
             || (data.vitals + data.bloodTests + [data.psa]).contains { $0.latest != nil }
         if let units = OnboardingSteps.regionUnits(hasValues: hasValues, onlyMissing: ownUnits, current: data.unitSystem, system: Locale.current.measurementSystem) {
-            _ = store.apply(.units(units))
+            _ = await store.apply(.units(units))
+            // Gone before the units landed: nothing to pin (onDisappear unpins only a begun run).
+            guard !Task.isCancelled, step == nil else { return }
         }
         prefill(from: HealthCharacteristics.none)
         step = onlyMissing
@@ -241,38 +247,39 @@ struct OnboardingView: View {
 
     private func save(_ step: OnboardingStep) {
         message = nil
-        let result: RecordStore.ApplyResult
+        let edit: RecordEdit?
         switch step {
         case .health:
             return
         case .sex:
             guard let sex = answers.sex else { return }
-            result = profile?.sex == sex ? .saved : store.apply(.profile(sex: sex))
+            edit = profile?.sex == sex ? nil : .profile(sex: sex)
         case .birth:
-            result = profile?.birthYear == answers.birthYear && profile?.birthMonth == answers.birthMonth
-                ? .saved : store.apply(.profile(birthYear: answers.birthYear, birthMonth: answers.birthMonth))
+            edit = profile?.birthYear == answers.birthYear && profile?.birthMonth == answers.birthMonth
+                ? nil : .profile(birthYear: answers.birthYear, birthMonth: answers.birthMonth)
         case .height:
             if usUnits {
                 let same = profile?.feetInches == MyData.FeetInches(feet: answers.feet, inches: answers.inches)
-                result = same ? .saved : store.apply(.feetInches(feet: answers.feet, inches: answers.inches))
+                edit = same ? nil : .feetInches(feet: answers.feet, inches: answers.inches)
             } else {
                 let same = profile?.height.flatMap(Double.init).map { Int($0.rounded()) } == answers.heightCm
-                result = same ? .saved : store.apply(.profile(height: Double(answers.heightCm)))
+                edit = same ? nil : .profile(height: Double(answers.heightCm))
             }
         case .weight:
-            if recordWeight == weightAnswer {
-                result = .saved
-            } else {
-                let added = store.apply(.add(metric: "weight", value: weightAnswer, day: DayText.iso(.now)))
-                // Today already holds a weight: ask before replacing it (AC5, US-25 AC5).
-                if case .refused(_, let existingId?) = added {
-                    replacing = existingId
-                    return
-                }
-                result = added
-            }
+            edit = recordWeight == weightAnswer ? nil : .add(metric: "weight", value: weightAnswer, day: DayText.iso(.now))
         }
-        settle(result, step)
+        guard let edit else { return settle(.saved, step) }
+        saving = true
+        Task {
+            let result = await store.apply(edit)
+            saving = false
+            // Today already holds a weight: ask before replacing it (AC5, US-25 AC5).
+            if step == .weight, case .refused(_, let existingId?) = result {
+                replacing = existingId
+                return
+            }
+            settle(result, step)
+        }
     }
 
     private var weightAnswer: Double { Double(answers.weightWhole) + Double(answers.weightTenth) / 10 }
@@ -281,7 +288,12 @@ struct OnboardingView: View {
     private func replaceWeight() {
         guard let id = replacing else { return }
         replacing = nil
-        settle(store.apply(.correct(id: id, value: weightAnswer)), .weight)
+        saving = true
+        Task {
+            let result = await store.apply(.correct(id: id, value: weightAnswer))
+            saving = false
+            settle(result, .weight)
+        }
     }
 
     private func settle(_ result: RecordStore.ApplyResult, _ step: OnboardingStep) {

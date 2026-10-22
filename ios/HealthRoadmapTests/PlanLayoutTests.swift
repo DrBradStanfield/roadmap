@@ -10,13 +10,13 @@ final class PlanLayoutTests: XCTestCase {
         let engine = try HealthEngine(bundle: .main)
         // Pinned, like EngineParityTests: due dates and ages depend on the day.
         let now = try Date("2026-10-21T12:30:00.000Z", strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true))
-        return (engine, try engine.plan(recordJSON: record, now: now, deviceId: "layout-test"))
+        return (engine, try engine.blocking { [now] in try $0.plan(recordJSON: record, now: now, deviceId: "layout-test") })
     }
 
     func testSampleRecordMatchesTheWebLayout() throws {
         let (engine, planJSON) = try samplePlan()
 
-        let sections = try engine.sections(planJSON: planJSON)
+        let sections = try engine.blocking { try $0.sections(planJSON: planJSON) }
         let layout = sections.map { section in (section.title, section.cards.map { $0.suggestions.map(\.id) }) }
 
         XCTAssertEqual(layout.map(\.0), ["Next Steps", "Foundation", "Skin Health", "Supplements"])
@@ -40,7 +40,7 @@ final class PlanLayoutTests: XCTestCase {
         let raw = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(planJSON.utf8)) as? [String: Any])
         let rawSuggestions = try XCTUnwrap((raw["results"] as? [String: Any])?["suggestions"] as? [[String: Any]])
 
-        let shown = try engine.sections(planJSON: planJSON).flatMap(\.cards).flatMap(\.suggestions)
+        let shown = try engine.blocking { try $0.sections(planJSON: planJSON) }.flatMap(\.cards).flatMap(\.suggestions)
 
         for rawSuggestion in rawSuggestions {
             let id = try XCTUnwrap(rawSuggestion["id"] as? String)

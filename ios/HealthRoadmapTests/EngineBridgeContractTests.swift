@@ -29,7 +29,7 @@ final class EngineBridgeContractTests: XCTestCase {
     func testTheNativesSwiftInstallsAreTheContracts() throws {
         let contract = try JSONDecoder().decode(Contract.self, from: contractBytes())
         let context = try XCTUnwrap(JSContext())
-        EngineNatives(session: StubHTTP.session()).install(in: context)
+        EngineNatives(session: StubHTTP.session(), queue: DispatchSerialQueue(label: "test")).install(in: context)
         let installed = context.evaluateScript("Object.keys(__native).sort().join(',')")?.toString()
         XCTAssertEqual(installed, contract.natives.keys.sorted().joined(separator: ","))
     }
@@ -39,7 +39,7 @@ final class EngineBridgeContractTests: XCTestCase {
         XCTAssertEqual(EngineRelease.doors.sorted(), contract.doors.keys.sorted())
         let engine = try HealthEngine()
         for (name, door) in contract.doors {
-            XCTAssertEqual(try engine.evaluate("HealthEngine.\(name).length").toInt32(), Int32(door.args.count), name)
+            XCTAssertEqual(try engine.blocking { try $0.evaluate("HealthEngine.\(name).length").toInt32() }, Int32(door.args.count), name)
         }
     }
 

@@ -69,7 +69,7 @@ final class StubHTTP: URLProtocol {
             client?.urlProtocolDidFinishLoading(self)
         }
         if answer.delay > 0 {
-            let later = MainQueueOnly(deliver)
+            let later = EngineQueueOnly(deliver)
             DispatchQueue.global().asyncAfter(deadline: .now() + answer.delay) { later.value() }
         } else {
             deliver()

@@ -9,7 +9,7 @@ final class FormEditTests: XCTestCase {
 
     /// A 60-year-old man, 180 cm, metric, with an ApoB over target: screening and the cholesterol cascade apply.
     private func man60(_ engine: HealthEngine) throws -> String {
-        var record = try engine.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!)
+        var record = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
         for edit: RecordEdit in [.profile(sex: "male", birthYear: 1966, birthMonth: 1, height: 180), .add(metric: "apob", value: 1.3, day: "2026-10-01")] {
             record = try saved(engine, edit, record)
         }
@@ -17,7 +17,7 @@ final class FormEditTests: XCTestCase {
     }
 
     private func saved(_ engine: HealthEngine, _ edit: RecordEdit, _ record: String) throws -> String {
-        let outcome = try engine.apply(edit, to: record, now: now, deviceId: "test")
+        let outcome = try engine.blocking { [now] in try $0.apply(edit, to: record, now: now, deviceId: "test") }
         XCTAssertTrue(outcome.ok, outcome.message ?? "")
         return try XCTUnwrap(outcome.record)
     }
@@ -28,7 +28,8 @@ final class FormEditTests: XCTestCase {
 
     func testTheFormsDecodeWithTheWebsQuestions() throws {
         let engine = try HealthEngine()
-        let data = try engine.myData(recordJSON: try man60(engine), now: now, deviceId: "test")
+        let start = try man60(engine)
+        let data = try engine.blocking { [now] in try $0.myData(recordJSON: start, now: now, deviceId: "test") }
         XCTAssertEqual(data.screenings.first?.groups.map(\.id), ["colorectal", "lung", "prostate"])
         XCTAssertEqual(data.medications.map(\.title), ["Cholesterol Medications"])
         guard case .choice(let key, let label, let hint, let options, _) = data.medications[0].groups[0].fields[0] else { return XCTFail("statin is a choice") }
@@ -51,7 +52,8 @@ final class FormEditTests: XCTestCase {
 
     func testAnAnswerTheFormDoesNotOfferIsRefused() throws {
         let engine = try HealthEngine()
-        let outcome = try engine.apply(.form(.medicationField(field: "statin", value: "aspirin")), to: try man60(engine), now: now, deviceId: "test")
+        let start = try man60(engine)
+        let outcome = try engine.blocking { [now] in try $0.apply(.form(.medicationField(field: "statin", value: "aspirin")), to: start, now: now, deviceId: "test") }
         XCTAssertFalse(outcome.ok)
         XCTAssertNil(outcome.record)
     }
@@ -69,10 +71,10 @@ final class FormEditTests: XCTestCase {
 
     func testASupplementIsAddedThenSoftStopped() throws {
         let engine = try HealthEngine()
-        var record = try engine.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!)
+        var record = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
         record = try saved(engine, .form(.customSupplement(name: "Lion's Mane")), record)
         record = try saved(engine, .form(.supplement(key: "custom_lion_s_mane", name: "Lion's Mane", dose: 500, unit: "mg", stopped: true)), record)
-        let data = try engine.myData(recordJSON: record, now: now, deviceId: "test")
+        let data = try engine.blocking { [now] in try $0.myData(recordJSON: record, now: now, deviceId: "test") }
         XCTAssertEqual(data.supplements.active, [])
         XCTAssertEqual(data.supplements.stopped.map(\.name), ["Lion's Mane"])
         XCTAssertEqual(data.supplements.stopped.first?.dose, 500)
@@ -97,11 +99,11 @@ final class FormEditTests: XCTestCase {
 
     func testHistoryKeepsTheCorrectedValueStruckNotRemoved() throws {
         let engine = try HealthEngine()
-        var record = try engine.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!)
+        var record = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
         record = try saved(engine, .add(metric: "weight", value: 82, day: "2026-10-01"), record)
-        let wrong = try XCTUnwrap(engine.myData(recordJSON: record, now: now, deviceId: "test").vitals.first?.latest?.id)
+        let wrong = try XCTUnwrap(engine.blocking { [now] in try $0.myData(recordJSON: record, now: now, deviceId: "test") }.vitals.first?.latest?.id)
         record = try saved(engine, .correct(id: wrong, value: 81), record)
-        let history = try engine.history(recordJSON: record, metric: "weight", now: now, deviceId: "test")
+        let history = try engine.blocking { [now] in try $0.history(recordJSON: record, metric: "weight", now: now, deviceId: "test") }
         XCTAssertEqual(history.rows.map(\.value), ["81.0", "82.0"])
         XCTAssertEqual(history.rows.map(\.isActive), [true, false])
         XCTAssertEqual(history.rows.map(\.current), [true, false])

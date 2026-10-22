@@ -148,4 +148,6 @@ struct EditOutcome: Decodable {
     let existingId: String?
     /// In the cloud (US-25 AC11): the erase the new record is at.
     var erase: String? = nil
+    /// In the cloud: the engine's stamp, set in Swift (`HealthEngine.stamp`).
+    var order: Int? = nil
 }

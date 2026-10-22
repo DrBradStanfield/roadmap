@@ -142,7 +142,7 @@ final class AppleHealthSyncTests: XCTestCase {
         let health = FakeHealthStore()
         let sync = sync(store, engine, health)
         await sync.connect()
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 82, day: "2026-10-20")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 82, day: "2026-10-20")))
         await sync.refresh()
         XCTAssertEqual(health.saved.count, 1)
         let first = try XCTUnwrap(health.saved.first)
@@ -152,7 +152,7 @@ final class AppleHealthSyncTests: XCTestCase {
         XCTAssertEqual(health.saved.count, 1, "an unchanged value is not written again")
 
         let rowId = try XCTUnwrap(store.myData?.vitals.first?.latest?.id)
-        XCTAssertEqual(store.apply(.correct(id: rowId, value: 81)), .saved)
+        await XCTAssertSaved(await store.apply(.correct(id: rowId, value: 81)))
         await sync.refresh()
         XCTAssertEqual(health.saved.count, 2)
         XCTAssertEqual(health.saved.last?.syncId, first.syncId, "a correction replaces the sample")
@@ -161,13 +161,16 @@ final class AppleHealthSyncTests: XCTestCase {
 
     func testOneRefusedWriteDoesNotBlockTheOthers() async throws {
         let (store, engine) = try parts()
+        // Both values typed, and Health set to refuse the first, before Health connects:
+        // an edit now waits, so a refresh the first edit started would otherwise run between them.
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 82, day: "2026-10-19")))
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 81, day: "2026-10-20")))
+        let shown = store.recordJSON
+        let first = try XCTUnwrap(engine.blocking { try $0.healthWrites(recordJSON: shown, now: .now, deviceId: "test") }.first)
         let health = FakeHealthStore()
+        health.refusing = [first.syncId]
         let sync = sync(store, engine, health)
         await sync.connect()
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 82, day: "2026-10-19")), .saved)
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 81, day: "2026-10-20")), .saved)
-        let first = try XCTUnwrap(engine.healthWrites(recordJSON: store.recordJSON, now: .now, deviceId: "test").first)
-        health.refusing = [first.syncId]
         await sync.refresh()
         XCTAssertEqual(health.saved.map(\.values), [["weight": 81]])
         guard case .failed = sync.status else { return XCTFail("status \(sync.status)") }
@@ -194,7 +197,7 @@ final class AppleHealthSyncTests: XCTestCase {
         health.writable = []
         let sync = sync(store, engine, health)
         await sync.connect()
-        XCTAssertEqual(store.apply(.add(metric: "weight", value: 82, day: "2026-10-20")), .saved)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 82, day: "2026-10-20")))
         await sync.refresh()
         XCTAssertTrue(health.saved.isEmpty)
     }

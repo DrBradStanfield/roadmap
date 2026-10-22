@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 
 /// The chat history file, `chat-history.json`, beside the record in the app's own
 /// storage (US-52 AC6). Every change is health-core's `ChatSession` rule, run in the
@@ -12,8 +13,10 @@ final class ChatHistoryStore {
     /// Moves the moment an erase writes the chat file (`keepErased`), in either mode.
     /// An answer asked for before it is never saved after it (re-check N1): a new
     /// conversation has no tombstone of its own to refuse it, and the record erase
-    /// that moves RecordStore.erasures may still be uploading.
-    private(set) static var erasures = 0
+    /// that moves RecordStore.erasures may still be uploading. Read and moved on any
+    /// thread: a cloud erase writes the file on the engine's queue (`writeErased`).
+    nonisolated static var erasures: Int { erased.withLock { $0 } }
+    private nonisolated static let erased = OSAllocatedUnfairLock(initialState: 0)
 
     private let engine: HealthEngine
     private let file: URL
@@ -28,29 +31,44 @@ final class ChatHistoryStore {
 
     /// The file's text, or nil when there is none yet (or it cannot be read: history
     /// is best effort, as on the web, and never stops a question being asked).
-    private func text() -> String? {
+    private nonisolated static func text(_ file: URL) -> String? {
         try? String(contentsOf: file, encoding: .utf8)
     }
 
     func refresh() {
-        conversations = (try? engine.chatConversations(historyJSON: text(), now: .now, deviceId: deviceId)) ?? []
+        let (file, deviceId) = (file, deviceId)
+        conversations = engine.blocking { (try? $0.chatConversations(historyJSON: Self.text(file), now: .now, deviceId: deviceId)) ?? [] }
     }
 
     func messages(_ conversationId: String) -> [ChatMessage] {
-        (try? engine.chatMessages(historyJSON: text(), conversationId: conversationId, now: .now, deviceId: deviceId)) ?? []
+        let (file, deviceId) = (file, deviceId)
+        return engine.blocking { (try? $0.chatMessages(historyJSON: Self.text(file), conversationId: conversationId, now: .now, deviceId: deviceId)) ?? [] }
     }
 
     /// Saves one exchange. A failure is dropped: the answer is already on screen.
     /// `askedAt` is `erasures` when the question was sent; an erase since refuses it.
+    /// Read, changed and written on the engine's queue, where a cloud erase writes
+    /// its tombstones, so neither can land between the other's read and write.
     func record(_ exchange: ChatExchange, askedAt: Int) {
-        guard askedAt == Self.erasures else { return }
-        guard let next = try? engine.recordChatExchange(historyJSON: text(), exchange: exchange, now: .now, deviceId: deviceId) else { return }
-        write(next)
+        let (file, deviceId) = (file, deviceId)
+        let wrote = engine.blocking { engine -> Bool in
+            guard askedAt == Self.erasures,
+                  let next = try? engine.recordChatExchange(historyJSON: Self.text(file), exchange: exchange, now: .now, deviceId: deviceId)
+            else { return false }
+            Self.write(next, to: file)
+            return true
+        }
+        if wrote { refresh() }
     }
 
     func delete(_ conversationId: String) {
-        guard let next = try? engine.deleteChat(historyJSON: text(), conversationId: conversationId, now: .now, deviceId: deviceId) else { return }
-        write(next)
+        let (file, deviceId) = (file, deviceId)
+        let wrote = engine.blocking { engine -> Bool in
+            guard let next = try? engine.deleteChat(historyJSON: Self.text(file), conversationId: conversationId, now: .now, deviceId: deviceId) else { return false }
+            Self.write(next, to: file)
+            return true
+        }
+        if wrote { refresh() }
     }
 
     /// The file's text for "Delete all my data"; nil when there is none. Throws when
@@ -64,13 +82,22 @@ final class ChatHistoryStore {
     /// write. False when the phone refused the write, so the erase can say so.
     func keepErased(_ json: String?) -> Bool {
         defer { refresh() }
-        Self.erasures += 1
-        guard let json else { return true }
-        return (try? Data(json.utf8).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])) != nil
+        return writeErased(json)
     }
 
-    private func write(_ json: String) {
-        try? Data(json.utf8).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
-        refresh()
+    /// `keepErased` without the redraw, for any thread: a cloud erase calls it on the
+    /// engine's queue, which never waits on the main thread. Refresh after.
+    nonisolated var writeErased: @Sendable (String?) -> Bool {
+        let file = file
+        return { json in
+            ChatHistoryStore.erased.withLock { $0 += 1 }
+            guard let json else { return true }
+            return ChatHistoryStore.write(json, to: file)
+        }
+    }
+
+    @discardableResult
+    private nonisolated static func write(_ json: String, to file: URL) -> Bool {
+        (try? Data(json.utf8).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])) != nil
     }
 }

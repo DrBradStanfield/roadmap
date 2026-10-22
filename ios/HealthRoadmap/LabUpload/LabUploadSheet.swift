@@ -28,6 +28,8 @@ struct LabUploadSheet: View {
     @State private var scanning = false
     @State private var picking = false
     @State private var photo: PhotosPickerItem?
+    /// A review is saving: the sheet stays open until it lands.
+    @State private var reviewSaving = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -35,7 +37,7 @@ struct LabUploadSheet: View {
                 .navigationTitle("Add medical records")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+                    ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() }.disabled(reviewSaving) }
                     if case .choose = step, AIConsent.labUpload.given {
                         ToolbarItem(placement: .primaryAction) {
                             Menu {
@@ -56,6 +58,7 @@ struct LabUploadSheet: View {
                     }
                 }
         }
+        .interactiveDismissDisabled(reviewSaving)
         .fileImporter(isPresented: $importing, allowedContentTypes: [.folder, .pdf, .jpeg, .png, .zip], allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let url = urls.first { Task { await read(file: url) } }
         }
@@ -85,7 +88,7 @@ struct LabUploadSheet: View {
         case .working(let what, let progress):
             LabReadingDiagram(step: what, progress: progress)
         case .review(let results, let index):
-            LabReviewView(engine: engine, store: store, result: results[index], position: (index + 1, results.count)) {
+            LabReviewView(engine: engine, store: store, result: results[index], position: (index + 1, results.count), saving: $reviewSaving) {
                 if index + 1 < results.count {
                     step = .review(results, index: index + 1)
                 } else {

@@ -14,15 +14,17 @@ struct ValueEntrySheet: View {
     /// Reads the typed text as a number by the web's rule (`RecordStore.number`).
     let read: (String) -> Double?
     /// Saves a value for a day (YYYY-MM-DD).
-    let save: (Double, String) -> RecordStore.ApplyResult
+    let save: (Double, String) async -> RecordStore.ApplyResult
     /// Replaces the value in a row with a correction.
-    var replace: ((String, Double) -> RecordStore.ApplyResult)?
+    var replace: ((String, Double) async -> RecordStore.ApplyResult)?
 
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
     @State private var day = Date.now
     @State private var message: String?
     @State private var held: (id: String, value: Double)?
+    /// A save is under way: the sheet stays open and its buttons wait.
+    @State private var saving = false
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -58,20 +60,22 @@ struct ValueEntrySheet: View {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: submit).disabled(number == nil)
+                    Button("Save", action: submit).disabled(number == nil || saving)
                 }
             }
             .confirmationDialog("This day already has a value", isPresented: Binding(get: { held != nil }, set: { if !$0 { held = nil } }), titleVisibility: .visible) {
                 Button("Replace it") {
-                    if let held, let replace { finish(replace(held.id, held.value)) }
+                    guard let held, let replace else { return }
+                    SheetSave.run($saving, { await replace(held.id, held.value) }) { SheetSave.close($0, dismiss, $message) }
                 }
             } message: {
                 Text("The old value stays in your record, marked as entered in error.")
             }
             .onAppear { focused = true }
         }
+        .interactiveDismissDisabled(saving)
     }
 
     /// The typed number: either decimal mark, and nothing that is not read in full,
@@ -80,18 +84,13 @@ struct ValueEntrySheet: View {
 
     private func submit() {
         guard let number else { return }
-        let result = save(number, DayText.iso(day))
-        if case .refused(_, let existingId?) = result, replace != nil {
-            held = (existingId, number)
-        } else {
-            finish(result)
-        }
-    }
-
-    private func finish(_ result: RecordStore.ApplyResult) {
-        switch result {
-        case .saved: dismiss()
-        case .refused(let why, _): message = why
+        let when = DayText.iso(day)
+        SheetSave.run($saving, { await save(number, when) }) { result in
+            if case .refused(_, let existingId?) = result, replace != nil {
+                held = (existingId, number)
+            } else {
+                SheetSave.close(result, dismiss, $message)
+            }
         }
     }
 }

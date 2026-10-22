@@ -175,8 +175,8 @@ final class ReminderSchedulerTests: XCTestCase {
     func testTheEngineGivesTheAnnualFloorForANewRecord() throws {
         let engine = try HealthEngine()
         let now = try Date("2026-10-21T08:00:00.000Z", strategy: .iso8601)
-        let record = try engine.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "UTC")!)
-        let out = try engine.reminders(recordJSON: record, now: now, deviceId: "test")
+        let record = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "UTC")!) }
+        let out = try engine.blocking { [now] in try $0.reminders(recordJSON: record, now: now, deviceId: "test") }
         XCTAssertEqual(out.eraseEpoch, 0)
         XCTAssertEqual(out.upcoming.map(\.category), ["annual_checkin"])
         XCTAssertEqual(out.upcoming.first?.dueAt, "2027-10-21")

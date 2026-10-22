@@ -49,7 +49,7 @@ final class AppleHealthCloudTests: XCTestCase {
 
     /// An empty record from the web, as the cloud holds it.
     private func webRecord() throws -> [String: Any] {
-        let json = try HealthEngine().newRecord(now: .now, deviceId: "web", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!)
+        let json = try HealthEngine().blocking { try $0.newRecord(now: .now, deviceId: "web", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
         return try JSONSerialization.jsonObject(with: Data(json.utf8)) as! [String: Any]
     }
 

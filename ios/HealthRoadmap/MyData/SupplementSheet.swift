@@ -8,7 +8,7 @@ struct SupplementSheet: View {
     /// The units health-core offers; the row's own unit stays pickable even if not listed.
     let units: [String]
     let read: (String) -> Double?
-    let save: (FormEdit) -> RecordStore.ApplyResult
+    let save: (FormEdit) async -> RecordStore.ApplyResult
 
     @Environment(\.dismiss) private var dismiss
     @State private var dose = ""
@@ -16,6 +16,8 @@ struct SupplementSheet: View {
     @State private var unit = ""
     @State private var message: String?
     @State private var confirmingStop = false
+    /// A save is under way: the sheet stays open and its buttons wait.
+    @State private var saving = false
 
     var body: some View {
         sheet.pinsRecord()
@@ -43,7 +45,7 @@ struct SupplementSheet: View {
                     if let message { Text(message).foregroundStyle(.red) } else { Text("Since \(DayText.short(row.startedDay))") }
                 }
                 Section {
-                    Button("Stop taking \(row.name)") { confirmingStop = true }
+                    Button("Stop taking \(row.name)") { confirmingStop = true }.disabled(saving)
                 } footer: {
                     Text("It stays in your record as stopped, and you can take it again.")
                 }
@@ -51,12 +53,12 @@ struct SupplementSheet: View {
             .navigationTitle(row.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Save", action: saveDose).disabled(!doseReadable) }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
+                ToolbarItem(placement: .confirmationAction) { Button("Save", action: saveDose).disabled(!doseReadable || saving) }
             }
             .confirmationDialog("Stop taking \(row.name)?", isPresented: $confirmingStop, titleVisibility: .visible) {
                 Button("Stop taking") {
-                    finish(save(.supplement(key: row.key, name: row.name, dose: row.dose, unit: row.unit, stopped: true)))
+                    submit(.supplement(key: row.key, name: row.name, dose: row.dose, unit: row.unit, stopped: true))
                 }
             }
             .onAppear {
@@ -64,6 +66,7 @@ struct SupplementSheet: View {
                 unit = row.unit ?? ""
             }
         }
+        .interactiveDismissDisabled(saving)
     }
 
     /// The listed units, plus the row's own if the list lacks it (a featured default such as "serving").
@@ -77,14 +80,11 @@ struct SupplementSheet: View {
 
     private func saveDose() {
         let value = dose.trimmingCharacters(in: .whitespaces).isEmpty ? nil : read(dose)
-        finish(save(.supplement(key: row.key, name: row.name, dose: value, unit: unit.isEmpty ? nil : unit, stopped: false)))
+        submit(.supplement(key: row.key, name: row.name, dose: value, unit: unit.isEmpty ? nil : unit, stopped: false))
     }
 
-    private func finish(_ result: RecordStore.ApplyResult) {
-        switch result {
-        case .saved: dismiss()
-        case .refused(let why, _): message = why
-        }
+    private func submit(_ edit: FormEdit) {
+        SheetSave.run($saving, { await save(edit) }) { SheetSave.close($0, dismiss, $message) }
     }
 
     /// "5" for a whole dose, "2.5" otherwise. `Int(_:)` traps past its range, and the
@@ -97,11 +97,13 @@ struct SupplementSheet: View {
 /// Add a supplement: search health-core's list, or add the typed name as your own.
 struct AddSupplementSheet: View {
     let choices: [SupplementsView.Choice]
-    let save: (FormEdit) -> RecordStore.ApplyResult
+    let save: (FormEdit) async -> RecordStore.ApplyResult
 
     @Environment(\.dismiss) private var dismiss
     @State private var search = ""
     @State private var message: String?
+    /// A save is under way: the sheet stays open and its buttons wait.
+    @State private var saving = false
 
     var body: some View {
         sheet.pinsRecord()
@@ -114,13 +116,14 @@ struct AddSupplementSheet: View {
                     Text(message).foregroundStyle(.red)
                 }
                 if canAddTyped {
-                    Button { finish(save(.customSupplement(name: typed))) } label: {
+                    Button { submit(.customSupplement(name: typed)) } label: {
                         Label("Add \u{201C}\(typed)\u{201D}", systemImage: "plus.circle.fill")
                     }
+                    .disabled(saving)
                 }
                 ForEach(matches) { choice in
                     Button {
-                        finish(save(.supplement(key: choice.key, name: choice.name, dose: choice.dose, unit: choice.unit, stopped: false)))
+                        submit(.supplement(key: choice.key, name: choice.name, dose: choice.dose, unit: choice.unit, stopped: false))
                     } label: {
                         HStack {
                             Text(choice.name)
@@ -131,13 +134,15 @@ struct AddSupplementSheet: View {
                         }
                     }
                     .tint(.primary)
+                    .disabled(saving)
                 }
             }
             .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search or type a name")
             .navigationTitle("Add a supplement")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) } }
         }
+        .interactiveDismissDisabled(saving)
     }
 
     private var typed: String { String(search.trimmingCharacters(in: .whitespaces).prefix(100)) }
@@ -151,10 +156,7 @@ struct AddSupplementSheet: View {
         !typed.isEmpty && !choices.contains { $0.name.caseInsensitiveCompare(typed) == .orderedSame }
     }
 
-    private func finish(_ result: RecordStore.ApplyResult) {
-        switch result {
-        case .saved: dismiss()
-        case .refused(let why, _): message = why
-        }
+    private func submit(_ edit: FormEdit) {
+        SheetSave.run($saving, { await save(edit) }) { SheetSave.close($0, dismiss, $message) }
     }
 }

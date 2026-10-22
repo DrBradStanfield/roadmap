@@ -11,11 +11,7 @@ final class RequestLog: @unchecked Sendable {
 final class TokenPort: CloudPort {
     var token = "real-token"
     func accessToken(provider: String, force: Bool) async -> TokenAnswer { .token(token) }
-    func phoneRead() throws -> String? { nil }
-    func phoneWrite(_ text: String) throws {}
-    func phoneRemove() {}
-    func pending(_ op: String) -> Bool { false }
-    func notify(_ event: String, _ payload: String, session: Int) {}
+    func notify(_ event: String, _ payload: String, session: Int, order: Int) {}
 }
 
 /// US-25 AC18: the fence around the engine's network (EngineHTTP). JavaScript gets a
@@ -30,7 +26,7 @@ final class EngineFenceTests: XCTestCase {
 
     override func setUpWithError() throws {
         engine = try HealthEngine(session: StubHTTP.session())
-        engine.natives.cloud = port
+        engine.blocking { [port] in $0.attach(port, phone: PhoneFiles(record: nil, pending: nil)) }
         let log = log
         StubHTTP.handler = { request in
             log.requests.append(request)
@@ -40,15 +36,15 @@ final class EngineFenceTests: XCTestCase {
 
     /// Runs one fetch; answers its status, or "refused" when it never left.
     private func fetch(_ url: String, method: String = "POST", headers: String = "{ Authorization: 'Bearer native-token:dropbox' }") async throws -> String {
-        try await engine.settle(engine.evaluate("""
+        try await engine.settleScript("""
             fetch('\(url)', { method: '\(method)', headers: \(headers) }).then((r) => String(r.status), () => 'refused')
-            """))
+            """)
     }
 
     func testJavaScriptGetsASentinelNeverTheToken() async throws {
-        let answer = try await engine.settle(engine.evaluate("""
+        let answer = try await engine.settleScript("""
             new Promise((done) => __native.accessToken('dropbox', false, (token) => done(token)))
-            """))
+            """)
         XCTAssertEqual(answer, "native-token:dropbox")
     }
 

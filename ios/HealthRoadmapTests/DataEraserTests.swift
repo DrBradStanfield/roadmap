@@ -52,7 +52,7 @@ final class DataEraserTests: XCTestCase {
         let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
         let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: "ios-test")
         let reminders = ReminderScheduler(center: center, folder: folder) {
-            try engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+            try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         }
         let appleHealth = AppleHealthSync(store: store, engine: engine, client: health, memory: HealthSyncMemory(defaults: healthDefaults))
         let eraser = DataEraser(engine: engine, store: store, sync: sync, chat: chat, reminders: reminders, health: appleHealth)
@@ -61,9 +61,9 @@ final class DataEraserTests: XCTestCase {
 
     private func record(days: [String]) throws -> [String: Any] {
         let engine = try HealthEngine()
-        var json = try engine.newRecord(now: .now, deviceId: "web", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!)
+        var json = try engine.blocking { try $0.newRecord(now: .now, deviceId: "web", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
         for day in days {
-            json = try XCTUnwrap(engine.apply(.add(metric: "weight", value: 80, day: day), to: json, now: .now, deviceId: "web").record)
+            json = try XCTUnwrap(engine.blocking { try $0.apply(.add(metric: "weight", value: 80, day: day), to: json, now: .now, deviceId: "web") }.record)
         }
         return try JSONSerialization.jsonObject(with: Data(json.utf8)) as! [String: Any]
     }
@@ -97,8 +97,8 @@ final class DataEraserTests: XCTestCase {
 
     func testThePhoneEraseEmptiesTheRecordTheChatAndTheReminders() async throws {
         let app = try app(connected: false)
-        XCTAssertEqual(app.store.apply(.units("conventional")), .saved)
-        XCTAssertEqual(app.store.apply(.add(metric: "weight", value: 176, day: "2026-10-01")), .saved)
+        await XCTAssertSaved(await app.store.apply(.units("conventional")))
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 176, day: "2026-10-01")))
         seedChat(app.chat)
         let optedIn = await app.reminders.optIn()
         XCTAssertTrue(optedIn)
@@ -159,7 +159,7 @@ final class DataEraserTests: XCTestCase {
         XCTAssertFalse(try String(contentsOf: chatFile, encoding: .utf8).contains(question))
         XCTAssertEqual(app.store.erasures, 1)
         guard case .synced = app.sync.status else { return XCTFail("status is \(app.sync.status)") }
-        XCTAssertEqual(app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-05")), .saved, "a new value after the erase saves")
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-05")), "a new value after the erase saves")
     }
 
     func testTheCloudEraseTombstonesTheChatHistoryTheWebsiteSavedInTheCloud() async throws {
@@ -227,7 +227,7 @@ final class DataEraserTests: XCTestCase {
         let app = try app(connected: true)
         await app.sync.start()
         XCTAssertNil(app.store.cloudErase, "the screen fell back to the phone's file")
-        XCTAssertEqual(app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-06")), .saved)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-06")))
         let before = try String(contentsOf: phoneFile, encoding: .utf8)
 
         guard case .refused = await app.eraser.eraseAll() else { return XCTFail("a phone that cannot read the cloud cannot list what it erases") }
@@ -305,7 +305,7 @@ final class DataEraserTests: XCTestCase {
     func testTheEraseDeletesTheSamplesThisAppWroteToAppleHealthAndForgetsThem() async throws {
         let app = try app(connected: false)
         await app.health.connect()
-        XCTAssertEqual(app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")), .saved)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
         await app.health.refresh()
         XCTAssertFalse(health.saved.isEmpty, "the typed weight went out to Health")
         XCTAssertNotNil(healthDefaults.dictionary(forKey: "appleHealth.written"))
@@ -384,7 +384,7 @@ final class DataEraserTests: XCTestCase {
 
     func testTheExportIsTheRecordFileUnderTheWebsName() async throws {
         let app = try app(connected: false)
-        XCTAssertEqual(app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")), .saved)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
         let export = RecordExport(json: app.store.recordJSON)
         XCTAssertEqual(RecordExport.fileName, "health-roadmap.json")
         guard #available(iOS 18.2, *) else { throw XCTSkip("exported(as:) needs iOS 18.2") }

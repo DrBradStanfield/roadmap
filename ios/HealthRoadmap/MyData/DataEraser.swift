@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 
 /// "Delete all my data" (US-25 AC16; US-11 on the iPhone). It decides which erase
 /// runs and keeps the files and views around it in step; the erase itself is the
@@ -61,13 +62,13 @@ final class DataEraser {
         erasing = true
         defer { erasing = false }
         let units = store.myData?.unitSystem
-        let outcome = if let provider = sync.provider { await eraseInCloud(provider) } else { eraseOnPhone() }
+        let outcome = if let provider = sync.provider { await eraseInCloud(provider) } else { await eraseOnPhone() }
         if case .refused = outcome { return outcome }
         awaitingDismissal = true
         // After the record: an erase refused there must change nothing, and Health's
         // copies of typed values are only copies (D6).
         let healthErased = await health?.eraseOwnSamples() ?? true
-        keepUnits(units)
+        await keepUnits(units)
         await reminders?.refresh()
         guard !healthErased else { return outcome }
         switch outcome {
@@ -77,18 +78,18 @@ final class DataEraser {
         }
     }
 
-    private func eraseOnPhone() -> Outcome {
+    private func eraseOnPhone() async -> Outcome {
         guard store.problem == nil, let record = try? store.phoneText() else { return .refused(EraseText.unreadable) }
         let (history, chatReadable) = chatText()
         let result: HealthEngine.PhoneErase
         do {
-            result = try engine.eraseOnPhone(recordJSON: record, historyJSON: history, now: .now, deviceId: store.deviceId)
+            result = try await engine.eraseOnPhone(recordJSON: record, historyJSON: history, now: .now, deviceId: store.deviceId)
         } catch {
             return .refused(EraseText.unreadable)
         }
         let chatErased = chatReadable && result.chatErased && chat.keepErased(result.chatHistory)
         do {
-            try store.showErased(result.record)
+            try await store.showErased(result.record)
         } catch {
             return .refused(EraseText.notWritten(error.localizedDescription, chatErased: chatErased))
         }
@@ -97,12 +98,17 @@ final class DataEraser {
 
     private func eraseInCloud(_ provider: CloudProvider) async -> Outcome {
         let (history, chatReadable) = chatText()
-        var chatWritten = false
+        // Written on the engine's queue, inside the erase; read here once it is over.
+        let written = OSAllocatedUnfairLock(initialState: false)
+        let writeErased = chat.writeErased
+        var chatWritten: Bool { written.withLock { $0 } }
+        defer { if chatWritten { chat.refresh() } }
         let answer: HealthEngine.CloudErase?
         do {
-            answer = try await sync.erase(chatHistory: history) { [chat] in
-                chatWritten = chat.keepErased($0)
-                return chatWritten
+            answer = try await sync.erase(chatHistory: history) { json in
+                let ok = writeErased(json)
+                written.withLock { $0 = ok }
+                return ok
             }
         } catch {
             // The engine answered nothing, so whether the cloud chat went is unknown; a
@@ -136,8 +142,8 @@ final class DataEraser {
 
     /// The units are a setting, not a health value: the web keeps its unit
     /// preference through an erase, so the app puts the user's choice back.
-    private func keepUnits(_ units: String?) {
+    private func keepUnits(_ units: String?) async {
         guard let units, store.myData?.unitSystem != units else { return }
-        _ = store.apply(.units(units))
+        _ = await store.apply(.units(units))
     }
 }

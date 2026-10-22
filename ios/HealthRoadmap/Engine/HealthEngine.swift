@@ -1,10 +1,13 @@
 import Foundation
 import JavaScriptCore
+import os
 
 /// Runs health-core, the web's own engine, in JavaScriptCore (ios/architecture.md D2).
 /// JSON in, JSON out: the record goes in as text and the plan comes back as text,
 /// so the app and the web compute from one source of clinical truth.
-final class HealthEngine {
+/// An actor on its own serial queue: the JSContext is made there and touched only
+/// there, so engine work never holds up the main thread (Brad 2026-10-22).
+actor HealthEngine {
     enum EngineError: LocalizedError {
         case missingBundle
         case loadFailed(String)
@@ -19,6 +22,10 @@ final class HealthEngine {
         }
     }
 
+    /// The one queue the engine runs on: its executor, its timers and its network answers.
+    nonisolated let queue: DispatchSerialQueue
+    nonisolated var unownedExecutor: UnownedSerialExecutor { queue.asUnownedSerialExecutor() }
+
     private let context: JSContext
     /// The bundle's exports (ios/engine/entry.ts): the plan, My data and the cloud doors.
     private let exports: JSValue
@@ -29,7 +36,7 @@ final class HealthEngine {
 
     /// The engine shipped in the app. `session`: the URLSession the engine's fetch
     /// runs on (EngineHTTP's own by default); tests pass a stubbed one.
-    convenience init(bundle: Bundle = .main, session: URLSession = EngineHTTP.shared) throws {
+    init(bundle: Bundle = .main, session: URLSession = EngineHTTP.shared) throws {
         guard let url = bundle.url(forResource: "health-engine", withExtension: "js"),
               let source = try? String(contentsOf: url, encoding: .utf8)
         else { throw EngineError.missingBundle }
@@ -40,25 +47,79 @@ final class HealthEngine {
     /// `quarantined`: a self-test context whose natives refuse every request and hold
     /// no token (US-25 AC18).
     init(source: String, sourceURL: URL?, session: URLSession = EngineHTTP.shared, quarantined: Bool = false) throws {
-        guard let context = JSContext() else { throw EngineError.missingBundle }
+        // Made on the engine's queue, the only one that ever touches it.
+        let queue = DispatchSerialQueue(label: "engine", qos: .userInitiated)
+        self.queue = queue
+        (context, exports, natives) = try queue.sync {
+            guard let context = JSContext() else { throw EngineError.missingBundle }
 
-        // A bare JSContext has no console. The engine may log a warning; drop it,
-        // because a log line must never carry a health value.
-        context.evaluateScript("var console = { log() {}, info() {}, warn() {}, error() {}, debug() {} };")
-        // Nor has it `crypto`, and health-core gives every new row a fresh
-        // `crypto.randomUUID()` (FHIR rule 5). The phone's own UUID stands in.
-        let randomUUID: @convention(block) () -> String = { UUID().uuidString.lowercased() }
-        context.setObject(["randomUUID": randomUUID], forKeyedSubscript: "crypto" as NSString)
-        // fetch, timers and text coding for the cloud adapters (ios/engine/shim.ts).
-        natives = EngineNatives(session: session, quarantined: quarantined)
-        natives.install(in: context)
-        context.evaluateScript(source, withSourceURL: sourceURL)
-        if let exception = context.exception { throw EngineError.loadFailed(exception.toString()) }
+            // A bare JSContext has no console. The engine may log a warning; drop it,
+            // because a log line must never carry a health value.
+            context.evaluateScript("var console = { log() {}, info() {}, warn() {}, error() {}, debug() {} };")
+            // Nor has it `crypto`, and health-core gives every new row a fresh
+            // `crypto.randomUUID()` (FHIR rule 5). The phone's own UUID stands in.
+            let randomUUID: @convention(block) () -> String = { UUID().uuidString.lowercased() }
+            context.setObject(["randomUUID": randomUUID], forKeyedSubscript: "crypto" as NSString)
+            // fetch, timers and text coding for the cloud adapters (ios/engine/shim.ts).
+            let natives = EngineNatives(session: session, queue: queue, quarantined: quarantined)
+            natives.install(in: context)
+            context.evaluateScript(source, withSourceURL: sourceURL)
+            if let exception = context.exception { throw EngineError.loadFailed(exception.toString()) }
 
-        guard let exports = context.objectForKeyedSubscript("HealthEngine"), !exports.isUndefined
-        else { throw EngineError.loadFailed("HealthEngine is not defined") }
-        self.context = context
-        self.exports = exports
+            guard let exports = context.objectForKeyedSubscript("HealthEngine"), !exports.isUndefined
+            else { throw EngineError.loadFailed("HealthEngine is not defined") }
+            return (context, exports, natives)
+        }
+    }
+
+    /// Where the engine reaches the phone: tokens and news on the main actor, the
+    /// record file and the pending marker as plain files here (US-25 AC11).
+    func attach(_ port: CloudPort?, phone: PhoneFiles) {
+        natives.cloud = port
+        natives.phone = phone
+    }
+
+    /// Runs `body` on the engine's queue and waits for it. A stopgap for callers not
+    /// yet moved off the main thread (stage 2); the engine queue never waits on main,
+    /// so this cannot deadlock. DEBUG counts the calls made from the main thread.
+    nonisolated func blocking<T>(_ body: (isolated HealthEngine) throws -> T) throws -> T {
+        try withoutActuallyEscaping(body) { body in
+            countBlocking()
+            // Run on the engine's executor, so the isolation `body` asks for holds.
+            let run = unsafeBitCast(body, to: ((HealthEngine) throws -> T).self)
+            return try queue.sync { try run(self) }
+        }
+    }
+
+    /// `blocking` for a body that cannot throw.
+    nonisolated func blocking<T>(_ body: (isolated HealthEngine) -> T) -> T {
+        withoutActuallyEscaping(body) { body in
+            countBlocking()
+            let run = unsafeBitCast(body, to: ((HealthEngine) -> T).self)
+            return queue.sync { run(self) }
+        }
+    }
+
+    private nonisolated func countBlocking() {
+        #if DEBUG
+        if Thread.isMainThread { Self.mainThreadBlocks.withLock { $0 += 1 } }
+        #endif
+    }
+
+    #if DEBUG
+    /// How many `blocking` calls the main thread has made (EngineThreadTests).
+    nonisolated static let mainThreadBlocks = OSAllocatedUnfairLock(initialState: 0)
+    #endif
+
+    /// The plan's on-screen sections for a record, and how long the engine took
+    /// (D2's budget). A plan no longer wanted (the record moved on) is not started.
+    func planSections(record: String, units: String, now: Date, deviceId: String) throws -> (sections: [PlanSection], ms: Double) {
+        try Task.checkCancellation()
+        let clock = ContinuousClock()
+        let start = clock.now
+        let sections = try sections(planJSON: plan(recordJSON: record, now: now, deviceId: deviceId, units: units))
+        let elapsed = clock.now - start
+        return (sections, Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15)
     }
 
     /// The plan for a record, as the engine's JSON.
@@ -125,14 +186,12 @@ final class HealthEngine {
 
     /// Calls an engine function that returns a Promise of text, and waits for it.
     /// A rejection becomes `EngineError.callFailed` with the error's message.
-    @MainActor
     func callAsync(_ name: String, _ arguments: [Any]) async throws -> String {
         try await settle(callValue(name, arguments))
     }
 
     /// Calls an engine function that returns a Promise of something other than
     /// text (an object holding an ArrayBuffer), and answers what `read` makes of it.
-    @MainActor
     func callAsync<T: Sendable>(_ name: String, _ arguments: [Any], read: @escaping (JSValue) -> T) async throws -> T {
         try await settle(callValue(name, arguments), read: read)
     }
@@ -153,15 +212,16 @@ final class HealthEngine {
     }
 
     /// Waits for a Promise (or takes a plain value) and answers it as text.
-    @MainActor
     func settle(_ value: JSValue) async throws -> String {
         try await settle(value) { $0.isUndefined ? "" : $0.toString() }
     }
 
     /// Waits for a Promise (or takes a plain value) and answers what `read` makes of it.
-    @MainActor
     func settle<T: Sendable>(_ value: JSValue, read: @escaping (JSValue) -> T) async throws -> T {
-        try await withCheckedThrowingContinuation { (done: CheckedContinuation<T, Error>) in
+        #if DEBUG
+        dispatchPrecondition(condition: .onQueue(queue))
+        #endif
+        return try await withCheckedThrowingContinuation { (done: CheckedContinuation<T, Error>) in
             let fulfilled: @convention(block) (JSValue) -> Void = { done.resume(returning: read($0)) }
             let rejected: @convention(block) (JSValue) -> Void = { error in
                 let message = error.isObject ? error.objectForKeyedSubscript("message")?.toString() : nil
@@ -173,6 +233,9 @@ final class HealthEngine {
     }
 
     private func callValue(_ name: String, _ arguments: [Any]) throws -> JSValue {
+        #if DEBUG
+        dispatchPrecondition(condition: .onQueue(queue))
+        #endif
         guard let function = exports.objectForKeyedSubscript(name), !function.isUndefined else {
             throw EngineError.callFailed("HealthEngine.\(name) is not defined")
         }

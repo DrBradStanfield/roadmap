@@ -1,22 +1,67 @@
 import Foundation
 import JavaScriptCore
+import os
 
-/// What the engine needs from the phone to sync (US-25 AC11): tokens, the
-/// phone's record file, the pending marker and news of what happened.
-/// `CloudSync` provides it; ios/engine/cloud.ts `CloudNatives` is its twin.
+/// What the engine needs from the main actor to sync (US-25 AC11): tokens and news
+/// of what happened. `CloudSync` provides it; ios/engine/cloud.ts `CloudNatives` is
+/// its twin. The phone's record file and pending marker are `PhoneFiles`, read and
+/// written on the engine's queue.
 @MainActor
 protocol CloudPort: AnyObject, Sendable {
     /// A current access token; `force` after the provider refused the last one.
     func accessToken(provider: String, force: Bool) async -> TokenAnswer
-    /// The phone's record: its text, nil when there is none; throws when unreadable.
-    func phoneRead() throws -> String?
-    func phoneWrite(_ text: String) throws
-    func phoneRemove()
-    /// "get", "set" or "clear" the marker that says the phone holds changes the cloud lacks.
-    func pending(_ op: String) -> Bool
     /// "saving", "saved", "synced", "failed" (payload: kind and detail) or
-    /// "changed" (payload: the record), from engine session `session`.
-    func notify(_ event: String, _ payload: String, session: Int)
+    /// "changed" (payload: the record), from engine session `session`. `order`:
+    /// the engine's stamp when it was sent (HealthEngine.stamp).
+    func notify(_ event: String, _ payload: String, session: Int, order: Int)
+}
+
+/// The phone's record file and the marker that says the phone holds changes the
+/// cloud lacks: plain files, so the engine reads and writes them on its own queue
+/// and never waits on the main thread. `nil` URLs keep them in memory (a quarantined
+/// self-test engine, EngineBoot).
+final class PhoneFiles: Sendable {
+    let record: URL?
+    let pending: URL?
+    private let memory = OSAllocatedUnfairLock(initialState: (record: String?.none, pending: false))
+
+    init(record: URL?, pending: URL?) {
+        self.record = record
+        self.pending = pending
+    }
+
+    /// The record's text, nil when there is none; throws when it is there but unreadable.
+    func read() throws -> String? {
+        guard let record else { return memory.withLock { $0.record } }
+        guard FileManager.default.fileExists(atPath: record.path(percentEncoded: false)) else { return nil }
+        return try String(contentsOf: record, encoding: .utf8)
+    }
+
+    func write(_ text: String) throws {
+        guard let record else { return memory.withLock { $0.record = text } }
+        try RecordStore.write(text, to: record)
+    }
+
+    func remove() {
+        guard let record else { return memory.withLock { $0.record = nil } }
+        try? FileManager.default.removeItem(at: record)
+    }
+
+    /// "get", "set" or "clear" the pending marker; answers whether it is set.
+    func pending(_ op: String) -> Bool {
+        guard let pending else {
+            return memory.withLock {
+                if op == "set" { $0.pending = true } else if op == "clear" { $0.pending = false }
+                return $0.pending
+            }
+        }
+        switch op {
+        case "set": try? Data().write(to: pending, options: .atomic)
+        case "clear": try? FileManager.default.removeItem(at: pending)
+        default: break
+        }
+        return FileManager.default.fileExists(atPath: pending.path(percentEncoded: false))
+    }
 }
 
 enum TokenAnswer: Sendable {
@@ -27,14 +72,18 @@ enum TokenAnswer: Sendable {
 
 /// The primitives JavaScriptCore lacks, which ios/engine/shim.ts builds the
 /// web's fetch, timers and text coding on (architecture.md D2), plus the
-/// `CloudPort` calls. Installed as the global `__native` before the bundle runs.
-/// JavaScript runs on the main queue only: every answer from URLSession or a
-/// timer hops there before it touches a JSValue.
+/// `CloudPort` and `PhoneFiles` calls. Installed as the global `__native` before the
+/// bundle runs. JavaScript runs on the engine's queue only: every answer from
+/// URLSession, a timer or the main actor hops there before it touches a JSValue.
+/// The queue never waits on the main thread: news goes there with `async`.
 /// HTTP goes only where `EngineHTTP` allows, and tokens never reach JavaScript
 /// (US-25 AC18): an engine can be updated over the air, the fence cannot.
 final class EngineNatives {
     weak var cloud: CloudPort?
+    var phone: PhoneFiles?
     private let session: URLSession
+    /// The engine's queue (HealthEngine.queue).
+    private let queue: DispatchSerialQueue
     /// A self-test context for a downloaded engine (EngineBoot): every request refused.
     private let quarantined: Bool
     private var tasks: [Int: URLSessionTask] = [:]
@@ -42,9 +91,11 @@ final class EngineNatives {
     private var cancelled: Set<Int> = []
     private var timers: [Int: DispatchWorkItem] = [:]
     private var nextId = 1
+    private var stamps = 0
 
-    init(session: URLSession, quarantined: Bool = false) {
+    init(session: URLSession, queue: DispatchSerialQueue, quarantined: Bool = false) {
         self.session = session
+        self.queue = queue
         self.quarantined = quarantined
     }
 
@@ -80,9 +131,9 @@ final class EngineNatives {
     private func request(method: String, url: String, headers: String, body: Data?, done: JSValue) -> Int {
         let id = nextId
         nextId += 1
-        let answer = MainQueueOnly(done)
+        let answer = EngineQueueOnly(done)
         let refuse = { (why: String) in
-            DispatchQueue.main.async { answer.value.call(withArguments: [0, "", "{}", NSNull(), why]) }
+            self.queue.async { answer.value.call(withArguments: [0, "", "{}", NSNull(), why]) }
         }
         let fields = (try? JSONDecoder().decode([String: String].self, from: Data(headers.utf8))) ?? [:]
         guard !quarantined, let address = URL(string: url),
@@ -96,11 +147,11 @@ final class EngineNatives {
         request.httpBody = body
         for (name, value) in allowed.headers { request.setValue(value, forHTTPHeaderField: name) }
         // The real token, from Swift, onto an allowed call for its own provider only.
-        let owner = MainQueueOnly(self)
+        let owner = EngineQueueOnly(self)
         let port = cloud
-        let wanted = MainQueueOnly(request)
-        Task { @MainActor in
-            let token = await port?.accessToken(provider: allowed.provider, force: false) ?? .failed("Not connected.", signIn: true)
+        let wanted = EngineQueueOnly(request)
+        let provider = allowed.provider
+        token(from: port, provider: provider, force: false) { token in
             let natives = owner.value
             if natives.cancelled.remove(id) != nil { return }
             guard case .token(let value) = token else {
@@ -114,10 +165,21 @@ final class EngineNatives {
         return id
     }
 
-    private func send(_ request: URLRequest, id: Int, answer: MainQueueOnly<JSValue>) {
-        let owner = MainQueueOnly(self)
+    /// Asks the main actor for a token and answers on the engine's queue. The engine
+    /// does not wait: the answer arrives as a new job there.
+    private func token(from port: CloudPort?, provider: String, force: Bool, then answer: @escaping @Sendable (TokenAnswer) -> Void) {
+        let queue = queue
+        Task { @MainActor in
+            let token = await port?.accessToken(provider: provider, force: force) ?? .failed("Not connected.", signIn: true)
+            queue.async { answer(token) }
+        }
+    }
+
+    private func send(_ request: URLRequest, id: Int, answer: EngineQueueOnly<JSValue>) {
+        let owner = EngineQueueOnly(self)
+        let queue = queue
         let task = session.dataTask(with: request) { data, response, error in
-            DispatchQueue.main.async {
+            queue.async {
                 owner.value.tasks.removeValue(forKey: id)
                 let done = answer.value
                 guard let context = done.context else { return }
@@ -150,27 +212,32 @@ final class EngineNatives {
     private func timer(after ms: Double, run: JSValue) -> Int {
         let id = nextId
         nextId += 1
-        let job = MainQueueOnly(run)
-        let owner = MainQueueOnly(self)
+        let job = EngineQueueOnly(run)
+        let owner = EngineQueueOnly(self)
         let item = DispatchWorkItem {
             owner.value.timers.removeValue(forKey: id)
             job.value.call(withArguments: [])
         }
         timers[id] = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + max(0, ms) / 1000, execute: item)
+        queue.asyncAfter(deadline: .now() + max(0, ms) / 1000, execute: item)
         return id
     }
 
     // MARK: Cloud
 
+    /// The next stamp for a cloud record handed to Swift (HealthEngine.stamp).
+    func stamp() -> Int {
+        stamps += 1
+        return stamps
+    }
+
     private func cloudNatives() -> [String: Any] {
-        // The engine calls these on the main queue only (see the type's comment).
-        let owner = MainQueueOnly(self)
+        // The engine calls these on its own queue only (see the type's comment).
+        let owner = EngineQueueOnly(self)
         let accessToken: @convention(block) (String, Bool, JSValue) -> Void = { provider, force, done in
-            let answer = MainQueueOnly(done)
-            let port = owner.value.quarantined ? nil : owner.value.cloud
-            Task { @MainActor in
-                let result = await port?.accessToken(provider: provider, force: force) ?? .failed("Not connected.", signIn: true)
+            let answer = EngineQueueOnly(done)
+            let natives = owner.value
+            natives.token(from: natives.quarantined ? nil : natives.cloud, provider: provider, force: force) { result in
                 switch result {
                 // The sentinel, never the token: EngineHTTP swaps it on an allowed call.
                 case .token: answer.value.call(withArguments: [EngineHTTP.sentinelPrefix + provider, NSNull(), false])
@@ -179,35 +246,34 @@ final class EngineNatives {
             }
         }
         let phoneRead: @convention(block) () -> String = {
-            MainActor.assumeIsolated {
-                do {
-                    let text = try owner.value.cloud?.phoneRead()
-                    return Self.json(["text": text.map { $0 as Any } ?? NSNull()])
-                } catch {
-                    return Self.json(["error": error.localizedDescription])
-                }
+            do {
+                let text = try owner.value.phone?.read()
+                return Self.json(["text": text.map { $0 as Any } ?? NSNull()])
+            } catch {
+                return Self.json(["error": error.localizedDescription])
             }
         }
         // Answers the error's words, or "" when the write landed (JavaScript reads "" as none).
         let phoneWrite: @convention(block) (String) -> String = { text in
-            MainActor.assumeIsolated {
-                do {
-                    guard let cloud = owner.value.cloud else { return "Not connected." }
-                    try cloud.phoneWrite(text)
-                    return ""
-                } catch {
-                    return error.localizedDescription
-                }
+            do {
+                guard let phone = owner.value.phone else { return "Not connected." }
+                try phone.write(text)
+                return ""
+            } catch {
+                return error.localizedDescription
             }
         }
         let phoneRemove: @convention(block) () -> Void = {
-            MainActor.assumeIsolated { owner.value.cloud?.phoneRemove() }
+            owner.value.phone?.remove()
         }
         let pending: @convention(block) (String) -> Bool = { op in
-            MainActor.assumeIsolated { owner.value.cloud?.pending(op) ?? false }
+            owner.value.phone?.pending(op) ?? false
         }
+        // In order, never waited for: the engine's queue must not block on the main thread.
         let notify: @convention(block) (String, String, Int) -> Void = { event, payload, session in
-            MainActor.assumeIsolated { owner.value.cloud?.notify(event, payload, session: session) }
+            guard let port = owner.value.cloud else { return }
+            let order = owner.value.stamp()
+            DispatchQueue.main.async { port.notify(event, payload, session: session, order: order) }
         }
         return [
             "accessToken": accessToken, "phoneRead": phoneRead, "phoneWrite": phoneWrite,
@@ -243,11 +309,11 @@ final class EngineNatives {
     }
 }
 
-/// Carries a value that is only ever touched on the main queue into a closure
+/// Carries a value that is only ever touched on the engine's queue into a closure
 /// the compiler must treat as concurrent (URLSession's completion, a work item).
 /// JSValue and the natives are not Sendable; this is the one place that says
-/// "main queue only" instead of proving it.
-struct MainQueueOnly<Value>: @unchecked Sendable {
+/// "engine queue only" instead of proving it.
+struct EngineQueueOnly<Value>: @unchecked Sendable {
     let value: Value
     init(_ value: Value) { self.value = value }
 }

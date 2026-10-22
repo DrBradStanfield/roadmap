@@ -12,9 +12,9 @@ struct MetricEntrySheet: View {
             BloodPressureSheet(store: store, saved: saved)
         } else {
             ValueEntrySheet(title: row.label, unit: row.unit, current: nil, asksForDay: true, read: store.number) { value, day in
-                saved(store.apply(.add(metric: row.metric, value: value, day: day)))
+                saved(await store.apply(.add(metric: row.metric, value: value, day: day)))
             } replace: { existingId, value in
-                saved(store.apply(.correct(id: existingId, value: value)))
+                saved(await store.apply(.correct(id: existingId, value: value)))
             }
         }
     }
@@ -42,6 +42,8 @@ struct BloodPressureSheet: View {
     @State private var asking = false
     /// The day's active rows when the "replace it?" prompt was shown.
     @State private var held: [String] = []
+    /// A save is under way: the sheet stays open and its buttons wait.
+    @State private var saving = false
     @FocusState private var focus: Field?
 
     var body: some View {
@@ -68,9 +70,9 @@ struct BloodPressureSheet: View {
             .navigationTitle(correcting.map { "Correct \(DayText.short($0.day))" } ?? "Blood pressure")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save(replace: correcting != nil, seen: correcting?.pairIds ?? []) }.disabled(pair == nil)
+                    Button("Save") { save(replace: correcting != nil, seen: correcting?.pairIds ?? []) }.disabled(pair == nil || saving)
                 }
             }
             .confirmationDialog("This day already has a blood pressure", isPresented: $asking, titleVisibility: .visible) {
@@ -80,6 +82,7 @@ struct BloodPressureSheet: View {
             }
             .onAppear { focus = .systolic }
         }
+        .interactiveDismissDisabled(saving)
         .pinsRecord()
     }
 
@@ -107,14 +110,15 @@ struct BloodPressureSheet: View {
     private func save(replace: Bool, seen: [String]) {
         guard let pair else { return }
         let when = correcting?.day ?? DayText.iso(day)
-        let result = saved(store.apply(.bloodPressure(systolic: pair.systolic, diastolic: pair.diastolic, day: when, replace: replace, seenIds: seen)))
-        switch result {
-        case .saved: dismiss()
-        case .refused(_, .some) where !replace:
-            // The rows the prompt is about, read from the same record the engine just refused on.
-            held = store.history(for: MyData.bloodPressure)?.rows.first { $0.isActive && $0.day == when }?.pairIds ?? []
-            asking = true
-        case .refused(let why, _): message = why
+        let edit = RecordEdit.bloodPressure(systolic: pair.systolic, diastolic: pair.diastolic, day: when, replace: replace, seenIds: seen)
+        SheetSave.run($saving, { saved(await store.apply(edit)) }) { result in
+            if case .refused(_, .some) = result, !replace {
+                // The rows the prompt is about, read from the same record the engine just refused on.
+                held = store.history(for: MyData.bloodPressure)?.rows.first { $0.isActive && $0.day == when }?.pairIds ?? []
+                asking = true
+            } else {
+                SheetSave.close(result, dismiss, $message)
+            }
         }
     }
 }

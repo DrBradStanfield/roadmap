@@ -13,6 +13,8 @@ struct LabReviewView: View {
     let store: RecordStore
     let result: LabResult
     let position: (Int, Int)
+    /// A save is under way; the sheet around the review holds its Close too.
+    @Binding var saving: Bool
     let onDone: () -> Void
 
     @State private var review: LabReview?
@@ -27,7 +29,6 @@ struct LabReviewView: View {
     @State private var documentTitle = ""
     @State private var documentDateKnown = false
     @State private var documentDate = Date.now
-    @State private var saving = false
 
     var body: some View {
         Form {
@@ -60,10 +61,8 @@ struct LabReviewView: View {
         }
         // Values and documents are checked against the record this review opened on: an
         // erase that arrives meanwhile refuses the save (the sheets' rule, US-25 AC11).
-        .onAppear {
-            store.pinScreen()
-            load()
-        }
+        .onAppear { store.pinScreen() }
+        .task { await load() }
         .onDisappear { store.unpinScreen() }
     }
 
@@ -160,10 +159,10 @@ struct LabReviewView: View {
         Binding(get: { ticked.contains(ref) }, set: { on in if on { ticked.insert(ref) } else { ticked.remove(ref) } })
     }
 
-    private func load() {
+    private func load() async {
         guard review == nil, let json = result.extractionJSON else { return }
         do {
-            let loaded = try engine.labReview(extractionJSON: json, now: .now, recordJSON: store.recordJSON, sourceFileName: result.name,
+            let loaded = try await engine.labReview(extractionJSON: json, now: .now, recordJSON: store.recordJSON, sourceFileName: result.name,
                                               contentHash: result.original?.contentHash ?? "", deviceId: store.deviceId)
             review = loaded
             if let document = loaded.document {
@@ -190,11 +189,11 @@ struct LabReviewView: View {
         let day = DayText.iso(testDay)
         problem = nil
         do {
-            switch try engine.labSaveSummary(recordJSON: store.recordJSON, extractionJSON: json, refs: refs, reportDay: day, now: .now, deviceId: store.deviceId) {
+            switch try await engine.labSaveSummary(recordJSON: store.recordJSON, extractionJSON: json, refs: refs, reportDay: day, now: .now, deviceId: store.deviceId) {
             case .failure(let refusal):
                 problem = refusal.message
             case .success(let summary):
-                switch store.apply(.labImport(extractionJSON: json, refs: refs, reportDay: day)) {
+                switch await store.apply(.labImport(extractionJSON: json, refs: refs, reportDay: day)) {
                 case .saved:
                     outcome = Self.describe(summary)
                     await keepOriginal(json, day: day)
