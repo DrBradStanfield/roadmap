@@ -50,7 +50,7 @@ function minuteVersion(date) {
 
 function appId() {
   const project = readFileSync(join(ios, 'HealthRoadmap.xcodeproj/project.pbxproj'), 'utf8');
-  const ids = [...project.matchAll(/PRODUCT_BUNDLE_IDENTIFIER = ([\w.]+);/g)].map((m) => m[1]).filter((id) => !/\.(ui)?tests$/.test(id)); // the unit and UI test targets
+  const ids = [...project.matchAll(/PRODUCT_BUNDLE_IDENTIFIER = ([\w.]+);/g)].map((m) => m[1]).filter((id) => !/\.(ui)?tests$/.test(id));
   if (new Set(ids).size !== 1) throw new Error(`Expected one app bundle id, found ${[...new Set(ids)].join(', ')}`);
   return ids[0];
 }
