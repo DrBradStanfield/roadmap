@@ -23,15 +23,16 @@
  *    build hides them.
  *  - Medication-history chart annotations use explicit change types saved at write time.
  */
-import { isLabArchiveDocument, pendingRowsFor, sha256Blob } from '../lib/archive-payloads';
+import { sha256Blob } from '../lib/archive-payloads';
 import {
-  buildDocumentRef,
   type BulkRow,
   LiveRefresh,
   RecordSession,
   bulkAppendValues,
-  splitDocumentRef,
   placeMeasurement,
+  saveDocuments,
+  documentView,
+  type DocumentPayload,
   setReminderOptIn,
   setScreening,
   stampProfile,
@@ -51,7 +52,6 @@ import {
   type ApiMeasurement,
   type ApiMedication,
   type ApiScreening,
-  type DocumentType,
   type FileDocument,
   type FileReminderOptIn,
   type FileSupplement,
@@ -178,9 +178,6 @@ export interface BulkLabValueInput {
 // --- small pure helpers ---
 
 
-function newId(): string {
-  return crypto.randomUUID();
-}
 function activeOnly<T extends { status: string }>(rows: T[]): T[] {
   return rows.filter((r) => r.status === 'active');
 }
@@ -250,7 +247,7 @@ export class RoadmapStore {
         reminderCategory: p.category,
         enabled: p.enabled,
       })),
-      documents: this.liveDocuments().map(toApiDocument),
+      documents: this.liveDocuments().map(documentView),
     };
   }
 
@@ -377,138 +374,32 @@ export class RoadmapStore {
   }
 
   /**
-   * Save reviewed documents. When the payload carries the original bytes, the
-   * blob is written to the user's cloud FIRST (organised path from
-   * buildDocumentRef: 'Lab results/2024-05-10 Lipid panel.pdf'), THEN the
-   * documents[] reference commits via the JSON write — §5.3's order, so an
-   * interrupted save leaves a harmless orphan blob, never a dangling ref.
-   * A failed blob write (e.g. GitHub's ~1 MB cap, localStorage quota) degrades
-   * to metadata-only: the extracted values are never lost with the file. Except
-   * behind a held metadata-only row (below): there the details already exist,
-   * so the failure is settled, counted in `unstored`, and only a changed title
-   * or date files a new row.
-   *
-   * `contentHash` is ONE key for the website and the connector (US-35 AC6): a
-   * live row that carries the hash AND a `fileRef` is the archived original,
-   * so the upload is a no-op; a row with the hash and no `fileRef` came in
-   * through the connector metadata-only (or is a website save whose blob
-   * failed), and THIS upload, of the same kind, is the user archiving
-   * that original — the new row lands with the blob and the old one is
-   * tombstoned, never edited (documents are immutable under merge).
+   * Save reviewed documents through health-core's one rule (saveDocuments,
+   * shared with the iPhone app): blob first, then the rows; hash dedup; a
+   * failed blob degrades to metadata-only; held metadata-only rows of the
+   * same kind are tombstoned once the original lands (US-13 AC1, US-14 AC4).
    */
   async bulkSaveDocuments(
-    documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,
+    documents: Array<DocumentPayload<Blob>>,
   ): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
     // The batch stands for the erase the page showed as it started: refused
     // before any upload if that is not this copy's, and again at the commit,
     // since an erase can land while the uploads run.
     const erase = this.shownErase;
     if (this.refuses(erase)) return { saved: [], errorCount: documents.length };
-    const out: FileDocument[] = [];
-    const existingRefs = new Set(this.file.documents.map((d) => d.fileRef).filter(Boolean));
-    // Content-hash dedup: re-uploading a file the archive already holds (live,
-    // not tombstoned) must not create a second entry or a " (2)" blob. The
-    // review step dedups extracted VALUES but knows nothing about originals.
-    const hashed = this.file.documents.filter((d) => !d.deleted && d.contentHash);
-    const archived = new Set(hashed.filter((d) => d.fileRef).map((d) => d.contentHash));
-    // Metadata-only rows are replaced only by an upload of their own kind, a
-    // lab archive or a shown document (US-14 AC4): `deleted` is OR-ed on merge,
-    // so a letter tombstoned by a lab re-read would be gone for good. Kind, not
-    // type: the type is the model's per-run guess.
-    const metadataOnly = hashed.filter((d) => !d.fileRef).map(toApiDocument);
-
-    // Phase 1 (serial, order-dependent): dedup by hash, assign collision-safe
-    // refs, build the metadata rows.
-    const writes: Array<{ doc: FileDocument; ref: string; file: Blob; lab: boolean; held?: ApiDocument; failed?: boolean }> = [];
-    for (const d of documents) {
-      const hash = d.file ? await sha256Blob(d.file) : null;
-      if (hash) {
-        if (archived.has(hash)) continue; // identical original already archived
-        archived.add(hash);
-      }
-      // The hash is the bytes' identity even when the blob write fails, so a
-      // later upload of the same bytes can replace this row (US-14 AC4).
-      const doc: FileDocument = {
-        id: newId(), title: d.title, type: d.documentType as DocumentType, date: d.documentDate,
-        fileRef: '', contentHash: hash ?? '', mimeType: '', extractedText: d.contentMd,
-        addedAt: new Date().toISOString(), metadata: d.metadata, sourceFileName: d.sourceFileName,
-      };
-      if (d.file) {
-        const ref = buildDocumentRef({
-          type: doc.type,
-          title: doc.title,
-          date: doc.date,
-          sourceFileName: d.sourceFileName,
-          existingRefs,
-        });
-        existingRefs.add(ref);
-        // The metadata-only rows for these bytes are tombstoned only once the
-        // blob lands, or a changed row replaces them: a failed write must not
-        // lose the hash key.
-        const lab = isLabArchiveDocument(d);
-        writes.push({ doc, ref, file: d.file, lab, held: pendingRowsFor(metadataOnly, hash, lab)[0] });
-      }
-      out.push(doc);
-    }
-
-    // Phase 2: blob uploads, 3 at a time — serial writes made a 20-file batch
-    // ~40 sequential round trips (20-40s on a slow link). The FIRST write into
-    // each folder still runs alone (concurrent find-or-create of the same new
-    // folder would create duplicates); the rest pool. A failed write degrades
-    // to metadata-only — unless a held row already holds these bytes: a
-    // plain row beside it would list the letter twice, and every later upload
-    // would offer to archive it again (Sentry 7715862604).
-    const writeOne = async (w: (typeof writes)[number]) => {
-      try {
-        await this.host.store.writeDocument(w.ref, w.file);
-        w.doc.fileRef = w.ref;
-        w.doc.mimeType = w.file.type || '';
-      } catch (error) {
+    const { saved, unstored, commit } = await saveDocuments(this.file, documents, {
+      hash: sha256Blob,
+      write: (ref, file) => this.host.store.writeDocument(ref, file),
+      mimeType: (file) => file.type || '',
+      onWriteError: (error) => {
         console.warn('Document file not stored');
         Sentry.captureException(recordFailure(error, 'Document file not stored'), {
           tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id },
         });
-        w.failed = !!w.held;
-      }
-    };
-    const seenFolders = new Set<string>();
-    const pooled: typeof writes = [];
-    for (const w of writes) {
-      const folder = splitDocumentRef(w.ref).folder ?? '';
-      if (seenFolders.has(folder)) {
-        pooled.push(w);
-      } else {
-        seenFolders.add(folder);
-        await writeOne(w); // folder-creating write runs alone
-      }
-    }
-    let next = 0;
-    await Promise.all(
-      Array.from({ length: Math.min(3, pooled.length) }, async () => {
-        while (next < pooled.length) await writeOne(pooled[next++]);
-      }),
-    );
-
-    // A repeat failure behind a held row (a connector's or an earlier failed
-    // save, alike) is settled, never an error: an original that can never be
-    // stored (a size cap) must not loop on "Failed to save". The held details
-    // stay, unless the review changed the title or date: then a new
-    // metadata-only row carries them and replaces the held rows. `unstored`
-    // tells the done screen to say so (US-14 AC4).
-    const unstored = writes.filter((w) => w.failed);
-    const unchanged = new Set(unstored.filter(({ doc, held }) => doc.title === held!.title && doc.date === held!.documentDate).map((w) => w.doc));
-    const saved = out.filter((d) => !unchanged.has(d));
-    const committed = this.session.edit((file) => {
-      // The rows to replace, read from the file as it now is, so a same-hash
-      // row merged in from another device during the upload goes too.
-      const pending = file.documents.filter((d) => !d.deleted && d.contentHash && !d.fileRef).map(toApiDocument);
-      const replaced = new Set(writes.filter((w) => w.doc.fileRef || (w.failed && !unchanged.has(w.doc)))
-        .flatMap((w) => pendingRowsFor(pending, w.doc.contentHash, w.lab).map((d) => d.id)));
-      for (const d of file.documents) if (replaced.has(d.id)) d.deleted = true;
-      file.documents.push(...saved);
-    }, erase);
-    if (!committed) return { saved: [], errorCount: documents.length };
-    return { saved: saved.map(toApiDocument), errorCount: 0, ...(unstored.length ? { unstored: unstored.length } : {}) };
+      },
+    });
+    if (!this.session.edit(commit, erase)) return { saved: [], errorCount: documents.length };
+    return { saved: saved.map(documentView), errorCount: 0, ...(unstored ? { unstored } : {}) };
   }
 
   /** Read a stored document's bytes back (viewer). */
@@ -644,17 +535,3 @@ export class RoadmapStore {
   }
 }
 
-function toApiDocument(d: FileDocument): ApiDocument {
-  return {
-    id: d.id,
-    documentType: d.type,
-    title: d.title,
-    documentDate: d.date,
-    contentMd: d.extractedText,
-    metadata: d.metadata ?? {},
-    sourceFileName: d.sourceFileName ?? null,
-    createdAt: d.addedAt,
-    fileRef: d.fileRef || null,
-    contentHash: d.contentHash || null,
-  };
-}

@@ -291,3 +291,36 @@ describe('dropboxApiArg — an ASCII header for a non-ASCII path (US-13 AC1, US-
     }
   });
 });
+
+// The hosted MCP server constructs `new DropboxAdapter(token)` and must keep
+// refusing document writes word for word; only an explicit opt-in writes.
+describe('document writes: refused by default, written only on opt-in', () => {
+  it('a bare adapter refuses with the same message and calls nothing', async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    await expect(new DropboxAdapter('token').writeDocument('Lab results/a.pdf', new Blob(['x'])))
+      .rejects.toThrow(new StorageError('The hosted server does not write uploaded documents.'));
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('an opted-in adapter overwrites at the folder-relative path, its non-ASCII name escaped', async () => {
+    const fetchSpy = vi.fn(async () => Response.json({ rev: 'r1' }));
+    vi.stubGlobal('fetch', fetchSpy);
+    const bytes = new Blob(['pdf bytes']);
+    await new DropboxAdapter('token', { documents: 'write' }).writeDocument('Clinic letters/2026-01-01 Letter — GP.pdf', bytes);
+    const [url, init] = (fetchSpy as Mock).mock.calls[0] as [string, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    expect(url).toBe('https://content.dropboxapi.com/2/files/upload');
+    expect(headers.Authorization).toBe('Bearer token');
+    expect(headers['Dropbox-API-Arg']).toBe(dropboxApiArg({ path: '/Clinic letters/2026-01-01 Letter — GP.pdf', mode: { '.tag': 'overwrite' }, autorename: false, mute: true }));
+    expect(init.body).toBe(bytes);
+  });
+
+  it('an opted-in write Dropbox refuses is a StorageError with the status', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('too big', { status: 413 })));
+    const failure = await new DropboxAdapter('token', { documents: 'write' }).writeDocument('a.pdf', new Blob(['x'])).catch((e: unknown) => e);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as StorageError).message).toBe('Dropbox document write failed (413).');
+    expect((failure as StorageError).status).toBe(413);
+  });
+});
