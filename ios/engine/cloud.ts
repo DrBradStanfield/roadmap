@@ -21,6 +21,7 @@ import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { eraseChatText } from './app-doors';
 import { applyEdit, type Edit } from './my-data';
+import { readUnitChoices } from './unit-choices';
 
 export type Provider = 'dropbox' | 'google-drive';
 
@@ -377,7 +378,7 @@ function dependsOnUnits(edit: Edit): boolean {
  * marker are written first, so an edit that has not reached the cloud yet
  * survives the app being closed (US-09 AC4).
  */
-export function cloudEdit(editJson: string, erase: string, shownUnits: string, nowIso: string): string {
+export function cloudEdit(editJson: string, erase: string, shownUnits: string, nowIso: string, unitsJson?: string): string {
   const refuse = (reason: string, message: string) => JSON.stringify({ ok: false, reason, message });
   const at = open;
   if (!at) return refuse('not-open', 'The cloud record is not open.');
@@ -391,7 +392,8 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
   if (session.refuses(erase)) {
     return refuse('erased', 'Your record was erased on another device, so this was not saved. Close this and enter the value again.');
   }
-  const outcome = applyEdit(session.file, edit, nowIso);
+  // Read in the per-test units the sheet showed (AC17e), as the phone's own file is.
+  const outcome = applyEdit(session.file, edit, nowIso, readUnitChoices(unitsJson));
   if (!outcome.ok) return JSON.stringify(outcome);
   // An edit that changed nothing (an Apple Health batch already taken in) saves nothing.
   if (outcome.file === session.file) return JSON.stringify({ ok: true, record: JSON.stringify(session.file), erase: session.eraseIdentity });

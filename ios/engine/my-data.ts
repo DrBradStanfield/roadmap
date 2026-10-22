@@ -20,6 +20,7 @@ import {
   type MetricType, type UnitSystem,
 } from '../../packages/health-core/src/units';
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
+import { SWITCHABLE, systemFor, type UnitChoices } from './unit-choices';
 
 /** One row of Vitals or Blood tests: the plan's current value, if any, in the user's units. */
 export interface MyDataRow {
@@ -30,6 +31,8 @@ export interface MyDataRow {
   /** The newest TREND_POINTS days' values, oldest first, in the user's units: the web's
    *  Trend sparkline (BloodTestTimeline.tsx). Blood pressure's is its systolic half. */
   trend: number[];
+  /** Whether this test has its own Metric/US choice, as the web's unit chip (not Lp(a), height or blood pressure). */
+  switchable: boolean;
 }
 
 /** Days a row's trend line holds: enough to show a direction, small enough to send every render. */
@@ -115,20 +118,22 @@ function unitsOf(file: RoadmapFile): UnitSystem {
   return file.profile.unitSystem ?? 'si';
 }
 
-export function myData(file: RoadmapFile, now = new Date().toISOString()): MyData & FormsView {
+export function myData(file: RoadmapFile, now = new Date().toISOString(), choices: UnitChoices = {}): MyData & FormsView {
   const system = unitsOf(file);
   const current = new Map(latestActivePerMetric(file.measurements).map((row) => [row.metricType, row]));
-  const trend = trends(file, system);
+  const trend = trends(file, (metric) => systemFor(file, metric, choices));
   const row = (metric: string): MyDataRow => {
     const latest = current.get(metric);
+    const shown = systemFor(file, metric, choices);
     return {
       metric,
       label: METRIC_LABELS[metric] ?? metric,
-      unit: getDisplayLabel(metric as MetricType, system),
+      unit: getDisplayLabel(metric as MetricType, shown),
       latest: latest
-        ? { id: latest.id, value: formatDisplayValue(metric as MetricType, latest.value, system), day: latest.recordedAt.slice(0, 10) }
+        ? { id: latest.id, value: formatDisplayValue(metric as MetricType, latest.value, shown), day: latest.recordedAt.slice(0, 10) }
         : null,
       trend: trend.get(metric) ?? [],
+      switchable: SWITCHABLE.has(metric),
     };
   };
   const { sex, birthYear, birthMonth, heightCm } = file.profile;
@@ -148,11 +153,11 @@ export function myData(file: RoadmapFile, now = new Date().toISOString()): MyDat
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     psa: row('psa'),
-    ...formsOf(file, now),
+    ...formsOf(file, now, choices),
   };
 }
 
-export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutcome {
+export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: UnitChoices = {}): EditOutcome {
   const system = unitsOf(file);
   switch (edit.kind) {
     case 'profile': {
@@ -184,14 +189,15 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
     }
     case 'add': {
       const result = appendMeasurement(file, {
-        metricType: edit.metric, value: edit.value, unit: getDisplayLabel(edit.metric as MetricType, system), recordedAt: edit.day, now,
+        // Typed in the units the row shows (AC17e), which the record converts to SI.
+        metricType: edit.metric, value: edit.value, unit: getDisplayLabel(edit.metric as MetricType, systemFor(file, edit.metric, choices)), recordedAt: edit.day, now,
       });
       if (result.ok) return { ok: true, file: result.file };
       return { ok: false, reason: result.reason, message: result.message, ...(result.existing ? { existingId: result.existing.id } : null) };
     }
     case 'correct': {
       const target = file.measurements.find((row) => row.id === edit.id);
-      const unit = target ? getDisplayLabel(target.metricType as MetricType, system) : undefined;
+      const unit = target ? getDisplayLabel(target.metricType as MetricType, systemFor(file, target.metricType, choices)) : undefined;
       const result = correctValue(file, { id: edit.id, newValue: edit.value, unit, now });
       if (result.ok) return { ok: true, file: result.file };
       return { ok: false, reason: result.reason, message: result.message };
@@ -249,12 +255,13 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>): MyDataRow
     metric: BLOOD_PRESSURE, label, unit,
     latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null,
     trend: trend.get('systolic_bp') ?? [],
+    switchable: false,
   };
 }
 
 /** Every metric's trend in one pass: each day's active value (the slot's first, as
  *  findActiveInSlot reads it), the newest TREND_POINTS days, oldest first. */
-function trends(file: RoadmapFile, system: UnitSystem): Map<string, number[]> {
+function trends(file: RoadmapFile, systemOf: (metric: string) => UnitSystem): Map<string, number[]> {
   const byMetric = new Map<string, Map<string, number>>();
   for (const row of file.measurements) {
     if (row.status !== 'active') continue;
@@ -266,7 +273,7 @@ function trends(file: RoadmapFile, system: UnitSystem): Map<string, number[]> {
   const out = new Map<string, number[]>();
   for (const [metric, days] of byMetric) {
     const newest = [...days.keys()].sort().slice(-TREND_POINTS);
-    out.set(metric, newest.map((day) => fromCanonicalValue(metric as MetricType, days.get(day)!, system)));
+    out.set(metric, newest.map((day) => fromCanonicalValue(metric as MetricType, days.get(day)!, systemOf(metric))));
   }
   return out;
 }

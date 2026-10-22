@@ -22,7 +22,7 @@ struct PlanView: View {
 
     var body: some View {
         // Read once per render, so the task runs once with the value its id names.
-        let planKey = visible ? store.recordJSON : nil
+        let planKey = visible ? PlanKey(record: store.recordJSON, units: store.unitChoices.json) : nil
         Group {
             switch state {
             case .loading:
@@ -60,11 +60,14 @@ struct PlanView: View {
 
     /// The screen's state, and whether the engine planned the record: a plan, or
     /// health-core's own PlanError (no height or sex). Any other throw is not.
-    private func load(_ record: String) -> (LoadState, planned: Bool) {
+    /// What a plan is computed from: the record, and the per-test units its targets read in (AC17e).
+    private struct PlanKey: Equatable { let record: String; let units: String }
+
+    private func load(_ key: PlanKey) -> (LoadState, planned: Bool) {
         let clock = ContinuousClock()
         do {
             let start = clock.now
-            let json = try engine.plan(recordJSON: record, now: .now, deviceId: store.deviceId)
+            let json = try engine.plan(recordJSON: key.record, now: .now, deviceId: store.deviceId, units: key.units)
             let sections = try engine.sections(planJSON: json)
             // The whole plan: the engine's plan, its layout and their decoding (D2's budget).
             let elapsed = clock.now - start
