@@ -125,7 +125,7 @@ Higher blood levels of omega-3s have been associated with lower total mortality,
 
 **Meta-analysis (127,477 participants, 13 trials):** A 2019 systematic review concluded that long-chain omega-3 supplementation reduces the risk of myocardial infarction, coronary heart disease death, total coronary heart disease, CVD death, and total CVD in a dose-related manner, but does not significantly reduce stroke risk. The authors noted that the 4 g/day dose in REDUCE-IT was needed to affect stroke outcomes (Hu, J Am Heart Assoc 2019) [10].
 
-**Cochrane Review (162,796 participants, 86 RCTs):** A 2020 review found that 0.5 g to more than 5 g a day of long-chain omega-3s reduced serum triglycerides by about 15% and may slightly reduce coronary heart disease deaths and events, but had little or no effect on all-cause mortality, cardiovascular mortality, cardiovascular events, stroke or arrhythmia (Abdelhamid, Cochrane Database Syst Rev 2020) [218].
+**Cochrane Review (162,796 participants, 86 RCTs):** A 2020 review found that 0.5 g to more than 5 g a day of long-chain omega-3s reduced serum triglycerides by about 15% and may slightly reduce coronary heart disease deaths and events, while its analyses suggested little or no effect on all-cause mortality, cardiovascular mortality, cardiovascular events, stroke or arrhythmia (Abdelhamid, Cochrane Database Syst Rev 2020) [218].
 
 **Mayo Clinic meta-analysis (135,267 participants, 40 studies):** Omega-3 supplementation cut heart attack risk by 13% and fatal heart attack risk by 35%. The authors concluded that EPA and DHA supplementation "is an effective lifestyle strategy for CVD prevention, and the protective effect probably increases with dosage" [38].
 
@@ -558,7 +558,7 @@ Fish, krill and calamari contain proteins that some people are allergic to. A sm
 
 In a 2003 laboratory analysis of 5 over-the-counter fish oil brands, mercury ranged from undetectable to negligible, similar to the level normally found in human blood (Foran, Arch Pathol Lab Med 2003) [217]. Purification used for some concentrated fish oil supplements also substantially reduces exposure to other toxins found in fish, such as PCBs and dioxins (Bays, Am J Cardio 2007) [199]. Fish oil supplement use was not associated with higher blood PFAS levels in a US national survey (Onteeru, Environ Res 2022) [208].
 
-Cod liver oil supplements also provide vitamin A and vitamin D [1]. Too much vitamin A may harm the liver, so if you take cod liver oil with other supplements that contain vitamin A, check the total with your doctor or pharmacist.
+Cod liver oil supplements also provide vitamin A and vitamin D [1]. Too much vitamin A may harm the liver [219], so if you take cod liver oil with other supplements that contain vitamin A, check the total with your doctor or pharmacist.
 
 ### Hair Loss
 
