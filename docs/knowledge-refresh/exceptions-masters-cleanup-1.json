@@ -1,22 +1,6 @@
 [
  {
   "check": "AC2",
-  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "changed_tokens[26] raw_quote shares no number with its body_line: - However, a study of 106 young male athletes in India with adequate blood vitamin C/E levels but...",
-  "reason": "Checker tokenisation: the abstract spells the sample size \"Hundred six\" (106). (carried over unchanged from exceptions-masters-1.json; the entry is untouched by the 2026-10-21 edits) (carried over unchanged from exceptions-masters-answers-2026-10-21.json)",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
-  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
-  "match": "changed_tokens[27] raw_quote shares no number with its body_line: | Liposomal hydrogel vitamin C | Liposomal vitamin C encased in a hydrogel matrix (e.g., galactom...",
-  "reason": "Checker tokenisation: body \"more than 7 times\" equals the abstract's \">7-fold\". (carried over unchanged from exceptions-masters-1.json; the entry is untouched by the 2026-10-21 edits) (carried over unchanged from exceptions-masters-answers-2026-10-21.json)",
-  "by": "orchestrator",
-  "date": "2026-10-20"
- },
- {
-  "check": "AC2",
   "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
   "match": "token \">24 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A study of 176 adults with MASLD found liver fat fell significantly in both the high-concentrate omega-3 and placebo ...\"",
   "reason": "Ruling 3: the body keeps the source's time span (\"over 24 weeks\", \"over 6 months\", \"over 8 weeks\"); the checker reads \"over\" as a comparator. Writer quoted each abstract in addendum-6.",
