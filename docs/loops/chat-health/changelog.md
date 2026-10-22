@@ -4,6 +4,24 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-10-22 (Brad): what reached main today.
+  - cf8ea1d2 (dc018de3, 098cadde): the creatine card's memory claim now
+    names Dr Stanfield as its source; reviews are mixed. Refs [114]-[117]
+    (US-07 AC1). The roadmap page is republished to Shopify.
+  - 3b0d608a: the 2026-10-21 masters answers landed (multivitamins USA v8,
+    26 ingredients, $65/$58.50 capsules, $100/$90 powder; turmeric, protein,
+    B vitamins, vitamin C, cholesterol).
+  - 61e78f8c: US-50 AC14 master-first routing. An older post is replaced by
+    its masters when every topic is a reviewed master. Named, open and
+    YouTube-own posts load with their masters. `chat_match_events.router_context`
+    gains `replaced` and `reduced`.
+  - 3bfb8103: third-party clinical pathway content is out of the chatbot and
+    the repo (US-15 AC39). Router index 1040 to 291 entries. An
+    emergency-first rule opens the system prompt; YouTube Step 0 answers
+    emergencies. 64 answer checks added, NOT yet run.
+  - 0ab664ea: chatbot architecture and knowledge-pipeline docs moved to the
+    private claude_business repo.
+
 - 2026-10-04 (Brad, issue #125): the weekly lint's model step runs every
   week under the $2 cap, after one supervised run ($0.47, 15 findings).
   Weekly lint section: "waits for Brad's yes" became "Brad said yes".
