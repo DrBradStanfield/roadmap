@@ -8,7 +8,7 @@ tags: ["Supplements"]
 keywords: ["multivitamin", "vitamin", "mineral", "vitamin a", "vitamin b1", "vitamin b2", "vitamin b3", "vitamin b5", "vitamin b6", "vitamin b7", "vitamin b9", "vitamin b12", "vitamin c", "vitamin d", "vitamin d3", "vitamin e", "vitamin k", "folate", "folic acid", "magnesium", "zinc", "selenium", "iron", "calcium", "potassium", "iodine", "boron", "chromium", "copper", "manganese", "cognitive", "brain health", "aging", "longevity", "cancer", "cardiovascular", "heart attack", "stroke", "dementia", "alzheimer", "depression", "diabetes", "blood pressure", "cholesterol", "bone density", "osteoporosis", "inflammation", "eye health", "sleep", "choline", "citicoline"]
 summary: "Reference on multivitamins. Brad's view: COSMOS found a small benefit to memory and global cognition in older adults, but no effect on cancer, heart disease or lifespan. Megadoses can harm; he sees no role for vitamins A or E. Talk to your doctor first, especially if you take warfarin or smoke."
 reviewed: "2026-10-20"
-sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/multivitamin-review-comparisons/multivitamins/","checked":"2026-09-29","fingerprint":"sha256:4dd2494586d58f9a237a08756c83d8eb42b8782c31596fe6533c3b2a1ab5d905"},{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/MVMS-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:a6d8510833f2d9926677cb0e0b23d6621eef1f415bbfac0b81019040e3ecb34c"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine","checked":"2026-10-20","fingerprint":"publishedAt:2026-08-19T00:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-supplements-that-actually-work","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-05T20:31:48Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30T20:38:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad","checked":"2026-10-20","fingerprint":"publishedAt:2025-01-07T00:08:13Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/methylated-multivitamin-regular-ones","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-28T07:00:07Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-19T03:13:05Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/multivitamin-contains-enough-riboflavin","checked":"2026-10-20","fingerprint":"publishedAt:2024-09-18T03:06:10Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/controversial-supplement-cognitive-decline","checked":"2026-10-20","fingerprint":"publishedAt:2024-08-09T04:19:30Z"}]
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/MVMS-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:a6d8510833f2d9926677cb0e0b23d6621eef1f415bbfac0b81019040e3ecb34c"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine","checked":"2026-10-20","fingerprint":"publishedAt:2026-08-19T00:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-supplements-that-actually-work","checked":"2026-10-20","fingerprint":"publishedAt:2025-10-05T20:31:48Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30T20:38:06Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad","checked":"2026-10-20","fingerprint":"publishedAt:2025-01-07T00:08:13Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/methylated-multivitamin-regular-ones","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-28T07:00:07Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-19T03:13:05Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/multivitamin-contains-enough-riboflavin","checked":"2026-10-20","fingerprint":"publishedAt:2024-09-18T03:06:10Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/controversial-supplement-cognitive-decline","checked":"2026-10-20","fingerprint":"publishedAt:2024-08-09T04:19:30Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/multivitamins-benefits-evidence-dosing-and-side-effects](https://drstanfield.com/blogs/articles/multivitamins-benefits-evidence-dosing-and-side-effects)*
@@ -16,6 +16,16 @@ sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/multi
 ## Current view (reviewed 20 October 2026)
 
 In the COSMOS trial, more than 21,000 older Americans took an ordinary multivitamin or a placebo for about three and a half years, and the multivitamin did not prevent cancer or heart disease or help people live longer ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). Pooled across three COSMOS cognitive sub-studies with 5,203 people, a daily multivitamin significantly benefited global cognition and episodic memory, although the clinical effect was small ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). A July 2026 WHO guideline recommended against multivitamins for reducing dementia risk unless you have a diagnosed deficiency, but it did not reassess supplements and does not mention COSMOS ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). Reaching the recommended intake of a vitamin or mineral is one thing, but megadosing is an entirely different proposition that can cause harm ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). Brad sees no role for vitamin A or vitamin E in a multivitamin, given the safety signals in the trials so far ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). Brad has a commercial interest in multivitamins, so readers should be aware of his potential bias, and he presents his points as general ideas to discuss with a doctor ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)).
+
+## Key safety points
+
+- If you take warfarin or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2 (MK-7) or any multivitamin that contains vitamin K, which may interfere with oral anticoagulant treatment [1][73][85].
+- Smokers, and possibly former smokers, should avoid multivitamins with large amounts of beta-carotene or vitamin A, which two large trials linked to more lung cancer in smokers [1][54][55].
+- Iron-containing products are a leading cause of fatal poisoning in children under 6. Keep them out of reach, and if a child swallows them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or poison control centre [63].
+- In pregnancy, keep total preformed vitamin A (retinol) from food and supplements at or below the UL of 3,000 mcg a day (2,800 mcg a day for adolescents), because intakes above it can cause birth defects; prenatal supplements generally provide no retinol [1][74].
+- People with kidney disease or hereditary hemochromatosis should check with their doctor first [80][86][63].
+- Megadoses can harm. Adult upper limits include 4,000 IU of vitamin D, 45 mg of iron and 40 mg of zinc a day [60][76][63][81].
+- Side effects are usually mild stomach upset; iron and zinc can cause nausea, and taking iron with food can help [1][63][81].
 
 ## Brad's videos on this topic
 
@@ -48,35 +58,29 @@ This article reviews the full body of evidence on multivitamin/mineral supplemen
 
 ### Delivery Forms
 
-Multivitamins come as tablets, capsules, chewable tablets, liquids and gummies [13].
+**Liposomal formulas:** In a randomized, counterbalanced study, 34 healthy adults took one dose of either a liposomal or a non-liposomal multivitamin with a snack. The liposomal version changed how some nutrients, such as vitamin E and iron, appeared in and cleared from the blood; the overall difference between the two versions was borderline (p = 0.051), and the authors called for longer studies of nutrient status and health outcomes (Ko, *Nutrients* 2023) [68].
 
-**Tablets:** If a tablet cannot break apart fast enough, less of its ingredients may be available for absorption [13].
-
-**Liquids and powders:** Often cited as having faster absorption since nutrients are pre-dissolved and do not require breakdown of a solid matrix. Liquids can incorporate fats to aid fat-soluble vitamin uptake and may benefit those with digestive issues. However, a clinical study of a single dose of a liposomal multivitamin did not significantly increase the overall absorption of any vitamins or minerals compared to a similar non-liposomal multivitamin (Ko, *Nutrients* 2023) [13].
-
-**Gummies:** Gummies are hard to make accurately. The correct amounts of vitamins and minerals are hard to measure in, and the ingredients are more likely to degrade, so manufacturers often add more than the listed amount [13]. Gummy vitamins also typically contain no iron [13]. One small crossover study in 31 healthy adults found that a single 20,000 IU dose of vitamin D3 gave higher blood vitamin D3 levels from gummies than from tablets [66].
+**Gummies:** One small crossover study in 31 healthy adults found that a single 20,000 IU dose of vitamin D3 gave higher blood vitamin D3 levels from gummies than from tablets [66].
 
 ### Key Nutrient Forms
 
 The chemical form of individual vitamins and minerals in a multivitamin significantly affects how much the body absorbs and utilizes. Important distinctions include:
 
-**Mineral forms:** Chelated minerals (bound to amino acids like glycine) demonstrate substantially higher bioavailability than inorganic forms. Magnesium glycinate provides approximately 24% absorption versus only 4% for magnesium oxide [14]. Zinc glycinate shows approximately 43% higher bioavailability than zinc gluconate (Gandia et al., *Int J Vitam Nutr Res*, 2007) [15]. Copper oxide, while common in supplements because it is less bulky, may not be well absorbed compared to copper sulfate, cupric acetate, or alkaline copper carbonate [13].
+**Mineral forms:** Chelated minerals (bound to amino acids like glycine) demonstrate substantially higher bioavailability than inorganic forms. Magnesium glycinate provides approximately 24% absorption versus only 4% for magnesium oxide [14]. Zinc glycinate shows approximately 43% higher bioavailability than zinc gluconate (Gandia et al., *Int J Vitam Nutr Res*, 2007) [15].
 
 **B vitamin forms:** Methylated forms of folate (5-methyltetrahydrofolate) and vitamin B12 (methylcobalamin) bypass the MTHFR gene variation that affects approximately 40% of the population and can impair conversion of standard synthetic forms to their active metabolites (Liew & Gupta, *Eur J Med Genet*, 2015) [16]. Standard folic acid requires enzymatic conversion via MTHFR to be biologically active, and individuals with common MTHFR polymorphisms (C677T, A1298C) may have reduced conversion capacity [16]. Estimates of how common the variant is differ: Brad cites around 1% of African Americans, 10% of Caucasians and Asians, and 25% of Hispanics for the mutation that lowers enzyme levels [61]. He sees little trial evidence that methylated multivitamins work better than standard ones, and notes that most methylated multivitamins on the market are very high dose [61].
 
-**Vitamin D:** Cholecalciferol (D3) is the preferred supplemental form, as it raises serum 25(OH)D levels more effectively than ergocalciferol (D2) per unit dose [1][13].
+**Vitamin D:** A meta-analysis of randomized trials found that vitamin D3 (cholecalciferol) raised blood 25(OH)D more than vitamin D2 (ergocalciferol), although the advantage was seen with large single doses and was lost with daily dosing (Tripkovic, *Am J Clin Nutr*, 2012) [72].
 
-**Vitamin E:** Most supplements contain synthetic dl-alpha-tocopherol, but the natural form (d-alpha-tocopherol) has approximately 50% higher biological activity. The conversion rates differ: 1 IU = 0.67 mg active alpha-tocopherol for natural vitamin E versus 0.45 mg for synthetic [13].
+**Vitamin E:** Natural vitamin E (d-alpha-tocopherol) is a single stereoisomer, while synthetic vitamin E (dl-alpha-tocopherol) contains equal amounts of eight, of which serum and tissues keep only four. So the same IU holds different amounts: 1 IU of the natural form equals 0.67 mg of alpha-tocopherol, and 1 IU of the synthetic form equals 0.45 mg [77].
 
-**Vitamin K:** The menaquinone-7 (MK-7) form has a substantially longer half-life in the body (approximately 72 hours vs. 1-2 hours for phylloquinone/K1), allowing for more sustained biological activity at lower doses [13].
+**Vitamin K:** In healthy volunteers, vitamin K1 and the menaquinone-7 (MK-7) form of vitamin K2 were both well absorbed, but MK-7 had a much longer half-life, giving more stable blood levels and 7- to 8-fold higher levels during prolonged intake (Schurgers, *Blood*, 2007) [73]. The authors warned that 50 mcg a day or more of MK-7 may interfere with oral anticoagulant treatment, such as warfarin, in a clinically relevant way [73]. A later dose-response study gave healthy volunteers on a vitamin K antagonist increasing doses of MK-7; at 10 mcg a day, two hematologists judged the drop in INR clinically relevant in at least 40% of them, and the authors concluded that MK-7 supplements should be avoided by anyone taking these drugs (Theuwissen, *J Thromb Haemost*, 2013) [85].
 
 ### Absorption Considerations
 
 Fat-soluble vitamins (A, D, E, K) require dietary fat for optimal absorption. In one trial in 50 healthy older adults, peak blood vitamin D3 after a single 50,000 IU dose was 32% higher when it was taken with a meal containing fat than with a fat-free meal [65].
 
-Splitting doses can improve absorption of certain nutrients. Fractional absorption of minerals declines as single-dose amounts increase — this is particularly relevant for calcium, magnesium, and iron [1][13]. Some nutrients compete for absorption via shared transport mechanisms: high-dose calcium (300 mg or more) can reduce absorption of iron; high-dose zinc can impair copper absorption [1][13].
-
-Timed-release or extended-release formulations are available but have not been clinically validated for broad multivitamin applications. Delaying release of some ingredients could potentially reduce their overall absorption [13].
+The share of calcium absorbed from a supplement falls as the dose rises, and absorption is highest with doses of 500 mg or less [79]. Some minerals compete for absorption: calcium might interfere with iron absorption, so experts suggest taking calcium and iron supplements at different times of day [63], and doses of 50 mg of zinc or more taken for weeks can interfere with copper absorption [81].
 
 ### FDA Daily Values for Key Nutrients
 
@@ -108,7 +112,7 @@ The following table shows the FDA Daily Values for vitamins and minerals commonl
 | Molybdenum | 45 mcg |
 | Iodine | 150 mcg |
 
-Basic multis provide most vitamins and minerals in amounts that do not exceed the Daily Values, but they often contain only small amounts of calcium, magnesium and potassium [1]. Calcium is so bulky that most multis do not contain the full recommended daily amount in a pill [13].
+Basic multis provide most vitamins and minerals in amounts that do not exceed the Daily Values, but they often contain only small amounts of calcium, magnesium and potassium [1].
 
 ## 3. Evidence for Health Benefits
 
@@ -154,7 +158,7 @@ The evidence consistently shows that multivitamins do not reduce cardiovascular 
 
 **Mortality:** A 2024 cohort study of 390,124 healthy U.S. adults followed for up to 27 years found that those who reported using MVMs daily did not have a lower risk of mortality from all causes, heart disease, cancer, or cerebrovascular disease. Initial crude analyses even suggested a 4% higher all-cause mortality risk, though this attenuated after multivariable adjustment (HR 1.02, 95% CI 1.00-1.03) (Loftfield et al., *JAMA Netw Open*, 2024) [32]. A meta-analysis of 21 RCTs (91,074 healthy adults, average follow-up 43 months) also found no effect of MVM use on all-cause mortality or on mortality due to CVD or cancer (Macpherson et al., *Am J Clin Nutr*, 2013) [33].
 
-**Carotid stenosis (conference abstract):** In a COSMOS analysis, people with narrowing of the carotid artery who took the multivitamin daily for about 3 years had fewer physical limitations and scored 7.58 points better (on a scale of 0 to 100) on symptoms such as shortness of breath and fatigue than those on placebo; no meaningful cardiovascular benefit occurred in other participants [13]. Brad notes that this subgroup was 122 of the 16,027 participants who completed the questionnaire, and that the result is a conference abstract, not yet a peer-reviewed paper [60].
+**Carotid stenosis (conference abstract):** In a COSMOS analysis, 16,027 participants filled in a yearly questionnaire for three years that scores, from 0 to 100, how much heart problems limit daily life. Across the whole group, the multivitamin slightly improved symptom burden (fatigue and breathlessness) but did not change physical ability; in people with carotid stenosis (a narrowed artery in the neck), the multivitamin group scored 7.58 points better [60]. Brad notes that this subgroup was 122 people, and that the result is a conference abstract, not yet a peer-reviewed paper [60].
 
 **Position statements:** The American Heart Association advises against the use of MVMs to prevent CVD because scientific studies have found them of no value for this purpose [34]. The USPSTF concluded there was insufficient evidence to determine the balance of benefits and harms in taking MVMs to prevent CVD [8][9].
 
@@ -170,13 +174,11 @@ This is the area with the strongest and most consistent evidence of benefit from
 
 **Meta-analysis of COSMOS substudies:** A meta-analysis combining all three ancillary cognitive studies (more than 5,000 participants) showed that MVM use improved global cognition and episodic memory over time, with the overall effect equivalent to slowing cognitive aging by approximately 2 years [12].
 
-**Epigenetic aging (2026):** A 2-year study found that daily use of a multivitamin similar to the COSMOS formula reduced two epigenetic "clocks" (DNA markers linked with mortality risk) by about 2.6 months and 1.4 months compared with no multivitamin, with a slightly greater effect in people with accelerated biological aging; three other epigenetic clocks did not change (Li et al., *Nat Med*, 2026) [13].
+**Epigenetic aging (2026):** In a 2-year COSMOS sub-study of 958 people, the multivitamin (Centrum Silver) modestly slowed the yearly rise of second-generation epigenetic clocks (DNA methylation measures of biological aging) compared with placebo: by 0.113 years a year for PCGrimAge and 0.214 years a year for PCPhenoAge; the effect on PCGrimAge was stronger in people whose biological aging was accelerated at the start (Li et al., *Nat Med*, 2026) [69]. The authors call the effects small and say more studies are needed to show whether they matter clinically [69].
 
-**WHO guideline (2026):** In July 2026 the World Health Organization recommended against multivitamins for reducing the risk of cognitive decline or dementia in people without confirmed nutrient deficiencies [13]. Brad notes that the guideline did not reassess supplements and does not mention COSMOS, so in effect it repeats a 2019 recommendation written before the COSMOS memory results existed [60]. ConsumerLab reads the COSMOS findings as a modest benefit mainly in older adults with cardiovascular disease, with no apparent benefit in well-nourished seniors [13].
+**WHO guideline (2026):** In July 2026 the World Health Organization recommended against multivitamins, and other supplements including B vitamins and vitamin E, for reducing dementia risk unless a person has a diagnosed deficiency [60]. Brad notes that the guideline did not reassess supplements and does not mention COSMOS, so in effect it repeats a 2019 recommendation written before the COSMOS memory results existed [60].
 
-**Contrasting evidence — PHS II:** However, the Physicians' Health Study II found that the multivitamin supplement had no effect on cognitive decline with age over 12 years of follow-up in male physicians (Grodstein et al., *Ann Intern Med*, 2013) [35]. The researchers noted that the participants may have been too well-nourished to benefit [13]. Brad points to other differences: PHS II enrolled only men, did not start cognitive testing until on average two and a half years into the study, and used an older formula, while the COSMOS formula included small amounts of lutein and lycopene [62][13].
-
-**Proposed mechanisms:** The benefit was strongest in people with cardiovascular disease, who the researchers noted may be more likely to have lower levels of nutrients such as vitamin B12, selenium and vitamin C, although blood levels were not measured [13].
+**Contrasting evidence — PHS II:** However, in the Physicians' Health Study II, 5,947 male physicians aged 65 or older who took a daily multivitamin showed no difference in cognitive change over 12 years compared with placebo (Grodstein et al., *Ann Intern Med*, 2013) [35]. The authors noted that the vitamin doses may have been too low, or the men too well-nourished, to benefit [35]. Brad points to other differences: PHS II enrolled only men, did not start cognitive testing until on average two and a half years into the study, and used an older formula, while the COSMOS formula added lutein and lycopene [62].
 
 ### Eye Health — Cataracts and Age-Related Macular Degeneration
 
@@ -196,7 +198,7 @@ The subsequent AREDS2 study (4,203 participants aged 50-85) tested whether addin
 
 **Neural tube defect prevention:** The CDC recommends that all women capable of becoming pregnant consume 400 mcg/day of folic acid from fortified foods, supplements, or both. The critical period for supplementation starts at least 1 month before conception and continues through the first 2-3 months of pregnancy. The USPSTF advises 400-800 mcg/day of folic acid for this purpose [42][43][44].
 
-**Prenatal supplement adequacy:** An analysis of labels from over 400 prenatal supplements found that only about 10% contained an optimal dose of folic acid or iron (sufficient but not excessive), while most contained excessive doses of these nutrients. Almost 90% contained insufficient calcium (less than 383 mg or none at all), 30% contained insufficient or no vitamin D, and 40% contained no vitamin A (Sauder, *Am J Clin Nutr*, 2023) [13].
+**Prenatal supplement adequacy:** A 2023 analysis estimated the supplement doses most pregnant women need to reach recommended intakes of 6 key nutrients, including vitamins A and D, folate, calcium and iron, without exceeding upper limits. Of 20,547 US dietary supplements, including 421 prenatal products, only one, which was not a prenatal, provided the target doses of all six (Sauder, *Am J Clin Nutr*, 2023) [70].
 
 ### Multiple Outcomes Studies
 
@@ -216,7 +218,7 @@ Several large studies have evaluated the effects of MVMs across many different h
 
 While evidence for healthy general populations is modest, evidence for nutrient-deficient populations is stronger.
 
-**People at risk of deficiency:** Multivitamins may help treat or prevent nutrient deficiencies in people at risk of them, although more targeted approaches may be better for deficiencies in iron, magnesium and vitamin B12 [13].
+**People at risk of deficiency:** People with poor diets, those on low-calorie diets and those who avoid certain foods, such as strict vegetarians and vegans, might benefit from a multivitamin, and doctors sometimes prescribe one for conditions that impair digestion or absorption of nutrients [1].
 
 **Children in low- and middle-income settings:** A 2017 Cochrane review of 13 trials (5,810 children aged 24 months to 12 years in Latin America, Africa and Asia) found that adding iron-containing micronutrient powders to food lowered anemia (prevalence ratio 0.66) and iron deficiency (prevalence ratio 0.35) compared with no intervention or placebo; information on deaths, illness, development and side effects is still scarce [67].
 
@@ -228,41 +230,41 @@ While evidence for healthy general populations is modest, evidence for nutrient-
 
 ### General Principles
 
-A basic MVM providing nutrients at or near 100% of the Daily Value for most vitamins and minerals represents a reasonable approach for adults who want to fill potential dietary gaps without risk of excessive intake [1][13]. The RDAs and AIs established by the Food and Nutrition Board represent levels sufficient to meet the requirements of 97-98% of healthy individuals [1].
+A basic MVM that provides nutrients in amounts close to recommended intakes should be safe for healthy people [1]. The RDAs and AIs established by the Food and Nutrition Board represent levels sufficient to meet the requirements of 97-98% of healthy individuals [1].
 
 ### Key Nutrient Dosing Guidelines
 
-**Vitamin A:** The RDA is 3,000 IU (900 mcg RAE) for men and 2,333 IU (700 mcg RAE) for women aged 14+. The UL is 10,000 IU (3,000 mcg) for adults. Pregnant women should not exceed 5,000 IU of preformed vitamin A (retinol) due to the risk of birth defects. Beta-carotene does not count toward the UL as it is converted based on the body's needs [13].
+**Vitamin A:** The RDA is 900 mcg RAE for men and 700 mcg RAE for women aged 14 and over; when the source is retinol or supplemental beta-carotene, 900 mcg RAE equals 3,000 IU [74]. Total intakes (food plus supplements) of preformed vitamin A above the UL can cause birth defects, and experts advise women who are pregnant, might be pregnant or are breastfeeding to avoid vitamin A supplements above 3,000 mcg RAE (10,000 IU) a day [74]. The FNB has set no UL for beta-carotene [74].
 
-**B Vitamins:** RDAs vary by individual B vitamin and age/sex. Some studies suggest methylated folate bypasses reduced MTHFR enzyme activity, but others conflict; Brad advises having a suspected MTHFR mutation tested by a doctor and deciding with your healthcare team [61]. Adults over 50 should obtain B12 primarily from supplements or fortified foods due to declining absorption of food-bound B12 [1].
+**B Vitamins:** RDAs vary by individual B vitamin and age/sex. Some studies suggest methylated folate bypasses reduced MTHFR enzyme activity, but others conflict; Brad advises having a suspected MTHFR mutation tested by a doctor and deciding with your healthcare team [61]. The FNB advises adults over 50 to get vitamin B12 mainly from fortified foods or dietary supplements, because they may not absorb enough of the B12 naturally present in food [1].
 
-**Vitamin C:** RDA is 90 mg for men and 75 mg for women. The UL is 2,000 mg. Doses above 400 mg show diminishing returns in absorption. Too much can cause diarrhea and may increase cataract risk [13].
+**Vitamin C:** The RDA is 90 mg for men and 75 mg for women, and the UL is 2,000 mg [75]. At doses above 1 gram a day, absorption falls to less than 50%, and high doses can cause diarrhea, nausea and abdominal cramps [75].
 
-**Vitamin D:** RDA is 600 IU for ages 1-70 and 800 IU for those 71+. The UL is 4,000 IU for adults. Brad notes that high-dose vitamin D was associated with more falls and fractures in one trial, not fewer [60].
+**Vitamin D:** The RDA is 800 IU for people 71+ and 600 IU for ages 1-70, and the UL for adults is 4,000 IU [76]. Brad notes that high-dose vitamin D was associated with more falls and fractures in one trial, not fewer [60].
 
-**Vitamin E:** RDA is 15 mg (33 IU synthetic or 22 IU natural) for adults 14+. The UL is 1,000 mg from supplements. The USPSTF has warned against high-dose vitamin E supplementation due to the SELECT trial showing a 17% increased risk of prostate cancer at 400 IU/day (Klein et al., *JAMA*, 2011) [8][51].
+**Vitamin E:** The adult RDA is 15 mg, which equals 22.4 IU of natural or 33.3 IU of synthetic vitamin E, and the UL for supplemental vitamin E is 1,000 mg [77]. In the SELECT trial, men taking 400 IU a day of synthetic vitamin E developed more prostate cancer than men on placebo (HR 1.17, 99% CI 1.004 to 1.36) (Klein et al., *JAMA*, 2011) [51], and the USPSTF recommends against vitamin E supplements for preventing cardiovascular disease or cancer [8].
 
-**Vitamin K:** AI is 120 mcg for men and 90 mcg for women. No UL has been established. The MK-7 form of K2 has a longer half-life and may provide more sustained benefit at lower doses [13].
+**Vitamin K:** The AI is 120 mcg for men and 90 mcg for women [78]. The FNB set no UL because of vitamin K's low potential for toxicity [78]. MK-7 stays in the blood much longer than vitamin K1 [73].
 
-**Calcium:** RDA is 1,000-1,300 mg depending on age and sex. The UL is 2,500 mg for most adults (2,000 mg for those over 50). Because calcium is bulky, most multivitamins contain far less than the full RDA — those who need additional calcium should consider a separate supplement [13].
+**Calcium:** The RDA is 1,000-1,300 mg depending on age and sex. The UL is 2,500 mg for most adults and 2,000 mg over age 50 [79]. Multivitamins often contain only small amounts of calcium, so check the label [1].
 
-**Iron:** RDA is 8 mg for men and 18 mg for premenopausal women. The UL is 45 mg. Adult men and postmenopausal women rarely need supplemental iron and should generally choose iron-free formulations, as excess iron intake may increase heart disease risk and is particularly dangerous in those with hereditary hemochromatosis [13].
+**Iron:** The RDA is 8 mg for men and 18 mg for premenopausal women, and the UL is 45 mg [63]. Multivitamins for older adults often contain little or no iron [1]. Men and women past menopause may not need the iron in a standard multivitamin, so ask your doctor whether an iron-free formula suits you. People with hereditary hemochromatosis absorb too much iron from food and have a higher risk of iron overload [63].
 
-**Magnesium:** RDA is 420 mg for men and 320 mg for women. The UL for supplemental magnesium is 350 mg. Approximately 48% of the U.S. population consumes less than the Estimated Average Requirement from food alone. The glycinate and taurate forms are well tolerated; oxide provides more elemental magnesium per pill but has poor absorption (~4%) [13][14].
+**Magnesium:** The RDA is 420 mg for men and 320 mg for women, and the UL for magnesium from supplements is 350 mg [80]. In US survey data, 48% of Americans of all ages got less magnesium from food and drinks than their estimated average requirement [80]. Forms that dissolve well in liquid, such as aspartate, citrate, lactate and chloride, are absorbed better than magnesium oxide [80]; oxide provides more elemental magnesium per pill but has poor absorption (~4%) [14].
 
-**Zinc:** RDA is 11 mg for men and 8 mg for women. The UL is 40 mg. Excessive zinc can impair copper absorption and cause copper deficiency, immune deficiency, heart problems and anemia; weak evidence links long-term doses over 100 mg a day with a higher risk of prostate cancer [13].
+**Zinc:** The RDA is 11 mg for men and 8 mg for women, and the UL is 40 mg [81]. Doses of 50 mg of zinc or more taken for weeks can interfere with copper absorption, reduce immune function and lower HDL cholesterol [81]. Long-term doses above the UL may carry other risks, so take more only on a doctor's advice [81].
 
-**Selenium:** RDA is 55 mcg for adults 14+. The UL is 400 mcg. At very high doses selenium can cause hair loss and tissue damage. The benefits of supplementation appear limited to those who are deficient [13].
+**Selenium:** The RDA is 55 mcg for adults 14+, and the UL is 400 mcg [82]. The most common signs of chronically high intakes are hair loss and brittle or lost nails; a garlic odor on the breath and a metallic taste can be early signs [82].
 
-**Iodine:** RDA is 150 mcg for adults. The UL is 1,100 mcg. Iodine deficiency is becoming more common due to reduced use of iodized salt and increased consumption of processed foods where salt is not iodized. Following a Paleo diet may result in mild iodine deficiency. Pregnant women need 220 mcg and the American Academy of Pediatrics advises pregnant women take an iodine-containing supplement providing 150 mcg [13].
+**Iodine:** The RDA is 150 mcg for adults and 220 mcg in pregnancy, and the UL is 1,100 mcg [84]. Many multivitamins contain 150 mcg of iodine, but not all prenatal supplements contain it [84]. The American Thyroid Association recommends that women who are planning a pregnancy, pregnant or breastfeeding take an iodine supplement of 150 mcg a day, as potassium iodide [84].
 
-**Chromium:** AI is 35 mcg for men 14-50 and 25 mcg for women 19-50. No UL has been established, but there are concerns about kidney damage at excessive intakes [13].
+**Chromium:** AI is 35 mcg for men 14-50 and 25 mcg for women 19-50 [83]. The FNB set no UL because no adverse effects have been linked to high intakes, but it noted that caution may be warranted, and isolated case reports link chromium supplements with problems including kidney failure [83].
 
 **Folate and pregnancy:** 400 mcg/day of folic acid from supplements or fortified foods for all women capable of becoming pregnant, starting at least 1 month before conception. The UL for folic acid is 1,000 mcg, yet many prenatal supplements provide 800-1,000 mcg [42][43][44].
 
 ### Product Mention — MicroVitamin
 
-Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) is a low-dose, evidence-based multivitamin formulated around human RCT data. It provides 26 ingredients in the USA (v8) and Australia (v8.5), and 25 in the UK, EU and Canada. The ingredients include methylated B12 and folate (bypassing MTHFR limitations), glycinate-form minerals (zinc, selenium, copper, manganese, chromium) with approximately 43% higher bioavailability than standard gluconate forms, magnesium taurate (126 mg elemental), choline bitartrate (181.5 mg), TMG (500 mg), hyaluronic acid (200 mg), vitamin D3 (1,000 IU), vitamin K2 MK-7 (90 mcg), and lutein/lycopene for eye health. The formula deliberately excludes vitamin A and vitamin E based on evidence of potential harm from high-dose supplementation. In the USA (v8) it costs $65 one-time or $58.50/month on subscription.
+Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) is a low-dose, evidence-based multivitamin formulated around human RCT data. It provides 26 ingredients in the USA (v8) and Australia (v8.5), and 25 in the UK, EU and Canada. The ingredients include methylated B12 and folate (bypassing MTHFR limitations), glycinate-form minerals (zinc, selenium, copper, manganese, chromium; in one small study, zinc bisglycinate was about 43% more bioavailable than zinc gluconate [15]), magnesium taurate (126 mg elemental), choline bitartrate (181.5 mg), TMG (500 mg), hyaluronic acid (200 mg), vitamin D3 (1,000 IU), vitamin K2 MK-7 (90 mcg), and lutein/lycopene for eye health. The formula deliberately excludes vitamin A and vitamin E based on evidence of potential harm from high-dose supplementation. In the USA (v8) it costs $65 one-time or $58.50/month on subscription.
 
 For those who also want collagen, creatine, psyllium husk fiber, and extra taurine, [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder), in its v8 formula, contains all 26 core ingredients plus these four premium additions, 30 ingredients in total, in a single daily scoop ($100 one-time / $90/month subscription in the USA, v8). The v8 powder is sold in the USA and every other market except Europe's Unflavored powder, which has moved to v9: it swaps the psyllium for 5 g of acacia fibre, drops potassium and changes some other doses.
 
@@ -276,9 +278,9 @@ Taking a basic MVM that provides nutrients in amounts that approximate recommend
 
 The most frequently reported side effects from multivitamins are gastrointestinal:
 
-- **Nausea:** Often caused by iron, zinc, or copper content. Taking with food reduces risk. Some people experience nausea from citrus bioflavonoids — when 50 mg of citrus bioflavonoids was added to a multivitamin taken by 88,000 women, reports of nausea increased from 2 to 166 women (Greenway, *Am J Ther*, 2011) [13].
+- **Nausea:** Iron and zinc supplements can cause nausea, and taking iron with food can help limit stomach side effects [63][81]. In one weight-loss program whose clients were mostly women, complaints of nausea and vomiting rose from 2 to 166 among 88,468 clients in the 3 months after its multivitamin was changed to a formula with added citrus bioflavonoids; the authors suggest the bioflavonoids may have raised estrogen levels in women taking oral contraceptives or hormone therapy (Greenway, *Am J Ther*, 2011) [71].
 - **Stomach upset and cramping:** Iron is the most common culprit. Gentler iron forms or iron-free formulations can help.
-- **Diarrhea:** High-dose vitamin C (above 400 mg) and magnesium (particularly oxide form) are the usual causes.
+- **Diarrhea:** High doses of vitamin C and magnesium (such as magnesium oxide) can cause diarrhea [75][80].
 - **Constipation:** Calcium carbonate supplements can cause constipation in some individuals.
 
 ### Risk of Excessive Intake
@@ -286,10 +288,10 @@ The most frequently reported side effects from multivitamins are gastrointestina
 MVM users who also take additional single-nutrient supplements and consume fortified foods may exceed ULs for some nutrients [1][5][52]:
 
 - **Niacin (B3):** 48-61% of MVM users in one study had excessive intakes [17].
-- **Vitamin A:** 10-15% of MVM users had excessive intakes. Chronic intake above 3,000 mcg RAE/day can cause liver damage, intracranial hypertension, bone loss, and birth defects [13][53].
-- **Iron:** Excessive intake (above 45 mg/day) causes gastrointestinal distress [13]. Iron-containing MVMs pose a serious toxicity risk if accidentally ingested by children; see Acute Overdose below [63][64].
-- **Vitamin D:** Excessive vitamin D can cause hypercalcemia, with constipation, confusion, weakness, loss of appetite and painful calcium deposits; the adult UL is 4,000 IU [13].
-- **Folic acid:** 33.4% of pregnant supplement users exceeded the UL (1,000 mcg) [18]. The clinical significance of excess folic acid is debated but may include masking of B12 deficiency.
+- **Vitamin A:** 10-15% of MVM users had excessive intakes [1]. Vitamin A has known and potentially serious adverse effects at high intakes [53]: chronic high doses can cause dry skin, painful muscles and joints, fatigue, depression and abnormal liver test results, and preformed vitamin A above the UL can cause birth defects [74].
+- **Iron:** High-dose iron supplements can cause stomach upset, constipation, nausea, abdominal pain, vomiting and diarrhea, and the UL for adults is 45 mg [63]. Iron-containing MVMs pose a serious toxicity risk if accidentally ingested by children; see Acute Overdose below [63][64].
+- **Vitamin D:** Too much vitamin D, almost always from supplements, can cause hypercalcemia, which can lead to nausea, vomiting, muscle weakness, loss of appetite and kidney stones; in extreme cases it causes kidney failure and calcium deposits in soft tissues. The adult UL is 4,000 IU [76].
+- **Folic acid:** In one US analysis, 33.4% of pregnant women exceeded the UL for folic acid (1,000 mcg) [18]. The clinical significance of excess folic acid is debated but may include masking of B12 deficiency.
 
 ### Smoking-Related Risks
 
@@ -300,22 +302,18 @@ Smokers and possibly former smokers should avoid MVM products providing large am
 
 The USPSTF explicitly warns that beta-carotene supplementation may increase lung cancer and CVD mortality risk in people who smoke or have smoked [8].
 
-### Dark Spots on Tablets
-
-Discoloration on multivitamin tablets is almost always due to oxidation of ingredients (particularly iron and vitamin C) after the bottle has been opened, not mold. While unlikely to be a safety issue, oxidation could affect potency — discard such products. Store multivitamins in a cool, dry place [13].
-
 ### Acute Overdose
 
 Accidental overdose of iron-containing products is a leading cause of fatal poisoning in children under 6, so US labels on iron-containing tablets and capsules must tell people to keep them out of reach of children [63]. Acute intakes of more than 20 mg/kg iron can lead to corrosive necrosis of the intestine, which might lead to fluid and blood loss, shock, tissue damage and organ failure [63]. Between 1983 and 2000, at least 43 US children died from swallowing supplements containing high doses of iron [63]. In US reports, children often got the iron from a child-resistant container that they or another child opened, or that an adult left open or closed improperly [64].
 
-Keep multivitamins and iron supplements out of reach of children, and close the lid properly after each use. If a child swallows iron tablets or an iron-containing multivitamin, act immediately: call your local emergency number or poison control centre.
+Keep multivitamins and iron supplements out of reach of children, and close the lid properly after each use. If a child swallows iron tablets or an iron-containing multivitamin, act immediately: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or poison control centre.
 
 ### Populations Requiring Caution
 
-- **Kidney disease:** Individuals with impaired renal function (eGFR <30) have reduced ability to excrete minerals and should avoid or carefully monitor MVM use, particularly for magnesium, potassium, and phosphorus [13].
-- **Hemochromatosis:** Those with hereditary iron overload should avoid iron-containing MVMs [13].
-- **Wilson's disease:** Those with excess copper accumulation should avoid copper-containing MVMs [13].
-- **Pregnancy:** Vitamin A as retinol should not exceed 5,000 IU. Many prenatal MVMs are specifically formulated to limit retinol [13][44].
+- **Kidney disease:** Impaired kidney function raises the risk of magnesium toxicity because the kidneys cannot remove the excess [80]. If chronic kidney disease or a medicine such as an ACE inhibitor or potassium-sparing diuretic impairs potassium excretion, even dietary potassium intakes below the adequate intake can cause high blood potassium (hyperkalemia) [86]. People with kidney disease should check with their doctor before taking a multivitamin [80][86].
+- **Hemochromatosis:** People with hereditary hemochromatosis absorb too much iron from food and have a higher risk of iron overload, so they should ask their doctor before taking an iron-containing multivitamin [63].
+- **Wilson's disease:** People with Wilson's disease, who build up excess copper, should ask their doctor before taking a copper-containing multivitamin.
+- **Pregnancy:** The UL for vitamin A during pregnancy is 2,800 mcg a day for adolescents and 3,000 mcg a day for women, and total intakes of preformed vitamin A above the UL can cause birth defects; prenatal supplements generally provide no vitamin A as retinol [1][74].
 
 ## 6. Drug Interactions
 
@@ -323,11 +321,11 @@ Taking a basic MVM at recommended doses generally does not cause clinically sign
 
 ### Vitamin K and Warfarin
 
-People who take warfarin (Coumadin, Jantoven) or similar blood thinners should consult their healthcare provider before taking any MVM containing vitamin K. Vitamin K is involved in blood clotting and directly counteracts the effectiveness of warfarin. Healthcare providers determine warfarin dosing in part by assessing the patient's consistent vitamin K intake — sudden changes in vitamin K from supplements can destabilize anticoagulation [1][56][57].
+People who take warfarin (Coumadin, Jantoven) or similar blood thinners should talk with their doctor before taking any MVM containing vitamin K. Because vitamin K helps blood to clot, it directly counteracts warfarin. Healthcare providers determine warfarin dosing in part by assessing the patient's consistent vitamin K intake — sudden changes in vitamin K from supplements can destabilize anticoagulation [1][56][57].
 
 ### Calcium and Iron Competition
 
-High-dose calcium (300 mg or more) reduces absorption of iron from both supplements and food. If both are needed, take them at least 2 hours apart [13].
+Calcium might interfere with the absorption of iron, although this effect has not been definitively established, so experts suggest taking calcium and iron supplements at different times of the day [63].
 
 ### Mineral Chelation of Medications
 
@@ -357,7 +355,7 @@ Certain medications can deplete nutrients, potentially making supplementation mo
 
 ### High-Dose Zinc and Copper
 
-Very high doses of zinc supplements (above 40 mg/day long-term) can impair copper absorption, leading to copper deficiency with symptoms including anemia, neutropenia, and neurological problems. MVMs containing zinc should also include copper to prevent this interaction [1][13].
+Doses of 50 mg of zinc or more taken for weeks can interfere with copper absorption and lead to low copper status, and chronic zinc excess can cause copper deficiency and neurological disease [81].
 
 ## 7. Dietary Sources
 
@@ -386,7 +384,7 @@ A balanced diet rich in whole foods remains the foundation for meeting nutrient 
 | Selenium | Brazil nuts (1 oz: 544 mcg — one Brazil nut provides ~68-91 mcg), tuna (3 oz: 92 mcg), halibut (3 oz: 47 mcg) |
 | Iodine | Seaweed (10g dried: 232 mcg), cod (3 oz: 150 mcg), yogurt (1 cup: 116 mcg), iodized salt (1/4 tsp: 71 mcg) |
 | Copper | Oysters (3 oz: 4,850 mcg), shiitake mushrooms (1/2 cup: 650 mcg), dark chocolate (1 oz: 501 mcg) |
-| Chromium | Broccoli (1/2 cup: 11 mcg), grape juice (1 cup: 8 mcg), whole wheat products, liver |
+| Chromium | Grape juice (1 cup: 7.5 mcg), ham (3 oz: 3.6 mcg), whole wheat English muffin (1: 3.6 mcg), brewer's yeast (1 tbsp: 3.3 mcg) [83] |
 | Manganese | Hazelnuts (1 oz: 1.6 mg), pecans (1 oz: 1.1 mg), brown rice (1/2 cup: 1.1 mg), black tea (1 cup: 0.5 mg) |
 | Potassium | Baked potato (1 medium: 926 mg), prune juice (1 cup: 707 mg), banana (1 medium: 422 mg) |
 
@@ -440,8 +438,6 @@ Based on the current evidence, the following groups are most likely to benefit f
 [11] Yeung LK, Alschuler DM, Wall M, et al. "Multivitamin supplementation improves memory in older adults: A randomized clinical trial." *Am J Clin Nutr*. 2023;118(1):273-282. [https://pubmed.ncbi.nlm.nih.gov/37244291/](https://pubmed.ncbi.nlm.nih.gov/37244291/)
 
 [12] Vyas CM, Manson JE, Sesso HD, et al. "Effect of multivitamin-mineral supplementation versus placebo on cognitive function: results from the clinic subcohort of the COcoa Supplement and Multivitamin Outcomes Study (COSMOS) randomized clinical trial and meta-analysis of 3 cognitive studies within COSMOS." *Am J Clin Nutr*. 2024;119(3):692-701. [https://pubmed.ncbi.nlm.nih.gov/38244989/](https://pubmed.ncbi.nlm.nih.gov/38244989/)
-
-[13] ConsumerLab. "Multivitamin/Multimineral Supplements Review." [https://www.consumerlab.com/reviews/multivitamin-review-comparisons/multivitamins/](https://www.consumerlab.com/reviews/multivitamin-review-comparisons/multivitamins/)
 
 [14] de Baaij JHF, Hoenderop JGJ, Bindels RJM. "Magnesium in Man: Implications for Health and Disease." *Physiol Rev*. 2015;95(1):1-46. [https://doi.org/10.1152/physrev.00012.2014](https://doi.org/10.1152/physrev.00012.2014)
 
@@ -550,3 +546,41 @@ Based on the current evidence, the following groups are most likely to benefit f
 [66] Wagner CL et al. Bioequivalence Studies of Vitamin D Gummies and Tablets in Healthy Adults: Results of a Cross-Over Study. Nutrients. 2019;11(5):1023. PMID: 31067745. https://pubmed.ncbi.nlm.nih.gov/31067745/
 
 [67] De-Regil LM et al. Point-of-use fortification of foods with micronutrient powders containing iron in children of preschool and school-age. Cochrane Database Syst Rev. 2017;11:CD009666. PMID: 29168569. https://pubmed.ncbi.nlm.nih.gov/29168569/
+
+[68] Ko J et al. Pharmacokinetic Analyses of Liposomal and Non-Liposomal Multivitamin/Mineral Formulations. Nutrients. 2023;15(13):3073. doi:10.3390/nu15133073. PMID: 37447400. https://pubmed.ncbi.nlm.nih.gov/37447400/
+
+[69] Li S et al. Effects of daily multivitamin-multimineral and cocoa extract supplementation on epigenetic aging clocks in the COSMOS randomized clinical trial. Nat Med. 2026;32(3):1012-1022. doi:10.1038/s41591-026-04239-3. PMID: 41803341. https://pubmed.ncbi.nlm.nih.gov/41803341/
+
+[70] Sauder KA et al. Selecting a dietary supplement with appropriate dosing for 6 key nutrients in pregnancy. Am J Clin Nutr. 2023;117(4):823-829. doi:10.1016/j.ajcnut.2022.12.018. PMID: 37019542. https://pubmed.ncbi.nlm.nih.gov/37019542/
+
+[71] Greenway F et al. Vomiting from multivitamins: a potential drug interaction. Am J Ther. 2011;18(6):453-7. doi:10.1097/MJT.0b013e3181d7e1e4. PMID: 20458212. https://pubmed.ncbi.nlm.nih.gov/20458212/
+
+[72] Tripkovic L et al. Comparison of vitamin D2 and vitamin D3 supplementation in raising serum 25-hydroxyvitamin D status: a systematic review and meta-analysis. Am J Clin Nutr. 2012;95(6):1357-64. doi:10.3945/ajcn.111.031070. PMID: 22552031. https://pubmed.ncbi.nlm.nih.gov/22552031/
+
+[73] Schurgers LJ et al. Vitamin K-containing dietary supplements: comparison of synthetic vitamin K1 and natto-derived menaquinone-7. Blood. 2007;109(8):3279-83. doi:10.1182/blood-2006-08-040709. PMID: 17158229. https://pubmed.ncbi.nlm.nih.gov/17158229/
+
+[74] National Institutes of Health, Office of Dietary Supplements. "Vitamin A and Carotenoids: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/VitaminA-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminA-HealthProfessional/)
+
+[75] National Institutes of Health, Office of Dietary Supplements. "Vitamin C: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/VitaminC-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminC-HealthProfessional/)
+
+[76] National Institutes of Health, Office of Dietary Supplements. "Vitamin D: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/)
+
+[77] National Institutes of Health, Office of Dietary Supplements. "Vitamin E: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/VitaminE-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminE-HealthProfessional/)
+
+[78] National Institutes of Health, Office of Dietary Supplements. "Vitamin K: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/VitaminK-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminK-HealthProfessional/)
+
+[79] National Institutes of Health, Office of Dietary Supplements. "Calcium: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/](https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/)
+
+[80] National Institutes of Health, Office of Dietary Supplements. "Magnesium: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/](https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/)
+
+[81] National Institutes of Health, Office of Dietary Supplements. "Zinc: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/Zinc-HealthProfessional/](https://ods.od.nih.gov/factsheets/Zinc-HealthProfessional/)
+
+[82] National Institutes of Health, Office of Dietary Supplements. "Selenium: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/Selenium-HealthProfessional/](https://ods.od.nih.gov/factsheets/Selenium-HealthProfessional/)
+
+[83] National Institutes of Health, Office of Dietary Supplements. "Chromium: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/Chromium-HealthProfessional/](https://ods.od.nih.gov/factsheets/Chromium-HealthProfessional/)
+
+[84] National Institutes of Health, Office of Dietary Supplements. "Iodine: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/Iodine-HealthProfessional/](https://ods.od.nih.gov/factsheets/Iodine-HealthProfessional/)
+
+[85] Theuwissen E, Teunissen KJ, Spronk HM, et al. Effect of low-dose supplements of menaquinone-7 (vitamin K2) on the stability of oral anticoagulant treatment: dose-response relationship in healthy volunteers. J Thromb Haemost. 2013;11(6):1085-1092. doi:10.1111/jth.12203. PMID: 23530987. https://pubmed.ncbi.nlm.nih.gov/23530987/
+
+[86] National Institutes of Health, Office of Dietary Supplements. "Potassium: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/Potassium-HealthProfessional/](https://ods.od.nih.gov/factsheets/Potassium-HealthProfessional/)
