@@ -306,7 +306,7 @@ These medications should be **separated from magnesium supplements** [1]:
 | Tetracycline antibiotics | Doxycycline, demeclocycline | 2h before or 4-6h after | Forms insoluble complexes [1] |
 | Fluoroquinolone antibiotics | Ciprofloxacin, levofloxacin | 2h before or 4-6h after | Forms insoluble complexes [1] |
 | Levothyroxine | Synthroid, Levoxyl | Ask your pharmacist | Taken together with levothyroxine, magnesium aspartate reduced its absorption by 12% in a trial of 15 healthy adults; the authors advise taking levothyroxine separately from magnesium [55] |
-| Statins (rosuvastatin) | Crestor | 2+ hours | An aluminium and magnesium hydroxide antacid taken at the same time reduced rosuvastatin exposure by 54%; taken 2 hours after rosuvastatin, by 22% [48] |
+| Statins (rosuvastatin) | Crestor | Separate as much as you can; even a 2-hour gap still cut exposure by 22% [48]; ask your pharmacist | An aluminium and magnesium hydroxide antacid taken at the same time reduced rosuvastatin exposure by 54%; taken 2 hours after rosuvastatin, by 22% [48] |
 | Sotalol | Betapace | 2+ hours | An antacid of magnesium hydroxide and aluminium oxide lowered sotalol blood levels; a two-hour interval avoided the interaction [49] |
 | Gabapentin | Neurontin | Ask your pharmacist | Magnesium oxide lowered gabapentin bioavailability by 32% in one study [50] |
 
