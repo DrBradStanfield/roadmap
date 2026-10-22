@@ -134,10 +134,9 @@ describe('safetySections (US-50 AC6)', () => {
 // "Safety and Side Effects" and "Drug Interactions" sections, within the caps.
 describe('masterViews on the published masters (US-50 AC6)', () => {
   // Magnesium, creatine and vitamin C gained Key safety points in masters-cleanup-1
-  // (2026-10-22), and taurine in masters-cleanup-3, so they now add those
-  // points instead (next test).
+  // (2026-10-22), taurine in masters-cleanup-3 and collagen in masters-cleanup-4,
+  // so they now add those points instead (next test).
   const MASTERS = [
-    'collagen-benefits-best-forms-dosing-and-side-effects',
     'vitamin-k-benefits-forms-dosing-and-side-effects',
   ];
   const KEYED = [
@@ -145,6 +144,7 @@ describe('masterViews on the published masters (US-50 AC6)', () => {
     'creatine-benefits-best-forms-dosing-and-side-effects',
     'vitamin-c-benefits-forms-dosing-and-side-effects',
     'taurine-benefits-forms-dosing-and-side-effects',
+    'collagen-benefits-best-forms-dosing-and-side-effects',
   ];
   it.each(KEYED)('%s adds its view and key safety points, not its whole safety sections (US-50 AC12)', (handle) => {
     const block = masterViews([handle], [])!;
