@@ -21,7 +21,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 - High-dose fish oil may increase bleeding risk with anticoagulant or antiplatelet drugs such as warfarin, heparin, clopidogrel or aspirin [21].
 - Policosanol may inhibit platelet aggregation and pantethine may increase the risk of bleeding, so use them cautiously with blood thinners [58][65].
-- Do not combine red yeast rice with a statin, and check with your doctor before combining it with niacin or a fibrate. Its monacolin K is identical to lovastatin, which carries a risk of muscle damage with these drugs [16][17][67].
+- Do not combine red yeast rice with a statin, gemfibrozil, cyclosporine, or strong CYP3A4 inhibitors such as clarithromycin or itraconazole, and avoid grapefruit juice; check with your doctor first before combining it with other fibrates or niacin [67]. Its monacolin K is identical to lovastatin, so also check with your doctor first if you have liver disease [16][17][67].
 - Psyllium may affect how well other medicines work, so take prescription medicines at least 2 hours before or after it [66].
 - Red yeast rice products can have the same potential muscle, kidney and liver side effects as statins, and some contain citrinin, which can damage the kidneys. They are not recommended in pregnancy or breastfeeding [17].
 - Sitosterolemia is a rare inherited disorder linked to marked atherosclerosis; people who have it should not take plant sterol supplements [51].
@@ -51,7 +51,7 @@ Plant sterols and stanols are naturally occurring compounds structurally similar
 
 These compounds are available in two primary chemical forms:
 
-**Free (nonesterified) sterols and stanols:** The base molecular form. In 2000 the FDA concluded that 800 mg per day or more of free plant sterols consistently lowered blood total and LDL cholesterol. Its 2010 proposed rule would raise it to 2 g a day, and it found the evidence for nonesterified phytosterols in supplements limited and inconsistent [63]. The current health claim covers only plant sterol esters (at least 1.3 g a day) and plant stanol esters (at least 3.4 g a day) [62].
+**Free (nonesterified) sterols and stanols:** The base molecular form. In 2000 the FDA concluded that 800 mg per day or more of free plant sterols consistently lowered blood total and LDL cholesterol. Its 2010 proposed rule would raise it to 2 g a day, and it found the evidence for nonesterified phytosterols in supplements limited and inconsistent [63]. Until a final rule, the FDA said it would consider using enforcement discretion, case by case, for claims that follow the proposed rule [63]. The current health claim covers only plant sterol esters (at least 1.3 g a day) and plant stanol esters (at least 3.4 g a day) [62].
 
 **Esterified sterols and stanols:** Sterols or stanols bonded to a fatty acid, which improves solubility in fats and oils (important for incorporation into spreads and softgels). The ester form is heavier — approximately 1,300 mg of plant sterol esters provides roughly 800 mg of free sterols. Similarly, 3,400 mg of plant stanol esters provides approximately 2,000 mg of free stanols [63].
 
@@ -161,7 +161,7 @@ Omega-3 fatty acids primarily reduce triglyceride levels rather than LDL cholest
 
 ### Pantethine
 
-In a trial in 32 adults at low to moderate cardiovascular risk who were eligible for statins, pantethine (600 mg a day for 8 weeks, then 900 mg a day for 8 more weeks) lowered LDL cholesterol by 11% from baseline, while LDL rose 3% with placebo; total cholesterol also fell significantly compared with placebo at 16 weeks (Evans et al., *Vasc Health Risk Manag*, 2014) [23]. The evidence base for pantethine remains small.
+In a trial in 32 adults at low to moderate cardiovascular risk who were eligible for statins, pantethine (600 mg a day for 8 weeks, then 900 mg a day for 8 more weeks) lowered LDL cholesterol by 11% from baseline, while LDL rose 3% with placebo; total cholesterol also fell significantly compared with placebo at 16 weeks (Evans et al., *Vasc Health Risk Manag*, 2014) [23]. The trial was funded by Daiichi Fine Chemical, and some of its authors were employees of that company or of Kyowa Hakko USA [23]. The evidence base for pantethine remains small.
 
 In rat liver cells, pantethine lowered the activity of HMG-CoA reductase, a key enzyme in cholesterol production (Cighetti et al., *Biochim Biophys Acta*, 1988) [41]. Sterols and stanols work differently, by blocking cholesterol absorption [7][8].
 
@@ -197,7 +197,7 @@ Under the current FDA health claim, eating at least these daily amounts with a d
 |------|:-:|-------|
 | Plant sterol esters | 1,300 mg (equivalent to ~800 mg free sterols) | Divided over 2+ servings with meals |
 | Plant stanol esters | 3,400 mg (equivalent to ~2,000 mg free stanols) | Divided over 2+ servings with meals |
-| Free sterols | Not in the current claim; the FDA's 2000 review found 800 mg a day or more effective, and its 2010 proposed rule would set 2 g a day | The 2010 proposal found the evidence for free sterols in supplements limited and inconsistent |
+| Free sterols | Not in the current claim; the FDA's 2000 review found 800 mg a day or more effective, and its 2010 proposed rule would set 2 g a day | The 2010 proposal found the evidence for free sterols in supplements limited and inconsistent; until a final rule, the FDA said it would consider enforcement discretion for claims that follow the proposal |
 
 Higher doses up to 3 g of total sterol esters (or 1,800 mg free sterols) have been used successfully in clinical trials (Lau, 2005; Vanstone et al., 2002) [45][46]. A dose-response meta-analysis described the LDL-lowering effect with a nonlinear curve that rises with dose toward a maximum [25].
 
@@ -254,7 +254,7 @@ Plant sterols and stanols are generally considered safe. In a 10-week trial, 8.8
 
 **Gastrointestinal effects:** At recommended intakes of about 2 to 2.5 g a day, products enriched with plant stanol or sterol esters lowered LDL cholesterol without any reported side effects [8]. Some people may still notice digestive symptoms; if they persist, talk to your doctor.
 
-**Sexual side effects:** Erectile problems or lower libido have been reported rarely with beta-sitosterol. If you notice them, talk to your doctor.
+**Sexual side effects:** In a Cochrane review of beta-sitosterol trials in men with an enlarged prostate, impotence was reported in 0.5% of men taking beta-sitosterol and in none taking placebo (Wilt et al., *Cochrane Database Syst Rev*, 2000) [69]. If you notice erectile problems, talk to your doctor.
 
 **Sitosterolemia contraindication:** Sitosterolemia (also called phytosterolemia) is a rare inherited disorder in which plant sterols build up in the body, and it is linked to a marked increase in atherosclerosis [51]. People with sitosterolemia should not take beta-sitosterol or other plant sterol supplements.
 
@@ -309,7 +309,7 @@ Adding sterols or stanols to statin therapy is generally considered safe and may
 
 ### Red Yeast Rice and Statins
 
-Red yeast rice should NOT be combined with prescription statins. Because monacolin K is identical to lovastatin, concomitant use produces additive effects on HMG-CoA reductase inhibition and substantially increases the risk of statin-associated adverse effects including myopathy, rhabdomyolysis, and liver toxicity [16][17]. Red yeast rice can have the same drug interactions as statins [17]. The lovastatin label rules out strong CYP3A4 inhibitors such as itraconazole and clarithromycin, says to avoid gemfibrozil, and urges caution with other fibrates or with niacin at 1 g a day or more, because these drugs can also cause muscle damage; cyclosporine and grapefruit juice raise lovastatin levels [67]. Check with your doctor before combining red yeast rice with niacin or a fibrate.
+Red yeast rice should NOT be combined with prescription statins. Because monacolin K is identical to lovastatin, concomitant use produces additive effects on HMG-CoA reductase inhibition and substantially increases the risk of statin-associated adverse effects including myopathy, rhabdomyolysis, and liver toxicity [16][17]. Red yeast rice can have the same drug interactions as statins [17]. The lovastatin label rules out strong CYP3A4 inhibitors such as itraconazole and clarithromycin, says to avoid gemfibrozil, and urges caution with other fibrates or with niacin at 1 g a day or more, because these drugs can also cause muscle damage; cyclosporine and grapefruit juice raise lovastatin levels [67]. Do not combine red yeast rice with a statin, gemfibrozil, cyclosporine, or strong CYP3A4 inhibitors such as clarithromycin or itraconazole, and avoid grapefruit juice; check with your doctor first before combining it with other fibrates or niacin [67].
 
 ### Omega-3 Fatty Acids and Anticoagulants
 
@@ -332,7 +332,7 @@ Laboratory research suggests beta-sitosterol may inhibit thrombin, potentially i
 | Supplement | Interacting Drug(s) | Risk | Management |
 |-----------|---------------------|------|------------|
 | Plant sterols/stanols | Fat-soluble vitamins, carotenoids | Reduced absorption | Supplement carotenoids separately |
-| Red yeast rice | Statins, niacin, CYP3A4 inhibitors, fibrates | Myopathy, rhabdomyolysis, liver toxicity | Do NOT combine with statins; check with your doctor before combining with niacin or a fibrate |
+| Red yeast rice | Statins, niacin, CYP3A4 inhibitors, fibrates, cyclosporine, grapefruit juice | Myopathy, rhabdomyolysis, liver toxicity | Do NOT combine with statins, gemfibrozil, cyclosporine or strong CYP3A4 inhibitors, and avoid grapefruit juice; check with your doctor first before combining with other fibrates or niacin |
 | Omega-3 (high dose) | Warfarin, heparin, clopidogrel, aspirin | Increased bleeding | Monitor bleeding parameters |
 | Psyllium | Prescription medicines taken by mouth | May affect how well they work | Separate by at least 2 hours |
 | Policosanol | Antiplatelet/anticoagulant drugs | Increased bleeding | Use cautiously |
@@ -521,3 +521,5 @@ Beyond individual foods, overall dietary patterns have well-demonstrated cholest
 [67] US National Library of Medicine, DailyMed. "Lovastatin tablets: prescribing information." Lupin Pharmaceuticals, SPL version 17, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=df7ddf4f-d569-431e-81f1-9129d7043150](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=df7ddf4f-d569-431e-81f1-9129d7043150)
 
 [68] US National Library of Medicine, DailyMed. "Niacin extended-release tablets: prescribing information." Amneal Pharmaceuticals, SPL version 11, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=6e604319-e164-4056-ab80-b78b98c519c7](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=6e604319-e164-4056-ab80-b78b98c519c7)
+
+[69] Wilt T, Ishani A, MacDonald R, Stark G, Mulrow C, Lau J. "Beta-sitosterols for benign prostatic hyperplasia." *Cochrane Database Syst Rev*. 2000;(2):CD001043. doi: [10.1002/14651858.CD001043](https://doi.org/10.1002/14651858.CD001043). PMID: [10796740](https://pubmed.ncbi.nlm.nih.gov/10796740/)
