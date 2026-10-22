@@ -129,12 +129,13 @@ describe('safetySections (US-50 AC6)', () => {
   });
 });
 
-// The six masters published on 2026-10-20: every one adds its view plus its
-// "Safety and Side Effects" and "Drug Interactions" sections, within the caps.
+// The masters published on 2026-10-20 without key safety points: every one adds
+// its view plus its "Safety and Side Effects" and "Drug Interactions" sections,
+// within the caps. Vitamin K gained key safety points in masters-cleanup-2, so
+// the AC12 published-masters test below covers it now.
 describe('masterViews on the published masters (US-50 AC6)', () => {
   const MASTERS = [
     'collagen-benefits-best-forms-dosing-and-side-effects',
-    'vitamin-k-benefits-forms-dosing-and-side-effects',
     'magnesium-benefits-best-forms-dosing',
     'taurine-benefits-forms-dosing-and-side-effects',
     'creatine-benefits-best-forms-dosing-and-side-effects',
