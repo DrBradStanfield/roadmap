@@ -262,5 +262,45 @@
   "reason": "US government primary sources (eCFR and the Federal Register) for the FDA psyllium and plant-sterol health claims (Brad's psyllium rule 2026-10-22); not on the checker's host list, which is code.",
   "by": "orchestrator",
   "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥10 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In a sample of women from the Nurses' Health Study, those who had used vitamin C supplements for 10 years or more h...\"",
+  "reason": "Tokeniser: the Jacques abstract (PMID 9322567) writes \"> or = 10 y\", which equals the body's \"10 years or more\"; the quote is in addendum-14. Added by the vitamin C fix worker under the orchestrator's task instruction (genuine tokeniser cases only), addendum-14.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥1500 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In men, supplemental vitamin C intake is inversely associated with gout risk. Men taking 1,000-1,499 mg a day of supp...\"",
+  "reason": "Tokeniser: the Choi abstract (PMID 19273781) writes \"1500 mg/d or greater\", which equals the body's \"1,500 mg or more\" (ruling 3 comparator); the checker drops \"or greater\". Added by the vitamin C fix worker under the orchestrator's task instruction (genuine tokeniser cases only), addendum-14.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2.3 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| **Acetaminophen (Tylenol)** | In five healthy adults, 3 g of vitamin C taken 1.5 hours after 1 g of acetaminophen c...\"",
+  "reason": "Tokeniser: the Houston and Levy abstract (PMID 978441) writes \"2.3 +/- 0.2 (mean +/- SD) to 3.1 +/- 0.5 hr\"; the SD between number and unit hides the hours. Added by the vitamin C fix worker under the orchestrator's task instruction (genuine tokeniser cases only), addendum-14.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.1 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| **Acetaminophen (Tylenol)** | In five healthy adults, 3 g of vitamin C taken 1.5 hours after 1 g of acetaminophen c...\"",
+  "reason": "Tokeniser: the Houston and Levy abstract (PMID 978441) writes \"3.1 +/- 0.5 hr\"; the SD between number and unit hides the hours. Added by the vitamin C fix worker under the orchestrator's task instruction (genuine tokeniser cases only), addendum-14.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"≥1000 mg/day\": In a US study of 45,619 men, a total vitamin C intake of 1,000 mg/day or more, compared with less than the RDA of 90 ...",
+  "reason": "Tokeniser: the Taylor abstract (PMID 15579526) writes \"1000 mg or greater of vitamin C per day\", which equals the body's \"1,000 mg/day or more\"; the checker drops \"or greater ... per day\". The quote is in addendum-14. Added by the vitamin C fix worker under the orchestrator's task instruction (genuine tokeniser cases only), addendum-14.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
  }
 ]
