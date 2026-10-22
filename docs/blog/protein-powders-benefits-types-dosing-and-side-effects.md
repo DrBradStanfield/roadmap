@@ -22,9 +22,9 @@ For people who struggle to meet their protein target from whole foods alone, Bra
 - Soy protein may reduce absorption of thyroid hormone medicine, dietary protein can reduce levodopa absorption, and dairy reduces tetracycline absorption; ask your doctor or pharmacist about timing [33][107][108].
 - If you have chronic kidney disease, ask your doctor how much protein suits you before using a protein powder; high protein intake may speed its progression [104][105].
 - People allergic to milk should avoid whey and casein, including laboratory-made whey, which still contains the milk allergen beta-lactoglobulin [10]. Soy protein can also cause severe allergic reactions, and concentrated pea protein may be an allergy concern [122].
-- Mycoprotein (Quorn) has been linked with allergic reactions, including anaphylaxis, one of them fatal [117].
-- In people with a urea cycle disorder, a rare genetic condition, a large rise in protein intake can trigger high blood ammonia and brain dysfunction [125].
-- Protein powders can contain heavy metals such as lead; a risk assessment of published test results suggested typical servings would not harm health [119].
+- Allergic reactions to mycoprotein (Quorn) appear to be very rare [47], but self-reports sent to an advocacy group's website included anaphylaxis, one case fatal [117].
+- In people with a rare inherited urea cycle disorder, a large rise in protein intake can trigger high blood ammonia and brain dysfunction [125].
+- Protein powders can contain lead and other heavy metals; a risk assessment of published test results suggested typical servings would not harm health [119].
 - In older men, whey drinks lowered blood pressure, most clearly between 120 and 180 minutes after drinking [123].
 - Whey protein supplements have been linked with acne in teenagers and young adults [120][121].
 
@@ -35,7 +35,7 @@ For people who struggle to meet their protein target from whole foods alone, Bra
 
 ## 1. Overview
 
-Protein is an essential macronutrient required to build, maintain, and repair muscle tissue, and it plays a central role in virtually every metabolic process in the human body.
+Protein is an essential nutrient: the body uses it to make and repair muscle and other tissues, and to make enzymes and hormones.
 
 The recommended protein intake (RDA) for adults is 0.8 g/kg of body weight a day [2]. In pregnancy the RDA is 1.1 g/kg a day [114]. A 2007 position stand from the International Society of Sports Nutrition set a higher range for physically active people: about 1.4 to 2.0 g/kg a day [116].
 
@@ -43,31 +43,31 @@ Many older adults eat less protein than the RDA. In US national survey data (NHA
 
 ## 2. Forms and Bioavailability
 
-Not all protein powders are equivalent. The protein source, processing method, and form determine amino acid profile, bioavailability (how efficiently protein is absorbed and utilized), digestibility, and tolerance. Understanding these differences is critical to selecting the right protein for a given purpose.
+Not all protein powders are equivalent. The protein source, processing method, and form determine amino acid profile, bioavailability (how much of the protein the body absorbs and uses), digestibility, and tolerance. Understanding these differences is critical to selecting the right protein for a given purpose.
 
 ### Animal-Based Proteins
 
 #### Whey Protein
 
-Whey is the most widely used protein source in commercial protein powders. It is derived from the liquid portion of milk during cheese production and is a complete protein containing all nine essential amino acids. Whey is digested faster than casein: in a single-meal study it caused a sharp but short rise in blood amino acids [102].
+Whey is the most widely used protein source in commercial protein powders. It is derived from the liquid portion of milk during cheese production and is a complete protein: it supplies every essential amino acid. Whey is digested faster than casein: in a single-meal study it caused a sharp but short rise in blood amino acids [102].
 
-Whey is rich in cysteine, the amino acid that limits how much glutathione, a major antioxidant, the body can make. In a two-week trial in 30 people with HIV and low glutathione, a daily dose of 45 g of a standard whey protein (Protectamin) raised blood glutathione, while a patented cysteine-rich whey (Immunocal) did not raise it significantly (Micke, *Eur J Clinical Investigation*, 2001) [7].
+Whey is rich in cysteine, the amino acid that limits how much glutathione, a major antioxidant, the body can make. In a two-week trial in 30 people with HIV and low glutathione, each group took a daily dose of 45 g of a cysteine-rich whey formula: blood glutathione rose with one (Protectamin), while the rise with the other (Immunocal) was not significant (Micke, *Eur J Clin Invest*, 2001) [7].
 
-Cow's milk holds very small amounts of the hormone estradiol, which travels with the milk fat; researchers who measured it in whole milk judged the amount unlikely to pose a health risk (Pape-Zambito, *J Dairy Sci*, 2007) [8]. Because estradiol travels with the fat, low-fat whey powders are likely to carry even less.
+Cow's milk holds very small amounts of the hormone estradiol, which travels with the milk fat; researchers who measured it in whole milk judged the amount unlikely to pose a health risk (Pape-Zambito, *J Dairy Sci*, 2007) [8].
 
 Perfect Day sells a whey protein made without cows, by fermentation with the fungus *Trichoderma reesei*. It still contains beta-lactoglobulin, one of the main allergens in cow's milk (FDA, GRAS Notice No. 863) [10].
 
 #### Casein Protein
 
-Casein is the other major milk protein. It is digested more slowly than whey, releasing amino acids over a longer period, probably because it leaves the stomach slowly [102]. This sustained amino acid release makes casein theoretically beneficial for overnight muscle maintenance.
+Casein is the other major milk protein, and the body digests it more slowly than whey [102].
 
 In a single-meal tracer study in healthy adults, whey caused a sharp but short rise in blood amino acids, while casein produced a prolonged, moderate rise, probably because it leaves the stomach slowly [102].
 
 In a 10-week trial in 13 young men doing supervised resistance training, 35 g of casein daily gave similar gains in lean tissue, muscle size and strength whether it was taken earlier in the day or shortly before bed (Joy, *J Int Soc Sports Nutr*, 2018) [11].
 
-In 99 older adults who were not frail, 20 g a day of a patented whey isolate (Immunocal) or of casein for 135 days, with resistance training 3 times a week, raised strength in both groups, by about 10% more with the whey isolate; lean body mass did not change in either group (Karelis, *J Nutr Health Aging*, 2015) [12].
+In 99 older adults who were not frail, 20 g a day of a patented whey isolate (Immunocal) or of casein for 135 days, with resistance training 3 times a week, raised strength in both groups, by about 10% more with the whey isolate; lean body mass was unchanged in both groups (Karelis, *J Nutr Health Aging*, 2015) [12].
 
-**Prostate cancer concern:** Casein makes up most of the protein in milk, and studies of dairy and prostate cancer give mixed results. In a laboratory study, casein made two types of prostate cancer cells grow faster but did not affect breast, lung, stomach or normal prostate cells (Park, *World J Mens Health*, 2014) [13]. In 142,251 European men followed for 8.7 years, those in the top fifth of dairy protein intake had a higher risk of prostate cancer than those in the bottom fifth (HR 1.22, 95% CI 1.07 to 1.41) (Allen, *Br J Cancer*, 2008) [14]. Among 3,918 men with localized prostate cancer, the highest intake of whole milk after diagnosis was linked with a higher risk of progression (HR 2.15, 95% CI 1.28 to 3.60) and the highest intake of low-fat dairy with a lower risk (HR 0.62, 95% CI 0.40 to 0.95), while total milk and dairy intake was not linked with lethal prostate cancer (Pettersson, *Cancer Epidemiol Biomarkers Prev*, 2012) [15]. Whether casein itself raises prostate cancer risk is not known.
+**Prostate cancer concern:** Casein makes up most of the protein in milk, and studies of dairy and prostate cancer give mixed results. In a laboratory study, casein made two types of prostate cancer cells grow faster but did not affect breast, lung, stomach or normal prostate cells (Park, *World J Mens Health*, 2014) [13]. In 142,251 European men followed for 8.7 years, those in the top fifth of dairy protein intake had a higher risk of prostate cancer than those in the bottom fifth (HR 1.22, 95% CI 1.07 to 1.41) (Allen, *Br J Cancer*, 2008) [14]. Among 3,918 men with localized prostate cancer, the highest intake of whole milk after diagnosis was linked with a higher risk of progression (HR 2.15, 95% CI 1.28 to 3.60) and the highest intake of low-fat dairy with a lower risk (HR 0.62, 95% CI 0.40 to 0.95), while total milk and dairy intake showed no link with lethal prostate cancer (Pettersson, *Cancer Epidemiol Biomarkers Prev*, 2012) [15]. Whether casein itself raises prostate cancer risk is not known.
 
 **Alpha-s1 casein hydrolysate (Lactium) for anxiety and sleep:** Early trials suggested a calming effect: it blunted rises in blood pressure and cortisol during stress tests, and in 63 women a 30-day course eased stress-related symptoms (Messaoudi, *Eur J Nutr*, 2005; Kim, *Eur J Clin Nutr*, 2007) [16][17]. Sleep trials are mixed. In a 4-week crossover trial in 48 adults with mild to moderate sleep problems, sleep questionnaires improved as much on placebo as on Lactium, though sleep diaries and wrist activity monitors favored Lactium (Kim, *Nutrients*, 2019) [18]. In a 4-week trial in 36 adults with chronic insomnia, 600 mg a day (cut to 300 mg for the last two weeks) improved sleep questionnaires, and on sleep testing the time to fall asleep fell by 7.7 minutes, against a rise of 6.1 minutes with placebo (Chang, *Clin Nutr*, 2024) [19].
 
@@ -77,7 +77,7 @@ Egg white (albumen) protein powder is a complete protein. In 30 female college a
 
 #### Collagen Protein
 
-Collagen appears to be a weaker choice than whey for building muscle. In 22 healthy older women (average age 69), whey protein raised muscle protein synthesis more than collagen protein, with and without resistance exercise (Oikawa, *Am J Clin Nutr*, 2020) [21]. Collagen should not be expected to provide the muscular benefits of a complete protein powder, though it may provide modest benefits for wrinkles and osteoarthritis.
+In 22 healthy older women (average age 69), whey protein raised muscle protein synthesis more than collagen protein, with and without resistance exercise. The authors concluded that whey may be the more effective supplement for keeping muscle in older women (Oikawa, *Am J Clin Nutr*, 2020) [21].
 
 #### Bone Broth Protein
 
@@ -85,7 +85,7 @@ Bone broth protein supplements are dried broth, usually made from chicken bones.
 
 #### Cricket Protein
 
-Cricket powder is crickets that have been washed, dried and ground. A European Food Safety Authority risk profile of insects as food flagged heavy metals such as cadmium, which insects can accumulate, along with bacterial contamination, bacterial spores that survive heating, and allergy: people allergic to insects or shellfish may react [26].
+Cricket powder is made from dried, ground crickets. In its opinion on one house cricket powder, a European Food Safety Authority panel could not establish that it was safe: it found mineral oil hydrocarbons, phthalates and variable microbial quality. The panel also warned that eating cricket protein may cause new allergies, and that people allergic to crustaceans, dust mites or molluscs may react to it through cross-reactivity [127].
 
 ### Plant-Based Proteins
 
@@ -104,7 +104,7 @@ Each plant protein has its own gaps in essential amino acids [27]:
 
 Combining a protein low in lysine (corn, hemp or brown rice) with one low in methionine (soy or pea) in equal parts gives a more complete blend [27]. Planned vegetarian and vegan diets can meet protein needs, and there is no need to combine plant proteins at every meal as long as a variety of foods is eaten over the day (Craig, *J Am Diet Assoc*, 2009; Marsh, *Med J Aust*, 2013) [28][29].
 
-Despite these limitations, trials show that soy protein, pea protein, and mycoprotein can be as effective as animal protein for building muscle when combined with resistance exercise [30][38][46].
+Despite these limitations, trials show that soy protein, pea protein, and mycoprotein can match animal protein for building muscle alongside resistance exercise [30][38][46].
 
 #### Soy Protein
 
@@ -116,7 +116,7 @@ Soy protein contains isoflavones, plant compounds with weak estrogen-like effect
 
 **Thyroid concern:** Soy isoflavones can affect thyroid hormone levels for a time. In 200 men with type 2 diabetes and 200 postmenopausal women, all with normal thyroid function, 15 g a day of soy protein with 66 mg of isoflavones raised TSH and lowered free T4 at 3 months compared with soy protein without isoflavones, and the effect had faded by 6 months (Sathyapalan, *Front Endocrinol*, 2018) [32]. Soy may also reduce absorption of thyroid hormone medicine, so people taking it may need a higher dose; a review concluded that people with an underactive thyroid need not avoid soy foods (Messina, *Thyroid*, 2006) [33].
 
-**Prostate cancer and soy:** Results are mixed. In 27,004 US men followed for a median of 11.5 years, isoflavone intake was not linked with total prostate cancer, but the top fifth of intake had a higher risk of advanced prostate cancer than the bottom fifth (HR 1.91, 95% CI 1.25 to 2.92) (Reger, *Int J Cancer*, 2018) [34]. In a trial in 177 men at high risk of recurrence after prostate cancer surgery, 20 g a day of soy protein isolate for up to 2 years did not reduce recurrence compared with a casein placebo (HR 0.96, 95% CI 0.53 to 1.72) (Bosland, *JAMA*, 2013) [35].
+**Prostate cancer and soy:** Results are mixed. In 27,004 US men followed for a median of 11.5 years, isoflavone intake showed no link with total prostate cancer, but the top fifth of intake had a higher risk of advanced prostate cancer than the bottom fifth (HR 1.91, 95% CI 1.25 to 2.92) (Reger, *Int J Cancer*, 2018) [34]. In a trial in 177 men at high risk of recurrence after prostate cancer surgery, 20 g a day of soy protein isolate for up to 2 years did not reduce recurrence compared with a casein placebo (HR 0.96, 95% CI 0.53 to 1.72) (Bosland, *JAMA*, 2013) [35].
 
 #### Rice Protein
 
@@ -126,7 +126,7 @@ In a laboratory analysis, about 36% of the amino acids in a brown rice protein i
 
 Pea protein is a complete protein. In 15 healthy adults, the overall digestibility of pea protein isolate (93.6%) did not differ from that of casein (96.8%), though leucine, valine, lysine and phenylalanine were less digestible from pea. The share of protein the body used was also similar, and pea scored 1.00 on the digestible indispensable amino acid score, meaning it met all amino acid needs (Guillin, *Am J Clin Nutr*, 2022) [37]. Like soy, pea protein is low in methionine [27].
 
-In a placebo-controlled trial, 161 men aged 18 to 35 years took 25 g of pea protein, whey protein or placebo twice a day during 12 weeks of upper-body resistance training. Biceps thickness and strength rose in all groups. Among the men who were weakest at the start, thickness rose more with pea protein than with placebo, and whey did not differ from either (Babault, *J Int Soc Sports Nutr*, 2015) [38]. In 15 adults doing 8 weeks of high-intensity functional training, 24 g of whey or pea protein around training gave similar gains in strength (Banaszek, *Sports*, 2019) [39].
+In a placebo-controlled trial, 161 men aged 18 to 35 years took 25 g of pea protein, whey protein or placebo twice a day during 12 weeks of upper-body resistance training. Biceps thickness and strength rose in all groups. Among the men who started out weakest, thickness rose more with pea protein than with placebo, and whey did not differ from either (Babault, *J Int Soc Sports Nutr*, 2015) [38]. In 15 adults doing 8 weeks of high-intensity functional training, 24 g of whey or pea protein around training gave similar gains in strength (Banaszek, *Sports*, 2019) [39].
 
 **Phytate concern:** Pea protein preparations can contain phytate, an antinutrient that binds iron, zinc and calcium in the gut so that less is absorbed (Naczk, *J Food Sci*, 1986; Schlemmer, *Mol Nutr Food Res*, 2009) [40][41]. Phytate content varies between foods and changes with processing and storage [41].
 
@@ -146,7 +146,7 @@ Mycoprotein is protein made from the fungus *Fusarium venenatum* and sold as Quo
 
 In a 10-week trial, 22 young adults did high-volume resistance training 5 days a week on a high-protein diet that was either omnivorous or vegan and rich in mycoprotein. Lean mass rose by a similar amount (2.6 kg omnivorous, 3.1 kg vegan), as did thigh muscle volume and strength (Monteyne, *J Nutr*, 2023) [46]. Both groups ate plenty of protein, so the trial compared protein sources rather than testing extra protein.
 
-Mycoprotein may cause gastrointestinal distress due to high fiber content (Finnigan, *Curr Dev Nutr*, 2019) [47]. In self-reports of reactions to Quorn products, people described gut symptoms such as vomiting and diarrhea, and allergic reactions including hives and anaphylaxis, one of them fatal (Jacobson, *Ann Allergy Asthma Immunol*, 2018) [117].
+Self-reports of reactions to Quorn products, collected through an advocacy group's website, described gut symptoms such as vomiting and diarrhea, and allergic reactions including hives and anaphylaxis, one of them fatal (Jacobson, *Ann Allergy Asthma Immunol*, 2018) [117]. A symposium review, drawing on a systematic evidence review, judged allergic reactions to mycoprotein exceptionally rare (Finnigan, *Curr Dev Nutr*, 2019) [47].
 
 ### Protein Purity and Essential Amino Acid Content
 
@@ -160,7 +160,7 @@ Extra protein can add to the muscle and strength gains from regular resistance e
 
 **Meta-analyses and systematic reviews:**
 
-A meta-analysis of 49 trials with 1,863 participants found that protein supplements added to gains in strength and muscle size during resistance training lasting 6 weeks or more. The effect on lean mass was smaller in older people and larger in people already trained, and total protein intakes above about 1.6 g/kg a day brought no further gain (Morton, *Br J Sports Med*, 2017) [48]. A later dose-response meta-analysis found that the rate of benefit diminishes rapidly after 1.3 g/kg a day (Brad's current guidance, 31 Jul 2026).
+A meta-analysis of 49 trials with 1,863 participants found that protein supplements added to gains in strength and muscle size during resistance training lasting 6 weeks or more. The effect on lean mass was smaller in older people and larger in people already trained, and total protein intakes above about 1.6 g/kg a day brought no further gain (Morton, *Br J Sports Med*, 2017) [48]. A later dose-response meta-analysis pooling 105 papers on randomised trials found that each extra 0.1 g/kg a day of protein added 0.39 kg of lean mass below a total intake of 1.3 g/kg a day, but only 0.12 kg above it (Tagawa, *Nutr Rev*, 2021) [126].
 
 A 2025 network meta-analysis of 38 trials in 2,610 adults aged 50 and over found that protein plus resistance training increased lean body mass more than protein alone. Resistance training, with or without protein, improved strength compared with controls and physical function compared with protein alone, and the authors judged the combination the most effective approach (Tian, *J Nutr*, 2025) [49].
 
@@ -168,13 +168,13 @@ A meta-analysis of 22 trials with 680 younger and older adults found that protei
 
 **When dietary protein is already adequate:**
 
-In 41 active older men (average age 70) doing 12 weeks of resistance training, 21 g of protein after exercise and before sleep each night did not increase gains in muscle size or strength compared with a placebo drink (Holwerda, *J Nutr*, 2018) [51].
+In a 12-week resistance training trial in 41 active older men (average age 70), a protein drink (21 g) taken after each session and every night before sleep added nothing to the gains in muscle size or strength seen with an energy-matched placebo (Holwerda, *J Nutr*, 2018) [51].
 
-Similarly, in 55 postmenopausal women (average age 58), 12 weeks of resistance training with a high-protein diet (2.5 g per kg of fat-free mass) brought no clear extra gain in body composition or strength over training alone. Training improved muscle mass and strength with or without the high-protein diet, and the high-protein diet without training did not change body composition (Ioannidou, *J Nutr Health Aging*, 2024) [52].
+Similarly, a 12-week trial in 55 postmenopausal women (average age 58) compared resistance training with and without a high-protein diet (2.5 g per kg of fat-free mass). Training improved muscle mass and strength in both groups, the high-protein diet added no clear benefit, and the diet without training did not change body composition (Ioannidou, *J Nutr Health Aging*, 2024) [52].
 
 In 19 women trained in Pilates (average age 31) who already ate about 1.3 g of protein per kg of body weight a day, adding 0.6 g of whey per kg daily for 10 weeks did not improve body composition, core muscle endurance or flexibility beyond what Pilates alone achieved (Karpouzi, *J Int Soc Sports Nutr*, 2025) [53].
 
-In 60 older men (average age 69) who already ate more protein than the RDA, adding 30 g of whey or casein a day (10 g per meal) to 12 weeks of mixed power training brought no extra gain in muscle mass, strength or function; all three groups improved with training (Dulac, *Br J Nutr*, 2021) [54].
+In 60 older men (average age 69) who already ate more protein than the RDA, adding 30 g of whey or casein a day (10 g per meal) to a 12-week mixed power training programme brought no extra gain in muscle mass, strength or function; all three groups improved with training (Dulac, *Br J Nutr*, 2021) [54].
 
 In 128 healthy adults aged 65 and over (average age 74) whose usual protein intake was about 0.85 g/kg a day, raising it to 1.5 g/kg a day with whey protein for 24 weeks did not improve muscle power, physical performance or muscle mass compared with placebo. Potassium bicarbonate, added to offset acid, did not help either (Ceglia, *Am J Clin Nutr*, 2026) [55].
 
@@ -184,11 +184,11 @@ Extra protein without exercise has shown little benefit. In 92 older men with ph
 
 **Protein without exercise for maintenance:**
 
-In 123 Chinese adults aged 65 to 79 years with low lean mass, about 16 g a day of whey, soy or a whey-soy blend for 6 months maintained lean mass, gait speed and physical performance, which declined in a control group on their usual diet. Handgrip strength did not change, and the type of protein did not matter (Li, *J Acad Nutr Diet*, 2021) [60].
+In 123 Chinese adults aged 65 to 79 years with low lean mass, about 16 g a day of whey, soy or a whey-soy blend for 6 months maintained lean mass, gait speed and physical performance, which declined in a control group on their usual diet. Handgrip strength did not change, and results did not differ by protein type (Li, *J Acad Nutr Diet*, 2021) [60].
 
 ### Older Adults and Sarcopenia
 
-Resistance exercise and protein supplementation are of particular interest for older adults at risk of sarcopenia, the loss of muscle mass and strength with age, which has been linked with falls and fractures (Clynes, *Calcif Tissue Int*, 2015) [61].
+Sarcopenia, the loss of muscle mass and strength with age, has been linked with falls and fractures (Clynes, *Calcif Tissue Int*, 2015) [61]. The studies below tested protein in older adults, most of them alongside resistance training.
 
 In 32 older women already used to resistance training, 35 g of whey protein after each session for 12 weeks increased lean soft tissue more than placebo (3.8% vs 2.0%), raised training volume more (45.4% vs 35.4%), and lowered the total to HDL cholesterol ratio more (-11.8% vs -2.9%) (Fernandes, *Exp Gerontol*, 2018) [62].
 
@@ -197,6 +197,8 @@ In 70 older women, the same research group found that 35 g of whey taken before 
 In a cohort study of 108 adults aged 60 and over with knee osteoarthritis and sarcopenia, 12 weeks of resistance training with protein supplements was linked with a faster return to normal walking speed, and the authors estimated that the protein may speed recovery by about 3 months compared with training alone (Liao, *Nutrients*, 2023) [64].
 
 In a 12-month trial in 218 people aged 75 to 96 with sarcopenia (68% women), 20 g of whey-enriched protein twice a day, with home exercises and 20 mcg of vitamin D daily for everyone, did not slow the decline in muscle and physical performance compared with a placebo drink or no supplement (Björkman, *J Am Med Dir Assoc*, 2020) [65].
+
+In a 2-year cluster randomised trial in 60 Australian residential aged care homes (7,195 residents, average age 86), 30 homes added milk, yoghurt and cheese to their menus, raising daily intake to 69 g of protein and 1,142 mg of calcium, against 58 g of protein and 700 mg of calcium in the control homes. The extra dairy lowered the risk of any fracture (HR 0.67, 95% CI 0.48 to 0.93), hip fracture (HR 0.54, 95% CI 0.35 to 0.83) and falls (HR 0.89, 95% CI 0.78 to 0.98). The drop in falls first became significant at 3 months and the drop in hip fractures at 5 months, and deaths did not change. Calcium and protein rose together, so the trial cannot separate their effects (Iuliano, *BMJ*, 2021) [85].
 
 ### Bed Rest and Hospitalization
 
@@ -210,7 +212,7 @@ In malnourished adults aged 65 and over in hospital for heart failure, heart att
 
 A 12-week trial in 26 older women with sarcopenic obesity found that 35 g of whey protein a day with supervised resistance training 3 times a week increased arm and leg lean tissue more than placebo (6.0% vs 2.5%) and lowered total fat more (-3.3% vs -0.3%); strength improved similarly in both groups (Nabuco, *Clin Nutr ESPEN*, 2019) [69].
 
-In a 12-week trial in 206 adults with overweight or obesity (70% women) on a diet 500 kcal a day below their needs, a shake with 17 g of protein and 6 g of fiber taken 30 minutes before breakfast and lunch led to more weight loss than a low-protein, lower-fiber placebo shake (-3.3 kg vs -1.8 kg). Body fat percentage fell similarly in both groups (Glynn, *J Nutr*, 2022) [70].
+In a 12-week trial in 206 adults with overweight or obesity (70% women) on a diet 500 kcal a day below their needs, a shake with 17 g of protein and 6 g of fiber taken 30 minutes before both breakfast and lunch led to more weight loss than a low-protein, lower-fiber placebo shake (-3.3 kg vs -1.8 kg). Body fat percentage fell similarly in both groups (Glynn, *J Nutr*, 2022) [70].
 
 **Without dieting or exercise:** In 10 younger and 10 older obese men, a 30 g whey protein drink slowed gastric emptying yet did not cut how much they ate at a buffet meal 3 hours later (Oberoi, *Nutr Diabetes*, 2020) [71].
 
@@ -222,17 +224,15 @@ In a 12-week trial in 206 adults with overweight or obesity (70% women) on a die
 
 ### Blood Sugar, Insulin Response, and Diabetes
 
-Protein supplementation appears to aid blood sugar control and may benefit diabetes management.
-
 In 13 centrally obese men with insulin resistance, 20 g of whey protein taken 15 minutes before breakfast lowered the post-meal glucose peak by 17.0%, and taken with breakfast by 9.2%, compared with no whey. Whey taken before the meal lowered overall glucose more than whey taken 15 minutes after it (Allerton, *Br J Nutr*, 2019) [75].
 
-In 15 people with well-controlled type 2 diabetes taking only sulfonylurea or metformin, 50 g of whey in 250 mL of water before a high-glycemic breakfast lowered glucose over the next 3 hours by 28% and raised the insulin response by 105% (the early response by 96%) compared with water alone. Whey also slows stomach emptying (Jakubowicz, *Diabetologia*, 2014; Ma, *Diabetes Care*, 2009) [76][77].
+In a randomised crossover trial in 15 adults with well-controlled type 2 diabetes, treated with sulfonylurea or metformin alone, a 50 g whey drink (in 250 mL of water) taken before a high-glycemic breakfast lowered glucose by 28% over the 180 minutes after the meal, compared with water alone. Insulin rose 105% more with whey, and 96% more in the early phase (Jakubowicz, *Diabetologia*, 2014) [76]. In another small study, whey taken before a meal slowed stomach emptying (Ma, *Diabetes Care*, 2009) [77].
 
-A study among 18 adults with poorly controlled type 2 diabetes (average HbA1c 7.3%) showed that 15 g whey protein 10 minutes before breakfast reduced post-meal blood sugar by 16% over 4 hours, attributed to a 40% increase in beta-cell function and 22% reduction in post-meal insulin clearance (Smith, *J Clin Endocrinol Metab*, 2023) [78].
+In a randomised crossover trial in 18 adults with type 2 diabetes, 15 g of whey protein drunk 10 minutes before a mixed breakfast cut the post-meal rise in glucose (area under the curve) by 16% compared with placebo. Beta-cell function was 40% greater and insulin clearance after the meal 22% lower, while insulin secretion itself did not change (Smith, *J Clin Endocrinol Metab*, 2023) [78].
 
-**Protein type matters:** In 9 healthy men, a whey protein shake raised insulin more over 3 hours than equal shakes of rice or potato protein, and the plant proteins kept blood glucose steadier (Lorinczova, *Nutrients*, 2021) [79].
+**Protein type matters:** In a crossover study in 9 healthy men, shakes of rice or potato protein produced a smaller insulin response than a whey shake with the same calories, and the authors concluded that the plant proteins kept glucose steadier (Lorinczova, *Nutrients*, 2021) [79].
 
-**Diabetes reversal:** In 30 people with type 2 diabetes, an 8-week very low calorie diet, with all diabetes medicines stopped at the start, followed by a gradual return to normal eating and a weight maintenance program, cut average weight from 98.0 to 83.8 kg. In 12 of the 30 (40%), fasting glucose fell below 7 mmol/L, and this remission lasted at least 6 months; those who responded had had diabetes for a shorter time (Steven, *Diabetes Care*, 2016) [80].
+**Diabetes reversal:** In 30 people with type 2 diabetes, an 8-week very low calorie diet, with all diabetes medicines stopped at the start, followed by a gradual return to normal eating and a weight maintenance program, cut average weight from 98.0 to 83.8 kg. Of the 30, 12 (40%) reached a fasting plasma glucose of less than 7 mmol/L and stayed in remission for at least 6 months; these responders had had diabetes for a shorter time (Steven, *Diabetes Care*, 2016) [80].
 
 ### Dialysis and Kidney Disease
 
@@ -242,11 +242,9 @@ Dialysis may decrease serum albumin, and levels below 4.0 g/dL are associated wi
 
 In 99 older adults (average age 67), 50 g a day of whey protein isolate for 12 weeks reduced aortic stiffness compared with a carbohydrate control of equal calories, with little effect on brain blood flow or cognitive function (Lefferts, *Nutrients*, 2020) [84].
 
-Higher protein intake along with adequate calcium from foods may reduce fracture and fall risk in elderly adults. A study involving 7,195 elderly adults (average age 86) in 60 long-term care facilities found that facilities providing additional milk, yogurt, and cheese (total 1,142 mg calcium and 69 g protein/day vs. usual 700 mg calcium and 58 g protein) had 11% lower fall risk at 3 months, 33% lower overall fracture risk, and 46% lower hip fracture risk at 5 months (Iuliano, *BMJ*, 2021) [85].
-
 ### Cancer and Chemotherapy
 
-In 166 malnourished adults with advanced cancer having chemotherapy, adding 20 g a day of whey protein isolate to nutritional counseling for 3 months improved body composition, muscle strength and body weight, and lowered the risk of chemotherapy toxicity (risk difference -9.8%, 95% CI -16.9 to -2.6) compared with counseling alone (Cereda, *Cancer Med*, 2019) [86].
+In a randomised trial in 166 malnourished adults with advanced cancer having chemotherapy, all given nutritional counseling, those who also took 20 g a day of whey protein isolate for 3 months did better than those given counseling alone on body composition, body weight and muscle strength, and had a lower risk of chemotherapy toxicity (risk difference -9.8%, 95% CI -16.9 to -2.6) (Cereda, *Cancer Med*, 2019) [86].
 
 ### Skin and Wrinkles
 
@@ -254,7 +252,7 @@ In a mouse study, whey peptides given twice a day during 17 weeks of UVB exposur
 
 ### HIIT Training
 
-Protein does not appear to add to the benefits of high-intensity interval training (HIIT) in younger adults. In 47 sedentary adults (average age 31), 40 g of whey after each session of 8 weeks of low-volume HIIT on a stationary bike did not improve fitness (VO2max), blood pressure or other heart and metabolic markers more than a maltodextrin placebo; both groups improved (Reljic, *Nutrients*, 2022) [88].
+In 47 sedentary adults (average age 31), 40 g of whey after each session of 8 weeks of low-volume high-intensity interval training (HIIT) on a stationary bike did not improve fitness (VO2max), blood pressure or other heart and metabolic markers more than a maltodextrin placebo; both groups improved (Reljic, *Nutrients*, 2022) [88].
 
 ## 4. Recommended Dosing
 
@@ -263,9 +261,9 @@ Protein does not appear to add to the benefits of high-intensity interval traini
 | Population | Protein (g/lb body weight) | Protein (g/kg body weight) | Example (150 lb person) |
 |------|:-:|:-:|:-:|
 | Adults (RDA) | 0.36 | 0.8 | 54 g/day |
-| Older adults (50+) | 0.45–0.55 | 1.0–1.2 | 68–83 g/day |
+| Older adults (50+) | 0.45–0.55 | 1.0–1.2 | 68–82 g/day |
 | Exercising people (ISSN, 2007) | 0.64–0.91 | 1.4–2.0 | – |
-| Point beyond which a 49-study review found no added muscle benefit | 0.73 | 1.6 | 109.5 g/day |
+| Point beyond which a 49-study review found no added muscle benefit | 0.73 | 1.6 | 109 g/day |
 
 Sources: Krok-Schoen, *J Nutr Health Aging*, 2019; Campbell, *J Int Soc Sports Nutr*, 2007; Deutz, *Clin Nutr*, 2014; Morton, *Br J Sports Med*, 2017 [2][116][3][48].
 
@@ -279,19 +277,19 @@ In one trial in older women, whey taken after exercise was more effective than w
 
 The International Society of Sports Nutrition's position stand suggests about 0.25 g of high-quality protein per kg of body weight per serving, or 20 to 40 g, spread evenly every 3 to 4 hours across the day [103]. It sets no strict post-workout window: protein before or after exercise helps, and the muscle-building effect of exercise lasts at least 24 hours, though it likely fades with time [103].
 
-In a study of 40 young, 40 middle-aged and 40 older adults, the older group ate less protein a day than young adults (83.4 vs 105.1 g), and all groups ate it unevenly across meals. The authors suggested that eating more protein at breakfast and lunch could help limit muscle loss with age (Smeuninx, *Front Nutr*, 2020) [90].
+In a study of 40 young, 40 middle-aged and 40 older adults, the older group ate less protein a day than young adults (83.4 vs 105.1 g), and all groups ate it unevenly across meals. The authors suggested that raising protein intake, especially at breakfast and lunch, could help limit muscle loss with age (Smeuninx, *Front Nutr*, 2020) [90].
 
 ### Timing
 
-A systematic review of 34 trials found that, during resistance training, protein supplements taken with meals rather than between them were followed slightly more often by gains in lean mass (94% vs 90% of study groups) and much more often by fat loss (87% vs 59%); the authors concluded that taking them with meals may help more with weight control (Hudson, *Nutr Rev*, 2018) [91]. Taking protein after exercise, as part of a meal, appears to be optimal for both muscle building and metabolic improvement [63][91].
+A systematic review of 34 trials found that, during resistance training, protein supplements taken with meals rather than between them were followed slightly more often by gains in lean mass (94% vs 90% of study groups) and much more often by fat loss (87% vs 59%); the authors concluded that taking them with meals may help more with weight control (Hudson, *Nutr Rev*, 2018) [91].
 
 In 24 healthy older adults, spreading protein evenly over three meals led to faster amino acid absorption and a more positive whole-body protein balance than eating most of it at dinner, though muscle protein synthesis did not differ (Agergaard, *Clin Nutr*, 2023) [92]. In 42 untrained young men (aged 18 to 24) doing 6 weeks of resistance training, 25 g of whey with vitamin D3 gave similar gains whether taken before bed or in the morning after waking (Chen, *Nutrients*, 2022) [93].
 
-For blood sugar, 20 g of whey taken 15 minutes before a meal, or with it, lowered the post-meal glucose peak (Allerton, *Br J Nutr*, 2019) [75].
+For blood sugar, 20 g of whey taken with a meal or 15 minutes before it lowered the post-meal glucose peak, and the earlier dose worked better (Allerton, *Br J Nutr*, 2019) [75].
 
 ### Plant-Based Protein Adjustments
 
-Plant proteins have a lower ratio of essential amino acids to total protein, so a larger serving is needed to match whey: about 37 g of pea protein provides the 10.9 g of essential amino acids in 25 g of whey [27]. Pairing complementary plant proteins (for example pea with rice) helps meet each essential amino acid requirement [27].
+Because plant proteins hold a smaller share of essential amino acids, matching whey takes a larger serving: about 37 g of pea protein supplies the 10.9 g of essential amino acids that 25 g of whey provides [27]. Pairing complementary plant proteins (for example pea with rice) helps meet each essential amino acid requirement [27].
 
 ### Protein Powder as Part of MicroVitamin+ Powder
 
@@ -303,7 +301,7 @@ Heat can unfold milk proteins and make them clump: in a laboratory study, skim m
 
 ### Storage
 
-In sealed bags, whey protein concentrate kept for at least 18 months at lower temperatures but only 9 months at 35°C (Tunick, *J Dairy Sci*, 2016) [98]. In pea protein isolate stored for a year, light at room temperature did the most damage, raising volatile compounds and changing its smell and color (Fischer, *Molecules*, 2022) [99]. Store in a closed container at room temperature, away from light.
+In sealed bags, whey protein concentrate kept for at least 18 months at lower temperatures but only 9 months at 35°C (Tunick, *J Dairy Sci*, 2016) [98]. In pea protein isolate stored for a year, light at room temperature did the most damage, raising volatile compounds and changing its smell and color (Fischer, *Molecules*, 2022) [99]. These results suggest keeping protein powder cool and out of the light.
 
 ## 5. Safety and Side Effects
 
@@ -313,7 +311,7 @@ Whey protein contains lactose, which can cause bloating, gas, cramps, and diarrh
 
 ### Kidney Strain
 
-A study of 1,324 adults (average age 64) followed for a median of 10 years, which measured kidney function directly, found that higher habitual protein intake was not linked with decline in kidney function (Rinde, *Clin Kidney J*, 2026) [118]. Large amounts of cricket protein may also be unwise if your kidney function is reduced [26].
+A study of 1,324 adults (average age 64) followed for a median of 10 years, which measured kidney function directly, found no link between higher habitual protein intake and decline in kidney function (Rinde, *Clin Kidney J*, 2026) [118]. If your kidney function is reduced, it may be wise to ask your doctor before taking cricket protein in large amounts.
 
 The 2020 KDOQI nutrition guideline for chronic kidney disease, written with the Academy of Nutrition and Dietetics, gives advice on dietary protein intake and nutritional supplements; it covers people with advanced or end-stage kidney disease, people with stages 1 to 5 disease who are not on dialysis, and people with a kidney transplant [104]. A recent narrative review concluded that in adults, high protein intake may speed the progression of chronic kidney disease, and that protein advice should be personalised to age and kidney function [105]. If you have chronic kidney disease, ask your doctor how much protein suits you before using a protein powder.
 
@@ -321,25 +319,25 @@ In adults without chronic kidney disease, a meta-analysis of 22 randomised trial
 
 ### Heavy Metal Contamination
 
-A 2020 risk assessment of published heavy-metal test results for protein powders found that one or three servings a day did not pose an increased health risk, with the lowest risk in whey powders (Bandara, *Toxicol Rep*, 2020) [119]. In the Consumer Reports test that Brad discussed, plant-based protein powders tended to contain more lead, though animal-based products were also affected ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)). For independent testing of named products, see consumerlab.com or Labdoor.
+A 2020 risk assessment of published heavy-metal test results for protein powders found no increased health risk from one or three servings a day, with the lowest risk in whey powders (Bandara, *Toxicol Rep*, 2020) [119]. In the Consumer Reports test that Brad discussed, plant-based protein powders tended to contain more lead, though animal-based products were also affected ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)). For independent testing of named products, see consumerlab.com or Labdoor.
 
 Brad bases his decisions on FDA safety limits, which are over 17 times higher than the Consumer Reports threshold; the worst powder in the Consumer Reports test, at 7.7 mcg of lead per serving, still fell within typical daily dietary exposure and just under the FDA's safety limit ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)).
 
 ### Acne
 
-Whey protein supplements have been linked with acne on the trunk in teenage boys who used them for bodybuilding (Cengiz, *Health Promot Perspect*, 2017) [120]. In a small study of young adults, acne started or worsened in a two-month period of using protein-calorie supplements, and whey contains growth factors that may be related to acne (Pontes, *An Bras Dermatol*, 2013) [121].
+Whey protein supplements have been linked with acne on the trunk in teenage boys who used them for bodybuilding (Cengiz, *Health Promot Perspect*, 2017) [120]. In a small study in young adults, acne started or worsened in a two-month period of using protein-calorie supplements, and whey contains growth factors that may be related to acne (Pontes, *An Bras Dermatol*, 2013) [121].
 
 ### Allergic Reactions
 
-People allergic to milk should avoid whey and casein; even laboratory-made whey contains the milk allergen beta-lactoglobulin [10]. Whey supplements may also cause allergic reactions in some people without a known milk allergy. Plant proteins can cause allergy too: in adults, most allergens behind food anaphylaxis come from plants, mainly pulses (such as soy and peas) and nuts, and concentrated plant protein isolates such as pea are of particular concern (Präger, *J Dtsch Dermatol Ges*, 2023) [122]. People allergic to egg should avoid egg white protein. People allergic to insects or shellfish may react to cricket protein [26]. Mycoprotein (Quorn) has been linked with anaphylaxis, including one fatal reaction [117].
+People allergic to milk should avoid whey and casein; even laboratory-made whey contains the milk allergen beta-lactoglobulin [10]. Whey supplements may also cause allergic reactions in some people without a known milk allergy. Plant proteins can cause allergy too: in adults, most allergens behind food anaphylaxis come from plants, mainly pulses (such as soy and peas) and nuts, and concentrated plant protein isolates such as pea are of particular concern (Präger, *J Dtsch Dermatol Ges*, 2023) [122]. People allergic to egg should avoid egg white protein. People allergic to crustaceans such as shrimp, to dust mites or to molluscs may react to cricket protein [127]. Allergy to mycoprotein (Quorn) appears to be very rare [47], but self-reports sent to an advocacy group's website included anaphylaxis, one case fatal [117].
 
 ### Blood Pressure in Older Adults
 
-In a small study of older men, whey protein drinks, even at 30 g, lowered systolic blood pressure, most clearly between 120 and 180 minutes after drinking (Oberoi, *Nutrients*, 2022) [123]. People who take medicines that slow the heart rate, such as beta blockers, or who have a heart condition that slows it, may be more at risk, so take care when standing up during that window.
+In a small study in older men, whey protein drinks, even at 30 g, lowered systolic blood pressure, most clearly between 120 and 180 minutes after drinking (Oberoi, *Nutrients*, 2022) [123]. If you tend to feel light-headed when you stand up, it may be wise to take care in the hours after a whey drink.
 
 ### Unexpected Ingredients
 
-Some products, especially those sold for "energy", may contain sources of caffeine, such as guarana, mate, coffee extract or cocoa, and many have added vitamins and minerals. Check the label, and ask your doctor first before giving a protein powder to a child or using one while pregnant, breastfeeding, or living with diabetes.
+Guarana, mate, coffee extract and cocoa all contain caffeine, and some powders may include them; others have added vitamins and minerals. Check the label. If you are pregnant or breastfeeding, have diabetes, or are buying for a child, it may be wise to ask your doctor first.
 
 ## 6. Drug Interactions
 
@@ -347,9 +345,8 @@ Some products, especially those sold for "energy", may contain sources of caffei
 
 | Drug | Interaction | Recommendation |
 |------|------|------|
-| Beta blockers and other medicines that slow heart rate | Whey may lower blood pressure, most clearly between 120 and 180 minutes after a drink, particularly in older adults [123] | Take care when standing up from sitting in that window |
 | Thyroid hormone medication | Soy may reduce its absorption [33] | Ask your doctor whether your dose needs checking if you eat soy regularly [33] |
-| Stimulants | Caffeine-containing ingredients in some "energy" powders (coffee extract, guarana, mate, cocoa) may add to the effects and side effects of other stimulants | Check the label |
+| Stimulants | Caffeine, found in guarana, mate, coffee extract and cocoa, may add to the effects of other stimulant medicines | Check the label |
 | Tetracycline antibiotics | Milk and other dairy products reduce tetracycline absorption [107]; dairy protein powders have not been studied directly | Ask your pharmacist how to time doses around whey or casein powders |
 | Levodopa (Parkinson's disease) | Dietary protein is a major factor that can reduce levodopa absorption [108] | If you have motor fluctuations, ask your doctor or dietitian whether changing when you eat protein could help [108][109] |
 
@@ -415,7 +412,7 @@ Milk adds protein and calories to a shake; water adds neither. Check the label o
 
 [5] Kalman DS. "Amino Acid Composition of an Organic Brown Rice Protein Concentrate and Isolate Compared to Soy and Whey Concentrates and Isolates." *Foods*. 2014;3(3):394-402. doi: [10.3390/foods3030394](https://doi.org/10.3390/foods3030394)
 
-[7] Micke P, et al. "Effects of long-term supplementation with whey proteins on plasma glutathione levels of HIV-infected patients." *Eur J Clin Investigation*. 2001;31(2):171-178. doi: [10.1046/j.1365-2362.2001.00781.x](https://doi.org/10.1046/j.1365-2362.2001.00781.x)
+[7] Micke P, et al. "Oral supplementation with whey proteins increases plasma glutathione levels of HIV-infected patients." *Eur J Clin Invest*. 2001;31(2):171-178. doi: [10.1046/j.1365-2362.2001.00781.x](https://doi.org/10.1046/j.1365-2362.2001.00781.x) PMID: 11168457. https://pubmed.ncbi.nlm.nih.gov/11168457/
 
 [8] Pape-Zambito DA, Magliaro AL, Kensinger RS. "Concentrations of 17beta-estradiol in Holstein whole milk." *J Dairy Sci*. 2007;90(7):3308-3313. doi: [10.3168/jds.2006-891](https://doi.org/10.3168/jds.2006-891) PMID: 17582116. https://pubmed.ncbi.nlm.nih.gov/17582116/
 
@@ -450,8 +447,6 @@ Milk adds protein and calories to a shake; water adds neither. Check the label o
 [24] Rennard BO, et al. "Chicken soup inhibits neutrophil chemotaxis in vitro." *Chest*. 2000;118(4):1150-1157. doi: [10.1378/chest.118.4.1150](https://doi.org/10.1378/chest.118.4.1150)
 
 [25] Monro JA, et al. "The risk of lead contamination in bone broth diets." *Med Hypotheses*. 2013;80(4):389-390. doi: [10.1016/j.mehy.2012.12.026](https://doi.org/10.1016/j.mehy.2012.12.026)
-
-[26] European Food Safety Authority. "Risk profile related to production and consumption of insects as food and feed." *EFSA Journal*. 2015;13(10):4257. doi: [10.2903/j.efsa.2015.4257](https://doi.org/10.2903/j.efsa.2015.4257)
 
 [27] Gorissen SHM, et al. "Protein content and amino acid composition of commercially available plant-based protein isolates." *Amino Acids*. 2018;50:1685-1695. doi: [10.1007/s00726-018-2640-5](https://doi.org/10.1007/s00726-018-2640-5)
 
@@ -553,7 +548,7 @@ Milk adds protein and calories to a shake; water adds neither. Check the label o
 
 [77] Ma J, et al. "Effects of a protein preload on gastric emptying, glycemia, and gut hormones after a carbohydrate meal in diet-controlled type 2 diabetes." *Diabetes Care*. 2009;32(9):1600-1602. doi: [10.2337/dc09-0723](https://doi.org/10.2337/dc09-0723)
 
-[78] Smith K, et al. "A whey protein pre-load enhances postprandial beta-cell function in type 2 diabetes." *J Clin Endocrinol Metab*. 2023.
+[78] Smith K, Taylor GS, Walker M, et al. "Pre-Meal Whey Protein Alters Postprandial Insulinemia by Enhancing β-Cell Function and Reducing Insulin Clearance in T2D." *J Clin Endocrinol Metab*. 2023;108(8):e603-e612. doi: [10.1210/clinem/dgad069](https://doi.org/10.1210/clinem/dgad069) PMID: 36734166. https://pubmed.ncbi.nlm.nih.gov/36734166/
 
 [79] Tiekou Lorinczova H, Deb S, Begum G, et al. "Comparative Assessment of the Acute Effects of Whey, Rice and Potato Protein Isolate Intake on Markers of Glycaemic Regulation and Appetite in Healthy Males Using a Randomised Study Design." *Nutrients*. 2021;13(7). doi: [10.3390/nu13072157](https://doi.org/10.3390/nu13072157) PMID: 34201703. https://pubmed.ncbi.nlm.nih.gov/34201703/
 
@@ -638,3 +633,7 @@ Milk adds protein and calories to a shake; water adds neither. Check the label o
 [124] Antonio J, Ellerbroek A, Evans C, et al. "High protein consumption in trained women: bad to the bone?" *J Int Soc Sports Nutr*. 2018;15:6. doi: [10.1186/s12970-018-0210-6](https://doi.org/10.1186/s12970-018-0210-6) PMID: 29434529. https://pubmed.ncbi.nlm.nih.gov/29434529/
 
 [125] Barkovich E, Gropman AL. "Late Onset Ornithine Transcarbamylase Deficiency Triggered by an Acute Increase in Protein Intake: A Review of 10 Cases Reported in the Literature." *Case Rep Genet*. 2020;2020:7024735. doi: [10.1155/2020/7024735](https://doi.org/10.1155/2020/7024735) PMID: 32373372. https://pubmed.ncbi.nlm.nih.gov/32373372/
+
+[126] Tagawa R, Watanabe D, Ito K, et al. "Dose-response relationship between protein intake and muscle mass increase: a systematic review and meta-analysis of randomized controlled trials." *Nutr Rev*. 2021;79(1):66-75. doi: [10.1093/nutrit/nuaa104](https://doi.org/10.1093/nutrit/nuaa104) PMID: 33300582. https://pubmed.ncbi.nlm.nih.gov/33300582/
+
+[127] EFSA Panel on Nutrition, Novel Foods and Food Allergens (NDA), Turck D, Bohn T, et al. "Safety of Acheta domesticus (house cricket) spray-dried powder as a Novel food pursuant to Regulation (EU) 2015/2283." *EFSA J*. 2026;24(9):e9946. doi: [10.2903/j.efsa.2026.9946](https://doi.org/10.2903/j.efsa.2026.9946) PMID: 42798873. https://pubmed.ncbi.nlm.nih.gov/42798873/
