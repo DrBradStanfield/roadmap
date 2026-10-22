@@ -8,7 +8,7 @@ tags: ["Supplements"]
 keywords: ["cholesterol", "ldl", "hdl", "triglycerides", "plant sterols", "stanols", "phytosterols", "beta-sitosterol", "policosanol", "red yeast rice", "psyllium", "fiber", "omega-3", "fish oil", "epa", "dha", "statin", "cardiovascular", "heart health", "atherosclerosis", "heart attack", "stroke", "niacin", "berberine", "garlic", "curcumin", "turmeric", "pantethine", "artichoke", "ezetimibe", "blood pressure", "hypertension", "diabetes", "insulin resistance", "mediterranean diet", "gut health", "inflammation", "aging", "longevity"]
 summary: "Reference on cholesterol-lowering supplements. Plant sterols/stanols and psyllium have the best evidence for lowering LDL, though less than statins. Red yeast rice acts like a statin; niacin is no longer recommended. Talk to your doctor first, especially if taking a statin or blood thinner."
 reviewed: "2026-10-20"
-sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/cholesterol-lowering-supplements-review-sterols-policosanol/cholesterol/","checked":"2026-09-29","fingerprint":"sha256:d2da43498f2ff35d42ca2af460ac1f0f5a050bf9ad37b853efc89bbf56922d47"}]
+sources: []
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects)*
