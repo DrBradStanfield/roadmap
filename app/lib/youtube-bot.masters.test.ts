@@ -133,18 +133,16 @@ describe('safetySections (US-50 AC6)', () => {
 // The six masters published on 2026-10-20: every one adds its view plus its
 // "Safety and Side Effects" and "Drug Interactions" sections, within the caps.
 describe('masterViews on the published masters (US-50 AC6)', () => {
-  // Magnesium, creatine and vitamin C gained Key safety points in masters-cleanup-1
-  // (2026-10-22), taurine in masters-cleanup-3 and vitamin K in masters-cleanup-2,
-  // so they now add those points instead (next test).
-  const MASTERS = [
-    'collagen-benefits-best-forms-dosing-and-side-effects',
-  ];
+  // All six now carry Key safety points (masters-cleanup-1 to -4, 2026-10-22), so each
+  // adds its view and those points. The path for a master without key points is
+  // covered by the synthetic tm-safe, tm-ix and tm-cited pages below.
   const KEYED = [
     'magnesium-benefits-best-forms-dosing',
     'creatine-benefits-best-forms-dosing-and-side-effects',
     'vitamin-c-benefits-forms-dosing-and-side-effects',
     'taurine-benefits-forms-dosing-and-side-effects',
     'vitamin-k-benefits-forms-dosing-and-side-effects',
+    'collagen-benefits-best-forms-dosing-and-side-effects',
   ];
   it.each(KEYED)('%s adds its view and key safety points, not its whole safety sections (US-50 AC12)', (handle) => {
     const block = masterViews([handle], [])!;
@@ -154,20 +152,6 @@ describe('masterViews on the published masters (US-50 AC6)', () => {
     expect(block.indexOf('### Key safety points')).toBeGreaterThan(view);
     expect(block).not.toMatch(/^### \d+\. (?:Safety and Side Effects|Drug Interactions|References)/m);
     expect(block).not.toContain("Brad's videos on this topic");
-  });
-  it.each(MASTERS)('%s adds its view, then its interaction and safety sections', (handle) => {
-    const block = masterViews([handle], [])!;
-    expect(block).not.toBeNull();
-    const view = block.indexOf('### Current view (reviewed');
-    const safety = block.search(/^### \d+\. Safety and Side Effects$/m);
-    const interactions = block.search(/^### \d+\. Drug Interactions$/m);
-    expect(view).toBeGreaterThan(-1);
-    expect(interactions).toBeGreaterThan(view);
-    expect(safety).toBeGreaterThan(interactions);
-    expect(block).not.toMatch(/^### \d+\. (?:References|Overview|Recommended Dosing)/m);
-    expect(block).not.toContain("Brad's videos on this topic");
-    expect(block).toMatch(/^\[\d+\] .+/m); // a cited bibliography line came with the safety text
-    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
   });
 
 });
