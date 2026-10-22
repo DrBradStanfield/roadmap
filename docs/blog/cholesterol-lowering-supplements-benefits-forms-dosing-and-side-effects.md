@@ -21,7 +21,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 - High-dose fish oil may increase bleeding risk with anticoagulant or antiplatelet drugs such as warfarin, heparin, clopidogrel or aspirin [21].
 - Policosanol may inhibit platelet aggregation and pantethine may increase the risk of bleeding, so use them cautiously with blood thinners [58][65].
-- Do not combine red yeast rice with a statin, niacin or a fibrate. Its monacolin K is identical to lovastatin, which carries a risk of muscle damage with these drugs [16][17][67].
+- Do not combine red yeast rice with a statin, and check with your doctor before combining it with niacin or a fibrate. Its monacolin K is identical to lovastatin, which carries a risk of muscle damage with these drugs [16][17][67].
 - Psyllium may affect how well other medicines work, so take prescription medicines at least 2 hours before or after it [66].
 - Red yeast rice products can have the same potential muscle, kidney and liver side effects as statins, and some contain citrinin, which can damage the kidneys. They are not recommended in pregnancy or breastfeeding [17].
 - Sitosterolemia is a rare inherited disorder linked to marked atherosclerosis; people who have it should not take plant sterol supplements [51].
@@ -309,7 +309,7 @@ Adding sterols or stanols to statin therapy is generally considered safe and may
 
 ### Red Yeast Rice and Statins
 
-Red yeast rice should NOT be combined with prescription statins. Because monacolin K is identical to lovastatin, concomitant use produces additive effects on HMG-CoA reductase inhibition and substantially increases the risk of statin-associated adverse effects including myopathy, rhabdomyolysis, and liver toxicity [16][17]. Red yeast rice can have the same drug interactions as statins [17]. The lovastatin label rules out strong CYP3A4 inhibitors such as itraconazole and clarithromycin, says to avoid gemfibrozil, and urges caution with other fibrates or with niacin at 1 g a day or more, because these drugs can also cause muscle damage; cyclosporine and grapefruit juice raise lovastatin levels [67]. Do not combine red yeast rice with niacin or fibrates.
+Red yeast rice should NOT be combined with prescription statins. Because monacolin K is identical to lovastatin, concomitant use produces additive effects on HMG-CoA reductase inhibition and substantially increases the risk of statin-associated adverse effects including myopathy, rhabdomyolysis, and liver toxicity [16][17]. Red yeast rice can have the same drug interactions as statins [17]. The lovastatin label rules out strong CYP3A4 inhibitors such as itraconazole and clarithromycin, says to avoid gemfibrozil, and urges caution with other fibrates or with niacin at 1 g a day or more, because these drugs can also cause muscle damage; cyclosporine and grapefruit juice raise lovastatin levels [67]. Check with your doctor before combining red yeast rice with niacin or a fibrate.
 
 ### Omega-3 Fatty Acids and Anticoagulants
 
@@ -332,7 +332,7 @@ Laboratory research suggests beta-sitosterol may inhibit thrombin, potentially i
 | Supplement | Interacting Drug(s) | Risk | Management |
 |-----------|---------------------|------|------------|
 | Plant sterols/stanols | Fat-soluble vitamins, carotenoids | Reduced absorption | Supplement carotenoids separately |
-| Red yeast rice | Statins, niacin, CYP3A4 inhibitors, fibrates | Myopathy, rhabdomyolysis, liver toxicity | Do NOT combine with statins, niacin or fibrates |
+| Red yeast rice | Statins, niacin, CYP3A4 inhibitors, fibrates | Myopathy, rhabdomyolysis, liver toxicity | Do NOT combine with statins; check with your doctor before combining with niacin or a fibrate |
 | Omega-3 (high dose) | Warfarin, heparin, clopidogrel, aspirin | Increased bleeding | Monitor bleeding parameters |
 | Psyllium | Prescription medicines taken by mouth | May affect how well they work | Separate by at least 2 hours |
 | Policosanol | Antiplatelet/anticoagulant drugs | Increased bleeding | Use cautiously |

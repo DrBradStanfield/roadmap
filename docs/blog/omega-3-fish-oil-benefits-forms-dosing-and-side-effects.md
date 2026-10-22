@@ -25,7 +25,7 @@ Brad still takes about 1 g of omega-3 a day, from a third-party tested brand, fo
 - Omega-3 use in early pregnancy was linked to more postpartum hemorrhage, which gives some support to stopping it in late pregnancy [192].
 - If you are having chemotherapy, ask your oncologist first; researchers suggest avoiding fish oil on the days around treatment [34].
 - Fish oil may raise the risk of atrial fibrillation, and the risk appears greater at doses above 1 g a day [30].
-- Cod liver oil also contains vitamin A; too much may harm the liver; check your total intake with your doctor or pharmacist [1].
+- Cod liver oil also contains vitamin A [1]; too much may harm the liver [219]; check your total intake with your doctor or pharmacist.
 - Side effects are usually mild: unpleasant taste, bad breath, heartburn, nausea, stomach discomfort and diarrhea [1].
 
 ## Brad's videos on this topic
@@ -1047,3 +1047,5 @@ Source: USDA FoodData Central [1][11].
 [217] Foran SE, Flood JG, Lewandrowski KB. "Measurement of mercury levels in concentrated over-the-counter fish oil preparations: is fish oil healthier than fish?" *Arch Pathol Lab Med*. 2003;127(12):1603-1605. doi: [10.5858/2003-127-1603-MOMLIC](https://doi.org/10.5858/2003-127-1603-MOMLIC). PMID: 14632570.
 
 [218] Abdelhamid AS, Brown TJ, Brainard JS, et al. "Omega-3 fatty acids for the primary and secondary prevention of cardiovascular disease." *Cochrane Database Syst Rev*. 2020;3(3):CD003177. doi: [10.1002/14651858.CD003177.pub5](https://doi.org/10.1002/14651858.CD003177.pub5). PMID: 32114706.
+
+[219] National Institutes of Health, Office of Dietary Supplements. "Vitamin A and Carotenoids -- Health Professional Fact Sheet." Updated 2025. [https://ods.od.nih.gov/factsheets/VitaminA-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminA-HealthProfessional/)
