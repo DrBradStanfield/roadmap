@@ -932,7 +932,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   }, [writeRefused]);
 
   const handleSupplementDelete = useCallback((supplementKey: string) => {
-    setSupplements(prev => prev.filter(s => s.supplementKey !== supplementKey));
+    // Keep stopped keys reserved for later additions, as they are after reload.
+    setSupplements(prev => prev.map(s => s.supplementKey === supplementKey ? { ...s, status: 'stopped' } : s));
     void deleteSupplementApi(supplementKey).then(saved => { if (!saved) writeRefused(); });
   }, [writeRefused]);
 

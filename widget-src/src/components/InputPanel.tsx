@@ -2004,7 +2004,13 @@ export function InputPanel({
                   <button
                     type="button"
                     className="supplement-dropdown-item supplement-custom"
-                    onClick={() => addSupplement(customSupplementKey(trimmedSearch), trimmedSearch.slice(0, 100))}
+                    onClick={() => {
+                      const baseKey = customSupplementKey(trimmedSearch);
+                      let key = baseKey;
+                      // Only additions allocate a key; dose/unit edits keep the recorded key.
+                      for (let suffix = 2; supplements.some(s => s.supplementKey === key); suffix++) key = `${baseKey}_${suffix}`;
+                      addSupplement(key, trimmedSearch.slice(0, 100));
+                    }}
                   >
                     + Add "{trimmedSearch}"
                   </button>
