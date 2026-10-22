@@ -46,26 +46,36 @@ const CONNECTION_CAP = 512;
 /** How long we wait on GitHub before calling it unanswered. */
 const GITHUB_TIMEOUT_MS = 8000;
 
-/**
- * One wording for every way GitHub can fail us — silence, a 5xx, or a refusal
- * such as a flagged account's (US-32 AC39): the agent can only retry.
- */
+/** An explicit provider refusal is distinct from a possibly accepted POST. */
 const UNAVAILABLE = { ok: false, refusal: FEEDBACK_UNAVAILABLE } as const;
+const UNCERTAIN = { ok: false, refusal: 'We could not confirm whether GitHub filed the report. It may already be posted; do not submit it again right now.' } as const;
 
-const filedAt: number[] = [];
-const recent = new Map<string, { url: string; number: number; at: number }>();
-const perConnection = new Map<string, number[]>();
+type Reservation = { at: number };
+const filedAt: Reservation[] = [];
+type Recent = {
+  answer: { ok: true; url: string; number: number } | typeof UNAVAILABLE | typeof UNCERTAIN;
+  at: number;
+};
+const recent = new Map<string, Recent>();
+const perConnection = new Map<string, Reservation[]>();
+const inFlight = new Map<string, ReturnType<FeedbackFiler>>();
 
-/** Test seam — both are process-global and would leak between cases. */
+/** Test seam — process-global state would leak between cases. */
 export function resetGithubIssues(): void {
   filedAt.length = 0;
   recent.clear();
   perConnection.clear();
+  inFlight.clear();
 }
 
 /** Same words, same report. Case and spacing are not a difference worth filing. */
 function dedupeKey(title: string): string {
   return title.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function remember(key: string, answer: Recent['answer'], at: number): void {
+  if (recent.size >= DEDUPE_CAP && !recent.has(key)) recent.delete(recent.keys().next().value as string);
+  recent.set(key, { answer, at });
 }
 
 /**
@@ -88,62 +98,88 @@ async function fileIssue(
   now: number,
 ): Promise<{ ok: true; url: string; number: number } | { ok: false; refusal: string }> {
   const key = `${connection}\n${dedupeKey(issue.title)}`;
+  const pending = inFlight.get(key);
+  if (pending) return pending;
   for (const [id, entry] of recent) if (now - entry.at > DEDUPE_MS) recent.delete(id);
   const already = recent.get(key);
-  if (already) return { ok: true, url: already.url, number: already.number };
+  if (already) return already.answer;
 
-  const mine = (perConnection.get(connection) ?? []).filter((at) => now - at <= DEDUPE_MS);
+  const mine = (perConnection.get(connection) ?? []).filter(({ at }) => now - at <= DEDUPE_MS);
   if (mine.length >= REPORTS_PER_DAY) {
     return { ok: false, refusal: 'You have filed three reports today. Nothing was filed.' };
   }
 
-  while (filedAt.length && now - filedAt[0] > WINDOW_MS) filedAt.shift();
+  while (filedAt.length && now - filedAt[0].at > WINDOW_MS) filedAt.shift();
   if (filedAt.length >= ISSUES_PER_HOUR) {
     return { ok: false, refusal: 'Feedback is paused for an hour. Nothing was filed. Ask the user to try again later.' };
   }
+
+  // Reserve both allowances synchronously: another request can enter as soon
+  // as fetch yields, before GitHub has answered this one.
+  const reservation = { at: now };
+  filedAt.push(reservation);
+  mine.push(reservation);
+  if (perConnection.size >= CONNECTION_CAP && !perConnection.has(connection)) {
+    perConnection.delete(perConnection.keys().next().value as string);
+  }
+  perConnection.set(connection, mine);
 
   // The provider is the one thing the server knows and the tool layer does not,
   // and it is what makes a report reproducible. It names a cloud, never a user.
   const body = `${issue.body}\nprovider: ${provider}`;
 
-  let response: Response;
+  const sending = (async (): ReturnType<FeedbackFiler> => {
+    let response: Response;
+    try {
+      response = await fetch(API, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'User-Agent': 'health-roadmap-mcp',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: issue.title, body, labels: issue.labels }),
+        signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
+      });
+    } catch {
+      remember(key, UNCERTAIN, now);
+      return UNCERTAIN;
+    }
+
+    if (!response.ok) {
+      // The status alone: a GitHub error body can quote the report back at us.
+      console.error('[mcp] github issue refused', response.status);
+      // Only an explicit refusal proves nothing was filed. Network/parse errors
+      // may follow an accepted POST and must keep their reserved capacity.
+      const hourly = filedAt.indexOf(reservation);
+      if (hourly !== -1) filedAt.splice(hourly, 1);
+      const current = perConnection.get(connection);
+      const daily = current?.indexOf(reservation) ?? -1;
+      if (current && daily !== -1) {
+        current.splice(daily, 1);
+        if (!current.length) perConnection.delete(connection);
+      }
+      return UNAVAILABLE;
+    }
+
+    const created = (await response.json().catch(() => null)) as { html_url?: unknown; number?: unknown } | null;
+    if (typeof created?.html_url !== 'string' || !created.html_url || typeof created.number !== 'number' || !created.number) {
+      console.error('[mcp] github issue answered without a url');
+      // HTTP success without a usable URL may still have created the issue.
+      remember(key, UNCERTAIN, now);
+      return UNCERTAIN;
+    }
+    const { html_url: url, number } = created;
+    const filed = { ok: true, url, number } as const;
+    remember(key, filed, now);
+    return filed;
+  })();
+  inFlight.set(key, sending);
   try {
-    response = await fetch(API, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-        'User-Agent': 'health-roadmap-mcp',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ title: issue.title, body, labels: issue.labels }),
-      signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
-    });
-  } catch {
-    return UNAVAILABLE;
+    return await sending;
+  } finally {
+    inFlight.delete(key);
   }
-
-  if (!response.ok) {
-    // The status alone: a GitHub error body can quote the report back at us.
-    console.error('[mcp] github issue refused', response.status);
-    return UNAVAILABLE;
-  }
-
-  const created = (await response.json().catch(() => null)) as { html_url?: unknown; number?: unknown } | null;
-  if (typeof created?.html_url !== 'string' || !created.html_url || typeof created.number !== 'number' || !created.number) {
-    console.error('[mcp] github issue answered without a url');
-    return UNAVAILABLE;
-  }
-  const { html_url: url, number } = created;
-
-  filedAt.push(now);
-  mine.push(now);
-  if (perConnection.size >= CONNECTION_CAP && !perConnection.has(connection)) {
-    perConnection.delete(perConnection.keys().next().value as string);
-  }
-  perConnection.set(connection, mine);
-  if (recent.size >= DEDUPE_CAP) recent.delete(recent.keys().next().value as string);
-  recent.set(key, { url, number, at: now });
-  return { ok: true, url, number };
 }
