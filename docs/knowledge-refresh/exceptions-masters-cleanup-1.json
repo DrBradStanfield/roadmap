@@ -302,5 +302,117 @@
   "reason": "Tokeniser: the Taylor abstract (PMID 15579526) writes \"1000 mg or greater of vitamin C per day\", which equals the body's \"1,000 mg/day or more\"; the checker drops \"or greater ... per day\". The quote is in addendum-14. Added by the vitamin C fix worker under the orchestrator's task instruction (genuine tokeniser cases only), addendum-14.",
   "by": "orchestrator",
   "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"200\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Despite marketing claims, creatine has not been shown to increase bone density. A narrative review describes the rese...\"",
+  "reason": "Checker tokenisation: the Sales 2020 abstract (PMID 31257405) spells the sample \"Two hundred postmenopausal women\"; extra_raw holds the abstract (clean1-creatine addendum-9). Ratified by the orchestrator at integration (2026-10-22).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"237\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Despite marketing claims, creatine has not been shown to increase bone density. A narrative review describes the rese...\"",
+  "reason": "Checker tokenisation: the Chilibeck 2023 abstract (PMID 37144634) spells the sample \"Two hundred and thirty-seven postmenopausal women\"; extra_raw holds the abstract (clean1-creatine addendum-9). Ratified by the orchestrator at integration (2026-10-22).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"52\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Mood trials:** In 52 women with depression taking escitalopram, adverse events were no more frequent with creatine ...\"",
+  "reason": "Checker tokenisation: the Lyoo 2012 abstract (PMID 22864465) spells the sample \"Fifty-two women\"; extra_raw holds the abstract (clean1-creatine addendum-9). Ratified by the orchestrator at integration (2026-10-22).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"14 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Kidney stones:** A 2022 case report noted that no study had looked at creatine and kidney stones in people. In that...\"",
+  "reason": "Checker tokenisation: the Akbari 2022 abstract (PMID 36206067) spells \"Fourteen months after stopping creatine monohydrate supplementation\"; extra_raw holds the abstract (clean1-creatine addendum-9). Ratified by the orchestrator at integration (2026-10-22).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "product mentions rose 3 -> 4",
+  "reason": "Orchestrator R3 (2026-10-22): a Labdoor disclosure (\"MicroVitamin products are tested by Labdoor under Labdoor's paid Quality Program\") was added beside the consumerlab.com/Labdoor pointer; the extra product mention is that disclosure (listed in ask_brad). Ratified by the orchestrator at integration (2026-10-22).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "report says product mentions 3 -> 3, recomputed 3 -> 4",
+  "reason": "Orchestrator R3 (2026-10-22): a Labdoor disclosure (\"MicroVitamin products are tested by Labdoor under Labdoor's paid Quality Program\") was added beside the consumerlab.com/Labdoor pointer; the extra product mention is that disclosure (listed in ask_brad). Ratified by the orchestrator at integration (2026-10-22).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7.8 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Low-dose sterol supplementation with diet adherence:** In a crossover trial in 50 Italian adults with high choleste...\"",
+  "reason": "Tokeniser: the Cicero 2023 abstract writes '-7.8 ± 7.7 mg/dL', so the unit attaches to 7.7; 7.8 mg/dL is the abstract's figure (PMID 37960208).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"13.7 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Yogurt drink delivery:** In a Spanish trial in 182 adults with high cholesterol, a yogurt drink with 2 g of plant s...\"",
+  "reason": "Tokeniser: the Parraga-Martinez 2015 abstract writes '13.7 (95% confidence interval, 3.2-24.1) mg/dL'; the unit follows the interval (PMID 25541227).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"40 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Policosanol | 5-40 mg (Cuban trials) | LDL cholesterol | Likely ineffective |\"",
+  "reason": "Tokeniser: Berthold 2006 says '5 to 40 mg/d'; the dosing-table cell sits under 'Effective Daily Dose' and reads '5-40 mg' like the other rows (PMID 16705107, R11).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"8 week\": In a trial in 32 adults at low to moderate cardiovascular risk who were eligible for statins, pantethine (600 mg a da...",
+  "reason": "Tokeniser: the Evans 2014 abstract writes '600 mg/day from weeks 1 to 8 and 900 mg/day from weeks 9 to 16' (PMID 24600231); the 8-week phases are the abstract's.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5 mg\": Policosanol | 5-40 mg (Cuban trials) | LDL cholesterol | Likely ineffective |",
+  "reason": "Tokeniser: Berthold 2006 says '5 to 40 mg/d'; the dosing-table cell sits under 'Effective Daily Dose' and reads '5-40 mg' like the other rows (PMID 16705107, R11).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [66] US National Library of Medicine, DailyMed. \"up & up Fiber Therapy (psyllium husk) powder: Dr...",
+  "reason": "US National Library of Medicine DailyMed drug labels (psyllium OTC Drug Facts, lovastatin, niacin ER) are the official sources for the psyllium spacing, red yeast rice/lovastatin interactions and niacin harms (review R4, R6, R9, R10); not on the checker's host list, which is code.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [67] US National Library of Medicine, DailyMed. \"Lovastatin tablets: prescribing information.\" Lu...",
+  "reason": "US National Library of Medicine DailyMed drug labels (psyllium OTC Drug Facts, lovastatin, niacin ER) are the official sources for the psyllium spacing, red yeast rice/lovastatin interactions and niacin harms (review R4, R6, R9, R10); not on the checker's host list, which is code.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [68] US National Library of Medicine, DailyMed. \"Niacin extended-release tablets: prescribing inf...",
+  "reason": "US National Library of Medicine DailyMed drug labels (psyllium OTC Drug Facts, lovastatin, niacin ER) are the official sources for the psyllium spacing, red yeast rice/lovastatin interactions and niacin harms (review R4, R6, R9, R10); not on the checker's host list, which is code.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
  }
 ]
