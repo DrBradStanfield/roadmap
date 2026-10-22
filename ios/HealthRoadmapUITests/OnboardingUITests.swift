@@ -137,6 +137,41 @@ final class OnboardingUITests: XCTestCase {
         snap(app, "health sheet")
     }
 
+    /// "Delete all my data" brings the questions back, not the welcome screen (AC7).
+    @MainActor
+    func testDeletingAllMyDataStartsTheQuestionsAgain_AC7() throws {
+        let app = launch()
+        try answerUpToWeight(app)
+        app.buttons["onboarding.skip"].tap()
+        app.tabBars.buttons["My data"].tap()
+        // Units other than the region's: the erase keeps them, and so must the questions (Codex R1).
+        let us = !app.buttons["US"].isSelected
+        app.buttons[us ? "US" : "Metric"].tap()
+        let delete = app.buttons["Delete all my data"]
+        while !delete.isHittable { app.swipeUp() }
+        delete.tap()
+        app.buttons["Delete everything"].firstMatch.tap()
+        // The alert's own button, then the words that say it is done.
+        XCTAssertTrue(app.alerts.buttons["Delete everything"].waitForExistence(timeout: 5))
+        app.alerts.buttons["Delete everything"].tap()
+        XCTAssertTrue(app.alerts.buttons["OK"].waitForExistence(timeout: 10))
+        app.alerts.buttons["OK"].tap()
+
+        XCTAssertTrue(app.buttons["onboarding.notNow"].waitForExistence(timeout: 10), "the questions again")
+        XCTAssertFalse(app.buttons["welcome.start"].exists, "not the welcome screen")
+        snap(app, "after delete")
+
+        // On to height, which shows the kept units: feet and inches, or one centimetre wheel.
+        app.buttons["onboarding.notNow"].tap()
+        app.buttons["onboarding.female"].tap()
+        app.buttons["onboarding.continue"].tap()
+        XCTAssertTrue(app.pickerWheels.element(boundBy: 1).waitForExistence(timeout: 5))
+        app.pickerWheels.element(boundBy: 1).adjust(toPickerWheelValue: "1980")
+        app.buttons["onboarding.continue"].tap()
+        XCTAssertTrue(app.staticTexts["How tall are you?"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.pickerWheels.count, us ? 2 : 1, us ? "US units kept" : "metric kept")
+    }
+
     /// Quitting at the weight question resumes there, not on My data (AC7).
     @MainActor
     func testQuittingAtWeightResumesThere_AC7() throws {

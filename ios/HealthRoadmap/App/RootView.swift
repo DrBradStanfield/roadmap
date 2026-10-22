@@ -20,6 +20,7 @@ struct RootView: View {
     @Environment(ReminderScheduler.self) private var reminders
     @Environment(ReminderTaps.self) private var reminderTaps
     @Environment(AppleHealthSync.self) private var health: AppleHealthSync?
+    @Environment(DataEraser.self) private var eraser
     /// Set once the welcome screen is done; a setting, not health data.
     @AppStorage("welcomed") private var welcomed = false
     /// Set once the new-user questions are done (US-54); never shown again after.
@@ -29,6 +30,15 @@ struct RootView: View {
     /// The questions began after "I already use Health Roadmap": a relaunch keeps asking
     /// only what the cloud record lacks (Codex re-check R1).
     @AppStorage("onboardingOnlyMissing") private var onlyMissingRun = false
+    /// The questions restarted after "Delete all my data": the record keeps the units the
+    /// erase kept, so the phone's region never overrides them (Codex R1).
+    @AppStorage("onboardingAfterErase") private var afterErase = false
+    /// The record's erase count when the questions were last finished: an erase made on
+    /// another device raises it through the cloud, and the questions come back (US-54 AC7).
+    @AppStorage("onboardedEpoch") private var onboardedEpoch = 0
+    /// Whose record that count belongs to: "" for the phone's own, else the cloud provider.
+    /// Counts from different records never compare (adversary re-check N1).
+    @AppStorage("onboardedSource") private var onboardedSource = ""
     /// What covers the tabs on a first run, decided once at launch, so the cover
     /// stays until the person finishes even as answers fill the record.
     @State private var firstRun: FirstRun?
@@ -59,6 +69,9 @@ struct RootView: View {
             firstRunCover
         }
         .onAppear(perform: decideFirstRun)
+        .onChange(of: eraser.startsOver) { startOver() }
+        // An erase from elsewhere; this phone's own waits for its words to be dismissed.
+        .onChange(of: shownRecord) { recordChanged() }
         .onChange(of: store.recordJSON) { reviewPrompt.recordChanged() }
         // Reminders refill on launch, on every record change and on return (US-25 AC9).
         .task(id: store.recordJSON) { await reminders.refresh() }
@@ -89,7 +102,7 @@ struct RootView: View {
             }
         case .questions(let onlyMissing):
             if let health {
-                OnboardingView(store: store, health: health, onlyMissing: onlyMissing, finish: finishOnboarding)
+                OnboardingView(store: store, health: health, onlyMissing: onlyMissing, keepUnits: afterErase, finish: finishOnboarding)
             } else {
                 // Never strand a cover with nothing on it (review R13).
                 Color.clear.onAppear(perform: finishOnboarding)
@@ -114,14 +127,60 @@ struct RootView: View {
         }
     }
 
+    /// Which record is on screen and its erase count. The phone's copy shows until a
+    /// connected cloud opens, so "open" is part of it.
+    private struct ShownRecord: Equatable { var source: String; var open: Bool; var epoch: Int? }
+
+    private var shownRecord: ShownRecord {
+        ShownRecord(source: source, open: sync.recordOpen, epoch: store.myData?.eraseEpoch)
+    }
+
+    private var source: String { sync.provider?.rawValue ?? "" }
+
+    /// Erased since the count was taken, by this record's own count.
+    private var erasedElsewhere: Bool {
+        // Not only after the questions: an existing user whose full record skipped them too (Codex re-check R3).
+        source == onboardedSource
+            && (store.myData.map { OnboardingSteps.erasedSince(onboardedEpoch, epoch: $0.eraseEpoch, profile: $0.profile) } ?? false)
+    }
+
+    /// The count for a record the phone has not counted yet (a cloud just connected or
+    /// switched; the questions' own state) is taken, not compared. The phone's copy of a
+    /// connected cloud never sets it: only the opened cloud record does.
+    private func recordChanged() {
+        guard decided, firstRun == nil, !eraser.erasing, !eraser.awaitingDismissal else { return }
+        if erasedElsewhere { startOver(); return }
+        if source != onboardedSource, source.isEmpty || sync.recordOpen { takeCount() }
+    }
+
+    private func takeCount() {
+        onboardedEpoch = store.myData?.eraseEpoch ?? 0
+        onboardedSource = source
+    }
+
     private func decideFirstRun() {
         guard !decided else { return }
         decided = true
+        // A launch mid-questions resumes them instead (AC7); a skipped user lands in needsQuestions.
+        if welcomed, onboarded, erasedElsewhere { startOver(); return }
         firstRun = !welcomed ? .welcome : needsQuestions ? .questions(onlyMissing: onlyMissingRun) : nil
+    }
+
+    /// "Delete all my data" empties the record, so the questions come back (US-54 AC7,
+    /// Brad 2026-10-22). Not the welcome screen: the person is already in, and a
+    /// connected cloud stays connected.
+    private func startOver() {
+        onboarded = false
+        onboardingStarted = false
+        onlyMissingRun = false
+        afterErase = true
+        firstRun = .questions(onlyMissing: false)
     }
 
     private func finishOnboarding() {
         onboarded = true
+        afterErase = false
+        takeCount()
         tab = .plan
         firstRun = nil
     }

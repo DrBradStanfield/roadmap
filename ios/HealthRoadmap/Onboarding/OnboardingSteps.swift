@@ -18,6 +18,13 @@ enum OnboardingSteps {
         profile.sex == nil || profile.birthYear == nil || profile.height == nil
     }
 
+    /// The record was erased since the questions were finished, on this phone or any
+    /// other (a higher erase count arrives through the cloud), and lost its answers:
+    /// ask again (US-54 AC7, Brad 2026-10-22).
+    static func erasedSince(_ onboardedEpoch: Int, epoch: Int?, profile: MyData.Profile) -> Bool {
+        (epoch ?? 0) > onboardedEpoch && needsFlow(profile)
+    }
+
     /// Where the flow starts. A first run starts at Apple Health; a resumed one
     /// (AC7), or one after "I already use Health Roadmap" (AC2), at the first
     /// question the record has not answered, else weight.

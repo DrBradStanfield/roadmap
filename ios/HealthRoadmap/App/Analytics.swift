@@ -14,9 +14,9 @@ import Clarity
 /// mode is Strict as a second layer.
 @MainActor
 final class Analytics {
-    /// The app's own Clarity project (a mobile project, not the website's). Off until
-    /// Brad creates it, decides consent (D9), and puts its id here.
-    static let clarityProjectId: String? = nil
+    /// The app's own Clarity project (a mobile project, not the website's; Brad created
+    /// it 2026-10-22 with Strict masking). A public id, not a secret.
+    static let clarityProjectId: String? = "z1kbjvj8u6"
 
     /// Launch argument the UI tests pass, so their sessions never reach Clarity.
     nonisolated static let uiTestingArgument = "--ui-testing"

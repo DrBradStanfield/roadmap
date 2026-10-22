@@ -55,6 +55,15 @@ JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs
 Bundle 368 KB with merge included (the app's bundle, plan and layout only, is 335 KB). A frame is 16 ms, so the cost is invisible. Re-measure on a real iPhone in
 the spike; the limit is 100 ms for plan plus merge, 300 ms for a cold engine load.
 
+**Measured on an iPhone 15 Pro Max, 2026-10-22** (`HealthRoadmapTests/EngineSpeedTests`,
+opt-in; daily weight and blood pressure plus quarterly labs). Cold load 25 ms. One year
+(1,100 rows): each call 9 to 31 ms (merge the most). Three years (3,300 rows): 22 to 74
+ms. Ten years (11,000 rows): 77 to 130 ms, merge 330 ms. Every call is linear in the
+record's size, and each parses the whole record again. The first run found My data's
+blood pressure history quadratic, 17 s at ten years; fixed (one pass, same output). A year
+of daily readings already costs a frame or more per call on the main thread. Brad wants
+engine work off the main thread (2026-10-22); that change is next.
+
 The runtime needs a bridge for what a bare JSContext lacks: `fetch`, `Response`, `Headers`,
 `URL`, `AbortController` with `AbortSignal.timeout`/`any`, `Blob`, `TextEncoder`/`Decoder`,
 `crypto.getRandomValues`/`randomUUID`, `setTimeout` (adapter.ts, drive-rest.ts,
@@ -882,11 +891,15 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   someone who knows the layout, and a wheel's swipe distance hints at a value. The website
   has the same limit. The privacy policy says so. Pausing Clarity on those screens would
   remove the onboarding funnel this amendment exists for: Brad's call (review R2, 2026-10-22).
-- Off until Brad creates a Clarity **mobile** project and sets `Analytics.clarityProjectId`.
-  Never under XCTest, nor in the UI tests (`--ui-testing`). Clarity 3.5.4, exact version.
-- **Before the id is set (Brad):** consent. Clarity keeps a random install id on the phone,
-  which in the EEA, UK and Switzerland needs consent (`ClaritySDK.consent(analyticsStorage:)`).
-  Decide with the website's consent handling, and add an in-app off switch if needed.
+- On since 2026-10-22: Brad created the mobile project (`z1kbjvj8u6`, Strict masking) and
+  `Analytics.clarityProjectId` holds it. Never under XCTest, nor in the UI tests
+  (`--ui-testing`). Clarity 3.5.4, exact version.
+- **No consent prompt (Brad, 2026-10-22):** "we aren't recording text or images." The app
+  never calls `ClaritySDK.consent`. Risk stated to Brad and accepted: Clarity keeps a random
+  install id on the phone, and under the EU ePrivacy rule (and the UK's and Switzerland's
+  equivalents) storing an id for analytics needs consent whatever is recorded; Microsoft's
+  Clarity terms also ask for a consent signal from those users. How the iOS SDK behaves
+  without one is not known. Revisit if Clarity stops recording those regions or a regulator asks.
 - Apple's Guideline 5.1.3 (no Health data to third parties for analytics) holds because no
   value reaches Clarity. The privacy policy and App Store answers name Clarity, and Clarity
   derives a coarse location from the IP address, declared as Coarse Location.

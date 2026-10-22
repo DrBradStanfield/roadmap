@@ -9,6 +9,8 @@ struct OnboardingView: View {
     let health: AppleHealthSync
     /// After "I already use Health Roadmap": only the questions the record lacks (AC2).
     let onlyMissing: Bool
+    /// Never write the phone's region's units: the record's own were kept (after an erase).
+    let keepUnits: Bool
     let finish: () -> Void
 
     /// A setting, not health data: the Apple Health screen was answered once.
@@ -174,12 +176,13 @@ struct OnboardingView: View {
         // An unreadable record: My data says why, so never strand the person here (review R13).
         guard let data = store.myData else { finish(); return }
         if onlyMissing { healthAsked = true }
-        // A record from the cloud keeps its own units, also on a resumed run (Codex re-check R1).
-        let fromCloud = onlyMissing || store.cloudErase != nil
+        // A record from the cloud keeps its own units, also on a resumed run (Codex re-check R1),
+        // as does one just erased, whose units the erase kept (US-25 AC16).
+        let ownUnits = onlyMissing || keepUnits || store.cloudErase != nil
         // A new record takes the phone's region's units (AC6); a record with values keeps its own.
         let hasValues = data.profile.sex != nil || data.profile.birthYear != nil || data.profile.height != nil
             || (data.vitals + data.bloodTests + [data.psa]).contains { $0.latest != nil }
-        if let units = OnboardingSteps.regionUnits(hasValues: hasValues, onlyMissing: fromCloud, current: data.unitSystem, system: Locale.current.measurementSystem) {
+        if let units = OnboardingSteps.regionUnits(hasValues: hasValues, onlyMissing: ownUnits, current: data.unitSystem, system: Locale.current.measurementSystem) {
             _ = store.apply(.units(units))
         }
         prefill(from: HealthCharacteristics.none)

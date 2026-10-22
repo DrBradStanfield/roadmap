@@ -31,6 +31,7 @@ US-25 and US-52 of [user-stories.md](../docs/user-stories.md).
 | Clarity analytics, every screen masked, off until its project id is set (2026-10-22) | US-25 AC19, D9 | adversary + Codex, /simplify |
 | Speed and tidying: plan only while on screen, cached value history, one date format (2026-10-22) | AC6, AC9 | adversary + Codex, /simplify |
 | UI tests (onboarding, large text, the Health sheet, plan refresh) and App Store screenshots (2026-10-22) | US-54, AC10 | adversary + Codex, /simplify |
+| "Delete all my data" (here or on another device) brings the onboarding questions back; My data no longer slows with years of blood pressure (17 s to 0.1 s at ten years, on an iPhone 15 Pro Max) | US-54 AC7 | adversary + Codex, /simplify |
 
 Each piece had one full review and one fix-scoped re-check. Fixes after that were read
 by the orchestrator, not a fresh reviewer.
@@ -73,18 +74,12 @@ by the orchestrator, not a fresh reviewer.
 9. **Clinical call:** should the value pages show target bands (blood pressure goal,
    healthy waist, ideal weight)? The targets live only in the website's code today;
    moving them into health-core is a three-file clinical change.
-10. **Clarity** (D9). Create a Clarity *mobile* project (not the website's), set its
-    masking mode to **Strict**, decide consent for the EEA, UK and Switzerland, then put
-    its id in `Analytics.clarityProjectId`. Before release, watch one real recording to
-    confirm every screen is masked (the supplement search bar included). Decide whether
-    to pause Clarity on two-button questions (tap position can show the answer).
-11. **Onboarding questions left open** (US-54): should "Delete all my data" bring
-    onboarding back? (Today it does not.)
-12. **App Store pictures** are in `ios/build/app-store-shots/` (run
+10. **Clarity** (D9). Done 2026-10-22: mobile project `z1kbjvj8u6`, Strict masking, no
+    consent prompt (Brad's call; the risk is in D9). Before release, watch one real
+    recording to confirm every screen is masked (the supplement search bar included).
+    Decide whether to pause Clarity on two-button questions (tap position can show the answer).
+11. **App Store pictures** are in `ios/build/app-store-shots/` (run
     `ios/scripts/app-store-shots.sh` again after any UI change).
-13. **Repo location.** `~/Documents` syncs to iCloud, which made conflicted copies of git's
-    branch files (`main 2`) on 2026-10-22, since removed. Moving the repo out of
-    `~/Documents` (or renaming the folder to end in `.nosync`) stops it for good.
 
 ## To check on a real iPhone
 
