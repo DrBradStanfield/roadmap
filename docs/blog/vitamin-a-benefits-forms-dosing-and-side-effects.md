@@ -321,7 +321,7 @@ Preformed vitamin A concentrations are highest in liver, fish, eggs, and dairy p
 
 *DV for vitamin A is 900 mcg RAE for adults and children age 4+ [4].
 
-### Groups at Risk of Vitamin A Inadequacy
+### Who Tends to Run Low on Vitamin A
 
 **Premature infants:** Preterm infants have low liver stores of vitamin A at birth, and plasma concentrations often remain low throughout the first year of life. Those with vitamin A deficiency have a higher risk of eye and chronic lung diseases [95][96][97].
 
