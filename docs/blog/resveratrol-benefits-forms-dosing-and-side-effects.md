@@ -293,7 +293,7 @@ Resveratrol may affect the thyroid. In rats given resveratrol by injection at 25
 - **Children:** Avoid: not studied in children; high doses lowered the growth factor IGF-I in adults [57].
 - **Blood-thinning medications:** Consult a physician before use (see Drug Interactions).
 - **Estrogen-sensitive cancers or conditions:** Consult a physician before use.
-- **Multiple myeloma or kidney disease:** Take particular care, given the SRT501 trial in multiple myeloma halted for kidney damage [6][87].
+- **Multiple myeloma or kidney disease:** Take particular care, given the SRT501 trial in multiple myeloma [87] halted for kidney damage [6].
 
 ### Long-Term Safety
 

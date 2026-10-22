@@ -74,7 +74,7 @@
   {
     "check": "AC2",
     "handle": "taurine-benefits-forms-dosing-and-side-effects",
-    "match": "changed_tokens[101] raw_quote shares no number with its body_line: - **Blood pressure lowering:** Taurine may lower systolic blood pressure by about 3 to 4 mmHg on ...",
+    "match": "changed_tokens[106] raw_quote shares no number with its body_line: - **Blood pressure lowering:** Taurine may lower systolic blood pressure by about 3 to 4 mmHg on ...",
     "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): 'about 3 to 4 mmHg' rounds Tzang's WMD -3.999 mmHg [6] and Waldron's ~3 mmHg [8], both quoted in addendum-3. Ruling 10, the text stays.",
     "by": "orchestrator",
     "date": "2026-10-22"
@@ -90,7 +90,7 @@
   {
     "check": "AC2",
     "handle": "electrolytes-benefits-dosing-and-side-effects",
-    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreationa...\" | \"- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which...\" | \"| Chia seeds | 1 oz (28g) | 111 |\"",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreationa...\" | \"- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which...\" | \"**Hyponatremia** (serum sodium <136 mEq/L) is the most common electrolyte disorder in clinical practice, and exercise...\"",
     "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-3): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays. The same FAIL also covers the chia seeds row (111 mg magnesium per 1 oz), a food-table value unchanged since BASE.",
     "by": "orchestrator",
     "date": "2026-10-22"
@@ -98,7 +98,7 @@
   {
     "check": "AC2",
     "handle": "electrolytes-benefits-dosing-and-side-effects",
-    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreationa...\" | \"- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which...\"",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreationa...\" | \"- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which...\" | \"**Hyponatremia** (serum sodium <136 mEq/L) is the most common electrolyte disorder in clinical practice, and exercise...\"",
     "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-3): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
     "by": "orchestrator",
     "date": "2026-10-22"
@@ -106,7 +106,7 @@
   {
     "check": "AC2",
     "handle": "electrolytes-benefits-dosing-and-side-effects",
-    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreationa...\" | \"- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which...\"",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreationa...\" | \"- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which...\" | \"**Hyponatremia** (serum sodium <136 mEq/L) is the most common electrolyte disorder in clinical practice, and exercise...\"",
     "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-3): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
     "by": "orchestrator",
     "date": "2026-10-22"
@@ -114,7 +114,7 @@
   {
     "check": "AC2",
     "handle": "electrolytes-benefits-dosing-and-side-effects",
-    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreationa...\" | \"- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which...\"",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreationa...\" | \"- Drinking too much fluid during long exercise, water or sports drinks, can dilute blood sodium (hyponatremia), which...\" | \"**Hyponatremia** (serum sodium <136 mEq/L) is the most common electrolyte disorder in clinical practice, and exercise...\"",
     "reason": "Ruling 17 emergency-number tokens (orchestrator 2026-10-22, masters-cleanup-3): '111', '0', '911', '999' come from the ruling 17 emergency-services list, not a source. No study number; ruling 10, the text stays.",
     "by": "orchestrator",
     "date": "2026-10-22"
@@ -186,7 +186,7 @@
   {
     "check": "AC2",
     "handle": "glycine-benefits-forms-dosing-and-side-effects",
-    "match": "token \"430 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Egg, whole, raw (FDC 171287) | 0.432 g | 2 large (100 g) | 0.43 g |\"",
+    "match": "token \"430 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Egg, whole, raw (FDC 171287) | 0.432 g | 2 large (2 × 50 g) | 0.43 g |\"",
     "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): per-serving glycine is the USDA per-100 g value times the USDA portion weight, both in the row; the checker reads the g value as a new mg token. Ruling 10, the text stays.",
     "by": "orchestrator",
     "date": "2026-10-22"

@@ -19,10 +19,10 @@ Brad says better clinical evidence is needed before making strong recommendation
 
 ## Key safety points
 
-- Diuretics, ACE inhibitors, ARBs and NSAIDs can raise blood lithium, serotonergic drugs taken with it can cause serotonin syndrome [27], and case reports link lithium toxicity with a new or switched GLP-1 agonist, such as semaglutide to tirzepatide [31][32]. If you take prescription medicines, check with your doctor or pharmacist before starting.
+- Too much lithium can be toxic, causing tremor, nausea, vomiting and unsteadiness, and in severe cases confusion, seizures and coma; dehydration makes it more likely [27]. If you take lithium and develop confusion, severe vomiting or diarrhea, marked unsteadiness or a seizure [27], get urgent medical help: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Diuretics, ACE inhibitors, ARBs and NSAIDs can raise blood lithium, serotonergic drugs taken with lithium can cause serotonin syndrome [27], and case reports link lithium toxicity with a new or switched GLP-1 agonist, such as semaglutide to tirzepatide [31][32]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 - Do not add a lithium supplement to prescription lithium without your doctor's advice: toxic blood levels are close to the treatment range [27].
 - Prescription lithium may cause harm in pregnancy and should not be used in severe kidney impairment [27]. Talk to your doctor first if you are pregnant or have kidney or thyroid problems.
-- Too much lithium can be toxic, causing tremor, nausea, vomiting and unsteadiness, and in severe cases confusion, seizures and coma; dehydration makes it more likely [27]. If you take lithium and develop confusion, severe vomiting or diarrhea, marked unsteadiness or a seizure [27], get urgent medical help: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 - Long-term lithium can harm the kidneys, thyroid and parathyroid glands, so prescription users have regular blood tests [3].
 - In a 2-year trial of low-dose prescription lithium in older adults, diarrhea, tiredness and tremor were more common than with placebo [21]. Whether supplement doses cause these effects is not known.
 
@@ -266,7 +266,7 @@ The interaction evidence for lithium comes from people taking high-dose prescrip
 | GLP-1 agonists (diabetes and weight loss) | Semaglutide, tirzepatide | Not established; possible causes include delayed stomach emptying and dehydration [31][32] | Toxicity in case reports [30]; raised lithium levels and toxicity in people on stable prescription lithium [31][32] |
 | Diuretics (including thiazide water pills) | Not named | Sodium loss from the diuretic may reduce lithium clearance | Higher blood lithium; the label advises more frequent blood tests and a lower lithium dose [27] |
 | Renin-angiotensin system antagonists | ACE inhibitors and angiotensin receptor blockers (ARBs) | Not stated | Higher steady-state blood lithium; the label advises more frequent blood tests and a lower lithium dose [27] |
-| Nitroimidazole antibiotics | Metronidazole | Reduced lithium clearance by the kidneys [27] | Higher blood lithium; the label advises more frequent blood tests and a lower lithium dose [27] |
+| Nitroimidazole antibiotics | e.g. metronidazole | Reduced lithium clearance by the kidneys [27] | Higher blood lithium; the label advises more frequent blood tests and a lower lithium dose [27] |
 
 In one case report, a woman on long-term prescription lithium developed severe lithium toxicity after raising both her lithium dose and her dose of the NSAID nabumetone (Hower et al., *Cureus*, 2026) [33]. The prescription lithium label adds that NSAIDs decrease blood flow to the kidneys, which lowers lithium clearance and raises blood lithium [27].
 

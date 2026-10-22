@@ -45,7 +45,7 @@ Glycine acts as both an inhibitory neurotransmitter and an excitatory co-agonist
 
 The body also needs glycine to make collagen [4]. A review lists glycine as a building block for glutathione, heme, creatine, nucleic acids and uric acid, and as a part of the bile acids that help digest fat [51].
 
-Food adds about 1.5 to 3.0 g a day [4], mainly from meat, fish, eggs, legumes and other protein foods [41].
+Food adds about 1.5 to 3.0 g a day [4].
 
 Most human trials of glycine are small. Researchers at Ajinomoto, a glycine maker, ran at least one of the sleep studies [17], and another enrolled Ajinomoto employees [16]; other trials tested glycine for bladder symptoms and schizophrenia.
 
@@ -192,7 +192,7 @@ A 2024 literature review reports some evidence that glycine supplementation may 
 
 Glycine has been investigated as a treatment for OCD because it is an NMDA receptor co-agonist [30].
 
-**Greenberg et al. (2009):** A small double-blind, placebo-controlled trial added glycine, titrated to 60 g a day, for 24 adults with OCD on stable treatment. Only 14 could be evaluated, mainly because of the taste or nausea. Yale-Brown Obsessive Compulsive Scale (Y-BOCS) scores fell 6.04 points with glycine (n=5) and 1.00 point with placebo (n=9). The weekly difference just missed statistical significance (p=0.053) [29].
+**Greenberg et al. (2009):** A small double-blind, placebo-controlled trial added glycine, titrated to 60 g a day, for 24 adults with OCD on stable treatment. Many did not keep taking it, mainly because of the taste or nausea, so only 14 could be evaluated. Yale-Brown Obsessive Compulsive Scale (Y-BOCS) scores fell 6.04 points with glycine (n=5) and 1.00 point with placebo (n=9). The weekly difference just missed statistical significance (p=0.053) [29].
 
 **Case report:** A long-term open-label case report described high-dose glycine treatment administered over more than 5 years resulting in robust and sustained reduction of symptoms in a patient with refractory OCD and comorbid body dysmorphic disorder (BDD), with only partial relapses during brief interruptions [30].
 
@@ -284,22 +284,22 @@ Some medicines may interact with glycine. Known and theoretical interactions inc
 
 ## 7. Dietary Sources
 
-Protein-rich foods supply most dietary glycine [41]. A typical diet provides about 1.5 to 3.0 g a day [4].
+Gelatin, skin and other protein-rich foods hold the most glycine per 100 g [41].
 
 ### Top Food Sources
 
 | Food (FoodData Central ID) | Glycine per 100 g | Serving (weight) | Glycine per serving |
 |------|:-:|------|:-:|
-| Gelatin, dry powder, unsweetened (FDC 169599) | 19.0 g | 1 envelope (7 g) | 1.33 g |
 | Pork skins, plain snack (FDC 167961) | 11.9 g | 1 oz (28.35 g) | 3.37 g |
 | Chicken skin, roasted (FDC 171055) | 3.25 g | Skin of half a chicken (56 g) | 1.82 g |
 | Top sirloin steak, lean, broiled (FDC 168634) | 1.86 g | 3 oz (85 g) | 1.58 g |
+| Gelatin, dry powder, unsweetened (FDC 169599) | 19.0 g | 1 envelope (7 g) | 1.33 g |
 | Chicken breast, roasted (FDC 171477) | 1.52 g | Half a breast (86 g) | 1.31 g |
-| Atlantic salmon, farmed, cooked (FDC 175168) | 1.06 g | 3 oz (85 g) | 0.90 g |
 | Pork top loin roast, lean, roasted (FDC 168254) | 1.23 g | 3 oz (85 g) | 1.05 g |
-| Pumpkin seed kernels, dried (FDC 170556) | 1.84 g | 1 oz (28.35 g) | 0.52 g |
-| Egg, whole, raw (FDC 171287) | 0.432 g | 2 large (100 g) | 0.43 g |
+| Atlantic salmon, farmed, cooked (FDC 175168) | 1.06 g | 3 oz (85 g) | 0.90 g |
 | Lentils, boiled (FDC 172421) | 0.367 g | 1 cup (198 g) | 0.73 g |
+| Pumpkin seed kernels, dried (FDC 170556) | 1.84 g | 1 oz (28.35 g) | 0.52 g |
+| Egg, whole, raw (FDC 171287) | 0.432 g | 2 large (2 × 50 g) | 0.43 g |
 
 Source: USDA FoodData Central, SR Legacy data [41]. The per-serving figures multiply the value per 100 g by the serving weight USDA lists.
 

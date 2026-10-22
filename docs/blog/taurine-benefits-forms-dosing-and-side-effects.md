@@ -105,7 +105,7 @@ Supplementation may lower fasting blood glucose.
 
 **2025 meta-analysis:** A 2025 meta-analysis of 34 randomized controlled trials (1,394 participants) found that taurine lowered fasting blood sugar by 5.90 mg/dL and HbA1c by 0.21% [24].
 
-**Clinical context:** The metabolic benefits of taurine appear to be most pronounced in individuals already showing metabolic dysfunction (elevated blood sugar, triglycerides, or blood pressure).
+**Clinical context:** Tzang et al. concluded that taurine may be a useful dietary addition for people at risk of, or already living with, metabolic syndrome [6].
 
 ### Liver Diseases
 
@@ -204,7 +204,7 @@ Taurine appears to be well tolerated: meta-analyses of trials reported no signif
 Taurine is generally well tolerated at typical supplemental doses [6][14]:
 
 - **Gastrointestinal:** No adverse side effects were associated with taurine in a trial in chronic liver disease [14].
-- **Blood pressure lowering:** Taurine may lower systolic blood pressure by about 3 to 4 mmHg on average [6][8]. That could be a problem if you have low blood pressure or take blood-pressure medicines
+- **Blood pressure lowering:** Taurine may lower systolic blood pressure by about 3 to 4 mmHg on average [6][8]. That could be a problem if you have low blood pressure or take blood-pressure medicines.
 
 ### Special Populations
 
@@ -212,7 +212,7 @@ Taurine is generally well tolerated at typical supplemental doses [6][14]:
 
 ### Taurine in Energy Drinks — Safety Considerations
 
-Taurine is added to energy drinks, so people who drink them may already be getting some [24].
+Taurine has been added to energy drinks for decades [24].
 
 ## 6. Drug Interactions
 
