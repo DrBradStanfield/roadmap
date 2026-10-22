@@ -24,7 +24,7 @@ Most adults need 75 to 90 mg of vitamin C a day, and Brad advises against megado
 - If you are having chemotherapy or radiation, ask your oncologist before taking vitamin C [87].
 - People with hemochromatosis should avoid high-dose vitamin C, because it could make iron overload worse [4][9][12].
 - High-dose supplements have been linked to kidney stones in men but not women, and to oxalate kidney damage, so men and people who have had kidney stones may be wise to stay close to the RDA [128][125][50].
-- High-dose intravenous vitamin C raised deaths in a burns trial and death or organ failure in a sepsis trial. It has caused kidney failure in people with kidney disease and hemolysis in people with G6PD deficiency [151][152][161].
+- High-dose intravenous vitamin C raised deaths in a burns trial and death or organ failure in a sepsis trial. It has caused kidney failure in people with kidney disease [151][152]. High doses, by mouth or intravenously, have caused hemolysis in people with G6PD deficiency [161].
 - Vitamin C can make guaiac stool tests falsely negative, and intravenous doses can make some glucose meters read falsely high, so tell your doctor before testing [163][159][160].
 - Large doses can cause diarrhea, nausea and stomach cramps [4][9][12].
 
@@ -150,7 +150,7 @@ Vitamin C's role in immune function led to widespread promotion for COVID-19 pre
 
 - In an open-label trial in 214 adult outpatients with COVID-19, 8,000 mg/day of vitamin C, 50 mg/day of zinc, or both did not shorten symptoms compared with usual care [44].
 - A study of 98 adults (average age 52) with mild to moderate COVID-19 found that 1,000 mg/day of vitamin C for 14 days did not reduce symptom number, duration, severity, or quality of life versus placebo [45].
-- In two linked trials in people hospitalized with COVID-19, intravenous vitamin C every 6 hours for 4 days did not increase days free of organ support. In critically ill patients, the vitamin C group had fewer such days and slightly lower survival to discharge, and the trials stopped once their rules for harm and futility were met [46].
+- In two linked trials in people hospitalized with COVID-19, a dose of intravenous vitamin C every 6 hours, up to 16 doses over 96 hours, gave no gain in days alive without organ support. In critically ill patients, the vitamin C group had fewer such days and slightly lower survival to discharge, and the trials stopped once their rules for harm and futility were met [46].
 - In a trial of 56 critically ill patients with COVID-19 in China, very high-dose IV vitamin C (24,000 mg/day for 7 days) showed a possible benefit for blood oxygenation, but it did not increase ventilator-free days or lower deaths over 28 days [47].
 - A retrospective study of 15 critically ill COVID-19 patients in shock found 80% mortality despite treatment with 3,000 mg/day vitamin C [48].
 - A review of pre-COVID studies found that 1,000-6,000 mg of vitamin C (IV or oral) shortened ventilation time by about 25% for patients requiring ventilation for over 10 hours, but was less helpful for shorter ventilation periods [49].
