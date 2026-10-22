@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { generateSuggestions, weightMedicationTrigger, lipidMarkerFor, joinWithAnd } from './suggestions';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
@@ -2973,6 +2976,30 @@ describe('Evidence attachment', () => {
     expect(omega3Reason).toContain('atrial fibrillation');
     expect(omega3Reason).toContain('1.49');
     expect(omega3.references!.map(r => r.url)).toContain('https://doi.org/10.1161/CIRCULATIONAHA.121.055654');
+  });
+
+  // US-07 AC1 (amended 2026-10-22, orchestrator): the multivitamin card lists
+  // vitamin K2, so it carries an anticoagulant caveat in the omega-3 card's style;
+  // low-dose MK-7 lowered the INR on a vitamin K antagonist (Theuwissen 2013).
+  it('US-07 AC1: multivitamin card warns warfarin users about vitamin K2 and cites Theuwissen 2013', () => {
+    const { inputs, results } = createTestData({}, { bmi: 22 });
+    const base = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-micronutrient-base')!;
+    expect(base.ingredients).toContain('Vitamin D3 with K2');
+    expect(base.description).toContain('If you take warfarin or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.');
+    expect(SUGGESTION_EVIDENCE['supplement-micronutrient-base'].reason).toContain('vitamin K antagonist');
+    expect(base.references!.map(r => r.url)).toContain('https://doi.org/10.1111/jth.12203');
+  });
+
+  // US-07 AC1 (amended 2026-10-22, orchestrator): the psyllium dose is the trial and
+  // FDA basis, about 10 g/day of husk (7 g soluble fibre), not "7g/day" of husk
+  // (21 CFR 101.81; Jovanovski 2018, median ~10.2 g/day, LDL −0.33 mmol/L).
+  it('US-07 AC1: the algorithm gives psyllium as about 10 g/day of husk (7 g soluble fibre)', () => {
+    const md = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../health_roadmap_algorithm.md'), 'utf8');
+    const line = md.split('\n').find(l => l.startsWith('**Psyllium husk**'))!;
+    expect(line).toContain('about 10 g/day of husk, about 7 g of soluble fibre');
+    expect(line).not.toMatch(/\(7g\/day\)/);
+    expect(line).toContain('0.33 mmol/L');
+    expect(md).toContain('https://doi.org/10.1093/ajcn/nqy115');
   });
 
   // US-07 AC1 (amended 2026-10-21, Brad): B vitamins' cognitive benefit may depend

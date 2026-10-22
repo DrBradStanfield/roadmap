@@ -88,7 +88,8 @@ describe('US-15 AC11: nothing reaches the prompt unless it is allowlisted or bou
   it('US-15 AC11: drops rows with an unknown key; a drug name off the list reaches the prompt as "unlisted"', () => {
     const { json, context } = contextFor([
       med('statin', INJECTION, 40),
-      med('warfarin', 'warfarin', 5),
+      // Not 'warfarin': the multivitamin card's K2 caveat names it (US-07 AC1, 2026-10-22).
+      med('apixaban', 'apixaban', 5),
       med('ezetimibe', 'ezetimibe', 10),
       { medicationKey: 'glp1', drugName: { nested: INJECTION } },
       'statin',
@@ -97,7 +98,7 @@ describe('US-15 AC11: nothing reaches the prompt unless it is allowlisted or bou
     // A non-string name is unanswered, as null is to the widget: its key drops.
     expect(context.medications).toEqual({ statin: { drug: 'unlisted', dose: 40 }, ezetimibe: 'yes' });
     expect(json).not.toContain(INJECTION);
-    expect(json).not.toContain('warfarin');
+    expect(json).not.toContain('apixaban');
   });
 
   it('US-15 AC11: keeps a drug on the list but drops from the prompt a dose that is not a finite number in range', () => {
