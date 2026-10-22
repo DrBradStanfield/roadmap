@@ -64,6 +64,8 @@ blood pressure history quadratic, 17 s at ten years; fixed (one pass, same outpu
 of daily readings already costs a frame or more per call on the main thread. Brad wants
 engine work off the main thread (2026-10-22); that change is next.
 
+**The parsed-record slot (2026-10-22, stage 1 of moving engine work off the main thread).** Every engine call took the record as text and parsed and migrated it; migration is most of a call's time (Node, ten years of rows: parse about 3 ms, migrate about 18 ms). `readRecord` (ios/engine/my-data.ts) now keeps one slot: the last text read, its device id and its parsed record, served again only for the identical text and device id, and only for a record whose meta carries both stamps, so the migration cannot have read `now` (health-core `hasStampShape`, the check `isoOr` uses). Only reads are kept, never a door's own output: a written record need not equal what its text reads back as, since migration clamps counters (Codex R1). The rule this binds every door, and every health-core function a door reaches, to: **a record from `readRecord` is read-only.** A function that writes in place gets a copy first (the phone document save copies before `saveDocuments`' commit). Under the tests the kept record is deep-frozen, so every engine test checks the rule on every branch it runs; never in the app. No bridge change. Next: the engine on its own serial queue, edits applied in order, sheets awaiting their save (stages 2 to 4).
+
 The runtime needs a bridge for what a bare JSContext lacks: `fetch`, `Response`, `Headers`,
 `URL`, `AbortController` with `AbortSignal.timeout`/`any`, `Blob`, `TextEncoder`/`Decoder`,
 `crypto.getRandomValues`/`randomUUID`, `setTimeout` (adapter.ts, drive-rest.ts,
