@@ -21,6 +21,9 @@ protocol HealthStoreClient: AnyObject {
     /// "Delete all my data" (US-25 AC16): deletes every sample this app wrote to Health.
     /// Readings other apps and devices wrote stay: they are not ours to delete.
     func deleteOwnSamples() async throws
+    /// Sex and birth month and year for onboarding to preselect (US-54 AC3); `.none`
+    /// when not allowed or not set. Read on demand, never stored by this call.
+    func characteristics() -> HealthCharacteristics
 }
 
 enum HealthStoreError: LocalizedError {

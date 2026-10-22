@@ -54,6 +54,12 @@ final class RecordStore {
         pins += 1
     }
 
+    /// A screen that stays open across several edits (onboarding) takes the record now
+    /// shown as the one its next edit is checked against.
+    func repinScreen() {
+        if pins > 0 { pinned = screen }
+    }
+
     /// That sheet closed.
     func unpinScreen() {
         pins = max(0, pins - 1)

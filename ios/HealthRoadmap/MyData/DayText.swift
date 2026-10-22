@@ -46,6 +46,11 @@ enum DayText {
         return date.formatted(Date.FormatStyle(timeZone: .gmt).month(.wide).year())
     }
 
+    /// "January" for 1, in the phone's language.
+    static func monthName(_ month: Int) -> String {
+        gregorian.monthSymbols[month - 1]
+    }
+
     /// Birth years a picker offers, newest first.
     static func birthYears(now: Date) -> [Int] {
         Array((1900...gregorian.component(.year, from: now)).reversed())

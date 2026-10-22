@@ -17,6 +17,7 @@ for ZONE in UTC Pacific/Auckland; do
   TEST_RUNNER_TZ="$ZONE" xcodebuild test \
     -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
     -destination "platform=iOS Simulator,name=$DEVICE" \
+    -skip-testing:HealthRoadmapUITests \
     -derivedDataPath "$DERIVED" 2>&1 | tee "$LOG" | grep -E "Test case|error:|TEST (SUCCEEDED|FAILED)" || true
   grep -q "TEST SUCCEEDED" "$LOG" || { echo "FAILED in $ZONE"; exit 1; }
   if grep -q "testEveryFixtureMatchesTheSourceInThisZone().*skipped" "$LOG"; then

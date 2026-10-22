@@ -87,6 +87,7 @@ struct BloodPressureSheet: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.caption).foregroundStyle(.secondary)
             TextField(hint ?? "0", text: text)
+                .analyticsMasked()
                 .keyboardType(.numberPad)
                 .font(.system(.largeTitle, design: .rounded).weight(.semibold))
                 .monospacedDigit()

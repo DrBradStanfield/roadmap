@@ -35,6 +35,7 @@ struct ValueEntrySheet: View {
                 Section {
                     HStack(alignment: .firstTextBaseline) {
                         TextField(current ?? "0", text: $text)
+                            .analyticsMasked()
                             .keyboardType(.decimalPad)
                             .font(.system(size: 44, weight: .semibold, design: .rounded))
                             .monospacedDigit()

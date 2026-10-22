@@ -77,10 +77,24 @@ three together. Brad's rule (2026-10-22): over-declare rather than under-declare
 - **Usage Data > Product Interaction.** Collected. The count of chat questions and uploads
   on the day the key was last used, kept with that row to cap daily use. Purpose: App
   Functionality only. Linked: No. Tracking: No.
-- **Everything else** (contact info, location, other identifiers, other usage data,
-  diagnostics, purchases, financial info, contacts, browsing, search, sensitive info): Not
-  collected. The app sends no analytics or crash reports, and our server keeps no IP
-  address.
+Microsoft Clarity (D9, 2026-10-22) records taps, scrolls and screen flow over masked
+screens. Its own privacy manifest (in Clarity.framework, merged into Xcode's privacy report)
+declares the three rows below; declare them as written.
+- **Usage Data > Product Interaction** also: Clarity. Purpose: Analytics (in addition to
+  App Functionality). Linked: No. Tracking: No.
+- **Usage Data > Other Usage Data.** Collected by Clarity. Purpose: Analytics. Linked: No.
+  Tracking: No.
+- **Identifiers > User ID.** Collected: Clarity's random install id. Purpose: App
+  Functionality. Linked: No. Tracking: No.
+- **Diagnostics > Performance Data.** Collected (over-declared: Clarity records session
+  timing and app hangs). Purpose: Analytics. Linked: No. Tracking: No.
+- **Diagnostics > Crash Data.** Collected (over-declared: Clarity may record a crash in
+  a session). Purpose: Analytics. Linked: No. Tracking: No.
+- **Location > Coarse Location.** Collected (over-declared: Clarity derives a rough
+  location from the IP address). Purpose: Analytics. Linked: No. Tracking: No.
+- **Everything else** (contact info, precise location, other identifiers, purchases,
+  financial info, contacts, browsing, search, sensitive info): Not collected. Our server
+  keeps no IP address.
 
 ## App Review notes
 
