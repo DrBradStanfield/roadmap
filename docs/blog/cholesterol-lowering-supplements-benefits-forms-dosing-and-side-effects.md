@@ -21,11 +21,11 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 - High-dose fish oil may increase bleeding risk with anticoagulant or antiplatelet drugs such as warfarin, heparin, clopidogrel or aspirin [21].
 - Policosanol may inhibit platelet aggregation and pantethine may increase the risk of bleeding, so use them cautiously with blood thinners [58][65].
-- Do not combine red yeast rice with a statin. Its monacolin K is identical to lovastatin, so it adds to statin side effects and shares statin drug interactions [16][17].
-- Psyllium can reduce the absorption of some medicines, such as metformin, digoxin and carbamazepine, so take them at a different time [12][13].
-- Red yeast rice can cause the same muscle, kidney and liver damage as statins, and some products contain citrinin, which can damage the kidneys. Avoid it in pregnancy, and check with your doctor first if you have liver disease [17].
-- Sitosterolemia is a rare inherited disorder linked to marked atherosclerosis; people who have it should not take plant sterol supplements without their specialist's advice [51].
-- High-dose niacin often causes flushing and may raise blood sugar, liver enzymes and uric acid [42].
+- Do not combine red yeast rice with a statin, niacin or a fibrate. Its monacolin K is identical to lovastatin, which carries a risk of muscle damage with these drugs [16][17][67].
+- Psyllium may affect how well other medicines work, so take prescription medicines at least 2 hours before or after it [66].
+- Red yeast rice products can have the same potential muscle, kidney and liver side effects as statins, and some contain citrinin, which can damage the kidneys. They are not recommended in pregnancy or breastfeeding [17].
+- Sitosterolemia is a rare inherited disorder linked to marked atherosclerosis; people who have it should not take plant sterol supplements [51].
+- High-dose niacin often causes flushing and can raise blood sugar, liver enzymes and uric acid [68].
 
 ## Brad's videos on this topic
 
@@ -51,15 +51,15 @@ Plant sterols and stanols are naturally occurring compounds structurally similar
 
 These compounds are available in two primary chemical forms:
 
-**Free (nonesterified) sterols and stanols:** The base molecular form. The FDA concluded that 800 mg per day or more of free plant sterols consistently lowers blood total and LDL cholesterol [63].
+**Free (nonesterified) sterols and stanols:** The base molecular form. In 2000 the FDA concluded that 800 mg per day or more of free plant sterols consistently lowered blood total and LDL cholesterol. Its 2010 proposed rule would raise it to 2 g a day, and it found the evidence for nonesterified phytosterols in supplements limited and inconsistent [63]. The current health claim covers only plant sterol esters (at least 1.3 g a day) and plant stanol esters (at least 3.4 g a day) [62].
 
 **Esterified sterols and stanols:** Sterols or stanols bonded to a fatty acid, which improves solubility in fats and oils (important for incorporation into spreads and softgels). The ester form is heavier — approximately 1,300 mg of plant sterol esters provides roughly 800 mg of free sterols. Similarly, 3,400 mg of plant stanol esters provides approximately 2,000 mg of free stanols [63].
 
-The distinction between free and esterified forms matters clinically. A pair of studies by Maki et al. (2011, 2012) compared free versus esterified sterols/stanols in supplement form. The first study used 1,800 mg daily of mixed free stanols and sterols in tablet form, yielding LDL reductions of approximately 4% and total cholesterol reductions of 3% [10]. The second study used 2,900 mg of esterified sterols and stanols (equivalent to 1,800 mg free form) in a softgel capsule, producing substantially larger reductions: LDL fell 9.2% and total cholesterol fell 7.4% from baseline. Triglycerides also decreased 9.1% in the softgel study but not in the tablet study [11]. This suggests that esterified forms in softgel delivery may be more effective than free forms in tablets.
+The form also seems to matter in supplements. In one trial, tablets giving 1.8 g a day of free sterols and stanols for 6 weeks lowered LDL cholesterol by 4.9% and total cholesterol by 2.8% compared with placebo (Maki et al., 2012) [10]. In a second trial, softgel capsules giving 1.8 g a day of esterified sterols and stanols lowered LDL cholesterol by 9.2%, total cholesterol by 7.4% and triglycerides by 9.1% (Maki et al., 2013) [11]. These were separate trials, but they suggest that esterified forms in softgels may work better than free forms in tablets.
 
 **Delivery vehicles matter.** Sterols and stanols have been studied in margarine/spreads, yogurt drinks, orange juice, capsules, and tablets. The food form may substantially affect how much LDL cholesterol falls [51]. A meta-analysis of randomized trials found larger LDL reductions when sterols were added to fat spreads, mayonnaise, salad dressing, milk and yogurt than to foods such as croissants, muffins, orange juice and cereal bars, and a single morning dose had no significant effect [26].
 
-To carry the FDA health claim, the plant sterol mixture in plant sterol esters must contain at least 80% beta-sitosterol, campesterol, and stigmasterol by combined weight [62].
+For the FDA health claim, at least 80% of the sterols in plant sterol esters, by combined weight, must be beta-sitosterol, campesterol or stigmasterol [62].
 
 ### Soluble Fiber Forms
 
@@ -79,11 +79,11 @@ The two primary omega-3 fatty acids relevant to lipid management are eicosapenta
 
 ### Policosanol
 
-Policosanol is a mixture of long-chain fatty alcohols derived primarily from sugar cane wax. The dominant component is octacosanol. As detailed in the evidence section below, the efficacy of policosanol has been seriously questioned.
+Policosanol is a blend of long-chain fatty alcohols, mostly from sugar cane wax. The dominant component is octacosanol. As detailed in the evidence section below, the efficacy of policosanol has been seriously questioned.
 
 ### Pantethine
 
-Pantethine is a derivative of vitamin B5 (pantothenic acid) — specifically the disulfide form of pantetheine, a precursor to coenzyme A. It may reduce cholesterol production in the liver by a mechanism distinct from statins [23]. It is available as a standalone supplement or combined with sterols/stanols (e.g., in CholestOff Complete).
+Pantethine is a derivative of vitamin B5 (pantothenic acid) — specifically the disulfide form of pantetheine, a precursor to coenzyme A. Laboratory work suggests it may reduce cholesterol production in the liver [41].
 
 ### Other Forms
 
@@ -93,41 +93,41 @@ Pantethine is a derivative of vitamin B5 (pantothenic acid) — specifically the
 
 ### Plant Sterols and Stanols — LDL Cholesterol Reduction
 
-Plant sterols and stanols lower LDL cholesterol by competing with dietary and biliary cholesterol for incorporation into mixed micelles in the intestinal lumen, reducing the amount of cholesterol available for uptake by enterocytes via the Niemann-Pick C1-Like 1 (NPC1L1) transporter [7][8].
+Plant sterols and stanols reduce LDL cholesterol by competing with dietary and biliary cholesterol for incorporation into mixed micelles in the intestinal lumen, reducing the amount of cholesterol available for uptake by enterocytes via the Niemann-Pick C1-Like 1 (NPC1L1) transporter [7][8].
 
 **Dose-response meta-analysis:** A dose-response meta-analysis of 84 randomized controlled trials found that phytosterols lowered LDL cholesterol by 8.8% (0.34 mmol/L) on average at a mean dose of 2.15 g a day; the effect rose with dose, and the dose-response curves for plant sterols and stanols did not differ significantly [25]. A separate meta-analysis of 41 trials found that intake of 2 g/day reduced LDL cholesterol by approximately 10%, with higher doses providing little additional benefit [51]. A 2011 meta-analysis of 113 publications found larger maximal LDL reductions for plant stanols (16.4%, or 17.1% as stanol esters) than for plant sterols (8.3%, or 8.4% as sterol esters), with stanol intakes in excess of 2 g/day giving further dose-dependent reductions [27]. This differs from the dose-response meta-analysis above, which found no significant difference between sterols and stanols [25].
 
-**Free vs. esterified forms in supplements:** As noted above, a clinical study using free stanols/sterols (1,800 mg/day in tablet form) lowered LDL by approximately 4% and total cholesterol by approximately 3% in adults with elevated LDL who were already on a low-cholesterol diet (Maki et al., 2011) [10]. A similar study using esterified sterols/stanols (2,900 mg esterified, equivalent to 1,800 mg free) in softgel form yielded LDL reductions of 9.2% and total cholesterol reductions of 7.4%. Triglycerides decreased 9.1%. HDL levels were not significantly affected in either study (Maki et al., 2012) [11].
+**Free vs. esterified forms in supplements:** As noted above, the free-sterol tablet lowered LDL cholesterol by 4.9% in adults on a therapeutic lifestyle changes diet [10], and the esterified softgel lowered it by 9.2% [11]. Neither changed HDL cholesterol significantly [10][11].
 
-**Low-dose sterol supplementation with diet adherence:** A study among 49 Italian adults (average age 52) with moderately high cholesterol showed that 2.5 grams of mixed phytosterols taken once daily before the main meal for 3 weeks reduced total and LDL cholesterol by 12.3% and 9.2%, respectively, among those who closely followed a Mediterranean diet, compared to only 4.5% and 6.3% reductions among those who did not closely follow a Mediterranean diet (Cicero et al., *Nutrients*, 2023) [28]. This demonstrates that dietary context significantly influences sterol efficacy.
+**Low-dose sterol supplementation with diet adherence:** In a crossover trial in 50 Italian adults with high cholesterol, a once-a-day drink with 2.5 g of phytosterols for 3 weeks lowered LDL cholesterol by 7.8 mg/dL from baseline, and the fall was larger in people who kept more closely to a Mediterranean diet (Cicero et al., *Nutrients*, 2023) [28]. Diet quality may change how much sterols help.
 
-**Yogurt drink delivery:** A study in Spain involving advice on diet and exercise showed that 2 grams of stanol esters in a yogurt drink consumed daily after the main meal reduced LDL cholesterol by slightly more than 10% among people with high cholesterol. The improvement was apparent at 3 months and maintained at one year when the study was completed. This was significant compared to a 1% decrease in LDL for those who received the yogurt drink without stanols (Parraga-Martinez et al., *Rev Esp Cardiol*, 2015) [29].
+**Yogurt drink delivery:** In a Spanish trial in 182 adults with high cholesterol, a yogurt drink with 2 g of plant stanols a day lowered LDL cholesterol by 11.0% at 12 months, a fall 13.7 mg/dL larger than with plain yogurt (Parraga-Martinez et al., *Rev Esp Cardiol*, 2015) [29].
 
-**Comparison to statin in a direct trial:** CholestOff Plus (esterified sterols/stanols) was found to be no more effective than placebo — and not as effective as low-dose rosuvastatin — for lowering LDL and total cholesterol in a one-month clinical trial among men and women (average age 64) with elevated LDL cholesterol (average 128 mg/dL). However, it is not known whether participants took the supplement with meals, which is essential for its mechanism of action (Laffin et al., *J Am Coll Cardiol*, 2023) [6].
+**Comparison to statin in a direct trial:** In a 28-day trial in 190 adults at raised cardiovascular risk, plant sterols did not lower LDL cholesterol more than placebo, while rosuvastatin 5 mg a day did (Laffin et al., *J Am Coll Cardiol*, 2023) [6].
 
 ### Plant Sterols Combined with Statins
 
-Several clinical studies show that adding sterols or stanols (usually in a margarine or spread) to statin therapy results in an additional 7-10% reduction in LDL cholesterol (Blair et al., *Am J Cardiol*, 2000; Castro Cabezas et al., *J Am Diet Assoc*, 2006) [30][31]. One study found a greater effect: the addition of a sterol-containing margarine to a statin produced a cholesterol-lowering effect similar to doubling the statin dose (Simons et al., *Am J Cardiol*, 2002) [32]. These data suggest that adding a sterol or stanol to statin therapy may be appropriate for patients who need additional cholesterol lowering but cannot tolerate higher statin doses. It is not known, however, if a lower statin dose plus a sterol/stanol reduces heart attack risk to the same degree as a higher statin dose.
+Adding plant stanols or sterols to a statin lowers LDL cholesterol further. A stanol ester spread (5.1 g a day) taken with a statin for 8 weeks cut LDL cholesterol by 10% more than a placebo spread (Blair et al., *Am J Cardiol*, 2000) [30]. In a small trial in statin-treated patients, a stanol margarine with dietary advice cut LDL cholesterol by 15.6%, against 7.7% with standard care (Castro Cabezas et al., *J Am Diet Assoc*, 2006) [31]. In a 2002 trial, sterol-ester margarine added to a statin gave an LDL reduction equal to doubling the dose of statin (Simons, *Am J Cardiol*, 2002) [32]. Sterols or stanols may therefore suit people who need more LDL lowering but cannot take a higher statin dose. There is no direct evidence yet that foods with added plant sterols reduce coronary disease [52], so it is not known whether adding a sterol or stanol to a low statin dose protects the heart as well as a higher statin dose.
 
 ### Plant Sterols Combined with Red Yeast Rice
 
-An 8-week study in Italy among adults with moderately elevated cholesterol found that 800 mg of plant sterols daily lowered LDL cholesterol slightly but not to a statistically significant degree, while red yeast rice (providing 5 mg of monacolins) lowered LDL by 20.5%, and the combination lowered LDL by 27% — significantly greater than red yeast rice alone (Cicero et al., *Nutr & Metab*, 2017) [33]. However, a U.S. study using more than twice the dose of phytosterols found different results: 900 mg of plant sterols in tablet form twice daily or 1,800 mg of red yeast rice twice daily (providing 7 mg of lovastatin daily) each reduced LDL by about 25%, but the combination did not further reduce LDL levels (Becker et al., *Am Heart J*, 2013) [34]. It appears that at moderate doses, taking a combination of sterols and red yeast rice can be worthwhile, but there is less additive effect at higher doses.
+In an 8-week Italian trial in 90 adults with moderately high cholesterol, 800 mg of phytosterols a day did not change lipids significantly, red yeast rice with 5 mg of monacolins cut LDL cholesterol by 20.5%, and the two together cut it by 27.0%, more than red yeast rice alone (Cicero et al., *Nutr Metab*, 2017) [33]. A US trial found no added benefit: in 187 people taking red yeast rice 1,800 mg twice daily, adding 900 mg of phytosterol tablets twice daily did not lower LDL cholesterol further at 12, 24 or 52 weeks (Becker et al., *Am Heart J*, 2013) [34]. Combining the two may help, but these trials disagree.
 
 ### Plant Sterols Combined with Fish Oil
 
-A well-controlled study in 332 adults with high or borderline-high cholesterol compared a spread containing 2,500 mg of free sterols with varying amounts of omega-3 fatty acids (0, 900, 1,300, or 1,800 mg EPA + DHA in a 2:1 ratio) for 4 weeks. The addition of fish oil did not diminish the cholesterol-lowering effect of the sterols and appeared to provide additional benefit. Compared to placebo spread, LDL fell by 11.7% with sterols alone, and by 11.5%, 12.7%, and 14.7%, respectively, with increasing amounts of EPA + DHA. A modest but statistically significant increase in HDL also occurred in the group receiving the highest amount of EPA + DHA. Triglycerides decreased in the groups receiving the two highest amounts of EPA + DHA (Ras et al., *J Nutr*, 2014) [35].
+In a 4-week trial in 332 adults with high cholesterol (85 men and 247 women), a low-fat spread gave 2.5 g of plant sterols a day with 0, 0.9, 1.3 or 1.8 g of EPA plus DHA from fish oil. LDL cholesterol was 11.5% to 14.7% lower in the sterol groups than with a control spread, and triglycerides were 9.3% to 16.2% lower in the fish oil groups, falling further as the fish oil dose rose (Ras et al., *J Nutr*, 2014) [35].
 
 ### Plant Sterols Combined with Curcumin
 
-A study in Australia among older people with high cholesterol levels found that 1,000 mg of a bioavailability-enhanced curcumin formula (Meriva, providing 200 mg of curcumin) combined with a phytosterol-enriched spread providing 2 grams of phytosterols produced average decreases in total and LDL cholesterol of 11% and 14.4%, respectively, compared with decreases of 4.8% and 8.1% with phytosterol alone. Curcumin alone produced slight but non-significant decreases. No significant changes in HDL or triglycerides were observed (Ferguson et al., *Metabolism*, 2017) [36].
+In an Australian trial in adults with high cholesterol, 2 g of phytosterols plus 200 mg of curcumin a day for 4 weeks lowered total cholesterol by 11.0% and LDL cholesterol by 14.4%, against 4.8% and 8.1% with phytosterols alone. Curcumin alone gave small, non-significant falls, and HDL cholesterol and triglycerides did not change (Ferguson et al., *Metabolism*, 2018) [36].
 
 ### Soluble Fiber — Psyllium
 
 Psyllium lowers cholesterol by binding bile acids in the intestinal lumen, preventing their reabsorption and promoting fecal excretion. This depletes the bile acid pool and stimulates the liver to convert more cholesterol into new bile acids via upregulation of cholesterol 7-alpha-hydroxylase, reducing circulating cholesterol levels [12][13].
 
-**Meta-analysis (2025):** A systematic review and dose-response meta-analysis of 41 randomized trials (n=2,049) found that psyllium significantly lowers LDL cholesterol (weighted mean difference -8.55 mg/dL) and total cholesterol (-9.05 mg/dL), with greater effects at doses exceeding 10 g/day [12]. These reductions correspond to LDL decreases of approximately 5-10% depending on baseline levels.
+**Meta-analysis (2025):** A 2025 meta-analysis of 41 randomized trials (2,049 people) found that psyllium lowered LDL cholesterol (weighted mean difference -8.55) and total cholesterol (-9.05); the paper does not state the unit. Dose and duration had no significant linear effect on the results [12].
 
-**Earlier meta-analyses** similarly support LDL reductions of 5-10% with psyllium supplementation at doses of 7-15 g/day, with benefits appearing consistent regardless of exact study duration [12][37].
+**Earlier meta-analyses:** In 8 trials of 10.2 g of psyllium a day added to a low-fat diet, LDL cholesterol fell by 7% and total cholesterol by 4% compared with placebo (Anderson et al., *Am J Clin Nutr*, 2000) [13]. A 2009 meta-analysis of trials using 3 to 20.4 g a day found that larger doses lowered cholesterol more [37]. The FDA, reviewing the trials in 1998, found no added benefit above 10.2 g a day of husk [61].
 
 **Trial dose:** Psyllium lowers LDL cholesterol at trial doses of about 7 g a day of soluble fiber from psyllium, which is 10.2 g of husk. This is the basis of the US FDA health claim, which requires 7 g or more per day of soluble fiber from psyllium seed husk [60][61]. A 2018 meta-analysis of 28 trials (1,924 people) supports this dose: a median dose of about 10.2 g of psyllium lowered LDL cholesterol by 0.33 mmol/L [59].
 
@@ -161,15 +161,15 @@ Omega-3 fatty acids primarily reduce triglyceride levels rather than LDL cholest
 
 ### Pantethine
 
-A small, company-funded study among 24 adults with mild to moderately elevated cholesterol who were not taking cholesterol-lowering medication showed that supplementation with pantethine (600 mg/day for 8 weeks, then 900 mg/day for 8 more weeks) in addition to the Therapeutic Lifestyle Changes (TLC) diet lowered total and LDL cholesterol at 16 weeks by 6% and 11%, respectively, compared to baseline. These decreases were statistically significant compared to placebo, among whom total cholesterol decreased by 2% and LDL increased by 3% (Evans et al., *Vasc Health Risk Manag*, 2014) [23]. The pantethine used was Pantesin (Daiichi Fine Chemical Co, which funded the study). The evidence base for pantethine remains small and largely industry-funded.
+In a trial in 32 adults at low to moderate cardiovascular risk who were eligible for statins, pantethine (600 mg a day for 8 weeks, then 900 mg a day for 8 more weeks) lowered LDL cholesterol by 11% from baseline, while LDL rose 3% with placebo; total cholesterol also fell significantly compared with placebo at 16 weeks (Evans et al., *Vasc Health Risk Manag*, 2014) [23]. The evidence base for pantethine remains small.
 
-Pantethine may reduce cholesterol production in the liver (Cighetti et al., *Biochim Biophys Acta*, 1988) [41], working through a mechanism distinct from sterols/stanols (which block cholesterol absorption). However, no studies have demonstrated that combining pantethine with sterols/stanols is more effective than sterols/stanols alone.
+In rat liver cells, pantethine lowered the activity of HMG-CoA reductase, a key enzyme in cholesterol production (Cighetti et al., *Biochim Biophys Acta*, 1988) [41]. Sterols and stanols work differently, by blocking cholesterol absorption [7][8].
 
 ### Policosanol
 
 **Most positive studies come from a single Cuban research group.** More than 80 trials, performed mostly by a single research institute, suggest that policosanol at 5 to 40 mg a day lowers lipids about as well as statins [64]. However, a randomized trial in Germany found that Cuban sugar cane policosanol at 10, 20, 40 or 80 mg a day for 12 weeks did not lower LDL cholesterol more than placebo [64]. A US government review finds no clear evidence that policosanol lowers cholesterol [2].
 
-Other forms of policosanol (such as rice bran wax policosanol) differ in composition and have also failed to demonstrate efficacy. The evidence for policosanol as a cholesterol-lowering agent should be considered doubtful at best.
+The evidence for policosanol as a cholesterol-lowering agent should be considered doubtful at best.
 
 ### Garlic
 
@@ -177,7 +177,7 @@ Garlic supplements have been extensively studied, yet high-quality trials and re
 
 ### Niacin (Vitamin B3)
 
-In high doses (1,000-3,000 mg/day), niacin can raise HDL cholesterol and lower LDL cholesterol and triglycerides. However, niacin is no longer recommended for cholesterol management in clinical guidelines due to a lack of demonstrated cardiovascular risk reduction in outcomes trials and notable adverse effects including increased incidence of diabetes, flushing, and gastrointestinal complications [42].
+In high doses, niacin can raise HDL cholesterol and lower LDL cholesterol and triglycerides [42][68]. In the AIM-HIGH trial, adding extended-release niacin (1,500 to 2,000 mg a day) to a statin in 3,414 people with heart disease gave no extra clinical benefit, and the trial stopped early for lack of efficacy [42]. The niacin label now states that it has not been shown to reduce cardiovascular events or deaths in people already taking a statin, and it lists flushing, digestive upset, liver problems and higher blood sugar among its harms [68].
 
 ### Artichoke Leaf Extract
 
@@ -191,13 +191,13 @@ Berberine, an alkaloid from several plant species, has shown cholesterol-lowerin
 
 ### Plant Sterols and Stanols
 
-The FDA's position is that supplements and foods providing at least the following minimum daily amounts may reduce the risk of heart disease when part of a diet low in saturated fat and cholesterol [62][63]:
+Under the current FDA health claim, eating at least these daily amounts with a diet that is low in saturated fat and cholesterol may lower heart disease risk [62]. The free-sterol row reflects the FDA's 2000 review and 2010 proposed rule [63]:
 
 | Form | Minimum Daily Dose | Notes |
 |------|:-:|-------|
 | Plant sterol esters | 1,300 mg (equivalent to ~800 mg free sterols) | Divided over 2+ servings with meals |
 | Plant stanol esters | 3,400 mg (equivalent to ~2,000 mg free stanols) | Divided over 2+ servings with meals |
-| Free sterols (from fortified foods) | 800 mg | Divided over 2+ servings with meals |
+| Free sterols | Not in the current claim; the FDA's 2000 review found 800 mg a day or more effective, and its 2010 proposed rule would set 2 g a day | The 2010 proposal found the evidence for free sterols in supplements limited and inconsistent |
 
 Higher doses up to 3 g of total sterol esters (or 1,800 mg free sterols) have been used successfully in clinical trials (Lau, 2005; Vanstone et al., 2002) [45][46]. A dose-response meta-analysis described the LDL-lowering effect with a nonlinear curve that rises with dose toward a maximum [25].
 
@@ -207,7 +207,7 @@ Note that in 2010, the FDA considered raising the minimum daily amount for healt
 
 ### Psyllium
 
-Effective doses for cholesterol lowering range from 7-15 g/day, with greater effects at doses exceeding 10 g/day [12]. The US FDA health claim rests on 10.2 g of husk a day, which provides about 7 g of soluble fiber [61]. This is typically divided into 2-3 doses taken with meals and ample water. Common starting dose is 5 g/day, titrated up over 1-2 weeks to minimize bloating and gas.
+The US FDA health claim rests on 10.2 g of husk a day, which provides about 7 g of soluble fiber [61]. Trials have used 3 to 20.4 g a day of psyllium [37], but the FDA found no added benefit above 10.2 g a day [61]. This is typically divided into 2-3 doses taken with meals and ample water. Common starting dose is 5 g/day, titrated up over 1-2 weeks to minimize bloating and gas.
 
 ### Beta-Glucan
 
@@ -234,50 +234,48 @@ The sole positive study used 600 mg/day for 8 weeks followed by 900 mg/day for a
 | Supplement | Effective Daily Dose | Primary Target | Expected Effect |
 |-----------|:-:|:-:|:-:|
 | Plant sterol esters | 1,300-3,000 mg (with meals) | LDL cholesterol | 6-12% reduction |
-| Free sterols (food/supplement) | 800-1,800 mg (with meals) | LDL cholesterol | 4-12% reduction |
-| Psyllium husk | 10.2 g husk (about 7 g soluble fiber); range 7-15 g (divided, with water) | LDL cholesterol | 5-10% reduction |
+| Free sterols (food/supplement) | 800-1,800 mg (with meals) | LDL cholesterol | Inconsistent in supplements; 4.9% in one tablet trial |
+| Psyllium husk | 10.2 g husk (about 7 g soluble fiber), divided, with water | LDL cholesterol | About 7% reduction |
 | Oat beta-glucan | 3+ g/day | LDL, total cholesterol | 5-7% reduction |
 | Red yeast rice | 1,200-2,400 mg | LDL cholesterol | 15-34% reduction (variable) |
 | Omega-3 (EPA + DHA) | 2-4 g | Triglycerides | 20-30% reduction |
-| Pantethine | 600-900 mg | Total, LDL cholesterol | 6-11% reduction (limited data) |
-| Policosanol | 10-20 mg | LDL cholesterol | Likely ineffective |
+| Pantethine | 600-900 mg | LDL cholesterol | 11% reduction in one small trial |
+| Policosanol | 5-40 mg (Cuban trials) | LDL cholesterol | Likely ineffective |
 
 ## 5. Safety and Side Effects
 
 ### Plant Sterols and Stanols
 
-Plant sterols and stanols are generally considered safe. A daily dose as high as 8.8 grams of plant stanol esters taken for 12 weeks was not found to have adverse effects on liver enzymes or blood cells, or decrease blood levels of vitamins A, E, and D, although it did decrease blood levels of beta-carotene (Gylling et al., *Clin Nutr*, 2010) [49].
+Plant sterols and stanols are generally considered safe. In a 10-week trial, 8.8 g a day of plant stanols as esters left liver enzymes, blood cells and vitamins A and D unchanged, but lowered blood beta-carotene (Gylling et al., *Clin Nutr*, 2010) [49].
 
-**Carotenoid depletion:** Due to possible inhibition of beta-carotene and other carotenoids such as lutein and zeaxanthin (Baumgartner et al., *Eur J Nutr*, 2017; Katan et al., *Mayo Clin Proc*, 2003) [50][51], individuals taking sterols/stanols should consider increasing intake of fruits and vegetables, or using a carotenoid supplement taken at a different time.
+**Carotenoid depletion:** A meta-analysis of randomized trials found that about 2.5 g a day of sterols or stanols lowered blood beta-carotene and some other carotenoids, though levels stayed within normal ranges, and did not affect vitamins A and D (Baumgartner et al., *Eur J Nutr*, 2017; Katan et al., *Mayo Clin Proc*, 2003) [50][51].
 
-**Elevated plant sterol blood levels:** There is some concern about raising plasma plant sterol levels (which occurs with supplementation), because elevated levels have been associated with increased risk of coronary artery disease in some epidemiologic studies. However, a 12-week study of 3 g sterol esters per day from a low-fat spread found no impact on arterial function, despite reducing LDL by 6.7% (Ras et al., *Am J Clin Nutr*, 2015) [52]. This raises the question of overall benefit if sterols improve cholesterol numbers but do not demonstrably improve arterial function.
+**Elevated plant sterol blood levels:** Sterol-enriched foods raise blood plant sterol levels. Experts have asked whether this adds heart risk, given the marked atherosclerosis seen in inherited phytosterolemia, and judged the risk largely hypothetical [51]. In a 12-week trial in 240 adults, 3 g a day of plant sterols in a low-fat spread lowered LDL cholesterol by 6.7% but neither improved nor worsened artery function (Ras et al., *Am J Clin Nutr*, 2015) [52].
 
 **Gastrointestinal effects:** At recommended intakes of about 2 to 2.5 g a day, products enriched with plant stanol or sterol esters lowered LDL cholesterol without any reported side effects [8]. Some people may still notice digestive symptoms; if they persist, talk to your doctor.
 
-**Sexual side effects:** Although rare, erectile dysfunction and/or loss of libido were reported in 1% of men taking beta-sitosterol (20 mg three times daily for 6 months) in a benign prostatic hyperplasia trial (Berges et al., *Lancet*, 1995) [53].
+**Sexual side effects:** Erectile problems or lower libido have been reported rarely with beta-sitosterol. If you notice them, talk to your doctor.
 
-**Liver enzyme elevations:** Plant sterol supplements might affect liver enzymes in rare cases, although we could not confirm this in a published study. If you have liver disease, check with your doctor before taking them.
+**Sitosterolemia contraindication:** Sitosterolemia (also called phytosterolemia) is a rare inherited disorder in which plant sterols build up in the body, and it is linked to a marked increase in atherosclerosis [51]. People with sitosterolemia should not take beta-sitosterol or other plant sterol supplements.
 
-**Sitosterolemia contraindication:** Sitosterolemia (also called phytosterolemia) is a rare inherited disorder in which plant sterols build up in the body, and it is linked to a marked increase in atherosclerosis [51]. People with sitosterolemia should not take beta-sitosterol or other plant sterol supplements without their specialist's advice.
-
-**Potential anticoagulant interaction:** Laboratory research in cell cultures and mice has shown that beta-sitosterol can inhibit thrombin, an enzyme involved in blood clotting (Gogoi et al., *J Nat Prod*, 2018) [56]. Consequently, beta-sitosterol may interact with anticoagulant drugs, particularly direct thrombin inhibitors such as dabigatran (Pradaxa), although this has not been confirmed in humans.
+**Potential anticoagulant interaction:** In laboratory and mouse studies, beta-sitosterol inhibited thrombin, a blood-clotting enzyme, and acted as an anticoagulant when given by mouth (Gogoi et al., *J Nat Prod*, 2018) [56]. It might therefore add to the effect of anticoagulants, especially thrombin-blocking drugs like dabigatran (Pradaxa), but this has not been shown in people.
 
 ### Soluble Fiber (Psyllium)
 
 Psyllium is generally well tolerated and considered safe. Common side effects include:
 - Mild bloating, gas, and cramping — particularly when starting treatment or with inadequate fluid intake
 - These symptoms typically resolve after 1-2 weeks as the gut microbiome adjusts
-- Always take psyllium with at least 8 oz of water to prevent esophageal or intestinal obstruction
+- Always take psyllium with at least 8 oz of water; without enough fluid it can swell and block the throat or esophagus and cause choking [66]
 
 ### Red Yeast Rice
 
 Red yeast rice carries the most significant safety concerns among cholesterol-lowering supplements because monacolin K is chemically identical to lovastatin [16][17]:
 
-- **Muscle damage:** Myopathy and rhabdomyolysis (the same risks as prescription statins) can occur [17].
-- **Liver injury:** Red yeast rice may affect the liver, as statins can. If you have liver disease, check with your doctor before taking it.
+- **Muscle damage:** Products with significant monacolin K can have the same potential muscle side effects as statins, including myopathy and rhabdomyolysis [17][67].
+- **Liver injury:** Such products can also cause liver damage, as statins can [17]. The lovastatin label rules lovastatin out in active liver disease and urges caution with heavy alcohol use or past liver disease [67], so check with your doctor first if either applies to you.
 - **Citrinin contamination:** Some products are contaminated with citrinin, a nephrotoxic mycotoxin that can cause kidney damage [17].
-- **Other side effects:** Digestive issues including stomach pain, heartburn, gas, nausea, and headache have been reported [17].
-- **Same contraindications as statins:** Pregnancy, liver disease, heavy alcohol use, concurrent use of CYP3A4 inhibitors.
+- **Other side effects:** Digestive problems such as diarrhea, nausea and stomach pain have been reported [17].
+- **Pregnancy and breastfeeding:** Red yeast rice products are not recommended for people who are pregnant or breastfeeding [17].
 
 ### Omega-3 Fatty Acids
 
@@ -296,22 +294,22 @@ Limited safety data. The available studies suggest it is generally well tolerate
 
 ### Niacin
 
-High-dose niacin causes:
-- **Flushing:** The most common side effect — warmth, redness, and itching, particularly on the face and upper body
+High-dose niacin can cause [68]:
+- **Flushing:** The most common side effect — warmth, redness, itching or tingling of the skin
 - **Gastrointestinal upset:** Nausea, vomiting, diarrhea
-- **Hepatotoxicity:** Elevated liver enzymes, particularly with sustained-release formulations
-- **Hyperglycemia:** Increased blood glucose and risk of new-onset diabetes
-- **Hyperuricemia:** May exacerbate gout [42]
+- **Hepatotoxicity:** Raised liver enzymes; severe liver damage has occurred when sustained-release niacin replaced immediate-release niacin at the same dose
+- **Hyperglycemia:** Higher fasting blood glucose, and worse glucose control in people with diabetes
+- **Hyperuricemia:** Raised uric acid, so use it with caution if you are prone to gout [68]
 
 ## 6. Drug Interactions
 
 ### Sterols/Stanols and Statins
 
-Adding sterols or stanols to statin therapy is generally considered safe and may provide additive LDL reduction of 7-10% [30][31][32]. No major adverse interactions have been documented. However, sterols may slightly reduce the absorption of beta-carotene and certain fat-soluble vitamins when consumed in high amounts [50][51].
+Adding sterols or stanols to statin therapy is generally considered safe and may lower LDL cholesterol further (by 10% in one trial) [30][31][32]. No major adverse interactions have been documented. However, sterols may slightly reduce the absorption of beta-carotene and certain fat-soluble vitamins when consumed in high amounts [50][51].
 
 ### Red Yeast Rice and Statins
 
-Red yeast rice should NOT be combined with prescription statins. Because monacolin K is identical to lovastatin, concomitant use produces additive effects on HMG-CoA reductase inhibition and substantially increases the risk of statin-associated adverse effects including myopathy, rhabdomyolysis, and liver toxicity [16][17]. Red yeast rice also shares statin drug interactions with CYP3A4 inhibitors (e.g., clarithromycin, itraconazole, grapefruit juice), fibrates, and cyclosporine.
+Red yeast rice should NOT be combined with prescription statins. Because monacolin K is identical to lovastatin, concomitant use produces additive effects on HMG-CoA reductase inhibition and substantially increases the risk of statin-associated adverse effects including myopathy, rhabdomyolysis, and liver toxicity [16][17]. Red yeast rice can have the same drug interactions as statins [17]. The lovastatin label rules out strong CYP3A4 inhibitors such as itraconazole and clarithromycin, says to avoid gemfibrozil, and urges caution with other fibrates or with niacin at 1 g a day or more, because these drugs can also cause muscle damage; cyclosporine and grapefruit juice raise lovastatin levels [67]. Do not combine red yeast rice with niacin or fibrates.
 
 ### Omega-3 Fatty Acids and Anticoagulants
 
@@ -319,7 +317,7 @@ Omega-3 fatty acids at higher doses (greater than 2 g/day EPA + DHA) may increas
 
 ### Soluble Fiber and Medication Absorption
 
-Psyllium can interfere with the gastrointestinal absorption of some oral medications, including cholesterol-lowering drugs, diabetes medications (such as metformin), digoxin, and carbamazepine. Medications should be taken at least 1-2 hours before or after the fiber supplement [12][13].
+Bulk-forming fibers like psyllium may affect how well other medicines work. US psyllium labels advise taking prescription medicines by mouth at least 2 hours before or 2 hours after psyllium [66].
 
 ### Policosanol and Anticoagulants
 
@@ -327,16 +325,16 @@ Policosanol may inhibit platelet aggregation and should be used cautiously with 
 
 ### Beta-Sitosterol and Thrombin Inhibitors
 
-Laboratory research suggests beta-sitosterol may inhibit thrombin, potentially interacting with direct thrombin inhibitors such as dabigatran (Pradaxa) (Gogoi et al., *J Nat Prod*, 2018) [56]. This interaction has not been confirmed in humans, but caution is warranted.
+Laboratory research suggests beta-sitosterol may inhibit thrombin, potentially interacting with thrombin-blocking anticoagulants like dabigatran (Pradaxa) (Gogoi et al., *J Nat Prod*, 2018) [56]. This interaction has not been confirmed in humans, but caution is warranted.
 
 ### Drug Interaction Summary Table
 
 | Supplement | Interacting Drug(s) | Risk | Management |
 |-----------|---------------------|------|------------|
 | Plant sterols/stanols | Fat-soluble vitamins, carotenoids | Reduced absorption | Supplement carotenoids separately |
-| Red yeast rice | Statins, CYP3A4 inhibitors, fibrates | Myopathy, rhabdomyolysis, liver toxicity | Do NOT combine with statins |
+| Red yeast rice | Statins, niacin, CYP3A4 inhibitors, fibrates | Myopathy, rhabdomyolysis, liver toxicity | Do NOT combine with statins, niacin or fibrates |
 | Omega-3 (high dose) | Warfarin, heparin, clopidogrel, aspirin | Increased bleeding | Monitor bleeding parameters |
-| Psyllium | Metformin, digoxin, carbamazepine, other oral meds | Reduced drug absorption | Separate by 1-2 hours |
+| Psyllium | Prescription medicines taken by mouth | May affect how well they work | Separate by at least 2 hours |
 | Policosanol | Antiplatelet/anticoagulant drugs | Increased bleeding | Use cautiously |
 | Pantethine | Anticoagulants and antiplatelets (e.g., warfarin, aspirin, clopidogrel) | Possible added bleeding risk. This is theoretical: it rests on reduced platelet aggregation in one small 1981 study, and we found no reports of bleeding events in people [58] | No dose threshold has been established, so the caution applies at any dose. Talk to your doctor before combining |
 | Beta-sitosterol | Dabigatran (thrombin inhibitors) | Theoretical bleeding risk | Unconfirmed in humans |
@@ -368,7 +366,6 @@ Natural dietary intake of sterols from unfortified foods is usually 160-500 mg/d
 | Oat bran | 2.2 g per 1/3 cup dry | Richest oat source of beta-glucan |
 | Oatmeal (rolled oats) | 1.5 g per 1/2 cup dry | 1.5 cups cooked = ~3 g beta-glucan |
 | Barley | 2.5 g per 1/2 cup cooked | Also contains beta-glucan |
-| Psyllium husk | 5 g per tablespoon | Most concentrated supplement source |
 | Beans (navy, kidney, black) | 2-3 g per 1/2 cup cooked | Also provide protein |
 | Lentils | 1.5 g per 1/2 cup cooked | Versatile legume |
 | Apples | 1 g per medium fruit | Pectin is the primary soluble fiber |
@@ -421,7 +418,7 @@ Beyond individual foods, overall dietary patterns have well-demonstrated cholest
 
 [11] Maki KC, Lawless AL, Reeves MS, et al. "Lipid effects of a dietary supplement softgel capsule containing plant sterols/stanols in primary hypercholesterolemia." *Nutrition*. 2013;29(1):96-100 (epub 2012). PMID: [22796122](https://pubmed.ncbi.nlm.nih.gov/22796122/)
 
-[12] Jia X, Xu W, Zhang L, et al. "Psyllium supplementation and lipid profiles: a systematic review and dose-response meta-analysis of randomized controlled trials." *Front Nutr*. 2025.
+[12] Gholami Z, Paknahad Z. "Psyllium supplementation and lipid profiles: systematic review and dose-response meta-analysis of randomized controlled trials." *Genes Nutr*. 2025;20:27. doi: [10.1186/s12263-025-00786-5](https://doi.org/10.1186/s12263-025-00786-5) PMID: [41366295](https://pubmed.ncbi.nlm.nih.gov/41366295/)
 
 [13] Anderson JW, Allgood LD, Lawrence A, et al. "Cholesterol-lowering effects of psyllium intake adjunctive to diet therapy in men and women with hypercholesterolemia." *Am J Clin Nutr*. 2000;71(2):472-479. doi: [10.1093/ajcn/71.2.472](https://doi.org/10.1093/ajcn/71.2.472)
 
@@ -453,9 +450,9 @@ Beyond individual foods, overall dietary patterns have well-demonstrated cholest
 
 [28] Cicero AFG, Fogacci F, Giovannini M, et al. "The effect of dietary supplementation with plant sterols on total and LDL-cholesterol in plasma is affected by adherence to Mediterranean diet: insights from the DESCO randomized clinical study." *Nutrients*. 2023;15(21):4555. PMID: [37960208](https://pubmed.ncbi.nlm.nih.gov/37960208/)
 
-[29] Parraga-Martinez I, Lopez-Torres-Hidalgo JD, Del Campo-Del Campo JM, et al. "Long-term effects of plant stanols on the lipid profile of patients with hypercholesterolemia. A randomized clinical trial." *Rev Esp Cardiol*. 2015;68(8):665-671.
+[29] Parraga-Martinez I, Lopez-Torres-Hidalgo JD, Del Campo-Del Campo JM, et al. "Long-term effects of plant stanols on the lipid profile of patients with hypercholesterolemia. A randomized clinical trial." *Rev Esp Cardiol*. 2015;68(8):665-671. doi: [10.1016/j.rec.2014.07.035](https://doi.org/10.1016/j.rec.2014.07.035) PMID: [25541227](https://pubmed.ncbi.nlm.nih.gov/25541227/)
 
-[30] Blair SN, Capuzzi DM, Gottlieb SO, et al. "Incremental reduction of serum total cholesterol and low-density lipoprotein cholesterol with the addition of plant stanol ester-containing spread to statin therapy." *Am J Cardiol*. 2000;86(1):46-52.
+[30] Blair SN, Capuzzi DM, Gottlieb SO, et al. "Incremental reduction of serum total cholesterol and low-density lipoprotein cholesterol with the addition of plant stanol ester-containing spread to statin therapy." *Am J Cardiol*. 2000;86(1):46-52. doi: [10.1016/s0002-9149(00)00976-0](https://doi.org/10.1016/s0002-9149(00)00976-0) PMID: [10867091](https://pubmed.ncbi.nlm.nih.gov/10867091/)
 
 [31] Castro Cabezas M, de Vries JH, Van Oostrom AJ, et al. "Effects of a stanol-enriched diet on plasma cholesterol and triglycerides in patients treated with statins." *J Am Diet Assoc*. 2006;106(10):1564-9. PMID: [17000189](https://pubmed.ncbi.nlm.nih.gov/17000189/)
 
@@ -463,11 +460,11 @@ Beyond individual foods, overall dietary patterns have well-demonstrated cholest
 
 [33] Cicero AFG, Fogacci F, Rosticci M, et al. "Effect of a short-term dietary supplementation with phytosterols, red yeast rice or both on lipid pattern in moderately hypercholesterolemic subjects." *Nutr Metab*. 2017;14:61. doi: [10.1186/s12986-017-0214-2](https://doi.org/10.1186/s12986-017-0214-2)
 
-[34] Becker DJ, Gordon RY, Halbert SC, et al. "Red yeast rice for dyslipidemia in statin-intolerant patients: a randomized trial." *Am Heart J*. 2013;166(2):185-190.
+[34] Becker DJ, French B, Morris PB, et al. "Phytosterols, red yeast rice, and lifestyle changes instead of statins: a randomized, double-blinded, placebo-controlled trial." *Am Heart J*. 2013;166(1):187-196. doi: [10.1016/j.ahj.2013.03.019](https://doi.org/10.1016/j.ahj.2013.03.019) PMID: [23816039](https://pubmed.ncbi.nlm.nih.gov/23816039/)
 
-[35] Ras RT, Fuchs D, Koppenol WP, et al. "The effect of a low-fat spread with added plant sterols on vascular function markers: results of the Investigating Vascular Function Effects of Plant Sterols (INVEST) study." *J Nutr*. 2014.
+[35] Ras RT, Demonty I, Zebregs YE, et al. "Low doses of eicosapentaenoic acid and docosahexaenoic acid from fish oil dose-dependently decrease serum triglyceride concentrations in the presence of plant sterols in hypercholesterolemic men and women." *J Nutr*. 2014;144(10):1564-1570. doi: [10.3945/jn.114.192229](https://doi.org/10.3945/jn.114.192229) PMID: [25122648](https://pubmed.ncbi.nlm.nih.gov/25122648/)
 
-[36] Ferguson JJA, Stojanovski E, MacDonald-Wicks L, Garg ML. "Curcumin potentiates cholesterol-lowering effects of phytosterols in hypercholesterolaemic individuals." *Metabolism*. 2017;72:86-95.
+[36] Ferguson JJA, Stojanovski E, MacDonald-Wicks L, Garg ML. "Curcumin potentiates cholesterol-lowering effects of phytosterols in hypercholesterolaemic individuals. A randomised controlled trial." *Metabolism*. 2018;82:22-35. doi: [10.1016/j.metabol.2017.12.009](https://doi.org/10.1016/j.metabol.2017.12.009) PMID: [29291429](https://pubmed.ncbi.nlm.nih.gov/29291429/)
 
 [37] Wei ZH, Wang H, Chen XY, et al. "Time- and dose-dependent effect of psyllium on serum lipids in mild-to-moderate hypercholesterolemia." *Eur J Clin Nutr*. 2009;63(7):821-827.
 
@@ -491,15 +488,13 @@ Beyond individual foods, overall dietary patterns have well-demonstrated cholest
 
 [48] Gerards MC, Terlou RJ, Yu H, et al. "Traditional Chinese lipid-lowering agent red yeast rice results in significant LDL reduction but safety is uncertain — a systematic review and meta-analysis." *Atherosclerosis*. 2015;240(2):415-423.
 
-[49] Gylling H, Hallikainen M, Simonen P, et al. "Serum and lipoprotein sitostanol and non-cholesterol sterols after an acute dose of plant stanol ester on its long-term consumption." *Clin Nutr*. 2010;29(4):495-499.
+[49] Gylling H, Hallikainen M, Nissinen MJ, Miettinen TA. "The effect of a very high daily plant stanol ester intake on serum lipids, carotenoids, and fat-soluble vitamins." *Clin Nutr*. 2010;29(1):112-118. doi: [10.1016/j.clnu.2009.08.005](https://doi.org/10.1016/j.clnu.2009.08.005) PMID: [19709787](https://pubmed.ncbi.nlm.nih.gov/19709787/)
 
 [50] Baumgartner S, Ras RT, Trautwein EA, et al. "Plasma fat-soluble vitamin and carotenoid concentrations after plant sterol and plant stanol consumption: a meta-analysis of randomized controlled trials." *Eur J Nutr*. 2017;56(3):909-923. doi: [10.1007/s00394-016-1289-7](https://doi.org/10.1007/s00394-016-1289-7)
 
 [51] Katan MB, Grundy SM, Jones P, et al. "Efficacy and safety of plant stanols and sterols in the management of blood cholesterol levels." *Mayo Clin Proc*. 2003;78(8):965-978. doi: [10.4065/78.8.965](https://doi.org/10.4065/78.8.965)
 
-[52] Ras RT, Fuchs D, Koppenol WP, et al. "Effect of a plant sterol-enriched spread on biomarkers of endothelial dysfunction and low-grade inflammation in hypercholesterolaemic subjects." *Am J Clin Nutr*. 2015;101(4):733-741.
-
-[53] Berges RR, Windeler J, Trampisch HJ, Senge T. "Randomised, placebo-controlled, double-blind clinical trial of beta-sitosterol in patients with benign prostatic hyperplasia." *Lancet*. 1995;345(8964):1529-32. PMID: [7540705](https://pubmed.ncbi.nlm.nih.gov/7540705/)
+[52] Ras RT, Fuchs D, Koppenol WP, et al. "The effect of a low-fat spread with added plant sterols on vascular function markers: results of the Investigating Vascular Function Effects of Plant Sterols (INVEST) study." *Am J Clin Nutr*. 2015;101(4):733-741. doi: [10.3945/ajcn.114.102053](https://doi.org/10.3945/ajcn.114.102053) PMID: [25809853](https://pubmed.ncbi.nlm.nih.gov/25809853/)
 
 [56] Gogoi D, Pal A, Chattopadhyay P, et al. "First report of plant-derived beta-sitosterol with antithrombotic, in vivo anticoagulant, and thrombus-preventing activities in a mouse model." *J Nat Prod*. 2018;81(11):2521-2530. doi: [10.1021/acs.jnatprod.8b00574](https://doi.org/10.1021/acs.jnatprod.8b00574)
 
@@ -520,3 +515,9 @@ Beyond individual foods, overall dietary patterns have well-demonstrated cholest
 [64] Berthold HK, Unverdorben S, Degenhardt R, Bulitta M, Gouni-Berthold I. "Effect of policosanol on lipid levels among patients with hypercholesterolemia or combined hyperlipidemia: a randomized controlled trial." *JAMA*. 2006;295(19):2262-2269. doi: [10.1001/jama.295.19.2262](https://doi.org/10.1001/jama.295.19.2262) PMID: [16705107](https://pubmed.ncbi.nlm.nih.gov/16705107/)
 
 [65] Arruzazabala ML, Valdés S, Más R, Carbajal D, Fernández L. "Comparative study of policosanol, aspirin and the combination therapy policosanol-aspirin on platelet aggregation in healthy volunteers." *Pharmacol Res*. 1997;36(4):293-297. doi: [10.1006/phrs.1997.0201](https://doi.org/10.1006/phrs.1997.0201) PMID: [9425618](https://pubmed.ncbi.nlm.nih.gov/9425618/)
+
+[66] US National Library of Medicine, DailyMed. "up & up Fiber Therapy (psyllium husk) powder: Drug Facts label." Target Corporation, SPL version 9, 2025. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=674753ee-1174-4c06-9ed3-a090b338a39e](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=674753ee-1174-4c06-9ed3-a090b338a39e)
+
+[67] US National Library of Medicine, DailyMed. "Lovastatin tablets: prescribing information." Lupin Pharmaceuticals, SPL version 17, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=df7ddf4f-d569-431e-81f1-9129d7043150](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=df7ddf4f-d569-431e-81f1-9129d7043150)
+
+[68] US National Library of Medicine, DailyMed. "Niacin extended-release tablets: prescribing information." Amneal Pharmaceuticals, SPL version 11, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=6e604319-e164-4056-ab80-b78b98c519c7](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=6e604319-e164-4056-ab80-b78b98c519c7)
