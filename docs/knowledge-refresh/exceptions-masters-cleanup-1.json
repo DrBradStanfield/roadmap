@@ -414,5 +414,13 @@
   "reason": "US National Library of Medicine DailyMed drug labels (psyllium OTC Drug Facts, lovastatin, niacin ER) are the official sources for the psyllium spacing, red yeast rice/lovastatin interactions and niacin harms (review R4, R6, R9, R10); not on the checker's host list, which is code.",
   "by": "orchestrator",
   "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"11 %\": Magnesium Citrate | Higher than oxide [1][7] | Brad notes it is better absorbed than oxide but only 11% elemental mag...",
+  "reason": "Checker defect, orchestrator-approved (2026-10-22): the \"11%\" sits in the Forms table citrate row, in a sentence that cites Brad's post [45], which states it; the checker reads the row's first citation [7] (Schuchardt 2017) instead of the sentence's own [45].",
+  "by": "orchestrator",
+  "date": "2026-10-22"
  }
 ]
