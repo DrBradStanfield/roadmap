@@ -461,6 +461,16 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
     the share sheet itself (`RecordExport`, a `DataRepresentation`), so the app keeps no
     stray copy. The website has no "load a file" flow; that would be a web feature.
 
+**On a real iPhone, 2026-10-22** (Brad's iPhone 15 Pro Max, iOS 27.0.1, driven through iPhone
+Mirroring): Dropbox connected, synced and merged the website's lab values into the phone's record
+(`health-roadmap.json` updated in Dropbox at the first sync); disconnecting and connecting Google
+Drive carried the same 57 KB record into Drive › Health Plan by Dr Brad. Google refused the
+Workspace password (brad@microvitamin.com) while "Try another way" signed in: the Workspace allows
+any third-party app (Admin console › API controls), so the likely cause is a stale autofilled
+password, not the app. The connect screens now show how sync works (`Sync/SyncDiagram.swift`,
+US-25 AC11i): the person's cloud above this iPhone and the website, silver data flowing both ways,
+no line to Dr Brad's server; still under Reduce Motion, capped at 30 frames a second.
+
 ### D6 · Apple Health (Brad, 2026-10-21, import deletions ignored)
 
 **Reading.** Vitals HealthKit models (weight, height, waist, blood pressure, glucose; the
@@ -594,6 +604,14 @@ Health are never written back.
 **Background.** Observer queries recompute the plan and reschedule reminders when data
 lands. HealthKit is unreadable while the phone is locked, and a background import must not
 race a foreground save: both are handled, not assumed.
+
+**Checked 2026-10-22.** On the iPhone, iOS 27's Health sheet adds a second page ("how much data
+would you like to share": past 30 days, or all recorded data); the app needs all. Onboarding then
+preselected sex, birth month and year, height and weight, each labelled "From Apple Health".
+Write-back checked on the simulator's own Health store: a typed 123/79 and 70 kg appeared in Health,
+dated noon of the day (the record holds days, not times); height is never written back. **Next
+(US-55, Brad 2026-10-22):** resting heart rate, VO2 max, steps and sleep, one value a finished day,
+display only (the algorithm reads none of them; heart rate variability left out).
 
 ### D7 · Reminders: on-device notifications only (Brad, 2026-10-21)
 
@@ -869,6 +887,13 @@ Files, From Photos, and Scan a paper report (VisionKit's document camera, real p
   all my data". The web's code lives in the widget's adapter, not health-core, so the
   phone repeats the one call in OAuthClient beside Drive's `about`.
 
+**State 2026-10-22.** On the iPhone, chat answers "not available": the education server leaves
+App Attest off until `APP_ATTEST_TEAM_ID` is set (`app/lib/app-attest.server.ts`), so chat and lab
+upload wait for that secret and the team it names (Brad's personal team P7LB54J2PM now, DR BRAD,
+INC. after enrolment; whether App Attest works under a personal team is not known). While a report
+is read, the sheet shows where it goes (`LabUpload/LabReadingDiagram.swift`, US-52 AC13): the
+report, "Read by AI", the record; it is not kept, and every value is checked before saving.
+
 ### D9 · No server telemetry; Clarity with every screen masked (Brad, 2026-10-21, amended 2026-10-22)
 
 The app sends no product events to Brad's server. Health values never enter any telemetry.
@@ -903,6 +928,9 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
 - Apple's Guideline 5.1.3 (no Health data to third parties for analytics) holds because no
   value reaches Clarity. The privacy policy and App Store answers name Clarity, and Clarity
   derives a coarse location from the IP address, declared as Coarse Location.
+
+**State 2026-10-22.** Project `z1kbjvj8u6`, Strict masking confirmed on the dashboard. No
+recording had arrived by evening, so the masking check on a real recording is still open.
 
 ### D10 · Old app versions stay safe
 
@@ -979,6 +1007,13 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
 - **Two Charts traps:** a material background inside a chart annotation renders black, so
   the callout uses a solid system fill; and the newest axis label clips unless the marks
   use the `.aligned` preset.
+
+**Added 2026-10-22.** Number boxes refuse, as typed, what no value can be (`MyData/TypedNumber.swift`,
+US-25 AC17b): blood pressure 3 whole digits, values 5+3, doses 5+2; a refused change goes back to
+the last accepted text, a loaded value is never cut, and an over-limit loaded value is never
+restored (no flip loop). Colours follow Apple Health (AC17c): blood pressure red, body measurements
+purple, blood tests blue; the light accent is dark enough for white text (5.35:1) and dark-mode
+accent buttons carry black text (`OnAccent`, dimmed when disabled).
 
 ## Build and test
 
@@ -1152,6 +1187,17 @@ A new user answers sex, birth month and year, height and weight, one per screen,
    accounts are owed (launch-checklist.md).
 3. **Health Records labs and camera lab upload.**
 4. **App Store submission.**
+
+## Next, in order (2026-10-22)
+
+1. Engine work off the main thread, with the engine keeping the parsed record between calls
+   (D2: every call parses the whole record; one year of daily readings costs 9 to 31 ms a call).
+2. US-55: resting heart rate, VO2 max, steps and sleep from Apple Health (D6).
+3. `APP_ATTEST_TEAM_ID` on the education server, so chat and lab upload work on a phone (D8).
+4. The Clarity masking check on a real recording (D9).
+5. Known gap: an erase arriving from another device while a sheet is open may wait for the next
+   launch to bring the questions back (US-54 AC7, adversary N2, unverified).
+
 
 ## Open questions and risks
 

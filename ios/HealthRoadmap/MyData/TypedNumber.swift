@@ -26,6 +26,13 @@ struct TypedNumber {
         else { return false }
         return parts[0].count <= whole && (parts.count == 1 || parts[1].count <= decimals)
     }
+
+    /// The text to put back after a change from `old` to `new`, or nil to keep `new`.
+    /// Never an `old` that breaks the rule itself (a loaded 100000 IU dose): putting
+    /// that back would flip between two refused texts forever (re-check R5).
+    func revert(old: String, new: String) -> String? {
+        accepts(new) || !accepts(old) ? nil : old
+    }
 }
 
 extension View {
@@ -34,7 +41,7 @@ extension View {
     /// 100000 IU dose must not become 10000).
     func typedNumber(_ text: Binding<String>, _ kind: TypedNumber, editing: Bool) -> some View {
         onChange(of: text.wrappedValue) { old, new in
-            if editing, !kind.accepts(new) { text.wrappedValue = old }
+            if editing, let back = kind.revert(old: old, new: new) { text.wrappedValue = back }
         }
     }
 

@@ -93,6 +93,7 @@ struct WelcomeView: View {
     private func cloudChooser(_ sync: CloudSync) -> some View {
         NavigationStack {
             List {
+                Section { SyncDiagram() }
                 Section {
                     ForEach(CloudProvider.allCases) { provider in
                         ConnectCloudButton(sync: sync, provider: provider, connected: { opened(sync) }) {

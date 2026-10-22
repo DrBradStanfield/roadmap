@@ -22,6 +22,12 @@ final class TypedNumberTests: XCTestCase {
         XCTAssertFalse(TypedNumber.value.accepts("-7"))
     }
 
+    func testARefusedChangeGoesBackOnlyToAnAcceptedText() {
+        XCTAssertEqual(TypedNumber.pressure.revert(old: "120", new: "1200"), "120")
+        XCTAssertNil(TypedNumber.pressure.revert(old: "12", new: "120"))
+        XCTAssertNil(TypedNumber.dose.revert(old: "100000", new: "1000000"), "a loaded dose over the limit is never restored, so nothing loops")
+    }
+
     func testADoseRunsToTheWebsLimit() {
         XCTAssertTrue(TypedNumber.dose.accepts("50000"))
         XCTAssertTrue(TypedNumber.dose.accepts("2.55"))

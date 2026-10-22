@@ -98,7 +98,7 @@ struct LabUploadSheet: View {
         case .consent(let documents):
             AIConsentView(consent: .labUpload) { Task { await send(documents) } }
         case .working(let what):
-            ProgressView(what).padding()
+            LabReadingDiagram(step: what)
         case .review(let results, let index):
             LabReviewView(engine: engine, store: store, result: results[index], position: (index + 1, results.count)) {
                 if index + 1 < results.count {
