@@ -19,7 +19,7 @@ Two trials found that high-dose vitamin K2 as MK-7 (360 to 720 mcg a day) slowed
 
 ## Key safety points
 
-- If you take warfarin or a similar drug, vitamin K can weaken its effect: daily MK-7 doses as low as 10 mcg lowered the INR in at least 40% of volunteers on a warfarin-like drug [44]. Do not start vitamin K unless your doctor advises it, and keep your vitamin K intake from food steady [38][44].
+- If you take warfarin or another vitamin K antagonist, keep your vitamin K intake from food and supplements steady, and do not start, stop or change a vitamin K supplement without your anticoagulation clinic [1][38].
 - Vitamin K intake is not expected to change the effect of newer blood thinners such as apixaban, rivaroxaban and dabigatran [45][46][55].
 - Orlistat taken with warfarin might cause a significant increase in prothrombin time, and orlistat, bile acid sequestrants and long courses of antibiotics can lower vitamin K status [1][50].
 - MK-7 is often made from natto, a fermented soybean food, so people with a soy allergy should check the source on the label [1][6].
@@ -112,8 +112,8 @@ Almost all menaquinones, in particular the long-chain forms, are produced by bac
 
 | Property | K1 (Phylloquinone) | K2 as MK-4 | K2 as MK-7 |
 |----------|-------------------|-------------|-------------|
-| Half-life | Shorter than MK-7 | Not measurable at nutritional doses | Longer; 7- to 8-fold higher serum accumulation during prolonged intake |
-| Absorption | Free form about 80%; much lower from foods | Not detectable in blood at nutritional doses | Well absorbed as a supplement |
+| Half-life | Shorter than MK-7 | No data | Longer; 7- to 8-fold higher serum accumulation during prolonged intake |
+| Absorption | Free form about 80%; much lower from foods | Not detectable in blood at nutritional doses in one study [56] | Well absorbed as a supplement |
 
 In small trials in postmenopausal women with osteoporosis, mostly in Japan, a drug dose of MK-4 (45,000 mcg a day) modestly raised spine density and lowered fracture rates [57]; MK-7 trials have given mixed results [24][61][62].
 
@@ -183,11 +183,11 @@ Vascular calcification is one of the risk factors for coronary heart disease bec
 
 #### MK-7 Cardiovascular Trials
 
-Trials of MK-7 have given mixed results for the arteries, though some found a modestly slower rise in coronary calcium in people who already had it [64][70]:
+The MK-7 trials below differ in who took part, the dose and what they measured. Two of them, and a subgroup of a third, found that coronary calcium scores rose more slowly with MK-7 in people who already had coronary calcification [64][69][70]:
 
 **Knapen et al. (2015):** In a double-blind trial of 244 healthy postmenopausal women, 180 mcg of MK-7 (MenaQ7) a day for three years lowered arterial stiffness compared with placebo, and the effect was larger in women whose arteries were stiffest at the start [28]. MK-7 lowered dp-ucMGP by 50% but did not change blood markers of inflammation or endothelial dysfunction [28].
 
-**de Vries et al. (2025):** A post hoc analysis of a one-year trial in 165 women with low vitamin K status found that the same dose of MK-7 attenuated the rise in vascular stiffness in post-menopausal women compared with placebo [63]. Post-menopausal women who started with stiff arteries also had a small fall in blood pressure, and the authors called for more research [63].
+**de Vries et al. (2025):** A post hoc analysis of a one-year trial looked at 165 women with low vitamin K status who took the same dose of MK-7 or placebo [63]. Only one stiffness measure, Young's modulus, rose less with MK-7 than with placebo, and only in the 87 post-menopausal women; the other vascular measures, and all vascular measures in the 78 pre- or peri-menopausal women, did not differ significantly from placebo [63]. The supplement maker Gnosis by Lesaffre funded the study, and three of the authors were employed by Lesaffre [63].
 
 **Vossen et al. (2026):** In a Dutch placebo-controlled trial, 180 people with coronary artery disease symptoms and calcium scores between 50 and 400 AU took 360 mcg of MK-7 or placebo daily for two years; calcium scores rose less with MK-7, and there were no significant adverse effects [64]. The number of soft, non-calcified plaques did not differ significantly between the groups [55].
 
@@ -213,7 +213,7 @@ Trials of MK-7 have given mixed results for the arteries, though some found a mo
 
 #### Summary of Cardiovascular Evidence
 
-Higher dietary K2 intake has been associated with less coronary calcification and lower coronary heart disease mortality in observational studies [1]. These benefits have generally not been shown in supplement trials, although some found a slower rise in calcium score in people with existing or severe coronary calcification [30][64][69][70]. That evidence is a slower rise in calcium score, not fewer heart attacks: no trial has shown that slowing coronary calcium reduces cardiovascular events, and soft plaque, the kind that can rupture, did not differ from placebo in the two dedicated trials [55].
+In observational studies, diets richer in K2 were associated with less coronary calcification and fewer deaths from coronary heart disease [1]. Most supplement trials found no overall effect on calcification or arterial stiffness [29][30][65][66][69]. The positive results came from narrower groups: calcium scores rose more slowly with MK-7 in people with symptoms of coronary artery disease and in people whose scores were already high, and with K1 in people who already had some calcification [30][64][69][70]. That evidence is a slower rise in calcium score, not fewer heart attacks: no trial has shown that slowing coronary calcium reduces cardiovascular events, and soft plaque, the kind that can rupture, did not differ from placebo in the two dedicated trials [55].
 
 ### Nocturnal Leg Cramps
 
@@ -343,7 +343,7 @@ Vitamin K can have a serious and potentially dangerous interaction with warfarin
 
 Vitamin K may reduce the effectiveness of warfarin and similar drugs [1]. In a study of healthy volunteers taking acenocoumarol, a warfarin-like drug, MK-7 at 10 mcg a day lowered the INR to a clinically relevant degree in at least 40% of them, and the authors concluded that people on these drugs should avoid MK-7 supplements [44].
 
-Guidance for warfarin care suggests against routine daily low-dose vitamin K supplements [38]. People on warfarin should start a vitamin K supplement only if their doctor advises it [44][57].
+Guidance for warfarin care suggests against routine daily low-dose vitamin K supplements, and says a significant change in dietary vitamin K should prompt more frequent INR checks [38]. People on warfarin should check with their anticoagulation clinic or doctor before starting, stopping or changing a vitamin K supplement [38]. The authors of the MK-7 dose study advise that people on vitamin K antagonists avoid MK-7 supplements [44], and MK-4 at the drug dose used for osteoporosis is contraindicated with warfarin [57].
 
 People taking warfarin should keep their vitamin K intake from food consistent, without large fluctuations [38]. NIH advises keeping vitamin K intake from both food and supplements consistent, because sudden changes can increase or decrease warfarin's anticoagulant effect [1].
 
@@ -413,11 +413,12 @@ Meat, dairy foods, and eggs contain low levels of phylloquinone but modest amoun
 | Semi-soft cheeses (Gouda, Havarti, Swiss) | 100 g | ~289 | Mostly K2 |
 | Hard cheeses (cheddar, parmesan) | 100 g | ~282 | Mostly K2 |
 | Processed American cheese | 100 g | ~98 | Mostly K2 |
-| Full-fat yogurt | 100 g | ~27 | Mostly K2 |
+| Full-fat yogurt | 100 g | ~26.3 | Mostly K2 |
+| Full-fat Greek yogurt | 100 g | ~28.2 | Mostly K2 |
 | Full-fat milk | 100 g | ~38 | Mostly K2 |
 | 2% milk | 100 g | ~19 | Mostly K2 |
 | 1% milk | 100 g | ~12.9 | Mostly K2 |
-| Fat-free milk | 100 g | ~5 | Mostly K2 |
+| Fat-free milk | 100 g | ~7.7 | Mostly K2 |
 | Low-fat kefir | 100 g | ~10.2 | Mostly K2 |
 | Chicken breast, rotisserie | 3 oz | 13 | MK-4 |
 | Egg, hard boiled | 1 large | 4 | MK-4 |
@@ -426,7 +427,7 @@ Meat, dairy foods, and eggs contain low levels of phylloquinone but modest amoun
 | Ham, roasted | 3 oz | 4 | MK-4 |
 | Cheddar cheese | 1.5 oz | 4 | MK-4 |
 
-The vitamin K in dairy foods rises with their fat content [74]. In one analysis of U.S. dairy foods, full-fat cheddar had about 281 mcg of total vitamin K per 100 g and reduced-fat cheddar 49 mcg, and reduced-fat or fat-free products generally held only about 5 to 22% as much vitamin K as their full-fat versions [74].
+Fu and colleagues measured vitamin K in U.S. dairy foods and found that the amount was proportional to fat content: products with reduced or no fat had about 5 to 22% as much vitamin K as their full-fat equivalents [74]. Cheddar is an example, with 49 mcg per 100 g in the reduced-fat version against 281 mcg in full-fat [74].
 
 ### Impact of Gut Microbiota
 
