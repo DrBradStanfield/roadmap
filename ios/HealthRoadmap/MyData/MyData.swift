@@ -38,6 +38,8 @@ struct MyData: Decodable {
         let label: String
         let unit: String
         let latest: Latest?
+        /// The newest days' values, oldest first, in the user's units (AC17d); nil from an older engine.
+        let trend: [Double]?
 
         var id: String { metric }
     }

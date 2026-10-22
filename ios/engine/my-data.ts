@@ -16,7 +16,7 @@ import { deviceWrites, type DeviceWrite } from '../../packages/health-core/src/d
 import { applyFormEdit, customSupplement, formsOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import {
-  cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, toCanonicalValue,
+  cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, fromCanonicalValue, getDisplayLabel, toCanonicalValue,
   type MetricType, type UnitSystem,
 } from '../../packages/health-core/src/units';
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
@@ -27,7 +27,13 @@ export interface MyDataRow {
   label: string;
   unit: string;
   latest: { id: string; value: string; day: string } | null;
+  /** The newest TREND_POINTS days' values, oldest first, in the user's units: the web's
+   *  Trend sparkline (BloodTestTimeline.tsx). Blood pressure's is its systolic half. */
+  trend: number[];
 }
+
+/** Days a row's trend line holds: enough to show a direction, small enough to send every render. */
+export const TREND_POINTS = 30;
 
 export interface MyData {
   unitSystem: UnitSystem;
@@ -112,6 +118,7 @@ function unitsOf(file: RoadmapFile): UnitSystem {
 export function myData(file: RoadmapFile, now = new Date().toISOString()): MyData & FormsView {
   const system = unitsOf(file);
   const current = new Map(latestActivePerMetric(file.measurements).map((row) => [row.metricType, row]));
+  const trend = trends(file, system);
   const row = (metric: string): MyDataRow => {
     const latest = current.get(metric);
     return {
@@ -121,6 +128,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString()): MyDat
       latest: latest
         ? { id: latest.id, value: formatDisplayValue(metric as MetricType, latest.value, system), day: latest.recordedAt.slice(0, 10) }
         : null,
+      trend: trend.get(metric) ?? [],
     };
   };
   const { sex, birthYear, birthMonth, heightCm } = file.profile;
@@ -136,7 +144,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString()): MyDat
       feetInches: heightCm === undefined || system !== 'conventional' ? null : cmToFeetInches(heightCm),
     },
     // Blood pressure is one row, as the web's matrix shows it: the newest day's pair.
-    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file)],
+    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend)],
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     psa: row('psa'),
@@ -234,10 +242,33 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string): EditOutco
 }
 
 /** The Vitals row for blood pressure: the newest day's pair, from the history's own pairing. */
-function pressureRow(file: RoadmapFile): MyDataRow {
+function pressureRow(file: RoadmapFile, trend: Map<string, number[]>): MyDataRow {
   const { label, unit, rows } = pressureHistory(file, []);
   const newest = rows.find((row) => row.status === 'active');
-  return { metric: BLOOD_PRESSURE, label, unit, latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null };
+  return {
+    metric: BLOOD_PRESSURE, label, unit,
+    latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null,
+    trend: trend.get('systolic_bp') ?? [],
+  };
+}
+
+/** Every metric's trend in one pass: each day's active value (the slot's first, as
+ *  findActiveInSlot reads it), the newest TREND_POINTS days, oldest first. */
+function trends(file: RoadmapFile, system: UnitSystem): Map<string, number[]> {
+  const byMetric = new Map<string, Map<string, number>>();
+  for (const row of file.measurements) {
+    if (row.status !== 'active') continue;
+    const days = byMetric.get(row.metricType) ?? new Map<string, number>();
+    byMetric.set(row.metricType, days);
+    const day = row.recordedAt.slice(0, 10);
+    if (!days.has(day)) days.set(day, row.value);
+  }
+  const out = new Map<string, number[]>();
+  for (const [metric, days] of byMetric) {
+    const newest = [...days.keys()].sort().slice(-TREND_POINTS);
+    out.set(metric, newest.map((day) => fromCanonicalValue(metric as MetricType, days.get(day)!, system)));
+  }
+  return out;
 }
 
 /** What the app writes to Apple Health (US-25 AC14): the values a person entered, never its own imports. */

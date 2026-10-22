@@ -54,9 +54,8 @@ enum LabFileReader {
         if ext == "zip" {
             // The web's ZIP limits: 20 MB as downloaded, 200 files (the folder's file cap).
             guard fits(name: name, bytes: data.count) else { throw Failure.tooLarge(name) }
-            let members = try ZipReader.members(of: data, maxMemberBytes: maxFileBytes, maxMembers: 200, maxTotalBytes: 200 * 1024 * 1024) { member in
-                let leaf = (member as NSString).lastPathComponent
-                return !leaf.hasPrefix(".") && !member.contains("__MACOSX") && ["pdf", "jpg", "jpeg", "png"].contains((member as NSString).pathExtension.lowercased())
+            let members = try ZipReader.members(of: data, maxMemberBytes: maxFileBytes, maxMembers: maxFolderFiles, maxTotalBytes: 200 * 1024 * 1024) { member in
+                !member.contains("__MACOSX") && isReport(member)
             }
             let documents = try members.map { try document(from: $0.data, name: "\(name)/\($0.name)") }
             guard !documents.isEmpty else { throw Failure.empty }
@@ -64,6 +63,29 @@ enum LabFileReader {
         }
         return [try document(from: data, name: name)]
     }
+
+    /// The reports in a picked folder and the folders inside it (US-52 AC13c): every PDF,
+    /// JPEG and PNG, as a ZIP's members are read, in name order, at most the ZIP's 200.
+    static func documents(inFolder folder: URL) throws -> [Document] {
+        let walk = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles, .skipsPackageDescendants])
+        let files = (walk?.allObjects as? [URL] ?? [])
+            .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true && isReport($0.path) }
+            .sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+        guard !files.isEmpty else { throw Failure.empty }
+        let base = folder.lastPathComponent
+        return try files.prefix(maxFolderFiles).map { file in
+            let inside = file.path.dropFirst(folder.path.count).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            return try document(from: Data(contentsOf: file), name: "\(base)/\(inside)")
+        }
+    }
+
+    /// A report file by its name: a PDF or picture, not hidden.
+    private static func isReport(_ path: String) -> Bool {
+        !(path as NSString).lastPathComponent.hasPrefix(".") && ["pdf", "jpg", "jpeg", "png"].contains((path as NSString).pathExtension.lowercased())
+    }
+
+    /// The web's file cap for a ZIP or folder.
+    static let maxFolderFiles = 200
 
     /// Pictures of one paper report, from the photo library or the document
     /// camera: a JPEG page each, as the web sends a picked image (US-52 AC10).

@@ -6,8 +6,27 @@ import SwiftUI
 /// report itself is not kept. Silver beads carry the report in, green beads carry
 /// values out. Still under Reduce Motion.
 struct LabReadingDiagram: View {
-    /// The step in words ("Reading the values"), under the picture.
+    /// The step in words ("Reading the values in report.pdf"), under the picture.
     let step: String
+    /// How far through the reports the send is; nil while the file is read on the phone.
+    var progress: Progress?
+
+    /// Real at each report's end, as the web's "Processed 2 of 3" (UploadModal.tsx). The
+    /// server says nothing while it reads one report, so inside a report's share the bar
+    /// is an estimate: it eases toward 90% of that share and never past it.
+    struct Progress: Equatable {
+        let done: Int
+        let total: Int
+        let started: Date
+
+        func fraction(at now: Date) -> Double {
+            let reading = 0.9 * (1 - exp(-now.timeIntervalSince(started) / Self.typicalRead))
+            return (Double(done) + reading) / Double(max(total, 1))
+        }
+
+        /// Seconds after which a report's share is about 57% filled: a typical read.
+        static let typicalRead = 15.0
+    }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -34,8 +53,20 @@ struct LabReadingDiagram: View {
             }
             .frame(height: 120)
             .dynamicTypeSize(...DynamicTypeSize.accessibility2)
-            Text(step).font(.headline)
-            Text("Your report goes through Dr Brad's server to Claude, which reads the values. The report is not kept, and you check every value before it is saved.")
+            Text(step).font(.headline).multilineTextAlignment(.center)
+            if let progress {
+                TimelineView(.periodic(from: .now, by: 0.25)) { timeline in
+                    ProgressView(value: progress.fraction(at: timeline.date))
+                        .animation(.linear(duration: 0.25), value: progress.fraction(at: timeline.date))
+                }
+                .padding(.horizontal, 24)
+                if progress.total > 1 {
+                    Text("Report \(progress.done + 1) of \(progress.total)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Text("Your report goes through Dr Brad's server to Claude, which reads the values. The server keeps no copy, and you check every value before it is saved.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -84,5 +115,5 @@ struct LabReadingDiagram: View {
 }
 
 #Preview {
-    LabReadingDiagram(step: "Reading the values")
+    LabReadingDiagram(step: "Reading the values in report.pdf", progress: .init(done: 1, total: 3, started: .now))
 }

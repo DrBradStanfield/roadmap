@@ -18,7 +18,7 @@ struct RecordSection: View {
                 Label(EraseText.title, systemImage: "trash").foregroundStyle(.red)
             }
         } header: {
-            Text("Your record")
+            SectionTitle.record()
         } footer: {
             Text("Export shares \(RecordExport.fileName), the same file the website keeps. Anyone you give it to can read your health record.")
         }
