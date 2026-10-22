@@ -141,7 +141,7 @@ Creatine plays a key role in the brain's energy supply, and there is some eviden
 
 **Mental fatigue reduction:** In a double-blind study, 8 g/day for 5 days reduced mental fatigue during repeated simple mathematical calculations and reduced the task-evoked rise in cerebral oxygenated hemoglobin, which is compatible with greater oxygen use in the brain [44].
 
-**Meta-analytic summary:** A 2024 meta-analysis of 16 RCTs found significant positive effects on memory (SMD = 0.31), attention time, and processing speed, but no improvements in overall cognitive function or executive function. Benefits were more pronounced in individuals with diseases, those aged 18–60 years, and females [45]. A 2023 meta-analysis found creatine enhanced memory performance especially in older adults (aged 66–76 years) with no significant effect in younger groups [33]. Both meta-analyses counted several memory tests from the same people as separate results, which inflates precision [95]. Reanalysed by its authors with an appropriate method, the 2023 meta-analysis no longer found a significant overall effect on memory, except in older adults [95][101]. The 2024 meta-analysis rated the certainty of evidence as moderate for memory and low for attention and processing speed [45].
+**Meta-analytic summary:** A 2024 meta-analysis of 16 RCTs found significant positive effects on memory (SMD = 0.31), attention time, and processing speed, but no improvements in overall cognitive function or executive function. Benefits were more pronounced in individuals with diseases, those aged 18–60 years, and females [45]. A 2023 meta-analysis found creatine enhanced memory performance especially in older adults (aged 66–76 years) with no significant effect in younger groups [33]. Both meta-analyses counted several memory tests from the same people as separate results, which inflates precision [95]. Reanalysed by its authors with an appropriate method, the 2023 meta-analysis no longer found a significant overall effect on memory, except in older adults [95]. The 2024 meta-analysis rated the certainty of evidence as moderate for memory and low for attention and processing speed [45].
 
 ### Depression
 
@@ -167,7 +167,7 @@ Researchers have studied whether creatine can protect heart function during isch
 
 **Muscular dystrophies:** A study of 30 children with Duchenne muscular dystrophy reported gains in fat-free mass and hand grip strength after 4 months of creatine [4].
 
-**Post-COVID-19 fatigue:** A small trial in 12 people with post-COVID-19 fatigue found that 4 g/day of creatine for 6 months raised creatine levels in muscle and brain more than placebo, and general fatigue fell from baseline after 3 months [50]. Some improvements in body aches and concentration difficulties were noted (Slankamenac, *Food Sci Nutr* 2023) [50].
+**Post-COVID-19 fatigue:** In a placebo-controlled trial in 12 patients with post-COVID-19 fatigue syndrome, 4 g/day of creatine for 6 months raised creatine levels in muscle and brain more than placebo did [50]. In the creatine group, general fatigue fell from baseline after 3 months, and scores for several symptoms, such as body aches, headache and difficulty concentrating, improved by 6 months; the abstract does not report a difference from placebo in fatigue (Slankamenac, *Food Sci Nutr* 2023) [50].
 
 **Parkinson's disease:** A trial of 1,741 people with early, treated Parkinson's disease, given 10 g/day of creatine or placebo, was stopped early for futility after an interim analysis of 955 participants found no benefit; the median follow-up was 4 years [51]. No detectable differences in adverse events were observed (NET-PD, *JAMA* 2015) [51].
 
@@ -223,7 +223,7 @@ The evidence for BCAA supplementation for muscle building is mixed and depends h
 
 **How to store:** Creatine monohydrate powder stays stable for years, even at elevated temperatures [3].
 
-**Hydration:** Creatine increases water retention in muscle but generally does not seem to cause dehydration [4][75].
+**Hydration:** Creatine increases water retention in muscle [4], but it does not appear to cause dehydration: a systematic review found no evidence that it harms athletes' body fluid balance [75].
 
 ### Creatine in MicroVitamin+ Powder
 
@@ -247,7 +247,7 @@ Brad recommends 5 g a day with no loading phase [93].
 
 ### Safety Thresholds
 
-**EFSA and Spanish Agency for Food Safety:** Both have concluded that doses up to 3 g/day of creatine are likely safe for the general population. EFSA advises against high loading doses because there is insufficient evidence to confirm their safety (EFSA, *EFSA J* 2004; AESAN, *Food Risk Assess Eur* 2024) [76].
+**EFSA:** In 2004, a European Food Safety Authority panel judged that up to 3 g/day of high-purity supplemental creatine, close to the amount the body breaks down and replaces each day, is unlikely to pose any risk. Agreeing with an earlier EU scientific committee, it said high loading doses should be avoided, since the evidence could not reassure on their safety and left doubts about kidney function (EFSA, *EFSA J* 2004) [76].
 
 **ISSN position:** The ISSN position stand describes short- and long-term creatine supplementation as safe and well tolerated in healthy people [72].
 
@@ -269,7 +269,7 @@ The ISSN position stand concludes that short- and long-term supplementation, up 
 
 **Muscle cramping and dehydration:** Reports of cramping and dehydration on creatine are anecdotal, and the evidence suggests it does not cause either [72]. A systematic review found no evidence that creatine hinders the body's ability to dissipate heat or harms body fluid balance during exercise [75].
 
-**Arrhythmia:** A single case report of atrial fibrillation was associated with creatine use in a 30-year-old man (Kammer, *Pharmacotherapy* 2005) [81].
+**Arrhythmia:** A 2005 case report describes a 30-year-old man with no notable medical history who came to an emergency department in atrial fibrillation; his thyroid test and drug screen were normal, he denied alcohol, and on questioning he said he was taking creatine monohydrate (Kammer, *Pharmacotherapy* 2005) [81]. One case cannot show that creatine caused the arrhythmia.
 
 **Airways and allergies:** In a trial of 19 elite youth soccer players (loading for 1 week, then 5 g a day for 7 weeks), creatine showed a trend toward mild airway inflammation and a larger fall in lung function after a breathing challenge, more pronounced in players with allergies (Simpson, *Med Sci Sports Exerc* 2019) [97]. The authors could not rule out a harmful effect on the airways, particularly in athletes with allergies [97].
 
@@ -293,7 +293,7 @@ If you take prescription medicines, check with your doctor or pharmacist before 
 
 **Glutamine:** Glutamine may cause gut symptoms such as upset stomach, gas, or diarrhea at higher doses, and very high doses may cause dry mouth, headache, or dizziness. In a small trial of single doses, GI symptoms rose with the dose but were mostly mild (Ogden, *Nutrients* 2020) [85]. Case reports have raised a possible link with mania in people with bipolar disorder, so if you have bipolar disorder, check with your doctor before taking it.
 
-**Muscle-building supplements and testicular cancer:** In a case-control study, men who had ever used muscle-building supplements had higher odds of testicular cancer (odds ratio 1.65), and the link was stronger in early users, men who used more types of supplement, and those who used them for longer (Li, *Brit J Cancer* 2015) [86]. Some muscle-building supplements may contain undeclared ingredients, so choose single-ingredient products; testers such as consumerlab.com and Labdoor publish product test results. Disclosure: MicroVitamin products are tested by Labdoor under Labdoor's paid Quality Program.
+**Muscle-building supplements and testicular cancer:** In a case-control study, men who had ever used muscle-building supplements had higher odds of testicular cancer (odds ratio 1.65), and the link was stronger in early users, men who used more types of supplement, and those who used them for longer (Li, *Brit J Cancer* 2015) [86]. Some muscle-building supplements may contain undeclared ingredients, so choose single-ingredient products; testers such as consumerlab.com and Labdoor publish product test results. Disclosure: MicroVitamin Capsules and Sleep are third-party tested by Labdoor under Labdoor's certification program.
 
 ### Special Populations
 
@@ -478,7 +478,7 @@ Because BCAAs are essential amino acids, they must come from protein in the diet
 
 [75] Lopez RM, et al. "Does creatine supplementation hinder exercise heat tolerance or hydration status? A systematic review with meta-analyses." *J Athl Train*. 2009. PMID: 19295968. [https://pubmed.ncbi.nlm.nih.gov/19295968/](https://pubmed.ncbi.nlm.nih.gov/19295968/)
 
-[76] EFSA. "Creatine monohydrate for use in foods for particular nutritional purposes." *EFSA J*. 2004; AESAN Scientific Committee. *Food Risk Assess Eur*. 2024.
+[76] EFSA Panel on Food Additives, Flavourings, Processing Aids and Materials in Contact with Food (AFC). "Opinion of the Scientific Panel on food additives, flavourings, processing aids and materials in contact with food (AFC) on a request from the Commission related to creatine monohydrate for use in foods for particular nutritional uses." *EFSA J*. 2004;2(4):36. doi: [10.2903/j.efsa.2004.36](https://doi.org/10.2903/j.efsa.2004.36)
 
 [77] Naeini F, et al. "Effect of creatine supplementation on kidney function: a systematic review and meta-analysis." *BMC Nephrol*. 2025. PMID: 41199218. [https://pubmed.ncbi.nlm.nih.gov/41199218/](https://pubmed.ncbi.nlm.nih.gov/41199218/)
 
@@ -527,8 +527,6 @@ Because BCAAs are essential amino acids, they must come from protein in the diet
 [99] Akbari HA, et al. "Effect of creatine supplementation on kidney stones recurrence in an athlete: a case report." *Tunis Med*. 2022;100(6):477-480. PMID: 36206067. [https://pubmed.ncbi.nlm.nih.gov/36206067/](https://pubmed.ncbi.nlm.nih.gov/36206067/)
 
 [100] Dickinson H, et al. "Creatine supplementation during pregnancy: summary of experimental studies suggesting a treatment to improve fetal and neonatal morbidity and reduce mortality in high-risk human pregnancy." *BMC Pregnancy Childbirth*. 2014;14:150. doi: [10.1186/1471-2393-14-150](https://doi.org/10.1186/1471-2393-14-150) PMID: 24766646. [https://pubmed.ncbi.nlm.nih.gov/24766646/](https://pubmed.ncbi.nlm.nih.gov/24766646/)
-
-[101] Prokopidis K, et al. "Author's reply: Letter to the Editor: Double counting due to inadequate statistics leads to false-positive findings in 'Effects of creatine supplementation on memory in healthy individuals: a systematic review and meta-analysis of randomized controlled trials'." *Nutr Rev*. 2023;81(11):1497-1500. doi: [10.1093/nutrit/nuac111](https://doi.org/10.1093/nutrit/nuac111) PMID: 36644912. [https://pubmed.ncbi.nlm.nih.gov/36644912/](https://pubmed.ncbi.nlm.nih.gov/36644912/)
 
 [102] Sales LP, et al. "Creatine Supplementation (3 g/d) and Bone Health in Older Women: A 2-Year, Randomized, Placebo-Controlled Trial." *J Gerontol A Biol Sci Med Sci*. 2020;75(5):931-938. doi: [10.1093/gerona/glz162](https://doi.org/10.1093/gerona/glz162) PMID: 31257405. [https://pubmed.ncbi.nlm.nih.gov/31257405/](https://pubmed.ncbi.nlm.nih.gov/31257405/)
 
