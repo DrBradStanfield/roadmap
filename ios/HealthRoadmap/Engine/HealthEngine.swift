@@ -137,6 +137,11 @@ final class HealthEngine {
         try await settle(callValue(name, arguments), read: read)
     }
 
+    /// `data` as an ArrayBuffer in this engine's context, for a door that takes bytes.
+    func arrayBuffer(_ data: Data) -> JSValue {
+        EngineNatives.arrayBuffer(data, in: context)
+    }
+
     /// Runs a script in the engine's context; tests use it to reach the shim directly.
     func evaluate(_ script: String) throws -> JSValue {
         let result = context.evaluateScript(script)

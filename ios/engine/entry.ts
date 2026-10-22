@@ -5,6 +5,7 @@ import { mergeFiles } from '../../packages/health-core/src/merge';
 import { computePlan, type Plan } from '../../packages/health-core/src/plan';
 import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-file';
 import { planSections } from '../../packages/health-core/src/plan-sections';
+import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
@@ -34,9 +35,17 @@ export function mergeJson(localJson: string, remoteJson: string, nowIso: string,
 }
 
 // Cloud sync (cloud.ts): every call but cloudEdit is async and answers a Promise.
-export { cloudClose, cloudEdit, cloudErase, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible, labFile, labFilesJson } from './cloud';
+export { cloudClose, cloudEdit, cloudErase, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible, documentSave, labFile, labFilesJson } from './cloud';
 // "Delete all my data" on the phone's own file (erase.ts); a cloud's is cloudErase.
 export { erasePhoneJson } from './erase';
+/** The `sourceFileName` of each file read, as JSON (US-52 AC13d): the document
+ *  dedup key, by health-core's own rules, one call per read. A ZIP member
+ *  (`{ zip, path }`) by zipMemberName, the web's rule and cap; any other file
+ *  (`{ name }`) on one line and cut to the cap, as the connector stores one. */
+export function fileNamesJson(filesJson: string): string {
+  const files = JSON.parse(filesJson) as Array<{ name: string } | { zip: string; path: string }>;
+  return JSON.stringify(files.map((f) => ('zip' in f ? zipMemberName(f.zip, f.path) : fileNameLine(f.name).slice(0, MAX_FILE_NAME_LENGTH))));
+}
 
 /** The plan for a record, as JSON. `nowIso` is passed in so tests can pin it. `unitsJson`,
  *  here and on the doors below: the phone's per-test units (unit-choices.ts); an app older

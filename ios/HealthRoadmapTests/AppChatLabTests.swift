@@ -98,6 +98,70 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertThrowsError(try engine.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0"], reportDay: "2099-01-01", now: now, deviceId: "test").get())
     }
 
+    // MARK: AC13d: documents
+
+    func testALetterGetsTheWebsDocumentCard() throws {
+        let engine = try HealthEngine()
+        let letter = #"{"classification":"discharge_summary","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"discharge_summary","title":"Discharge","documentDate":"2026-09","contentMarkdown":"Short text","metadata":{}}}"#
+        let review = try engine.labReview(extractionJSON: letter, now: now, recordJSON: try record(engine), sourceFileName: "d.pdf", deviceId: "test")
+        XCTAssertFalse(review.isLabReport)
+        XCTAssertEqual(review.document, LabReview.Document(classification: "discharge_summary", title: "Discharge", documentDate: nil, preview: "Short text", alreadySaved: false, held: false))
+        XCTAssertNil(try engine.labReview(extractionJSON: extraction, now: now).document)
+    }
+
+    func testAReadFileKeepsItsOriginalBytes() throws {
+        let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }
+        let document = try XCTUnwrap(LabFileReader.documents(from: pdf, name: "a.pdf").first)
+        XCTAssertEqual(document.original?.verifiedData(), pdf)
+        XCTAssertEqual(document.original?.mimeType, "application/pdf")
+        XCTAssertNil(try LabFileReader.pictures([UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { _ in }], name: "Photo").original)
+    }
+
+    /// A ZIP member's name is the web's zipMemberName, cap and hash included, so the
+    /// document dedup key (`sourceFileName`) is one on the phone and the web. One call per ZIP.
+    @MainActor
+    func testAZipMembersNameIsTheWebsZipMemberName() async throws {
+        let engine = try HealthEngine()
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).pngData { _ in }
+        let long = String(repeating: "d", count: 260) + "/letter.png"
+        let zip = Self.zip([("a/b.png", image, false), (long, image, false)])
+        let names = await engine.named(try LabFileReader.documents(from: zip, name: "Records.zip")).map(\.name)
+        // What health-core's zipMemberName gives in Node for these (computed 2026-10-22):
+        // the long one cut to 255 with the FNV-1a hash of the whole name, its end kept.
+        XCTAssertEqual(names, ["Records.zip/a/b.png", "~635451cb/" + String(repeating: "d", count: 234) + "/letter.png"])
+        // R7: any other file's name goes through the same cleanup (one line, capped), in the same call.
+        let plain = LabFileReader.Document(name: "Bad\u{7}\nname.pdf", pages: [], truncated: false)
+        let cleaned = await engine.named([plain]).map(\.name)
+        XCTAssertEqual(cleaned, ["Bad name.pdf"])
+    }
+
+    /// A folder's originals are the files themselves, read again when saved: no bytes
+    /// mapped from a picked folder outlive the picker's access (US-52 AC13d).
+    func testAFoldersOriginalsAreStillReadableAfterTheRead() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Picked \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder.appending(path: "sub"), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }
+        let png = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).pngData { _ in }
+        try pdf.write(to: folder.appending(path: "a.pdf"))
+        try png.write(to: folder.appending(path: "sub/b.png"))
+        let documents = try LabFileReader.documents(inFolder: folder)
+        XCTAssertEqual(documents.map { $0.original?.verifiedData() }, [pdf, png])
+        XCTAssertEqual(documents.map { $0.original?.mimeType }, ["application/pdf", "image/png"])
+        for document in documents {
+            guard case .file = document.original?.source else { return XCTFail("\(document.name) holds bytes, not its file") }
+        }
+        // Codex R2: changed since the review read it (same size, other bytes), or gone: no bytes.
+        var other = pdf
+        other[other.count - 1] ^= 0xFF
+        try other.write(to: folder.appending(path: "a.pdf"))
+        XCTAssertNil(documents[0].original?.verifiedData())
+        try FileManager.default.removeItem(at: folder.appending(path: "sub/b.png"))
+        XCTAssertNil(documents[1].original?.verifiedData())
+        // The fingerprint is the web's sha256Blob format.
+        XCTAssertEqual(documents[1].original?.contentHash, "sha256-" + SHA256.hash(data: png).map { String(format: "%02x", $0) }.joined())
+    }
+
     // MARK: AC7: reading files
 
     func testAPdfPageWithTextGoesAsText() throws {

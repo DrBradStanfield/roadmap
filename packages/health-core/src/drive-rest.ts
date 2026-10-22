@@ -30,6 +30,7 @@
 import {
   ConflictError,
   fetchOrFail,
+  ROADMAP_FILE_NAME,
   jsonBody,
   StorageError,
   type DocumentAccess,
@@ -104,16 +105,27 @@ export async function driveFindFolder(
   parentId?: string,
   signal?: AbortSignal,
 ): Promise<{ id: string; name: string } | undefined> {
+  return (await driveFindFolders(accessToken, names, parentId, signal, 1))[0];
+}
+
+/** Every folder by any of `names` (inside `parentId`), up to `pageSize`. */
+async function driveFindFolders(
+  accessToken: string,
+  names: readonly string[],
+  parentId: string | undefined,
+  signal: AbortSignal | undefined,
+  pageSize: number,
+): Promise<Array<{ id: string; name: string }>> {
   const anyName = names.map((name) => `name='${quoted(name)}'`).join(' or ');
   const q = encodeURIComponent(
     `(${anyName}) and mimeType='${DRIVE_FOLDER_MIME}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
   );
-  const res = await request(`${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=1`, {
+  const res = await request(`${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=${pageSize}`, {
     headers: auth(accessToken),
     signal,
   });
   if (!res.ok) await fail('folder lookup', res);
-  return (await jsonBody<{ files?: Array<{ id: string; name: string }> }>(res)).files?.[0];
+  return (await jsonBody<{ files?: Array<{ id: string; name: string }> }>(res)).files ?? [];
 }
 
 export async function driveCreateFolder(accessToken: string, name: string, parentId?: string, signal?: AbortSignal): Promise<string> {
@@ -396,7 +408,7 @@ export class DriveAdapter implements StorageAdapter {
     if (!pending) {
       pending = folder
         ? this.documentFolder(null).then((root) => driveEnsureSubfolder(this.accessToken, folder, root))
-        : this.folderId();
+        : this.recordFolder();
       this.documentFolders.set(key, pending);
       const settled = pending;
       settled.catch(() => {
@@ -404,6 +416,22 @@ export class DriveAdapter implements StorageAdapter {
       });
     }
     return pending;
+  }
+
+  /**
+   * The app folder that holds the record: the browser persists its folder id
+   * and moves the record into it, so originals filed here land beside the
+   * website's. A record with no such parent (none yet, or one left at the
+   * Drive root) falls back to the folder found by name.
+   */
+  private async recordFolder(): Promise<string> {
+    const fileId = await this.findFile(ROADMAP_FILE_NAME);
+    const res = fileId ? await request(`${DRIVE_API}/files/${fileId}?fields=parents`, { headers: auth(this.accessToken) }) : null;
+    const parents = res?.ok ? (await jsonBody<{ parents?: string[] }>(res)).parents ?? [] : [];
+    // The app folders by name, the same lookup the record's own folder takes.
+    const folders = await driveFindFolders(this.accessToken, [DRIVE_FOLDER_NAME, DRIVE_LEGACY_FOLDER_NAME], undefined, undefined, 10);
+    const found = folders.find((f) => parents.includes(f.id)) ?? folders[0];
+    return found?.id ?? (await driveCreateFolder(this.accessToken, DRIVE_FOLDER_NAME));
   }
 
   private async folderId(signal?: AbortSignal): Promise<string> {

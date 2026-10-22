@@ -412,8 +412,15 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   "Saving…", on open, after a write and after Sync now.
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free
-  (US-34). Until then the app polls each minute while on screen. Documents are not synced
-  by the app (its adapter refuses them).
+  (US-34). Until then the app polls each minute while on screen.
+- **Documents (US-52 AC13d, 2026-10-22):** the app files letters and lab originals
+  through health-core's `saveDocuments`, the web's one path, with the shared adapters
+  built `{ documents: 'write' }`. The rows commit like any cloud edit (phone copy and
+  pending marker, then `RecordSession.edit` with the erase), one save at a time. Swift
+  hashes each original with CryptoKit as it reads it (JavaScriptCore has no
+  `crypto.subtle`) and checks the hash again at Save; the engine takes that hash as the
+  row's `contentHash`. On Drive the originals go to the folder that holds the record, so
+  web and phone share one archive. The app never reads an original back yet.
 - **Not the iOS Files picker.** File Provider writes have no version check, which breaks
   US-10 AC4 (two overlapping saves must keep both rows).
 - **iCloud: open.** A website cannot read iCloud Drive, so an iCloud user could not use the
