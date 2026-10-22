@@ -33,7 +33,8 @@ final class RecordStore {
     var onEdit: (() -> Void)?
     /// While a cloud is connected but its record is not open: the marker a phone edit
     /// sets, in the same engine step that writes it, so the next open merges it up
-    /// (US-09 AC4). Set by CloudSync; nil with no cloud.
+    /// (US-09 AC4). Read when the edit's turn comes: an edit asked for before a first
+    /// connect, landing after it, is marked too. Set by CloudSync; nil with no cloud.
     @ObservationIgnored var marksPending: PhoneFiles?
     /// Moves each time "Delete all my data" erases the record here (US-25 AC16),
     /// so a view holding health data outside the record, the open chat, drops it.
@@ -110,7 +111,7 @@ final class RecordStore {
     /// Runs `job` after every change asked for before it, so two quick edits land in
     /// the order they were made. Every change to the record goes through here.
     @discardableResult
-    private func chain<T: Sendable>(_ job: @escaping @MainActor () async -> T) -> Task<T, Never> {
+    func chain<T: Sendable>(_ job: @escaping @MainActor () async -> T) -> Task<T, Never> {
         let previous = tail
         let task = Task { @MainActor in
             await previous?()
@@ -254,8 +255,8 @@ final class RecordStore {
     /// One edit, checked against the record the screen showed when it was asked for:
     /// the sheet's pin, taken now, before anything waits.
     func apply(_ edit: RecordEdit) async -> ApplyResult {
-        let (seen, marking) = (pinned ?? screen, marksPending)
-        return await chain { await self.apply(edit, as: seen, marking: marking) }.value
+        let seen = pinned ?? screen
+        return await chain { await self.apply(edit, as: seen) }.value
     }
 
     /// The units the row for `metric` shows: its per-test choice, else the record's (AC17e).
@@ -269,11 +270,10 @@ final class RecordStore {
     /// merge and the erase guard.
     /// Its turn in line decides "now": the screen is read when the edits before it have landed.
     func applyNow(_ edit: RecordEdit) async -> ApplyResult {
-        await chain { await self.apply(edit, as: self.screen, marking: self.marksPending) }.value
+        await chain { await self.apply(edit, as: self.screen) }.value
     }
 
-    /// `marking`: the pending marker when the edit was asked for (`marksPending`).
-    private func apply(_ edit: RecordEdit, as seen: Screen, marking: PhoneFiles?) async -> ApplyResult {
+    private func apply(_ edit: RecordEdit, as seen: Screen) async -> ApplyResult {
         // An erase taken in, or sync turned on or off, since the sheet opened.
         // The sheet keeps refusing until it closes: it still shows the old record,
         // its unit and the typed number, so a second Save would store that number
@@ -293,7 +293,7 @@ final class RecordStore {
             // changed: a failed write keeps both as they were (Codex R1).
             let choices = Self.clearsChoices(edit) ? UnitChoices() : unitChoices
             // One engine call: the edit, My data and the atomic write, off the main thread.
-            let answer = try await engine.applyOnPhone(edit, to: recordJSON, units: seen.choices, shownIn: choices.json, file: file, marking: marking, deviceId: deviceId)
+            let answer = try await engine.applyOnPhone(edit, to: recordJSON, units: seen.choices, shownIn: choices.json, file: file, marking: marksPending, deviceId: deviceId)
             switch answer {
             case .refused(let outcome):
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
@@ -315,18 +315,58 @@ final class RecordStore {
     /// Through the engine's open session: the save loop sends it to the cloud.
     private func applyInCloud(_ edit: RecordEdit, erase: String, seen: Screen) async -> ApplyResult {
         do {
-            let outcome = try await engine.cloudEdit(edit, erase: erase, units: seen.units, now: .now, choices: seen.choices)
-            guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
-                return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
-            }
-            if next == recordJSON { return .saved }
-            // The session has taken the edit: the choices follow it.
-            if Self.clearsChoices(edit) { publish(UnitChoices()) }
-            await draw(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0, order: outcome.order))
-            onEdit?()
-            return .saved
+            return await shown(try await engine.cloudEdit(edit, erase: erase, units: seen.units, now: .now, choices: seen.choices), of: edit)
         } catch {
             return .refused(message: error.localizedDescription, existingId: nil)
+        }
+    }
+
+    /// What the session made of a cloud edit, onto the screen.
+    private func shown(_ outcome: EditOutcome, of edit: RecordEdit) async -> ApplyResult {
+        guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
+            return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
+        }
+        if next == recordJSON { return .saved }
+        // The session has taken the edit: the choices follow it.
+        if Self.clearsChoices(edit) { publish(UnitChoices()) }
+        await draw(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0, order: outcome.order))
+        onEdit?()
+        return .saved
+    }
+
+    // MARK: Lab reports (US-52 AC8)
+
+    /// The ticked values of a lab report, and what saving them did. The summary is taken
+    /// in the same turn as the import, against the record it lands on (in the cloud, the
+    /// session's working copy, in one engine step), so it never counts a value another
+    /// device brought in meanwhile as saved (Codex re-check R3).
+    func importLabs(extractionJSON: String, refs: [String], reportDay: String) async -> Result<LabSaveSummary, LabRefusal> {
+        let seen = pinned ?? screen
+        return await chain { await self.importLabs(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, as: seen) }.value
+    }
+
+    private func importLabs(extractionJSON: String, refs: [String], reportDay: String, as seen: Screen) async -> Result<LabSaveSummary, LabRefusal> {
+        let edit = RecordEdit.labImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay)
+        do {
+            let summary: Result<LabSaveSummary, LabRefusal>
+            let result: ApplyResult
+            if let erase = seen.erase, erase == cloudErase {
+                let answer = try await engine.cloudLabImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, erase: erase,
+                                                             units: seen.units, now: .now, choices: seen.choices, deviceId: deviceId)
+                guard let outcome = answer.outcome else { return answer.summary }
+                summary = answer.summary
+                result = await shown(outcome, of: edit)
+            } else {
+                // The phone's file (or a screen that moved on, which `apply` refuses): nothing
+                // else changes the record before this turn ends.
+                summary = try await engine.labSaveSummary(recordJSON: recordJSON, extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, now: .now, deviceId: deviceId)
+                guard case .success = summary else { return summary }
+                result = await apply(edit, as: seen)
+            }
+            if case .refused(let message, _) = result { return .failure(LabRefusal(message: message)) }
+            return summary
+        } catch {
+            return .failure(LabRefusal(message: error.localizedDescription))
         }
     }
 
@@ -346,11 +386,11 @@ final class RecordStore {
     /// then the rows through the engine's session, with the erase the screen showed.
     /// On the phone: a text-only row (no original), written to the file as an edit is.
     func saveDocument(extractionJSON: String, choice: DocumentChoice, original: LabFileReader.Original?) async -> DocumentResult {
-        let (seen, marking) = (pinned ?? screen, marksPending)
-        return await chain { await self.saveDocument(extractionJSON: extractionJSON, choice: choice, original: original, as: seen, marking: marking) }.value
+        let seen = pinned ?? screen
+        return await chain { await self.saveDocument(extractionJSON: extractionJSON, choice: choice, original: original, as: seen) }.value
     }
 
-    private func saveDocument(extractionJSON: String, choice: DocumentChoice, original: LabFileReader.Original?, as seen: Screen, marking: PhoneFiles?) async -> DocumentResult {
+    private func saveDocument(extractionJSON: String, choice: DocumentChoice, original: LabFileReader.Original?, as seen: Screen) async -> DocumentResult {
         guard seen.erase == cloudErase else {
             return .refused("Your record changed while this was open, so this was not saved. Close this and try again.")
         }
@@ -375,7 +415,7 @@ final class RecordStore {
                 }
                 return result
             }
-            guard try await commitPhoneDocument(next, over: before, marking: marking) else {
+            guard try await commitPhoneDocument(next, over: before) else {
                 return .refused("Your record changed while this was saving, so it was not saved. Save again.")
             }
             return result
@@ -387,10 +427,10 @@ final class RecordStore {
     /// A document save's record, onto the phone's file: written only over the record the
     /// save began from (`before`), never over an edit made while it ran. False when refused.
     /// Runs inside a chained change (saveDocument); never chain it, or it waits on itself.
-    func commitPhoneDocument(_ next: String, over before: String, marking: PhoneFiles? = nil) async throws -> Bool {
+    func commitPhoneDocument(_ next: String, over before: String) async throws -> Bool {
         guard cloudErase == nil, recordJSON == before else { return false }
         if next != recordJSON {
-            let shown = try await engine.myDataAndWrite(next, units: unitChoices.json, to: file, marking: marking, deviceId: deviceId)
+            let shown = try await engine.myDataAndWrite(next, units: unitChoices.json, to: file, marking: marksPending, deviceId: deviceId)
             recordJSON = next
             myData = shown
             onEdit?()
@@ -402,9 +442,15 @@ final class RecordStore {
 
     /// One test to the other units, as the web's unit chip does. Back to the record's
     /// units drops the choice; nothing is written to the record.
+    /// Per-test unit switches asked for and not yet landed. While one is pending, a sheet
+    /// would pin the old choices and label itself from the new row: entry waits (AC17e).
+    private(set) var unitSwitches = 0
+
     @discardableResult
     func switchUnits(for row: MyData.Row, to system: String) -> Task<Void, Never> {
-        chain {
+        unitSwitches += 1
+        return chain {
+            defer { self.unitSwitches -= 1 }
             guard row.switchable == true, let data = self.myData else { return }
             let choices = self.unitChoices.setting(row.metric, to: system == data.unitSystem ? nil : system)
             // Drawn first: a choice the screen cannot show is not kept, so labels and reading agree.

@@ -92,6 +92,9 @@ final class EngineNatives {
     private var timers: [Int: DispatchWorkItem] = [:]
     private var nextId = 1
     private var stamps = 0
+    /// The open session's working copy, as the engine last handed it over (its open,
+    /// an edit, or news it brought something in): what a lab summary is taken against.
+    var openSession: (id: Int, record: String)?
 
     init(session: URLSession, queue: DispatchSerialQueue, quarantined: Bool = false) {
         self.session = session
@@ -271,8 +274,13 @@ final class EngineNatives {
         }
         // In order, never waited for: the engine's queue must not block on the main thread.
         let notify: @convention(block) (String, String, Int) -> Void = { event, payload, session in
-            guard let port = owner.value.cloud else { return }
-            let order = owner.value.stamp()
+            let natives = owner.value
+            if event == "changed", natives.openSession?.id == session,
+               let view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) {
+                natives.openSession = (session, view.record)
+            }
+            guard let port = natives.cloud else { return }
+            let order = natives.stamp()
             DispatchQueue.main.async { port.notify(event, payload, session: session, order: order) }
         }
         return [

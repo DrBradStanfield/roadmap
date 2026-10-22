@@ -210,6 +210,53 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01", "2026-10-02"])
     }
 
+    /// US-09 AC4 (Codex re-check R1): a save asked for while disconnected, held behind
+    /// another change, lands after the first connect lifted the phone's record. It is
+    /// marked pending when its turn comes, so the reopen merges it up.
+    func testASaveAskedForBeforeAFirstConnectThatLandsAfterTheLiftIsMerged() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync, _) = try app(connected: false)
+        store.chain { try? await Task.sleep(for: .milliseconds(400)) } // a change still landing
+        let save = Task { await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")) }
+        try await sync.connect(.dropbox, authenticate: signIn())
+        let saved = await save.value
+        XCTAssertEqual(saved, .saved)
+        XCTAssertNotNil(store.cloudErase, "the cloud record is open")
+        XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01", "2026-10-02"], "the screen shows the save")
+        await sync.background()
+        XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"], "the save reached the cloud")
+    }
+
+    /// US-52 AC8 (Codex re-check R3): a lab report's summary is taken against the record
+    /// the import lands on, so a value another device brings in meanwhile is never
+    /// counted as saved: what the summary says was saved is what the cloud file holds.
+    func testALabSummaryMatchesWhatTheImportSavedWhenARemoteValueArrives() async throws {
+        dropbox.put(try record(days: [], device: "web"))
+        let (store, sync, engine) = try app()
+        await sync.start()
+        // Another device fills the report's LDL slot.
+        let web = dropbox.file!.text
+        let filled = try XCTUnwrap(engine.blocking { try $0.apply(.add(metric: "ldl", value: 2.5, day: "2026-10-01"), to: web, now: .now, deviceId: "web") }.record)
+        dropbox.put(try JSONSerialization.jsonObject(with: Data(filled.utf8)) as! [String: Any])
+        let extraction = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01",
+         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"},
+                   {"metric":"hba1c","valueSI":40,"displayValue":40,"displayUnit":"mmol/mol","displaySystem":"si","confidence":"medium","recordedAt":"2025-04-02"}],
+         "additionalValues":[{"name":"Ferritin","value":85,"unit":"µg/L"}], "refusedValues":[]}
+        """#
+        // The re-read and the import race; whichever lands first, the summary must match.
+        let reread = Task { await sync.syncNow() }
+        let result = await store.importLabs(extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01")
+        await reread.value
+        await sync.background()
+        let summary = try result.get()
+        let file = dropbox.record
+        let imported = ((file["measurements"] as? [[String: Any]]) ?? []).filter { $0["source"] as? String == "lab_import" }.count
+            + ((file["labValues"] as? [Any]) ?? []).count
+        XCTAssertEqual(summary.saved, imported, "the summary counts what was saved, no more")
+        XCTAssertEqual(summary.saved + summary.skipped, 3)
+    }
+
     func testACloudThatCannotBeReachedLeavesThePhoneRecordAndMarksEditsForLater() async throws {
         StubHTTP.handler = { _ in .init(offline: true) }
         let (store, sync, engine) = try app()

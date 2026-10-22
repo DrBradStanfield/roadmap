@@ -126,6 +126,7 @@ extension HealthEngine {
         let (json, order) = try await callAsync("documentSave", [recordJSON, extractionJSON, choiceJSON, bytes, erase, now.formatted(Self.iso), deviceId], read: stamped)
         var answer = try JSONDecoder().decode(DocumentSaveAnswer.self, from: Data(json.utf8))
         answer.order = order
+        if !erase.isEmpty, answer.ok, let record = answer.record, let id = natives.openSession?.id { natives.openSession = (id, record) }
         return answer
     }
 

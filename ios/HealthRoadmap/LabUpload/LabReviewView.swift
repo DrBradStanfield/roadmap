@@ -188,20 +188,12 @@ struct LabReviewView: View {
         let refs = review?.items.map(\.ref).filter { ticked.contains($0) } ?? []
         let day = DayText.iso(testDay)
         problem = nil
-        do {
-            switch try await engine.labSaveSummary(recordJSON: store.recordJSON, extractionJSON: json, refs: refs, reportDay: day, now: .now, deviceId: store.deviceId) {
-            case .failure(let refusal):
-                problem = refusal.message
-            case .success(let summary):
-                switch await store.apply(.labImport(extractionJSON: json, refs: refs, reportDay: day)) {
-                case .saved:
-                    outcome = Self.describe(summary)
-                    await keepOriginal(json, day: day)
-                case .refused(let message, _): problem = message
-                }
-            }
-        } catch {
-            problem = error.localizedDescription
+        switch await store.importLabs(extractionJSON: json, refs: refs, reportDay: day) {
+        case .failure(let refusal):
+            problem = refusal.message
+        case .success(let summary):
+            outcome = Self.describe(summary)
+            await keepOriginal(json, day: day)
         }
     }
 

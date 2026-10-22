@@ -55,6 +55,7 @@ extension HealthEngine {
         let (json, order) = try await callAsync("cloudErase", [historyJSON ?? NSNull(), now.formatted(Self.iso), unsafeBitCast(block, to: AnyObject.self)], read: stamped)
         var answer = try JSONDecoder().decode(CloudErase.self, from: Data(json.utf8))
         answer.view?.order = order
+        if let view = answer.view { natives.openSession = (view.session, view.record) }
         return answer
     }
 }

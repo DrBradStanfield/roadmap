@@ -156,11 +156,13 @@ struct MyDataView: View {
     private func metrics(_ rows: [MyData.Row], @ViewBuilder header: () -> some View) -> some View {
         Section {
             ForEach(rows) { row in
+                // A unit switch still landing would open a sheet on the old choices (AC17e).
                 Button { open(row) } label: {
                     ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
                              trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0])
                 }
                 .tint(.primary)
+                .disabled(store.unitSwitches > 0)
             }
         } header: {
             header()

@@ -168,6 +168,21 @@ final class RecordPipelineTests: XCTestCase {
         store.unpinScreen()
     }
 
+    /// US-25 AC17e (Codex re-check R2): while a per-test unit switch is still landing,
+    /// entry and correction wait (`unitSwitches`), so a sheet never pins the old choices
+    /// and labels itself from the new row.
+    func testEntryWaitsWhileAUnitSwitchLands() async throws {
+        let store = try store()
+        let other = store.myData?.unitSystem == "si" ? "conventional" : "si"
+        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
+        stallEngine()
+        let switched = store.switchUnits(for: weight, to: other)
+        XCTAssertEqual(store.unitSwitches, 1, "entry is held while the switch is pending")
+        await switched.value
+        XCTAssertEqual(store.unitSwitches, 0)
+        XCTAssertEqual(store.units(for: "weight"), other, "the sheet opened now pins the new choices")
+    }
+
     func testAnOlderCloudRecordNeverReplacesANewerOne() async throws {
         let store = try store()
         let older = try engine.blocking { try $0.newRecord(now: .now, deviceId: "web") }

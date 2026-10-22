@@ -57,10 +57,12 @@ struct MetricDetailView: View {
                         Text("US").tag("conventional")
                     }
                     .pickerStyle(.menu)
+                    .disabled(store.unitSwitches > 0)
                 }
             }
             ToolbarItem(placement: .primaryAction) {
                 Button("Add Data") { editing = .add }
+                    .disabled(store.unitSwitches > 0)
             }
         }
         .sheet(item: $editing) { editing in
@@ -132,6 +134,7 @@ struct MetricDetailView: View {
                 if value.isActive {
                     Button { editing = .correct(value) } label: { HistoryRow(row: value, unit: history.unit, excluded: history.excluded) }
                         .tint(.primary)
+                        .disabled(store.unitSwitches > 0)
                         .accessibilityHint("Opens a correction")
                 } else {
                     HistoryRow(row: value, unit: history.unit, excluded: history.excluded)

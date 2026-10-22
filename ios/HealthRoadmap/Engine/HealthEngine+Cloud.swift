@@ -33,6 +33,7 @@ extension HealthEngine {
         let (json, order) = try await callAsync("cloudOpen", [provider.rawValue, deviceId, firstConnect], read: stamped)
         var view = try JSONDecoder().decode(CloudView.self, from: Data(json.utf8))
         view.order = order
+        natives.openSession = (view.session, view.record)
         return view
     }
 
@@ -44,7 +45,19 @@ extension HealthEngine {
         let json = try call("cloudEdit", [editJSON, erase, units, now.formatted(Self.iso), choices])
         var outcome = try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
         outcome.order = stamp()
+        if outcome.ok, let record = outcome.record, let id = natives.openSession?.id { natives.openSession = (id, record) }
         return outcome
+    }
+
+    /// A lab report's ticked values through the open session, and what saving them did,
+    /// in one engine step: the summary is taken against the session's working copy the
+    /// import lands on, so a value another device brought in is never counted as saved.
+    func cloudLabImport(extractionJSON: String, refs: [String], reportDay: String, erase: String, units: String, now: Date, choices: String, deviceId: String) throws -> (summary: Result<LabSaveSummary, LabRefusal>, outcome: EditOutcome?) {
+        guard let record = natives.openSession?.record else { return (.failure(LabRefusal(message: "That could not be saved.")), nil) }
+        let summary = try labSaveSummary(recordJSON: record, extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, now: now, deviceId: deviceId)
+        guard case .success = summary else { return (summary, nil) }
+        let edit = RecordEdit.labImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay)
+        return (summary, try cloudEdit(edit, erase: erase, units: units, now: now, choices: choices))
     }
 
     /// The app came to the foreground: re-read, and retry a refused save.
@@ -67,7 +80,8 @@ extension HealthEngine {
     /// flight, or none) copies nothing, and says so (review F6).
     @discardableResult
     func cloudClose(copyDown: Bool) async throws -> Bool {
-        try await callAsync("cloudClose", [copyDown]) == "copied"
+        natives.openSession = nil
+        return try await callAsync("cloudClose", [copyDown]) == "copied"
     }
 
     /// A lab file in the Dropbox app folder, as the engine lists it (US-52 AC11).
