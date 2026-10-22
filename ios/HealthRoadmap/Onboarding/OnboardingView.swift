@@ -144,7 +144,7 @@ struct OnboardingView: View {
             Text(label)
                 .font(.title3.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 64)
-                .foregroundStyle(selected ? Color.white : Color.primary)
+                .foregroundStyle(selected ? Color.onAccent : Color.primary)
                 .background(selected ? Color.accentColor : Color(.secondarySystemFill), in: shape)
                 .contentShape(shape)
         }
@@ -156,7 +156,7 @@ struct OnboardingView: View {
 
     private func primary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6)
+            Text(title).font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6).onAccentLabel()
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)

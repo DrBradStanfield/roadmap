@@ -46,7 +46,7 @@ struct WelcomeView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button(action: getStarted) {
-                Text("Get started").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6)
+                Text("Get started").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6).onAccentLabel()
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)

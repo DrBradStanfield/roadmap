@@ -33,7 +33,7 @@ struct PlanView: View {
                 } description: {
                     Text(reason)
                 } actions: {
-                    Button("Go to My data", action: showMyData)
+                    Button(action: showMyData) { Text("Go to My data").onAccentLabel() }
                         .buttonStyle(.borderedProminent)
                 }
             case .loaded(let sections, let planMs):

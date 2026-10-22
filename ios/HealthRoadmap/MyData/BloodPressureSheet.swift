@@ -89,6 +89,7 @@ struct BloodPressureSheet: View {
             TextField(hint ?? "0", text: text)
                 .analyticsMasked()
                 .keyboardType(.numberPad)
+                .typedNumber(text, .pressure, editing: focus == field)
                 .font(.system(.largeTitle, design: .rounded).weight(.semibold))
                 .monospacedDigit()
                 .focused($focus, equals: field)

@@ -37,6 +37,16 @@ struct MetricChart: View {
     @State private var finger: Date?
     @Environment(\.dynamicTypeSize) private var textSize
 
+    /// Apple Health's colours (Brad 2026-10-22): heart readings red, body measurements
+    /// purple. Blood tests blue: Apple gives lab results no colour of its own that we know of.
+    static func colors(for metric: String) -> [Color] {
+        switch metric {
+        case MyData.bloodPressure: [.red, .pink]
+        case "weight", "waist", "height": [.purple]
+        default: [.blue]
+        }
+    }
+
     var body: some View {
         Chart {
             ForEach(points) { point in
@@ -56,7 +66,7 @@ struct MetricChart: View {
                     }
             }
         }
-        .chartForegroundStyleScale(range: history.metric == MyData.bloodPressure ? [Color.accentColor, Color.teal] : [Color.accentColor])
+        .chartForegroundStyleScale(range: Self.colors(for: history.metric))
         .chartLegend(history.metric == MyData.bloodPressure ? .visible : .hidden)
         .chartYScale(domain: .automatic(includesZero: false))
         // Aligned, so the newest month's label stays inside the card.
