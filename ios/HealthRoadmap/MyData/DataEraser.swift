@@ -25,6 +25,11 @@ final class DataEraser {
     }
 
     private(set) var erasing = false
+    /// Counts erases the person has seen the words for: each one starts the new-user
+    /// questions again (US-54 AC7, RootView).
+    private(set) var startsOver = 0
+    /// An erase is done but its words are still on screen: nothing else may cover them.
+    private(set) var awaitingDismissal = false
 
     private let engine: HealthEngine
     private let store: RecordStore
@@ -42,6 +47,12 @@ final class DataEraser {
         self.health = health
     }
 
+    /// The erase's words were dismissed: the questions start again on the empty record.
+    func erasedAndSeen() {
+        awaitingDismissal = false
+        startsOver += 1
+    }
+
     /// Whether the confirmation names Apple Health.
     var appleHealthConnected: Bool { health?.connected ?? false }
 
@@ -52,6 +63,7 @@ final class DataEraser {
         let units = store.myData?.unitSystem
         let outcome = if let provider = sync.provider { await eraseInCloud(provider) } else { eraseOnPhone() }
         if case .refused = outcome { return outcome }
+        awaitingDismissal = true
         // After the record: an erase refused there must change nothing, and Health's
         // copies of typed values are only copies (D6).
         let healthErased = await health?.eraseOwnSamples() ?? true

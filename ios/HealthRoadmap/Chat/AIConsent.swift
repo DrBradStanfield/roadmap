@@ -33,7 +33,7 @@ struct AIConsentView: View {
                 Text("You can stop sharing at any time from this screen's menu.")
                     .foregroundStyle(.secondary)
                 Button(action: agree) {
-                    Text("Agree and continue").frame(maxWidth: .infinity)
+                    Text("Agree and continue").frame(maxWidth: .infinity).onAccentLabel()
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)

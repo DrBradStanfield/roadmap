@@ -27,6 +27,12 @@ describe('newRecord (AC4)', () => {
 });
 
 describe('myData (AC5)', () => {
+  it('carries the record\'s erase count, so every phone sees an erase (US-54 AC7)', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    expect(myData(file).eraseEpoch).toBe(0);
+    expect(myData({ ...file, meta: { ...file.meta, eraseEpoch: 3 } }).eraseEpoch).toBe(3);
+  });
+
   it('lists the web\'s vitals and blood tests, PSA left to screening', () => {
     const data = myData(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'));
     expect(data.vitals.map((row) => row.metric)).toEqual(['weight', 'waist', 'blood_pressure']);

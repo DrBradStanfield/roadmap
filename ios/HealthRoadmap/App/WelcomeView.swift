@@ -46,7 +46,7 @@ struct WelcomeView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button(action: getStarted) {
-                Text("Get started").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6)
+                Text("Get started").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6).onAccentLabel()
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
@@ -93,6 +93,7 @@ struct WelcomeView: View {
     private func cloudChooser(_ sync: CloudSync) -> some View {
         NavigationStack {
             List {
+                Section { SyncDiagram() }
                 Section {
                     ForEach(CloudProvider.allCases) { provider in
                         ConnectCloudButton(sync: sync, provider: provider, connected: { opened(sync) }) {

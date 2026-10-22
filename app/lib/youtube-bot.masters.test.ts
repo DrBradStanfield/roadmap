@@ -53,6 +53,7 @@ import { platformChatCompletion } from './platform-chat.server';
 import { currentViewSection, safetySections, masterViews, reducedMaster, reducedDrops, MAX_VIEW_CHARS, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_KEY_POINTS_CHARS, BULLET_LINE } from './youtube-context';
 import { MAX_KEY_POINTS_CHARS as CHECKER_MAX_KEY_POINTS_CHARS, BULLET_LINE as CHECKER_BULLET_LINE, keySafetyErrors } from '../../tools/knowledge-batch-check';
 import { getChatCompletion } from './chat.server';
+import { MAX_BLOG_CHARS } from './matched-content';
 import { routeQuery } from './chat-router.server';
 
 const VIEW = '## Current view (reviewed 20 October 2026)\n\nCollagen peptides may improve skin hydration [the-collagen-peptides-for-skin-story-is-changing].';
@@ -73,7 +74,7 @@ const files: Record<string, string> = {
   'tm-numbered': `---\ntitle: "Numbered"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNumbered view.\n\n## 6. Drug Interactions\n\nWarfarin [2].\n\n## 8. References\n\n1. Ref A.\n2. Ref B.\n`,
   // A master whose smallest form still nearly fills the cap: it loads that
   // form and leaves no room even for tm-master-long reduced (US-50 AC13).
-  'tm-huge': `---\ntitle: "Huge"\n---\n\n## Current view (reviewed 20 October 2026)\n\nHuge view.\n\n## 5. Safety and Side Effects\n\n${'h'.repeat(119_750)}\n`,
+  'tm-huge': `---\ntitle: "Huge"\n---\n\n## Current view (reviewed 20 October 2026)\n\nHuge view.\n\n## 5. Safety and Side Effects\n\n${'h'.repeat(MAX_BLOG_CHARS - 250)}\n`,
   'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
   'tm-article': `---\ntitle: "An article"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNot a master.\n`,
   'tm-collagen-video': `---\ntitle: "Collagen video"\n---\n\nThe old collagen video's text.\n`,

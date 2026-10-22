@@ -44,6 +44,8 @@ struct MyData: Decodable {
 
     /// "si" (metric) or "conventional" (US)
     let unitSystem: String
+    /// The record's erase count; nil from an engine older than US-54 AC7.
+    let eraseEpoch: Int?
     let profile: Profile
     let vitals: [Row]
     let bloodTests: [Row]

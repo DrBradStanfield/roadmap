@@ -15,6 +15,15 @@ final class OnboardingStepsTests: XCTestCase {
         XCTAssertTrue(OnboardingSteps.needsFlow(profile(sex: "male", year: 1970)), "no height")
     }
 
+    /// An erase on any device raises the record's erase count; with the answers gone,
+    /// the questions come back. A higher count with the answers still there does not.
+    func testAnEraseAnywhereBringsTheQuestionsBack_AC7() {
+        XCTAssertTrue(OnboardingSteps.erasedSince(0, epoch: 1, profile: profile()))
+        XCTAssertFalse(OnboardingSteps.erasedSince(1, epoch: 1, profile: profile()), "the erase already answered")
+        XCTAssertFalse(OnboardingSteps.erasedSince(0, epoch: nil, profile: profile()), "an older engine")
+        XCTAssertFalse(OnboardingSteps.erasedSince(0, epoch: 2, profile: profile(sex: "male", year: 1980, height: "180")), "answers already back")
+    }
+
     func testFirstRunStartsAtAppleHealth_AC1() {
         XCTAssertEqual(OnboardingSteps.start(profile(), healthAsked: false), .health)
     }
