@@ -160,7 +160,7 @@ Extra protein can add to the muscle and strength gains from regular resistance e
 
 **Meta-analyses and systematic reviews:**
 
-A meta-analysis of 49 trials with 1,863 participants found that protein supplements added to gains in strength and muscle size during resistance training lasting 6 weeks or more. The effect on lean mass was smaller in older people and larger in people already trained, and total protein intakes above about 1.6 g/kg a day brought no further gain (Morton, *Br J Sports Med*, 2017) [48]. A later dose-response meta-analysis pooling 105 papers on randomised trials found that each extra 0.1 g/kg a day of protein was associated with 0.39 kg more lean mass below a total intake of 1.3 g/kg a day, but only 0.12 kg above it (Tagawa, *Nutr Rev*, 2021) [126].
+A meta-analysis of 49 trials with 1,863 participants found that protein supplements added to gains in strength and muscle size during resistance training lasting 6 weeks or more. The effect on lean mass was smaller in older people and larger in people already trained, and total protein intakes above about 1.6 g/kg a day brought no further gain (Morton, *Br J Sports Med*, 2017) [48]. A later dose-response meta-analysis pooling 105 papers on randomised trials estimated, from a statistical model, that each extra 0.1 g/kg a day of protein was associated with 0.39 kg more lean mass below a total intake of 1.3 g/kg a day, but only 0.12 kg above it (Tagawa, *Nutr Rev*, 2021) [126].
 
 A 2025 network meta-analysis of 38 trials in 2,610 adults aged 50 and over found that protein plus resistance training increased lean body mass more than protein alone. Resistance training, with or without protein, improved strength compared with controls and physical function compared with protein alone, and the authors judged the combination the most effective approach (Tian, *J Nutr*, 2025) [49].
 
@@ -333,7 +333,7 @@ People allergic to milk should avoid whey and casein; even laboratory-made whey 
 
 ### Blood Pressure in Older Adults
 
-In a small pilot study in eight older men, whey protein drinks, even at 30 g, lowered systolic blood pressure compared with a control drink, most clearly between 120 and 180 minutes after drinking. Systolic pressure fell by 20 mmHg or more in 63% of the men after 30 g of whey, against 38% after the control drink. The authors concluded that even modest protein loads may cause a fall in blood pressure after eating (postprandial hypotension) in older men (Oberoi, *Nutrients*, 2022) [123]. If you tend to feel light-headed when you stand up, it may be wise to take care in the hours after a whey drink.
+In a small pilot study in eight older men, whey protein drinks, even at 30 g, lowered systolic blood pressure compared with a control drink, most clearly between 120 and 180 minutes after drinking. Systolic pressure fell by 20 mmHg or more in 63% of the men after 30 g of whey, against 38% after the control drink. The authors concluded that even modest protein loads may cause a fall in blood pressure after eating (postprandial hypotension) in older men (Oberoi, *Nutrients*, 2022) [123]. In their discussion, the authors suggest that older people taking beta-blockers, which limit the rise in heart rate, or with heart conditions that cause a slow heart rate (bradycardia) may be at even greater risk of this fall [123]. This is a proposed risk; the study did not test it. If you tend to feel light-headed when you stand up, it may be wise to take care in the hours after a whey drink.
 
 ### Unexpected Ingredients
 
