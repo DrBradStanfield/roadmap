@@ -358,5 +358,21 @@
     "reason": "Host false positive (orchestrator 2026-10-22, masters-cleanup-3): clinicaltrials.gov is the NIH trial registry; [87] is the SRT501 trial record.",
     "by": "orchestrator",
     "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "glycine-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"3\": Powder versus capsules: At a dose of 3 g/day, powder is more practical than capsules (3 g = 3–6 capsules depending on...",
+    "reason": "Checker arithmetic (orchestrator 2026-10-22, masters-cleanup-3): BASE text; '3 g = 3–6 capsules' follows from the forms table's 500–1,000 mg per capsule. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
+  },
+  {
+    "check": "AC2",
+    "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+    "match": "token \"250 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review:** Some have suggested resveratrol might help with type 2 diabetes, but a Cochrane analysis found...\" | \"**In older inactive men:** 27 healthy, physically inactive men with an average age of 65 took 250 mg/day of trans-res...\" | \"| Exercise training | 150-250 mg/day | 4-8 weeks | May blunt exercise adaptations [60][61] |\"",
+    "reason": "Checker tokenisation (orchestrator 2026-10-22, masters-cleanup-3): BASE text; the Gliemann abstract writes 'daily intake of either 250 mg trans-resveratrol' (addendum-9); the body writes '250 mg/day'. Ruling 10, the text stays.",
+    "by": "orchestrator",
+    "date": "2026-10-22"
   }
 ]
