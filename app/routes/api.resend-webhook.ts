@@ -59,6 +59,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const { kind, emails } = parseResendEvent(payload);
   if (kind === 'ignored') return Response.json({ ok: true, action: 'ignored' });
 
+  let cleanupFailed = false;
   for (const email of emails) {
     // Both sides are attempted independently: a Klaviyo outage must not leave
     // a dead address still enrolled for reminders.
@@ -66,12 +67,18 @@ export async function action({ request }: ActionFunctionArgs) {
       suppressInKlaviyo(email),
       deleteByEmail(email),
     ]);
-    if (suppressed.status === 'rejected') {
-      Sentry.captureException(suppressed.reason, { tags: { feature: 'resend_webhook', step: 'klaviyo' } });
+    cleanupFailed ||= suppressed.status === 'rejected'
+      || suppressed.value === false || unenrolled.status === 'rejected';
+    if (suppressed.status === 'rejected' || suppressed.value === false) {
+      Sentry.captureException(new Error('Resend webhook suppression failed'), { tags: { feature: 'resend_webhook', step: 'klaviyo' } });
     }
     if (unenrolled.status === 'rejected') {
-      Sentry.captureException(unenrolled.reason, { tags: { feature: 'resend_webhook', step: 'reminders' } });
+      Sentry.captureException(new Error('Resend webhook reminder cleanup failed'), { tags: { feature: 'resend_webhook', step: 'reminders' } });
     }
+  }
+
+  if (cleanupFailed) {
+    return Response.json({ ok: false, error: 'Cleanup incomplete' }, { status: 503 });
   }
 
   await recordServerEvent(kind === 'complained' ? 'report_email_complained' : 'report_email_bounced');

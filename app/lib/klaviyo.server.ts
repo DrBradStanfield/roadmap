@@ -228,12 +228,14 @@ export async function getCachedKlaviyoCaptureStats(): Promise<KlaviyoCaptureStat
  * stay, so a misclassified bounce is reversible and we keep the record that
  * the address was ever captured. Klaviyo excludes UNSUBSCRIBED profiles from
  * sends and from audience syncs, which is the whole point.
+ * Returns null when unconfigured (no remote work required), false on failure,
+ * and true when the unsubscribe job is accepted. Safe to repeat on delivery retries.
  */
-export async function suppressInKlaviyo(email: string): Promise<boolean> {
+export async function suppressInKlaviyo(email: string): Promise<boolean | null> {
   const listId = klaviyoListId();
   if (!klaviyoApiKey() || !listId) {
     console.log('Klaviyo not configured, skipping suppression');
-    return false;
+    return null;
   }
   try {
     const response = await fetch(`${KLAVIYO_BASE}/profile-subscription-bulk-delete-jobs/`, {
@@ -255,8 +257,9 @@ export async function suppressInKlaviyo(email: string): Promise<boolean> {
       return false;
     }
     return true;
-  } catch (error) {
-    console.error('Klaviyo suppression error:', error);
+  } catch {
+    // Network errors can echo the submitted address; never log the raw error.
+    console.error('Klaviyo suppression error');
     return false;
   }
 }
