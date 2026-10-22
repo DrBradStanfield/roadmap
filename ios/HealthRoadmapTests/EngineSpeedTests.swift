@@ -4,7 +4,7 @@ import XCTest
 /// How long each engine call holds the main thread (ios/architecture.md D2's limits),
 /// on a record the size a long-time user reaches. Opt-in, because it runs for seconds:
 ///   TEST_RUNNER_ENGINE_SPEED=1 xcodebuild test ... -only-testing:HealthRoadmapTests/EngineSpeedTests
-/// Prints one line per call: the median of five runs, in milliseconds.
+/// Prints one line per call: the median of five runs, in milliseconds; `plan cold` re-reads the record every run.
 final class EngineSpeedTests: XCTestCase {
     private let now = try! Date("2026-10-21T08:00:00.000Z", strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true))
 
@@ -20,6 +20,10 @@ final class EngineSpeedTests: XCTestCase {
             let rows = (try JSONSerialization.jsonObject(with: Data(record.utf8)) as? [String: Any])?["measurements"] as? [Any]
             let label = "\(years)y \(rows?.count ?? 0) rows \(record.utf8.count / 1024) KB"
             var plan = ""
+            // A new device id each run misses the engine's parsed-record slot (my-data.ts keepRecord):
+            // the cold read. The lines below repeat one text, so all but the first run are served from it.
+            var run = 0
+            print("ENGINE-SPEED \(label) plan cold \(try median { run += 1; _ = try engine.plan(recordJSON: record, now: now, deviceId: "cold\(run)") }) ms")
             print("ENGINE-SPEED \(label) plan \(try median { plan = try engine.plan(recordJSON: record, now: now, deviceId: "t") }) ms")
             print("ENGINE-SPEED \(label) sections \(try median { _ = try engine.sections(planJSON: plan) }) ms")
             print("ENGINE-SPEED \(label) myData \(try median { _ = try engine.myData(recordJSON: record, now: now, deviceId: "t") }) ms")

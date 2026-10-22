@@ -516,8 +516,10 @@ async function saveOneDocument(
   if (!at) {
     const current = readRecord(recordJson, nowIso, deviceId);
     plan = await saveDocuments(current, [payload], io);
-    plan.commit(current);
-    return answer(JSON.stringify(current));
+    // commit writes in place (push, `deleted`): on a copy, as the read record is shared (my-data.ts readRecord).
+    const next = { ...current, documents: current.documents.map((d) => ({ ...d })) };
+    plan.commit(next);
+    return answer(JSON.stringify(next));
   }
 
   plan = await saveDocuments(at.session.file, [payload], io);
