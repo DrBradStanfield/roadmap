@@ -19,6 +19,7 @@ import { METRIC_LABELS, METRIC_TO_FIELD } from '../../packages/health-core/src/m
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { formatDisplayValue, getDisplayLabel, type MetricType } from '../../packages/health-core/src/units';
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
+import { systemFor, type UnitChoices } from './unit-choices';
 
 /** A supplement as the tab lists it. */
 export interface SupplementRow {
@@ -84,14 +85,14 @@ export type FormEdit =
   | { kind: 'customSupplement'; name: string };
 
 /** What the medication and screening questions read: the plan's age, BMI, trigger and lipid marker, as the web's PlanBasis. */
-function basisOf(file: RoadmapFile, now: string) {
+function basisOf(file: RoadmapFile, now: string, choices: UnitChoices = {}) {
   const derived = derivePlanInputs(file);
   const raw = derived.inputs;
   const hasLipidInput = raw.apoB !== undefined || raw.ldlC !== undefined || raw.totalCholesterol !== undefined || raw.hdlC !== undefined;
   const hasWeightInput = raw.hba1c !== undefined || raw.triglycerides !== undefined || (raw.weightKg !== undefined && raw.heightCm !== undefined);
   let plan: ReturnType<typeof computePlan> | null = null;
   try {
-    plan = computePlan(file, new Date(now));
+    plan = computePlan(file, new Date(now), choices);
   } catch {
     // No usable height or sex: no plan, so no age and no cascades (the web's planBasis null).
   }
@@ -105,7 +106,7 @@ function basisOf(file: RoadmapFile, now: string) {
       bmi: results?.bmi,
       hasLipidInput,
       hasWeightInput,
-      unitFor: () => derived.unitSystem,
+      unitFor: (metric: MetricType) => systemFor(file, metric, choices),
     },
   };
 }
@@ -134,9 +135,9 @@ function listable(file: RoadmapFile, status: 'active' | 'stopped') {
  * row this code did not foresee) gets no questions and a plain note, so the
  * rest of My data still opens and saves (adversary R2).
  */
-export function formsOf(file: RoadmapFile, now: string): FormsView {
+export function formsOf(file: RoadmapFile, now: string, choices: UnitChoices = {}): FormsView {
   try {
-    return buildForms(file, now);
+    return buildForms(file, now, choices);
   } catch {
     return {
       medications: [], screenings: [],
@@ -147,8 +148,8 @@ export function formsOf(file: RoadmapFile, now: string): FormsView {
   }
 }
 
-function buildForms(file: RoadmapFile, now: string): FormsView {
-  const basis = basisOf(file, now);
+function buildForms(file: RoadmapFile, now: string, choices: UnitChoices): FormsView {
+  const basis = basisOf(file, now, choices);
   const screenings = screeningForm(basis.age, basis.sex, basis.derived.screenings);
   const taking = new Set(file.supplements.filter((s) => s.status === 'active').map((s) => s.supplementKey));
   const featuredFirst = [...SUPPLEMENT_OPTIONS].sort((a, b) => Number(b.category === 'featured') - Number(a.category === 'featured'));
@@ -246,7 +247,7 @@ export function customSupplement(name: string): { supplementKey: string; supplem
  * included (the app strikes them through). The record is append-only: this
  * view offers corrections, never removal.
  */
-export function metricHistory(file: RoadmapFile, metric: string, now = new Date().toISOString()): MetricHistory {
+export function metricHistory(file: RoadmapFile, metric: string, now = new Date().toISOString(), choices: UnitChoices = {}): MetricHistory {
   let excludedFields: string[] = [];
   try {
     excludedFields = computePlan(file, new Date(now)).excluded;
@@ -254,7 +255,7 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
     // No plan yet (no usable height or sex): nothing is excluded, and nothing used.
   }
   if (metric === BLOOD_PRESSURE) return pressureHistory(file, excludedFields);
-  const system = file.profile.unitSystem ?? 'si';
+  const system = systemFor(file, metric, choices);
   const rows = file.measurements.filter((row) => row.metricType === metric);
   // The plan's own pick of the current value.
   const current = latestActivePerMetric(rows.filter((row) => row.status === 'active'))[0];

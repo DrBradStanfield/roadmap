@@ -113,9 +113,15 @@ export async function eraseChatText(historyText: string | null, nowIso: string, 
 
 // --- Lab upload review -------------------------------------------------------
 
-/** What the review screen shows for the server's extraction (US-52 AC8). */
-export function labReviewJson(extractionJson: string, nowIso: string): string {
-  return JSON.stringify(labReview(JSON.parse(extractionJson) as Extraction, nowIso));
+/** What the review screen shows for the server's extraction (US-52 AC8), and
+ *  for a document whether the record already holds one from `sourceFileName`, and
+ *  a held metadata-only row for the original's `contentHash` (AC13d, US-14 AC4).
+ *  `recordJson` '' checks no record. */
+export function labReviewJson(extractionJson: string, nowIso: string, recordJson: string, sourceFileName: string, contentHash: string, deviceId: string): string {
+  const extraction = JSON.parse(extractionJson) as Extraction;
+  // The record is read only for a document's dedup: a lab report's card never needs it.
+  const file = recordJson && extraction.document ? readRecord(recordJson, nowIso, deviceId) : null;
+  return JSON.stringify(labReview(extraction, nowIso, file, sourceFileName || null, contentHash || null));
 }
 
 /** What saving the ticked values would do: `{ ok, summary }` or the refusal. The record is not changed. */

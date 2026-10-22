@@ -3,7 +3,7 @@
 // matrix pairs them (StartingInfoVitals.tsx). This file writes both or
 // neither, and reads them back as pairs.
 import type { FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { appendMeasurement, correctValue, findActiveInSlot, resolveRecordedAt } from '../../packages/health-core/src/record-edits';
+import { appendMeasurement, correctValue, findActiveInSlot, resolveRecordedAt, slotKey } from '../../packages/health-core/src/record-edits';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { formatDisplayValue } from '../../packages/health-core/src/units';
 import type { HistoryRow, MetricHistory } from './my-data-forms';
@@ -88,10 +88,21 @@ function sameIds(seen: unknown, held: string[]): boolean {
 export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[]): MetricHistory {
   const rows = file.measurements.filter((row) => (HALVES as readonly string[]).includes(row.metricType));
   const current = new Set(latestActivePerMetric(rows).map((row) => row.id));
-  const days = [...new Set(rows.map((row) => row.recordedAt.slice(0, 10)))].sort().reverse();
+  // One pass each, not one per day: a filter per day was quadratic, 17 s for ten years
+  // of daily readings on an iPhone 15 Pro Max.
+  const byDay = new Map<string, FileMeasurement[]>();
+  const firstActive = new Map<string, FileMeasurement>();
+  for (const row of rows) {
+    const day = row.recordedAt.slice(0, 10);
+    const onDay = byDay.get(day);
+    if (onDay) onDay.push(row);
+    else byDay.set(day, [row]);
+    const slot = slotKey('measurement', row.metricType, row.recordedAt);
+    if (row.status === 'active' && !firstActive.has(slot)) firstActive.set(slot, row);
+  }
   const pairs: HistoryRow[] = [];
-  for (const day of days) {
-    const onDay = rows.filter((row) => row.recordedAt.slice(0, 10) === day);
+  for (const day of [...byDay.keys()].sort().reverse()) {
+    const onDay = byDay.get(day)!;
     const named = new Set(onDay.map((row) => row.correctsId));
     const lost = (row: FileMeasurement) => row.status !== 'active' && !named.has(row.id);
     let state: Partial<Record<string, FileMeasurement>> = {};
@@ -110,7 +121,8 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
       }
     }
     // The pair now: the engine's own slot lookup, the ids a replace must send back (re-check R4).
-    const held = HALVES.flatMap((metric) => findActiveInSlot(file, 'measurement', metric, day) ?? []) as FileMeasurement[];
+    // findActiveInSlot's answer (its first active row in the slot), from the index above.
+    const held = HALVES.flatMap((metric) => firstActive.get(slotKey('measurement', metric, day)) ?? []);
     const shownRow = (index: number): HistoryRow => {
       const now = held.length > 0 && index === stateAt;
       const snapshot = snapshots[index];

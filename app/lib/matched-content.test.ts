@@ -83,9 +83,26 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   const POTASSIUM = 'potassium-benefits-forms-dosing-and-side-effects';
   const realRead = fs.readFileSync;
   afterEach(() => { vi.restoreAllMocks(); });
+  // A real page grown to `size` chars, measured on the raw file with its
+  // frontmatter, by a section its reduced forms leave out, so a test pins the cap's behaviour, not today's page sizes: the masters keep
+  // growing (omega-3 passed the old 120,000 cap on 2026-10-22).
+  const grown = (raw: string, size: number) => `${raw}\n\n## Grown for the test\n\n${'z'.repeat(Math.max(0, size - raw.length))}\n`;
+  const grow = (sizes: Record<string, number>) => (handle: string, raw: string) => (handle in sizes ? grown(raw, sizes[handle]) : raw);
+  // loadMatchedContent from a fresh module (loadBlogArticle caches), reading
+  // each .md file through `edit`.
+  async function loaderWith(edit: (handle: string, raw: string) => string) {
+    vi.resetModules();
+    vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
+      const raw = (realRead as (...a: unknown[]) => unknown)(p, ...rest);
+      return String(p).endsWith('.md') ? edit(path.basename(String(p), '.md'), String(raw)) : raw;
+    }) as typeof fs.readFileSync);
+    return (await import('./matched-content')).loadMatchedContent;
+  }
+  // Vitamin D grown so vitamin K, whole, no longer fits after it.
+  const bigD = grow({ [D]: MAX_BLOG_CHARS - 30_000 });
 
-  it('vitamin D + vitamin K: both load, with vitamin K\'s warfarin lines', () => {
-    const { content, titles, skipped } = loadMatchedContent([D, K]);
+  it('vitamin D + vitamin K: both load, with vitamin K\'s warfarin lines', async () => {
+    const { content, titles, skipped } = (await loaderWith(bigD))([D, K]);
     expect(skipped).toEqual([]);
     expect(titles).toHaveLength(2);
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
@@ -95,8 +112,17 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     expect(content).toContain('Internal note, do not quote: this page is shortened to fit.');
   });
 
-  it('names each master that loaded reduced, for the match log (US-50 AC14 usage signal)', () => {
-    expect(loadMatchedContent([D, K]).reduced).toEqual([K]);
+  // US-15 AC23: the cap sits above the largest entry, so a master routed alone
+  // loads whole, evidence sections and all (omega-3 outgrew 120,000 on 2026-10-22).
+  it('every current master loads whole when routed alone', () => {
+    for (const m of index.filter(isMaster).map(e => e.handle)) {
+      const { reduced, skipped } = loadMatchedContent([m]);
+      expect({ m, reduced, skipped }).toEqual({ m, reduced: [], skipped: [] });
+    }
+  });
+
+  it('names each master that loaded reduced, for the match log (US-50 AC14 usage signal)', async () => {
+    expect((await loaderWith(bigD))([D, K]).reduced).toEqual([K]);
     expect(loadMatchedContent([MG]).reduced).toEqual([]);
   });
 
@@ -136,10 +162,11 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
   });
 
-  it('[vitamin K, vitamin A post, lithium]: a master shrinks so the post after it loads too (review S1)', () => {
+  it('[vitamin K, vitamin A post, lithium]: a master shrinks so the post after it loads too (review S1)', async () => {
     const A = 'vitamin-a-benefits-forms-dosing-and-side-effects';
     expect(index.find(e => e.handle === A) && isMaster(index.find(e => e.handle === A)!)).toBe(false);
-    const { content, skipped } = loadMatchedContent([K, A, LITHIUM]);
+    // Vitamin K grown so the three do not fit whole together.
+    const { content, skipped } = (await loaderWith(grow({ [K]: MAX_BLOG_CHARS - 40_000 })))([K, A, LITHIUM]);
     expect(skipped).toEqual([]);
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
     expect(content!.split('\n\n---\n\n')[0]).toContain('Internal note, do not quote');
@@ -152,8 +179,8 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     expect(content!.match(/^title: /gm)).toHaveLength(1);
   });
 
-  it('magnesium + vitamin D: both load, vitamin D reduced with its safety and interactions', () => {
-    const { content, skipped } = loadMatchedContent([MG, D]);
+  it('magnesium + vitamin D: both load, vitamin D reduced with its safety and interactions', async () => {
+    const { content, skipped } = (await loaderWith(grow({ [MG]: MAX_BLOG_CHARS - 30_000 })))([MG, D]);
     expect(skipped).toEqual([]);
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
     const tail = content!.slice(content!.lastIndexOf('\n\n---\n\n'));
@@ -167,8 +194,9 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   const lastPart = (content: string) => content.slice(content.lastIndexOf('\n\n---\n\n'));
   const parts = (content: string) => content.split('\n\n---\n\n');
 
-  it('every citation in a reduced master keeps its reference line: taurine\'s view cites [26] (Codex R1)', () => {
-    const { content, skipped } = loadMatchedContent(['protein-powders-benefits-types-dosing-and-side-effects', 'taurine-benefits-forms-dosing-and-side-effects']);
+  it('every citation in a reduced master keeps its reference line: taurine\'s view cites [26] (Codex R1)', async () => {
+    const PROTEIN = 'protein-powders-benefits-types-dosing-and-side-effects';
+    const { content, skipped } = (await loaderWith(grow({ [PROTEIN]: MAX_BLOG_CHARS - 20_000 })))([PROTEIN, 'taurine-benefits-forms-dosing-and-side-effects']);
     expect(skipped).toEqual([]);
     const tail = lastPart(content!);
     expect(tail).toContain('Internal note, do not quote');
@@ -185,8 +213,8 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     }
   });
 
-  it('a reduced master keeps its Recommended Dosing when it fits: magnesium\'s UL after vitamin D (adversary R2)', () => {
-    const { content } = loadMatchedContent([D, MG]);
+  it('a reduced master keeps its Recommended Dosing when it fits: magnesium\'s UL after vitamin D (adversary R2)', async () => {
+    const { content } = (await loaderWith(bigD))([D, MG]);
     const tail = lastPart(content!);
     expect(tail).toContain('Internal note, do not quote');
     expect(tail).toMatch(/^#+ 4\. Recommended Dosing$/m);
@@ -207,7 +235,8 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
 
   it('a non-master entry that would overflow is still skipped whole', () => {
     vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
-      if (path.basename(String(p), '.md') === 'cap-test-post') return `## Safety\n\n${'p'.repeat(117_000)}`;
+      // Fits alone, but not beside vitamin D even at its smallest (about 9,300).
+      if (path.basename(String(p), '.md') === 'cap-test-post') return `## Safety\n\n${'p'.repeat(MAX_BLOG_CHARS - 3_000)}`;
       return (realRead as (...a: unknown[]) => unknown)(p, ...rest);
     }) as typeof fs.readFileSync);
     const { content, skipped } = loadMatchedContent([D, 'cap-test-post']);
@@ -215,12 +244,8 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     expect(content).not.toContain('ppp');
   });
 
-  it('a master whose reduced form still does not fit is skipped', () => {
-    const real = String(realRead(path.join('docs/blog', `${POTASSIUM}.md`), 'utf-8'));
-    vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
-      if (path.basename(String(p), '.md') === POTASSIUM) return real.replace('## 5. Safety and Side Effects', `## 5. Safety and Side Effects\n\n${'q'.repeat(125_000)}`);
-      return (realRead as (...a: unknown[]) => unknown)(p, ...rest);
-    }) as typeof fs.readFileSync);
+  it('a master whose reduced form still does not fit is skipped', async () => {
+    const loadMatchedContent = await loaderWith((handle, raw) => (handle === POTASSIUM ? raw.replace('## 5. Safety and Side Effects', `## 5. Safety and Side Effects\n\n${'q'.repeat(MAX_BLOG_CHARS + 5_000)}`) : raw));
     const { content, skipped } = loadMatchedContent([D, POTASSIUM]);
     expect(skipped).toEqual([POTASSIUM]);
     expect(content).not.toContain('qqq');
@@ -262,13 +287,7 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   });
 
   it('a reduced master logs what it dropped once, and a whole one logs nothing (review S2)', async () => {
-    vi.resetModules();
-    const real = String(realRead(path.join('docs/blog', `${K}.md`), 'utf-8'));
-    vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
-      if (path.basename(String(p), '.md') === K) return real.replace(/^(## Current view.*)$/m, `$1\n\n${'v'.repeat(6_000)}`);
-      return (realRead as (...a: unknown[]) => unknown)(p, ...rest);
-    }) as typeof fs.readFileSync);
-    const { loadMatchedContent } = await import('./matched-content');
+    const loadMatchedContent = await loaderWith((handle, raw) => (handle === K ? raw.replace(/^(## Current view.*)$/m, `$1\n\n${'v'.repeat(6_000)}`) : bigD(handle, raw)));
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const logged = () => warn.mock.calls.map(([m]) => String(m)).filter(m => m.startsWith('Chat reduced master'));
     loadMatchedContent([K]);

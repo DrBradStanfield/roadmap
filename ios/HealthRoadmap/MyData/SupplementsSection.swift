@@ -24,7 +24,7 @@ struct SupplementsSection: View {
             quickAdd
             Button { adding = true } label: { Label("Add another supplement", systemImage: "plus.circle.fill") }
         } header: {
-            Text("Supplements")
+            SectionTitle.supplements()
         }
         .sheet(item: $editing) { row in
             SupplementSheet(row: row, units: supplements.units, read: store.number) { edit in

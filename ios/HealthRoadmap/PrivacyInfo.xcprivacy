@@ -9,7 +9,11 @@
      linked: a report carries the patient's name, and Anthropic may keep API inputs
      for a time. The App Attest row (a per-install key id and that day's chat and
      upload counts) is declared as Device ID and Product Interaction, not linked.
-     Declared on purpose to over-declare rather than under-declare. -->
+     Declared on purpose to over-declare rather than under-declare.
+     Microsoft Clarity (D9, 2026-10-22) ships its own manifest in Clarity.framework
+     (User ID, Product Interaction, Other Usage Data, all not linked, no tracking);
+     Xcode merges it into the app's privacy report, so it is not repeated here. -->
+
 <plist version="1.0">
 <dict>
 	<key>NSPrivacyTracking</key>

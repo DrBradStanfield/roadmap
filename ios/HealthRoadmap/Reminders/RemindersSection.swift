@@ -37,7 +37,7 @@ struct RemindersSection: View {
                 }
             }
         } header: {
-            Text("Reminders")
+            SectionTitle.reminders()
         } footer: {
             Text("Worked out on this iPhone from your record, with nothing sent anywhere. The lock screen says only that a check-up is due, never which one.")
         }

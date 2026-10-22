@@ -88,8 +88,13 @@ const MAX_COUNTER = 1e12;
  * later of two by instant, and one spelling keeps the file's clock and every
  * row clamped to it in step (US-10 AC8 review, R1).
  */
+/** Whether a value has a stamp's shape, so `isoOr` keeps it rather than its fallback. */
+export function hasStampShape(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value);
+}
+
 function isoOr(value: unknown, fallback: string): string {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T/.test(value)) return fallback;
+  if (!hasStampShape(value)) return fallback;
   const at = stampInstant(value);
   return Number.isNaN(at) || /^[^a-z]*Z$/.test(value) ? value : new Date(at).toISOString();
 }

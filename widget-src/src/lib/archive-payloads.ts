@@ -7,52 +7,8 @@
  * Blobs are only attached to results when the backend can archive them
  * (getDocumentArchiveMode() === 'cloud'), so off-cloud this returns [].
  */
-import { LAB_ARCHIVE_TITLE } from '@roadmap/health-core';
+import { labArchivePayload, pendingRowsFor, type DocumentPayload, type ExistingDoc } from '@roadmap/health-core';
 import type { FileResult } from '../components/ReviewTable';
-import type { ApiDocument } from './api-types';
-
-export interface ArchiveDocPayload {
-  documentType: string;
-  title: string;
-  documentDate: string | null;
-  contentMd: string;
-  metadata: Record<string, unknown>;
-  sourceFileName: string | null;
-  file?: Blob;
-}
-
-/**
- * Metadata flag stamped on synthesized blood-test archive entries. These exist
- * ONLY to persist the original lab PDF to the user's cloud — the extracted
- * VALUES surface in the Blood Test Results table, so the synthesized entry must
- * never appear in the Documents list. Filtered out of the list via
- * isLabArchiveDocument(); see HealthRecordsSection. Real biopsy/histology
- * pathology reports carry markdown content + their own metadata and are NEVER
- * flagged, so they keep showing.
- */
-export const LAB_ARCHIVE_FLAG = 'labArchive';
-
-/**
- * True when a stored document is a synthesized blood-test archive entry (the
- * raw lab PDF kept purely for the user's cloud). Hidden from the Documents
- * list. Matches the explicit flag for new uploads AND a content signature for
- * legacy entries written before the flag existed: documentType
- * 'pathology_report' + title 'Blood test results' + empty contentMd (a real
- * pathology report always has extracted markdown).
- */
-export function isLabArchiveDocument(doc: {
-  documentType: string;
-  title: string;
-  contentMd: string;
-  metadata: Record<string, unknown>;
-}): boolean {
-  if (doc.metadata?.[LAB_ARCHIVE_FLAG] === true) return true;
-  return (
-    doc.documentType === 'pathology_report' &&
-    doc.title === LAB_ARCHIVE_TITLE &&
-    doc.contentMd.trim() === ''
-  );
-}
 
 /** 'sha256-<hex>' content fingerprint — names the blob + detects corruption. */
 export async function sha256Blob(blob: Blob): Promise<string> {
@@ -75,19 +31,6 @@ function isArchivableFile(r: FileResult, alreadyCovered: Set<string | null>): bo
   return !!r.document || r.values.length > 0 || r.additionalValues.length > 0;
 }
 
-/** A stored row as the archive step reads it. */
-type ExistingDoc = Pick<ApiDocument, 'contentHash' | 'fileRef' | 'documentType' | 'title' | 'contentMd' | 'metadata'> & { createdAt?: string };
-
-/**
- * The live metadata-only rows of one kind (lab archive or shown document)
- * holding these bytes, newest first (US-14 AC4). An upload of that kind
- * replaces them all once its blob lands, and its review card starts from the
- * newest. One rule for the card and the store.
- */
-export function pendingRowsFor<T extends ExistingDoc>(existing: readonly T[], hash: string | null | undefined, lab: boolean): T[] {
-  return existing.filter((d) => !!hash && d.contentHash === hash && !d.fileRef && isLabArchiveDocument(d) === lab)
-    .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
-}
 
 /**
  * Unarchived lab originals remain saveable after their values become history
@@ -115,7 +58,7 @@ export function connectorDocumentEntries(
   results: FileResult[],
   existing: ReadonlyArray<ExistingDoc>,
   alreadyCovered: Set<string | null>,
-): ArchiveDocPayload[] {
+): DocumentPayload<Blob>[] {
   return unarchivedOriginals(results, existing, alreadyCovered)
     .filter((r) => r.document)
     .map((r) => ({
@@ -133,19 +76,11 @@ export function connectorDocumentEntries(
 export function synthesizeLabArchiveEntries(
   results: FileResult[],
   alreadyCovered: Set<string | null>,
-): ArchiveDocPayload[] {
-  const out: ArchiveDocPayload[] = [];
+): DocumentPayload<Blob>[] {
+  const out: DocumentPayload<Blob>[] = [];
   for (const r of results) {
     if (r.document || !isArchivableFile(r, alreadyCovered)) continue;
-    out.push({
-      documentType: 'pathology_report',
-      title: LAB_ARCHIVE_TITLE,
-      documentDate: r.reportDate,
-      contentMd: '',
-      metadata: { [LAB_ARCHIVE_FLAG]: true },
-      sourceFileName: r.fileName,
-      file: r.file,
-    });
+    out.push(labArchivePayload(r.fileName, r.reportDate, r.file));
   }
   return out;
 }

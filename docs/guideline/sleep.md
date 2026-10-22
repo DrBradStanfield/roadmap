@@ -16,9 +16,9 @@ This guideline covers the clinical management of insomnia in adults, cross-refer
 
 ## Section 1: Sleep Duration
 
-**Guideline position:** Adults require approximately 7–9 hours of sleep per night to support adequate alertness, performance, and health. The American Academy of Sleep Medicine (AASM) endorses 7–9 hours as the recommended range for adults aged 18–64, with 7–8 hours for those 65 and over. Most well-rested adults fall asleep within 10–20 minutes and spend less than 30 minutes awake during the night. Short sleep duration (consistently <6 hours) is a distinct entity from insomnia disorder — short sleepers who feel refreshed without daytime impairment do not have insomnia. The adverse outcome data are clear: both short sleep (<6 hours) and long sleep (>8–9 hours) are associated with significantly increased all-cause mortality risk.
+**Guideline position:** Adults require approximately 7–9 hours of sleep per night to support adequate alertness, performance, and health. The American Academy of Sleep Medicine (AASM) endorses 7–9 hours as the recommended range for adults aged 18–64, with 7–8 hours for those 65 and over. A well-rested adult typically takes 10–20 minutes to fall asleep and is awake for under 30 minutes in total overnight. Short sleep duration (consistently <6 hours) is a distinct entity from insomnia disorder — short sleepers who feel refreshed without daytime impairment do not have insomnia. The adverse outcome data are clear: both short sleep (<6 hours) and long sleep (>8–9 hours) are associated with significantly increased all-cause mortality risk.
 
-A large meta-analysis of over 1.3 million participants confirmed a U-shaped relationship between sleep duration and mortality (Cappuccio 2010). Insomnia with objectively short sleep duration (<6 hours on actigraphy) is associated with higher risk of hypertension, neurocognitive impairment, and mortality than insomnia with normal sleep duration.
+A large meta-analysis of over 1.3 million participants confirmed a U-shaped relationship between sleep duration and mortality (Cappuccio 2010). People with insomnia whose sleep, measured objectively, is under 6 hours appear to fare worse than people with insomnia and normal sleep time: more high blood pressure, poorer cognitive performance and higher death rates (Vgontzas 2013, DOI: 10.1016/j.smrv.2012.09.005).
 
 **Brad's position:** Aligns with AASM. The algorithm uses a single `sleep` suggestion (always-show) recommending 7–9 hours nightly, sourced directly from Cappuccio 2010. No additional sub-thresholds are currently modelled.
 
@@ -38,7 +38,7 @@ Core sleep hygiene recommendations:
 
 1. **Consistent schedule** — go to bed and wake at the same time every day, including weekends. A fixed rise time is the anchor.
 2. **Sleep only when sleepy** — go to bed only when actually feeling drowsy, not just tired.
-3. **20-minute rule** — if unable to sleep after approximately 20 minutes, get out of bed and do something calm and non-stimulating (dim lights; do not use screens). Return to bed only when sleepy.
+3. **20-minute rule** — if sleep has not come after about 20 minutes, get up and spend some time on a quiet, relaxing activity in dim light, away from screens. Go back to bed only once sleepy again.
 4. **Avoid caffeine and nicotine** — for at least 4–6 hours before bedtime. Caffeine is a stimulant that directly interferes with sleep onset.
 5. **Avoid alcohol** — for at least 4–6 hours before bed. Alcohol may initially aid sleep onset but fragments sleep architecture and reduces sleep quality.
 6. **Bed is for sleep and sex only** — do not use the bed for screens, eating, reading, or working. This strengthens the conditioned association between bed and sleepiness.
@@ -62,7 +62,7 @@ Core sleep hygiene recommendations:
 
 ## Section 3: Insomnia — Evaluation and Diagnosis
 
-**Guideline position:** Insomnia is one of the most common medical complaints. It is a clinical diagnosis established by history and patient report — no routine laboratory tests or sleep studies are required for most patients.
+**Guideline position:** Insomnia ranks among the problems patients raise with doctors most often. The diagnosis is clinical, made from the history and the patient's own account — no routine laboratory tests or sleep studies are required for most patients.
 
 ### Types of insomnia
 
@@ -72,9 +72,9 @@ Core sleep hygiene recommendations:
 ### ICSD-3-TR diagnostic criteria (all four must be met)
 
 1. Difficulty initiating sleep, maintaining sleep, or waking earlier than desired.
-2. Sleep difficulties occur despite adequate opportunity and circumstances for sleep.
-3. Daytime impairment attributable to the sleep difficulties: fatigue or malaise; impaired attention, concentration, or memory; social, vocational, or educational dysfunction; mood disturbance or irritability; daytime sleepiness; reduced motivation or energy; increased errors or accidents; ongoing worry about sleep.
-4. Sleep-wake difficulty is not solely explained by another sleep disorder, medical disorder, mental disorder, or medication/substance use.
+2. The sleep problem happens even though there is enough time, and a suitable setting, for sleep.
+3. The sleep problem causes daytime consequences: fatigue or malaise; impaired attention, concentration, or memory; social, vocational, or educational dysfunction; mood disturbance or irritability; daytime sleepiness; reduced motivation or energy; increased errors or accidents; ongoing worry about sleep.
+4. No other sleep disorder, medical or mental illness, medication or substance fully accounts for the sleep problem.
 
 In practice, difficulty falling asleep is defined as sleep latency >30 minutes; difficulty maintaining sleep as >30 minutes of wakefulness after sleep onset; early morning awakening as waking >30 minutes before the desired time.
 
@@ -136,9 +136,9 @@ Steps:
 Retrains the conditioned association between the bed/bedroom and arousal, anxiety, and wakefulness.
 
 Instructions:
-1. Use the bed and bedroom only for sleep and sex. No TV, reading, eating, or worrying in bed.
+1. Keep the bed and bedroom for sleep and sex only. No TV, reading, eating, or worrying in bed.
 2. Go to bed only when sleepy (not just tired).
-3. If unable to fall asleep or return to sleep within approximately 20 minutes, get out of bed and go to another room. Return only when sleepy. Repeat as needed throughout the night.
+3. If sleep has not come after about 20 minutes, at bedtime or after a night waking, leave the bed for another room. Go back only once sleepy. Repeat as often as the night requires.
 4. Set an alarm and rise at the same time every morning regardless of sleep quality.
 5. Do not nap during the day.
 
@@ -149,7 +149,7 @@ Identifies and restructures maladaptive thoughts and beliefs about sleep that in
 - Overestimating the impact of poor sleep on daytime performance.
 - Catastrophising about not sleeping.
 
-Mindfulness-based approaches (MBCT) are sometimes incorporated as "third-wave" cognitive techniques. A network meta-analysis (2023) found that cognitive restructuring, third-wave components, sleep restriction, and stimulus control had the highest likelihood of treatment response.
+Mindfulness-based approaches (MBCT) are sometimes incorporated as "third-wave" cognitive techniques. A network meta-analysis (2023) found that the components most likely to produce a treatment response were sleep restriction, stimulus control, cognitive restructuring and third-wave techniques.
 
 **5. Relaxation and counter-arousal**
 Progressive muscle relaxation (PMR) and diaphragmatic breathing reduce physiological arousal at bedtime. These are supportive components, not stand-alone treatments — the network meta-analysis found relaxation therapy alone may actually reduce the likelihood of treatment response compared with other CBT-I components.
@@ -176,7 +176,7 @@ Moderate-quality evidence: multicomponent CBT-I produces clinically significant 
 
 ## Section 5: Pharmacotherapy
 
-**Guideline position:** Pharmacotherapy should not be the sole treatment for insomnia. When used, medications are combined with CBT-I and healthy sleep habits. Selection is individualized based on the type of insomnia complaint (sleep-onset vs sleep-maintenance), patient age and comorbidities, side effect profile, cost, and preference.
+**Guideline position:** Medication should not be used on its own to treat insomnia. When used, medications are combined with CBT-I and healthy sleep habits. Selection is individualized based on the type of insomnia complaint (sleep-onset vs sleep-maintenance), patient age and comorbidities, side effect profile, cost, and preference.
 
 ### Class overview
 
@@ -262,7 +262,7 @@ Diphenhydramine 25–50 mg and doxylamine 25 mg. Only modest evidence: diphenhyd
 - Assess for suicidal ideation before prescribing hypnotics in depressed patients.
 - Schedule follow-up within a few weeks of starting, then at least every 6 months for long-term use.
 - Have a plan for tapering — gradual reduction over months, ideally alongside CBT-I.
-- Avoid long-term prescribing: significant evidence of harm, little evidence of long-term efficacy or safety.
+- Avoid long-term prescribing: the harms are well documented, while data on benefit and safety over longer use are sparse.
 
 **Brad's position:** Aligns with guidelines. Brad does not prescribe sleep medications via the Health Roadmap app (it is a lifestyle/supplement tool). Brad's clinical practice aligns with the guideline hierarchy: CBT-I first, short-term medication when necessary, long-term hypnotics avoided.
 
@@ -275,13 +275,13 @@ Diphenhydramine 25–50 mg and doxylamine 25 mg. Only modest evidence: diphenhyd
 
 ## Section 6: Supplements for Sleep
 
-**Guideline position:** Dietary supplements marketed for sleep are regulated as food in the US (DSHEA), and concentration/purity are not guaranteed. The best evidence among supplements is for melatonin, though even that is described as weak by UpToDate. No herbal supplement (valerian, chamomile, kava, hops, passionflower) has shown significant benefit over placebo in a 14-trial meta-analysis (1,600+ patients). Valerian and kava have been associated with severe liver injury in rare cases.
+**Guideline position:** Dietary supplements marketed for sleep are regulated as food in the US (DSHEA), and concentration/purity are not guaranteed. The best evidence among supplements is for melatonin, though even that is described as weak by UpToDate. No herbal supplement (valerian, chamomile, kava, hops, passionflower) has shown significant benefit over placebo in a 14-trial meta-analysis (1,600+ patients). Rare cases of severe liver injury have been reported with valerian and kava.
 
 ### Melatonin
 
-**Guideline position:** Exogenous melatonin may be useful for sleep-onset insomnia in some patients. It is not a potent hypnotic and does not help maintain sleep later in the night. It works primarily by augmenting natural circadian alignment — reducing the evening SCN-driven arousal (via MT1) and reinforcing circadian periodicity (via MT2). A 2020 systematic review of 12 meta-analyses concluded melatonin produces a statistically significant but small improvement in sleep latency and total sleep time, with lack of consensus on clinical meaningfulness.
+**Guideline position:** Supplemental melatonin may help some people who have trouble falling asleep. Its hypnotic effect is weak, and it does little to keep people asleep later in the night. It works primarily by augmenting natural circadian alignment — reducing the evening SCN-driven arousal (via MT1) and reinforcing circadian periodicity (via MT2). A 2020 systematic review of 12 meta-analyses concluded that melatonin shortens the time to fall asleep and lengthens total sleep by a small, statistically significant margin; reviewers disagree on whether that gain is clinically meaningful.
 
-UpToDate dosing note: "Typical melatonin doses for insomnia are in the 1 to 5 mg range, although some products are as low as 200 mcg and as high as 20 mg. **Doses below 1 mg may be as effective as higher amounts.**" Potential benefits are improved when dosed a few hours before bedtime (circadian signal, not sedative timing). Half-life: ~20–50 minutes (rapidly cleared). Side effects: vivid dreams, daytime sleepiness, headache, dizziness — not well-established in controlled studies. Long-term safety not established.
+UpToDate dosing note: most insomnia doses sit between 1 and 5 mg, though products on sale run from 200 mcg up to 20 mg, and **under 1 mg may work as well as larger doses.** Potential benefits are improved when dosed a few hours before bedtime (circadian signal, not sedative timing). Half-life: ~20–50 minutes (rapidly cleared). Side effects: vivid dreams, daytime sleepiness, headache, dizziness — not well-established in controlled studies. Long-term safety not established.
 
 **Brad's position: DIVERGES from typical consumer behaviour, ALIGNS with evidence.**
 
@@ -414,7 +414,7 @@ Advanced sleep-wake phase disorder (ASWPD) is more common in older adults and mi
 
 ### Shift workers
 
-Shift work sleep disorder (SWD) affects 10–23% of shift workers. Criteria: insomnia, excessive daytime sleepiness, and reduced total sleep time specifically because the work schedule overlaps with the preferred sleep schedule.
+Shift work sleep disorder (SWD) affects 10–23% of shift workers. Criteria: insomnia, excessive daytime sleepiness and shortened total sleep that arise because working hours fall in the time the person would normally sleep.
 
 ### Pregnancy
 
@@ -428,7 +428,7 @@ Insomnia and OSA co-occur in 30–40% of cases. OSA should be considered in all 
 
 ### Comorbid depression and anxiety
 
-At least one-third of patients with chronic insomnia have a psychiatric disorder. Bidirectional relationship: insomnia predicts new-onset depression, and depression perpetuates insomnia. Treat both disorders concurrently — do not assume insomnia will resolve when the psychiatric disorder improves. CBT-I is valuable even in psychiatric comorbidity. Concurrent treatment of insomnia with eszopiclone during initial antidepressant treatment has been shown to enhance psychiatric treatment response time.
+A third or more of people with chronic insomnia also have a psychiatric disorder. Bidirectional relationship: insomnia predicts new-onset depression, and depression perpetuates insomnia. Treat both disorders concurrently — do not assume insomnia will resolve when the psychiatric disorder improves. CBT-I is valuable even in psychiatric comorbidity. Concurrent treatment of insomnia with eszopiclone during initial antidepressant treatment has been shown to enhance psychiatric treatment response time.
 
 ### Comorbid chronic pain
 

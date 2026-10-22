@@ -1,0 +1,434 @@
+[
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \">24 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A study of 176 adults with MASLD found liver fat fell significantly in both the high-concentrate omega-3 and placebo ...\"",
+  "reason": "Ruling 3: the body keeps the source's time span (\"over 24 weeks\", \"over 6 months\", \"over 8 weeks\"); the checker reads \"over\" as a comparator. Writer quoted each abstract in addendum-6.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \">6 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Periodontitis:** 2,000 mg/day DHA with low-dose aspirin (81 mg) improved pocketing and inflammation in periodontiti...\"",
+  "reason": "Ruling 3: the body keeps the source's time span (\"over 24 weeks\", \"over 6 months\", \"over 8 weeks\"); the checker reads \"over\" as a comparator. Writer quoted each abstract in addendum-6.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \">8 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A case report suggests high-dose fish oil may be linked to bleeding at the back of the eye. A 32-year-old man with my...\"",
+  "reason": "Ruling 3: the body keeps the source's time span (\"over 24 weeks\", \"over 6 months\", \"over 8 weeks\"); the checker reads \"over\" as a comparator. Writer quoted each abstract in addendum-6.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1\": Fish oil (standard) | ~1.5:1 (e.g., 180 mg EPA / 120 mg DHA per 1 g) | One of the most commonly used supplements [1] |",
+  "reason": "Token count: this table row is unchanged; the whole-body count of \"1\" rose because new hazard-ratio CIs (\"1.00\") were added on other lines (addendum-8).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"4000 mg/day\": REDUCE-IT (n=8,179, 4.9 years): High-dose icosapent ethyl (Vascepa, 4 g/day) among statin-treated patients with eleva...",
+  "reason": "Unit form: the abstract states the same dose as \"4 g\", \"2-g/day\", \"1, 2, or 4 g/d\", \"2-4 g/d\", \"2,000 mg of DHA\" or \"5 1-g capsules\"; the checker tokenises the two forms differently. Quoted in addenda 6 and 8.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"4000 mg/day\": End-stage kidney disease (n=1,228, 3.5 years): Fish oil (4 g/day providing 1,600 mg EPA + 800 mg DHA) reduced serious...",
+  "reason": "Unit form: the abstract states the same dose as \"4 g\", \"2-g/day\", \"1, 2, or 4 g/d\", \"2-4 g/d\", \"2,000 mg of DHA\" or \"5 1-g capsules\"; the checker tokenises the two forms differently. Quoted in addenda 6 and 8.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2000 mg\": However, among patients with coronary artery disease on statins with well-controlled LDL, adding 2 g of EPA/DHA once ...",
+  "reason": "Unit form: the abstract states the same dose as \"4 g\", \"2-g/day\", \"1, 2, or 4 g/d\", \"2-4 g/d\", \"2,000 mg of DHA\" or \"5 1-g capsules\"; the checker tokenises the two forms differently. Quoted in addenda 6 and 8.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2000 mg\": An earlier study found that only 1,000 mg/day of EPA had a significantly better outcome than placebo, while 2,000 mg ...",
+  "reason": "Unit form: the abstract states the same dose as \"4 g\", \"2-g/day\", \"1, 2, or 4 g/d\", \"2-4 g/d\", \"2,000 mg of DHA\" or \"5 1-g capsules\"; the checker tokenises the two forms differently. Quoted in addenda 6 and 8.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"4000 mg/day\": Krill oil has shown limited benefit for osteoarthritis. A study of 222 people found no benefit from 2 g/day krill oil...",
+  "reason": "Unit form: the abstract states the same dose as \"4 g\", \"2-g/day\", \"1, 2, or 4 g/d\", \"2-4 g/d\", \"2,000 mg of DHA\" or \"5 1-g capsules\"; the checker tokenises the two forms differently. Quoted in addenda 6 and 8.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"14 %\": In young women with one leg experimentally immobilized, pre-treatment with 5 g/day of omega-3s (for 4 weeks before im...",
+  "reason": "Tokeniser: the abstract writes \"14 vs. 8%\", so 14 carries no % sign there. Quoted in addendum-6.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2000 mg/day\": Periodontitis: 2,000 mg/day DHA with low-dose aspirin (81 mg) improved pocketing and inflammation in periodontitis pa...",
+  "reason": "Unit form: the abstract states the same dose as \"4 g\", \"2-g/day\", \"1, 2, or 4 g/d\", \"2-4 g/d\", \"2,000 mg of DHA\" or \"5 1-g capsules\"; the checker tokenises the two forms differently. Quoted in addenda 6 and 8.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2000 mg\": Triglyceride reduction: Trials used 2,000-4,000 mg EPA+DHA per day to lower triglycerides, under physician supervisio...",
+  "reason": "Unit form: the abstract states the same dose as \"4 g\", \"2-g/day\", \"1, 2, or 4 g/d\", \"2-4 g/d\", \"2,000 mg of DHA\" or \"5 1-g capsules\"; the checker tokenises the two forms differently. Quoted in addenda 6 and 8.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5000 mg/day\": In overweight men, 5 g/day of a krill and salmon oil blend for 8 weeks lowered insulin sensitivity by 14% compared wi...",
+  "reason": "Unit form: the abstract states the same dose as \"4 g\", \"2-g/day\", \"1, 2, or 4 g/d\", \"2-4 g/d\", \"2,000 mg of DHA\" or \"5 1-g capsules\"; the checker tokenises the two forms differently. Quoted in addenda 6 and 8.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1924\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Trial dose:** Psyllium lowers LDL cholesterol at trial doses of about 7 g a day of soluble fiber from psyllium, whi...\"",
+  "reason": "Tokeniser: the Jovanovski 2018 abstract's \"n = 1924\" is skipped as a year. Quoted in addendum-7 (PMID 30239559).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Very large doses can cause magnesium toxicity, with muscle weakness, difficulty breathing or an irregular heartbeat...\" | \"| Chia seeds | 1 oz (28g) | 111 | 26% |\" | \"If these later symptoms appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in ...\"",
+  "reason": "Ruling 17 (Brad 2026-10-22): supplement pages give the local emergency number list \"111 in NZ, 000 in Australia, 911 in the US, 999 in the UK\"; the checker exempts only \"call 111\".",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Very large doses can cause magnesium toxicity, with muscle weakness, difficulty breathing or an irregular heartbeat...\" | \"If these later symptoms appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in ...\"",
+  "reason": "Ruling 17 (Brad 2026-10-22): supplement pages give the local emergency number list \"111 in NZ, 000 in Australia, 911 in the US, 999 in the UK\"; the checker exempts only \"call 111\".",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Very large doses can cause magnesium toxicity, with muscle weakness, difficulty breathing or an irregular heartbeat...\" | \"If these later symptoms appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in ...\"",
+  "reason": "Ruling 17 (Brad 2026-10-22): supplement pages give the local emergency number list \"111 in NZ, 000 in Australia, 911 in the US, 999 in the UK\"; the checker exempts only \"call 111\".",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Very large doses can cause magnesium toxicity, with muscle weakness, difficulty breathing or an irregular heartbeat...\" | \"If these later symptoms appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in ...\"",
+  "reason": "Ruling 17 (Brad 2026-10-22): supplement pages give the local emergency number list \"111 in NZ, 000 in Australia, 911 in the US, 999 in the UK\"; the checker exempts only \"call 111\".",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "token \"80\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Magnesium L-threonate (Magtein) for sleep:** An RCT of 1 g/day Magtein for 21 days in 80 adults reported improved d...\" | \"| Almonds, dry roasted | 1 oz (28g) | 80 | 19% |\"",
+  "reason": "Tokeniser: the Hausenblas abstract spells the sample size \"Eighty\". Quoted in addendum-3.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "token \"0.47\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Fracture risk:** A US study of 3,765 adults followed for 8 years found that those in the highest fifth of magnesium...\"",
+  "reason": "Tokeniser: the Veronese abstract writes the hazard ratios with a middle dot (0·47, 0·38). Quoted in addendum-3.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "token \"0.38\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Fracture risk:** A US study of 3,765 adults followed for 8 years found that those in the highest fifth of magnesium...\"",
+  "reason": "Tokeniser: the Veronese abstract writes the hazard ratios with a middle dot (0·47, 0·38). Quoted in addendum-3.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "token \"500 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Muscle soreness in low-Mg individuals:** In a crossover trial of nine male runners on low-magnesium diets, 500 mg/d...\" | \"**Sleep:** The trials used 250 mg a day as bisglycinate [17] and 500 mg a day [15].\" | \"**Muscle recovery (athletes with low Mg):** The main soreness trial used 500 mg/day for 7 days, which is above the UL...\"",
+  "reason": "Unit form: the Abbasi abstract says \"500 mg magnesium or placebo daily\". Quoted in addendum-3.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"250 mg/day\": Interventional evidence: The best evidence comes from a small RCT (n=60) in depressed people with low magnesium, find...",
+  "reason": "Unit form: the Rajizadeh abstract says \"two 250-mg tablets ... daily\"; the dose is unchanged from the base. Quoted in addendum-3.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[60] raw_quote shares no number with its body_line: A cross-over trial in 40 adults aged 21 to 78 with high serum uric acid found that a drink contai...",
+  "reason": "Tokeniser: the Enderle abstract writes \"600 mg\" with a non-breaking space.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC4",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Re-dated: the Current view was rewritten 2026-10-22 (Brad's rule 2; rulings Q1, Q2), so its heading and reviewed: say 22 October 2026; the section is kept.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Nickel Sensitivity",
+  "reason": "Brad's ConsumerLab rule (2026-10-22): the section's only sentence was a ConsumerLab-only claim with no primary study, so the whole section is gone; declared in addendum-12.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC4",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Re-dated: the Current view gained the 22 Oct 2026 position sentences, so its heading and reviewed: say 22 October 2026; the section is kept.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "product mentions rose 92 -> 155",
+  "reason": "Counting artefact: the product counter matches the generic word \"Omega-3\", which rose with 176 new PubMed reference titles; no new product promotion. The 0 -> 0 figure sits in the append-only base report. Count moved 156 -> 155 in fix/clean1-omega3 (2026-10-22): the transplant rows and removed references [212] and [214] lost generic \"omega-3\" words, and three new reference titles added some; net one fewer.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "report says product mentions 0 -> 0, recomputed 92 -> 155",
+  "reason": "Counting artefact: the product counter matches the generic word \"Omega-3\", which rose with 176 new PubMed reference titles; no new product promotion. The 0 -> 0 figure sits in the append-only base report. Count moved 156 -> 155 in fix/clean1-omega3 (2026-10-22): the transplant rows and removed references [212] and [214] lost generic \"omega-3\" words, and three new reference titles added some; net one fewer.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host ecfr.gov: [60] US Food and Drug Administration. \"Health claims: soluble fiber from certain foods and risk o...",
+  "reason": "US government primary sources (eCFR and the Federal Register) for the FDA psyllium and plant-sterol health claims (Brad's psyllium rule 2026-10-22); not on the checker's host list, which is code.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host federalregister.gov: [61] US Food and Drug Administration. \"Food Labeling: Health Claims; Soluble Fiber From Certain F...",
+  "reason": "US government primary sources (eCFR and the Federal Register) for the FDA psyllium and plant-sterol health claims (Brad's psyllium rule 2026-10-22); not on the checker's host list, which is code.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host ecfr.gov: [62] US Food and Drug Administration. \"Health claims: plant sterol/stanol esters and risk of coro...",
+  "reason": "US government primary sources (eCFR and the Federal Register) for the FDA psyllium and plant-sterol health claims (Brad's psyllium rule 2026-10-22); not on the checker's host list, which is code.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host federalregister.gov: [63] US Food and Drug Administration. \"Food Labeling; Health Claim; Phytosterols and Risk of Coro...",
+  "reason": "US government primary sources (eCFR and the Federal Register) for the FDA psyllium and plant-sterol health claims (Brad's psyllium rule 2026-10-22); not on the checker's host list, which is code.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥10 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In a sample of women from the Nurses' Health Study, those who had used vitamin C supplements for 10 years or more h...\"",
+  "reason": "Tokeniser: the Jacques abstract (PMID 9322567) writes \"> or = 10 y\", which equals the body's \"10 years or more\"; the quote is in addendum-14. Added by the vitamin C fix worker under the orchestrator's task instruction (genuine tokeniser cases only), addendum-14.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥1500 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In men, supplemental vitamin C intake is inversely associated with gout risk. Men taking 1,000-1,499 mg a day of supp...\"",
+  "reason": "Tokeniser: the Choi abstract (PMID 19273781) writes \"1500 mg/d or greater\", which equals the body's \"1,500 mg or more\" (ruling 3 comparator); the checker drops \"or greater\". Added by the vitamin C fix worker under the orchestrator's task instruction (genuine tokeniser cases only), addendum-14.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2.3 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| **Acetaminophen (Tylenol)** | In five healthy adults, 3 g of vitamin C taken 1.5 hours after 1 g of acetaminophen c...\"",
+  "reason": "Tokeniser: the Houston and Levy abstract (PMID 978441) writes \"2.3 +/- 0.2 (mean +/- SD) to 3.1 +/- 0.5 hr\"; the SD between number and unit hides the hours. Added by the vitamin C fix worker under the orchestrator's task instruction (genuine tokeniser cases only), addendum-14.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.1 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| **Acetaminophen (Tylenol)** | In five healthy adults, 3 g of vitamin C taken 1.5 hours after 1 g of acetaminophen c...\"",
+  "reason": "Tokeniser: the Houston and Levy abstract (PMID 978441) writes \"3.1 +/- 0.5 hr\"; the SD between number and unit hides the hours. Added by the vitamin C fix worker under the orchestrator's task instruction (genuine tokeniser cases only), addendum-14.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"≥1000 mg/day\": In a US study of 45,619 men, a total vitamin C intake of 1,000 mg/day or more, compared with less than the RDA of 90 ...",
+  "reason": "Tokeniser: the Taylor abstract (PMID 15579526) writes \"1000 mg or greater of vitamin C per day\", which equals the body's \"1,000 mg/day or more\"; the checker drops \"or greater ... per day\". The quote is in addendum-14. Added by the vitamin C fix worker under the orchestrator's task instruction (genuine tokeniser cases only), addendum-14.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"200\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Despite marketing claims, creatine has not been shown to increase bone density. A narrative review describes the rese...\"",
+  "reason": "Checker tokenisation: the Sales 2020 abstract (PMID 31257405) spells the sample \"Two hundred postmenopausal women\"; extra_raw holds the abstract (clean1-creatine addendum-9). Ratified by the orchestrator at integration (2026-10-22).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"237\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Despite marketing claims, creatine has not been shown to increase bone density. A narrative review describes the rese...\"",
+  "reason": "Checker tokenisation: the Chilibeck 2023 abstract (PMID 37144634) spells the sample \"Two hundred and thirty-seven postmenopausal women\"; extra_raw holds the abstract (clean1-creatine addendum-9). Ratified by the orchestrator at integration (2026-10-22).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"52\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Mood trials:** In 52 women with depression taking escitalopram, adverse events were no more frequent with creatine ...\"",
+  "reason": "Checker tokenisation: the Lyoo 2012 abstract (PMID 22864465) spells the sample \"Fifty-two women\"; extra_raw holds the abstract (clean1-creatine addendum-9). Ratified by the orchestrator at integration (2026-10-22).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"14 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Kidney stones:** A 2022 case report noted that no study had looked at creatine and kidney stones in people. In that...\"",
+  "reason": "Checker tokenisation: the Akbari 2022 abstract (PMID 36206067) spells \"Fourteen months after stopping creatine monohydrate supplementation\"; extra_raw holds the abstract (clean1-creatine addendum-9). Ratified by the orchestrator at integration (2026-10-22).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "product mentions rose 3 -> 4",
+  "reason": "Orchestrator R3 (2026-10-22): a Labdoor disclosure (\"MicroVitamin products are tested by Labdoor under Labdoor's paid Quality Program\") was added beside the consumerlab.com/Labdoor pointer; the extra product mention is that disclosure (listed in ask_brad). Ratified by the orchestrator at integration (2026-10-22).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "report says product mentions 3 -> 3, recomputed 3 -> 4",
+  "reason": "Orchestrator R3 (2026-10-22): a Labdoor disclosure (\"MicroVitamin products are tested by Labdoor under Labdoor's paid Quality Program\") was added beside the consumerlab.com/Labdoor pointer; the extra product mention is that disclosure (listed in ask_brad). Ratified by the orchestrator at integration (2026-10-22).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7.8 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Low-dose sterol supplementation with diet adherence:** In a crossover trial in 50 Italian adults with high choleste...\"",
+  "reason": "Tokeniser: the Cicero 2023 abstract writes '-7.8 ± 7.7 mg/dL', so the unit attaches to 7.7; 7.8 mg/dL is the abstract's figure (PMID 37960208).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"13.7 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Yogurt drink delivery:** In a Spanish trial in 182 adults with high cholesterol, a yogurt drink with 2 g of plant s...\"",
+  "reason": "Tokeniser: the Parraga-Martinez 2015 abstract writes '13.7 (95% confidence interval, 3.2-24.1) mg/dL'; the unit follows the interval (PMID 25541227).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"40 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Policosanol | 5-40 mg (Cuban trials) | LDL cholesterol | Likely ineffective |\"",
+  "reason": "Tokeniser: Berthold 2006 says '5 to 40 mg/d'; the dosing-table cell sits under 'Effective Daily Dose' and reads '5-40 mg' like the other rows (PMID 16705107, R11).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"8 week\": In a trial in 32 adults at low to moderate cardiovascular risk who were eligible for statins, pantethine (600 mg a da...",
+  "reason": "Tokeniser: the Evans 2014 abstract writes '600 mg/day from weeks 1 to 8 and 900 mg/day from weeks 9 to 16' (PMID 24600231); the 8-week phases are the abstract's.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5 mg\": Policosanol | 5-40 mg (Cuban trials) | LDL cholesterol | Likely ineffective |",
+  "reason": "Tokeniser: Berthold 2006 says '5 to 40 mg/d'; the dosing-table cell sits under 'Effective Daily Dose' and reads '5-40 mg' like the other rows (PMID 16705107, R11).",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [66] US National Library of Medicine, DailyMed. \"up & up Fiber Therapy (psyllium husk) powder: Dr...",
+  "reason": "US National Library of Medicine DailyMed drug labels (psyllium OTC Drug Facts, lovastatin, niacin ER) are the official sources for the psyllium spacing, red yeast rice/lovastatin interactions and niacin harms (review R4, R6, R9, R10); not on the checker's host list, which is code.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [67] US National Library of Medicine, DailyMed. \"Lovastatin tablets: prescribing information.\" Lu...",
+  "reason": "US National Library of Medicine DailyMed drug labels (psyllium OTC Drug Facts, lovastatin, niacin ER) are the official sources for the psyllium spacing, red yeast rice/lovastatin interactions and niacin harms (review R4, R6, R9, R10); not on the checker's host list, which is code.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC7",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [68] US National Library of Medicine, DailyMed. \"Niacin extended-release tablets: prescribing inf...",
+  "reason": "US National Library of Medicine DailyMed drug labels (psyllium OTC Drug Facts, lovastatin, niacin ER) are the official sources for the psyllium spacing, red yeast rice/lovastatin interactions and niacin harms (review R4, R6, R9, R10); not on the checker's host list, which is code.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"11 %\": Magnesium Citrate | Higher than oxide [1][7] | Brad notes it is better absorbed than oxide but only 11% elemental mag...",
+  "reason": "Checker defect, orchestrator-approved (2026-10-22): the \"11%\" sits in the Forms table citrate row, in a sentence that cites Brad's post [45], which states it; the checker reads the row's first citation [7] (Schuchardt 2017) instead of the sentence's own [45].",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "token \">96 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In two linked trials in people hospitalized with COVID-19, a dose of intravenous vitamin C every 6 hours, up to 16 ...\"",
+  "reason": "Checker tokenisation: the body's \"over 96 hours\" tokenises as \">96 hour\"; the Adhikari abstract (PMID 37877585) says \"every 6 hours for 96 hours (maximum of 16 doses)\", quoted in vitamin-c addendum-15. Same number and unit.",
+  "by": "orchestrator",
+  "date": "2026-10-22"
+ }
+]

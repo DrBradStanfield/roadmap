@@ -67,10 +67,15 @@ export async function action({ request }: ActionFunctionArgs) {
       suppressInKlaviyo(email),
       deleteByEmail(email),
     ]);
+    const failure = suppressed.status === 'fulfilled' && typeof suppressed.value === 'object'
+      ? suppressed.value : null;
     cleanupFailed ||= suppressed.status === 'rejected'
-      || suppressed.value === false || unenrolled.status === 'rejected';
-    if (suppressed.status === 'rejected' || suppressed.value === false) {
-      Sentry.captureException(new Error('Resend webhook suppression failed'), { tags: { feature: 'resend_webhook', step: 'klaviyo' } });
+      || failure?.retryable === true || unenrolled.status === 'rejected';
+    if (suppressed.status === 'rejected' || failure) {
+      Sentry.captureException(new Error('Resend webhook suppression failed'), {
+        tags: { feature: 'resend_webhook', step: 'klaviyo' },
+        extra: { status: failure?.status ?? null },
+      });
     }
     if (unenrolled.status === 'rejected') {
       Sentry.captureException(new Error('Resend webhook reminder cleanup failed'), { tags: { feature: 'resend_webhook', step: 'reminders' } });

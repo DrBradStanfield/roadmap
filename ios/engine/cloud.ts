@@ -19,8 +19,12 @@ import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/re
 import { describeStorageFailure } from '../../packages/health-core/src/sync-manager';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { labArchivePayload, saveDocuments, type DocumentPayload, type DocumentSaveIO, type DocumentSavePlan } from '../../packages/health-core/src/document-save';
+import { validDay } from '../../packages/health-core/src/record-edits';
 import { eraseChatText } from './app-doors';
-import { applyEdit, type Edit } from './my-data';
+import type { Extraction } from './lab-review';
+import { applyEdit, readRecord, type Edit } from './my-data';
+import { readUnitChoices } from './unit-choices';
 
 export type Provider = 'dropbox' | 'google-drive';
 
@@ -72,7 +76,10 @@ function accessToken(provider: Provider, force: boolean): Promise<string> {
  * The user's cloud, through health-core's own REST adapter, with a fresh
  * access token for each call (the phone refreshes with PKCE, in Swift). A
  * call the provider refuses with 401 runs once more on a forced refresh.
- * Documents are not synced by the app yet.
+ * The adapters are the phone's own, so they file documents
+ * (`{ documents: 'write' }`, US-52 AC13d); the record calls are unchanged.
+ * A document ref is a folder path ('Letters/2026-01-01 Clinic letter.pdf')
+ * for both providers, as `saveDocuments` builds it.
  */
 class PhoneCloudAdapter implements StorageAdapter {
   readonly id: 'dropbox' | 'google-drive';
@@ -103,11 +110,12 @@ class PhoneCloudAdapter implements StorageAdapter {
     return written;
   }
 
-  async readDocument(): Promise<Blob> {
-    throw new StorageError('The iPhone app does not sync documents yet.');
+  readDocument(ref: string, signal?: AbortSignal): Promise<Blob> {
+    return this.run((cloud) => cloud.readDocument(ref, signal));
   }
-  async writeDocument(): Promise<void> {
-    throw new StorageError('The iPhone app does not sync documents yet.');
+
+  writeDocument(ref: string, bytes: Blob): Promise<void> {
+    return this.run((cloud) => cloud.writeDocument(ref, bytes));
   }
 
   private run<T>(call: (cloud: StorageAdapter) => Promise<T>): Promise<T> {
@@ -118,7 +126,8 @@ class PhoneCloudAdapter implements StorageAdapter {
   private async adapter(force: boolean): Promise<StorageAdapter> {
     const token = await accessToken(this.provider, force);
     if (this.current?.token !== token) {
-      this.current = { token, adapter: this.provider === 'dropbox' ? new DropboxAdapter(token) : new DriveAdapter(token) };
+      const options = { documents: 'write' } as const;
+      this.current = { token, adapter: this.provider === 'dropbox' ? new DropboxAdapter(token, options) : new DriveAdapter(token, options) };
     }
     return this.current.adapter;
   }
@@ -369,6 +378,28 @@ function dependsOnUnits(edit: Edit): boolean {
   return edit.kind === 'add' || edit.kind === 'correct' || (edit.kind === 'profile' && edit.height !== undefined);
 }
 
+function refuse(reason: string, message: string): string {
+  return JSON.stringify({ ok: false, reason, message });
+}
+
+const ERASED = 'Your record was erased on another device, so this was not saved.';
+
+/** Take `next` as the session's working copy: on the phone first, marked for the
+ *  cloud, then `RecordSession.edit` with the erase the screen showed. A phone that
+ *  cannot keep it refuses it, and nothing changes (US-09 AC4). Answers the
+ *  refusal, or null when it was taken. */
+function commit(at: Open, next: RoadmapFile, erase: string, nowIso: string): string | null {
+  at.host.mirror.pending.set();
+  try {
+    at.phone.mergeNow(next, { deviceId: at.host.deviceId(), now: nowIso });
+  } catch (error) {
+    return refuse('phone-write', `This iPhone could not save it, so nothing changed. ${(error as Error).message}`);
+  }
+  at.session.edit(() => next, erase);
+  at.unflushed += 1;
+  return null;
+}
+
 /**
  * One My data edit, through the session (D4): the engine's write rule on the
  * working copy, then `RecordSession.edit` with the erase the screen showed, so
@@ -377,8 +408,7 @@ function dependsOnUnits(edit: Edit): boolean {
  * marker are written first, so an edit that has not reached the cloud yet
  * survives the app being closed (US-09 AC4).
  */
-export function cloudEdit(editJson: string, erase: string, shownUnits: string, nowIso: string): string {
-  const refuse = (reason: string, message: string) => JSON.stringify({ ok: false, reason, message });
+export function cloudEdit(editJson: string, erase: string, shownUnits: string, nowIso: string, unitsJson?: string): string {
   const at = open;
   if (!at) return refuse('not-open', 'The cloud record is not open.');
   const { session } = at;
@@ -389,23 +419,120 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
     return refuse('units-changed', 'Your units changed on another device, so this was not saved. Close this and enter the value again.');
   }
   if (session.refuses(erase)) {
-    return refuse('erased', 'Your record was erased on another device, so this was not saved. Close this and enter the value again.');
+    return refuse('erased', `${ERASED} Close this and enter the value again.`);
   }
-  const outcome = applyEdit(session.file, edit, nowIso);
+  // Read in the per-test units the sheet showed (AC17e), as the phone's own file is.
+  const outcome = applyEdit(session.file, edit, nowIso, readUnitChoices(unitsJson));
   if (!outcome.ok) return JSON.stringify(outcome);
   // An edit that changed nothing (an Apple Health batch already taken in) saves nothing.
   if (outcome.file === session.file) return JSON.stringify({ ok: true, record: JSON.stringify(session.file), erase: session.eraseIdentity });
-  // On the phone first, marked for the cloud: only then is the edit taken. A
-  // phone that cannot keep it refuses it, and nothing changes (US-09 AC4).
-  at.host.mirror.pending.set();
-  try {
-    at.phone.mergeNow(outcome.file, { deviceId: at.host.deviceId(), now: nowIso });
-  } catch (error) {
-    return refuse('phone-write', `This iPhone could not save it, so nothing changed. ${(error as Error).message}`);
-  }
-  session.edit(() => outcome.file, erase);
-  at.unflushed += 1;
+  // On the phone first, marked for the cloud: only then is the edit taken.
+  const refusal = commit(at, outcome.file, erase, nowIso);
+  if (refusal) return refusal;
   return JSON.stringify({ ok: true, record: JSON.stringify(session.file), erase: session.eraseIdentity });
+}
+
+/** What the review chose for one file (US-52 AC13d). `mimeType` and
+ *  `contentHash` ('sha256-<hex>', the web's sha256Blob format) are the original's
+ *  as the review read it; both absent when there is none (a photo, a scan). */
+type DocumentChoice = { sourceFileName: string; mimeType: string; contentHash?: string } & (
+  | { kind: 'document'; title: string; documentDate: string | null }
+  | { kind: 'labArchive'; reportDay: string | null });
+
+/** Document saves run one after another, so each plans its refs against the
+ *  record as the previous one committed it: two at once would be given the
+ *  same ref and one original would overwrite the other. */
+let documentQueue: Promise<unknown> = Promise.resolve();
+
+/**
+ * File one reviewed file as the web does (US-52 AC13d, US-14 AC5): health-core's
+ * `saveDocuments`, the web's one save path. `document`: the letter or other
+ * document, with the title and date the review shows. `labArchive`: a lab
+ * report's original, as the hidden row the web keeps (`labArchivePayload`).
+ *
+ * With a cloud open (`erase` is the erase the screen showed) the original goes
+ * to the person's cloud first, then the rows are committed the way cloudEdit
+ * commits an edit: the phone's copy and its pending marker first, then
+ * `RecordSession.edit` with the erase, refused if an erase arrived meanwhile.
+ * `original` null with a `contentHash`: the file changed or could not be read
+ * since the review read it, so the row is filed without it, with the reviewed
+ * bytes' hash (US-14 AC4's metadata-only fallback), and the answer says `stale`.
+ * With no cloud (`erase` ''), as on the web off-cloud, no original is kept: a
+ * document is a text-only row added to `recordJson`, answered for Swift to
+ * write to the phone's file, and a lab report's original is not kept at all.
+ *
+ * Answers `{ ok, record, erase?, saved, unstored, stored, stale }` or `{ ok: false, reason, message }`.
+ * `stored`: the original reached the cloud; null when none was offered to one.
+ */
+export function documentSave(
+  recordJson: string, extractionJson: string, choiceJson: string, original: ArrayBuffer | null, erase: string, nowIso: string, deviceId: string,
+): Promise<string> {
+  const run = documentQueue.then(() => saveOneDocument(recordJson, extractionJson, choiceJson, original, erase, nowIso, deviceId));
+  documentQueue = run.catch(() => {});
+  return run;
+}
+
+async function saveOneDocument(
+  recordJson: string, extractionJson: string, choiceJson: string, original: ArrayBuffer | null, erase: string, nowIso: string, deviceId: string,
+): Promise<string> {
+  const choice = JSON.parse(choiceJson) as DocumentChoice;
+  const extraction = JSON.parse(extractionJson) as Extraction;
+  const at = erase ? open : null;
+  if (erase && !at) return refuse('not-open', 'The cloud record is not open.');
+  if (at?.session.refuses(erase)) return refuse('erased', ERASED);
+  // The one gate for originals: kept only in the person's cloud, as on the web
+  // (UploadModal strips them off-cloud).
+  const hash = at ? choice.contentHash : undefined;
+  const bytes = hash && original && original.byteLength > 0 ? new Uint8Array(original) : null;
+  const file = hash ? bytes ?? new Uint8Array(0) : undefined;
+  let plan: DocumentSavePlan | null = null;
+  const answer = (record: string) => JSON.stringify({
+    ok: true, record, ...(at ? { erase: at.session.eraseIdentity } : null),
+    saved: plan?.saved.length ?? 0, unstored: plan?.unstored ?? 0,
+    stored: hash ? !!plan?.saved.some((d) => !!d.fileRef) : null,
+    stale: !!hash && !bytes,
+  });
+  let payload: DocumentPayload<Uint8Array<ArrayBuffer>>;
+  if (choice.kind === 'labArchive') {
+    if (!file) return answer(at ? JSON.stringify(at.session.file) : recordJson);
+    payload = labArchivePayload(choice.sourceFileName, validDay(choice.reportDay, { now: nowIso }), file);
+  } else {
+    const doc = extraction.classification === 'lab_report' ? null : extraction.document;
+    if (!doc) return refuse('not-found', 'This file has no document to save.');
+    payload = {
+      documentType: doc.classification, title: choice.title || doc.title, documentDate: validDay(choice.documentDate, { now: nowIso }),
+      contentMd: doc.contentMarkdown, metadata: doc.metadata, sourceFileName: choice.sourceFileName, file,
+    };
+  }
+  const io: DocumentSaveIO<Uint8Array<ArrayBuffer>> = {
+    // Hashed by the phone as it read the file: the same bytes it uploads, or none.
+    hash: async () => hash!,
+    write: (ref, data) => (bytes
+      ? at!.host.store.writeDocument(ref, new Blob([data], { type: choice.mimeType }))
+      : Promise.reject(new StorageError('The original changed or could not be read.'))),
+    mimeType: () => choice.mimeType,
+  };
+
+  if (!at) {
+    const current = readRecord(recordJson, nowIso, deviceId);
+    plan = await saveDocuments(current, [payload], io);
+    // commit writes in place (push, `deleted`): on a copy, as the read record is shared (my-data.ts readRecord).
+    const next = { ...current, documents: current.documents.map((d) => ({ ...d })) };
+    plan.commit(next);
+    return answer(JSON.stringify(next));
+  }
+
+  plan = await saveDocuments(at.session.file, [payload], io);
+  // The uploads took time: the session may have closed, or an erase arrived.
+  if (open !== at) return refuse('not-open', 'The cloud record closed while this was saving, so it was not saved. Try again.');
+  if (at.session.refuses(erase)) return refuse('erased', ERASED);
+  if (plan.saved.length > 0) {
+    const next = JSON.parse(JSON.stringify(at.session.file)) as RoadmapFile;
+    plan.commit(next);
+    const refusal = commit(at, next, erase, nowIso);
+    if (refusal) return refusal;
+  }
+  return answer(JSON.stringify(at.session.file));
 }
 
 /**

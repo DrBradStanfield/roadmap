@@ -55,6 +55,17 @@ JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs
 Bundle 368 KB with merge included (the app's bundle, plan and layout only, is 335 KB). A frame is 16 ms, so the cost is invisible. Re-measure on a real iPhone in
 the spike; the limit is 100 ms for plan plus merge, 300 ms for a cold engine load.
 
+**Measured on an iPhone 15 Pro Max, 2026-10-22** (`HealthRoadmapTests/EngineSpeedTests`,
+opt-in; daily weight and blood pressure plus quarterly labs). Cold load 25 ms. One year
+(1,100 rows): each call 9 to 31 ms (merge the most). Three years (3,300 rows): 22 to 74
+ms. Ten years (11,000 rows): 77 to 130 ms, merge 330 ms. Every call is linear in the
+record's size, and each parses the whole record again. The first run found My data's
+blood pressure history quadratic, 17 s at ten years; fixed (one pass, same output). A year
+of daily readings already costs a frame or more per call on the main thread. Brad wants
+engine work off the main thread (2026-10-22); that change is next.
+
+**The parsed-record slot (2026-10-22, stage 1 of moving engine work off the main thread).** Every engine call took the record as text and parsed and migrated it; migration is most of a call's time (Node, ten years of rows: parse about 3 ms, migrate about 18 ms). `readRecord` (ios/engine/my-data.ts) now keeps one slot: the last text read, its device id and its parsed record, served again only for the identical text and device id, and only for a record whose meta carries both stamps, so the migration cannot have read `now` (health-core `hasStampShape`, the check `isoOr` uses). Only reads are kept, never a door's own output: a written record need not equal what its text reads back as, since migration clamps counters (Codex R1). The rule this binds every door, and every health-core function a door reaches, to: **a record from `readRecord` is read-only.** A function that writes in place gets a copy first (the phone document save copies before `saveDocuments`' commit). Under the tests the kept record is deep-frozen, so every engine test checks the rule on every branch it runs; never in the app. No bridge change. Next: the engine on its own serial queue, edits applied in order, sheets awaiting their save (stages 2 to 4).
+
 The runtime needs a bridge for what a bare JSContext lacks: `fetch`, `Response`, `Headers`,
 `URL`, `AbortController` with `AbortSignal.timeout`/`any`, `Blob`, `TextEncoder`/`Decoder`,
 `crypto.getRandomValues`/`randomUUID`, `setTimeout` (adapter.ts, drive-rest.ts,
@@ -403,8 +414,15 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   "Saving…", on open, after a write and after Sync now.
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free
-  (US-34). Until then the app polls each minute while on screen. Documents are not synced
-  by the app (its adapter refuses them).
+  (US-34). Until then the app polls each minute while on screen.
+- **Documents (US-52 AC13d, 2026-10-22):** the app files letters and lab originals
+  through health-core's `saveDocuments`, the web's one path, with the shared adapters
+  built `{ documents: 'write' }`. The rows commit like any cloud edit (phone copy and
+  pending marker, then `RecordSession.edit` with the erase), one save at a time. Swift
+  hashes each original with CryptoKit as it reads it (JavaScriptCore has no
+  `crypto.subtle`) and checks the hash again at Save; the engine takes that hash as the
+  row's `contentHash`. On Drive the originals go to the folder that holds the record, so
+  web and phone share one archive. The app never reads an original back yet.
 - **Not the iOS Files picker.** File Provider writes have no version check, which breaks
   US-10 AC4 (two overlapping saves must keep both rows).
 - **iCloud: open.** A website cannot read iCloud Drive, so an iCloud user could not use the
@@ -451,6 +469,16 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   - **Export** is the record as shown (`store.recordJSON`) through the share sheet, written by
     the share sheet itself (`RecordExport`, a `DataRepresentation`), so the app keeps no
     stray copy. The website has no "load a file" flow; that would be a web feature.
+
+**On a real iPhone, 2026-10-22** (Brad's iPhone 15 Pro Max, iOS 27.0.1, driven through iPhone
+Mirroring): Dropbox connected, synced and merged the website's lab values into the phone's record
+(`health-roadmap.json` updated in Dropbox at the first sync); disconnecting and connecting Google
+Drive carried the same 57 KB record into Drive › Health Plan by Dr Brad. Google refused the
+Workspace password (brad@microvitamin.com) while "Try another way" signed in: the Workspace allows
+any third-party app (Admin console › API controls), so the likely cause is a stale autofilled
+password, not the app. The connect screens now show how sync works (`Sync/SyncDiagram.swift`,
+US-25 AC11i): the person's cloud above this iPhone and the website, silver data flowing both ways,
+no line to Dr Brad's server; still under Reduce Motion, capped at 30 frames a second.
 
 ### D6 · Apple Health (Brad, 2026-10-21, import deletions ignored)
 
@@ -585,6 +613,14 @@ Health are never written back.
 **Background.** Observer queries recompute the plan and reschedule reminders when data
 lands. HealthKit is unreadable while the phone is locked, and a background import must not
 race a foreground save: both are handled, not assumed.
+
+**Checked 2026-10-22.** On the iPhone, iOS 27's Health sheet adds a second page ("how much data
+would you like to share": past 30 days, or all recorded data); the app needs all. Onboarding then
+preselected sex, birth month and year, height and weight, each labelled "From Apple Health".
+Write-back checked on the simulator's own Health store: a typed 123/79 and 70 kg appeared in Health,
+dated noon of the day (the record holds days, not times); height is never written back. **Next
+(US-55, Brad 2026-10-22):** resting heart rate, VO2 max, steps and sleep, one value a finished day,
+display only (the algorithm reads none of them; heart rate variability left out).
 
 ### D7 · Reminders: on-device notifications only (Brad, 2026-10-21)
 
@@ -860,21 +896,50 @@ Files, From Photos, and Scan a paper report (VisionKit's document camera, real p
   all my data". The web's code lives in the widget's adapter, not health-core, so the
   phone repeats the one call in OAuthClient beside Drive's `about`.
 
-### D9 · No server telemetry (Brad, 2026-10-21)
+**State 2026-10-22.** On the iPhone, chat answers "not available": the education server leaves
+App Attest off until `APP_ATTEST_TEAM_ID` is set (`app/lib/app-attest.server.ts`), so chat and lab
+upload wait for that secret and the team it names (Brad's personal team P7LB54J2PM now, DR BRAD,
+INC. after enrolment; whether App Attest works under a personal team is not known). While a report
+is read, the sheet shows where it goes (`LabUpload/LabReadingDiagram.swift`, US-52 AC13): the
+report, "Read by AI", the record; it is not kept, and every value is checked before saving.
 
-The app sends no product events to Brad's server. The usage signal is App Store Connect
-analytics (installs, sessions, retention, crashes, from users who opt in). Stated limit: it
-cannot see "viewed a plan". Health values never enter any telemetry.
+### D9 · No server telemetry; Clarity with every screen masked (Brad, 2026-10-21, amended 2026-10-22)
 
-The plan screen said "No health data left your device". That was true only while the app
-had no network code; D8's chat and upload re-derived it to "Worked out on this iPhone"
-(2026-10-21). The first network call (D3's update check, D5's sync, D8's chat)
-must re-derive that sentence in the same commit.
-D3's update check (2026-10-22) sends no health data, so the plan line stands; the
-privacy policy names GitHub. With D5's sync (2026-10-21) the plan line stays as it is: it claims only where the
-plan was worked out. Where the record is kept is said on My data
-(`SyncStatusText.myDataFooter`): the connected cloud, or after a Disconnect that a copy
-stays in the cloud synced earlier, or only this iPhone.
+The app sends no product events to Brad's server. Health values never enter any telemetry.
+
+~~The usage signal is App Store Connect analytics only.~~ Fell 2026-10-22 (Brad): App
+Store Connect cannot show where people get stuck. **Microsoft Clarity** now records
+sessions, taps, rage taps and screen flow, as it does for the website, which masks its whole
+health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches that:
+- `App/Analytics.swift` masks the whole window (`ClaritySDK.maskView`) BEFORE Clarity
+  starts, so every tab, sheet, cover and alert in it is masked. Clarity's docs say a
+  parent's mask does not force a text input's, so every TextField also carries
+  `analyticsMasked()` (`clarityMask`). Screen names are fixed words (`Analytics.Screen`),
+  never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
+- `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
+  unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
+- Second layer: the Clarity project's masking mode is set to **Strict** on its dashboard
+  (Brad), which masks all text and images whatever the code does.
+- **What masking cannot hide:** where a person taps on a masked layout. On a two-button
+  question (Female or Male, a screening yes or no) the tap position can reveal the answer to
+  someone who knows the layout, and a wheel's swipe distance hints at a value. The website
+  has the same limit. The privacy policy says so. Pausing Clarity on those screens would
+  remove the onboarding funnel this amendment exists for: Brad's call (review R2, 2026-10-22).
+- On since 2026-10-22: Brad created the mobile project (`z1kbjvj8u6`, Strict masking) and
+  `Analytics.clarityProjectId` holds it. Never under XCTest, nor in the UI tests
+  (`--ui-testing`). Clarity 3.5.4, exact version.
+- **No consent prompt (Brad, 2026-10-22):** "we aren't recording text or images." The app
+  never calls `ClaritySDK.consent`. Risk stated to Brad and accepted: Clarity keeps a random
+  install id on the phone, and under the EU ePrivacy rule (and the UK's and Switzerland's
+  equivalents) storing an id for analytics needs consent whatever is recorded; Microsoft's
+  Clarity terms also ask for a consent signal from those users. How the iOS SDK behaves
+  without one is not known. Revisit if Clarity stops recording those regions or a regulator asks.
+- Apple's Guideline 5.1.3 (no Health data to third parties for analytics) holds because no
+  value reaches Clarity. The privacy policy and App Store answers name Clarity, and Clarity
+  derives a coarse location from the IP address, declared as Coarse Location.
+
+**State 2026-10-22.** Project `z1kbjvj8u6`, Strict masking confirmed on the dashboard. No
+recording had arrived by evening, so the masking check on a real recording is still open.
 
 ### D10 · Old app versions stay safe
 
@@ -952,6 +1017,13 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
   the callout uses a solid system fill; and the newest axis label clips unless the marks
   use the `.aligned` preset.
 
+**Added 2026-10-22.** Number boxes refuse, as typed, what no value can be (`MyData/TypedNumber.swift`,
+US-25 AC17b): blood pressure 3 whole digits, values 5+3, doses 5+2; a refused change goes back to
+the last accepted text, a loaded value is never cut, and an over-limit loaded value is never
+restored (no flip loop). Colours follow Apple Health (AC17c): blood pressure red, body measurements
+purple, blood tests blue; the light accent is dark enough for white text (5.35:1) and dark-mode
+accent buttons carry black text (`OnAccent`, dimmed when disabled).
+
 ## Build and test
 
 **Layout.**
@@ -986,18 +1058,27 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
   `engine/bridge-contract.json` is the native bridge's contract; its hash is the bridge id.
   Tested by `scripts/release-engine.test.ts`, `scripts/signing-key-guard.test.ts` and
   `engine/bridge.test.ts`.
-- `scripts/test.sh`: builds the engine and runs the tests once in UTC and once in
+- `scripts/ui-test.sh`: the UI tests, one at a time, each on a fresh install (US-54).
+- `scripts/app-store-shots.sh`: the App Store screenshots (US-25 AC10, app-store.md step 6).
+- `scripts/test.sh`: builds the engine and runs the unit tests (not the UI tests) once in UTC and once in
   Pacific/Auckland. Gotcha (2026-10-21): JavaScriptCore reads the time zone once per
   process, so `setenv("TZ")` inside a test does not reach the engine; the first
   parity test passed in Auckland and failed in UTC for that reason. The zone is set at
   launch with `TEST_RUNNER_TZ`, and a zone with no golden skips (a Tokyo run proved
   the pin reaches the test).
 - `HealthRoadmap.xcodeproj`: hand-written, using Xcode's synchronized folders, so a file
-  added to `HealthRoadmap/` or `HealthRoadmapTests/` joins its target with no project edit.
-  No project generator, so no new dependency.
+  added to `HealthRoadmap/`, `HealthRoadmapTests/` or `HealthRoadmapUITests/` joins its
+  target with no project edit. No project generator. One Swift package: Microsoft Clarity
+  (`clarity-apps`, exact version 3.5.4, D9), resolved in
+  `project.xcworkspace/xcshareddata/swiftpm/Package.resolved`.
+- `HealthRoadmapUITests/`: XCUITest on the simulator (US-54); each test needs a fresh
+  install, and the app is launched with `--ui-testing` so Clarity never starts.
 - `HealthRoadmap/`: the SwiftUI app, one folder per feature:
-  - `App/`: the entry point (`AppParts` makes the engine and the record once) and
-    `RootView`, the two tabs: My data first, then My plan, the web's mobile order.
+  - `App/`: the entry point (`AppParts` makes the engine and the record once),
+    `RootView` (the tabs: My data, My plan, Chat; and the first-run cover),
+    `WelcomeView`, and `Analytics` (Clarity, masked, D9).
+  - `Onboarding/`: the new-user flow (D12, US-54). `OnboardingSteps` (which questions,
+    resume, region units, Health's sex and birth month and year) and `OnboardingView`.
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext` and awaits its
     Promises; `EngineNatives.swift` is the bridge (D2); `EngineHTTP.swift` its network
     fence (D3); `HealthEngine+Cloud.swift` the typed cloud doors. The generated bundle and
@@ -1089,6 +1170,21 @@ then about 1 ms each.
 - **CI:** a macOS runner job. Workflow files are Brad-only.
 - **Minimum iOS:** 17 (proposed).
 
+### D12 · Onboarding: four questions, prefilled from Apple Health (Brad, 2026-10-22, US-54)
+
+A new user answers sex, birth month and year, height and weight, one per screen, after one
+"Fill this in from Apple Health?" screen, then lands on My plan. Design and reasons:
+[onboarding.md](onboarding.md).
+- **Why:** the full My data form asked thirty rows before the plan; the plan runs on sex
+  and height. Apple Health and Fitness ask these few things first and get out of the way.
+- **Writes are the engine's own** (`profile`, `feetInches`, `add`, `correct`), saved as the
+  person goes, so quitting keeps answers and a relaunch resumes. No health-core change.
+- **Health's sex and date of birth** are now read (new purpose text). Only the birth month
+  and year are used, and only once the person continues; the day is never stored.
+- **Existing users skip it**: a record holding sex, birth year and height. "I already use
+  Health Roadmap" connects the cloud first, then asks only what is missing.
+- **No usage event** (D9 holds): App Store Connect retention is the signal.
+
 ## Phases
 
 0. **Readiness (Brad, in progress 2026-10-21):** macOS upgrade, Xcode 26, Apple Developer
@@ -1100,6 +1196,17 @@ then about 1 ms each.
    accounts are owed (launch-checklist.md).
 3. **Health Records labs and camera lab upload.**
 4. **App Store submission.**
+
+## Next, in order (2026-10-22)
+
+1. Engine work off the main thread, with the engine keeping the parsed record between calls
+   (D2: every call parses the whole record; one year of daily readings costs 9 to 31 ms a call).
+2. US-55: resting heart rate, VO2 max, steps and sleep from Apple Health (D6).
+3. `APP_ATTEST_TEAM_ID` on the education server, so chat and lab upload work on a phone (D8).
+4. The Clarity masking check on a real recording (D9).
+5. Known gap: an erase arriving from another device while a sheet is open may wait for the next
+   launch to bring the questions back (US-54 AC7, adversary N2, unverified).
+
 
 ## Open questions and risks
 

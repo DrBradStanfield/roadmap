@@ -71,15 +71,55 @@ describe('signed Resend cleanup acknowledgment', () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(deletion).toHaveBeenCalledWith(ADDRESS);
   });
-  it.each([400, 429, 503])('requests retry on Klaviyo HTTP %s even when local cleanup succeeds', async (status) => {
+  // US-22 AC10a: permanent remote errors need operator action, not redelivery.
+  it.each([400, 401, 403, 408, 422])('acknowledges Klaviyo HTTP %s after local cleanup and reports only its status', async (status) => {
+    const privateDetail = `${ADDRESS} synthetic-health-marker=123`;
+    fetchMock.mockResolvedValue(new Response(privateDetail, { status }));
+    const response = await action({ request: signedRequest() } as never);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true, action: 'complained', count: 1 });
+    expect(deletion).toHaveBeenCalledExactlyOnceWith(ADDRESS);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(recordServerEvent).toHaveBeenCalledExactlyOnceWith('report_email_complained');
+    expect(Sentry.captureException).toHaveBeenCalledExactlyOnceWith(
+      new Error('Resend webhook suppression failed'),
+      { tags: { feature: 'resend_webhook', step: 'klaviyo' }, extra: { status } },
+    );
+    const diagnostics = JSON.stringify([
+      vi.mocked(console.error).mock.calls,
+      vi.mocked(console.warn).mock.calls,
+      vi.mocked(console.log).mock.calls,
+      vi.mocked(Sentry.captureException).mock.calls,
+    ], (_key, value) => value instanceof Error ? { message: value.message, stack: value.stack } : value);
+    expect(diagnostics).not.toContain(ADDRESS);
+    expect(diagnostics).not.toContain('synthetic-health-marker');
+  });
+
+  it.each([429, 500, 503, 599])('requests retry on Klaviyo HTTP %s even when local cleanup succeeds', async (status) => {
     fetchMock.mockResolvedValue(new Response('provider body must not be logged', { status }));
     const response = await action({ request: signedRequest() } as never);
     expect(response.status).toBe(503);
     expect(deletion).toHaveBeenCalledWith(ADDRESS);
     expect(recordServerEvent).not.toHaveBeenCalled();
     expect(Sentry.captureException).toHaveBeenCalledWith(
-      expect.any(Error), { tags: { feature: 'resend_webhook', step: 'klaviyo' } },
+      expect.any(Error), { tags: { feature: 'resend_webhook', step: 'klaviyo' }, extra: { status } },
     );
+  });
+
+  it('requests retry on a network failure even when reminder cleanup succeeds', async () => {
+    fetchMock.mockRejectedValue(new Error(`${ADDRESS} synthetic network outage`));
+    expect((await action({ request: signedRequest() } as never)).status).toBe(503);
+    expect(deletion).toHaveBeenCalledExactlyOnceWith(ADDRESS);
+    expect(recordServerEvent).not.toHaveBeenCalled();
+  });
+
+  it('still requests retry for reminder failure after a permanent Klaviyo error', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 401 }));
+    deletion.mockRejectedValue(new Error('synthetic database outage'));
+    expect((await action({ request: signedRequest() } as never)).status).toBe(503);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(deletion).toHaveBeenCalledExactlyOnceWith(ADDRESS);
+    expect(recordServerEvent).not.toHaveBeenCalled();
   });
 
   it('requests retry when only reminder cleanup fails', async () => {

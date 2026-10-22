@@ -22,9 +22,11 @@ enum EngineHTTP {
 
     /// Every call the adapters make on the app's path, with the query parameters
     /// drive-rest.ts sends on each. Not here, because the app never makes them:
-    /// Dropbox delete_v2, get_metadata and longpoll (documents and push are web-only),
-    /// Drive DELETE and permissions. The upload branch's lab reads (files/list_folder,
-    /// files/download, no query) are the first two Dropbox routes.
+    /// Dropbox delete_v2, get_metadata and longpoll (push is web-only), Drive DELETE and
+    /// permissions. The upload branch's lab reads (files/list_folder, files/download, no
+    /// query) are the first two Dropbox routes; its originals (US-52 AC13d) use the record's
+    /// own routes: Dropbox files/upload, and Drive's folder lookup, folder create and
+    /// multipart upload.
     static let routes: [Route] = [
         Route(provider: "dropbox", method: "POST", host: "content.dropboxapi.com", path: ["2", "files", "download"]),
         Route(provider: "dropbox", method: "POST", host: "content.dropboxapi.com", path: ["2", "files", "upload"]),

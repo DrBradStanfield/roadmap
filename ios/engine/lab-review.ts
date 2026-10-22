@@ -5,7 +5,8 @@
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { bulkAppendValues, validDay, type BulkRow } from '../../packages/health-core/src/record-edits';
 import { METRIC_LABELS } from '../../packages/health-core/src/mappings';
-import type { AdditionalLabValue, ExtractedValue, RefusedLabValue } from '../../packages/health-core/src/lab-extraction';
+import { documentView, pendingRowsFor } from '../../packages/health-core/src/document-save';
+import type { AdditionalLabValue, DocumentResult, ExtractedValue, RefusedLabValue } from '../../packages/health-core/src/lab-extraction';
 
 /** The server's answer (`data` of POST /api/app/v1/lab-import). */
 export interface Extraction {
@@ -15,6 +16,25 @@ export interface Extraction {
   additionalValues?: AdditionalLabValue[];
   refusedValues?: RefusedLabValue[];
   droppedValueCount?: number;
+  /** A letter, discharge summary or other document: what the web files (US-52 AC13d). */
+  document?: DocumentResult | null;
+}
+
+/** A non-lab document as the review card shows it: the web's ReviewTable card (US-52 AC13d). */
+export interface DocumentReview {
+  /** The model's classification, shown read-only ("clinic letter"). */
+  classification: string;
+  title: string;
+  /** A past day, else null ("Date unknown"): a month alone keeps no day, as on the web. */
+  documentDate: string | null;
+  /** The first 300 characters of the text, with "..." when there is more. */
+  preview: string;
+  /** The record already holds a document from a file of this name: the keep tick starts off. */
+  alreadySaved: boolean;
+  /** A metadata-only row holds these bytes (a failed save, or the connector's;
+   *  US-14 AC4): the card starts from its title and date, and the original is
+   *  filed behind it even when the keep tick is off, as the web archives it. */
+  held: boolean;
 }
 
 export interface LabReviewItem {
@@ -42,11 +62,32 @@ export interface LabReview {
   notSaved: Array<{ label: string; reason: string }>;
   /** Rows the extractor could not read at all (US-12 AC8). */
   unreadCount: number;
+  /** The document to file, when the file is not a lab report. */
+  document: DocumentReview | null;
 }
 
 const ownDay = (recordedAt: string | undefined, now: string) => validDay(recordedAt, { now });
 
-export function labReview(extraction: Extraction, now: string): LabReview {
+/** The web's document dedup: a live row from a file of the same name (stable across re-reads, where titles drift). */
+function alreadySaved(file: RoadmapFile | null, sourceFileName: string | null): boolean {
+  return !!file && !!sourceFileName && file.documents.some((d) => !d.deleted && d.sourceFileName === sourceFileName);
+}
+
+function documentReview(document: DocumentResult, now: string, file: RoadmapFile | null, sourceFileName: string | null, contentHash: string | null): DocumentReview {
+  const text = document.contentMarkdown ?? '';
+  // The newest metadata-only shown-document row for these bytes, as the web's card reads it.
+  const held = file ? pendingRowsFor(file.documents.filter((d) => !d.deleted).map(documentView), contentHash, false)[0] : undefined;
+  return {
+    classification: document.classification,
+    title: held?.title ?? document.title,
+    documentDate: ownDay((held ? held.documentDate : document.documentDate) ?? undefined, now),
+    preview: text.length > 300 ? `${text.slice(0, 300)}...` : text,
+    alreadySaved: alreadySaved(file, sourceFileName),
+    held: !!held,
+  };
+}
+
+export function labReview(extraction: Extraction, now: string, file: RoadmapFile | null = null, sourceFileName: string | null = null, contentHash: string | null = null): LabReview {
   const items: LabReviewItem[] = [
     ...(extraction.values ?? []).map((v, i) => ({
       ref: `v${i}`,
@@ -72,6 +113,9 @@ export function labReview(extraction: Extraction, now: string): LabReview {
     items,
     notSaved: (extraction.refusedValues ?? []).map((r) => ({ label: METRIC_LABELS[r.metric] ?? r.metric, reason: r.reason })),
     unreadCount: extraction.droppedValueCount ?? 0,
+    document: extraction.classification !== 'lab_report' && extraction.document
+      ? documentReview(extraction.document, now, file, sourceFileName, contentHash)
+      : null,
   };
 }
 

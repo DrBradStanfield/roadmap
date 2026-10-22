@@ -62,8 +62,9 @@ final class HealthEngine {
     }
 
     /// The plan for a record, as the engine's JSON.
-    func plan(recordJSON: String, now: Date, deviceId: String) throws -> String {
-        try call("planJson", [recordJSON, now.formatted(Self.iso), deviceId])
+    /// `units`: the phone's per-test units as JSON (UnitChoices, US-25 AC17e); "{}" for none.
+    func plan(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> String {
+        try call("planJson", [recordJSON, now.formatted(Self.iso), deviceId, units])
     }
 
     /// The plan's on-screen layout, from the same function the web uses.
@@ -82,15 +83,15 @@ final class HealthEngine {
     }
 
     /// What the My data tab shows for a record.
-    func myData(recordJSON: String, now: Date, deviceId: String) throws -> MyData {
-        let json = try call("myDataJson", [recordJSON, now.formatted(Self.iso), deviceId])
+    func myData(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> MyData {
+        let json = try call("myDataJson", [recordJSON, now.formatted(Self.iso), deviceId, units])
         return try JSONDecoder().decode(MyData.self, from: Data(json.utf8))
     }
 
     /// Applies one edit with health-core's own write rules. The record passed in is not changed.
-    func apply(_ edit: RecordEdit, to recordJSON: String, now: Date, deviceId: String) throws -> EditOutcome {
+    func apply(_ edit: RecordEdit, to recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> EditOutcome {
         let editJSON = String(decoding: try JSONEncoder().encode(edit), as: UTF8.self)
-        let json = try call("applyEditJson", [recordJSON, editJSON, now.formatted(Self.iso), deviceId])
+        let json = try call("applyEditJson", [recordJSON, editJSON, now.formatted(Self.iso), deviceId, units])
         return try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
     }
 
@@ -101,8 +102,8 @@ final class HealthEngine {
     }
 
     /// Every value recorded for one metric, newest first, corrections included (US-25 AC9).
-    func history(recordJSON: String, metric: String, now: Date, deviceId: String) throws -> MetricHistory {
-        let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId])
+    func history(recordJSON: String, metric: String, now: Date, deviceId: String, units: String = "{}") throws -> MetricHistory {
+        let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId, units])
         return try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
     }
 
@@ -134,6 +135,11 @@ final class HealthEngine {
     @MainActor
     func callAsync<T: Sendable>(_ name: String, _ arguments: [Any], read: @escaping (JSValue) -> T) async throws -> T {
         try await settle(callValue(name, arguments), read: read)
+    }
+
+    /// `data` as an ArrayBuffer in this engine's context, for a door that takes bytes.
+    func arrayBuffer(_ data: Data) -> JSValue {
+        EngineNatives.arrayBuffer(data, in: context)
     }
 
     /// Runs a script in the engine's context; tests use it to reach the shim directly.
