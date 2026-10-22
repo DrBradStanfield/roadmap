@@ -29,7 +29,7 @@ enum ChartRange: String, CaseIterable, Identifiable {
         case .all: nil
         }
         guard let step else { return nil }
-        return Self.utc.date(byAdding: step.0, value: step.1, to: today)
+        return DayText.utc.date(byAdding: step.0, value: step.1, to: today)
     }
 
     /// The ranges worth offering: each that holds some values but not all, then
@@ -45,11 +45,5 @@ enum ChartRange: String, CaseIterable, Identifiable {
     /// The value day closest to a scrubbing finger.
     static func nearest(to date: Date, in days: [Date]) -> Date? {
         days.min { abs($0.timeIntervalSince(date)) < abs($1.timeIntervalSince(date)) }
-    }
-
-    private static var utc: Calendar {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = .gmt
-        return calendar
     }
 }
