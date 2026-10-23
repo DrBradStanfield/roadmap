@@ -6,255 +6,249 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["zinc", "zinc glycinate", "zinc gluconate", "zinc acetate", "zinc picolinate", "zinc citrate", "zinc oxide", "zinc carnosine", "zinc sulfate", "immune", "sleep", "testosterone", "copper", "selenium", "acne", "macular degeneration", "cold", "wound healing", "diabetes", "insulin resistance", "depression", "cholesterol", "inflammation", "gut health", "prostate", "cognitive", "brain health"]
-summary: "Reference on zinc: immune function, cold duration, wound healing, acne, eye health. At risk: vegans, older adults, gut disorders. Forms: glycinate; gluconate/acetate for cold lozenges. RDA 8-11 mg, UL 40 mg. Always discuss with your doctor."
+summary: "Reference on zinc. Brad's view: zinc acetate or gluconate lozenges, started within 24 hours at over 75 mg a day, may shorten colds by about a third. Over 40 mg a day long term can cause copper deficiency. Talk to your doctor first if you take quinolone or tetracycline antibiotics or penicillamine."
+reviewed: "2026-10-23"
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Zinc-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:6bc632ff549b4c4a2f373373c21dc7fe0b14c501bbd924667b489c34ee433d7b"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine","checked":"2026-10-23","fingerprint":"publishedAt:2026-04-16T12:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/zma-supplements-benefits-research","checked":"2026-10-23","fingerprint":"publishedAt:2025-01-29T16:30:23Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad","checked":"2026-10-23","fingerprint":"publishedAt:2025-01-07T00:08:13Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/zinc-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/zinc-benefits-forms-dosing-and-side-effects)*
 
+## Current view (reviewed 23 October 2026)
+
+Brad recommends zinc lozenges for a cold, citing a researcher's conclusion that they may shorten colds by approximately 33% ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). A meta-analysis of zinc acetate trials found the lozenges shortened colds by 2.73 to 2.94 days ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). His approach is to start within 24 hours of the first symptoms, with zinc acetate or zinc gluconate lozenges that contain no citric acid, sorbitol or mannitol, at a dose above 75 mg per day ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). Let one 23 mg lozenge dissolve slowly in the mouth every 2 hours while awake, without chewing, and take it after eating to avoid nausea ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). For everyday intake, Brad sees the trace minerals in a multivitamin as a way to cover dietary gaps, zinc among them, but warns that megadoses of trace minerals are toxic ([Brad, 7 Jan 2025](https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad)). He treats any intake over 40 mg a day as excessive, because ongoing high intakes can interfere with copper absorption and lower HDL ("good") cholesterol, so check the zinc in every supplement you take and consult your doctor first ([Brad, 29 Jan 2025](https://drstanfield.com/blogs/articles/zma-supplements-benefits-research)).
+
+## Key safety points
+
+- Do not put zinc into the nose. Zinc nasal gels have been linked to loss of smell that can be long lasting or permanent [87][88][99].
+- The Tolerable Upper Intake Level for adults is 40 mg a day, and it is lower for children [1]. Doses of 50 mg of zinc or more over weeks can interfere with copper absorption [1].
+- Chronic excess can cause copper deficiency with anemia and neurological disease such as sensory ataxia [73][91]. If you take high-dose zinc and get numbness, tingling, unsteady walking or unexplained anemia, stop the zinc and see your doctor; early copper treatment may help recovery [91][100].
+- Cold-lozenge doses are above the upper limit; trial authors suggest using them for less than two weeks [1][85].
+- Zinc might bind quinolone and tetracycline antibiotics in the gut, which could lower absorption of both; take the antibiotic at least 2 hours before or 4 to 6 hours after zinc (6 hours after for ciprofloxacin) [1][102]. Take penicillamine at least 1 hour apart from zinc [1].
+- Heavy long-term use of zinc-containing denture creams has caused copper deficiency and neurological disease [1][89].
+- High zinc intakes can cause nausea, vomiting, loss of appetite, stomach upset and headaches; lozenges can also cause a bad taste and mouth irritation [1][18][29].
+
+## Brad's videos on this topic
+
+- 16 Apr 2026, [This $2 Remedy Beats Every Cold Medicine](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine): zinc acetate or gluconate lozenges without citric acid, started within 24 hours at above 75 mg per day, may shorten colds by about a third.
+- 29 Jan 2025, [ZMA Supplements: What Are the Benefits and Research?](https://drstanfield.com/blogs/articles/zma-supplements-benefits-research): ZMA shows no clear benefit over its separate ingredients, and its usual 30 mg of zinc puts you close to the 40 mg limit, above which high intakes can interfere with copper absorption.
+- 7 Jan 2025, [Trace Minerals in Vitamins: What Are They and Is It a Fad?](https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad): trace minerals in a multivitamin can cover dietary gaps, zinc among them, but megadoses are toxic.
+
 ## 1. Overview
 
-Zinc is an essential trace mineral involved in the catalytic activity of hundreds of enzymes and plays critical roles in immune function, protein and DNA synthesis, wound healing, cell signaling and division, and the sense of taste [1][2][3]. The total amount of zinc in the human body is approximately 1.5 g in women and 2.5 g in men, with most stored in skeletal muscle and bone [2][3]. Unlike iron or calcium, the body has no specialized zinc storage system, making consistent dietary intake essential [1][2].
+Zinc is an essential trace mineral. It is required for the catalytic activity of hundreds of enzymes and has roles in immune function, protein and DNA synthesis, wound healing, cell signaling and division, and the sense of taste [1][2][3]. The total amount of zinc in the human body is approximately 1.5 g in women and 2.5 g in men, with most stored in skeletal muscle and bone [2][3].
 
-Zinc homeostasis is maintained through a dynamic balance of absorption from the diet, excretion into the gastrointestinal tract, and reabsorption in the intestinal lumen [2][3]. As zinc intakes rise, the absolute amount absorbed increases, but fractional absorption drops [2][3]. The amount of zinc absorbed from food ranges from 5% to more than 50%, depending on the dietary context — particularly the amount of phytate (the storage form of phosphorus in plants) present, which binds zinc in the intestine and forms an insoluble complex that inhibits absorption [1][2][3].
+Zinc homeostasis is maintained through a dynamic balance of absorption from the diet, excretion into the gastrointestinal tract, and reabsorption in the intestinal lumen [2][3]. As zinc intakes rise, the absolute amount absorbed increases, but fractional absorption drops [2][3]. The amount of zinc absorbed from food ranges from 5% to more than 50%, depending on how much phytate (the storage form of phosphorus in plants) the diet contains; phytate binds zinc in the intestine and forms an insoluble complex that inhibits absorption [1][2][3].
 
-Zinc deficiency affects many different tissues and organs throughout the body. In developed countries, severe deficiency is rare, but mild to moderate deficiency is more common than generally appreciated. An analysis of 2005-2016 NHANES data showed that 15% of U.S. adults aged 19 and older have zinc intakes below the Estimated Average Requirement [4]. Serum zinc concentrations below the cutoff for sufficiency were found in 3.8% of U.S. children under 10, 8.6% of males aged 10 and older, and 8.2% of females [1][5]. Globally, approximately 17% of the world's population is estimated to have zinc deficiency based on food supply data and stunting prevalence [6].
+Most people in the United States get enough zinc, although older adults are more likely to have marginal intakes [1]. An analysis of 2005-2016 NHANES data showed that 15% of U.S. adults aged 19 and older have zinc intakes below the Estimated Average Requirement [1][4]. Serum zinc concentrations below the cutoff for sufficiency were found in 3.8% of U.S. children under 10, 8.6% of males aged 10 and older, and 8.2% of females [1][5]. Deficiency is much more common in low- and middle-income countries, and an estimated 17.3% of the world's population is at risk of inadequate zinc intake [1][6][9].
 
-Symptoms of deficiency vary by age and severity [1][2][7]:
-- **Mild:** Loss of appetite, altered taste and smell, impaired immune function
-- **Moderate:** Delayed wound healing, hair loss, diarrhea, skin lesions, recurrent infections
-- **Severe:** Growth retardation (in children), hypogonadism, impotence, cognitive and psychological changes, severe immune dysfunction
+Signs of deficiency vary by age [1][7]:
+- **Infants and young children:** Diarrhea, impaired growth, loss of appetite
+- **Older children:** Hair loss, delayed growth, frequent infections
+- **All ages, including older adults:** Altered taste and smell; in older adults, delayed wound healing and changes in cognitive and psychological function
 
 Groups at highest risk of zinc inadequacy include [1][2]:
 - People with gastrointestinal disorders (IBD, celiac disease) or who have had bariatric surgery
 - Vegetarians and vegans (due to high phytate intake and lower bioavailability from plant foods)
 - Pregnant and lactating women (increased requirements)
-- Older adults (lower intake and absorption)
+- Older adults (more likely to have marginal intakes)
 - People with alcohol use disorder (30-50% prevalence of low zinc status)
 - Infants exclusively breastfed beyond 6 months (breast milk zinc declines ~75% by month 9)
 - Children with sickle cell disease
 
-Assessing zinc status is challenging. Serum or plasma zinc concentrations (normal range: 80-120 mcg/dL) are typically used, but these are affected by age, sex, time of day, inflammation, infections, and steroid hormone changes [1][2][5]. Serum zinc represents a small fraction of total body zinc and does not always correlate with dietary intake or tissue stores. In clinical practice, zinc status is best assessed by combining serum levels with dietary intake history, risk factors for deficiency, and clinical signs [1].
+Assessing zinc status is challenging. Serum or plasma zinc concentrations (normal range: 80-120 mcg/dL) are typically used, but these are affected by age, sex, time of day, infections, steroid hormone changes and muscle breakdown, and they do not always correlate with dietary or supplemental intake [1][5]. In clinical practice, clinicians also weigh risk factors for deficiency and clinical signs [1].
 
 ## 2. Forms and Bioavailability
 
-Not all zinc supplements are equivalent. The form of zinc determines three critical factors: elemental zinc content (how much actual zinc per milligram of compound), bioavailability (what percentage is absorbed), and tolerability (gastrointestinal side effects).
+Not all zinc supplements are equivalent. The form of zinc determines elemental zinc content (how much actual zinc per milligram of compound) and how well it is absorbed. The Supplement Facts panel declares the amount of elemental zinc, not the weight of the whole compound [1].
 
 ### Comparison Table
 
 | Form | Elemental Zinc (%) | Absorption | GI Tolerance | Key Notes |
 |------|:-:|:-:|:-:|------|
-| Zinc Oxide | ~80% | ~50% (lower than soluble forms) | Good | Highest elemental content per pill but poorest relative bioavailability. Used in topical sunscreens and AREDS formula. Not well absorbed for systemic supplementation [8][9]. |
-| Zinc Gluconate | ~14% | ~61% | Good | Well-studied, commonly used in lozenges and supplements. Proven effective for colds when used as lozenges [8][9][10]. |
-| Zinc Acetate | ~30% | ~61% | Good | Proven effective in cold lozenges. Releases ionic zinc effectively in the throat [8][10][11]. |
-| Zinc Citrate | ~34% | ~61% | Good | Absorption comparable to gluconate. Available in tablets and lozenges [8][9]. |
-| Zinc Sulfate | ~23% | ~9% (in one study with milk) | Moderate (can cause GI upset) | Commonly used in clinical trials and prescribed for deficiency. Inexpensive but can cause nausea [8][9][12]. |
-| Zinc Glycinate (Bisglycinate) | ~25% | 43% higher than gluconate | Excellent | Amino acid chelate with superior absorption and minimal GI side effects. Gentle on the stomach [13][14]. |
-| Zinc Picolinate | ~21% | High (increased hair, urine, RBC zinc vs gluconate/citrate) | Good | Well absorbed. One study found 50 mg/day for 4 weeks raised tissue zinc levels when gluconate and citrate did not [15]. |
-| Zinc Aspartate | Variable | ~81% higher than gluconate in one study | Good | Amino acid chelate. Fractional absorption 34.58% vs 19.13% for gluconate in one trial. May be combined with magnesium (ZMA formulas) [12]. |
-| Zinc Methionine (OptiZinc) | Variable | ~30% higher than sulfate (fasting); no difference with phytate-containing meals | Good | Amino acid chelate. Advantage diminishes when taken with food [16]. |
-| Zinc Orotate | ~17% | Poor (low water solubility, does not ionize) | Good | Failed to shorten colds in one RCT. Often promoted for testosterone with no supporting clinical evidence [10][11]. |
-| Zinc Carnosine (Polaprezinc) | Variable | Moderate | Excellent (GI-protective) | Complex of zinc and carnosine. Prescribed in Japan for stomach ulcers and taste disorders. Promoted for GI health but limited clinical evidence [17]. |
-| Zinc Carbonate | ~52% | Low | Moderate | Sometimes used in supplements. Limited absorption data [8]. |
+| Zinc Oxide | ~80% | ~50% (lower than soluble forms) | Not compared | Highest elemental content per pill. The form used in the AREDS eye formula. Absorbed less well than citrate or gluconate, and minimally by some people [1][8][20]. |
+| Zinc Gluconate | ~14% | ~61% | Not compared | Common in lozenges and supplements. Gluconate lozenges shortened colds in pooled trials [8][11]. |
+| Zinc Acetate | ~30% | Not measured in the same studies | Not compared | Acetate lozenges shortened colds in pooled trials [11][85]. |
+| Zinc Citrate | ~34% | ~61% | Not compared | Absorbed as well as gluconate in one tracer study [8]. |
+| Zinc Sulfate | ~23% | Not measured in the same studies | Not compared | Commonly found in supplements and used in many clinical trials [1]. |
+| Zinc Glycinate (Bisglycinate) | Varies by product | 43% higher than gluconate (one single-dose study) | Well tolerated in that study | Amino acid chelate. In 12 women given a single 15 mg dose, bisglycinate raised blood zinc more than gluconate [13]. |
+| Zinc Picolinate | ~21% | Raised hair, urine and red-cell zinc when gluconate and citrate did not | Not compared | One study of 50 mg/day for 4 weeks in 15 volunteers [15]. |
+| Zinc Aspartate | Variable | Little human comparison data | Not compared | Amino acid salt. Combined with magnesium in ZMA products. |
+| Zinc Orotate | ~17% | Not measured | Not compared | Orotate lozenges with a zinc nasal spray did not shorten colds in one trial [28]. |
+| Zinc Carnosine (Polaprezinc) | Variable | Not measured | Not compared | Zinc bound to L-carnosine. |
+| Zinc Carbonate | ~52% | Not measured | Not compared | Sometimes used in supplements. |
 
-Sources for absorption data: Wegmuller et al., *J Nutr* 2014; Gandia et al., *Int J Vitam Nutr Res* 2007; Piacenza et al., *Nutrients* 2023; Barrie et al., *Agents Actions* 1987; Rosado et al., *Nutr Res* 1993 [8][9][12][13][15][16].
+Sources for absorption data: Wegmuller et al., *J Nutr* 2014; Gandia et al., *Int J Vitam Nutr Res* 2007; Barrie et al., *Agents Actions* 1987 [8][13][15]. Elemental percentages are calculated from each compound's molecular weight.
 
 ### Key Principles for Form Selection
 
-**For general supplementation and correcting deficiency:** Zinc glycinate (bisglycinate) offers the best balance of absorption and gastrointestinal tolerance. It provides 43% greater bioavailability than zinc gluconate while being gentle on the stomach [13][14]. Zinc gluconate and citrate are also well-absorbed, reasonable alternatives [8][9].
+**For general supplementation and correcting deficiency:** Zinc gluconate and zinc citrate are absorbed equally well, at about 61%, and both better than zinc oxide, at about 50% [1]. In one small single-dose study, zinc bisglycinate increased zinc bioavailability by 43.4% compared with gluconate [13].
 
-**For cold treatment (lozenges):** Only zinc gluconate and zinc acetate have been proven effective for reducing cold duration when used as lozenges. The lozenge must dissolve slowly (15-30 minutes) in the mouth to release ionic zinc against cold viruses in the throat. Citric acid, tartaric acid, mannitol, and sorbitol in flavorings can bind zinc ions and reduce effectiveness. Dextrose and sucrose do not interfere [10][11][18].
+**For cold treatment (lozenges):** The pooled lozenge trials used zinc acetate or zinc gluconate at more than 75 mg of zinc a day [11][86]. Adding citric acid or tartaric acid to a lozenge may reduce its effect, because these acids bind zinc ions [18]. Brad also advises avoiding lozenges that contain sorbitol or mannitol, and letting each lozenge dissolve slowly rather than chewing it.
 
-**For gastrointestinal support:** Zinc carnosine (polaprezinc) is the only form specifically studied for gastric mucosal protection, though evidence remains limited [17].
-
-**For acne treatment:** Most clinical trials have used zinc gluconate or zinc sulfate at high doses (30-90+ mg/day). The form matters less than the dose for this indication, though GI tolerance becomes important at high doses [19].
-
-**For macular degeneration (AREDS formula):** The original AREDS study used zinc oxide (80 mg zinc/day) and AREDS2 found that a reduced dose (25 mg zinc/day) was equally effective. The AREDS formula also includes copper to offset zinc-induced copper depletion [20][21].
+**For macular degeneration (AREDS formula):** The original AREDS study used zinc oxide (80 mg zinc/day) together with 2 mg copper as cupric oxide [20]. In AREDS2, lowering the zinc dose had no apparent effect on progression to advanced AMD [21].
 
 ### How to Read a Supplement Label
 
-The weight of the zinc compound and the weight of elemental zinc are different — this is the most common source of consumer confusion.
+The weight of the zinc compound and the weight of elemental zinc are different.
 
 - 100 mg zinc gluconate = approximately 14 mg elemental zinc
-- 50 mg zinc glycinate (bisglycinate) = approximately 12.5 mg elemental zinc
 - 220 mg zinc sulfate = approximately 50 mg elemental zinc
 
-Look for "elemental zinc" or check the "% Daily Value" on the Supplement Facts label. The DV for zinc is 11 mg for adults and children age 4 and older [22]. If a product lists 11 mg at 100% DV, it contains 11 mg elemental zinc regardless of compound weight.
+The Supplement Facts panel declares the amount of elemental zinc [1]. The DV for zinc is 11 mg for adults and children age 4 years and older [1][22]. If a product lists 11 mg at 100% DV, it contains 11 mg elemental zinc regardless of compound weight.
 
-**Absorption is influenced by co-ingestion.** Taking zinc with high-fiber foods or phytate-rich meals (beans, grains, nuts) reduces absorption. Taking zinc with milk may also decrease absorption, possibly due to casein protein or calcium competition [23]. Taking 25 mg or more of supplemental iron at the same time as zinc can reduce zinc absorption [24]. Splitting zinc away from iron supplements and high-phytate meals optimizes uptake.
+**Absorption is influenced by co-ingestion.** Phytate-rich foods (beans, grains, nuts) reduce zinc absorption [1]. Taking 25 mg or more of supplemental iron at the same time as zinc can reduce zinc absorption [1][24]; iron added to fortified foods does not interfere much [1]. Taking zinc apart from iron supplements and high-phytate meals may help absorption.
 
 ## 3. Evidence for Health Benefits
 
 ### Common Cold
 
-Most, though not all, studies have found that zinc lozenges can reduce the duration of cold symptoms when taken within 24 hours of symptom onset. The effect appears to depend on the form (gluconate or acetate), dose (sufficient ionic zinc), lozenge dissolution time (15-30 minutes), and dosing frequency (every 2-3 hours).
+Trial results have been mixed, but overall zinc lozenges or syrups taken soon after a cold starts appear to shorten it without reducing symptom severity [1]. The effect appears to depend on the form (gluconate or acetate) and the dose: trials using less than 75 mg of zinc a day found no effect, while those above 75 mg did [86].
 
-**Meta-analysis of lozenge studies:** A review of three RCTs involving substantial total daily doses (80-92 mg) of zinc from zinc acetate lozenges given within 24 hours of cold symptoms found reductions in duration of: nasal discharge by 34%, nasal congestion by 37%, sneezing by 22%, scratchy throat by 33%, sore throat by 18%, hoarseness by 43%, cough by 46%, and muscle ache by 54% — though no difference for headache or fever (Hemila, *BMC Family Practice*, 2015) [10].
+**Meta-analysis of lozenge studies:** A pooled analysis of three randomised trials of zinc acetate lozenges at 80-92 mg of zinc a day found that symptoms cleared sooner: cough 46%, hoarseness 43%, nasal congestion 37%, nasal discharge 34%, scratchy throat 33%, sneezing 22%, sore throat 18% and muscle ache 54% shorter [85]. Headache and fever did not change (Hemila, *BMC Family Practice*, 2015) [85]. The confidence intervals for sneezing and sore throat crossed zero.
 
-**Gluconate vs acetate comparison:** A subsequent analysis of seven clinical trials found that both zinc gluconate and zinc acetate lozenges reduced the duration of colds by an average of 33% (about 2-3 days) compared to placebo (Hemila, *JRSM Open*, 2017) [11]. Lower daily doses (80-92 mg elemental zinc) were just as effective as higher daily doses (192-207 mg), suggesting a ceiling effect.
+**Gluconate vs acetate comparison:** A meta-analysis of seven trials (575 participants) at doses above 75 mg a day found that zinc lozenges shortened colds by 33% (95% CI 21% to 45%); acetate trials found 40% and gluconate trials 28%, a difference that was not significant (Hemila, *JRSM Open*, 2017) [11]. Trials at 80-92 mg a day were as effective as those at 192-207 mg a day.
 
-**RCT — zinc acetate lozenges:** In a trial of 50 adults, zinc acetate lozenges (13.3 mg zinc) taken every 2-3 hours within 24 hours of developing a cold reduced cold duration by 3 days and improved symptom severity for cough, nasal discharge, and muscle aches compared to placebo (Prasad et al., *J Infect Dis*, 2008) [25].
+**RCT, zinc acetate lozenges:** In a trial of 50 adults, zinc acetate lozenges (13.3 mg zinc) taken every 2-3 hours while awake, started within 24 hours of a cold, shortened colds (4.0 vs. 7.1 days) and reduced symptom severity compared to placebo (Prasad et al., *J Infect Dis*, 2008) [1][25].
 
-**RCT — zinc gluconate lozenges:** In 273 adults with experimentally induced colds given lozenges of zinc gluconate (13.3 mg) or zinc acetate (5.0 or 11.5 mg), zinc gluconate reduced cold duration by 1 day versus placebo. However, the zinc acetate lozenges at these lower doses per lozenge had no effect [26].
+**RCT, zinc gluconate lozenges:** In 273 adults with experimentally induced colds given lozenges of zinc gluconate (13.3 mg) or zinc acetate (5 or 11.5 mg), the median illness lasted 2.5 days with zinc gluconate and 3.5 days with placebo. The zinc acetate lozenges at these lower doses had no effect, and neither lozenge helped natural colds in a second trial of 281 adults [26].
 
-**Negative result — insufficient dose/dissolution:** A Finnish study of 87 adults found that a zinc acetate lozenge (13 mg zinc) used 5-6 times daily did not shorten colds. The researchers attributed this to: (1) the total daily dose being only 65 mg (lower than the effective ~80 mg threshold), and (2) smaller lozenges dissolving in only 8 minutes rather than the 15-30 minutes required for adequate zinc ion exposure (Hemila, *BMJ Open*, 2020) [27].
+**Negative result, low dose and short course:** A Finnish trial in 87 adults with colds found that a zinc acetate lozenge (13 mg zinc), used six times a day for up to 5 days, did not speed recovery (rate ratio 0.68, 95% CI 0.42 to 1.08) (Hemila, *BMJ Open*, 2020) [27].
 
-**Negative result — zinc orotate:** A study of 33 adults using zinc orotate lozenges (37 mg zinc) with zinc gluconate nasal spray found no benefit. The researchers attributed this to the low water solubility of zinc orotate and its failure to ionize under physiological conditions (Eby, *Altern Ther Health Med*, 2006) [28].
+**Negative result, zinc orotate:** A trial in 77 volunteers using zinc orotate lozenges with a zinc gluconate nasal spray found no reduction in cold duration or severity, and the spray caused pain in the smell region of the nose in some patients (Eby, *Altern Ther Health Med*, 2006) [28].
 
-**2021 systematic review:** A review of 28 trials (n=5,446) found that zinc products (mostly lozenges) resolved cold symptoms an average of 2 days earlier than placebo and reduced symptom severity on day 3. However, average daily symptom severity did not differ overall, and zinc did not prevent colds after rhinovirus inoculation (Hunter et al., *BMJ Open*, 2021) [29].
+**2021 systematic review:** A review of 28 trials (n=5,446) found that zinc (by mouth under the tongue or in the nose) resolved cold symptoms an average of 2 days earlier than placebo and reduced symptom severity on day 3. However, average daily symptom severity did not differ, and zinc did not prevent colds after rhinovirus inoculation. Minor side effects, including nausea and irritation of the mouth or nose, were more common (RR 1.41, 95% CI 1.17 to 1.69) (Hunter et al., *BMJ Open*, 2021) [29].
 
-**2024 Cochrane Review:** The most recent Cochrane Review (34 trials, n=8,526) concluded that zinc may reduce symptom duration by about 2 days in people who already have a cold, but zinc appears to make little to no difference in preventing colds. It remains unclear whether zinc affects symptom severity. All conclusions were based on low to very low certainty of evidence (Nault et al., *Cochrane Database Syst Rev*, 2024) [30].
+**2024 Cochrane Review:** The most recent Cochrane Review (34 trials, n=8,526) concluded that zinc may reduce symptom duration by about 2 days in people who already have a cold, but zinc appears to make little to no difference in preventing colds. It remains unclear whether zinc affects symptom severity. All conclusions were based on low to very low certainty of evidence (Nault et al., *Cochrane Database Syst Rev*, 2024) [1][30].
 
-**In children:** Zinc sulfate syrup at 15 mg zinc/day may help prevent colds and 30 mg/day at onset may modestly treat colds in children. Side effects were minor and similar to placebo in a seven-month study [10].
-
-**Practical recommendation:** For adults with a cold, zinc gluconate or zinc acetate lozenges providing 9-23 mg zinc per lozenge, taken every 2-3 hours (total daily dose 80-92 mg), starting within 24 hours of symptom onset, for up to one week. Allow lozenges to dissolve slowly (15-30 minutes) — do not chew or swallow whole. Avoid lozenges containing citric acid, tartaric acid, or zinc orotate. Do NOT exceed one week at these high doses, as they far exceed the Tolerable Upper Intake Level [10][11][18].
+**Practical recommendation:** For adults with a cold, Brad uses zinc acetate or zinc gluconate lozenges free of citric acid, sorbitol and mannitol, started within 24 hours, at above 75 mg per day (see the Current view above). These daily doses exceed the adult Tolerable Upper Intake Level of 40 mg [1]. The meta-analysis authors suggest about 80 mg a day for less than two weeks [85].
 
 ### Immune Function
 
-Zinc is essential for both innate and adaptive immunity. It supports the development and activation of immune cells, particularly T lymphocytes, natural killer cells, and macrophages [1][2].
+Zinc supports immune function, and people with low zinc status are more prone to infections [1].
 
-**Elderly with zinc deficiency:** A study of nursing home residents in France found that daily supplementation with zinc (20 mg from zinc sulfate) plus selenium (100 mcg) for two years resulted in more people being free of respiratory tract infections and having better antibody responses after influenza vaccination. Most participants were initially slightly deficient, with blood plasma zinc levels steadily increasing from 70 to ~80 mcg/dL in the supplemented group (Girodon, *Arch Intern Med*, 1999) [31].
+**Elderly in nursing homes:** In a French trial of 725 institutionalized people (over 65 years), a daily low-dose supplement of zinc plus selenium for two years led to higher antibody titers after influenza vaccination, and slightly more people stayed free of respiratory infections (P = .06). Because zinc was given with selenium, the effect cannot be credited to zinc alone (Girodon, *Arch Intern Med*, 1999) [31].
 
-**Vegans and vegetarians:** A study in Germany found that vegans and vegetarians had lower zinc blood levels than omnivores (64.9, 78.2, and 83.0 mcg/dL respectively). Immune response to viral stimuli was reduced in vegetarians and vegans. Giving 10 mg of zinc (as zinc aspartate) daily for 2 weeks to deficient participants raised levels from 58.9 to 74.0 mcg/dL and improved antiviral immune response (Vallboehmer, *Clin Nutr*, 2025) [32].
+**Vegans and vegetarians:** A study found that zinc deficiency was common among vegetarians and vegans and that their antiviral interferon response was lower than in omnivores. Oral zinc supplements in those who were deficient improved zinc status and restored the response (Vallboehmer, *Clin Nutr*, 2025) [32].
 
-**COVID-19:** Evidence for zinc in COVID-19 has been conflicting. A Spanish study of 249 hospitalized COVID-19 patients found that those with very low blood zinc levels (<50 mcg/dL) had higher mortality (21% vs 5%) compared to those with higher zinc (Vogel-Gonzalez, *Nutrients*, 2021) [33]. However, a study of 214 adults in Ohio/Florida found that 50 mg zinc at bedtime did not shorten COVID-19 symptom duration, nor did combining it with 8,000 mg vitamin C (Thomas, *JAMA Network Open*, 2021) [34]. A study in India of 156 hospitalized adults with adequate zinc levels showed that 40 mg zinc daily for 8 weeks did not shorten symptoms or reduce ventilation need (Partap, *Curr Dev Nutr*, 2023) [35]. The balance of evidence suggests maintaining adequate zinc status is important for immune function, but supplementing above adequacy does not provide additional benefit against COVID-19.
+**COVID-19:** In a Spanish cohort of 249 hospitalized COVID-19 patients, serum zinc below 50 mcg/dL at admission was linked to worse illness and higher mortality (Vogel-Gonzalez, *Nutrients*, 2021) [33]. However, in a trial of 214 outpatients in Ohio and Florida, 50 mg zinc gluconate for 10 days did not shorten COVID-19 symptoms, nor did 8,000 mg vitamin C (Thomas, *JAMA Network Open*, 2021) [34]. An Indian trial gave 181 hospitalized adults zinc (40 mg daily) or placebo for 8 weeks; zinc neither sped recovery from fever, cough and breathlessness nor reduced the use of assisted ventilation (Partap, *Curr Dev Nutr*, 2023) [35]. In these two trials, zinc did not help people with COVID-19.
 
 ### Age-Related Macular Degeneration (AMD)
 
 The relationship between zinc and AMD is supported by some of the strongest interventional evidence for any zinc health outcome.
 
-**Observational evidence:** In a Dutch cohort study (n=4,170, mean follow-up 8 years), higher dietary zinc intake was inversely associated with AMD risk [36]. An Australian study (n=2,464) found that participants with the highest zinc intake (>=15.8 mg/day) had a 44% lower risk of any AMD and 46% lower risk of early AMD at 5- and 10-year follow-ups [37].
+**Observational evidence:** In a Dutch cohort study (n=4,170, mean follow-up 8 years), higher dietary zinc intake was inversely associated with AMD risk (hazard ratio 0.91 per standard deviation of intake, 95% CI 0.83 to 0.98) [36]. In an Australian study, participants with total zinc intakes in the top decile (at least 15.8 mg/day) had a lower risk of any AMD (risk ratio 0.56, 95% CI 0.32 to 0.97) and of early AMD (0.54, 95% CI 0.30 to 0.97) than everyone else [1][37].
 
-**AREDS trial:** The landmark Age-Related Eye Disease Study enrolled 4,757 participants aged 50-80 with high risk of advanced AMD. Those taking daily supplements containing 80 mg zinc (as zinc oxide), 500 mg vitamin C, 400 IU vitamin E, 15 mg beta-carotene, and 2 mg copper for 5 years had a 25% lower risk of advanced AMD compared to placebo (AREDS Research Group, *Arch Ophthalmol*, 2001) [20].
+**AREDS trial:** The Age-Related Eye Disease Study randomised 3,640 people aged 55-80 years with AMD to antioxidants (500 mg vitamin C, 400 IU vitamin E and 15 mg beta-carotene), zinc (80 mg as zinc oxide, with 2 mg copper), both, or placebo, with an average follow-up of 6.3 years. Antioxidants plus zinc lowered the odds of advanced AMD compared with placebo (odds ratio 0.72, 99% CI 0.52 to 0.98) (AREDS Research Group, *Arch Ophthalmol*, 2001) [20].
 
-**AREDS2 trial:** The follow-up study (n=4,203, median 5 years) confirmed the benefit and found that reducing zinc from ~80 mg to ~25 mg provided the same protective effect against advanced AMD. However, with fewer participants on the lower-zinc formula, the researchers viewed this as preliminary. The National Eye Institute continues to recommend the AREDS formula with 80 mg zinc [21][38].
+**AREDS2 trial:** The follow-up study (n=4,203, median 5 years) found no apparent effect of lowering the zinc dose on progression to advanced AMD [21]. Because the lower-zinc formula was taken by fewer than half of the participants, the researchers viewed this as preliminary, and the National Eye Institute continues to recommend the AREDS formula with 80 mg zinc [1][38].
 
-**Practical note:** The high zinc dose in AREDS formulas (69.6-80 mg) greatly exceeds the UL (40 mg), so copper (2 mg) is included to prevent zinc-induced copper deficiency. Individuals with or developing AMD should discuss AREDS supplementation with their healthcare provider [20][21].
+**Practical note:** The 80 mg zinc dose in the AREDS formula greatly exceeds the UL of 40 mg [1]. The formula includes 2 mg copper [20]. Individuals with or developing AMD should discuss AREDS supplementation with their healthcare provider [1].
 
 ### Type 2 Diabetes and Insulin Resistance
 
-Zinc plays a role in insulin secretion from pancreatic beta cells, insulin signaling, and glucose storage. Zinc concentrations are often low in people with type 2 diabetes [1][2][3].
+People with type 2 diabetes often have low zinc levels, and zinc depletion might play a role in the disease [1].
 
-**Observational data:** A systematic review and meta-analysis of 16 observational studies (n=146,027) found a 13% lower risk of type 2 diabetes in participants with the highest zinc intakes versus the lowest (Fernandez-Cao et al., *Nutrients*, 2019) [39].
+**Observational data:** A meta-analysis of 16 observational studies found that the highest dietary zinc intakes, compared with the lowest, were linked to lower odds of type 2 diabetes (odds ratio 0.87, 95% CI 0.78 to 0.98), but zinc from supplements was not (Fernandez-Cao et al., *Nutrients*, 2019) [39].
 
-**Meta-analysis of dose and duration effects:** A comprehensive meta-analysis of 27 clinical trials compared low-dose zinc (<25 mg/day) with high-dose zinc (25-75 mg/day) for diabetes and cardiovascular risk factors (Pompano & Boy, *Adv Nutr*, 2021) [40]. Key findings:
-- Low-dose zinc (<25 mg/day) lowered fasting blood sugar by 17.3 mg/dL — significantly more than high-dose zinc (only 5.27 mg/dL reduction)
-- Both doses improved HbA1c, but longer supplementation (>=12 weeks) had greater effects than shorter courses
-- Low-dose zinc improved a larger number of risk factors than high-dose zinc
-- Low-dose zinc also reduced triglycerides, total cholesterol, and LDL cholesterol
+**Meta-analysis of dose and duration effects:** A meta-analysis of 27 trials compared low-dose zinc (<25 mg/day) with 25-75 mg/day doses on risk factors for diabetes and cardiovascular disease (Pompano & Boy, *Adv Nutr*, 2021) [40]. Key findings:
+- Low-dose zinc benefited fasting blood glucose, insulin resistance, triglycerides, total cholesterol and LDL cholesterol
+- Higher-dose zinc benefited HbA1c and insulin resistance
+- Trials lasting at least 12 weeks benefited fasting glucose, triglycerides, and total and LDL cholesterol
+- Low-dose and longer trials each improved more risk factors than high-dose and shorter ones
 
-**Meta-analysis for glycemic control:** A systematic review of 32 trials (n=1,700 adults with type 2 diabetes) found that zinc supplementation (mean 35 mg/day) reduced fasting glucose, 2-hour postprandial glucose, fasting insulin, insulin resistance (HOMA-IR), HbA1c, and C-reactive protein (Wang et al., *Am J Clin Nutr*, 2019) [41]. Glycemic benefits did not vary significantly by dose (<30 mg vs >=30 mg) or supplementation duration.
+**Meta-analysis for glycemic control:** A systematic review of 32 placebo-controlled trials (n=1,700) found that zinc supplementation (mean 35 mg/day) reduced fasting glucose, 2-hour postprandial glucose, fasting insulin, insulin resistance (HOMA-IR), HbA1c, and C-reactive protein (Wang et al., *Am J Clin Nutr*, 2019) [1][41]. Glycemic benefits did not vary by dose (<30 mg vs >=30 mg) or supplementation duration [1].
 
-**Lipid effects in type 2 diabetes:** A meta-analysis of 9 trials (n=424) in people with type 2 diabetes found that zinc supplementation improved triglycerides and total cholesterol but not LDL or HDL cholesterol (Asbaghi et al., *Nutr Metab Cardiovasc Dis*, 2020) [42].
+**Lipid effects in type 2 diabetes:** Pooling 9 trials (n=424) of adults with type 2 diabetes, zinc lowered triglycerides and total cholesterol; the overall effect on LDL cholesterol was not significant (Asbaghi et al., *Nutr Metab Cardiovasc Dis*, 2020) [42].
 
-**Gestational diabetes:** A meta-analysis of 5 trials (n=263) found zinc supplementation improved fasting glucose, insulin, and insulin resistance in gestational diabetes, but results were confounded by co-supplementation with other nutrients [43].
+**Gestational diabetes:** A meta-analysis of 5 trials (n=263) found zinc supplementation improved fasting glucose, insulin, and insulin resistance in gestational diabetes, but some trials gave zinc with other nutrients [1][43].
 
-**Diabetic foot ulcers:** One trial of 50 mg zinc sulfate daily for 12 weeks in 60 patients with diabetic foot ulcers showed uncertain results (Cochrane Review) [44].
+**Diabetic foot ulcers:** One trial of 50 mg/day zinc (as zinc sulfate) for 12 weeks in 60 patients with diabetic foot ulcers gave uncertain results (Cochrane Review) [1].
 
-**Synthesis:** The evidence suggests that low-dose zinc supplementation (<25 mg/day) for 12+ weeks may improve multiple metabolic markers in people with type 2 diabetes. Higher doses appear less effective than lower doses for glycemic control — a counter-intuitive finding that may relate to zinc's U-shaped dose-response relationship.
+**Synthesis:** The NIH fact sheet judges the evidence insufficient to support zinc supplements for preventing or managing type 2 diabetes [1]. Meta-analyses suggest modest benefits for blood glucose and lipids, and in one the benefit did not depend on dose [1][41].
 
 ### Cholesterol and Cardiovascular Risk
 
-As part of the same meta-analysis by Pompano & Boy (*Adv Nutr*, 2021), zinc taken in low doses (<25 mg/day) for longer durations (>=12 weeks) reduced triglyceride levels, total cholesterol, and LDL cholesterol better than controls [40]. Zinc supplementation did not improve HDL cholesterol regardless of dose or duration.
+In the same meta-analysis by Pompano & Boy (*Adv Nutr*, 2021), low-dose zinc (<25 mg/day) benefited triglycerides, total cholesterol and LDL cholesterol, and trials lasting at least 12 weeks benefited triglycerides and total and LDL cholesterol [40].
 
 ### Acne
 
-Zinc's anti-inflammatory and antibacterial properties have made it a target for acne treatment.
+Zinc has been tested as an acne treatment.
 
-**Meta-analysis:** A systematic review found that supplementation with high doses of zinc (about 100-210 mg zinc gluconate or 400-600 mg zinc sulfate, providing ~14-220 mg elemental zinc daily) slightly reduced the number of papules (solid, inflamed bumps) compared to placebo or other active treatments, but did not significantly reduce pustules (Yee, *Dermatol Ther*, 2020) [19].
-
-**Clinical guidance:** The American Academy of Dermatology stated in its 2024 guidelines that there is insufficient evidence to develop a recommendation on oral or topical zinc for acne treatment (Reynolds, *J Am Acad Dermatol*, 2024) [45].
-
-**Practical note:** Some evidence suggests 30 mg of zinc daily may be helpful for acne — a dose that is safe for most people. However, many studies used 90+ mg daily, which requires physician supervision due to copper depletion risk [10][19].
+**Meta-analysis:** A 2020 systematic review found that people with acne had lower serum zinc than controls, and that zinc treatment improved the count of inflamed papules (solid, red bumps), with side effects no more common than with comparators (Yee, *Dermatol Ther*, 2020) [19].
 
 ### Wound Healing and Skin Health
 
-Zinc is essential for cell division, collagen synthesis, and inflammatory response — all critical for wound repair [1][2][3].
+Zinc is needed for cell division and wound healing, and deficiency in older adults can delay wound healing [1].
 
-**Zinc deficiency and skin lesions:** A case report described a 4-month-old infant with zinc deficiency who developed a severe eczema-like rash on the abdomen, arms, legs, diaper area, face, and scalp. The rash cleared completely after five days of zinc sulfate supplementation and recurrence was prevented by continued supplementation over the following year (Schroeder, *New Engl J Med*, 2020) [46].
-
-**IBD-related deficiency:** Two men with Crohn's disease and zinc deficiency had skin lesions resolve with oral zinc supplementation (220 mg zinc sulfate three times daily), though one required IV supplementation due to GI intolerance (McClain, *Gastroenterology*, 1980) [47].
+**Zinc deficiency and skin lesions:** In a series of patients with Crohn's disease, two developed skin lesions from zinc deficiency that responded to zinc therapy (McClain, *Gastroenterology*, 1980) [47].
 
 **Diabetic wound healing:** Limited evidence exists specifically for zinc in diabetic foot ulcers (see Diabetes section above) [44].
 
-**Synthesis:** Zinc supplementation clearly aids wound healing and skin repair in deficient individuals. Evidence for benefit in zinc-replete people is limited.
+**Synthesis:** Zinc helps skin and wound repair in people who are deficient. Evidence for benefit in people with adequate zinc is limited.
 
 ### Sleep
 
-The evidence for zinc and sleep is preliminary but mechanistically plausible.
+The evidence for zinc and sleep is preliminary.
 
-**Observational associations:** Higher blood zinc levels have been associated with better sleep in studies of infants, pre-adolescents, and adults — though this does not establish causation [48].
+**Review:** A review reports that serum zinc varies with the amount of sleep, and that oral zinc increased the amount and quality of sleep in mice and humans [48].
 
-**Zinc and sleep duration:** One study found that taking a relatively high dose of zinc (30 mg as zinc magnesium aspartate/ZMA) may actually shorten total sleep time in people who already sleep ~8 hours per day [49].
-
-**Oyster study:** A 3-month study in Japan found that ingesting 50 g of Pacific oyster daily (providing 15 mg zinc) reduced time to fall asleep by 5 minutes and increased time in non-REM sleep (a measure of sleep efficiency) (Cherasse, *Int J Molec Sci*, 2017) [48].
-
-**Synthesis:** No clinical trials have studied zinc supplementation alone for sleep. The evidence is limited to observational associations, multi-ingredient formulas, and one food-based study. More research is needed before recommending zinc specifically for sleep.
+**Synthesis:** Human evidence on zinc supplements alone for sleep is limited, and more research is needed before recommending zinc specifically for sleep.
 
 ### Infertility
 
 Zinc is essential for sperm production and male reproductive function [1][2].
 
-**Small studies:** Several small studies from the Netherlands and Iran suggested that zinc plus folic acid supplementation might improve sperm count or quality in healthy men and those with fertility issues, even without deficiency (Wong, *Fertil Steril*, 2002; Azizollahi, *J Assist Reprod Genet*, 2013) [50][51].
+**Small studies:** In a Dutch trial of 108 fertile and 103 subfertile men, a daily dose of 66 mg zinc sulfate plus 5 mg folic acid for 26 weeks increased total normal sperm count by 74% in subfertile men (Wong, *Fertil Steril*, 2002) [50]. An Iranian trial after varicocele surgery found that zinc sulfate plus folic acid improved most sperm measures (Azizollahi, *J Assist Reprod Genet*, 2013) [51].
 
-**Large negative trial:** A large U.S. trial in over 2,000 men seeking infertility treatment (about 80% with male infertility diagnosis) found that zinc (30 mg elemental) plus folic acid (5 mg) daily for 6 months did NOT significantly increase sperm count, improve semen quality, or improve live birth rates compared to placebo. Zinc deficiency status was not assessed at baseline (Schisterman, *JAMA*, 2019) [52].
+**Large negative trial:** A large U.S. trial randomised the male partners of 2,370 couples seeking fertility treatment to a daily 30 mg of elemental zinc plus 5 mg of folic acid, or placebo, for 6 months. The supplement did not improve semen quality or the chance of a live birth. DNA fragmentation rose slightly, and nausea and vomiting were more common with the supplement (Schisterman, *JAMA*, 2020) [52].
 
-**Synthesis:** Large-scale evidence does not support zinc supplementation for male fertility in well-nourished populations. The earlier positive findings may have reflected benefits in zinc-deficient individuals.
+**Synthesis:** Large-scale evidence does not support zinc supplementation for male fertility in well-nourished populations. Because the trials gave zinc with folic acid, results cannot be credited to zinc alone.
 
 ### Gum Disease (Periodontitis)
 
-**Clinical trial:** A study of 42 adults (average age 40) with moderate to severe periodontitis found that 15 mg zinc (zinc acetate) once daily for one month following standard dental treatment (scaling and root planing) significantly improved gum inflammation scores (0.89 vs 1.23 on a 0-3 scale), bleeding (0.67 vs 0.9), and pocket probing depth (3.63 mm vs 4.6 mm) compared to placebo plus standard treatment (Gupta, *J Oral Biol Craniofac Res*, 2025) [53].
+**Clinical trial:** In a trial of 42 adults in India with moderate to severe periodontitis, oral zinc for one month alongside scaling and root planing reduced gum inflammation, bleeding, pocket depth and attachment loss more than scaling and root planing with placebo (Gupta, *J Oral Biol Craniofac Res*, 2025) [53].
 
 ### Childhood Diarrhea
 
-Acute diarrhea is a leading cause of death in children under 5 in low-income countries, killing approximately 525,000 children annually [54].
+Acute diarrhea is a leading cause of death in children in low-income countries, killing approximately 525,000 children annually [1][54].
 
-**Cochrane Review:** A 2016 review of 33 trials (n=10,841 children aged 1 month to 5 years) found that zinc supplementation (mostly 20 mg/day for 2 weeks) shortened diarrhea duration by about half a day in children over 6 months and reduced the likelihood of diarrhea persisting for 7+ days by 27%. In malnourished children, diarrhea duration was reduced by about 1 day. In children under 6 months, no benefit was seen [55].
+**Cochrane Review:** A 2016 review of 33 trials (n=10,841 children aged 1 month to 5 years) found that zinc supplementation (mostly 20 mg/day for 2 weeks) shortened diarrhea by about half a day in children over 6 months (mean difference 11.46 hours) and reduced the number whose diarrhea lasted at least 7 days (RR 0.73, 95% CI 0.61 to 0.88). In malnourished children, diarrhea was shortened by about a day. In children under 6 months, no benefit was seen [1][55].
 
-**Network meta-analysis:** A 2018 review of 174 studies (n=32,430 children) found zinc was one of the most effective interventions for acute childhood diarrhea, especially when combined with probiotics (Saccharomyces boulardii) or smectite (Florez et al., *PLoS One*, 2018) [56].
+**Network meta-analysis:** A 2018 review of 174 studies (n=32,430 children) found zinc was one of the best single interventions for acute childhood diarrhea, and best combined with the probiotic Saccharomyces boulardii or with smectite; the effect of zinc was seen in low- and middle-income countries, not high-income ones (Florez et al., *PLoS One*, 2018) [56].
 
-**WHO/UNICEF recommendation:** Short-term zinc supplementation — 20 mg/day for children, 10 mg/day for infants under 6 months — for 10 to 14 days to treat acute childhood diarrhea [57].
+**WHO/UNICEF recommendation:** Short-term zinc supplementation, 20 mg/day for children and 10 mg/day for infants under 6 months, for 10 to 14 days to treat acute childhood diarrhea [1][57].
 
 ### Pneumonia in Children
 
-**Prevention:** A 2016 Cochrane Review of 6 trials in low-income countries (n=5,193 children aged 2-59 months) found that supplementation with 10-20 mg zinc for up to 20 months reduced the incidence and prevalence of pneumonia [58].
+**Prevention:** A 2016 Cochrane Review of 6 trials in low-income countries (n=5,193 children aged 2-59 months) found that supplementation with 10-20 mg zinc for up to 20 months reduced the incidence of pneumonia (RR 0.87, 95% CI 0.81 to 0.94) [1][58].
 
-**Treatment:** Most evidence suggests that using zinc supplements as an adjunct to antibiotics for treating pneumonia in children does not significantly reduce mortality or time to recovery (Brown et al., 2020; 11 trials) [59]. However, one meta-analysis of 6 trials (n=2,216 children) found zinc reduced mortality from severe pneumonia specifically [60].
+**Treatment:** Most evidence suggests that zinc given with antibiotics for pneumonia in children does not reduce mortality or time to recovery (Brown et al., 2020; 11 trials) [59]. However, one meta-analysis of 6 trials (n=2,216 children) found zinc reduced mortality from severe pneumonia (RR 0.43) [60].
 
 ### HIV
 
 People with HIV often have low zinc status due to reduced absorption and increased losses [1][2].
 
-**Positive findings:** An RCT of 231 adults with HIV and low plasma zinc gave 12 mg/day (women) or 15 mg/day (men) zinc for 18 months. Zinc reduced immunological failure events (CD4+ <200 cells/mL) by 76% and diarrhea by 60% (Baum et al., *Clin Infect Dis*, 2010) [61].
+**Positive findings:** An RCT of 231 adults with HIV and low plasma zinc gave 12 mg/day (women) or 15 mg/day (men) zinc for 18 months. Zinc lowered the rate of immunological failure (CD4+ <200 cells/mm3; relative rate 0.24, 95% CI 0.10 to 0.56) and the rate of diarrhea (odds ratio 0.4), with no effect on mortality (Baum et al., *Clin Infect Dis*, 2010) [61].
 
-**Cochrane Reviews:** Two systematic reviews found that while zinc may improve zinc status in people with HIV, the supplements appeared to have little to no effect on CD4+ T-cell counts, viral load, or mortality. In pregnant women with HIV, 25 mg zinc daily did not affect birth outcomes or mother-to-child transmission [62][63].
+**Cochrane Reviews:** Two systematic reviews found that while zinc may improve zinc status in people with HIV, the supplements appeared to have little to no effect on CD4+ T-cell counts or viral load [1][62][63]. In one trial of 400 pregnant women with HIV in Tanzania, 25 mg zinc a day until 6 weeks after delivery did not change birth weight, length of pregnancy, fetal deaths or early mother-to-child transmission compared with placebo [1].
 
 ### Inflammatory Bowel Disease (IBD)
 
-Zinc deficiency is common in IBD: 54% of people with Crohn's disease and 41% with ulcerative colitis in one analysis (Zupo, *Nutrients*, 2022) [64]. In patients with zinc deficiency, the risk of IBD-related symptoms (anemia, hemorrhage, fistula) increases, and hospitalization or surgery is more likely [65]. Zinc supplementation might reduce these risks, though oral supplementation is not always well-tolerated — one of two men with Crohn's disease in a case series experienced stomach pain and vomiting requiring IV zinc (McClain, *Gastroenterology*, 1980) [47].
+A 2022 meta-analysis estimated that about half of people with IBD have zinc deficiency, with a pooled prevalence of 54% in Crohn's disease and 41% in ulcerative colitis (Zupo, *Nutrients*, 2022) [64]. In patients with zinc deficiency, the risk of IBD-related complications increases, and hospitalization or surgery is more likely; normalization of zinc levels was associated with improvement in these outcomes [1][65].
 
-A study of 61 children and adolescents with IBD found that a daily multivitamin (providing 2.5 mg zinc oxide) for one year normalized zinc levels in 63% of those who began with deficiency, while 37% remained deficient (Santucci, *J Ped Gastroenterol Nutr*, 2014) [66].
+In a 5-year follow-up of 61 young people with IBD, 63% of the zinc-deficient patients reached normal zinc status on a daily multivitamin, but 15% developed zinc deficiency despite supplementation (Santucci, *J Ped Gastroenterol Nutr*, 2014) [66].
 
 ### Wilson's Disease
 
-Zinc may be helpful in Wilson's disease, a genetic disorder where excess copper accumulates in tissues, as zinc reduces copper absorption. This is a recognized therapeutic use (Brewer, *J Lab Clin Med*, 1998) [67].
+Zinc is used to treat Wilson's disease, an inherited disorder in which copper builds up in the body, because zinc blocks copper absorption. In 141 patients followed for up to 10 years, zinc worked as the sole maintenance therapy with low toxicity (Brewer, *J Lab Clin Med*, 1998) [67].
 
 ### Other Conditions — Limited or Speculative Evidence
 
-**Depression:** High-dose zinc may enhance the effectiveness of antidepressants [10].
+**Taste disorders (dysgeusia):** Zinc deficiency can interfere with the senses of taste and smell [1].
 
-**Anorexia nervosa:** Zinc supplementation has shown some benefit for improving symptoms [10].
+**Canker sores (aphthous stomatitis):** In a retrospective study of 48 patients whose repeated mouth ulcers came with zinc deficiency (some also iron deficient), correcting the deficiencies stopped recurrences (Yildirimyan, *Oral Health Prev Dent*, 2019) [68].
 
-**Taste disorders (dysgeusia):** Zinc carnosine is prescribed in Japan for altered taste sensation, and zinc deficiency can cause taste abnormalities [10][17].
-
-**ADHD:** High-dose zinc may improve symptoms, but evidence is limited [10].
-
-**Canker sores (aphthous stomatitis):** Correcting zinc deficiency (and iron deficiency) in people with recurrent canker sores eliminated recurrence in one study (Yildirimyan, *Oral Health Prev Dent*, 2019) [68].
-
-**Hypothyroidism:** Hypothyroidism can cause zinc deficiency because thyroid hormones are essential for zinc absorption. Conversely, zinc deficiency can cause subclinical hypothyroidism because zinc is needed to make thyroid hormones. Supplementation has improved symptoms including hair loss in some cases (Ambooken, *Int J Trich*, 2013) [69].
-
-**Prostate cancer:** Long-term zinc supplementation at very high doses (>100 mg/day) has been associated with increased prostate cancer risk. However, zinc may also suppress prostate cancer cell growth — the overall relationship is unclear [10][70].
-
-**BPH, peptic ulcers, osteoporosis, tinnitus, cataracts, rheumatoid arthritis, eczema:** The evidence does not support zinc supplementation for any of these conditions [10].
+**Prostate cancer:** In a cohort of 46,974 U.S. men, zinc supplements up to 100 mg/day were not linked to prostate cancer, but more than 100 mg/day was linked to a higher risk of advanced prostate cancer (relative risk 2.29, 95% CI 1.06 to 4.95) [92].
 
 ## 4. Recommended Dosing
 
@@ -276,7 +270,7 @@ From the NIH Office of Dietary Supplements and the Food and Nutrition Board [1]:
 
 ### Tolerable Upper Intake Level (UL)
 
-The UL for zinc from food and supplements for healthy individuals is based on the level that adversely affects copper status [1]:
+The UL for zinc from food and supplements for healthy individuals is based on the level that adversely affects copper status [1][80]:
 
 | Age | UL (mg/day) |
 |-----|:-:|
@@ -288,30 +282,26 @@ The UL for zinc from food and supplements for healthy individuals is based on th
 | 14-18 years | 34 |
 | 19+ years | 40 |
 
-The UL applies to all adults aged 19 and over, including pregnant and lactating women. The UL does not apply to individuals receiving zinc for medical treatment under physician supervision.
+The UL applies to all adults aged 19 and over, including pregnant and lactating women. The UL does not apply to individuals receiving zinc for medical treatment, who should be under a physician's care [1].
 
 ### Practical Dosing by Indication
 
-**General supplementation (to fill dietary gaps):** 8-15 mg elemental zinc per day. Most multivitamins provide 8-15 mg. A dose of ~8 mg is appropriate for women; ~11 mg for men [1][10].
+**General supplementation (to fill dietary gaps):** The adult RDA is 11 mg for men and 8 mg for women [1].
 
-**Vegetarians and vegans:** May require up to 50% more zinc than omnivores due to lower bioavailability from phytate-rich plant foods. Consider 12-16 mg/day [1][2].
+**Vegetarians and vegans:** Phytate-rich plant foods lower zinc absorption. Soaking beans, grains and seeds before cooking, and choosing canned or pre-cooked legumes, can help, and zinc supplements might also help [1].
 
-**Cold treatment (short-term only):** 80-92 mg/day as zinc gluconate or zinc acetate lozenges (9-23 mg per lozenge, every 2-3 hours) for up to 1 week. This exceeds the UL and should not be sustained [10][11].
+**Cold treatment (short-term only):** Above 75 mg/day as zinc acetate or gluconate lozenges, started within 24 hours (see the Current view). This exceeds the UL and should not be sustained [1][11][85].
 
-**Macular degeneration (AREDS):** 25-80 mg zinc oxide daily plus 2 mg copper, as part of the AREDS formula. Requires physician oversight [20][21].
+**Macular degeneration (AREDS):** 80 mg zinc (as zinc oxide) daily plus 2 mg copper, as part of the AREDS formula. Discuss it with your eye doctor [1][20].
 
-**Diabetes/metabolic support:** <25 mg/day for >=12 weeks appears more effective than higher doses [40].
+**IBD with zinc deficiency:** As directed by physician [1][65].
 
-**Acne:** 30 mg/day is a reasonable starting dose. Higher doses (90+ mg) require physician supervision [10][19].
-
-**IBD with zinc deficiency:** As directed by physician. Oral supplementation may not be tolerated; IV supplementation may be needed [47][65].
-
-Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes 8.25 mg of elemental zinc as zinc glycinate — a form chosen for its 43% higher bioavailability compared to zinc gluconate and its excellent gastrointestinal tolerance. This dose is designed to fill common dietary gaps without approaching the UL, consistent with the evidence that low-dose zinc (<25 mg/day) provides metabolic benefits and supports immune function.
+Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes 11 mg of elemental zinc as zinc glycinate. In a small head-to-head study (a single dose in 12 healthy women), zinc bisglycinate was absorbed about 43% better than zinc gluconate (Gandia et al., *Int J Vitam Nutr Res*, 2007). This dose is designed to fill common dietary gaps without approaching the UL, consistent with the evidence that low-dose zinc (<25 mg/day) provides metabolic benefits and supports immune function.
 
 ### How to Take Zinc
 
-- **With or without food:** Zinc is best absorbed on an empty stomach or with a light meal. Taking zinc with high-phytate foods (beans, grains, nuts) or with milk may reduce absorption [23][24].
-- **Separate from iron supplements:** Take zinc and iron supplements at least 2 hours apart. Supplemental iron (>=25 mg) reduces zinc absorption [24].
+- **With or without food:** Taking zinc with high-phytate foods (beans, grains, nuts) may reduce absorption [1]. Brad suggests taking zinc lozenges after eating to avoid nausea.
+- **Separate from iron supplements:** Take iron supplements of 25 mg or more at a different time from zinc [1][24].
 - **Separate from certain medications:** See Drug Interactions section.
 - **Timing:** No strong evidence favors morning vs evening. Choose a consistent time that allows separation from interfering foods and medications.
 
@@ -319,63 +309,65 @@ Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin
 
 ### Common Side Effects
 
-Zinc supplements cause few immediate side effects other than occasional stomach upset or unpleasant taste at standard supplemental doses (8-15 mg/day) [1][10]. At higher doses (40+ mg):
+High zinc intakes can cause nausea, dizziness, headaches, gastric distress, vomiting, and loss of appetite [1]. Zinc lozenges commonly cause an unpleasant taste, mouth irritation and nausea [18][29]:
 
-- Nausea, vomiting, diarrhea
-- Metallic taste
+- Nausea, vomiting
+- Unpleasant taste, mouth irritation (lozenges)
 - Headache, dizziness
 - Gastric distress, loss of appetite
 
 ### Copper Depletion — The Primary Long-Term Risk
 
-The most important safety concern with zinc supplementation is copper depletion. Excess zinc induces metallothionein in intestinal cells, which traps copper and prevents its absorption [1][10][70].
+The most important safety concern with zinc supplementation is copper depletion. High zinc intakes block copper absorption [1][67].
 
-**Timeline and dose threshold:** Copper depletion typically occurs with zinc doses of 50+ mg/day taken for weeks to months. However, cases have been reported at lower doses in vulnerable individuals (those with malabsorption, bariatric surgery, or concurrent denture adhesive use containing zinc) [70][71][72].
+**Timeline and dose threshold:** Doses of 50 mg of zinc or more over weeks can interfere with copper absorption [1]. Copper deficiency is more likely when copper intake or absorption is already low, for example after bariatric surgery, and it has been reported with heavy use of zinc-containing denture creams [71][91].
 
 **Consequences of zinc-induced copper deficiency:**
-- Anemia (often severe)
-- Neutropenia (immune suppression)
-- Neurological damage — sensory ataxia, myelopathy, difficulty walking, cognitive changes
+- Anemia
+- Neutropenia (low white blood cells)
+- Neurological damage, including sensory ataxia, myelopathy, difficulty walking and cognitive changes
 - Reduced HDL cholesterol
-- Some of these effects (especially neurological) may be irreversible [70][71]
+- Neurological symptoms may not fully recover [1][72][73][90][91]
 
 **Prevention:**
-- When taking zinc above the UL (40 mg) long-term, take 1-3 mg copper daily to partially offset depletion [10][20]
-- Some experts recommend not exceeding 20 mg/day of zinc to avoid copper depletion risk entirely [70]
-- Copper deficiency often goes undiagnosed because copper levels are not part of routine lab testing (Duncan, *Br J Clin Pharmacol*, 2023) [73]
-- Even supplementing with copper may not fully prevent zinc-associated copper deficiency — one 81-year-old woman on a vision supplement with 80 mg zinc and 2 mg copper still developed copper deficiency [74]
+- The AREDS formula pairs 80 mg zinc with 2 mg copper [1][20]
+- Copper deficiency often goes undiagnosed because zinc and copper levels are rarely measured in people prescribed zinc; in one Scottish review, 7 of 14 confirmed cases had been missed (Duncan, *Br J Clin Pharmacol*, 2023) [70]
+- In a review of 70 patients prescribed zinc, 62% were given doses high enough to cause copper deficiency, 9% developed unexplained anemia and 7% neurological symptoms typical of copper deficiency [73]
+- In one case report, the authors judged that the 2 mg of copper in an 80 mg zinc supplement was not enough to offset the zinc [100].
+
+**What to do:** If you take high-dose zinc and get numbness, tingling, unsteady walking or unexplained anemia, stop the zinc and see your doctor. Treatment is stopping the zinc and taking oral copper, and early copper treatment may improve neurological recovery [91][100].
 
 ### Hypoglycemia Risk
 
-Three cases of hypoglycemia (blood sugar 26-45 mg/dL, normal 70-100 mg/dL) requiring emergency treatment were reported in men without diabetes who consumed 50-250 mg zinc daily for 2-7 days during COVID-19 (Elanjian, *Cureus*, 2023) [75].
+A case series described three patients who developed moderate-to-severe hypoglycemia (low blood sugar) needing glucose after taking excess zinc tablets for COVID-19 prophylaxis (Elanjian, *Cureus*, 2023) [75]. If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not give food or drink by mouth.
 
 ### Prostate Cancer Risk
 
-Long-term zinc supplementation at very high doses (>100 mg/day) has been associated with increased prostate cancer risk. However, zinc may also suppress prostate cancer cell growth — the relationship is complex and unclear [10][70].
+In a large cohort of U.S. men, taking more than 100 mg/day of supplemental zinc was linked to a higher risk of advanced prostate cancer (relative risk 2.29, 95% CI 1.06 to 4.95), and so was taking zinc for 10 or more years (relative risk 2.37, 95% CI 1.42 to 3.95); doses up to 100 mg/day were not linked to risk [92].
 
 ### Carotenoid Absorption
 
-High doses of zinc (and other divalent minerals) may decrease absorption of carotenoids (beta-carotene, lycopene, astaxanthin) from foods and supplements. Take carotenoid supplements at a different time of day from zinc supplements [76].
+High doses of zinc and other minerals may lower carotenoid absorption from foods and supplements. Taking the two at separate times may help.
 
 ### Zinc Nasal Products — Loss of Smell
 
-Zinc nasal gels have been linked to permanent or temporary loss of smell (anosmia). Over 130 cases were reported, leading the FDA to issue a warning in 2009 to discontinue use of three Zicam nasal products [10]. Oral zinc supplements and lozenges do not carry this risk.
+Intranasal zinc gluconate gels have been linked to loss of smell (anosmia). In a series of 17 patients, smell loss followed a burning sensation after sniffing the gel [87], and in some patients the loss appears long lasting or permanent [88]. In June 2009 the US Food and Drug Administration told consumers to stop using three Zicam Cold Remedy nasal products (a gel and two swabs) after more than 130 reports of lost sense of smell, and said anyone affected should contact their health care professional [99]. Do not use zinc products inside the nose.
 
 ### Contact Dermatitis (Rare)
 
-In rare cases, individuals sensitized to zinc may develop systemic contact dermatitis from oral zinc supplementation. One case involved a 67-year-old man who developed rash exacerbation after starting 30 mg zinc daily, confirmed by skin patch testing (Yamazaki, *Int J Dermatol*, 2022) [77].
+In rare cases, oral zinc supplements can cause systemic contact dermatitis, a skin reaction in people sensitized to zinc (Yamazaki, *Int J Dermatol*, 2022) [77].
 
 ### Denture Adhesives
 
-Some denture adhesive creams contain 17-34 mg zinc per gram of product. Chronic excessive use (more than one tube per week for years) has caused zinc toxicity with copper deficiency and neurological damage. Many denture creams have been reformulated to omit zinc [1][78].
+Some denture adhesive creams contain 17-34 mg zinc per gram of product. Chronic excessive use (70 g or more of denture cream each week for several years) has caused zinc toxicity with copper deficiency and neurological disease. Many denture creams have been reformulated to omit zinc [1][89].
 
 ### Special Populations
 
-**Pregnancy:** Requirements increase by 3 mg/day. Routine zinc supplementation during pregnancy does not appear to reduce the risk of low birthweight, stillbirth, or neonatal death but might lower the risk of preterm birth [79].
+**Pregnancy:** Requirements increase by 3 mg/day [1]. A 2021 Cochrane Review of 25 trials found that zinc supplements in pregnancy may make little or no difference to preterm birth (RR 0.87, 95% CI 0.74 to 1.03) and probably make little or no difference to low birthweight (RR 0.94, 95% CI 0.79 to 1.13) [101].
 
-**Kidney disease:** Zinc is generally safe in people with normal kidney function. No specific renal contraindications are well-established for zinc at standard doses, unlike magnesium.
+**Kidney disease:** If you have kidney disease, check with your doctor before taking zinc supplements.
 
-**Children:** ULs for children are lower (7-34 mg depending on age). Cold treatment doses exceeding the UL should only be used under physician supervision [1].
+**Children:** ULs for children are lower (4-34 mg depending on age). Ask a doctor before giving a child zinc above the UL, including cold-lozenge doses [1].
 
 ## 6. Drug Interactions
 
@@ -383,34 +375,34 @@ Zinc can interact with several medications, either by reducing drug absorption o
 
 ### Zinc Reduces Drug Absorption
 
-These medications should be separated from zinc supplements [1][10][80]:
+These medications should be separated from zinc supplements [1][93]:
 
 | Drug Class | Examples | Separation Time | Mechanism |
 |-----------|---------|:-:|----------|
-| Quinolone (fluoroquinolone) antibiotics | Ciprofloxacin, levofloxacin, norfloxacin | Take antibiotic 2h before or 4-6h after zinc | Zinc chelates the antibiotic in the GI tract, reducing absorption of both |
-| Tetracycline antibiotics | Doxycycline, tetracycline, minocycline | Take antibiotic 2h before or 4-6h after zinc | Forms insoluble complexes |
-| Penicillamine | Cuprimine, Depen | Take at least 1h apart | Zinc reduces absorption and action of penicillamine (used for rheumatoid arthritis and Wilson's disease) |
+| Quinolone (fluoroquinolone) antibiotics | Ciprofloxacin, levofloxacin, norfloxacin | Take antibiotic 2h before or 4-6h after zinc; the ciprofloxacin label says 2h before or 6h after [102] | Zinc might bind the antibiotic in the gut, which could reduce absorption of both |
+| Tetracycline antibiotics | Doxycycline, tetracycline, minocycline | Take antibiotic 2h before or 4-6h after zinc | Zinc might bind the antibiotic in the gut, which could reduce absorption of both |
+| Penicillamine | Cuprimine, Depen | Take at least 1h apart | Zinc can reduce absorption and action of penicillamine (used for rheumatoid arthritis and Wilson's disease) |
 
 ### Drugs That Affect Zinc Levels
 
 | Drug Class | Effect on Zinc | Clinical Implication |
 |-----------|:-:|----------|
-| Thiazide diuretics | Deplete | Chlorthalidone, hydrochlorothiazide increase urinary zinc excretion, decreasing serum zinc [1][80] |
-| ACE inhibitors | May deplete | Some evidence that ACE inhibitors increase zinc needs [10] |
-| Proton pump inhibitors (PPIs) | May reduce absorption | By reducing stomach acidity. A study of 78 elderly hospitalized patients found PPI users had significantly lower zinc levels and were almost twice as likely to be deficient (Olah, *Int J Mol Sci*, 2026) [81] |
-| H2-blockers | May reduce absorption | E.g., famotidine (Pepcid). Reduced stomach acid may impair zinc absorption [10] |
-| Amiloride | May increase zinc | Combined use with zinc supplements could lead to excess zinc accumulation [10] |
+| Thiazide diuretics | Deplete | Chlorthalidone, hydrochlorothiazide increase urinary zinc excretion, decreasing serum zinc [1][94] |
+| ACE inhibitors | May deplete | In a 3-month trial in people with high blood pressure, ACE inhibitors lowered serum zinc [94] |
+| Proton pump inhibitors (PPIs) | May reduce absorption | In 14 healthy volunteers, omeprazole 60 mg a day for 7 days reduced absorption of a zinc sulfate dose [96]. People on long-term PPIs absorbed less supplemental zinc and, without supplements, had a 28% lower plasma zinc level than healthy controls [95] |
+| H2 blockers | May reduce absorption | In small studies of healthy volunteers, cimetidine 1 g a day and ranitidine 300 mg a day reduced zinc absorption; cimetidine 500 mg did not [97] |
+
+If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Zinc and Other Nutrients
 
 | Nutrient | Interaction |
 |----------|----------|
-| Iron (>=25 mg supplemental) | Iron supplements reduce zinc absorption when taken simultaneously. Food-fortified iron does not significantly interfere [24] |
-| Copper | Zinc induces intestinal metallothionein that traps copper. Long-term high-dose zinc depletes copper [1][10][70] |
-| Calcium | May compete with zinc for absorption [23] |
-| Magnesium | Very high zinc doses (142 mg/day) may interfere with magnesium absorption and disrupt magnesium balance [82] |
-| Phytate (from plant foods) | Binds zinc in the intestine, reducing absorption. Soaking, sprouting, or fermenting grains/legumes reduces phytate [1][2] |
-| Folic acid | Often co-supplemented for fertility. No significant negative interaction [52] |
+| Iron (>=25 mg supplemental) | Iron supplements reduce zinc absorption when taken simultaneously. Food-fortified iron does not significantly interfere [1][24] |
+| Copper | High zinc intakes block copper absorption. Long-term high-dose zinc depletes copper [1][67] |
+| Magnesium | Very high zinc doses (142 mg/day) may interfere with magnesium absorption and disrupt magnesium balance [1][82] |
+| Calcium | A 600 mg calcium supplement (as calcium carbonate) taken with a meal reduced zinc absorption from that meal by 50%. In postmenopausal women, an extra 468 mg of calcium a day lowered net zinc absorption by about 2 mg a day [98] |
+| Phytate (from plant foods) | Binds zinc in the intestine, reducing absorption. Soaking grains and legumes reduces phytate's effect [1][2] |
 
 ## 7. Dietary Sources
 
@@ -446,11 +438,11 @@ Source: USDA FoodData Central; NIH ODS [1][83].
 
 ### Practical Notes on Dietary Zinc
 
-- **Oysters are the single richest food source**, with a single Eastern oyster providing approximately 8 mg zinc [10].
+- **Oysters contain more zinc per serving than any other food** [1].
 - **Beef contributes 20% of zinc from food** in the U.S. diet because it is so commonly consumed [1].
-- **Phytate reduces zinc bioavailability** from plant foods. Vegetarians may need up to 50% more zinc than omnivores [1][2]. Soaking, sprouting, and fermenting beans, grains, and seeds reduces phytate content and improves zinc absorption [2].
-- **Canned and pre-cooked legumes** have lower phytate content than dried beans prepared at home, improving zinc absorption.
-- **Fortified breakfast cereals** are a major source of zinc in the U.S. diet, providing 12-18% of daily zinc intake in children and adolescents [84].
+- **Phytate reduces zinc bioavailability** from plant foods [1][2]. Soaking beans, grains, and seeds before cooking, and eating fermented foods, may improve zinc absorption [1].
+- **Canned and pre-cooked legumes** are another option for improving zinc absorption [1].
+- **Enriched and fortified foods** provide 12.1% to 18.4% of daily zinc intake in U.S. children and adolescents [1][84].
 - **Fruits and vegetables** contain very little zinc [1].
 - **Absorption from a mixed diet** (combining animal and plant sources) is lower than from animal-only meals due to the phytate in plant foods [1][3].
 
@@ -462,37 +454,27 @@ Source: USDA FoodData Central; NIH ODS [1][83].
 
 [3] King JC, Cousins RJ. "Zinc." In: Ross AC, et al., eds. *Modern Nutrition in Health and Disease*. 11th ed. Lippincott Williams & Wilkins; 2014:189-205.
 
-[4] Reider CA, et al. "Inadequacy of immune health nutrients: intakes in US adults, the 2005-2016 NHANES." *Nutrients*. 2020;12. [https://pubmed.ncbi.nlm.nih.gov/31941060/](https://pubmed.ncbi.nlm.nih.gov/31941060/)
+[4] Reider CA, et al. "Inadequacy of immune health nutrients: intakes in US adults, the 2005-2016 NHANES." *Nutrients*. 2020;12(6):1735. PMID: 32531972. [https://pubmed.ncbi.nlm.nih.gov/32531972/](https://pubmed.ncbi.nlm.nih.gov/32531972/)
 
-[5] Hennigar SR, et al. "Serum zinc concentrations in the US population are related to sex, age, and time of blood draw but not dietary or supplemental zinc." *J Nutr*. 2018;148:1341-51. [https://pubmed.ncbi.nlm.nih.gov/30053264/](https://pubmed.ncbi.nlm.nih.gov/30053264/)
+[5] Hennigar SR, et al. "Serum zinc concentrations in the US population are related to sex, age, and time of blood draw but not dietary or supplemental zinc." *J Nutr*. 2018;148:1341-51. PMID: 29947812. [https://pubmed.ncbi.nlm.nih.gov/29947812/](https://pubmed.ncbi.nlm.nih.gov/29947812/)
 
 [6] Wessells KR, Brown KH. "Estimating the global prevalence of zinc deficiency: results based on zinc availability in national food supplies and the prevalence of stunting." *PLoS One*. 2012;7:e50568. [https://pubmed.ncbi.nlm.nih.gov/23209782/](https://pubmed.ncbi.nlm.nih.gov/23209782/)
 
 [7] Roohani N, et al. "Zinc and its importance for human health: An integrative review." *J Res Med Sci*. 2013;18:144-57. [https://pubmed.ncbi.nlm.nih.gov/23914218/](https://pubmed.ncbi.nlm.nih.gov/23914218/)
 
-[8] Wegmuller R, et al. "Zinc absorption by young adults from supplemental zinc citrate is comparable with that from zinc gluconate and higher than from zinc oxide." *J Nutr*. 2014;144:132-6. [https://pubmed.ncbi.nlm.nih.gov/24259557/](https://pubmed.ncbi.nlm.nih.gov/24259557/)
+[8] Wegmuller R, et al. "Zinc absorption by young adults from supplemental zinc citrate is comparable with that from zinc gluconate and higher than from zinc oxide." *J Nutr*. 2014;144:132-6. PMID: 24259556. [https://pubmed.ncbi.nlm.nih.gov/24259556/](https://pubmed.ncbi.nlm.nih.gov/24259556/)
 
 [9] Gupta S, et al. "Zinc deficiency in low- and middle-income countries: prevalence and approaches for mitigation." *J Hum Nutr Diet*. 2020;33:624-43. [https://pubmed.ncbi.nlm.nih.gov/32627912/](https://pubmed.ncbi.nlm.nih.gov/32627912/)
 
-[10] ConsumerLab. "Zinc Supplements Review." Accessed 2025. [https://www.consumerlab.com/reviews/zinc-supplements-lozenges-review/zinc/](https://www.consumerlab.com/reviews/zinc-supplements-lozenges-review/zinc/)
-
 [11] Hemila H. "Zinc lozenges and the common cold: a meta-analysis comparing zinc acetate and zinc gluconate, and the role of zinc dosage." *JRSM Open*. 2017;8:2054270417694291. [https://pubmed.ncbi.nlm.nih.gov/28515951/](https://pubmed.ncbi.nlm.nih.gov/28515951/)
-
-[12] Piacenza F, et al. "Zinc bioavailability from three salts when consumed in combination with a dairy matrix: a randomized crossover study." *Nutrients*. 2023.
 
 [13] Gandia P, et al. "A bioavailability study comparing two oral formulations containing zinc (Zn bis-glycinate vs. Zn gluconate) after a single administration to twelve healthy female volunteers." *Int J Vitam Nutr Res*. 2007;77(4):243-8. [https://pubmed.ncbi.nlm.nih.gov/18271278/](https://pubmed.ncbi.nlm.nih.gov/18271278/)
 
-[14] Chen MD, et al. "Zinc glycine chelate absorption and bioavailability." *Biofactors*. 2006.
+[15] Barrie SA, et al. "Comparative absorption of zinc picolinate, zinc citrate and zinc gluconate in humans." *Agents Actions*. 1987;21(1-2):223-8. PMID: 3630857. [https://pubmed.ncbi.nlm.nih.gov/3630857/](https://pubmed.ncbi.nlm.nih.gov/3630857/)
 
-[15] Barrie SA, et al. "Comparative absorption of zinc picolinate, zinc citrate and zinc gluconate in humans." *Agents Actions*. 1987;21(1-2):223-8.
+[18] Garland ML, Hagmeyer KO. "The role of zinc lozenges in treatment of the common cold." *Ann Pharmacother*. 1998;32:63-69. PMID: 9475824. [https://pubmed.ncbi.nlm.nih.gov/9475824/](https://pubmed.ncbi.nlm.nih.gov/9475824/)
 
-[16] Rosado JL, et al. "Bioavailability of zinc methionine compared to zinc sulfate." *Nutr Res*. 1993.
-
-[17] ConsumerLab. "Zinc Carnosine (Polaprezinc) Review." [https://www.consumerlab.com/reviews/zinc-supplements-lozenges-review/zinc/](https://www.consumerlab.com/reviews/zinc-supplements-lozenges-review/zinc/)
-
-[18] Garland ML, Hagmeyer KO. "The role of zinc lozenges in treatment of the common cold." *Ann Pharmacother*. 1998;32:63-69.
-
-[19] Yee BE, et al. "The effect of oral zinc supplementation on acne vulgaris: a systematic review and meta-analysis." *Dermatol Ther*. 2020.
+[19] Yee BE, et al. "Serum zinc levels and efficacy of zinc treatment in acne vulgaris: a systematic review and meta-analysis." *Dermatol Ther*. 2020;33(6):e14252. PMID: 32860489. [https://pubmed.ncbi.nlm.nih.gov/32860489/](https://pubmed.ncbi.nlm.nih.gov/32860489/)
 
 [20] Age-Related Eye Disease Study Research Group. "A randomized, placebo-controlled, clinical trial of high-dose supplementation with vitamins C and E, beta carotene, and zinc for age-related macular degeneration and vision loss: AREDS report no. 8." *Arch Ophthalmol*. 2001;119:1417-36. [https://pubmed.ncbi.nlm.nih.gov/11594942/](https://pubmed.ncbi.nlm.nih.gov/11594942/)
 
@@ -500,31 +482,29 @@ Source: USDA FoodData Central; NIH ODS [1][83].
 
 [22] U.S. Food and Drug Administration. "Food Labeling: Revision of the Nutrition and Supplement Facts Labels." 2017.
 
-[23] Yildirimyan N, et al. "The effect of zinc and iron supplementation on recurrent aphthous stomatitis." *Oral Health Prev Dent*. 2019.
-
-[24] Solomons NW. "Competitive interaction of iron and zinc in the diet: consequences for human nutrition." *J Nutr*. 1986;116:927-35. [https://pubmed.ncbi.nlm.nih.gov/3522831/](https://pubmed.ncbi.nlm.nih.gov/3522831/)
+[24] Solomons NW. "Competitive interaction of iron and zinc in the diet: consequences for human nutrition." *J Nutr*. 1986;116:927-35. PMID: 3522825. [https://pubmed.ncbi.nlm.nih.gov/3522825/](https://pubmed.ncbi.nlm.nih.gov/3522825/)
 
 [25] Prasad AS, et al. "Duration and severity of symptoms and levels of plasma interleukin-1 receptor antagonist, soluble tumor necrosis factor receptor, and adhesion molecules in patients with common cold treated with zinc acetate." *J Infect Dis*. 2008;197:795-802. [https://pubmed.ncbi.nlm.nih.gov/18279051/](https://pubmed.ncbi.nlm.nih.gov/18279051/)
 
-[26] Turner RB, Cetnarowski WE. "Effect of treatment with zinc gluconate or zinc acetate on experimental and natural colds." *Clin Infect Dis*. 2000;31:1202-8. [https://pubmed.ncbi.nlm.nih.gov/11073752/](https://pubmed.ncbi.nlm.nih.gov/11073752/)
+[26] Turner RB, Cetnarowski WE. "Effect of treatment with zinc gluconate or zinc acetate on experimental and natural colds." *Clin Infect Dis*. 2000;31:1202-8. PMID: 11073753. [https://pubmed.ncbi.nlm.nih.gov/11073753/](https://pubmed.ncbi.nlm.nih.gov/11073753/)
 
-[27] Hemila H. "Zinc acetate lozenges for the treatment of the common cold: a randomised controlled trial." *BMJ Open*. 2020.
+[27] Hemila H, et al. "Zinc acetate lozenges for the treatment of the common cold: a randomised controlled trial." *BMJ Open*. 2020;10(1):e031662. PMID: 31980506. [https://pubmed.ncbi.nlm.nih.gov/31980506/](https://pubmed.ncbi.nlm.nih.gov/31980506/)
 
-[28] Eby GA. "Zinc lozenges as cure for the common cold -- a review and hypothesis." *Altern Ther Health Med*. 2006.
+[28] Eby GA, Halcomb WW. "Ineffectiveness of zinc gluconate nasal spray and zinc orotate lozenges in common-cold treatment: a double-blind, placebo-controlled clinical trial." *Altern Ther Health Med*. 2006;12(1):34-8. PMID: 16454145. [https://pubmed.ncbi.nlm.nih.gov/16454145/](https://pubmed.ncbi.nlm.nih.gov/16454145/)
 
-[29] Hunter J, et al. "Zinc for the prevention or treatment of acute viral respiratory tract infections in adults: a rapid systematic review and meta-analysis of randomised controlled trials." *BMJ Open*. 2021;11:e047474. [https://pubmed.ncbi.nlm.nih.gov/33972346/](https://pubmed.ncbi.nlm.nih.gov/33972346/)
+[29] Hunter J, et al. "Zinc for the prevention or treatment of acute viral respiratory tract infections in adults: a rapid systematic review and meta-analysis of randomised controlled trials." *BMJ Open*. 2021;11:e047474. PMID: 34728441. [https://pubmed.ncbi.nlm.nih.gov/34728441/](https://pubmed.ncbi.nlm.nih.gov/34728441/)
 
-[30] Nault D, et al. "Zinc for prevention and treatment of the common cold." *Cochrane Database Syst Rev*. 2024;5(5):CD014914. [https://pubmed.ncbi.nlm.nih.gov/38720573/](https://pubmed.ncbi.nlm.nih.gov/38720573/)
+[30] Nault D, et al. "Zinc for prevention and treatment of the common cold." *Cochrane Database Syst Rev*. 2024;5(5):CD014914. PMID: 38719213. [https://pubmed.ncbi.nlm.nih.gov/38719213/](https://pubmed.ncbi.nlm.nih.gov/38719213/)
 
-[31] Girodon F, et al. "Effect of micronutrient supplementation on infection in institutionalized elderly subjects." *Arch Intern Med*. 1999;159(7):748-54.
+[31] Girodon F, et al. "Impact of trace elements and vitamin supplementation on immunity and infections in institutionalized elderly patients: a randomized controlled trial." *Arch Intern Med*. 1999;159(7):748-54. PMID: 10218756. [https://pubmed.ncbi.nlm.nih.gov/10218756/](https://pubmed.ncbi.nlm.nih.gov/10218756/)
 
-[32] Vallboehmer T, et al. "Zinc supplementation improves antiviral immune response in vegans and vegetarians." *Clin Nutr*. 2025.
+[32] Vallboehmer F, et al. "Zinc supplementation among zinc-deficient vegetarians and vegans restores antiviral interferon-α response by upregulating interferon regulatory factor 3." *Clin Nutr*. 2025;51:161-173. PMID: 40580803. [https://pubmed.ncbi.nlm.nih.gov/40580803/](https://pubmed.ncbi.nlm.nih.gov/40580803/)
 
-[33] Vogel-Gonzalez M, et al. "Low zinc levels at admission associates with poor clinical outcomes in SARS-CoV-2 infection." *Nutrients*. 2021.
+[33] Vogel-Gonzalez M, et al. "Low zinc levels at admission associates with poor clinical outcomes in SARS-CoV-2 infection." *Nutrients*. 2021;13(2):562. PMID: 33572045. [https://pubmed.ncbi.nlm.nih.gov/33572045/](https://pubmed.ncbi.nlm.nih.gov/33572045/)
 
-[34] Thomas S, et al. "Effect of high-dose zinc and ascorbic acid supplementation vs usual care on symptom length and reduction among ambulatory patients with SARS-CoV-2 infection." *JAMA Network Open*. 2021.
+[34] Thomas S, et al. "Effect of high-dose zinc and ascorbic acid supplementation vs usual care on symptom length and reduction among ambulatory patients with SARS-CoV-2 infection: the COVID A to Z randomized clinical trial." *JAMA Netw Open*. 2021;4(2):e210369. PMID: 33576820. [https://pubmed.ncbi.nlm.nih.gov/33576820/](https://pubmed.ncbi.nlm.nih.gov/33576820/)
 
-[35] Partap U, et al. "Effect of zinc and vitamin D supplementation on COVID-19 outcomes among hospitalized adults." *Curr Dev Nutr*. 2023.
+[35] Partap U, et al. "Vitamin D and zinc supplementation to improve treatment outcomes among COVID-19 patients in India: results from a double-blind randomized placebo-controlled trial." *Curr Dev Nutr*. 2023;7(8):101971. PMID: 37560461. [https://pubmed.ncbi.nlm.nih.gov/37560461/](https://pubmed.ncbi.nlm.nih.gov/37560461/)
 
 [36] van Leeuwen R, et al. "Dietary intake of antioxidants and risk of age-related macular degeneration." *JAMA*. 2005;294:3101-7. [https://pubmed.ncbi.nlm.nih.gov/16380590/](https://pubmed.ncbi.nlm.nih.gov/16380590/)
 
@@ -532,94 +512,112 @@ Source: USDA FoodData Central; NIH ODS [1][83].
 
 [38] National Eye Institute. "AREDS/AREDS2 Frequently Asked Questions." 2020. [https://www.nei.nih.gov/research/clinical-trials/age-related-eye-disease-studies-aredsareds2](https://www.nei.nih.gov/research/clinical-trials/age-related-eye-disease-studies-aredsareds2)
 
-[39] Fernandez-Cao JC, et al. "Zinc intake and status and risk of type 2 diabetes mellitus: a systematic review and meta-analysis." *Nutrients*. 2019;11. [https://pubmed.ncbi.nlm.nih.gov/30934683/](https://pubmed.ncbi.nlm.nih.gov/30934683/)
+[39] Fernandez-Cao JC, et al. "Zinc intake and status and risk of type 2 diabetes mellitus: a systematic review and meta-analysis." *Nutrients*. 2019;11(5):1027. PMID: 31071930. [https://pubmed.ncbi.nlm.nih.gov/31071930/](https://pubmed.ncbi.nlm.nih.gov/31071930/)
 
-[40] Pompano LM, Boy E. "Effects of dose and duration of zinc interventions on risk factors for type 2 diabetes and cardiovascular disease: a systematic review and meta-analysis." *Adv Nutr*. 2021;12:141-60. [https://pubmed.ncbi.nlm.nih.gov/32678430/](https://pubmed.ncbi.nlm.nih.gov/32678430/)
+[40] Pompano LM, Boy E. "Effects of dose and duration of zinc interventions on risk factors for type 2 diabetes and cardiovascular disease: a systematic review and meta-analysis." *Adv Nutr*. 2021;12:141-60. PMID: 32722790. [https://pubmed.ncbi.nlm.nih.gov/32722790/](https://pubmed.ncbi.nlm.nih.gov/32722790/)
 
-[41] Wang X, et al. "Zinc supplementation improves glycemic control for diabetes prevention and management: a systematic review and meta-analysis of randomized controlled trials." *Am J Clin Nutr*. 2019;110:76-90. [https://pubmed.ncbi.nlm.nih.gov/31161217/](https://pubmed.ncbi.nlm.nih.gov/31161217/)
+[41] Wang X, et al. "Zinc supplementation improves glycemic control for diabetes prevention and management: a systematic review and meta-analysis of randomized controlled trials." *Am J Clin Nutr*. 2019;110:76-90. PMID: 31161192. [https://pubmed.ncbi.nlm.nih.gov/31161192/](https://pubmed.ncbi.nlm.nih.gov/31161192/)
 
-[42] Asbaghi O, et al. "Effects of zinc supplementation on lipid profile in patients with type 2 diabetes mellitus: A systematic review and meta-analysis of randomized controlled trials." *Nutr Metab Cardiovasc Dis*. 2020;30:1260-71. [https://pubmed.ncbi.nlm.nih.gov/32451278/](https://pubmed.ncbi.nlm.nih.gov/32451278/)
+[42] Asbaghi O, et al. "Effects of zinc supplementation on lipid profile in patients with type 2 diabetes mellitus: A systematic review and meta-analysis of randomized controlled trials." *Nutr Metab Cardiovasc Dis*. 2020;30:1260-71. PMID: 32451277. [https://pubmed.ncbi.nlm.nih.gov/32451277/](https://pubmed.ncbi.nlm.nih.gov/32451277/)
 
-[43] Li X, Zhao J. "The influence of zinc supplementation on metabolic status in gestational diabetes: a meta-analysis of randomized controlled studies." *J Matern Fetal Neonatal Med*. 2021;34:2140-5. [https://pubmed.ncbi.nlm.nih.gov/31394976/](https://pubmed.ncbi.nlm.nih.gov/31394976/)
+[43] Li X, Zhao J. "The influence of zinc supplementation on metabolic status in gestational diabetes: a meta-analysis of randomized controlled studies." *J Matern Fetal Neonatal Med*. 2021;34:2140-5. PMID: 31438733. [https://pubmed.ncbi.nlm.nih.gov/31438733/](https://pubmed.ncbi.nlm.nih.gov/31438733/)
 
-[44] Moore ZE, et al. "Nutritional interventions for treating foot ulcers in people with diabetes." *Cochrane Database Syst Rev*. 2020;7:CD011378. [https://pubmed.ncbi.nlm.nih.gov/32677040/](https://pubmed.ncbi.nlm.nih.gov/32677040/)
+[44] Moore ZE, et al. "Nutritional interventions for treating foot ulcers in people with diabetes." *Cochrane Database Syst Rev*. 2020;7:CD011378. PMID: 32677037. [https://pubmed.ncbi.nlm.nih.gov/32677037/](https://pubmed.ncbi.nlm.nih.gov/32677037/)
 
-[45] Reynolds RV, et al. "Guidelines of care for the management of acne vulgaris." *J Am Acad Dermatol*. 2024.
+[47] McClain C, et al. "Zinc deficiency: a complication of Crohn's disease." *Gastroenterology*. 1980;78(2):272-9. PMID: 7350050. [https://pubmed.ncbi.nlm.nih.gov/7350050/](https://pubmed.ncbi.nlm.nih.gov/7350050/)
 
-[46] Schroeder L, et al. "Zinc deficiency rash in an infant." *New Engl J Med*. 2020.
+[48] Cherasse Y, Urade Y. "Dietary zinc acts as a sleep modulator." *Int J Mol Sci*. 2017;18(11). PMID: 29113075. [https://pubmed.ncbi.nlm.nih.gov/29113075/](https://pubmed.ncbi.nlm.nih.gov/29113075/)
 
-[47] McClain CJ, et al. "Zinc deficiency in Crohn's disease." *Gastroenterology*. 1980.
+[50] Wong WY, et al. "Effects of folic acid and zinc sulfate on male factor subfertility: a double-blind, randomized, placebo-controlled trial." *Fertil Steril*. 2002;77(3):491-8. PMID: 11872201. [https://pubmed.ncbi.nlm.nih.gov/11872201/](https://pubmed.ncbi.nlm.nih.gov/11872201/)
 
-[48] Cherasse Y, et al. "Dietary zinc acts as a sleep modulator." *Int J Molec Sci*. 2017.
-
-[49] ConsumerLab. "Magnesium Supplements Review." See ZMA section. [https://www.consumerlab.com/reviews/magnesium-supplements-review/magnesium/](https://www.consumerlab.com/reviews/magnesium-supplements-review/magnesium/)
-
-[50] Wong WY, et al. "Effects of folic acid and zinc sulfate on male factor subfertility." *Fertil Steril*. 2002.
-
-[51] Azizollahi G, et al. "Effects of supplement therapy on sperm parameters, protamine content and acrosomal integrity of varicocelectomized subjects." *J Assist Reprod Genet*. 2013.
+[51] Azizollahi G, et al. "Effects of supplement therapy on sperm parameters, protamine content and acrosomal integrity of varicocelectomized subjects." *J Assist Reprod Genet*. 2013;30(4):593-9. PMID: 23435530. [https://pubmed.ncbi.nlm.nih.gov/23435530/](https://pubmed.ncbi.nlm.nih.gov/23435530/)
 
 [52] Schisterman EF, et al. "Effect of folic acid and zinc supplementation in men on semen quality and live birth among couples undergoing infertility treatment." *JAMA*. 2020;323(1):35-48. [https://pubmed.ncbi.nlm.nih.gov/31910279/](https://pubmed.ncbi.nlm.nih.gov/31910279/)
 
-[53] Gupta N, et al. "Effect of zinc supplementation on periodontal treatment outcomes." *J Oral Biol Craniofac Res*. 2025.
+[53] Gupta V, et al. "To evaluate the effect of oral zinc supplementation on salivary MMP-8 levels in periodontitis: a randomized, double-blind, placebo-controlled study." *J Oral Biol Craniofac Res*. 2025;15(3):493-499. PMID: 40144642. [https://pubmed.ncbi.nlm.nih.gov/40144642/](https://pubmed.ncbi.nlm.nih.gov/40144642/)
 
 [54] World Health Organization. "Diarrhoeal Disease." 2017.
 
 [55] Lazzerini M, Wanzira H. "Oral zinc for treating diarrhoea in children." *Cochrane Database Syst Rev*. 2016;12:CD005436. [https://pubmed.ncbi.nlm.nih.gov/27996088/](https://pubmed.ncbi.nlm.nih.gov/27996088/)
 
-[56] Florez ID, et al. "Comparative effectiveness and safety of interventions for acute diarrhea and gastroenteritis in children: A systematic review and network meta-analysis." *PLoS One*. 2018;13:e0207701. [https://pubmed.ncbi.nlm.nih.gov/30517199/](https://pubmed.ncbi.nlm.nih.gov/30517199/)
+[56] Florez ID, et al. "Comparative effectiveness and safety of interventions for acute diarrhea and gastroenteritis in children: A systematic review and network meta-analysis." *PLoS One*. 2018;13:e0207701. PMID: 30517196. [https://pubmed.ncbi.nlm.nih.gov/30517196/](https://pubmed.ncbi.nlm.nih.gov/30517196/)
 
 [57] UNICEF, World Health Organization. "Clinical Management of Acute Diarrhea." 2004.
 
-[58] Lassi ZS, et al. "Zinc supplementation for the prevention of pneumonia in children aged 2 months to 59 months." *Cochrane Database Syst Rev*. 2016;12:CD005978. [https://pubmed.ncbi.nlm.nih.gov/27977849/](https://pubmed.ncbi.nlm.nih.gov/27977849/)
+[58] Lassi ZS, et al. "Zinc supplementation for the prevention of pneumonia in children aged 2 months to 59 months." *Cochrane Database Syst Rev*. 2016;12:CD005978. PMID: 27915460. [https://pubmed.ncbi.nlm.nih.gov/27915460/](https://pubmed.ncbi.nlm.nih.gov/27915460/)
 
-[59] Brown N, et al. "Efficacy of zinc as adjunctive pneumonia treatment in children aged 2 to 60 months in low-income and middle-income countries: a systematic review and meta-analysis." *BMJ Paediatr Open*. 2020;4:e000662. [https://pubmed.ncbi.nlm.nih.gov/32582866/](https://pubmed.ncbi.nlm.nih.gov/32582866/)
+[59] Brown N, et al. "Efficacy of zinc as adjunctive pneumonia treatment in children aged 2 to 60 months in low-income and middle-income countries: a systematic review and meta-analysis." *BMJ Paediatr Open*. 2020;4:e000662. PMID: 32685705. [https://pubmed.ncbi.nlm.nih.gov/32685705/](https://pubmed.ncbi.nlm.nih.gov/32685705/)
 
-[60] Wang L, Song Y. "Efficacy of zinc given as an adjunct to the treatment of severe pneumonia: A meta-analysis of randomized, double-blind and placebo-controlled trials." *Clin Respir J*. 2018;12:857-64. [https://pubmed.ncbi.nlm.nih.gov/28164455/](https://pubmed.ncbi.nlm.nih.gov/28164455/)
+[60] Wang L, Song Y. "Efficacy of zinc given as an adjunct to the treatment of severe pneumonia: A meta-analysis of randomized, double-blind and placebo-controlled trials." *Clin Respir J*. 2018;12:857-64. PMID: 28488366. [https://pubmed.ncbi.nlm.nih.gov/28488366/](https://pubmed.ncbi.nlm.nih.gov/28488366/)
 
-[61] Baum MK, et al. "Randomized, controlled clinical trial of zinc supplementation to prevent immunological failure in HIV-infected adults." *Clin Infect Dis*. 2010;50:1653-60. [https://pubmed.ncbi.nlm.nih.gov/20459324/](https://pubmed.ncbi.nlm.nih.gov/20459324/)
+[61] Baum MK, et al. "Randomized, controlled clinical trial of zinc supplementation to prevent immunological failure in HIV-infected adults." *Clin Infect Dis*. 2010;50:1653-60. PMID: 20455705. [https://pubmed.ncbi.nlm.nih.gov/20455705/](https://pubmed.ncbi.nlm.nih.gov/20455705/)
 
 [62] Irlam JH, et al. "Micronutrient supplementation for children with HIV infection." *Cochrane Database Syst Rev*. 2013:CD010666. [https://pubmed.ncbi.nlm.nih.gov/24114375/](https://pubmed.ncbi.nlm.nih.gov/24114375/)
 
 [63] Visser ME, et al. "Micronutrient supplementation in adults with HIV infection." *Cochrane Database Syst Rev*. 2017;5:CD003650. [https://pubmed.ncbi.nlm.nih.gov/28518221/](https://pubmed.ncbi.nlm.nih.gov/28518221/)
 
-[64] Zupo R, et al. "Zinc status in inflammatory bowel disease." *Nutrients*. 2022.
+[64] Zupo R, et al. "Prevalence of zinc deficiency in inflammatory bowel disease: a systematic review and meta-analysis." *Nutrients*. 2022;14(19). PMID: 36235709. [https://pubmed.ncbi.nlm.nih.gov/36235709/](https://pubmed.ncbi.nlm.nih.gov/36235709/)
 
-[65] Siva S, et al. "Zinc deficiency is associated with poor clinical outcomes in patients with inflammatory bowel disease." *Inflamm Bowel Dis*. 2017;23:152-7. [https://pubmed.ncbi.nlm.nih.gov/27930411/](https://pubmed.ncbi.nlm.nih.gov/27930411/)
+[65] Siva S, et al. "Zinc deficiency is associated with poor clinical outcomes in patients with inflammatory bowel disease." *Inflamm Bowel Dis*. 2017;23:152-7. PMID: 27930412. [https://pubmed.ncbi.nlm.nih.gov/27930412/](https://pubmed.ncbi.nlm.nih.gov/27930412/)
 
-[66] Santucci NR, et al. "Micronutrient status in children and adolescents with inflammatory bowel disease." *J Ped Gastroenterol Nutr*. 2014.
+[66] Santucci NR, et al. "Vitamin and zinc status pretreatment and posttreatment in patients with inflammatory bowel disease." *J Ped Gastroenterol Nutr*. 2014;59(4):455-7. PMID: 25000354. [https://pubmed.ncbi.nlm.nih.gov/25000354/](https://pubmed.ncbi.nlm.nih.gov/25000354/)
 
-[67] Brewer GJ, et al. "Zinc therapy in Wilson's disease." *J Lab Clin Med*. 1998.
+[67] Brewer GJ, et al. "Treatment of Wilson's disease with zinc: XV long-term follow-up studies." *J Lab Clin Med*. 1998;132(4):264-78. PMID: 9794697. [https://pubmed.ncbi.nlm.nih.gov/9794697/](https://pubmed.ncbi.nlm.nih.gov/9794697/)
 
-[68] Yildirimyan N, et al. "Zinc and iron correction eliminates recurrent aphthous stomatitis." *Oral Health Prev Dent*. 2019.
+[68] Yildirimyan N, et al. "Recurrent aphthous stomatitis as a result of zinc deficiency." *Oral Health Prev Dent*. 2019;17(5):465-468. PMID: 31268044. [https://pubmed.ncbi.nlm.nih.gov/31268044/](https://pubmed.ncbi.nlm.nih.gov/31268044/)
 
-[69] Ambooken B, et al. "Zinc deficiency associated with hypothyroidism." *Int J Trich*. 2013.
+[70] Duncan A, et al. "Iatrogenic copper deficiency: risks and cautions with zinc prescribing." *Br J Clin Pharmacol*. 2023;89(9):2825-2829. PMID: 37070154. [https://pubmed.ncbi.nlm.nih.gov/37070154/](https://pubmed.ncbi.nlm.nih.gov/37070154/)
 
-[70] Duncan A, et al. "Zinc-induced copper deficiency." *Br J Clin Pharmacol*. 2023.
+[71] Tatineni V, et al. "Anemia from A to zinc: hypocupremia in the setting of gastric bypass and zinc excess." *Clin Case Rep*. 2020;8(4):745-750. PMID: 32274050. [https://pubmed.ncbi.nlm.nih.gov/32274050/](https://pubmed.ncbi.nlm.nih.gov/32274050/)
 
-[71] Tatineni V, et al. "Copper deficiency after gastric surgery." *Clin Case Rep*. 2020.
+[72] Jamal R, et al. "Hypocupraemia-induced anaemia, sensory ataxia and cognitive impairment secondary to zinc-containing dental adhesive." *BMJ Case Rep*. 2021;14(7). PMID: 34289999. [https://pubmed.ncbi.nlm.nih.gov/34289999/](https://pubmed.ncbi.nlm.nih.gov/34289999/)
 
-[72] Jamal R, et al. "Hypocupraemia-induced anaemia, sensory ataxia and cognitive impairment secondary to zinc-containing dental adhesive." *BMJ Case Rep*. 2021. [https://pubmed.ncbi.nlm.nih.gov/34556478/](https://pubmed.ncbi.nlm.nih.gov/34556478/)
+[73] Duncan A, et al. "The risk of copper deficiency in patients prescribed zinc supplements." *J Clin Pathol*. 2015;68(9):723-5. PMID: 26085547. [https://pubmed.ncbi.nlm.nih.gov/26085547/](https://pubmed.ncbi.nlm.nih.gov/26085547/)
 
-[73] Duncan A, et al. "The risk of copper deficiency in patients prescribed zinc supplements." *Br J Clin Pharmacol*. 2023.
+[75] Elanjian AI, et al. "Hypoglycemia induced by zinc supplementation for COVID-19 prophylaxis: a case series." *Cureus*. 2023;15(5):e38828. PMID: 37303432. [https://pubmed.ncbi.nlm.nih.gov/37303432/](https://pubmed.ncbi.nlm.nih.gov/37303432/)
 
-[74] Wahab MA, et al. "Copper deficiency from a zinc-containing vision supplement." *J Community Hosp Intern Med Perspect*. 2021.
-
-[75] Elanjian S, et al. "High-dose zinc supplementation and hypoglycemia." *Cureus*. 2023.
-
-[76] Borel P, et al. "High doses of minerals reduce carotenoid bioavailability." *Br J Nutr*. 2017.
-
-[77] Yamazaki H, et al. "Systemic contact dermatitis from oral zinc supplementation." *Int J Dermatol*. 2022.
-
-[78] U.S. Food and Drug Administration. "Denture Adhesive Safety Communication." 2018.
-
-[79] Ota E, et al. "Zinc supplementation for improving pregnancy and infant outcome." *Cochrane Database Syst Rev*. 2015:CD000230. [https://pubmed.ncbi.nlm.nih.gov/25927101/](https://pubmed.ncbi.nlm.nih.gov/25927101/)
+[77] Yamazaki K, et al. "A case of systemic contact dermatitis due to zinc supplements." *Int J Dermatol*. 2022;61(11):e449-e450. PMID: 35393667. [https://pubmed.ncbi.nlm.nih.gov/35393667/](https://pubmed.ncbi.nlm.nih.gov/35393667/)
 
 [80] Institute of Medicine, Food and Nutrition Board. *Dietary Reference Intakes for Vitamin A, Vitamin K, Arsenic, Boron, Chromium, Copper, Iodine, Iron, Manganese, Molybdenum, Nickel, Silicon, Vanadium, and Zinc*. Washington, DC: National Academy Press; 2001.
-
-[81] Olah A, et al. "Proton pump inhibitor use and zinc deficiency in elderly patients." *Int J Mol Sci*. 2026.
 
 [82] Spencer H, et al. "Inhibitory effects of zinc on magnesium balance and magnesium absorption in man." *J Am Coll Nutr*. 1994;13:479-84. [https://pubmed.ncbi.nlm.nih.gov/7836627/](https://pubmed.ncbi.nlm.nih.gov/7836627/)
 
 [83] U.S. Department of Agriculture. FoodData Central. 2022. [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
 
-[84] Berner LA, et al. "Fortified foods are major contributors to nutrient intakes in diets of US children and adolescents." *J Acad Nutr Diet*. 2014;114:1009-22. [https://pubmed.ncbi.nlm.nih.gov/24751664/](https://pubmed.ncbi.nlm.nih.gov/24751664/)
+[84] Berner LA, et al. "Fortified foods are major contributors to nutrient intakes in diets of US children and adolescents." *J Acad Nutr Diet*. 2014;114:1009-22. PMID: 24462266. [https://pubmed.ncbi.nlm.nih.gov/24462266/](https://pubmed.ncbi.nlm.nih.gov/24462266/)
+
+[85] Hemila H, Chalker E. "The effectiveness of high dose zinc acetate lozenges on various common cold symptoms: a meta-analysis." *BMC Fam Pract*. 2015;16:24. PMID: 25888289. [https://pubmed.ncbi.nlm.nih.gov/25888289/](https://pubmed.ncbi.nlm.nih.gov/25888289/)
+
+[86] Hemila H. "Zinc lozenges may shorten the duration of colds: a systematic review." *Open Respir Med J*. 2011;5:51-8. PMID: 21769305. [https://pubmed.ncbi.nlm.nih.gov/21769305/](https://pubmed.ncbi.nlm.nih.gov/21769305/)
+
+[87] Alexander TH, Davidson TM. "Intranasal zinc and anosmia: the zinc-induced anosmia syndrome." *Laryngoscope*. 2006;116(2):217-20. PMID: 16467707. [https://pubmed.ncbi.nlm.nih.gov/16467707/](https://pubmed.ncbi.nlm.nih.gov/16467707/)
+
+[88] Jafek BW, et al. "Anosmia after intranasal zinc gluconate use." *Am J Rhinol*. 2004;18(3):137-41. PMID: 15283486. [https://pubmed.ncbi.nlm.nih.gov/15283486/](https://pubmed.ncbi.nlm.nih.gov/15283486/)
+
+[89] Nations SP, et al. "Denture cream: an unusual source of excess zinc, leading to hypocupremia and neurologic disease." *Neurology*. 2008;71(9):639-43. PMID: 18525032. [https://pubmed.ncbi.nlm.nih.gov/18525032/](https://pubmed.ncbi.nlm.nih.gov/18525032/)
+
+[90] Doherty K, et al. "Zinc-containing denture adhesive: a potential source of excess zinc resulting in copper deficiency myelopathy." *Br Dent J*. 2011;210(11):523-5. PMID: 21660014. [https://pubmed.ncbi.nlm.nih.gov/21660014/](https://pubmed.ncbi.nlm.nih.gov/21660014/)
+
+[91] Poujois A, et al. "Neurological presentations revealing acquired copper deficiency: diagnosis features, aetiologies and evolution in seven patients." *Intern Med J*. 2018;48(5):535-540. PMID: 29034989. [https://pubmed.ncbi.nlm.nih.gov/29034989/](https://pubmed.ncbi.nlm.nih.gov/29034989/)
+
+[92] Leitzmann MF, et al. "Zinc supplement use and risk of prostate cancer." *J Natl Cancer Inst*. 2003;95(13):1004-7. PMID: 12837837. [https://pubmed.ncbi.nlm.nih.gov/12837837/](https://pubmed.ncbi.nlm.nih.gov/12837837/)
+
+[93] Lomaestro BM, Bailie GR. "Absorption interactions with fluoroquinolones. 1995 update." *Drug Saf*. 1995;12(5):314-33. PMID: 7669261. [https://pubmed.ncbi.nlm.nih.gov/7669261/](https://pubmed.ncbi.nlm.nih.gov/7669261/)
+
+[94] Suliburska J, et al. "Diuretics, Ca-antagonists, and angiotensin-converting enzyme inhibitors affect zinc status in hypertensive patients on monotherapy: a randomized trial." *Nutrients*. 2018;10(9). PMID: 30208601. [https://pubmed.ncbi.nlm.nih.gov/30208601/](https://pubmed.ncbi.nlm.nih.gov/30208601/)
+
+[95] Farrell CP, et al. "Proton pump inhibitors interfere with zinc absorption and zinc body stores." *Gastroenterology Res*. 2011;4(6):243-251. PMID: 27957023. [https://pubmed.ncbi.nlm.nih.gov/27957023/](https://pubmed.ncbi.nlm.nih.gov/27957023/)
+
+[96] Ozutemiz AO, et al. "Effect of omeprazole on plasma zinc levels after oral zinc administration." *Indian J Gastroenterol*. 2002;21(6):216-8. PMID: 12546170. [https://pubmed.ncbi.nlm.nih.gov/12546170/](https://pubmed.ncbi.nlm.nih.gov/12546170/)
+
+[97] Sturniolo GC, et al. "Inhibition of gastric acid secretion reduces zinc absorption in man." *J Am Coll Nutr*. 1991;10(4):372-5. PMID: 1894892. [https://pubmed.ncbi.nlm.nih.gov/1894892/](https://pubmed.ncbi.nlm.nih.gov/1894892/)
+
+[98] Wood RJ, Zheng JJ. "High dietary calcium intakes reduce zinc absorption and balance in humans." *Am J Clin Nutr*. 1997;65(6):1803-9. PMID: 9174476. [https://pubmed.ncbi.nlm.nih.gov/9174476/](https://pubmed.ncbi.nlm.nih.gov/9174476/)
+
+[99] U.S. Food and Drug Administration. "FDA Advises Consumers Not To Use Certain Zicam Cold Remedies." News release, 16 June 2009. Archived copy: [http://web.archive.org/web/20100112061849id_/http://www.fda.gov/NewsEvents/Newsroom/PressAnnouncements/2009/ucm167065.htm](http://web.archive.org/web/20100112061849id_/http://www.fda.gov/NewsEvents/Newsroom/PressAnnouncements/2009/ucm167065.htm)
+
+[100] Wahab A, et al. "Zinc-induced hypocupremia and pancytopenia, from zinc supplementation to its toxicity, a case report." *J Community Hosp Intern Med Perspect*. 2021;11(6):843-846. PMID: 34804403. [https://pubmed.ncbi.nlm.nih.gov/34804403/](https://pubmed.ncbi.nlm.nih.gov/34804403/)
+
+[101] Carducci B, et al. "Zinc supplementation for improving pregnancy and infant outcome." *Cochrane Database Syst Rev*. 2021;3(3):CD000230. PMID: 33724446. [https://pubmed.ncbi.nlm.nih.gov/33724446/](https://pubmed.ncbi.nlm.nih.gov/33724446/)
+
+[102] Ciprofloxacin hydrochloride tablets. Prescribing information. DailyMed, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=bb2edaca-6cf2-4100-83f5-8ce142f68e59](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=bb2edaca-6cf2-4100-83f5-8ce142f68e59)
