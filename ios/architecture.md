@@ -49,6 +49,13 @@ Why not a Swift rewrite:
   four files.
 - **Clinical fixes can ship over the air** (D3). Compiled Swift cannot.
 
+**One exception, planned: the VO2 max rating will be Swift (Brad 2026-10-23, US-56 AC8: "do it in
+Swift because this is apple centric").** It will copy Apple Health's cardio fitness level, show only
+in the iPhone app, and read a value that never enters the record, so the web will have no copy to
+drift from. It is still a clinical table: when US-56 is built it will be recorded in
+`health_roadmap_algorithm.md` with its source in `evidence.ts` (it is in neither yet), and a fix to
+it will ship through App Review, not over the air.
+
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
 JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs 4.6 ms.
@@ -645,8 +652,13 @@ would you like to share": past 30 days, or all recorded data); the app needs all
 preselected sex, birth month and year, height and weight, each labelled "From Apple Health".
 Write-back checked on the simulator's own Health store: a typed 123/79 and 70 kg appeared in Health,
 dated noon of the day (the record holds days, not times); height is never written back. **Next
-(US-55, Brad 2026-10-22):** resting heart rate, VO2 max, steps and sleep, one value a finished day,
-display only (the algorithm reads none of them; heart rate variability left out).
+(US-56, Brad 2026-10-23; replaces US-55):** heart rate, resting heart rate, sleep with Apple's
+stages, VO2 max and steps, read live from HealthKit each time they show and never stored, so the
+record, merge, website, chat and engine never see them. Display only; no heart rate variability.
+Access is asked later, from one card on My data, not in onboarding. Heart rate, resting heart rate
+and sleep sit in Vitals under blood pressure; VO2 max and steps under a new Fitness heading.
+VO2 max will show Apple's cardio fitness level, worked out in Swift (the D2 exception above; its
+table is not yet in the clinical files).
 
 ### D7 · Reminders: on-device notifications only (Brad, 2026-10-21)
 
@@ -1144,7 +1156,18 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled).
     `Plan.swift` is the slice of the engine's JSON the app reads, evidence included. The layout (sections, card order, grouped cards) is not
     Swift: it is health-core's `planSections` (packages/health-core/src/plan-sections.ts),
     which the web's results panel calls too. `PlanView.swift` and `PlanCardView.swift`
-    draw it.
+    draw it. `SummaryTiles.swift` draws the tiles above it (US-25 AC22), the web's Quick
+    Stats, from the engine's `statTilesJson`. The tile rules (which tiles, their order, words,
+    units, statuses and evidence) live once, in health-core's `statTiles`
+    (packages/health-core/src/stat-tiles.ts), which the web's results panel calls too;
+    `statTilesJson` in `engine/entry.ts` only passes the phone's units. Swift picks only the
+    status capsule's colour: names are plain text, no symbol (Brad 2026-10-23). Each card
+    rises in once, the first time any of it scrolls into view (`RiseIn`, iOS 18's
+    `onScrollVisibilityChange`; on iOS 17 cards are simply there). A section-wide transition
+    tied to scroll position faded a section out while it was being read, once an opened card
+    made it taller than the screen (Brad 2026-10-23, "Micronutrient base"); a latched
+    per-card entrance cannot. The earlier fixes (4fd330bc, then a `.visible(0)` threshold)
+    worked on the animation and missed this.
 - `engine/fixtures.mjs`: the parity records (the sample, an urgent value reached by a
   correction, a minor, an excluded value, no height). `engine/golden.ts` runs the engine
   from source on each to make the goldens.
@@ -1203,7 +1226,7 @@ then about 1 ms each.
 ### D12 · Onboarding: four questions, prefilled from Apple Health (Brad, 2026-10-22, US-54)
 
 A new user answers sex, birth month and year, height and weight, one per screen, after one
-"Fill this in from Apple Health?" screen, then lands on My plan. Design and reasons:
+"Use your Apple Health data" screen, then lands on My plan. Design and reasons:
 [onboarding.md](onboarding.md).
 - **Why:** the full My data form asked thirty rows before the plan; the plan runs on sex
   and height. Apple Health and Fitness ask these few things first and get out of the way.
@@ -1249,7 +1272,7 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 1. Engine work off the main thread: stage 1 done (the memo); stage 2 on its branch (above);
    stage 3 (typed-number parsing, history, chat history and the cloud attach still wait on the
    engine) and stage 4 (engine start behind the launch screen) to follow.
-2. US-55: resting heart rate, VO2 max, steps and sleep from Apple Health (D6).
+2. US-56: heart rate, resting heart rate, sleep, VO2 max and steps from Apple Health, read live (D6).
 3. `APP_ATTEST_TEAM_ID` on the education server, so chat and lab upload work on a phone (D8).
 4. The Clarity masking check on a real recording (D9).
 5. Known gap: an erase arriving from another device while a sheet is open may wait for the next

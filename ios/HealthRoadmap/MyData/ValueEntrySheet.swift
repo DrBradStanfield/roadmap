@@ -40,17 +40,8 @@ struct ValueEntrySheet: View {
         NavigationStack {
             Form {
                 Section {
-                    HStack(alignment: .firstTextBaseline) {
-                        TextField(current ?? "0", text: $text)
-                            .analyticsMasked()
-                            .keyboardType(.decimalPad)
-                            .typedNumber($text, .value, editing: focused)
-                            .font(.system(size: 44, weight: .semibold, design: .rounded))
-                            .monospacedDigit()
-                            .focused($focused)
-                            .onChange(of: text) { message = nil }
-                        Text(unit).font(.title3).foregroundStyle(.secondary)
-                    }
+                    BigNumberField(placeholder: current ?? "0", text: $text, unit: unit, focus: $focused, field: true, label: title)
+                        .onChange(of: text) { message = nil }
                     if let chooseUnit, !units.isEmpty {
                         // Held, with Save, while the choice lands: a value is never read mid-switch.
                         Picker("Unit", selection: Binding(get: { unit }, set: { choice in

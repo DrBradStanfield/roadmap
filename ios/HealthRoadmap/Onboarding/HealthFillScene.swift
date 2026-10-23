@@ -2,10 +2,10 @@ import SwiftUI
 
 /// The Apple Health step's picture (Brad 2026-10-23: "needs some magic and
 /// delight"): the six things the app reads light up one by one, each ticked as
-/// if filled in, with a line under them naming the two taps on Apple's sheet that
-/// comes next. That sheet is the system's: an app cannot turn its switches on, so
-/// this offers no switch of its own, only the way through. Loops; under Reduce
-/// Motion it shows everything ticked and still. VoiceOver reads the six as one list.
+/// if filled in. Apple's sheet comes next and is the system's: an app cannot turn
+/// its switches on, so the page offers no switch of its own, only a hint above its
+/// button (OnboardingView). Loops; under Reduce Motion it shows everything ticked
+/// and still. VoiceOver reads the six as one list.
 struct HealthFillScene: View {
     @State private var filled = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -20,19 +20,13 @@ struct HealthFillScene: View {
     ]
 
     var body: some View {
-        VStack(spacing: 18) {
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10), GridItem(.flexible())], spacing: 10) {
-                ForEach(Self.items.indices, id: \.self) { index in
-                    tile(Self.items[index], lit: index < filled)
-                }
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10), GridItem(.flexible())], spacing: 10) {
+            ForEach(Self.items.indices, id: \.self) { index in
+                tile(Self.items[index], lit: index < filled)
             }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Apple Health fills in six things: \(Self.items.map { $0.name.lowercased() }.joined(separator: ", ")).")
-
-            Text("Apple asks next: tap **Turn On All**, then **Allow**.")
-                .font(.subheadline)
-                .multilineTextAlignment(.center)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Apple Health fills in six things: \(Self.items.map { $0.name.lowercased() }.joined(separator: ", ")).")
         .task { await play() }
     }
 

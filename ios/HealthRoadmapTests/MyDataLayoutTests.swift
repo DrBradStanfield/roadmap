@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import HealthRoadmap
 
@@ -128,5 +129,42 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(ChartRange.atLeastAWeek(["2026-08-18", "2026-08-20"].map(day)), day("2026-08-16")...day("2026-08-22"), "two days apart: a week around their middle")
         XCTAssertNil(ChartRange.atLeastAWeek(["2026-08-18", "2026-09-01"].map(day)), "two weeks apart: the chart's own fit")
         XCTAssertNil(ChartRange.atLeastAWeek([]))
+    }
+
+    /// US-25 AC17 (Brad 2026-10-23): each metric has its own graph colour, readable as a
+    /// line on its card (about 3:1) in light and dark, and no two metrics share one.
+    func testEveryMetricHasItsOwnReadableChartColour() {
+        for style in [UIUserInterfaceStyle.light, .dark] {
+            let traits = UITraitCollection(userInterfaceStyle: style)
+            let card = UIColor.secondarySystemGroupedBackground.resolvedColor(with: traits)
+            var seen: [String: String] = [:]
+            for metric in MetricChart.palette.keys.sorted() {
+                for color in MetricChart.colors(for: metric) {
+                    let resolved = UIColor(color).resolvedColor(with: traits)
+                    XCTAssertGreaterThanOrEqual(UIColor.contrast(resolved, card), 3, "\(metric) in \(style == .dark ? "dark" : "light")")
+                    var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+                    resolved.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+                    let key = [red, green, blue].map { String(format: "%.2f", $0) }.joined(separator: ",")
+                    XCTAssertNil(seen[key], "\(metric) shares \(seen[key] ?? "")'s colour")
+                    seen[key] = metric
+                }
+            }
+        }
+        XCTAssertEqual(MetricChart.colors(for: "unknown"), [.accentColor], "an unmapped metric takes the accent colour")
+        XCTAssertEqual(MetricChart.colors(for: MyData.bloodPressure).count, 2, "systolic and diastolic")
+    }
+}
+
+extension UIColor {
+    /// WCAG contrast ratio of two resolved colours, 1 to 21.
+    static func contrast(_ one: UIColor, _ two: UIColor) -> CGFloat {
+        func luminance(_ color: UIColor) -> CGFloat {
+            var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+            color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+            let linear = { (c: CGFloat) in c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
+            return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
+        }
+        let (a, b) = (luminance(one), luminance(two))
+        return (max(a, b) + 0.05) / (min(a, b) + 0.05)
     }
 }

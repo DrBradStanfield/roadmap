@@ -83,3 +83,87 @@ struct HealthCharacteristics: Equatable {
         }
     }
 }
+
+/// A typed height or weight on its onboarding screen (US-54 AC6). Its unit switch is for
+/// entry only: the box keeps its own text and units and never writes the record's, which
+/// come from the region default and change in My data's Units row. Every conversion is the
+/// engine's (`convertJson`, health-core's factors). Pure, so OnboardingStepsTests checks it.
+struct TypedAnswer: Equatable {
+    /// (value, metric, from, to): a value in the other units, "si" or "conventional".
+    typealias Convert = (Double, String, String, String) -> HealthEngine.Conversion?
+
+    /// "height" or "weight".
+    let metric: String
+    /// Centimetres, or the weight, as typed.
+    var text = ""
+    /// A US height's two boxes.
+    var feet = ""
+    var inches = ""
+    var us = false
+    /// The person typed here. A box filled from the record and left alone saves nothing,
+    /// in any unit: compared by this, never by the text shown (Codex, adversary R1, R2).
+    var edited = false
+
+    static func system(_ us: Bool) -> String { us ? "conventional" : "si" }
+
+    private var isHeight: Bool { metric == "height" }
+
+    /// A US height as typed, nil until both read as whole numbers. Empty inches are 0:
+    /// "5 ft" is a height.
+    var feetInches: MyData.FeetInches? {
+        guard let feet = Int(feet), let inches = inches.isEmpty ? 0 : Int(inches) else { return nil }
+        return MyData.FeetInches(feet: feet, inches: inches)
+    }
+
+    /// The box's number in its own units (a US height in inches), nil until it reads as one.
+    func value(read: (String) -> Double?) -> Double? {
+        guard isHeight, us else { return read(text) }
+        return feetInches.map { Double($0.feet * 12 + $0.inches) }
+    }
+
+    /// Shows `recorded`, the record's value in `recordUnits`, in the box's own units;
+    /// empty boxes when there is none.
+    mutating func show(_ recorded: Double?, recordUnits: String, convert: Convert) {
+        let shown = recorded.flatMap { convert($0, metric, recordUnits, Self.system(us)) }
+        fill(shown)
+    }
+
+    /// The other units. A box left alone shows the record's value again; a typed one is
+    /// converted once, and stays the person's.
+    mutating func switchUnits(toUS: Bool, recorded: Double?, recordUnits: String, read: (String) -> Double?, convert: Convert) {
+        guard toUS != us else { return }
+        let typed = edited ? value(read: read).flatMap { convert($0, metric, Self.system(us), Self.system(toUS)) } : nil
+        us = toUS
+        if !edited {
+            show(recorded, recordUnits: recordUnits, convert: convert)
+        } else if let typed {
+            fill(typed)
+        }
+    }
+
+    /// What to save, in `recordUnits` (the units the engine's edit reads), or nil when
+    /// the person typed nothing here.
+    func saved(recordUnits: String, read: (String) -> Double?, convert: Convert) -> Double? {
+        guard edited, let typed = value(read: read) else { return nil }
+        if Self.system(us) == recordUnits { return typed }
+        return convert(typed, metric, Self.system(us), recordUnits)?.value
+    }
+
+    /// The typed value is `recorded` (in `recordUnits`) to within half the box's own step,
+    /// 0.1 kg or a whole pound: compared in kilograms, never by the text shown (US-54 AC5).
+    func repeats(_ recorded: Double?, recordUnits: String, read: (String) -> Double?, convert: Convert) -> Bool {
+        guard let recorded, let typed = saved(recordUnits: "si", read: read, convert: convert),
+              let kg = recordUnits == "si" ? recorded : convert(recorded, metric, recordUnits, "si")?.value,
+              let halfStep = us ? convert(0.5, metric, "conventional", "si")?.value : 0.05 else { return false }
+        return abs(typed - kg) < halfStep
+    }
+
+    private mutating func fill(_ shown: HealthEngine.Conversion?) {
+        if isHeight, us {
+            feet = shown?.feetInches.map { String($0.feet) } ?? ""
+            inches = shown?.feetInches.map { String($0.inches) } ?? ""
+        } else {
+            text = shown?.text ?? ""
+        }
+    }
+}

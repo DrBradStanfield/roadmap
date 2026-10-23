@@ -274,6 +274,11 @@ final class RecordStore {
         (try? engine.blocking { try $0.number(from: text) }) ?? nil
     }
 
+    /// A typed value in the other units ("si" or "conventional"), by the engine; nil if it cannot.
+    func convert(_ value: Double, metric: String, from: String, to: String) -> HealthEngine.Conversion? {
+        try? engine.blocking { try $0.convert(value, metric: metric, from: from, to: to) }
+    }
+
     /// Every value recorded for one metric (US-25 AC9); nil while the record cannot be read.
     func history(for metric: String) -> MetricHistory? {
         guard problem == nil else { return nil }

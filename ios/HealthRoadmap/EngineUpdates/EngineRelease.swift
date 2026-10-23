@@ -7,7 +7,7 @@ import Foundation
 enum EngineRelease {
     /// The native bridge this binary serves: the first 16 hex digits of the SHA-256 of
     /// ios/engine/bridge-contract.json. EngineBridgeContractTests fails if they drift.
-    static let bridge = "bcb25cd75e262be0"
+    static let bridge = "431da5d9474acbb5"
 
     /// The signing keys this app trusts, by id: the daily key (Brad's login Keychain),
     /// the cold backup (the Passwords app) and the ci key (the GitHub `engine-signing`
@@ -23,9 +23,9 @@ enum EngineRelease {
     static let doors = [
         "applyEditJson", "chatContextJson", "chatDeleteJson", "chatListJson", "chatMessagesJson",
         "chatRecordExchangeJson", "cloudClose", "cloudEdit", "cloudErase", "cloudFlush", "cloudHidden", "cloudLabImport",
-        "cloudOpen", "cloudRefresh", "cloudVisible", "documentSave", "erasePhoneJson", "fileNamesJson", "healthWritesJson", "historyJson",
+        "cloudOpen", "cloudRefresh", "cloudVisible", "convertJson", "documentSave", "erasePhoneJson", "fileNamesJson", "healthWritesJson", "historyJson",
         "labFile", "labFolderFilesJson", "labFolderJson", "labReviewJson", "labSaveSummaryJson", "mergeJson", "myDataJson", "newRecordJson", "numberJson",
-        "planJson", "remindersJson", "sectionsJson", "settledJson",
+        "planJson", "remindersJson", "sectionsJson", "settledJson", "statTilesJson",
     ]
 
     static let channel = "production"

@@ -111,15 +111,23 @@ actor HealthEngine {
     nonisolated static let mainThreadBlocks = OSAllocatedUnfairLock(initialState: 0)
     #endif
 
-    /// The plan's on-screen sections for a record, and how long the engine took
-    /// (D2's budget). A plan no longer wanted (the record moved on) is not started.
-    func planSections(record: String, units: String, now: Date, deviceId: String) throws -> (sections: [PlanSection], ms: Double) {
+    /// The plan's summary tiles and on-screen sections for a record, and how long the engine
+    /// took (D2's budget). A plan no longer wanted (the record moved on) is not started.
+    func planSections(record: String, units: String, now: Date, deviceId: String) throws -> (tiles: [StatTile], sections: [PlanSection], ms: Double) {
         try Task.checkCancellation()
         let clock = ContinuousClock()
         let start = clock.now
-        let sections = try sections(planJSON: plan(recordJSON: record, now: now, deviceId: deviceId, units: units))
+        let planJSON = try plan(recordJSON: record, now: now, deviceId: deviceId, units: units)
+        // A tile the engine cannot draw never blanks the plan below it (adversary R7).
+        let tiles = (try? statTiles(planJSON: planJSON, units: units)) ?? []
+        let sections = try sections(planJSON: planJSON)
         let elapsed = clock.now - start
-        return (sections, Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15)
+        return (tiles, sections, Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15)
+    }
+
+    /// The summary tiles above the plan, the web's Quick Stats (US-25 AC22).
+    func statTiles(planJSON: String, units: String) throws -> [StatTile] {
+        try JSONDecoder().decode([StatTile].self, from: Data(call("statTilesJson", [planJSON, units]).utf8))
     }
 
     /// The plan for a record, as the engine's JSON.
@@ -173,6 +181,20 @@ actor HealthEngine {
     func number(from text: String) throws -> Double? {
         let json = try call("numberJson", [text])
         return try JSONDecoder().decode(Double?.self, from: Data(json.utf8))
+    }
+
+    /// A typed value in the other units, by health-core's factors (`convertJson`): onboarding's
+    /// unit switches are for entry only (US-54 AC6). `from`, `to`: "si" or "conventional".
+    func convert(_ value: Double, metric: String, from: String, to: String) throws -> Conversion {
+        let json = try call("convertJson", [metric, value, from, to])
+        return try JSONDecoder().decode(Conversion.self, from: Data(json.utf8))
+    }
+
+    /// `value` unrounded, for an edit; `text` as the record shows it; `feetInches` for a height.
+    struct Conversion: Decodable {
+        let value: Double
+        let text: String
+        let feetInches: MyData.FeetInches?
     }
 
     /// Calls an engine function that returns text, turning a JavaScript exception into a Swift error.

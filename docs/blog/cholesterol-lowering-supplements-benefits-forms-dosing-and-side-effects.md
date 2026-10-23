@@ -15,7 +15,7 @@ sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/chole
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Plant sterols and stanols and soluble fiber such as psyllium have the strongest support from meta-analyses for lowering LDL cholesterol, but supplements generally lower it far less than statins do [2][3][4]. In a trial that compared low-dose rosuvastatin with six popular supplements, including plant sterols, red yeast rice and fish oil, only rosuvastatin lowered LDL cholesterol significantly compared with placebo [6]. Red yeast rice contains the same compound as the statin lovastatin, its strength varies widely between products, and it can have the same side effects and drug interactions as statins [17][18]. Fish oil mainly lowers triglycerides rather than LDL cholesterol, and niacin is no longer recommended for cholesterol because outcome trials did not show a reduction in cardiovascular risk [22][42].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Plant sterols and stanols and soluble fiber such as psyllium have the strongest support from meta-analyses for lowering LDL cholesterol, but supplements generally lower it far less than statins do [2][3][4]. In a trial that compared low-dose rosuvastatin with six popular supplements, including plant sterols, red yeast rice and fish oil, only rosuvastatin lowered LDL cholesterol significantly compared with placebo [6]. Red yeast rice contains the same compound as the statin lovastatin, its strength varies widely between products, and it can have the same side effects and drug interactions as statins [17][19]. Fish oil mainly lowers triglycerides rather than LDL cholesterol, and niacin is no longer recommended for cholesterol because outcome trials did not show a reduction in cardiovascular risk [22][42].
 
 ## Key safety points
 
@@ -71,7 +71,7 @@ For the FDA health claim, at least 80% of the sterols in plant sterol esters, by
 
 ### Red Yeast Rice
 
-Red yeast rice is made by fermenting rice with the yeast *Monascus purpureus*. The active compound, monacolin K, is chemically identical to the prescription statin lovastatin [16][17]. Product quality varies enormously — studies have shown monacolin K levels ranging from trace amounts to over 10 mg per serving, with some products containing 60-fold differences in active ingredient content [18][19]. The U.S. FDA has classified red yeast rice products containing more than trace amounts of monacolin K as unapproved drugs rather than dietary supplements [17][19]. Some products are also contaminated with citrinin, a nephrotoxic mycotoxin [17].
+Red yeast rice is made by fermenting rice with the yeast *Monascus purpureus*. The active compound, monacolin K, is chemically identical to the prescription statin lovastatin [16][17]. Product quality varies enormously. In a test of 28 US brands, two had no detectable monacolin K, and in the rest the amount varied more than 60-fold, from 0.09 to 5.48 mg per 1200 mg of red yeast rice [19]. The U.S. FDA has classified red yeast rice products containing more than trace amounts of monacolin K as unapproved drugs rather than dietary supplements [17][19]. Some products are also contaminated with citrinin, a nephrotoxic mycotoxin [17].
 
 ### Omega-3 Fatty Acids
 
@@ -141,11 +141,11 @@ Meta-analyses of randomized trials indicate that intakes of at least 3 g/day of 
 
 Red yeast rice lowers cholesterol through monacolin K (identical to lovastatin), which competitively inhibits HMG-CoA reductase, the rate-limiting enzyme in the mevalonate pathway of cholesterol biosynthesis [16][17].
 
-**Meta-analysis (2024):** A systematic review and meta-analysis of 14 double-blind trials reported significant reductions in total cholesterol (mean -37.43 mg/dL) and LDL cholesterol (-35.82 mg/dL), with no major safety concerns in the studied populations, though further research on long-term risks is recommended [39].
+**Meta-analysis (2024):** A systematic review and meta-analysis of 14 double-blind trials lasting 4 to 24 weeks found red yeast rice extract lowered total cholesterol by a mean of 37.43 mg/dL and LDL cholesterol by 35.82 mg/dL, but did not significantly change HDL cholesterol or triglycerides. It was not associated with an increase in life-threatening side effects, and the authors call for more research in specific groups (Trogkanis et al., *Nutrients*, 2024) [70].
 
-**LDL reductions of 15-34%** have been reported in certain trials involving individuals with mild-to-moderate hypercholesterolemia, with effects comparable to low-dose statins [17][39].
+**Dose matters:** Products with considerable amounts of monacolin K may lower blood cholesterol. Products with very little monacolin K may not, and some contain less than the amount known to lower cholesterol in clinical trials [17].
 
-**However, product variability is a major concern.** Studies have shown monacolin K levels ranging from trace amounts to over 10 mg per serving, with some products containing 60-fold differences or virtually none [18][19]. This means that the supplement a consumer purchases may contain a therapeutically irrelevant dose or an unpredictably high dose.
+**However, product variability is a major concern.** In a test of 28 brands sold by mainstream US retailers, two had no detectable monacolin K. Following the labels' daily servings, the rest would give anywhere from 0.09 to 10.94 mg of monacolin K a day, a more than 120-fold range [19]. This means that the supplement a consumer purchases may contain a therapeutically irrelevant dose or an unpredictably high dose.
 
 **Regulatory status:** The U.S. FDA has classified red yeast rice products containing more than trace amounts of monacolin K as unapproved drugs rather than dietary supplements, because monacolin K is chemically identical to the active ingredient in a prescription medication (lovastatin) [17][19].
 
@@ -173,7 +173,7 @@ The evidence for policosanol as a cholesterol-lowering agent should be considere
 
 ### Garlic
 
-Garlic supplements have been extensively studied, yet high-quality trials and reviews generally show no meaningful reduction in LDL cholesterol or other lipid parameters. A randomized controlled trial found no cholesterol-lowering benefit from garlic, and a more recent study reported that a commonly used garlic supplement actually increased LDL levels relative to placebo [24][6].
+Garlic supplements have been extensively studied, and the results for LDL cholesterol are mixed. A 2013 meta-analysis of 39 trials found garlic taken for longer than 2 months lowered LDL cholesterol by about 9 mg/dL in people with total cholesterol above 200 mg/dL [71]. A 2012 meta-analysis of 26 trials found garlic lowered total cholesterol and triglycerides but did not change LDL cholesterol [72]. A 6-month trial found no cholesterol-lowering benefit from raw garlic or garlic supplements [24]. In a 28-day trial, garlic did not lower LDL cholesterol more than placebo [6].
 
 ### Niacin (Vitamin B3)
 
@@ -215,7 +215,7 @@ A minimum of 3 g/day of oat beta-glucan is needed for meaningful cholesterol red
 
 ### Red Yeast Rice
 
-Research dosages have typically ranged from 1,200 to 2,400 mg/day, often divided into two doses [47][48]. However, because of marked variability in monacolin K content across products and FDA regulatory concerns, standardized products with verified monacolin K levels are essential. Consult a healthcare provider before use, as red yeast rice acts as an unregulated statin.
+Research dosages have typically ranged from 1,200 to 2,400 mg/day, often divided into two doses [47][48]. However, because monacolin K content varies more than 60-fold between products [19], and because of FDA regulatory concerns, standardized products with verified monacolin K levels are essential. Consult a healthcare provider before use, as red yeast rice acts as an unregulated statin.
 
 ### Omega-3 Fatty Acids
 
@@ -237,7 +237,7 @@ The sole positive study used 600 mg/day for 8 weeks followed by 900 mg/day for a
 | Free sterols (food/supplement) | 800-1,800 mg (with meals) | LDL cholesterol | Inconsistent in supplements; 4.9% in one tablet trial |
 | Psyllium husk | 10.2 g husk (about 7 g soluble fiber), divided, with water | LDL cholesterol | About 7% reduction |
 | Oat beta-glucan | 3+ g/day | LDL, total cholesterol | 5-7% reduction |
-| Red yeast rice | 1,200-2,400 mg | LDL cholesterol | 15-34% reduction (variable) |
+| Red yeast rice | Varies with monacolin K content [19] | LDL cholesterol | LDL 35.82 mg/dL lower on average in a 2024 meta-analysis [70] |
 | Omega-3 (EPA + DHA) | 2-4 g | Triglycerides | 20-30% reduction |
 | Pantethine | 600-900 mg | LDL cholesterol | 11% reduction in one small trial |
 | Policosanol | 5-40 mg (Cuban trials) | LDL cholesterol | Likely ineffective |
@@ -430,8 +430,6 @@ Beyond individual foods, overall dietary patterns have well-demonstrated cholest
 
 [17] National Center for Complementary and Integrative Health (NCCIH). "Red Yeast Rice." [https://www.nccih.nih.gov/health/red-yeast-rice](https://www.nccih.nih.gov/health/red-yeast-rice)
 
-[18] Gordon RY, Cooperman T, Obermeyer W, Becker DJ. "Marked variability of monacolin levels in commercial red yeast rice products." *Arch Intern Med*. 2010;170(19):1722-1727. doi: [10.1001/archinternmed.2010.382](https://doi.org/10.1001/archinternmed.2010.382)
-
 [19] Cohen PA, Avula B, Khan IA. "Variability in strength of red yeast rice supplements purchased from mainstream retailers." *Eur J Prev Cardiol*. 2017;24(13):1431-1434. doi: [10.1177/2047487317715714](https://doi.org/10.1177/2047487317715714)
 
 [21] Mayo Clinic. "Fish oil." [https://www.mayoclinic.org/drugs-supplements-fish-oil/art-20364810](https://www.mayoclinic.org/drugs-supplements-fish-oil/art-20364810)
@@ -467,8 +465,6 @@ Beyond individual foods, overall dietary patterns have well-demonstrated cholest
 [36] Ferguson JJA, Stojanovski E, MacDonald-Wicks L, Garg ML. "Curcumin potentiates cholesterol-lowering effects of phytosterols in hypercholesterolaemic individuals. A randomised controlled trial." *Metabolism*. 2018;82:22-35. doi: [10.1016/j.metabol.2017.12.009](https://doi.org/10.1016/j.metabol.2017.12.009) PMID: [29291429](https://pubmed.ncbi.nlm.nih.gov/29291429/)
 
 [37] Wei ZH, Wang H, Chen XY, et al. "Time- and dose-dependent effect of psyllium on serum lipids in mild-to-moderate hypercholesterolemia." *Eur J Clin Nutr*. 2009;63(7):821-827.
-
-[39] Fogacci F, Banach M, Mikhailidis DP, et al. "Safety of red yeast rice supplementation: A systematic review and meta-analysis of randomized controlled trials." *Pharmacol Res*. 2019;143:1-16. doi: [10.1016/j.phrs.2019.02.028](https://doi.org/10.1016/j.phrs.2019.02.028)
 
 [40] Balk EM, Lichtenstein AH, Chung M, et al. "Effects of omega-3 fatty acids on serum markers of cardiovascular disease risk: a systematic review." *Atherosclerosis*. 2006;189(1):19-30. doi: [10.1016/j.atherosclerosis.2006.02.012](https://doi.org/10.1016/j.atherosclerosis.2006.02.012)
 
@@ -523,3 +519,9 @@ Beyond individual foods, overall dietary patterns have well-demonstrated cholest
 [68] US National Library of Medicine, DailyMed. "Niacin extended-release tablets: prescribing information." Amneal Pharmaceuticals, SPL version 11, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=6e604319-e164-4056-ab80-b78b98c519c7](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=6e604319-e164-4056-ab80-b78b98c519c7)
 
 [69] Wilt T, Ishani A, MacDonald R, Stark G, Mulrow C, Lau J. "Beta-sitosterols for benign prostatic hyperplasia." *Cochrane Database Syst Rev*. 2000;(2):CD001043. doi: [10.1002/14651858.CD001043](https://doi.org/10.1002/14651858.CD001043). PMID: [10796740](https://pubmed.ncbi.nlm.nih.gov/10796740/)
+
+[70] Trogkanis E, Karalexi MA, Sergentanis TN, Kornarou E, Vassilakou T. "Safety and Efficacy of the Consumption of the Nutraceutical "Red Yeast Rice Extract" for the Reduction of Hypercholesterolemia in Humans: A Systematic Review and Meta-Analysis." *Nutrients*. 2024;16(10):1453. doi: [10.3390/nu16101453](https://doi.org/10.3390/nu16101453). PMID: [38794691](https://pubmed.ncbi.nlm.nih.gov/38794691/)
+
+[71] Ried K, Toben C, Fakler P. "Effect of garlic on serum lipids: an updated meta-analysis." *Nutr Rev*. 2013;71(5):282-299. doi: [10.1111/nure.12012](https://doi.org/10.1111/nure.12012). PMID: [23590705](https://pubmed.ncbi.nlm.nih.gov/23590705/)
+
+[72] Zeng T, Guo FF, Zhang CL, et al. "A meta-analysis of randomized, double-blind, placebo-controlled trials for the effects of garlic on serum lipid profiles." *J Sci Food Agric*. 2012;92(9):1892-1902. doi: [10.1002/jsfa.5557](https://doi.org/10.1002/jsfa.5557). PMID: [22234974](https://pubmed.ncbi.nlm.nih.gov/22234974/)

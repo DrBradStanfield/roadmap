@@ -74,22 +74,8 @@ struct WelcomeView: View {
 
     /// The icon's idea in symbols: a road that ends at a heart.
     private var hero: some View {
-        ZStack {
-            Circle()
-                .fill(LinearGradient(colors: [Color(red: 0.2, green: 0.83, blue: 0.47), Color(red: 0.03, green: 0.47, blue: 0.43)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 100, height: 100)
-                .shadow(color: .green.opacity(0.3), radius: 20, y: 10)
-            Image(systemName: "point.bottomleft.forward.to.point.topright.scurvepath.fill")
-                .font(.system(size: 42, weight: .semibold))
-                .foregroundStyle(.white)
-                .offset(x: -5, y: 7)
-            Image(systemName: "heart.fill")
-                .font(.system(size: 22))
-                .foregroundStyle(Color(red: 1, green: 0.27, blue: 0.35))
-                .offset(x: 22, y: -22)
-                .symbolEffect(.bounce, value: shown && !reduceMotion)
-        }
-        .accessibilityHidden(true)
+        LogoMark(bounce: shown && !reduceMotion)
+            .accessibilityHidden(true)
     }
 
     /// Where the website keeps the record: Sync's own connect buttons (US-25 AC11).

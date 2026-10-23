@@ -1,0 +1,442 @@
+[
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Statin-type muscle damage is possible, including rhabdomyolysis, which can be life-threatening [7][48][72]. Stop it...\" | \"Stop red yeast rice and see your doctor promptly about unexplained muscle pain, tenderness or weakness, especially wi...\" | \"A case of anaphylaxis, a severe allergic reaction, to red yeast rice has been reported [49]. For swelling of the face...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Statin-type muscle damage is possible, including rhabdomyolysis, which can be life-threatening [7][48][72]. Stop it...\" | \"Stop red yeast rice and see your doctor promptly about unexplained muscle pain, tenderness or weakness, especially wi...\" | \"A case of anaphylaxis, a severe allergic reaction, to red yeast rice has been reported [49]. For swelling of the face...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Statin-type muscle damage is possible, including rhabdomyolysis, which can be life-threatening [7][48][72]. Stop it...\" | \"Stop red yeast rice and see your doctor promptly about unexplained muscle pain, tenderness or weakness, especially wi...\" | \"A case of anaphylaxis, a severe allergic reaction, to red yeast rice has been reported [49]. For swelling of the face...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Statin-type muscle damage is possible, including rhabdomyolysis, which can be life-threatening [7][48][72]. Stop it...\" | \"Stop red yeast rice and see your doctor promptly about unexplained muscle pain, tenderness or weakness, especially wi...\" | \"A case of anaphylaxis, a severe allergic reaction, to red yeast rice has been reported [49]. For swelling of the face...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "token \"254 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Foundational trial, Heber 1999.** In a 12-week double-blind trial in 83 US adults with high cholesterol on a low-fa...\"",
+  "reason": "AC2 PMID 9989685 gives \"254+/-36 mg/dL\" and \"208+/-31 mg/dL\"; tokeniser split at the +/-. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "token \"208 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Foundational trial, Heber 1999.** In a 12-week double-blind trial in 83 US adults with high cholesterol on a low-fa...\"",
+  "reason": "AC2 PMID 9989685 gives \"208+/-31 mg/dL\"; tokeniser split at the +/-. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.2 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Low dose, Minamizuka 2021.** In 18 Japanese adults with mild dyslipidemia on diet therapy, 200 mg a day of red yeas...\"",
+  "reason": "AC2 PMID 34587702 gives \"control -0.20 [-0.62, 1.19] mmol/L\"; tokeniser split at the bracket. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "token \"74 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Venero 2010.** In a chart review of 25 patients who had not tolerated other lipid-lowering drugs, red yeast rice lo...\"",
+  "reason": "AC2 PMID 20185013 gives \"74 +/- 39 days\"; tokeniser split at the +/-. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5.2 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In the red yeast rice and CoQ10 trial, systolic blood pressure fell by 5.2 mmHg against 3.0 mmHg with diet alone [21]...\"",
+  "reason": "AC2 PMID 30021394 gives \"systolic BP (-5.2 vs. -3.0 mmHg)\"; same figure. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "token \"37\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Strength can be far from the label: of 37 supplements sold in the European Union, nine held less monacolin K than l...\" | \"- Citrinin was found in all 37 of those products, and four labeled \"citrinin free\" were contaminated [69]\" | \"- In 37 supplements sold in the European Union, citrinin was found in all of them; a single product met the limit of ...\"",
+  "reason": "AC2 spelled number: PMID 34950692 writes \"Thirty-seven red yeast rice (RYR) food supplements\"; same figure. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.65\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2019 meta-analysis of 53 randomized trials with 8,535 people found no increase in muscle problems with red yeast ri...\"",
+  "reason": "AC2 PMID 30844537 gives \"OR = 0.94, 95% CI 0.53,1.65\"; tokeniser split. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"14\": Meta-analysis, 2024 (14 trials). A meta-analysis of 14 double-blind trials lasting 4 to 24 weeks found that red yeast...",
+  "reason": "AC2 spelled number: PMID 38794691 writes \"Fourteen double-blinded clinical trials\"; same figure. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1800 mg/day\": Becker 2009. In 62 people who had stopped statins because of muscle pain, red yeast rice 1,800 mg twice daily for 24 ...",
+  "reason": "AC2 PMID 19528562 gives \"red yeast rice, 1800 mg ... twice daily\"; the body says 1,800 mg twice daily, a per-dose figure the unit tokeniser reads as /day. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1800 mg/day\": Becker 2009 [30] | Red yeast rice 1,800 mg twice daily | 24 weeks |",
+  "reason": "AC2 PMID 19528562 gives \"red yeast rice, 1800 mg ... twice daily\"; the body says 1,800 mg twice daily, a per-dose figure the unit tokeniser reads as /day. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Some people are allergic to garlic, and case reports describe anaphylaxis. For swelling of the face or throat or tr...\" | \"- **Allergic reactions**: some people are allergic to garlic. Case reports describe allergic skin rashes, hives, swel...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Some people are allergic to garlic, and case reports describe anaphylaxis. For swelling of the face or throat or tr...\" | \"- **Allergic reactions**: some people are allergic to garlic. Case reports describe allergic skin rashes, hives, swel...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Some people are allergic to garlic, and case reports describe anaphylaxis. For swelling of the face or throat or tr...\" | \"- **Allergic reactions**: some people are allergic to garlic. Case reports describe allergic skin rashes, hives, swel...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Some people are allergic to garlic, and case reports describe anaphylaxis. For swelling of the face or throat or tr...\" | \"- **Allergic reactions**: some people are allergic to garlic. Case reports describe allergic skin rashes, hives, swel...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"26 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a breath-test study of 13 supplements, the allicin delivered by garlic powder capsules ranged from 26% to 109% of ...\" | \"| Garlic powder capsules or tablets | Alliin and alliinase, which form allicin after swallowing [3] | Capsules 26% to...\"",
+  "reason": "AC2 PMID 29937536 gives \"26⁻109%\"; tokeniser reads the superscript-minus range as one token. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"36 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Enteric coating** did not improve delivery. Enteric-coated tablets delivered 36% to 104% of raw garlic's allicin, a...\" | \"| Garlic powder capsules or tablets | Alliin and alliinase, which form allicin after swallowing [3] | Capsules 26% to...\"",
+  "reason": "AC2 PMID 29937536 gives \"36⁻104%\"; tokeniser reads the superscript-minus range as one token. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"480 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Trials report the SAC content of each dose. In one, 480 mg of extract held 1.2 mg of SAC; in another, 1.2 g held 1.2 ...\" | \"**Practical implication:** The best-studied dose is aged garlic extract giving 1.2 mg of SAC a day, as 480 mg or 1.2 ...\"",
+  "reason": "AC2 PMID 23169470 gives \"240/480/960 mg containing 0.6/1.2/2.4 mg\"; tokeniser split at the slashes. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"67\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In a 6-week crossover trial in 67 adults whose LDL cholesterol was at least 115 mg/dL, an aged black garlic extract...\"",
+  "reason": "AC2 spelled number: PMID 35276764 writes \"Sixty-seven hypercholesterolemic individuals\"; same figure. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"6 day/week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Raw garlic, crushed | Allicin and its breakdown products [3][6] | 100% (reference) [3] | No LDL lowering at one 4 g...\" | \"**LDL and HDL cholesterol:** The effect on LDL (\"bad\") cholesterol and HDL (\"good\") cholesterol is inconsistent. A 20...\" | \"Raw garlic and a garlic powder supplement, each at a dose equal to about one 4 g clove 6 days a week, did not lower L...\"",
+  "reason": "AC2 PMID 17325296 gives \"6 d/wk\"; the body says 6 days a week. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"0.19 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Total cholesterol:** A 2009 meta-analysis of 29 trials found garlic lowered total cholesterol by 0.19 mmol/L and tr...\"",
+  "reason": "AC2 PMID 19555517 gives \"TC ( - 0.19; 95 % CI ... mmol/l)\"; tokeniser split from the unit. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"0.11 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Total cholesterol:** A 2009 meta-analysis of 29 trials found garlic lowered total cholesterol by 0.19 mmol/L and tr...\"",
+  "reason": "AC2 PMID 19555517 gives \"TAG ( - 0.11; 95 % CI ... mmol/l)\"; tokeniser split from the unit. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"0.28 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Total cholesterol:** A 2009 meta-analysis of 29 trials found garlic lowered total cholesterol by 0.19 mmol/L and tr...\"",
+  "reason": "AC2 PMID 22234974 gives \"0.28 (95% CI, -0.45, -0.11) mmol L⁻¹\"; tokeniser split from the unit. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"0.13 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Total cholesterol:** A 2009 meta-analysis of 29 trials found garlic lowered total cholesterol by 0.19 mmol/L and tr...\"",
+  "reason": "AC2 PMID 22234974 gives \"0.13 (95% CI, -0.20, -0.06) mmol L⁻¹\"; tokeniser split from the unit. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"17 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**LDL and HDL cholesterol:** The effect on LDL (\"bad\") cholesterol and HDL (\"good\") cholesterol is inconsistent. A 20...\"",
+  "reason": "AC2 PMID 23590705 gives \"17 ± 6 mg/dL\"; tokeniser split at the ±. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"9 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**LDL and HDL cholesterol:** The effect on LDL (\"bad\") cholesterol and HDL (\"good\") cholesterol is inconsistent. A 20...\"",
+  "reason": "AC2 PMID 23590705 gives \"9 ± 6 mg/dL\"; tokeniser split at the ±. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"5.01 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Josling (2001):** In a 12-week winter trial, 146 volunteers took one allicin-containing garlic capsule or placebo d...\"",
+  "reason": "AC2 PMID 11697022 gives \"(5.01 vs 1.52 days\"; tokeniser split. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"76\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Two small trials in overweight or obese postmenopausal women with knee osteoarthritis tested 1,000 mg a day of garlic...\"",
+  "reason": "AC2 spelled number: PMID 29790635 writes \"Seventy-six postmenopausal overweight or obese women\"; same figure. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"1.2 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **\"S-allylcysteine (SAC)\"**: the marker reported in aged garlic extract trials, such as 1.2 mg a day for blood pres...\"",
+  "reason": "AC2 the aged garlic extract trials give \"1.2 mg S-allylcysteine\" per daily dose (Ried 2013, PMID 23169470: \"480 mg containing ... 1.2 mg\"; PMID 30619868: \"1.2 g containing 1.2 mg\"). (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"80 %\": Enteric coating did not improve delivery. Enteric-coated tablets delivered 36% to 104% of raw garlic's allicin, and o...",
+  "reason": "AC2 PMID 29937536 gives \"80⁻111%\" and \"gave 80% ABB\"; tokeniser reads the superscript-minus range as one token. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"80 %\": Garlic powder capsules or tablets | Alliin and alliinase, which form allicin after swallowing [3] | Capsules 26% to 1...",
+  "reason": "AC2 PMID 29937536 gives \"80⁻111%\" and \"gave 80% ABB\"; tokeniser reads the superscript-minus range as one token. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"90\": Spontaneous spinal epidural hematoma with paralysis of the legs was reported in a person in their 90s and was linked ...",
+  "reason": "AC2 PMID 2352608 describes \"a nonagenarian\"; the body says a person in their 90s. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ashwagandha-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Blood sugar:** In 6 people with mild type 2 diabetes, ashwagandha root powder for 30 days lowered blood glucose abo...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ashwagandha-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Blood sugar:** In 6 people with mild type 2 diabetes, ashwagandha root powder for 30 days lowered blood glucose abo...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ashwagandha-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"500 mg\": In 54 adults with mild to moderate stress and anxiety, a daily tablet of 500 mg ashwagandha root extract (Shagandha, ...",
+  "reason": "AC2 PMID 37832082 names the extract \"ARE-500 mg\"; same dose. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ashwagandha-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"60\": In 60 college students, 700 mg/day of full-spectrum ashwagandha root extract for 30 days improved restorative sleep s...",
+  "reason": "AC2 spelled number: PMID 35984871 writes \"Sixty healthy students\"; same figure. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ashwagandha-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3\": Three trials have tested ashwagandha for menopausal symptoms.",
+  "reason": "AC2 spelled number, confirmed by the ashwagandha re-check: \"Three trials\" (3 trials follow, [62][63][64]); Gannon 2014 \"all three ASW treated patients\"; Bjornsson \"three were males\". (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ashwagandha-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3\": In an 8-week placebo-controlled trial in 60 people with bipolar disorder, all 3 ashwagandha-treated patients with abn...",
+  "reason": "AC2 spelled number, confirmed by the ashwagandha re-check: \"Three trials\" (3 trials follow, [62][63][64]); Gannon 2014 \"all three ASW treated patients\"; Bjornsson \"three were males\". (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ashwagandha-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3\": Five people (3 men and 2 women, aged 21 to 62) developed jaundice with nausea, lethargy, itching, and abdominal disco...",
+  "reason": "AC2 spelled number, confirmed by the ashwagandha re-check: \"Three trials\" (3 trials follow, [62][63][64]); Gannon 2014 \"all three ASW treated patients\"; Bjornsson \"three were males\". (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. L-tryptophan at 1 g or more...\" | \"- Taking either supplement with SSRIs, SNRIs, MAO inhibitors, tramadol or other serotonergic drugs may cause serotoni...\" | \"- Contaminated L-tryptophan caused the 1989 eosinophilia-myalgia syndrome epidemic, with 27 deaths reported by July 1...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. L-tryptophan at 1 g or more...\" | \"- Taking either supplement with SSRIs, SNRIs, MAO inhibitors, tramadol or other serotonergic drugs may cause serotoni...\" | \"- Contaminated L-tryptophan caused the 1989 eosinophilia-myalgia syndrome epidemic, with 27 deaths reported by July 1...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. L-tryptophan at 1 g or more...\" | \"- Taking either supplement with SSRIs, SNRIs, MAO inhibitors, tramadol or other serotonergic drugs may cause serotoni...\" | \"- Contaminated L-tryptophan caused the 1989 eosinophilia-myalgia syndrome epidemic, with 27 deaths reported by July 1...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. L-tryptophan at 1 g or more...\" | \"- Taking either supplement with SSRIs, SNRIs, MAO inhibitors, tramadol or other serotonergic drugs may cause serotoni...\" | \"- Contaminated L-tryptophan caused the 1989 eosinophilia-myalgia syndrome epidemic, with 27 deaths reported by July 1...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-5): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.08\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2022 meta-analysis pooled data from 4 of the 18 articles it collected. Tryptophan shortened time awake after first ...\"",
+  "reason": "AC2 the 2022 meta-analysis abstract gives \"-1.08 min\"; tokeniser drops the sign. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5040\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 1992 double-blind trial, 20 people with obesity took 900 mg of 5-HTP a day or placebo for two 6-week periods, wi...\"",
+  "reason": "AC2 the 1992 trial abstract gives \"5040-kJ/d\"; tokeniser split at the hyphen. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"95 %\": A 2022 meta-analysis pooled data from 4 of the 18 articles it collected. Tryptophan shortened time awake after first ...",
+  "reason": "AC2 the 2022 meta-analysis abstract writes \"95%CI\"; tokeniser split. (orchestrator 2026-10-23, masters-new-5)",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC4",
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Nutritional Profile of Raw Garlic (Per 100g)",
+  "reason": "AC4 heading removed with its unsourced section (orchestrator 2026-10-23, masters-new-5): the whole section was unsourced and was deleted (orchestrator-ratified).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC4",
+  "handle": "ashwagandha-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Pharmacokinetics",
+  "reason": "AC4 heading removed with its unsourced section (orchestrator 2026-10-23, masters-new-5): the whole section was unsourced and was deleted (orchestrator-ratified).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [72] US National Library of Medicine, DailyMed. \"Lovastatin tablets: prescribing information.\" Lu...",
+  "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-5): the US National Library of Medicine's DailyMed, cited for the FDA lovastatin label.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Product Selection",
+  "reason": "AC7 product-heading regex false positive (orchestrator 2026-10-23, masters-new-5): not a Brad product section (orchestrator-ratified).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "ashwagandha-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Testosterone and Male Reproductive Health",
+  "reason": "AC7 product-heading regex false positive (orchestrator 2026-10-23, masters-new-5): not a Brad product section (orchestrator-ratified).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "ashwagandha-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Pregnancy and Reproductive Concerns",
+  "reason": "AC7 product-heading regex false positive (orchestrator 2026-10-23, masters-new-5): not a Brad product section (orchestrator-ratified).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ }
+]

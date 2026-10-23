@@ -48,9 +48,11 @@
     "myDataJson": { "args": ["recordJson", "nowIso", "deviceId", "unitsJson"], "returns": "MyData JSON" },
     "newRecordJson": { "args": ["nowIso", "deviceId", "locale", "timeZone"], "returns": "record JSON" },
     "numberJson": { "args": ["text"], "returns": "number or null JSON" },
+    "convertJson": { "args": ["metric", "value", "from", "to"], "returns": "{value, text, feetInches|null} JSON: a typed value in the other units by health-core's factors, for onboarding's entry-only unit switches (US-54 AC6)" },
     "planJson": { "args": ["recordJson", "nowIso", "deviceId", "unitsJson"], "returns": "Plan JSON" },
     "remindersJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "PhoneReminders JSON" },
     "sectionsJson": { "args": ["planJson"], "returns": "[PlanSection] JSON" },
+    "statTilesJson": { "args": ["planJson", "unitsJson"], "returns": "[StatTile] JSON: the plan's summary tiles, the web's Quick Stats (health-core stat-tiles.ts, US-25 AC22)" },
     "fileNamesJson": { "args": ["filesJson"], "returns": "JSON array: each file's sourceFileName by health-core's rules (zipMemberName for {zip, path}, fileNameLine and the 255 cap for {name}), one call per read (US-52 AC13d)" },
     "settledJson": { "args": [], "returns": "the last settled async door's answer" }
   }

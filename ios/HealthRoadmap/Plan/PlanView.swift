@@ -6,7 +6,7 @@ import SwiftUI
 struct PlanView: View {
     private enum LoadState {
         case loading
-        case loaded(sections: [PlanSection], planMs: Double)
+        case loaded(tiles: [StatTile], sections: [PlanSection], planMs: Double)
         /// The engine cannot plan this record yet, in its own words.
         case cannotPlan(String)
     }
@@ -36,8 +36,8 @@ struct PlanView: View {
                     Button(action: showMyData) { Text("Go to My data").onAccentLabel() }
                         .buttonStyle(.borderedProminent)
                 }
-            case .loaded(let sections, let planMs):
-                PlanList(sections: sections, planMs: planMs)
+            case .loaded(let tiles, let sections, let planMs):
+                PlanList(tiles: tiles, sections: sections, planMs: planMs)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -69,7 +69,7 @@ struct PlanView: View {
     private func load(_ key: PlanKey) async -> (LoadState, planned: Bool) {
         do {
             let plan = try await engine.planSections(record: key.record, units: key.units, now: .now, deviceId: store.deviceId)
-            return (.loaded(sections: plan.sections, planMs: plan.ms), true)
+            return (.loaded(tiles: plan.tiles, sections: plan.sections, planMs: plan.ms), true)
         } catch HealthEngine.EngineError.callFailed(let why) where why.hasPrefix("PlanError: ") {
             // health-core's one PlanError: no usable height or sex (plan.ts). Its own
             // words are written for connectors, so people get a plain sentence.
@@ -80,29 +80,26 @@ struct PlanView: View {
     }
 }
 
-/// The plan's sections, which rise in as they scroll into view, then the disclaimer
-/// and the privacy line.
+/// The summary tiles, then the plan's sections, whose cards rise in as they scroll into
+/// view, then the disclaimer and the privacy line.
 private struct PlanList: View {
+    let tiles: [StatTile]
     let sections: [PlanSection]
     let planMs: Double
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 28) {
+                // The web's Quick Stats, above the suggestions as there (US-25 AC22).
+                if !tiles.isEmpty { SummaryTiles(tiles: tiles) }
+
                 ForEach(sections) { section in
                     VStack(alignment: .leading, spacing: 12) {
                         Text(section.title)
                             .font(.title3.weight(.semibold))
                             .padding(.horizontal, 4)
-                        ForEach(section.cards) { PlanCardView(card: $0) }
-                    }
-                    // Each section rises in as it scrolls into view. Driven by scroll position,
-                    // not an appear flag: inside a navigation stack the flag's animation
-                    // never ran, and the plan stayed invisible.
-                    .scrollTransition(topLeading: .identity, bottomTrailing: .animated(.spring(duration: 0.6, bounce: 0.25))) { content, phase in
-                        content
-                            .opacity(phase.isIdentity ? 1 : 0)
-                            .offset(y: phase.isIdentity ? 0 : 24)
+                            .modifier(RiseIn())
+                        ForEach(section.cards) { PlanCardView(card: $0).modifier(RiseIn()) }
                     }
                 }
 
@@ -126,6 +123,41 @@ private struct PlanList: View {
             .padding(.horizontal, 16)
             .padding(.top, 8)
             .padding(.bottom, 32)
+        }
+    }
+}
+
+/// A card rises in the first time any of it scrolls into view, then stays (Brad 2026-10-23).
+/// Once, per card: a section-wide transition tied to scroll position faded a section out
+/// while it was being read, once an opened card made it taller than the screen
+/// (Micronutrient base). Not an appear flag: inside a navigation stack its animation
+/// never ran, and the plan stayed invisible. A card starts visible and is hidden only once
+/// it is reported off screen, so one on screen at first, or one whose report never comes,
+/// is never left at 0 (review R-N4). VoiceOver and Reduce Motion skip it: the cards are
+/// simply there. iOS 18 and later; on 17 the cards are there from the start.
+private struct RiseIn: ViewModifier {
+    private enum Phase { case shown, waiting, risen }
+    @State private var phase = Phase.shown
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
+
+    func body(content: Content) -> some View {
+        // One view either way, so turning VoiceOver on keeps an opened card open.
+        let hidden = phase == .waiting && !reduceMotion && !voiceOver
+        if #available(iOS 18, *) {
+            content
+                .opacity(hidden ? 0 : 1)
+                .offset(y: hidden ? 24 : 0)
+                .onScrollVisibilityChange(threshold: 0.01) { visible in
+                    switch (phase, visible) {
+                    case (.shown, false): phase = .waiting
+                    case (.shown, true): phase = .risen
+                    case (.waiting, true): withAnimation(.spring(duration: 0.6, bounce: 0.25)) { phase = .risen }
+                    default: break
+                    }
+                }
+        } else {
+            content
         }
     }
 }
