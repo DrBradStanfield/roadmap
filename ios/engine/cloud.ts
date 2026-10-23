@@ -22,7 +22,7 @@ import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { labArchivePayload, saveDocuments, type DocumentPayload, type DocumentSaveIO, type DocumentSavePlan } from '../../packages/health-core/src/document-save';
 import { validDay } from '../../packages/health-core/src/record-edits';
 import { eraseChatText } from './app-doors';
-import type { Extraction } from './lab-review';
+import { labRows, labSaveSummary, type Extraction } from './lab-review';
 import { applyEdit, readRecord, type Edit } from './my-data';
 import { readUnitChoices } from './unit-choices';
 
@@ -44,8 +44,11 @@ export interface CloudNatives {
   /** Writes the phone's record file atomically; answers the error, or '' when it landed. */
   phoneWrite(text: string): string;
   phoneRemove(): void;
-  /** The marker that says the phone holds changes the cloud lacks (US-09 AC4). */
-  pending(op: 'get' | 'set' | 'clear'): boolean;
+  /** The marker that says the phone holds changes the cloud lacks (US-09 AC4), as a
+   *  generation: 0 when it is not set, and a higher number at every 'set'.
+   *  'clear-if:<n>' clears it only while it is still at generation n, so a session
+   *  never clears a marker set after it read the phone. Answers the generation after. */
+  pending(op: 'get' | 'set' | 'clear' | `clear-if:${number}`): number;
   /** Tells Swift what happened in session `session`: 'saving', 'saved',
    *  'synced', 'failed' or 'changed'. Swift drops news from any session but the
    *  one it shows. Never a log: 'changed' carries the record, which Swift only shows. */
@@ -242,19 +245,29 @@ function failed(provider: Provider, error: unknown): string {
 }
 
 function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, id: number): CloudHost {
+  // The marker generation this session's working copy holds: the one it saw as it
+  // read the phone's file, or the one its own commit or failed save set. A marker
+  // set after that (a phone edit while the open ran) is never cleared by it.
+  let held = 0;
   return {
     tier: 'cloud',
     store: new PhoneCloudAdapter(provider, id),
     mirror: {
       adapter: phone,
       pending: {
-        get: () => __native.pending('get'),
-        set: () => void __native.pending('set'),
+        get: () => (held = __native.pending('get')) > 0,
+        // Raised only from the generation it holds: a set it did not make (a phone
+        // edit the session never read) stays unheld, so its marker outlives this session.
+        set: () => {
+          const before = __native.pending('get');
+          const after = __native.pending('set');
+          if (before === held || before === 0) held = after;
+        },
         // The session clears the marker only when a save has landed and been
-        // verified: the one moment the record is in sync (re-check R3).
+        // verified: the one moment the record is in sync (re-check R3), and only
+        // the generation it holds.
         clear: () => {
-          __native.pending('clear');
-          __native.notify('synced', '', id);
+          if (__native.pending(`clear-if:${held}`) === 0) __native.notify('synced', '', id);
         },
       },
       // The phone never logs off underneath an open session: Disconnect closes
@@ -327,9 +340,11 @@ function keepPhoneCopy(at: Open): void {
  * Open the cloud record. `firstConnect`: merge the phone's record up first
  * (health-core's lift, US-09 AC3), so neither side's rows are lost. A lift the
  * cloud refused marks the phone copy pending, and the session merges it in.
+ * `mergePhone`: the phone took edits while an earlier open ran; the session
+ * merges the phone's file in whatever the marker says (Swift's reopen).
  * Rejects when the cloud cannot be read; the app then stays on the phone.
  */
-export async function cloudOpen(provider: Provider, deviceId: string, firstConnect: boolean): Promise<string> {
+export async function cloudOpen(provider: Provider, deviceId: string, firstConnect: boolean, mergePhone: boolean): Promise<string> {
   // The number is taken before any await, so the order of the calls decides
   // which open wins, never the order their awaits finish in (re-check R2).
   const id = ++latest;
@@ -348,6 +363,7 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
     }
     if (superseded()) throw new Error('superseded');
   }
+  if (mergePhone) host.mirror.pending.set();
   // A pending phone copy is merged in by the session's open and saved on its
   // debounce; counted here so a flush on going to the background sends it too.
   const waiting = host.mirror.pending.get();
@@ -430,6 +446,23 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
   const refusal = commit(at, outcome.file, erase, nowIso);
   if (refusal) return refusal;
   return JSON.stringify({ ok: true, record: JSON.stringify(session.file), erase: session.eraseIdentity });
+}
+
+/**
+ * A lab report's ticked values through the session (US-52 AC8), and what saving
+ * them did, in one synchronous step: the summary is taken against the working copy
+ * the import lands on, so a value another device brought in is never counted as
+ * saved. Answers cloudEdit's outcome with `summary` when it was taken.
+ */
+export function cloudLabImport(extractionJson: string, refsJson: string, reportDay: string, erase: string, shownUnits: string, nowIso: string, unitsJson: string): string {
+  const at = open;
+  if (!at) return refuse('not-open', 'The cloud record is not open.');
+  const refs = JSON.parse(refsJson) as string[];
+  const rows = labRows(JSON.parse(extractionJson) as Extraction, refs, reportDay, nowIso);
+  if (!rows.ok) return JSON.stringify(rows);
+  const summary = labSaveSummary(at.session.file, rows.rows, nowIso);
+  const outcome = JSON.parse(cloudEdit(JSON.stringify({ kind: 'labImport', extractionJson, refs, reportDay }), erase, shownUnits, nowIso, unitsJson)) as { ok: boolean };
+  return JSON.stringify(outcome.ok ? { ...outcome, summary } : outcome);
 }
 
 /** What the review chose for one file (US-52 AC13d). `mimeType` and

@@ -209,8 +209,8 @@ final class RecordStoreTests: XCTestCase {
         let (_, other) = otherUnits(store)
         let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
         await store.switchUnits(for: weight, to: other).value
-        let erased = try HealthEngine().blocking { try $0.newRecord(now: .now, deviceId: "test") }
-        try await store.showErased(erased)
+        let erased = await store.erasePhone(historyJSON: nil) { _, _ in true }
+        XCTAssertEqual(erased, .erased(chatErased: true))
         XCTAssertTrue(store.unitChoices.isEmpty)
     }
 

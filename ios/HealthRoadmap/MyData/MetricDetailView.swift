@@ -61,11 +61,11 @@ struct MetricDetailView: View {
                 }
             }
             ToolbarItem(placement: .primaryAction) {
-                Button("Add Data") { editing = .add }
+                Button("Add Data") { edit(.add) }
                     .disabled(store.unitSwitches > 0)
             }
         }
-        .sheet(item: $editing) { editing in
+        .sheet(item: $editing, onDismiss: { store.unpinScreen() }) { editing in
             sheet(for: editing).presentationDetents([.medium, .large])
         }
     }
@@ -132,7 +132,7 @@ struct MetricDetailView: View {
         Section {
             ForEach(history.rows) { value in
                 if value.isActive {
-                    Button { editing = .correct(value) } label: { HistoryRow(row: value, unit: history.unit, excluded: history.excluded) }
+                    Button { edit(.correct(value)) } label: { HistoryRow(row: value, unit: history.unit, excluded: history.excluded) }
                         .tint(.primary)
                         .disabled(store.unitSwitches > 0)
                         .accessibilityHint("Opens a correction")
@@ -145,6 +145,13 @@ struct MetricDetailView: View {
         } footer: {
             Text("Tap a value to correct it. The old value stays in your record, struck through and marked as entered in error.")
         }
+    }
+
+    /// Opens a sheet pinned to the record as this page shows it now, not as it is when
+    /// the sheet appears: its unit label and the units a value is read in agree (Codex R2).
+    private func edit(_ next: Editing) {
+        store.pinScreen()
+        editing = next
     }
 
     @ViewBuilder

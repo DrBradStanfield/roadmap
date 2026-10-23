@@ -79,7 +79,7 @@ struct MyDataView: View {
                 ContentUnavailableView("Your record could not be opened", systemImage: "exclamationmark.triangle", description: Text(store.problem ?? ""))
             }
         }
-        .sheet(item: $entry) { entry in
+        .sheet(item: $entry, onDismiss: { store.unpinScreen() }) { entry in
             sheet(for: entry)
                 .presentationDetents([.medium, .large])
         }
@@ -114,10 +114,11 @@ struct MyDataView: View {
             }
             .disabled(picking)
 
-            Button { entry = .height } label: {
+            Button { enter(.height) } label: {
                 ValueRow(label: "Height", value: data.profile.height, unit: data.profile.heightUnit, day: nil, feetInches: data.profile.feetInches)
             }
             .tint(.primary)
+            .disabled(store.unitSwitches > 0)
         } header: {
             header(.aboutYou()) {
                 Button { addingLabs = true } label: {
@@ -174,11 +175,18 @@ struct MyDataView: View {
         if MetricDetailView.opensHistory(store.history(for: row.metric)) {
             detail = row
         } else {
-            entry = .metric(row)
+            enter(.metric(row))
         }
     }
 
     // MARK: Entry
+
+    /// Opens entry pinned to the record as the row was read now, not as it is when
+    /// the sheet appears: its unit label and the units a value is read in agree (Codex R2).
+    private func enter(_ next: Entry) {
+        store.pinScreen()
+        entry = next
+    }
 
     @ViewBuilder
     private func sheet(for entry: Entry) -> some View {

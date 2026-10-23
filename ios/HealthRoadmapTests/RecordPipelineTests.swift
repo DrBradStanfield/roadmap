@@ -173,14 +173,42 @@ final class RecordPipelineTests: XCTestCase {
     /// and labels itself from the new row.
     func testEntryWaitsWhileAUnitSwitchLands() async throws {
         let store = try store()
-        let other = store.myData?.unitSystem == "si" ? "conventional" : "si"
+        let recordUnits = store.myData?.unitSystem ?? "si"
+        let other = recordUnits == "si" ? "conventional" : "si"
         let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
         stallEngine()
         let switched = store.switchUnits(for: weight, to: other)
         XCTAssertEqual(store.unitSwitches, 1, "entry is held while the switch is pending")
+        // A sheet opened anyway pins the row as it was read: its value is read in those units.
+        store.pinScreen()
+        let save = Task { await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")) }
         await switched.value
         XCTAssertEqual(store.unitSwitches, 0)
-        XCTAssertEqual(store.units(for: "weight"), other, "the sheet opened now pins the new choices")
+        let saved = await save.value
+        store.unpinScreen()
+        XCTAssertEqual(saved, .saved)
+        XCTAssertEqual(try XCTUnwrap(weights(store.recordJSON).last?.value), recordUnits == "si" ? 80 : 36.287, accuracy: 0.01,
+                       "read in the units the sheet showed, not the switch that landed behind it")
+    }
+
+    /// US-25 AC20 (Codex R2): the master units switch holds entry while it lands, and a
+    /// sheet opened on the old units has its value refused, never stored in the new ones.
+    func testEntryDuringAMasterUnitsSwitchIsHeldAndRefused() async throws {
+        let store = try store()
+        let other = store.myData?.unitSystem == "si" ? "conventional" : "si"
+        stallEngine()
+        let switched = Task { await store.apply(.units(other)) }
+        await Task.yield()
+        XCTAssertEqual(store.unitSwitches, 1, "entry is held while the master switch is pending")
+        store.pinScreen() // a sheet opened anyway, on the old units
+        let save = Task { await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")) }
+        let switchResult = await switched.value
+        XCTAssertEqual(switchResult, .saved)
+        XCTAssertEqual(store.unitSwitches, 0)
+        guard case .refused(let words, _) = await save.value else { return XCTFail("a value typed in the old units was stored") }
+        store.unpinScreen()
+        XCTAssertTrue(words.hasPrefix("Your units changed while this was open"))
+        XCTAssertTrue(weights(store.recordJSON).isEmpty)
     }
 
     func testAnOlderCloudRecordNeverReplacesANewerOne() async throws {

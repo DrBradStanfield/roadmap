@@ -42,6 +42,7 @@ final class DataEraserTests: XCTestCase {
         let reminders: ReminderScheduler
         let eraser: DataEraser
         let health: AppleHealthSync
+        let engine: HealthEngine
     }
 
     /// The app's parts, as AppParts makes them, on the test folder and the stub.
@@ -55,8 +56,8 @@ final class DataEraserTests: XCTestCase {
             try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         }
         let appleHealth = AppleHealthSync(store: store, engine: engine, client: health, memory: HealthSyncMemory(defaults: healthDefaults))
-        let eraser = DataEraser(engine: engine, store: store, sync: sync, chat: chat, reminders: reminders, health: appleHealth)
-        return App(store: store, sync: sync, chat: chat, reminders: reminders, eraser: eraser, health: appleHealth)
+        let eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: appleHealth)
+        return App(store: store, sync: sync, chat: chat, reminders: reminders, eraser: eraser, health: appleHealth, engine: engine)
     }
 
     private func record(days: [String]) throws -> [String: Any] {
@@ -390,5 +391,21 @@ final class DataEraserTests: XCTestCase {
         guard #available(iOS 18.2, *) else { throw XCTSkip("exported(as:) needs iOS 18.2") }
         let data = try await export.exported(as: .json)
         XCTAssertEqual(String(decoding: data, as: UTF8.self), app.store.recordJSON)
+    }
+
+    /// US-25 AC20 (Codex R1): an import accepted while the phone erase waits on the
+    /// engine lands after the erase, never under it: it is in the record afterwards.
+    func testAnImportDuringAPhoneEraseLandsAfterIt() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        app.engine.queue.async { Thread.sleep(forTimeInterval: 0.3) } // the erase waits on the engine
+        let erase = Task { await app.eraser.eraseAll() }
+        try await Task.sleep(for: .milliseconds(50))
+        let imported = await app.store.applyNow(.add(metric: "weight", value: 81, day: "2026-10-02"))
+        guard case .erased = await erase.value else { return XCTFail("the erase did not finish") }
+        XCTAssertEqual(imported, .saved)
+        let onDisk = try object(String(contentsOf: phoneFile, encoding: .utf8))
+        XCTAssertEqual(rows(onDisk), 1, "the import is in the erased record, not written over")
+        XCTAssertEqual(epoch(onDisk), 1)
     }
 }

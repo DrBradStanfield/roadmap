@@ -54,6 +54,9 @@ final class CloudSync: CloudPort {
     private var openingFor: Int?
     /// Edits the phone took while an open was under way (review A5).
     private var editsWhileOpening = 0
+    /// News a session sent before the handover showed it: the newest record each
+    /// session brought in, shown once that session is (adversary R4).
+    private var heldNews: [Int: HealthEngine.CloudView] = [:]
 
     init(engine: HealthEngine, store: RecordStore, oauth: OAuthClient) {
         self.engine = engine
@@ -198,26 +201,31 @@ final class CloudSync: CloudPort {
             store.showPhone()
         }
         status = .connecting
+        heldNews = [:]
         var first = firstConnect
-        for _ in 0..<3 {
+        for attempt in 0..<3 {
             editsWhileOpening = 0
             do {
-                let view = try await engine.cloudOpen(provider: provider, deviceId: store.deviceId, firstConnect: first)
+                // A reopen merges the phone's file in, whatever its marker says: it holds
+                // the edits that made this open go round again (adversary R1).
+                let view = try await engine.cloudOpen(provider: provider, deviceId: store.deviceId, firstConnect: first, mergePhone: attempt > 0)
                 // Disconnected meanwhile: the Disconnect closed what this open made.
                 guard mine == generation else { return }
-                // An edit asked for while the open ran may still be landing on the phone's
-                // file: let it land and be counted before deciding (US-09 AC4).
-                await store.drained()
-                guard mine == generation else { return }
                 first = false
-                if editsWhileOpening > 0 { continue }
-                let shown = store.showCloud(view)
-                shownSession = view.session
+                // Decided as a step in the store's line: every edit asked for before it has
+                // landed on the phone's file and been counted (US-09 AC4, adversary R2).
+                let shown = await store.handOver(to: view) { [weak self] in
+                    guard let self, mine == self.generation, self.editsWhileOpening == 0 else { return false }
+                    self.shownSession = view.session
+                    if let held = self.heldNews.removeValue(forKey: view.session) { self.store.showCloud(held) }
+                    return true
+                }
+                guard mine == generation else { return }
+                guard shown else { continue }
+                heldNews = [:]
                 status = settled()
                 syncedBefore = provider
                 try? files.write(provider.rawValue, to: files.history)
-                // Done once the screen shows the cloud record.
-                await shown.value
                 return
             } catch {
                 guard mine == generation else { return }
@@ -270,7 +278,14 @@ final class CloudSync: CloudPort {
     }
 
     func notify(_ event: String, _ payload: String, session: Int, order: Int) {
-        guard session == shownSession else { return }
+        guard session == shownSession else {
+            // A session still being handed over: keep the record it brought in for when it shows.
+            if openingFor != nil, event == "changed", var view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) {
+                view.order = order
+                heldNews[session] = view
+            }
+            return
+        }
         switch event {
         case "saving": status = .saving
         // A write landed, but the save may still verify or go round again:

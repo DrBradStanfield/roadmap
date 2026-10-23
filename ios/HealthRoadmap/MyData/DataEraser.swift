@@ -32,15 +32,13 @@ final class DataEraser {
     /// An erase is done but its words are still on screen: nothing else may cover them.
     private(set) var awaitingDismissal = false
 
-    private let engine: HealthEngine
     private let store: RecordStore
     private let sync: CloudSync
     private let chat: ChatHistoryStore
     private let reminders: ReminderScheduler?
     private let health: AppleHealthSync?
 
-    init(engine: HealthEngine, store: RecordStore, sync: CloudSync, chat: ChatHistoryStore, reminders: ReminderScheduler?, health: AppleHealthSync?) {
-        self.engine = engine
+    init(store: RecordStore, sync: CloudSync, chat: ChatHistoryStore, reminders: ReminderScheduler?, health: AppleHealthSync?) {
         self.store = store
         self.sync = sync
         self.chat = chat
@@ -79,21 +77,15 @@ final class DataEraser {
     }
 
     private func eraseOnPhone() async -> Outcome {
-        guard store.problem == nil, let record = try? store.phoneText() else { return .refused(EraseText.unreadable) }
         let (history, chatReadable) = chatText()
-        let result: HealthEngine.PhoneErase
-        do {
-            result = try await engine.eraseOnPhone(recordJSON: record, historyJSON: history, now: .now, deviceId: store.deviceId)
-        } catch {
-            return .refused(EraseText.unreadable)
+        // One step in the store's line: an edit asked for meanwhile lands after the erase.
+        switch await store.erasePhone(historyJSON: history, keepChat: { [chat] tombstoned, engineErased in
+            chatReadable && engineErased && chat.keepErased(tombstoned)
+        }) {
+        case .unreadable: return .refused(EraseText.unreadable)
+        case .notWritten(let why, let chatErased): return .refused(EraseText.notWritten(why, chatErased: chatErased))
+        case .erased(let chatErased): return .erased(EraseText.done(provider: nil, chatErased: chatErased, cloudChat: nil))
         }
-        let chatErased = chatReadable && result.chatErased && chat.keepErased(result.chatHistory)
-        do {
-            try await store.showErased(result.record)
-        } catch {
-            return .refused(EraseText.notWritten(error.localizedDescription, chatErased: chatErased))
-        }
-        return .erased(EraseText.done(provider: nil, chatErased: chatErased, cloudChat: nil))
     }
 
     private func eraseInCloud(_ provider: CloudProvider) async -> Outcome {

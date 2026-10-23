@@ -11,7 +11,7 @@
     "phoneRead": "() -> '{\"text\": string|null}' or '{\"error\": string}'",
     "phoneWrite": "(text) -> '' when written, else the error",
     "phoneRemove": "() -> void",
-    "pending": "('get'|'set'|'clear') -> boolean",
+    "pending": "('get'|'set'|'clear'|'clear-if:<generation>') -> the marker's generation after (0: not set); 'set' raises it, 'clear-if' clears only that generation",
     "notify": "(event, payload, session) -> void"
   },
   "events": ["changed", "failed", "saved", "saving", "synced"],
@@ -31,7 +31,8 @@
     "cloudErase": { "args": ["historyText", "nowIso", "keepChat"], "returns": "Promise of JSON" },
     "cloudFlush": { "args": [], "returns": "Promise of JSON" },
     "cloudHidden": { "args": [], "returns": "JSON" },
-    "cloudOpen": { "args": ["provider", "deviceId", "firstConnect"], "returns": "Promise of JSON" },
+    "cloudLabImport": { "args": ["extractionJson", "refsJson", "reportDay", "erase", "shownUnits", "nowIso", "unitsJson"], "returns": "cloudEdit's JSON outcome with the labSaveSummary taken in the same step (US-52 AC8)" },
+    "cloudOpen": { "args": ["provider", "deviceId", "firstConnect", "mergePhone"], "returns": "Promise of JSON" },
     "cloudRefresh": { "args": [], "returns": "Promise of JSON" },
     "cloudVisible": { "args": [], "returns": "JSON" },
     "documentSave": { "args": ["recordJson", "extractionJson", "choiceJson", "original", "erase", "nowIso", "deviceId"], "returns": "Promise of JSON: {ok, record, erase?, saved, unstored, stored} or {ok:false, reason, message}; files one document or a lab report's original through health-core's saveDocuments (US-52 AC13d)" },

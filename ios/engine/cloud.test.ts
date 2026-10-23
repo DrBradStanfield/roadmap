@@ -86,7 +86,9 @@ class FakeDropbox {
 interface Engine {
   newRecordJson(now: string, device: string, locale: string, zone: string): string;
   applyEditJson(record: string, edit: string, now: string, device: string): string;
-  cloudOpen(provider: string, device: string, first: boolean): Promise<string>;
+  cloudOpen(provider: string, device: string, first: boolean, mergePhone?: boolean): Promise<string>;
+  cloudLabImport(extraction: string, refs: string, reportDay: string, erase: string, units: string, now: string, unitsJson: string): string;
+  labSaveSummaryJson(record: string, extraction: string, refs: string, reportDay: string, now: string, device: string): string;
   cloudEdit(edit: string, erase: string, units: string, now: string, unitsJson?: string): string;
   cloudVisible(): string;
   cloudFlush(): Promise<string>;
@@ -115,7 +117,7 @@ interface Server {
 }
 
 async function phone(dropbox: Server, phoneText: string | null = null) {
-  const state = { phoneText, pending: false, events: [] as Array<[string, string]>, tokenRefreshes: 0, signedOut: false, phoneWriteError: '', sessions: [] as number[] };
+  const state = { phoneText, pending: false, generation: 1, events: [] as Array<[string, string]>, tokenRefreshes: 0, signedOut: false, phoneWriteError: '', sessions: [] as number[] };
   const encode = (text: string) => new Uint8Array(Buffer.from(text, 'utf8')).buffer;
   const decode = (bytes: ArrayBuffer) => Buffer.from(new Uint8Array(bytes)).toString('utf8');
   let next = 1;
@@ -149,10 +151,14 @@ async function phone(dropbox: Server, phoneText: string | null = null) {
     phoneRemove: () => {
       state.phoneText = null;
     },
+    // The marker as Swift keeps it (PhoneFiles): a generation that rises at every set.
     pending(op: string) {
-      if (op === 'set') state.pending = true;
-      if (op === 'clear') state.pending = false;
-      return state.pending;
+      if (op === 'set') {
+        state.pending = true;
+        state.generation += 1;
+      }
+      if (op === 'clear' || (op === `clear-if:${state.generation}`)) state.pending = false;
+      return state.pending ? state.generation : 0;
     },
     notify: (event: string, payload: string, session: number) => {
       state.events.push([event, payload]);
@@ -271,6 +277,61 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(days(dropbox.record)).toEqual(['2026-10-07']);
     expect(second.state.pending).toBe(false);
+  });
+
+  it('US-25 AC20: a marker set after the session read the phone outlives that session\'s save', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
+    // Swift's phone path while the screen still showed the phone: the file takes an edit, marked.
+    state.phoneText = JSON.stringify(await recordWith(['2026-10-05'], 'ios-1'));
+    state.pending = true;
+    state.generation += 1;
+    engine.cloudEdit(add('2026-10-06'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(days(dropbox.record)).toEqual(['2026-10-06']);
+    expect(state.pending).toBe(true); // the phone's own edit is still waiting
+  });
+
+  it('US-25 AC20: a reopen after edits made during an open merges the phone file whatever the marker says', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    state.phoneText = JSON.stringify(await recordWith(['2026-10-05'], 'ios-1'));
+    state.pending = false; // cleared by the session the reopen replaces
+    const view = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, true)) as { record: string };
+    expect(days(JSON.parse(view.record) as RoadmapFile)).toEqual(['2026-10-01', '2026-10-05']);
+    await engine.cloudFlush();
+    await engine.cloudClose(false);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(days(dropbox.record)).toEqual(['2026-10-01', '2026-10-05']);
+  });
+
+  it('US-52 AC8: a lab import takes its summary against the session it lands on, after a re-read brought a value in', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine } = await phone(dropbox);
+    const opened = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { record: string; erase: string };
+    // Another device fills the report's LDL slot; the session's re-read takes it in.
+    const web = JSON.parse(engine.applyEditJson(JSON.stringify(dropbox.record), JSON.stringify({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-10-01' }), NOW, 'web')) as { record: string };
+    dropbox.put(JSON.parse(web.record) as RoadmapFile);
+    expect(await engine.cloudRefresh()).toBe('changed');
+    const extraction = JSON.stringify({ classification: 'lab_report', reportDate: '2026-10-01',
+      values: [{ metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' },
+        { metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', displaySystem: 'si', confidence: 'medium', recordedAt: '2025-04-02' }],
+      additionalValues: [{ name: 'Ferritin', value: 85, unit: 'µg/L' }], refusedValues: [] });
+    const refs = JSON.stringify(['v0', 'v1', 'a0']);
+    // The old way: a summary of the record the screen showed before the re-read counts the LDL as saved.
+    const stale = JSON.parse(engine.labSaveSummaryJson(opened.record, extraction, refs, '2026-10-01', NOW, 'ios-1')) as { summary: { saved: number } };
+    expect(stale.summary.saved).toBe(3);
+    const answer = JSON.parse(engine.cloudLabImport(extraction, refs, '2026-10-01', opened.erase, 'si', NOW, '{}')) as { ok: boolean; record: string; summary: { saved: number; skipped: number } };
+    expect(answer.ok).toBe(true);
+    expect(answer.summary).toMatchObject({ saved: 2, skipped: 1 });
+    const record = JSON.parse(answer.record) as RoadmapFile;
+    const imported = record.measurements.filter((m) => m.source === 'lab_import').length + (record.labValues?.length ?? 0);
+    expect(imported).toBe(answer.summary.saved);
   });
 
   it('AC11e: Disconnect copies the cloud record down onto the phone, and never writes the cloud', async () => {

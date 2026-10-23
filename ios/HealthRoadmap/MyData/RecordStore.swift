@@ -121,12 +121,6 @@ final class RecordStore {
         return task
     }
 
-    /// Returns once every change asked for so far has landed (CloudSync's open waits
-    /// for edits made while it ran before it decides whether to open again).
-    func drained() async {
-        await tail?()
-    }
-
     /// Shows what the phone's file holds.
     private func show(_ loaded: PhoneLoad) {
         recordJSON = loaded.record
@@ -141,6 +135,18 @@ final class RecordStore {
     @discardableResult
     func showCloud(_ view: HealthEngine.CloudView) -> Task<Void, Never> {
         chain { await self.draw(view) }
+    }
+
+    /// The cloud handover (CloudSync's open), as one step in line: every edit asked for
+    /// before it has landed on the phone's file and been counted when `decide` runs.
+    /// `decide` answers whether to show `view` (no edit came in while the open ran);
+    /// when it does, the view is drawn in the same step. False: open again.
+    func handOver(to view: HealthEngine.CloudView, if decide: @escaping @MainActor () -> Bool) async -> Bool {
+        await chain {
+            guard decide() else { return false }
+            await self.draw(view)
+            return true
+        }.value
     }
 
     private func draw(_ view: HealthEngine.CloudView) async {
@@ -175,23 +181,42 @@ final class RecordStore {
 
     // MARK: Erase (US-25 AC16)
 
-    /// The phone's own file, erased by the engine (DataEraser): written, then shown.
-    func showErased(_ erased: String) async throws {
-        let failure = await chain { () async -> (any Error)? in
+    /// What erasing the phone's own file did.
+    enum PhoneErase: Equatable, Sendable {
+        /// The record could not be read: nothing was erased.
+        case unreadable
+        /// Erased, but the phone refused the write. `chatErased`: the chat history was.
+        case notWritten(String, chatErased: Bool)
+        case erased(chatErased: Bool)
+    }
+
+    /// "Delete all my data" on the phone's own file (DataEraser), as one step in line:
+    /// the record is read, erased by the engine, the chat tombstones kept (`keepChat`,
+    /// given the engine's tombstoned chat file), then the erase written and shown. An
+    /// edit asked for meanwhile lands after it, never under it (Codex R1).
+    func erasePhone(historyJSON: String?, keepChat: @escaping @MainActor (_ chatHistory: String?, _ engineErased: Bool) -> Bool) async -> PhoneErase {
+        await chain {
+            guard self.problem == nil, let record = try? self.phoneText() else { return .unreadable }
+            let result: HealthEngine.PhoneErase
+            do {
+                result = try await self.engine.eraseOnPhone(recordJSON: record, historyJSON: historyJSON, now: .now, deviceId: self.deviceId)
+            } catch {
+                return .unreadable
+            }
+            let chatErased = keepChat(result.chatHistory, result.chatErased)
             do {
                 // A fresh start: no per-test choice, published only once the erase is on disk (Codex R1).
-                let shown = try await self.engine.myDataAndWrite(erased, units: UnitChoices().json, to: self.file, marking: nil, deviceId: self.deviceId)
-                self.recordJSON = erased
+                let shown = try await self.engine.myDataAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: nil, deviceId: self.deviceId)
+                self.recordJSON = result.record
                 self.myData = shown
                 self.publish(UnitChoices())
                 self.problem = nil
                 self.erasures += 1
-                return nil
+                return .erased(chatErased: chatErased)
             } catch {
-                return error
+                return .notWritten(error.localizedDescription, chatErased: chatErased)
             }
         }.value
-        if let failure { throw failure }
     }
 
     /// The cloud record, erased by the engine's session: shown like any record it sends.
@@ -256,7 +281,13 @@ final class RecordStore {
     /// the sheet's pin, taken now, before anything waits.
     func apply(_ edit: RecordEdit) async -> ApplyResult {
         let seen = pinned ?? screen
-        return await chain { await self.apply(edit, as: seen) }.value
+        // The master units switch holds entry while it lands, as a per-test one does.
+        let switching = Self.clearsChoices(edit)
+        if switching { unitSwitches += 1 }
+        return await chain {
+            defer { if switching { self.unitSwitches -= 1 } }
+            return await self.apply(edit, as: seen)
+        }.value
     }
 
     /// The units the row for `metric` shows: its per-test choice, else the record's (AC17e).
@@ -352,10 +383,9 @@ final class RecordStore {
             let result: ApplyResult
             if let erase = seen.erase, erase == cloudErase {
                 let answer = try await engine.cloudLabImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, erase: erase,
-                                                             units: seen.units, now: .now, choices: seen.choices, deviceId: deviceId)
-                guard let outcome = answer.outcome else { return answer.summary }
-                summary = answer.summary
-                result = await shown(outcome, of: edit)
+                                                             units: seen.units, now: .now, choices: seen.choices)
+                result = await shown(answer.outcome, of: edit)
+                summary = answer.summary.map { .success($0) } ?? .failure(LabRefusal(message: answer.outcome.message ?? "These values could not be saved."))
             } else {
                 // The phone's file (or a screen that moved on, which `apply` refuses): nothing
                 // else changes the record before this turn ends.
@@ -442,8 +472,9 @@ final class RecordStore {
 
     /// One test to the other units, as the web's unit chip does. Back to the record's
     /// units drops the choice; nothing is written to the record.
-    /// Per-test unit switches asked for and not yet landed. While one is pending, a sheet
-    /// would pin the old choices and label itself from the new row: entry waits (AC17e).
+    /// Unit switches asked for and not yet landed, per-test or the master one. While one
+    /// is pending, a sheet would pin the old units and label itself from the new row:
+    /// entry waits (AC17e).
     private(set) var unitSwitches = 0
 
     @discardableResult

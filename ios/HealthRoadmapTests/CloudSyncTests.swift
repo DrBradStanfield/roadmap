@@ -257,6 +257,33 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(summary.saved + summary.skipped, 3)
     }
 
+    /// US-25 AC20 (adversary R2): an import asked for after the open resolved, while the
+    /// handover decision waits its turn, is never hidden on the phone: it reaches the
+    /// cloud record and the screen.
+    func testAnImportAskedForDuringTheHandoverDecisionReachesTheCloud() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync, _) = try app()
+        var asked = false
+        var imported: Task<RecordStore.ApplyResult, Never>?
+        dropbox.onDownload = {
+            guard !asked else { return }
+            asked = true
+            store.chain { try? await Task.sleep(for: .milliseconds(400)) } // a change still landing
+            imported = Task {
+                try? await Task.sleep(for: .milliseconds(200)) // the open has resolved by now
+                return await store.applyNow(.add(metric: "weight", value: 80, day: "2026-10-02"))
+            }
+        }
+        await sync.start()
+        dropbox.onDownload = nil
+        let result = await imported?.value
+        XCTAssertEqual(result, .saved)
+        XCTAssertNotNil(store.cloudErase, "the cloud record is open")
+        XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01", "2026-10-02"], "the screen shows the import")
+        await sync.background()
+        XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"], "the import reached the cloud")
+    }
+
     func testACloudThatCannotBeReachedLeavesThePhoneRecordAndMarksEditsForLater() async throws {
         StubHTTP.handler = { _ in .init(offline: true) }
         let (store, sync, engine) = try app()

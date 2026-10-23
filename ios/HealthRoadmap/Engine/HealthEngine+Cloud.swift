@@ -28,12 +28,13 @@ extension HealthEngine {
     }
 
     /// Open the cloud record. `firstConnect` merges the phone's record up first.
+    /// `mergePhone`: the phone took edits while an earlier open ran, so the session
+    /// merges the phone's file in whatever its marker says.
     /// Throws `EngineError.callFailed` whose text is the failure's JSON (`SyncProblem`).
-    func cloudOpen(provider: CloudProvider, deviceId: String, firstConnect: Bool) async throws -> CloudView {
-        let (json, order) = try await callAsync("cloudOpen", [provider.rawValue, deviceId, firstConnect], read: stamped)
+    func cloudOpen(provider: CloudProvider, deviceId: String, firstConnect: Bool, mergePhone: Bool = false) async throws -> CloudView {
+        let (json, order) = try await callAsync("cloudOpen", [provider.rawValue, deviceId, firstConnect, mergePhone], read: stamped)
         var view = try JSONDecoder().decode(CloudView.self, from: Data(json.utf8))
         view.order = order
-        natives.openSession = (view.session, view.record)
         return view
     }
 
@@ -45,19 +46,23 @@ extension HealthEngine {
         let json = try call("cloudEdit", [editJSON, erase, units, now.formatted(Self.iso), choices])
         var outcome = try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
         outcome.order = stamp()
-        if outcome.ok, let record = outcome.record, let id = natives.openSession?.id { natives.openSession = (id, record) }
         return outcome
     }
 
-    /// A lab report's ticked values through the open session, and what saving them did,
-    /// in one engine step: the summary is taken against the session's working copy the
-    /// import lands on, so a value another device brought in is never counted as saved.
-    func cloudLabImport(extractionJSON: String, refs: [String], reportDay: String, erase: String, units: String, now: Date, choices: String, deviceId: String) throws -> (summary: Result<LabSaveSummary, LabRefusal>, outcome: EditOutcome?) {
-        guard let record = natives.openSession?.record else { return (.failure(LabRefusal(message: "That could not be saved.")), nil) }
-        let summary = try labSaveSummary(recordJSON: record, extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, now: now, deviceId: deviceId)
-        guard case .success = summary else { return (summary, nil) }
-        let edit = RecordEdit.labImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay)
-        return (summary, try cloudEdit(edit, erase: erase, units: units, now: now, choices: choices))
+    /// A lab report's ticked values through the open session, and what saving them did:
+    /// one engine door takes the summary against the session's working copy and runs
+    /// the import on it in the same step (cloud.ts `cloudLabImport`), so a value another
+    /// device brought in is never counted as saved (US-52 AC8).
+    func cloudLabImport(extractionJSON: String, refs: [String], reportDay: String, erase: String, units: String, now: Date, choices: String) throws -> (outcome: EditOutcome, summary: LabSaveSummary?) {
+        let refsJSON = String(decoding: try JSONEncoder().encode(refs), as: UTF8.self)
+        let json = try call("cloudLabImport", [extractionJSON, refsJSON, reportDay, erase, units, now.formatted(Self.iso), choices])
+        var outcome = try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
+        outcome.order = stamp()
+        return (outcome, try JSONDecoder().decode(Summarised.self, from: Data(json.utf8)).summary)
+    }
+
+    private struct Summarised: Decodable {
+        let summary: LabSaveSummary?
     }
 
     /// The app came to the foreground: re-read, and retry a refused save.
@@ -80,8 +85,7 @@ extension HealthEngine {
     /// flight, or none) copies nothing, and says so (review F6).
     @discardableResult
     func cloudClose(copyDown: Bool) async throws -> Bool {
-        natives.openSession = nil
-        return try await callAsync("cloudClose", [copyDown]) == "copied"
+        try await callAsync("cloudClose", [copyDown]) == "copied"
     }
 
     /// A lab file in the Dropbox app folder, as the engine lists it (US-52 AC11).

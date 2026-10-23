@@ -100,6 +100,6 @@ struct AppParts {
         health = AppleHealthSync(store: store, engine: engine, client: HealthKitClient()) { await sync.syncNow() }
         health.start()
         let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
-        eraser = DataEraser(engine: engine, store: store, sync: sync, chat: chat, reminders: reminders, health: health)
+        eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: health)
     }
 }

@@ -23,7 +23,10 @@ protocol CloudPort: AnyObject, Sendable {
 final class PhoneFiles: Sendable {
     let record: URL?
     let pending: URL?
-    private let memory = OSAllocatedUnfairLock(initialState: (record: String?.none, pending: false))
+    /// In memory: the record (a quarantined engine has no files), the marker's
+    /// generation when there is no marker file, and the highest generation set, so
+    /// one set after a clear is still higher than any before it.
+    private let memory = OSAllocatedUnfairLock(initialState: (record: String?.none, marker: 0, highest: 0))
 
     init(record: URL?, pending: URL?) {
         self.record = record
@@ -47,20 +50,35 @@ final class PhoneFiles: Sendable {
         try? FileManager.default.removeItem(at: record)
     }
 
-    /// "get", "set" or "clear" the pending marker; answers whether it is set.
-    func pending(_ op: String) -> Bool {
-        guard let pending else {
-            return memory.withLock {
-                if op == "set" { $0.pending = true } else if op == "clear" { $0.pending = false }
-                return $0.pending
+    /// The pending marker as a generation (ios/engine/cloud.ts `pending`): "get",
+    /// "set" (a higher generation), "clear", or "clear-if:<n>" (only while it is still
+    /// at n). Answers the generation after; 0 when it is not set. A marker an older
+    /// app wrote (empty) reads as generation 1.
+    func pending(_ op: String) -> Int {
+        memory.withLock { state in
+            var marker = state.marker
+            if let pending {
+                marker = FileManager.default.fileExists(atPath: pending.path(percentEncoded: false))
+                    ? (try? String(contentsOf: pending, encoding: .utf8)).flatMap { Int($0) } ?? 1 : 0
             }
+            switch op {
+            case "set":
+                state.highest = max(state.highest, marker) + 1
+                marker = state.highest
+            case "clear":
+                marker = 0
+            case "clear-if:\(marker)":
+                marker = 0
+            default:
+                return marker
+            }
+            if let pending {
+                if marker == 0 { try? FileManager.default.removeItem(at: pending) } else { try? Data(String(marker).utf8).write(to: pending, options: .atomic) }
+            } else {
+                state.marker = marker
+            }
+            return marker
         }
-        switch op {
-        case "set": try? Data().write(to: pending, options: .atomic)
-        case "clear": try? FileManager.default.removeItem(at: pending)
-        default: break
-        }
-        return FileManager.default.fileExists(atPath: pending.path(percentEncoded: false))
     }
 }
 
@@ -92,9 +110,6 @@ final class EngineNatives {
     private var timers: [Int: DispatchWorkItem] = [:]
     private var nextId = 1
     private var stamps = 0
-    /// The open session's working copy, as the engine last handed it over (its open,
-    /// an edit, or news it brought something in): what a lab summary is taken against.
-    var openSession: (id: Int, record: String)?
 
     init(session: URLSession, queue: DispatchSerialQueue, quarantined: Bool = false) {
         self.session = session
@@ -269,18 +284,13 @@ final class EngineNatives {
         let phoneRemove: @convention(block) () -> Void = {
             owner.value.phone?.remove()
         }
-        let pending: @convention(block) (String) -> Bool = { op in
-            owner.value.phone?.pending(op) ?? false
+        let pending: @convention(block) (String) -> Int = { op in
+            owner.value.phone?.pending(op) ?? 0
         }
         // In order, never waited for: the engine's queue must not block on the main thread.
         let notify: @convention(block) (String, String, Int) -> Void = { event, payload, session in
-            let natives = owner.value
-            if event == "changed", natives.openSession?.id == session,
-               let view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) {
-                natives.openSession = (session, view.record)
-            }
-            guard let port = natives.cloud else { return }
-            let order = natives.stamp()
+            guard let port = owner.value.cloud else { return }
+            let order = owner.value.stamp()
             DispatchQueue.main.async { port.notify(event, payload, session: session, order: order) }
         }
         return [
