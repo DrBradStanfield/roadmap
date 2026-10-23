@@ -702,5 +702,13 @@
     "reason": "AC2 tokeniser and unit case, unit (orchestrator 2026-10-23, masters-new-2): the NIH zinc sheet writes \"The Tolerable Upper Intake Level for zinc is 40 mg for adults\" (a daily limit); the body says \"40 mg a day\", which the tokeniser reads as 40 mg/day. Base entry 98 carried this quote and was voided in fix round 1; the re-entry would still not match.",
     "by": "orchestrator",
     "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Groups at Higher Risk of Inadequacy",
+    "reason": "AC4 heading rename ratified (orchestrator 2026-10-23, masters-new-2): selenium deficiency heading renamed 'Who Tends to Run Low on Selenium' (it matched the US-41 AC8 risk-heading pattern; same case as vitamin A in masters-new-1). Declared in selenium addendum-3.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
   }
 ]
