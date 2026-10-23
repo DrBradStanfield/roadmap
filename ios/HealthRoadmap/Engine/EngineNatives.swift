@@ -51,24 +51,44 @@ final class PhoneFiles: Sendable {
     }
 
     /// The pending marker as a generation (ios/engine/cloud.ts `pending`): "get",
-    /// "set" (a higher generation), or "clear-if:<n>" (only while it is still at n). Answers the generation after; 0 when it is not set. A marker an older
-    /// app wrote (empty) reads as generation 1.
+    /// "set" (a higher generation), or "clear-if:<n>" (only while it is still at n).
+    /// Answers the generation after; 0 when it is not set. A marker an older app wrote
+    /// (empty) reads as generation 1.
     func pending(_ op: String) -> Int {
-        memory.withLock { state in
+        marker { marker, highest in
+            switch op {
+            case "set":
+                highest = max(highest, marker) + 1
+                marker = highest
+            case "clear-if:\(marker)":
+                marker = 0
+            default:
+                break
+            }
+        }
+    }
+
+    /// A refused phone write puts back the generation it found, `previous` (0: none),
+    /// while the marker is still the one it set: a session holding `previous` can
+    /// still clear it. Swift's own; never a native the engine can call.
+    func restore(_ previous: Int, ifStill generation: Int) {
+        _ = marker { marker, _ in
+            if marker == generation { marker = previous }
+        }
+    }
+
+    /// Reads the marker, lets `change` move it, and keeps what it became.
+    private func marker(_ change: (inout Int, inout Int) -> Void) -> Int {
+        // Unchecked: `change` runs here, under the lock, and escapes nowhere.
+        memory.withLockUnchecked { state in
             var marker = state.marker
             if let pending {
                 marker = FileManager.default.fileExists(atPath: pending.path(percentEncoded: false))
                     ? (try? String(contentsOf: pending, encoding: .utf8)).flatMap { Int($0) } ?? 1 : 0
             }
-            switch op {
-            case "set":
-                state.highest = max(state.highest, marker) + 1
-                marker = state.highest
-            case "clear-if:\(marker)":
-                marker = 0
-            default:
-                return marker
-            }
+            let found = marker
+            change(&marker, &state.highest)
+            guard marker != found else { return marker }
             if let pending {
                 if marker == 0 { try? FileManager.default.removeItem(at: pending) } else { try? Data(String(marker).utf8).write(to: pending, options: .atomic) }
             } else {

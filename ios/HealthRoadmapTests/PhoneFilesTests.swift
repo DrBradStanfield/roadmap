@@ -59,6 +59,7 @@ final class PhoneFilesTests: XCTestCase {
         let nowhere = folder.appending(path: "missing folder/health-roadmap.json")
         XCTAssertThrowsError(try engine.blocking { try $0.myDataAndWrite(record, units: "{}", to: nowhere, marking: phone, deviceId: "test") })
         XCTAssertEqual(phone.pending("get"), 0)
+        XCTAssertEqual(phone.pending("clear-if:0"), 0)
         // The marker was set before the write was tried (generation 1), then taken back:
         // an app killed after a write that lands is never left with an unmarked edit.
         XCTAssertEqual(phone.pending("set"), 2)
@@ -73,6 +74,7 @@ final class PhoneFilesTests: XCTestCase {
         let record = try engine.blocking { try $0.newRecord(now: .now, deviceId: "test") }
         let nowhere = folder.appending(path: "missing folder/health-roadmap.json")
         XCTAssertThrowsError(try engine.blocking { try $0.myDataAndWrite(record, units: "{}", to: nowhere, marking: phone, deviceId: "test") })
-        XCTAssertGreaterThan(phone.pending("get"), earlier)
+        XCTAssertEqual(phone.pending("get"), earlier, "the generation it found is put back")
+        XCTAssertEqual(phone.pending("clear-if:\(earlier)"), 0, "so the session holding it can still clear it")
     }
 }
