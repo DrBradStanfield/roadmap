@@ -21,7 +21,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 - Valerian may add to the drowsiness caused by alcohol, benzodiazepines such as diazepam, barbiturates, opioids such as morphine, and other sedatives. Check with your doctor or pharmacist before combining them [11].
 - Valerian may strengthen the sedative effect of anesthetics. Tell your surgeon and anesthetist that you take it before any operation [76].
-- Valerian has been linked to rare cases of liver injury, so check with your doctor first if you have liver disease, and stop it and see your doctor if your skin or eyes turn yellow [92][93][94].
+- Valerian has been linked to rare cases of liver injury [92][93][94], so check with your doctor first if you have liver disease, and stop it and see your doctor if your skin or eyes turn yellow.
 - Do not take valerian while pregnant or breastfeeding without your doctor's advice, and do not give it to children younger than 3 years old. Its risks in these groups have not been evaluated [11].
 - A small trial found slightly reduced alertness 1 to 2 hours after a dose, so avoid driving or using machinery for the first few hours. Tests the morning after usual doses found no impairment [63][95].
 - Headache, dizziness, itching and stomach upset are the side effects most often reported in trials, but placebo groups reported them too [11].
@@ -38,7 +38,7 @@ Today, valerian is one of the most used herbal products for sleep problems [44].
 
 The genus *Valeriana* includes over 250 species, but *V. officinalis* is the species most often used in the United States and Europe [2][5][11]. Other names for valerian include setwall (English), Valerianae radix (Latin), Baldrianwurzel (German), and phu (Greek) [11]. Its roots contain valerenic acid and other sesquiterpenes, valepotriates, a volatile oil and GABA, among many other compounds [11][12]. There is no scientific agreement on which constituents are active, and its effects may come from several of them acting together [11][13].
 
-The evidence that valerian helps sleep is mixed. Reviews call it inconclusive or find no benefit on objective sleep measures, while some trials report better self-rated sleep [11][15][16][44]. Evidence for anxiety comes from small pilot studies [51]. Few adverse events have been reported, but long-term safety data are not available [11].
+The evidence that valerian helps sleep is mixed. Reviews call it inconclusive or find no benefit on objective sleep measures, while some trials report better self-rated sleep [11][15][16][44]. Evidence for anxiety is limited and comes mainly from small studies [43][51]. Few adverse events have been reported, but long-term safety data are not available [11].
 
 ## 2. Forms and Bioavailability
 
@@ -102,7 +102,7 @@ Valerian is most often taken to help sleep, but the clinical evidence is mixed. 
 
 *Shinjyo et al., 2020:* A systematic review of 60 studies (n=6,894) suggested that inconsistent results may stem from the variable quality of herbal extracts, and that the whole root or rhizome may give more reliable effects [43]. It found no severe adverse events in people aged between 7 and 80 years [43].
 
-*Valente et al., 2024:* An umbrella review of eight systematic reviews found no evidence that valerian works for insomnia, although it appeared to improve self-rated sleep quality without any gain on objective measures [44]. It found a good safety profile and described the existing trials as few, heterogeneous and of low methodological quality [44].
+*Valente et al., 2024:* An umbrella review of eight systematic reviews found no evidence that valerian works for insomnia, although it appeared to improve self-rated sleep quality with no demonstrated gain on objective measures [44]. It found a good safety profile and described the existing trials as few, heterogeneous and of low methodological quality [44].
 
 #### Individual Clinical Trials
 
@@ -116,7 +116,7 @@ Valerian is most often taken to help sleep, but the clinical evidence is mixed. 
 
 **Donath et al., 2000 (n=16, polysomnography):** In a randomized, double-blind, placebo-controlled crossover trial, people with insomnia confirmed by sleep studies took 600 mg of LI 156 as a single dose and for 14 days, with sleep measured by polysomnography [11]. Valerian had no effect on any of the 15 objective or subjective measures except one [11]. It shortened the time to reach slow-wave (deep) sleep: 13.5 minutes on valerian versus 21.3 minutes on placebo [33]. Because only that endpoint differed, chance may explain it [11]. There were 3 adverse events during valerian treatment versus 18 during placebo [33].
 
-**Shekhar et al., 2024 (n=80):** In an 8-week trial, 80 young adults with mild insomnia symptoms took a capsule containing 200 mg of a hydro-alcoholic valerian root extract with 2% total valerenic acid (Sleeproot) or placebo [46]. Among the 72 who completed it, the valerian group improved more on a sleep quality score (PSQI) and on wrist-measured sleep latency, sleep time and sleep efficiency; in a sleep-laboratory subset of 20 per group, total sleep time, sleep latency and sleep efficiency also improved by day 56 [46]. The extract's maker, OmniActive Health Technologies, funded the study [46].
+**Shekhar et al., 2024 (n=80):** In an 8-week trial, 80 young adults with mild insomnia symptoms took a capsule containing 200 mg of a valerian root extract with 2% total valerenic acid or placebo [46]. Among the 72 who completed it, the valerian group improved more on a sleep quality score (PSQI) and on wrist-measured sleep latency, sleep time and sleep efficiency; in a sleep-laboratory subset of 20 per group, total sleep time, sleep latency and sleep efficiency also improved by day 56 [46]. The extract's maker, OmniActive Health Technologies, funded the study [46].
 
 **Taavoni et al., 2011 (n=100, postmenopausal women):** In a triple-blind trial, 100 women aged 50 to 60 years, past menopause and with insomnia, took 530 mg of concentrated valerian extract or placebo twice a day for 4 weeks [49]. Sleep quality improved more on valerian: 30% of the valerian group and 4% of the placebo group showed better sleep quality [49].
 
@@ -128,7 +128,7 @@ Valerian may modestly improve self-rated sleep quality for some people, but obje
 
 ### Anxiety and Stress
 
-Valerian is promoted for daytime anxiety and stress, and valerenic acid's action on GABA-A receptors makes an anti-anxiety effect plausible [22]. Clinical evidence is limited to small studies.
+Valerian is promoted for daytime anxiety and stress, and valerenic acid's action on GABA-A receptors makes an anti-anxiety effect plausible [22]. Clinical evidence comes mainly from small studies. A 2020 meta-analysis that included 8 anxiety studies (535 people) concluded that valerian could help prevent disorders linked to poor sleep, such as anxiety, but it tied inconsistent results across studies to variable extract quality [43].
 
 **Andreatini et al., 2002 (n=36):** In a 4-week pilot trial, 36 outpatients with generalized anxiety disorder took valepotriates (a valerian extract; mean daily dose 81.3 mg), diazepam (mean daily dose 6.5 mg) or placebo, 12 per group [51]. The groups did not differ on the main anxiety score (HAM-A), and all three improved [51]. Only the diazepam and valepotriate groups improved on the psychic (mental) symptoms of anxiety, which the authors called a preliminary signal given the small groups [51].
 
@@ -138,7 +138,7 @@ Valerian is promoted for daytime anxiety and stress, and valerenic acid's action
 
 #### Synthesis
 
-The evidence for valerian as an anxiolytic is limited to small pilot studies with methodological limitations. The Kennedy 2006 dose findings came from a valerian and lemon balm combination, so they do not show how valerian alone behaves at different doses [52]. Larger, well-designed trials of valerian alone are needed before it can be recommended for anxiety.
+The evidence for valerian as an anxiolytic rests mainly on small pilot studies with methodological limitations. The Kennedy 2006 dose findings came from a valerian and lemon balm combination, so they do not show how valerian alone behaves at different doses [52]. Larger, well-designed trials of valerian alone are needed before it can be recommended for anxiety.
 
 ### Restless Legs Syndrome
 
@@ -184,7 +184,7 @@ Valerian supplements are made from the roots, rhizomes and stolons of *Valeriana
 For those seeking evidence-based sleep support, it is worth noting that other compounds have stronger clinical evidence than valerian:
 
 - **Melatonin** (0.3-0.5 mg) has a well-established mechanism for circadian rhythm regulation
-- **Magnesium glycinate** (250-300 mg elemental) has been shown to reduce sleep onset latency by approximately 17 minutes in a meta-analysis of RCTs in older adults
+- **Magnesium**: a 2021 review pooled 2 small trials, both using magnesium oxide at 500-729 mg a day; people fell asleep about 17 minutes sooner than with placebo, but the evidence was rated low to very low quality
 - **Glycine** (2,500-3,000 mg) has demonstrated improved subjective sleep quality in three RCTs
 
 Dr Brad Stanfield's [Sleep by Dr Brad](https://drstanfield.com/products/sleep) combines these three evidence-based ingredients: low-dose, sustained-release melatonin (0.8 mg), magnesium bisglycinate (126 mg elemental), and glycine (2,400 mg) — targeting different sleep mechanisms with stronger clinical support than valerian alone.
@@ -207,9 +207,6 @@ In animal tests, a water extract of valerian root showed no genotoxicity, caused
 
 These are the effects most often reported in clinical trials, but similar effects were also reported for placebo [11].
 
-**Uncommon/Anecdotal:**
-- Some people report feeling restless rather than sleepy after taking valerian. This is poorly documented.
-
 **Next-morning effects:** In one study, 900 mg of valerian increased sleepiness the next morning [11]. In a trial of 102 volunteers, single and 14-day evening doses of 600 mg of LI 156 did not impair reaction time, alertness or concentration the morning after [63]. Another trial found no next-morning impairment after a valerian-only syrup or a valerian and hops tablet [95].
 
 **Mental function and driving:** A single 1,600 mg dose did not impair driving-simulator performance or field sobriety tests, though the authors noted the study may have been underpowered for some measures [96]. Tests 1 to 2 hours after a valerian-only syrup found a very slight drop in vigilance, and the authors advised expecting slight impairment in the first few hours after a dose [95]. Avoid driving or using machinery for the first few hours after taking valerian. In the Kennedy 2006 study, all three doses of a valerian and lemon balm combination worsened performance on one attention task [52].
@@ -226,7 +223,7 @@ If you have liver disease, check with your doctor before taking valerian. Stop t
 
 ### Withdrawal and Dependency
 
-One case report described cardiac complications and delirium associated with stopping valerian root [71]. If you have taken valerian for a long time, ask your doctor whether to taper the dose rather than stop suddenly.
+One case report described cardiac complications and delirium associated with stopping valerian root [71]. A review of herbal medicines in surgery warns of potentially serious problems linked to both taking and stopping these herbs, so tell your doctor or anesthetist that you take valerian before surgery [76].
 
 ### Overdose
 
@@ -309,11 +306,11 @@ The second major category of proposed active constituents comprises the volatile
 
 ### Valepotriate Activity
 
-Valepotriates and their derivatives are active as sedatives in animal models, but their instability and rapid degradation in storage or aqueous environments make their contribution to clinical effects difficult to assess [12][19][89]. Their practical relevance to commercial preparations is uncertain.
+Valepotriates and their derivatives are active as sedatives in animal models, but their instability and rapid degradation in storage or aqueous environments make their contribution to clinical effects difficult to assess [12][19]. Their practical relevance to commercial preparations is uncertain.
 
 ### Levels of Variability
 
-Levels of these bioactive constituents vary significantly among plants depending on when the plants are harvested, resulting in marked variability in the amounts found in valerian preparations [90]. Variable extract quality may be one reason why clinical trial results have been inconsistent [43].
+Levels of these bioactive constituents vary significantly among plants depending on when the plants are harvested, resulting in marked variability in the amounts found in valerian preparations [35]. Variable extract quality may be one reason why clinical trial results have been inconsistent [43].
 
 ## 9. References
 
@@ -416,10 +413,6 @@ Levels of these bioactive constituents vary significantly among plants depending
 [86] Santos MS, Ferreira F, Cunha AP, Carvalho AP, Macedo T. "An aqueous extract of valerian influences the transport of GABA in synaptosomes." *Planta Med*. 1994;60:278-279. [https://pubmed.ncbi.nlm.nih.gov/8073095/](https://pubmed.ncbi.nlm.nih.gov/8073095/)
 
 [88] Krieglstein VJ, Grusla D. "Central depressing components in Valerian: Valeportriates, valeric acid, valerone, and essential oil are inactive, however [in German]." *Deutsche Apotheker Zeitung*. 1988;128:2041-2046.
-
-[89] Hendriks H, Bos R, Allersma DP, Malingre M, Koster AS. "Pharmacological screening of valerenal and some other components of essential oil of Valeriana officinalis." *Planta Med*. 1981;42:62-68. [https://pubmed.ncbi.nlm.nih.gov/7255569/](https://pubmed.ncbi.nlm.nih.gov/7255569/)
-
-[90] Bos R, Woerdenbag HJ, van Putten FMS, Hendriks H, Scheffer JJC. "Seasonal variation of the essential oil, valerenic acid and derivatives, and valepotriates in Valeriana officinalis roots and rhizomes." *Planta Med*. 1998;64:143-147. [https://pubmed.ncbi.nlm.nih.gov/9556440/](https://pubmed.ncbi.nlm.nih.gov/9556440/)
 
 [91] Taibi DM, Vitiello MV, Barsness S, et al. "A randomized clinical trial of valerian fails to improve self-reported, polysomnographic, and actigraphic sleep in older women with insomnia." *Sleep Med*. 2009;10(3):319-328. [https://pubmed.ncbi.nlm.nih.gov/18482867/](https://pubmed.ncbi.nlm.nih.gov/18482867/)
 
