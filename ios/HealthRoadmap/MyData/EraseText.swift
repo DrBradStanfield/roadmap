@@ -39,7 +39,7 @@ enum EraseText {
     }
 
     /// The erase reached everywhere it was meant to.
-    static func done(provider: CloudProvider?, chatErased: Bool, cloudChat: CloudChat?) -> String {
+    static func done(provider: CloudProvider?, chatErased: Bool, cloudChat: CloudChat?, warning: String? = nil) -> String {
         var text = chatErased
             ? "Your health record, chat history and reminders are deleted."
             : "Your health record and reminders are deleted. Your chat history could not be deleted, so it is still on this iPhone. Try again to delete it."
@@ -47,6 +47,7 @@ enum EraseText {
             if let cloudChat { text += websiteChat(provider, cloudChat) }
             text += " Your other devices erase their copies when they next sync with \(provider.label)."
         }
+        if let warning { text += " " + warning }
         return text
     }
 

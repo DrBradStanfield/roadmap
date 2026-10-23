@@ -152,6 +152,8 @@ export interface ReadResult {
 
 export interface WriteResult {
   version: string;
+  /** What the user should hear about a write that landed (US-10 AC4a). */
+  warning?: string;
 }
 
 /** The REST adapters' document opt-in. Without `documents: 'write'` they
