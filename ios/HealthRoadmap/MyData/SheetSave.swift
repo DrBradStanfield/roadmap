@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A sheet's save, with the engine off the main thread (US-25 AC20): `saving` is set
+/// A sheet's save, with the engine off the main thread (US-25 AC21): `saving` is set
 /// as the button is tapped, so the sheet's Save, Cancel and swipe-down can wait until
 /// the edit lands. A sheet closes only on a save; otherwise the engine's words show.
 @MainActor

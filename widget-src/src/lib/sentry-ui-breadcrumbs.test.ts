@@ -62,8 +62,14 @@ it('sends click and input breadcrumbs without labels, names, values or status cl
     // A shadow-root click retargets to its host.
     { category: 'ui.click', message: 'body > div#host', data: undefined },
   ]);
+  // The bare value 0.4 is checked in what the page supplies (breadcrumbs,
+  // tags, exception), not in Sentry's own ids and timestamps, where "0.4" can
+  // turn up by chance ("…10.405Z" failed the CI deploy gate, 2026-10-23).
+  const [, [[, event]]] = envelopes[0] as [unknown, Array<[unknown, Record<string, unknown>]>];
+  const supplied = JSON.stringify({ breadcrumbs: event.breadcrumbs, tags: event.tags, exception: event.exception });
+  expect(supplied, '0.4').not.toContain('0.4');
   const sent = JSON.stringify(envelopes);
-  for (const leak of ['0.4', 'weird', 'zinc', 'Zinc', 'LEAK', 'aria-label', 'ReviewRow', 'Diabetic', 'urgent', 'discharge']) {
+  for (const leak of ['weird', 'zinc', 'Zinc', 'LEAK', 'aria-label', 'ReviewRow', 'Diabetic', 'urgent', 'discharge']) {
     expect(sent, leak).not.toContain(leak);
   }
 });

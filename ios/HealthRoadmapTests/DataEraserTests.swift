@@ -369,6 +369,17 @@ final class DataEraserTests: XCTestCase {
         }
     }
 
+    /// US-10 AC4a: an erase that left an unreadable Drive copy in place says so.
+    func testTheEngineWarningAfterACloudEraseIsShown() throws {
+        let warning = "One copy of health-roadmap.json in Google Drive could not be read, so the erase left it untouched. You can delete it in Google Drive."
+        let json = #"{"success":true,"erased":true,"chatErased":true,"cloudChatErased":true,"cloudChatProblem":null,"view":null,"warning":"\#(warning)"}"#
+        let answer = try JSONDecoder().decode(HealthEngine.CloudErase.self, from: Data(json.utf8))
+        XCTAssertEqual(answer.warning, warning)
+        let text = EraseText.done(provider: .googleDrive, chatErased: true, cloudChat: answer.cloudChat, warning: answer.warning)
+        XCTAssertTrue(text.hasSuffix(" " + warning), text)
+        XCTAssertFalse(EraseText.done(provider: .googleDrive, chatErased: true, cloudChat: .erased, warning: nil).contains("untouched"))
+    }
+
     /// L1: a refusal that comes after the chat step never says nothing was deleted
     /// when a chat file was tombstoned.
     func testARefusalAfterTheChatStepSaysWhatWasDeleted() {
@@ -393,7 +404,7 @@ final class DataEraserTests: XCTestCase {
         XCTAssertEqual(String(decoding: data, as: UTF8.self), app.store.recordJSON)
     }
 
-    /// US-25 AC20 (Codex R1): an import accepted while the phone erase waits on the
+    /// US-25 AC21 (Codex R1): an import accepted while the phone erase waits on the
     /// engine lands after the erase, never under it: it is in the record afterwards.
     func testAnImportDuringAPhoneEraseLandsAfterIt() async throws {
         let app = try app(connected: false)

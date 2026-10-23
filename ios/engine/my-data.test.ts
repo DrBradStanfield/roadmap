@@ -7,6 +7,9 @@ import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
 import { planJson } from './entry';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { supplementSchema } from '../../packages/health-core/src/validation';
+import { stampProfile, upsertSupplement } from '../../packages/health-core/src/state-edits';
+import { mergeFiles } from '../../packages/health-core/src/merge';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const LATER = '2026-10-21T09:00:00.000Z';
@@ -370,6 +373,109 @@ describe('forms (AC8)', () => {
     expect(data.psa.latest).toMatchObject({ value: '1.2', day: '2026-10-02' });
   });
 
+  // US-06 AC1a: accepted names must produce keys accepted by the real native writer.
+  it.each([93, 100])('saves long native names and collisions without losing identity (%i characters)', length => {
+    const name = 'a'.repeat(length);
+    const other = length === 93 ? name + '+' : 'a'.repeat(99) + 'b';
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'customSupplement', name });
+    const original = file.supplements[0];
+    const history = [...file.supplementHistory];
+    const added = applyEdit(file, { kind: 'customSupplement', name: other }, LATER);
+    expect(added).toMatchObject({ ok: true });
+    if (!added.ok) throw new Error(added.message);
+    file = added.file;
+    expect(file.supplements).toHaveLength(2);
+    expect(file.supplements[0]).toEqual(original);
+    expect(file.supplementHistory.slice(0, history.length)).toEqual(history);
+    expect(new Set(file.supplements.map(s => s.supplementKey)).size).toBe(2);
+    for (const row of file.supplements) {
+      expect(row.supplementKey.length).toBeLessThanOrEqual(100);
+      expect(supplementSchema.shape.supplementKey.safeParse(row.supplementKey).success).toBe(true);
+    }
+    const second = file.supplements[1];
+    file = edited(readRecord(JSON.stringify(file), LATER, 'phone'), {
+      kind: 'supplement', supplementKey: second.supplementKey, supplementName: second.supplementName,
+      doseValue: 2, doseUnit: 'g', status: 'active',
+    });
+    expect(file.supplements[0]).toEqual(original);
+    expect(file.supplements[1]).toMatchObject({ id: second.id, supplementKey: second.supplementKey, doseValue: 2 });
+    expect(file.supplementHistory.at(-1)).toMatchObject({ supplementKey: second.supplementKey, changeType: 'dose_changed' });
+    const readded = edited(file, { kind: 'customSupplement', name: name.toUpperCase() });
+    expect(readded.supplements).toHaveLength(2);
+    expect(readded.supplements[0]).toMatchObject({ id: original.id, supplementKey: original.supplementKey, startedAt: original.startedAt });
+    expect(readded.supplements[1]).toEqual(file.supplements[1]);
+    expect(readded.supplementHistory.slice(0, file.supplementHistory.length)).toEqual(file.supplementHistory);
+  });
+
+  it('reuses the stored 100-character name at a truncation boundary (US-06 AC1a)', () => {
+    const name = 'Taurine' + ' '.repeat(93) + 'x';
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'customSupplement', name });
+    const original = file.supplements[0];
+    file = edited(file, { kind: 'customSupplement', name: name.toUpperCase() });
+    expect(file.supplements).toHaveLength(1);
+    expect(file.supplements[0]).toMatchObject({ id: original.id, supplementKey: original.supplementKey, startedAt: original.startedAt });
+  });
+
+  // US-06 AC1a / US-25 AC8: the actual typed-name command must preserve identities.
+  it('keeps normalized collisions distinct through native form add, stop, reload and restart', () => {
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'customSupplement', name: 'alanine+' });
+    file = edited(file, { kind: 'supplement', supplementKey: 'custom_alanine', supplementName: 'alanine+', doseValue: 3, doseUnit: 'g', status: 'active' });
+    const original = file.supplements[0];
+    file = edited(file, { kind: 'customSupplement', name: 'alanine' });
+    expect(file.supplements).toHaveLength(2);
+    expect(file.supplements[0]).toEqual(original);
+    expect(file.supplements[1]).toMatchObject({ supplementKey: 'custom_alanine_2', supplementName: 'alanine' });
+    file = edited(file, { kind: 'supplement', supplementKey: original.supplementKey, supplementName: original.supplementName, doseValue: 3, doseUnit: 'g', status: 'stopped' });
+    const history = file.supplementHistory;
+    // A fresh engine invocation receives the serialized record, not a helper fixture.
+    file = edited(JSON.parse(JSON.stringify(file)) as RoadmapFile, { kind: 'customSupplement', name: '  ALANINE+  ' });
+    expect(file.supplements).toHaveLength(2);
+    expect(file.supplements[0]).toMatchObject({ id: original.id, supplementKey: original.supplementKey, startedAt: original.startedAt, status: 'active' });
+    expect(file.supplementHistory.slice(0, history.length)).toEqual(history);
+    expect(file.supplementHistory.at(-1)).toMatchObject({ supplementKey: original.supplementKey, changeType: 'started' });
+    const count = file.supplementHistory.length;
+    file = edited(file, { kind: 'customSupplement', name: 'ALANINE+' });
+    expect(file.supplements).toHaveLength(2);
+    expect(file.supplementHistory).toHaveLength(count);
+    expect(myData(file, NOW).supplements.active.map(s => s.key)).toEqual(['custom_alanine', 'custom_alanine_2']);
+  });
+
+  // US-06 AC1a: an older browser record can hold a custom key over 100 characters.
+  it('restarts a legacy overlong custom key through the native add, and still refuses a new one', () => {
+    const key = 'custom_' + 'a'.repeat(100);
+    const row = { supplementKey: key, supplementName: 'A'.repeat(100), doseValue: 1, doseUnit: 'g' };
+    let legacy = upsertSupplement(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { ...row, status: 'active' }, NOW).file;
+    legacy = upsertSupplement(legacy, { ...row, status: 'stopped' }, NOW).file;
+    const file = readRecord(JSON.stringify(legacy), LATER, 'phone');
+    const restarted = applyEdit(file, { kind: 'customSupplement', name: 'a'.repeat(100) }, LATER);
+    if (!restarted.ok) throw new Error(restarted.message);
+    expect(restarted.file.supplements).toEqual([expect.objectContaining({ id: legacy.supplements[0].id, supplementKey: key, status: 'active' })]);
+    expect(restarted.file.supplementHistory.at(-1)).toMatchObject({ supplementKey: key, changeType: 'started' });
+    expect(applyEdit(restarted.file, { kind: 'supplement', ...row, doseValue: 2, status: 'active' }, LATER)).toMatchObject({ ok: true });
+    expect(applyEdit(file, { kind: 'supplement', ...row, supplementKey: 'custom_' + 'b'.repeat(100), status: 'active' }, LATER))
+      .toMatchObject({ ok: false, reason: 'invalid-value' });
+  });
+
+  // US-06 AC1a: a restart keeps the row's stored spelling.
+  it('restarts a stopped row under its stored name, spaces and case kept', () => {
+    const row = { supplementKey: 'custom_taurine', supplementName: 'Taurine ', doseValue: 1, doseUnit: 'g' };
+    let file = upsertSupplement(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { ...row, status: 'active' }, NOW).file;
+    file = upsertSupplement(file, { ...row, status: 'stopped' }, NOW).file;
+    file = edited(readRecord(JSON.stringify(file), LATER, 'phone'), { kind: 'customSupplement', name: 'TAURINE' });
+    expect(file.supplements).toEqual([expect.objectContaining({ supplementKey: 'custom_taurine', supplementName: 'Taurine ', status: 'active' })]);
+    expect(file.supplementHistory.at(-1)).toMatchObject({ supplementName: 'Taurine ', changeType: 'started' });
+  });
+
+  // US-06 AC1a: re-adding a name already taken keeps its dose and writes no history.
+  it('keeps the dose when an active name is added again', () => {
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'customSupplement', name: 'Taurine' });
+    file = edited(file, { kind: 'supplement', supplementKey: 'custom_taurine', supplementName: 'Taurine', doseValue: 2, doseUnit: 'g', status: 'active' });
+    const again = edited(file, { kind: 'customSupplement', name: ' taurine ' });
+    expect(again.supplements).toEqual(file.supplements);
+    expect(again.supplementHistory).toEqual(file.supplementHistory);
+  });
+
   it('lists supplements: quick-add first, a typed one keyed by the web\'s rule, a stopped one kept', () => {
     let file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
     expect(myData(file, NOW).supplements.choices.slice(0, 2)).toEqual([
@@ -440,5 +546,87 @@ describe('metricHistory and the plan\'s exclusions (Codex R2)', () => {
     const history = metricHistory(file, 'systolic_bp', NOW);
     expect(history.excluded).toBe(true);
     expect(history.rows[0].current).toBe(true);
+  });
+});
+
+// US-25 AC20: Lp(a)'s three units on the phone, the web's control (US-05 AC2): the
+// record's `profile.lpaUnit`, read and written through health-core as the web does.
+describe('Lp(a) unit (US-05 AC2, US-25 AC20)', () => {
+  const lpaRow = (file: RoadmapFile) => myData(file).bloodTests.find((row) => row.metric === 'lpa')!;
+  const withLpa = (locale: string, zone: string) =>
+    edited(newRecord(NOW, 'phone', locale, zone), { kind: 'add', metric: 'lpa', value: 124, day: '2026-09-01' });
+  const inUnit = (file: RoadmapFile, unit: 'nmol/L' | 'mg/dL' | 'mg/L') => edited(file, { kind: 'lpaUnit', unit });
+
+  it('with none chosen, US units give mg/dL and any other nmol/L', () => {
+    expect(myData(withLpa('en-US', 'America/New_York'))).toMatchObject({ lpaUnit: 'mg/dL' });
+    // Typed 124 in mg/dL, stored 310 nmol/L, shown back at mg/dL's one place.
+    expect(lpaRow(withLpa('en-US', 'America/New_York'))).toMatchObject({ unit: 'mg/dL', latest: { value: '124.0' } });
+    expect(myData(withLpa('en-NZ', 'Pacific/Auckland'))).toMatchObject({ lpaUnit: 'nmol/L' });
+    // A hand edit can hold anything: an unknown unit reads as none.
+    const odd = withLpa('en-NZ', 'Pacific/Auckland');
+    expect(myData({ ...odd, profile: { ...odd.profile, lpaUnit: 'g/L' as never } }).lpaUnit).toBe('nmol/L');
+  });
+
+  it('shows the row, its history and its trend in the chosen unit, at the web\'s step', () => {
+    const file = withLpa('en-NZ', 'Pacific/Auckland');
+    for (const [unit, value] of [['nmol/L', '124'], ['mg/dL', '49.6'], ['mg/L', '496']] as const) {
+      const chosen = inUnit(file, unit);
+      expect(lpaRow(chosen)).toMatchObject({ unit, latest: { value } });
+      expect(metricHistory(chosen, 'lpa', NOW)).toMatchObject({ unit, rows: [{ value }] });
+      expect(lpaRow(chosen).trend[0]).toBeCloseTo(Number(value), 6);
+    }
+    // Every other test keeps the record's units.
+    expect(myData(inUnit(file, 'mg/dL')).bloodTests.find((row) => row.metric === 'ldl')!.unit).toBe('mmol/L');
+  });
+
+  it('reads a typed value in the chosen unit, and a correction too', () => {
+    const base = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const stored = (file: RoadmapFile) => file.measurements.find((row) => row.metricType === 'lpa' && row.status === 'active')!.value;
+    // US-05 AC1's pairs: 156 mg/dL is 390 nmol/L; 93 mg/L is 23.25.
+    expect(stored(edited(inUnit(base, 'mg/dL'), { kind: 'add', metric: 'lpa', value: 156, day: '2026-09-01' }))).toBeCloseTo(390, 9);
+    expect(stored(edited(inUnit(base, 'mg/L'), { kind: 'add', metric: 'lpa', value: 93, day: '2026-09-01' }))).toBeCloseTo(23.25, 9);
+    expect(stored(edited(base, { kind: 'add', metric: 'lpa', value: 75, day: '2026-09-01' }))).toBe(75);
+    const file = inUnit(withLpa('en-NZ', 'Pacific/Auckland'), 'mg/dL');
+    const row = file.measurements.find((r) => r.metricType === 'lpa')!;
+    // 50 mg/dL over a shown 49.6 corrects it to 125 (US-05 AC2).
+    const corrected = edited(file, { kind: 'correct', id: row.id, value: 50 });
+    expect(corrected.measurements.find((r) => r.correctsId === row.id)!.value).toBeCloseTo(125, 9);
+    // Over the range, said in the unit typed in, as the web's cellRange says it (review R2).
+    expect(applyEdit(file, { kind: 'add', metric: 'lpa', value: 301, day: '2026-09-02' }, NOW))
+      .toMatchObject({ ok: false, reason: 'out-of-range', message: 'Lp(a) must be at most 300 mg/dL (got 301)' });
+    expect(applyEdit(inUnit(file, 'mg/L'), { kind: 'correct', id: row.id, value: 3001 }, NOW))
+      .toMatchObject({ ok: false, reason: 'out-of-range', message: 'Lp(a) must be at most 3000 mg/L (got 3001)' });
+    expect(applyEdit(inUnit(file, 'nmol/L'), { kind: 'add', metric: 'lpa', value: 751, day: '2026-09-02' }, NOW))
+      .toMatchObject({ message: 'Lp(a) must be at most 750 nmol/L (got 751)' });
+    // 3000 mg/L is the bound itself: saved, as 750 nmol/L.
+    expect(applyEdit(inUnit(file, 'mg/L'), { kind: 'add', metric: 'lpa', value: 3000, day: '2026-09-02' }, NOW).ok).toBe(true);
+  });
+
+  it('writes profile.lpaUnit field-stamped, as the web\'s store does, and merges like it', () => {
+    const file = withLpa('en-NZ', 'Pacific/Auckland');
+    const chosen = applyEdit(file, { kind: 'lpaUnit', unit: 'mg/L' }, LATER);
+    if (!chosen.ok) throw new Error(chosen.message);
+    // The web's own write (roadmap-store.ts setLpaUnit).
+    expect(chosen.file).toEqual(stampProfile(file, { lpaUnit: 'mg/L' }, LATER));
+    expect(chosen.file.profile.fieldStamps?.lpaUnit).toBeDefined();
+    // The stored unit again writes nothing; a unit outside the three is refused.
+    expect(applyEdit(chosen.file, { kind: 'lpaUnit', unit: 'mg/L' }, LATER)).toEqual({ ok: true, file: chosen.file });
+    expect(applyEdit(file, { kind: 'lpaUnit', unit: 'g/L' as never }, LATER)).toMatchObject({ ok: false, reason: 'invalid-value' });
+    // The web, from the same copy, changes the units meanwhile: both choices survive the merge.
+    const web = stampProfile(file, { unitSystem: 'conventional' }, LATER);
+    const merged = mergeFiles(chosen.file, web, { deviceId: 'phone', now: LATER });
+    expect(merged.profile).toMatchObject({ lpaUnit: 'mg/L', unitSystem: 'conventional' });
+    expect(mergeFiles(web, chosen.file, { deviceId: 'web', now: LATER }).profile).toMatchObject({ lpaUnit: 'mg/L', unitSystem: 'conventional' });
+    // The web's later choice wins over the phone's (per-field last write).
+    const webLater = stampProfile(chosen.file, { lpaUnit: 'mg/dL' }, '2026-10-21T10:00:00.000Z');
+    expect(mergeFiles(chosen.file, webLater, { deviceId: 'phone', now: LATER }).profile.lpaUnit).toBe('mg/dL');
+  });
+
+  it('leaves the plan\'s Lp(a) text in nmol/L, as the web\'s plan prints it (US-05 AC2 out of scope)', () => {
+    const file = edited(withLpa('en-NZ', 'Pacific/Auckland'), { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
+      { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' });
+    const text = (f: RoadmapFile) => JSON.stringify(JSON.parse(planJson(JSON.stringify(f), NOW, 'phone')).results.suggestions);
+    expect(text(file)).toContain('Lp(a): 124 nmol/L');
+    expect(text(inUnit(file, 'mg/dL'))).toEqual(text(file));
   });
 });

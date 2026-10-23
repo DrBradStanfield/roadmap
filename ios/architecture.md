@@ -66,16 +66,16 @@ engine work off the main thread (2026-10-22); stages 1 and 2 are built (below).
 
 **The parsed-record slot (2026-10-22, stage 1 of moving engine work off the main thread).** Every engine call took the record as text and parsed and migrated it; migration is most of a call's time (Node, ten years of rows: parse about 3 ms, migrate about 18 ms). `readRecord` (ios/engine/my-data.ts) now keeps one slot: the last text read, its device id and its parsed record, served again only for the identical text and device id, and only for a record whose meta carries both stamps, so the migration cannot have read `now` (health-core `hasStampShape`, the check `isoOr` uses). Only reads are kept, never a door's own output: a written record need not equal what its text reads back as, since migration clamps counters (Codex R1). The rule this binds every door, and every health-core function a door reaches, to: **a record from `readRecord` is read-only.** A function that writes in place gets a copy first (the phone document save copies before `saveDocuments`' commit). Under the tests the kept record is deep-frozen, so every engine test checks the rule on every branch it runs; never in the app. No bridge change.
 
-**The engine off the main thread (2026-10-22, stage 2; US-25 AC20).** Brad: "we want the main/UI thread to only be for UI elements."
+**The engine off the main thread (2026-10-22, stage 2; US-25 AC21).** Brad: "we want the main/UI thread to only be for UI elements."
 - `HealthEngine` is an actor whose executor is its own serial queue (`DispatchSerialQueue`, user-initiated). The JSContext is made on that queue and touched only there; DEBUG checks it in `callValue` and `settle`. Timers, URLSession answers and token answers land on that queue. Tokens come from the main actor and hop back with `queue.async`. The phone's file and the pending marker are plain files (`PhoneFiles`) read and written there. A phone edit made while a cloud is connected but not open sets the marker in the same engine step that writes it, before the write, so an app killed between the two never leaves an unmarked edit (a refused write puts back the generation it found, so a session holding it can still clear it), decided when its turn comes (an edit asked for before a first connect and landing after it is marked too).
 - **The invariant: the engine's queue never waits on the main thread.** News goes to main with `DispatchQueue.main.async`, in order, never waited for. Nothing in the natives uses `main.sync` or `assumeIsolated` (EngineThreadTests greps for both). A cloud erase writes the chat tombstones on the engine queue, with a lock-guarded erase counter.
 - **One ordered pipeline, and every record-level decision is a step in it.** Every record change in `RecordStore` (apply, applyNow, importLabs, saveDocument, showCloud, showPhone, switchUnits, the cloud erase's record) runs after the one before it (`chain`), so two quick edits land in order. On the phone, one engine call does the edit, My data and the atomic write; main then publishes the record, My data and the unit choices together (Codex R1). Three decisions are steps too:
   - **The cloud handover** (`handOver`): after an open resolves, one step decides whether to show it. Every edit asked for before that step has landed on the phone's file and been counted; if any came in, the app opens again, and that reopen merges the phone's file in whatever its marker says (`cloudOpen`'s `mergePhone`). An edit asked for after the step lands after the cloud record is shown. A record or a failure the opening session sends meanwhile is held and shown with it, not dropped, and the status is set in the same turn the session is shown: news after that turn is never overwritten by the open finishing.
   - **The phone erase** (`erasePhone`): the record is read, erased by the engine, the chat tombstones kept and the erase written, in one step, so an import accepted meanwhile lands after the erase, never under it. It is marked and counted like any phone edit, so a first connect that lifted the pre-erase file opens again and merges the erase in, whose higher eraseEpoch wins (US-09 AC23).
   - **The master units switch** holds entry while it lands, as a per-test switch does (`unitSwitches`).
-- **The marker's generation (engine, cloud.ts).** The pending marker is a number that rises at every set. A session holds the generation it saw as it read the phone's file, or set itself, and clears only that one (`clear-if:<n>`; there is no plain clear), so a marker set after it read the phone (an edit during an open) outlives its save (adversary R1). Disconnect and erase remove the marker file directly.
+- **The marker's generation (engine, cloud.ts).** The pending marker is a number that rises at every set. A session holds the generation it saw as it read the phone's file, or set itself, and clears only that one (`clear-if:<n>`; there is no plain clear), so a marker set after it read the phone (an edit during an open) outlives its save (adversary R1). Disconnect and erase remove the marker file directly. The set and restore pair (`myDataAndWrite`, `PhoneFiles.restore(_:ifStill:)`) is atomic only because every call runs on the engine's actor; Disconnect's remove (`CloudSync`, `files.remove(files.pending)`) takes no lock and is a known narrow exception, healed by the next open's get and clear-if.
 - **The captured Screen.** A value sheet opened from My data or a metric page carries the row and the `Screen` taken at its tap, and its save is checked against that (`apply(_:as:)`), so its unit label and the units its value is read in agree; nothing is pinned at the tap. Every sheet that edits the record, these included, still pins on appear and unpins on disappear (`pinsRecord`); for these the carried Screen wins over the pin. A sheet's edit takes `pinned ?? screen` before it waits, and the erase check runs when its turn comes, so a sheet that closes mid-save still saves against the record it showed. An import (`applyNow`) reads the screen at its turn: the record as it is now, never a sheet's pin. On the phone, as in the cloud session (`dependsOnUnits`), a value or height typed before the record's units changed is refused.
-- **Unit switches hold entry.** While a per-test or master switch is still landing (`unitSwitches`), the units menu, Add Data, corrections, height and My data's value rows wait.
+- **Unit switches hold entry.** While a per-test or master switch, or an Lp(a) unit choice, is still landing (`unitSwitches`), the units menu, Add Data, corrections, height and My data's value rows wait.
 - **A lab report's summary and its import are one step.** On the phone, both run against the record of that turn. In the cloud, one engine door (`cloudLabImport`) takes the summary against the session's working copy and runs the import on it in the same synchronous JavaScript step, so a value another device brought in is never counted as saved. Swift keeps no copy of the session's record.
 - **The cloud stamp.** The engine queue stamps every cloud record it hands to Swift (open, edit, erase and document save as their Promise resolves, each notify as it is sent). An edit's answer can arrive after news of a re-read made before it, so the screen keeps the record with the higher stamp.
 - Sheets set `saving` in the button action (`SheetSave`), hold Save and Cancel, refuse swipe-down while saving and dismiss only on a save; pickers that save at once wait while their edit lands, so a quick change back is never lost. PlanView awaits `planSections`, which skips a plan no longer wanted.
@@ -118,6 +118,16 @@ it shared, so a fix to `dropbox-rest.ts`, `drive-rest.ts`, `SyncManager` or
   rather than shown). Async engine doors return Promises; `HealthEngine.callAsync` awaits
   them with a continuation, and JavaScriptCore runs the promise jobs when each call from
   Swift returns. The bundle is 510 KB with sync.
+
+**Lp(a)'s unit (2026-10-23, US-25 AC20).** Lp(a) is shown and typed in nmol/L, mg/dL or mg/L,
+as on the web (US-05 AC2). Unlike the per-test Metric/US choices (a device preference), the
+unit is the record's `profile.lpaUnit`, so it syncs: the engine's `lpaUnit` edit writes it with
+health-core's `stampProfile`, the web store's own write. The display and reading functions are
+health-core's `cell-unit.ts` (`recordLpaUnit`, `cellText`, `cellFromSI`, `cellRange`), moved there
+from the web's `blood-test-cell.ts` and `lpa-unit.ts` so both clients run one copy. The Screen a
+sheet carries holds the Lp(a) unit it showed; a unit chosen in the sheet moves that Screen with it
+(`ValueEntrySheet.lpaUnits`), and one changed elsewhere refuses an Lp(a) value or correction, on the phone's file in Swift and in the
+cloud session in `cloudEdit`, whose new last argument (`shownLpaUnit`) changed the bridge id (D3).
 
 ### D3 · Clinical fixes ship over the air, signed (Brad, 2026-10-21; built 2026-10-22, US-25 AC18)
 
@@ -878,12 +888,15 @@ Files, From Photos, and Scan a paper report (VisionKit's document camera, real p
   record. The screen says so in one sentence before the sign-in. A second OAuth flow, or a
   token that reads files but does not sync, would be two Dropbox grants for one app key.
 - *The app folder is the inbox.* The Dropbox app is an App folder app, so the app lists
-  only `Apps/Health Plan by Dr Brad`, the root the hosted connector imports from too. The
-  listing and download are health-core's `dropboxListFolder` and `dropboxDownload`, run in
-  the engine (`labFilesJson`, `labFile` in cloud.ts), filtered by the connector's name
-  rule (`isImportableEntryName`, `FOLDER_IMPORT_EXTENSIONS`), so the record and the app's
-  own files never list. Download is by listing id only, never a path, and only an id a
-  fresh listing still offers as a lab file (review R3): any Dropbox id the phone could
+  only `Apps/Health Plan by Dr Brad`, the root the hosted connector imports from too, and
+  its subfolders (US-52 AC13c, 2026-10-23). The listing is health-core's `dropboxListTree`
+  (folders and files, recursive for "Read every report in this folder"); the connector's
+  `dropboxListFolder` is left exactly as it was, under the OpenAI review. Download is
+  `dropboxDownload`. They run in the engine (`labFolderJson`, `labFolderFilesJson`,
+  `labFile` in cloud.ts), filtered by the connector's name rule (`isImportableEntryName`,
+  `FOLDER_IMPORT_EXTENSIONS`), so the record and the app's own files never list. Download
+  is by listing id only, never a path, and only an id a fresh listing of its own folder
+  still offers as a lab file (review R3): any Dropbox id the phone could
   learn, the record's included, is otherwise refused. A file over the web's size limit
   is refused before it downloads, an empty one (or one listed with no size) is called empty, and the bytes are checked again
   (R5). The bridge's fetch holds the whole answer in Swift before JavaScript sees its
@@ -1213,10 +1226,38 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 3. **Health Records labs and camera lab upload.**
 4. **App Store submission.**
 
+## Where things stand (2026-10-23)
+
+- **Done on main:** shared document saving (39ff03a5); per-test units (d1199494); clinic letters
+  and originals on the phone (1b6d58a7); the parsed-record memo, stage 1 of moving engine work
+  off the main thread (b196f32a); Drive originals filed by the record folder's id (c8c2d7cd);
+  plan cards that open without covering the card being read, and diagrams that hold up in dark
+  mode (4fd330bc). The website's shared document save is not deployed: it waits for a real
+  upload checked in Safari.
+- **Stage 2 (engine on its own queue, edits in order, sheets awaiting saves):** on branch
+  `claude/engine-off-main-stage2` (worktree `../roadmap-stage2`), reviewed over several rounds;
+  the last re-check found nothing blocking bar two small agreed fixes (marker before the phone
+  write with clear-if on failure; held news applied in the handover's own turn). Those landed and
+  were approved; main is merged into the branch (its AC is now US-25 AC21; main's AC20 is the Lp(a)
+  unit), so the merge to main is a fast-forward. Main's Lp(a) unit and Dropbox folder reading run
+  inside the stage-2 model: the Lp(a) choice is a chained edit that holds entry, the folder doors
+  run on the engine's actor.
+- **In progress, uncommitted on main:** Lp(a)'s three-unit control on the phone (US-25 AC20 on
+  main; review fixes being applied: the unit choice in the entry sheet, the web's Lp(a) display
+  functions moved into health-core and shared); Dropbox folder picking (US-52 AC13c; review
+  fixes being applied: cancel on close, one listing per read, a memory bound); the MCP
+  de-duplication (plan docs/reviews/2026-10-23-mcp-dedup-plan.md v3, US-52 AC14; done and
+  reviewed clean, waiting to be committed with the other two). Main is behind origin (PR #218
+  changed ios/engine/cloud.ts): merge after these commits, then recompute the bridge id.
+- **Not started:** the "new reports in your Dropbox, read them?" prompt (web and phone; first
+  test whether a picked Google Drive folder lets `drive.file` see inside it); installing the
+  latest build on Brad's iPhone.
+
 ## Next, in order (2026-10-22)
 
-1. Engine work off the main thread, with the engine keeping the parsed record between calls
-   (D2: every call parses the whole record; one year of daily readings costs 9 to 31 ms a call).
+1. Engine work off the main thread: stage 1 done (the memo); stage 2 on its branch (above);
+   stage 3 (typed-number parsing, history, chat history and the cloud attach still wait on the
+   engine) and stage 4 (engine start behind the launch screen) to follow.
 2. US-55: resting heart rate, VO2 max, steps and sleep from Apple Health (D6).
 3. `APP_ATTEST_TEAM_ID` on the education server, so chat and lab upload work on a phone (D8).
 4. The Clarity masking check on a real recording (D9).

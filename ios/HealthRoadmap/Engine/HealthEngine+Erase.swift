@@ -34,6 +34,9 @@ extension HealthEngine {
         let cloudChatErased: Bool
         /// Why not, when the step ran and failed: "unreadable" or "unreachable".
         let cloudChatProblem: String?
+        /// What the user should still hear about an erase that landed: a Google Drive
+        /// copy it could not read and left in place (US-10 AC4a).
+        let warning: String?
 
         /// The website's chat history in the cloud, as the words need it.
         var cloudChat: EraseText.CloudChat {

@@ -41,9 +41,9 @@ extension HealthEngine {
     /// One My data edit through the open session, checked against the erase and the
     /// units the screen showed when the edit began (a sheet's opening).
     /// `choices`: the per-test units the sheet showed (US-25 AC17e), as JSON.
-    func cloudEdit(_ edit: RecordEdit, erase: String, units: String, now: Date, choices: String = "{}") throws -> EditOutcome {
+    func cloudEdit(_ edit: RecordEdit, erase: String, units: String, now: Date, choices: String = "{}", lpaUnit: String) throws -> EditOutcome {
         let editJSON = String(decoding: try JSONEncoder().encode(edit), as: UTF8.self)
-        let json = try call("cloudEdit", [editJSON, erase, units, now.formatted(Self.iso), choices])
+        let json = try call("cloudEdit", [editJSON, erase, units, now.formatted(Self.iso), choices, lpaUnit])
         var outcome = try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
         outcome.order = stamp()
         return outcome
@@ -96,21 +96,82 @@ extension HealthEngine {
         let size: Int
         /// Dropbox's `server_modified`, ISO 8601 in UTC.
         let modified: String
+        /// The folder it is in, app-folder-relative ("" the root): the engine lists it afresh before a download.
+        var folder = ""
+        /// Its path below the folder that was listed: its name, or "sub/name" in a whole-folder read.
+        var path = ""
     }
 
-    /// The lab files in the connected Dropbox's app folder, newest first. Throws
-    /// `EngineError.callFailed` whose text is the failure JSON (`SyncProblem`).
-    func labFiles() async throws -> [CloudLabFile] {
-        let json = try await callAsync("labFilesJson", [])
-        return try JSONDecoder().decode([CloudLabFile].self, from: Data(json.utf8))
+    /// A folder in the Dropbox app folder ("" the root), as the engine lists it (US-52 AC13c).
+    struct CloudLabFolder: Decodable, Hashable, Sendable {
+        let name: String
+        let path: String
     }
 
-    /// One listed file: its name in a fresh listing, which the phone reads it
-    /// under (re-check R3), and its bytes. Throws `EngineError.callFailed` whose
-    /// text is `{"refused": "…"}` or the failure JSON.
+    /// One folder's subfolders, by name, and its lab files, newest first.
+    struct CloudLabListing: Decodable, Equatable, Sendable {
+        let folders: [CloudLabFolder]
+        let files: [CloudLabFile]
+        /// At the root, the app's own folders there, which are not listed.
+        var hidden: [String] = []
+    }
+
+    /// One folder of the connected Dropbox's app folder. Throws `EngineError.callFailed`
+    /// whose text is the failure JSON (`SyncProblem`).
+    func labFolder(_ path: String) async throws -> CloudLabListing {
+        let json = try await callAsync("labFolderJson", [path])
+        return try JSONDecoder().decode(CloudLabListing.self, from: Data(json.utf8))
+    }
+
+    /// One listed file: its name in a fresh listing of its folder, which the phone
+    /// reads it under (re-check R3), and its bytes. Throws `EngineError.callFailed`
+    /// whose text is `{"refused": "…"}` or the failure JSON.
     func labFile(_ file: CloudLabFile) async throws -> (name: String, data: Data) {
-        try await callAsync("labFile", [file.id]) { answer in
+        try await callAsync("labFile", [file.id, file.folder]) { answer in
             (answer.forProperty("name")?.toString() ?? file.name, EngineNatives.data(answer.forProperty("bytes")) ?? Data())
         }
+    }
+
+    /// Every report in a Dropbox folder and the folders inside it (US-52 AC13c), read as
+    /// a folder picked in Files is (`LabFileReader.documents(inFolder:)`): name order, at
+    /// most 200 files, each named by its place in the folder; a ZIP gives its members.
+    /// Every size is checked on the listing before anything downloads, and the reports'
+    /// bytes, ZIP members included, are held to the ZIP reader's 200 MB as they are read.
+    /// `maxBytes` is that cap (a test sets a smaller one). `progress(done, total)` before each download. Cancelling stops it before the next
+    /// download. Dropbox's refusals and failures throw `DropboxFailure`; a file gone since
+    /// the listing, `LabFileReader.Failure.folderChanged`.
+    func labFolderDocuments(_ folder: CloudLabFolder, maxBytes: Int = LabFileReader.maxFolderBytes, progress: @MainActor @Sendable (Int, Int) -> Void = { _, _ in }) async throws -> [LabFileReader.Document] {
+        let listed: [CloudLabFile]
+        do {
+            let json = try await callAsync("labFolderFilesJson", [folder.path])
+            listed = try JSONDecoder().decode([CloudLabFile].self, from: Data(json.utf8))
+        } catch {
+            throw DropboxFailure(error)
+        }
+        let files = listed
+            .sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+            .prefix(LabFileReader.maxFolderFiles)
+        guard !files.isEmpty else { throw LabFileReader.Failure.folderEmpty }
+        if let big = files.first(where: { !LabFileReader.fits(name: $0.name, bytes: $0.size) }) { throw LabFileReader.Failure.tooLarge(big.name) }
+        guard files.reduce(0, { $0 + $1.size }) <= maxBytes else { throw LabFileReader.Failure.folderTooLarge }
+        let base = folder.path.isEmpty ? "" : folder.name + "/"
+        var documents: [LabFileReader.Document] = []
+        var bytes = 0
+        for (done, file) in files.enumerated() where documents.count < LabFileReader.maxFolderFiles {
+            await progress(done, files.count)
+            try Task.checkCancellation()
+            let fetched: (name: String, data: Data)
+            do {
+                fetched = try await labFile(file)
+            } catch {
+                let failure = DropboxFailure(error)
+                throw failure.gone ? LabFileReader.Failure.folderChanged : failure
+            }
+            let read = try LabFileReader.documents(from: fetched.data, name: base + file.path)
+            bytes += read.reduce(0) { $0 + ($1.original?.size ?? 0) }
+            guard bytes <= maxBytes else { throw LabFileReader.Failure.folderTooLarge }
+            documents += read
+        }
+        return Array(documents.prefix(LabFileReader.maxFolderFiles))
     }
 }

@@ -214,6 +214,68 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertTrue(store.unitChoices.isEmpty)
     }
 
+    /// US-25 AC20: Lp(a)'s menu writes the record's `profile.lpaUnit`, as the web's control
+    /// does; the row, its history and a typed value follow it. On disk before the screen.
+    func testLpaUnitMenuWritesTheRecordAndATypedValueIsReadInIt() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.setLpaUnit("mg/L"))
+        XCTAssertEqual(store.myData?.lpaUnit, "mg/L")
+        let onDisk = try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any]
+        let profile = try XCTUnwrap(onDisk?["profile"] as? [String: Any])
+        XCTAssertEqual(profile["lpaUnit"] as? String, "mg/L")
+        XCTAssertNotNil((profile["fieldStamps"] as? [String: Any])?["lpaUnit"], "field-stamped, so it merges per field")
+        XCTAssertEqual(store.myData?.bloodTests.first { $0.metric == "lpa" }?.unit, "mg/L")
+        await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 500, day: "2026-10-20"), as: store.screen))
+        XCTAssertEqual(store.history(for: "lpa")?.unit, "mg/L")
+        XCTAssertEqual(store.history(for: "lpa")?.rows.first?.value, "500")
+        let record = try JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as? [String: Any]
+        let lpa = (record?["measurements"] as? [[String: Any]])?.first { $0["metricType"] as? String == "lpa" }
+        XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9, "500 mg/L is 125 nmol/L")
+        // Choosing it again writes nothing.
+        let before = try Data(contentsOf: file)
+        await XCTAssertSaved(await store.setLpaUnit("mg/L"))
+        XCTAssertEqual(try Data(contentsOf: file), before)
+    }
+
+    /// US-25 AC20 (review R1): the entry sheet's own picker sets the unit, so a first Lp(a)
+    /// value is typed in the lab's unit; the sheet's screen carries it, so the value is
+    /// read in the unit shown at Save.
+    func testAnLpaUnitChosenInTheOpenSheetReadsItsValue() async throws {
+        let store = try store()
+        let row = try XCTUnwrap(store.myData?.bloodTests.first { $0.metric == "lpa" })
+        var seen = store.screen // the entry sheet opens, showing the default unit
+        let sheet = ValueEntrySheet(title: row.label, unit: row.unit, current: nil, asksForDay: true, read: store.number) { _, _ in .saved }
+            .lpaUnits(store, row) { seen = seen.showing(lpaUnit: $0) }
+        let choose = try XCTUnwrap(sheet.chooseUnit)
+        let refusal = await choose("mg/L")
+        XCTAssertNil(refusal)
+        XCTAssertEqual(seen.lpaUnit, "mg/L")
+        await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 500, day: "2026-10-20"), as: seen))
+        let record = try JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as? [String: Any]
+        let lpa = (record?["measurements"] as? [[String: Any]])?.first { $0["metricType"] as? String == "lpa" }
+        XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9, "500 mg/L is 125 nmol/L")
+    }
+
+    /// US-25 AC20: on the phone's file too, an Lp(a) value or correction typed before its unit
+    /// changed under the sheet is refused; another test's value saves. A refused choice says why.
+    func testAnLpaValueTypedBeforeItsUnitChangedIsRefusedOnThePhone() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 100, day: "2026-10-19")))
+        let rowId = try XCTUnwrap(store.history(for: "lpa")?.rows.first?.id)
+        let before = try XCTUnwrap(store.myData?.lpaUnit)
+        let seen = store.screen // the sheet opens
+        // A change the sheet did not make (applyNow, as an import would come in).
+        await XCTAssertSaved(await store.applyNow(.lpaUnit(before == "mg/L" ? "nmol/L" : "mg/L")))
+        guard case .refused(let message, _) = await store.apply(.add(metric: "lpa", value: 50, day: "2026-10-20"), as: seen) else {
+            return XCTFail("a value typed in the old unit must not be read in the new one")
+        }
+        XCTAssertTrue(message.contains("Close this"), message)
+        guard case .refused = await store.apply(.correct(id: rowId, value: 90), as: seen) else { return XCTFail("the correction too") }
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20"), as: seen))
+        let refused = await store.chooseLpaUnit("g/L")
+        XCTAssertEqual(refused, "Lp(a) is in nmol/L, mg/dL or mg/L.")
+    }
+
     /// US-52 AC13d: with no cloud, a letter is a text-only row, as the web saves one
     /// off-cloud: no original, no hash, its text kept. On disk before the screen.
     func testALetterOnThePhoneAloneIsATextOnlyRow() async throws {

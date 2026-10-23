@@ -51,6 +51,13 @@ final class RecordStore {
         let units: String
         /// The per-test units it showed (US-25 AC17e): a typed value is read in them.
         let choices: String
+        /// Lp(a)'s unit it showed (US-05 AC2): the record's, so another device can change it.
+        let lpaUnit: String
+
+        /// The same screen once its sheet has chosen Lp(a)'s unit (US-25 AC20).
+        func showing(lpaUnit: String) -> Screen {
+            Screen(erase: erase, units: units, choices: choices, lpaUnit: lpaUnit)
+        }
     }
     private var pinned: Screen?
     private var pins = 0
@@ -60,7 +67,7 @@ final class RecordStore {
     @ObservationIgnored private var shownOrder = 0
 
     var screen: Screen {
-        Screen(erase: cloudErase, units: myData?.unitSystem ?? "si", choices: unitChoices.json)
+        Screen(erase: cloudErase, units: myData?.unitSystem ?? "si", choices: unitChoices.json, lpaUnit: myData?.lpaUnit ?? "")
     }
 
     /// A sheet that edits the record opened.
@@ -324,6 +331,10 @@ final class RecordStore {
         if Self.dependsOnUnits(edit), seen.units != (myData?.unitSystem ?? "si") {
             return .refused(message: "Your units changed while this was open, so this was not saved. Close this and enter the value again.", existingId: nil)
         }
+        // Lp(a)'s unit is the record's: a number typed in another is never saved in this one.
+        if seen.lpaUnit != screen.lpaUnit, await readsLpa(edit) {
+            return .refused(message: "Your Lp(a) unit changed while this was open, so this was not saved. Close this and enter the value again.", existingId: nil)
+        }
         do {
             // The master switch clears every choice, published only with the record it
             // changed: a failed write keeps both as they were (Codex R1).
@@ -351,7 +362,7 @@ final class RecordStore {
     /// Through the engine's open session: the save loop sends it to the cloud.
     private func applyInCloud(_ edit: RecordEdit, erase: String, seen: Screen) async -> ApplyResult {
         do {
-            return await shown(try await engine.cloudEdit(edit, erase: erase, units: seen.units, now: .now, choices: seen.choices), of: edit)
+            return await shown(try await engine.cloudEdit(edit, erase: erase, units: seen.units, now: .now, choices: seen.choices, lpaUnit: seen.lpaUnit), of: edit)
         } catch {
             return .refused(message: error.localizedDescription, existingId: nil)
         }
@@ -493,6 +504,44 @@ final class RecordStore {
             guard let shown = try? await self.engine.myData(recordJSON: self.recordJSON, now: .now, deviceId: self.deviceId, units: choices.json) else { return }
             self.myData = shown
             self.publish(choices)
+        }
+    }
+
+    /// Lp(a)'s units, in the web's order (health-core's LPA_UNITS).
+    static let lpaUnits = ["nmol/L", "mg/dL", "mg/L"]
+
+    /// Lp(a)'s unit, from its page's menu or a sheet's picker (US-05 AC2, US-25 AC20): a record
+    /// edit, as the web's control writes it, so it syncs; the unit already stored writes nothing.
+    /// Not a typed value, so it is checked against the record when its turn comes, never a
+    /// sheet's screen. Entry waits while it lands, as for any unit switch. A sheet open as it
+    /// is chosen there shows it from then on and moves its own screen with it
+    /// (`ValueEntrySheet.lpaUnits`), so a value typed there is read in the unit shown at Save.
+    func setLpaUnit(_ unit: String) async -> ApplyResult {
+        unitSwitches += 1
+        defer { unitSwitches -= 1 }
+        return await applyNow(.lpaUnit(unit))
+    }
+
+    /// The same, answering a refusal's words, nil when it was taken.
+    func chooseLpaUnit(_ unit: String) async -> String? {
+        if case .refused(let message, _) = await setLpaUnit(unit) { return message }
+        return nil
+    }
+
+    /// Lp(a)'s unit as the record holds it now, for an Lp(a) row; nil for any other.
+    func lpaUnit(for row: MyData.Row) -> String? {
+        row.metric == "lpa" ? myData?.lpaUnit : nil
+    }
+
+    /// Whether an edit is a typed Lp(a) value, read in Lp(a)'s own unit. Run in a change's
+    /// turn: the history is read off the main thread, from the record that edit lands on.
+    private func readsLpa(_ edit: RecordEdit) async -> Bool {
+        switch edit {
+        case .add(let metric, _, _): return metric == "lpa"
+        case .correct(let id, _):
+            let lpa = try? await engine.history(recordJSON: recordJSON, metric: "lpa", now: .now, deviceId: deviceId, units: unitChoices.json)
+            return lpa?.rows.contains { $0.id == id } ?? false
+        default: return false
         }
     }
 

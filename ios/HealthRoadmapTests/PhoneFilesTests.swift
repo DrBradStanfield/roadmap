@@ -1,7 +1,7 @@
 import XCTest
 @testable import HealthRoadmap
 
-/// US-25 AC20, US-09 AC4: the phone's pending marker as a generation (PhoneFiles,
+/// US-25 AC21, US-09 AC4: the phone's pending marker as a generation (PhoneFiles,
 /// ios/engine/cloud.ts `pending`). A session clears only the generation it holds.
 final class PhoneFilesTests: XCTestCase {
     private var folder: URL!
@@ -59,7 +59,6 @@ final class PhoneFilesTests: XCTestCase {
         let nowhere = folder.appending(path: "missing folder/health-roadmap.json")
         XCTAssertThrowsError(try engine.blocking { try $0.myDataAndWrite(record, units: "{}", to: nowhere, marking: phone, deviceId: "test") })
         XCTAssertEqual(phone.pending("get"), 0)
-        XCTAssertEqual(phone.pending("clear-if:0"), 0)
         // The marker was set before the write was tried (generation 1), then taken back:
         // an app killed after a write that lands is never left with an unmarked edit.
         XCTAssertEqual(phone.pending("set"), 2)
@@ -76,5 +75,16 @@ final class PhoneFilesTests: XCTestCase {
         XCTAssertThrowsError(try engine.blocking { try $0.myDataAndWrite(record, units: "{}", to: nowhere, marking: phone, deviceId: "test") })
         XCTAssertEqual(phone.pending("get"), earlier, "the generation it found is put back")
         XCTAssertEqual(phone.pending("clear-if:\(earlier)"), 0, "so the session holding it can still clear it")
+    }
+
+    /// A restore puts back only the generation its own set made: a set that came after it
+    /// (another edit's) stays, so that edit still waits for the cloud.
+    func testARestoreLeavesALaterSetAlone() {
+        let phone = files()
+        let mine = phone.pending("set")
+        let later = phone.pending("set")
+        XCTAssertEqual(later, mine + 1)
+        phone.restore(0, ifStill: mine)
+        XCTAssertEqual(phone.pending("get"), later, "the later set is not taken back")
     }
 }

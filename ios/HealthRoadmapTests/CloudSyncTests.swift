@@ -257,7 +257,7 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(summary.saved + summary.skipped, 3)
     }
 
-    /// US-25 AC20 (adversary R2): an import asked for after the open resolved, while the
+    /// US-25 AC21 (adversary R2): an import asked for after the open resolved, while the
     /// handover decision waits its turn, is never hidden on the phone: it reaches the
     /// cloud record and the screen.
     func testAnImportAskedForDuringTheHandoverDecisionReachesTheCloud() async throws {
@@ -284,7 +284,7 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"], "the import reached the cloud")
     }
 
-    /// US-25 AC20 (Codex R1): a first connect that lifts the phone's file while a phone
+    /// US-25 AC21 (Codex R1): a first connect that lifts the phone's file while a phone
     /// erase waits on the engine never restores what the erase removed: the erase is a
     /// counted change, the reopen merges it in, and its higher eraseEpoch wins.
     func testASignInCompletingDuringAPhoneEraseEndsWithTheErase() async throws {
@@ -308,7 +308,7 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01"], "nor in the cloud")
     }
 
-    /// US-25 AC20 (adversary R2, R4): a record and a failure the opening session sends
+    /// US-25 AC21 (adversary R2, R4): a record and a failure the opening session sends
     /// before the handover shows it are held, then shown with it, never dropped.
     func testNewsFromASessionBeforeItIsShownIsHeldAndShownWithIt() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
@@ -334,7 +334,7 @@ final class CloudSyncTests: XCTestCase {
         guard case .problem = sync.status else { return XCTFail("the failure it sent was dropped: \(sync.status)") }
     }
 
-    /// US-25 AC20 (R2): a held failure followed by a "synced" before the handover shows
+    /// US-25 AC21 (R2): a held failure followed by a "synced" before the handover shows
     /// the session ends synced; and (below) a failure arriving after the session is shown,
     /// while the open is still finishing, is never overwritten by it.
     func testASyncedAfterAHeldFailureWins() async throws {
@@ -470,6 +470,40 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"])
     }
 
+    /// US-25 AC20: the sheet's pin covers Lp(a)'s unit, which the record holds, so a value
+    /// typed in mg/dL is refused after the web switches Lp(a) to mg/L, never read as mg/L.
+    func testLpaValueTypedBeforeTheWebChangesItsUnitIsRefused() async throws {
+        dropbox.put(try record(days: [], device: "web"))
+        let (store, sync, engine) = try app()
+        await sync.start()
+        let chosen = await store.setLpaUnit("mg/dL")
+        XCTAssertEqual(chosen, .saved, "the menu's choice goes through the session")
+        store.pinScreen()
+        XCTAssertEqual(store.screen.lpaUnit, "mg/dL")
+        // Saved without a re-read: the session throttles re-reads, and the web's change comes next.
+        _ = try await engine.cloudFlush()
+        XCTAssertEqual((dropbox.record["profile"] as? [String: Any])?["lpaUnit"] as? String, "mg/dL")
+        let web = try await engine.apply(.lpaUnit("mg/L"), to: dropbox.file!.text, now: .now, deviceId: "web")
+        dropbox.put(try JSONSerialization.jsonObject(with: Data(try XCTUnwrap(web.record).utf8)) as! [String: Any])
+        await sync.syncNow()
+        XCTAssertEqual(store.myData?.lpaUnit, "mg/L")
+        guard case .refused(let message, _) = await store.apply(.add(metric: "lpa", value: 50, day: "2026-10-02")) else {
+            return XCTFail("50 typed as mg/dL must not be stored as 50 mg/L")
+        }
+        XCTAssertTrue(message.contains("Close this"), message)
+        let weight = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02"))
+        XCTAssertEqual(weight, .saved, "another test's value still saves")
+        store.unpinScreen()
+        // A sheet opened now shows mg/L: its value saves, read in mg/L.
+        store.pinScreen()
+        let lpaSaved = await store.apply(.add(metric: "lpa", value: 500, day: "2026-10-02"))
+        XCTAssertEqual(lpaSaved, .saved)
+        store.unpinScreen()
+        await sync.background()
+        let lpa = (dropbox.record["measurements"] as? [[String: Any]])?.first { $0["metricType"] as? String == "lpa" }
+        XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9)
+    }
+
     func testR4AReopenThatFailsGoesBackToThePhoneAndKeepsEdits() async throws {
         dropbox.put(try record(days: [], device: "web"))
         let (store, sync, engine) = try app()
@@ -601,12 +635,12 @@ final class CloudSyncTests: XCTestCase {
         dropbox.onDownload = nil
         XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .busy)))
         XCTAssertNil(store.cloudErase)
-        let probe = try engine.blocking { try $0.cloudEdit(.add(metric: "weight", value: 80, day: "2026-10-09"), erase: "x", units: "si", now: .now) }
+        let probe = try engine.blocking { try $0.cloudEdit(.add(metric: "weight", value: 80, day: "2026-10-09"), erase: "x", units: "si", now: .now, lpaUnit: "nmol/L") }
         XCTAssertEqual(probe.reason, "not-open", "the engine holds no session that would poll and say Synced")
         XCTAssertNotNil(SyncProblem(kind: .busy).words(.dropbox).range(of: "on this iPhone"))
     }
 
-    /// US-09 AC4, US-25 AC20: an edit asked for while the cloud opens, whose write lands
+    /// US-09 AC4, US-25 AC21: an edit asked for while the cloud opens, whose write lands
     /// on the phone only as the open resolves, is neither hidden nor left behind: it
     /// reaches the cloud file and the screen.
     func testAnEditLandingAsTheOpenResolvesReachesTheCloudAndTheScreen() async throws {

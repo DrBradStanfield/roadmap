@@ -430,7 +430,7 @@ export class RoadmapStore {
     const out: Partial<HealthInputs> = {};
     for (const field of PREFILL_FIELDS) {
       const v = (p as unknown as Record<string, unknown>)[field];
-      if (v !== undefined) (out as Record<string, unknown>)[field] = v;
+      if (v != null) (out as Record<string, unknown>)[field] = v;
     }
     if (p.unitSystem !== undefined) out.unitSystem = p.unitSystem;
     return out;
@@ -524,7 +524,9 @@ export class RoadmapStore {
   private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): void {
     const changes: Record<string, unknown> = {};
     for (const field of [...PREFILL_FIELDS, 'unitSystem'] as const) {
-      if (current[field] !== undefined && current[field] !== previous[field]) changes[field] = current[field];
+      // A cleared form field is absent from current, but is still a write.
+      // Keep its key as null so the field stamp carries the clear (US-10 AC9).
+      if (current[field] !== previous[field]) changes[field] = current[field] ?? null;
     }
     if (Object.keys(changes).length === 0) return;
     // Only the fields changed take a new stamp (US-10 AC6). And an edit, which

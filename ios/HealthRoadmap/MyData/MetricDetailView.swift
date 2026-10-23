@@ -17,6 +17,8 @@ struct MetricDetailView: View {
     @State private var scrubbed: Date?
     /// Which sheet is open: a new value, or a correction of a row.
     @State private var editing: Editing?
+    /// Why the Lp(a) unit menu's choice was not saved.
+    @State private var lpaRefusal: String?
 
     /// What a tap opened: the row as this page showed it and the screen it was read
     /// on, so the sheet's unit label and its save agree (Codex R2).
@@ -62,6 +64,19 @@ struct MetricDetailView: View {
                     .disabled(store.unitSwitches > 0)
                 }
             }
+            // Lp(a)'s three units, the web's control (US-05 AC2): kept in the record, so it syncs.
+            if row.metric == "lpa", let unit = store.myData?.lpaUnit {
+                ToolbarItem(placement: .secondaryAction) {
+                    Picker("Units for \(row.label)", selection: Binding(
+                        get: { unit },
+                        set: { unit in Task { lpaRefusal = await store.chooseLpaUnit(unit) } }
+                    )) {
+                        ForEach(RecordStore.lpaUnits, id: \.self) { Text($0).tag($0) }
+                    }
+                    .pickerStyle(.menu)
+                    .disabled(store.unitSwitches > 0)
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button("Add Data") { editing = .add(live ?? row, store.screen) }
                     .disabled(store.unitSwitches > 0)
@@ -69,6 +84,11 @@ struct MetricDetailView: View {
         }
         .sheet(item: $editing) { editing in
             sheet(for: editing).presentationDetents([.medium, .large])
+        }
+        .alert("Not saved", isPresented: Binding(get: { lpaRefusal != nil }, set: { if !$0 { lpaRefusal = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(lpaRefusal ?? "")
         }
     }
 
@@ -158,9 +178,12 @@ struct MetricDetailView: View {
         case .correct(let value, let shown, let seen) where shown.metric == MyData.bloodPressure:
             BloodPressureSheet(store: store, correcting: value, seen: seen, saved: saved)
         case .correct(let value, let shown, let seen):
-            ValueEntrySheet(title: "Correct \(DayText.short(value.day))", unit: shown.unit, current: value.value, asksForDay: false, read: store.number) { number, _ in
+            // Lp(a)'s value as it is now: its unit can change in the sheet.
+            let now = store.lpaUnit(for: shown) == nil ? value.value : store.history(for: shown.metric)?.rows.first { $0.id == value.id }?.value ?? value.value
+            ValueEntrySheet(title: "Correct \(DayText.short(value.day))", unit: store.lpaUnit(for: shown) ?? shown.unit, current: now, asksForDay: false, read: store.number) { number, _ in
                 saved(await store.apply(.correct(id: value.id, value: number), as: seen))
             }
+            .lpaUnits(store, shown) { self.editing = .correct(value, shown, seen.showing(lpaUnit: $0)) }
         }
     }
 }

@@ -17,6 +17,11 @@ struct ValueEntrySheet: View {
     let save: (Double, String) async -> RecordStore.ApplyResult
     /// Replaces the value in a row with a correction.
     var replace: ((String, Double) async -> RecordStore.ApplyResult)?
+    /// Lp(a)'s three units (US-05 AC2, US-25 AC20), chosen here so a first value is typed in
+    /// the lab's unit; `unit` is the record's choice as it is now. Choosing writes the
+    /// record's unit and answers a refusal's words, nil when it was taken.
+    var units: [String] = []
+    var chooseUnit: ((String) async -> String?)?
 
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
@@ -45,6 +50,20 @@ struct ValueEntrySheet: View {
                             .focused($focused)
                             .onChange(of: text) { message = nil }
                         Text(unit).font(.title3).foregroundStyle(.secondary)
+                    }
+                    if let chooseUnit, !units.isEmpty {
+                        // Held, with Save, while the choice lands: a value is never read mid-switch.
+                        Picker("Unit", selection: Binding(get: { unit }, set: { choice in
+                            saving = true
+                            Task {
+                                message = await chooseUnit(choice)
+                                saving = false
+                            }
+                        })) {
+                            ForEach(units, id: \.self) { Text($0).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        .disabled(saving)
                     }
                 } footer: {
                     if let message {
@@ -92,5 +111,22 @@ struct ValueEntrySheet: View {
                 SheetSave.close(result, dismiss, $message)
             }
         }
+    }
+}
+
+extension ValueEntrySheet {
+    /// Lp(a)'s unit picker in its sheets (US-25 AC20); any other row's sheet is as it was.
+    /// `shows`: a unit chosen here is the sheet's from then on, so its screen carries it and
+    /// a value typed there is read in the unit shown at Save.
+    func lpaUnits(_ store: RecordStore, _ row: MyData.Row, shows: @escaping (String) -> Void) -> ValueEntrySheet {
+        guard store.lpaUnit(for: row) != nil else { return self }
+        var sheet = self
+        sheet.units = RecordStore.lpaUnits
+        sheet.chooseUnit = { unit in
+            let refusal = await store.chooseLpaUnit(unit)
+            if refusal == nil { shows(unit) }
+            return refusal
+        }
+        return sheet
     }
 }

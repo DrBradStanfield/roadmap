@@ -11,17 +11,19 @@ import { labRows, type Extraction } from './lab-review';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, supplementSchema } from '../../packages/health-core/src/validation';
+import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
 import { deviceWrites, type DeviceWrite } from '../../packages/health-core/src/device-export';
-import { applyFormEdit, customSupplement, formsOf, type FormEdit, type FormsView } from './my-data-forms';
+import { applyFormEdit, formsOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import {
-  cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, fromCanonicalValue, getDisplayLabel, toCanonicalValue,
-  type MetricType, type UnitSystem,
+  cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, toCanonicalValue,
+  type LpaUnit, type MetricType, type UnitSystem,
 } from '../../packages/health-core/src/units';
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
-import { SWITCHABLE, systemFor, type UnitChoices } from './unit-choices';
+import { cellUnitFor, lpaUnitOf, SWITCHABLE, type UnitChoices } from './unit-choices';
+import { cellFromSI, cellLabel, cellRange, cellText, isLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
 
 /** One row of Vitals or Blood tests: the plan's current value, if any, in the user's units. */
 export interface MyDataRow {
@@ -41,6 +43,8 @@ export const TREND_POINTS = 30;
 
 export interface MyData {
   unitSystem: UnitSystem;
+  /** Lp(a)'s unit, the web's three-unit control (US-05 AC2): the record's choice, else the units' default. */
+  lpaUnit: LpaUnit;
   /** How many times the record was erased, anywhere: a rise starts the phone's questions again (US-54 AC7). */
   eraseEpoch: number;
   profile: {
@@ -64,6 +68,8 @@ export type Edit =
   /** Systolic and diastolic for one day, both or neither (blood-pressure.ts). */
   | PressureEdit
   | { kind: 'units'; unitSystem: UnitSystem }
+  /** Lp(a)'s unit, written to the record as the web writes it (US-05 AC2). */
+  | { kind: 'lpaUnit'; unit: LpaUnit }
   | { kind: 'add'; metric: string; value: number; day?: string }
   | { kind: 'correct'; id: string; value: number }
   /** A medication's current state (US-06): the web's write, history row included. */
@@ -158,16 +164,16 @@ function unitsOf(file: RoadmapFile): UnitSystem {
 export function myData(file: RoadmapFile, now = new Date().toISOString(), choices: UnitChoices = {}): MyData & FormsView {
   const system = unitsOf(file);
   const current = new Map(latestActivePerMetric(file.measurements).map((row) => [row.metricType, row]));
-  const trend = trends(file, (metric) => systemFor(file, metric, choices));
+  const trend = trends(file, (metric, valueSI) => cellFromSI(metric as MetricType, valueSI, cellUnitFor(file, metric, choices)));
   const row = (metric: string): MyDataRow => {
     const latest = current.get(metric);
-    const shown = systemFor(file, metric, choices);
+    const shown = cellUnitFor(file, metric, choices);
     return {
       metric,
       label: METRIC_LABELS[metric] ?? metric,
-      unit: getDisplayLabel(metric as MetricType, shown),
+      unit: cellLabel(metric as MetricType, shown),
       latest: latest
-        ? { id: latest.id, value: formatDisplayValue(metric as MetricType, latest.value, shown), day: latest.recordedAt.slice(0, 10) }
+        ? { id: latest.id, value: cellText(metric as MetricType, latest.value, shown), day: latest.recordedAt.slice(0, 10) }
         : null,
       trend: trend.get(metric) ?? [],
       switchable: SWITCHABLE.has(metric),
@@ -176,6 +182,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
   const { sex, birthYear, birthMonth, heightCm } = file.profile;
   return {
     unitSystem: system,
+    lpaUnit: lpaUnitOf(file),
     eraseEpoch: file.meta.eraseEpoch ?? 0,
     profile: {
       sex: sex ?? null,
@@ -224,20 +231,29 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       if (edit.unitSystem === file.profile.unitSystem) return { ok: true, file };
       return { ok: true, file: stampProfile(file, { unitSystem: edit.unitSystem }, now) };
     }
+    case 'lpaUnit': {
+      if (!isLpaUnit(edit.unit)) {
+        return { ok: false, reason: 'invalid-value', message: 'Lp(a) is in nmol/L, mg/dL or mg/L.' };
+      }
+      // The web's write (roadmap-store.ts setLpaUnit): the stored choice again writes nothing.
+      if (edit.unit === file.profile.lpaUnit) return { ok: true, file };
+      return { ok: true, file: stampProfile(file, { lpaUnit: edit.unit }, now) };
+    }
     case 'add': {
+      const unit = cellUnitFor(file, edit.metric, choices);
       const result = appendMeasurement(file, {
-        // Typed in the units the row shows (AC17e), which the record converts to SI.
-        metricType: edit.metric, value: edit.value, unit: getDisplayLabel(edit.metric as MetricType, systemFor(file, edit.metric, choices)), recordedAt: edit.day, now,
+        // Typed in the unit the row shows (AC17e; Lp(a)'s own, US-05 AC2), which the record converts to SI.
+        metricType: edit.metric, value: edit.value, unit: cellLabel(edit.metric as MetricType, unit), recordedAt: edit.day, now,
       });
       if (result.ok) return { ok: true, file: result.file };
-      return { ok: false, reason: result.reason, message: result.message, ...(result.existing ? { existingId: result.existing.id } : null) };
+      return { ok: false, reason: result.reason, message: typedRangeMessage(edit.metric, edit.value, unit, result), ...(result.existing ? { existingId: result.existing.id } : null) };
     }
     case 'correct': {
       const target = file.measurements.find((row) => row.id === edit.id);
-      const unit = target ? getDisplayLabel(target.metricType as MetricType, systemFor(file, target.metricType, choices)) : undefined;
-      const result = correctValue(file, { id: edit.id, newValue: edit.value, unit, now });
+      const shown = target && cellUnitFor(file, target.metricType, choices);
+      const result = correctValue(file, { id: edit.id, newValue: edit.value, unit: shown && cellLabel(target!.metricType as MetricType, shown), now });
       if (result.ok) return { ok: true, file: result.file };
-      return { ok: false, reason: result.reason, message: result.message };
+      return { ok: false, reason: result.reason, message: shown ? typedRangeMessage(target!.metricType, edit.value, shown, result) : result.message };
     }
     // The web's own writes (state-edits.ts), behind the API's own schemas:
     // the app's input is checked the way a request to the server was.
@@ -248,11 +264,15 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: true, file: upsertMedication(file, { medicationKey, drugName, doseValue, doseUnit }, now).file };
     }
     case 'supplement': {
-      const checked = supplementSchema.safeParse(edit);
+      // A key the record holds passes as it is: older browser records hold
+      // custom keys over the 100 characters a new key may have (US-06 AC1a).
+      const held = file.supplements.some((row) => row.supplementKey === edit.supplementKey);
+      const checked = (held ? supplementSchema.omit({ supplementKey: true }) : supplementSchema).safeParse(edit);
       if (!checked.success || !checked.data.status) {
         return { ok: false, reason: 'invalid-value', message: checked.success ? 'A supplement is active or stopped.' : checked.error.issues[0]?.message ?? 'Not a supplement.' };
       }
-      const { supplementKey, supplementName, doseValue = null, doseUnit = null, status, startedAt } = checked.data;
+      const { supplementKey } = edit;
+      const { supplementName, doseValue = null, doseUnit = null, status, startedAt } = checked.data;
       // A start is a real day or instant that has happened (rule 9's check).
       if (startedAt !== undefined && (Number.isNaN(Date.parse(startedAt)) || validDay(startedAt, { now }) === null)) {
         return { ok: false, reason: 'invalid-date', message: 'A supplement starts on a real day, today or before.' };
@@ -271,7 +291,9 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: true, file: importDeviceSamples(file, edit.samples, { now, source: 'apple_health' }).file };
     }
     case 'customSupplement':
-      return applyEdit(file, { kind: 'supplement', ...customSupplement(edit.name), status: 'active' }, now);
+      // A name already taken keeps its dose: adding it again changes nothing (US-06 AC1a).
+      if (customSupplementMatch(edit.name, file.supplements)?.status === 'active') return { ok: true, file };
+      return applyEdit(file, { kind: 'supplement', ...customSupplementAdd(edit.name, file.supplements), status: 'active' }, now);
     case 'medicationField':
     case 'screening':
       return applyFormEdit(file, edit, now, (next, save) => applyEdit(next, save, now));
@@ -282,6 +304,15 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
   }
+}
+
+/** An Lp(a) value out of range, said in the unit it was typed in with the web's range
+ *  (`cellRange`, its matrix's "Max 3000 mg/L"); the record's words, in nmol/L, are for an agent.
+ *  Any other refusal keeps the record's words. */
+function typedRangeMessage(metric: string, typed: number, unit: CellUnit, refusal: { reason: string; message: string }): string {
+  if (metric !== 'lpa' || refusal.reason !== 'out-of-range') return refusal.message;
+  const { min, max } = cellRange('lpa', unit);
+  return typed < min ? `Lp(a) must be at least ${min} ${unit} (got ${typed})` : `Lp(a) must be at most ${max} ${unit} (got ${typed})`;
 }
 
 /** The Vitals row for blood pressure: the newest day's pair, from the history's own pairing. */
@@ -298,7 +329,7 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>): MyDataRow
 
 /** Every metric's trend in one pass: each day's active value (the slot's first, as
  *  findActiveInSlot reads it), the newest TREND_POINTS days, oldest first. */
-function trends(file: RoadmapFile, systemOf: (metric: string) => UnitSystem): Map<string, number[]> {
+function trends(file: RoadmapFile, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
   const byMetric = new Map<string, Map<string, number>>();
   for (const row of file.measurements) {
     if (row.status !== 'active') continue;
@@ -310,7 +341,7 @@ function trends(file: RoadmapFile, systemOf: (metric: string) => UnitSystem): Ma
   const out = new Map<string, number[]>();
   for (const [metric, days] of byMetric) {
     const newest = [...days.keys()].sort().slice(-TREND_POINTS);
-    out.set(metric, newest.map((day) => fromCanonicalValue(metric as MetricType, days.get(day)!, systemOf(metric))));
+    out.set(metric, newest.map((day) => shown(metric, days.get(day)!)));
   }
   return out;
 }

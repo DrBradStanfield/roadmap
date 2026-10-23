@@ -118,7 +118,7 @@ final class DataEraser {
         }
         let chatErased = chatReadable && result.chatErased
         return result.success
-            ? .erased(EraseText.done(provider: provider, chatErased: chatErased, cloudChat: result.cloudChat))
+            ? .erased(EraseText.done(provider: provider, chatErased: chatErased, cloudChat: result.cloudChat, warning: result.warning))
             : .notSent(EraseText.notSent(provider: provider, chatErased: chatErased, cloudChat: result.cloudChat))
     }
 

@@ -191,7 +191,7 @@ final class RecordPipelineTests: XCTestCase {
                        "read in the units the sheet showed, not the switch that landed behind it")
     }
 
-    /// US-25 AC20 (Codex R2): the master units switch holds entry while it lands, and a
+    /// US-25 AC21 (Codex R2): the master units switch holds entry while it lands, and a
     /// sheet opened on the old units has its value refused, never stored in the new ones.
     func testEntryDuringAMasterUnitsSwitchIsHeldAndRefused() async throws {
         let store = try store()
@@ -211,7 +211,7 @@ final class RecordPipelineTests: XCTestCase {
         XCTAssertTrue(weights(store.recordJSON).isEmpty)
     }
 
-    /// US-25 AC20 (adversary R1): a sheet carries the screen taken at its tap. Two taps
+    /// US-25 AC21 (adversary R1): a sheet carries the screen taken at its tap. Two taps
     /// before one sheet appears, then a unit switch: its save is read in the units its
     /// label showed, and nothing stays pinned to drive a later edit.
     func testASheetCarriesTheScreenOfItsTapAndPinsNothing() async throws {

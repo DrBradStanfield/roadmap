@@ -177,7 +177,7 @@ describe('step 1: read with fields=version (US-32 phase 2)', () => {
 
     const read = await new DriveAdapter('access-token').read(ROADMAP_FILE_NAME);
     expect((read.body as RoadmapFile).schemaVersion).toBe(1);
-    expect(read.version).toBe(String(file.version));
+    expect(read.version).toBe(JSON.stringify([file.id, String(file.version)]));
     expect(drive.requests.some((r) => r.includes('fields=version'))).toBe(true);
   });
 
@@ -458,14 +458,60 @@ describe('documents: refused by default, written only on opt-in', () => {
   it('US-52 AC13d (R4): an opted-in write files into the folder that holds the record, not the first folder of that name', async () => {
     const drive = new FakeDrive();
     drive.install();
-    drive.create(DRIVE_FOLDER_NAME, '', FOLDER_MIME); // a stray folder of the same name, found first by name
-    const home = drive.create(DRIVE_FOLDER_NAME, '', FOLDER_MIME);
+    const root = drive.create('My Drive', '', FOLDER_MIME); // Drive's root: the one folder with no parent
+    drive.create(DRIVE_FOLDER_NAME, '', FOLDER_MIME, [root.id]); // a stray folder of the same name, found first by name
+    const home = drive.create(DRIVE_FOLDER_NAME, '', FOLDER_MIME, [root.id]);
     drive.create(ROADMAP_FILE_NAME, '{}', 'application/json', [home.id]);
     const adapter = new DriveAdapter('token', { documents: 'write' });
     await adapter.writeDocument('Letters/2026-01-01 Clinic letter.pdf', new Blob(['letter']));
     const letters = drive.find('Letters', FOLDER_MIME)!;
     expect(letters.parents).toEqual([home.id]);
     expect(drive.find('2026-01-01 Clinic letter.pdf', undefined, letters.id)?.content).toBe('letter');
+  });
+
+  it('US-52 AC13d: a renamed app folder still holds the originals, by its id, not a folder found by name', async () => {
+    const drive = new FakeDrive();
+    drive.install();
+    const root = drive.create('My Drive', '', FOLDER_MIME);
+    const renamed = drive.create('My health', '', FOLDER_MIME, [root.id]); // the person renamed the app folder
+    drive.create(ROADMAP_FILE_NAME, '{}', 'application/json', [renamed.id]);
+    drive.create(DRIVE_FOLDER_NAME, '', FOLDER_MIME, [root.id]); // another folder still carrying the app's name
+    const adapter = new DriveAdapter('token', { documents: 'write' });
+    await adapter.writeDocument('Letters/2026-01-01 Clinic letter.pdf', new Blob(['letter']));
+    expect(drive.find('Letters', FOLDER_MIME)!.parents).toEqual([renamed.id]);
+  });
+
+  it('US-52 AC13d: a failed look at the record\'s folder fails the save, never files elsewhere, and the next save retries', async () => {
+    const drive = new FakeDrive();
+    drive.install();
+    const root = drive.create('My Drive', '', FOLDER_MIME);
+    const renamed = drive.create('My health', '', FOLDER_MIME, [root.id]);
+    drive.create(ROADMAP_FILE_NAME, '{}', 'application/json', [renamed.id]);
+    drive.create(DRIVE_FOLDER_NAME, '', FOLDER_MIME, [root.id]);
+    const real = globalThis.fetch;
+    let fail = true;
+    vi.stubGlobal('fetch', (input: string | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (fail && url.includes(`/files/${renamed.id}?fields=`)) return Promise.resolve(new Response('busy', { status: 503 }));
+      return real(input, init);
+    });
+    const adapter = new DriveAdapter('token', { documents: 'write' });
+    await expect(adapter.writeDocument('Letters/a.pdf', new Blob(['a']))).rejects.toThrow(/503/);
+    expect(drive.find('Letters', FOLDER_MIME)).toBeUndefined();
+    fail = false;
+    await adapter.writeDocument('Letters/a.pdf', new Blob(['a']));
+    expect(drive.find('Letters', FOLDER_MIME)!.parents).toEqual([renamed.id]);
+  });
+
+  it('US-52 AC13d: a record with several parents files into the one that is an app folder, not the root', async () => {
+    const drive = new FakeDrive();
+    drive.install();
+    const root = drive.create('My Drive', '', FOLDER_MIME);
+    const renamed = drive.create('My health', '', FOLDER_MIME, [root.id]);
+    drive.create(ROADMAP_FILE_NAME, '{}', 'application/json', [root.id, renamed.id]);
+    const adapter = new DriveAdapter('token', { documents: 'write' });
+    await adapter.writeDocument('Letters/a.pdf', new Blob(['a']));
+    expect(drive.find('Letters', FOLDER_MIME)!.parents).toEqual([renamed.id]);
   });
 
   it('US-52 AC13d (R4): a record at the Drive root does not pull documents there; they go to the app folder by name', async () => {

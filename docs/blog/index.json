@@ -2237,7 +2237,8 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-a-forms-benefits-dosing",
     "type": "reference",
     "product": "microvitamin",
-    "summary": "Reference on vitamin A: vision, immune function, skin health, bone density. Forms: retinol/retinyl palmitate (animal sources), beta-carotene (plant). Toxicity risk from high preformed vitamin A; safe in pregnancy only below UL. Always discuss with your doctor."
+    "summary": "Reference on vitamin A and beta-carotene. Brad sees no role for vitamin A in a multivitamin: high-dose beta-carotene raised lung cancer in smokers, and excess vitamin A can weaken bones, damage the liver and cause birth defects. Talk to your doctor first if pregnant or on retinoid medicines.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Experts Were WRONG About Testosterone (Shocking New Proof)",
@@ -4386,7 +4387,8 @@
     "publishedAt": "2025-05-13T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/psyllium-husk-benefits-dosing-and-side-effects",
     "type": "reference",
-    "summary": "Reference on psyllium husk: constipation, LDL cholesterol, blood sugar, IBS, weight management. AGA first-line fiber for chronic constipation; FDA heart health claim. Whole husk or powder, 5-15 g/day. Always discuss with your doctor."
+    "summary": "Psyllium husk is a gel-forming soluble fiber that relieves constipation and lowers LDL (about 10 g of husk, or 7 g of soluble fiber, a day). Take each dose with a full glass of water. Do not take it if you have trouble swallowing; talk to your doctor first if you take prescription medicines.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Taurine: Benefits, Forms, Dosing, and Side Effects",
@@ -4705,7 +4707,8 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/calcium-benefits-forms-dosing",
     "type": "reference",
     "product": "microvitamin",
-    "summary": "Reference on calcium: bone health, fracture prevention, osteoporosis. Postmenopausal women, older adults, vegans, and pregnant women most at risk of deficiency. Forms include carbonate and citrate (citrate preferred for PPI users). Typical supplemental doses 500-1,200 mg/day; high doses may raise cardiovascular and kidney stone risk. Always discuss with your doctor."
+    "summary": "Brad: get calcium from food (dairy, leafy greens, fish), not pills. Pooled trials found no fewer fractures with supplements, which are linked to more heart attacks and may add to kidney stones. Talk to your doctor first, especially if you take thyroid or antibiotic medicines.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Cocoa Flavanols: Benefits, Best Sources, Dosing, and Side Effects",
@@ -5379,7 +5382,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/melatonin-supplements-evidence-dosing-forms-and-safety",
     "type": "reference",
-    "summary": "Reference on melatonin: sleep onset, jet lag, delayed sleep phase, migraine prevention. Children with ASD/ADHD, menopausal women, shift workers. Start low (0.3-3 mg). Caution with diabetes, fractures. Always discuss with your doctor."
+    "summary": "Reference on melatonin. Brad's view: it may shorten the time it takes to fall asleep, but dose and timing matter; he keeps to 1 mg or less, 2 to 4 hours before sleep, and calls the 2025 heart failure link flawed. Talk to your doctor first if pregnant, or on fluvoxamine, blood thinners, sedatives or diabetes medicines.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Milk Thistle: Benefits, Best Forms, Dosing, and Side Effects",
@@ -5741,7 +5745,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/selenium-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on selenium: thyroid hormone metabolism, antioxidant defense, immune function, and fertility; food sources (Brazil nuts richest); organic vs inorganic forms; safe dosing range and toxicity ceiling. Covers thyroid disease and low-intake populations. Always discuss with your doctor."
+    "summary": "Brad's view: selenium deficiency is rare in the developed world, adults need 55 mcg, and megadoses are toxic. Trials show no cancer benefit; supplements may raise type 2 diabetes risk and, in men with higher selenium, high-grade prostate cancer. Talk to your doctor first if you have prostate cancer.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Shilajit: Benefits, Forms, Dosing, and Side Effects",
@@ -5914,7 +5919,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-e-forms-evidence-safety",
     "type": "reference",
-    "summary": "Reference on vitamin E: antioxidant, fatty liver (NASH), Alzheimer's, heart health. RDA 15 mg/day; diet usually sufficient. Supplements may raise prostate cancer risk; natural vs synthetic forms differ in potency. Always discuss with your doctor."
+    "summary": "Reference on vitamin E. Brad's view: he sees no role for it in a multivitamin. In SELECT, 400 IU a day raised prostate cancer risk, and the USPSTF found no net benefit. Deficiency is rare. Talk to your doctor first, especially if you take warfarin or another blood thinner.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "New Study Reveals the BEST Exercise to Reverse Skin Wrinkles",
@@ -6750,7 +6756,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/iodine-kelp-benefits-dosage",
     "type": "reference",
-    "summary": "Reference on iodine and kelp: thyroid health, fetal brain development. Deficiency risk in pregnant women, vegans, salt-avoiders. Potassium iodide preferred over kelp; RDA 150 mcg/day. Excess risks thyroid dysfunction. Always discuss with your doctor."
+    "summary": "Brad: iodine deficiency is the leading preventable cause of intellectual disability; get the 150 mcg RDA without megadosing, plus 150 mcg a day of supplemental iodine in pregnancy. Kelp iodine varies and can contain arsenic. Talk to your doctor first with thyroid disease or on amiodarone or lithium.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "L-Theanine: Benefits, Forms, Dosing, and Side Effects",
@@ -7057,7 +7064,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/zinc-supplement-guide-forms-dosing-benefits-and-safety",
     "type": "reference",
-    "summary": "Reference on zinc: immune function, cold duration, wound healing, acne, eye health. At risk: vegans, older adults, gut disorders. Forms: glycinate; gluconate/acetate for cold lozenges. RDA 8-11 mg, UL 40 mg. Always discuss with your doctor."
+    "summary": "Reference on zinc. Brad's view: zinc acetate or gluconate lozenges, started within 24 hours at over 75 mg a day, may shorten colds by about a third. Over 40 mg a day long term can cause copper deficiency. Talk to your doctor first if you take quinolone or tetracycline antibiotics or penicillamine.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "This Study Proved We Were WRONG About Vitamin D",
@@ -7226,7 +7234,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/berberine-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on berberine: blood sugar, cholesterol, insulin resistance, weight loss. People with type 2 diabetes, prediabetes, or high LDL. Forms include HCl, phytosome, dihydroberberine; typical doses 900-1500 mg/day with meals. Always discuss with your doctor."
+    "summary": "Reference on berberine. Trials show modest drops in blood sugar and LDL cholesterol, mainly in type 2 diabetes, and little weight loss. Brad considers it only a last resort for cholesterol, and not for healthy adults. Talk to your doctor first if pregnant, breastfeeding or on prescription medicines.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Boron: Benefits, Forms, Dosing, and Side Effects",
@@ -7347,7 +7356,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/iron-supplement-guide",
     "type": "reference",
-    "summary": "Reference on iron: anemia, fatigue, restless legs, pregnancy, athletic performance. Common in women, adolescent girls, vegetarians, athletes. Ferrous bisglycinate best tolerated; 50-100 mg/day for deficiency. Always discuss with your doctor."
+    "summary": "Reference on iron: forms, dosing, deficiency and risks. Brad advises getting iron from food and taking a supplement only on a doctor's advice after a blood test shows low iron. Keep iron away from children. Talk to your doctor first if you have hemochromatosis or take levothyroxine or antibiotics.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Nattokinase: Benefits, Forms, Dosing, and Side Effects",

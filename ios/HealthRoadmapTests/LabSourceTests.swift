@@ -17,6 +17,31 @@ final class LabSourceTests: XCTestCase {
         var requests: [StubHTTP.Request] { lock.withLock { all } }
     }
     private let seen = Seen()
+    /// The app folder the stub lists: each entry's `path_display` places it (US-52 AC13c).
+    private final class Tree: @unchecked Sendable {
+        private let lock = NSLock()
+        private var all: [[String: Any]] = [
+            [".tag": "file", "id": "id:record", "name": "health-roadmap.json", "path_display": "/health-roadmap.json", "size": 900, "server_modified": "2026-10-22T01:00:00Z"],
+            [".tag": "folder", "id": "id:imports", "name": "imports", "path_display": "/imports"],
+            [".tag": "file", "id": "id:old", "name": "Lipids 2025.pdf", "path_display": "/Lipids 2025.pdf", "size": 2000, "server_modified": "2025-03-01T00:00:00Z"],
+            [".tag": "file", "id": "id:new", "name": "Bloods October.pdf", "path_display": "/Bloods October.pdf", "size": 3000, "server_modified": "2026-10-20T00:00:00Z"],
+            [".tag": "file", "id": "id:ds", "name": ".DS_Store", "path_display": "/.DS_Store", "size": 10, "server_modified": "2026-10-21T00:00:00Z"],
+        ]
+        private var goneIds: Set<String> = []
+        func add(_ entries: [[String: Any]]) { lock.withLock { all += entries } }
+        /// Files deleted since the listing: their download answers not_found.
+        func gone(_ id: String) { lock.withLock { _ = goneIds.insert(id) } }
+        func isGone(_ arg: String?) -> Bool { lock.withLock { goneIds.contains { arg == #"{"path":"\#($0)"}"# } } }
+        /// One folder's entries, or everything below it.
+        func list(_ path: String, recursive: Bool) -> Data {
+            let entries = lock.withLock { all }.filter { entry in
+                let shown = entry["path_display"] as! String
+                return recursive ? shown.hasPrefix(path + "/") : (shown as NSString).deletingLastPathComponent == (path.isEmpty ? "/" : path)
+            }
+            return try! JSONSerialization.data(withJSONObject: ["entries": entries, "has_more": false])
+        }
+    }
+    private let tree = Tree()
     private var requests: [StubHTTP.Request] { seen.requests }
     /// Held for the test: the engine reaches CloudSync's tokens through a weak reference.
     private var sync: CloudSync?
@@ -33,6 +58,7 @@ final class LabSourceTests: XCTestCase {
         tokens = TokenStore(service: "test.\(UUID().uuidString)")
         try tokens.save(OAuthTokens(accessToken: "token-1", refreshToken: "r", expiresAt: .distantFuture), for: .dropbox)
         let seen = seen
+        let tree = tree
         StubHTTP.handler = { request in
             seen.add(request)
             if request.url.path == "/oauth2/token" {
@@ -42,18 +68,12 @@ final class LabSourceTests: XCTestCase {
             if request.headers["dropbox-api-arg"] == #"{"path":"/health-roadmap.json"}"# {
                 return .init(status: 409, body: Data(#"{"error_summary":"path/not_found/"}"#.utf8)) // no record yet
             }
-            if request.url.path.hasSuffix("/files/list_folder") {
-                return .init(body: Data(#"""
-                {"entries":[
-                  {".tag":"file","id":"id:record","name":"health-roadmap.json","size":900,"server_modified":"2026-10-22T01:00:00Z"},
-                  {".tag":"folder","id":"id:imports","name":"imports"},
-                  {".tag":"file","id":"id:old","name":"Lipids 2025.pdf","size":2000,"server_modified":"2025-03-01T00:00:00Z"},
-                  {".tag":"file","id":"id:new","name":"Bloods October.pdf","size":3000,"server_modified":"2026-10-20T00:00:00Z"},
-                  {".tag":"file","id":"id:ds","name":".DS_Store","size":10,"server_modified":"2026-10-21T00:00:00Z"}
-                ],"has_more":false}
-                """#.utf8))
+            if request.url.path.hasSuffix("/files/list_folder"),
+               let asked = try? JSONSerialization.jsonObject(with: request.body) as? [String: Any] {
+                return .init(body: tree.list(asked["path"] as? String ?? "", recursive: asked["recursive"] as? Bool ?? false))
             }
             if request.url.path.hasSuffix("/files/download") {
+                if tree.isGone(request.headers["dropbox-api-arg"]) { return .init(status: 409, body: Data(#"{"error_summary":"path/not_found/"}"#.utf8)) }
                 return .init(body: LabSourceTests.pdf)
             }
             return .init(status: 500)
@@ -78,9 +98,9 @@ final class LabSourceTests: XCTestCase {
     func testTheListShowsOnlyLabFilesNewestFirstWithTheKeptToken() async throws {
         let (engine, sync) = try app()
         XCTAssertEqual(sync.provider, .dropbox)
-        let files = try await engine.labFiles()
+        let files = try await engine.labFolder("").files
         XCTAssertEqual(files.map(\.name), ["Bloods October.pdf", "Lipids 2025.pdf"])
-        XCTAssertEqual(files.first, HealthEngine.CloudLabFile(id: "id:new", name: "Bloods October.pdf", size: 3000, modified: "2026-10-20T00:00:00Z"))
+        XCTAssertEqual(files.first, HealthEngine.CloudLabFile(id: "id:new", name: "Bloods October.pdf", size: 3000, modified: "2026-10-20T00:00:00Z", path: "Bloods October.pdf"))
         let list = try XCTUnwrap(requests.first { $0.url.path.hasSuffix("/files/list_folder") })
         let body = try XCTUnwrap(JSONSerialization.jsonObject(with: list.body) as? [String: Any])
         XCTAssertEqual(body["path"] as? String, "", "the app folder's root, where the connector reads too")
@@ -88,7 +108,7 @@ final class LabSourceTests: XCTestCase {
 
     func testATappedFileDownloadsByItsIdAndReadsAsAPickedFile() async throws {
         let (engine, _) = try app()
-        let listed = try await engine.labFiles()
+        let listed = try await engine.labFolder("").files
         let file = try XCTUnwrap(listed.first)
         // A stale name on the phone: the file is read under the fresh listing's name (re-check R3).
         let stale = HealthEngine.CloudLabFile(id: file.id, name: "renamed since.zip", size: file.size, modified: file.modified)
@@ -116,7 +136,7 @@ final class LabSourceTests: XCTestCase {
         tokens.delete(.dropbox)
         let (engine, _) = try app()
         do {
-            _ = try await engine.labFiles()
+            _ = try await engine.labFolder("")
             XCTFail("listing without a sign-in must fail")
         } catch {
             XCTAssertEqual(SyncProblem(error).kind, .signIn)
@@ -138,8 +158,195 @@ final class LabSourceTests: XCTestCase {
             return URL(string: "db-xf96vqvjotm5xhx://2/token?code=c&state=\(state)")!
         }
         await list.signedIn()
-        guard case .files(let files) = list.load else { return XCTFail("still \(list.load)") }
-        XCTAssertEqual(files.map(\.name), ["Bloods October.pdf", "Lipids 2025.pdf"])
+        guard case .files(let listing) = list.load else { return XCTFail("still \(list.load)") }
+        XCTAssertEqual(listing.files.map(\.name), ["Bloods October.pdf", "Lipids 2025.pdf"])
+    }
+
+    // MARK: Dropbox folders (AC13c)
+
+    /// A small tree under the app folder: Labs, with a report, a note and Labs/2025 with two more.
+    private func addLabs() {
+        tree.add([
+            [".tag": "folder", "id": "id:labs", "name": "Labs", "path_display": "/Labs"],
+            [".tag": "folder", "id": "id:2025", "name": "2025", "path_display": "/Labs/2025"],
+            [".tag": "file", "id": "id:b", "name": "b.pdf", "path_display": "/Labs/b.pdf", "size": 3000, "server_modified": "2026-01-01T00:00:00Z"],
+            [".tag": "file", "id": "id:note", "name": "note.txt", "path_display": "/Labs/note.txt", "size": 5],
+            [".tag": "file", "id": "id:a10", "name": "a10.pdf", "path_display": "/Labs/2025/a10.pdf", "size": 3000, "server_modified": "2025-01-01T00:00:00Z"],
+            [".tag": "file", "id": "id:a2", "name": "a2.pdf", "path_display": "/Labs/2025/a2.pdf", "size": 3000, "server_modified": "2025-02-01T00:00:00Z"],
+        ])
+    }
+
+    func testAFolderOpensToItsSubfoldersAndItsOwnReports() async throws {
+        addLabs()
+        let (engine, sync) = try app()
+        let root = try await engine.labFolder("")
+        XCTAssertEqual(root.folders.map(\.name), ["Labs"], "imports/ is the app's own")
+        let labs = try XCTUnwrap(root.folders.last)
+        let list = DropboxLabFolder(engine: engine, sync: sync, folder: labs)
+        await list.refresh()
+        guard case .files(let listing) = list.load else { return XCTFail("still \(list.load)") }
+        XCTAssertEqual(listing.folders, [HealthEngine.CloudLabFolder(name: "2025", path: "Labs/2025")])
+        XCTAssertEqual(listing.files.map(\.name), ["b.pdf"])
+        // A file in a subfolder downloads by id after a fresh listing of that folder.
+        let fetched = try await engine.labFile(XCTUnwrap(listing.files.first))
+        XCTAssertEqual(fetched.name, "b.pdf")
+        let lists = requests.filter { $0.url.path.hasSuffix("/files/list_folder") }
+            .compactMap { try? JSONSerialization.jsonObject(with: $0.body) as? [String: Any] }
+        XCTAssertEqual(lists.last?["path"] as? String, "/Labs")
+        XCTAssertEqual(requests.last { $0.url.path.hasSuffix("/files/download") }?.headers["dropbox-api-arg"], #"{"path":"id:b"}"#)
+    }
+
+    /// The whole folder reads as a folder picked in Files does: name order, by place.
+    func testAWholeFolderReadsEveryReportInsideItInNameOrder() async throws {
+        addLabs()
+        let (engine, _) = try app()
+        var seenProgress: [[Int]] = []
+        let documents = try await engine.labFolderDocuments(.init(name: "Labs", path: "Labs")) { seenProgress.append([$0, $1]) }
+        XCTAssertEqual(documents.map(\.name), ["Labs/2025/a2.pdf", "Labs/2025/a10.pdf", "Labs/b.pdf"])
+        XCTAssertEqual(seenProgress, [[0, 3], [1, 3], [2, 3]])
+        XCTAssertTrue(documents.allSatisfy { $0.original != nil })
+        let downloads = requests.filter { $0.url.path.hasSuffix("/files/download") }.map { $0.headers["dropbox-api-arg"] }
+        XCTAssertEqual(downloads, [#"{"path":"id:a2"}"#, #"{"path":"id:a10"}"#, #"{"path":"id:b"}"#])
+        // One listing for the whole read, not one per file (review R2).
+        XCTAssertEqual(requests.filter { $0.url.path.hasSuffix("/files/list_folder") }.count, 1)
+        // The root's whole read names files by their place below it, with no folder name.
+        let all = try await engine.labFolderDocuments(DropboxLabFolder.root)
+        XCTAssertEqual(all.map(\.name), ["Bloods October.pdf", "Labs/2025/a2.pdf", "Labs/2025/a10.pdf", "Labs/b.pdf", "Lipids 2025.pdf"])
+    }
+
+    func testAWholeFolderReadsAtMostTwoHundredFiles() async throws {
+        tree.add((1...LabFileReader.maxFolderFiles + 5).map { n in
+            [".tag": "file", "id": "id:many\(n)", "name": "r\(n).pdf", "path_display": "/Many/r\(n).pdf", "size": 3000]
+        })
+        let (engine, _) = try app()
+        let documents = try await engine.labFolderDocuments(.init(name: "Many", path: "Many"))
+        XCTAssertEqual(documents.count, LabFileReader.maxFolderFiles)
+        XCTAssertEqual(documents.first?.name, "Many/r1.pdf")
+        XCTAssertEqual(documents.last?.name, "Many/r200.pdf")
+        XCTAssertEqual(requests.filter { $0.url.path.hasSuffix("/files/download") }.count, LabFileReader.maxFolderFiles)
+    }
+
+    func testAWholeFolderWithAFileOverTheLimitIsRefusedBeforeAnyDownload() async throws {
+        addLabs()
+        tree.add([[".tag": "file", "id": "id:big", "name": "big.pdf", "path_display": "/Labs/big.pdf", "size": LabFileReader.maxFileBytes + 1]])
+        let (engine, _) = try app()
+        do {
+            _ = try await engine.labFolderDocuments(.init(name: "Labs", path: "Labs"))
+            XCTFail("an oversized file must refuse the folder")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, LabFileReader.Failure.tooLarge("big.pdf").localizedDescription)
+        }
+        XCTAssertFalse(requests.contains { $0.url.path.hasSuffix("/files/download") })
+    }
+
+    func testAFolderOverTwoHundredMegabytesInAllIsRefusedInItsOwnWords() async throws {
+        tree.add((1...21).map { n in
+            [".tag": "file", "id": "id:heavy\(n)", "name": "h\(n).pdf", "path_display": "/Heavy/h\(n).pdf", "size": LabFileReader.maxFileBytes]
+        })
+        let (engine, _) = try app()
+        do {
+            _ = try await engine.labFolderDocuments(.init(name: "Heavy", path: "Heavy"))
+            XCTFail("more than 200 MB must refuse the folder")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "This folder holds more than 200 MB of reports. Pick a smaller folder, or the reports one at a time.")
+        }
+        XCTAssertFalse(requests.contains { $0.url.path.hasSuffix("/files/download") })
+    }
+
+    /// At the root, the app's own folders neither list nor read (the engine half: cloud.test.ts).
+    func testTheRootLeavesOutTheAppsOwnFolders() async throws {
+        addLabs()
+        tree.add([
+            [".tag": "folder", "id": "id:lr", "name": "Lab results", "path_display": "/Lab results"],
+            [".tag": "file", "id": "id:kept", "name": "kept.pdf", "path_display": "/Lab results/kept.pdf", "size": 3000],
+            [".tag": "file", "id": "id:parked", "name": "parked.pdf", "path_display": "/imports/parked.pdf", "size": 3000],
+        ])
+        let (engine, _) = try app()
+        let root = try await engine.labFolder("")
+        XCTAssertEqual(root.folders.map(\.name), ["Labs"])
+        XCTAssertEqual(root.hidden, ["imports", "Lab results"], "named in the root's footer (review R6)")
+        let all = try await engine.labFolderDocuments(DropboxLabFolder.root)
+        XCTAssertFalse(all.contains { $0.name.hasPrefix("Lab results/") || $0.name.hasPrefix("imports/") })
+    }
+
+    /// Review R1: a read the person walked away from stops before the next download.
+    func testACancelledWholeFolderReadStopsBeforeTheNextDownload() async throws {
+        addLabs()
+        let (engine, _) = try app()
+        let read = Task { @MainActor in
+            try await engine.labFolderDocuments(.init(name: "Labs", path: "Labs")) { done, _ in
+                if done == 1 { withUnsafeCurrentTask { $0?.cancel() } }
+            }
+        }
+        let result = await read.result
+        XCTAssertThrowsError(try result.get()) { XCTAssertTrue($0 is CancellationError, "\($0)") }
+        XCTAssertEqual(requests.filter { $0.url.path.hasSuffix("/files/download") }.count, 1)
+    }
+
+    /// Codex: every send the sheet starts, the one after first-use consent included, is
+    /// its tracked work; once Close cancels it, no further report is sent and no review opens.
+    func testACancelledSendSendsNoFurtherReports() async {
+        let documents = (1...3).map { LabFileReader.Document(name: "r\($0).pdf", pages: [], truncated: false) }
+        let outcome = await Task { @MainActor () -> ([LabResult]?, [String]) in
+            var sent: [String] = []
+            let results = await LabUploadSheet.extractEach(documents, extract: { document in
+                sent.append(document.name)
+                withUnsafeCurrentTask { $0?.cancel() }
+                return "{}"
+            }, progress: { _, _ in })
+            return (results, sent)
+        }.value
+        XCTAssertNil(outcome.0, "no review for a closed sheet")
+        XCTAssertEqual(outcome.1, ["r1.pdf"])
+        // Not cancelled: every report is sent, in order.
+        let all = await LabUploadSheet.extractEach(documents, extract: { _ in "{}" }, progress: { _, _ in })
+        XCTAssertEqual(all?.map(\.name), ["r1.pdf", "r2.pdf", "r3.pdf"])
+    }
+
+    /// Review R3: the reports' bytes are held to the cap as they are read, whatever the listing said.
+    func testAWholeFolderStopsWhenItsReportsOutgrowTheCap() async throws {
+        tree.add((1...3).map { n in
+            [".tag": "file", "id": "id:small\(n)", "name": "s\(n).pdf", "path_display": "/Small/s\(n).pdf", "size": 1]
+        })
+        let (engine, _) = try app()
+        do {
+            _ = try await engine.labFolderDocuments(.init(name: "Small", path: "Small"), maxBytes: LabSourceTests.pdf.count * 3 / 2)
+            XCTFail("the second report passes the cap")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, LabFileReader.Failure.folderTooLarge.localizedDescription)
+        }
+        XCTAssertEqual(requests.filter { $0.url.path.hasSuffix("/files/download") }.count, 2)
+    }
+
+    /// Review R5: the folder's own words for an empty folder and for a file gone mid-read.
+    func testAnEmptyOrChangedFolderIsSaidAsAFolder() async throws {
+        addLabs()
+        tree.add([[".tag": "file", "id": "id:txt", "name": "only.txt", "path_display": "/Notes/only.txt", "size": 5]])
+        tree.gone("id:a10")
+        let (engine, _) = try app()
+        do {
+            _ = try await engine.labFolderDocuments(.init(name: "Notes", path: "Notes"))
+            XCTFail("no reports")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "This folder holds no reports the app can read: no PDF, JPEG, PNG or ZIP.")
+        }
+        do {
+            _ = try await engine.labFolderDocuments(.init(name: "Labs", path: "Labs"))
+            XCTFail("a file went")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "The folder changed while it was read. Try again.")
+        }
+    }
+
+    func testAWholeFolderWithoutASignInSaysSoInTheSheetsWords() async throws {
+        tokens.delete(.dropbox)
+        let (engine, _) = try app()
+        do {
+            _ = try await engine.labFolderDocuments(.init(name: "Labs", path: "Labs"))
+            XCTFail("listing without a sign-in must fail")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "Dropbox needs you to sign in again. Open From Dropbox to sign in.")
+        }
     }
 
     // MARK: Reading on the phone (AC10, AC11)

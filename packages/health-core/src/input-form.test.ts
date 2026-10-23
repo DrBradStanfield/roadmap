@@ -2,10 +2,114 @@
 // as data, shared by the web form and the iPhone app.
 import { describe, expect, it } from 'vitest';
 import {
-  customSupplementKey, medicationForm, medicationWrites, screeningForm, screeningMonths, screeningWrites,
+  customSupplementAdd, customSupplementKey, customSupplementMatch, medicationForm, medicationWrites, screeningForm, screeningMonths, screeningWrites,
   type FormField, type FormSection, type MedicationBasis,
 } from './input-form';
 import type { MedicationInputs, ScreeningInputs } from './types';
+
+// US-06 AC1a: additions share identity rules without changing explicit keyed edits.
+const customSupplementAddKey = (name: string, rows: Parameters<typeof customSupplementAdd>[1]) => customSupplementAdd(name, rows).supplementKey;
+
+describe('customSupplementAdd', () => {
+  it('restarts under the stored spelling, and names a new row as typed (US-06 AC1a)', () => {
+    const rows = [{ supplementKey: 'custom_taurine', supplementName: 'Taurine ', status: 'stopped' }];
+    expect(customSupplementAdd('  TAURINE ', rows)).toEqual({ supplementKey: 'custom_taurine', supplementName: 'Taurine ' });
+    expect(customSupplementAdd('  Glycine ', rows)).toEqual({ supplementKey: 'custom_glycine', supplementName: 'Glycine' });
+  });
+
+  it('picks the most recently changed of several stopped same-name rows (US-06 AC1a)', () => {
+    const older = { supplementKey: 'custom_taurine', supplementName: 'Taurine', status: 'stopped', updatedAt: '2026-01-01T00:00:00.000Z' };
+    const newer = { supplementKey: 'custom_taurine_2', supplementName: 'taurine', status: 'stopped', updatedAt: '2026-05-01T00:00:00.000Z' };
+    expect(customSupplementMatch('Taurine', [older, newer])).toBe(newer);
+    expect(customSupplementMatch('Taurine', [newer, older])).toBe(newer);
+    const active = { ...older, status: 'active' };
+    expect(customSupplementMatch('Taurine', [active, newer])).toBe(active);
+  });
+
+  it.each(['active', 'stopped'] as const)('reuses a case-insensitive stored name on an arbitrary legacy key (%s)', status => {
+    const rows = [{ supplementKey: 'custom_old_7', supplementName: 'Taurine', status }];
+    expect(customSupplementAddKey('  TAURINE  ', rows)).toBe('custom_old_7');
+    expect(rows).toEqual([{ supplementKey: 'custom_old_7', supplementName: 'Taurine', status }]);
+  });
+
+  it.each(['active', 'stopped'] as const)('trims the stored name too, without rewriting it (US-06 AC1a, %s)', status => {
+    const rows = [{ supplementKey: 'custom_taurine', supplementName: 'Taurine ', status }];
+    expect(customSupplementAddKey('TAURINE', rows)).toBe('custom_taurine');
+    expect(rows).toEqual([{ supplementKey: 'custom_taurine', supplementName: 'Taurine ', status }]);
+  });
+
+  it('prefers an active row when old data has the same name on two keys (US-06 AC1a)', () => {
+    const rows = [
+      { supplementKey: 'custom_taurine', supplementName: 'Taurine', status: 'stopped' },
+      { supplementKey: 'custom_taurine_2', supplementName: 'taurine', status: 'active' },
+    ];
+    expect(customSupplementAddKey('Taurine', rows)).toBe('custom_taurine_2');
+    expect(customSupplementMatch('Taurine', rows)).toBe(rows[1]);
+    expect(customSupplementMatch('Taurine', rows.slice(0, 1))).toBe(rows[0]);
+    expect(customSupplementMatch('Glycine', rows)).toBeUndefined();
+  });
+
+  it('reserves stopped different names and takes the first unoccupied suffix gap', () => {
+    const rows = [
+      { supplementKey: 'custom_alanine', supplementName: 'β-alanine', status: 'stopped' },
+      { supplementKey: 'custom_alanine_2', supplementName: 'alanine 2', status: 'active' },
+      { supplementKey: 'custom_alanine_4', supplementName: 'alanine 4', status: 'active' },
+    ];
+    expect(customSupplementAddKey('alanine', rows)).toBe('custom_alanine_3');
+    expect(customSupplementAddKey('β-ALANINE', rows)).toBe('custom_alanine');
+    expect(customSupplementKey('alanine')).toBe('custom_alanine');
+    expect(customSupplementKey('β-alanine')).toBe('custom_alanine');
+  });
+
+  it('compares the actual truncated stored name without truncating legacy longer names', () => {
+    const name = 'Taurine' + ' '.repeat(93) + 'x';
+    const stored = name.trim().slice(0, 100);
+    expect(customSupplementAddKey(name.toUpperCase(), [{ supplementKey: 'custom_legacy', supplementName: stored }])).toBe('custom_legacy');
+    expect(customSupplementAddKey(name, [{ supplementKey: 'custom_taurine', supplementName: name }])).toBe('custom_taurine_2');
+    expect(customSupplementAddKey('  Lion\'s Mane  ', [])).toBe('custom_lion_s_mane');
+  });
+
+  it.each([90, 91, 92])('reserves suffix space at the 99/100/101-character candidate boundary (%i letters)', length => {
+    const name = 'a'.repeat(length);
+    const base = customSupplementKey(name);
+    const rows = [{ supplementKey: base, supplementName: name + '+' }];
+    expect(customSupplementAddKey(name, rows)).toBe(`${base.slice(0, 98)}_2`);
+  });
+
+  it('bounds a new key for the full accepted 100-character name', () => {
+    expect(customSupplementAddKey('a'.repeat(100), [])).toBe('custom_' + 'a'.repeat(93));
+  });
+
+  it('checks truncated suffixes against all rows and takes the first gap', () => {
+    const name = 'a'.repeat(100);
+    const base = 'custom_' + 'a'.repeat(93);
+    const rows = [
+      { supplementKey: base, supplementName: 'a'.repeat(99) + 'b' },
+      { supplementKey: base.slice(0, 98) + '_2', supplementName: 'occupied two' },
+      { supplementKey: base.slice(0, 98) + '_4', supplementName: 'occupied four' },
+    ];
+    expect(customSupplementAddKey(name, rows)).toBe(base.slice(0, 98) + '_3');
+    for (let suffix = 3; suffix <= 9; suffix++) rows.push({ supplementKey: base.slice(0, 98) + '_' + suffix, supplementName: `occupied ${suffix}` });
+    rows.push({ supplementKey: base.slice(0, 97) + '_10', supplementName: 'occupied ten' });
+    expect(customSupplementAddKey(name, rows)).toBe(base.slice(0, 97) + '_11');
+  });
+
+  it('returns a matched legacy overlong key byte-for-byte without rewriting it', () => {
+    const key = 'custom_' + 'a'.repeat(100);
+    const rows = [{ supplementKey: key, supplementName: 'a'.repeat(100) }];
+    expect(customSupplementAddKey('A'.repeat(100), rows)).toBe(key);
+    expect(rows).toEqual([{ supplementKey: key, supplementName: 'a'.repeat(100) }]);
+  });
+
+  it('does not rewrite or deduplicate previously duplicated histories', () => {
+    const rows = [
+      { supplementKey: 'custom_taurine_2', supplementName: 'Taurine' },
+      { supplementKey: 'custom_taurine', supplementName: 'Taurine' },
+    ];
+    expect(customSupplementAddKey('Taurine', rows)).toBe('custom_taurine_2');
+    expect(rows.map(s => s.supplementKey)).toEqual(['custom_taurine_2', 'custom_taurine']);
+  });
+});
 
 const keys = (sections: FormSection[]) => sections.flatMap((s) => s.groups.flatMap((g) => g.fields.map((f) => ('key' in f ? f.key : f.metric))));
 const field = (sections: FormSection[], key: string) =>
