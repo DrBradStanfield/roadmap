@@ -6,7 +6,7 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["ashwagandha", "withania somnifera", "withanolides", "KSM-66", "Sensoril", "Shoden", "stress", "anxiety", "cortisol", "sleep", "insomnia", "testosterone", "cognitive", "brain health", "inflammation", "depression", "thyroid", "muscle", "strength training", "resistance training", "exercise", "aging", "longevity", "melatonin", "rhodiola"]
-summary: "Brad says ashwagandha may ease anxiety, but the effect is inconsistent; a 2025 trial found no exercise benefit. Liver and thyroid harms are rare. Some experts advise against it in pregnancy. Talk to your doctor first if you have liver disease or take thyroid, sedative or immunosuppressant drugs."
+summary: "Brad says ashwagandha's anxiety effect is inconsistent; a 2025 trial found no added exercise gain. Liver and thyroid harm is rare. Some experts advise against it in pregnancy and breastfeeding. Talk to your doctor first if you have liver disease or take thyroid, sedative or immunosuppressant drugs."
 reviewed: "2026-10-23"
 sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Ashwagandha-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:4b3eace5a8488c2f6b9645ea6334f85356b012330da90c2ab6da63445469d0b2"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study","checked":"2026-10-23","fingerprint":"publishedAt:2025-10-15T20:07:54Z"}]
 ---
@@ -15,7 +15,7 @@ sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Ashwagandha
 
 ## Current view (reviewed 23 October 2026)
 
-There is some human evidence that ashwagandha can improve anxiety, but the effect is inconsistent and the trials are small, so Brad does not think the evidence yet justifies adding another pill (Brad's current guidance, 31 Jul 2026). For exercise, a 2025 trial in 41 healthy non-athlete men found that 600 mg a day of root extract added nothing to the gains in aerobic capacity and blood measures from 8 weeks of HIIT, and Brad says more high-quality research is needed before drawing confident conclusions ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). In 2025 he said it may still help stress and anxiety, pointing to a 2009 trial in which naturopathic care that included 300 mg of ashwagandha twice daily cut anxiety scores by 56.5%, against 30.5% with psychotherapy, and to a 2024 meta-analysis of 9 trials in 558 people that found lower stress, anxiety and cortisol ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). When patients want to try it, he explains the evidence and its limits and suggests a product tested by consumerlab.com ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)).
+There is some human evidence that ashwagandha can improve anxiety, but the effect is inconsistent and the trials are small, so Brad does not think the evidence yet justifies adding another pill (Brad's current guidance, 31 Jul 2026). For exercise, a 2025 trial in 41 healthy non-athlete men found that 600 mg a day of root extract added nothing to the gains in aerobic capacity and blood measures from 8 weeks of HIIT, and Brad said more high-quality research is needed before drawing confident conclusions ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). In 2025 he said it may still help stress and anxiety, pointing to a 2009 trial in which naturopathic care that included 300 mg of ashwagandha twice daily cut anxiety scores by 56.5%, against 30.5% with psychotherapy, and to a 2024 meta-analysis of 9 trials in 558 people that found lower stress, anxiety and cortisol ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). When patients want to try it, he explains the evidence and its limits and suggests a product tested by consumerlab.com ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)).
 
 ## Key safety points
 
@@ -196,7 +196,7 @@ Ashwagandha may raise thyroid hormone levels [42]. That could help subclinical h
 
 A study of 50 adults with subclinical hypothyroidism found that root extract at 600 mg/day for 8 weeks improved TSH, T3 and T4 compared with placebo [73]. NIH describes the dose as 300 mg twice daily and the effect as lower TSH with higher T3 and T4 [42].
 
-A study of 3 adult men taking a standardized root and leaf extract (500 mg/day) for 8 weeks showed small increases in T4 levels [42].
+In an 8-week placebo-controlled trial in 60 people with bipolar disorder, all 3 ashwagandha-treated patients with abnormal thyroid tests had rises in T4 [114]. NIH describes the extract as a standardized root and leaf extract at 500 mg/day, and the increases as small [42].
 
 So ashwagandha could alter thyroid tests and might interact with thyroid medicines, even in people with normal thyroid function (see Safety section) [42][74].
 
@@ -251,7 +251,7 @@ A 2017 case of a 20-year-old man in Japan who developed liver dysfunction and hy
 
 If your skin or eyes turn yellow, or you develop itching, nausea or unusual tiredness while taking ashwagandha, stop taking it and see a doctor promptly [42][81].
 
-**Recommendation:** The authors of this series warn that ashwagandha liver injury can lead to acute-on-chronic liver failure with high mortality in people with existing liver disease, and they urge the public to avoid potentially toxic herbal supplements [85]. People with liver disease may be safest avoiding ashwagandha unless their doctor advises otherwise.
+**Recommendation:** The authors of this series warn that ashwagandha liver injury can lead to acute-on-chronic liver failure with high mortality in people with existing liver disease, and they call for educating the public to avoid potentially toxic herbal supplements [85]. People with liver disease may be safest avoiding ashwagandha unless their doctor advises otherwise.
 
 ### Thyroid Effects
 
@@ -275,7 +275,7 @@ Some experts advise against ashwagandha use during pregnancy because some report
 
 **Blood pressure:** Ashwagandha might interact with blood pressure medicines [42].
 
-**Cardiac rhythm:** A review of heart toxicity case reports lists ashwagandha among the herbs linked to heart problems [112]. In one case, a 73-year-old woman developed supraventricular tachycardia, a fast heart rhythm, with thyrotoxicosis after two years of taking ashwagandha root extract, and her symptoms resolved after she stopped it [113].
+**Cardiac rhythm:** A review of heart toxicity case reports lists ashwagandha among the herbs linked to heart problems [112]. In one case, a 73-year-old woman who had taken ashwagandha root extract for two years as self-treatment for hypothyroidism developed supraventricular tachycardia, a fast heart rhythm, with thyrotoxicosis, and her symptoms resolved after she stopped it [113]. If you notice a racing heartbeat while taking it, stop it and see a doctor [113].
 
 **Skin reactions:** A 28-year-old man taking 5 g of ashwagandha a day for 10 days felt burning and itching, and the skin of his penis became discolored, a fixed drug eruption; a later 1 g test dose brought it back within 12 hours [98].
 
@@ -296,7 +296,7 @@ Ashwagandha might interact with thyroid hormone, diabetes and blood pressure med
 | Blood thinners (warfarin, aspirin, clopidogrel) | Withaferin A, an ashwagandha compound, slowed clotting in laboratory and animal studies [102] | Human relevance unknown; ask your doctor first |
 | Anesthesia | Ashwagandha can cause drowsiness [42] | Tell your surgical team that you take it |
 
-In one trial, an ashwagandha root extract with piperine raised blood serotonin [101], so combining ashwagandha with an antidepressant may carry a risk of serotonin syndrome. Serotonin syndrome can be life-threatening: if you develop agitation or confusion, muscle twitching or stiffness, a high fever or a fast heartbeat while taking ashwagandha with an antidepressant, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+In one trial, an ashwagandha root extract with piperine raised blood serotonin [101]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 A published case report links ashwagandha to kidney transplant rejection [99].
 
@@ -462,6 +462,8 @@ Products vary widely in withanolide content and in how much leaf they contain [2
 
 [111] Siwek M, Woroń J, Wrzosek A, et al. Harder, better, faster, stronger? Retrospective chart review of adverse events of interactions between adaptogens and antidepressant drugs. *Front Pharmacol*. 2023;14:1271776. [PubMed](https://pubmed.ncbi.nlm.nih.gov/37829299/)
 
-[112] Brown AC. Heart Toxicity Related to Herbs and Dietary Supplements: Online Table of Case Reports. Part 4 of 5. *J Diet Suppl*. 2018. [PubMed](https://pubmed.ncbi.nlm.nih.gov/28981338/)
+[112] Brown AC. Heart Toxicity Related to Herbs and Dietary Supplements: Online Table of Case Reports. Part 4 of 5. *J Diet Suppl*. 2018;15:516-55. [PubMed](https://pubmed.ncbi.nlm.nih.gov/28981338/)
 
-[113] Kamal, et al. Ashwagandha as a Unique Cause of Thyrotoxicosis Presenting With Supraventricular Tachycardia. *Cureus*. 2022. [PubMed](https://pubmed.ncbi.nlm.nih.gov/35475098/)
+[113] Kamal HI, Patel K, Brdak A, et al. Ashwagandha as a Unique Cause of Thyrotoxicosis Presenting With Supraventricular Tachycardia. *Cureus*. 2022;14:e23494. [PubMed](https://pubmed.ncbi.nlm.nih.gov/35475098/)
+
+[114] Gannon JM, Forrest PE, Roy Chengappa KN. Subtle changes in thyroid indices during a placebo-controlled study of an extract of Withania somnifera in persons with bipolar disorder. *J Ayurveda Integr Med*. 2014;5:241-5. [PubMed](https://pubmed.ncbi.nlm.nih.gov/25624699/)
