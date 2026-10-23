@@ -11,7 +11,7 @@
     "phoneRead": "() -> '{\"text\": string|null}' or '{\"error\": string}'",
     "phoneWrite": "(text) -> '' when written, else the error",
     "phoneRemove": "() -> void",
-    "pending": "('get'|'set'|'clear'|'clear-if:<generation>') -> the marker's generation after (0: not set); 'set' raises it, 'clear-if' clears only that generation",
+    "pending": "('get'|'set'|'clear-if:<generation>') -> the marker's generation after (0: not set); 'set' raises it, 'clear-if' clears only that generation",
     "notify": "(event, payload, session) -> void"
   },
   "events": ["changed", "failed", "saved", "saving", "synced"],

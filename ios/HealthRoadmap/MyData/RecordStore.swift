@@ -206,12 +206,16 @@ final class RecordStore {
             let chatErased = keepChat(result.chatHistory, result.chatErased)
             do {
                 // A fresh start: no per-test choice, published only once the erase is on disk (Codex R1).
-                let shown = try await self.engine.myDataAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: nil, deviceId: self.deviceId)
+                // Marked and counted as any phone edit is: a connect in flight that lifted
+                // the pre-erase file opens again and merges the erase in, whose higher
+                // eraseEpoch wins (US-09 AC23).
+                let shown = try await self.engine.myDataAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: self.marksPending, deviceId: self.deviceId)
                 self.recordJSON = result.record
                 self.myData = shown
                 self.publish(UnitChoices())
                 self.problem = nil
                 self.erasures += 1
+                self.onEdit?()
                 return .erased(chatErased: chatErased)
             } catch {
                 return .notWritten(error.localizedDescription, chatErased: chatErased)
@@ -279,8 +283,9 @@ final class RecordStore {
 
     /// One edit, checked against the record the screen showed when it was asked for:
     /// the sheet's pin, taken now, before anything waits.
-    func apply(_ edit: RecordEdit) async -> ApplyResult {
-        let seen = pinned ?? screen
+    /// `captured`: the screen a sheet was opened on, taken with the row it shows (the tap).
+    func apply(_ edit: RecordEdit, as captured: Screen? = nil) async -> ApplyResult {
+        let seen = captured ?? pinned ?? screen
         // The master units switch holds entry while it lands, as a per-test one does.
         let switching = Self.clearsChoices(edit)
         if switching { unitSwitches += 1 }
@@ -579,12 +584,12 @@ extension HealthEngine {
     }
 
     /// My data for `record`, drawn first, then the record written: one that cannot be
-    /// drawn is never written. `marking`: set the pending marker before the write, as
-    /// the cloud session does (cloud.ts `commit`), in this same step.
+    /// drawn is never written. `marking`: set the pending marker once the write has
+    /// landed, in this same step: a refused write never leaves a marker no session holds.
     func myDataAndWrite(_ record: String, units: String, to file: URL, marking: PhoneFiles?, deviceId: String) throws -> MyData {
         let shown = try myData(recordJSON: record, now: .now, deviceId: deviceId, units: units)
-        _ = marking?.pending("set")
         try RecordStore.write(record, to: file)
+        _ = marking?.pending("set")
         return shown
     }
 

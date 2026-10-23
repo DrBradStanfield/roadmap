@@ -10,14 +10,16 @@ import SwiftUI
 /// page in the tab's navigation stack (MetricDetailView).
 struct MyDataView: View {
     /// Which value the entry sheet is for.
+    /// What a tap opened, with the screen it was read on: the sheet's save is checked
+    /// against that, whatever lands before it appears (Codex R2).
     private enum Entry: Identifiable {
-        case height
-        case metric(MyData.Row)
+        case height(RecordStore.Screen)
+        case metric(MyData.Row, RecordStore.Screen)
 
         var id: String {
             switch self {
             case .height: "height"
-            case .metric(let row): row.metric
+            case .metric(let row, _): row.metric
             }
         }
     }
@@ -79,7 +81,7 @@ struct MyDataView: View {
                 ContentUnavailableView("Your record could not be opened", systemImage: "exclamationmark.triangle", description: Text(store.problem ?? ""))
             }
         }
-        .sheet(item: $entry, onDismiss: { store.unpinScreen() }) { entry in
+        .sheet(item: $entry) { entry in
             sheet(for: entry)
                 .presentationDetents([.medium, .large])
         }
@@ -114,7 +116,7 @@ struct MyDataView: View {
             }
             .disabled(picking)
 
-            Button { enter(.height) } label: {
+            Button { entry = .height(store.screen) } label: {
                 ValueRow(label: "Height", value: data.profile.height, unit: data.profile.heightUnit, day: nil, feetInches: data.profile.feetInches)
             }
             .tint(.primary)
@@ -175,33 +177,26 @@ struct MyDataView: View {
         if MetricDetailView.opensHistory(store.history(for: row.metric)) {
             detail = row
         } else {
-            enter(.metric(row))
+            entry = .metric(row, store.screen)
         }
     }
 
     // MARK: Entry
 
-    /// Opens entry pinned to the record as the row was read now, not as it is when
-    /// the sheet appears: its unit label and the units a value is read in agree (Codex R2).
-    private func enter(_ next: Entry) {
-        store.pinScreen()
-        entry = next
-    }
-
     @ViewBuilder
     private func sheet(for entry: Entry) -> some View {
         switch entry {
-        case .height where store.myData?.unitSystem == "conventional":
+        case .height(let seen) where seen.units == "conventional":
             FeetInchesSheet(current: store.myData?.profile.feetInches) { height in
-                saved(await store.apply(.feetInches(feet: height.feet, inches: height.inches)))
+                saved(await store.apply(.feetInches(feet: height.feet, inches: height.inches), as: seen))
             }
-        case .height:
+        case .height(let seen):
             let profile = store.myData?.profile
             ValueEntrySheet(title: "Height", unit: profile?.heightUnit ?? "", current: profile?.height, asksForDay: false, read: store.number) { value, _ in
-                saved(await store.apply(.profile(height: value)))
+                saved(await store.apply(.profile(height: value), as: seen))
             }
-        case .metric(let row):
-            MetricEntrySheet(store: store, row: row, saved: saved)
+        case .metric(let row, let seen):
+            MetricEntrySheet(store: store, row: row, seen: seen, saved: saved)
         }
     }
 

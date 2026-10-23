@@ -157,7 +157,7 @@ async function phone(dropbox: Server, phoneText: string | null = null) {
         state.pending = true;
         state.generation += 1;
       }
-      if (op === 'clear' || (op === `clear-if:${state.generation}`)) state.pending = false;
+      if (op === `clear-if:${state.generation}`) state.pending = false;
       return state.pending ? state.generation : 0;
     },
     notify: (event: string, payload: string, session: number) => {

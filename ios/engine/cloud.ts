@@ -48,7 +48,7 @@ export interface CloudNatives {
    *  generation: 0 when it is not set, and a higher number at every 'set'.
    *  'clear-if:<n>' clears it only while it is still at generation n, so a session
    *  never clears a marker set after it read the phone. Answers the generation after. */
-  pending(op: 'get' | 'set' | 'clear' | `clear-if:${number}`): number;
+  pending(op: 'get' | 'set' | `clear-if:${number}`): number;
   /** Tells Swift what happened in session `session`: 'saving', 'saved',
    *  'synced', 'failed' or 'changed'. Swift drops news from any session but the
    *  one it shows. Never a log: 'changed' carries the record, which Swift only shows. */

@@ -211,6 +211,24 @@ final class RecordPipelineTests: XCTestCase {
         XCTAssertTrue(weights(store.recordJSON).isEmpty)
     }
 
+    /// US-25 AC20 (adversary R1): a sheet carries the screen taken at its tap. Two taps
+    /// before one sheet appears, then a unit switch: its save is read in the units its
+    /// label showed, and nothing stays pinned to drive a later edit.
+    func testASheetCarriesTheScreenOfItsTapAndPinsNothing() async throws {
+        let store = try store()
+        let recordUnits = store.myData?.unitSystem ?? "si"
+        let other = recordUnits == "si" ? "conventional" : "si"
+        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
+        _ = store.screen // the first tap, whose sheet never appeared
+        let tapped = store.screen // the second tap: the sheet that appears carries this
+        await store.switchUnits(for: weight, to: other).value
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20"), as: tapped))
+        XCTAssertEqual(try XCTUnwrap(weights(store.recordJSON).last?.value), recordUnits == "si" ? 80 : 36.287, accuracy: 0.01)
+        // A later edit with no sheet of its own reads in the units now shown: nothing was left pinned.
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-21")))
+        XCTAssertEqual(try XCTUnwrap(weights(store.recordJSON).last?.value), other == "si" ? 80 : 36.287, accuracy: 0.01)
+    }
+
     func testAnOlderCloudRecordNeverReplacesANewerOne() async throws {
         let store = try store()
         let older = try engine.blocking { try $0.newRecord(now: .now, deviceId: "web") }

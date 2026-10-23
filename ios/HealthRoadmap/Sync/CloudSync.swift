@@ -55,8 +55,9 @@ final class CloudSync: CloudPort {
     /// Edits the phone took while an open was under way (review A5).
     private var editsWhileOpening = 0
     /// News a session sent before the handover showed it: the newest record each
-    /// session brought in, shown once that session is (adversary R4).
+    /// session brought in, and its last failure, shown once that session is (adversary R2, R4).
     private var heldNews: [Int: HealthEngine.CloudView] = [:]
+    private var heldFailures: [Int: String] = [:]
 
     init(engine: HealthEngine, store: RecordStore, oauth: OAuthClient) {
         self.engine = engine
@@ -202,6 +203,7 @@ final class CloudSync: CloudPort {
         }
         status = .connecting
         heldNews = [:]
+        heldFailures = [:]
         var first = firstConnect
         for attempt in 0..<3 {
             editsWhileOpening = 0
@@ -223,7 +225,8 @@ final class CloudSync: CloudPort {
                 guard mine == generation else { return }
                 guard shown else { continue }
                 heldNews = [:]
-                status = settled()
+                status = heldFailures[view.session].map { .problem(SyncProblem(json: $0)) } ?? settled()
+                heldFailures = [:]
                 syncedBefore = provider
                 try? files.write(provider.rawValue, to: files.history)
                 return
@@ -279,8 +282,12 @@ final class CloudSync: CloudPort {
 
     func notify(_ event: String, _ payload: String, session: Int, order: Int) {
         guard session == shownSession else {
-            // A session still being handed over: keep the record it brought in for when it shows.
-            if openingFor != nil, event == "changed", var view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) {
+            // A session still being handed over: keep the record it brought in, and a
+            // failure it met, for when it shows.
+            guard openingFor != nil else { return }
+            if event == "failed" { heldFailures[session] = payload }
+            if event == "saved" || event == "synced" { heldFailures[session] = nil }
+            if event == "changed", var view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) {
                 view.order = order
                 heldNews[session] = view
             }

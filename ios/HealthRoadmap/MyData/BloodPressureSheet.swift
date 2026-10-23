@@ -4,17 +4,20 @@ import SwiftUI
 /// side for blood pressure, one number otherwise.
 struct MetricEntrySheet: View {
     let store: RecordStore
+    /// The row as it was tapped, and the screen it was read on: the label's unit and
+    /// the units a value is read in come from the same moment (Codex R2).
     let row: MyData.Row
+    let seen: RecordStore.Screen
     let saved: (RecordStore.ApplyResult) -> RecordStore.ApplyResult
 
     var body: some View {
         if row.metric == MyData.bloodPressure {
-            BloodPressureSheet(store: store, saved: saved)
+            BloodPressureSheet(store: store, seen: seen, saved: saved)
         } else {
             ValueEntrySheet(title: row.label, unit: row.unit, current: nil, asksForDay: true, read: store.number) { value, day in
-                saved(await store.apply(.add(metric: row.metric, value: value, day: day)))
+                saved(await store.apply(.add(metric: row.metric, value: value, day: day), as: seen))
             } replace: { existingId, value in
-                saved(await store.apply(.correct(id: existingId, value: value)))
+                saved(await store.apply(.correct(id: existingId, value: value), as: seen))
             }
         }
     }
@@ -30,6 +33,8 @@ struct BloodPressureSheet: View {
     let store: RecordStore
     /// Correcting a day's reading: the day is fixed and Save replaces it.
     var correcting: MetricHistory.Row?
+    /// The screen the sheet was opened on (the tap).
+    let seen: RecordStore.Screen
     let saved: (RecordStore.ApplyResult) -> RecordStore.ApplyResult
 
     private enum Field { case systolic, diastolic }
@@ -111,7 +116,7 @@ struct BloodPressureSheet: View {
         guard let pair else { return }
         let when = correcting?.day ?? DayText.iso(day)
         let edit = RecordEdit.bloodPressure(systolic: pair.systolic, diastolic: pair.diastolic, day: when, replace: replace, seenIds: seen)
-        SheetSave.run($saving, { saved(await store.apply(edit)) }) { result in
+        SheetSave.run($saving, { saved(await store.apply(edit, as: self.seen)) }) { result in
             if case .refused(_, .some) = result, !replace {
                 // The rows the prompt is about, read from the same record the engine just refused on.
                 held = store.history(for: MyData.bloodPressure)?.rows.first { $0.isActive && $0.day == when }?.pairIds ?? []

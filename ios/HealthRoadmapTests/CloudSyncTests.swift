@@ -284,6 +284,56 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"], "the import reached the cloud")
     }
 
+    /// US-25 AC20 (Codex R1): a first connect that lifts the phone's file while a phone
+    /// erase waits on the engine never restores what the erase removed: the erase is a
+    /// counted change, the reopen merges it in, and its higher eraseEpoch wins.
+    func testASignInCompletingDuringAPhoneEraseEndsWithTheErase() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync, _) = try app(connected: false)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
+        dropbox.downloadDelay = 0.3
+        var erase: Task<RecordStore.PhoneErase, Never>?
+        dropbox.onDownload = {
+            guard erase == nil else { return }
+            erase = Task { await store.erasePhone(historyJSON: nil) { _, _ in true } } // the lift has read the phone
+        }
+        try await sync.connect(.dropbox, authenticate: signIn())
+        dropbox.onDownload = nil
+        dropbox.downloadDelay = 0
+        let erased = await erase?.value
+        XCTAssertEqual(erased, .erased(chatErased: true))
+        XCTAssertNotNil(store.cloudErase, "the cloud record is open")
+        XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01"], "the erased value is not back on screen")
+        await sync.background()
+        XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01"], "nor in the cloud")
+    }
+
+    /// US-25 AC20 (adversary R2, R4): a record and a failure the opening session sends
+    /// before the handover shows it are held, then shown with it, never dropped.
+    func testNewsFromASessionBeforeItIsShownIsHeldAndShownWithIt() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync, _) = try app()
+        let news = try record(days: ["2026-10-01", "2026-10-03"], device: "web")
+        let newsText = String(decoding: try JSONSerialization.data(withJSONObject: news), as: UTF8.self)
+        var sent = false
+        dropbox.onDownload = {
+            guard !sent else { return }
+            sent = true
+            store.chain { try? await Task.sleep(for: .milliseconds(400)) } // the handover waits its turn
+            Task {
+                try? await Task.sleep(for: .milliseconds(200)) // the open has resolved; session 1 is not shown yet
+                let view = String(decoding: try! JSONSerialization.data(withJSONObject: ["record": newsText, "erase": "e-news", "session": 1]), as: UTF8.self)
+                sync.notify("changed", view, session: 1, order: 1_000)
+                sync.notify("failed", #"{"kind":"unreachable","detail":"Dropbox could not be reached."}"#, session: 1, order: 1_001)
+            }
+        }
+        await sync.start()
+        dropbox.onDownload = nil
+        try await Task.sleep(for: .milliseconds(100)) // the held record, queued after the handover, lands
+        XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01", "2026-10-03"], "the record it sent is shown")
+        guard case .problem = sync.status else { return XCTFail("the failure it sent was dropped: \(sync.status)") }
+    }
+
     func testACloudThatCannotBeReachedLeavesThePhoneRecordAndMarksEditsForLater() async throws {
         StubHTTP.handler = { _ in .init(offline: true) }
         let (store, sync, engine) = try app()

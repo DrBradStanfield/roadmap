@@ -51,8 +51,7 @@ final class PhoneFiles: Sendable {
     }
 
     /// The pending marker as a generation (ios/engine/cloud.ts `pending`): "get",
-    /// "set" (a higher generation), "clear", or "clear-if:<n>" (only while it is still
-    /// at n). Answers the generation after; 0 when it is not set. A marker an older
+    /// "set" (a higher generation), or "clear-if:<n>" (only while it is still at n). Answers the generation after; 0 when it is not set. A marker an older
     /// app wrote (empty) reads as generation 1.
     func pending(_ op: String) -> Int {
         memory.withLock { state in
@@ -65,8 +64,6 @@ final class PhoneFiles: Sendable {
             case "set":
                 state.highest = max(state.highest, marker) + 1
                 marker = state.highest
-            case "clear":
-                marker = 0
             case "clear-if:\(marker)":
                 marker = 0
             default:

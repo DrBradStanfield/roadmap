@@ -1,0 +1,63 @@
+import XCTest
+@testable import HealthRoadmap
+
+/// US-25 AC20, US-09 AC4: the phone's pending marker as a generation (PhoneFiles,
+/// ios/engine/cloud.ts `pending`). A session clears only the generation it holds.
+final class PhoneFilesTests: XCTestCase {
+    private var folder: URL!
+
+    override func setUpWithError() throws {
+        folder = FileManager.default.temporaryDirectory.appending(path: "Phone Files \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    }
+
+    override func tearDownWithError() throws {
+        try? FileManager.default.removeItem(at: folder)
+    }
+
+    private var marker: URL { folder.appending(path: "sync-pending") }
+    private func files() -> PhoneFiles { PhoneFiles(record: folder.appending(path: "health-roadmap.json"), pending: marker) }
+
+    func testAGenerationOnDiskIsRaisedAfterARelaunch() throws {
+        try Data("7".utf8).write(to: marker)
+        let relaunched = files()
+        XCTAssertEqual(relaunched.pending("get"), 7)
+        XCTAssertEqual(relaunched.pending("set"), 8)
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "8")
+    }
+
+    func testAnOlderAppsEmptyMarkerReadsAsGenerationOne() throws {
+        try Data().write(to: marker)
+        let phone = files()
+        XCTAssertEqual(phone.pending("get"), 1)
+        XCTAssertEqual(phone.pending("clear-if:1"), 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path(percentEncoded: false)))
+    }
+
+    func testClearIfClearsOnlyTheGenerationItNames() {
+        let phone = files()
+        XCTAssertEqual(phone.pending("get"), 0)
+        let held = phone.pending("set")
+        let later = phone.pending("set")
+        XCTAssertGreaterThan(later, held)
+        XCTAssertEqual(phone.pending("clear-if:\(held)"), later, "a set made after the session's stays")
+        XCTAssertEqual(phone.pending("clear-if:\(later)"), 0)
+        XCTAssertGreaterThan(phone.pending("set"), later, "a set after a clear is still higher than any before")
+    }
+
+    func testTheOldPlainClearIsGone() {
+        let phone = files()
+        let set = phone.pending("set")
+        XCTAssertEqual(phone.pending("clear"), set, "only clear-if clears")
+    }
+
+    /// A phone write that fails leaves no marker: none no session could ever hold (adversary R3).
+    func testAFailedPhoneWriteSetsNoMarker() throws {
+        let engine = try HealthEngine()
+        let phone = files()
+        let record = try engine.blocking { try $0.newRecord(now: .now, deviceId: "test") }
+        let nowhere = folder.appending(path: "missing folder/health-roadmap.json")
+        XCTAssertThrowsError(try engine.blocking { try $0.myDataAndWrite(record, units: "{}", to: nowhere, marking: phone, deviceId: "test") })
+        XCTAssertEqual(phone.pending("get"), 0)
+    }
+}

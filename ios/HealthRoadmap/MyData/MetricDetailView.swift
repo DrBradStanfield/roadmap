@@ -18,13 +18,15 @@ struct MetricDetailView: View {
     /// Which sheet is open: a new value, or a correction of a row.
     @State private var editing: Editing?
 
+    /// What a tap opened: the row as this page showed it and the screen it was read
+    /// on, so the sheet's unit label and its save agree (Codex R2).
     private enum Editing: Identifiable {
-        case add
-        case correct(MetricHistory.Row)
+        case add(MyData.Row, RecordStore.Screen)
+        case correct(MetricHistory.Row, MyData.Row, RecordStore.Screen)
         var id: String {
             switch self {
             case .add: "add"
-            case .correct(let row): row.id
+            case .correct(let value, _, _): value.id
             }
         }
     }
@@ -61,11 +63,11 @@ struct MetricDetailView: View {
                 }
             }
             ToolbarItem(placement: .primaryAction) {
-                Button("Add Data") { edit(.add) }
+                Button("Add Data") { editing = .add(live ?? row, store.screen) }
                     .disabled(store.unitSwitches > 0)
             }
         }
-        .sheet(item: $editing, onDismiss: { store.unpinScreen() }) { editing in
+        .sheet(item: $editing) { editing in
             sheet(for: editing).presentationDetents([.medium, .large])
         }
     }
@@ -132,7 +134,7 @@ struct MetricDetailView: View {
         Section {
             ForEach(history.rows) { value in
                 if value.isActive {
-                    Button { edit(.correct(value)) } label: { HistoryRow(row: value, unit: history.unit, excluded: history.excluded) }
+                    Button { editing = .correct(value, live ?? row, store.screen) } label: { HistoryRow(row: value, unit: history.unit, excluded: history.excluded) }
                         .tint(.primary)
                         .disabled(store.unitSwitches > 0)
                         .accessibilityHint("Opens a correction")
@@ -147,25 +149,17 @@ struct MetricDetailView: View {
         }
     }
 
-    /// Opens a sheet pinned to the record as this page shows it now, not as it is when
-    /// the sheet appears: its unit label and the units a value is read in agree (Codex R2).
-    private func edit(_ next: Editing) {
-        store.pinScreen()
-        editing = next
-    }
-
     @ViewBuilder
     private func sheet(for editing: Editing) -> some View {
-        // The row as it is now: its unit is the one a typed value is read in (AC17e).
-        let shown = live ?? row
+        // The row as it was tapped: its unit is the one a typed value is read in (AC17e).
         switch editing {
-        case .add:
-            MetricEntrySheet(store: store, row: shown, saved: saved)
-        case .correct(let value) where shown.metric == MyData.bloodPressure:
-            BloodPressureSheet(store: store, correcting: value, saved: saved)
-        case .correct(let value):
+        case .add(let shown, let seen):
+            MetricEntrySheet(store: store, row: shown, seen: seen, saved: saved)
+        case .correct(let value, let shown, let seen) where shown.metric == MyData.bloodPressure:
+            BloodPressureSheet(store: store, correcting: value, seen: seen, saved: saved)
+        case .correct(let value, let shown, let seen):
             ValueEntrySheet(title: "Correct \(DayText.short(value.day))", unit: shown.unit, current: value.value, asksForDay: false, read: store.number) { number, _ in
-                saved(await store.apply(.correct(id: value.id, value: number)))
+                saved(await store.apply(.correct(id: value.id, value: number), as: seen))
             }
         }
     }
