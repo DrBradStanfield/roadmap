@@ -6,303 +6,285 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["nattokinase", "fibrinolytic", "cardiovascular", "blood clot", "blood pressure", "hypertension", "cholesterol", "ldl", "hdl", "triglycerides", "atherosclerosis", "stroke", "heart attack", "deep vein thrombosis", "inflammation", "cognitive", "brain health", "dementia", "alzheimer", "natto", "vitamin k", "blood sugar", "insulin resistance", "aging", "longevity"]
-summary: "Reference on nattokinase: blood clot prevention, blood pressure, heart health. Adults with cardiovascular risk, hypertension, or interest in clot-dissolving enzymes. Enteric-coated or softgel forms, 2000-4000 FU/day; avoid with blood thinners or aspirin. Always discuss with your doctor."
+summary: "Nattokinase is an enzyme from natto. Small trials found changes in clotting markers and small blood pressure falls, but a 3-year trial found no benefit, and cholesterol and memory trials were negative. Bleeding is the main risk. Talk to your doctor first if you take blood thinners or aspirin."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/nattokinase-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/nattokinase-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Nattokinase is an enzyme from natto that breaks down fibrin, and in small human studies a single 2,000 FU dose, or two 2,000 FU capsules a day for 2 months, changed clotting and clot-breakdown markers [19][26]. Blood pressure results are mixed: an 8-week trial of 2,000 FU a day lowered systolic pressure by 5.55 mmHg compared with placebo, but a 3-year trial of 2,000 FU a day found no effect on blood pressure or on thickening of the carotid artery wall [31][34]. Randomized trials have not shown that nattokinase alone improves cholesterol or global cognition, and the authors of the 3-year trial noted that no large, long-term cardiovascular study had been done before theirs [34][38][44]. Its main risk is bleeding, including a fatal bleed into the abdomen and a brain bleed in a patient also taking aspirin, so people who take blood thinners or have a bleeding risk should talk to their doctor first [52][53].
+
+## Key safety points
+
+- Nattokinase may add to the effect of blood thinners and antiplatelet drugs. A patient on aspirin had a bleed in the cerebellum (part of the brain) after a week of nattokinase 400 mg a day [53]. Do not combine them unless your doctor agrees.
+- An elderly woman taking nattokinase bled into her abdomen and died [52]. For face drooping, arm or leg weakness or numbness, trouble speaking, a sudden severe headache or bleeding that will not stop, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [52][53].
+- Natto is rich in vitamin K2 (MK-7), and MK-7 as low as 10 mcg a day lowered INR in some people on a warfarin-type drug [23][60]. If you take warfarin, check with your doctor or anticoagulation clinic before taking nattokinase or eating natto.
+- Anaphylaxis from nattokinase has been reported in a patient with natto allergy [55]. For trouble breathing, swelling of the face or throat, or fainting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Nattokinase may lower blood pressure by a few mmHg [33]. If you have low blood pressure or take blood pressure medicines, talk to your doctor first.
+- Soy foods may raise the thyroid hormone dose people with hypothyroidism need [56], and nattokinase such as NSK-SD is a fermented soy extract [32].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Nattokinase is a serine protease enzyme produced by the bacterium *Bacillus subtilis* var. *natto* during the fermentation of soybeans to create natto, a traditional Japanese food [1][2]. The enzyme was first identified and extracted from natto in 1987 by Japanese researcher Dr. Hiroyuki Sumi, who discovered its potent ability to dissolve fibrin, the structural protein of blood clots [1][3]. Nattokinase consists of a single polypeptide chain of 275 amino acids with a molecular weight of approximately 27.7 kDa, featuring a conserved catalytic triad (Asp-32, His-64, Ser-221) characteristic of the subtilisin family of serine proteases [2][4].
+Nattokinase is an enzyme found in natto, a Japanese food made by fermenting soybeans. Sumi and colleagues reported strong clot-dissolving (fibrinolytic) activity in natto in 1987 and named the enzyme nattokinase [57]. It is a subtilisin-like serine protease of 275 amino acids, with a molecular weight of 27,728 [7].
 
-The enzyme's primary claim to fame is its fibrinolytic activity — the ability to break down fibrin in blood clots. Unlike tissue plasminogen activator (tPA), which works indirectly by converting plasminogen to plasmin, nattokinase cleaves cross-linked fibrin directly into soluble degradation products [2][5]. In addition to this direct mechanism, nattokinase stimulates the release of tPA from vascular endothelial cells and inactivates plasminogen activator inhibitor-1 (PAI-1), enhancing the body's own fibrinolytic system through multiple pathways [5][6]. In vitro studies suggest nattokinase's fibrinolytic strength is approximately four times greater than that of plasmin in dissolving artificial thrombi [7].
+Nattokinase breaks down fibrin, the protein mesh that holds blood clots together. In lab work it also cut and inactivated plasminogen activator inhibitor 1 (PAI-1), one of the body's brakes on clot breakdown, and it dissolved fibrin directly [6]. In a rat model of carotid artery thrombosis, it restored more blood flow than plasmin on a molar basis (62.0% versus 15.8%) [25].
 
-Beyond its clot-dissolving properties, nattokinase has demonstrated mild antihypertensive effects through possible inhibition of angiotensin-converting enzyme (ACE), antiplatelet activity via thromboxane blockade, and potential anti-atherosclerotic benefits through reduction of arterial plaque [2][8][9]. It has also been investigated for neuroprotective properties, including the degradation of amyloid-beta fibrils associated with Alzheimer's disease [10][11].
+A 2018 review described possible effects of nattokinase on blood pressure, atherosclerosis, cholesterol, platelets and the nervous system [4]. In lab tests, natto and some other fermented foods blocked angiotensin-converting enzyme (ACE) [8], and nattokinase broke down amyloid fibrils, protein clumps linked to Alzheimer's disease [10].
 
-Nattokinase's potency is measured in fibrin degradation units (FU), also called fibrinolytic units, which quantify the enzyme's ability to break down fibrin. This is a critical distinction from simple milligram measurements — the enzyme activity level (FU) is required to know the actual potency of any nattokinase supplement, as milligram amounts alone do not convey functional activity [1]. Commercial preparations are standardized to approximately 20,000 FU per gram (or 20 FU per mg) [12].
+Nattokinase strength is given in fibrinolytic units (FU), a measure of enzyme activity, because weight alone does not show how active a preparation is. In one study, a softgel holding about 100 mg of NSK-SD nattokinase supplied 2,000 FU [18].
 
-The enzyme demonstrates notable biochemical stability, remaining active across a pH range of 6 to 12 and at temperatures up to 60 degrees Celsius [2][13]. However, it is sensitive to acidic conditions and pepsin in the stomach, which has led to the development of enteric-coated formulations and softgel delivery systems to protect the enzyme during oral administration [13][14]. Fibrinolytic effects begin within 2 hours after oral ingestion, with activity persisting for up to 8 hours, and the enzyme has a circulating half-life of approximately 8 to 12 hours — notably longer than conventional fibrinolytic agents like streptokinase [2][7][15].
+In rats, nattokinase placed in the small intestine was absorbed and broke down fibrinogen in the blood [14]. In people, a single 2,000 FU softgel raised blood levels of nattokinase from 2 to 24 hours after the dose, with a peak at about 13.3 hours [18].
 
-Despite growing consumer interest, the evidence for nattokinase's cardiovascular benefits comes largely from small, short-term, preliminary clinical studies. Larger, longer, and better-controlled trials are needed to confirm its efficacy for any clinical application [1]. As of 2025, no large-scale Phase III randomized controlled trials have been completed to confirm nattokinase's role in thrombosis prevention across diverse populations [2].
+Most human studies of nattokinase are small and short. The authors of the 2021 Hodis trial noted that no large-scale, long-term cardiovascular study of nattokinase had been done before theirs [34].
 
 ## 2. Forms and Bioavailability
 
 ### Supplement Forms
 
-Nattokinase supplements are available in several delivery formats, each with implications for enzyme stability and absorption:
+Nattokinase is sold as capsules, enteric-coated capsules, softgels and powders.
 
-**Standard capsules:** The most common form. Nattokinase powder is enclosed in vegetarian or gelatin capsules, typically providing 2,000-4,000 FU per capsule (equivalent to approximately 100-200 mg of enzyme). Standard capsules expose the enzyme to stomach acid, which can degrade a portion of the active enzyme before it reaches the intestine [1][14].
+**Standard capsules:** Trials have used capsules of 2,000 FU each [26][31].
 
-**Enteric-coated capsules:** Designed with a pH-sensitive coating that resists dissolution in the acidic stomach environment (pH 1-3) and releases the enzyme in the alkaline small intestine (pH 6-7.5), where nattokinase is primarily absorbed. Some researchers recommend enteric coating to protect the enzyme from stomach acid and pepsin, which can inactivate it [14][16]. Several clinical studies showing positive results used enteric-coated formulations [1][3]. However, not all commercial products are enteric-coated, and the necessity of enteric coating remains debated.
+**Enteric-coated capsules:** These have a coating meant to resist stomach acid and dissolve in the intestine. Rat work shows that nattokinase can be absorbed from the intestine [14], but coated and uncoated capsules have not been compared in people.
 
-**Softgel capsules:** Nattokinase suspended in oil-based carriers. Absorption of nattokinase into the blood from oral softgel dosing has been confirmed, though it is not always clear whether the softgels used in studies were enteric-coated [17][18]. One study using a single dose of nattokinase in softgel form (NSK-SD, 2,000 FU) demonstrated significant increases in fibrin breakdown markers 4 hours after ingestion compared to placebo [19].
+**Softgel capsules:** The human blood-level study used NSK-SD softgels of about 100 mg [18].
 
-**Powdered/functional food forms:** Some products offer nattokinase in powdered form for mixing into beverages. These are less common and may expose the enzyme to degradation if mixed with acidic liquids [2].
+**Powdered/functional food forms:** Powders for mixing into drinks are also sold. The trials described here used capsules or softgels.
 
 ### NSK-SD — A Proprietary Form
 
-NSK-SD (Nattokinase Subtilisin NAT, SD for vitamin K-removed) is a branded nattokinase produced by Japan Bio Science Laboratory Co., Ltd. Its key distinguishing feature is the removal of vitamin K during processing. Since many consumers take nattokinase specifically for its anti-clotting properties, the presence of vitamin K (which promotes clotting) could theoretically counteract this benefit. NSK-SD addresses this concern by providing nattokinase that is claimed to be vitamin K-free [1][20]. NSK-SD has been used in several clinical studies and has been granted novel food authorization in the European Union [21]. A safety study of NSK-SD (552 mg/day for 4 weeks) found it well-tolerated with minimal adverse effects [22].
+NSK-SD is a branded nattokinase from Japan Bio Science Laboratory [19]. It is a fermented soy extract from which vitamin K2 has been removed [32]. It was used in the single-dose trials and in an 8-week blood pressure trial [18][19][32], and its maker's safety studies are described under Safety and Side Effects [22].
 
 ### Vitamin K Content in Nattokinase
 
-This is an important consideration. Natto itself is one of the richest food sources of vitamin K2 (MK-7), with a typical 40-gram single-serving package providing approximately 350 mcg of vitamin K2 — far exceeding the adequate intake of 120 mcg for adult men and 90 mcg for adult women [1][23]. Since vitamin K is essential for blood clotting factor production, this creates a theoretical paradox: natto simultaneously provides a clot-dissolving enzyme (nattokinase) and a clot-promoting vitamin (K2).
+Natto contains much menaquinone-7 (MK-7), a form of vitamin K2 [23]. Vitamin K helps the liver make clotting factors. Natto-derived MK-7 at 50 mcg a day or more may interfere with warfarin-type anticoagulants [59], and in one study doses as low as 10 mcg a day lowered INR in some people [60].
 
-During commercial processing of nattokinase for supplements, it is possible to remove or reduce much of the vitamin K content [1]. If avoiding vitamin K intake is a priority — particularly for individuals on anticoagulant medications like warfarin — look for supplements that explicitly state they are vitamin K-free [1]. However, it is worth noting that nattokinase and vitamin K2 coexist naturally in natto without apparent clinical conflict, as the body regulates clotting dynamically through multiple pathways [24].
+Some nattokinase products, such as NSK-SD, have the vitamin K2 removed [32]. This is the supplement, not natto: natto food still contains its vitamin K2. If you take warfarin, choose a product labelled vitamin K-free, and check with your doctor or anticoagulation clinic before taking nattokinase or eating natto.
 
 ### Absorption and Bioavailability
 
-Nattokinase is absorbed primarily in the small intestine. The enzyme is a protein (275 amino acids), which raises the question of whether it can survive gastrointestinal digestion intact. Evidence suggests that at least a portion of orally administered nattokinase reaches the bloodstream in active form:
+Nattokinase is a protein, so how much survives digestion is uncertain. Studies suggest that some of it reaches the blood:
 
-- A single dose of 2,000 FU nattokinase (NSK-SD softgel) significantly increased measures of fibrin breakdown and anti-thrombotic factors in the blood 4 hours after ingestion in 12 healthy men [19].
-- Oral administration of nattokinase capsules (total daily dose of 1,950 mg) significantly increased measures of fibrin breakdown after 8 days in 12 men [3].
-- Consumption of 200 grams of natto itself increased fibrinolytic activity for 2 to 8 hours after ingestion [3].
-- Absorption of nattokinase into the blood from softgel forms has been confirmed by pharmacokinetic studies [17][18].
-
-Nattokinase shows some stability against trypsin in the intestinal tract but is sensitive to pepsin and the low pH of the gastric environment [13]. This sensitivity to stomach conditions is why enteric coating, softgel delivery, and empty-stomach administration (which reduces stomach acidity and speeds gastric transit) are commonly recommended strategies to improve bioavailability [14][2].
+- In 12 healthy young men, a single 2,000 FU dose of NSK-SD raised fibrin and fibrinogen breakdown products at 4 hours and D-dimer at 6 and 8 hours, compared with placebo [19].
+- Nattokinase capsules or natto taken by mouth produced a mild and frequent increase in clot-breaking activity in plasma [3].
+- In 11 healthy adults, nattokinase was detectable in blood from 2 to 24 hours after one 2,000 FU softgel [18].
+- In rats, nattokinase given into the intestine was found in blood drawn 3 and 5 hours later [14].
 
 ### Empty Stomach vs. With Food
 
-For optimal absorption and systemic fibrinolytic activity, nattokinase is generally recommended to be taken on an empty stomach — for example, 30-60 minutes before meals or at least 2 hours after eating [2]. Taking nattokinase with food may reduce its systemic effectiveness because the enzyme may act primarily as a digestive protease in the gut (breaking down food proteins) rather than being absorbed intact into the bloodstream [2].
+Advice to take nattokinase on an empty stomach rests on theory, not on trials comparing it with and without food.
 
 ### Standardization and Potency
 
-Nattokinase potency should be evaluated by fibrinolytic units (FU), not milligrams. Some supplement labels only provide milligram amounts, which are insufficient to determine actual enzyme activity [1]. The relationship between milligrams and FU depends on the purity and concentration of the preparation. As a rough guide, standardized commercial preparations typically provide approximately 20 FU per milligram [12], so a 100 mg supplement standardized to this level would deliver approximately 2,000 FU. However, independent testing has revealed significant variability between products — some products deliver less than half their labeled FU activity, while others contain substantially more than claimed [2]. Always look for products that list FU activity on the label.
+Look for activity in FU on the label, because milligrams alone do not show enzyme activity. In one study, about 100 mg of NSK-SD supplied 2,000 FU [18]; other preparations may differ.
 
 ## 3. Evidence for Benefits
 
 ### Blood Clots and Thrombosis
 
-Laboratory and animal research suggests nattokinase may help break down blood clots that can block blood flow in arteries (potentially causing heart attacks and stroke) [3][25]. However, evidence of this effect in humans is limited to preliminary studies, and none demonstrate reduced risk of clots using nattokinase alone.
+In animal studies, nattokinase broke down clots in dogs with induced thrombosis and in rats with blocked carotid arteries [3][25]. The authors of the 3-year Hodis trial noted that no large-scale, long-term cardiovascular study had been done, so it is unknown whether nattokinase alone prevents clots, heart attacks or strokes [34].
 
-**Fibrinolytic activity in healthy subjects:** A study in 12 healthy men found that a single dose of nattokinase (NSK-SD softgel, 2,000 FU) significantly increased measures of fibrin breakdown and anti-thrombotic factors in the blood 4 hours after ingestion compared to placebo. Specifically, D-dimer levels rose by approximately 38-45% at 6-8 hours post-administration, indicating enhanced fibrin breakdown and reduced clotting potential [5][19].
+**Fibrinolytic activity in healthy subjects:** In a placebo-controlled crossover trial in 12 healthy young men, a single 2,000 FU dose of NSK-SD raised fibrin breakdown products at 4 hours and D-dimer at 6 and 8 hours, lowered factor VIII at 4 and 6 hours, and lengthened the activated partial thromboplastin time at 2 and 4 hours [19]. All the changes stayed within the normal range [19].
 
-**Clotting factor reduction:** A study found that 4,000 FU of nattokinase (from two enteric-coated capsules) taken daily for two months decreased levels of blood-clotting factors — fibrinogen, factor VII, and factor VIII — by approximately 7% to 19% in healthy people as well as those with cardiovascular risk factors or those undergoing dialysis. Blood pressure remained stable except for a slight decline of -3.73 mmHg in systolic blood pressure [26].
+**Clotting factor reduction:** In an open-label study with no placebo group, 45 people (healthy volunteers, people with cardiovascular risk factors and people on dialysis) took two 2,000 FU capsules a day for 2 months [26]. Across the groups, fibrinogen fell by 7% to 10%, factor VII by 7% to 14% and factor VIII by 17% to 19%, while blood lipids did not change [26].
 
-**Sustained fibrinolytic activity:** A study in 12 men found that taking two enteric-coated capsules three times daily (total daily dose of 1,950 mg of nattokinase) significantly increased measures of fibrin breakdown after 8 days. The same study reported that consuming 200 grams of natto itself increased fibrinolytic activity for 2 to 8 hours after ingestion [3].
+**Sustained fibrinolytic activity:** Sumi and colleagues reported that nattokinase capsules or natto taken by mouth gave a mild and frequent increase in plasma clot-breaking activity and in tissue plasminogen activator [3].
 
-**Deep vein thrombosis prevention:** One study examined a combination of nattokinase and Pycnogenol (pine bark extract) in men and women at high risk for deep vein thrombosis (DVT) who were not taking anticoagulant or anti-thrombotic medication. None of those who took 300 mg of this combination two hours before a long flight (7-8 hours) and again six hours after the first dose experienced a thrombotic event, while seven of those who took placebo developed clots [27]. However, four of the seven women who developed thrombosis had been taking oral contraceptive drugs, which independently increase clot risk. Because the combination product was used, it is not possible to draw conclusions about the effect of nattokinase alone on clot risk.
+**Deep vein thrombosis prevention:** The LONFLIT-FLITE trial randomized 204 high-risk travellers on 7- to 8-hour flights to Flite Tabs (150 mg pinokinase) or placebo [27]. No deep vein thrombosis occurred with treatment, while 5 of 92 controls had a deep vein thrombosis and 2 had a superficial thrombosis [27]. Flite Tabs are a branded product rather than plain nattokinase, so the result cannot be credited to nattokinase alone.
 
-**Real-world observational data:** An observational study of 153 patients with vascular diseases found that nattokinase supplementation (approximately 2,000 FU/day) was associated with improved clinical symptoms and no new thrombotic events during follow-up [28].
+**Epidemiological data from Japan:** In the Takayama cohort of 13,355 men and 15,724 women followed for 16 years, the highest quarter of natto intake had lower ischemic stroke mortality than the lowest (HR 0.67, 95% CI 0.47 to 0.95) [29]. This is a study of natto food, which also contains vitamin K2 and soy, so it cannot show an effect of nattokinase supplements.
 
-**Epidemiological data from Japan:** The Takayama cohort study of over 13,000 adults followed for 15 years found that individuals in the highest quartile of natto intake had approximately 33% lower rates of ischemic stroke mortality compared to non-consumers (HR 0.67, 95% CI 0.47-0.95) [29]. While this is observational and cannot establish causation, it provides population-level data consistent with nattokinase's fibrinolytic properties.
-
-**Fibrinaloid microclots:** A 2024 in vitro study demonstrated that recombinant nattokinase effectively degrades fibrinaloid microclots — anomalous amyloid forms of fibrin that are resistant to normal fibrinolysis. This suggests potential therapeutic utility for conditions involving persistent microclots, such as Long COVID, though no in vivo or clinical validation exists [30].
-
-**Limitations:** Most trials feature small sample sizes (n < 100) and short intervention periods (4-12 weeks), precluding definitive conclusions on long-term efficacy. As of 2025, no large-scale Phase III randomized controlled trials have been completed to confirm nattokinase's role in thrombosis prevention across diverse populations [2].
+**Limitations:** Most trials are small and short, and the longest trial found no benefit on carotid artery thickening [34].
 
 ### Blood Pressure
 
-Preliminary evidence suggested that nattokinase may help lower blood pressure, possibly through ACE inhibition [8]. However, results from clinical research have been mixed. The benefit, if any, appears to be small and may only persist in the short term (up to 8 weeks).
+Results are mixed. Short trials found small falls in blood pressure, while a 3-year trial found none [31][33][34].
 
 **Positive short-term studies:**
 
-A study in men and women with untreated high systolic blood pressure (130-159 mmHg) found that one capsule containing 2,000 FU of nattokinase taken daily for 8 weeks reduced systolic blood pressure by 5.55 mmHg and diastolic blood pressure by 2.84 mmHg compared to placebo [31]. This study also found a net decrease in plasma renin activity (PRA) of -1.17 ng/mL/h compared to placebo (p < 0.05).
+In a trial of 86 adults with untreated systolic pressure of 130 to 159 mmHg, one 2,000 FU capsule a day for 8 weeks lowered systolic pressure by 5.55 mmHg (95% CI -10.5 to -0.57 mmHg) and diastolic pressure by 2.84 mmHg compared with placebo [31]. Renin activity fell by 1.17 ng/mL/h compared with placebo [31].
 
-In the Hsia et al. (2009) study mentioned above, taking 4,000 FU daily led to a slight decline of -3.73 mmHg in systolic blood pressure but not diastolic blood pressure compared to baseline among healthy adults. However, there was no reduction in systolic or diastolic blood pressure among those with cardiovascular disease [26].
+In a North American trial in 79 people with raised blood pressure, NSK-SD 100 mg a day for 8 weeks lowered average diastolic pressure from 87 to 84 mmHg, while it stayed at 87 mmHg with placebo; in men it fell from 86 to 81 mmHg [32]. Among people with low renin activity at the start, renin rose in 66% with nattokinase and 8% with placebo (P<0.1) [32].
 
-A separate randomized trial (Jensen et al., 2016) in hypertensive individuals found that while overall average PRA did not change significantly, in the subgroup with low baseline PRA (approximately 30% of participants), 66% in the nattokinase group showed normalization to normal levels after 8 weeks compared to only 8% in the placebo group (p < 0.1), with more robust increases in males [32].
-
-**Meta-analysis:** An analysis of results from three clinical studies (including the Kim et al. study) found that taking 2,000 to 6,000 FU of nattokinase daily for 8 weeks slightly reduced systolic blood pressure by about 3 mmHg and diastolic blood pressure by about 2 mmHg compared to control [33]. A separate 2023 systematic review and meta-analysis encompassing 607 participants overall (with the blood pressure analysis based on 223 participants from 3 RCTs) reported that nattokinase supplementation led to a reduction in systolic blood pressure of 3.45 mmHg (95% CI: -4.37 to -2.18, p < 0.00001) and diastolic blood pressure of 2.32 mmHg (95% CI: -2.72 to -1.92, p < 0.00001), particularly at doses exceeding 100 mg daily [33].
+**Meta-analysis:** A 2023 meta-analysis of 6 randomized trials with 546 participants found that nattokinase lowered systolic pressure by 3.45 mmHg (95% CI -4.37 to -2.18) and diastolic pressure by 2.32 mmHg (95% CI -2.72 to -1.92) compared with placebo [33].
 
 **Negative long-term studies:**
 
-A US study among 234 adults (average age 65) at low risk for cardiovascular disease showed that taking 2,000 FU of nattokinase (by Jarrow Formulas, which provided the supplement but did not fund the study) daily for 3 years did not significantly lower systolic or diastolic blood pressure compared to placebo [34].
+In the Hodis trial, 265 adults with a median age of 65.3 years and no cardiovascular disease took 2,000 FU a day or placebo for a median of 3 years, and nattokinase did not significantly change blood pressure [34].
 
-A study in China among 178 adults with stable coronary artery disease showed that taking 3,615 FU of nattokinase in two divided doses daily for 3 months did not significantly lower systolic or diastolic blood pressure compared to placebo [35].
+In a 90-day trial in 178 coronary artery disease patients whose disease was stable, nattokinase with red yeast rice lowered diastolic pressure the most (by 7.39 mmHg), more than nattokinase alone, red yeast rice alone or placebo [35].
 
-**Practical interpretation:** Blood pressure reductions appear to be gradual, requiring consistent daily intake over weeks (approximately 8 weeks in key RCTs). No evidence supports sudden or acute blood pressure changes from initial doses. Single-dose pharmacokinetic studies confirm no resting blood pressure alteration shortly after ingestion in normotensive subjects [2]. The overall evidence suggests that any antihypertensive effect is modest (approximately 3-5 mmHg systolic) and may not persist beyond 8 weeks of use, with longer studies failing to show significant effects.
+**Practical interpretation:** Any fall in blood pressure from nattokinase appears small, a few mmHg, and the longest trial found none [33][34].
 
 ### High Cholesterol and Lipid Metabolism
 
-Laboratory research suggested that nattokinase may lower cholesterol levels and reduce atherosclerosis risk through antioxidant effects, reduced lipid peroxidation, and improved lipid metabolism [36]. However, results in humans have generally shown that nattokinase does not significantly improve cholesterol levels compared to placebo.
+In cholesterol-fed rats, natto extracts lowered triglycerides and total cholesterol and reduced lipid oxidation [36]. These were natto fractions, not purified nattokinase. Randomized trials in people have not found that nattokinase alone improves cholesterol [33][38].
 
 **Negative controlled trials:**
 
-An 8-week study in Taiwan among 29 adults (average age 53) with high cholesterol (total cholesterol >200 mg/dL) showed that taking 4,000 FU of nattokinase daily did not significantly improve total cholesterol, LDL cholesterol, HDL cholesterol, or triglycerides compared to placebo [37].
+In a 6-month trial in 47 people with high blood lipids, nattokinase alone (two 50 mg capsules twice a day) did not differ from placebo on total cholesterol, LDL cholesterol or the cholesterol-to-HDL ratio after adjusting for baseline, while nattokinase with red yeast rice did [38].
 
-A 6-month study in Taiwan among 46 adults (average age 54) with untreated high cholesterol showed that taking 7,000 FU of nattokinase in two divided doses daily did not significantly reduce levels of cholesterol or triglycerides compared to placebo [38].
+In the 3-year Hodis trial, 2,000 FU a day did not significantly change any laboratory measure, which included metabolic factors [34].
 
-A 3-year randomized controlled trial (Hodis et al., 2021) among 234 healthy older adults at low cardiovascular disease risk showed that taking 2,000 FU of nattokinase daily did not significantly improve levels of cholesterol or triglycerides [34].
+**Meta-analysis (unfavorable):** The 2023 meta-analysis found that relatively low total doses of nattokinase raised total cholesterol (mean difference 5.27) and LDL cholesterol (6.49) and lowered HDL cholesterol (-2.76), and higher total doses also raised total cholesterol (3.18); triglycerides did not change [33].
 
-**Meta-analysis (unfavorable):** An analysis of data from four clinical studies (including the three described above) showed that taking nattokinase actually increased total cholesterol and had no significant effect on triglycerides, LDL cholesterol, or HDL cholesterol compared to control [33]. Notably, supplementation at relatively low total dosages was associated with adverse changes, including increased total cholesterol and LDL cholesterol levels and decreased HDL cholesterol [33].
+**One positive observational study (with significant caveats):** A clinical study in China of 1,062 participants reported that 10,800 FU a day for 12 months improved blood lipids, with improvement rates of 66.5% to 95.4%, and that 3,600 FU a day was ineffective [39]. A correction to the paper was later published, and the result has not been repeated in a randomized placebo-controlled trial.
 
-**One positive observational study (with significant caveats):** An analysis of records of 1,062 people (average age 68) in China with high cholesterol levels found that taking 10,800 FU of nattokinase daily for one year reduced triglycerides by 15.7%, total cholesterol by 15.9%, and LDL cholesterol by 18.1%, as well as increased HDL cholesterol by 15.8% [39]. However, this study has many potential weaknesses: it was not a controlled clinical trial, several authors were employees of the nattokinase manufacturer (Sungen), and a "lower dose of 3,600 FU per day" was found to be ineffective — but only 6% of the records analyzed were of patients who took this lower dose, and it is not clear how these patients differed from those given the higher dose [1][39].
-
-**Synthesis:** The balance of evidence from controlled trials and meta-analyses indicates that nattokinase at standard doses (2,000-7,000 FU/day) does not meaningfully improve lipid profiles. The single large positive observational study used a much higher dose (10,800 FU/day) and had significant methodological limitations including manufacturer conflicts of interest. Nattokinase should not be relied upon as a lipid-lowering supplement.
+**Synthesis:** Randomized trials have not shown that nattokinase alone lowers cholesterol [33][34][38]. It is not a dependable way to lower cholesterol.
 
 ### Atherosclerosis and Arterial Plaque
 
-Given nattokinase's effects on fibrin, clotting factors, and vascular function, several studies have examined whether it can slow or reverse atherosclerosis (plaque buildup in arteries).
+Several studies have tested whether nattokinase slows plaque build-up in arteries (atherosclerosis).
 
-**Carotid intima-media thickness (CIMT) — negative RCT:** The Hodis et al. (2021) 3-year randomized controlled trial in 265 healthy older adults at low cardiovascular disease risk found that 2,000 FU of nattokinase daily did not significantly affect the progression of subclinical atherosclerosis based on the rate of change of carotid artery intima-media thickness (CIMT) or carotid artery stiffness compared to placebo [34].
+**Carotid intima-media thickness (CIMT): negative RCT:** The Hodis trial randomized 265 healthy older adults to 2,000 FU a day or placebo. After a median of 3 years, the yearly change in carotid intima-media thickness (CIMT) and carotid artery stiffness did not differ between the groups [34].
 
-**CIMT and plaque — positive observational study:** The Chen et al. (2022) retrospective analysis of 1,062 participants with hyperlipidemia and mild carotid atherosclerosis found that 10,800 FU/day for 12 months significantly reduced CIMT by 21.7% (from 1.33 to 1.04 mm, p < 0.001) and carotid plaque size by 36% (from 24.9 to 15.94 mm squared, p < 0.001). Improvement rates were approximately 77.7% for CIMT and 66.5% for plaque size. Co-administration of vitamin K2 and aspirin appeared to produce a synergistic effect, and lifestyle factors such as exercise were associated with enhanced outcomes [39]. However, this was a retrospective observational study, not an RCT, so causation cannot be established, and the manufacturer conflict of interest limits confidence in these findings.
+**CIMT and plaque, high-dose study:** In the Chen study of 1,062 participants, 10,800 FU a day for 12 months was linked to thinner carotid artery walls and smaller carotid plaques, and people who also took vitamin K2 and aspirin did better [39].
 
-**Plaque comparison with simvastatin:** An earlier clinical study (Ren et al., 2017) in patients with carotid atherosclerosis and hyperlipidemia reported that nattokinase over 26 weeks reduced carotid plaque size by 36.6% and CIMT significantly more than simvastatin, with plaque reduction potentially independent of lipid changes [40]. This finding is noteworthy but has not been replicated in larger controlled trials.
+**Plaque comparison with simvastatin:** In a Chinese trial, 82 patients with carotid atherosclerosis and high blood lipids took nattokinase 6,000 FU a day or simvastatin 20 mg a day for 26 weeks, and 76 completed it [40]. Plaque size fell by 36.6% with nattokinase and 11.5% with simvastatin, while simvastatin lowered cholesterol and triglycerides more [40].
 
-**Anti-atherosclerotic mechanisms:** Nattokinase's potential anti-atherosclerotic effects include reductions in von Willebrand factor levels by up to 15% and inhibition of platelet aggregation via thromboxane blockade, which collectively may hinder plaque formation and thrombus development [9][41]. Recent research from 2023 to 2025 suggests nattokinase may also improve endothelial function and reduce arterial stiffness in hypertensive patients through modulation of gene expression related to vascular repair [2][42].
+**Anti-atherosclerotic mechanisms:** In the Jensen trial, von Willebrand factor, a clotting protein, fell in women taking nattokinase (P<0.1) [32].
 
-**Interpretation:** For low-risk individuals, the best available evidence (a 3-year placebo-controlled RCT) shows no benefit for atherosclerosis progression at 2,000 FU/day. The positive observational data at much higher doses (10,800 FU/day) in higher-risk individuals is intriguing but requires confirmation in randomized controlled trials before clinical recommendations can be made.
+**Interpretation:** In low-risk adults, the best evidence, a 3-year placebo-controlled trial, found no effect on artery thickening at 2,000 FU a day [34]. The higher-dose results [39][40] need confirmation in larger randomized trials.
 
 ### Alzheimer's Disease and Cognitive Function
 
-Nattokinase has been investigated for potential neuroprotective effects based on its ability to degrade amyloid fibrils, anti-inflammatory properties, and vascular benefits.
+Nattokinase has been studied for brain health because it can break down amyloid fibrils in the lab.
 
-**Amyloid degradation (in vitro):** A seminal 2009 study demonstrated that nattokinase can degrade amyloid fibrils, including amyloid-beta 40 (linked to Alzheimer's plaques), insulin fibrils, and prion-related fibrils under physiological conditions (neutral pH, body temperature) [10]. Subsequent 2023 research showed that nattokinase slowly degrades amyloid-beta 42 aggregates and promotes peripheral clearance of amyloid-beta peptides, potentially reducing brain amyloid burden via blood clearance [11].
+**Amyloid degradation (in vitro):** Hsu and colleagues found in 2009 that nattokinase can break down amyloid fibrils, an ability shared by some other proteases but not by trypsin or plasmin [10].
 
-**Animal studies:**
+**Human clinical evidence (negative):** The ICC-PACS trial randomized 120 adults (average age 58.3 years) with narrowed carotid or intracranial arteries but no symptoms to nattokinase 8,000 FU a day or placebo for 6 months [44]. Global cognition (MoCA score) did not differ between the groups, though an exploratory analysis found better visuospatial scores with nattokinase [44].
 
-A 2023 mouse model using amyloid-beta 1-42 injection found that chronic nattokinase administration (50-100 mg/kg intraperitoneally) prevented memory impairment, anxiety-like, and depression-like behaviors. It reduced hippocampal neuroinflammation (lowered IL-6 and TNF-alpha, increased IL-10), restored BDNF signaling, and normalized neurochemical changes, with effects comparable to donepezil in some measures [11].
-
-A 2024 rat study in a D-galactose plus aluminum chloride Alzheimer's disease model found oral nattokinase (equivalent to 2,600-5,200 FU/kg/day for 10 weeks) reduced amyloid-beta plaques, increased free-form amyloid-beta in cerebrospinal fluid (indicating clearance), removed brain aluminum accumulation, restored brain volume, and improved spatial memory in behavioral tests [43].
-
-Other preclinical work suggests nattokinase may ameliorate blood-brain barrier dysfunction, reduce brain inflammation, and improve cognition in neurodegenerative models. Proposed mechanisms include direct proteolysis of amyloid fibrils, anti-inflammatory effects via cytokine modulation, BDNF restoration, and vascular benefits improving cerebral blood flow [2].
-
-**Human clinical evidence (negative):** A study among 120 adults (average age 58) with asymptomatic narrowing of the carotid artery (carotid artery stenosis) or arteries within the skull (intracranial stenosis) — conditions linked with vascular cognitive impairment and dementia — showed that taking 4,000 FU of nattokinase twice daily for 6 months did not significantly improve overall cognitive function, or measures of visual attention, mental flexibility, verbal memory, working memory, language, executive function, spatial awareness, coordination, recall and recognition, olfactory function, or sleep compared to placebo [44]. A separate 2026 single-center RCT (ICC-PACS, n=88 completers) in patients with asymptomatic intracranial/carotid stenosis found 6 months of nattokinase supplementation did not significantly improve global cognition (MoCA scores) compared to placebo, though exploratory analysis indicated potential benefits in visuospatial function [2].
-
-**Synthesis:** While preclinical data on amyloid degradation and neuroinflammation reduction are promising, human clinical trials have consistently failed to demonstrate cognitive benefits from nattokinase supplementation. There are currently no studies on nattokinase in people with established Alzheimer's disease. The preclinical mechanisms are interesting but have not translated to measurable human cognitive outcomes.
+**Synthesis:** Lab findings on amyloid have not yet translated into better thinking in people [44].
 
 ### Metabolism and Insulin Sensitivity
 
-A small randomized trial involving women with obesity and/or diabetes found that nattokinase improved insulin sensitivity, fasting glucose, and HOMA-IR metrics after 3 months, but there was no difference in weight loss compared to placebo — metabolic benefits occurred independently of body weight changes [45]. However, this remains an isolated finding from a small study and should not be interpreted as evidence that nattokinase is effective for metabolic improvement. Nattokinase is not supported by the evidence as an effective supplement for weight loss or body composition improvement [2].
+The 2023 meta-analysis found a slight rise in blood glucose with nattokinase compared with placebo (mean difference 0.40, 95% CI 0.20 to 0.60) [33].
 
 ### Combination with Red Yeast Rice
 
-Nattokinase is mechanistically distinct from red yeast rice (RYR) and the two are sometimes combined for cardiovascular support. Nattokinase acts as a fibrinolytic enzyme while RYR contains monacolin K, which inhibits HMG-CoA reductase in a statin-like manner to lower cholesterol.
+Red yeast rice contains monacolin K, which lowers cholesterol in a statin-like way. Nattokinase acts on clots instead, and the two are sometimes combined.
 
-A 2009 randomized, double-blind trial found that combined nattokinase and RYR produced significant reductions in triglycerides (15%), total cholesterol (25%), LDL cholesterol (41%), and TC/HDL-C ratio (29.5%), with HDL cholesterol increases (7.5%), while nattokinase alone showed limited early effects [46].
+In the Yang trial, nattokinase with red yeast rice lowered triglycerides by 15%, total cholesterol by 25% and LDL cholesterol by 41%, and raised HDL cholesterol by 7.5%, while nattokinase alone did not differ from placebo [38].
 
-A 2024 randomized, double-blind, placebo-controlled trial in patients with stable coronary artery disease confirmed the combination's superior lipid-lowering, antihypertensive, and antithrombotic effects compared to either alone or placebo, with improvements in markers like thromboxane B2 and antithrombin III, and no notable adverse events [47]. However, the lipid-lowering effects are likely attributable primarily to the RYR component rather than nattokinase, given the consistently negative lipid data for nattokinase alone.
+In the Liu trial in stable coronary artery disease, the combination lowered triglycerides, total cholesterol and diastolic pressure more than either supplement alone or placebo, and lowered thromboxane B2 and raised antithrombin III compared with placebo; no adverse effects were reported [35]. Because nattokinase alone has not lowered lipids in trials, the lipid effect likely comes mostly from red yeast rice.
 
 ### SARS-CoV-2 Spike Protein
 
-In vitro studies have reported that nattokinase cleaves the SARS-CoV-2 spike protein in a dose- and time-dependent manner, suggesting possible antiviral properties [48]. However, no in vivo or clinical validation exists. These findings remain preliminary laboratory observations and should not be interpreted as evidence that nattokinase treats or prevents COVID-19.
+In cell experiments, nattokinase broke down the SARS-CoV-2 spike protein in a dose- and time-dependent way [48]. This is lab work only and is not evidence that nattokinase treats or prevents COVID-19.
 
 ### Gastrointestinal Health
 
-Limited evidence from traditional use suggests that natto may benefit gastrointestinal health. The mucus produced during natto fermentation (consisting mainly of gamma-polyglutamic acid and fructans) is believed to coat and protect the gastrointestinal mucosa. *Bacillus subtilis* in natto can colonize the intestine, secrete enzymes and vitamins to promote proliferation of mucosal cells, and regulate gut microbiota balance [49]. However, these potential effects are primarily theoretical, based on the properties of natto's components rather than clinical trials of nattokinase supplementation specifically. The evidence for gastrointestinal effects is substantially weaker than that for nattokinase's vascular benefits.
+Any gut benefit of natto food has not been shown for nattokinase supplements.
 
 ## 4. Recommended Dosing
 
 ### Clinical Study Doses
 
-Daily doses between 2,000 FU and 4,000 FU (and 100 mg to 650 mg) have been used in most clinical studies [1]. Due to a lack of definitive clinical evidence, it is not clear what dose is optimal for any specific indication.
+Trials have used 2,000 FU a day, two 2,000 FU capsules a day, 6,000 FU a day, 8,000 FU a day and 100 mg a day [26][31][32][34][40][44]. The best dose for any purpose is unknown.
 
 | Indication | Dose Studied | Duration | Outcome |
 |-----------|:-:|:-:|---------|
-| Fibrinolytic activity | 2,000 FU single dose | Acute | Increased fibrin breakdown markers at 4 hours [19] |
-| Clotting factor reduction | 4,000 FU/day | 8 weeks | Reduced fibrinogen, factor VII, factor VIII by 7-19% [26] |
+| Fibrinolytic activity | 2,000 FU single dose | Single dose | Raised fibrin breakdown products at 4 hours and D-dimer at 6 and 8 hours [19] |
+| Clotting factor reduction | Two 2,000 FU capsules a day | 2 months | Fibrinogen and factors VII and VIII fell 7% to 19%, no placebo group [26] |
 | Blood pressure (positive) | 2,000 FU/day | 8 weeks | SBP -5.55 mmHg, DBP -2.84 mmHg vs placebo [31] |
-| Blood pressure (negative) | 2,000 FU/day | 3 years | No significant BP reduction vs placebo [34] |
-| Blood pressure (negative) | 3,615 FU/day | 3 months | No significant BP reduction vs placebo [35] |
-| Cholesterol (negative) | 4,000 FU/day | 8 weeks | No lipid improvement vs placebo [37] |
-| Cholesterol (negative) | 7,000 FU/day | 6 months | No lipid improvement vs placebo [38] |
-| CIMT/atherosclerosis (negative) | 2,000 FU/day | 3 years | No effect on atherosclerosis progression [34] |
-| CIMT/plaque (observational, positive) | 10,800 FU/day | 12 months | Reduced CIMT by 21.7%, plaque by 36% [39] |
-| Cognition (negative) | 8,000 FU/day | 6 months | No improvement in cognitive function [44] |
+| Blood pressure (negative) | 2,000 FU/day | 3 years | No significant BP effect vs placebo [34] |
+| Cholesterol (negative) | Two 50 mg capsules twice a day | 6 months | No lipid difference vs placebo [38] |
+| CIMT/atherosclerosis (negative) | 2,000 FU/day | 3 years | No effect on CIMT progression [34] |
+| CIMT/plaque (positive) | 10,800 FU/day | 12 months | Thinner carotid walls, smaller plaques [39] |
+| Plaque vs simvastatin | 6,000 FU/day | 26 weeks | Plaque size fell 36.6% vs 11.5% with simvastatin [40] |
+| Cognition (negative) | 8,000 FU/day | 6 months | No change in global cognition [44] |
 
 ### Dosing Recommendations by Source
 
-The Japan NattoKinase Association recommends a minimum of 2,000 FU per daily dose for certified supplements [2]. Most supplement products provide 2,000-4,000 FU per capsule.
-
-Higher doses of 10,800 FU/day have been used in the Chen et al. observational study with reported benefits for lipids and atherosclerosis, but this dose has not been validated in controlled trials. A large clinical study involving 1,062 participants demonstrated that 10,800 FU/day for 12 months was safe and well-tolerated [39], though the observational design limits the strength of this safety conclusion.
+The Chen study authors reported that 10,800 FU a day was safe and well tolerated, and argued that their results challenge the recommended dose of 2,000 FU a day [39]. Most randomized trials used 2,000 to 8,000 FU a day [31][34][44].
 
 ### Timing
 
-Several timing strategies have been suggested:
-
-**Evening/bedtime:** Recommended by the Japan NattoKinase Association, based on the rationale that fibrinolytic activity naturally decreases during nighttime hours and is lowest in the morning, potentially increasing the risk of blood clots and heart attacks early in the morning [1][50]. Taking nattokinase at bedtime may provide fibrinolytic protection during this vulnerable window.
-
-**Morning (upon waking, before breakfast):** Aligns with higher early-morning cardiovascular risk due to elevated PAI-1 levels and supports daytime circulation [2].
-
-**Split doses (morning and evening):** Can help maintain steadier fibrinolytic activity throughout the day given the enzyme's pharmacokinetics — fibrinolytic activity begins within 2 hours, peaks at 2-4 hours, and persists for 8-12 hours [2].
-
-**Empty stomach administration** is generally recommended for optimal systemic absorption, as discussed in the Forms and Bioavailability section [2].
+Trials gave nattokinase once or twice a day [26][31][38]. The best time of day is unknown.
 
 ### Practical Dosing Summary
 
-- **General cardiovascular support:** 2,000-4,000 FU daily, taken on an empty stomach
-- **Timing:** Evening/bedtime or split morning/evening. Consistency matters more than exact timing
-- **Look for FU on the label** — milligram amounts alone are insufficient to determine potency
-- **Choose vitamin K-free formulations** if the primary goal is anti-thrombotic benefit or if taking warfarin (discuss with physician first)
+- **Doses studied:** 2,000 to 8,000 FU a day in most randomized trials [31][34][44]
+- **Look for FU on the label**: milligram amounts alone do not show enzyme activity
+- **Blood thinners:** if you take warfarin, aspirin or another blood thinner, talk to your doctor before starting [53][60]
 
 ## 5. Safety and Side Effects
 
 ### General Tolerability
 
-Nattokinase appears to be generally well-tolerated in clinical studies, and serious adverse events have not been reported in short-term studies at standard doses [17][51].
+Trials reported no notable adverse events with nattokinase [26][33][35].
 
-**Mild adverse effects** reported in clinical studies include diarrhea, common cold symptoms, constipation, stomach pain, menstrual cramps, headache, and one case of an abnormal liver function test [17].
+**Safety study:** In safety studies of NSK-SD, 10 mg/kg a day for 4 weeks was well tolerated in healthy volunteers, and rats showed no adverse effects at doses up to 1000 mg/kg a day for 90 days [22].
 
-**Safety study:** A study in 11 men and women found that 5 capsules of NSK-SD taken three times per day with meals (total daily dose of 552 mg/day) for four weeks was well-tolerated, with just one episode of constipation reported. In the women, there was a small but significant decrease in systolic but not diastolic blood pressure [22].
+**Large-scale safety data:** The Chen study reported no noticeable adverse effects at 10,800 FU a day for 12 months [39].
 
-**Large-scale safety data:** The Chen et al. study involving 1,062 participants at 10,800 FU/day for 12 months reported no noticeable adverse effects, including no significant changes in liver or kidney function [39]. While the observational design limits the strength of this safety finding, it provides some reassurance about tolerability at higher doses.
-
-Long-term safety studies of nattokinase supplementation beyond 12 months are lacking.
+The longest randomized trial lasted a median of 3 years [34].
 
 ### Risk of Bleeding
 
-This is the most significant safety concern with nattokinase. The enzyme's anti-thrombotic and blood-thinning effects could increase the risk of bruising or bleeding, particularly when combined with other blood-thinning supplements or medications [1]. This risk extends to any individual undergoing surgery or who may suffer traumatic injury, even if not taking blood-thinning medications.
+Bleeding is the main safety concern. Nattokinase breaks down fibrin, and a single dose lengthened a clotting time (the activated partial thromboplastin time) in healthy men [19]. It may add to the effect of blood thinners, and bleeding after an injury or surgery is a concern even without them.
 
-**Fatal hemoperitoneum:** A 92-year-old woman who was not taking blood thinners or aspirin but was regularly ingesting nattokinase supplements in unclear amounts ("sometimes a handful") experienced moderate hemoperitoneum (bleeding within the space between the abdominal wall and abdominal organs) after a fall. CT scanning revealed moderate hemoperitoneum with multiple bleeding spots in the liver. The woman opted for conservative management but passed away after one week due to severe low blood pressure and bradycardia [52].
+**Fatal hemoperitoneum:** An elderly woman taking nattokinase developed bleeding into the abdominal cavity (hemoperitoneum) and died, and the authors warned against taking nattokinase [52].
 
-**Intracerebral hemorrhage:** Bleeding in the brain was reported in one woman with high blood pressure who took 400 mg of nattokinase daily for one week, in addition to taking blood-pressure-lowering medication and low-dose aspirin [53]. This case highlights the particular danger of combining nattokinase with aspirin, especially in individuals with conditions predisposing to cerebral microbleeds.
+**Intracerebral hemorrhage:** A patient taking aspirin to prevent another stroke had a bleed in the cerebellum after taking nattokinase 400 mg a day for 7 days [53]. Brain scans also showed multiple small old bleeds (microbleeds), and the authors suggested nattokinase may raise the risk of brain bleeding in people with fragile small brain vessels who also take another antithrombotic drug [53]. For face drooping, arm or leg weakness or numbness, trouble speaking, a sudden severe headache or bleeding that will not stop, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
-**Theoretical risk of clot embolization:** Nattokinase could theoretically loosen an existing blood clot from an extremity (such as a limb), allowing the clot to travel to a potentially more dangerous location such as the heart or lungs [54].
-
-**Risk-benefit assessment:** For a healthy individual, the potential for increased bleeding from accidental trauma may outweigh any potential benefits of taking nattokinase, particularly given the limited evidence of clinical benefit [1]. Higher doses (such as 400 mg/day) significantly amplify bleeding risk, including severe events like intracerebral hemorrhage, and safety at these elevated doses is not well established [2].
+**Theoretical risk of clot embolization:** In theory, breaking up an existing clot could let a piece travel to the lungs or heart.
 
 ### Blood Pressure Lowering
 
-Nattokinase can lower blood pressure, which is a concern for individuals who already have low blood pressure or who take antihypertensive medications. Studies have shown systolic blood pressure reductions ranging from -3.73 to -5.55 mmHg [26][31]. Nattokinase should be used with caution in people with low blood pressure or those on blood-pressure-lowering medications [31].
+Nattokinase may lower blood pressure by a few mmHg; the 2023 meta-analysis found a fall in systolic pressure of 3.45 mmHg [33]. If you have low blood pressure or take blood pressure medicines, talk to your doctor first.
 
 ### Allergic Reactions
 
-**Soy allergy:** Nattokinase supplements derived from soy fermentation may contain soy proteins and should not be taken by people with soy allergies. Some nattokinase supplements claim to be soy-free (produced through fermentation processes not involving soy) [1].
+**Soy allergy:** Many nattokinase products are made by fermenting soybeans, so people with soy allergy should check the label.
 
-**Non-soy anaphylaxis:** Severe allergic reactions can occur even in individuals without soy allergies. A 51-year-old man experienced several anaphylaxis episodes over three months, including one approximately 10 minutes after consuming natto. Symptoms included rash, low blood pressure, tingling in the mouth, stomach cramps, nausea, vomiting, diarrhea, and fainting. The man was not allergic to soybeans or soy products such as miso, tofu, or soy milk. However, skin prick tests were positive for whole natto and nattokinase, indicating an allergy specific to the natto fermentation product or enzyme rather than to soy itself [55].
+**Non-soy anaphylaxis:** A case report described anaphylaxis from nattokinase in a patient with natto allergy [55]. For trouble breathing, swelling of the face or throat, or fainting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Thyroid Considerations
 
-People with impaired thyroid function should be aware of a theoretical concern that soy can increase the required dose of thyroid hormone medication. This concern may also apply to nattokinase supplements made from soy, although this specific interaction has not been demonstrated in studies [56].
+Soy foods may mean that people with hypothyroidism need more thyroid hormone medicine, because soy can reduce its absorption, although hypothyroid adults need not avoid soy foods [56]. Whether soy-based nattokinase supplements have this effect is unknown.
 
 ### Perioperative Risk
 
-Nattokinase should be discontinued at least two weeks prior to any scheduled surgery to minimize perioperative hemorrhage risk [2][51]. The enzyme's fibrinolytic activity, while generally modest at standard doses, could increase bleeding during and after surgical procedures.
+Because of the bleeding risk, tell your surgeon or dentist that you take nattokinase before any procedure. They may advise stopping it beforehand.
 
 ### Contraindications
 
-Nattokinase should be avoided or used only under medical supervision in the following situations [2][1]:
+Talk to your doctor before taking nattokinase, or avoid it, if any of these apply:
 
-- Bleeding disorders or coagulation abnormalities
-- Concurrent use of anticoagulant medications (warfarin, heparin) or antiplatelet agents (aspirin, clopidogrel)
-- Within two weeks before scheduled surgery (discontinue to minimize perioperative hemorrhage)
-- Recent surgery or trauma
-- Peptic ulcers, acute gastritis, or bleeding-prone gastrointestinal conditions
-- Pregnancy and breastfeeding (insufficient safety data)
-- Known allergy to natto, nattokinase, or soy (for soy-derived products)
+- Bleeding disorders or a high risk of bleeding
+- Anticoagulants (such as warfarin or heparin) or antiplatelet drugs (such as aspirin or clopidogrel) [53]
+- Upcoming surgery, or recent surgery or injury
+- Stomach ulcers or other gut conditions prone to bleeding
+- Pregnancy or breastfeeding, because safety data are lacking
+- Allergy to natto or nattokinase [55], or soy allergy for products made from soy
 
 ## 6. Drug Interactions
 
 ### Anticoagulants and Antiplatelet Agents
 
-Nattokinase exhibits anticoagulant properties that may potentiate the effects of the following drug classes, increasing bleeding risk [1][2]:
+Nattokinase may add to the effects of these medicines and raise bleeding risk [19][53]:
 
 | Drug Class | Examples | Interaction Risk |
 |-----------|---------|:-:|
-| Anticoagulants | Warfarin, heparin, enoxaparin | High — nattokinase's fibrinolytic action can amplify anticoagulant effects, increasing hemorrhage risk [52][53] |
-| Antiplatelet agents | Aspirin, clopidogrel (Plavix) | High — additive anti-thrombotic effects. The intracerebral hemorrhage case involved aspirin co-administration [53] |
-| NSAIDs | Ibuprofen, naproxen | Moderate — NSAIDs inhibit platelet function, potentially compounding nattokinase's effects [2] |
+| Anticoagulants | Warfarin, heparin, enoxaparin | High: nattokinase breaks down fibrin and lengthened a clotting time in healthy men [19] |
+| Antiplatelet agents | Aspirin, clopidogrel (Plavix) | High: the cerebellar bleed case involved aspirin [53] |
+| NSAIDs | Ibuprofen, naproxen | Possible: NSAIDs also affect platelets |
 
-Close monitoring of coagulation parameters, including international normalized ratio (INR), is recommended when nattokinase is used concurrently with any anticoagulant or antiplatelet agent [12].
+If you take warfarin, your doctor may want to check your INR more often if you start nattokinase.
 
 ### Antihypertensive Medications
 
-Nattokinase may have additive hypotensive effects when combined with blood-pressure-lowering medications such as ACE inhibitors, beta-blockers, calcium channel blockers, or diuretics. This could potentially lead to orthostatic hypotension (dizziness upon standing) or excessive blood pressure reduction [2][51]. Individuals on antihypertensive therapy should monitor blood pressure closely and consult healthcare providers before starting nattokinase [2].
+Trials found small falls in blood pressure with nattokinase [31][33], so it may add to blood pressure medicines. If you take them, check your blood pressure and talk to your doctor before starting.
 
 ### Blood-Thinning Supplements
 
-Other supplements with blood-thinning properties may compound nattokinase's effects. These include:
+Other supplements that affect clotting may add to nattokinase's effects. These include:
 
 - Fish oil / omega-3 fatty acids
 - Vitamin E (high dose)
@@ -310,164 +292,102 @@ Other supplements with blood-thinning properties may compound nattokinase's effe
 - Ginkgo biloba
 - Turmeric / curcumin
 
-Combining multiple supplements with anti-thrombotic properties increases the cumulative bleeding risk [1].
+Combining several supplements that affect clotting may add to bleeding risk.
 
 ### Vitamin K Interactions
 
-The relationship between nattokinase and vitamin K is complex. Natto itself is one of the richest dietary sources of vitamin K2 (MK-7), which promotes blood clotting factor production. However, purified nattokinase supplements (especially NSK-SD) have most vitamin K removed. If taking warfarin — which works by antagonizing vitamin K — the vitamin K content of nattokinase supplements that are not K-free could reduce warfarin's efficacy. Conversely, the fibrinolytic effects of nattokinase could increase bleeding risk when combined with warfarin. This dual concern makes it essential for warfarin users to either avoid nattokinase entirely or use only vitamin K-free formulations under close medical supervision [1][24].
+Natto contains a lot of MK-7, a form of vitamin K2 [23], and MK-7 at doses as low as 10 mcg a day lowered INR in some people on a warfarin-type drug [60]. NSK-SD has its vitamin K2 removed [32], but other products may not state their vitamin K content. Nattokinase itself may also add to bleeding risk with warfarin [19]. If you take warfarin, check with your doctor or anticoagulation clinic before taking nattokinase or eating natto.
 
 ### No Known Interactions with Antibiotics
 
-Reliable medical sources, including Memorial Sloan Kettering Cancer Center, Drugs.com, and WebMD, report no known significant drug interactions between nattokinase and antibiotics [2].
+Interactions between nattokinase and antibiotics have not been studied. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ## 7. Dietary Sources
 
 ### Natto
 
-Natto is the only significant dietary source of nattokinase. It is a traditional Japanese food made by fermenting steamed soybeans with *Bacillus subtilis* subsp. *natto* at approximately 40 degrees Celsius for 24 hours [2][57].
+Natto is the main food source of nattokinase. It is made by fermenting soybeans with *Bacillus subtilis* natto [6][57].
 
-**Nattokinase content:** A 50-gram serving of natto is estimated to provide between 1,400 to 2,000 FU of nattokinase activity, comparable to a single supplement capsule. However, this content may decrease depending on how natto is cooked or prepared — heat can denature the enzyme [1][58].
+**Nattokinase content:** Sumi measured an average clot-dissolving activity of about 40 plasmin units per gram of natto, a different unit from FU [57].
 
-**Nutritional profile of natto:** Beyond nattokinase, natto is a nutrient-dense food providing:
+**Nutritional profile of natto:** Natto is also high in MK-7, a form of vitamin K2 [23].
 
-| Nutrient | Per 50g Serving (approximate) |
-|----------|:-:|
-| Nattokinase activity | 1,400-2,000 FU |
-| Vitamin K2 (MK-7) | ~350 mcg (per 40g package) [23] |
-| Protein | ~8-9g |
-| Fiber | ~2.5g |
-| Iron | ~4mg |
-| Manganese | ~0.6mg |
-| Vitamin C | ~6.5mg |
-| Zinc | ~1.5mg |
-| Copper | ~0.3mg |
+**Characteristics:** Natto is sticky and strong-smelling, and is often eaten with rice in Japan.
 
-**Characteristics:** Natto has a sticky, slippery consistency and a pungent, cheese-like or ammonia-like odor that may be an acquired taste for those not raised on it [1][2]. It is consumed widely in Japan, particularly in the eastern regions, typically served over rice for breakfast.
-
-**Preparation considerations:** Because nattokinase is an enzyme sensitive to heat, consuming natto fresh or at room temperature preserves more enzyme activity than cooking it at high temperatures. Freezing natto for storage is acceptable, as the enzyme retains activity after thawing. Adding natto to very hot rice or soup may reduce enzyme activity [2].
+**Preparation considerations:** Nattokinase is a protein enzyme, so cooking natto at high heat may reduce its activity.
 
 ### Other Fermented Soybean Products
 
-While natto is the primary source, other fermented soybean foods from various Asian traditions (such as cheonggukjang from Korea and thua nao from Thailand) may contain related fibrinolytic enzymes produced by *Bacillus* species, though nattokinase specifically is associated with *B. subtilis* var. *natto* and natto production [2].
+Other fermented soybean foods made with *Bacillus* species, such as Korean cheonggukjang, may contain related enzymes, but nattokinase itself comes from natto.
 
 ### Recombinant and Non-Soy Production
 
-Modern production methods can generate nattokinase through fermentation processes that do not use soybeans as a substrate, using alternative growth media for *Bacillus subtilis*. These methods can produce soy-free nattokinase supplements for individuals with soy allergies [1][2]. The enzyme produced through these methods is biochemically identical to soy-derived nattokinase.
+Some nattokinase is made by growing *Bacillus subtilis* without soybeans, which may suit people with soy allergy. Check the label.
 
 ## 8. References
 
-[1] ConsumerLab. "Nattokinase Supplements Review." Accessed 2026. [https://www.consumerlab.com/reviews/nattokinase-supplement-review/nattokinase/](https://www.consumerlab.com/reviews/nattokinase-supplement-review/nattokinase/)
+[3] Sumi H, Hamada H, Nakanishi K, Hiratani H. "Enhancement of the fibrinolytic activity in plasma by oral administration of nattokinase." *Acta Haematol*. 1990;84(3):139-143. PMID: 2123064. https://pubmed.ncbi.nlm.nih.gov/2123064/
 
-[2] Grokipedia. "Nattokinase." [https://grokipedia.com/page/Nattokinase](https://grokipedia.com/page/Nattokinase)
+[4] Chen H, McGowan EM, Ren N, et al. "Nattokinase: A Promising Alternative in Prevention and Treatment of Cardiovascular Diseases." *Biomark Insights*. 2018;13:1177271918785130. PMID: 30013308. https://pubmed.ncbi.nlm.nih.gov/30013308/
 
-[3] Sumi H, Hamada H, Nakanishi K, Hiratani H. "Enhancement of the fibrinolytic activity in plasma by oral administration of nattokinase." *Acta Haematol*. 1990;84(3):139-143. doi: [10.1159/000205051](https://doi.org/10.1159/000205051)
+[6] Urano T, Ihara H, Umemura K, et al. "The profibrinolytic enzyme subtilisin NAT purified from Bacillus subtilis cleaves and inactivates plasminogen activator inhibitor type 1." *J Biol Chem*. 2001;276(27):24690-24696. PMID: 11325965. https://pubmed.ncbi.nlm.nih.gov/11325965/
 
-[4] Chen H, McGowan EM, Ren N, et al. "Nattokinase: A Promising Alternative in Prevention and Treatment of Cardiovascular Diseases." *Biomarker Res*. 2018;6:5. doi: [10.1186/s40364-018-0120-7](https://doi.org/10.1186/s40364-018-0120-7)
+[7] Fujita M, Nomura K, Hong K, et al. "Purification and characterization of a strong fibrinolytic enzyme (nattokinase) in the vegetable cheese natto, a popular soybean fermented food in Japan." *Biochem Biophys Res Commun*. 1993;197(3):1340-1347. PMID: 8280151. https://pubmed.ncbi.nlm.nih.gov/8280151/
 
-[5] Kurosawa Y, Nirengi S, Homma T, et al. "A single-dose of oral nattokinase potentiates thrombolysis and anti-coagulation profiles." *Sci Rep*. 2015;5:11601. doi: [10.1038/srep11601](https://doi.org/10.1038/srep11601)
+[8] Okamoto A, Hanagata H, Matsumoto E, et al. "Angiotensin I converting enzyme inhibitory activities of various fermented foods." *Biosci Biotechnol Biochem*. 1995;59(6):1147-1149. PMID: 7613003. https://pubmed.ncbi.nlm.nih.gov/7613003/
 
-[6] Urano T, Ihara H, Umemura K, et al. "The profibrinolytic enzyme subtilisin NAT purified from Bacillus subtilis cleaves and inactivates plasminogen activator inhibitor type 1." *J Biol Chem*. 2001;276(27):24690-24696. doi: [10.1074/jbc.M101751200](https://doi.org/10.1074/jbc.M101751200)
+[10] Hsu RL, Lee KT, Wang JH, et al. "Amyloid-degrading ability of nattokinase from Bacillus subtilis natto." *J Agric Food Chem*. 2009;57(2):503-508. PMID: 19117402. https://pubmed.ncbi.nlm.nih.gov/19117402/
 
-[7] Fujita M, Nomura K, Hong K, et al. "Purification and characterization of a strong fibrinolytic enzyme (nattokinase) in the vegetable cheese natto, a popular soybean fermented food in Japan." *Biochem Biophys Res Commun*. 1993;197(3):1340-1347.
+[14] Fujita M, Hong K, Ito Y, et al. "Transport of nattokinase across the rat intestinal tract." *Biol Pharm Bull*. 1995;18(9):1194-1196. PMID: 8845803. https://pubmed.ncbi.nlm.nih.gov/8845803/
 
-[8] Okamoto A, Hanagata H, Matsumoto E, et al. "Angiotensin I converting enzyme inhibitory activities of various fermented foods." *Plant Foods Hum Nutr*. 1995;47(3):277-285.
+[18] Ero MP, Ng CM, Mihailovski T, et al. "A pilot study on the serum pharmacokinetics of nattokinase in humans following a single, oral, daily dose." *Altern Ther Health Med*. 2013;19(3):16-19. PMID: 23709455. https://pubmed.ncbi.nlm.nih.gov/23709455/
 
-[9] Nattokinase anti-atherosclerotic effects on von Willebrand factor and platelet aggregation. As cited in Grokipedia.
+[19] Kurosawa Y, Nirengi S, Homma T, et al. "A single-dose of oral nattokinase potentiates thrombolysis and anti-coagulation profiles." *Sci Rep*. 2015;5:11601. PMID: 26109079. https://pubmed.ncbi.nlm.nih.gov/26109079/
 
-[10] Hsu RL, Lee KT, Wang JH, et al. "Amyloid-degrading ability of nattokinase from Bacillus subtilis natto." *J Agric Food Chem*. 2009;57(2):503-508. doi: [10.1021/jf803072r](https://doi.org/10.1021/jf803072r)
+[22] Lampe BJ, English JC. "Toxicological assessment of nattokinase derived from Bacillus subtilis var. natto." *Food Chem Toxicol*. 2016;88:87-99. PMID: 26740078. https://pubmed.ncbi.nlm.nih.gov/26740078/
 
-[11] Nattokinase neuroprotection in mouse models of amyloid-beta-induced neurotoxicity, 2023. As cited in Grokipedia.
+[23] Ikeda Y, Iki M, Morita A, et al. "Intake of fermented soybeans, natto, is associated with reduced bone loss in postmenopausal women: Japanese Population-Based Osteoporosis (JPOS) Study." *J Nutr*. 2006;136(5):1323-1328. PMID: 16614424. https://pubmed.ncbi.nlm.nih.gov/16614424/
 
-[12] Commercial nattokinase standardization to approximately 20,000 FU per gram. As cited in Grokipedia.
+[25] Fujita M, Hong K, Ito Y, et al. "Thrombolytic effect of nattokinase on a chemically induced thrombosis model in rat." *Biol Pharm Bull*. 1995;18(10):1387-1391. PMID: 8593442. https://pubmed.ncbi.nlm.nih.gov/8593442/
 
-[13] Nattokinase biochemical stability (pH 6-12, temperatures up to 60 degrees Celsius) and sensitivity to pepsin. As cited in Grokipedia.
+[26] Hsia CH, Shen MC, Lin JS, et al. "Nattokinase decreases plasma levels of fibrinogen, factor VII, and factor VIII in human subjects." *Nutr Res*. 2009;29(3):190-196. PMID: 19358933. https://pubmed.ncbi.nlm.nih.gov/19358933/
 
-[14] Fujita M, Hong K, Ito Y, et al. "Transport of nattokinase across the rat intestinal tract." *Biol Pharm Bull*. 1995;18(9):1194-1196.
+[27] Cesarone MR, Belcaro G, Nicolaides AN, et al. "Prevention of venous thrombosis in long-haul flights with Flite Tabs: the LONFLIT-FLITE randomized, controlled trial." *Angiology*. 2003;54(5):531-539. PMID: 14565628. https://pubmed.ncbi.nlm.nih.gov/14565628/
 
-[15] Nattokinase half-life of 8-12 hours compared to streptokinase. As cited in Grokipedia.
+[29] Nagata C, Wada K, Tamura T, et al. "Dietary soy and natto intake and cardiovascular disease mortality in Japanese adults: the Takayama study." *Am J Clin Nutr*. 2017;105(2):426-431. PMID: 27927636. https://pubmed.ncbi.nlm.nih.gov/27927636/
 
-[16] Milner M, Makise K. "Natto and its active ingredient nattokinase: a potent and safe thrombolytic agent." *Altern Complement Ther*. 2002;8(3):157-164.
+[31] Kim JY, Gum SN, Paik JK, et al. "Effects of nattokinase on blood pressure: a randomized, controlled trial." *Hypertens Res*. 2008;31(8):1583-1588. PMID: 18971533. https://pubmed.ncbi.nlm.nih.gov/18971533/
 
-[17] Kazuya M. "Clinical evaluation of NSK-SD, a nattokinase supplement." *Prog Med*. 2006;26:1-8.
+[32] Jensen GS, Lenninger M, Ero MP, Benson KF. "Consumption of nattokinase is associated with reduced blood pressure and von Willebrand factor, a cardiovascular risk marker: results from a randomized, double-blind, placebo-controlled, multicenter North American clinical trial." *Integr Blood Press Control*. 2016;9:95-104. PMID: 27785095. https://pubmed.ncbi.nlm.nih.gov/27785095/
 
-[18] Ero MP, Ng CM, Mihailovski T, et al. "A pilot study on the serum pharmacokinetics of nattokinase in humans following a single, oral, daily dose." *Altern Ther Health Med*. 2013;19(3):16-19.
+[33] Li X, Long J, Gao Q, et al. "Nattokinase Supplementation and Cardiovascular Risk Factors: A Systematic Review and Meta-Analysis of Randomized Controlled Trials." *Rev Cardiovasc Med*. 2023;24(8):234. PMID: 39076715. https://pubmed.ncbi.nlm.nih.gov/39076715/
 
-[19] Kurosawa Y, Nirengi S, Homma T, et al. "A single-dose of oral nattokinase potentiates thrombolysis and anti-coagulation profiles." *Sci Rep*. 2015;5:11601. doi: [10.1038/srep11601](https://doi.org/10.1038/srep11601)
+[34] Hodis HN, Mack WJ, Meiselman HJ, et al. "Nattokinase atherothrombotic prevention study: A randomized controlled trial." *Clin Hemorheol Microcirc*. 2021;78(4):339-353. PMID: 33843667. https://pubmed.ncbi.nlm.nih.gov/33843667/
 
-[20] Japan Bio Science Laboratory Co. NSK-SD product information.
+[35] Liu M, Xu Z, Wang Z, et al. "Lipid-lowering, antihypertensive, and antithrombotic effects of nattokinase combined with red yeast rice in patients with stable coronary artery disease: a randomized, double-blinded, placebo-controlled trial." *Front Nutr*. 2024;11:1380727. PMID: 38812930. https://pubmed.ncbi.nlm.nih.gov/38812930/
 
-[21] European Food Safety Authority. "Safety of the food enzyme subtilisin (nattokinase) from Bacillus subtilis." *EFSA Journal*. 2016. Commission Implementing Decision (EU) 2017/115.
+[36] Iwai K, Nakaya N, Kawasaki Y, Matsue H. "Antioxidative functions of natto, a kind of fermented soybeans: effect on LDL oxidation and lipid metabolism in cholesterol-fed rats." *J Agric Food Chem*. 2002;50(12):3597-3601. PMID: 12033835. https://pubmed.ncbi.nlm.nih.gov/12033835/
 
-[22] Lampe JW, English JC. "A Four-Week Toxicity Study of Nattokinase Supplement (NSK-SD) in Healthy Adults." *Food Chem Toxicol*. 2016;94:48-54.
+[38] Yang NC, Chou CW, Chen CY, et al. "Combined nattokinase with red yeast rice but not nattokinase alone has potent effects on blood lipids in human subjects with hyperlipidemia." *Asia Pac J Clin Nutr*. 2009;18(3):310-317. PMID: 19786378. https://pubmed.ncbi.nlm.nih.gov/19786378/
 
-[23] Ikeda S, Kagamimori S, Tobata M, et al. "Intake of fermented soybeans, natto, is associated with reduced bone loss in postmenopausal women: Japanese Population-Based Osteoporosis (JPOS) Study." *J Nutr*. 2006;136(5):1323-1328.
+[39] Chen H, Chen J, Zhang F, et al. "Effective management of atherosclerosis progress and hyperlipidemia with nattokinase: A clinical study with 1,062 participants." *Front Cardiovasc Med*. 2022;9:964977. PMID: 36072877. https://pubmed.ncbi.nlm.nih.gov/36072877/ Corrigendum: *Front Cardiovasc Med*. 2022;9:1076420. PMID: 36545015. https://pubmed.ncbi.nlm.nih.gov/36545015/
 
-[24] Nattokinase and vitamin K2 coexistence in natto and potential synergistic effects. As cited in Grokipedia.
+[40] Ren NN, Chen HJ, Li Y, et al. "A clinical study on the effect of nattokinase on carotid artery atherosclerosis and hyperlipidaemia." *Zhonghua Yi Xue Za Zhi*. 2017;97(26):2038-2042. PMID: 28763875. https://pubmed.ncbi.nlm.nih.gov/28763875/
 
-[25] Fujita M, Hong K, Ito Y, et al. "Thrombolytic effect of nattokinase on a chemically induced thrombosis model in rat." *Biol Pharm Bull*. 1995;18(10):1387-1391.
+[44] Zhang K, Zhang X, Wang A, et al. "Nattokinase supplementation for cognitive enhancement in asymptomatic intracranial/carotid stenosis: A randomized controlled trial." *J Stroke Cerebrovasc Dis*. 2026;35(1):108511. PMID: 41325794. https://pubmed.ncbi.nlm.nih.gov/41325794/
 
-[26] Hsia CH, Shen MC, Lin JS, et al. "Nattokinase decreases plasma levels of fibrinogen, factor VII, and factor VIII in human subjects." *Nutr Res*. 2009;29(3):190-196. doi: [10.1016/j.nutres.2009.01.009](https://doi.org/10.1016/j.nutres.2009.01.009)
+[48] Tanikawa T, Kiba Y, Yu J, et al. "Degradative Effect of Nattokinase on Spike Protein of SARS-CoV-2." *Molecules*. 2022;27(17):5405. PMID: 36080170. https://pubmed.ncbi.nlm.nih.gov/36080170/
 
-[27] Cesarone MR, Belcaro G, Nicolaides AN, et al. "Prevention of venous thrombosis in long-haul flights with Flite Tabs: The LONFLIT-FLITE randomized, controlled trial." *Angiology*. 2003;54(5):531-539.
+[52] Ramachandran L, Aqeel A, Jafri A, et al. "Nattokinase-Associated Hemoperitoneum in an Elderly Woman." *Cureus*. 2021;13(12):e20074. PMID: 35003944. https://pubmed.ncbi.nlm.nih.gov/35003944/
 
-[28] Observational study of 153 patients with vascular diseases. As cited in Grokipedia.
+[53] Chang YY, Liu JS, Lai SL, et al. "Cerebellar hemorrhage provoked by combined use of nattokinase and aspirin in a patient with cerebral microbleeds." *Intern Med*. 2008;47(5):467-469. PMID: 18310985. https://pubmed.ncbi.nlm.nih.gov/18310985/
 
-[29] Takayama cohort study: natto intake and ischemic stroke mortality in over 13,000 adults. As cited in Grokipedia.
+[55] Awatani-Yoshidome K, Hashimoto T, Satoh T. "Anaphylaxis from nattokinase in a patient with fermented soybean (natto) allergy." *Allergol Int*. 2022;71(1):153-154. PMID: 34452810. https://pubmed.ncbi.nlm.nih.gov/34452810/
 
-[30] Fibrinaloid microclot degradation by recombinant nattokinase, 2024 study. As cited in Grokipedia.
+[56] Messina M, Redmond G. "Effects of soy protein and soybean isoflavones on thyroid function in healthy adults and hypothyroid patients: a review of the relevant literature." *Thyroid*. 2006;16(3):249-258. PMID: 16571087. https://pubmed.ncbi.nlm.nih.gov/16571087/
 
-[31] Kim JY, Gum SN, Paik JK, et al. "Effects of nattokinase on blood pressure: a randomized, controlled trial." *Hypertens Res*. 2008;31(8):1583-1588. doi: [10.1291/hypres.31.1583](https://doi.org/10.1291/hypres.31.1583)
+[57] Sumi H, Hamada H, Tsushima H, et al. "A novel fibrinolytic enzyme (nattokinase) in the vegetable cheese Natto; a typical and popular soybean food in the Japanese diet." *Experientia*. 1987;43(10):1110-1111. PMID: 3478223. https://pubmed.ncbi.nlm.nih.gov/3478223/
 
-[32] Jensen GS, Lenninger M, Ero MP, Benson KF. "Consumption of nattokinase is associated with reduced blood pressure and von Willebrand factor, a cardiovascular risk marker: results from a randomized, double-blind, placebo-controlled, multicenter North American clinical trial." *Integr Blood Press Control*. 2016;9:95-104. doi: [10.2147/IBPC.S99553](https://doi.org/10.2147/IBPC.S99553)
+[59] Schurgers LJ, Teunissen KJ, Hamulyák K, et al. "Vitamin K-containing dietary supplements: comparison of synthetic vitamin K1 and natto-derived menaquinone-7." *Blood*. 2007;109(8):3279-3283. PMID: 17158229. https://pubmed.ncbi.nlm.nih.gov/17158229/
 
-[33] Li D, Hou L, Hu M, et al. "The effects of nattokinase on blood pressure, blood lipids, and anticoagulation: a systematic review and meta-analysis of randomized controlled trials." *Rev Cardiovasc Med*. 2023;24(8):234. doi: [10.31083/j.rcm2408234](https://doi.org/10.31083/j.rcm2408234)
-
-[34] Hodis HN, Mack WJ, Azen SP, et al. "Nattokinase atherothrombotic prevention study: a randomized controlled trial." *Clin Hemorheol Microcirc*. 2021;78(4):339-353. doi: [10.3233/CH-211147](https://doi.org/10.3233/CH-211147)
-
-[35] Liu K, Wang K, Guo Y, et al. "The effect of nattokinase in patients with stable coronary artery disease: a randomized, double-blind, placebo-controlled trial." *Front Nutr*. 2024. doi: [10.3389/fnut.2024.1373271](https://doi.org/10.3389/fnut.2024.1373271)
-
-[36] Iwai K, Nakaya N, Kawasaki Y, Matsue H. "Antioxidative functions of natto, a kind of fermented soybeans: effect on LDL oxidation and lipid metabolism in cholesterol-fed rats." *J Agric Food Chem*. 2002;50(12):3597-3601.
-
-[37] Wu DJ, Lin CS, Lee MY. "Lipid-lowering effect of nattokinase in patients with primary hypercholesterolemia." *Acta Cardiol Sin*. 2009;25:26-30.
-
-[38] Yang NC, Chou CW, Chen CY, et al. "Combined nattokinase with red yeast rice but not nattokinase alone has potent effects on blood lipids in human subjects with hyperlipidemia." *Asia Pac J Clin Nutr*. 2009;18(3):310-317.
-
-[39] Chen H, Chen J, Zhang F, et al. "Effective management of atherosclerosis progress and hyperlipidemia with nattokinase: A clinical study with 1,062 participants." *Front Cardiovasc Med*. 2022;9:964977. doi: [10.3389/fcvm.2022.964977](https://doi.org/10.3389/fcvm.2022.964977)
-
-[40] Ren NN, Chen HJ, Li Y, et al. "Nattokinase versus simvastatin in carotid atherosclerosis: a comparative study." *Chin J Integr Med*. 2017;23(8):619-625.
-
-[41] Nattokinase reduction of von Willebrand factor and inhibition of platelet aggregation. As cited in Grokipedia.
-
-[42] Nattokinase improvement of endothelial function and arterial stiffness. As cited in Grokipedia.
-
-[43] 2024 rat study of nattokinase in D-galactose/aluminum chloride Alzheimer's disease model. As cited in Grokipedia.
-
-[44] Zhang C, Zhang H, Yu L, et al. "Effects of nattokinase on cognitive function in patients with asymptomatic cerebrovascular stenosis: A randomized controlled trial." *J Stroke Cerebrovasc Dis*. 2025;34(1):108044.
-
-[45] Nattokinase effects on insulin sensitivity in women with obesity/diabetes. As cited in Grokipedia.
-
-[46] Yang NC, Chou CW, Chen CY, et al. "Combined nattokinase with red yeast rice but not nattokinase alone has potent effects on blood lipids in human subjects with hyperlipidemia." *Asia Pac J Clin Nutr*. 2009;18(3):310-317.
-
-[47] Liu K, et al. "Nattokinase paired with red yeast rice in stable coronary artery disease: a randomized, double-blind, placebo-controlled trial." *Front Nutr*. 2024. doi: [10.3389/fnut.2024.1373271](https://doi.org/10.3389/fnut.2024.1373271)
-
-[48] In vitro studies on nattokinase cleavage of SARS-CoV-2 spike protein. As cited in Grokipedia.
-
-[49] Gastrointestinal effects of natto and Bacillus subtilis. As cited in Grokipedia.
-
-[50] Urano T, Sakakibara K, Rydzewski A, et al. "Relationships between euglobulin clot lysis time and the plasma levels of tissue plasminogen activator and plasminogen activator inhibitor 1." *Thromb Haemost*. 1990;63(1):82-86.
-
-[51] Nattokinase general tolerability and safety profile. As cited in Grokipedia.
-
-[52] Ramachandran R, Bhatt DK, Engelman RM. "Nattokinase Supplement Associated Hemoperitoneum." *Cureus*. 2021;13(7):e16555. doi: [10.7759/cureus.16555](https://doi.org/10.7759/cureus.16555)
-
-[53] Chang YY, Liu JS, Lai SL, et al. "Cerebellar hemorrhage provoked by combined use of nattokinase and aspirin in a patient with cerebral microbleeds." *Intern Med*. 2008;47(5):467-469. doi: [10.2169/internalmedicine.47.0317](https://doi.org/10.2169/internalmedicine.47.0317)
-
-[54] Milner M, Makise K. "Natto and its active ingredient nattokinase: a potent and safe thrombolytic agent." *Altern Complement Ther*. 2002;8(3):157-164.
-
-[55] Awatani-Yoshidome T, Kano M, et al. "Anaphylaxis to natto: Nattokinase as a novel allergen." *Allergol Int*. 2022;71(3):399-401. doi: [10.1016/j.alit.2022.01.003](https://doi.org/10.1016/j.alit.2022.01.003)
-
-[56] Messina M, Redmond G. "Effects of soy protein and soybean isoflavones on thyroid function in healthy adults and hypothyroid patients: a review of the relevant literature." *Thyroid*. 2006;16(3):249-258.
-
-[57] Sumi H. "A novel fibrinolytic enzyme (nattokinase) in the vegetable cheese natto; a typical and popular soybean food in the Japanese diet." *Experientia*. 1987;43(10):1110-1111. doi: [10.1007/BF01956052](https://doi.org/10.1007/BF01956052)
-
-[58] European Food Safety Authority. "Safety assessment of the food enzyme subtilisin (nattokinase) from Bacillus subtilis." *EFSA Journal*. 2016.
+[60] Theuwissen E, Teunissen KJ, Spronk HM, et al. "Effect of low-dose supplements of menaquinone-7 (vitamin K2) on the stability of oral anticoagulant treatment: dose-response relationship in healthy volunteers." *J Thromb Haemost*. 2013;11(6):1085-1092. PMID: 23530987. https://pubmed.ncbi.nlm.nih.gov/23530987/
