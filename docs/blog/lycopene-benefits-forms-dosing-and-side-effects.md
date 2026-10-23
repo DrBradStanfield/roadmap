@@ -6,7 +6,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["lycopene", "antioxidant", "prostate", "cardiovascular", "heart health", "blood pressure", "cholesterol", "ldl", "skin", "uv", "photoaging", "wrinkles", "tomato", "carotenoid", "cancer", "prostate cancer", "lung cancer", "inflammation", "beta-carotene", "lutein", "zeaxanthin", "vitamin c", "vitamin e", "selenium", "statin", "spf", "sunscreen", "aging", "longevity", "mediterranean diet", "olive oil"]
-summary: "Reference on lycopene. Brad's guidance includes it in his micronutrient base and cites a meta-analysis in which 12 mg a day or more lowered systolic blood pressure; higher dietary intake is linked with lower prostate cancer risk. Talk to your doctor first if pregnant or on blood thinners."
+summary: "Reference on lycopene. Brad includes it in his micronutrient base, citing a meta-analysis in which supplements lowered systolic blood pressure; more dietary lycopene is linked with lower prostate cancer risk. Avoid in pregnancy unless advised. Talk to your doctor first if on blood thinners."
 reviewed: "2026-10-23"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28129549/","checked":"2026-10-23","fingerprint":"sha256:f923ffa83dee63c1d2e461319d1682b25249c1d383addbdba1c2b52b12581c81"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28440323/","checked":"2026-10-23","fingerprint":"sha256:d65ec9bc23f9f535958bd6ab009a4f144ee214f6f753b43ed38c5adcad1f0695"}]
 ---
@@ -19,12 +19,12 @@ Brad's Health Roadmap lists lycopene in its micronutrient base, alongside methyl
 
 ## Key safety points
 
-- Lab studies suggest lycopene has antiplatelet effects, and whether this raises bleeding risk in people is unknown. If you take warfarin, aspirin, clopidogrel or another blood thinner, check with your doctor before starting [8].
+- Lycopene has antiplatelet effects and may strengthen aspirin's effect, so a review advises a low-lycopene diet for people taking aspirin to prevent another heart attack or stroke, because of the potential bleeding risk [8]. If you take warfarin, aspirin, clopidogrel or another blood thinner, check with your doctor before starting [8].
 - In a randomised trial in pregnant women, 2 mg a day did not prevent pre-eclampsia and was linked with more preterm labour and more low-birthweight babies. Avoid lycopene supplements in pregnancy unless your doctor advises them [69].
 - Severe tomato allergy is rare but can cause throat swelling and anaphylaxis. If you react this way to tomatoes, avoid tomato-derived lycopene; if throat swelling or trouble breathing starts, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [70].
 - Doses from 15 to 120 mg a day for a year were well tolerated in men with prostate cancer, and blood levels were similar from 15 to 90 mg a day [66].
-- Diarrhoea, nausea and bloating were the most common side effects in trials [66][67].
-- Eating very large amounts of tomatoes and other lycopene-rich foods can turn the skin yellow-orange (carotenoderma), which is harmless [73].
+- In a tomato-supplement trial, diarrhoea, nausea and bloating were the most common side effects [67]; in a lycopene trial, one man stopped because of diarrhoea [66].
+- Eating very large amounts of lycopene-rich foods can turn the skin yellow-orange (carotenoderma), which is harmless [73].
 
 ## Brad's videos on this topic
 
@@ -46,7 +46,7 @@ Safety studies of synthetic lycopene in rats found low toxicity and a large marg
 
 Tomatoes and tomato foods contain mainly all-trans lycopene, but more than half of the lycopene in human blood and tissues is in cis forms [17]. In one trial, supplements that were over 90% all-trans lycopene raised blood lycopene that was 60% cis [22].
 
-In ferrets, cis lycopene was absorbed better than all-trans lycopene, probably because cis forms dissolve more easily in bile acid micelles [17]. Heating tomatoes increased the amount of lycopene that could be absorbed and raised their total antioxidant activity [16]. This is why processed tomato products tend to deliver more lycopene than raw tomatoes.
+In ferrets, cis lycopene was absorbed better than all-trans lycopene, probably because cis forms dissolve more easily in bile acid micelles [17]. Heating tomatoes released more extractable lycopene and raised their total antioxidant activity [16]. This is why processed tomato products tend to deliver more lycopene than raw tomatoes.
 
 Inside the plant tissue, lycopene is generally stable during processing [6]. Pure crystalline lycopene is different: stored badly and exposed to light and air, it can break down into mutagenic products, so commercial forms include antioxidants to prevent this [65].
 
@@ -72,7 +72,7 @@ Lycopene concentrations vary widely between tissues, from about 1 nmol/g in fat 
 
 **The type of fat matters.** In a crossover trial of 16 adults eating the same salad, lycopene absorption was 45.8% higher when the salad came with olive oil rather than coconut oil [29].
 
-**High-dose calcium supplements dramatically reduce lycopene absorption.** In a crossover study of 10 healthy adults, adding 500 mg of calcium carbonate to a meal providing 19 mg of lycopene in tomato paste cut lycopene bioavailability by 83% [30]. In lab digestion models, calcium, magnesium, zinc and iron all reduced how much carotenoid could be taken up, with iron and zinc having the strongest effects [31][32]. Taking a lycopene supplement at a different meal from large mineral doses may help.
+**Calcium supplements can reduce lycopene absorption.** In a crossover study of 10 healthy adults, adding 500 mg of calcium carbonate, which the authors call a nutritional dose, to a meal providing 19 mg of lycopene in tomato paste cut lycopene bioavailability by 83% [30]. In lab digestion models, calcium, magnesium, zinc and iron all reduced how much carotenoid could be taken up, with iron and zinc having the strongest effects [31][32]. Taking a lycopene supplement at a different meal from mineral supplements may help.
 
 **Processing substantially enhances bioavailability from food.** Heat-treated tomatoes released more lycopene than raw tomatoes [16]. LactoLycopene and tomato paste gave similar blood lycopene levels when both provided 25 mg a day [22].
 
@@ -86,7 +86,7 @@ Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin
 
 Most of the evidence on lycopene and cancer comes from observational studies of tomato intake or blood lycopene, which cannot prove cause and effect. A 1999 review found 72 such studies; 57 reported lower cancer risk with more tomato intake or higher blood lycopene, and 35 of these results were statistically significant [36]. The evidence was strongest for cancers of the prostate, lung and stomach, and the author noted that other compounds in tomatoes may contribute [36].
 
-In its 2007 review, the US Food and Drug Administration found no credible evidence that lycopene intake lowers the risk of prostate, lung, colorectal, gastric, breast, ovarian, endometrial or pancreatic cancer [34]. It found very limited evidence that tomato consumption lowers the risk of prostate, ovarian, gastric and pancreatic cancers [34].
+In its 2007 review, the US Food and Drug Administration found no credible evidence that lycopene intake lowers the risk of prostate, lung, colorectal, gastric, breast, ovarian, endometrial or pancreatic cancer [34]. It also found no credible evidence that eating tomatoes lowers the risk of lung, colorectal, breast, cervical or endometrial cancer, and very limited evidence that tomato consumption lowers the risk of prostate, ovarian, gastric and pancreatic cancers [34].
 
 #### Prostate Cancer
 
@@ -108,11 +108,11 @@ In men whose PSA had risen again after treatment for prostate cancer, lycopene a
 
 #### Oral Leukoplakia
 
-In a trial of 58 people with oral leukoplakia, white patches in the mouth that can turn cancerous, 8 mg or 4 mg of lycopene a day for three months gave clinical response rates of 80% and 66.25%, compared with 12.5% on placebo [46].
+In a trial of 58 people with oral leukoplakia, white patches in the mouth that can turn cancerous, 8 mg or 4 mg of lycopene a day for three months gave mean clinical responses of 80% and 66.25%, compared with 12.5% on placebo [46].
 
 #### Lung and Breast Cancer
 
-In the 1999 review of observational studies, the evidence for tomatoes and lung cancer was among the strongest, while the data for breast cancer were only suggestive [36]. The FDA found no credible evidence that lycopene intake lowers the risk of lung or breast cancer [34].
+In the 1999 review of observational studies, the evidence for tomatoes and lung cancer was among the strongest, while the data for breast cancer were only suggestive [36]. The FDA found no credible evidence that either lycopene intake or tomato consumption lowers the risk of lung or breast cancer [34].
 
 ### Cardiovascular Health
 
@@ -138,11 +138,11 @@ In a randomised trial, 7 mg of lycopene a day for 2 months improved endothelial 
 
 In a pilot trial in 40 people with heart failure, drinking vegetable juice that provided 29.4 mg of lycopene a day for 30 days lowered C-reactive protein (CRP) in women but not men [54]. This was a juice, not a lycopene supplement. In the 2017 meta-analysis, tomato and lycopene interventions did not significantly change CRP [51].
 
-Reviews also list antiplatelet effects among lycopene's actions [8]. Whether this affects bleeding in people is unknown.
+Reviews also list antiplatelet effects among lycopene's actions (see Drug Interactions) [8].
 
 ### Benign Prostatic Hyperplasia (BPH)
 
-Lycopene is sometimes promoted for enlarged prostate (benign prostatic hyperplasia or BPH), but the evidence comes from small trials.
+Lycopene is sometimes promoted for enlarged prostate (benign prostatic hyperplasia or BPH), but the evidence comes from one small pilot trial.
 
 In a 6-month pilot trial, 40 men with BPH took 15 mg of lycopene a day or placebo. PSA fell in the lycopene group, and the prostate did not enlarge, while it grew in the placebo group; symptoms improved in both groups, more so with lycopene [21].
 
@@ -188,7 +188,7 @@ A randomised trial tested 2 mg of lycopene a day to prevent pre-eclampsia in fir
 
 ## 4. Recommended Dosing
 
-An optimal dosage for lycopene supplementation has not been established. Most trials have used about 4 mg to 30 mg a day, depending on the outcome [46][68]; in one trial in men with prostate cancer, the highest-dose group took 120 mg a day [66].
+An optimal dosage for lycopene supplementation has not been established. Trials cited here used from 2 mg a day, in pregnancy [69], to 120 mg a day, the highest dose in a prostate cancer trial [66].
 
 ### Dosing by Indication
 
@@ -207,7 +207,7 @@ An optimal dosage for lycopene supplementation has not been established. Most tr
 
 - **Always take with dietary fat.** Avocado and olive oil both raised lycopene absorption in controlled studies [28][29].
 - **Olive oil is the preferred fat source.** Lycopene absorption was 45.8% higher when a salad came with olive oil rather than coconut oil [29].
-- **Separate from mineral supplements.** 500 mg of calcium carbonate taken with a lycopene-rich meal cut lycopene bioavailability by 83%, and lab studies show similar effects for magnesium, zinc and iron [30][31][32]. Take lycopene at a different meal from high-dose mineral supplements.
+- **Separate from mineral supplements.** 500 mg of calcium carbonate taken with a lycopene-rich meal cut lycopene bioavailability by 83%, and lab studies show similar effects for magnesium, zinc and iron [30][31][32]. Take lycopene at a different meal from mineral supplements.
 - **Dietary sources may be sufficient for general health.** Lycopene from cooked tomato products is readily absorbed [16], and tomato-based foods were linked with lower prostate cancer risk in an observational study [38].
 - **Higher doses may add little.** Blood lycopene levels were similar across doses from 15 to 90 mg a day [66].
 - **Supplements and tomato paste give similar blood levels.** LactoLycopene and tomato paste at 25 mg a day raised blood lycopene equally [22].
@@ -224,17 +224,17 @@ For synthetic lycopene supplements, the listed amount typically reflects pure ly
 
 Trials have found lycopene supplements well tolerated at the doses tested. In men with prostate cancer, doses from 15 to 120 mg a day for one year were safe, with mild side effects [66]. In healthy adults, 6.5, 15 or 30 mg a day of purified lycopene for 8 weeks raised blood lycopene without changing glucose or lipids [68].
 
-In pregnancy, a randomised trial gave 159 healthy women in their first pregnancy 2 mg of lycopene or placebo daily from 12 to 20 weeks until delivery [69]. Lycopene did not prevent pre-eclampsia (18.18% vs 18.29%), and preterm labour (10.39% vs 1.22%) and low-birthweight babies (22.08% vs 9.76%) were more common in the lycopene group [69]. Until more is known, avoid lycopene supplements in pregnancy unless your doctor advises them.
+In pregnancy, a randomised trial gave 159 healthy women in their first pregnancy 2 mg of lycopene or placebo daily, starting at 12 to 20 weeks and continuing until delivery [69]. Lycopene did not prevent pre-eclampsia (18.18% vs 18.29%), and preterm labour (10.39% vs 1.22%) and low-birthweight babies (22.08% vs 9.76%) were more common in the lycopene group [69]. Until more is known, avoid lycopene supplements in pregnancy unless your doctor advises them.
 
 In rats, synthetic lycopene caused no significant toxicity at up to 500 mg/kg body weight a day for 14 weeks, was not genotoxic, and caused no birth defects [65].
 
 ### Gastrointestinal Symptoms
 
-In a trial of 46 men taking 15 mg of lycopene twice a day, diarrhoea (18 men), nausea (12) and abdominal swelling (8) were the most common side effects, and one man had severe diarrhoea [67]. In a dose-escalation trial, one of 36 men stopped because of diarrhoea [66].
+In a trial of 46 men whose lycopene-rich tomato supplement provided 15 mg of lycopene twice a day, diarrhoea (18 men), nausea (12) and abdominal swelling (8) were the most common side effects, and one man had grade 4 diarrhoea [67]. In a dose-escalation trial, one of 36 men stopped because of diarrhoea [66].
 
 ### Allergic Reactions
 
-Severe allergic reactions to tomatoes are rare [70]. In one report, two adults had throat swelling after eating tomatoes, and one had anaphylaxis [70]. If you have throat swelling, trouble breathing or other signs of anaphylaxis, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). People with tomato allergy may prefer synthetic lycopene, which is not made from tomatoes [65].
+Severe allergic reactions to tomatoes are rare [70]. In one report, two adults had throat swelling after eating tomatoes, and one had anaphylaxis [70]. If you have throat swelling, trouble breathing or other signs of anaphylaxis, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Lycopenodermia (Skin Discoloration)
 
@@ -248,7 +248,7 @@ Most trials of lycopene supplements lasted weeks to months, and the longest ran 
 
 ### Blood-Thinning Medications
 
-Reviews list antiplatelet effects among lycopene's actions in lab studies [8]. Whether this raises bleeding risk in people is unknown, so take care when combining lycopene supplements with blood-thinning medicines, including:
+A review notes antiplatelet activity in living organisms and in the lab, and that lycopene may strengthen aspirin's antiplatelet effect; because of the potential bleeding risk, it advises a low-lycopene diet for people taking aspirin to prevent another heart attack or stroke [8]. Take care when combining lycopene supplements with blood-thinning medicines, including:
 
 - Aspirin
 - Warfarin (Coumadin)
@@ -269,11 +269,7 @@ As detailed in the Forms and Bioavailability section, 500 mg of calcium carbonat
 
 ### Other Mineral Supplements
 
-In lab digestion studies, magnesium, zinc and iron, like calcium, reduced how much carotenoid could be absorbed [31][32]. If you take high-dose mineral supplements, take them at a different meal from lycopene or other carotenoid supplements.
-
-### Thyroid Medications
-
-If you take prescription medicines, check with your doctor or pharmacist before starting.
+In lab digestion studies, magnesium, zinc and iron, like calcium, reduced how much carotenoid could be absorbed [31][32]. If you take mineral supplements, take them at a different meal from lycopene or other carotenoid supplements.
 
 ## 7. Dietary Sources
 
@@ -289,7 +285,7 @@ Amounts vary widely between foods, varieties and products. USDA FoodData Central
 
 - **Add olive oil.** Eaten with a salad, olive oil gave 45.8% more lycopene absorption than coconut oil [29].
 
-- **Avocado dramatically enhances absorption.** Adding 150 g of avocado to tomato salsa gave 4.4 times the lycopene absorption in one controlled study [28].
+- **Avocado boosts absorption.** Adding 150 g of avocado to tomato salsa gave 4.4 times the lycopene absorption in one controlled study [28].
 
 - **Do not take calcium supplements with lycopene-rich meals.** 500 mg of calcium carbonate cut lycopene bioavailability from a tomato paste meal by 83% [30].
 
@@ -327,7 +323,7 @@ In the Health Professionals Follow-up Study in the US, tomatoes, tomato sauce, t
 
 [28] Unlu NZ, Bohn T, Clinton SK, Schwartz SJ. "Carotenoid absorption from salad and salsa by humans is enhanced by the addition of avocado or avocado oil." *J Nutr*. 2005;135(3):431-436. PMID: 15735074. [https://doi.org/10.1093/jn/135.3.431](https://doi.org/10.1093/jn/135.3.431)
 
-[29] Yao, et al. "Effects of dietary fat type and emulsification on carotenoid absorption: a randomized crossover trial." *Am J Clin Nutr*. 2023;117(5):1017-1025. PMID: 36921903. [https://doi.org/10.1016/j.ajcnut.2023.03.011](https://doi.org/10.1016/j.ajcnut.2023.03.011)
+[29] Yao Y, Yang Z, Yin B, et al. "Effects of dietary fat type and emulsification on carotenoid absorption: a randomized crossover trial." *Am J Clin Nutr*. 2023;117(5):1017-1025. PMID: 36921903. [https://doi.org/10.1016/j.ajcnut.2023.03.011](https://doi.org/10.1016/j.ajcnut.2023.03.011)
 
 [30] Borel P, et al. "Dietary calcium impairs tomato lycopene bioavailability in healthy humans." *Br J Nutr*. 2016;116(12):2091-2096. PMID: 28069089. [https://doi.org/10.1017/S0007114516004335](https://doi.org/10.1017/S0007114516004335)
 
@@ -381,11 +377,11 @@ In the Health Professionals Follow-up Study in the US, tomatoes, tomato sauce, t
 
 [68] Devaraj S, Mathur S, Basu A, et al. "A dose-response study on the effects of purified lycopene supplementation on biomarkers of oxidative stress." *J Am Coll Nutr*. 2008;27(2):267-273. PMID: 18689558. [https://doi.org/10.1080/07315724.2008.10719699](https://doi.org/10.1080/07315724.2008.10719699)
 
-[69] Banerjee S, et al. "Trial of lycopene to prevent pre-eclampsia in healthy primigravidas: results show some adverse effects." *J Obstet Gynaecol Res*. 2009;35(3):477-482. PMID: 19527386. [https://doi.org/10.1111/j.1447-0756.2008.00983.x](https://doi.org/10.1111/j.1447-0756.2008.00983.x)
+[69] Banerjee S, Jeyaseelan S, Guleria R. "Trial of lycopene to prevent pre-eclampsia in healthy primigravidas: results show some adverse effects." *J Obstet Gynaecol Res*. 2009;35(3):477-482. PMID: 19527386. [https://doi.org/10.1111/j.1447-0756.2008.00983.x](https://doi.org/10.1111/j.1447-0756.2008.00983.x)
 
 [70] Zacharisen MC. "Severe tomato allergy (Lycopersicon esculentum)." *Allergy Asthma Proc*. 2002;23(2):149-152. PMID: 12001794. [https://pubmed.ncbi.nlm.nih.gov/12001794/](https://pubmed.ncbi.nlm.nih.gov/12001794/)
 
-[73] Tanaka, et al. "Carotenoderma due to lycopenemia: A case report and evaluation of lycopene deposition in the skin." *J Dermatol*. 2022;49(12):1320-1324. PMID: 35938228. [https://doi.org/10.1111/1346-8138.16537](https://doi.org/10.1111/1346-8138.16537)
+[73] Tanaka A, Miyauchi T, Kitamura S, et al. "Carotenoderma due to lycopenemia: A case report and evaluation of lycopene deposition in the skin." *J Dermatol*. 2022;49(12):1320-1324. PMID: 35938228. [https://doi.org/10.1111/1346-8138.16537](https://doi.org/10.1111/1346-8138.16537)
 
 [75] Tarshish E, et al. "Beauty from within: Improvement of skin health and appearance with Lycomato a tomato-derived oral supplement." *J Cosmet Dermatol*. 2023;22(6):1786-1798. PMID: 36860176. [https://doi.org/10.1111/jocd.15650](https://doi.org/10.1111/jocd.15650)
 
