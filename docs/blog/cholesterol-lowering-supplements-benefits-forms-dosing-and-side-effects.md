@@ -237,7 +237,7 @@ The sole positive study used 600 mg/day for 8 weeks followed by 900 mg/day for a
 | Free sterols (food/supplement) | 800-1,800 mg (with meals) | LDL cholesterol | Inconsistent in supplements; 4.9% in one tablet trial |
 | Psyllium husk | 10.2 g husk (about 7 g soluble fiber), divided, with water | LDL cholesterol | About 7% reduction |
 | Oat beta-glucan | 3+ g/day | LDL, total cholesterol | 5-7% reduction |
-| Red yeast rice | 1,200-2,400 mg | LDL cholesterol | 15-34% reduction (variable) |
+| Red yeast rice | Varies with monacolin K content [19] | LDL cholesterol | LDL 35.82 mg/dL lower on average in a 2024 meta-analysis [70] |
 | Omega-3 (EPA + DHA) | 2-4 g | Triglycerides | 20-30% reduction |
 | Pantethine | 600-900 mg | LDL cholesterol | 11% reduction in one small trial |
 | Policosanol | 5-40 mg (Cuban trials) | LDL cholesterol | Likely ineffective |
