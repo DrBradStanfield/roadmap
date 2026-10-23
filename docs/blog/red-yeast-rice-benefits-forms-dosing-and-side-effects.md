@@ -332,7 +332,7 @@ Common red yeast rice is used in food products, while functional red yeast rice 
 
 ### Other Supplements and Foods That May Help Lower Cholesterol
 
-Other options, such as plant sterols and psyllium, are covered in the [cholesterol-lowering supplements reference](https://drstanfield.com/blogs/articles/cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects). Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 2.5 g of psyllium husk, a soluble fiber shown in a Cochrane systematic review to reduce cardiovascular disease risk factors and help maintain healthy cholesterol levels.
+Other options, such as plant sterols and psyllium, are covered in the [cholesterol-lowering supplements reference](https://drstanfield.com/blogs/articles/cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects). Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 2.5 g of psyllium husk — a soluble fiber shown in a Cochrane systematic review to reduce cardiovascular disease risk factors and help maintain healthy cholesterol levels.
 
 ## 8. References
 
