@@ -7,24 +7,26 @@ type: "reference"
 tags: ["Supplements"]
 keywords: ["tryptophan", "l-tryptophan", "5-htp", "5-hydroxytryptophan", "serotonin", "melatonin", "sleep", "insomnia", "depression", "anxiety", "mood", "migraine", "weight loss", "fibromyalgia", "niacin", "griffonia simplicifolia", "tryptopure", "kynurenine", "brain health", "cognitive", "glycine"]
 product: "sleep"
-summary: "Reference on L-tryptophan and 5-HTP, two serotonin precursors. L-tryptophan 1 g may help mild insomnia, but a sleep guideline advises against it; 5-HTP trials are small. Both can cause serotonin syndrome with other drugs. Talk to your doctor first if you take antidepressants, triptans or tramadol."
+summary: "L-tryptophan and 5-HTP are serotonin precursors. L-tryptophan 1 g may help mild insomnia, but a sleep guideline suggests against it; 5-HTP trials are small. Both can cause serotonin syndrome with other drugs. Talk to your doctor first if you take antidepressants or other serotonergic drugs."
 reviewed: "2026-10-23"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33942088/","checked":"2026-10-23","fingerprint":"sha256:bdb02272be1deb212b43e675d6a23f5de6e6b316837850c07918dd82f9a6ce9a"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects)*
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. L-tryptophan at 1 g or more may help people with mild insomnia fall asleep sooner, but the American Academy of Sleep Medicine suggests clinicians not use it for insomnia [24][25][26][27]. 5-HTP has been tested mostly in small trials for depression, migraine, fibromyalgia and weight loss, few depression trials used a placebo, and a Cochrane review judged the evidence for both supplements in depression too weak to be conclusive [35][85]. Both raise serotonin, so taking either with antidepressants or other serotonergic drugs may cause serotonin syndrome, which can be life-threatening; if confusion, agitation, sweating, shivering, tremor, muscle jerks, a fast heartbeat or a high temperature follow such a combination, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [78][79][81]. L-tryptophan from one manufacturer caused the 1989 eosinophilia-myalgia syndrome epidemic, and later reports of the syndrome with L-tryptophan or 5-HTP have been rare [54][56][60][75].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. L-tryptophan at 1 g or more may help people with mild insomnia fall asleep sooner, but the American Academy of Sleep Medicine suggests clinicians not use it for chronic insomnia [24][25][26][27]. 5-HTP has been tested mostly in small trials for depression, migraine, fibromyalgia and weight loss, few depression trials used a placebo, and a Cochrane review judged the evidence for both supplements in depression too weak to be conclusive [35][85]. Both raise serotonin, so taking either with antidepressants or other serotonergic drugs may cause serotonin syndrome, which can be life-threatening; if confusion, agitation, sweating, shivering, tremor, muscle jerks, a fast heartbeat or a high temperature follow such a combination, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [78][79][81]. L-tryptophan from one manufacturer caused the 1989 eosinophilia-myalgia syndrome epidemic [54], and later reports of the syndrome with L-tryptophan or 5-HTP have been rare [56][60][75].
 
 ## Key safety points
 
-- Taking either supplement with SSRIs, SNRIs, MAO inhibitors, triptans, tramadol or other serotonergic drugs may cause serotonin syndrome, which can be life-threatening [78][80][81][83]. For confusion, agitation, sweating, shivering, tremor, muscle jerks, a fast heartbeat or a high temperature, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [79].
+- Taking either supplement with SSRIs, SNRIs, MAO inhibitors, tramadol or other serotonergic drugs may cause serotonin syndrome, which can be life-threatening [78][80][81]; the risk with triptans is uncertain [83]. For confusion, agitation, sweating, shivering, tremor or a high temperature, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [78][79].
 - 5-HTP taken with carbidopa was followed by a scleroderma-like illness in one patient [76]. If you take carbidopa, ask your doctor first.
-- Contaminated L-tryptophan caused the 1989 eosinophilia-myalgia syndrome epidemic, with 27 deaths reported by July 1990; one new case was reported after the US ban was lifted [50][54][56]. Stop and see your doctor for muscle pain, swelling or rash; for trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- One family's 5-HTP held an impurity linked to an illness like the syndrome [75].
+- Older reports linked experimental 5-HTP with infantile spasms, a type of seizure, in children with Down syndrome [92][93]. Do not give 5-HTP to a child unless a doctor advises it.
+- Contaminated L-tryptophan caused the 1989 eosinophilia-myalgia syndrome epidemic, with 27 deaths reported by July 1990 [50][54]. Stop and see your doctor for muscle pain, swelling or rash; for trouble breathing or new weakness, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- One family's 5-HTP held an impurity linked to a similar illness; two of them had normal eosinophil counts again after a switch to 5-HTP without it [75]. For muscle pain, swelling or rash, stop it and see your doctor.
 - 5-HTP can falsely raise the urine 5-HIAA test for carcinoid tumours [77][66].
-- L-tryptophan at 1 g or more makes people sleepier [24].
+- L-tryptophan at 1 g or more makes people sleepier [24]. Do not drive if it makes you drowsy.
 
 ## Brad's videos on this topic
 
@@ -95,11 +97,11 @@ A 1982 review of 40 controlled studies concluded that L-tryptophan at 1 g or mor
 
 In a laboratory study of 15 people with mild insomnia, 1 g of L-tryptophan cut the time to fall asleep; 1/4 g and 1/2 g produced a trend in the same direction [25].
 
-A 2022 meta-analysis pooled data from 4 of the 18 articles it collected. Tryptophan shortened time awake after first falling asleep (SMD -1.08 min, 95% CI -1.89 to -0.28), more so at 1 g or more, but did not change other parts of sleep [26].
+A 2022 meta-analysis pooled data from 4 of the 18 articles it collected. Tryptophan shortened time awake after first falling asleep (SMD -1.08, 95% CI -1.89 to -0.28), more so at 1 g or more, but did not change other parts of sleep [26].
 
 The 1982 review saw the clearest gains in mild insomnia and in healthy people who take longer than average to fall asleep. Results were mixed in severe insomnia and in seriously ill medical or psychiatric patients [24].
 
-The American Academy of Sleep Medicine's 2017 guideline suggests that clinicians not use tryptophan to treat trouble falling or staying asleep in adults, a weak recommendation [27].
+The American Academy of Sleep Medicine's 2017 guideline on chronic insomnia suggests that clinicians not use tryptophan to treat trouble falling or staying asleep in adults, a weak recommendation [27].
 
 #### 5-HTP for Sleep
 
@@ -119,7 +121,7 @@ The case for 5-HTP in depression is that it raises serotonin synthesis in the br
 
 **5-HTP vs. fluvoxamine (Luvox):** A 1991 paper compared 5-HTP with fluvoxamine, treating serotonin deficiency as the target [31].
 
-Without a placebo group, such comparisons cannot show how much of the gain was a placebo response. A 2020 systematic review of 13 studies of 5-HTP in depression found that, on the whole, they were relatively weak and few included placebo groups [85].
+Without a placebo group, such comparisons cannot show how much of the gain was a placebo response. A 2020 systematic review and meta-analysis of 13 studies of 5-HTP in depression pooled a remission rate of 0.65 (95% CI 0.55 to 0.78) and found a large effect on depression questionnaires (Hedges' g 1.11, 95% CI 0.53 to 1.69) [85]. Results varied widely between studies, and on the whole the studies were relatively weak and few included placebo groups [85].
 
 #### L-Tryptophan for Depression
 
@@ -175,7 +177,7 @@ Too little evidence exists to support either supplement for sleep apnea.
 
 | Indication | Daily Dose | Timing | Notes |
 |-----------|-----------|--------|-------|
-| Sleep aid | 1 g | At bedtime | 1 g shortened the time to fall asleep in mild insomnia; 1/4 g and 1/2 g trended the same way [25]. Effects were larger at 1 g or more [26]. The AASM suggests against tryptophan for insomnia [27]. |
+| Sleep aid | 1 g | At bedtime | 1 g shortened the time to fall asleep in mild insomnia; 1/4 g and 1/2 g trended the same way [25]. Effects were larger at 1 g or more [26]. The AASM suggests against tryptophan for chronic insomnia [27]. |
 | Premenstrual dysphoric disorder (PMDD) | 6 g a day | From ovulation to the third day of menstruation | A very high dose, tested in trials; use only with your doctor [44][46]. |
 | Smoking cessation | 50 mg/kg a day | During a 2-week withdrawal period | Taken alongside group therapy and a high-carbohydrate diet [45]. |
 
@@ -201,7 +203,7 @@ For sleep, the best-studied dose of L-tryptophan is 1 g [24][25]. Carbohydrate i
 
 ### L-Tryptophan Side Effects
 
-At 1 g or more, L-tryptophan makes people feel sleepier [24]. An open study of 6 g a day reported only mild side effects [46]. Headache and stomach upset may also occur.
+At 1 g or more, L-tryptophan makes people feel sleepier [24]. An open study of 6 g a day reported only mild side effects [46].
 
 ### Eosinophilia-Myalgia Syndrome (EMS)
 
@@ -215,19 +217,19 @@ By July 1990, 1,531 US cases had been reported, including 27 deaths [50]. Common
 
 Studies traced the epidemic to L-tryptophan made by Showa Denko. In Oregon, 45 of 46 cases (98%) had taken a product made by this one manufacturer [54]. In New York, all 113 cases with a traceable brand had used Showa Denko tryptophan, against 73% of controls, and risk rose with dose, with age and with use as a sleep aid [52]. In one psychiatric practice in South Carolina, 29% of users of the implicated brand developed definite EMS, as did 50% of those taking more than 4,000 mg a day [53].
 
-In Minnesota, cases were linked to lots made with less powdered carbon in a purification step and with a new strain of *Bacillus amyloliquefaciens* [55]. A compound called peak E was found in 75% of lots used by cases and 27% of lots used by controls [55]. In 2018, the most significant contaminant, Peak AAA, turned out to be two compounds formed when L-tryptophan reacts with fatty acids from the bacterial cell membrane [23].
+In Minnesota, cases were linked to lots made with less powdered carbon in a purification step and with a new strain of *Bacillus amyloliquefaciens* [55]. A compound called peak E was found in 75% of lots used by cases and 27% of lots used by controls [55]. Peak AAA, the most significant contaminant, was earlier shown to be two compounds formed when L-tryptophan reacts with fatty acids from the bacterial cell membrane; a 2018 study identified eight more related compounds [23].
 
 A 1996 review concluded that the evidence meets accepted criteria for cause and effect: of 6 manufacturers, only Showa Denko's tryptophan was clearly linked to illness, risk rose with dose, and cases fell abruptly once tryptophan products were recalled [74].
 
 #### Post-1989 Return to Market
 
-The US FDA banned the sale of L-tryptophan after the epidemic and lifted the ban in 2005 [56]. A 2011 report described a new case of L-tryptophan-associated EMS; no new cases had been described since the ban was lifted [56].
+The US FDA banned the sale of L-tryptophan after the epidemic and lifted the ban in 2005 [56]. A 2011 report described a new case of L-tryptophan-associated EMS, the first described since the ban was lifted [56].
 
 #### Role of Pure Tryptophan
 
 Some researchers argue that one manufacturer's impurity cannot fully explain EMS. One theory holds that overloads of tryptophan raise metabolites that inhibit the breakdown of histamine, and excess histamine activity can cause eosinophilia and muscle pain [57]. In a laboratory study, immune cells from seven of 12 patients with functional somatic syndromes such as fibromyalgia reacted to the contaminant peak E, against three of 24 controls; the authors see this as support for an allergic mechanism [58].
 
-Stop L-tryptophan and see your doctor if you develop muscle pain, swelling, a rash or skin changes while taking it [50][56][73]. If you have trouble breathing or new weakness, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). People with kidney or liver disease, a high eosinophil count or a muscle disorder should talk to their doctor before taking L-tryptophan.
+Stop L-tryptophan and see your doctor if you develop muscle pain, swelling, a rash or skin changes while taking it [50][56][73]. If you have trouble breathing or new weakness, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### 5-HTP Side Effects
 
@@ -249,11 +251,9 @@ If symptoms like these start after combining either supplement with a serotonerg
 
 ### Special Populations
 
-**Pregnancy and Breastfeeding:** Neither supplement has established safety in pregnancy or breastfeeding; do not use them unless your doctor advises it.
+**Pregnancy and Breastfeeding:** Safety in pregnancy and breastfeeding is unknown; check with your doctor before taking either supplement.
 
-**Children:** Safety in children is unknown.
-
-**Kidney or Liver Disease:** Safety in kidney or liver disease is unknown; talk to your doctor first.
+**Children:** Safety in children is unknown. Older reports linked 5-HTP, given experimentally, with infantile spasms (a type of seizure) in children with Down syndrome [92][93]. A 1978 review of such cases noted that brain differences in Down syndrome may predispose to these spasms, and that the part played by serotonin is uncertain [93].
 
 ### Toxicity in Dogs
 
@@ -267,17 +267,17 @@ The 5-HIAA test, done on a 24-hour urine collection, helps detect carcinoid tumo
 
 ### Serotonergic Medications (Most Critical)
 
-Taking either supplement with serotonergic drugs may cause serotonin syndrome [78][79]. Only combinations of serotonergic drugs that act in different ways can raise serotonin to a life-threatening level, and the most common is an MAO inhibitor with any serotonin reuptake inhibitor [80]. In 2006 the FDA warned that triptans taken with SSRIs or SNRIs may cause serotonin syndrome; a 2010 headache society review judged the evidence weak but still urged caution [83].
+Taking either supplement with serotonergic drugs may cause serotonin syndrome [78][79]. Only combinations of serotonergic drugs that act in different ways can raise serotonin to a life-threatening level, and the most common is an MAO inhibitor with any serotonin reuptake inhibitor [80]. In 2006 the FDA warned that triptans taken with SSRIs or SNRIs may cause serotonin syndrome. A 2010 American Headache Society position paper found too little data to judge that risk and said the evidence does not support limiting triptans with SSRIs or SNRIs, but that caution is warranted because serotonin syndrome is serious [83].
 
 | Drug Class | Examples | Risk |
 |-----------|---------|------|
 | SSRIs | Fluoxetine, sertraline, paroxetine, escitalopram | Serotonin syndrome; a toxic reaction was reported with fluoxetine plus L-tryptophan [81] |
 | SNRIs | Venlafaxine, duloxetine | Serotonin syndrome [83] |
 | MAO inhibitors | Phenelzine, tranylcypromine, moclobemide, linezolid | Highest risk combination [80][91] |
-| Triptan anti-migraine drugs | Sumatriptan, rizatriptan | FDA warning with SSRIs and SNRIs [83] |
+| Triptan anti-migraine drugs | Sumatriptan, rizatriptan | FDA warning with SSRIs and SNRIs; the risk is uncertain [83] |
 | Opioids | Pethidine (meperidine), tramadol, methadone | Serotonin toxicity with MAO inhibitors, including deaths [80] |
 | Dextromethorphan | Cough medicines | Serotonin toxicity with MAO inhibitors [80] |
-| Other supplements | St. John's wort | May add to serotonin effects |
+| Other supplements | St. John's wort | St. John's wort may itself cause serotonin syndrome in sensitive people [94] |
 
 ### Carbidopa (Parkinson's Disease)
 
@@ -308,7 +308,7 @@ Tryptophan comes from protein in food [12][88]. Normal diets supply about 1/2 g 
 
 ### Conditions That Impair Tryptophan Status
 
-- **Hartnup disorder:** An inherited (autosomal recessive) disorder of an amino acid transporter; in one family it reduced tryptophan absorption on a loading test [72].
+- **Hartnup disorder:** An inherited (autosomal recessive) disorder of an amino acid transporter [72]. In one family, the patient's younger brother, described as a carrier, showed reduced tryptophan absorption on a loading test [72].
 - **Inflammation:** Cytokines such as interferon-gamma regulate IDO, and peripheral inflammation can raise kynurenine in the brain, leaving less tryptophan for serotonin [11][13].
 
 ## 8. References
@@ -379,13 +379,13 @@ Tryptophan comes from protein in food [12][88]. Normal diets supply about 1/2 g 
 
 [46] Steinberg S, Annable L, Young SN, Liyanage N. "Tryptophan in the treatment of late luteal phase dysphoric disorder: a pilot study." *J Psychiatry Neurosci*. 1994;19(2):114-119. PMID: [8204563](https://pubmed.ncbi.nlm.nih.gov/8204563/)
 
-[50] Swygert LA, Maes EF, Sewell LE, et al. "Eosinophilia-myalgia syndrome. Results of national surveillance." *JAMA*. 1990;264(13):1698-1703. PMID: 2398610. doi: [10.1001/jama.1990.03450130058029](https://doi.org/10.1001/jama.1990.03450130058029)
+[50] Swygert LA, Maes EF, Sewell LE, et al. "Eosinophilia-myalgia syndrome. Results of national surveillance." *JAMA*. 1990;264(13):1698-1703. PMID: 2398610. doi: [10.1001/jama.1990.03450130070029](https://doi.org/10.1001/jama.1990.03450130070029)
 
 [52] Back EE, Henning KJ, Kallenbach LR, et al. "Risk factors for developing eosinophilia myalgia syndrome among L-tryptophan users in New York." *J Rheumatol*. 1993;20(4):666-672. PMID: [8496862](https://pubmed.ncbi.nlm.nih.gov/8496862/)
 
 [53] Kamb ML, Murphy JJ, Jones JL, et al. "Eosinophilia-myalgia syndrome in L-tryptophan-exposed patients." *JAMA*. 1992;267(1):77-82. PMID: 1727200. doi: [10.1001/jama.267.1.77](https://doi.org/10.1001/jama.267.1.77)
 
-[54] Slutsker L, Hoesly FC, Miller L, et al. "Eosinophilia-myalgia syndrome associated with exposure to tryptophan from a single manufacturer." *JAMA*. 1990;264(2):213-217. PMID: 2355442. doi: [10.1001/jama.1990.03450020075024](https://doi.org/10.1001/jama.1990.03450020075024)
+[54] Slutsker L, Hoesly FC, Miller L, et al. "Eosinophilia-myalgia syndrome associated with exposure to tryptophan from a single manufacturer." *JAMA*. 1990;264(2):213-217. PMID: 2355442. doi: [10.1001/jama.1990.03450020065028](https://doi.org/10.1001/jama.1990.03450020065028)
 
 [55] Belongia EA, Hedberg CW, Gleich GJ, et al. "An investigation of the cause of the eosinophilia-myalgia syndrome associated with tryptophan use." *N Engl J Med*. 1990;323(6):357-365. PMID: 2370887. doi: [10.1056/NEJM199008093230601](https://doi.org/10.1056/NEJM199008093230601)
 
@@ -442,3 +442,9 @@ Tryptophan comes from protein in food [12][88]. Normal diets supply about 1/2 g 
 [90] Williamson BL, et al. "Problems with over-the-counter 5-hydroxy-L-tryptophan." *Nat Med*. 1998. PMID: 9734369. https://pubmed.ncbi.nlm.nih.gov/9734369/
 
 [91] Scotton WJ, et al. "Serotonin Syndrome: Pathophysiology, Clinical Features, Management, and Potential Future Directions." *Int J Tryptophan Res*. 2019. PMID: 31523132. https://pubmed.ncbi.nlm.nih.gov/31523132/
+
+[92] Coleman M. "Infantile spasms associated with 5-hydroxytryptophan administration in patients with Down's syndrome." *Neurology*. 1971. PMID: 4328302. doi: [10.1212/wnl.21.9.911](https://doi.org/10.1212/wnl.21.9.911)
+
+[93] Pollack, et al. "Infantile spasms in Down syndrome: a report of 5 cases and review of the literature." *Ann Neurol*. 1978. PMID: 153121. doi: [10.1002/ana.410030508](https://doi.org/10.1002/ana.410030508)
+
+[94] "Adverse reactions to St John's Wort." *Can J Psychiatry*. 2001. PMID: 11221494. doi: [10.1177/070674370104600112](https://doi.org/10.1177/070674370104600112)
