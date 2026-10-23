@@ -76,11 +76,11 @@ struct OnboardingView: View {
         switch step {
         case .health:
             Page(symbol: "heart.fill", tint: .pink, title: "Fill this in from Apple Health?",
-                 detail: "Health Roadmap can read your sex, birth date, height, weight, waist and blood pressure from Apple Health, so you type less. They go only into your record, on this iPhone or in the cloud you connect.",
-                 progress: nil) {
-                EmptyView()
+                 detail: "So you type less. What it reads goes only into your record, on this iPhone or in your own cloud, and values you add here are saved back to Apple Health.",
+                 progress: nil, spread: true) {
+                HealthFillScene()
             } actions: {
-                primary(connecting ? "Connecting…" : "Allow", id: "onboarding.allow") { Task { await allowHealth() } }
+                primary(connecting ? "Connecting…" : "Connect Apple Health", id: "onboarding.allow") { Task { await allowHealth() } }
                     .disabled(connecting)
                 secondary("Not now", id: "onboarding.notNow") { healthAsked = true; advance(from: .health) }
             }
@@ -354,6 +354,9 @@ struct OnboardingView: View {
         let progress: OnboardingStep?
         var fromHealth = false
         var message: String?
+        /// Shares the screen's height between the heading and the content, so a short page
+        /// leaves no gap above its buttons (Brad 2026-10-23).
+        var spread = false
         @ViewBuilder let content: () -> Content
         @ViewBuilder let actions: () -> Actions
 
@@ -364,8 +367,10 @@ struct OnboardingView: View {
                         .accessibilityLabel("Question \(index + 1) of \(OnboardingStep.questions.count)")
                         .padding(.bottom, 12)
                 }
+                GeometryReader { screen in
                 ScrollView {
                     VStack(spacing: 14) {
+                        if spread { Spacer(minLength: 0) }
                         Image(systemName: symbol)
                             .font(.system(size: 44))
                             .foregroundStyle(tint)
@@ -383,11 +388,14 @@ struct OnboardingView: View {
                                 .font(.footnote)
                                 .foregroundStyle(.pink)
                         }
-                        content().padding(.top, 12)
+                        if spread { Spacer(minLength: 12).frame(maxHeight: 48) }
+                        content().padding(.top, spread ? 0 : 12)
+                        if spread { Spacer(minLength: 0) }
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: spread ? screen.size.height : nil)
                 }
                 .scrollBounceBehavior(.basedOnSize)
+                }
                 VStack(spacing: 6) {
                     // The engine's own words for a refused answer (AC5).
                     if let message {

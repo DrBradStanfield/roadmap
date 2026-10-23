@@ -51,9 +51,11 @@ flowchart TD
    AC10 text, shortened). Two ways on: **Get started**, and a smaller **I already use
    Health Roadmap**, which connects Dropbox or Google Drive and brings the existing
    record in, so a web user never types their details twice.
-2. **Apple Health.** One screen: "Fill this in from Apple Health?" with what is read and
-   why. **Allow** shows Apple's sheet. **Not now** goes on. Either way the next screens
-   come next.
+2. **Apple Health.** The only page before Apple's sheet: "Fill this in from Apple Health?",
+   six tiles (sex, birth date, height, weight, waist, blood pressure) ticking in, one line
+   on where what is read goes and that added values are saved back, and a hint for Apple's
+   two taps. No switch of ours: Apple's sheet cannot be pre-switched. **Connect Apple
+   Health** shows the sheet. **Not now** goes on. Either way the next screens come next.
 3. **Sex.** Female or Male, two large buttons. One line on why: the plan's targets and
    screenings depend on it.
 4. **Birth month and year.** Two wheels. We never ask for or keep the day.
@@ -85,7 +87,7 @@ Health, and see my plan, without facing the full form.
 - AC2: "I already use Health Roadmap" runs Sync's own connect (US-25 AC11). A record
   that already has sex, birth year and height skips the questions and opens My plan.
   One that lacks any of them asks only for those.
-- AC3: Allow on the Apple Health screen asks HealthKit for read access to sex, date of
+- AC3: Connect Apple Health on the Apple Health screen asks HealthKit for read access to sex, date of
   birth, height and weight. Values it returns preselect the matching screens. Sex
   "other" or "not set" preselects nothing. Of the birth date, only month and year are
   used; the day is never stored.

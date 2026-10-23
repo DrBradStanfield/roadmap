@@ -19,7 +19,7 @@ enum ChartRange: String, CaseIterable, Identifiable {
         }
     }
 
-    /// A week's span in days, first to last: today and the six before it.
+    /// A week's span in days, first to last: the last day and the six before it.
     static let weekDays = 6
 
     /// Values spanning less than a week, under All: a week around their middle. The
@@ -33,8 +33,8 @@ enum ChartRange: String, CaseIterable, Identifiable {
         return middle.addingTimeInterval(-half)...middle.addingTimeInterval(half)
     }
 
-    /// The first day the range shows, ending today; nil for All.
-    func start(today: Date) -> Date? {
+    /// The first day the range shows when it ends on `last`, the newest value; nil for All.
+    func start(ending last: Date) -> Date? {
         let step: (Calendar.Component, Int)? = switch self {
         case .week: (.day, -Self.weekDays)
         case .month: (.month, -1)
@@ -43,16 +43,17 @@ enum ChartRange: String, CaseIterable, Identifiable {
         case .all: nil
         }
         guard let step else { return nil }
-        return DayText.utc.date(byAdding: step.0, value: step.1, to: today)
+        return DayText.utc.date(byAdding: step.0, value: step.1, to: last)
     }
 
-    /// The ranges worth offering: each that holds some values but not all, then
-    /// All. A range holding every value would draw the same chart as All.
-    static func offered(for days: [Date], today: Date) -> [ChartRange] {
-        allCases.filter { range in
-            guard let start = range.start(today: today) else { return true }
-            let inside = days.filter { $0 >= start }.count
-            return inside > 0 && inside < days.count
+    /// The ranges worth offering: each shorter than the values' span, then All. One
+    /// spanning them all would draw the same chart as All. The chart opens a range on
+    /// the newest value and scrolls back from there, as Apple Health's does (Brad 2026-10-23).
+    static func offered(for days: [Date]) -> [ChartRange] {
+        guard let first = days.min(), let last = days.max() else { return [.all] }
+        return allCases.filter { range in
+            guard let start = range.start(ending: last) else { return true }
+            return start > first
         }
     }
 

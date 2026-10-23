@@ -210,8 +210,9 @@ same commit).
   repo-wide; domain-specific ones go to the owning loop's LEARNINGS.md.
 - **Model delegation (Brad, 2026-09-28):** the main session runs the newest Opus as orchestrator and
   keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. Delegated work goes
-  to `worker` (Sonnet 5.5, medium; Brad 2026-10-19 usage audit); implementation touching clinical
-  logic, merge/FHIR, security or a live write path, and every knowledge-base entry
+  to `worker` (Sonnet 5.5, medium; Brad 2026-10-19 usage audit): test runs, simulator checks, mechanical
+  edits; implementation touching clinical logic, merge/FHIR, security or a live write path, all UI and
+  design work (iOS and web; Brad 2026-10-23), the four /simplify reviewers, and every knowledge-base entry
   or web page, to `worker-opus` (Opus, medium); every adversarial
   check to a FRESH `adversary` (Opus, medium). All pinned in `.claude/agents/`. Review rounds capped:
   one full review + one fix-scoped re-check, then Brad (docs/review-format.md). Full 1M context kept (Brad

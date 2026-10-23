@@ -30,12 +30,28 @@ struct ChartPoint: Identifiable {
 struct MetricChart: View {
     let history: MetricHistory
     let points: [ChartPoint]
-    /// The range's days, first to last; nil fits the values.
-    let domain: ClosedRange<Date>?
+    /// A range's length: the chart shows that much and scrolls across the rest, as
+    /// Apple Health's does. Nil (All) fits every value.
+    let window: TimeInterval?
+    /// The first day a scrolling chart shows.
+    @Binding var scrolledTo: Date
     /// The scrubbed day, shared so the page can hide its headline under the callout.
     @Binding var selected: Date?
     @State private var finger: Date?
     @Environment(\.dynamicTypeSize) private var textSize
+
+    /// A little past the newest value, so its point is drawn whole at the right edge.
+    nonisolated static func margin(window: TimeInterval) -> TimeInterval { max(86_400, window / 30) }
+
+    /// What the chart shows at once; the scrub filter must use the same length.
+    nonisolated static func visibleLength(window: TimeInterval) -> TimeInterval { window + margin(window: window) }
+
+    /// The days a scrubbing finger may pick: those in view on a scrolling range, every day on All.
+    nonisolated static func inView(_ days: [Date], scrolledTo: Date, window: TimeInterval?) -> [Date] {
+        guard let window else { return days }
+        let end = scrolledTo.addingTimeInterval(visibleLength(window: window))
+        return days.filter { $0 >= scrolledTo && $0 <= end }
+    }
 
     /// Apple Health's colours (Brad 2026-10-22): heart readings red, body measurements
     /// purple. Blood tests blue: Apple gives lab results no colour of its own that we know of.
@@ -44,6 +60,16 @@ struct MetricChart: View {
         case MyData.bloodPressure: [.red, .pink]
         case "weight", "waist", "height": [.purple]
         default: [.blue]
+        }
+    }
+
+    /// Apple Health's symbol for a metric's card.
+    static func symbol(for metric: String) -> String {
+        switch metric {
+        case MyData.bloodPressure: "heart.fill"
+        case "weight": "scalemass.fill"
+        case "waist": "figure.arms.open"
+        default: "drop.fill"
         }
     }
 
@@ -71,10 +97,13 @@ struct MetricChart: View {
         .chartYScale(domain: .automatic(includesZero: false))
         // Aligned, so the newest month's label stays inside the card.
         .chartXAxis { AxisMarks(preset: .aligned, values: .automatic(desiredCount: textSize.isAccessibilitySize ? 2 : 4)) }
-        .modifier(XDomain(domain: domain ?? ChartRange.atLeastAWeek(points.map(\.date))))
+        .modifier(XDomain(window: window, scrolledTo: $scrolledTo, days: points.map(\.date)))
         .chartXSelection(value: $finger)
         .onChange(of: finger) {
-            let day = finger.flatMap { ChartRange.nearest(to: $0, in: points.map(\.date)) }
+            // On a scrolling range, only the days in view: a finger in a gap never picks one off screen.
+            let days = points.map(\.date)
+            let inView = MetricChart.inView(days, scrolledTo: scrolledTo, window: window)
+            let day = finger.flatMap { ChartRange.nearest(to: $0, in: inView) }
             if day != selected { selected = day }
         }
         .sensoryFeedback(.selection, trigger: selected) { _, new in new != nil }
@@ -105,13 +134,38 @@ struct MetricChart: View {
     }
 }
 
-/// A fixed x domain for a range, or the chart's own fit for All.
+extension Color {
+    /// The same hue, calmer on a dark background (Brad 2026-10-23: system red and purple
+    /// glare on black); unchanged in light mode.
+    var softInDark: Color {
+        let base = UIColor(self)
+        return Color(uiColor: UIColor { traits in
+            let color = base.resolvedColor(with: traits)
+            guard traits.userInterfaceStyle == .dark else { return color }
+            var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0, alpha: CGFloat = 0
+            guard color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha) else { return color }
+            return UIColor(hue: hue, saturation: saturation * 0.6, brightness: brightness * 0.9, alpha: alpha)
+        })
+    }
+}
+
+/// A range scrolls across every value, a window at a time; All fits them, or a week
+/// around values closer together than that.
 private struct XDomain: ViewModifier {
-    let domain: ClosedRange<Date>?
+    let window: TimeInterval?
+    @Binding var scrolledTo: Date
+    let days: [Date]
 
     func body(content: Content) -> some View {
-        if let domain {
-            content.chartXScale(domain: domain)
+        if let window, let first = days.min(), let last = days.max() {
+            let margin = MetricChart.margin(window: window)
+            content
+                .chartXScale(domain: min(first, last.addingTimeInterval(-window))...last.addingTimeInterval(margin))
+                .chartScrollableAxes(.horizontal)
+                .chartXVisibleDomain(length: MetricChart.visibleLength(window: window))
+                .chartScrollPosition(x: $scrolledTo)
+        } else if let week = ChartRange.atLeastAWeek(days) {
+            content.chartXScale(domain: week)
         } else {
             content
         }

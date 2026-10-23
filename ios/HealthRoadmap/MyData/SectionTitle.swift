@@ -12,7 +12,7 @@ struct SectionTitle: View {
         Label {
             Text(title)
         } icon: {
-            Image(systemName: symbol).foregroundStyle(tint)
+            Image(systemName: symbol).foregroundStyle(tint.softInDark)
         }
     }
 
@@ -32,6 +32,8 @@ struct SectionTitle: View {
 struct Sparkline: View {
     let points: [Double]
     let tint: Color
+    /// A row's line is small; a vitals card draws it larger.
+    var size = CGSize(width: 44, height: 18)
 
     var body: some View {
         if points.count >= 2 {
@@ -56,7 +58,7 @@ struct Sparkline: View {
                 let last = spot(points.count - 1)
                 context.fill(Path(ellipseIn: CGRect(x: last.x - 2, y: last.y - 2, width: 4, height: 4)), with: .color(tint))
             }
-            .frame(width: 44, height: 18)
+            .frame(width: size.width, height: size.height)
             .accessibilityHidden(true)
         }
     }

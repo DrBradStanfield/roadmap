@@ -15,6 +15,28 @@ final class MyDataLayoutTests: XCTestCase {
         try XCTUnwrap((JSONSerialization.jsonObject(with: Data(record.utf8)) as? [String: Any])?["measurements"] as? [[String: Any]])
     }
 
+    /// US-25 AC17: the right-most strip of the chart is visible, so it is pickable.
+    func testScrubbingPicksEveryDayInViewIncludingTheRightMostStrip() {
+        let days = (0...10).map { Date(timeIntervalSince1970: 1_792_000_000 + Double($0) * 86_400) }
+        let week: TimeInterval = 7 * 86_400
+        // Daily readings, a week window scrolled to the middle of day 0 (Codex's case): day 7 and
+        // day 8 (inside the margin) are pickable, day 0 (before the left edge) is not.
+        let scrolled = days[0].addingTimeInterval(43_200)
+        let picked = MetricChart.inView(days, scrolledTo: scrolled, window: week)
+        XCTAssertTrue(picked.contains(days[7]))
+        XCTAssertTrue(picked.contains(days[8]))
+        XCTAssertFalse(picked.contains(days[9]))
+        XCTAssertFalse(picked.contains(days[0]))
+        XCTAssertEqual(MetricChart.inView(days, scrolledTo: scrolled, window: nil), days)
+    }
+
+    /// US-25 AC17: a range opens on the newest value, not today.
+    func testARangeOpensOnTheNewestValue() {
+        let newest = Date(timeIntervalSince1970: 1_792_000_000)
+        XCTAssertEqual(ChartRange.month.start(ending: newest), DayText.utc.date(byAdding: .month, value: -1, to: newest))
+        XCTAssertEqual(ChartRange.year.start(ending: newest), DayText.utc.date(byAdding: .year, value: -1, to: newest))
+    }
+
     func testABloodPressureSavesBothHalvesOrNeither() throws {
         let engine = try HealthEngine()
         let empty = try record(engine)
@@ -72,23 +94,22 @@ final class MyDataLayoutTests: XCTestCase {
 
     private func day(_ text: String) -> Date { DayText.date(text)! }
 
-    func testOnlyRangesThatHoldSomeButNotAllValuesAreOffered() {
-        let today = day("2026-10-21")
-        // Values across three years: the week and month hold none.
+    func testOnlyRangesShorterThanTheValuesSpanAreOffered() {
+        // Values across three years, the newest months ago: every range fits inside the span.
         let spread = ["2023-10-01", "2025-06-01", "2026-06-01", "2026-09-01"].map(day)
-        XCTAssertEqual(ChartRange.offered(for: spread, today: today), [.sixMonths, .year, .all])
-        // All within the last week: every range shows the same, so only All.
+        XCTAssertEqual(ChartRange.offered(for: spread), [.week, .month, .sixMonths, .year, .all])
+        // Two days apart: every range would show the same as All.
         let recent = ["2026-10-18", "2026-10-20"].map(day)
-        XCTAssertEqual(ChartRange.offered(for: recent, today: today), [.all])
-        XCTAssertEqual(ChartRange.offered(for: [], today: today), [.all])
-        // A week and a month that each leave some out.
+        XCTAssertEqual(ChartRange.offered(for: recent), [.all])
+        XCTAssertEqual(ChartRange.offered(for: []), [.all])
+        // Nine months: a year would hold them all.
         let dense = ["2026-01-01", "2026-09-30", "2026-10-19"].map(day)
-        XCTAssertEqual(ChartRange.offered(for: dense, today: today), [.week, .month, .sixMonths, .all])
+        XCTAssertEqual(ChartRange.offered(for: dense), [.week, .month, .sixMonths, .all])
     }
 
-    func testTheWeekStartsSixDaysBeforeToday() {
-        XCTAssertEqual(ChartRange.week.start(today: day("2026-10-21")), day("2026-10-15"))
-        XCTAssertNil(ChartRange.all.start(today: day("2026-10-21")))
+    func testTheWeekStartsSixDaysBeforeItsLastDay() {
+        XCTAssertEqual(ChartRange.week.start(ending: day("2026-10-21")), day("2026-10-15"))
+        XCTAssertNil(ChartRange.all.start(ending: day("2026-10-21")))
     }
 
     func testScrubbingPicksTheNearestValue() {
