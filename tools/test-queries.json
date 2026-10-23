@@ -5096,6 +5096,97 @@
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-21 (masters-2); not run. Current view: GlyNAC corrected glutathione deficiency and improved grip strength in older adults; the 2022 benefits appeared only in older adults, \"Brad plans to start GlyNAC at age 45\" (3 Feb 2026), future tense, not a current habit."
   },
   {
+    "category": "masters-new-1",
+    "source": "us-42-ac5-masters-new-1-2026-10-23",
+    "pending": "masters-new-1 not deployed",
+    "surface": "doctor",
+    "query": "I take fluvoxamine for OCD. Can I take melatonin for sleep?",
+    "answer_handles": [
+      "melatonin-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\b17[- ]?(?:fold|times)\\b|seventeen",
+      "(?:[Dd]octor|[Pp]harmacist)"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|OK) to (?:take|combine|use) (?:them |melatonin |both )?(?:together|with fluvoxamine)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-1); not run. Key safety points: \"In 5 healthy men, the antidepressant fluvoxamine raised exposure to a melatonin dose 17-fold [126]. If you take fluvoxamine, check with your doctor or pharmacist before using melatonin.\" The old text said only \"significantly increases melatonin absorption\", with no size."
+  },
+  {
+    "category": "masters-new-1",
+    "source": "us-42-ac5-masters-new-1-2026-10-23",
+    "pending": "masters-new-1 not deployed",
+    "surface": "doctor",
+    "query": "Should I take vitamin E to prevent prostate cancer or heart disease?",
+    "answer_handles": [
+      "vitamin-e-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\b1\\.17\\b|\\b17\\s?%",
+      "[Rr]ecommend(?:s|ed|ation)? against"
+    ],
+    "must_not_match": [
+      "\\b(?:[Bb]rad|I) (?:recommends?|suggests?) (?:taking )?(?:a )?vitamin E"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-1); not run. Entry: \"in SELECT, 400 IU a day of synthetic vitamin E raised prostate cancer risk in healthy men (HR 1.17, 99% CI 1.004 to 1.36) [7]\"; Brad posts: \"SELECT and the USPSTF recommendation against vitamin E\"; Current view: Brad sees no role for vitamin E in a multivitamin. The old text gave the USPSTF finding only as \"no net benefit\" and never said it recommends against; the 17% was already there, so the second pattern is the one the old text fails."
+  },
+  {
+    "category": "masters-new-1",
+    "source": "us-42-ac5-masters-new-1-2026-10-23",
+    "pending": "masters-new-1 not deployed",
+    "surface": "doctor",
+    "query": "I am pregnant. How much vitamin A is too much?",
+    "answer_handles": [
+      "vitamin-a-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "3,?000\\s?(?:mcg|µg|micrograms)|10,?000\\s?IU",
+      "(?:[Ff]ood|[Dd]iet)"
+    ],
+    "must_not_match": [
+      "\\b1,?500\\s?(?:mcg|µg|micrograms)|\\b5,?000\\s?IU"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-1); not run. Key safety points: \"In pregnancy, keep preformed vitamin A from food and supplements within it: 3,000 mcg RAE (10,000 IU) a day from age 19, or 2,800 mcg at 14 to 18 years [109].\" The old text capped supplements alone (\"not to take more than 3,000 mcg RAE (10,000 IU) daily of preformed vitamin A supplements\") and gave the March of Dimes 1,500 mcg (5,000 IU) prenatal cap, which the master no longer carries. Passes: the UL figure, counting food too. Fails: the 1,500 mcg or 5,000 IU cap."
+  },
+  {
+    "category": "masters-new-1",
+    "source": "us-42-ac5-masters-new-1-2026-10-23",
+    "pending": "masters-new-1 not deployed",
+    "surface": "doctor",
+    "query": "How much psyllium should I take to lower my LDL, and can I take it with my morning pills?",
+    "answer_handles": [
+      "psyllium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\b10\\s?(?:g|grams?)\\b",
+      "\\b(?:2|two) hours\\b"
+    ],
+    "must_not_match": [
+      "\\b5\\s?(?:-|–|to)\\s?15\\s?(?:g|grams?)\\b",
+      "(?<!(?:not|n't|never|avoid) )\\b(?:take|taking) (?:it|them|psyllium|both) (?:together|at the same time) (?:with|as) (?:your )?(?:pills|medicines?|medications?)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-1); not run. Current view: \"about 10 g of husk a day (about 7 g of soluble fiber, the FDA health-claim amount) lowers LDL by about 0.33 mmol/L (13 mg/dL)\"; Key safety points: \"take it at least 2 hours before or 2 hours after a prescription medicine taken by mouth\". The old text gave \"5-15 g/day\" and no medicine spacing. Passes: about 10 g and 2 hours apart. Fails: the 5 to 15 g range, or taking it together with the pills."
+  },
+  {
+    "category": "masters-new-1",
+    "source": "us-42-ac5-masters-new-1-2026-10-23",
+    "pending": "masters-new-1 not deployed",
+    "surface": "doctor",
+    "query": "I have a heart rhythm problem. Is berberine safe for me to take?",
+    "answer_handles": [
+      "berberine-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\bQT\\b|[Tt]orsades",
+      "[Dd]octor"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:appears|seems|is) (?:to be )?(?:perfectly |generally |very )?safe for (?:you|most people|people with (?:a )?heart)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-1); not run. Key safety points: \"Case reports link berberine to QT prolongation and torsades de pointes, a life-threatening heart rhythm, so talk to your doctor first if you have a heart rhythm condition or take QT-prolonging medicines.\" The old text named only polymorphic ventricular tachycardia and never QT or torsades. Brad's \"appears to be safe\" line is queued for him (ask-brad-masters-new-1), so the reply must not call it safe for this person."
+  },
+  {
     "query": "I'm taking a curcumin supplement for my joints. Is there anything I should be monitoring?",
     "category": "masters-answers",
     "source": "us-50-masters-answers-2026-10-21",

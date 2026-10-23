@@ -1,0 +1,562 @@
+[
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "token \"26.9 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Children with ADHD:** In 105 children with ADHD and chronic sleep onset insomnia, 3 or 6 mg of melatonin for 4 week...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" (orchestrator 2026-10-23, masters-new-1): the source writes \"26.9 +/- 47.8 minutes\" and \"10.5 +/- 37.4 minutes\" (Van der Heijden 2007); the tokeniser reads the SD, not the mean.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "token \"10.5 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Children with ADHD:** In 105 children with ADHD and chronic sleep onset insomnia, 3 or 6 mg of melatonin for 4 week...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" (orchestrator 2026-10-23, masters-new-1): the source writes \"26.9 +/- 47.8 minutes\" and \"10.5 +/- 37.4 minutes\" (Van der Heijden 2007); the tokeniser reads the SD, not the mean.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "token \"2 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Post-operative delirium:** In 210 adults having heart surgery, a 7-day course of 3 mg nightly, begun 2 days beforeh...\"",
+    "reason": "AC2 tokeniser and unit case, thin spaces (orchestrator 2026-10-23, masters-new-1): the source writes \"7&#x2009;days\" and \"2&#x2009;days\" (thin spaces, Ford 2020); same figure in the body.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "token \"48\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Atopic dermatitis:** In a crossover trial in 48 children and adolescents, 3 mg of melatonin a day for 4 weeks lower...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-1): the source spells the number (\"Forty-eight children\"); the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "token \"121523\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In US health records of 121,523 people aged 50 or older, melatonin use was linked to a lower risk of developing AMD (...\"",
+    "reason": "AC2 tokeniser and unit case, thin spaces (orchestrator 2026-10-23, masters-new-1): the source writes \"121&#x202f;523\" (narrow no-break space); same figure in the body.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"5\": In 5 healthy men, the antidepressant fluvoxamine raised exposure to a melatonin dose 17-fold [126]. If you take fluvo...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-1): the source spells the number (\"Five healthy male volunteers\"); the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"80\": Children with ASD: In a 13-week trial of 125 children and adolescents with ASD or Smith-Magenis syndrome, prolonged-r...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-1): the source spells the number (\"Eighty children and adolescents\"); the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"7 day\": Post-operative delirium: In 210 adults having heart surgery, a 7-day course of 3 mg nightly, begun 2 days beforehand,...",
+    "reason": "AC2 tokeniser and unit case, thin spaces (orchestrator 2026-10-23, masters-new-1): the source writes \"7&#x2009;days\" and \"2&#x2009;days\" (thin spaces, Ford 2020); same figure in the body.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"24 hour\": Post-stroke delirium: In a propensity-matched (non-randomised) comparison, 2 mg of melatonin at night started within ...",
+    "reason": "AC2 tokeniser and unit case, \"24 h\" (orchestrator 2026-10-23, masters-new-1): the source writes \"24 h\"; the body writes \"24 hours\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"40\": Irritable bowel syndrome (IBS): Several small studies suggest 3 mg of melatonin at bedtime may ease IBS symptoms with...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-1): the source spells the number (\"Forty IBS patients\"); the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"16\": Beta-blockers suppress the body's night-time melatonin. In 16 people taking atenolol or metoprolol for high blood pre...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-1): the source spells the number (\"Sixteen hypertensive patients\"); the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"34\": Melatonin may stay active longer in older people and cause daytime drowsiness [13]. In 34 older adults, a single 3 mg...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-1): the source spells the number (\"Thirty-four older adults\"); the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"22\": In 22 women with mild to moderate asthma, a 4-week course of 3 mg improved sleep quality without changing asthma symp...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-1): the source spells the number (\"Twenty-two consecutive women\"); the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"19\": Reports to US poison control centers of melatonin ingestion by people 19 and younger rose 530% from 2012 to 2021; fiv...",
+    "reason": "AC2 tokeniser and unit case, \"≤19\" (orchestrator 2026-10-23, masters-new-1): the poison-centre report gives the age band as \"≤19 years\"; the body writes \"19 and younger\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"5\": Fluvoxamine (Luvox) | Raises melatonin levels | In 5 healthy men, 50 mg fluvoxamine raised exposure to a 5 mg melaton...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-1): the source spells the number (\"Five healthy male volunteers\"); the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "vitamin-e-benefits-forms-dosing-and-side-effects",
+    "match": "token \"≥400 IU/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- The adult UL is 1,000 mg a day, which is 1,500 IU a day of the natural form or 1,100 IU a day of the synthetic form...\" | \"**Note:** Doses above the UL carry more risk and need medical supervision. A meta-analysis of 19 trials found that hi...\" | \"- A meta-analysis of 19 trials found that high-dosage vitamin E (400 IU a day or more) may increase all-cause mortali...\"",
+    "reason": "AC2 tokeniser and unit case, \"> or =\" (orchestrator 2026-10-23, masters-new-1): Miller 2005 writes \"> or =400 IU/d\"; the body writes \"400 IU a day or more\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "vitamin-a-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[11] raw_quote shares no number with its body_line: **Chronic toxicity:** Regular high doses can cause dry skin, painful muscles and joints, fatigue,...",
+    "reason": "AC2 tokeniser and unit case, \"IUs\" (orchestrator 2026-10-23, masters-new-1): the source writes \"more than 50,000 IUs a day\"; the body writes the same dose as IU a day.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "vitamin-a-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[22] raw_quote shares no number with its body_line: Babies and children are more sensitive to vitamin A than adults and can become ill at smaller dos...",
+    "reason": "AC2 tokeniser and unit case, \"IUs\" (orchestrator 2026-10-23, masters-new-1): the source writes \"20,000 IUs a day for children\"; the body writes the same dose as IU a day.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "vitamin-a-benefits-forms-dosing-and-side-effects",
+    "match": "token \"<2 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Research suggests that vitamin A supplements reduce the risk of measles in children at high risk of deficiency, but t...\"",
+    "reason": "AC2 tokeniser and unit case, \"under the age of two years\" (orchestrator 2026-10-23, masters-new-1): the Cochrane quote writes \"children under the age of two years\"; the body writes \"under 2 years\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "vitamin-a-benefits-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Acute toxicity (hypervitaminosis A):** This follows one or a few very high doses, typically more than 100 times the...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-1): the house emergency line (111 in NZ, 911 in the US, 999 in the UK, 000 in Australia) is a fixed safety sentence, not a source figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "vitamin-a-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Acute toxicity (hypervitaminosis A):** This follows one or a few very high doses, typically more than 100 times the...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-1): the house emergency line (111 in NZ, 911 in the US, 999 in the UK, 000 in Australia) is a fixed safety sentence, not a source figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "vitamin-a-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Acute toxicity (hypervitaminosis A):** This follows one or a few very high doses, typically more than 100 times the...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-1): the house emergency line (111 in NZ, 911 in the US, 999 in the UK, 000 in Australia) is a fixed safety sentence, not a source figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "vitamin-a-benefits-forms-dosing-and-side-effects",
+    "match": "token \">50000 IU/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Chronic toxicity:** Regular high doses can cause dry skin, painful muscles and joints, fatigue, depression and abno...\"",
+    "reason": "AC2 tokeniser and unit case, \"IUs\" (orchestrator 2026-10-23, masters-new-1): the source writes \"more than 50,000 IUs a day\"; the body writes the same dose as IU a day.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "vitamin-a-benefits-forms-dosing-and-side-effects",
+    "match": "token \"20000 IU/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Babies and children are more sensitive to vitamin A than adults and can become ill at smaller doses, around 20,000 IU...\"",
+    "reason": "AC2 tokeniser and unit case, \"IUs\" (orchestrator 2026-10-23, masters-new-1): the source writes \"20,000 IUs a day for children\"; the body writes the same dose as IU a day.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "psyllium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- If you get chest pain, vomiting, or trouble swallowing or breathing after a dose, call your local emergency number ...\" | \"Taken without enough fluid, psyllium can swell and block the throat or esophagus and cause choking [66]. Do not take ...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-1): the house emergency line (111 in NZ, 911 in the US, 999 in the UK, 000 in Australia) is a fixed safety sentence, not a source figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "psyllium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- If you get chest pain, vomiting, or trouble swallowing or breathing after a dose, call your local emergency number ...\" | \"Taken without enough fluid, psyllium can swell and block the throat or esophagus and cause choking [66]. Do not take ...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-1): the house emergency line (111 in NZ, 911 in the US, 999 in the UK, 000 in Australia) is a fixed safety sentence, not a source figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "psyllium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- If you get chest pain, vomiting, or trouble swallowing or breathing after a dose, call your local emergency number ...\" | \"Taken without enough fluid, psyllium can swell and block the throat or esophagus and cause choking [66]. Do not take ...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-1): the house emergency line (111 in NZ, 911 in the US, 999 in the UK, 000 in Australia) is a fixed safety sentence, not a source figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "psyllium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- If you get chest pain, vomiting, or trouble swallowing or breathing after a dose, call your local emergency number ...\" | \"Taken without enough fluid, psyllium can swell and block the throat or esophagus and cause choking [66]. Do not take ...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-1): the house emergency line (111 in NZ, 911 in the US, 999 in the UK, 000 in Australia) is a fixed safety sentence, not a source figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "psyllium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"6 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In pooled data from 19 clinical studies lasting 6 weeks to 6 months, psyllium was well tolerated and safe alongside a...\"",
+    "reason": "AC2 tokeniser and unit case, \"6 mo\" (orchestrator 2026-10-23, masters-new-1): the source writes \"6 wk to 6 mo\"; the body writes \"6 weeks to 6 months\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[12] raw_quote shares no number with its body_line: **Berberine vs. placebo in type 2 diabetes:** In a trial of 116 adults with type 2 diabetes plus ...",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" and \"mm/liter\" (orchestrator 2026-10-23, masters-new-1): Zhang 2008 writes \"7.0 +/- 0.8 to 5.6 +/- 0.9 ... mm/liter, HbA1c from 7.5 +/- 1.0% to 6.6 +/- 0.7%\"; the body gives the means in mmol/L.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[15] raw_quote shares no number with its body_line: **Berberine vs. placebo in type 2 diabetes:** In a trial of 116 adults with type 2 diabetes plus ...",
+    "reason": "AC2 tokeniser and unit case, \"% after a CI\" (orchestrator 2026-10-23, masters-new-1): the source puts the unit after the CI bracket (PREMOTE: \"-1.04[-1.19, -0.89]%\", \"-0.99[-1.16, -0.83]%\", \"-0.59[-0.75, -0.44]%\"); same figures in the body.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[37] raw_quote shares no number with its body_line: **Large MASLD trial (Lei 2026):** In a double-blind trial of 337 adults without diabetes who had ...",
+    "reason": "AC2 tokeniser and unit case, \"% after a CI\" (orchestrator 2026-10-23, masters-new-1): the source puts the unit after the CI bracket (Lei 2026: \"-7.72 [95% CI, -13.13 to -1.93] mg/dL\", \"-3.42 [95% CI, -6.33 to -0.51] mg/dL\"; the unit here is mg/dL); same figures in the body.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[40] raw_quote shares no number with its body_line: **Zhang 2008 lipid data:** In the 116-patient diabetes trial, LDL cholesterol fell from 3.23 to 2...",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" and \"mm/liter\" (orchestrator 2026-10-23, masters-new-1): Zhang 2008 writes \"3.23 +/- 0.81 to 2.55 +/- 0.77 mm/liter\"; the body gives the means in mmol/L.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[56] raw_quote shares no number with its body_line: **Two-year trial:** In a double-blind trial across seven hospitals in China, people aged 18 to 75...",
+    "reason": "AC2 tokeniser and unit case, middle-dot decimals (orchestrator 2026-10-23, masters-new-1): Lancet abstract writes \"0&#xb7;3 g\", \"0&#xb7;77\", \"95% CI 0&#xb7;66-0&#xb7;91\"; the body writes 0.3, 0.77, 0.66 to 0.91.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[74] raw_quote shares no number with its body_line: | Colorectal adenoma prevention | 0.3 g | Twice daily | 2 years | Lower dose than metabolic studi...",
+    "reason": "AC2 tokeniser and unit case, middle-dot decimals (orchestrator 2026-10-23, masters-new-1): Lancet abstract writes \"0&#xb7;3 g\", \"0&#xb7;77\", \"95% CI 0&#xb7;66-0&#xb7;91\"; the body writes 0.3, 0.77, 0.66 to 0.91.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[109] raw_quote shares no number with its body_line: In the PREMOTE trial, berberine plus probiotics lowered HbA1c by 1.04%, about the same as berberi...",
+    "reason": "AC2 tokeniser and unit case, \"% after a CI\" (orchestrator 2026-10-23, masters-new-1): the source puts the unit after the CI bracket (PREMOTE: \"-1.04[-1.19, -0.89]%\", \"-0.99[-1.16, -0.83]%\", \"-0.59[-0.75, -0.44]%\"); same figures in the body.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[149] raw_quote shares no number with its body_line: **Heart rhythm problems:** Case reports describe torsades de pointes, a form of polymorphic ventr...",
+    "reason": "AC2 tokeniser and unit case, \"age to 63\" (orchestrator 2026-10-23, masters-new-1): the Cureus correction reads \"change the patient's age to 63\"; the body gives the woman's age as 63.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link berberine to QT prolongation and torsades de pointes, a life-threatening heart rhythm, so talk to...\" | \"**Heart rhythm problems:** Case reports describe torsades de pointes, a form of polymorphic ventricular tachycardia, ...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-1): the house emergency line (111 in NZ, 911 in the US, 999 in the UK, 000 in Australia) is a fixed safety sentence, not a source figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link berberine to QT prolongation and torsades de pointes, a life-threatening heart rhythm, so talk to...\" | \"**Heart rhythm problems:** Case reports describe torsades de pointes, a form of polymorphic ventricular tachycardia, ...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-1): the house emergency line (111 in NZ, 911 in the US, 999 in the UK, 000 in Australia) is a fixed safety sentence, not a source figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link berberine to QT prolongation and torsades de pointes, a life-threatening heart rhythm, so talk to...\" | \"**Heart rhythm problems:** Case reports describe torsades de pointes, a form of polymorphic ventricular tachycardia, ...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-1): the house emergency line (111 in NZ, 911 in the US, 999 in the UK, 000 in Australia) is a fixed safety sentence, not a source figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link berberine to QT prolongation and torsades de pointes, a life-threatening heart rhythm, so talk to...\" | \"**Heart rhythm problems:** Case reports describe torsades de pointes, a form of polymorphic ventricular tachycardia, ...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-1): the house emergency line (111 in NZ, 911 in the US, 999 in the UK, 000 in Australia) is a fixed safety sentence, not a source figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"1.04 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In the PREMOTE trial, berberine plus probiotics lowered HbA1c by 1.04%, about the same as berberine alone (0.99%) [32...\"",
+    "reason": "AC2 tokeniser and unit case, \"% after a CI\" (orchestrator 2026-10-23, masters-new-1): the source puts the unit after the CI bracket (PREMOTE: \"-1.04[-1.19, -0.89]%\", \"-0.99[-1.16, -0.83]%\", \"-0.59[-0.75, -0.44]%\"); same figures in the body.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0.99 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In the PREMOTE trial, berberine plus probiotics lowered HbA1c by 1.04%, about the same as berberine alone (0.99%) [32...\" | \"**Berberine vs. placebo in type 2 diabetes:** In a trial of 116 adults with type 2 diabetes plus abnormal blood fats,...\"",
+    "reason": "AC2 tokeniser and unit case, \"% after a CI\" (orchestrator 2026-10-23, masters-new-1): the source puts the unit after the CI bracket (PREMOTE: \"-1.04[-1.19, -0.89]%\", \"-0.99[-1.16, -0.83]%\", \"-0.59[-0.75, -0.44]%\"); same figures in the body.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"6.6 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Berberine vs. placebo in type 2 diabetes:** In a trial of 116 adults with type 2 diabetes plus abnormal blood fats,...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" and \"mm/liter\" (orchestrator 2026-10-23, masters-new-1): Zhang 2008 writes \"7.0 +/- 0.8 to 5.6 +/- 0.9 ... mm/liter, HbA1c from 7.5 +/- 1.0% to 6.6 +/- 0.7%\"; the body gives the means in mmol/L.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"7 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Berberine vs. placebo in type 2 diabetes:** In a trial of 116 adults with type 2 diabetes plus abnormal blood fats,...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" and \"mm/liter\" (orchestrator 2026-10-23, masters-new-1): Zhang 2008 writes \"7.0 +/- 0.8 to 5.6 +/- 0.9 ... mm/liter, HbA1c from 7.5 +/- 1.0% to 6.6 +/- 0.7%\"; the body gives the means in mmol/L.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"5.6 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Berberine vs. placebo in type 2 diabetes:** In a trial of 116 adults with type 2 diabetes plus abnormal blood fats,...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" and \"mm/liter\" (orchestrator 2026-10-23, masters-new-1): Zhang 2008 writes \"7.0 +/- 0.8 to 5.6 +/- 0.9 ... mm/liter, HbA1c from 7.5 +/- 1.0% to 6.6 +/- 0.7%\"; the body gives the means in mmol/L.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"409\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Berberine vs. placebo in type 2 diabetes:** In a trial of 116 adults with type 2 diabetes plus abnormal blood fats,...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-1): the source spells the number (\"Four-hundred-nine eligible participants\"); the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0.59 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Berberine vs. placebo in type 2 diabetes:** In a trial of 116 adults with type 2 diabetes plus abnormal blood fats,...\"",
+    "reason": "AC2 tokeniser and unit case, \"% after a CI\" (orchestrator 2026-10-23, masters-new-1): the source puts the unit after the CI bracket (PREMOTE: \"-1.04[-1.19, -0.89]%\", \"-0.99[-1.16, -0.83]%\", \"-0.59[-0.75, -0.44]%\"); same figures in the body.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"14\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Berberine vs. metformin:** In a 3-month pilot study of 36 adults with newly diagnosed type 2 diabetes, berberine an...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-1): the source spells the number (\"Fourteen randomized trials\"); the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"3.42 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Large MASLD trial (Lei 2026):** In a double-blind trial of 337 adults without diabetes who had obesity and metaboli...\"",
+    "reason": "AC2 tokeniser and unit case, \"% after a CI\" (orchestrator 2026-10-23, masters-new-1): the source puts the unit after the CI bracket (Lei 2026: \"-7.72 [95% CI, -13.13 to -1.93] mg/dL\", \"-3.42 [95% CI, -6.33 to -0.51] mg/dL\"; the unit here is mg/dL); same figures in the body.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"3.23 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Zhang 2008 lipid data:** In the 116-patient diabetes trial, LDL cholesterol fell from 3.23 to 2.55 mmol/L on berber...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" and \"mm/liter\" (orchestrator 2026-10-23, masters-new-1): Zhang 2008 writes \"3.23 +/- 0.81 to 2.55 +/- 0.77 mm/liter\"; the body gives the means in mmol/L.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"2.55 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Zhang 2008 lipid data:** In the 116-patient diabetes trial, LDL cholesterol fell from 3.23 to 2.55 mmol/L on berber...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" and \"mm/liter\" (orchestrator 2026-10-23, masters-new-1): Zhang 2008 writes \"3.23 +/- 0.81 to 2.55 +/- 0.77 mm/liter\"; the body gives the means in mmol/L.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0.66\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Two-year trial:** In a double-blind trial across seven hospitals in China, people aged 18 to 75 years who had had c...\"",
+    "reason": "AC2 tokeniser and unit case, middle-dot decimals (orchestrator 2026-10-23, masters-new-1): Lancet abstract writes \"0&#xb7;3 g\", \"0&#xb7;77\", \"95% CI 0&#xb7;66-0&#xb7;91\"; the body writes 0.3, 0.77, 0.66 to 0.91.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0.91\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Two-year trial:** In a double-blind trial across seven hospitals in China, people aged 18 to 75 years who had had c...\"",
+    "reason": "AC2 tokeniser and unit case, middle-dot decimals (orchestrator 2026-10-23, masters-new-1): Lancet abstract writes \"0&#xb7;3 g\", \"0&#xb7;77\", \"95% CI 0&#xb7;66-0&#xb7;91\"; the body writes 0.3, 0.77, 0.66 to 0.91.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"63 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Heart rhythm problems:** Case reports describe torsades de pointes, a form of polymorphic ventricular tachycardia, ...\"",
+    "reason": "AC2 tokeniser and unit case, \"age to 63\" (orchestrator 2026-10-23, masters-new-1): the Cureus correction reads \"change the patient's age to 63\"; the body gives the woman's age as 63.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"7.5 %\": Berberine vs. placebo in type 2 diabetes: In a trial of 116 adults with type 2 diabetes plus abnormal blood fats, ber...",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" and \"mm/liter\" (orchestrator 2026-10-23, masters-new-1): Zhang 2008 writes \"7.0 +/- 0.8 to 5.6 +/- 0.9 ... mm/liter, HbA1c from 7.5 +/- 1.0% to 6.6 +/- 0.7%\"; the body gives the means in mmol/L.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"0.77\": Two-year trial: In a double-blind trial across seven hospitals in China, people aged 18 to 75 years who had had color...",
+    "reason": "AC2 tokeniser and unit case, middle-dot decimals (orchestrator 2026-10-23, masters-new-1): Lancet abstract writes \"0&#xb7;3 g\", \"0&#xb7;77\", \"95% CI 0&#xb7;66-0&#xb7;91\"; the body writes 0.3, 0.77, 0.66 to 0.91.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Vivid Dreams",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-1): melatonin \"Vivid Dreams\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "vitamin-e-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Achilles Tendinopathy",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-1): vitamin E \"Achilles Tendinopathy\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Additional Delivery Systems",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-1): berberine \"Additional Delivery Systems\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Radiation-Induced Intestinal Injury",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-1): berberine \"Radiation-Induced Intestinal Injury\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Appearance and Taste",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-1): berberine \"Appearance and Taste\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Historical Uses Beyond Medicine",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-1): berberine \"Historical Uses Beyond Medicine\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "vitamin-e-benefits-forms-dosing-and-side-effects",
+    "match": "product section changed: ### Why MicroVitamin Excludes Vitamin E",
+    "reason": "AC7 product-section change ordered by the orchestrator (2026-10-23, masters-new-1): \"Why MicroVitamin Excludes Vitamin E\" factual fixes.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "psyllium-benefits-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host dailymed.nlm.nih.gov: [66] U.S. National Library of Medicine, DailyMed. Drug Facts label: up & up Fiber Therapy (psylli...",
+    "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-1): DailyMed is the US National Library of Medicine label database, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "psyllium-benefits-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host dailymed.nlm.nih.gov: [71] U.S. National Library of Medicine, DailyMed. Prescribing information: SYNTHROID (levothyroxi...",
+    "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-1): DailyMed is the US National Library of Medicine label database, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "psyllium-benefits-forms-dosing-and-side-effects",
+    "match": "product section changed: ### Product Note",
+    "reason": "AC7 product-section change ordered by the orchestrator (2026-10-23, masters-new-1): psyllium Product Note figure fix.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "berberine-benefits-forms-dosing-and-side-effects",
+    "match": "product section changed: ### Male Reproductive Health",
+    "reason": "AC7 product-regex false positive (orchestrator 2026-10-23, masters-new-1): \"Male Reproductive Health\" is a clinical section, not a product section.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"28 min\": In children with ASD given 1 mg (n = 65), 4 mg (n = 65) or placebo (n = 66) before bedtime, sleep onset latency short...",
+    "reason": "AC2 tokeniser and unit case (orchestrator 2026-10-23, masters-new-1): the unit appears only at the end of the list; the source writes \"- 22.0, - 28.0, and - 5.0 min\", the body \"22.0, 28.0 and 5.0 min\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "vitamin-a-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Groups at Risk of Vitamin A Inadequacy",
+    "reason": "AC4 heading rename (orchestrator 2026-10-23, masters-new-1): renamed \"### Who Tends to Run Low on Vitamin A\"; a deficiency section, not a safety one, so it no longer matches the US-41 AC8 risk-heading pattern. Body unchanged (vitamin A addendum-3).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  }
+]
