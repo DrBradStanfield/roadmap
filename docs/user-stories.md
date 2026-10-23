@@ -616,6 +616,7 @@ As Brad, who took himself out of the merge loop (auto-ship, 2026-08-10), an agen
 - AC2 (only the real test counts): a `test` success counts only if GitHub Actions ran it and its check suite's workflow is `.github/workflows/ci.yml`. A `test` job from another workflow or another app never ships a PR.
 - AC3 (fail closed): if every `test` run finished without a success, nothing ships (exit 0, as before). If one GitHub API call fails, the poll counts it as pending and tries again; it never counts as a pass.
 - AC4 (no silent stall): if `test` is still pending at 10 minutes, nothing ships and the auto-ship run fails red, so the stall is visible.
+- AC5 (never merge stale checks): after the veto window, if the PR head is behind main, auto-ship merges main into it through the API (only when the result is exactly the approved sha plus main, and main changed no workflow files), runs `test` on the new head sha and merges only if it is green, with `--match-head-commit` on that sha. Failed `test`, conflict, workflow-file changes, or main still moving after 3 rounds: not merged, the veto issue says why. A `test` still pending at 10 minutes fails red (AC4). Any abort closes the veto issue.
 - Usage signal: the ratio of auto-ship runs that reach the veto issue to approved agent PRs. Before: #124 and #129 both needed a manual review re-run on 2026-10-07.
 - Tests: no unit harness for workflows. Six cases were checked by hand against a mocked `gh` (PR #134 body); the first agent PR after merge is the live check.
 
