@@ -8,6 +8,7 @@ import { SyncManager, describeStorageFailure } from './sync-manager';
 import { ROADMAP_FILE_NAME, ConflictError, LostUpdateError, StorageError } from './adapter';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ROADMAP_DOC } from './roadmap-doc';
+import { SchemaTooNewError } from './migrate';
 import { FileAdapter } from './file-adapter';
 
 // US-10 · Cross-device convergence — highest-risk gap flagged in
@@ -307,6 +308,16 @@ describe('SyncManager.save — uncertainty survives later failures', () => {
     expect(writes).toBe(5);
     expect(cloud.files.size).toBe(0);
     expect(describeStorageFailure(failure, 'Memory').hint).toContain('nothing was written');
+  });
+});
+
+describe('describeStorageFailure — a newer schema (US-10 AC4a)', () => {
+  it('asks for an update without claiming reads refuse: on Drive the other copies still load', () => {
+    const told = describeStorageFailure(new SchemaTooNewError(99, 2), 'Google Drive');
+    expect(told.message).toContain('newer version');
+    expect(told.hint).not.toMatch(/read/i);
+    expect(told.hint).toContain('Nothing was written');
+    expect(told.hint).toContain('update');
   });
 });
 

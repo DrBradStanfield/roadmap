@@ -127,7 +127,8 @@ class PhoneCloudAdapter implements StorageAdapter {
     const token = await accessToken(this.provider, force);
     if (this.current?.token !== token) {
       const options = { documents: 'write' } as const;
-      this.current = { token, adapter: this.provider === 'dropbox' ? new DropboxAdapter(token, options) : new DriveAdapter(token, options) };
+      // No oldest-first chat lookup: EngineHTTP.swift allows no orderBy (US-10 AC4a).
+      this.current = { token, adapter: this.provider === 'dropbox' ? new DropboxAdapter(token, options) : new DriveAdapter(token, options, false) };
     }
     return this.current.adapter;
   }

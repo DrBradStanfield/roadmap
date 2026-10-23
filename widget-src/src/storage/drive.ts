@@ -630,7 +630,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   }
 
   private async findFileId(name: string): Promise<string | undefined> {
-    return driveFindFileId(await this.getToken(), name);
+    return driveFindFileId(await this.getToken(), name, undefined, undefined, true);
   }
 
   private async authHeaders(): Promise<Record<string, string>> {

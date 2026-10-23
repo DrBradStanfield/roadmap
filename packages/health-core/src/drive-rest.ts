@@ -84,17 +84,20 @@ async function fail(what: string, res: Response): Promise<never> {
 
 /** Find one file by name, optionally inside one parent. Undefined = not there.
  *  First match: named files (chat history, documents) keep it on purpose. The
- *  record has its own every-copy discovery below (US-10 AC4a). */
+ *  record has its own every-copy discovery below (US-10 AC4a). `oldestFirst`
+ *  makes the match the oldest copy, so every device picks the same one. */
 export async function driveFindFileId(
   accessToken: string,
   name: string,
   parentId?: string,
   signal?: AbortSignal,
+  oldestFirst = false,
 ): Promise<string | undefined> {
   const q = encodeURIComponent(
     `name='${quoted(name)}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
   );
-  const res = await request(`${DRIVE_API}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`, {
+  const order = oldestFirst ? '&orderBy=createdTime' : '';
+  const res = await request(`${DRIVE_API}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1${order}`, {
     headers: auth(accessToken),
     signal,
   });
@@ -301,6 +304,7 @@ export async function driveDownloadJson(accessToken: string, fileId: string, sig
 interface RecordCopy { id: string; createdTime?: string }
 const recordContext = () => ({ deviceId: 'drive-record-discovery', now: new Date().toISOString() });
 const LANDED_HINT = 'A save may already have landed. Keep your local copy and read the record again. No copies were removed.';
+const ERASE_KEPT_COPY = 'One copy of health-roadmap.json in Google Drive could not be read (damaged, or from a newer version of the app), so the erase left it untouched. You can delete it in Google Drive.';
 const DAMAGED_HINT = 'Your plan loaded from the other copies. Nothing was written. Saving resumes once that health-roadmap.json in Google Drive is repaired or renamed.';
 
 /** A write that may have landed: keep the provider status, so a 401 still
@@ -385,18 +389,21 @@ function unreadableCopy(error: unknown): boolean {
     || (error instanceof StorageError && error.cause instanceof SyntaxError);
 }
 
-/** The read's token when a copy was unreadable: every save with it refuses. */
-function refusingToken(token: string, error: unknown): string {
-  return JSON.stringify({ driveRecord: 1, refuse: error instanceof SchemaTooNewError ? error.fileVersion : 'damaged', of: token });
+/** The read's token when a copy was unreadable. A save with it refuses,
+ *  unless it erases past `epoch`, the readable copies' erase. */
+function refusingToken(token: string, error: unknown, epoch: number): string {
+  return JSON.stringify({ driveRecord: 1, refuse: error instanceof SchemaTooNewError ? error.fileVersion : 'damaged', epoch, of: token });
 }
 
-function refusalOf(expected: string | null): Error | null {
+/** An unreadable copy's hold on a save, from the read's token; null when none. */
+function holdOf(expected: string | null): { error: Error; epoch: number; of: string } | null {
   if (!expected?.startsWith('{')) return null;
-  const { refuse } = JSON.parse(expected) as { refuse?: number | 'damaged' };
+  const { refuse, epoch, of } = JSON.parse(expected) as { refuse?: number | 'damaged'; epoch: number; of: string };
   if (refuse === undefined) return null;
-  return typeof refuse === 'number'
+  const error = typeof refuse === 'number'
     ? new SchemaTooNewError(refuse, CURRENT_SCHEMA_VERSION)
     : new StorageError(`A copy of the record in ${PROVIDER} could not be read, so saving is paused.`, DAMAGED_HINT);
+  return { error, epoch, of };
 }
 
 /** Read every copy and merge them. A copy this app cannot read is left out
@@ -430,16 +437,18 @@ export async function readDriveRecord(token: string, known: Set<string>, signal?
     merged = merged ? ROADMAP_DOC.merge(merged, parsed, context) : parsed;
   }
   if (!merged) throw refusal;
-  return { body: merged, version: refusal ? refusingToken(state.token, refusal) : state.token };
+  return { body: merged, version: refusal ? refusingToken(state.token, refusal, merged.meta.eraseEpoch ?? 0) : state.token };
 }
 
 /** Save to the winner, after checking every copy's version is still the one read. */
 export async function writeDriveRecord(token: string, body: object, expected: string | null, folder: () => Promise<string>, known: Set<string>, signal?: AbortSignal): Promise<WriteResult> {
-  const refusal = refusalOf(expected);
-  if (refusal) throw refusal;
-  const state = await recordSnapshot(token, known, signal);
-  if (state.token !== expected) throw new ConflictError(`${PROVIDER} record membership or contributing version changed`);
   const context = recordContext();
+  // An unreadable copy pauses saves, but never "Delete all my data": an erase
+  // goes to the winner from the readable copies and leaves that copy untouched.
+  const hold = holdOf(expected);
+  if (hold && (ROADMAP_DOC.migrate(body, context).meta.eraseEpoch ?? 0) <= hold.epoch) throw hold.error;
+  const state = await recordSnapshot(token, known, signal);
+  if (state.token !== (hold ? hold.of : expected)) throw new ConflictError(`${PROVIDER} record membership or contributing version changed`);
   const intended = ROADMAP_DOC.migrate(body, context);
   const json = JSON.stringify(body);
   let id = state.copies[0]?.id;
@@ -490,7 +499,7 @@ export async function writeDriveRecord(token: string, body: object, expected: st
     if (error instanceof LostUpdateError) throw error;
     throw uncertain(`${PROVIDER} canonical record verification failed.`, error);
   }
-  return { version };
+  return { version, ...(hold ? { warning: ERASE_KEPT_COPY } : {}) };
 }
 
 /**
@@ -517,6 +526,9 @@ export class DriveAdapter implements StorageAdapter {
   constructor(
     private readonly accessToken: string,
     private readonly options: DocumentAccess = {},
+    /** Named-file lookups pick the oldest copy (`orderBy=createdTime`). The
+     *  iPhone passes false: its HTTP allow-list (EngineHTTP.swift) has no orderBy. */
+    private readonly oldestFirst = true,
   ) {}
 
   async connect(): Promise<void> {}
@@ -600,7 +612,7 @@ export class DriveAdapter implements StorageAdapter {
     // No parent filter, exactly as the browser adapter searches: `drive.file`
     // already limits the result set to this app's own files, and a record
     // created before the folder existed still lives at the Drive root.
-    const found = await driveFindFileId(this.accessToken, fileName, undefined, signal);
+    const found = await driveFindFileId(this.accessToken, fileName, undefined, signal, this.oldestFirst);
     if (found) this.fileIds.set(fileName, found);
     return found;
   }

@@ -6,11 +6,12 @@ import { Blob as NodeBlob } from 'node:buffer';
 import {
   ConflictError, buildErasedFile, createEmptyFile, createMeasurement, DriveAdapter, DRIVE_FOLDER_NAME,
   driveFindFileId,
-  ROADMAP_DOC, ROADMAP_FILE_NAME, SchemaTooNewError, StorageError, SyncManager,
+  RecordSession, ROADMAP_DOC, ROADMAP_FILE_NAME, SchemaTooNewError, StorageError, SyncManager,
   type RoadmapFile, type StorageAdapter,
 } from '@roadmap/health-core';
 import { GoogleDriveAdapter } from './drive';
 import { ChatHistoryStore } from './chat-history-store';
+import { webRecordHost } from './web-record-host';
 import { describeStorageFailure } from '../../../packages/health-core/src/sync-manager';
 
 const NOW = '2026-10-01T00:00:00.000Z';
@@ -54,6 +55,7 @@ class Drive {
       if (this.pages) return Response.json(this.pages[Number(url.searchParams.get('pageToken') ?? 0)]);
       const name = /name='([^']+)'/.exec(q)?.[1];
       const hits = this.files.filter((file) => file.name === name && !(file.hiddenFor && file.hiddenFor-- > 0));
+      if (url.searchParams.get('orderBy') === 'createdTime') hits.sort((x, y) => (x.createdTime ?? NOW).localeCompare(y.createdTime ?? NOW));
       const limit = Number(url.searchParams.get('pageSize'));
       return Response.json({ files: hits.slice(0, limit).map(({ id, createdTime }) => ({ id, ...(this.omitDates ? {} : { createdTime: createdTime ?? NOW }) })) });
     }
@@ -526,5 +528,44 @@ describe('US-10 AC4 — ambiguous first-save discovery', () => {
       expect(`${told.message} ${told.hint}`).toMatch(refusal === SchemaTooNewError ? /newer version/ : /Nothing was written/);
       expect(drive.requests.every((request) => request.startsWith('GET '))).toBe(true);
     }
+  });
+
+  it.each<Kind>(['hosted', 'browser'])('%s lets "Delete all my data" through past an unreadable copy, with a warning, and keeps ordinary saves refused (US-10 AC4a)', async (kind) => {
+    for (const content of ['{broken', JSON.stringify({ ...record('B'), schemaVersion: 999 })]) {
+      const drive = new Drive();
+      drive.files = [
+        { id: 'a', name: ROADMAP_FILE_NAME, version: 1, content: JSON.stringify(record('A')) },
+        { id: 'z', name: ROADMAP_FILE_NAME, version: 1, content },
+      ];
+      const session = await RecordSession.open(webRecordHost(adapter(kind)));
+      const result = await session.deleteAllData();
+      expect(result).toMatchObject({ success: true, warning: expect.stringMatching(/left it untouched/) });
+      expect(result.warning).toMatch(/delete it in Google Drive/i);
+      const winner = JSON.parse(drive.files[0].content) as RoadmapFile;
+      expect(winner.measurements).toEqual([]);
+      expect(winner.meta.eraseEpoch).toBe(1);
+      expect(drive.files[1].content).toBe(content);
+      expect(drive.requests.some((request) => request.startsWith('DELETE '))).toBe(false);
+      // An ordinary save after the erase is still refused, and writes nothing.
+      const patches = drive.requests.filter((request) => request.startsWith('PATCH ')).length;
+      await expect(manager(adapter(kind), 'writer').save(record('C'))).rejects.toBeDefined();
+      expect(drive.requests.filter((request) => request.startsWith('PATCH '))).toHaveLength(patches);
+      localStorage.clear();
+    }
+  });
+
+  it.each<Kind>(['hosted', 'browser'])('%s picks the oldest of two chat copies, so every device reads the same one (US-10 AC4a)', async (kind) => {
+    const drive = new Drive();
+    const seed = await ChatHistoryStore.create(adapter(kind));
+    await seed.recordExchange({ conversationId: 'old', isNew: true, userText: 'synthetic question', assistantText: 'synthetic answer' });
+    const older = drive.files.find((file) => file.name === 'chat-history.json')!;
+    older.createdTime = '2026-09-01T00:00:00.000Z';
+    const newer = { ...older, id: 'chat-newer', createdTime: '2026-10-01T00:00:00.000Z', content: older.content.replace(/"old"/g, '"new"') };
+    drive.files = [newer, ...drive.files.filter((file) => file !== older), older];
+    localStorage.clear();
+    const store = await ChatHistoryStore.create(adapter(kind));
+    expect(store.listConversations().map((conv) => conv.id)).toEqual(['old']);
+    const lookups = drive.requests.filter((request) => decodeURIComponent(request).includes("name='chat-history.json'"));
+    expect(lookups.at(-1)).toContain('orderBy=createdTime');
   });
 });

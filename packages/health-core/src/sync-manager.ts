@@ -68,6 +68,8 @@ export interface SaveResult<T> {
   version: string;
   /** How many conflict retries happened (0 = clean first write). */
   attempts: number;
+  /** The adapter's note on the write that landed (`WriteResult.warning`). */
+  warning?: string;
 }
 
 export interface SyncOptions {
@@ -111,10 +113,10 @@ export class SyncManager<T extends SyncedFile> {
         const base = this.doc.migrate(remoteRaw, this.ctx());
         const merged = this.doc.merge(local, base, this.ctx());
         try {
-          const { version: newVersion } = await this.adapter.write(this.doc.fileName, merged, version, signal);
+          const { version: newVersion, warning } = await this.adapter.write(this.doc.fileName, merged, version, signal);
           mayHaveWritten = true;
           if (this.doc.verify !== false) await this.verifyAfterWrite(merged, signal);
-          return { file: merged, version: newVersion, attempts: attempt };
+          return { file: merged, version: newVersion, attempts: attempt, ...(warning ? { warning } : {}) };
         } catch (error) {
           lastError = error;
           if (error instanceof LostUpdateError) mayHaveWritten = true;
@@ -183,9 +185,9 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
       message:
         `This record was written by a newer version of the app: schema v${error.fileVersion}, ` +
         `and this tool understands v${error.appVersion}`,
-      hint:
-        'It cannot be read or written here — reads refuse too, because the record is migrated before any tool ' +
-        'runs. Nothing was written. Open the app, which will update it.',
+      // No claim about reads: a lone newer record cannot be read here, but on
+      // Drive a newer copy beside readable ones only pauses saves (US-10 AC4a).
+      hint: 'Nothing was written. Open the app, which will update it.',
     };
   }
   if (error instanceof RecordShapeError) {
