@@ -388,7 +388,7 @@ Source: USDA FoodData Central [107].
 
 Selenium intakes and serum concentrations in the US and Canada vary somewhat by region due to differences in soil selenium content. Residents of the Midwestern and Western US have higher concentrations than those in the South and Northeast [1]. However, the extensive transport of food typically allows people in low-selenium areas to get enough [1].
 
-### Groups at Higher Risk of Inadequacy
+### Who Tends to Run Low on Selenium
 
 - **People in selenium-deficient regions** (parts of China and some European countries)
 - **Vegetarians and vegans** (especially in low-selenium regions)
