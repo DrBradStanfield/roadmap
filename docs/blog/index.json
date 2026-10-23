@@ -4707,7 +4707,8 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/calcium-benefits-forms-dosing",
     "type": "reference",
     "product": "microvitamin",
-    "summary": "Reference on calcium: bone health, fracture prevention, osteoporosis. Postmenopausal women, older adults, vegans, and pregnant women most at risk of deficiency. Forms include carbonate and citrate (citrate preferred for PPI users). Typical supplemental doses 500-1,200 mg/day; high doses may raise cardiovascular and kidney stone risk. Always discuss with your doctor."
+    "summary": "Brad: get calcium from food (dairy, leafy greens, fish), not pills. Pooled trials found no fewer fractures with supplements, which are linked to more heart attacks and may add to kidney stones. Talk to your doctor first, especially if you take thyroid or antibiotic medicines.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Cocoa Flavanols: Benefits, Best Sources, Dosing, and Side Effects",
@@ -5744,7 +5745,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/selenium-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on selenium: thyroid hormone metabolism, antioxidant defense, immune function, and fertility; food sources (Brazil nuts richest); organic vs inorganic forms; safe dosing range and toxicity ceiling. Covers thyroid disease and low-intake populations. Always discuss with your doctor."
+    "summary": "Brad's view: selenium deficiency is rare in the developed world, adults need 55 mcg, and megadoses are toxic. Trials show no cancer benefit; supplements may raise type 2 diabetes risk and, in men with higher selenium, high-grade prostate cancer. Talk to your doctor first if you have prostate cancer.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Shilajit: Benefits, Forms, Dosing, and Side Effects",
@@ -6754,7 +6756,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/iodine-kelp-benefits-dosage",
     "type": "reference",
-    "summary": "Reference on iodine and kelp: thyroid health, fetal brain development. Deficiency risk in pregnant women, vegans, salt-avoiders. Potassium iodide preferred over kelp; RDA 150 mcg/day. Excess risks thyroid dysfunction. Always discuss with your doctor."
+    "summary": "Brad: iodine deficiency is the leading preventable cause of intellectual disability; get the 150 mcg RDA without megadosing, plus 150 mcg a day of supplemental iodine in pregnancy. Kelp iodine varies and can contain arsenic. Talk to your doctor first with thyroid disease or on amiodarone or lithium.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "L-Theanine: Benefits, Forms, Dosing, and Side Effects",
@@ -7061,7 +7064,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/zinc-supplement-guide-forms-dosing-benefits-and-safety",
     "type": "reference",
-    "summary": "Reference on zinc: immune function, cold duration, wound healing, acne, eye health. At risk: vegans, older adults, gut disorders. Forms: glycinate; gluconate/acetate for cold lozenges. RDA 8-11 mg, UL 40 mg. Always discuss with your doctor."
+    "summary": "Reference on zinc. Brad's view: zinc acetate or gluconate lozenges, started within 24 hours at over 75 mg a day, may shorten colds by about a third. Over 40 mg a day long term can cause copper deficiency. Talk to your doctor first if you take quinolone or tetracycline antibiotics or penicillamine.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "This Study Proved We Were WRONG About Vitamin D",
@@ -7352,7 +7356,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/iron-supplement-guide",
     "type": "reference",
-    "summary": "Reference on iron: anemia, fatigue, restless legs, pregnancy, athletic performance. Common in women, adolescent girls, vegetarians, athletes. Ferrous bisglycinate best tolerated; 50-100 mg/day for deficiency. Always discuss with your doctor."
+    "summary": "Reference on iron: forms, dosing, deficiency and risks. Brad advises getting iron from food and taking a supplement only on a doctor's advice after a blood test shows low iron. Keep iron away from children. Talk to your doctor first if you have hemochromatosis or take levothyroxine or antibiotics.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Nattokinase: Benefits, Forms, Dosing, and Side Effects",
