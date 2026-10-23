@@ -456,6 +456,16 @@ describe('forms (AC8)', () => {
       .toMatchObject({ ok: false, reason: 'invalid-value' });
   });
 
+  // US-06 AC1a: a restart keeps the row's stored spelling.
+  it('restarts a stopped row under its stored name, spaces and case kept', () => {
+    const row = { supplementKey: 'custom_taurine', supplementName: 'Taurine ', doseValue: 1, doseUnit: 'g' };
+    let file = upsertSupplement(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { ...row, status: 'active' }, NOW).file;
+    file = upsertSupplement(file, { ...row, status: 'stopped' }, NOW).file;
+    file = edited(readRecord(JSON.stringify(file), LATER, 'phone'), { kind: 'customSupplement', name: 'TAURINE' });
+    expect(file.supplements).toEqual([expect.objectContaining({ supplementKey: 'custom_taurine', supplementName: 'Taurine ', status: 'active' })]);
+    expect(file.supplementHistory.at(-1)).toMatchObject({ supplementName: 'Taurine ', changeType: 'started' });
+  });
+
   // US-06 AC1a: re-adding a name already taken keeps its dose and writes no history.
   it('keeps the dose when an active name is added again', () => {
     let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'customSupplement', name: 'Taurine' });

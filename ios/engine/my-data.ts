@@ -11,11 +11,11 @@ import { labRows, type Extraction } from './lab-review';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, supplementSchema } from '../../packages/health-core/src/validation';
-import { customSupplementMatch } from '../../packages/health-core/src/input-form';
+import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
 import { deviceWrites, type DeviceWrite } from '../../packages/health-core/src/device-export';
-import { applyFormEdit, customSupplement, formsOf, type FormEdit, type FormsView } from './my-data-forms';
+import { applyFormEdit, formsOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import {
   cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, fromCanonicalValue, getDisplayLabel, toCanonicalValue,
@@ -278,7 +278,7 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
     case 'customSupplement':
       // A name already taken keeps its dose: adding it again changes nothing (US-06 AC1a).
       if (customSupplementMatch(edit.name, file.supplements)?.status === 'active') return { ok: true, file };
-      return applyEdit(file, { kind: 'supplement', ...customSupplement(edit.name, file.supplements), status: 'active' }, now);
+      return applyEdit(file, { kind: 'supplement', ...customSupplementAdd(edit.name, file.supplements), status: 'active' }, now);
     case 'medicationField':
     case 'screening':
       return applyFormEdit(file, edit, now, (next, save) => applyEdit(next, save, now));

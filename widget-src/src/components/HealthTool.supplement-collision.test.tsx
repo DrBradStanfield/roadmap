@@ -124,7 +124,8 @@ describe('US-06: collision-safe custom supplement additions', () => {
     dose(view.container, 'Taurine', 2, 'g');
     await settle();
     fireEvent.click(row(view.container, 'Taurine').querySelector('.supplement-remove')!);
-    addCustom(view.container, 'Taurine');
+    // The restart keeps the stored spelling (US-06 AC1a).
+    addCustom(view.container, 'TAURINE');
     dose(view.container, 'Taurine', 3, 'g');
     await settle();
     view.unmount();
@@ -135,7 +136,7 @@ describe('US-06: collision-safe custom supplement additions', () => {
     await settle();
     const after = await persisted();
     expect(after.supplements).toEqual([expect.objectContaining({
-      id: original.id, supplementKey: original.supplementKey, startedAt: original.startedAt,
+      id: original.id, supplementKey: original.supplementKey, supplementName: 'Taurine', startedAt: original.startedAt,
       status: 'active', doseValue: 4, doseUnit: 'g',
     })]);
     expect(after.supplementHistory).toEqual(expect.arrayContaining(before.supplementHistory));
@@ -210,5 +211,21 @@ describe('US-06: collision-safe custom supplement additions', () => {
     });
     expect(saved.supplements.find(s => s.supplementName === 'alanine')).toMatchObject({ doseValue: 500, status: 'active' });
     expect(view.container.querySelectorAll('.supplement-row')).toHaveLength(1);
+  });
+
+  // US-06 AC1a: a remove right after a dose change must not be undone by the pending save.
+  it('keeps a remove made within the dose save delay across reload', async () => {
+    await seed();
+    const view = await page();
+    addCustom(view.container, 'Taurine');
+    await settle();
+    dose(view.container, 'Taurine', 2, 'g');
+    fireEvent.click(row(view.container, 'Taurine').querySelector('.supplement-remove')!);
+    await settle();
+    expect((await persisted()).supplements).toEqual([expect.objectContaining({ supplementKey: 'custom_taurine', status: 'stopped' })]);
+    view.unmount();
+    await initRoadmapStore(new LocalStorageAdapter());
+    const reloaded = await page();
+    expect(reloaded.container.querySelectorAll('.supplement-row')).toHaveLength(0);
   });
 });

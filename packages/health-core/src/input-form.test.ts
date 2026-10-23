@@ -2,13 +2,30 @@
 // as data, shared by the web form and the iPhone app.
 import { describe, expect, it } from 'vitest';
 import {
-  customSupplementAddKey, customSupplementKey, customSupplementMatch, medicationForm, medicationWrites, screeningForm, screeningMonths, screeningWrites,
+  customSupplementAdd, customSupplementKey, customSupplementMatch, medicationForm, medicationWrites, screeningForm, screeningMonths, screeningWrites,
   type FormField, type FormSection, type MedicationBasis,
 } from './input-form';
 import type { MedicationInputs, ScreeningInputs } from './types';
 
 // US-06 AC1a: additions share identity rules without changing explicit keyed edits.
-describe('customSupplementAddKey', () => {
+const customSupplementAddKey = (name: string, rows: Parameters<typeof customSupplementAdd>[1]) => customSupplementAdd(name, rows).supplementKey;
+
+describe('customSupplementAdd', () => {
+  it('restarts under the stored spelling, and names a new row as typed (US-06 AC1a)', () => {
+    const rows = [{ supplementKey: 'custom_taurine', supplementName: 'Taurine ', status: 'stopped' }];
+    expect(customSupplementAdd('  TAURINE ', rows)).toEqual({ supplementKey: 'custom_taurine', supplementName: 'Taurine ' });
+    expect(customSupplementAdd('  Glycine ', rows)).toEqual({ supplementKey: 'custom_glycine', supplementName: 'Glycine' });
+  });
+
+  it('picks the most recently changed of several stopped same-name rows (US-06 AC1a)', () => {
+    const older = { supplementKey: 'custom_taurine', supplementName: 'Taurine', status: 'stopped', updatedAt: '2026-01-01T00:00:00.000Z' };
+    const newer = { supplementKey: 'custom_taurine_2', supplementName: 'taurine', status: 'stopped', updatedAt: '2026-05-01T00:00:00.000Z' };
+    expect(customSupplementMatch('Taurine', [older, newer])).toBe(newer);
+    expect(customSupplementMatch('Taurine', [newer, older])).toBe(newer);
+    const active = { ...older, status: 'active' };
+    expect(customSupplementMatch('Taurine', [active, newer])).toBe(active);
+  });
+
   it.each(['active', 'stopped'] as const)('reuses a case-insensitive stored name on an arbitrary legacy key (%s)', status => {
     const rows = [{ supplementKey: 'custom_old_7', supplementName: 'Taurine', status }];
     expect(customSupplementAddKey('  TAURINE  ', rows)).toBe('custom_old_7');

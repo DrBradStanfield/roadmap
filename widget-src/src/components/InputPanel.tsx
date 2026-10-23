@@ -74,7 +74,7 @@ import {
   followupDateLabel,
   anyScreeningEligible,
   dexaEligible,
-  customSupplementAddKey,
+  customSupplementAdd,
   customSupplementMatch,
   type FormOption,
   type MedicationInputs,
@@ -2007,7 +2007,10 @@ export function InputPanel({
                   <button
                     type="button"
                     className="supplement-dropdown-item supplement-custom"
-                    onClick={() => addSupplement(customSupplementAddKey(trimmedSearch, supplements), trimmedSearch.slice(0, 100))}
+                    onClick={() => {
+                      const { supplementKey, supplementName } = customSupplementAdd(trimmedSearch, supplements);
+                      addSupplement(supplementKey, supplementName);
+                    }}
                   >
                     + Add "{trimmedSearch}"
                   </button>
