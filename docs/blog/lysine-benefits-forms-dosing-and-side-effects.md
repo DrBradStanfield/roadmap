@@ -6,7 +6,7 @@ publishedAt: "2025-01-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["lysine", "l-lysine", "herpes", "cold sores", "collagen", "calcium", "immune", "hair loss", "iron", "sleep", "canker sores", "anxiety", "cortisol", "osteoporosis", "bone density", "arginine", "amino acid"]
-summary: "Lysine is one of the essential amino acids. It is sold mostly as L-lysine HCl to prevent cold sores. Small trials from 1978 to 1987 gave mixed results, and a Cochrane review found no evidence it works. Stomach upset is the main side effect. Talk to your doctor first if you have kidney or gallbladder disease."
+summary: "An essential amino acid, lysine is sold mostly as L-lysine HCl for cold sores. Small trials from 1978 to 1987 gave mixed results, and a Cochrane review found no evidence it works. Stomach upset is the main side effect. Talk to your doctor first if you have kidney, heart or gallbladder disease."
 reviewed: "2026-10-23"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26252373/","checked":"2026-10-23","fingerprint":"sha256:9e4a815001214af19ca580d78b889f75331d69cdc7145933a05fd2ef4d58486d"}]
 ---
@@ -15,7 +15,7 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26252373/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Lysine is mostly taken to prevent cold sores, and the trials of L-lysine monohydrochloride are small, old and mixed: 1,000 mg three times a day for 6 months cut outbreaks by an average of 2.4 compared with placebo, 1,248 mg a day showed evidence of lowering the recurrence rate while 624 mg a day did not, and 1,000 mg a day for 12 weeks had no overall effect on recurrence [9][10][11]. A 2015 Cochrane review of 32 prevention trials found no evidence that lysine prevents cold sores, while a 2017 review judged doses of less than 1 g a day ineffective and suggested doses in excess of 3 g a day may improve how people experience the disease [34][35]. A 2019 systematic review of 71 human studies found that the side effects reported were mainly nausea, stomach ache and diarrhoea, with no significant rise in these symptoms overall [36]. One woman developed kidney damage that progressed to chronic kidney failure in association with lysine, so people with kidney disease, gallbladder disease or glutaric aciduria type 1 should talk to their doctor first [30][35][37].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Lysine is mostly taken to prevent cold sores, and the trials are small, old and mixed: 1,000 mg L-lysine three times a day for 6 months cut outbreaks by an average of 2.4 compared with placebo, 1,248 mg a day of L-lysine monohydrochloride showed evidence of lowering the recurrence rate while 624 mg a day did not, and 1,000 mg a day of L-lysine monohydrochloride for 12 weeks had no overall effect on recurrence [9][10][11]. A 2015 Cochrane review of cold sore prevention (32 trials of 19 treatments) found no evidence that lysine prevents cold sores, while a 2017 review judged doses of less than 1 g a day without a low-arginine diet ineffective and suggested doses in excess of 3 g a day may improve how people experience the disease [34][35]. A 2019 systematic review of 71 human studies found that the side effects reported were mainly nausea, stomach ache and diarrhoea, with no significant rise in these symptoms overall [36]. One woman developed kidney damage that progressed to chronic kidney failure in association with lysine [30]; people with kidney, heart or gallbladder disease should talk to their doctor first, and people with glutaric aciduria type 1 should avoid lysine supplements unless their metabolic team advises otherwise [35][37].
 
 ## Key safety points
 
@@ -62,7 +62,7 @@ L-lysine is sold in several forms:
 
 ### Absorption and Bioavailability
 
-Lysine shares its route into the body with the other basic amino acids, including arginine. In humans and piglets, about 30 to 42% of the lysine released from digested protein is used up by the gut and liver on its first pass [31]. Cooking at high heat can make some of the lysine in food unavailable, because lysine reacts with sugars in the browning (Maillard) reaction.
+Lysine shares its route into the body with the other basic amino acids, including arginine. In humans and piglets, about 30 to 42% of the lysine released from digested protein is lost to first-pass metabolism [31]. Cooking at high heat can make some of the lysine in food unavailable, because lysine reacts with sugars in the browning (Maillard) reaction.
 
 In a 12-month cold sore trial, people whose serum lysine exceeded 165 nmol/ml had significantly fewer recurrences, and recurrences rose when levels fell below that [7].
 
@@ -84,7 +84,7 @@ Because nearly all products use the same salt, the main differences are accurate
 
 Herpes simplex virus causes cold sores on the lips and also genital sores. In tissue culture, too little arginine held back the virus, and lysine blocked arginine's growth-promoting effect [33]. The authors of that 1981 work suggested that people prone to cold sores avoid excess arginine and might need extra lysine [33]. Whether that holds in people depends on the trials below.
 
-An early multicentre study gave 45 people with frequent herpes recurrences 312 to 1,200 mg a day of lysine and reported faster recovery and fewer recurrences [6].
+An early multicentre study, which had no placebo group, gave 45 people with frequent herpes recurrences 312 to 1,200 mg a day of lysine and reported faster recovery and fewer recurrences [6].
 
 In a 1987 double-blind, placebo-controlled trial, 27 people took L-lysine monohydrochloride tablets (1,000 mg L-lysine per dose) three times a day for 6 months and 25 took placebo [9]. On average, the lysine group had 2.4 fewer herpes infections, and their symptoms were less severe and healed faster [9].
 
@@ -96,13 +96,13 @@ In a 1980 double-blind crossover study, 65 people took L-lysine monohydrochlorid
 
 The reviews disagree in tone. A 2015 Cochrane review of 32 randomized trials of cold sore prevention found no evidence that lysine works [34]. It found that long-term antiviral tablets can prevent cold sores, with a small benefit [34]. A 2017 review concluded that lysine appears ineffective at doses of less than 1 g a day without a low-arginine diet, that doses in excess of 3 g a day appear to improve how people experience the disease, and that longer trials of daily doses exceeding 1.2 g a day are needed [35].
 
-Taken together, the trials are small, mostly from the 1980s, and point in different directions. The positive results came at the higher doses tested, taken every day for months to prevent outbreaks. Antiviral medicines have stronger evidence for prevention [34].
+Taken together, the trials are small, mostly from the 1980s, and point in different directions. Results were mixed even at the same dose: 1,000 mg a day helped in one trial and had no overall effect in another [7][11]. In the one trial that compared doses, 1,248 mg a day showed evidence of benefit and 624 mg a day did not [10]. Antiviral medicines have stronger evidence for prevention [34].
 
 ### Canker Sores (Aphthous Ulcers)
 
 Canker sores (aphthous ulcers) are shallow, painful mouth ulcers. Typical ones are small, less than 1 cm across [12]. They are not cold sores, and their cause is still unknown: local, immune, genetic, allergic, nutritional and microbial factors have all been proposed [13]. Mouth ulcers that come with eye inflammation, genital ulcers, arthritis or fever need a doctor's assessment for a more serious cause [12].
 
-Evidence that lysine prevents or heals canker sores comes only from small studies, and none is large enough to rely on.
+Evidence that lysine prevents or heals canker sores comes only from small studies, such as a 1994 report on lysine for recurrent canker sores and cold sores [14], and none is large enough to rely on.
 
 ### Calcium Absorption and Bone Health
 
@@ -164,11 +164,11 @@ People who may fall short include:
 
 | Indication | Dose studied | Duration | Evidence |
 |-----------|:-:|:-:|:-:|
-| Cold sore prevention | 1,000 mg three times a day; 1,248 mg a day; 1,000 mg a day | 12 weeks to 12 months | Small trials, mixed results; Cochrane review found no evidence of benefit |
+| Cold sore prevention | 1,000 mg L-lysine three times a day; 1,248 mg a day of L-lysine HCl; 1,000 mg a day | 12 weeks to 12 months | Small trials, mixed results; Cochrane review found no evidence of benefit |
 | Calcium absorption | 400 mg with a calcium load; 800 mg a day | Single dose; short term | One study of calcium handling |
 | Anxiety (with arginine) | L-lysine 2.64 g a day plus L-arginine 2.64 g a day | A week | One trial of the combination |
 
-**Cold sore prevention:** the positive trials used L-lysine monohydrochloride at 1,000 mg three times a day for 6 months, 1,248 mg a day, or 1,000 mg a day [7][9][10]. A dose of 624 mg a day did not work, and 1,000 mg a day for 12 weeks had no overall effect on recurrence [10][11]. Benefit, if any, comes from taking lysine every day to prevent outbreaks.
+**Cold sore prevention:** the positive trials used 1,000 mg L-lysine three times a day for 6 months [9], 1,248 mg a day of L-lysine monohydrochloride [10], or 1,000 mg a day of L-lysine [7]. A dose of 624 mg a day did not work, and 1,000 mg a day of L-lysine monohydrochloride for 12 weeks had no overall effect on recurrence [10][11]. Benefit, if any, comes from taking lysine every day to prevent outbreaks.
 
 **Calcium absorption:** 400 mg with a calcium load, or 800 mg a day for a short period [16].
 
@@ -200,7 +200,7 @@ A 2019 systematic review of 71 human studies, with doses from 16.8 to 17,500 mg 
 
 ### Contraindications
 
-**Glutaric aciduria type 1:** this rare inherited disorder blocks the breakdown of lysine, hydroxylysine and tryptophan. Treatment includes a low-lysine diet [37]. People with it should avoid lysine supplements unless their metabolic team advises otherwise.
+**Glutaric aciduria type 1:** this is a rare inherited disorder of lysine metabolism. Treatment includes a low-lysine diet [37]. People with it should avoid lysine supplements unless their metabolic team advises otherwise.
 
 ### Special Populations
 
@@ -214,7 +214,7 @@ A 2019 systematic review of 71 human studies, with doses from 16.8 to 17,500 mg 
 
 ### Long-Term Safety
 
-Few studies have lasted long. The 2019 review included dosing periods of 1 to 1,095 days and set a provisional no-observed-adverse-effect level of 6,000 mg a day, based on stomach and bowel symptoms [36]. A 2007 review suggested an upper limit of 300 to 400 mg per kg of body weight a day could be considered [31]. People taking lysine long term, especially at high doses, may want their doctor to check kidney function from time to time.
+Few studies have lasted long. The 2019 review included dosing periods of 1 to 1,095 days [36]. A 2007 review suggested an upper limit of 300 to 400 mg per kg of body weight a day could be considered [31], but the 2019 review set a lower provisional no-observed-adverse-effect level of 6,000 mg a day, based on stomach and bowel symptoms [36]. People taking lysine long term, especially at high doses, may want their doctor to check kidney function from time to time.
 
 ### Calcium Absorption Interaction
 
@@ -242,7 +242,6 @@ Given the case of kidney failure linked to lysine [30], take care when combining
 
 - **NSAIDs** (ibuprofen, naproxen)
 - **ACE inhibitors and ARBs**
-- **Aminoglycosides**
 - **High-dose methotrexate**
 
 ### Medications for Osteoporosis
@@ -294,6 +293,8 @@ USDA FoodData Central lists the lysine content of individual foods [4].
 [12] McBride DR. "Management of aphthous ulcers." *Am Fam Physician*. 2000;62(1):149-154, 160. PMID: [10905785](https://pubmed.ncbi.nlm.nih.gov/10905785/)
 
 [13] Akintoye SO, Greenberg MS. "Recurrent aphthous stomatitis." *Dent Clin North Am*. 2014;58(2):281-297. PMID: [24655523](https://pubmed.ncbi.nlm.nih.gov/24655523/). doi: [10.1016/j.cden.2013.12.002](https://doi.org/10.1016/j.cden.2013.12.002)
+
+[14] Wright EF. "Clinical effectiveness of lysine in treating recurrent aphthous ulcers and herpes labialis." *Gen Dent*. 1994;42(1):40-42. PMID: [8005397](https://pubmed.ncbi.nlm.nih.gov/8005397/)
 
 [16] Civitelli R, Villareal DT, Agnusdei D, Nardi P, Avioli LV, Gennari C. "Dietary L-lysine and calcium metabolism in humans." *Nutrition*. 1992;8(6):400-405. PMID: [1486246](https://pubmed.ncbi.nlm.nih.gov/1486246/)
 
