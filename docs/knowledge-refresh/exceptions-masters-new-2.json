@@ -686,5 +686,21 @@
     "reason": "AC7 product-regex false positive (orchestrator 2026-10-23, masters-new-2): \"Byproduct\" matched the product pattern; \"Disinfection Byproduct Risk from Cooking with Kelp\" is a clinical section (its heading removal is an AC4 exception).",
     "by": "orchestrator",
     "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"60 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Polyphenols in some plant foods reduce nonheme iron absorption [2]. In iron-depleted women, coffee taken with a 100...\" | \"- **Keep coffee and tea apart from your dose.** Coffee taken with a 100 mg iron dose cut absorption by 54% [46], and ...\" | \"- **Tea and coffee reduce iron absorption.** Coffee taken with an iron dose cut absorption by 54% in one study [46], ...\"",
+    "reason": "AC2 tokeniser and unit case, bare list numbers (glued footnote) (orchestrator 2026-10-23, masters-new-2): Snook, Gut 2021 [24] (34497146 full text) writes \"dissipates within 60 min.125\", with footnote 125 glued to the unit, so a quote of it is not a whole token; same figure in both body lines. Like masters-new-1's melatonin \"28 min\" list-unit case.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "zinc-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"40 mg/day\": The Tolerable Upper Intake Level for adults is 40 mg a day, and it is lower for children [1]. Doses of 50 mg of zinc ...",
+    "reason": "AC2 tokeniser and unit case, unit (orchestrator 2026-10-23, masters-new-2): the NIH zinc sheet writes \"The Tolerable Upper Intake Level for zinc is 40 mg for adults\" (a daily limit); the body says \"40 mg a day\", which the tokeniser reads as 40 mg/day. Base entry 98 carried this quote and was voided in fix round 1; the re-entry would still not match.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
   }
 ]
