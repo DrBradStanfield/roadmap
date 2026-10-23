@@ -105,27 +105,16 @@ export async function driveFindFolder(
   parentId?: string,
   signal?: AbortSignal,
 ): Promise<{ id: string; name: string } | undefined> {
-  return (await driveFindFolders(accessToken, names, parentId, signal, 1))[0];
-}
-
-/** Every folder by any of `names` (inside `parentId`), up to `pageSize`. */
-async function driveFindFolders(
-  accessToken: string,
-  names: readonly string[],
-  parentId: string | undefined,
-  signal: AbortSignal | undefined,
-  pageSize: number,
-): Promise<Array<{ id: string; name: string }>> {
   const anyName = names.map((name) => `name='${quoted(name)}'`).join(' or ');
   const q = encodeURIComponent(
     `(${anyName}) and mimeType='${DRIVE_FOLDER_MIME}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
   );
-  const res = await request(`${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=${pageSize}`, {
+  const res = await request(`${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=1`, {
     headers: auth(accessToken),
     signal,
   });
   if (!res.ok) await fail('folder lookup', res);
-  return (await jsonBody<{ files?: Array<{ id: string; name: string }> }>(res)).files ?? [];
+  return (await jsonBody<{ files?: Array<{ id: string; name: string }> }>(res)).files?.[0];
 }
 
 export async function driveCreateFolder(accessToken: string, name: string, parentId?: string, signal?: AbortSignal): Promise<string> {
@@ -419,19 +408,31 @@ export class DriveAdapter implements StorageAdapter {
   }
 
   /**
-   * The app folder that holds the record: the browser persists its folder id
-   * and moves the record into it, so originals filed here land beside the
-   * website's. A record with no such parent (none yet, or one left at the
-   * Drive root) falls back to the folder found by name.
+   * The folder that holds the record: the browser persists its folder id and
+   * moves the record into it, so originals filed here land beside the
+   * website's, whatever the folder is called now (a renamed folder keeps its
+   * id; Codex, 2026-10-23). A record with no such parent (none yet, one left at
+   * the Drive root, a trashed parent, or a folder this app may not see) falls back
+   * to the folder found by name. Any other failure throws, so the save retries
+   * rather than filing into a fallback folder the website does not read (review R1).
    */
   private async recordFolder(): Promise<string> {
     const fileId = await this.findFile(ROADMAP_FILE_NAME);
-    const res = fileId ? await request(`${DRIVE_API}/files/${fileId}?fields=parents`, { headers: auth(this.accessToken) }) : null;
-    const parents = res?.ok ? (await jsonBody<{ parents?: string[] }>(res)).parents ?? [] : [];
-    // The app folders by name, the same lookup the record's own folder takes.
-    const folders = await driveFindFolders(this.accessToken, [DRIVE_FOLDER_NAME, DRIVE_LEGACY_FOLDER_NAME], undefined, undefined, 10);
-    const found = folders.find((f) => parents.includes(f.id)) ?? folders[0];
-    return found?.id ?? (await driveCreateFolder(this.accessToken, DRIVE_FOLDER_NAME));
+    const parents = fileId ? (await this.metadata<{ parents?: string[] }>(fileId, 'parents'))?.parents ?? [] : [];
+    for (const parent of parents) {
+      const folder = await this.metadata<{ mimeType?: string; trashed?: boolean; parents?: string[] }>(parent, 'mimeType,trashed,parents');
+      // The Drive root is a folder with no parent of its own: never file documents there.
+      if (folder?.mimeType === DRIVE_FOLDER_MIME && !folder.trashed && (folder.parents?.length ?? 0) > 0) return parent;
+    }
+    return this.folderId();
+  }
+
+  /** One file's fields; null when Drive says it is not there (404: gone, or not this app's to see). */
+  private async metadata<T>(id: string, fields: string): Promise<T | null> {
+    const res = await request(`${DRIVE_API}/files/${encodeURIComponent(id)}?fields=${fields}`, { headers: auth(this.accessToken) });
+    if (res.status === 404) return null;
+    if (!res.ok) await fail('folder lookup', res);
+    return jsonBody<T>(res);
   }
 
   private async folderId(signal?: AbortSignal): Promise<string> {
