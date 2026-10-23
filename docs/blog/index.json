@@ -2237,7 +2237,8 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-a-forms-benefits-dosing",
     "type": "reference",
     "product": "microvitamin",
-    "summary": "Reference on vitamin A: vision, immune function, skin health, bone density. Forms: retinol/retinyl palmitate (animal sources), beta-carotene (plant). Toxicity risk from high preformed vitamin A; safe in pregnancy only below UL. Always discuss with your doctor."
+    "summary": "Reference on vitamin A and beta-carotene. Brad sees no role for vitamin A in a multivitamin: high-dose beta-carotene raised lung cancer in smokers, and excess vitamin A can weaken bones, damage the liver and cause birth defects. Talk to your doctor first if pregnant or on retinoid medicines.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Experts Were WRONG About Testosterone (Shocking New Proof)",
@@ -4386,7 +4387,8 @@
     "publishedAt": "2025-05-13T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/psyllium-husk-benefits-dosing-and-side-effects",
     "type": "reference",
-    "summary": "Reference on psyllium husk: constipation, LDL cholesterol, blood sugar, IBS, weight management. AGA first-line fiber for chronic constipation; FDA heart health claim. Whole husk or powder, 5-15 g/day. Always discuss with your doctor."
+    "summary": "Psyllium husk is a gel-forming soluble fiber that relieves constipation and lowers LDL (about 10 g of husk, or 7 g of soluble fiber, a day). Take each dose with a full glass of water. Do not take it if you have trouble swallowing; talk to your doctor first if you take prescription medicines.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Taurine: Benefits, Forms, Dosing, and Side Effects",
@@ -5379,7 +5381,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/melatonin-supplements-evidence-dosing-forms-and-safety",
     "type": "reference",
-    "summary": "Reference on melatonin: sleep onset, jet lag, delayed sleep phase, migraine prevention. Children with ASD/ADHD, menopausal women, shift workers. Start low (0.3-3 mg). Caution with diabetes, fractures. Always discuss with your doctor."
+    "summary": "Reference on melatonin. Brad's view: it may shorten the time it takes to fall asleep, but dose and timing matter; he keeps to 1 mg or less, 2 to 4 hours before sleep, and calls the 2025 heart failure link flawed. Talk to your doctor first if pregnant, or on fluvoxamine, blood thinners, sedatives or diabetes medicines.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Milk Thistle: Benefits, Best Forms, Dosing, and Side Effects",
@@ -5914,7 +5917,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-e-forms-evidence-safety",
     "type": "reference",
-    "summary": "Reference on vitamin E: antioxidant, fatty liver (NASH), Alzheimer's, heart health. RDA 15 mg/day; diet usually sufficient. Supplements may raise prostate cancer risk; natural vs synthetic forms differ in potency. Always discuss with your doctor."
+    "summary": "Reference on vitamin E. Brad's view: he sees no role for it in a multivitamin. In SELECT, 400 IU a day raised prostate cancer risk, and the USPSTF found no net benefit. Deficiency is rare. Talk to your doctor first, especially if you take warfarin or another blood thinner.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "New Study Reveals the BEST Exercise to Reverse Skin Wrinkles",
@@ -7226,7 +7230,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/berberine-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on berberine: blood sugar, cholesterol, insulin resistance, weight loss. People with type 2 diabetes, prediabetes, or high LDL. Forms include HCl, phytosome, dihydroberberine; typical doses 900-1500 mg/day with meals. Always discuss with your doctor."
+    "summary": "Reference on berberine. Trials show modest drops in blood sugar and LDL cholesterol, mainly in type 2 diabetes, and little weight loss. Brad considers it only a last resort for cholesterol, and not for healthy adults. Talk to your doctor first if pregnant, breastfeeding or on prescription medicines.",
+    "reviewed": "2026-10-22"
   },
   {
     "title": "Boron: Benefits, Forms, Dosing, and Side Effects",
