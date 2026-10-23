@@ -5,7 +5,8 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { createEmptyFile, type FileDocument, type RoadmapFile } from './roadmap-file';
 import { LAB_ARCHIVE_TITLE } from './document-path';
-import { documentView, isLabArchiveDocument, LAB_ARCHIVE_FLAG, pendingRowsFor, saveDocuments, type DocumentPayload, type DocumentSaveIO } from './document-save';
+import { documentView, isLabArchiveDocument, labArchivePayload, pendingRowsFor, saveDocuments, type DocumentPayload, type DocumentSaveIO } from './document-save';
+import { LAB_ARCHIVE_FLAG } from './document-rows';
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 const hashOf = (b: Uint8Array) => `sha256-${createHash('sha256').update(b).digest('hex')}`;
@@ -171,6 +172,18 @@ describe('saveDocuments: the upload pool', () => {
     await saveDocuments(fresh(), [labArchive(), ...payloads], t.io);
     expect(order.slice(0, 2)).toEqual(['Lab results/2026-01-01 Blood test results.pdf', 'Clinic letters/2026-01-01 L0.pdf']);
     expect(peak).toBe(3);
+  });
+});
+
+describe('saveDocuments: the rows, byte for byte (US-52 AC14)', () => {
+  it('a letter and a lab report\'s archive row: the bytes the web and the iPhone write', async () => {
+    let ids = 0;
+    let clock = 0;
+    const t = io();
+    const plan = await saveDocuments(fresh(), [letter(), labArchivePayload('labs.pdf', '2026-01-02', bytes('lab bytes'))], {
+      ...t.io, newId: () => `doc-${++ids}`, now: () => `2026-02-01T00:00:0${clock++}.000Z`,
+    });
+    expect(JSON.stringify(plan.saved)).toMatchSnapshot();
   });
 });
 

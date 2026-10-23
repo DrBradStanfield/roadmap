@@ -11,11 +11,12 @@ struct MetricEntrySheet: View {
         if row.metric == MyData.bloodPressure {
             BloodPressureSheet(store: store, saved: saved)
         } else {
-            ValueEntrySheet(title: row.label, unit: row.unit, current: nil, asksForDay: true, read: store.number) { value, day in
+            ValueEntrySheet(title: row.label, unit: store.lpaUnit(for: row) ?? row.unit, current: nil, asksForDay: true, read: store.number) { value, day in
                 saved(store.apply(.add(metric: row.metric, value: value, day: day)))
             } replace: { existingId, value in
                 saved(store.apply(.correct(id: existingId, value: value)))
             }
+            .lpaUnits(store, row)
         }
     }
 }

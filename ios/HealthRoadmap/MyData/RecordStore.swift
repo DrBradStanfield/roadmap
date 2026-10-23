@@ -44,12 +44,14 @@ final class RecordStore {
         let units: String
         /// The per-test units it showed (US-25 AC17e): a typed value is read in them.
         let choices: String
+        /// Lp(a)'s unit it showed (US-05 AC2): the record's, so another device can change it.
+        let lpaUnit: String
     }
     private var pinned: Screen?
     private var pins = 0
 
     var screen: Screen {
-        Screen(erase: cloudErase, units: myData?.unitSystem ?? "si", choices: unitChoices.json)
+        Screen(erase: cloudErase, units: myData?.unitSystem ?? "si", choices: unitChoices.json, lpaUnit: myData?.lpaUnit ?? "")
     }
 
     /// A sheet that edits the record opened.
@@ -243,6 +245,10 @@ final class RecordStore {
         }
         if let erase = seen.erase { return applyInCloud(edit, erase: erase, seen: seen) }
         if let problem { return .refused(message: problem, existingId: nil) }
+        // Lp(a)'s unit is the record's: a number typed in another is never saved in this one.
+        if seen.lpaUnit != screen.lpaUnit, readsLpa(edit) {
+            return .refused(message: "Your Lp(a) unit changed while this was open, so this was not saved. Close this and enter the value again.", existingId: nil)
+        }
         do {
             let outcome = try engine.apply(edit, to: recordJSON, now: .now, deviceId: deviceId, units: seen.choices)
             guard outcome.ok, let next = outcome.record else {
@@ -268,7 +274,7 @@ final class RecordStore {
     /// Through the engine's open session: the save loop sends it to the cloud.
     private func applyInCloud(_ edit: RecordEdit, erase: String, seen: Screen) -> ApplyResult {
         do {
-            let outcome = try engine.cloudEdit(edit, erase: erase, units: seen.units, now: .now, choices: seen.choices)
+            let outcome = try engine.cloudEdit(edit, erase: erase, units: seen.units, now: .now, choices: seen.choices, lpaUnit: seen.lpaUnit)
             guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
             }
@@ -358,6 +364,42 @@ final class RecordStore {
         guard let shown = try? engine.myData(recordJSON: recordJSON, now: .now, deviceId: deviceId, units: choices.json) else { return }
         myData = shown
         publish(choices)
+    }
+
+    /// Lp(a)'s units, in the web's order (health-core's LPA_UNITS).
+    static let lpaUnits = ["nmol/L", "mg/dL", "mg/L"]
+
+    /// Lp(a)'s unit, from its page's menu or a sheet's picker (US-05 AC2, US-25 AC20): a record
+    /// edit, as the web's control writes it, so it syncs; the unit already stored writes nothing.
+    /// Not a typed value, so it is checked against the record now, never a pin. A sheet open
+    /// as it is chosen shows it from then on, so its pin carries it: a value typed there is
+    /// read in the unit shown at Save.
+    func setLpaUnit(_ unit: String) -> ApplyResult {
+        let result = applyNow(.lpaUnit(unit))
+        if result == .saved, let seen = pinned, let shown = myData?.lpaUnit {
+            pinned = Screen(erase: seen.erase, units: seen.units, choices: seen.choices, lpaUnit: shown)
+        }
+        return result
+    }
+
+    /// The same, answering a refusal's words, nil when it was taken.
+    func chooseLpaUnit(_ unit: String) -> String? {
+        if case .refused(let message, _) = setLpaUnit(unit) { return message }
+        return nil
+    }
+
+    /// Lp(a)'s unit as the record holds it now, for an Lp(a) row; nil for any other.
+    func lpaUnit(for row: MyData.Row) -> String? {
+        row.metric == "lpa" ? myData?.lpaUnit : nil
+    }
+
+    /// Whether an edit is a typed Lp(a) value, read in Lp(a)'s own unit.
+    private func readsLpa(_ edit: RecordEdit) -> Bool {
+        switch edit {
+        case .add(let metric, _, _): metric == "lpa"
+        case .correct(let id, _): history(for: "lpa")?.rows.contains { $0.id == id } ?? false
+        default: false
+        }
     }
 
     /// The master switch clears every per-test choice, as the web's does, on the phone's

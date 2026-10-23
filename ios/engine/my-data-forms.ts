@@ -17,9 +17,10 @@ import { setScreening } from '../../packages/health-core/src/state-edits';
 import { localDay } from '../../packages/health-core/src/merge';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '../../packages/health-core/src/mappings';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
-import { formatDisplayValue, getDisplayLabel, type MetricType } from '../../packages/health-core/src/units';
+import type { MetricType } from '../../packages/health-core/src/units';
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
-import { systemFor, type UnitChoices } from './unit-choices';
+import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
+import { cellLabel, cellText } from '../../packages/health-core/src/cell-unit';
 
 /** A supplement as the tab lists it. */
 export interface SupplementRow {
@@ -249,7 +250,7 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
     // No plan yet (no usable height or sex): nothing is excluded, and nothing used.
   }
   if (metric === BLOOD_PRESSURE) return pressureHistory(file, excludedFields);
-  const system = systemFor(file, metric, choices);
+  const shown = cellUnitFor(file, metric, choices);
   const rows = file.measurements.filter((row) => row.metricType === metric);
   // The plan's own pick of the current value.
   const current = latestActivePerMetric(rows.filter((row) => row.status === 'active'))[0];
@@ -257,14 +258,14 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
     metric,
     excluded: excludedFields.includes(METRIC_TO_FIELD[metric]),
     label: METRIC_LABELS[metric] ?? metric,
-    unit: getDisplayLabel(metric as MetricType, system),
+    unit: cellLabel(metric as MetricType, shown),
     rows: [...rows]
       // Newest day first; within a day, newest written first, the active row above the ones it replaced.
       .sort((a, b) => b.recordedAt.slice(0, 10).localeCompare(a.recordedAt.slice(0, 10)) || String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''))
         || Number(b.status === 'active') - Number(a.status === 'active'))
       .map((row) => ({
         id: row.id,
-        value: formatDisplayValue(metric as MetricType, row.value, system),
+        value: cellText(metric as MetricType, row.value, shown),
         day: row.recordedAt.slice(0, 10),
         status: row.status,
         current: row.id === current?.id,

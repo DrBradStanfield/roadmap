@@ -48,6 +48,9 @@ struct MyData: Decodable {
 
     /// "si" (metric) or "conventional" (US)
     let unitSystem: String
+    /// Lp(a)'s unit, "nmol/L", "mg/dL" or "mg/L": the record's choice, as the web's control
+    /// (US-05 AC2); nil from an older engine.
+    let lpaUnit: String?
     /// The record's erase count; nil from an engine older than US-54 AC7.
     let eraseEpoch: Int?
     let profile: Profile
@@ -73,6 +76,8 @@ enum RecordEdit: Encodable, Equatable {
     /// the active rows the user saw (`seenIds`), so a change from elsewhere refuses it (AC17).
     case bloodPressure(systolic: Double, diastolic: Double, day: String, replace: Bool, seenIds: [String] = [])
     case units(String)
+    /// Lp(a)'s unit, written to the record as the web's three-unit control writes it (US-05 AC2).
+    case lpaUnit(String)
     /// A new value for a day, YYYY-MM-DD.
     case add(metric: String, value: Double, day: String)
     /// Replaces the value in row `id`: a FHIR correction, never a removal.
@@ -86,7 +91,7 @@ enum RecordEdit: Encodable, Equatable {
     case labImport(extractionJSON: String, refs: [String], reportDay: String)
 
     private enum Key: String, CodingKey {
-        case kind, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, metric, value, day, id, extractionJson, refs, reportDay, samples
+        case kind, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples
     }
 
     func encode(to encoder: Encoder) throws {
@@ -112,6 +117,9 @@ enum RecordEdit: Encodable, Equatable {
         case .units(let unitSystem):
             try json.encode("units", forKey: .kind)
             try json.encode(unitSystem, forKey: .unitSystem)
+        case .lpaUnit(let unit):
+            try json.encode("lpaUnit", forKey: .kind)
+            try json.encode(unit, forKey: .unit)
         case .add(let metric, let value, let day):
             try json.encode("add", forKey: .kind)
             try json.encode(metric, forKey: .metric)

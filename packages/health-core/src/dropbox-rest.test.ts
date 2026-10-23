@@ -232,6 +232,62 @@ describe('US-35 AC2 — dropboxListFolder lists files only, and follows has_more
   });
 });
 
+// US-52 AC13c — the iPhone browses folders; the connector's listing is untouched.
+import { dropboxListTree } from './dropbox-rest';
+
+describe('US-52 AC13c — dropboxListTree lists folders and files, recursively on request', () => {
+  const page = {
+    entries: [
+      { '.tag': 'folder', id: 'id:labs', name: 'Labs', path_display: '/Labs', path_lower: '/labs' },
+      { '.tag': 'folder', id: 'id:2025', name: '2025', path_display: '/Labs/2025', path_lower: '/labs/2025' },
+      { '.tag': 'file', id: 'id:one', name: 'a.pdf', path_display: '/Labs/2025/a.pdf', size: 12, server_modified: '2026-09-01T00:00:00Z' },
+      { '.tag': 'file', id: 'id:low', name: 'b.png', path_lower: '/labs/b.png' },
+      { '.tag': 'deleted', name: 'gone.pdf', path_display: '/Labs/gone.pdf' },
+    ],
+    cursor: 'c1', has_more: true,
+  };
+
+  it('keeps folders with their paths, drops the listed folder itself and deleted entries, follows the cursor', async () => {
+    const bodies: unknown[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)));
+      if (url.endsWith('/list_folder')) return Response.json(page);
+      return Response.json({ entries: [{ '.tag': 'file', id: 'id:two', name: 'c.zip', path_display: '/Labs/c.zip', size: 9 }], has_more: false });
+    }));
+    const entries = await dropboxListTree('token', 'Labs', true);
+    expect(entries).toEqual([
+      { kind: 'folder', id: 'id:2025', name: '2025', path: 'Labs/2025', size: 0, modified: '' },
+      { kind: 'file', id: 'id:one', name: 'a.pdf', path: 'Labs/2025/a.pdf', size: 12, modified: '2026-09-01T00:00:00Z' },
+      { kind: 'file', id: 'id:low', name: 'b.png', path: 'labs/b.png', size: 0, modified: '' },
+      { kind: 'file', id: 'id:two', name: 'c.zip', path: 'Labs/c.zip', size: 9, modified: '' },
+    ]);
+    expect(bodies).toEqual([{ path: '/Labs', recursive: true, include_deleted: false }, { cursor: 'c1' }]);
+  });
+
+  it('lists the root one level down, and a folder that does not exist as empty', async () => {
+    const bodies: unknown[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)));
+      return new Response('{"error_summary":"path/not_found/"}', { status: 409 });
+    }));
+    expect(await dropboxListTree('token', '', false)).toEqual([]);
+    expect(bodies).toEqual([{ path: '', recursive: false, include_deleted: false }]);
+  });
+
+  it('dropboxListFolder (the hosted connector, US-35 AC2) still asks for one level and answers files only, without paths', async () => {
+    const bodies: unknown[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)));
+      return Response.json(url.endsWith('/list_folder') ? page : { entries: [], has_more: false });
+    }));
+    expect(await dropboxListFolder('token', '')).toEqual([
+      { id: 'id:one', name: 'a.pdf', size: 12, modified: '2026-09-01T00:00:00Z' },
+      { id: 'id:low', name: 'b.png', size: 0, modified: '' },
+    ]);
+    expect(bodies[0]).toEqual({ path: '', recursive: false, include_deleted: false });
+  });
+});
+
 describe('a caller’s signal reaches `fetch` on every call the import makes (US-35 AC5)', () => {
   it('aborts the request in flight when the caller aborts, and reports the abort as the adapter’s failure', async () => {
     const fetchSpy = vi.fn((_url: unknown, init: RequestInit) => new Promise<Response>((_, reject) => {

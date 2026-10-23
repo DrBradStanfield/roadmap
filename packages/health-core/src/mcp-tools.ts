@@ -51,6 +51,7 @@ import { CANONICAL_UNITS, formatDisplayValue, getDisplayLabel, getDisplayRange, 
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
+import { documentRow, labArchiveFields, type DocumentFields } from './document-rows';
 import { DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES } from './validation';
 import { z } from 'zod';
 
@@ -1771,11 +1772,15 @@ export function importDocumentsCommit(
     : { importedVia: 'connector' };
   const docs: FileDocument[] = payload.documents
     .filter((d) => !isAlreadyImported(file, d.sourceFileName, d.contentHash, d.date))
-    .map((d) => ({
-      id: crypto.randomUUID(), title: d.title, type: d.type, date: d.date,
-      fileRef: '', contentHash: d.contentHash, mimeType: d.mimeType, extractedText: '', addedAt: now,
-      metadata, sourceFileName: d.sourceFileName,
-    }));
+    .map((d) => {
+      // A lab report's row is the website's and the iPhone's hidden archive row
+      // (`labArchive: true`), told apart at commit by the signature the extract
+      // gave it, so a receipt parked before this rule commits the same way.
+      const fields: DocumentFields = d.type === 'pathology_report' && d.title === LAB_ARCHIVE_TITLE
+        ? labArchiveFields(d.sourceFileName, d.date)
+        : { documentType: d.type, title: d.title, documentDate: d.date, contentMd: '', metadata: {}, sourceFileName: d.sourceFileName };
+      return documentRow({ ...fields, metadata: { ...fields.metadata, ...metadata } }, { id: crypto.randomUUID(), contentHash: d.contentHash, mimeType: d.mimeType, addedAt: now });
+    });
   const base = { phase: 'committed' as const, route: payload.route, files: [], candidates: [], documents: [], unrecognized: [], remaining: [] };
   if (chosen.size === 0 && docs.length === 0) {
     return {

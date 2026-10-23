@@ -23,18 +23,12 @@
  * (documents are immutable under merge).
  */
 import { buildDocumentRef, LAB_ARCHIVE_TITLE, splitDocumentRef } from './document-path';
+import { documentRow, LAB_ARCHIVE_FLAG, labArchiveFields, type DocumentFields } from './document-rows';
 import { newId as freshId } from './record-edits';
 import type { FileDocument, RoadmapFile } from './roadmap-file';
-import type { DocumentType } from './validation';
 
 /** One reviewed document to save. `file` is the original's bytes, when kept. */
-export interface DocumentPayload<F> {
-  documentType: string;
-  title: string;
-  documentDate: string | null;
-  contentMd: string;
-  metadata: Record<string, unknown>;
-  sourceFileName: string | null;
+export interface DocumentPayload<F> extends DocumentFields {
   file?: F;
 }
 
@@ -68,15 +62,6 @@ export function documentView(d: FileDocument): DocumentView {
 }
 
 /**
- * Metadata flag stamped on synthesized blood-test archive entries. These exist
- * ONLY to persist the original lab PDF to the user's cloud — the extracted
- * VALUES surface in the Blood Test Results table, so the synthesized entry must
- * never appear in the Documents list. Real biopsy/histology pathology reports
- * carry markdown content + their own metadata and are NEVER flagged.
- */
-export const LAB_ARCHIVE_FLAG = 'labArchive';
-
-/**
  * True when a stored document is a synthesized blood-test archive entry (the
  * raw lab PDF kept purely for the user's cloud). Hidden from the Documents
  * list. Matches the explicit flag for new uploads AND a content signature for
@@ -98,21 +83,9 @@ export function isLabArchiveDocument(doc: {
   );
 }
 
-/**
- * The hidden row that keeps a lab report's original in the user's cloud: the
- * extracted values live in the record, so this row carries no text. One shape
- * for the website (archive-payloads.ts) and the iPhone app.
- */
+/** The lab report's archive row (`labArchiveFields`) with the original's bytes: the website (archive-payloads.ts) and the iPhone app. */
 export function labArchivePayload<F>(sourceFileName: string | null, reportDate: string | null, file: F | undefined): DocumentPayload<F> {
-  return {
-    documentType: 'pathology_report',
-    title: LAB_ARCHIVE_TITLE,
-    documentDate: reportDate,
-    contentMd: '',
-    metadata: { [LAB_ARCHIVE_FLAG]: true },
-    sourceFileName,
-    file,
-  };
+  return { ...labArchiveFields(sourceFileName, reportDate), file };
 }
 
 /** A stored row as the archive step reads it. */
@@ -163,6 +136,35 @@ export interface DocumentSavePlan {
   commit(file: RoadmapFile): void;
 }
 
+/*
+ * The six duplicate checks on the way into `documents[]` (US-52 AC14). Each
+ * runs where it does because each surface knows different things at that
+ * moment; none is a copy of another, so a de-dup must not fold them together.
+ * 1. Website review, `isDocDuplicate` (ReviewTable.tsx): an exact
+ *    `sourceFileName` match unticks the keep box. Titles drift between reads;
+ *    the name does not, and the bytes are not hashed yet.
+ * 2. iPhone review, `alreadySaved` (ios/engine/lab-review.ts): the same
+ *    exact-name rule, so the app's card starts as the web's does.
+ * 3. Here: by hash, skipping only a row that holds a stored original; a
+ *    same-hash metadata-only row of the same kind (lab archive or shown
+ *    document, US-14 AC4) is replaced behind and tombstoned (US-13 AC1).
+ *    Only the save holds the bytes and the cloud write.
+ * 4. Connector, `isAlreadyImported` (mcp-tools.ts): the hash of whatever row
+ *    holds it; else, for a hashless candidate, name and date with a " (n)"
+ *    stripped; else the name alone against a hashless live row whose date is
+ *    compatible (either unknown, or equal). The assistant route often has no
+ *    bytes to hash (US-36 AC5).
+ * 5. Connector, `folderNudge` (mcp-tools.ts): a live row with the listed name,
+ *    hashed or not, compared by `dedupFileName` on both sides (" (n)"
+ *    stripped); a folder listing has names only, and rule 4 would nag every
+ *    folder-imported file forever (US-37 AC1).
+ * 6. Website archive step (widget-src archive-payloads.ts):
+ *    `unarchivedOriginals` / `isArchivableFile` keep a by-hash archived set
+ *    (a `contentHash` with a stored original) and the `alreadyCovered` name
+ *    set, and `pendingRowsFor` files an unselected letter behind its
+ *    metadata-only row; the iPhone's review-time held check uses
+ *    `pendingRowsFor` too.
+ */
 /**
  * Hash, dedup and write the blobs for `payloads` against `current`. Returns
  * the rows to commit; it changes nothing in `current`.
@@ -198,11 +200,7 @@ export async function saveDocuments<F>(
     }
     // The hash is the bytes' identity even when the blob write fails, so a
     // later upload of the same bytes can replace this row (US-14 AC4).
-    const doc: FileDocument = {
-      id: newId(), title: d.title, type: d.documentType as DocumentType, date: d.documentDate,
-      fileRef: '', contentHash: hash ?? '', mimeType: '', extractedText: d.contentMd,
-      addedAt: now(), metadata: d.metadata, sourceFileName: d.sourceFileName,
-    };
+    const doc = documentRow(d, { id: newId(), contentHash: hash ?? '', mimeType: '', addedAt: now() });
     if (d.file) {
       const ref = buildDocumentRef({
         type: doc.type,

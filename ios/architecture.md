@@ -103,6 +103,16 @@ it shared, so a fix to `dropbox-rest.ts`, `drive-rest.ts`, `SyncManager` or
   them with a continuation, and JavaScriptCore runs the promise jobs when each call from
   Swift returns. The bundle is 510 KB with sync.
 
+**Lp(a)'s unit (2026-10-23, US-25 AC20).** Lp(a) is shown and typed in nmol/L, mg/dL or mg/L,
+as on the web (US-05 AC2). Unlike the per-test Metric/US choices (a device preference), the
+unit is the record's `profile.lpaUnit`, so it syncs: the engine's `lpaUnit` edit writes it with
+health-core's `stampProfile`, the web store's own write. The display and reading functions are
+health-core's `cell-unit.ts` (`recordLpaUnit`, `cellText`, `cellFromSI`, `cellRange`), moved there
+from the web's `blood-test-cell.ts` and `lpa-unit.ts` so both clients run one copy. A sheet's pin
+carries the Lp(a) unit it showed; a unit chosen in the sheet moves the pin with it, and one
+changed elsewhere refuses an Lp(a) value or correction, on the phone's file in Swift and in the
+cloud session in `cloudEdit`, whose new last argument (`shownLpaUnit`) changed the bridge id (D3).
+
 ### D3 · Clinical fixes ship over the air, signed (Brad, 2026-10-21; built 2026-10-22, US-25 AC18)
 
 The engine bundle can be updated without an App Store release. Apple's developer agreement
@@ -862,12 +872,15 @@ Files, From Photos, and Scan a paper report (VisionKit's document camera, real p
   record. The screen says so in one sentence before the sign-in. A second OAuth flow, or a
   token that reads files but does not sync, would be two Dropbox grants for one app key.
 - *The app folder is the inbox.* The Dropbox app is an App folder app, so the app lists
-  only `Apps/Health Plan by Dr Brad`, the root the hosted connector imports from too. The
-  listing and download are health-core's `dropboxListFolder` and `dropboxDownload`, run in
-  the engine (`labFilesJson`, `labFile` in cloud.ts), filtered by the connector's name
-  rule (`isImportableEntryName`, `FOLDER_IMPORT_EXTENSIONS`), so the record and the app's
-  own files never list. Download is by listing id only, never a path, and only an id a
-  fresh listing still offers as a lab file (review R3): any Dropbox id the phone could
+  only `Apps/Health Plan by Dr Brad`, the root the hosted connector imports from too, and
+  its subfolders (US-52 AC13c, 2026-10-23). The listing is health-core's `dropboxListTree`
+  (folders and files, recursive for "Read every report in this folder"); the connector's
+  `dropboxListFolder` is left exactly as it was, under the OpenAI review. Download is
+  `dropboxDownload`. They run in the engine (`labFolderJson`, `labFolderFilesJson`,
+  `labFile` in cloud.ts), filtered by the connector's name rule (`isImportableEntryName`,
+  `FOLDER_IMPORT_EXTENSIONS`), so the record and the app's own files never list. Download
+  is by listing id only, never a path, and only an id a fresh listing of its own folder
+  still offers as a lab file (review R3): any Dropbox id the phone could
   learn, the record's included, is otherwise refused. A file over the web's size limit
   is refused before it downloads, an empty one (or one listed with no size) is called empty, and the bytes are checked again
   (R5). The bridge's fetch holds the whole answer in Swift before JavaScript sees its
@@ -1197,10 +1210,36 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 3. **Health Records labs and camera lab upload.**
 4. **App Store submission.**
 
+## Where things stand (2026-10-23)
+
+- **Done on main:** shared document saving (39ff03a5); per-test units (d1199494); clinic letters
+  and originals on the phone (1b6d58a7); the parsed-record memo, stage 1 of moving engine work
+  off the main thread (b196f32a); Drive originals filed by the record folder's id (c8c2d7cd);
+  plan cards that open without covering the card being read, and diagrams that hold up in dark
+  mode (4fd330bc). The website's shared document save is not deployed: it waits for a real
+  upload checked in Safari.
+- **Stage 2 (engine on its own queue, edits in order, sheets awaiting saves):** on branch
+  `claude/engine-off-main-stage2` (worktree `../roadmap-stage2`), reviewed over several rounds;
+  the last re-check found nothing blocking bar two small agreed fixes (marker before the phone
+  write with clear-if on failure; held news applied in the handover's own turn). Merge to main
+  once those land and a final check is clean. Its US-25 AC20 must be renumbered on merge: main's
+  US-25 AC20 is the Lp(a) unit.
+- **In progress, uncommitted on main:** Lp(a)'s three-unit control on the phone (US-25 AC20 on
+  main; review fixes being applied: the unit choice in the entry sheet, the web's Lp(a) display
+  functions moved into health-core and shared); Dropbox folder picking (US-52 AC13c; review
+  fixes being applied: cancel on close, one listing per read, a memory bound); the MCP
+  de-duplication (plan docs/reviews/2026-10-23-mcp-dedup-plan.md v3, US-52 AC14; done and
+  reviewed clean, waiting to be committed with the other two). Main is behind origin (PR #218
+  changed ios/engine/cloud.ts): merge after these commits, then recompute the bridge id.
+- **Not started:** the "new reports in your Dropbox, read them?" prompt (web and phone; first
+  test whether a picked Google Drive folder lets `drive.file` see inside it); installing the
+  latest build on Brad's iPhone.
+
 ## Next, in order (2026-10-22)
 
-1. Engine work off the main thread, with the engine keeping the parsed record between calls
-   (D2: every call parses the whole record; one year of daily readings costs 9 to 31 ms a call).
+1. Engine work off the main thread: stage 1 done (the memo); stage 2 on its branch (above);
+   stage 3 (typed-number parsing, history, chat history and the cloud attach still wait on the
+   engine) and stage 4 (engine start behind the launch screen) to follow.
 2. US-55: resting heart rate, VO2 max, steps and sleep from Apple Health (D6).
 3. `APP_ATTEST_TEAM_ID` on the education server, so chat and lab upload work on a phone (D8).
 4. The Clarity masking check on a real recording (D9).

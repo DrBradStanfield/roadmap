@@ -19,7 +19,7 @@ struct LabUploadSheet: View {
         case failed(String)
     }
 
-    private enum Source: Hashable { case dropbox, googleDrive }
+    private enum Source: Hashable { case dropbox, dropboxFolder(HealthEngine.CloudLabFolder), googleDrive }
 
     @Environment(\.dismiss) private var dismiss
     @State private var step = Step.choose
@@ -28,6 +28,8 @@ struct LabUploadSheet: View {
     @State private var scanning = false
     @State private var picking = false
     @State private var photo: PhotosPickerItem?
+    /// The read or send under way, cancelled when the sheet closes (review R1, Codex).
+    @State private var work: Task<Void, Never>?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -35,7 +37,7 @@ struct LabUploadSheet: View {
                 .navigationTitle("Add medical records")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+                    ToolbarItem(placement: .cancellationAction) { Button("Close") { work?.cancel(); dismiss() } }
                     if case .choose = step, AIConsent.labUpload.given {
                         ToolbarItem(placement: .primaryAction) {
                             Menu {
@@ -50,14 +52,17 @@ struct LabUploadSheet: View {
                 .navigationDestination(for: Source.self) { source in
                     switch source {
                     case .dropbox:
-                        DropboxLabFiles(engine: engine, sync: sync, pick: { file in Task { await read(dropbox: file) } }, browseFiles: browseFiles)
+                        dropbox(DropboxLabFolder.root)
+                    case .dropboxFolder(let folder):
+                        dropbox(folder)
                     case .googleDrive:
                         GoogleDriveLabFiles(sync: sync, browseFiles: browseFiles)
                     }
                 }
         }
+        .onDisappear { work?.cancel() }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.folder, .pdf, .jpeg, .png, .zip], allowsMultipleSelection: false) { result in
-            if case .success(let urls) = result, let url = urls.first { Task { await read(file: url) } }
+            if case .success(let urls) = result, let url = urls.first { start { await read(file: url) } }
         }
         // Presented from the sheet's root, like Files: an inline PhotosPicker row took
         // the whole sheet down with it when a photo was picked (iOS 27, seen 2026-10-22).
@@ -65,12 +70,12 @@ struct LabUploadSheet: View {
         .onChange(of: photo) {
             guard let item = photo else { return }
             photo = nil
-            Task { await read(photo: item) }
+            start { await read(photo: item) }
         }
         .fullScreenCover(isPresented: $scanning) {
             DocumentScanner { pages in
                 scanning = false
-                if !pages.isEmpty { Task { await read { [try LabFileReader.pictures(pages, name: "Scanned report")] } } }
+                if !pages.isEmpty { start { await read { [try LabFileReader.pictures(pages, name: "Scanned report")] } } }
             }
             .ignoresSafeArea()
         }
@@ -81,7 +86,7 @@ struct LabUploadSheet: View {
         case .choose:
             chooser
         case .consent(let documents):
-            AIConsentView(consent: .labUpload) { Task { await send(documents) } }
+            AIConsentView(consent: .labUpload) { start { await send(documents) } }
         case .working(let what, let progress):
             LabReadingDiagram(step: what, progress: progress)
         case .review(let results, let index):
@@ -136,6 +141,20 @@ struct LabUploadSheet: View {
         importing = true
     }
 
+    /// Runs a read or a send as the sheet's tracked work, which Close cancels.
+    private func start(_ operation: @escaping @MainActor () async -> Void) {
+        work = Task { await operation() }
+    }
+
+    /// One Dropbox folder: a folder opens in place, a file or the whole folder is read.
+    private func dropbox(_ folder: HealthEngine.CloudLabFolder) -> some View {
+        DropboxLabFiles(engine: engine, sync: sync, folder: folder,
+                        pick: { file in start { await read(dropbox: file) } },
+                        open: { inner in path.append(.dropboxFolder(inner)) },
+                        readAll: { folder in start { await read(dropboxFolder: folder) } },
+                        browseFiles: browseFiles)
+    }
+
     // MARK: Reading, on the phone
 
     /// Reads the report on the phone, then sends it, or asks for consent first.
@@ -147,6 +166,8 @@ struct LabUploadSheet: View {
         step = .working("Reading the file on your iPhone")
         do {
             let read = try await documents()
+            // Closed while it read: nothing is sent (review R1).
+            try Task.checkCancellation()
             if AIConsent.labUpload.given {
                 await send(read)
             } else {
@@ -196,16 +217,39 @@ struct LabUploadSheet: View {
         }
     }
 
+    /// A whole Dropbox folder (AC13c): every report in it and its folders, each file
+    /// downloaded by id as a tapped one is, the count shown on the reading screen.
+    private func read(dropboxFolder folder: HealthEngine.CloudLabFolder) async {
+        await read {
+            step = .working("Looking in \(folder.name)")
+            let read = try await engine.labFolderDocuments(folder) { done, total in
+                step = .working("Getting report \(done + 1) of \(total) from Dropbox", .init(done: done, total: total, started: .now))
+            }
+            return await engine.named(read)
+        }
+    }
+
     // MARK: Sending, with consent
 
     private func send(_ documents: [LabFileReader.Document]) async {
         guard AIConsent.labUpload.given else { step = .consent(documents); return }
         let units = store.myData?.unitSystem ?? "si"
+        let results = await Self.extractEach(documents, extract: { try await LabUploadClient().extract($0, unitSystem: units) }) { n, document in
+            step = .working("Reading the values in \(document.name)", .init(done: n, total: documents.count, started: .now))
+        }
+        if let results { step = .review(results, index: 0) }
+    }
+
+    /// Each report sent in turn, or nil once the sheet is closed: a report not yet
+    /// sent when the task is cancelled is never sent (review R1, Codex).
+    static func extractEach(_ documents: [LabFileReader.Document], extract: (LabFileReader.Document) async throws -> String,
+                            progress: (Int, LabFileReader.Document) -> Void) async -> [LabResult]? {
         var results: [LabResult] = []
         for (n, document) in documents.enumerated() {
-            step = .working("Reading the values in \(document.name)", .init(done: n, total: documents.count, started: .now))
+            if Task.isCancelled { return nil }
+            progress(n, document)
             do {
-                let extraction = try await LabUploadClient().extract(document, unitSystem: units)
+                let extraction = try await extract(document)
                 results.append(LabResult(name: document.name, truncated: document.truncated, extractionJSON: extraction, failure: nil,
                                          original: document.original))
             } catch let AppAttestClient.Failure.server(status, message) where status == 422 {
@@ -215,7 +259,7 @@ struct LabUploadSheet: View {
                 results.append(LabResult(name: document.name, truncated: false, extractionJSON: nil, failure: error.localizedDescription))
             }
         }
-        step = .review(results, index: 0)
+        return Task.isCancelled ? nil : results
     }
 }
 
@@ -224,12 +268,17 @@ struct LabUploadSheet: View {
 /// cloud failure means. The marker tells them apart, never the first character (re-check R1).
 struct DropboxFailure: LocalizedError {
     let errorDescription: String?
+    /// The file is no longer where the listing put it.
+    var gone = false
 
     init(_ error: Error) {
-        if case HealthEngine.EngineError.callFailed(let message) = error,
+        if let failure = error as? DropboxFailure {
+            self = failure
+        } else if case HealthEngine.EngineError.callFailed(let message) = error,
            let object = try? JSONSerialization.jsonObject(with: Data(message.utf8)) as? [String: Any],
            let words = object["refused"] as? String {
             errorDescription = words
+            gone = object["gone"] as? Bool ?? false
         } else if SyncProblem(error).kind == .signIn {
             errorDescription = "Dropbox needs you to sign in again. Open From Dropbox to sign in."
         } else {

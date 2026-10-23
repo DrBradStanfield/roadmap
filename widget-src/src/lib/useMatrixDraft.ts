@@ -7,7 +7,7 @@
 // StartingInfoVitals.
 
 import { useEffect, useRef, useState } from 'react';
-import { LPA_UNITS, localDay, type LpaUnit, type UnitSystem } from '@roadmap/health-core';
+import { isLpaUnit, localDay, type LpaUnit, type UnitSystem } from '@roadmap/health-core';
 import type { CellUnit } from './blood-test-cell';
 import { DRAFTS_CLEARED_EVENT, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
@@ -166,7 +166,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
      *  this was kept, so its unit is unknown. */
     lpaUnitOf: (cell: CellRef<K>): LpaUnit | undefined => {
       const unit = metaOf(cell)?.unit;
-      return (LPA_UNITS as readonly unknown[]).includes(unit) ? unit as LpaUnit : undefined;
+      return isLpaUnit(unit) ? unit : undefined;
     },
     /** A unit chosen on this page says what the numbers typed are in (US-05
      *  AC2): every cell of `key` the user typed by hand on this load of the

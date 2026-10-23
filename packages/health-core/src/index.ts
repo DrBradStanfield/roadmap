@@ -243,6 +243,7 @@ export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence 
 // Reference-range hints (blood-test matrix + legacy form labels)
 export type { RefHint, SexedRefHint } from './reference-hints';
 export { REFERENCE_HINTS, refHintFor, refLineFor, lpaRefHint } from './reference-hints';
+export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange } from './cell-unit';
 
 // Sentry PII/PHI scrubbing
 export {
@@ -317,7 +318,6 @@ export {
 export {
   documentView,
   isLabArchiveDocument,
-  LAB_ARCHIVE_FLAG,
   labArchivePayload,
   pendingRowsFor,
   saveDocuments,
@@ -327,6 +327,7 @@ export {
   type DocumentView,
   type ExistingDoc,
 } from './document-save';
+export { LAB_ARCHIVE_FLAG } from './document-rows';
 
 // v2 measurement recency — dated chat history + newest-active-row resolution
 export {

@@ -1,8 +1,8 @@
-# Plan: one lab-import path for the website, the iPhone and MCP (v2)
+# Plan: one lab-import path for the website, the iPhone and MCP (v3)
 
 Brad, 2026-10-23: "the only difference is that we want to use the user's openAI or claude or gemini etc rather than ours to do the processing. otherwise, share as much as possible and de-dup."
 
-v2 after the plan reviews (fresh Opus adversary R1-R10, Codex R1-R3, 2026-10-23). v1's single "answer to rows" function is dropped: MCP turns an answer into rows across two tool calls with a parked pending file between them, and the website's review edits values and replaces held days on purpose. Sharing those would change what OpenAI's reviewers see or change the website's behaviour.
+v2 after the plan reviews (fresh Opus adversary R1-R10, Codex R1-R3, 2026-10-23). v3 after the re-check (adversary N1-N5; Codex: no findings): the row-shape step is dropped, since `BulkRow` (`record-edits.ts`) already is the one row shape and a function wrapping an object literal would add a layer, not remove duplication. v1's single "answer to rows" function is dropped: MCP turns an answer into rows across two tool calls with a parked pending file between them, and the website's review edits values and replaces held days on purpose. Sharing those would change what OpenAI's reviewers see or change the website's behaviour.
 
 ## Where things stand
 
@@ -17,12 +17,13 @@ v2 after the plan reviews (fresh Opus adversary R1-R10, Codex R1-R3, 2026-10-23)
 | Lab-report archive row | `labArchivePayload` | `labArchivePayload` | hand-built (`mcp-tools.ts` ~1529), no `labArchive: true` | same |
 | Original file | the person's cloud | the person's cloud | none: already in their Dropbox, or never reaches us | none |
 
-**Duplicate checks: five, each on purpose.**
+**Duplicate checks: six, each on purpose.**
 1. Website review, `isDocDuplicate` (`ReviewTable.tsx` ~207-221): an exact `sourceFileName` match unticks the keep box.
 2. iPhone review, `alreadySaved` (`lab-review.ts` ~72): the same exact-name rule.
 3. `saveDocuments`: hash, skipping only rows that hold a stored original; a same-hash metadata-only row is archived behind and tombstoned (US-13 AC1, US-14 AC4).
 4. MCP `isAlreadyImported` (`mcp-tools.ts` ~1239-1248): hash whatever the row holds, else name and date with " (n)" stripped, because the chat route often has no hash.
 5. MCP `folderNudge`: its own name rule for the folder listing.
+6. Website archive step, `unarchivedOriginals` / `isArchivableFile` (`archive-payloads.ts`): a by-hash archived set (`contentHash` with a stored original), the `alreadyCovered` name set, and `pendingRowsFor` for unselected letters; the iPhone's review-time held check uses `pendingRowsFor` too.
 They differ because each surface knows different things at that moment; none is a copy of another. This change leaves them where they are and documents them in one place (step 4).
 
 ## The rule
@@ -34,12 +35,11 @@ Everything after "read the file" that is the same on every surface lives in heal
 1. **Characterisation tests first.** Pin today's output before any code moves:
    - MCP, through `runToolOverSync`, with the receipt-id and clock seams: the extract answer (`candidates`, `files[].hint`, `unrecognized`, `next`, `documents`), the pending-file `ImportPayload` JSON, the commit receipt, and the rows appended. Cases: lab report core and additional values; own-day values; a folder-route dated previous column (dropped) versus the assistant route (kept); `MAX_IMPORT_CANDIDATES`; `held_equal`, `held_different` with and without `replace`; the non-replaceable age reject; a moved-slot reject; a `sameDayAs` reject; a write-time unit refusal; a `measurementRefusals` reject; `fileDates` giving `bad_date` and `no_date`; a clinic letter; a ZIP member; a hashless re-import by name and date. A receipt issued before the change must still commit after it.
    - iPhone: `labRows` output and its refusal words through `labImport` (`my-data.ts`) and `labSaveSummaryJson` (`app-doors.ts`).
-   - Website: the rows handleSave produces, including edited values (`lab_import_edited`), `UNDATED_PREVIOUS` with a chosen day, replace, and a unit toggle.
+   - Website: the `ReviewedValue` / `ReviewedLabValue` handleSave produces and the store inputs UploadModal reshapes them into, including edited values (`lab_import_edited`), `UNDATED_PREVIOUS` with a chosen day, replace, and a unit toggle.
    These pins stay byte-identical through every later step except the one row change step 3 names.
-2. **One row shape.** A small `bulkRowFor(kind, value, day, { source, correctsId, unit, metricName })` in health-core, the leaf all three build `BulkRow`s with (website handleSave, iPhone `labRows`, MCP commit from a candidate). Edited values and sources stay inputs; `prepareImport`, the review UI and the commit's rules are untouched.
-3. **One document-row builder, and MCP's archive row from the shared shape.** Export the metadata-only row construction `saveDocuments` does, from a module with no `saveDocuments` in it (e.g. `document-rows.ts`), and call it from MCP's commit with MCP's own values (`extractedText: ''`, `metadata: { importedVia, client? }`), byte-identical. Build MCP's lab-report archive row with the same fields `labArchivePayload` sets plus MCP's audit trail: `metadata: { labArchive: true, importedVia, client? }`. That one added key is the only intended row change; no tool answer prints document metadata, merge unions documents by id so it is merge-safe, and every web and iPhone build already reads `labArchive: true`. The step-1 row pin is updated for exactly that key, and US-35 AC8 and the US-14 note are amended in the same commit.
-4. **Document the five duplicate rules** beside `saveDocuments` (a comment block naming each rule, where it lives and why it differs) and in US-35/US-52, so a later "de-dup" does not erase a deliberate difference. No code moves.
-5. **Story.** New ACs: US-35 AC8 amended (the archive row's metadata); a US-52 AC naming the shared row and document builders and the deliberate per-surface differences above (edited values, previous columns, same-day handling, replace rules, the five duplicate rules).
+2. **One document-row builder, and MCP's archive row from the shared shape.** Export the metadata-only row construction `saveDocuments` does, from a module with no `saveDocuments` in it (e.g. `document-rows.ts`), and call it from MCP's commit with MCP's own values (`extractedText: ''`, `metadata: { importedVia, client? }`), byte-identical. Detect the lab-report archive row at commit time by its existing signature (`type === 'pathology_report' && title === LAB_ARCHIVE_TITLE`, as `isLabArchiveDocument` reads it), so the pending file's JSON is unchanged, and build it with the same fields `labArchivePayload` sets plus MCP's audit trail: `metadata: { labArchive: true, importedVia, client? }`. That one added key is the only intended row change; no tool answer prints document metadata, merge unions documents by id so it is merge-safe, and every web and iPhone build already reads `labArchive: true`. The step-1 row pin is updated for exactly that key, and US-35 AC8, the US-14 note and docs/lab-upload-connector.md (~line 94) are amended in the same commit. Document ids stay `crypto.randomUUID()`, so the step-1 pins mask ids.
+3. **Document the six duplicate rules** beside `saveDocuments` (a comment block naming each rule, where it lives and why it differs) and in US-35/US-52, so a later "de-dup" does not erase a deliberate difference. No code moves.
+4. **Story.** A US-52 AC naming the shared row and document builders and the deliberate per-surface differences above (edited values, previous columns, same-day handling, replace rules, the six duplicate rules). US-35 AC8 is amended in step 2 only.
 
 ## Not in this change
 
@@ -52,5 +52,5 @@ Everything after "read the file" that is the same on every surface lives in heal
 - Website: every upload suite passes unchanged; no change a person can see; its two store calls and their Sentry tags and retries stay.
 - iPhone: engine goldens match; `labRows`' refusal words unchanged; no bridge change expected.
 - FHIR: rows only appended or tombstoned; `bulkAppendValues` and the slot rules untouched.
-- Size: honest de-dup is small. Expected net production LOC roughly -10 to -30 (the row shape and the document row each written once instead of three and two times), plus test lines.
+- Size: the honest de-dup is small. Expected net production LOC about 0 to +10 (a shared builder module costs about what the two literals it replaces save); the value is one place for the row and the rules, not fewer lines. Most of the path is already shared: one parse, one `bulkAppendValues`, one slot rule, one `saveDocuments`.
 - Review: /simplify, a fresh Opus adversary and Codex on the finished change; one fix-scoped re-check. This plan document: docs only, net production LOC 0, nothing deleted.

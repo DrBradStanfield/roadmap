@@ -93,8 +93,9 @@ interface Engine {
   cloudRefresh(): Promise<string>;
   cloudClose(copyDown: boolean): Promise<string>;
   cloudErase(historyText: string | null, now: string, keepChat?: (text: string) => string): Promise<string>;
-  labFilesJson(): Promise<string>;
-  labFile(id: string): Promise<{ name: string; bytes: ArrayBuffer }>;
+  labFolderJson(folder: string): Promise<string>;
+  labFolderFilesJson(folder: string): Promise<string>;
+  labFile(id: string, folder: string): Promise<{ name: string; bytes: ArrayBuffer }>;
   documentSave(record: string, extraction: string, choice: string, original: ArrayBuffer | null, erase: string, now: string, device: string): Promise<string>;
 }
 
@@ -321,6 +322,36 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: rowId, value: 79 }), erase, 'si', NOW))).toMatchObject({ reason: 'units-changed' });
     // An edit made in the units now shown goes through.
     expect((JSON.parse(engine.cloudEdit(add('2026-10-02'), erase, 'conventional', NOW)) as { ok: boolean }).ok).toBe(true);
+  });
+
+  it('AC20: Lp(a) is read in the record\'s unit, and a value typed before another device changed it is refused', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const lpa = (value: number, day: string) => JSON.stringify({ kind: 'add', metric: 'lpa', value, day });
+    // The phone's menu writes the unit through the session, so it reaches the web's file.
+    const chosen = JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'lpaUnit', unit: 'mg/dL' }), erase, 'si', NOW, '{}', 'nmol/L')) as { ok: boolean; record: string };
+    expect(chosen.ok).toBe(true);
+    // 156 mg/dL typed with mg/dL shown: 390 nmol/L.
+    expect((JSON.parse(engine.cloudEdit(lpa(156, '2026-10-02'), erase, 'si', NOW, '{}', 'mg/dL')) as { ok: boolean }).ok).toBe(true);
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(dropbox.record.profile.lpaUnit).toBe('mg/dL');
+    expect(dropbox.record.measurements.find((row) => row.metricType === 'lpa')!.value).toBeCloseTo(390, 9);
+    // The web switches Lp(a) to mg/L.
+    const web = JSON.parse(engine.applyEditJson(dropbox.file!.text, JSON.stringify({ kind: 'lpaUnit', unit: 'mg/L' }), '2026-10-21T09:00:00.000Z', 'web')) as { record: string };
+    dropbox.put(JSON.parse(web.record) as RoadmapFile);
+    expect(await engine.cloudRefresh()).toBe('changed');
+    // A sheet that showed mg/dL: its value and its correction are refused, never read as mg/L.
+    expect(JSON.parse(engine.cloudEdit(lpa(50, '2026-10-03'), erase, 'si', NOW, '{}', 'mg/dL'))).toMatchObject({ ok: false, reason: 'units-changed' });
+    const rowId = dropbox.record.measurements.find((row) => row.metricType === 'lpa')!.id;
+    expect(JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: rowId, value: 150 }), erase, 'si', NOW, '{}', 'mg/dL'))).toMatchObject({ reason: 'units-changed' });
+    // Another test's value is not Lp(a)'s: it saves.
+    expect((JSON.parse(engine.cloudEdit(add('2026-10-03'), erase, 'si', NOW, '{}', 'mg/dL')) as { ok: boolean }).ok).toBe(true);
+    // A sheet opened in mg/L saves, read in mg/L: 500 mg/L is 125 nmol/L.
+    expect((JSON.parse(engine.cloudEdit(lpa(500, '2026-10-03'), erase, 'si', NOW, '{}', 'mg/L')) as { ok: boolean }).ok).toBe(true);
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(dropbox.record.measurements.find((row) => row.metricType === 'lpa' && row.recordedAt.startsWith('2026-10-03'))!.value).toBeCloseTo(125, 9);
   });
 
   it('R3: an edit is refused, and nothing changes, when the phone copy cannot be written', async () => {
@@ -752,15 +783,18 @@ class FakeDrive implements Server {
   }
 }
 
-/** The Dropbox app folder's root as the "+" lists it: list_folder and download by id. */
+/** The Dropbox app folder as the "+" lists it: list_folder (one level, or
+ *  recursive) and download by id. An entry without a path is at the root. */
 class FakeLabFolder implements Server {
   online = true;
-  listed: Array<{ path: string }> = [];
+  listed: Array<{ path: string; recursive?: boolean }> = [];
   downloads: string[] = [];
   /** Answers 401 to this many calls first (an access token Dropbox refused). */
   refuse = 0;
   /** A download's body in place of the default one, when it gives one. */
   bodyFor: (id: string) => string | null = () => null;
+  /** A download's whole answer, in place of the file (a file gone since the listing). */
+  answerDownload?: () => { status: number; headers: Record<string, string>; body: string };
   entries: Array<Record<string, unknown>> = [
     { '.tag': 'file', id: 'id:record', name: 'health-roadmap.json', size: 900, server_modified: '2026-10-22T01:00:00Z' },
     { '.tag': 'folder', id: 'id:imports', name: 'imports' },
@@ -780,11 +814,18 @@ class FakeLabFolder implements Server {
     }
     if (headers.authorization !== 'Bearer token-1') return { status: 401, headers: {}, body: 'expired' };
     if (url.endsWith('/files/list_folder')) {
-      this.listed.push(JSON.parse(body!) as { path: string });
-      return { status: 200, headers: {}, body: JSON.stringify({ entries: this.entries, has_more: false }) };
+      const asked = JSON.parse(body!) as { path: string; recursive: boolean };
+      this.listed.push(asked);
+      const entries = this.entries.map((e) => ({ path_display: `/${String(e.name)}`, ...e })).filter((e) => {
+        const parent = e.path_display.slice(0, e.path_display.lastIndexOf('/'));
+        return asked.recursive ? e.path_display.startsWith(`${asked.path}/`) : parent === asked.path;
+      });
+      return { status: 200, headers: {}, body: JSON.stringify({ entries, has_more: false }) };
     }
     if (url.endsWith('/files/download')) {
       const { path } = JSON.parse(headers['dropbox-api-arg']) as { path: string };
+      const answer = this.answerDownload?.();
+      if (answer) return answer;
       this.downloads.push(path);
       return { status: 200, headers: {}, body: this.bodyFor(path) ?? `%PDF bytes of ${path}` };
     }
@@ -796,16 +837,16 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
   it('lists the lab files at the folder root, newest first, and never the record, folders or other files', async () => {
     const folder = new FakeLabFolder();
     const { engine } = await phone(folder);
-    const files = JSON.parse(await engine.labFilesJson()) as Array<{ id: string; name: string; size: number; modified: string }>;
+    const files = (JSON.parse(await engine.labFolderJson('')) as { files: Array<{ id: string; name: string; size: number; modified: string }> }).files;
     expect(files.map((f) => f.name)).toEqual(['Bloods October.PDF', 'report.jpg', 'Portal export.zip', 'Lipids 2025.pdf']);
-    expect(files[0]).toEqual({ id: 'id:new', name: 'Bloods October.PDF', size: 3000, modified: '2026-10-20T00:00:00Z' });
+    expect(files[0]).toEqual({ id: 'id:new', name: 'Bloods October.PDF', size: 3000, modified: '2026-10-20T00:00:00Z', folder: '', path: 'Bloods October.PDF' });
     expect(folder.listed).toEqual([expect.objectContaining({ path: '' })]);
   });
 
   it('downloads a listed file by its id and answers its bytes', async () => {
     const folder = new FakeLabFolder();
     const { engine } = await phone(folder);
-    const file = await engine.labFile('id:new');
+    const file = await engine.labFile('id:new', '');
     expect(file.name).toBe('Bloods October.PDF'); // the fresh listing's name, which Swift reads it under (re-check R3)
     expect(Buffer.from(new Uint8Array(file.bytes)).toString('utf8')).toBe('%PDF bytes of id:new');
     expect(folder.downloads).toEqual(['id:new']);
@@ -814,8 +855,8 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
   it('downloads only by a listing id, never by a path', async () => {
     const folder = new FakeLabFolder();
     const { engine } = await phone(folder);
-    await expect(engine.labFile('health-roadmap.json')).rejects.toThrow();
-    await expect(engine.labFile('/Other/thing.pdf')).rejects.toThrow();
+    await expect(engine.labFile('health-roadmap.json', '')).rejects.toThrow();
+    await expect(engine.labFile('/Other/thing.pdf', '')).rejects.toThrow();
     expect(folder.downloads).toEqual([]);
   });
 
@@ -823,10 +864,10 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
     const folder = new FakeLabFolder();
     const { engine } = await phone(folder);
     // A refusal is marked as one, so Swift never reads a name like "{scan}.pdf" as a failure's JSON (re-check R1).
-    const refusal = await engine.labFile('id:record').catch((error: Error) => JSON.parse(error.message) as { refused?: string });
+    const refusal = await engine.labFile('id:record', '').catch((error: Error) => JSON.parse(error.message) as { refused?: string });
     expect(refusal.refused).toContain('not a lab file in the folder');
-    await expect(engine.labFile('id:backup')).rejects.toThrow('not a lab file in the folder');
-    await expect(engine.labFile('id:chat-history')).rejects.toThrow('not a lab file in the folder');
+    await expect(engine.labFile('id:backup', '')).rejects.toThrow('not a lab file in the folder');
+    await expect(engine.labFile('id:chat-history', '')).rejects.toThrow('not a lab file in the folder');
     expect(folder.downloads).toEqual([]);
     expect(folder.listed).toHaveLength(3); // each read lists the folder afresh
   });
@@ -841,11 +882,11 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
     );
     folder.bodyFor = (id) => (id === 'id:liar' ? 'x'.repeat(10 * 1024 * 1024 + 1) : null);
     const { engine } = await phone(folder);
-    for (const id of ['id:big', 'id:bigzip']) await expect(engine.labFile(id)).rejects.toThrow('larger than');
+    for (const id of ['id:big', 'id:bigzip']) await expect(engine.labFile(id, '')).rejects.toThrow('larger than');
     // No size reads as 0 (dropboxListFolder), so it is refused as empty, never downloaded.
-    await expect(engine.labFile('id:nosize')).rejects.toThrow('Nosize.pdf is empty.');
+    await expect(engine.labFile('id:nosize', '')).rejects.toThrow('Nosize.pdf is empty.');
     expect(folder.downloads).toEqual([]);
-    await expect(engine.labFile('id:liar')).rejects.toThrow('larger than');
+    await expect(engine.labFile('id:liar', '')).rejects.toThrow('larger than');
   });
 
   it('re-check R2: an empty file is called empty, not too large, before and after the download', async () => {
@@ -856,17 +897,119 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
     );
     folder.bodyFor = (id) => (id === 'id:hollow' ? '' : null);
     const { engine } = await phone(folder);
-    const empty = await engine.labFile('id:empty').catch((error: Error) => JSON.parse(error.message) as { refused?: string });
+    const empty = await engine.labFile('id:empty', '').catch((error: Error) => JSON.parse(error.message) as { refused?: string });
     expect(empty.refused).toBe('{scan}.pdf is empty.');
     expect(folder.downloads).toEqual([]);
-    await expect(engine.labFile('id:hollow')).rejects.toThrow('Hollow.pdf is empty.');
+    await expect(engine.labFile('id:hollow', '')).rejects.toThrow('Hollow.pdf is empty.');
+  });
+
+  describe('US-52 AC13c: subfolders and a whole folder', () => {
+    const tree = (folder: FakeLabFolder) => folder.entries.push(
+      { '.tag': 'folder', id: 'id:labs', name: 'Labs' },
+      { '.tag': 'folder', id: 'id:hidden', name: '.git' },
+      { '.tag': 'folder', id: 'id:2025', name: '2025', path_display: '/Labs/2025' },
+      { '.tag': 'folder', id: 'id:mac', name: '__MACOSX', path_display: '/Labs/__MACOSX' },
+      { '.tag': 'file', id: 'id:a', name: 'a.pdf', path_display: '/Labs/a.pdf', size: 10, server_modified: '2026-01-01T00:00:00Z' },
+      { '.tag': 'file', id: 'id:b', name: 'b.PNG', path_display: '/Labs/2025/b.PNG', size: 10, server_modified: '2026-02-01T00:00:00Z' },
+      { '.tag': 'file', id: 'id:mac', name: 'c.pdf', path_display: '/Labs/__MACOSX/c.pdf', size: 10 },
+      { '.tag': 'file', id: 'id:txt', name: 'notes.txt', path_display: '/Labs/notes.txt', size: 10 },
+    );
+
+    it('a folder lists its subfolders by name, hidden ones left out, and its own lab files only', async () => {
+      const folder = new FakeLabFolder();
+      tree(folder);
+      const { engine } = await phone(folder);
+      const root = JSON.parse(await engine.labFolderJson('')) as { folders: Array<{ name: string; path: string }>; files: unknown[] };
+      expect(root.folders).toEqual([{ name: 'Labs', path: 'Labs' }]); // imports/ is the app's own
+      expect(root.files).toHaveLength(4);
+      const labs = JSON.parse(await engine.labFolderJson('Labs')) as { folders: Array<{ name: string; path: string }>; files: unknown[] };
+      expect(labs.folders).toEqual([{ name: '2025', path: 'Labs/2025' }]);
+      expect(labs.files).toEqual([{ id: 'id:a', name: 'a.pdf', size: 10, modified: '2026-01-01T00:00:00Z', folder: 'Labs', path: 'a.pdf' }]);
+      expect(folder.listed.at(-1)).toEqual({ path: '/Labs', recursive: false, include_deleted: false });
+    });
+
+    it('a whole folder lists every lab file below it, each with its own folder, never a __MACOSX one', async () => {
+      const folder = new FakeLabFolder();
+      tree(folder);
+      const { engine } = await phone(folder);
+      const files = JSON.parse(await engine.labFolderFilesJson('Labs')) as Array<{ id: string; folder: string; path: string }>;
+      expect(files.map((f) => [f.id, f.folder, f.path])).toEqual([['id:a', 'Labs', 'a.pdf'], ['id:b', 'Labs/2025', '2025/b.PNG']]);
+      expect(folder.listed).toEqual([{ path: '/Labs', recursive: true, include_deleted: false }]);
+    });
+
+    it('at the root, the app\'s own folders (imports/, the stored originals\' folders) neither list nor read', async () => {
+      const folder = new FakeLabFolder();
+      tree(folder);
+      folder.entries.push(
+        { '.tag': 'folder', id: 'id:lr', name: 'Lab results' },
+        { '.tag': 'file', id: 'id:kept', name: 'x.pdf', path_display: '/Lab results/x.pdf', size: 10 },
+        { '.tag': 'folder', id: 'id:cl', name: 'clinic letters' },
+        { '.tag': 'file', id: 'id:letter', name: 'y.pdf', path_display: '/clinic letters/y.pdf', size: 10 },
+        { '.tag': 'file', id: 'id:parked', name: 'z.pdf', path_display: '/imports/z.pdf', size: 10 },
+        { '.tag': 'folder', id: 'id:inner', name: 'Lab results', path_display: '/Labs/Lab results' },
+        { '.tag': 'file', id: 'id:inner-file', name: 'w.pdf', path_display: '/Labs/Lab results/w.pdf', size: 10 },
+      );
+      const { engine } = await phone(folder);
+      const root = JSON.parse(await engine.labFolderJson('')) as { folders: Array<{ name: string }>; hidden: string[] };
+      expect(root.folders.map((f) => f.name)).toEqual(['Labs']);
+      expect(root.hidden).toEqual(['clinic letters', 'imports', 'Lab results']);
+      // R7: the engine itself refuses them, whatever the phone asks.
+      for (const ask of [engine.labFolderJson('Lab results'), engine.labFolderFilesJson('imports'), engine.labFile('id:kept', 'Lab results'), engine.labFolderJson('Clinic Letters/old')]) {
+        await expect(ask).rejects.toThrow("the app's own files");
+      }
+      expect(folder.downloads).toEqual([]);
+      const all = (JSON.parse(await engine.labFolderFilesJson('')) as Array<{ id: string }>).map((f) => f.id);
+      for (const id of ['id:kept', 'id:letter', 'id:parked']) expect(all).not.toContain(id);
+      // Below the root, a folder of that name is the person's own.
+      expect(all).toContain('id:inner-file');
+      expect((JSON.parse(await engine.labFolderJson('Labs')) as { folders: Array<{ name: string }> }).folders.map((f) => f.name)).toEqual(['2025', 'Lab results']);
+    });
+
+    it('R2: a whole-folder read lists once, then downloads each offered id without listing again', async () => {
+      const folder = new FakeLabFolder();
+      tree(folder);
+      const { engine } = await phone(folder);
+      const files = JSON.parse(await engine.labFolderFilesJson('Labs')) as Array<{ id: string; folder: string }>;
+      for (const file of files) await engine.labFile(file.id, file.folder);
+      expect(folder.listed).toHaveLength(1);
+      expect(folder.downloads).toEqual(['id:a', 'id:b']);
+      // Still only ids that listing offered (R3): the record is refused, after a fresh listing of its folder.
+      await expect(engine.labFile('id:record', '')).rejects.toThrow('not a lab file in the folder');
+      expect(folder.downloads).toEqual(['id:a', 'id:b']);
+      // Any other listing ends the read: a later tap lists afresh.
+      await engine.labFolderJson('Labs');
+      const before = folder.listed.length;
+      await engine.labFile('id:a', 'Labs');
+      expect(folder.listed).toHaveLength(before + 1);
+    });
+
+    it('R5: a file gone since the listing is refused as gone', async () => {
+      const folder = new FakeLabFolder();
+      tree(folder);
+      const { engine } = await phone(folder);
+      await engine.labFolderFilesJson('Labs');
+      folder.answerDownload = () => ({ status: 409, headers: {}, body: '{"error_summary":"path/not_found/"}' });
+      const gone = await engine.labFile('id:a', 'Labs').catch((error: Error) => JSON.parse(error.message) as { refused?: string; gone?: boolean });
+      expect(gone).toEqual({ refused: 'a.pdf is not in the folder any more.', gone: true });
+    });
+
+    it('R3 still holds in a subfolder: a file downloads only when a fresh listing of its own folder offers it', async () => {
+      const folder = new FakeLabFolder();
+      tree(folder);
+      const { engine } = await phone(folder);
+      const file = await engine.labFile('id:b', 'Labs/2025');
+      expect(file.name).toBe('b.PNG');
+      await expect(engine.labFile('id:b', '')).rejects.toThrow('not a lab file in the folder');
+      await expect(engine.labFile('id:record', 'Labs')).rejects.toThrow('not a lab file in the folder');
+      expect(folder.downloads).toEqual(['id:b']);
+    });
   });
 
   it('a refused token is refreshed once and the listing repeated', async () => {
     const folder = new FakeLabFolder();
     folder.refuse = 1;
     const { engine, state } = await phone(folder);
-    expect(JSON.parse(await engine.labFilesJson())).toHaveLength(4);
+    expect(JSON.parse(await engine.labFolderJson('')).files).toHaveLength(4);
     expect(state.tokenRefreshes).toBe(1);
   });
 
@@ -874,11 +1017,11 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
     const folder = new FakeLabFolder();
     const signedOut = await phone(folder);
     signedOut.state.signedOut = true;
-    await expect(signedOut.engine.labFilesJson()).rejects.toThrow('"kind":"sign-in"');
+    await expect(signedOut.engine.labFolderJson('')).rejects.toThrow('"kind":"sign-in"');
     folder.online = false;
     const offline = await phone(folder);
-    await expect(offline.engine.labFilesJson()).rejects.toThrow('"kind":"unreachable"');
-    await expect(offline.engine.labFile('id:new')).rejects.toThrow('"kind":"unreachable"');
+    await expect(offline.engine.labFolderJson('')).rejects.toThrow('"kind":"unreachable"');
+    await expect(offline.engine.labFile('id:new', '')).rejects.toThrow('"kind":"unreachable"');
   });
 });
 
