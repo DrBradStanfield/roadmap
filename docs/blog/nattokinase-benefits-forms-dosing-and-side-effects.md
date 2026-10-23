@@ -6,7 +6,9 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["nattokinase", "fibrinolytic", "cardiovascular", "blood clot", "blood pressure", "hypertension", "cholesterol", "ldl", "hdl", "triglycerides", "atherosclerosis", "stroke", "heart attack", "deep vein thrombosis", "inflammation", "cognitive", "brain health", "dementia", "alzheimer", "natto", "vitamin k", "blood sugar", "insulin resistance", "aging", "longevity"]
-summary: "Nattokinase is an enzyme from natto. Small trials found changes in clotting markers and small blood pressure falls, but a 3-year trial found no benefit, and cholesterol and memory trials were negative. Bleeding is the main risk. Talk to your doctor first if you take blood thinners or aspirin."
+summary: "Nattokinase is an enzyme from natto. Small trials found changes in clotting markers and small blood pressure falls, but a 3-year trial, the cholesterol trials and one cognition trial found no benefit. Bleeding is the main risk. Talk to your doctor first if you take blood thinners or aspirin."
+reviewed: "2026-10-23"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33843667/","checked":"2026-10-23","fingerprint":"sha256:8bc79d76e03cb8c56399866f303698a69f39950839becae0af428092c795ef0a"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/nattokinase-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/nattokinase-benefits-forms-dosing-and-side-effects)*
@@ -18,11 +20,10 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - Nattokinase may add to the effect of blood thinners and antiplatelet drugs. A patient on aspirin had a bleed in the cerebellum (part of the brain) after a week of nattokinase 400 mg a day [53]. Do not combine them unless your doctor agrees.
-- An elderly woman taking nattokinase bled into her abdomen and died [52]. For face drooping, arm or leg weakness or numbness, trouble speaking, a sudden severe headache or bleeding that will not stop, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [52][53].
-- Natto is rich in vitamin K2 (MK-7), and MK-7 as low as 10 mcg a day lowered INR in some people on a warfarin-type drug [23][60]. If you take warfarin, check with your doctor or anticoagulation clinic before taking nattokinase or eating natto.
+- An elderly woman taking nattokinase bled into her abdomen and died [52]. For signs of a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, or vision loss that has not recovered), bleeding that will not stop, or a suspected bleed inside the abdomen, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [52][53].
+- Natto is rich in vitamin K2 (MK-7), and MK-7 as low as 10 mcg a day lowered INR in some healthy volunteers on a warfarin-type drug [23][60]. A lower INR means the drug is working less well. If you take warfarin, check with your doctor or anticoagulation clinic before taking nattokinase or eating natto.
 - Anaphylaxis from nattokinase has been reported in a patient with natto allergy [55]. For trouble breathing, swelling of the face or throat, or fainting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 - Nattokinase may lower blood pressure by a few mmHg [33]. If you have low blood pressure or take blood pressure medicines, talk to your doctor first.
-- Soy foods may raise the thyroid hormone dose people with hypothyroidism need [56], and nattokinase such as NSK-SD is a fermented soy extract [32].
 
 ## Brad's videos on this topic
 
@@ -58,11 +59,11 @@ Nattokinase is sold as capsules, enteric-coated capsules, softgels and powders.
 
 ### NSK-SD — A Proprietary Form
 
-NSK-SD is a branded nattokinase from Japan Bio Science Laboratory [19]. It is a fermented soy extract from which vitamin K2 has been removed [32]. It was used in the single-dose trials and in an 8-week blood pressure trial [18][19][32], and its maker's safety studies are described under Safety and Side Effects [22].
+NSK-SD is a branded nattokinase from Japan Bio Science Laboratory [19]. It is a fermented soy extract from which vitamin K2 has been removed [32]. It was used in the single-dose trials and in an 8-week blood pressure trial [18][19][32], and safety studies of NSK-SD are described under Safety and Side Effects [22].
 
 ### Vitamin K Content in Nattokinase
 
-Natto contains much menaquinone-7 (MK-7), a form of vitamin K2 [23]. Vitamin K helps the liver make clotting factors. Natto-derived MK-7 at 50 mcg a day or more may interfere with warfarin-type anticoagulants [59], and in one study doses as low as 10 mcg a day lowered INR in some people [60].
+Natto contains much menaquinone-7 (MK-7), a form of vitamin K2 [23]. Vitamin K helps the liver make clotting factors. Natto-derived MK-7 at 50 mcg a day or more may interfere with warfarin-type anticoagulants [59], and in one study of healthy volunteers on a warfarin-type drug, doses as low as 10 mcg a day lowered INR in some of them [60]. A lower INR means the blood thinner is working less well.
 
 Some nattokinase products, such as NSK-SD, have the vitamin K2 removed [32]. This is the supplement, not natto: natto food still contains its vitamin K2. If you take warfarin, choose a product labelled vitamin K-free, and check with your doctor or anticoagulation clinic before taking nattokinase or eating natto.
 
@@ -109,15 +110,13 @@ Results are mixed. Short trials found small falls in blood pressure, while a 3-y
 
 In a trial of 86 adults with untreated systolic pressure of 130 to 159 mmHg, one 2,000 FU capsule a day for 8 weeks lowered systolic pressure by 5.55 mmHg (95% CI -10.5 to -0.57 mmHg) and diastolic pressure by 2.84 mmHg compared with placebo [31]. Renin activity fell by 1.17 ng/mL/h compared with placebo [31].
 
-In a North American trial in 79 people with raised blood pressure, NSK-SD 100 mg a day for 8 weeks lowered average diastolic pressure from 87 to 84 mmHg, while it stayed at 87 mmHg with placebo; in men it fell from 86 to 81 mmHg [32]. Among people with low renin activity at the start, renin rose in 66% with nattokinase and 8% with placebo (P<0.1) [32].
+In a North American trial in 79 people with raised blood pressure, NSK-SD 100 mg a day for 8 weeks lowered average diastolic pressure from 87 to 84 mmHg, while it stayed at 87 mmHg with placebo; in men it fell from 86 to 81 mmHg [32]. Among people with low renin activity at the start, renin rose in 66% with nattokinase and 8% with placebo, a trend that did not reach statistical significance (P<0.1) [32].
 
 **Meta-analysis:** A 2023 meta-analysis of 6 randomized trials with 546 participants found that nattokinase lowered systolic pressure by 3.45 mmHg (95% CI -4.37 to -2.18) and diastolic pressure by 2.32 mmHg (95% CI -2.72 to -1.92) compared with placebo [33].
 
 **Negative long-term studies:**
 
 In the Hodis trial, 265 adults with a median age of 65.3 years and no cardiovascular disease took 2,000 FU a day or placebo for a median of 3 years, and nattokinase did not significantly change blood pressure [34].
-
-In a 90-day trial in 178 coronary artery disease patients whose disease was stable, nattokinase with red yeast rice lowered diastolic pressure the most (by 7.39 mmHg), more than nattokinase alone, red yeast rice alone or placebo [35].
 
 **Practical interpretation:** Any fall in blood pressure from nattokinase appears small, a few mmHg, and the longest trial found none [33][34].
 
@@ -133,7 +132,7 @@ In the 3-year Hodis trial, 2,000 FU a day did not significantly change any labor
 
 **Meta-analysis (unfavorable):** The 2023 meta-analysis found that relatively low total doses of nattokinase raised total cholesterol (mean difference 5.27) and LDL cholesterol (6.49) and lowered HDL cholesterol (-2.76), and higher total doses also raised total cholesterol (3.18); triglycerides did not change [33].
 
-**One positive observational study (with significant caveats):** A clinical study in China of 1,062 participants reported that 10,800 FU a day for 12 months improved blood lipids, with improvement rates of 66.5% to 95.4%, and that 3,600 FU a day was ineffective [39]. A correction to the paper was later published, and the result has not been repeated in a randomized placebo-controlled trial.
+**One positive clinical study (with caveats):** A clinical study of 1,062 participants reported that 10,800 FU a day for 12 months improved blood lipids, with improvement rates of 66.5% to 95.4%, and that 3,600 FU a day was ineffective [39]. A correction to the paper was later published, and the result has not been repeated in a randomized placebo-controlled trial.
 
 **Synthesis:** Randomized trials have not shown that nattokinase alone lowers cholesterol [33][34][38]. It is not a dependable way to lower cholesterol.
 
@@ -147,7 +146,7 @@ Several studies have tested whether nattokinase slows plaque build-up in arterie
 
 **Plaque comparison with simvastatin:** In a Chinese trial, 82 patients with carotid atherosclerosis and high blood lipids took nattokinase 6,000 FU a day or simvastatin 20 mg a day for 26 weeks, and 76 completed it [40]. Plaque size fell by 36.6% with nattokinase and 11.5% with simvastatin, while simvastatin lowered cholesterol and triglycerides more [40].
 
-**Anti-atherosclerotic mechanisms:** In the Jensen trial, von Willebrand factor, a clotting protein, fell in women taking nattokinase (P<0.1) [32].
+**Other markers:** In the Jensen trial, von Willebrand factor, a clotting protein, fell in women taking nattokinase, a trend that did not reach statistical significance (P<0.1) [32].
 
 **Interpretation:** In low-risk adults, the best evidence, a 3-year placebo-controlled trial, found no effect on artery thickening at 2,000 FU a day [34]. The higher-dose results [39][40] need confirmation in larger randomized trials.
 
@@ -171,7 +170,7 @@ Red yeast rice contains monacolin K, which lowers cholesterol in a statin-like w
 
 In the Yang trial, nattokinase with red yeast rice lowered triglycerides by 15%, total cholesterol by 25% and LDL cholesterol by 41%, and raised HDL cholesterol by 7.5%, while nattokinase alone did not differ from placebo [38].
 
-In the Liu trial in stable coronary artery disease, the combination lowered triglycerides, total cholesterol and diastolic pressure more than either supplement alone or placebo, and lowered thromboxane B2 and raised antithrombin III compared with placebo; no adverse effects were reported [35]. Because nattokinase alone has not lowered lipids in trials, the lipid effect likely comes mostly from red yeast rice.
+In the Liu trial, 178 patients whose coronary artery disease was stable took nattokinase with red yeast rice, nattokinase alone, red yeast rice alone or placebo for 90 days [35]. The combination lowered triglycerides, total cholesterol and diastolic pressure (by 7.39 mmHg) more than either supplement alone or placebo, and lowered thromboxane B2 and raised antithrombin III compared with placebo; no adverse effects were reported [35]. Because nattokinase alone has not lowered lipids in trials, the lipid effect likely comes mostly from red yeast rice.
 
 ### SARS-CoV-2 Spike Protein
 
@@ -227,11 +226,11 @@ The longest randomized trial lasted a median of 3 years [34].
 
 ### Risk of Bleeding
 
-Bleeding is the main safety concern. Nattokinase breaks down fibrin, and a single dose lengthened a clotting time (the activated partial thromboplastin time) in healthy men [19]. It may add to the effect of blood thinners, and bleeding after an injury or surgery is a concern even without them.
+Bleeding is the main safety concern. Nattokinase breaks down fibrin, and a single dose lengthened a clotting time (the activated partial thromboplastin time) in healthy men [19]. It may add to the effect of blood thinners.
 
 **Fatal hemoperitoneum:** An elderly woman taking nattokinase developed bleeding into the abdominal cavity (hemoperitoneum) and died, and the authors warned against taking nattokinase [52].
 
-**Intracerebral hemorrhage:** A patient taking aspirin to prevent another stroke had a bleed in the cerebellum after taking nattokinase 400 mg a day for 7 days [53]. Brain scans also showed multiple small old bleeds (microbleeds), and the authors suggested nattokinase may raise the risk of brain bleeding in people with fragile small brain vessels who also take another antithrombotic drug [53]. For face drooping, arm or leg weakness or numbness, trouble speaking, a sudden severe headache or bleeding that will not stop, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+**Intracerebral hemorrhage:** A patient taking aspirin to prevent another stroke had a bleed in the cerebellum after taking nattokinase 400 mg a day for 7 days [53]. Brain scans also showed multiple small old bleeds (microbleeds), and the authors suggested nattokinase may raise the risk of brain bleeding in people with fragile small brain vessels who also take another antithrombotic drug [53]. For signs of a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, or vision loss that has not recovered), bleeding that will not stop, or a suspected bleed inside the abdomen, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 **Theoretical risk of clot embolization:** In theory, breaking up an existing clot could let a piece travel to the lungs or heart.
 
@@ -241,9 +240,9 @@ Nattokinase may lower blood pressure by a few mmHg; the 2023 meta-analysis found
 
 ### Allergic Reactions
 
-**Soy allergy:** Many nattokinase products are made by fermenting soybeans, so people with soy allergy should check the label.
+**Soy allergy:** NSK-SD, the form used in several trials, is a fermented soy extract [32].
 
-**Non-soy anaphylaxis:** A case report described anaphylaxis from nattokinase in a patient with natto allergy [55]. For trouble breathing, swelling of the face or throat, or fainting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+**Natto allergy:** A case report described anaphylaxis from nattokinase in a patient with natto allergy [55]. For trouble breathing, swelling of the face or throat, or fainting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Thyroid Considerations
 
@@ -251,7 +250,7 @@ Soy foods may mean that people with hypothyroidism need more thyroid hormone med
 
 ### Perioperative Risk
 
-Because of the bleeding risk, tell your surgeon or dentist that you take nattokinase before any procedure. They may advise stopping it beforehand.
+If you are having surgery or a procedure, tell your doctor you take nattokinase.
 
 ### Contraindications
 
@@ -259,7 +258,7 @@ Talk to your doctor before taking nattokinase, or avoid it, if any of these appl
 
 - Bleeding disorders or a high risk of bleeding
 - Anticoagulants (such as warfarin or heparin) or antiplatelet drugs (such as aspirin or clopidogrel) [53]
-- Upcoming surgery, or recent surgery or injury
+- Upcoming surgery or a procedure
 - Stomach ulcers or other gut conditions prone to bleeding
 - Pregnancy or breastfeeding, because safety data are lacking
 - Allergy to natto or nattokinase [55], or soy allergy for products made from soy
@@ -296,7 +295,7 @@ Combining several supplements that affect clotting may add to bleeding risk.
 
 ### Vitamin K Interactions
 
-Natto contains a lot of MK-7, a form of vitamin K2 [23], and MK-7 at doses as low as 10 mcg a day lowered INR in some people on a warfarin-type drug [60]. NSK-SD has its vitamin K2 removed [32], but other products may not state their vitamin K content. Nattokinase itself may also add to bleeding risk with warfarin [19]. If you take warfarin, check with your doctor or anticoagulation clinic before taking nattokinase or eating natto.
+Natto contains a lot of MK-7, a form of vitamin K2 [23], and MK-7 at doses as low as 10 mcg a day lowered INR in some healthy volunteers on a warfarin-type drug [60]. NSK-SD has its vitamin K2 removed [32], but other products may not state their vitamin K content. Nattokinase itself lengthened a clotting time in healthy men [19], so it may also add to the effect of warfarin. If you take warfarin, check with your doctor or anticoagulation clinic before taking nattokinase or eating natto.
 
 ### No Known Interactions with Antibiotics
 
@@ -314,15 +313,13 @@ Natto is the main food source of nattokinase. It is made by fermenting soybeans 
 
 **Characteristics:** Natto is sticky and strong-smelling, and is often eaten with rice in Japan.
 
-**Preparation considerations:** Nattokinase is a protein enzyme, so cooking natto at high heat may reduce its activity.
-
 ### Other Fermented Soybean Products
 
 Other fermented soybean foods made with *Bacillus* species, such as Korean cheonggukjang, may contain related enzymes, but nattokinase itself comes from natto.
 
 ### Recombinant and Non-Soy Production
 
-Some nattokinase is made by growing *Bacillus subtilis* without soybeans, which may suit people with soy allergy. Check the label.
+Nattokinase is produced by the bacterium *Bacillus subtilis* var. natto, which also ferments soybeans into natto [22].
 
 ## 8. References
 

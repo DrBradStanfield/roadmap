@@ -6,7 +6,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["ginkgo biloba", "ginkgo", "cognitive", "brain health", "memory", "dementia", "alzheimer", "tinnitus", "circulation", "vertigo", "neuropathy", "blood pressure", "diabetes", "insulin resistance", "inflammation", "aging", "longevity", "anxiety"]
-summary: "Reference on ginkgo biloba leaf extract. Large trials (GEM, GuidAge) found it did not prevent dementia; evidence for memory and tinnitus is weak, and small trials hint at help for vertigo. Trials used EGb 761 at 240 mg a day in two doses. Talk to your doctor first if you take blood thinners or are pregnant."
+summary: "Reference on ginkgo biloba leaf extract. Large trials (GEM, GuidAge) found it did not prevent dementia; evidence for memory and tinnitus is weak, and small trials hint at help for vertigo. The large trials gave 120 mg twice a day. Talk to your doctor first if you take blood thinners or are pregnant."
 reviewed: "2026-10-23"
 sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/ginkgo","checked":"2026-09-29","fingerprint":"sha256:dfae212038801311748c01013f84f02684075eaf4413cc06682caa1c71e34aa9"}]
 ---
@@ -19,13 +19,13 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- Ginkgo may raise bleeding risk in people who take anticoagulants such as warfarin [2][24]. Case reports include serious bleeds, though a meta-analysis of trials found no rise in bleeding risk on clotting tests [37][38].
+- Ginkgo may raise bleeding risk in people on anticoagulants such as warfarin [2][24]. Case reports include serious bleeds, though trials found no rise in bleeding risk on clotting tests [37][38]. For face drooping, arm or leg weakness or numbness, trouble speaking, or vision loss, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Stop nonessential supplements, ginkgo included, 2 weeks before surgery [24].
 - In people with epilepsy, case reports link ginkgo to returning seizures, one of them fatal [39][40]. If a seizure lasts more than 5 minutes, or seizures come back to back, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- Ginkgo may interact with other drugs; in a small study it sped up the breakdown of omeprazole [2][42]. If you take any medicine, talk with your doctor or pharmacist first.
+- Ginkgo may interact with other drugs. Case reports link it to coma with trazodone and possible HIV treatment failure with efavirenz, and it sped up omeprazole breakdown in a small study [2][42][49][50]. If you take any medicine, ask your doctor or pharmacist first.
 - Ginkgo may be unsafe in pregnancy: it might cause early labor or extra bleeding at delivery. Little is known about breastfeeding [2].
-- Raw ginkgo seeds are toxic and have caused seizures in children, a separate hazard from leaf extract [2][43]. If anyone has a seizure after eating them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- The most common side effects of leaf extract are dizziness, stomach and bowel symptoms, and headache [2].
+- Ginkgo seeds, raw or roasted, can be poisonous and have caused seizures in children [2][43]. If anyone has a seizure after eating them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- The most common side effects are dizziness, stomach and bowel symptoms, and headache [2].
 
 ## Brad's videos on this topic
 
@@ -71,7 +71,7 @@ Trials have given ginkgo split into two doses (120 mg twice daily in GEM and Gui
 |------|:-:|:-:|
 | Standardized leaf extract (such as EGb 761) | Used in the large trials [7][9] | Flavone glycosides about 24%, terpene lactones about 6% [45] |
 | Dietary supplement leaf extracts | Rarely tested | Active content and ginkgolic acids vary [32] |
-| Ginkgo seeds | None | Toxic when eaten raw [2] |
+| Ginkgo seeds | None | Raw seeds are toxic; roasted seeds have also caused serious side effects [2] |
 | Combination products | Single trials | Results cannot be credited to ginkgo alone [6] |
 
 ## 3. Evidence for Benefits
@@ -128,13 +128,13 @@ Vertigo is one of the few conditions with some, still limited, evidence in favou
 
 Ginkgo is widely promoted for tinnitus (a ringing or buzzing sound in the ears), but the clinical evidence does not support it [2][17].
 
-**Cochrane Review:** A 2022 Cochrane review of 12 trials with 1,915 participants found ginkgo may have little to no effect on tinnitus severity at 3 to 6 months compared with placebo, though the evidence is very uncertain (Sereda et al., Cochrane Database of Systematic Reviews, 2022) [17]. Single trials found little to no difference in loudness or quality of life, and ginkgo did not raise the risk of bleeding, seizures or other side effects [17].
+**Cochrane Review:** A 2022 Cochrane review included 12 trials with 1,915 participants (Sereda et al., Cochrane Database of Systematic Reviews, 2022) [17]. Pooling 2 trials with 85 participants, it found ginkgo may have little to no effect on tinnitus severity at 3 to 6 months compared with placebo, though the evidence is very uncertain [17]. Single trials found there may be little to no difference in loudness or quality of life. Ginkgo may make little to no difference to the risk of bleeding or seizures, and may not increase other side effects [17].
 
 **Post-Cochrane study:** In a trial of 69 people aged 40 to 70 with tinnitus, ginkgo 60 mg twice a day combined with antioxidants improved tinnitus scores more than ginkgo alone or placebo (Chauhan, Journal of Audiology & Otology, 2023) [18]. The benefit was seen with the combination, so it cannot be credited to ginkgo.
 
 **NCCIH position:** NCCIH says research suggests ginkgo is not helpful for relieving tinnitus [2].
 
-**Synthesis:** Despite its popularity for tinnitus, ginkgo has not shown a clear benefit; the Cochrane review found little to no effect, with very uncertain evidence [17].
+**Synthesis:** Despite its popularity for tinnitus, ginkgo has not shown a clear benefit; the Cochrane review found it may have little to no effect, with very uncertain evidence [17].
 
 ### Peripheral Vascular Disease and Intermittent Claudication
 
@@ -173,7 +173,7 @@ In a 2003 crossover trial of 27 people with normal-tension glaucoma, ginkgo extr
 Research suggests ginkgo is not helpful for these conditions:
 
 - **Heart disease prevention:** Research suggests ginkgo is not helpful for preventing heart disease [2].
-- **High blood pressure treatment:** Ginkgo is not helpful for treating high blood pressure [2].
+- **High blood pressure treatment:** Research suggests ginkgo is not helpful for treating high blood pressure [2].
 - **Multiple sclerosis symptoms:** Research suggests ginkgo is not helpful for relieving symptoms of multiple sclerosis [2].
 - **Peripheral arterial disease:** A Cochrane review found no clinically significant benefit [46].
 
@@ -185,7 +185,7 @@ Research suggests ginkgo is not helpful for these conditions:
 | Dementia/Alzheimer's treatment | Moderate | Mixed | Cochrane review found evidence "unconvincing"; a 2020 meta-analysis was positive [10][11] |
 | Memory in healthy adults | Moderate | Negative | Meta-analysis found effects close to zero [5] |
 | Vertigo | Low | Possibly positive | 47% vs 18% symptom-free at 3 months in one trial [15] |
-| Tinnitus | Low (Cochrane) | Negative | Little to no effect in 12 trials, 1,915 participants; very uncertain [17] |
+| Tinnitus | Low (Cochrane) | Negative | May have little to no effect on severity (2 trials, 85 people); very uncertain [17] |
 | Raynaud's disease | Very Low | Possibly positive | Fewer attacks in one small trial [20] |
 | Intermittent claudication | Moderate (Cochrane) | Negative | No clinically significant benefit in 14 trials [46] |
 | PMS | Very Low | Inconclusive | Small amount of evidence [2] |
@@ -208,9 +208,9 @@ These are the doses used in trials. For most conditions the evidence is weak or 
 
 **Extract quality matters more than dose.** The large trials used standardised leaf extract such as EGb 761, standardised to flavone glycosides (about 24%) and terpene lactones (about 6%) [9][45]. Supplement quality varies: in one analysis, many dietary supplements held lower levels of the active compounds, and some had more ginkgolic acids [32].
 
-**Splitting the daily dose** is common. GEM and GuidAge gave 120 mg twice daily, while trials in healthy adults often gave 240 mg once daily [7][8][9][12][13].
+**Splitting the daily dose** is common. GEM and GuidAge gave 120 mg twice daily, while one trial in healthy adults gave 240 mg once daily [7][8][9][12].
 
-**Ginkgo leaf extract, not seeds.** The trials tested standardised leaf extracts [7][9][12]. Raw ginkgo seeds are toxic [2].
+**Ginkgo leaf extract, not seeds.** The trials tested standardised leaf extracts [7][9][12]. Ginkgo seeds, raw or roasted, can be poisonous [2].
 
 ## 5. Safety and Side Effects
 
@@ -227,12 +227,12 @@ The most common side effects are [2]:
 
 Ginkgo may raise bleeding risk in people who take anticoagulant drugs such as warfarin [2]. EGb 761 inhibits platelet aggregation and prolongs bleeding time [45]. The evidence on real bleeding is mixed:
 
-- **Case reports:** A 2005 review of 15 published case reports found a possible causal link between ginkgo and bleeding, including 8 bleeds inside the skull, though 13 of the reports named other bleeding risk factors [38].
+- **Case reports:** A 2005 review of 15 published case reports found a possible causal link between ginkgo and bleeding, including 8 bleeds inside the skull, though 13 of the reports named other bleeding risk factors [38]. A 1997 letter linked ginkgo extract to spontaneous bleeding into the front of the eye (hyphema) [51].
 - **Clinical trials:** A 2011 meta-analysis of 18 randomised trials (1,985 adults) found no effect on platelet aggregation or standard clotting times, and no sign of a higher bleeding risk with standardised extract [37].
 - **Anticoagulants and surgery:** A 2022 review linked ginkgo to bleeding risk in people on anticoagulants, found conflicting evidence on bleeding risk overall, and advised stopping nonessential supplements 2 weeks before surgery (Hatfield et al., Proceedings of Baylor University Medical Center, 2022) [24].
 - **Bleeding disorders:** People with known bleeding risks should be told about a possible rise in bleeding risk [38].
 
-Sudden severe headache, new weakness on one side or trouble speaking can mean bleeding in the brain: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+For face drooping, arm or leg weakness or numbness, trouble speaking, or vision loss, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Dermatologic Reactions
 
@@ -275,7 +275,7 @@ Fresh ginkgo seeds are toxic when eaten, and serious side effects have also foll
 
 ## 6. Drug Interactions
 
-Ginkgo may interact with other drugs, and NCCIH advises anyone who takes medicine to talk with their health care provider before using it [2]. Reviews of herb-drug interactions include ginkgo among the herbs with clinically relevant interactions [3][34].
+Ginkgo may interact with other drugs, and NCCIH advises anyone who takes medicine to talk with their health care provider before using it [2]. Reviews of herb-drug interactions cover ginkgo [3], and one lists it among the herbs with clinically relevant interactions [34].
 
 ### Anticoagulants and Antiplatelet Agents
 
@@ -283,6 +283,7 @@ Ginkgo may interact with other drugs, and NCCIH advises anyone who takes medicin
 |------|:-:|:-:|
 | Warfarin and other anticoagulants | Ginkgo may increase bleeding risk | Linked to bleeding in people on anticoagulants [2][24] |
 | Aspirin, clopidogrel and other antiplatelet drugs | EGb 761 inhibits platelet aggregation [45], so effects may add up | Ask your doctor before combining |
+| Ibuprofen | A fatal brain bleed was reported in a person taking ginkgo and ibuprofen [52] | Ask your doctor before combining |
 
 Trials of clotting tests did not show a higher bleeding risk, but case reports include serious bleeds [37][38]. If you take a blood thinner, check with your doctor or anticoagulation clinic before taking ginkgo.
 
@@ -298,13 +299,17 @@ Ginkgo may speed the clearance of diabetes tablets as well as insulin, which cou
 
 In 18 healthy Chinese adults, 12 days of ginkgo at 140 mg twice daily lowered blood levels of omeprazole by speeding its breakdown through the CYP2C19 enzyme [42]. The authors warn that ginkgo may weaken omeprazole and other drugs broken down by CYP2C19, though more studies are needed [42].
 
+Studies of midazolam, a test drug cleared by CYP3A, disagree: ginkgo lowered its levels by 34% in one and raised them by 25% in another [53][54]. A study of a standardised extract found no relevant effect on the major CYP enzymes [55].
+
+In a case report, a patient on the same efavirenz-containing HIV regimen for 10 years had virological breakthrough (rising virus levels despite treatment), which a drug-herb interaction with ginkgo may have caused; ginkgo can induce the liver enzymes that break down efavirenz [50]. The authors advise avoiding this combination when possible [50].
+
 ### Serotonergic Medications
 
-A review of herb-drug interactions in psychiatric and neurological drug treatment lists ginkgo among the herbs with clinically relevant interactions [34]. If you take prescription medicines, check with your doctor or pharmacist before starting.
+A review of herb-drug interactions in psychiatric and neurological drug treatment lists ginkgo among the herbs with clinically relevant interactions [34]. A case report described coma in a patient with Alzheimer's disease taking low-dose trazodone and ginkgo [49]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Summary: Who Should Avoid Ginkgo or Use with Extreme Caution
 
-- People taking warfarin or other anticoagulants, or antiplatelet drugs [2][24][45]
+- People taking warfarin or other anticoagulants, antiplatelet drugs or ibuprofen [2][24][45][52]
 - People with known bleeding risks [38]
 - People with epilepsy [39][40]
 - People scheduled for surgery within 2 weeks [24]
@@ -312,6 +317,8 @@ A review of herb-drug interactions in psychiatric and neurological drug treatmen
 - Couples trying to conceive (laboratory data only) [44]
 - People with diabetes on glucose-lowering medicines (monitor glucose more often) [41]
 - People taking omeprazole or other drugs broken down by CYP2C19 [42]
+- People taking efavirenz for HIV [50]
+- People taking trazodone [49]
 
 ## 7. Dietary Sources
 
@@ -321,7 +328,7 @@ Ginkgo is not a nutrient, and food does not supply the flavone glycosides and te
 
 Ginkgo seeds are a traditional food and are used in foods and drinks [36][43].
 
-**Important safety warning:** Raw ginkgo seeds are toxic, and poisoning, mostly in children, can cause repeated seizures that may be fatal [2][43]. A 2-year-old girl who ate a large amount of seeds had vomiting and diarrhea, then a seizure; she was treated with pyridoxal phosphate, a form of vitamin B6 [43]. If anyone has a seizure after eating ginkgo seeds, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+**Important safety warning:** Ginkgo seeds, raw or roasted, can be poisonous, and poisoning, mostly in children, can cause repeated seizures that may be fatal [2][43]. A 2-year-old girl who ate a large amount of seeds had vomiting and diarrhea, then a seizure; she was treated with pyridoxal phosphate, a form of vitamin B6 [43]. If anyone has a seizure after eating ginkgo seeds, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 Ginkgo seeds differ chemically from the leaves and are not a substitute for leaf extract [36].
 
@@ -410,3 +417,17 @@ The trials above used standardised leaf extracts, not tea [7][9][12].
 [47] Quaranta L, Bettelli S, Uva MG, et al. "Effect of Ginkgo biloba extract on preexisting visual field damage in normal tension glaucoma." *Ophthalmology*. 2003;110(2):359-362. PMID: 12578781. [https://doi.org/10.1016/S0161-6420(02)01745-1](https://doi.org/10.1016/S0161-6420(02)01745-1)
 
 [48] Guo X, Kong X, Huang R, et al. "Effect of Ginkgo biloba on visual field and contrast sensitivity in Chinese patients with normal tension glaucoma: a randomized, crossover clinical trial." *Investigative Ophthalmology & Visual Science*. 2014;55(1):110-116. PMID: 24282229. [https://doi.org/10.1167/iovs.13-13168](https://doi.org/10.1167/iovs.13-13168)
+
+[49] Galluzzi S, Zanetti O, Binetti G, et al. "Coma in a patient with Alzheimer's disease taking low dose trazodone and gingko biloba." *Journal of Neurology, Neurosurgery & Psychiatry*. 2000;68(5):679-680. PMID: 10836866. [https://doi.org/10.1136/jnnp.68.5.679a](https://doi.org/10.1136/jnnp.68.5.679a)
+
+[50] Naccarato M, Yoong D, Gough K. "A potential drug-herbal interaction between Ginkgo biloba and efavirenz." *Journal of the International Association of Physicians in AIDS Care*. 2012;11(2):98-100. PMID: 22323244. [https://doi.org/10.1177/1545109711435364](https://doi.org/10.1177/1545109711435364)
+
+[51] Rosenblatt M, Mindel J. "Spontaneous hyphema associated with ingestion of Ginkgo biloba extract." *New England Journal of Medicine*. 1997;336(15):1108. PMID: 9091822. [https://doi.org/10.1056/NEJM199704103361518](https://doi.org/10.1056/NEJM199704103361518)
+
+[52] Meisel C, Johne A, Roots I. "Fatal intracerebral mass bleeding associated with Ginkgo biloba and ibuprofen." *Atherosclerosis*. 2003;167(2):367. PMID: 12818420. [https://doi.org/10.1016/s0021-9150(03)00015-7](https://doi.org/10.1016/s0021-9150(03)00015-7)
+
+[53] Robertson SM, Davey RT, Voell J, et al. "Effect of Ginkgo biloba extract on lopinavir, midazolam and fexofenadine pharmacokinetics in healthy subjects." *Current Medical Research and Opinion*. 2008;24(2):591-599. PMID: 18205997. [https://doi.org/10.1185/030079908x260871](https://doi.org/10.1185/030079908x260871)
+
+[54] Uchida S, Yamada H, Li XD, et al. "Effects of Ginkgo biloba extract on pharmacokinetics and pharmacodynamics of tolbutamide and midazolam in healthy volunteers." *Journal of Clinical Pharmacology*. 2006;46(11):1290-1298. PMID: 17050793. [https://doi.org/10.1177/0091270006292628](https://doi.org/10.1177/0091270006292628)
+
+[55] Zadoyan G, Rokitta D, Klement S, et al. "Effect of Ginkgo biloba special extract EGb 761 on human cytochrome P450 activity: a cocktail interaction study in healthy volunteers." *European Journal of Clinical Pharmacology*. 2012;68(5):553-560. PMID: 22189672. [https://doi.org/10.1007/s00228-011-1174-5](https://doi.org/10.1007/s00228-011-1174-5)

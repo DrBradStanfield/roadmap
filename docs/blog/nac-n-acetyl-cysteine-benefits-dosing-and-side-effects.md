@@ -15,25 +15,25 @@ sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the
 
 ## Current view (reviewed 23 October 2026)
 
-Brad's plan is to take 1 g of GlyNAC, a combination of glycine and N-acetylcysteine (NAC), from the age of 45 (Brad's current guidance, 19 Feb 2026). He chose that age because glutathione, a powerful antioxidant, declines rapidly from 45 (Brad's current guidance, 31 Jul 2026). A placebo-controlled human study found that GlyNAC corrected glutathione deficiency in older adults and improved hand grip strength (Brad's current guidance, 31 Jul 2026). That study was small, with 36 participants (24 older adults and 12 younger adults), and the younger group gained no benefit ([Brad, 3 Feb 2026](https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read)). People already taking collagen or trimethylglycine (TMG) are likely to have enough glycine, which leaves NAC as the only missing part of the pair (Brad's current guidance, 31 Jul 2026). Brad says GlyNAC has the least evidence of the supplements he discussed, and that his taking a supplement does not mean you should; talk to a healthcare professional first ([Brad, 19 Nov 2024](https://drstanfield.com/blogs/articles/only-supplements-work-2025)).
+Brad's plan is to take 1 g of GlyNAC, a combination of glycine and N-acetylcysteine (NAC), from the age of 45 (Brad's current guidance, 19 Feb 2026). He chose that age because glutathione, a powerful antioxidant, declines rapidly from 45 (Brad's current guidance, 31 Jul 2026). A placebo-controlled human study found that GlyNAC corrected glutathione deficiency in older adults and improved hand grip strength (Brad's current guidance, 31 Jul 2026). That study was small, with 36 participants (24 older adults and 12 younger adults), and the younger group gained no benefit ([Brad, 3 Feb 2026](https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read)). Collagen supplements already contain a lot of glycine and trimethylglycine (TMG) adds more, so people already taking them are likely to have enough glycine, which leaves NAC as the only missing part of the pair (Brad's current guidance, 31 Jul 2026). Brad says GlyNAC has the least evidence of the supplements he discussed, and that his taking a supplement does not mean you should; talk to a healthcare professional first ([Brad, 19 Nov 2024](https://drstanfield.com/blogs/articles/only-supplements-work-2025)).
 
 ## Key safety points
 
 - Ask your doctor before combining NAC with nitroglycerin. NAC strengthened nitroglycerin's effect on blood pressure, and in an angina trial the pair caused side effects, mainly intolerable headache, in 35% of patients [41][73].
 - If you take a blood thinner or have a bleeding disorder, check with your doctor first. High-dose intravenous NAC had anticoagulant and platelet-inhibiting effects during surgery [66].
-- If you have asthma, ask your doctor first. Asthma is a risk factor for reactions to intravenous NAC, which can include wheeze and bronchospasm [74][75].
+- If you have asthma, ask your doctor first. Asthma is a risk factor for reactions to intravenous NAC [75], which can include wheeze and bronchospasm [74].
 - A suspected paracetamol (acetaminophen) overdose needs emergency care: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department. Hospital NAC protects the liver best when started within 8 hours, so do not wait or treat it yourself with supplements [77][78].
 - In mice, NAC sped up lung cancer growth, and the researchers urged caution for smokers and people with COPD [61][62].
 - In oral trials, side effects were generally no more common on NAC than on placebo [20][80].
 
 ## Brad's videos on this topic
 
-- 3 Feb 2026, [The Most Important Antioxidant Study I’ve Ever Read](https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read): a new meta-analysis found antioxidants, especially with exercise, improved strength and physical function in older adults; Brad still avoids vitamins A and E and plans to start GlyNAC at 45, citing a small trial in which only the older adults benefited.
+- 3 Feb 2026, [The Most Important Antioxidant Study I’ve Ever Read](https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read): a new meta-analysis found antioxidants, especially with exercise, gave small improvements in strength and physical function in older adults; Brad still avoids vitamins A and E and plans to start GlyNAC at 45, citing a small trial in which only the older adults benefited.
 - 19 Nov 2024, [The Only Supplements That ACTUALLY Work (2025)](https://drstanfield.com/blogs/articles/only-supplements-work-2025): from age 45 Brad would consider about 1 gram of glycine plus NAC to support glutathione, while calling it the least proven supplement on his list.
 
 ## 1. Overview
 
-N-acetylcysteine (NAC), also called acetylcysteine, is a modified version of cysteine, an amino acid. Cysteine itself comes from protein foods such as meat, eggs, dairy, legumes and seeds [3]. The body uses NAC as a source of cysteine to make glutathione (GSH), and NAC also breaks disulfide bonds in proteins, which is how it thins mucus [4]. Glutathione is built from three amino acids: cysteine, glycine and glutamate. In a small study, older adults had lower levels of glycine, cysteine and glutathione in their red blood cells than younger adults [10].
+N-acetylcysteine (NAC), also called acetylcysteine, is a modified version of cysteine, an amino acid. Cysteine itself comes from protein foods [3]. The body uses NAC as a source of cysteine to make glutathione (GSH), and NAC also breaks disulfide bonds in proteins, which is how it thins mucus [4]. Glutathione is built from three amino acids: cysteine, glycine and glutamate. In a small study, older adults had lower levels of glycine, cysteine and glutathione in their red blood cells than younger adults [10].
 
 The body does not need NAC from the diet, so it has no recommended intake. It has been used in medicine for decades, as a mucolytic and for paracetamol poisoning, and has been tested in many other conditions, including heavy metal toxicity and psychiatric disorders [4].
 
@@ -53,25 +53,25 @@ Oral NAC is poorly absorbed into the bloodstream, which some researchers think m
 
 ### NACET (N-Acetyl Cysteine Ethyl Ester)
 
-NACET is an ethyl ester of NAC designed to cross cell membranes more easily. In rats, oral NACET raised glutathione in most tissues examined, including the brain, while oral NAC did not [9]. Human studies comparing the two are lacking, so any advantage in people is uncertain.
+NACET is an ethyl ester of NAC designed to cross cell membranes more easily. In rats, oral NACET raised glutathione in most tissues examined, including the brain, while oral NAC did not [9]. Whether NACET has an advantage in people is uncertain.
 
 ### GlyNAC (Glycine + NAC)
 
-GlyNAC combines NAC with glycine, the two glutathione building blocks that are low in older adults [10]. The idea is that supplying both may restore glutathione better than NAC alone. The human GlyNAC trials (see Aging and Longevity) were small and came from one research group [7][72], and no trial has compared GlyNAC with NAC alone.
+GlyNAC combines NAC with glycine, the two glutathione building blocks that are low in older adults [10]. The idea is that supplying both may restore glutathione better than NAC alone. The human GlyNAC trials (see Aging and Longevity) were small and came from one research group [7][72], and they did not compare GlyNAC with NAC alone.
 
 ### Delivery Forms
 
-NAC is sold as capsules, tablets, effervescent tablets and powder. Oral doses in the trials described here ranged from 200 mg to 3,000 mg a day [31][79].
+NAC is sold as capsules, tablets, effervescent tablets and powder. Oral doses in the trials described here ranged from 200 mg to 6 g a day [51][79].
 
 ### Storage and Stability
 
-NAC contains a sulfur (thiol) group [4], so a faint sulfur smell is common. Keep it in a closed container away from heat and moisture.
+NAC contains a sulfur (thiol) group [4], so a faint sulfur smell is common. Store it sealed, somewhere cool and dry.
 
 ## 3. Evidence for Benefits
 
 ### Acetaminophen Overdose and Liver Protection
 
-NAC is the standard antidote for paracetamol (acetaminophen) poisoning. It is a hospital treatment. In 100 people with severe paracetamol poisoning, intravenous NAC given within eight hours gave virtually complete protection against liver damage [78]. In a multicentre study of 2540 patients, an oral regimen of 140 mg per kilogram followed by 70 mg per kilogram every four hours for 17 more doses was protective when started within eight hours, and less effective with longer delays [77].
+NAC is the standard antidote for paracetamol (acetaminophen) poisoning. It is a hospital treatment. Of 100 people treated with intravenous NAC for severe paracetamol poisoning, the 40 treated within eight hours had virtually complete protection against liver damage [78]. In a multicentre study of 2540 patients, an oral regimen of 140 mg per kilogram followed by 70 mg per kilogram every four hours for 17 more doses was protective when started within eight hours, and less effective with longer delays [77].
 
 A suspected paracetamol overdose needs emergency care: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department. Do not wait for symptoms, and do not try to treat an overdose yourself with NAC supplements.
 
@@ -155,7 +155,7 @@ In a double-blind trial of 64 women aged 18 to 40 years with fibrocystic breast 
 
 ### Sjogren's Syndrome
 
-In a 4-week double-blind crossover trial in 26 adults with Sjogren's syndrome, oral NAC improved eye soreness and irritation, bad breath and daytime thirst, but not tear tests [48].
+In a 4-week double-blind crossover trial in 26 adults with Sjogren's syndrome, oral NAC improved eye soreness and irritation, bad breath and daytime thirst, but not the Schirmer test or tear break-up time [48].
 
 ### Ulcerative Colitis
 
@@ -163,7 +163,7 @@ NAC is not an established treatment for ulcerative colitis. If you have it, keep
 
 ### Parkinson's Disease
 
-In 42 adults with Parkinson's disease, weekly intravenous NAC (50 mg/kg) plus oral NAC 500 mg twice daily for 3 months improved symptoms and increased dopamine transporter binding compared with standard care alone [50]. No placebo was used, and the oral part was a small share of the total dose.
+In 42 adults with Parkinson's disease, weekly intravenous NAC (50 mg/kg) plus oral NAC 500 mg twice daily for 3 months improved symptoms and increased dopamine transporter binding compared with standard care alone [50]. No placebo was used.
 
 ### Progressive Myoclonus Epilepsy
 
@@ -187,11 +187,11 @@ Glutathione falls with age [10]. In genetically mixed mice, NAC extended life sp
 
 **GlyNAC (Glycine + NAC) for aging:** Because older adults are low in both glycine and cysteine [10], researchers tested the two together.
 
-In an open-label pilot trial, eight older adults took GlyNAC for 24 weeks. It corrected red blood cell glutathione deficiency, oxidative stress and mitochondrial dysfunction, and improved inflammation, insulin resistance, strength, gait speed and cognition. The benefits declined after 12 weeks off GlyNAC [7].
+In an open-label pilot trial, eight older adults took GlyNAC for 24 weeks. It corrected red blood cell glutathione deficiency, oxidative stress and mitochondrial dysfunction, and improved inflammation, insulin resistance, strength, gait speed and cognition. The benefits declined after 12 weeks off GlyNAC [7]. The pilot trial dosed by body weight: glycine 1.33 mmol/kg a day and cysteine 0.81 mmol/kg a day as NAC, roughly 100 mg of glycine and 130 mg of NAC per kilogram, or several grams of each a day for an adult [7], far above the dose in Brad's plan.
 
 In a later placebo-controlled trial, 24 older adults were randomly assigned to GlyNAC or an alanine placebo for 16 weeks, and 12 younger adults took GlyNAC for 2 weeks [72]. Compared with the younger adults, the older adults had glutathione deficiency, oxidative stress, mitochondrial dysfunction, inflammation and weaker physical function. GlyNAC, but not placebo, improved or corrected these defects, and it was well tolerated [72].
 
-**Limitations:** Both human GlyNAC trials were small and came from the same research group [7][72]. Whether GlyNAC extends human life is unknown, and no trial has tested whether it beats NAC alone.
+**Limitations:** The human GlyNAC studies were small and came from one research group [7][10][72]. Whether GlyNAC extends human life is unknown, and these trials did not test whether it beats NAC alone.
 
 ### Nasal Congestion and Sinusitis
 
@@ -240,7 +240,7 @@ In the oral trials above, side effects were no more common on NAC than on placeb
 
 ### Body Odor
 
-NAC contains sulfur [4]; see Sulfur Smell, below.
+NAC contains sulfur [4], which gives the product its smell; whether NAC changes body odour is unclear.
 
 ### Sulfur Smell
 
@@ -256,7 +256,7 @@ High doses of NAC may affect blood clotting. In a randomised trial in 20 people 
 
 ### Asthma
 
-Asthma is a risk factor for reactions to intravenous NAC, including wheeze and bronchospasm [74][75]. If you have asthma, ask your doctor before taking NAC.
+Asthma is a risk factor for reactions to intravenous NAC [75], which can include wheeze and bronchospasm [74]. If you have asthma, ask your doctor before taking NAC.
 
 ### Blood Test Interference
 
@@ -293,7 +293,7 @@ NAC itself is not found in food. Cysteine, which NAC supplies, comes from protei
 
 ### Cysteine-Rich Foods
 
-Meat, poultry, fish, eggs, dairy, legumes and seeds supply cysteine; USDA FoodData Central lists amounts for individual foods [3].
+USDA FoodData Central lists the cysteine content of individual foods [3].
 
 ### Practical Notes
 

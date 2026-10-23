@@ -15,17 +15,17 @@ sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the
 
 ## Current view (reviewed 23 October 2026)
 
-Brad describes glutathione as a powerful antioxidant that helps regulate oxidative stress and immune function, and notes that its levels decline rapidly from the age of 45 (Brad's current guidance, 31 Jul 2026). Rather than taking antioxidants directly, he favours GlyNAC, the glutathione precursors glycine and N-acetylcysteine (NAC), because it lets the body regulate its own antioxidant levels instead of flooding the system with external antioxidants ([Brad, 3 Feb 2026](https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read)). A human placebo-controlled study found that supplementing with glycine and NAC corrected the glutathione deficiency in older adults and improved hand grip strength (Brad's current guidance, 31 Jul 2026). That study was small, and the benefits appeared only in the older adults, not the younger ones, which suggests to Brad that the effects of antioxidants or their precursors vary with age ([Brad, 3 Feb 2026](https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read)). His own plan is GlyNAC 1 g from the age of 45 (Brad's current guidance, 19 Feb 2026). He rates it as the item in his stack with the least evidence, very early in the research, and says that his taking a supplement does not mean you should, so check with a healthcare professional first ([Brad, 19 Nov 2024](https://drstanfield.com/blogs/articles/only-supplements-work-2025)).
+Brad describes glutathione as a powerful antioxidant that helps regulate oxidative stress and immune function, and notes that its levels decline rapidly from the age of 45 (Brad's current guidance, 31 Jul 2026). Rather than supplementing with vitamin A or E, he favours GlyNAC, the glutathione precursors glycine and N-acetylcysteine (NAC), because it lets the body regulate its own antioxidant levels instead of flooding the system with external antioxidants ([Brad, 3 Feb 2026](https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read)). A human placebo-controlled study found that supplementing with glycine and NAC corrected the glutathione deficiency in older adults and improved hand grip strength (Brad's current guidance, 31 Jul 2026). That study was small, and the benefits appeared only in the older adults, not the younger ones, which suggests to Brad that the effects of antioxidants or their precursors vary with age ([Brad, 3 Feb 2026](https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read)). His own plan is GlyNAC 1 g from the age of 45 (Brad's current guidance, 19 Feb 2026). He rates it as the item in his stack with the least evidence, very early in the research, and says that his taking a supplement does not mean you should, so check with a healthcare professional first ([Brad, 19 Nov 2024](https://drstanfield.com/blogs/articles/only-supplements-work-2025)).
 
 ## Key safety points
 
 - If you take nitroglycerin or another nitrate, ask your doctor before taking NAC or GlyNAC. When the two were given together by drip in a trial, symptomatic low blood pressure was much more common [81].
 - If you take a blood thinner, check with your doctor first. In laboratory tests, NAC reduced platelet clumping [82].
-- During chemotherapy or radiotherapy, take glutathione or NAC only with your oncologist's approval. Cancer cells can use high glutathione to resist treatment [5].
-- Intravenous glutathione for skin lightening has no proof that it works, and its harms led the Philippine FDA to warn against it [60]. If a blistering or peeling rash follows an injection, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [60].
+- During chemotherapy, take glutathione or NAC only with your oncologist's approval. Cancer cells can use high glutathione to resist treatment [5].
+- Intravenous glutathione for skin lightening has little evidence behind it, and the Philippine FDA has warned against it [60][85]. Reported harms include life-threatening skin reactions (Stevens-Johnson syndrome and toxic epidermal necrolysis), so if a blistering or peeling rash follows an injection, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [85].
 - Inhaled glutathione briefly lowered lung function (FEV1) after each dose in a cystic fibrosis study [47].
 - High NAC doses can cause nausea: in a lupus trial, 33% of people taking 4.8 g a day had nausea, which went away [42].
-- In trials lasting 4 to 12 weeks, oral glutathione was well tolerated, with only mild, short-lived side effects [61][63][80]. Its long-term safety has not been established [61].
+- In trials lasting 4 to 12 weeks, oral glutathione was well tolerated, though two people in one trial had a temporary rise in liver enzymes [61][80]. Its long-term safety has not been established [61].
 
 ## Brad's videos on this topic
 
@@ -162,7 +162,7 @@ Glutathione levels affect how lymphocytes work, and both too little and too much
 
 Glutathione also helps protect lung tissue from oxidative damage [8].
 
-**COPD:** A Cochrane review of mucolytics (NAC, carbocysteine and others) in chronic bronchitis and COPD included 38 trials and 10,377 people [43]. People taking mucolytics were more likely to stay free of flare-ups (Peto OR 1.73, 95% CI 1.56 to 1.91), though recent studies showed less benefit than earlier ones [43].
+**COPD:** A Cochrane review of mucolytics (NAC, carbocysteine and others) in chronic bronchitis and COPD included 38 trials and 10,377 people [43]. In 28 of those trials, with 6,723 people, those taking mucolytics may have been more likely to stay free of flare-ups (Peto OR 1.73, 95% CI 1.56 to 1.91), though recent studies showed less benefit than earlier ones [43].
 
 The PANTHEON trial randomized 1,006 Chinese people with moderate to severe COPD to NAC 600 mg twice daily or placebo for 1 year. Flare-ups fell from 1.49 to 1.16 per patient-year (risk ratio 0.78, 95% CI 0.67 to 0.90; p=0.0011) [44].
 
@@ -188,11 +188,11 @@ NAC has also been tested. In a study that randomized people with Parkinson's to 
 
 Poor glutathione synthesis has been linked with diabetes [2].
 
-**Direct glutathione supplementation:** In an Indian trial, 125 people being treated for type 2 diabetes took 500 mg of oral glutathione a day for six months alongside their diabetes medicines, and were compared with people on medicines alone [55]. Blood glutathione rose and a marker of DNA damage fell within three months [55]. Overall, HbA1c held steady; only in a later subgroup analysis of people above 55 years did HbA1c fall and fasting insulin rise [55].
+**Direct glutathione supplementation:** In a trial, 125 people being treated for type 2 diabetes took 500 mg of oral glutathione a day for six months alongside their diabetes medicines, and were compared with people on medicines alone [55]. Blood glutathione rose and a marker of DNA damage fell within three months [55]. Overall, HbA1c held steady; only in a later subgroup analysis of people above 55 years did HbA1c fall and fasting insulin rise [55].
 
 **GlyNAC and insulin resistance:** GlyNAC improved insulin resistance in older adults, in the open-label pilot and in the placebo-controlled trial [10][21].
 
-**Polycystic ovary syndrome (PCOS):** In a double-blind trial in women with PCOS who had not responded to clomiphene, adding NAC 1.2 g a day raised the ovulation rate (49.3% vs 1.3%) and the pregnancy rate (21.3% vs 0%) compared with placebo [58]. A meta-analysis of eight trials in 910 women found NAC improved ovulation, pregnancy and live birth compared with placebo, but less than metformin did [59].
+**Polycystic ovary syndrome (PCOS):** In a double-blind trial in women with PCOS who had not responded to clomiphene, adding NAC 1.2 g a day raised the ovulation rate (49.3% vs 1.3%) and the pregnancy rate (21.3% vs 0%) compared with placebo [58]. A meta-analysis of eight trials in 910 women found NAC improved ovulation, pregnancy and live birth compared with placebo, but pregnancy and ovulation were less likely with NAC than with metformin [59].
 
 ### Skin Health and Lightening
 
@@ -206,7 +206,7 @@ Glutathione is popular as an oral and injected skin-lightening agent in some cou
 
 **Negative evidence:** In an Indonesian randomized trial lasting 12 weeks, people took an oral supplement combining glutathione with zinc, vitamin C and alpha-lipoic acid; skin lightening was slightly greater than with placebo but not statistically significant [63]. There is no good evidence that intravenous glutathione lightens skin [60].
 
-**Safety concerns with IV glutathione for skin lightening:** Harms from intravenous glutathione led the Philippine FDA to issue a public warning against its use for skin lightening [60]. Reported harms include rashes, stomach pain, and thyroid, liver and kidney problems, including possible kidney failure [60].
+**Safety concerns with IV glutathione for skin lightening:** Harms from intravenous glutathione led the Philippine FDA to issue a public warning against its use for skin lightening [60]. Reported harms include potentially fatal skin reactions, severe abdominal pain, and thyroid and kidney problems [85].
 
 **Skin aging and UV protection:** In the topical study, the oxidized glutathione lotion also improved skin moisture and smoothness and reduced wrinkle formation [62]. Clinical evidence that oral glutathione prevents sun damage to the skin is limited [2].
 
@@ -215,6 +215,8 @@ Glutathione is popular as an oral and injected skin-lightening agent in some cou
 Oxidative stress and poor blood vessel lining (endothelial) function contribute to heart disease [2][5].
 
 **Endothelial function:** The GlyNAC trials found better endothelial function in older adults [10][21]. In 16 people having heart catheterisation, NAC infused into the arteries improved the widening of coronary and leg arteries in response to acetylcholine, a test of endothelial function [65].
+
+**Homocysteine reduction:** In a study of 40 healthy adults, oral NAC at 600 or 1,800 mg a day lowered plasma homocysteine, with larger effects at the higher dose [66].
 
 **Contrast-induced nephropathy prevention:** NAC has been tested to prevent kidney injury from contrast dye. A meta-analysis of 22 trials with 2,746 patients found that 18 larger, later trials showed no benefit, while 4 early, small, lower-quality trials suggested a large benefit [67]. In the ACT trial of 2,308 patients, NAC 1,200 mg, taken twice before and twice after the procedure, did not prevent kidney injury (12.7% in both groups) [68].
 
@@ -286,7 +288,7 @@ The GlyNAC trials used weight-based doses of glycine and NAC, taken daily for 16
 
 ### Oral Glutathione
 
-In trials lasting 4 to 12 weeks, oral glutathione was well tolerated, with only mild, short-lived side effects reported [61][63][80]. Mild gut symptoms such as wind or loose stools, a rash or flushing may occur.
+In trials lasting 4 to 12 weeks, oral glutathione was well tolerated [61][80]. In a 12-week trial in women, itching, red patches or spots on the skin and tiredness were reported, about as often as with placebo, and there were no serious side effects [80]. Two people had a rise in liver enzymes that returned to normal within a few weeks after they stopped; the authors advise blood tests even for over-the-counter supplements [80].
 
 Long-term safety has not been established [61].
 
@@ -302,13 +304,14 @@ Taken by mouth, NAC is generally safe and well tolerated, while the intravenous 
 
 ### Intravenous Glutathione
 
-IV glutathione carries risks that oral glutathione does not. Reported harms include [60]:
+IV glutathione carries risks that oral glutathione does not. Harms reported to the Philippine FDA include [85]:
 
-- Rashes, including rare severe blistering reactions
-- Stomach pain
-- Thyroid, liver and kidney problems, including possible kidney failure
+- Skin reactions, including potentially fatal Stevens-Johnson syndrome and toxic epidermal necrolysis
+- Severe abdominal pain
+- Thyroid and kidney problems
+- Air embolism or potentially fatal sepsis from unsterile injection or counterfeit products
 
-These harms were reported mainly with repeated IV injections for cosmetic skin lightening, and the Philippine FDA has warned against this use [60]. If a blistering or peeling rash appears after an injection, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+In the one trial of IV glutathione for skin lightening, liver problems were the main side effect reported, though the trial did not describe them [85]. These harms followed off-label IV use for skin lightening, and the Philippine FDA has warned the public against it [60][85]. If a blistering or peeling rash appears after an injection, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [85].
 
 ### Theoretical Cancer Concern
 
@@ -387,7 +390,7 @@ Because cysteine supply limits glutathione synthesis, foods with cysteine and ot
 
 [9] Mokhtari V, Afsharian P, Shahhoseini M, et al. "A review on various uses of N-acetyl cysteine." *Cell J*. 2017;19(1):11-17. doi: [10.22074/cellj.2016.4872](https://doi.org/10.22074/cellj.2016.4872) PMID: [28367412](https://pubmed.ncbi.nlm.nih.gov/28367412/)
 
-[10] Kumar P, Liu C, Hsu JW, et al. "Glycine and N-acetylcysteine (GlyNAC) supplementation in older adults improves glutathione deficiency, oxidative stress, mitochondrial dysfunction, inflammation, insulin resistance, endothelial dysfunction, genotoxicity, muscle strength, and cognition: Results of a pilot randomized clinical trial." *Clin Transl Med*. 2021;11(3):e372. doi: [10.1002/ctm2.372](https://doi.org/10.1002/ctm2.372) PMID: [33783984](https://pubmed.ncbi.nlm.nih.gov/33783984/)
+[10] Kumar P, Liu C, Hsu JW, et al. "Glycine and N-acetylcysteine (GlyNAC) supplementation in older adults improves glutathione deficiency, oxidative stress, mitochondrial dysfunction, inflammation, insulin resistance, endothelial dysfunction, genotoxicity, muscle strength, and cognition: Results of a pilot clinical trial." *Clin Transl Med*. 2021;11(3):e372. doi: [10.1002/ctm2.372](https://doi.org/10.1002/ctm2.372) PMID: [33783984](https://pubmed.ncbi.nlm.nih.gov/33783984/)
 
 [11] Sekhar RV, Patel SG, Guthikonda AP, et al. "Deficient synthesis of glutathione underlies oxidative stress in aging and can be corrected by dietary cysteine and glycine supplementation." *Am J Clin Nutr*. 2011;94(3):847-853. doi: [10.3945/ajcn.110.003483](https://doi.org/10.3945/ajcn.110.003483) PMID: [21795440](https://pubmed.ncbi.nlm.nih.gov/21795440/)
 
@@ -489,6 +492,8 @@ Because cysteine supply limits glutathione synthesis, foods with cysteine and ot
 
 [65] Andrews NP, Prasad A, Quyyumi AA. "N-acetylcysteine improves coronary and peripheral vascular function." *J Am Coll Cardiol*. 2001;37(1):117-123. doi: [10.1016/S0735-1097(00)01093-7](https://doi.org/10.1016/S0735-1097(00)01093-7) PMID: [11153725](https://pubmed.ncbi.nlm.nih.gov/11153725/)
 
+[66] Ventura P, Panini R, Abbati G, et al. "Urinary and plasma homocysteine and cysteine levels during prolonged oral N-acetylcysteine therapy." *Pharmacology*. 2003;68(2):105-114. doi: [10.1159/000069535](https://doi.org/10.1159/000069535) PMID: [12711838](https://pubmed.ncbi.nlm.nih.gov/12711838/)
+
 [67] Gonzales DA, Norsworthy KJ, Kern SJ, et al. "A meta-analysis of N-acetylcysteine in contrast-induced nephrotoxicity: unsupervised clustering to resolve heterogeneity." *BMC Med*. 2007;5:32. doi: [10.1186/1741-7015-5-32](https://doi.org/10.1186/1741-7015-5-32) PMID: [18001477](https://pubmed.ncbi.nlm.nih.gov/18001477/)
 
 [68] ACT Investigators. "Acetylcysteine for prevention of renal outcomes in patients undergoing coronary and peripheral vascular angiography: main results from the randomized Acetylcysteine for Contrast-induced nephropathy Trial (ACT)." *Circulation*. 2011;124(11):1250-1259. doi: [10.1161/CIRCULATIONAHA.111.038943](https://doi.org/10.1161/CIRCULATIONAHA.111.038943) PMID: [21859972](https://pubmed.ncbi.nlm.nih.gov/21859972/)
@@ -524,3 +529,5 @@ Because cysteine supply limits glutathione synthesis, foods with cysteine and ot
 [83] Sandilands EA, Bateman DN. Adverse reactions associated with acetylcysteine. *Clin Toxicol (Phila)*. 2009. PMID: 19280424. https://pubmed.ncbi.nlm.nih.gov/19280424/
 
 [84] Renzi FP, Donovan JW, Martin TG, et al. Concomitant use of activated charcoal and N-acetylcysteine. *Ann Emerg Med*. 1985. PMID: 3994080. https://pubmed.ncbi.nlm.nih.gov/3994080/
+
+[85] Sonthalia S, Jha AK, Lallas A, Jain G, Jakhar D. "Glutathione for skin lightening: a regnant myth or evidence-based verity?" *Dermatol Pract Concept*. 2018;8(1):15-21. doi: [10.5826/dpc.0801a04](https://doi.org/10.5826/dpc.0801a04) PMID: [29445569](https://pubmed.ncbi.nlm.nih.gov/29445569/)

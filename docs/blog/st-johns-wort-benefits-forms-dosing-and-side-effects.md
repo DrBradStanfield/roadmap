@@ -19,10 +19,10 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- It can weaken many medicines, sometimes dangerously: birth control pills, warfarin, ciclosporin (heart transplant rejection has occurred), digoxin, and some HIV, cancer, seizure, heart and cholesterol drugs [2][10][39]. If you take prescription medicines, check with your doctor or pharmacist before starting.
+- It can weaken many medicines, sometimes dangerously: birth control pills, warfarin, ciclosporin (heart transplant rejection has occurred), digoxin, and some HIV, cancer, seizure, heart and cholesterol drugs [2][10][39]. The COVID-19 drug Paxlovid must not be taken with it [51]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 - With antidepressants or other serotonin drugs it may cause serotonin syndrome, which can be deadly. For shaking, muscle jerks, a racing heart, a high temperature, agitation or confusion, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [2][44][46].
 - It may be unsafe in pregnancy because it may raise the risk of birth defects, and breastfed babies have had colic, drowsiness and lethargy [2].
-- Depression can be serious, so see a doctor rather than treating it yourself [2]. A case report describes mania after high doses [49].
+- Depression can be serious; if you may have it, see a doctor [2]. A case report describes mania after high doses [49].
 - Large doses by mouth, or use on the skin, might cause severe skin reactions after sun exposure [2].
 - Other side effects can include diarrhea, dizziness, trouble sleeping, restlessness and skin tingling [2].
 
@@ -180,7 +180,7 @@ Doses used in the main depression trials:
 - **Time to effect:** The main trials judged response after 6 to 8 weeks [9][18].
 - **Dose escalation:** In the Szegedi et al. (2005) trial, the dose was raised from 900 mg/day to 1,800 mg/day after two weeks in people who had not responded [9]. Dose increases should only be made under medical supervision.
 - **Do not self-treat serious depression:** Depression can be a serious illness. The NCCIH emphasizes that anyone who may have depression should consult a healthcare provider [2]. St. John's wort should not be used as a substitute for professional mental health care, particularly for moderate to severe depression.
-- **Stopping:** Stopping suddenly may cause withdrawal-type symptoms, so ask your doctor how to taper. If you take a medicine that St. John's wort affects, do not stop without your doctor's advice (see Drug Interactions).
+- **Stopping:** If you take a medicine that St. John's wort affects, do not stop without your doctor's advice (see Drug Interactions).
 
 ### Dosing for Menopause
 
@@ -208,8 +208,6 @@ Headache was more common than with placebo in one trial (41% vs 25%) [19].
 
 **Mania/bipolar episodes:** A case report describes mania in a 28-year-old woman with depression and no past mania who took high doses and no antidepressants [49]. People with bipolar disorder should not use it without their psychiatrist's advice.
 
-**Anorgasmia:** Difficulty reaching orgasm may occur, as it can with standard antidepressants.
-
 **Hair loss:** A report of two cases suggested the herb may be associated with hair loss [45].
 
 ### Photosensitivity
@@ -222,11 +220,11 @@ Taken by mouth in large doses or applied to the skin, St. John's wort might caus
 
 ### Withdrawal Symptoms
 
-Stopping the herb abruptly may cause withdrawal-type symptoms. Ask your doctor about tapering, especially if you take a medicine it interacts with (see the reverse risk below).
+If you take a medicine it interacts with, ask your doctor before stopping the herb (see the reverse risk below).
 
 ### Special Populations
 
-**Pregnancy:** The NCCIH states that it may be unsafe to use during pregnancy because it may increase the risk of birth defects [2]. Avoid it if you are pregnant or trying to conceive [2].
+**Pregnancy:** The NCCIH states that it may be unsafe to use during pregnancy because it may increase the risk of birth defects [2]. Avoid it if you are pregnant [2].
 
 **Breastfeeding:** Breastfeeding infants of mothers who take St. John's wort can experience colic, drowsiness, and lethargy [2]. The herb is not recommended during breastfeeding.
 
@@ -248,7 +246,7 @@ The following table lists medications whose levels or effects St. John's wort ha
 | **HIV protease inhibitors and NNRTIs** (e.g., indinavir, nevirapine) | Indinavir exposure fell by a mean of 57%, risking drug resistance and treatment failure | Volunteer study, NCCIH [2][40] |
 | **Warfarin** | Faster warfarin clearance and a weaker blood-thinning effect | Volunteer study, NCCIH [2][43] |
 | **Cancer drugs** (irinotecan, imatinib, docetaxel) | Possible loss of anticancer effect | NCCIH, review [2][36] |
-| **Birth control pills** | Breakthrough bleeding in 7 of 12 women vs 2 of 12 without the herb; weaker effect | Volunteer study, NCCIH [2][42] |
+| **Birth control pills** | Breakthrough bleeding in 7 of 12 women vs 2 of 12 without the herb; weaker effect; consider adding a barrier method of contraception | Volunteer study, NCCIH [2][42] |
 | **Digoxin** (heart disease treatment) | Digoxin exposure fell by 25% after 10 days | Volunteer study, NCCIH [2][41] |
 | **Statins** (e.g., simvastatin) | Lower statin levels | NCCIH, review [2][10] |
 | **Omeprazole** (Prilosec) | Omeprazole exposure fell by 37.9% to 43.9% | Volunteer study [47] |
@@ -259,7 +257,7 @@ The following table lists medications whose levels or effects St. John's wort ha
 
 Sources: NCCIH [2], Nicolussi et al. (2020) [10], Soleymani et al. (2017) [11], Henderson et al. (2002) [34], Chan et al. (2023) [36].
 
-Other drugs cleared by the same enzymes may also be affected, possibly including some hepatitis C antivirals (sofosbuvir, ledipasvir), the COVID-19 antiviral Paxlovid, estrogen replacement, the antipsychotics olanzapine and clozapine, and the erectile dysfunction drugs sildenafil and tadalafil. If you take prescription medicines, check with your doctor or pharmacist before starting.
+The COVID-19 antiviral Paxlovid must not be taken with the herb, and cannot be started straight after stopping it [51]. The labels for the hepatitis C drugs sofosbuvir (Sovaldi) and ledipasvir with sofosbuvir (Harvoni) advise against combining them with the herb, because it can lower their levels through the P-glycoprotein drug pump [52][53]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Medications with Other Interaction Risks
 
@@ -305,16 +303,11 @@ St. John's wort is not a nutrient and has no dietary sources. It is a herbal pro
 
 ### Plant Identification
 
-*Hypericum perforatum* is a plant with yellow flowers [2]. It is characterized by:
-
-- Yellow, five-petaled flowers
-- Opposite leaves with tiny translucent dots visible when held to light (the "perforations" referenced in the species name *perforatum*)
-- Blooming period around late June (St. John's Day)
-- Found in meadows, fields, roadsides, and disturbed areas
+*Hypericum perforatum* is a plant with yellow flowers that blooms around late June [2].
 
 ### Harvesting and Processing
 
-Extracts are made by extracting the dried herb with solvents, and the Cochrane authors note that products on the market may vary considerably in quality [12].
+The Cochrane authors note that products on the market may vary considerably in quality [12].
 
 Whole herb preparations use the dried, ground plant without the extraction step and are less studied than extracts.
 
@@ -407,3 +400,9 @@ Whole herb preparations use the dried, ground plant without the extraction step 
 [49] Fahmi M, Huang C, Schweitzer I. "A case of mania induced by hypericum." *World J Biol Psychiatry*. 2002;3(1):58-59. PMID: 12479089. [https://pubmed.ncbi.nlm.nih.gov/12479089/](https://pubmed.ncbi.nlm.nih.gov/12479089/)
 
 [50] Schey KL, Patat S, Chignell CF, et al. "Photooxidation of lens alpha-crystallin by hypericin (active ingredient in St. John's Wort)." *Photochem Photobiol*. 2000;72(2):200-203. PMID: 10946573. [https://pubmed.ncbi.nlm.nih.gov/10946573/](https://pubmed.ncbi.nlm.nih.gov/10946573/)
+
+[51] PAXLOVID (nirmatrelvir tablets; ritonavir tablets). Prescribing information, Pfizer. DailyMed, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=8a99d6d6-fd9e-45bb-b1bf-48c7f761232a](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=8a99d6d6-fd9e-45bb-b1bf-48c7f761232a)
+
+[52] SOVALDI (sofosbuvir) tablets and oral pellets. Prescribing information, Gilead Sciences. DailyMed, 2025. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=80beab2c-396e-4a37-a4dc-40fdb62859cf](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=80beab2c-396e-4a37-a4dc-40fdb62859cf)
+
+[53] HARVONI (ledipasvir and sofosbuvir) tablets and oral pellets. Prescribing information, Gilead Sciences. DailyMed, 2025. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=f4ec77e4-bae8-4db0-b3d5-bde09c5fa075](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=f4ec77e4-bae8-4db0-b3d5-bde09c5fa075)
