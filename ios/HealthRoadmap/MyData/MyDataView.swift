@@ -238,7 +238,8 @@ private struct ValueRow: View {
     @State private var shownUnit: String?
 
     var body: some View {
-        LabelValue.layout(textSize).callAsFunction {
+        // Centred on the row (Brad 2026-10-23): on the label's first line, a dated value sat high.
+        LabelValue.layout(textSize, alignment: .center).callAsFunction {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                 if let day {
@@ -289,7 +290,7 @@ private struct ValueRow: View {
 /// A row's label and value: side by side, stacked at accessibility text sizes so
 /// neither is squeezed into a broken word. Used by My data and the metric page.
 enum LabelValue {
-    static func layout(_ size: DynamicTypeSize) -> AnyLayout {
-        size.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+    static func layout(_ size: DynamicTypeSize, alignment: VerticalAlignment = .firstTextBaseline) -> AnyLayout {
+        size.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(alignment: alignment))
     }
 }
