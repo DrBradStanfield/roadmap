@@ -85,6 +85,8 @@ class PhoneCloudAdapter implements StorageAdapter {
   readonly id: 'dropbox' | 'google-drive';
   readonly label: string;
   private current: { token: string; adapter: StorageAdapter } | null = null;
+  /** Drive's record copies, kept across token refreshes (US-10 AC4a). */
+  private readonly recordIds = new Set<string>();
 
   constructor(private readonly provider: Provider, private readonly session: number) {
     this.id = provider;
@@ -128,7 +130,7 @@ class PhoneCloudAdapter implements StorageAdapter {
     if (this.current?.token !== token) {
       const options = { documents: 'write' } as const;
       // No oldest-first chat lookup: EngineHTTP.swift allows no orderBy (US-10 AC4a).
-      this.current = { token, adapter: this.provider === 'dropbox' ? new DropboxAdapter(token, options) : new DriveAdapter(token, options, false) };
+      this.current = { token, adapter: this.provider === 'dropbox' ? new DropboxAdapter(token, options) : new DriveAdapter(token, options, false, this.recordIds) };
     }
     return this.current.adapter;
   }

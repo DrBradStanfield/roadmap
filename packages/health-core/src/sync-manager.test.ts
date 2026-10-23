@@ -299,6 +299,23 @@ describe('SyncManager.save — uncertainty survives later failures', () => {
     expect(told.hint).toMatch(/may.*landed/);
   });
 
+  it('keeps a 401 after a landed write: the status for a token refresh, and "may have landed" beside "reconnect" (US-10 AC4a)', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const read = adapter.read.bind(adapter);
+    let reads = 0;
+    adapter.read = async (...args) => {
+      if (++reads === 2) throw new StorageError('synthetic token expired', undefined, undefined, 401);
+      return read(...args);
+    };
+    const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
+    expect(failure).toMatchObject({ status: 401 });
+    const told = describeStorageFailure(failure, 'Memory');
+    expect(told.hint).toContain('Reconnect');
+    expect(told.hint).toMatch(/may.*landed/);
+    expect(`${told.message} ${told.hint}`).not.toMatch(/nothing was (read|written)/i);
+  });
+
   it('still reports no writes for five ordinary pre-upload conflicts', async () => {
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);

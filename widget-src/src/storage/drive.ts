@@ -234,6 +234,10 @@ export class GoogleDriveAdapter implements StorageAdapter {
       };
       setJson(CONFIG_KEY, this.stored);
     }
+    // The record id this browser saved last: a reload inside Drive's search
+    // lag still finds the record, and never creates a second one (US-10 AC4a).
+    const cached = this.cachedFileId(ROADMAP_FILE_NAME);
+    if (cached) this.recordIds.add(cached);
   }
 
   isConnected(): boolean {
@@ -416,15 +420,14 @@ export class GoogleDriveAdapter implements StorageAdapter {
   async read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
     if (fileName === ROADMAP_FILE_NAME) {
       const result = await readDriveRecord(await this.getToken(), this.recordIds, signal);
-      const [winner] = this.recordIds;
-      if (winner) void this.ensureInFolderOnce(winner);
+      this.rememberRecord();
       return result;
     }
-    const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
+    // Search first, oldest copy first, so every device reads the same copy of
+    // a duplicated file; the cached id only covers a search that lags a create.
+    const fileId = (await this.findFileId(fileName)) ?? this.cachedFileId(fileName);
     if (!fileId) return { body: null, version: null };
     this.rememberFileId(fileName, fileId);
-    // Cosmetic, never blocks the read: adopt pre-folder files into the app folder.
-    void this.ensureInFolderOnce(fileId);
     // Version BEFORE bytes: a writer landing mid-download then conflicts at
     // write time instead of handing us their version on our stale bytes.
     const token = await this.getToken();
@@ -433,12 +436,22 @@ export class GoogleDriveAdapter implements StorageAdapter {
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
-    if (fileName === ROADMAP_FILE_NAME) return writeDriveRecord(await this.getToken(), body, expectedVersion, () => this.ensureFolderId(), this.recordIds, signal);
+    if (fileName === ROADMAP_FILE_NAME) {
+      const result = await writeDriveRecord(await this.getToken(), body, expectedVersion, () => this.ensureFolderId(), this.recordIds, signal);
+      const winner = this.rememberRecord();
+      // Cosmetic, never blocks the save, and never on a read (reads do not
+      // mutate Drive): adopt a pre-folder record into the app folder.
+      if (winner) void this.ensureInFolderOnce(winner);
+      return result;
+    }
     const json = JSON.stringify(body);
     const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
     if (fileId) {
       const version = await driveUpdateIfVersion(await this.getToken(), fileId, json, expectedVersion);
       this.rememberFileId(fileName, fileId);
+      // Cosmetic, never blocks the save, and never on a read: adopt a
+      // pre-folder file into the app folder.
+      void this.ensureInFolderOnce(fileId);
       return { version };
     }
     // The file that was read has since been deleted: re-reading turns that
@@ -536,6 +549,13 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   private cachedFileId(fileName: string): string | undefined {
     return this.stored?.fileIds?.[fileName];
+  }
+
+  /** Cache the record's winner for the next page load; returns it. */
+  private rememberRecord(): string | undefined {
+    const [winner] = this.recordIds;
+    if (winner) this.rememberFileId(ROADMAP_FILE_NAME, winner);
+    return winner;
   }
 
   private rememberFileId(fileName: string, fileId: string): void {

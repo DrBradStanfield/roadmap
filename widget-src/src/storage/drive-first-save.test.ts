@@ -96,12 +96,16 @@ class Drive {
   }
 }
 
-function adapter(kind: Kind, fileIds?: Record<string, string>): StorageAdapter {
+function adapter(kind: Kind, fileIds?: Record<string, string>, folderId: string | null = FOLDER): StorageAdapter {
   if (kind === 'hosted') return new DriveAdapter('synthetic');
   // Each adapter captures its own config before any save; persisted ids cannot
   // act as cross-device coordination. No token exchange or live provider call.
-  localStorage.setItem('health_roadmap_gdrive', JSON.stringify({ folderId: FOLDER, folderName: DRIVE_FOLDER_NAME, fileIds }));
+  localStorage.setItem('health_roadmap_gdrive', JSON.stringify({ folderId, folderName: DRIVE_FOLDER_NAME, fileIds }));
   localStorage.setItem('health_roadmap_gdrive_tokens', JSON.stringify({ accessToken: 'synthetic', expiresAt: Date.now() + 3_600_000 }));
+  return reloadBrowser();
+}
+/** A browser adapter on whatever this browser already stored: a page reload. */
+function reloadBrowser(): GoogleDriveAdapter {
   return new GoogleDriveAdapter({ clientId: 'synthetic', scope: 's', redirectUri: 'https://example.test/', exchangeUrl: 'https://example.test/exchange' });
 }
 function manager(storage: StorageAdapter, device: string) {
@@ -339,7 +343,11 @@ describe('US-10 AC4 — ambiguous first-save discovery', () => {
       // iOS refreshes the token on a 401 and the page says "reconnect": both read the status.
       expect(failure).toBeInstanceOf(StorageError);
       expect(failure).toMatchObject({ status });
-      expect(describeStorageFailure(failure, 'Google Drive').hint).toContain('Reconnect');
+      // A refused PATCH may still have landed: say both, never "nothing was written".
+      const told = describeStorageFailure(failure, 'Google Drive');
+      expect(told.hint).toContain('Reconnect');
+      expect(told.hint).toMatch(/may have landed/);
+      expect(`${told.message} ${told.hint}`).not.toMatch(/nothing was (read|written)/i);
     }
   });
 
@@ -567,5 +575,81 @@ describe('US-10 AC4 — ambiguous first-save discovery', () => {
     expect(store.listConversations().map((conv) => conv.id)).toEqual(['old']);
     const lookups = drive.requests.filter((request) => decodeURIComponent(request).includes("name='chat-history.json'"));
     expect(lookups.at(-1)).toContain('orderBy=createdTime');
+  });
+
+  it.each<Kind>(['hosted', 'browser'])('%s erases into the oldest readable copy, never an unreadable one, past every epoch seen (US-10 AC4a)', async (kind) => {
+    const newer = record('B'); newer.meta.eraseEpoch = 5;
+    for (const [bad, epoch] of [['{broken', 1], [JSON.stringify({ ...newer, schemaVersion: 999 }), 6]] as const) {
+      const drive = new Drive();
+      drive.files = [
+        { id: 'bad', name: ROADMAP_FILE_NAME, version: 1, createdTime: '2026-09-01T00:00:00.000Z', content: bad },
+        { id: 'good', name: ROADMAP_FILE_NAME, version: 1, content: JSON.stringify(record('A')) },
+      ];
+      const result = await (await RecordSession.open(webRecordHost(adapter(kind)))).deleteAllData();
+      expect(result).toMatchObject({ success: true, warning: expect.stringMatching(/left it untouched/) });
+      expect(drive.files[0].content).toBe(bad);
+      const good = JSON.parse(drive.files[1].content) as RoadmapFile;
+      expect(good.measurements).toEqual([]);
+      expect(good.meta.eraseEpoch).toBe(epoch);
+      expect(drive.requests.filter((request) => request.startsWith('PATCH ')).every((request) => request.includes('/files/good'))).toBe(true);
+      localStorage.clear();
+    }
+  });
+
+  it.each<Kind>(['hosted', 'browser'])('%s never writes a save with a raised local epoch to an unreadable winner (US-10 AC4a)', async (kind) => {
+    for (const bad of ['{broken', JSON.stringify({ ...record('B'), schemaVersion: 999 })]) {
+      const drive = new Drive();
+      drive.files = [
+        { id: 'bad', name: ROADMAP_FILE_NAME, version: 1, createdTime: '2026-09-01T00:00:00.000Z', content: bad },
+        { id: 'good', name: ROADMAP_FILE_NAME, version: 1, content: JSON.stringify(record('A')) },
+      ];
+      const local = record('C'); local.meta.eraseEpoch = 3;
+      await manager(adapter(kind), 'writer').save(local).catch(() => null);
+      expect(drive.files[0].content).toBe(bad);
+      expect(drive.requests.some((request) => request.includes('/files/bad') && !request.startsWith('GET '))).toBe(false);
+    }
+  });
+
+  it.each<Kind>(['hosted', 'browser'])('%s reads an empty or null copy as unreadable, not missing: healthy copies load, saves are held (US-10 AC4a)', async (kind) => {
+    for (const content of ['', 'null']) {
+      const drive = new Drive();
+      drive.files = [
+        { id: 'a', name: ROADMAP_FILE_NAME, version: 1, content: JSON.stringify(record('A')) },
+        { id: 'z', name: ROADMAP_FILE_NAME, version: 1, content },
+      ];
+      expect((await manager(adapter(kind), 'reader').load()).measurements.map((row) => row.id)).toEqual(['A']);
+      await expect(manager(adapter(kind), 'writer').save(record('C'))).rejects.toBeInstanceOf(StorageError);
+      expect(drive.requests.every((request) => request.startsWith('GET '))).toBe(true);
+    }
+  });
+
+  it('browser record read never moves a root record into the app folder: reads do not mutate Drive (US-10 AC4a)', async () => {
+    const drive = new Drive();
+    drive.files = [{ id: 'root-record', name: ROADMAP_FILE_NAME, version: 1, content: JSON.stringify(record('A')) }];
+    const browser = adapter('browser', undefined, null);
+    await browser.read(ROADMAP_FILE_NAME);
+    await new Promise((resolve) => setTimeout(resolve, 20)); // the cosmetic move is fire-and-forget
+    expect(drive.requests.every((request) => request.startsWith('GET '))).toBe(true);
+  });
+
+  it('browser reload inside the search-lag window shows the record and never creates a second copy (US-10 AC4a)', async () => {
+    const drive = new Drive(); drive.listLag = 50;
+    await manager(adapter('browser'), 'A').save(record('A'));
+    const reloaded = manager(reloadBrowser(), 'A');
+    expect((await reloaded.load()).measurements.map((row) => row.id)).toEqual(['A']);
+    await reloaded.save(record('B'));
+    expect(drive.requests.filter((request) => request.startsWith('POST '))).toHaveLength(1);
+    expect(drive.files).toHaveLength(1);
+  });
+
+  it('browser revalidates a cached newer chat copy and reads the oldest (US-10 AC4a)', async () => {
+    const drive = new Drive();
+    const seed = await ChatHistoryStore.create(adapter('browser'));
+    await seed.recordExchange({ conversationId: 'old', isNew: true, userText: 'synthetic question', assistantText: 'synthetic answer' });
+    const older = drive.files.find((file) => file.name === 'chat-history.json')!;
+    older.createdTime = '2026-09-01T00:00:00.000Z';
+    drive.files.push({ ...older, id: 'chat-newer', createdTime: '2026-10-01T00:00:00.000Z', content: older.content.replace(/"old"/g, '"new"') });
+    const store = await ChatHistoryStore.create(adapter('browser', { 'chat-history.json': 'chat-newer' }));
+    expect(store.listConversations().map((conv) => conv.id)).toEqual(['old']);
   });
 });

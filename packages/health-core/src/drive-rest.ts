@@ -389,69 +389,106 @@ function unreadableCopy(error: unknown): boolean {
     || (error instanceof StorageError && error.cause instanceof SyntaxError);
 }
 
-/** The read's token when a copy was unreadable. A save with it refuses,
- *  unless it erases past `epoch`, the readable copies' erase. */
-function refusingToken(token: string, error: unknown, epoch: number): string {
-  return JSON.stringify({ driveRecord: 1, refuse: error instanceof SchemaTooNewError ? error.fileVersion : 'damaged', epoch, of: token });
+/** An unreadable copy's hold on saves, carried in the read's token (`of` is
+ *  the plain token): `readable` is the readable copies' erase epoch, `seen`
+ *  the highest epoch any copy showed, `target` the oldest readable copy. */
+interface Hold { refuse: number | 'damaged'; readable: number; seen: number; target: string; of: string }
+
+function holdOf(expected: string | null): (Hold & { error: Error }) | null {
+  if (!expected?.startsWith('{')) return null;
+  const hold = JSON.parse(expected) as Partial<Hold>;
+  if (hold.refuse === undefined) return null;
+  const error = typeof hold.refuse === 'number'
+    ? new SchemaTooNewError(hold.refuse, CURRENT_SCHEMA_VERSION)
+    : new StorageError(`A copy of the record in ${PROVIDER} could not be read, so saving is paused.`, DAMAGED_HINT);
+  return { ...(hold as Hold), error };
 }
 
-/** An unreadable copy's hold on a save, from the read's token; null when none. */
-function holdOf(expected: string | null): { error: Error; epoch: number; of: string } | null {
-  if (!expected?.startsWith('{')) return null;
-  const { refuse, epoch, of } = JSON.parse(expected) as { refuse?: number | 'damaged'; epoch: number; of: string };
-  if (refuse === undefined) return null;
-  const error = typeof refuse === 'number'
-    ? new SchemaTooNewError(refuse, CURRENT_SCHEMA_VERSION)
-    : new StorageError(`A copy of the record in ${PROVIDER} could not be read, so saving is paused.`, DAMAGED_HINT);
-  return { error, epoch, of };
+/** A copy's erase epoch from its raw JSON, when it has one: what is known of
+ *  a copy this app cannot migrate. */
+function rawEraseEpoch(raw: unknown): number {
+  const epoch = (raw as { meta?: { eraseEpoch?: unknown } } | null | undefined)?.meta?.eraseEpoch;
+  return typeof epoch === 'number' && Number.isFinite(epoch) ? epoch : 0;
+}
+
+/** One copy's JSON. Gone (404) is a conflict; empty, `null` or invalid JSON
+ *  is a copy that is there and unreadable, never a missing one. */
+async function downloadCopy(token: string, id: string, signal?: AbortSignal): Promise<unknown> {
+  const res = await request(`${DRIVE_API}/files/${id}?alt=media`, { headers: auth(token), signal });
+  if (res.status === 404) throw new ConflictError(`${PROVIDER} record disappeared during read`);
+  if (!res.ok) await fail('read', res);
+  const text = await res.text();
+  let body: unknown = null;
+  try {
+    body = JSON.parse(text);
+  } catch { /* refused below */ }
+  if (body === null) throw new StorageError(`${PROVIDER} read failed: a copy of the record is empty or not valid JSON.`, undefined, new SyntaxError('empty or invalid JSON'));
+  return body;
 }
 
 /** Read every copy and merge them. A copy this app cannot read is left out
- *  of the merge and pauses saves (`refusalOf`), never the read itself. */
+ *  of the merge and holds saves (`holdOf`), never the read itself. */
 export async function readDriveRecord(token: string, known: Set<string>, signal?: AbortSignal): Promise<ReadResult> {
   const state = await recordSnapshot(token, known, signal);
   if (!state.token) return { body: null, version: null };
   if (state.copies.length === 1) {
-    // A unique file keeps the adapter's raw-body/schema policy.
+    // A unique file keeps the adapter's raw-body/schema policy: an empty one
+    // reads as no record, and the save writes over it.
     const body = await driveDownloadJson(token, state.copies[0].id, signal);
     signal?.throwIfAborted();
-    if (body === null) throw new ConflictError(`${PROVIDER} record disappeared or is empty during read`);
     return { body, version: state.token };
   }
   const context = recordContext();
   let merged: RoadmapFile | undefined;
   let refusal: unknown;
+  let seen = 0;
+  let target: string | undefined;
   for (const copy of state.copies) {
     signal?.throwIfAborted();
+    let raw: unknown;
     let parsed: RoadmapFile;
     try {
-      const body = await driveDownloadJson(token, copy.id, signal);
+      raw = await downloadCopy(token, copy.id, signal);
       signal?.throwIfAborted();
-      if (body === null) throw new ConflictError(`${PROVIDER} record disappeared or is empty during read`);
-      parsed = ROADMAP_DOC.migrate(body, context);
+      parsed = ROADMAP_DOC.migrate(raw, context);
     } catch (error) {
       if (!unreadableCopy(error)) throw error;
       if (!(refusal instanceof SchemaTooNewError)) refusal = error; // "update the app" outranks "damaged"
+      seen = Math.max(seen, rawEraseEpoch(raw));
       continue;
     }
+    target ??= copy.id;
     merged = merged ? ROADMAP_DOC.merge(merged, parsed, context) : parsed;
   }
-  if (!merged) throw refusal;
-  return { body: merged, version: refusal ? refusingToken(state.token, refusal, merged.meta.eraseEpoch ?? 0) : state.token };
+  if (!merged || !target) throw refusal;
+  if (!refusal) return { body: merged, version: state.token };
+  const readable = merged.meta.eraseEpoch ?? 0;
+  const hold: Hold = {
+    refuse: refusal instanceof SchemaTooNewError ? refusal.fileVersion : 'damaged',
+    readable, seen: Math.max(seen, readable), target, of: state.token,
+  };
+  return { body: merged, version: JSON.stringify({ driveRecord: 1, ...hold }) };
 }
 
 /** Save to the winner, after checking every copy's version is still the one read. */
 export async function writeDriveRecord(token: string, body: object, expected: string | null, folder: () => Promise<string>, known: Set<string>, signal?: AbortSignal): Promise<WriteResult> {
   const context = recordContext();
-  // An unreadable copy pauses saves, but never "Delete all my data": an erase
-  // goes to the winner from the readable copies and leaves that copy untouched.
+  // An unreadable copy holds saves, but never "Delete all my data": an erase
+  // (an epoch past the readable copies') goes to the oldest READABLE copy, and
+  // the unreadable one is never written. Its epoch goes past every epoch any
+  // copy showed, so the cloud's erase never goes down.
   const hold = holdOf(expected);
-  if (hold && (ROADMAP_DOC.migrate(body, context).meta.eraseEpoch ?? 0) <= hold.epoch) throw hold.error;
+  if (hold) {
+    const epoch = ROADMAP_DOC.migrate(body, context).meta.eraseEpoch ?? 0;
+    if (epoch <= hold.readable) throw hold.error;
+    if (epoch <= hold.seen) body = { ...body, meta: { ...(body as RoadmapFile).meta, eraseEpoch: hold.seen + 1 } };
+  }
   const state = await recordSnapshot(token, known, signal);
   if (state.token !== (hold ? hold.of : expected)) throw new ConflictError(`${PROVIDER} record membership or contributing version changed`);
   const intended = ROADMAP_DOC.migrate(body, context);
   const json = JSON.stringify(body);
-  let id = state.copies[0]?.id;
+  const at = hold ? state.copies.findIndex((copy) => copy.id === hold.target) : 0;
+  let id = state.copies[at]?.id;
   let version: string;
   if (!id) {
     const parent = await folder();
@@ -481,7 +518,7 @@ export async function writeDriveRecord(token: string, body: object, expected: st
     // Every contributing version was checked above, and the winner gets one
     // final check before upload. There is still no atomic CAS.
     try {
-      version = await driveUpdateIfVersion(token, id, json, state.versions[0], signal);
+      version = await driveUpdateIfVersion(token, id, json, state.versions[at], signal);
     } catch (error) {
       // A rejected precondition did not upload. Any other failure may be a
       // lost PATCH response: do not claim nothing was written.
@@ -517,8 +554,6 @@ export class DriveAdapter implements StorageAdapter {
   readonly id = 'google-drive' as const;
   readonly label = PROVIDER;
   private readonly fileIds = new Map<string, string>();
-  /** The record's copies as last found or made (US-10 AC4a). */
-  private readonly recordIds = new Set<string>();
   /** Document folder ids by ref folder ('' = the app folder), opted-in only.
    *  The promise is cached, so concurrent first writes share one find-or-create. */
   private readonly documentFolders = new Map<string, Promise<string>>();
@@ -529,6 +564,9 @@ export class DriveAdapter implements StorageAdapter {
     /** Named-file lookups pick the oldest copy (`orderBy=createdTime`). The
      *  iPhone passes false: its HTTP allow-list (EngineHTTP.swift) has no orderBy. */
     private readonly oldestFirst = true,
+    /** The record's copies as last found or made (US-10 AC4a). The iPhone
+     *  passes one set to every adapter it makes, so a token refresh keeps it. */
+    private readonly recordIds = new Set<string>(),
   ) {}
 
   async connect(): Promise<void> {}

@@ -127,7 +127,8 @@ export class SyncManager<T extends SyncedFile> {
         // Later reads, schema gates, access failures and cancellation cannot
         // undo an earlier write. Preserve the cause, but not its no-write/status certainty.
         if (!mayHaveWritten) throw error;
-        throw new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', VERIFY_HINT, error);
+        // The status stays, so a 401 still refreshes the token (iOS).
+        throw new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', VERIFY_HINT, error, error instanceof StorageError ? error.status : undefined);
       }
     }
     throw new StorageError(
@@ -215,6 +216,13 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
   // buys nothing — a scope change, or the folder removed. Sending the user to
   // check a folder that is fine never gets them anywhere; reconnecting does.
   if (error instanceof StorageError && (error.status === 401 || error.status === 403)) {
+    // A refusal after a write went out cannot say nothing was written: say both.
+    if (error.hint?.includes('landed')) {
+      return {
+        message: `${provider} refused this connection’s access after a change was sent`,
+        hint: 'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
+      };
+    }
     return {
       message: `${provider} refused this connection’s access. Nothing was read and nothing was written`,
       hint: 'Reconnect the provider, which grants access again.',
