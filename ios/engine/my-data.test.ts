@@ -8,6 +8,7 @@ import { readUnitChoices } from './unit-choices';
 import { planJson } from './entry';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { supplementSchema } from '../../packages/health-core/src/validation';
+import { upsertSupplement } from '../../packages/health-core/src/state-edits';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const LATER = '2026-10-21T09:00:00.000Z';
@@ -437,6 +438,31 @@ describe('forms (AC8)', () => {
     expect(file.supplements).toHaveLength(2);
     expect(file.supplementHistory).toHaveLength(count);
     expect(myData(file, NOW).supplements.active.map(s => s.key)).toEqual(['custom_alanine', 'custom_alanine_2']);
+  });
+
+  // US-06 AC1a: an older browser record can hold a custom key over 100 characters.
+  it('restarts a legacy overlong custom key through the native add, and still refuses a new one', () => {
+    const key = 'custom_' + 'a'.repeat(100);
+    const row = { supplementKey: key, supplementName: 'A'.repeat(100), doseValue: 1, doseUnit: 'g' };
+    let legacy = upsertSupplement(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { ...row, status: 'active' }, NOW).file;
+    legacy = upsertSupplement(legacy, { ...row, status: 'stopped' }, NOW).file;
+    const file = readRecord(JSON.stringify(legacy), LATER, 'phone');
+    const restarted = applyEdit(file, { kind: 'customSupplement', name: 'a'.repeat(100) }, LATER);
+    if (!restarted.ok) throw new Error(restarted.message);
+    expect(restarted.file.supplements).toEqual([expect.objectContaining({ id: legacy.supplements[0].id, supplementKey: key, status: 'active' })]);
+    expect(restarted.file.supplementHistory.at(-1)).toMatchObject({ supplementKey: key, changeType: 'started' });
+    expect(applyEdit(restarted.file, { kind: 'supplement', ...row, doseValue: 2, status: 'active' }, LATER)).toMatchObject({ ok: true });
+    expect(applyEdit(file, { kind: 'supplement', ...row, supplementKey: 'custom_' + 'b'.repeat(100), status: 'active' }, LATER))
+      .toMatchObject({ ok: false, reason: 'invalid-value' });
+  });
+
+  // US-06 AC1a: re-adding a name already taken keeps its dose and writes no history.
+  it('keeps the dose when an active name is added again', () => {
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'customSupplement', name: 'Taurine' });
+    file = edited(file, { kind: 'supplement', supplementKey: 'custom_taurine', supplementName: 'Taurine', doseValue: 2, doseUnit: 'g', status: 'active' });
+    const again = edited(file, { kind: 'customSupplement', name: ' taurine ' });
+    expect(again.supplements).toEqual(file.supplements);
+    expect(again.supplementHistory).toEqual(file.supplementHistory);
   });
 
   it('lists supplements: quick-add first, a typed one keyed by the web\'s rule, a stopped one kept', () => {

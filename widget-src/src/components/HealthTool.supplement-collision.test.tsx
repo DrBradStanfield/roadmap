@@ -115,8 +115,12 @@ describe('US-06: collision-safe custom supplement additions', () => {
     await settle();
     const before = await persisted();
     const original = before.supplements[0];
-    addCustom(view.container, 'Taurine');
+    // An active name is not offered again, as an active preset is not (US-06 AC1a).
+    fireEvent.change(view.container.querySelector('.supplement-add input')!, { target: { value: ' taurine ' } });
+    expect(view.container.querySelector('.supplement-custom')).toBeNull();
+    fireEvent.change(view.container.querySelector('.supplement-add input')!, { target: { value: '' } });
     expect(view.container.querySelectorAll('.supplement-row')).toHaveLength(1);
+    expect(row(view.container, 'Taurine').querySelector<HTMLInputElement>('.supplement-dose')!.value).toBe('1');
     dose(view.container, 'Taurine', 2, 'g');
     await settle();
     fireEvent.click(row(view.container, 'Taurine').querySelector('.supplement-remove')!);

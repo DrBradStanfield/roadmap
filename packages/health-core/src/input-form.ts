@@ -542,10 +542,18 @@ export function customSupplementKey(name: string): string {
   return `custom_${name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')}`;
 }
 
+type RecordedSupplement = { supplementKey: string; supplementName: string; status?: string };
+
+/** The recorded row a typed name names (US-06 AC1a): both names trimmed, any case, an active row first. */
+export function customSupplementMatch<T extends RecordedSupplement>(name: string, supplements: readonly T[]): T | undefined {
+  const typed = name.trim().slice(0, 100).trim().toLowerCase();
+  const named = supplements.filter(s => typeof s.supplementName === 'string' && s.supplementName.trim().toLowerCase() === typed);
+  return named.find(s => s.status === 'active') ?? named[0];
+}
+
 /** Reuse a recorded name (active or stopped); reserve every other recorded key. */
-export function customSupplementAddKey(name: string, supplements: readonly { supplementKey: string; supplementName: string }[]): string {
-  const storedName = name.trim().slice(0, 100).toLowerCase();
-  const existing = supplements.find(s => typeof s.supplementName === 'string' && s.supplementName.toLowerCase() === storedName);
+export function customSupplementAddKey(name: string, supplements: readonly RecordedSupplement[]): string {
+  const existing = customSupplementMatch(name, supplements);
   if (existing) return existing.supplementKey;
   const base = customSupplementKey(name.trim().slice(0, 100)).slice(0, 100);
   let key = base;

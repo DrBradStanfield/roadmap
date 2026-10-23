@@ -2,7 +2,7 @@
 // as data, shared by the web form and the iPhone app.
 import { describe, expect, it } from 'vitest';
 import {
-  customSupplementAddKey, customSupplementKey, medicationForm, medicationWrites, screeningForm, screeningMonths, screeningWrites,
+  customSupplementAddKey, customSupplementKey, customSupplementMatch, medicationForm, medicationWrites, screeningForm, screeningMonths, screeningWrites,
   type FormField, type FormSection, type MedicationBasis,
 } from './input-form';
 import type { MedicationInputs, ScreeningInputs } from './types';
@@ -13,6 +13,23 @@ describe('customSupplementAddKey', () => {
     const rows = [{ supplementKey: 'custom_old_7', supplementName: 'Taurine', status }];
     expect(customSupplementAddKey('  TAURINE  ', rows)).toBe('custom_old_7');
     expect(rows).toEqual([{ supplementKey: 'custom_old_7', supplementName: 'Taurine', status }]);
+  });
+
+  it.each(['active', 'stopped'] as const)('trims the stored name too, without rewriting it (US-06 AC1a, %s)', status => {
+    const rows = [{ supplementKey: 'custom_taurine', supplementName: 'Taurine ', status }];
+    expect(customSupplementAddKey('TAURINE', rows)).toBe('custom_taurine');
+    expect(rows).toEqual([{ supplementKey: 'custom_taurine', supplementName: 'Taurine ', status }]);
+  });
+
+  it('prefers an active row when old data has the same name on two keys (US-06 AC1a)', () => {
+    const rows = [
+      { supplementKey: 'custom_taurine', supplementName: 'Taurine', status: 'stopped' },
+      { supplementKey: 'custom_taurine_2', supplementName: 'taurine', status: 'active' },
+    ];
+    expect(customSupplementAddKey('Taurine', rows)).toBe('custom_taurine_2');
+    expect(customSupplementMatch('Taurine', rows)).toBe(rows[1]);
+    expect(customSupplementMatch('Taurine', rows.slice(0, 1))).toBe(rows[0]);
+    expect(customSupplementMatch('Glycine', rows)).toBeUndefined();
   });
 
   it('reserves stopped different names and takes the first unoccupied suffix gap', () => {

@@ -443,6 +443,6 @@ export { IMPORT_LIMITS } from './import-hints';
 export {
   MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS,
   optionsShowing, escalationOptions, doseOptions, medicationForm, medicationWrites, screeningForm, screeningWrites,
-  screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, customSupplementKey, customSupplementAddKey,
+  screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, customSupplementAddKey, customSupplementMatch,
   type FormOption, type FormField, type FormGroup, type FormSection, type MedicationBasis,
 } from './input-form';
