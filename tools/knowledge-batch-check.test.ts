@@ -1565,9 +1565,13 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
     master([`reviewed: "2026-10-20"`, "sources: []"]);
     expect(f1(mrun())).toContain("sources");
   });
-  it("rejects a source name outside consumerlab, nih-ods and brad-video", () => {
+  it("rejects a source name outside consumerlab, nih-ods, brad-video and pubmed", () => {
     master([`reviewed: "2026-10-20"`, `sources: ${SRC.replace("nih-ods", "NIH ODS")}`]);
-    expect(f1(mrun())).toContain("name must be one of consumerlab, nih-ods, brad-video");
+    expect(f1(mrun())).toContain("name must be one of consumerlab, nih-ods, brad-video, pubmed");
+  });
+  it("accepts a pubmed source, for a master with no NIH sheet and no post", () => {
+    master([`reviewed: "2026-10-20"`, `sources: ${SRC.replace("nih-ods", "pubmed")}`]);
+    expect(f1(mrun())).not.toContain("name must be one of");
   });
   it("rejects a multi-line sources value", () => {
     master([`reviewed: "2026-10-20"`, "sources:", `  - name: x`]);

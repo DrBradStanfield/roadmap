@@ -46,9 +46,9 @@ describe('US-50 AC7 static: a rewritten master needs sources', () => {
     expect(fails.map((f) => f.handle).sort()).toEqual(['m1', 'm2', 'm3', 'm4']);
     expect(new Set(rules(fails))).toEqual(new Set(['master-front']));
   });
-  it('fails a source name outside consumerlab, nih-ods and brad-video', () => {
+  it('fails a source name outside consumerlab, nih-ods, brad-video and pubmed', () => {
     const { fails } = staticMasterFindings([master('n', [`reviewed: "2026-10-20"`, `sources: ${SRC('2026-10-20', 'NIH ODS')}`])], '', CFG);
-    expect(fails.map((f) => f.detail)).toEqual(['item 0 name must be one of consumerlab, nih-ods, brad-video']);
+    expect(fails.map((f) => f.detail)).toEqual(['item 0 name must be one of consumerlab, nih-ods, brad-video, pubmed']);
   });
   it('fails a frontmatter key that appears twice, and a reference with a view heading but no reviewed', () => {
     const dup = master('d1', [`reviewed: "2026-10-20"`, `sources: ${SRC()}`, `reviewed: "2026-10-21"`]);
