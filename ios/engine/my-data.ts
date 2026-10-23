@@ -11,10 +11,11 @@ import { labRows, type Extraction } from './lab-review';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, supplementSchema } from '../../packages/health-core/src/validation';
+import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
 import { deviceWrites, type DeviceWrite } from '../../packages/health-core/src/device-export';
-import { applyFormEdit, customSupplement, formsOf, type FormEdit, type FormsView } from './my-data-forms';
+import { applyFormEdit, formsOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import {
   cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, fromCanonicalValue, getDisplayLabel, toCanonicalValue,
@@ -248,11 +249,15 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: true, file: upsertMedication(file, { medicationKey, drugName, doseValue, doseUnit }, now).file };
     }
     case 'supplement': {
-      const checked = supplementSchema.safeParse(edit);
+      // A key the record holds passes as it is: older browser records hold
+      // custom keys over the 100 characters a new key may have (US-06 AC1a).
+      const held = file.supplements.some((row) => row.supplementKey === edit.supplementKey);
+      const checked = (held ? supplementSchema.omit({ supplementKey: true }) : supplementSchema).safeParse(edit);
       if (!checked.success || !checked.data.status) {
         return { ok: false, reason: 'invalid-value', message: checked.success ? 'A supplement is active or stopped.' : checked.error.issues[0]?.message ?? 'Not a supplement.' };
       }
-      const { supplementKey, supplementName, doseValue = null, doseUnit = null, status, startedAt } = checked.data;
+      const { supplementKey } = edit;
+      const { supplementName, doseValue = null, doseUnit = null, status, startedAt } = checked.data;
       // A start is a real day or instant that has happened (rule 9's check).
       if (startedAt !== undefined && (Number.isNaN(Date.parse(startedAt)) || validDay(startedAt, { now }) === null)) {
         return { ok: false, reason: 'invalid-date', message: 'A supplement starts on a real day, today or before.' };
@@ -271,7 +276,9 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: true, file: importDeviceSamples(file, edit.samples, { now, source: 'apple_health' }).file };
     }
     case 'customSupplement':
-      return applyEdit(file, { kind: 'supplement', ...customSupplement(edit.name), status: 'active' }, now);
+      // A name already taken keeps its dose: adding it again changes nothing (US-06 AC1a).
+      if (customSupplementMatch(edit.name, file.supplements)?.status === 'active') return { ok: true, file };
+      return applyEdit(file, { kind: 'supplement', ...customSupplementAdd(edit.name, file.supplements), status: 'active' }, now);
     case 'medicationField':
     case 'screening':
       return applyFormEdit(file, edit, now, (next, save) => applyEdit(next, save, now));

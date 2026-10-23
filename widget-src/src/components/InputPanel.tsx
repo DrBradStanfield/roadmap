@@ -74,7 +74,8 @@ import {
   followupDateLabel,
   anyScreeningEligible,
   dexaEligible,
-  customSupplementKey,
+  customSupplementAdd,
+  customSupplementMatch,
   type FormOption,
   type MedicationInputs,
 } from '@roadmap/health-core';
@@ -1908,8 +1909,10 @@ export function InputPanel({
     // A typed name with no exact preset match can always be added as a custom
     // supplement — this must NOT be gated on filteredOptions having matches, or
     // a supplement matching no preset can never be added.
+    // A name already taken is hidden too, as a preset is: re-adding it would clear its dose (US-06 AC1a).
     const canAddCustomSupplement = !!trimmedSearch
-      && !allOptions.some(o => o.name.toLowerCase() === trimmedSearch.toLowerCase());
+      && !allOptions.some(o => o.name.toLowerCase() === trimmedSearch.toLowerCase())
+      && customSupplementMatch(trimmedSearch, supplements)?.status !== 'active';
 
     const addSupplement = (key: string, name: string, defaultDose?: number, defaultUnit?: string) => {
       onSupplementChange(key, name, defaultDose ?? null, defaultUnit ?? null);
@@ -2004,7 +2007,10 @@ export function InputPanel({
                   <button
                     type="button"
                     className="supplement-dropdown-item supplement-custom"
-                    onClick={() => addSupplement(customSupplementKey(trimmedSearch), trimmedSearch.slice(0, 100))}
+                    onClick={() => {
+                      const { supplementKey, supplementName } = customSupplementAdd(trimmedSearch, supplements);
+                      addSupplement(supplementKey, supplementName);
+                    }}
                   >
                     + Add "{trimmedSearch}"
                   </button>
