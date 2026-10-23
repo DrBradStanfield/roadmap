@@ -1,1 +1,338 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Severe tomato allergy is rare but can cause throat swelling and anaphylaxis. If you react this way to tomatoes, avo...\" | \"Severe allergic reactions to tomatoes are rare [70]. In one report, two adults had throat swelling after eating tomat...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-6): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Severe tomato allergy is rare but can cause throat swelling and anaphylaxis. If you react this way to tomatoes, avo...\" | \"Severe allergic reactions to tomatoes are rare [70]. In one report, two adults had throat swelling after eating tomat...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-6): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Severe tomato allergy is rare but can cause throat swelling and anaphylaxis. If you react this way to tomatoes, avo...\" | \"Severe allergic reactions to tomatoes are rare [70]. In one report, two adults had throat swelling after eating tomat...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-6): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Severe tomato allergy is rare but can cause throat swelling and anaphylaxis. If you react this way to tomatoes, avo...\" | \"Severe allergic reactions to tomatoes are rare [70]. In one report, two adults had throat swelling after eating tomat...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-6): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"30 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Synthetic lycopene**: Made by chemical synthesis and sold in formulated beadlets that contain antioxidants [65]. ...\" | \"Human trials do not yet show that lycopene supplements improve blood sugar or weight. In an 8-week trial, purified ly...\" | \"Trials have found lycopene supplements well tolerated at the doses tested. In men with prostate cancer, doses from 15...\"",
+  "reason": "AC2 PMID 18689558 gives \"0, 6.5, 15, or 30 mg lycopene/day\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"25 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **LactoLycopene**: Lycopene bound to whey protein. At 25 mg a day for 8 weeks, it raised blood lycopene as much as ...\" | \"**Processing substantially enhances bioavailability from food.** Heat-treated tomatoes released more lycopene than ra...\" | \"- **Supplements and tomato paste give similar blood levels.** LactoLycopene and tomato paste at 25 mg a day raised bl...\"",
+  "reason": "AC2 PMID 11880563 gives \"25 mg lycopene/d for 8 wk\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"26\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 26 men with localised prostate cancer, 15 mg of lycopene twice a day as Lyc-O-Mato for 3 weeks before surgery was ...\"",
+  "reason": "AC2 PMID 11489752 gives \"Twenty-six men\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7.55 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2011 meta-analysis of 12 trials found that lycopene at 25 mg a day or more lowered total cholesterol by 7.55 mg/dL ...\" | \"| Cholesterol lowering (total + LDL) | 25+ mg/day | 2+ weeks | Meta-analysis of 12 trials: total -7.55 mg/dL, LDL -10...\"",
+  "reason": "AC2 PMID 21163596 gives \"-7.55&#xb1;6.15mg/dl\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"10.35 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2011 meta-analysis of 12 trials found that lycopene at 25 mg a day or more lowered total cholesterol by 7.55 mg/dL ...\" | \"| Cholesterol lowering (total + LDL) | 25+ mg/day | 2+ weeks | Meta-analysis of 12 trials: total -7.55 mg/dL, LDL -10...\"",
+  "reason": "AC2 PMID 21163596 gives \"-10.35&#xb1;5.64mg/dl\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5.6 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2017 meta-analysis of 21 trials of tomato products or lycopene found that lycopene supplements lowered systolic blo...\"",
+  "reason": "AC2 PMID 21163596 gives \"-5.60&#xb1;5.26mm Hg\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"144 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a single-blind pilot trial of 31 adults with grade 1 hypertension, 250 mg of tomato extract (Lyc-O-Mato) during an...\"",
+  "reason": "AC2 PMID 16368299 gives \"from 144 (SE +/- 1.1) to 134 mm Hg\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"134 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a single-blind pilot trial of 31 adults with grade 1 hypertension, 250 mg of tomato extract (Lyc-O-Mato) during an...\"",
+  "reason": "AC2 PMID 16368299 gives \"to 134 mm Hg (SE +/- 2\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"87.4 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a single-blind pilot trial of 31 adults with grade 1 hypertension, 250 mg of tomato extract (Lyc-O-Mato) during an...\"",
+  "reason": "AC2 PMID 16368299 gives \"from 87.4 (SE +/- 1.2) to 83.4 mm Hg\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"83.4 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a single-blind pilot trial of 31 adults with grade 1 hypertension, 250 mg of tomato extract (Lyc-O-Mato) during an...\"",
+  "reason": "AC2 PMID 16368299 gives \"to 83.4 mm Hg (SE +/- 1.2\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥10\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a cohort of 39,876 middle-aged and older women, dietary lycopene was not strongly linked with cardiovascular disea...\"",
+  "reason": "AC2 PMID 12840203 gives \">or=10 servings/wk\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"29.4 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a pilot trial in 40 people with heart failure, drinking vegetable juice that provided 29.4 mg of lycopene a day fo...\"",
+  "reason": "AC2 PMID 24651682 gives \"29.4 mg of lycopene intake per day\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"65\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a double-blind crossover trial of 65 healthy volunteers, 12 weeks of a lycopene-rich tomato nutrient complex block...\"",
+  "reason": "AC2 PMID 27662341 gives \"Sixty-five healthy volunteers\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A randomised trial tested 2 mg of lycopene a day to prevent pre-eclampsia in first pregnancies; it found no benefit a...\" | \"In pregnancy, a randomised trial gave 159 healthy women in their first pregnancy 2 mg of lycopene or placebo daily, s...\"",
+  "reason": "AC2 PMID 19527386 gives \"2 mg oral lycopene daily\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "token \"16 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Skin UV protection | 16 mg/day (from tomato paste) | 12 weeks | Small randomised trial [57] |\"",
+  "reason": "AC2 PMID 20854436 gives \"55 g tomato paste (16 mg lycopene) ... daily\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"15 mg/day\": Synthetic lycopene: Made by chemical synthesis and sold in formulated beadlets that contain antioxidants [65]. Purifi...",
+  "reason": "AC2 PMID 18689558 gives \"0, 6.5, 15, or 30 mg lycopene/day\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"42\": A 2016 meta-analysis of 24 studies found tomato intake was linked with lower prostate cancer risk (RR 0.86, 95% CI 0....",
+  "reason": "AC2 PMID 28440323 gives \"Forty-two studies\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"40\": In a pilot trial in 40 people with heart failure, drinking vegetable juice that provided 29.4 mg of lycopene a day fo...",
+  "reason": "AC2 PMID 24651682 gives \"Forty participants\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"8 mg\": Oxidative damage harms sperm, and lycopene is a strong antioxidant. A 2014 review reported that human trials of 4 to ...",
+  "reason": "AC2 PMID 24675655 gives \"4-8 mg of lycopene daily\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "valerian-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"16\": Donath et al., 2000 (n=16, polysomnography): In a randomized, double-blind, placebo-controlled crossover trial, peopl...",
+  "reason": "AC2 PMID 10761819 (Donath 2000) gives \"Sixteen patients\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lysine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Side effects in human studies were mainly nausea, stomach ache and diarrhoea [36]. A 2019 review put a provisional ...\" | \"Few studies have lasted long. The 2019 review included dosing periods of 1 to 1,095 days [36]. A 2007 review suggeste...\"",
+  "reason": "AC2 PMID 30661148 gives \"6000&#xa0;mg/person/day\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lysine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"64 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Lysine (L-lysine) is one of the essential amino acids: the body cannot make it, so it must come from food [31]. Its m...\" | \"Recommended intakes for lysine are about 30 mg per kg of body weight a day for adults and 64 mg per kg a day for infa...\"",
+  "reason": "AC2 PMID 17513440 (Tome 2007) gives the figure as \"mg/(kg.d)\" (\"64 to 30\", \"40-180\", \"300-400\"); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lysine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"30 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Lysine (L-lysine) is one of the essential amino acids: the body cannot make it, so it must come from food [31]. Its m...\" | \"Recommended intakes for lysine are about 30 mg per kg of body weight a day for adults and 64 mg per kg a day for infa...\"",
+  "reason": "AC2 PMID 17513440 (Tome 2007) gives the figure as \"mg/(kg.d)\" (\"64 to 30\", \"40-180\", \"300-400\"); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lysine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"40 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Lysine (L-lysine) is one of the essential amino acids: the body cannot make it, so it must come from food [31]. Its m...\" | \"Recommended intakes for lysine are about 30 mg per kg of body weight a day for adults and 64 mg per kg a day for infa...\"",
+  "reason": "AC2 PMID 17513440 (Tome 2007) gives the figure as \"mg/(kg.d)\" (\"64 to 30\", \"40-180\", \"300-400\"); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lysine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"180 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Lysine (L-lysine) is one of the essential amino acids: the body cannot make it, so it must come from food [31]. Its m...\" | \"Recommended intakes for lysine are about 30 mg per kg of body weight a day for adults and 64 mg per kg a day for infa...\"",
+  "reason": "AC2 PMID 17513440 (Tome 2007) gives the figure as \"mg/(kg.d)\" (\"64 to 30\", \"40-180\", \"300-400\"); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lysine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"30\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In an open-label pilot study of 30 people with cold sores on or around the lips, an ointment combining L-lysine with ...\"",
+  "reason": "AC2 PMID 15989381 gives \"Thirty male and female participants\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lysine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"108\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a double-blind, placebo-controlled trial in 108 healthy Japanese adults, a week of L-lysine (2.64 g a day) plus L-...\"",
+  "reason": "AC2 PMID 17510493 gives \"one hundred eight healthy Japanese adults\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lysine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"300 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Few studies have lasted long. The 2019 review included dosing periods of 1 to 1,095 days [36]. A 2007 review suggeste...\"",
+  "reason": "AC2 PMID 17513440 (Tome 2007) gives the figure as \"mg/(kg.d)\" (\"64 to 30\", \"40-180\", \"300-400\"); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lysine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"400 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Few studies have lasted long. The 2019 review included dosing periods of 1 to 1,095 days [36]. A 2007 review suggeste...\"",
+  "reason": "AC2 PMID 17513440 (Tome 2007) gives the figure as \"mg/(kg.d)\" (\"64 to 30\", \"40-180\", \"300-400\"); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "lysine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1000 mg/day\": In a 12-month double-blind crossover study of 26 volunteers, the group taking L-lysine, 1,000 mg a day, reported sign...",
+  "reason": "AC2 PMID 6438572 gives \"daily oral supplements of 1,000 mg\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "d-mannose-benefits-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- D-mannose has not been shown to treat an active UTI [16]. If you have urinary symptoms with fever, back or side pai...\" | \"**Clinical position:** D-mannose should NOT be used as a substitute for antibiotic treatment of confirmed UTIs. Untre...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-6): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "d-mannose-benefits-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- D-mannose has not been shown to treat an active UTI [16]. If you have urinary symptoms with fever, back or side pai...\" | \"**Clinical position:** D-mannose should NOT be used as a substitute for antibiotic treatment of confirmed UTIs. Untre...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-6): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "d-mannose-benefits-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- D-mannose has not been shown to treat an active UTI [16]. If you have urinary symptoms with fever, back or side pai...\" | \"**Clinical position:** D-mannose should NOT be used as a substitute for antibiotic treatment of confirmed UTIs. Untre...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-6): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "d-mannose-benefits-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- D-mannose has not been shown to treat an active UTI [16]. If you have urinary symptoms with fever, back or side pai...\" | \"**Clinical position:** D-mannose should NOT be used as a substitute for antibiotic treatment of confirmed UTIs. Untre...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-6): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "d-mannose-benefits-dosing-and-side-effects",
+  "match": "token \"7\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Cooper et al. (Cochrane review) [16] | 2022 | 719 | 7 RCTs, not pooled | Various | 15 days to 6 months | Little to ...\" | \"## 7. Dietary Sources\"",
+  "reason": "AC2 PMID 36041061 (Cochrane) gives \"seven RCTs (719 participants)\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC4",
+  "handle": "lycopene-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Thyroid Medications",
+  "reason": "AC4 ### Thyroid Medications: section removed by the fix round (no source covers it); ratified in decisions.md (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC4",
+  "handle": "d-mannose-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Laboratory Tests",
+  "reason": "AC4 ### Laboratory Tests: section removed by the fix round (no source covers it); ratified in decisions.md (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "lysine-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Topical Lysine Products",
+  "reason": "AC7 '### Topical Lysine Products' covers third-party products, not a Brad product section; ratified in decisions.md (orchestrator 2026-10-23, masters-new-6).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ }
+]
