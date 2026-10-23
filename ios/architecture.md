@@ -1228,30 +1228,19 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 
 ## Where things stand (2026-10-23)
 
-- **Done on main:** shared document saving (39ff03a5); per-test units (d1199494); clinic letters
-  and originals on the phone (1b6d58a7); the parsed-record memo, stage 1 of moving engine work
-  off the main thread (b196f32a); Drive originals filed by the record folder's id (c8c2d7cd);
-  plan cards that open without covering the card being read, and diagrams that hold up in dark
-  mode (4fd330bc). The website's shared document save is not deployed: it waits for a real
-  upload checked in Safari.
-- **Stage 2 (engine on its own queue, edits in order, sheets awaiting saves):** on branch
-  `claude/engine-off-main-stage2` (worktree `../roadmap-stage2`), reviewed over several rounds;
-  the last re-check found nothing blocking bar two small agreed fixes (marker before the phone
-  write with clear-if on failure; held news applied in the handover's own turn). Those landed and
-  were approved; main is merged into the branch (its AC is now US-25 AC21; main's AC20 is the Lp(a)
-  unit), so the merge to main is a fast-forward. Main's Lp(a) unit and Dropbox folder reading run
-  inside the stage-2 model: the Lp(a) choice is a chained edit that holds entry, the folder doors
-  run on the engine's actor.
-- **In progress, uncommitted on main:** Lp(a)'s three-unit control on the phone (US-25 AC20 on
-  main; review fixes being applied: the unit choice in the entry sheet, the web's Lp(a) display
-  functions moved into health-core and shared); Dropbox folder picking (US-52 AC13c; review
-  fixes being applied: cancel on close, one listing per read, a memory bound); the MCP
-  de-duplication (plan docs/reviews/2026-10-23-mcp-dedup-plan.md v3, US-52 AC14; done and
-  reviewed clean, waiting to be committed with the other two). Main is behind origin (PR #218
-  changed ios/engine/cloud.ts): merge after these commits, then recompute the bridge id.
+- **Done on main (pushed, a1276698):** shared document saving (39ff03a5); per-test units
+  (d1199494); clinic letters and originals on the phone (1b6d58a7); the parsed-record memo, stage 1
+  (b196f32a); Drive originals filed by the record folder's id (c8c2d7cd); plan cards and dark-mode
+  diagrams (4fd330bc); Lp(a)'s three units, Dropbox folder picking and the MCP de-dup (84718d47);
+  stage 2, the engine on its own queue with every record change in RecordStore's chain (merged
+  bfaac736 after a clean adversary and Codex pass on the merge; its AC is US-25 AC21; bridge
+  bcb25cd75e262be0). Installed on Brad's iPhone the same day.
+- **Not deployed:** the website's shared document save waits for a real upload checked in Safari.
+- **Small follow-ups from the stage-2 merge review (low, none blocking):** raise `unitSwitches`
+  synchronously when the Lp(a) page menu is used (R1); move PDF decoding in `labFolderDocuments`
+  off the engine actor (R2); a test or comment on the correction sheet's `Editing.id` (R3).
 - **Not started:** the "new reports in your Dropbox, read them?" prompt (web and phone; first
-  test whether a picked Google Drive folder lets `drive.file` see inside it); installing the
-  latest build on Brad's iPhone.
+  test whether a picked Google Drive folder lets `drive.file` see inside it).
 
 ## Next, in order (2026-10-22)
 
