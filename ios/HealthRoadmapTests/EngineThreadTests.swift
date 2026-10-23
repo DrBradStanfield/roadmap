@@ -49,8 +49,8 @@ final class EngineThreadTests: XCTestCase {
         await store.confirmEngineTrial() // no trial: a no-op, never a wait
         await chat.record(ChatExchange(conversationId: "c1", isNew: true, userText: "What is ApoB?", assistantText: "A count.", isFallback: false), askedAt: ChatHistoryStore.erasures)
         XCTAssertEqual(chat.conversations.map(\.id), ["c1"])
-        let messages = await chat.messages("c1")
-        XCTAssertEqual(messages.count, 2)
+        let messages = await chat.open("c1").value
+        XCTAssertEqual(messages?.count, 2)
         await chat.delete("c1").value
         XCTAssertEqual(chat.conversations, [])
 

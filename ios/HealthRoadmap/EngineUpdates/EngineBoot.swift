@@ -130,11 +130,12 @@ final class EngineTrial {
         self.bundled = bundled
     }
 
-    /// Whether the engine plans `recordJSON`: a plan, or health-core's own PlanError
-    /// (no height or sex), which is the engine working. Any other throw is a failure.
-    static func planned(_ engine: isolated HealthEngine, recordJSON: String, deviceId: String) -> Bool {
+    /// Whether the engine draws `recordJSON`'s Plan tab (`planView`, what PlanView shows): a
+    /// plan, or health-core's own PlanError (no height or sex), which is the engine working.
+    /// Any other throw is a failure.
+    static func planned(_ engine: isolated HealthEngine, recordJSON: String, deviceId: String, units: String) -> Bool {
         do {
-            _ = try engine.plan(recordJSON: recordJSON, now: .now, deviceId: deviceId)
+            _ = try engine.planView(record: recordJSON, units: units, now: .now, deviceId: deviceId)
             return true
         } catch HealthEngine.EngineError.callFailed(let why) where why.hasPrefix("PlanError: ") {
             return true

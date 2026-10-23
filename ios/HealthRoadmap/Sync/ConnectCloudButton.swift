@@ -26,11 +26,7 @@ struct ConnectCloudButton<Label: View>: View {
             }
         }
         .disabled(signingIn || !provider.isConfigured || sync.erasing)
-        .alert(provider.label, isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(message ?? "")
-        }
+        .messageAlert(provider.label, $message)
     }
 
     private func signIn() async {

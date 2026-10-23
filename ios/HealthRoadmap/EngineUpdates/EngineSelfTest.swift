@@ -35,7 +35,7 @@ enum EngineSelfTest {
         try check(weight?.value == "80.0" && weight?.day == "2026-10-20", "my data")
         let plan = try engine.plan(recordJSON: record, now: now, deviceId: device)
         try check((try? JSONSerialization.jsonObject(with: Data(plan.utf8))) is [String: Any], "plan")
-        _ = try engine.sections(planJSON: plan)
+        _ = try engine.planView(record: record, units: "{}", now: now, deviceId: device)
 
         try merges(engine, record)
     }

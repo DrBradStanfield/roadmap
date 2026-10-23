@@ -1,6 +1,7 @@
 // The engine the iOS app runs in JavaScriptCore (ios/architecture.md D2).
 // The same health-core the web runs; this file only gives Swift a
 // string-in, string-out door, because JSON is the one shape both sides share.
+// Its door list is bridge-contract.json; bridge.test.ts holds the two together.
 import { mergeFiles } from '../../packages/health-core/src/merge';
 import { computePlan, type Plan } from '../../packages/health-core/src/plan';
 import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-file';
@@ -8,7 +9,8 @@ import { planSections } from '../../packages/health-core/src/plan-sections';
 import { statTiles } from '../../packages/health-core/src/stat-tiles';
 import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
 import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
-import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
+import { deviceWrites } from '../../packages/health-core/src/device-export';
+import { applyEdit, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
@@ -36,8 +38,11 @@ export function mergeJson(localJson: string, remoteJson: string, nowIso: string,
   return JSON.stringify(mergeFiles(readRecord(localJson, nowIso, deviceId), readRecord(remoteJson, nowIso, deviceId), ctx));
 }
 
-// Cloud sync (cloud.ts): every call but cloudEdit is async and answers a Promise.
-export { cloudClose, cloudEdit, cloudErase, cloudLabImport, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible, documentSave, labFile, labFolderFilesJson, labFolderJson } from './cloud';
+// Cloud sync (cloud.ts): cloudOpen, cloudRefresh, cloudFlush, cloudClose, cloudErase and
+// documentSave answer a Promise; the rest answer at once.
+export { cloudClose, cloudEdit, cloudErase, cloudLabImport, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible, documentSave } from './cloud';
+// Lab files from the Dropbox app folder (lab-files.ts), each async.
+export { labFile, labFolderFilesJson, labFolderJson } from './lab-files';
 // "Delete all my data" on the phone's own file (erase.ts); a cloud's is cloudErase.
 export { erasePhoneJson } from './erase';
 /** The `sourceFileName` of each file read, as JSON (US-52 AC13d): the document
@@ -62,11 +67,20 @@ export function sectionsJson(planJsonText: string): string {
   return JSON.stringify(planSections(plan.results.suggestions));
 }
 
-/** The summary tiles above the plan, as JSON: the web's Quick Stats (health-core
- *  stat-tiles.ts, US-25 AC22), in the phone's per-test units. */
-export function statTilesJson(planJsonText: string, unitsJson: string): string {
-  const plan = JSON.parse(planJsonText) as Plan;
-  return JSON.stringify(statTiles(plan.results, { unitSystem: plan.unitSystem, unitOverrides: readUnitChoices(unitsJson), sex: plan.inputs.sex }));
+/** The Plan tab's view of a record, as JSON, from one computePlan: `{sections, tiles}`,
+ *  the layout sectionsJson gives and the summary tiles above it, the web's Quick Stats
+ *  (health-core stat-tiles.ts, US-25 AC22), in the phone's per-test units. A tile that
+ *  cannot be drawn never blanks the plan below it (adversary R7): no tiles instead. */
+export function planViewJson(recordJson: string, nowIso: string, deviceId: string, unitsJson: string): string {
+  const unitOverrides = readUnitChoices(unitsJson);
+  const plan = computePlan(readRecord(recordJson, nowIso, deviceId), new Date(nowIso), unitOverrides);
+  let tiles: ReturnType<typeof statTiles> = [];
+  try {
+    tiles = statTiles(plan.results, { unitSystem: plan.unitSystem, unitOverrides, sex: plan.inputs.sex });
+  } catch {
+    // tiles stay empty
+  }
+  return JSON.stringify({ sections: planSections(plan.results.suggestions), tiles });
 }
 
 // The My data tab (my-data.ts). A record from disk is read as the plan's is,
@@ -109,9 +123,10 @@ export function convertJson(metric: string, value: number, from: string, to: str
   });
 }
 
-/** The values to write to Apple Health, as JSON (US-25 AC14, device-export.ts). */
+/** The values to write to Apple Health, as JSON (US-25 AC14, device-export.ts): the values
+ *  a person entered, never the app's own imports. */
 export function healthWritesJson(recordJson: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(healthWrites(readRecord(recordJson, nowIso, deviceId)));
+  return JSON.stringify(deviceWrites(readRecord(recordJson, nowIso, deviceId), 'apple_health'));
 }
 
 /** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */

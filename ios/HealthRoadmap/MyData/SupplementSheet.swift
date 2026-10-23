@@ -88,7 +88,7 @@ struct SupplementSheet: View {
 
     /// "5" for a whole dose, "2.5" otherwise. `Int(_:)` traps past its range, and the
     /// schema puts no upper bound on a dose, so only a modest whole number goes through it.
-    static func doseText(_ dose: Double) -> String {
+    nonisolated static func doseText(_ dose: Double) -> String {
         dose.rounded() == dose && abs(dose) < 1e15 ? String(Int(dose)) : String(dose)
     }
 }

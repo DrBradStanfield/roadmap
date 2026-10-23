@@ -3,6 +3,7 @@ import SwiftUI
 /// The plan screen (US-25 AC2, AC6): the user's own record, planned on the phone
 /// by the shared engine and laid out by the web's own `planSections`. It plans
 /// while on screen: on each return to the tab, and on every record change then.
+/// The web twin is widget-src/src/components/ResultsPanel.tsx.
 struct PlanView: View {
     private enum LoadState {
         case loading
@@ -22,7 +23,7 @@ struct PlanView: View {
 
     var body: some View {
         // Read once per render, so the task runs once with the value its id names.
-        let planKey = visible ? PlanKey(record: store.recordJSON, units: store.unitChoices.json) : nil
+        let planKey = visible ? PlanKey(revision: store.revision, units: store.unitChoices.json) : nil
         Group {
             switch state {
             case .loading:
@@ -60,15 +61,16 @@ struct PlanView: View {
         }
     }
 
+    /// What a plan is computed from: the record (its revision, which moves whenever the
+    /// record or the units change), and the per-test units its targets read in (AC17e).
+    private struct PlanKey: Equatable { let revision: Int; let units: String }
+
     /// The screen's state, and whether the engine planned the record: a plan, or
     /// health-core's own PlanError (no height or sex). Any other throw is not.
-    /// What a plan is computed from: the record, and the per-test units its targets read in (AC17e).
-    private struct PlanKey: Equatable { let record: String; let units: String }
-
     /// Off the main thread, on the engine's queue.
     private func load(_ key: PlanKey) async -> (LoadState, planned: Bool) {
         do {
-            let plan = try await engine.planSections(record: key.record, units: key.units, now: .now, deviceId: store.deviceId)
+            let plan = try await engine.planSections(record: store.recordJSON, units: key.units, now: .now, deviceId: store.deviceId)
             return (.loaded(tiles: plan.tiles, sections: plan.sections, planMs: plan.ms), true)
         } catch HealthEngine.EngineError.callFailed(let why) where why.hasPrefix("PlanError: ") {
             // health-core's one PlanError: no usable height or sex (plan.ts). Its own

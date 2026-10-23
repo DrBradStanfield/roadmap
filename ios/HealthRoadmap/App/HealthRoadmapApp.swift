@@ -13,7 +13,7 @@ struct HealthRoadmapApp: App {
             case nil:
                 LaunchView()
             case .success(let parts)?:
-                RootView(engine: parts.engine, store: parts.store, sync: parts.sync)
+                RootView(engine: parts.engine, store: parts.store, sync: parts.sync, chat: parts.chat)
                     .environment(parts.reminders).environment(parts.reminderTaps).environment(parts.health).environment(parts.eraser)
                     .task { await parts.sync.start() }
                     // Initial: the app may have come on screen while its parts were built.
@@ -98,6 +98,7 @@ private final class BackgroundTask {
 
     init() {
         id = UIApplication.shared.beginBackgroundTask(withName: "Save the record") { [weak self] in
+            // UIKit calls the expiration handler on the main thread.
             MainActor.assumeIsolated { self?.end() }
         }
     }
@@ -120,6 +121,8 @@ struct AppParts {
     /// Apple Health in and out (ios/architecture.md D6). Started at launch, so its
     /// observers are in place when iOS wakes the app for new Health data.
     let health: AppleHealthSync
+    /// The chat history file: Chat's list and the eraser's tombstones, one store.
+    let chat: ChatHistoryStore
     let eraser: DataEraser
     /// Over-the-air engine updates (US-25 AC18); nil if their folder cannot be made.
     let updater: EngineUpdater?
@@ -150,7 +153,7 @@ struct AppParts {
         let sync = self.sync
         health = AppleHealthSync(store: store, engine: engine, client: client) { await sync.syncNow() }
         health.start()
-        let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
+        chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
         eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: health)
     }
 }

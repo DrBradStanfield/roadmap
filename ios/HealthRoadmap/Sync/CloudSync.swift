@@ -43,10 +43,9 @@ final class CloudSync: CloudPort {
     /// open. Everything that talks to the session checks this, never the store,
     /// and news from any other session is dropped (review F2, F4).
     private var shownSession: Int?
-    private var sessionOpen: Bool { shownSession != nil }
     /// True once the cloud record is open and shown. A connect can succeed and
     /// the open still fail (offline, a provider error): onboarding waits for this (US-54 AC2).
-    var recordOpen: Bool { sessionOpen }
+    var recordOpen: Bool { shownSession != nil }
     /// Moves on every Disconnect. An open that finishes under an older one is
     /// closed, not shown: Disconnect wins (review R5).
     private var generation = 0
@@ -105,7 +104,7 @@ final class CloudSync: CloudPort {
     /// The app came to the foreground: re-read, or try again to open.
     func foreground() async {
         guard provider != nil else { return }
-        if sessionOpen {
+        if recordOpen {
             try? await engine.cloudVisible()
         } else {
             await open(firstConnect: false)
@@ -114,7 +113,7 @@ final class CloudSync: CloudPort {
 
     /// The app is leaving the screen: stop re-reading, and save what waits.
     func background() async {
-        guard sessionOpen else { return }
+        guard recordOpen else { return }
         try? await engine.cloudHidden()
         _ = try? await engine.cloudFlush()
     }
@@ -198,7 +197,7 @@ final class CloudSync: CloudPort {
         defer { if openingFor == mine { openingFor = nil } }
         // The phone's file holds every edit (write-ahead), so the screen falls back
         // to it while the session is closed, and edits made meanwhile wait there.
-        if sessionOpen {
+        if recordOpen {
             shownSession = nil
             store.showPhone()
         }
@@ -260,7 +259,7 @@ final class CloudSync: CloudPort {
     }
 
     private func edited() {
-        if sessionOpen {
+        if recordOpen {
             status = .saving
         } else if provider != nil {
             // Connected, but no session is open: this edit waits on the phone, marked

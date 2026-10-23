@@ -59,11 +59,7 @@ struct HealthWrite: Codable, Equatable, Sendable {
     /// zone, the moment least likely to fall on another day in Health's own views, or
     /// now if noon today has not come yet (a sample in the future may be refused).
     func date(timeZone: TimeZone = .current, now: Date = .now) -> Date? {
-        let parts = day.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3 else { return nil }
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timeZone
-        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12)).map { min($0, now) }
+        DayText.noon(day, timeZone: timeZone).map { min($0, now) }
     }
 }
 

@@ -90,34 +90,39 @@ actor HealthEngine {
         queue.async { run(self) }
     }
 
-    /// The plan's summary tiles and on-screen sections for a record, and how long the engine
-    /// took (D2's budget). A plan no longer wanted (the record moved on) is not started.
+    /// The plan's summary tiles and on-screen sections for a record, from one plan, and how
+    /// long the engine took (D2's budget). A plan no longer wanted (the record moved on) is
+    /// not started. Tiles the engine cannot draw come back empty, never blanking the plan.
     func planSections(record: String, units: String, now: Date, deviceId: String) throws -> (tiles: [StatTile], sections: [PlanSection], ms: Double) {
         try Task.checkCancellation()
         let clock = ContinuousClock()
         let start = clock.now
-        let planJSON = try plan(recordJSON: record, now: now, deviceId: deviceId, units: units)
-        // A tile the engine cannot draw never blanks the plan below it (adversary R7).
-        let tiles = (try? statTiles(planJSON: planJSON, units: units)) ?? []
-        let sections = try sections(planJSON: planJSON)
-        let elapsed = clock.now - start
-        return (tiles, sections, Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15)
+        let view = try planView(record: record, units: units, now: now, deviceId: deviceId)
+        return (view.tiles, view.sections, (clock.now - start) / .milliseconds(1))
     }
 
-    /// The summary tiles above the plan, the web's Quick Stats (US-25 AC22).
-    func statTiles(planJSON: String, units: String) throws -> [StatTile] {
-        try JSONDecoder().decode([StatTile].self, from: Data(call("statTilesJson", [planJSON, units]).utf8))
+    /// The Plan tab's sections and summary tiles (the web's Quick Stats, US-25 AC22).
+    func planView(record: String, units: String, now: Date, deviceId: String) throws -> (sections: [PlanSection], tiles: [StatTile]) {
+        struct View: Decodable {
+            let sections: [PlanSection]
+            let tiles: [StatTile]
+            enum CodingKeys: CodingKey { case sections, tiles }
+            /// Sections decode strictly; a tile Swift cannot read leaves no tiles, never a blank plan.
+            init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: CodingKeys.self)
+                sections = try c.decode([PlanSection].self, forKey: .sections)
+                tiles = (try? c.decode([StatTile].self, forKey: .tiles)) ?? []
+            }
+        }
+        let json = try call("planViewJson", [record, now.formatted(Self.iso), deviceId, units])
+        let view = try JSONDecoder().decode(View.self, from: Data(json.utf8))
+        return (view.sections, view.tiles)
     }
 
     /// The plan for a record, as the engine's JSON.
     /// `units`: the phone's per-test units as JSON (UnitChoices, US-25 AC17e); "{}" for none.
     func plan(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> String {
         try call("planJson", [recordJSON, now.formatted(Self.iso), deviceId, units])
-    }
-
-    /// The plan's on-screen layout, from the same function the web uses.
-    func sections(planJSON: String) throws -> [PlanSection] {
-        try JSONDecoder().decode([PlanSection].self, from: Data(sectionsJSON(planJSON: planJSON).utf8))
     }
 
     /// The layout as the engine's JSON, for the parity test to compare byte for byte.
@@ -178,6 +183,22 @@ actor HealthEngine {
         return text
     }
 
+    /// Calls an async door whose Promise settles in the same call, then reads its answer
+    /// (`settledJson`) without awaiting. JavaScriptCore runs pending promise work before a
+    /// call returns, so the answer is there; "pending" would mean it was not.
+    func settled<T: Decodable>(_ type: T.Type, _ name: String, _ arguments: [Any]) throws -> T {
+        _ = try call(name, arguments)
+        let answer = try JSONDecoder().decode(Settled<T>.self, from: Data(call("settledJson", []).utf8))
+        guard answer.ok, let value = answer.value else { throw EngineError.callFailed(answer.message ?? "no answer") }
+        return value
+    }
+
+    private struct Settled<T: Decodable>: Decodable {
+        let ok: Bool
+        let value: T?
+        let message: String?
+    }
+
     /// Calls an engine function that returns a Promise of text, and waits for it.
     /// A rejection becomes `EngineError.callFailed` with the error's message.
     func callAsync(_ name: String, _ arguments: [Any]) async throws -> String {
@@ -195,7 +216,8 @@ actor HealthEngine {
         EngineNatives.arrayBuffer(data, in: context)
     }
 
-    /// Runs a script in the engine's context; tests use it to reach the shim directly.
+    /// Runs a script in the engine's context: the self-test reads the bundle's globals
+    /// with it, and tests reach the shim directly.
     func evaluate(_ script: String) throws -> JSValue {
         checkJSThread()
         let result = context.evaluateScript(script)

@@ -79,7 +79,7 @@ struct OnboardingView: View {
     @ViewBuilder private func page(_ step: OnboardingStep) -> some View {
         switch step {
         case .health:
-            Page(symbol: "heart.fill", tint: .pink, title: "Use your Apple Health data",
+            OnboardingPage(symbol: "heart.fill", tint: .pink, title: "Use your Apple Health data",
                  detail: "So you type less. What it reads goes only into your record, on this iPhone or in your own cloud. Values you add here are saved back to Apple Health.",
                  progress: nil, spread: true) {
                 HealthFillScene()
@@ -91,7 +91,7 @@ struct OnboardingView: View {
             }
         case .sex:
             // A tap is the answer: it saves and moves on, so the step has no Continue (Brad 2026-10-23).
-            Page(symbol: "person.fill", tint: .accentColor, title: "What is your sex?",
+            OnboardingPage(symbol: "person.fill", tint: .accentColor, title: "What is your sex?",
                  detail: "Your plan's targets and screenings depend on it.", progress: step, fromHealth: fromHealth.contains(.sex), message: message) {
                 HStack(spacing: 12) {
                     choice("Female", value: "female")
@@ -99,7 +99,7 @@ struct OnboardingView: View {
                 }
             }
         case .birth:
-            Page(symbol: "calendar", tint: .orange, title: "When were you born?",
+            OnboardingPage(symbol: "calendar", tint: .orange, title: "When were you born?",
                  detail: "Your age decides which checks you're due for, like bowel and breast cancer screening and bone density (DEXA) scans. We never ask for the day.",
                  progress: step, fromHealth: fromHealth.contains(.birth), message: message) {
                 HStack(spacing: 0) {
@@ -116,7 +116,7 @@ struct OnboardingView: View {
                 primary("Continue", id: "onboarding.continue") { save(.birth) }.disabled(!birthAnswered)
             }
         case .height:
-            Page(symbol: "ruler", tint: .teal, title: "How tall are you?",
+            OnboardingPage(symbol: "ruler", tint: .teal, title: "How tall are you?",
                  detail: "Height sets your healthy weight range.", progress: step, fromHealth: fromHealth.contains(.height), message: message) {
                 withUnits(.height) {
                     if answers.height.us {
@@ -132,7 +132,7 @@ struct OnboardingView: View {
             }
         case .weight:
             // Required (Brad 2026-10-23): weight shapes much of the plan, so there is no Skip.
-            Page(symbol: "scalemass.fill", tint: .indigo, title: "What do you weigh?",
+            OnboardingPage(symbol: "scalemass.fill", tint: .indigo, title: "What do you weigh?",
                  detail: "Weight shapes much of your plan.", progress: step, fromHealth: fromHealth.contains(.weight), message: message) {
                 withUnits(.weight) {
                     numberField(.weight)
@@ -477,80 +477,4 @@ struct OnboardingView: View {
     }
 
     private enum Field: String { case height, feet, inches, weight }
-
-    // MARK: Layout
-
-    /// One onboarding screen: symbol, title, one line on why, the control, then the buttons.
-    fileprivate struct Page<Content: View, Actions: View>: View {
-        let symbol: String
-        let tint: Color
-        let title: String
-        let detail: String
-        let progress: OnboardingStep?
-        var fromHealth = false
-        var message: String?
-        /// Shares the screen's height between the heading and the content, so a short page
-        /// leaves no gap above its buttons (Brad 2026-10-23).
-        var spread = false
-        @ViewBuilder let content: () -> Content
-        @ViewBuilder let actions: () -> Actions
-
-        var body: some View {
-            VStack(spacing: 0) {
-                if let progress, let index = OnboardingStep.questions.firstIndex(of: progress) {
-                    ProgressView(value: Double(index + 1), total: Double(OnboardingStep.questions.count))
-                        .accessibilityLabel("Question \(index + 1) of \(OnboardingStep.questions.count)")
-                        .padding(.bottom, 12)
-                }
-                GeometryReader { screen in
-                ScrollView {
-                    VStack(spacing: 14) {
-                        if spread { Spacer(minLength: 0) }
-                        Image(systemName: symbol)
-                            .font(.system(size: 44))
-                            .foregroundStyle(tint)
-                            .padding(.top, 24)
-                            .accessibilityHidden(true)
-                        Text(title)
-                            .font(.title.bold())
-                            .multilineTextAlignment(.center)
-                            .accessibilityAddTraits(.isHeader)
-                        Text(detail)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                        if fromHealth {
-                            Label("From Apple Health", systemImage: "heart.fill")
-                                .font(.footnote)
-                                .foregroundStyle(.pink)
-                        }
-                        if spread { Spacer(minLength: 12).frame(maxHeight: 48) }
-                        content().padding(.top, spread ? 0 : 12)
-                        if spread { Spacer(minLength: 0) }
-                    }
-                    .frame(maxWidth: .infinity, minHeight: spread ? screen.size.height : nil)
-                }
-                .scrollBounceBehavior(.basedOnSize)
-                }
-                VStack(spacing: 6) {
-                    // The engine's own words for a refused answer (AC5).
-                    if let message {
-                        Text(message).font(.footnote).foregroundStyle(.red).multilineTextAlignment(.center)
-                    }
-                    actions()
-                }
-                .padding(.top, 12)
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 12)
-        }
-    }
-}
-
-extension OnboardingView.Page where Actions == EmptyView {
-    /// A page whose control is its answer (sex): no buttons.
-    init(symbol: String, tint: Color, title: String, detail: String, progress: OnboardingStep?, fromHealth: Bool, message: String?,
-         @ViewBuilder content: @escaping () -> Content) {
-        self.init(symbol: symbol, tint: tint, title: title, detail: detail, progress: progress, fromHealth: fromHealth, message: message,
-                  content: content, actions: { EmptyView() })
-    }
 }

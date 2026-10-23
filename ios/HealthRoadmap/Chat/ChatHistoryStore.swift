@@ -48,19 +48,14 @@ final class ChatHistoryStore {
     /// then (an earlier delete's refresh) never shows them again (re-check N3).
     @ObservationIgnored private var deleting: Set<String> = []
 
-    func messages(_ conversationId: String) async -> [ChatMessage] {
-        let (file, deviceId) = (file, deviceId)
-        return await engine.perform { (try? $0.chatMessages(historyJSON: Self.text(file), conversationId: conversationId, now: .now, deviceId: deviceId)) ?? [] }
-    }
-
     /// A saved conversation's messages for the screen, read by the engine. Nil when the
     /// screen moved on while they were read (New chat, `leave`, or another `open`): a late
     /// load never replaces what the screen shows then (Codex). Its turn is taken in the tap.
     func open(_ conversationId: String) -> Task<[ChatMessage]?, Never> {
         opens += 1
-        let mine = opens
+        let (file, deviceId, mine) = (file, deviceId, opens)
         return Task {
-            let read = await messages(conversationId)
+            let read = await engine.perform { (try? $0.chatMessages(historyJSON: Self.text(file), conversationId: conversationId, now: .now, deviceId: deviceId)) ?? [] }
             return mine == opens ? read : nil
         }
     }

@@ -188,7 +188,7 @@ final class RecordStoreTests: XCTestCase {
         await XCTAssertSaved(await store.apply(.add(metric: "systolic_bp", value: 150, day: "2026-10-20")))
         await XCTAssertSaved(await store.apply(.add(metric: "diastolic_bp", value: 95, day: "2026-10-20")))
         let record = store.recordJSON
-        let sections = try engine.blocking { try $0.sections(planJSON: $0.plan(recordJSON: record, now: .now, deviceId: "test")) }
+        let sections = try engine.blocking { try $0.planView(record: record, units: "{}", now: .now, deviceId: "test") }.sections
         let ids = sections.flatMap(\.cards).flatMap(\.suggestions).map(\.id)
         XCTAssertTrue(ids.contains { $0.hasPrefix("bp-") }, "a 150/95 reading must reach the plan: \(ids)")
     }

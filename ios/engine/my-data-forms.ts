@@ -20,6 +20,7 @@ import { latestActivePerMetric } from '../../packages/health-core/src/measuremen
 import type { MetricType } from '../../packages/health-core/src/units';
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
+import type { EditOutcome } from './my-data';
 import { cellLabel, cellText } from '../../packages/health-core/src/cell-unit';
 
 /** A supplement as the tab lists it. */
@@ -86,7 +87,7 @@ export type FormEdit =
   | { kind: 'customSupplement'; name: string };
 
 /** What the medication and screening questions read: the plan's age, BMI, trigger and lipid marker, as the web's PlanBasis. */
-function basisOf(file: RoadmapFile, now: string, choices: UnitChoices = {}) {
+function basisOf(file: RoadmapFile, now: string, choices: UnitChoices) {
   const derived = derivePlanInputs(file);
   const raw = derived.inputs;
   const hasLipidInput = raw.apoB !== undefined || raw.ldlC !== undefined || raw.totalCholesterol !== undefined || raw.hdlC !== undefined;
@@ -137,20 +138,32 @@ function listable(file: RoadmapFile, status: 'active' | 'stopped') {
  * rest of My data still opens and saves (adversary R2).
  */
 export function formsOf(file: RoadmapFile, now: string, choices: UnitChoices = {}): FormsView {
+  return formsAndBasis(file, now, choices).forms;
+}
+
+/** The forms, and the basis they were built on (null when they could not be): an
+ *  answer is checked against the forms and written from the same basis, so the plan
+ *  behind them is computed once per call. */
+function formsAndBasis(file: RoadmapFile, now: string, choices: UnitChoices): { forms: FormsView; basis: Basis | null } {
   try {
-    return buildForms(file, now, choices);
+    const basis = basisOf(file, now, choices);
+    return { forms: buildForms(file, now, basis), basis };
   } catch {
     return {
-      medications: [], screenings: [],
-      screeningNote: 'Your medication, screening and supplement answers could not be read from this record.',
-      supplements: { intro: SUPPLEMENT_TEXT.intro, active: [], stopped: [], choices: [], units: [...SUPPLEMENT_DOSE_UNITS] },
-      months: { past: [], future: [] },
+      forms: {
+        medications: [], screenings: [],
+        screeningNote: 'Your medication, screening and supplement answers could not be read from this record.',
+        supplements: { intro: SUPPLEMENT_TEXT.intro, active: [], stopped: [], choices: [], units: [...SUPPLEMENT_DOSE_UNITS] },
+        months: { past: [], future: [] },
+      },
+      basis: null,
     };
   }
 }
 
-function buildForms(file: RoadmapFile, now: string, choices: UnitChoices): FormsView {
-  const basis = basisOf(file, now, choices);
+type Basis = ReturnType<typeof basisOf>;
+
+function buildForms(file: RoadmapFile, now: string, basis: Basis): FormsView {
   const screenings = screeningForm(basis.age, basis.sex, basis.derived.screenings);
   const taking = new Set(file.supplements.filter((s) => s.status === 'active').map((s) => s.supplementKey));
   const featuredFirst = [...SUPPLEMENT_OPTIONS].sort((a, b) => Number(b.category === 'featured') - Number(a.category === 'featured'));
@@ -195,7 +208,7 @@ function offered(field: FormField, value: string, months: FormsView['months']): 
   }
 }
 
-type Outcome = { ok: true; file: RoadmapFile } | { ok: false; reason: string; message: string };
+type Outcome = { ok: true; file: RoadmapFile } | Extract<EditOutcome, { ok: false }>;
 type Save = (file: RoadmapFile, edit: { kind: 'medication'; medicationKey: string; drugName: string; doseValue: number | null; doseUnit: string | null }) => Outcome;
 
 /**
@@ -204,18 +217,19 @@ type Save = (file: RoadmapFile, edit: { kind: 'medication'; medicationKey: strin
  * could not. The answer's dependent writes follow, as on the web.
  */
 export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind: 'customSupplement' }>, now: string, saveMedication: Save): Outcome {
-  const forms = formsOf(file, now);
+  const { forms, basis } = formsAndBasis(file, now, {});
   if (edit.kind === 'medicationField') {
     const field = fieldsByKey(forms.medications).get(edit.field);
-    if (!field || !offered(field, edit.value, forms.months)) {
+    // No basis, no forms: every answer is refused here.
+    if (!basis || !field || !offered(field, edit.value, forms.months)) {
       return { ok: false, reason: 'invalid-value', message: 'That is not an answer this question offers.' };
     }
     // The web resets an escalation answer only while that drug's cascade runs (US-06 AC7).
-    const { medication } = basisOf(file, now);
+    const { medication } = basis;
     const weightField = ['glp1', 'glp1_dose', 'glp1_escalation', 'sglt2i', 'sglt2i_dose', 'metformin'].includes(edit.field);
     const cascadeMode = weightField ? medication.weightMedTrigger.on : !!medication.lipidMarker?.elevated;
     let next = file;
-    for (const save of medicationWrites(derivePlanInputs(file).medications, cascadeMode, edit.field, edit.value)) {
+    for (const save of medicationWrites(basis.derived.medications, cascadeMode, edit.field, edit.value)) {
       const outcome = saveMedication(next, { kind: 'medication', ...save });
       if (!outcome.ok) return outcome;
       next = outcome.file;
@@ -230,10 +244,10 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
     return { ok: false, reason: 'invalid-value', message: 'That is not a screening answer.' };
   }
   const field = fieldsByKey(forms.screenings).get(edit.key);
-  if (!field || !offered(field, edit.value, forms.months)) {
+  if (!basis || !field || !offered(field, edit.value, forms.months)) {
     return { ok: false, reason: 'invalid-value', message: 'That is not an answer this question offers.' };
   }
-  const writes = screeningWrites(derivePlanInputs(file).screenings, edit.key, edit.value);
+  const writes = screeningWrites(basis.derived.screenings, edit.key, edit.value);
   return { ok: true, file: writes.reduce((next, [key, value]) => setScreening(next, key, value, now), file) };
 }
 

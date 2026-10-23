@@ -4,19 +4,22 @@ import XCTest
 /// US-25 AC2: the app lays the plan out exactly as the web does, because both
 /// call health-core's `planSections`, and every card keeps its evidence.
 final class PlanLayoutTests: XCTestCase {
-    private func samplePlan() throws -> (engine: HealthEngine, planJSON: String) {
+    // Pinned, like EngineParityTests: due dates and ages depend on the day.
+    private let now = Date(timeIntervalSince1970: 1_792_585_800) // 2026-10-21T12:30:00Z
+
+    private func sample() throws -> String {
         let fixtures = Bundle(for: Self.self)
-        let record = try String(contentsOf: XCTUnwrap(fixtures.url(forResource: "sample.record", withExtension: "json")), encoding: .utf8)
-        let engine = try HealthEngine(bundle: .main)
-        // Pinned, like EngineParityTests: due dates and ages depend on the day.
-        let now = try Date("2026-10-21T12:30:00.000Z", strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true))
-        return (engine, try engine.blocking { [now] in try $0.plan(recordJSON: record, now: now, deviceId: "layout-test") })
+        return try String(contentsOf: XCTUnwrap(fixtures.url(forResource: "sample.record", withExtension: "json")), encoding: .utf8)
+    }
+
+    /// The Plan tab's sections and tiles, through the door the app uses.
+    private func view(units: String = "{}") throws -> (sections: [PlanSection], tiles: [StatTile]) {
+        let record = try sample()
+        return try HealthEngine(bundle: .main).blocking { [now] in try $0.planView(record: record, units: units, now: now, deviceId: "layout-test") }
     }
 
     func testSampleRecordMatchesTheWebLayout() throws {
-        let (engine, planJSON) = try samplePlan()
-
-        let sections = try engine.blocking { try $0.sections(planJSON: planJSON) }
+        let sections = try view().sections
         let layout = sections.map { section in (section.title, section.cards.map { $0.suggestions.map(\.id) }) }
 
         XCTAssertEqual(layout.map(\.0), ["Next Steps", "Foundation", "Skin Health", "Supplements"])
@@ -36,11 +39,12 @@ final class PlanLayoutTests: XCTestCase {
     }
 
     func testEveryCardKeepsItsEvidenceAndIngredients() throws {
-        let (engine, planJSON) = try samplePlan()
+        let record = try sample()
+        let planJSON = try HealthEngine(bundle: .main).blocking { [now] in try $0.plan(recordJSON: record, now: now, deviceId: "layout-test") }
         let raw = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(planJSON.utf8)) as? [String: Any])
         let rawSuggestions = try XCTUnwrap((raw["results"] as? [String: Any])?["suggestions"] as? [[String: Any]])
 
-        let shown = try engine.blocking { try $0.sections(planJSON: planJSON) }.flatMap(\.cards).flatMap(\.suggestions)
+        let shown = try view().sections.flatMap(\.cards).flatMap(\.suggestions)
 
         for rawSuggestion in rawSuggestions {
             let id = try XCTUnwrap(rawSuggestion["id"] as? String)
@@ -58,8 +62,7 @@ final class PlanLayoutTests: XCTestCase {
     /// US-25 AC22: the summary tiles reach the screen as the engine wrote them, the web's
     /// Quick Stats, each with its why. Their wording is pinned in ios/engine/stat-tiles.test.ts.
     func testSampleSummaryTilesAreTheEngines() throws {
-        let (engine, planJSON) = try samplePlan()
-        let tiles = try engine.blocking { try $0.statTiles(planJSON: planJSON, units: #"{"hba1c":"conventional"}"#) }
+        let tiles = try view(units: #"{"hba1c":"conventional"}"#).tiles
 
         XCTAssertEqual(tiles.map(\.key), ["bmi", "ibw", "protein", "ldl", "hba1c"])
         XCTAssertEqual(tiles.map(\.label), ["BMI", "Ideal Body Weight", "Protein Target", "LDL Cholesterol", "HbA1c"])
@@ -68,5 +71,25 @@ final class PlanLayoutTests: XCTestCase {
         XCTAssertEqual(tiles[3].status?.tone, "info")
         XCTAssertEqual("\(tiles[4].value) \(tiles[4].unit)", "5.6 %", "the phone's own units (AC17e)")
         for tile in tiles { XCTAssertFalse(tile.evidence?.reason.isEmpty ?? true, tile.key) }
+    }
+
+    /// Re-check F1: a tile Swift cannot decode leaves no tiles, never a blank plan.
+    func testAMalformedTileStillGivesTheSections() throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
+        let source = try String(contentsOf: url, encoding: .utf8) + """
+
+        const realView = HealthEngine.planViewJson;
+        HealthEngine = Object.assign({}, HealthEngine, { planViewJson: function (r, n, d, u) {
+          const view = JSON.parse(realView(r, n, d, u)); view.tiles = [{ key: 7 }]; return JSON.stringify(view);
+        } });
+
+        """
+        let record = try sample()
+        let broken = try HealthEngine(source: source, sourceURL: url).blocking { [now] in
+            try $0.planView(record: record, units: "{}", now: now, deviceId: "layout-test")
+        }
+        XCTAssertEqual(broken.tiles.count, 0)
+        XCTAssertEqual(broken.sections.map(\.key), try view().sections.map(\.key))
+        XCTAssertFalse(broken.sections.isEmpty)
     }
 }

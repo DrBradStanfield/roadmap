@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { planJson, statTilesJson } from './entry';
+import { planJson, planViewJson, sectionsJson } from './entry';
 import { statTiles as tilesFor, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { STAT_CARD_EVIDENCE, getIbwEvidence } from '../../packages/health-core/src/evidence';
@@ -11,10 +11,10 @@ import { STAT_CARD_EVIDENCE, getIbwEvidence } from '../../packages/health-core/s
 const NOW = '2026-10-21T08:00:00.000Z';
 const sample = JSON.parse(readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'));
 
-function planOf(edit: (record: typeof sample) => void = () => {}): Plan {
+function recordOf(edit: (record: typeof sample) => void = () => {}): string {
   const record = JSON.parse(JSON.stringify(sample));
   edit(record);
-  return JSON.parse(planJson(JSON.stringify(record), NOW, 'phone')) as Plan;
+  return JSON.stringify(record);
 }
 
 function add(record: typeof sample, metricType: string, value: number) {
@@ -25,12 +25,12 @@ function add(record: typeof sample, metricType: string, value: number) {
 }
 
 const byKey = (tiles: StatTile[]) => Object.fromEntries(tiles.map((t) => [t.key, t]));
-/** The tiles as the app reads them: through the engine's door. */
-const statTiles = (plan: Plan, unitsJson = '{}'): StatTile[] => JSON.parse(statTilesJson(JSON.stringify(plan), unitsJson));
+/** The tiles as the app reads them: through the engine's Plan tab door. */
+const statTiles = (record: string, unitsJson = '{}'): StatTile[] => JSON.parse(planViewJson(record, NOW, 'phone', unitsJson)).tiles;
 
 describe('statTiles (US-25 AC22)', () => {
   it('gives the sample the web\'s tiles, in its order, with its words', () => {
-    const tiles = statTiles(planOf());
+    const tiles = statTiles(recordOf());
     expect(tiles.map((t) => t.key)).toEqual(['bmi', 'ibw', 'protein', 'ldl', 'hba1c']);
     const t = byKey(tiles);
     // BMI 25-29.9 with no waist: no label, the plan asks for the waist instead.
@@ -45,7 +45,7 @@ describe('statTiles (US-25 AC22)', () => {
   });
 
   it('puts waist-to-height first, and with it BMI gets its label', () => {
-    const t = byKey(statTiles(planOf((r) => add(r, 'waist', 90))));
+    const t = byKey(statTiles(recordOf((r) => add(r, 'waist', 90))));
     expect(Object.keys(t)[0]).toBe('whtr');
     expect(t.whtr).toMatchObject({ label: 'Waist-to-Height', status: { label: 'Elevated', tone: 'attention' } });
     expect(t.whtr.evidence).toEqual(STAT_CARD_EVIDENCE['whtr']);
@@ -53,7 +53,7 @@ describe('statTiles (US-25 AC22)', () => {
   });
 
   it('shows eGFR from creatinine, the non-HDL tile from total cholesterol, and Lp(a)', () => {
-    const t = byKey(statTiles(planOf((r) => { add(r, 'creatinine', 70); add(r, 'total_cholesterol', 6); add(r, 'lpa', 130); })));
+    const t = byKey(statTiles(recordOf((r) => { add(r, 'creatinine', 70); add(r, 'total_cholesterol', 6); add(r, 'lpa', 130); })));
     expect(t.egfr).toMatchObject({ label: 'eGFR', unit: 'mL/min', status: { tone: 'normal' } });
     expect(t.nonHdl).toMatchObject({ label: 'Non-HDL Cholesterol', unit: 'mmol/L' });
     expect(t.ldl).toBeUndefined();
@@ -61,7 +61,7 @@ describe('statTiles (US-25 AC22)', () => {
   });
 
   it('reads each test in the phone\'s own units (AC17e)', () => {
-    const t = byKey(statTiles(planOf(), JSON.stringify({ hba1c: 'conventional', weight: 'conventional' })));
+    const t = byKey(statTiles(recordOf(), JSON.stringify({ hba1c: 'conventional', weight: 'conventional' })));
     expect(t.hba1c).toMatchObject({ value: '5.6', unit: '%' });
     expect(t.ibw.unit).toBe('lbs');
     // Height stays in the record's units, as the web's tile does.
@@ -69,7 +69,7 @@ describe('statTiles (US-25 AC22)', () => {
   });
 
   it('gives a known minor the values and no adult reading (US-07 AC6)', () => {
-    const tiles = statTiles(planOf((r) => { r.profile.birthYear = 2012; add(r, 'creatinine', 70); }));
+    const tiles = statTiles(recordOf((r) => { r.profile.birthYear = 2012; add(r, 'creatinine', 70); }));
     expect(tiles.map((t) => t.key)).toEqual(['bmi', 'ldl', 'hba1c']);
     for (const tile of tiles) {
       expect(tile.status, tile.key).toBeUndefined();
@@ -78,8 +78,21 @@ describe('statTiles (US-25 AC22)', () => {
   });
 
   it('is health-core\'s statTiles for the plan, as JSON', () => {
-    const plan = planOf();
+    const plan = JSON.parse(planJson(recordOf(), NOW, 'phone', '{"hba1c":"conventional"}')) as Plan;
     const direct = tilesFor(plan.results, { unitSystem: plan.unitSystem, unitOverrides: { hba1c: 'conventional' }, sex: plan.inputs.sex });
-    expect(statTiles(plan, '{"hba1c":"conventional"}')).toEqual(JSON.parse(JSON.stringify(direct)));
+    expect(statTiles(recordOf(), '{"hba1c":"conventional"}')).toEqual(JSON.parse(JSON.stringify(direct)));
+  });
+
+  it('planViewJson is the separate plan, sections and tiles it replaced, from one computePlan', () => {
+    for (const units of ['{}', '{"hba1c":"conventional","ldl":"conventional","weight":"conventional"}']) {
+      const record = recordOf((r) => { add(r, 'waist', 90); add(r, 'creatinine', 70); });
+      const plan = planJson(record, NOW, 'phone', units);
+      const parsed = JSON.parse(plan) as Plan;
+      const tiles = tilesFor(parsed.results, { unitSystem: parsed.unitSystem, unitOverrides: JSON.parse(units), sex: parsed.inputs.sex });
+      expect(JSON.parse(planViewJson(record, NOW, 'phone', units))).toEqual({
+        sections: JSON.parse(sectionsJson(plan)),
+        tiles: JSON.parse(JSON.stringify(tiles)),
+      });
+    }
   });
 });

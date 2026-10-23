@@ -130,7 +130,9 @@ export function labRows(extraction: Extraction, refs: string[], reportDay: strin
   const rows: BulkRow[] = [];
   for (const ref of refs) {
     const index = Number(ref.slice(1));
-    const value = ref[0] === 'v' ? extraction.values?.[index] : ref[0] === 'a' ? extraction.additionalValues?.[index] : undefined;
+    const core = ref[0] === 'v' ? extraction.values?.[index] : undefined;
+    const extra = ref[0] === 'a' ? extraction.additionalValues?.[index] : undefined;
+    const value = core ?? extra;
     if (!value || !Number.isInteger(index)) return { ok: false, reason: 'not-found', message: 'That value is not in this report.' };
     // A value with a day of its own that is not a real past day (an undated
     // column the server should have stripped) is never filed on another day.
@@ -140,13 +142,15 @@ export function labRows(extraction: Extraction, refs: string[], reportDay: strin
         ? { ok: false, reason: 'invalid-date', message: 'A value in this report has no usable date.' }
         : { ok: false, reason: 'invalid-date', message: 'Pick the day of the test: a real day, today or before.' };
     }
-    rows.push(ref[0] === 'v'
-      ? { kind: 'measurement', metricType: (value as ExtractedValue).metric, value: (value as ExtractedValue).valueSI, recordedAt: day, source: 'lab_import' }
-      : {
-        kind: 'lab', metricName: (value as AdditionalLabValue).name, value: (value as AdditionalLabValue).value, unit: (value as AdditionalLabValue).unit,
-        referenceLow: (value as AdditionalLabValue).referenceLow ?? null, referenceHigh: (value as AdditionalLabValue).referenceHigh ?? null,
+    if (core) {
+      rows.push({ kind: 'measurement', metricType: core.metric, value: core.valueSI, recordedAt: day, source: 'lab_import' });
+    } else if (extra) {
+      rows.push({
+        kind: 'lab', metricName: extra.name, value: extra.value, unit: extra.unit,
+        referenceLow: extra.referenceLow ?? null, referenceHigh: extra.referenceHigh ?? null,
         recordedAt: day, source: 'lab_import',
       });
+    }
   }
   return { ok: true, rows };
 }

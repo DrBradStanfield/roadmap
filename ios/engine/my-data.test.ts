@@ -2,10 +2,10 @@
 // health-core's own write functions. The app runs this same code in
 // JavaScriptCore; these tests run it in Node.
 import { describe, expect, it } from 'vitest';
-import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord, TREND_POINTS } from './my-data';
+import { applyEdit, myData, newRecord, readNumber, readRecord, TREND_POINTS } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
-import { planJson } from './entry';
+import { healthWritesJson, planJson } from './entry';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { supplementSchema } from '../../packages/health-core/src/validation';
 import { stampProfile, upsertSupplement } from '../../packages/health-core/src/state-edits';
@@ -302,7 +302,7 @@ describe('Apple Health (AC13, AC14)', () => {
 
   it('lists a typed weight as a write to Apple Health, and an imported one not', () => {
     const typed = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'weight', value: 80, day: '2026-10-20' }, { kind: 'appleHealth', samples: [reading] });
-    expect(healthWrites(typed)).toEqual([{ syncId: typed.measurements[0].id, version: 1, day: '2026-10-20', values: { weight: 80 } }]);
+    expect(JSON.parse(healthWritesJson(JSON.stringify(typed), NOW, 'phone'))).toEqual([{ syncId: typed.measurements[0].id, version: 1, day: '2026-10-20', values: { weight: 80 } }]);
   });
 });
 

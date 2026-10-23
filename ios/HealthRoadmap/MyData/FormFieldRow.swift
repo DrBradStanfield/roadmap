@@ -79,11 +79,7 @@ struct FormFieldRow: View {
                 EmptyView()
             }
         }
-        .alert("Not saved", isPresented: Binding(get: { refusal != nil }, set: { if !$0 { refusal = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(refusal ?? "")
-        }
+        .refusalAlert($refusal)
     }
 
     /// A choice: the question, the recorded answer as a menu, and the hint beneath.

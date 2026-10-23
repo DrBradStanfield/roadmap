@@ -44,18 +44,6 @@ extension View {
             if editing, let back = kind.revert(old: old, new: new) { text.wrappedValue = back }
         }
     }
-
-    /// The label on an accent-filled button: OnAccent while it can be tapped, the
-    /// system's dimmed colour while disabled (review R3).
-    func onAccentLabel() -> some View { modifier(OnAccentLabel()) }
-}
-
-private struct OnAccentLabel: ViewModifier {
-    @Environment(\.isEnabled) private var enabled
-
-    func body(content: Content) -> some View {
-        content.foregroundStyle(enabled ? Color.onAccent : Color.secondary)
-    }
 }
 
 extension TypedNumber {

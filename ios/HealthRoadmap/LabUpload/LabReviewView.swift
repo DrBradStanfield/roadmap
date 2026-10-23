@@ -168,14 +168,14 @@ struct LabReviewView: View {
             if let document = loaded.document {
                 keepDocument = !document.alreadySaved
                 documentTitle = document.title
-                if let day = document.documentDate, let date = Self.localDate(day) {
+                if let day = document.documentDate, let date = DayText.noon(day) {
                     documentDateKnown = true
                     documentDate = date
                 }
             }
             // A value the extractor asked about starts unticked: never saved unnoticed.
             ticked = Set(loaded.items.filter { $0.question == nil }.map(\.ref))
-            if let day = loaded.reportDay, let date = Self.localDate(day) { testDay = date }
+            if let day = loaded.reportDay, let date = DayText.noon(day) { testDay = date }
         } catch {
             problem = error.localizedDescription
         }
@@ -239,13 +239,6 @@ struct LabReviewView: View {
         case false? where count > 0 || unstored > 0: "The original file couldn't be stored; its details are saved."
         default: nil
         }
-    }
-
-    /// Noon on a YYYY-MM-DD day in the phone's zone, for the date picker.
-    static func localDate(_ day: String) -> Date? {
-        let parts = day.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3 else { return nil }
-        return DayText.gregorian.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
     }
 
     static func describe(_ summary: LabSaveSummary) -> String {

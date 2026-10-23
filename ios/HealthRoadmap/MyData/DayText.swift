@@ -40,6 +40,16 @@ enum DayText {
         return utc.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
     }
 
+    /// Noon of YYYY-MM-DD in `timeZone`, the moment of that day least likely to show on
+    /// another one; nil if it is not a day.
+    static func noon(_ day: String, timeZone: TimeZone = .current) -> Date? {
+        let parts = day.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
+    }
+
     /// "March 2025" from YYYY-MM (a screening date), in the phone's language; the text as given if it is not a month.
     static func month(_ month: String) -> String {
         guard let date = date("\(month)-01") else { return month }

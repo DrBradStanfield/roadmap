@@ -37,11 +37,7 @@ struct SupplementsSection: View {
         .sheet(isPresented: $adding) {
             AddSupplementSheet(choices: supplements.choices) { edit in saved(await store.apply(.form(edit))) }
         }
-        .alert("Not saved", isPresented: Binding(get: { refusal != nil }, set: { if !$0 { refusal = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(refusal ?? "")
-        }
+        .refusalAlert($refusal)
 
         if !supplements.stopped.isEmpty {
             Section {

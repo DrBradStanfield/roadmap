@@ -72,6 +72,24 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(latest?.first?.content, "Q c2")
     }
 
+    /// US-52 AC6: the History sheet lists the conversations saved on the phone. The app's
+    /// one store starts empty at launch; opening History reads the file (ChatView's button).
+    @MainActor
+    func testTheHistorySheetListsSavedConversations() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Chat List \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let engine = try HealthEngine()
+        let earlier = ChatHistoryStore(engine: engine, folder: folder, deviceId: "test")
+        for id in ["c1", "c2"] {
+            await earlier.record(ChatExchange(conversationId: id, isNew: true, userText: "Q \(id)", assistantText: "A.", isFallback: false), askedAt: ChatHistoryStore.erasures)
+        }
+        let launched = ChatHistoryStore(engine: engine, folder: folder, deviceId: "test")
+        XCTAssertEqual(launched.conversations, [], "empty until read")
+        await launched.refresh() // History, as it opens
+        XCTAssertEqual(Set(launched.conversations.map(\.id)), ["c1", "c2"])
+    }
+
     /// R9 (US-52 AC6): a swiped conversation leaves the list at once, before the engine
     /// writes its tombstone, so its row never springs back; the list is read again after.
     @MainActor

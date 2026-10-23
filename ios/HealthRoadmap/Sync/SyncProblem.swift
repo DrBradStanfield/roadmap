@@ -1,7 +1,7 @@
 import Foundation
 
-/// Why the record is not synced, as the engine classed it (ios/engine/cloud.ts
-/// `failureKind`), and the plain words the Sync screen says for it.
+/// Why the record is not synced, as the engine classed it (ios/engine/cloud-adapters.ts,
+/// its private `failureKind`), and the plain words the Sync screen says for it.
 struct SyncProblem: Equatable {
     enum Kind: String {
         /// The provider refused the sign-in: only signing in again fixes it.

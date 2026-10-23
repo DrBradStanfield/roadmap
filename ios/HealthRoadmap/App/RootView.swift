@@ -12,6 +12,7 @@ struct RootView: View {
     let engine: HealthEngine
     let store: RecordStore
     let sync: CloudSync
+    let chat: ChatHistoryStore
     @State private var tab = Tab.data
     @State private var reviewPrompt = ReviewPrompt()
     @State private var analytics = Analytics()
@@ -55,7 +56,7 @@ struct RootView: View {
                 .tabItem { Label("My plan", systemImage: "heart.text.square") }
                 .tag(Tab.plan)
             // ChatView keeps its own navigation stack and title.
-            ChatView(engine: engine, store: store)
+            ChatView(engine: engine, store: store, history: chat)
                 .tabItem { Label("Chat", systemImage: "bubble.left.and.text.bubble.right") }
                 .tag(Tab.chat)
         }

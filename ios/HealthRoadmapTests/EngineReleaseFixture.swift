@@ -26,13 +26,14 @@ struct EngineReleaseFixture {
     }
 
     /// The bundled engine re-stamped as `version`; `broken` makes the plan door throw;
-    /// `throwsOnRealRecords` makes it throw for every device but the self-test's, so it
+    /// `throwsOnRealRecords` makes both plan doors throw for every device but the self-test's, so it
     /// passes its self-test and fails on the user's record.
     func bundle(version: Int, broken: Bool = false, throwsOnRealRecords: Bool = false) -> Data {
         var source = bundled.source + "\nHealthEngine = Object.assign({}, HealthEngine, { engineVersion: \(version) });\n"
         if broken { source += "HealthEngine.planJson = function () { throw new Error('broken on purpose'); };\n" }
         if throwsOnRealRecords {
             source += "const selfTestPlan = HealthEngine.planJson; HealthEngine.planJson = function (r, n, d) { if (d !== 'self-test') throw new Error('broken on real records'); return selfTestPlan(r, n, d); };\n"
+            source += "const selfTestView = HealthEngine.planViewJson; HealthEngine.planViewJson = function (r, n, d, u) { if (d !== 'self-test') throw new Error('broken on real records'); return selfTestView(r, n, d, u); };\n"
         }
         return Data(source.utf8)
     }

@@ -46,7 +46,7 @@ struct PlanCard: Decodable, Identifiable {
     var id: String { suggestions.map(\.id).joined(separator: "+") }
 }
 
-/// One summary tile above the plan, as the engine writes it (ios/engine/entry.ts `statTilesJson`): the web's
+/// One summary tile above the plan, as the engine writes it (ios/engine/entry.ts `planViewJson`): the web's
 /// Quick Stats. Every word and number is the engine's; the app only draws it (US-25 AC22).
 struct StatTile: Decodable, Identifiable {
     struct Status: Decodable {

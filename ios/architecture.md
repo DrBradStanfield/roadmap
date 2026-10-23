@@ -92,7 +92,7 @@ engine work off the main thread (2026-10-22); stages 1 and 2 are built (below).
   - **Typed numbers** are read in Swift, `TypedNumber.read`, the engine's `readNumber` rule (Arabic-Indic digits, JavaScript's trim, either mark, plain decimals only, -0 as 0); NumberReadingTests holds it to the engine's `numberJson` on 47 texts. The engine's door stays (tests only; no bridge change). It is in the binary: a change to health-core's number rule needs an app release (D3).
   - **A value's history** is `RecordStore.history(for:) async`, read once per metric and record `revision` (a counter that moves with the record and the per-test units); a second ask for the same revision joins the read under way, so a page and the page above it make one engine call. The store keeps each answer with its chart inputs (`ChartData`: points, days, offered ranges, built once per history) and drops older revisions' as a newer one lands. A page draws `shownChart(for:)`, which may trail the record by one read, and asks again on `.task(id: store.revision)`; only `shownHistory(for:)`, the history read for the record and units as they are now, opens a correction, so Show All Data holds its taps while it trails (adversary R2). A correction's "Now" hint comes from that current history, and for Lp(a) only one read in the sheet's unit (`correctionHint`): never "100 mg/dL" from a 100 nmol/L row.
   - **Onboarding's conversions** (`TypedAnswer`) await the engine; a unit switch's conversion lands only if the box did not move meanwhile, so a box never shows text in units it no longer holds. A trial's confirm awaits its plan (`.task` on My data).
-  - **Chat history** (`ChatHistoryStore`) awaits the engine for its list, messages, saves and deletes; each save or delete reads, changes and writes in one engine step. Both erases now write the chat tombstones on the engine's queue (the phone erase's `keepChat` runs through `perform`), so neither lands between a save's read and write.
+  - **Chat history** (`ChatHistoryStore`) awaits the engine for its list, messages, saves and deletes; each save or delete reads, changes and writes in one engine step. The app has one store, made at launch (`AppParts`) and shared by Chat and the eraser: `DataEraser` reads its list again after an erase, and opening History reads it again, so Chat shows what is on disk without a refresh of its own. Both erases now write the chat tombstones on the engine's queue (the phone erase's `keepChat` runs through `perform`), so neither lands between a save's read and write.
   - **Cloud news** is decoded on the engine's queue (`CloudNews`) before it goes to main.
   - **Photos and scans** are resized `@concurrent` (`LabFileReader.photo` takes the photo's bytes; `pictures` takes the scan's images, which are Sendable in the iOS 27 SDK).
 - **The watchdog (DEBUG only, opt-in, US-25 AC21c).** `MainThreadWatchdog` runs only when the launch argument `-mainWatchdogLog <path>` names a log. It pings main every 50 ms from its own thread and appends "<timestamp> main stalled N ms" to that file when main took 100 ms or more to answer. It takes no stacks: a tool for timing by hand, not a test. `LaunchClock` logs the launch's milestones in ms since the process started.
@@ -119,8 +119,8 @@ it shared, so a fix to `dropbox-rest.ts`, `drive-rest.ts`, `SyncManager` or
 `RecordSession` reaches the phone with the next engine build. The bridge is small:
 - Swift (`Engine/EngineNatives.swift`) supplies five primitives, installed as the global
   `__native` before the bundle runs: `http` (one URLSession request, body and answer as
-  ArrayBuffers, headers as JSON) with `cancelHttp`, `setTimer`/`clearTimer` on the main
-  queue, and `utf8Encode`/`utf8Decode`. Plus the cloud calls (`CloudPort`): an access
+  ArrayBuffers, headers as JSON) with `cancelHttp`, `setTimer`/`clearTimer` on the
+  engine's queue, and `utf8Encode`/`utf8Decode`. Plus the cloud calls (`CloudPort`): an access
   token, the phone's record file, the pending marker, and `notify`.
 - `ios/engine/shim.ts` builds on them exactly what the adapters touch: `fetch`,
   `Response`, `Headers`, `Blob`, `AbortController`, `AbortSignal` (`timeout`, `any`),
@@ -129,9 +129,10 @@ it shared, so a fix to `dropbox-rest.ts`, `drive-rest.ts`, `SyncManager` or
   uses them: `URL`, `URLSearchParams`, `atob`/`btoa`, `crypto.getRandomValues` (the token
   exchange is Swift's). Tested in Node (`shim.test.ts`, an empty vm context) and in
   JavaScriptCore (`ShimTests.swift`).
-- Every JavaScript call, timer and answer runs on the main queue; URLSession answers hop
-  there before they touch a JSValue (`MainQueueOnly` marks the one place Swift 6 is told
-  rather than shown). Async engine doors return Promises; `HealthEngine.callAsync` awaits
+- Every JavaScript call, timer and answer runs on the engine's queue, never on main; URLSession
+  answers hop there before they touch a JSValue. The invariant, from stages 2 to 4: the
+  engine's queue never waits on the main thread (above: "The engine off the main thread",
+  its invariant, and "Stages 3 and 4"). Async engine doors return Promises; `HealthEngine.callAsync` awaits
   them with a continuation, and JavaScriptCore runs the promise jobs when each call from
   Swift returns. The bundle is 510 KB with sync.
 
@@ -207,9 +208,12 @@ A signature means "the key holder approved this bundle", nothing more.
   verified manifest leads to the third GET, the bundle, read up to its declared size (8 MB
   cap) and refused unless its SHA-256 matches. It is staged in `Application
   Support/Engine` (left out of backups, as the record is) with its manifest and signature.
-  Failures are silent and keep the current engine. Its last write re-reads the state and
-  changes only `highWater`, `floor` and `lastCheck`, so a trial confirmed during a
-  download is kept (review R4).
+  Failures are silent and keep the current engine. The GETs, the signature and hash checks
+  and the staging run off the main actor (US-25 AC21); both of the check's read-modify-writes
+  of the state (stamping `lastCheck`, then recording the release) run on the main actor with
+  no suspension inside, as `EngineTrial.confirm()` does, so the two are serialized and neither
+  overwrites the other (review R1). The last write re-reads the state and changes only
+  `highWater`, `floor` and `lastCheck`, so a trial confirmed during a download is kept (review R4).
 - **The state file** (`state.json`) decodes a missing field as its default. `highWater`
   and `floor` are mirrored into the Keychain (`EngineWatermark`, this device only, after
   first unlock, only ever raised), and every read of the state is raised to them, so
@@ -356,7 +360,7 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
 ### D5 · Storage: on the phone by default, Dropbox or Google Drive optional (Brad, 2026-10-21)
 
 - **Default: a file in the app's container**, with iOS Data Protection. Built 2026-10-21
-  (`MyData/RecordStore.swift`): `Application Support/Record/health-roadmap.json`, the web's schema,
+  (`MyData/RecordFile.swift`): `Application Support/Record/health-roadmap.json`, the web's schema,
   written atomically, and only after the engine accepted the edit. Data protection is
   "until first unlock", Apple's default (the strictest class, which HealthKit uses, would
   fail when iOS pre-launches the app before the user unlocks; a read that fails still
@@ -430,7 +434,7 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   `RecordSession.refuses` refuses one typed before a remote erase. `cloudEdit` merges the edit
   into the phone's file synchronously and refuses it if the phone cannot write it, so
   "saved" is true on the phone before the save goes up. CloudSync tracks its session
-  explicitly (`sessionOpen`); a failed reopen falls back to the phone's file; a generation
+  explicitly (`recordOpen`); a failed reopen falls back to the phone's file; a generation
   number makes a Disconnect beat an open still in flight; edits that land while the cloud
   opens make the open run again so the session merges them. Every re-read reports to Swift
   (`synced` or `failed` with its kind). A 403 whose reason is a rate limit is a retry, not a
@@ -586,9 +590,10 @@ Decisions made building it (agent, 2026-10-21; Brad to confirm):
 
 **Built 2026-10-21 (app).** `HealthRoadmap/Health/`: `HealthKitClient` is the only file that
 touches HealthKit (types, SI units, anchored queries, observer queries, saves), behind the
-`HealthStoreClient` protocol so the tests run on a fake. `AppleHealthSync` runs it on the
-main actor, as `RecordStore` does, so an import and a typed save never overlap; a refresh
-asked for during one loops once more. Its decisions:
+`HealthStoreClient` protocol so the tests run on a fake. `AppleHealthSync` keeps its state
+on the main actor and awaits HealthKit and the engine. An import and a typed save never
+overlap because an import goes through `RecordStore.applyNow`, in the store's one ordered
+line (`chain`), not because of the main actor; a refresh asked for during one loops once more. Its decisions:
 - **An import takes the typed values' path** (`RecordStore.applyNow`, 2026-10-21, after the
   merge with cloud sync): in the cloud it goes through `cloudEdit`, so the session's save
   loop, merge and erase guard apply. It is checked against the erase and units shown at
@@ -919,7 +924,7 @@ Files, From Photos, and Scan a paper report (VisionKit's document camera, real p
   (folders and files, recursive for "Read every report in this folder"); the connector's
   `dropboxListFolder` is left exactly as it was, under the OpenAI review. Download is
   `dropboxDownload`. They run in the engine (`labFolderJson`, `labFolderFilesJson`,
-  `labFile` in cloud.ts), filtered by the connector's name rule (`isImportableEntryName`,
+  `labFile` in lab-files.ts), filtered by the connector's name rule (`isImportableEntryName`,
   `FOLDER_IMPORT_EXTENSIONS`), so the record and the app's own files never list. Download
   is by listing id only, never a path, and only an id a fresh listing of its own folder
   still offers as a lab file (review R3): any Dropbox id the phone could
@@ -1082,14 +1087,20 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled).
 ## Build and test
 
 **Layout.**
-- `engine/entry.ts`: the one door Swift calls, JSON in and out: `planJson`,
-  `sectionsJson`, and for My data `newRecordJson`, `myDataJson`, `applyEditJson`,
+- `engine/entry.ts`: the one door Swift calls, JSON in and out: `planViewJson` (the Plan
+  tab's sections and tiles from one plan; the self-test and the trial call it too, so they
+  prove what the Plan tab draws), `planJson` and `sectionsJson` (the parity goldens; the
+  self-test also checks `planJson`), and for My data `newRecordJson`, `myDataJson`, `applyEditJson`,
   `numberJson`. Every door reads the record through health-core's `ROADMAP_DOC.migrate`
   (shape check, then migration), as the web, CLI and connector do.
 - `engine/shim.ts`: fetch, timers and friends over Swift's natives (D2). `engine/cloud.ts`:
   the phone's `RecordHost` and the cloud doors Swift calls (`cloudOpen`, `cloudEdit`,
-  `cloudVisible`, `cloudHidden`, `cloudRefresh`, `cloudFlush`, `cloudClose`), D5. Both
-  tested in Node by `shim.test.ts` and `cloud.test.ts`, which `test:all` runs.
+  `cloudLabImport`, `documentSave`, `cloudErase`, `cloudVisible`, `cloudHidden`,
+  `cloudRefresh`, `cloudFlush`, `cloudClose`), D5. `engine/cloud-adapters.ts`: the two
+  stores it stands on (the cloud through health-core's REST adapters, the phone's file as
+  the mirror), the cloud natives and the failure kinds. `engine/lab-files.ts`: the Dropbox
+  lab-file doors (US-52 AC11). All tested in Node by `shim.test.ts` and `cloud.test.ts`,
+  which `test:all` runs.
 - `engine/reminders.ts`: the phone's reminders, `remindersJson` in `entry.ts`: health-core's
   schedule plus the notification days (D7). Tested by `engine/reminders.test.ts`.
 - `engine/my-data.ts`: what the My data tab shows and every write it makes, each one
@@ -1132,13 +1143,28 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled).
 - `HealthRoadmap/`: the SwiftUI app, one folder per feature:
   - `App/`: the entry point (`AppParts` makes the engine and the record once),
     `RootView` (the tabs: My data, My plan, Chat; and the first-run cover),
-    `WelcomeView`, and `Analytics` (Clarity, masked, D9).
+    `WelcomeView`, `Analytics` (Clarity, masked, D9), `Colors` (the app-wide colour helpers)
+    and `MessageAlert` (the one-button alert every tab uses).
   - `Onboarding/`: the new-user flow (D12, US-54). `OnboardingSteps` (which questions,
-    resume, region units, Health's sex and birth month and year) and `OnboardingView`.
+    resume, region units, Health's sex and birth month and year), `TypedAnswer` (a typed
+    height or weight and its entry-only unit switch), `OnboardingView` and `OnboardingPage`
+    (one screen's layout).
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext` and awaits its
-    Promises; `EngineNatives.swift` is the bridge (D2); `EngineHTTP.swift` its network
-    fence (D3); `HealthEngine+Cloud.swift` the typed cloud doors. The generated bundle and
-    its `health-engine.json` sidecar sit beside them.
+    Promises; `EngineNatives.swift` is the bridge (D2); `PhoneFiles.swift` the phone's
+    record file and pending marker the natives read and write; `EngineHTTP.swift` its network
+    fence (D3); `HealthEngine+Cloud.swift` the typed cloud doors and `HealthEngine+Erase.swift`
+    the erase doors. The generated bundle and its `health-engine.json` sidecar sit beside them.
+    **Where a bridge door lives (one rule):** a door one feature alone uses sits in that
+    feature's folder as `Engine<Feature>Doors.swift` (`Chat/EngineChatDoors.swift`,
+    `LabUpload/EngineLabDoors.swift`); a door the record, sync or erase paths share sits in
+    `Engine/` as `HealthEngine+<Feature>.swift` (`+Cloud`, `+Erase`). Both are extensions of
+    `HealthEngine`; the core doors (plan, My data, edits) stay in `HealthEngine.swift`. This is
+    the split the files already follow (two of each), so neither moves.
+  - `LabUpload/`: "Add medical records" (US-52). `LabUploadSheet` (the flow) and
+    `LabUploadExplainer`, `LabSourceViews` (Files, Photos, the scanner and the Dropbox app
+    folder as sources), `DocumentScanner`, `EngineLabDoors` (the engine doors it calls),
+    `LabUploadClient` (the server's extraction), `LabReview` and `LabReviewView` (the
+    engine's answers and their screen), `LabReadingDiagram`, `LabFileReader` and `ZipReader`.
   - `EngineUpdates/`: over-the-air engines (D3, AC18). `EngineRelease` (pins, bridge,
     limits, address), `EngineManifest` (`ManifestCheck`), `EngineFolder` (staging and
     state), `EngineUpdater` (the check), `EngineBoot` (which engine runs),
@@ -1148,17 +1174,20 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled).
     (opens the engine's session, follows the app on and off screen, answers the engine's
     `CloudPort` calls), `SyncProblem` and `SyncStatusText` (the words), `SyncView` (the
     screen, from the cloud button on My data's About you line).
-  - `MyData/`: the record and its tab. `RecordStore` keeps the file and applies edits
-    through the engine; `MyData.swift` is the engine's view of the record and the
-    `RecordEdit` the tab sends; `MyDataView`, `ValueEntrySheet` and `DayText` draw it.
+  - `MyData/`: the record and its tab. `RecordStore` keeps the record and applies edits
+    through the engine; `RecordFile` is the file on disk and the engine steps that read and
+    write it; `MyData.swift` is the engine's view of the record and the
+    `RecordEdit` the tab sends; `MyDataView`, `ValueRow` (a row, a vitals card, its
+    sparkline), `ValueEntrySheet` and `DayText` draw it. `SheetSave` is a sheet's save and
+    the "Not saved" alert (`refusalAlert`, over `App/MessageAlert.swift`).
     The form sections (US-25 AC8): `FormModels` (the engine's question JSON and `FormEdit`),
     `FormFieldRow` (one question: menu, month wheel, number or dated value),
     `FormSectionsList`, `MedicationsSection`, `ScreeningsSection`, `SupplementsSection`
     with `SupplementSheet`. Value pages (AC9, AC17): `MetricDetailView` (pushed:
     range picker, headline, values, tap to correct, no delete), `MetricChart` (Swift
     Charts, scrubbing, the VoiceOver chart descriptor), `ChartRange` (which ranges to
-    offer), `BloodPressureSheet` (with `MetricEntrySheet`, which picks it or
-    `ValueEntrySheet`) and `FeetInchesSheet`.
+    offer), `MetricEntrySheet` (picks `BloodPressureSheet` or `ValueEntrySheet`) and
+    `FeetInchesSheet`.
   - `Reminders/`: on-device reminders (D7). `PhoneReminders` is the engine's answer,
     `ReminderScheduler` keeps the pending notifications equal to it behind
     `NotificationScheduling` (a fake in the tests), `ReminderTaps` sends a tap to My plan,
@@ -1171,10 +1200,10 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled).
     Swift: it is health-core's `planSections` (packages/health-core/src/plan-sections.ts),
     which the web's results panel calls too. `PlanView.swift` and `PlanCardView.swift`
     draw it. `SummaryTiles.swift` draws the tiles above it (US-25 AC22), the web's Quick
-    Stats, from the engine's `statTilesJson`. The tile rules (which tiles, their order, words,
+    Stats, from the engine's `planViewJson` (one plan gives both, US-25 AC22). The tile rules (which tiles, their order, words,
     units, statuses and evidence) live once, in health-core's `statTiles`
     (packages/health-core/src/stat-tiles.ts), which the web's results panel calls too;
-    `statTilesJson` in `engine/entry.ts` only passes the phone's units. Swift picks only the
+    `planViewJson` in `engine/entry.ts` only passes the phone's units. Swift picks only the
     status capsule's colour: names are plain text, no symbol (Brad 2026-10-23). Each card
     rises in once, the first time any of it scrolls into view (`RiseIn`, iOS 18's
     `onScrollVisibilityChange`; on iOS 17 cards are simply there). A section-wide transition

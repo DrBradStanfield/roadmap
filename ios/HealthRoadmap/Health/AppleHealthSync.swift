@@ -10,8 +10,9 @@ import UIKit
 /// Out: the engine lists the values a person entered (`healthWritesJson`); each
 /// is written once per version.
 ///
-/// Everything runs on the main actor, as `RecordStore` does, so an import and a
-/// typed save never overlap: each edit reads the record as it is at that moment.
+/// Its state is on the main actor; HealthKit and the engine are awaited. An import
+/// goes through `RecordStore.applyNow`, in the store's one ordered line, so an import
+/// and a typed save never overlap: each edit reads the record as it is at its turn.
 /// A run asked for while one is going sets `again`, and the running one loops.
 @MainActor
 @Observable

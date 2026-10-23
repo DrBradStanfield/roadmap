@@ -40,7 +40,7 @@ struct MetricDetailView: View {
     }
 
     /// The page once the record holds any row for the metric, active or not (Codex R3); else entry opens directly.
-    static func opensHistory(_ history: MetricHistory?) -> Bool {
+    nonisolated static func opensHistory(_ history: MetricHistory?) -> Bool {
         !(history?.rows.isEmpty ?? true)
     }
 
@@ -71,11 +71,7 @@ struct MetricDetailView: View {
             }
         }
         .editingSheet($editing, store: store, saved: saved)
-        .alert("Not saved", isPresented: Binding(get: { lpaRefusal != nil }, set: { if !$0 { lpaRefusal = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(lpaRefusal ?? "")
-        }
+        .refusalAlert($lpaRefusal)
     }
 
     /// This metric's row in My data now, so a units switch shows at once.
