@@ -1,0 +1,245 @@
+[
+ {
+  "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-review-glucosamine-chondroitin-msm-boswellia-supplements-jointsupplements.md",
+  "cl_raw_sha256": "16c5806c953688d8079ebb7f2c79f0e7d65a024c778d292e1f1b1bb416de701f",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/glucosamine-nccih.md",
+  "nih_raw_sha256": "e808b50ce11097c8022a4dc0254f62bce7cea177c0bb5dc38122a662044f1e9e",
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 531,
+    "text": "| Folate | 200 mcg DFE (≈118 mcg levomefolate mass) | **400 mcg levomefolic acid by mass** (≈680 mcg DFE) | ≈3.4× increase — don't call it a doubling; still methylated (Quatrefolic® levomefolate glucosamine) |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 547,
+    "text": "**v8.5 vs the v7 sold in Australia (AUST L 509250, Lavida).** The public changelog compares v8.5 with AU v7, not with US v8, and AU v7 was not the international v7. Per the AU v7 label (`multivitamin/Manufacturing Australia/la-vida/2 label "
+   }
+  ],
+  "positions_candidates_total": 2,
+  "posts": [
+   {
+    "handle": "human-studies-nmn-supplements",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/human-studies-nmn-supplements.md",
+    "url": "https://drstanfield.com/blogs/articles/human-studies-nmn-supplements",
+    "publishedAt": "2024-11-07T22:07:19Z",
+    "title": "Human Studies on NMN Supplements: Are There Any Benefits?",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "alpha-lipoic-acid-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-alpha-lipoic-acid-supplements-alphalipoic.md",
+  "cl_raw_sha256": "9f7eed7cd148d1c06d4ff51b656d6f5c86ed6b07e28e82e21bc332ba150959d5",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": [
+   {
+    "handle": "alpha-lipoic-acid-antioxidant",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/alpha-lipoic-acid-antioxidant.md",
+    "url": "https://drstanfield.com/blogs/articles/alpha-lipoic-acid-antioxidant",
+    "publishedAt": "2024-09-14T03:22:51Z",
+    "title": "Alpha-Lipoic Acid: A Potent (But Potentially DAMAGING) Antioxidant",
+    "topic_mentions": 25,
+    "title_names_topic": true
+   }
+  ]
+ },
+ {
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-astaxanthin-supplements-review-astaxanthin.md",
+  "cl_raw_sha256": "96d780e49698ccae4d1d5f765d38692ce1b73f3e04d31fb54c1b7c5f5ffcd0f6",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 102,
+    "text": "**Why doesn't MicroVitamin contain astaxanthin?**"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 103,
+    "text": "Astaxanthin is a red pigment from algae. Most human trials are small, short and funded by the companies that make it, and they mostly measure blood markers rather than outcomes you would notice. A widely shared 2024 study from the Intervent"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 189,
+    "text": "Lithium orotate, astaxanthin, cocoa flavanols: same answers as the MicroVitamin FAQ."
+   }
+  ],
+  "positions_candidates_total": 3,
+  "posts": [
+   {
+    "handle": "the-anti-aging-supplement-scam-new-evidence",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-anti-aging-supplement-scam-new-evidence.md",
+    "url": "https://drstanfield.com/blogs/articles/the-anti-aging-supplement-scam-new-evidence",
+    "publishedAt": "2026-04-09T12:00:00Z",
+    "title": "The Anti-Aging Supplement Scam (New Evidence)",
+    "topic_mentions": 11,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-coq10-ubiquinol-supplements-review-coq10.md",
+  "cl_raw_sha256": "41834f79f460f1f6d50ad13e6e5564d763116811ac198bf1066874bdc302c684",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/coq10-nih.md",
+  "nih_raw_sha256": "b35f30b418e430dbd5299045010ca738c733c4241cbabdc9c9667d88445c3bd0",
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": [
+   {
+    "handle": "popular-supplements-try-avoid",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/popular-supplements-try-avoid.md",
+    "url": "https://drstanfield.com/blogs/articles/popular-supplements-try-avoid",
+    "publishedAt": "2024-08-11T19:43:34Z",
+    "title": "Which Popular Supplements Should You Actually Try to Avoid?",
+    "topic_mentions": 8,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "boron-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-boron-supplements-reviewed-boron.md",
+  "cl_raw_sha256": "32ce6541db02256435e17456a24a14dbfdcf8997826071f1744cea7d2063f125",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/boron-nih.md",
+  "nih_raw_sha256": "69732d60acf66ab50c7a20d276cafee058c4edf6d139735d9e17dde7d2c913eb",
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 25,
+    "text": "- Bone Density: Encapsulated Vitamin K2 MK-7 90mcg (K2VITAL® DELTA), Encapsulated Vitamin D3 1,000IU (AlgeD3™), Boron 1mg. D3 supports calcium absorption and K2 activates osteocalcin to direct calcium to bone (Myneni & Mezey, *Oral Dis*, 20"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 50,
+    "text": "- **Canada — Canadian Premier Supplements:** cGMP-certified, FDA-registered, NSF-licensed, Health Canada site-licensed, every batch third-party tested. Product licence **NPN 80144032** (Health Canada LNHPD, licensed 2025-09-11, Dr Brad, Inc"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 309,
+    "text": "| Bone density concerns | MicroVitamin or MicroVitamin+ Powder | K2 MK-7 90mcg (directs calcium to bones via osteocalcin activation) + D3 1,000IU (calcium absorption), both encapsulated in the USA, Australia and UK/EU (Canada v7: not encaps"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 381,
+    "text": "| Boron | 1mg (USA capsules, and MicroVitamin+ Powder in every market) | UK and EU v9 capsules 3 mg as sodium borate; Canadian capsules 0.7 mg per serving (5 capsules) (if your bottle shows NPN 80132012, go by the label or contact us); Aust"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 383,
+    "text": "UK, EU and Canada: give the boron dose only and attach no bone benefit to boron (content map §7)."
+   },
+   {
+    "file": "docs/products.md",
+    "line": 387,
+    "text": "Calcium is intentionally excluded. When high-quality RCTs are isolated, calcium supplements show no significant reduction in fracture risk, while multiple large studies link them to increased cardiovascular risk. A meta-analysis of placebo-"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 428,
+    "text": "- All 26 core ingredients in MicroVitamin / MicroVitamin+: methylated B12 and folate, full B-complex, Vitamin K2 MK-7 90mcg, Vitamin D3 1,000IU, Magnesium Taurate 126mg, glycinate trace minerals, Lutein, Lycopene, Zeaxanthin, Choline Bitart"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 494,
+    "text": "Four versions are currently shipping: **v8 in the USA**, **v8.5 in Australia** (from 2026-08), **v9 in the UK and EU** (from 2026-10; see the v9 subsection below), and **v7 in Canada**. Use these tables to give region-correct doses: USA → v"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 505,
+    "text": "| Boron | UK 1 mg (sodium borate); EU 0.5 mg (boric acid); Canada 0.7 mg (boron glycinate, NPN 80144032) | 1 mg glycinate | Differs by market; quote that market's figure |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 514,
+    "text": "**What stayed the same in v8:** Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Magnesium Taurate 126mg, Methylated Folate 200mcg DFE, Methylated B12 12mcg, B1/B2/B5/B6/Biotin (75% RDA), Selenium 27.5mcg glycinate, Manganese 1"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 534,
+    "text": "| Boron | 1 mg glycinate | **3 mg** (as borax) | Dose and form change |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 547,
+    "text": "**v8.5 vs the v7 sold in Australia (AUST L 509250, Lavida).** The public changelog compares v8.5 with AU v7, not with US v8, and AU v7 was not the international v7. Per the AU v7 label (`multivitamin/Manufacturing Australia/la-vida/2 label "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 565,
+    "text": "| Boron (Sodium Borate) | 3 mg | + | US v8 1 mg glycinate |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 583,
+    "text": "**UK v7 → v9** (UK v7 label, per `claude_business/docs/brief-assets/v9-listing-images/v7-v9-diff.md`): removed choline bitartrate (181.5 mg), potassium (99 mg, chloride) and peppermint leaf extract (50 mg); added CDP-citicoline 500 mg and z"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 585,
+    "text": "**EU v7 → v9** (EU v7 label, BHI Biohealth International, Germany: `multivitamin/Manufacturing EU/BHI Biohealth International GmbH (Germany)/3 label/2 8588672_MircoVitamin_205x75_V8 copy.pdf`, marked v7): removed choline bitartrate (181 mg "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 587,
+    "text": "**UK/EU v9 vs the US v9 spec** (the v9 columns and Version 9 entry in the changelog below, formula file 16): the UK/EU label differs in magnesium (126 mg, not 150 mg), vitamin B1 form (thiamine HCl, not mononitrate), boron form (sodium bora"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 659,
+    "text": "| Boron | v1–v3 — · v4 **1 mg citrate** · v5–v8 1 mg **glycinate** (v7: US; UK/EU/Canada v7 differ, see Regional Formula Differences) · v9 **3 mg glycinate** |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 686,
+    "text": "Initial formula. Tablets, serving size TBD (moved to 5/serving at v3). B-vitamins at 50% RDA, B12 at 1200 mcg, TMG at 1000 mg; no selenium, copper, manganese, chromium, boron, lutein, or lycopene. Formula file: `multivitamin/formulas/3 form"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 698,
+    "text": "Moved from tablets to capsules; B1, B2, B5, B6, biotin 50→75% RDA; B12 1.2→12 mcg (500% RDA); vitamin C 29.7 mg (33%) → 45 mg (50% RDA); vitamin D3 1000→2000 IU (25→50 mcg), vegetarian source; iodine 75→112.5 mcg (50→75% RDA); zinc 5.5→8.25"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 702,
+    "text": "Decreased vitamin D3 2000→1000 IU (50→25 mcg); decreased potassium 360→200 mg; decreased niacin 50→35 mg; zinc and boron citrate → glycinate. Formula file: `multivitamin/formulas/8 formula v5 US.xlsx`."
+   },
+   {
+    "file": "docs/products.md",
+    "line": 718,
+    "text": "Australia-specific release; full detail, sources and files in Regional Formula Differences → v8.5. In short: keeps the full v8 ingredient set and v8-era choline bitartrate and potassium (unlike v9), raises B1, B2, B5, B6, biotin, folate, vi"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 722,
+    "text": "Shipped to the UK and EU from 2026-10 (made in the UK by G&G Food Supplies); not yet shipped in the USA. The UK/EU label differs from this US spec (Regional Formula Differences → \"UK/EU v9 vs the US v9 spec\"). US spec: B1, B2, B5, B6, bioti"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 743,
+    "text": "| Boron citrate→glycinate | Version 6 | **Version 5** (file 8 notes say \"changed boron form to glycinate\") |"
+   }
+  ],
+  "positions_candidates_total": 23,
+  "posts": [
+   {
+    "handle": "trace-minerals-vitamins-fad",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/trace-minerals-vitamins-fad.md",
+    "url": "https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad",
+    "publishedAt": "2025-01-07T00:08:13Z",
+    "title": "Trace Minerals in Vitamins: What Are They and Is It a Fad?",
+    "topic_mentions": 18,
+    "title_names_topic": false
+   }
+  ]
+ }
+]

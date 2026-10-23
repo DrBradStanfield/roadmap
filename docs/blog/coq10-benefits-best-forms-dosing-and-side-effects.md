@@ -6,565 +6,439 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["coq10", "ubiquinol", "ubiquinone", "coenzyme q10", "cardiovascular", "heart health", "heart failure", "statin", "energy", "mitochondria", "blood pressure", "aging", "cholesterol", "ldl", "hdl", "triglycerides", "blood sugar", "diabetes", "insulin resistance", "hba1c", "migraine", "fibromyalgia", "inflammation", "brain health", "cognitive", "skin", "wrinkles", "anti-aging", "longevity"]
-summary: "Reference on CoQ10 (ubiquinol/ubiquinone): heart failure, migraine prevention, statin-related muscle pain and fatigue. Evidence strongest for heart failure (adjunct to medication) and migraine. Ubiquinol preferred over 60; typical dosing 100-300 mg/day with food. Caution with blood thinners, diabetes meds, and during cancer treatment. Always discuss with your doctor."
+summary: "Reference on CoQ10 (ubiquinone, ubiquinol). Brad would not take it: he sees no good evidence of benefit and says statin users get none, though meta-analyses on statin muscle pain disagree. Talk to your doctor first, especially if you take warfarin, diabetes medicines or cancer treatment."
+reviewed: "2026-10-23"
+sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/coenzyme-q10","checked":"2026-10-23","fingerprint":"sha256:b35f30b418e430dbd5299045010ca738c733c4241cbabdc9c9667d88445c3bd0"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-supplements-try-avoid","checked":"2026-10-23","fingerprint":"publishedAt:2024-08-11T19:43:34Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/coq10-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/coq10-benefits-best-forms-dosing-and-side-effects)*
 
+## Current view (reviewed 23 October 2026)
+
+Brad lists CoQ10 among the supplements he would never take because, in his view, the risks far outweigh the benefits ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). He groups it with PQQ as an anti-inflammatory and explains that exercise releases oxidants and inflammation, a natural signal that makes the body more efficient, which he does not want to interfere with ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). He cites a randomized trial in which CoQ10 taken after exercise dramatically reduced the benefits of exercise compared with a control group ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). He says there is no good evidence of benefit from CoQ10, with studies finding no value in preventing cancer or heart disease ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). He adds that there is good evidence that people on statins do not get any benefit from CoQ10 ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). He tells readers to talk to their own health professionals about their goals, needs and unique health situation ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)).
+
+## Key safety points
+
+- CoQ10 may interact with warfarin. A 1994 report described a weaker warfarin effect, which means a lower INR, and a cohort study linked CoQ10 to more self-reported bleeding. If you take warfarin, check with your doctor first and have your INR checked [3][83][84].
+- It may interact with insulin, and it lowered fasting glucose in trials. If you take diabetes medicines, ask your doctor first [3][38].
+- It may not be compatible with some cancer treatments. Antioxidant use during breast cancer chemotherapy was linked to a possible rise in recurrence, and CoQ10 weakened the effect of radiation in mice. Ask your cancer team first [3][72][73].
+- Some earlier trials reported falls in blood pressure. If you take blood pressure medicines, ask your doctor first [30][93].
+- In pregnancy, take it only under medical supervision. The main trial gave women at higher risk of pre-eclampsia 200 mg daily from 20 weeks of pregnancy [69].
+- Doses of 1,200 and 2,400 mg a day were well tolerated for up to 16 months in a large trial, and a safety review put the observed safety level at 1,200 mg a day [55][78].
+- Mild side effects such as insomnia or digestive upsets may occur [3].
+
+## Brad's videos on this topic
+
+- 11 Aug 2024, [Which Popular Supplements Should You Actually Try to Avoid?](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid): he would not take CoQ10, because it may blunt the benefits of exercise, there is no good evidence of benefit, and statin users do not benefit.
+
 ## 1. Overview
 
-Coenzyme Q10 (CoQ10), also known as ubiquinone or ubidecarenone, is a naturally occurring fat-soluble compound essential for cellular energy production. It resides in the inner mitochondrial membrane of virtually every cell, where it serves as an electron carrier in the mitochondrial electron transport chain -- the process by which cells generate adenosine triphosphate (ATP), the primary energy currency of the body [1][2][3]. The organs with the highest energy demands -- the heart, liver, kidneys, and pancreas -- contain the greatest concentrations of CoQ10 [1][2].
+Coenzyme Q10 (CoQ10) is made in the body, with the highest levels in the heart, liver, kidneys and pancreas, and it is sold as a dietary supplement [3]. Inside cells it is an essential cofactor for making ATP, the cell's energy molecule, through mitochondrial oxidative phosphorylation, and it works as a fat-soluble antioxidant [8][78].
 
-Beyond its role in energy production, CoQ10 functions as a potent lipid-soluble antioxidant. In its reduced form, ubiquinol (CoQH2-10), it scavenges free radicals and protects cell membranes, lipoproteins (including LDL), and mitochondrial DNA from oxidative damage [1][2][3]. More than 90% of circulating CoQ10 exists in the ubiquinol form in healthy individuals, reflecting its continuous recycling between oxidized (ubiquinone) and reduced (ubiquinol) states [1][2].
+The body builds CoQ10 through the same pathway (via mevalonate) that makes cholesterol [75]. Statins block this pathway at HMG-CoA reductase. In a 6-month trial, simvastatin 20 mg lowered plasma CoQ10 from 1.08 to 0.80 mg/dl [75].
 
-The body synthesizes CoQ10 endogenously through the mevalonate pathway -- the same biochemical pathway used to produce cholesterol. This shared pathway is clinically significant because statin drugs, which inhibit HMG-CoA reductase (a key enzyme in the mevalonate pathway), can reduce CoQ10 synthesis as a side effect [1][2][3]. Other medications that may lower CoQ10 levels include beta-blockers, certain antidepressants, and antipsychotics [1].
+In 236 people admitted to hospital with chronic heart failure, a low plasma CoQ10 level predicted death independently of other risk factors [6]. Low levels in disease do not prove that supplements help, which is why trials matter.
 
-Blood levels of CoQ10 steadily rise from young adulthood through middle age, peaking around age 60, then declining modestly -- although they do not fall below levels of early adulthood [1]. However, CoQ10 concentrations in tissues of the heart, brain, and pancreas do decrease with age [1][2]. Of potentially greater significance, the body appears to convert less CoQ10 into its active form (ubiquinol) after age 60, resulting in a decreased ubiquinol-to-CoQ10 ratio and indicating a higher level of oxidative stress [1][4][5].
+Food supplies only a little: the average dietary intake is only 3 to 6 mg [91]. Doses in trials are far higher (see Recommended Dosing).
 
-The normal reference range for blood CoQ10 levels is 0.5-1.7 micromol/L (or 0.44-1.64 mg/L) [6]. For individuals with heart disease, a therapeutic target of 2.0 mg/L or greater is sometimes recommended [1]. Blood levels do not necessarily reflect tissue concentrations, but they remain the most practical measure of CoQ10 status [1][7].
-
-Only small amounts of CoQ10 are available from food, primarily from organ meats, beef, chicken, and oily fish (see Dietary Sources). Consequently, dietary supplements are the most common way to meaningfully increase CoQ10 levels [1][2].
-
-Primary CoQ10 deficiency is a rare genetic condition resulting from mutations in genes involved in CoQ10 biosynthesis. It typically presents in infancy or early childhood with severe neurological (encephalopathy) and/or renal symptoms. Patients may respond well to oral CoQ10 supplementation if treatment begins before irreversible tissue damage has occurred [8]. Certain single nucleotide polymorphisms (SNPs) can also affect CoQ10 metabolism. For example, the NQO1 polymorphism affects the conversion of CoQ10 to ubiquinol. People homozygous for this SNP have slightly higher blood levels of CoQ10, likely because conversion to ubiquinol is impaired. The NQO1 SNP is most common among East Asians (22%) and least common among Caucasians (4%) [9].
+Primary CoQ10 deficiency is a rare genetic condition caused by mutations in at least 10 genes needed to make CoQ10 [8]. Oral CoQ10 can help, but only if the condition is caught before tissue damage becomes permanent [8].
 
 ## 2. Forms and Bioavailability
 
-CoQ10 supplements are available in two primary forms, along with several enhanced-absorption formulations and one modified analog. Choosing the right form depends on age, health status, and the specific clinical goal.
+CoQ10 comes in two main forms, plus formulations designed to improve absorption and one modified compound (MitoQ).
 
 ### Ubiquinone (Oxidized CoQ10)
 
-This is the conventional, most widely studied form. After absorption, more than 90% is converted to ubiquinol in the body [1][2]. It is stable, less expensive, and has the longest track record in clinical trials. Most landmark studies on heart failure, migraine, and statin side effects used ubiquinone [10][11][12].
+Ubiquinone is another name for CoQ10 [10], and it is the oxidised form. Most trials report simply giving CoQ10, including the Q-SYMBIO heart failure trial and the migraine trial [11][12].
 
 ### Ubiquinol (Reduced CoQ10)
 
-This is the active, antioxidant form. It may be preferable for individuals over 60, who appear to convert ubiquinone to ubiquinol less efficiently [1][4][5]. Ubiquinol is inherently less stable than ubiquinone and requires specialized manufacturing (the leading branded ingredient is Kaneka QH by Kaneka Corporation). Some clinical trials have used ubiquinol specifically, including studies on diastolic heart failure [13][14], insulin resistance [15], and athletic performance [16].
+Ubiquinol is the reduced form of CoQ10 [58]. Trials that used ubiquinol include studies in heart failure with preserved ejection fraction, heart surgery and mild fatigue [14][29][58]. A 2020 review compared the evidence on how well each form is absorbed and how well it works [94].
 
 ### Bioavailability Considerations
 
-CoQ10 has inherently poor oral bioavailability -- approximately 2-3% for standard formulations -- due to its large molecular weight, high lipophilicity, and poor water solubility [1][2]. Several strategies improve absorption:
+CoQ10 is fat-soluble, and absorbed CoQ10 passes from the small intestine into the lymphatic system [91][94]. How a product disperses CoQ10 crystals matters: the same review estimated that without crystal dispersion, bioavailability falls by 75% [94].
 
-- **Take with food containing fat.** CoQ10 is fat-soluble; consuming it with a meal containing dietary fats substantially increases absorption [1][2].
-- **Divide doses.** When total daily intake exceeds 100 mg, splitting into two or three doses maximizes absorption, as uptake is saturable [17].
-- **Solubilized/emulsified formulations.** Softgel capsules containing CoQ10 dissolved in oil generally provide better absorption than powder-filled capsules or tablets [1][2].
-- **Water-soluble formulations.** Specialized formulations such as Q10Vital (used in the wrinkle-reduction study) use water-dispersible delivery systems to enhance bioavailability [18].
-- **Phytosome technology.** CoQ10 phytosome (e.g., Ubiqsome by Indena) complexes CoQ10 with phospholipids to improve absorption. A formulation containing 60 mg CoQ10 as phytosome showed clinical benefit for statin-related fatigue at a dose that would typically be considered low [19].
-- **Black pepper extract (piperine/BioPerine).** Piperine inhibits gut CYP enzymes that metabolize CoQ10, potentially increasing bioavailability. However, this same mechanism can affect the metabolism of many medications (see Drug Interactions) [1].
+- **Water-soluble formulations.** Forms with better water solubility or dispersibility have shown improved bioavailability [91]. The skin trial below used one of them (Q10Vital) [18].
+- **Phytosome.** A phytosome product gave 60 mg of CoQ10 in 300 mg of phytosome a day in a trial in older adults with statin-related fatigue [19].
+- **Piperine (black pepper extract).** Some products add piperine, which raises blood levels of some medicines (see Drug Interactions) [88].
 
 ### Comparison Table
 
-| Form | Key Features | Best For |
+| Form | What it is | Trials that used it |
 |------|-------------|----------|
-| Ubiquinone (standard) | Most studied; stable; inexpensive; >90% converted to ubiquinol in body | General supplementation; adults under 60; proven clinical applications |
-| Ubiquinol | Active/reduced form; may bypass age-related conversion decline; less stable | Adults over 60; conditions with high oxidative stress |
-| Ubiquinone in oil (softgel) | Better absorbed than powder-in-capsule | Preferred delivery over dry tablets/capsules |
-| Water-soluble CoQ10 | Enhanced bioavailability via water-dispersible formulation | When higher blood levels are needed at lower doses |
-| CoQ10 phytosome | Phospholipid complex; clinical efficacy at lower absolute CoQ10 doses | When gastrointestinal tolerance at higher doses is a concern |
-| MitoQ (mitoquinone) | Modified ubiquinone with positive charge for mitochondrial targeting; ~10% oral bioavailability vs ~2% for standard CoQ10 | Research use; vascular function (limited evidence) |
-
-### Natural vs. Synthetic CoQ10
-
-Naturally formed CoQ10 is 100% in the trans-isomer configuration. Most commercial CoQ10 today is produced via bacterial or yeast fermentation, yielding 100% natural trans-CoQ10. Synthetic chemical processes can produce small amounts of the cis-isomer. Products labeled "yeast fermentation" or carrying branded ingredients such as Kaneka QH or Q-Gel are natural-source CoQ10 [1].
+| Ubiquinone (CoQ10) | The oxidised form | Q-SYMBIO heart failure trial; migraine trial [11][12] |
+| Ubiquinol | The reduced form [58] | HFpEF, heart surgery and mild fatigue trials [14][29][58] |
+| Water-soluble CoQ10 | Formulated to disperse in water, with improved bioavailability [91] | Skin trial [18] |
+| CoQ10 phytosome | CoQ10 bound in a phytosome | Statin-related fatigue trial [19] |
+| MitoQ (mitoquinone) | Modified to concentrate in mitochondria | Small blood vessel studies [23][25] |
 
 ### Idebenone
 
-Idebenone is a synthetic analog of CoQ10 that can also appear as a contaminant in improperly manufactured CoQ10 supplements. Some evidence suggests idebenone could be helpful for slowing cognitive decline in Alzheimer's disease and other dementias [20][21], but not all studies have found benefit [22]. It is a distinct compound from CoQ10 and should not be confused with it.
+Idebenone is a synthetic compound related to CoQ10. In a 6-month trial in 300 people with Alzheimer's disease, idebenone 90 mg three times a day improved scores on a dementia rating scale [21]. A larger 1-year trial in 536 people found that it did not slow cognitive decline enough to matter clinically [22].
 
 ### MitoQ (Mitoquinone)
 
-MitoQ is a modified form of ubiquinone carrying a triphenylphosphonium cation that allows preferential uptake into mitochondria. Its oral bioavailability is approximately 10%, versus about 2% for standard CoQ10 [1]. Small studies have shown it can improve endothelial function in older adults (42% increase in flow-mediated dilation at 20 mg/day for 6 weeks) [23] and modestly improve cycling performance in recreational athletes (4.4% increase in VO2peak at 20 mg/day for 28 days) [24]. A placebo-controlled study of 23 middle-aged and older adults (average age 62) found that a single 80 mg dose of MitoQ slightly improved vascular endothelial function and myocardial perfusion in non-exercisers, but not in regular exercisers [25].
+MitoQ (mitoquinone) is a form of CoQ10 built to concentrate inside mitochondria. Twenty healthy people aged 60 to 79 years took MitoQ 20 mg a day for 6 weeks, which raised flow-mediated dilation, a measure of blood vessel function, by 42% compared with placebo [23]. A single dose of 80 mg, tested in 23 adults of middle age or older, improved this measure in non-exercisers but not in exercisers [25]. Thirty people with hepatitis C received mitoquinone (40 or 80 mg) or placebo once daily for 28 days; a liver enzyme (ALT) fell from baseline, though not significantly more than on placebo [28].
 
-However, a laboratory study found MitoQ caused acute mitochondrial swelling in kidney tubule cells and kidney tissue damage in mice, prompting researchers to advise caution in patients with kidney disease [26]. MitoQ did not show benefit in Parkinson's disease and had side effects similar to high-dose CoQ10 (headache, nausea, vomiting) [27][28]. It is not a direct substitute for CoQ10 and has a limited clinical evidence base.
+In laboratory studies of kidney tubule cells and tissue, MitoQ caused mitochondria to swell and lose their membrane charge [26]. In 128 people newly diagnosed with Parkinson's disease, MitoQ did not slow the disease over 12 months [27].
 
 ## 3. Evidence for Benefits
 
 ### Heart Failure
 
-Heart failure is the most extensively studied clinical application for CoQ10, with evidence spanning decades. The rationale is straightforward: the failing heart has increased energy demands and reduced CoQ10 tissue levels, and CoQ10 is essential for mitochondrial ATP production [1][2].
+In all the heart failure trials below, CoQ10 was added to standard treatment, not used instead of it.
 
-**Systolic heart failure (HFrEF):** A meta-analysis of 13 clinical studies found that CoQ10 supplementation (typically 100 mg daily) significantly improved left ventricular ejection fraction by approximately 3.7% compared to placebo in people with mild-to-moderate heart failure [10].
+**Pooled trials:** A 2013 meta-analysis found that CoQ10 raised ejection fraction (how much blood the heart pumps with each beat) by a pooled 3.67% (95% CI 1.60% to 5.74%), with no clear change in symptom class [10].
 
-**The Q-SYMBIO trial -- landmark evidence:** The largest and longest clinical study to date randomized patients with moderate-to-severe heart failure to 100 mg of CoQ10 three times daily (300 mg/day total) or placebo for 2 years, in addition to standard heart failure medications. CoQ10 reduced the risk of a major adverse cardiovascular event (hospitalization for worsening heart failure, cardiovascular death, or urgent heart transplant) by nearly 50% compared to placebo. It also significantly improved quality of life measures including activity levels, fatigue, and shortness of breath. Critically, these benefits required long-term supplementation -- at 3 months, no significant improvements were detected [11].
+**Q-SYMBIO:** This trial randomized 420 people whose heart failure was moderate or severe to CoQ10 100 mg three times a day or placebo for 2 years [11]. Major cardiac events occurred in 15% on CoQ10 and 26% on placebo (HR 0.50, 95% CI 0.32 to 0.80) [11]. Cardiovascular deaths were 9% versus 16% and all deaths 10% versus 18% [11]. There were no significant changes at 16 weeks [11].
 
-In all heart failure studies, CoQ10 was used as an adjunct to standard prescription treatment, not as a replacement.
+NCCIH, the source Brad cites in his post, still rates the heart failure research as inconclusive [3]. That fits his view that CoQ10 lacks good evidence of benefit ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)), but Q-SYMBIO is the main trial pointing the other way.
 
-**Diastolic heart failure (HFpEF) -- mixed results:** A study of 32 elderly patients (average age 75) with mild to severe diastolic heart failure found that 100 mg of stabilized ubiquinol (Kaneka Corporation, which funded the study) three times daily for 4 months did not improve diastolic function or reduce NT-proBNP levels compared to placebo. There was also no significant improvement in ejection fraction (which was, on average, low but within normal range) [13].
+**Heart failure with preserved ejection fraction (HFpEF):** In 39 people aged over 55 years, 4 months of CoQ10 did not change diastolic function or NT-proBNP compared with placebo [13]. A larger trial enrolled 216 people and randomised 153 of them to ubiquinol 600 mg a day, D-ribose 15 g a day, both, or placebo over 12 weeks [14]. The groups given ubiquinol, D-ribose or both had better symptom scores, but no better 6-minute walk [14]. Compared with placebo, ejection fraction rose 7.08% with ubiquinol alone and 8.03% with D-ribose alone, and taking both added nothing [14]. The paper also reports each group separately: ubiquinol alone raised the Kansas City Cardiomyopathy Questionnaire (KCCQ) symptom score by 22.41 points more than placebo [14]. The trial stopped early, short of its target of 276 people, so each group was small [14].
 
-However, a larger U.S. study of 139 people (average age 69) diagnosed with diastolic heart failure within the past 12 months found that a much higher dose -- 600 mg of ubiquinol daily for 12 weeks -- increased ejection fraction by 7.08%, improved self-reported symptoms by 22.41 points (on a 100-point scale), decreased BNP levels (a blood marker typically elevated in heart failure), and increased adenosine triphosphate levels compared to placebo. However, there was no significant improvement in left ventricular diastolic function or total distance walked in a 6-minute walk test. Interestingly, 15 grams of D-ribose daily without ubiquinol produced similar benefits, and combining ubiquinol with D-ribose did not provide additional benefit [14].
-
-**Cardiac surgery:** A study of 50 elderly patients (average age 78) undergoing aortic valve replacement found that 200 mg of ubiquinol (QH Absorb, Jarrow Formulas) twice daily for 7 days before and 5 days after surgery reduced blood markers of heart muscle damage (troponin I at 1 day and CK-MB at 5 days post-surgery) compared to placebo. Ubiquinol also curbed the post-surgical decline in ejection fraction by about 5% at 6-month follow-up. However, it did not improve heart function as measured by NYHA classification or reduce the rate of major adverse events -- although rates of most events were low [29].
+**Heart surgery:** In 50 older people having aortic valve replacement, ubiquinol 400 mg a day from 7 days before to 5 days after surgery curbed the rise in troponin I, a marker of heart muscle damage (1.90 versus 4.03 ng/dL) [29]. NCCIH notes some evidence that CoQ10 may reduce complications of heart surgery [3].
 
 ### Cholesterol, Lipids, and Cardiovascular Risk Markers
 
-**Cholesterol lowering in people not on statins:** A study among middle-aged adults in China with elevated cholesterol who were not taking statins found that 60 mg of CoQ10 twice daily after meals (120 mg/day total) for 5.5 months decreased LDL cholesterol by 6.5% and triglycerides by nearly 20% compared to placebo. Total cholesterol was not significantly affected. Additionally, fasting blood sugar decreased by 6%, fasting insulin by 21%, and systolic and diastolic blood pressure by 4% and 5%, respectively [30]. Further analysis of this study showed CoQ10 did not significantly affect HDL cholesterol levels, but it very slightly (by 1%) increased HDL cholesterol efflux capacity -- the ability of HDL to transfer cholesterol from macrophages within atherosclerotic plaques to the liver, a process associated with reduced atherosclerotic cardiovascular disease risk. This effect was only significant among women, those over 60, and those of generally normal weight, but not among men, those 60 or younger, or those who were overweight or obese [31].
+**People not on lipid or diabetes drugs:** In 101 adults with abnormal blood lipids, CoQ10 120 mg a day for 24 weeks lowered triglycerides, LDL cholesterol, blood pressure and insulin resistance compared with placebo [30]. In the same trial, it helped HDL carry cholesterol out of cells (cholesterol efflux), more so in older, female or non-obese participants [31]. A correction to that report has been published [31].
 
-**No additive benefit with statins:** A study of 55 men and women in Denmark already taking simvastatin (40 mg/day) found that adding 400 mg of ubiquinol daily for 2 months did not further lower LDL, total cholesterol, or triglyceride levels compared to placebo [32].
+**With statins:** In the 6-month simvastatin trial, adding 100 mg of CoQ10 to simvastatin 20 mg raised plasma CoQ10 without changing the cholesterol-lowering effect of the statin [75].
 
-**Homocysteine -- no solid evidence of benefit:** An uncontrolled clinical study in India suggested that 100 mg of CoQ10 daily for 2 months could lower elevated homocysteine levels, but the absence of a placebo control makes these results inconclusive [33]. A placebo-controlled study in China found that neither a low (60 mg) nor higher (150 mg) dose of CoQ10 daily for 3 months had a significant effect on homocysteine [34]. A study among healthy older adults in Japan (average age 59) found that 100-120 mg of ubiquinol for 6-12 months had no effect on homocysteine in men and slightly increased levels in women -- although this study also lacked a control group [35]. In summary, there is no solid evidence that CoQ10 or ubiquinol meaningfully lowers homocysteine levels. Additionally, although elevated homocysteine is associated with higher heart disease risk, lowering homocysteine levels has not been shown to be clinically beneficial.
+**Homocysteine:** In 51 people with coronary artery disease given 60 or 150 mg a day for 12 weeks, plasma CoQ10 was not correlated with homocysteine [34].
 
 ### Blood Pressure
 
-Although some individual studies have found CoQ10 to reduce elevated blood pressure, the overall evidence is not compelling. A Cochrane systematic review critically evaluated the available clinical trials and concluded that CoQ10 does not have a clinically significant effect on lowering blood pressure [36].
+A 2016 Cochrane review pooled two trials (50 participants) and found no significant change in systolic blood pressure (-3.68 mm Hg, 95% CI -8.86 to 1.49) [36]. It concluded, from moderate-quality evidence, that any effect of CoQ10 on blood pressure is too small to matter clinically [36]. An older 2007 meta-analysis, mostly of open-label studies, had reported falls of up to 17 mm Hg systolic [93].
 
-One small, uncontrolled case series found that 257 mg of CoQ10 daily for approximately 8 months reduced the drop in systolic blood pressure upon standing from 30 mmHg to just 7 mmHg in 7 older patients with orthostatic hypotension who were also using conventional treatments (clonidine, salt tablets, compression stockings). Three of these patients had multiple system atrophy, a neurodegenerative condition associated with mutations in an enzyme involved in CoQ10 synthesis [37]. This finding is preliminary and requires confirmation in controlled studies.
+In a report of 7 people with orthostatic hypotension (a fall in blood pressure on standing), 257 ± 37 mg of CoQ10 daily for 10 ± 3 months reduced the standing drop in systolic pressure from 30 to 7 mm Hg [37]. The patients were not randomized.
 
-The NCCIH states that "the small amount of evidence currently available suggests that CoQ10 probably doesn't have a meaningful effect on blood pressure" [3].
+NCCIH states that "the small amount of evidence currently available suggests that CoQ10 probably doesn't have a meaningful effect on blood pressure" [3].
 
 ### Blood Sugar, Insulin, and Diabetes
 
-CoQ10 supplementation may modestly improve glycemic parameters, but the evidence suggests a dose-response ceiling, with higher doses potentially worsening outcomes.
+A 2022 meta-analysis of 40 trials (2,424 participants) found that CoQ10 lowered fasting glucose (-5.22 mg/dl, 95% CI -8.33 to -2.11), fasting insulin, HbA1c (-0.12%) and insulin resistance [38]. Effects were larger in people with diabetes. The dose response was U-shaped, with the largest effects at 100 to 200 mg a day [38].
 
-**Meta-analysis of 40 RCTs:** A comprehensive review of 40 randomized clinical trials (including 25 trials among people with type 1 or type 2 diabetes) concluded there is weak evidence that 100-200 mg/day of CoQ10 modestly decreases HbA1c by about 0.12%, may decrease fasting blood sugar (average decrease 5.22 mg/dL) and insulin levels (average decrease 1.32 microIU/mL), and may improve insulin sensitivity (average decrease of 0.69 HOMA-IR). Most benefit was observed with supplementation lasting 12 weeks or more. Critically, daily doses of 300 mg or more did not provide greater benefit and in some cases worsened glycemic measures [38].
-
-**Prediabetes:** A small study of 20 adults (average age 47) with prediabetes in Thailand found that 100 mg of ubiquinol (Kaneka Ubiquinol) daily for 12 weeks (while maintaining typical diet) reduced HOMA-IR (a measure of insulin resistance) by 0.57, which was significant compared to the placebo group that showed an increase of 0.15. However, there were no significant between-group differences in fasting blood sugar, HbA1c, fasting insulin, cholesterol, or triglycerides. No side effects were reported [15].
-
-People with diabetes or hypoglycemia who are taking blood sugar-lowering medications should use CoQ10 with caution and under medical supervision, as it may affect glycemic control [1][38].
-
-A single case of insulin autoimmune syndrome (IAS) possibly caused by CoQ10 was reported in a 52-year-old woman in Japan who had taken CoQ10 for 3 months. Her symptoms (sweating, shakiness, weakness due to hypoglycemia) resolved after stopping CoQ10. People of Japanese ancestry may be more predisposed to IAS. Many cases of IAS due to alpha-lipoic acid have been reported in Japan, but this was the first reported case associated with CoQ10 [39].
+NCCIH warns that CoQ10 may interact with insulin [3]. One case report described severe low blood sugar from insulin autoimmune syndrome in a woman taking CoQ10 (see Safety and Side Effects) [39].
 
 ### Statin-Associated Muscle Symptoms
 
-This is one of the most commonly cited reasons for taking CoQ10, yet the evidence is surprisingly mixed.
+The evidence here is divided.
 
-**The theoretical basis:** Statins inhibit HMG-CoA reductase, which sits upstream in the mevalonate pathway from CoQ10 synthesis. Statins reliably lower blood levels of CoQ10 [1][2]. The hypothesis is that CoQ10 depletion contributes to statin-associated myalgia (muscle pain), weakness, and fatigue. Studies and reviews of those studies have yielded inconsistent results [40][41][42][43][44].
+**The idea:** Statins lower blood CoQ10, as the simvastatin trial showed [75]. The hypothesis is that this contributes to statin muscle pain. Individual trials have given mixed results: two found less pain with CoQ10 [40][48], and two found no difference from placebo [41][42].
 
-**Meta-analysis of 7 trials:** An analysis reviewing data from 7 clinical studies reported that CoQ10 supplementation decreased statin-associated muscle pain by a statistically significant amount overall. However, three of the analyzed studies included some participants without confirmed statin-associated muscle pain. When these three studies were excluded, there was no significant reduction in statin-associated muscle pain with CoQ10 compared to placebo [45].
+**Meta-analyses disagree.** Four pooled analyses have reached different answers:
 
-**Against benefit -- muscle-level evidence:** A small study of 35 men and women (average age 63) in Denmark on simvastatin (40 mg/day), about half of whom reported muscle pain, found that 200 mg of CoQ10 twice daily for 8 weeks did not reduce muscle pain intensity, nor increase CoQ10 levels in muscle tissue, despite significantly increasing blood CoQ10 levels. Changes in muscle CoQ10 did not correlate with changes in pain intensity. Supplementation did not increase mitochondrial CoQ10 levels or improve mitochondrial function in muscle cells [46].
+- 2015 (5 studies, 253 patients, for muscle pain): no significant effect on muscle pain (standardized mean difference -0.53, 95% CI -1.33 to 0.28) [92].
+- 2018 (12 trials, 575 patients): CoQ10 eased muscle pain (WMD -1.60, 95% CI -1.75 to -1.44), weakness, cramps and tiredness, with no change in creatine kinase [43].
+- 2020 (7 studies, 321 patients): no benefit for muscle pain (WMD -0.42, 95% CI -1.47 to 0.62) and no effect on staying on a statin (RR 0.99, 95% CI 0.81 to 1.20) [44].
+- 2025 (7 trials, 389 patients, 100 to 600 mg a day for 30 to 90 days): a small reduction in pain intensity (WMD -0.96, 95% CI -1.88 to -0.03), with four trials positive and three not; the authors called for more research [45].
 
-**Against benefit -- observational data:** A study of 511 people (average age 58) in the U.S. and Canada with a history of statin-associated muscle symptoms found that CoQ10 supplementation (dose not specified) was not associated with increased resolution of symptoms or willingness to continue statin therapy compared to not taking CoQ10 [47].
+**Muscle studies:** In 37 people on simvastatin, taking CoQ10 400 mg a day for 8 weeks left muscle CoQ10, mitochondrial function and muscle pain unchanged [46].
 
-**In favor -- combination with reduced statin dose:** A study in Italy found that when participants reduced their statin dose by half for one month and then added either 100 mg of CoQ10 daily or placebo for 3 months, 46.6% of CoQ10 recipients reported significantly less muscular pain compared to just 6.6% with placebo. CoQ10 also prevented the worsening of lipid profiles that occurred in the placebo group [48].
+**Observational data:** In a survey of 511 people with statin muscle symptoms, symptoms resolved in 25% of CoQ10 users and 31% of non-users (OR 0.75, 95% CI 0.41 to 1.38) [47].
 
-**For statin-related fatigue/weakness (asthenia):** A study of 60 adults (average age 74) in Italy with statin-associated asthenia for at least 3 months found that 300 mg of CoQ10 phytosome (Ubiqsome by Indena, which provided the supplement but did not fund the study), containing 60 mg of CoQ10, taken daily for 8 weeks reduced self-reported asthenia by 3 points (on a 0-10 scale) compared to baseline. This improvement was significant compared to the placebo group, which oddly showed a 1-point increase in asthenia. The CoQ10 group also showed significant improvements in handgrip strength (+4.5 kg vs. -0.2 kg), lower limb strength based on sit-to-stand repetitions (+6.8 vs. +0.1 per minute), and aerobic endurance based on a 2-minute step test (+11.2 vs. +1.3 steps) [19].
+**With a halved statin dose:** In 60 statin-intolerant people restarted on half their previous statin dose, liquid CoQ10 100 mg a day for 3 months lowered muscle pain scores, while placebo did not [48].
 
-**Guidelines:** The American College of Cardiology / American Heart Association task force states that available evidence does not support use of CoQ10 for statin-associated muscle symptoms [49]. The evidence remains inconclusive, with individual responses possibly varying.
+**Statin-related fatigue:** In older adults with statin-related fatigue (asthenia), a daily 300 mg CoQ10 phytosome (60 mg of CoQ10) for 8 weeks lowered fatigue scores by 30.0 ± 20.0% and improved grip strength, compared with both baseline and placebo [19].
+
+NCCIH concludes that the overall evidence does not support using CoQ10 to ease muscle pain from statins [3]. Brad's view is that statin users get no benefit ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). Two of the four meta-analyses found a benefit, so the trial evidence is mixed rather than uniformly negative.
 
 ### Migraine Prevention
 
-Two clinical trials support a role for CoQ10 in reducing migraine frequency, severity, or duration.
-
-**Trial 1:** A study of 42 men and women with migraine (with or without aura) in Switzerland found that 100 mg of CoQ10 taken as liquid drops three times daily (300 mg/day total) for 3 months modestly decreased migraine frequency by about 1 episode per month and slightly reduced days with nausea compared to placebo. The duration of episodes was not affected. Benefits were noticeable only after the first month of supplementation [12].
-
-**Trial 2:** A study of 45 men and women (average age 32) with migraine in Iran found that 200 mg of ubiquinol twice daily with meals (400 mg/day total) for 3 months produced greater reductions in migraine frequency (-6 vs. -3 episodes per month), duration (-7 vs. -4 hours), and severity (-3.4 vs. -2.4 points on a 1-10 scale) compared to placebo. CoQ10 supplementation also reduced blood levels of lactate and nitric oxide, both of which may be elevated in people with migraine [50].
-
-Based on this evidence, 300-400 mg of CoQ10 daily in divided doses may reduce migraine burden. Benefits may take 1-3 months to appear.
+In a trial of 42 people with migraine, CoQ10 100 mg three times a day beat placebo for attack frequency, headache days and days with nausea in the third month [12]. Attack frequency halved in 47.6% on CoQ10 and 14.4% on placebo [12].
 
 ### Muscle Pain, Fibromyalgia, and Nerve Pain
 
-**Fibromyalgia (psychological symptoms):** A study among middle-aged adults in Spain with fibromyalgia found that 100 mg of CoQ10 three times daily for 40 days significantly improved measures of interpersonal sensitivity, depression, anxiety, hostility, and symptoms of somatization and obsessive-compulsion compared to placebo. A reduction in inflammation and clinical symptoms (including sleep quality and tender points) was also noted by the researchers, although detailed data for these findings was not provided [51].
-
-**Fibromyalgia (as adjunct to pregabalin):** A study of middle-aged adults with fibromyalgia in Thailand found that adding 300 mg of CoQ10 to 150 mg of pregabalin (Lyrica) daily for 40 days significantly reduced pain, anxiety, and certain measures of inflammation compared to pregabalin plus placebo. Brain imaging showed that CoQ10 recipients had greater decreases in activity in brain regions associated with pain perception and modulation, including emotional, cognitive, and motor control responses to pain [52].
-
-**Trigeminal neuralgia:** A study of men and women in Thailand being treated with carbamazepine (e.g., Tegretol, Carbatrol) for trigeminal neuralgia found that adding 100 mg of CoQ10 three times daily for 2 months significantly reduced self-reported nerve pain and certain measures of oxidative stress compared to placebo [53].
+In a crossover trial of 11 people with fibromyalgia taking pregabalin, adding CoQ10 for 40 days reduced pain and anxiety more than pregabalin with placebo [52]. Brain scans showed lower activity in pain-related areas [52].
 
 ### Cognition
 
-Evidence for CoQ10 improving cognitive function is limited.
-
-A study of 69 men and women (average age 72) with mild cognitive impairment in Spain found that 200 mg of ubiquinol (Kaneka Corp) taken once daily with breakfast for 1 year improved cerebral vasoreactivity (the ability of brain blood vessels to expand and contract to allow proper blood flow) and reduced a blood marker of inflammation (lipopolysaccharide) in men, but not in women, compared to placebo. However, there were no improvements in cognition or measures of neurological function compared to placebo [54].
-
-The NCCIH notes that CoQ10 has also been studied for amyotrophic lateral sclerosis, Down syndrome, and Huntington's disease, but the research is too limited for conclusions [3].
+Evidence that CoQ10 improves thinking or memory is limited. NCCIH notes that it has been studied for amyotrophic lateral sclerosis, Down syndrome and Huntington's disease, but the research is too limited for conclusions [3].
 
 ### Parkinson's Disease
 
-Early research suggested potential benefit, but larger, well-designed studies have been definitively negative.
+**QE3:** This trial randomized 600 people with early Parkinson's disease to placebo, CoQ10 1,200 mg a day or CoQ10 2,400 mg a day, all with vitamin E 1,200 IU a day [55]. It stopped early for futility. Both CoQ10 groups did slightly worse than placebo (scores worsened by 7.5 and 8.0 points versus 6.9), and the differences were not significant [55].
 
-**The definitive trial (QE3):** A large, placebo-controlled study funded by the National Institutes of Health found no benefit from high-dose CoQ10 (1,200 mg or 2,400 mg daily) in people with early Parkinson's disease over 16+ months. In fact, symptoms worsened more (though not statistically significantly) in the CoQ10 groups, particularly at the higher dose, compared to the placebo group. All patients also received high-dose vitamin E (1,200 mg daily) [55].
-
-An earlier, smaller study had suggested possible benefit with a daily dose of 1,200 mg of CoQ10 (also with 1,200 mg of vitamin E), although not at lower doses of 300 mg or 600 mg [56].
-
-A 2017 evaluation of these and other studies concluded that CoQ10 is not helpful for Parkinson's symptoms [3].
+An earlier trial of 80 people had found less decline at 1,200 mg a day than with placebo [56]. A 2017 evaluation of these and other studies concluded that CoQ10 is not helpful for Parkinson's symptoms [3].
 
 ### Fatigue, Sleep, and Mood
 
-**Gulf War illness:** A study of veterans in their 40s and early 50s with Gulf War illness found that 100 mg of CoQ10 (in oil from a softgel) daily for 3-4 months improved physical function and multiple symptoms including word and name recall, impatience, irritability, headache, fatigue with exertion, low energy, and muscle pain. Self-rated health improved among men but not women. There was no improvement with sleep problems -- possibly due to an "activation" effect of CoQ10. Critically, a larger 300 mg dose did NOT provide these benefits and actually worsened sleep (74% reported sleep problems at baseline; this fell to 64% with 100 mg but increased to 83% with 300 mg) [57].
+**Gulf War illness:** In 46 veterans, CoQ10 100 mg a day for 3.5 ± 0.5 months improved self-rated health in men and physical function [57]. The 300 mg dose did not give the same benefit. Of 20 symptoms, all but sleep problems moved in a favourable direction on 100 mg [57].
 
-**General fatigue in healthy adults:** A study of 62 healthy men and women (average age 42) in Japan experiencing fatigue in daily life found that neither 100 mg nor 150 mg of ubiquinol taken daily after breakfast significantly improved nerve function, blood markers of oxidative stress, or most measures of cognitive function and fatigue compared to placebo, despite both doses significantly increasing blood CoQ10 levels. At 4 weeks there was improvement at both dosage levels in self-reported fatigue and sleepiness after cognitive testing, but this improvement was no longer significant relative to placebo at study end. The study was funded by Kaneka, a manufacturer of ubiquinol supplements [58].
+**Mild fatigue in healthy adults:** Ubiquinol 100 or 150 mg a day for 12 weeks improved fatigue and sleepiness after mental tasks compared with placebo [58].
 
-**Long COVID:** A study of 119 men and women in Denmark with COVID symptoms persisting 12+ weeks after infection found that 500 mg of CoQ10 daily (as five 100 mg doses throughout the day to maximize absorption) for 6 weeks did not reduce the severity or duration of symptoms including physical fatigue, mental fatigue, concentration difficulties, headache, and muscle weakness compared to placebo [59].
+**Long COVID:** In 119 people with post-COVID symptoms, CoQ10 500 mg a day for 6 weeks did not reduce symptoms compared with placebo [59].
 
-**Elderly "vitality":** A very small Japanese study of 11 healthy elderly subjects given 100 mg/day of ubiquinol showed increases in self-assessed "vitality" and "mental health." Plasma ubiquinol concentrations increased four-fold. Interestingly, the effects correlated with the increased ubiquinol-to-CoQ10 ratio rather than the absolute concentration increase [1].
-
-**Sleep:** CoQ10 does not appear to improve sleep. In fact, doses of 100 mg or more taken in the evening may cause mild insomnia, and higher doses (300 mg) may worsen sleep problems (see Safety and Side Effects) [1][57].
+**Sleep:** Insomnia is a possible mild side effect of CoQ10 [3].
 
 ### Skin and Wrinkles
 
-A study of 33 healthy, middle-aged women found that 150 mg of water-soluble CoQ10 (Q10Vital from Valens International) taken daily for 3 months significantly reduced visible wrinkles around the eyes, nose, and lips compared to placebo. However, there were no improvements in forehead wrinkles or frown lines between eyebrows, no improvement in skin thickness or hydration, and no evidence of increased UV protection. A lower dose of 50 mg had more limited effectiveness [18].
+In 33 healthy people, 50 or 150 mg of a water-soluble CoQ10 (Q10Vital) daily for 12 weeks reduced wrinkles and fine (microrelief) lines and improved skin smoothness compared with placebo [18]. It did not change skin hydration, dermis thickness or sunburn threshold [18].
 
 ### Strength and Athletic Performance
 
-Results are mixed and overall inconclusive. A 2022 review of studies indicated that results were inconclusive for CoQ10 and athletic performance [60]. Subsequent studies have continued to yield mixed findings.
-
-**No benefit in trained athletes:** A study of 68 athletically trained men (average age 39) in Spain found that 200 mg of ubiquinol (Kaneka QH, Kaneka Corporation) taken with water once daily in the morning (before eating) for 2 weeks during high-intensity resistance training did not consistently increase strength compared to placebo [16].
-
-**Possible acute benefit in untrained men:** A study of 42 untrained men (average age 26) in Thailand found that a single 300 mg dose of ubiquinol taken with lemon-flavored water 10 minutes after completing a round of resistance and cycling exercises increased strength during exercises performed 1 hour later and slightly reduced muscle soreness at 1 and 3 days post-exercise compared to placebo. The benefits were similar to the effects of drinking a lemon-flavored sports drink (Gatorade) after exercising [61].
+A 2022 systematic review found the data on CoQ10 and exercise performance inconclusive [60]. Brad cites a trial in which CoQ10 after exercise reduced its benefits ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). In a trial of 9 people on CoQ10 and 9 on placebo over 22 days, which included 5 days of high-intensity training, the placebo group gained significantly more anaerobic cycling performance than the CoQ10 group [95].
 
 ### Gum Disease (Gingivitis/Periodontitis)
 
-Evidence is limited. One small study reported benefit from topical CoQ10 gel (PerioQ) as an adjunct to non-surgical cleaning treatment [62]. Another small study of 30 men and women in India with periodontitis who received standard treatment (scaling and root planing) found that 120 mg of CoQ10 daily for 3 months after treatment modestly decreased gum inflammation compared to placebo, but there were no improvements in other disease measures such as plaque levels or pocket depth [63].
+Evidence is limited. In 18 people with periodontitis, a CoQ10 gel used with deep cleaning (scaling and root planing) improved gum measures at 4 weeks [62]. In 30 people, oral CoQ10 taken after deep cleaning reduced gum inflammation at 1 and 3 months but did not change plaque or pocket depth [63].
 
 ### Tinnitus
 
-Results are mixed. A study of 20 men and women (average age 54) in Germany with tinnitus found that 100 mg of CoQ10 three times daily for 16 weeks had no overall effect on tinnitus symptom scores. Only among participants who began the study with lower blood CoQ10 concentrations was there a modest reduction in the severity of associated symptoms (emotional distress, sleep disturbance), though there was no improvement in physical symptoms. The study lacked a placebo group [64].
-
-A study of 50 men and women (average age 58) in Iran with tinnitus found that adding 100 mg of CoQ10 daily to standard medication (nortriptyline 25 mg/day) resulted in a greater average reduction in self-reported tinnitus severity (-17 points on a 0-100 scale) than standard medication plus placebo (-4 points). However, CoQ10 did not improve quality of life, and the study had notable reporting deficiencies, including incomplete baseline data and no blood CoQ10 level measurements [65].
+In a 16-week study of 20 people with tinnitus and no control group, CoQ10 did not change tinnitus scores overall [64]. A subgroup of 7 people with low starting CoQ10 levels improved [64].
 
 ### Fertility
 
-**Female fertility:** A preliminary study suggested that CoQ10 (200 mg three times daily for 60 days) improved ovarian response to gonadotrophin stimulation in young women with low ovarian reserve [66]. However, no benefit was found when adding CoQ10 to DHEA treatment in another study [67].
+**Female fertility:** In 186 young women with poor ovarian reserve, CoQ10 for 60 days before IVF raised the number of eggs retrieved and high-quality embryos [66]. Clinical pregnancy and live birth rates tended to be higher but did not differ significantly [66].
 
-**Male fertility:** Doses of 200-300 mg have been used to increase sperm motility [1][68].
+**Male fertility:** NCCIH lists male infertility among the conditions where research is too limited for conclusions [3].
 
 ### Pre-eclampsia
 
-A dose of 200 mg of CoQ10 daily during pregnancy has been studied for reducing pre-eclampsia risk [69]. However, CoQ10's safety during pregnancy and breastfeeding has not been thoroughly evaluated, so use should only be under medical supervision.
+In 235 pregnant women at higher risk of pre-eclampsia, CoQ10 200 mg daily from 20 weeks of pregnancy until delivery lowered the rate of pre-eclampsia (14.4% versus 25.6%; RR 0.56, 95% CI 0.33 to 0.96) [69]. Use CoQ10 in pregnancy only under medical supervision.
 
-### Cancer -- Mixed Evidence and Caution
+### Cancer: Mixed Evidence and Caution
 
-CoQ10's role during cancer treatment is complex and potentially dangerous. Several case reports and a small preliminary clinical study found that supplementing with CoQ10 (typically 200-300 mg daily) during or following chemotherapy with anthracyclines (e.g., daunorubicin, doxorubicin) helped protect against or improve symptoms of chemotherapy-induced heart damage, although patients in the clinical trial were not followed for long-term survival [70][71].
+According to NCCIH, CoQ10 has not proved useful for treating cancer, though it may protect the heart from one type of chemotherapy drug [3]. In a small controlled study of children treated with anthracyclines, the 10 given CoQ10 kept better heart function than the 10 who were not [70].
 
-However, a study of women being treated for breast cancer with cyclophosphamide, doxorubicin, and/or paclitaxel suggested an increased risk of cancer recurrence or death among those taking any antioxidant supplements, including CoQ10 [72]. An animal study suggested that CoQ10 may reduce the effectiveness of cancer radiotherapy [73]. The NCCIH states that CoQ10 has not been shown to be of value in treating cancer [3].
+In 1,134 patients with breast cancer treated with cyclophosphamide, doxorubicin and paclitaxel, taking any antioxidant (including CoQ10) before and during chemotherapy was linked to a higher hazard of recurrence (adjusted HR 1.41, 95% CI 0.98 to 2.04) [72]. In mice with human lung cancer, CoQ10 reduced the response of tumours to radiation [73].
 
-Given these conflicting findings, CoQ10 should not be taken during cancer treatment without explicit guidance from an oncologist.
+Do not take CoQ10 during cancer treatment without your cancer team's advice.
 
 ### Autism Spectrum Disorder
 
-One small study found that ubiquinol, taken at 50 mg twice daily at morning and lunchtime for 3 months, improved communication, sleep, and decreased food rejection in children with autism, based on parental reports. The authors noted that in the first days of supplementation, a small subset of children experienced increased anger, hyperactivity, or sleep disturbance, which was managed by modifying the timing of doses to morning and evening. More research is needed to confirm whether ubiquinol supplementation is beneficial for autism [74].
+In an uncontrolled study, twenty-four children aged 3 to 6 years with autism took ubiquinol 50 mg twice a day for 3 months, and parents reported better communication, play and sleep, and less food refusal [74]. The journal has since published an expression of concern about this paper [74].
 
 ## 4. Recommended Dosing
 
+The doses below are those used in trials. They are not a recommendation: Brad would not take CoQ10 ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)).
+
 ### Dosing by Condition
 
-| Condition | Daily Dose | Form | Duration | Evidence Level |
+| Condition | Daily dose in trials | Form | Duration | Evidence |
 |-----------|-----------|------|----------|---------------|
-| Congestive heart failure (adjunct) | 100-300 mg in 2-3 divided doses | Ubiquinone or ubiquinol | 2+ years for full benefit | Strong (Q-SYMBIO trial) |
-| Diastolic heart failure (HFpEF) | 600 mg | Ubiquinol | 12+ weeks | Moderate (single study) |
-| Migraine prevention | 300-400 mg in 2-3 divided doses | CoQ10 or ubiquinol | 1-3 months before benefit appears | Moderate (2 RCTs) |
-| Statin-associated muscle pain | 50-200 mg (or 60 mg as phytosome) | CoQ10 or ubiquinol | 8-12 weeks | Weak/Mixed |
-| Blood sugar/insulin sensitivity | 100-200 mg (avoid >300 mg) | CoQ10 or ubiquinol | 12+ weeks | Weak |
-| Cholesterol (not on statins) | 120 mg in divided doses | CoQ10 | 5+ months | Moderate (single study) |
-| Fibromyalgia (adjunct) | 300 mg in divided doses | CoQ10 | 40+ days | Preliminary |
-| Trigeminal neuralgia (adjunct) | 300 mg in divided doses | CoQ10 | 2 months | Preliminary |
-| Skin/wrinkles | 150 mg | Water-soluble CoQ10 | 3 months | Preliminary |
-| Cardiac surgery (perioperative) | 400 mg (200 mg twice daily) | Ubiquinol | 7 days before through 5 days after | Moderate (single study) |
-| Pre-eclampsia prevention | 200 mg | CoQ10 | Throughout pregnancy (under medical supervision) | Preliminary |
-| General antioxidant/wellness | 100-200 mg | CoQ10 or ubiquinol | Ongoing | Low |
-| Male fertility (sperm motility) | 200-300 mg | CoQ10 | Ongoing | Preliminary |
-
-### Other Doses Used in Clinical Studies
-
-- Angina: 150 mg/day [1]
-- Reducing future heart problems after first heart attack: 120 mg/day [1]
-- HIV/AIDS: 200 mg/day [1]
-- Muscular dystrophy: 100 mg/day [1]
-- Mitochondrial encephalomyopathies: 150-160 mg/day or higher [1]
-- Children with trisomy 21 (to increase ubiquinol ratios): 10 mg ubiquinol per kg body weight [1]
+| Heart failure (added to treatment) | 100 mg three times a day | CoQ10 | 2 years | One large trial [11] |
+| HFpEF | 600 mg | Ubiquinol | 12 weeks | One small trial, stopped early; ubiquinol alone improved symptom scores [14] |
+| Migraine prevention | 100 mg three times a day | CoQ10 | Benefit by the third month | One small trial [12] |
+| Statin muscle symptoms | 100 to 600 mg | CoQ10 | 30 to 90 days | Four meta-analyses disagree [43][44][45][92] |
+| Blood sugar | 100 to 200 mg | CoQ10 | Varied | Meta-analysis [38] |
+| Blood lipids (no lipid drugs) | 120 mg | CoQ10 | 24 weeks | One trial [30] |
+| Skin wrinkles | 50 or 150 mg | Water-soluble CoQ10 | 12 weeks | One small trial [18] |
+| Aortic valve surgery | 400 mg | Ubiquinol | 7 days before to 5 days after | One trial [29] |
+| Pre-eclampsia (higher risk) | 200 mg | CoQ10 | From 20 weeks of pregnancy to delivery | One trial [69] |
 
 ### Practical Dosing Guidelines
 
-**Dose splitting:** When the total daily dose exceeds 100 mg, divide into 2-3 smaller doses taken throughout the day to maximize absorption [17].
+**Dose splitting:** The heart failure and migraine trials gave 100 mg three times a day [11][12].
 
-**Take with fat-containing food.** CoQ10 is fat-soluble and absorption improves significantly when taken with meals containing dietary fats [1][2]. If your statin must be taken without food, take CoQ10 at a different time alongside food.
+**With a statin:** In a 6-month trial, adding 100 mg of CoQ10 to simvastatin 20 mg kept plasma CoQ10 from falling and did not change the statin's cholesterol-lowering effect [75].
 
-**CoQ10 can be taken at the same time as statin medication** [75]. However, people who take their statin in the evening may prefer to take CoQ10 earlier in the day, as evening CoQ10 may cause insomnia [1].
+**More is not always better.** In Gulf War illness, 100 mg a day helped men more than 300 mg [57]. For blood sugar, the largest effects were at 100 to 200 mg a day [38].
 
-**Avoid evening dosing.** Doses of 100 mg or more taken in the evening may cause insomnia. Take CoQ10 with breakfast and/or lunch [1][57][76].
-
-**Higher doses do not always mean better results.** For blood sugar parameters, doses above 300 mg/day actually worsened some measures [38]. For Gulf War illness fatigue, 100 mg was effective but 300 mg was not and worsened sleep [57].
-
-**Age-based form selection:** Adults under 60 can use either ubiquinone or ubiquinol effectively. After age 60, ubiquinol may be preferable due to the age-related decline in CoQ10-to-ubiquinol conversion efficiency [1][4][5].
-
-**Do not suddenly stop CoQ10** if taking it for heart failure. Symptoms may worsen. Tapering is recommended [1].
+**Stopping:** If you take CoQ10 for heart failure, talk to your doctor before you stop it.
 
 ### Blood Level Monitoring
 
-CoQ10 levels can be measured via blood test (commonly ordered as "Coenzyme Q10," "Coenzyme Q10, Total," or "Ubiquinone 50"). The test is available through laboratories such as Quest Diagnostics and LabCorp. Normal reference range: 0.5-1.7 micromol/L (0.44-1.64 mg/L) [6]. For people with heart disease, a therapeutic target of 2.0 mg/L or greater is sometimes recommended. Blood levels do not necessarily reflect tissue levels (such as heart and skeletal muscle), but they are still considered a useful measure of CoQ10 status [1][7].
+Blood tests for CoQ10 exist. In people admitted with chronic heart failure, plasma CoQ10 predicted mortality, with 0.73 micromol/l as the best cut-point (HR 2.0, 95% CI 1.2 to 3.3) [6].
 
 ## 5. Safety and Side Effects
 
-CoQ10 is generally safe and well-tolerated at commonly used doses. Long-term safety data exists: a study of over 100 people with cardiomyopathy taking 100 mg daily (divided into three doses) for up to 6 years found CoQ10 to be safe, though the study lacked a control group [77]. In the QE3 Parkinson's trial, doses as high as 1,200 mg/day in divided doses were well tolerated over 16+ months in a placebo-controlled setting [55]. Even doses up to 2,400 mg/day have been studied [55].
+A 2008 safety review found that CoQ10 has low toxicity and does not cause serious adverse effects in humans, and it put the observed safety level at 1,200 mg a day [78]. In the QE3 Parkinson's trial, 1,200 and 2,400 mg a day for up to 16 months were well tolerated with no safety concerns [55]. Q-SYMBIO found long-term use in heart failure safe [11].
 
 ### Common Side Effects
 
-Gastrointestinal effects occur in approximately 1% of individuals in clinical trials and include [78][79]:
-
-- Loss of appetite
-- Heartburn
-- Nausea
-- Diarrhea
-
-Less commonly reported: headache, fatigue, irritability, and skin rash [78][79]. Gastrointestinal side effects may be minimized by taking smaller, divided doses [80].
+NCCIH reports no serious side effects; mild side effects such as insomnia or digestive upsets may occur [3]. A 2005 review described minimal side effects and low drug interaction potential [79].
 
 ### Insomnia
 
-A dose of 100 mg or more taken in the evening may cause mild insomnia [76]. Higher doses (300 mg) may worsen sleep problems even when taken during the day. In the Gulf War illness study, sleep problems increased from 74% at baseline to 83% with 300 mg/day, while decreasing to 64% with 100 mg/day [57]. If insomnia occurs, take CoQ10 well before dinner and consider reducing the dose.
+Insomnia is one of the mild side effects NCCIH lists [3]. In the Gulf War illness trial, sleep problems were the one symptom that did not move in a favourable direction on 100 mg a day [57].
 
 ### Blood Sugar Effects
 
-At doses of 100-200 mg/day, CoQ10 may modestly decrease fasting blood sugar and insulin. At doses above 300 mg/day, some glycemic measures may worsen [38]. People with diabetes, hypoglycemia, or those taking blood sugar-lowering medications should use CoQ10 with caution.
+CoQ10 lowered fasting glucose in pooled trials [38], and NCCIH warns it may interact with insulin [3]. After 3 months of taking CoQ10, a 52-year-old woman was taken to hospital with reduced consciousness and a blood glucose of 19 mg/dL, caused by insulin autoimmune syndrome; it resolved after she stopped CoQ10 [39]. If someone is confused, very drowsy, unconscious, having a seizure or cannot swallow safely with low blood sugar, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department. Do not give them food or drink by mouth.
 
 ### Pregnancy and Breastfeeding
 
-CoQ10's safety has not been evaluated in pregnant or breastfeeding women [1]. Use should be under medical supervision only.
-
-### Children
-
-CoQ10 has been used safely in children under medical supervision at doses up to 10 mg/kg/day for up to 9 months [1].
+The pre-eclampsia trial gave 200 mg daily from 20 weeks of pregnancy, under medical care [69]. Ask your doctor before taking CoQ10 if you are pregnant or breastfeeding.
 
 ### Cancer Treatment
 
-Evidence is mixed and concerning. CoQ10 may protect against anthracycline-induced cardiotoxicity [70][71], but antioxidant supplements (including CoQ10) may increase cancer recurrence risk during treatment with certain chemotherapy regimens [72]. CoQ10 may also reduce the effectiveness of radiotherapy in animal models [73]. Do not take CoQ10 during cancer treatment without oncologist approval.
+CoQ10 may protect the heart during anthracycline chemotherapy [3][70], but antioxidant use during breast cancer chemotherapy was linked to a possible rise in recurrence [72], and CoQ10 weakened radiation in mice [73]. NCCIH notes CoQ10 may not be compatible with some types of cancer treatment [3]. Do not take CoQ10 during cancer treatment without your cancer team's approval.
 
 ### Polysorbate 80
 
-Some CoQ10 supplements contain polysorbate 80 as a solubilizing agent. The FDA considers it generally safe but limits it to 175-475 mg per daily supplement serving depending on other ingredients. The WHO recommends adults not consume more than 1,750 mg (25 mg per kg body weight) daily. The amount of polysorbate 80 in supplements is not listed on labels, but amounts over 100 mg may be present in CoQ10 and ubiquinol supplements, particularly when polysorbate 80 appears early in the "Other ingredients" list. There are isolated reports of anaphylactoid reactions to polysorbate 80 from subcutaneous or intravenous medication, but not by mouth. There is theoretical concern that it may be harmful to people with Crohn's disease [81][82].
+Some CoQ10 softgels use polysorbate 80 as an emulsifier. In laboratory models, polysorbate 80 increased the passage of Crohn's disease E. coli across gut lining cells [82]. The concern is theoretical and applies to those who have Crohn's disease.
 
 ## 6. Drug Interactions
 
+If you take prescription medicines, check with your doctor or pharmacist before starting.
+
 ### Warfarin (Blood Thinners)
 
-The most clinically important interaction. CoQ10 is structurally similar to vitamin K2 and may decrease the anticoagulant effect of warfarin, potentially necessitating a warfarin dose increase [83]. However, a population-based study suggested the opposite -- an increased risk of bleeding with CoQ10 in warfarin users [84], and another study found no effect in patients with a stable INR [85]. Given the conflicting evidence, anyone taking warfarin should inform their physician before starting CoQ10 and have their INR monitored closely. It is unclear whether CoQ10 interacts with clopidogrel (Plavix), which works through a different mechanism [1].
+NCCIH warns that CoQ10 may interact with warfarin [3]. A 1994 report described a reduced effect of warfarin with CoQ10 (ubidecarenone) [83]. A cohort of 171 warfarin users linked CoQ10 to more self-reported bleeding (OR 3.69, 95% CI 1.88 to 7.24) [84]. In a crossover trial of 24 people on stable warfarin, CoQ10 100 mg a day for 4 weeks did not change the INR or warfarin dose [85]. Because the findings conflict, anyone taking warfarin should talk to their doctor before starting CoQ10 and have their INR checked.
 
 ### Insulin and Diabetes Medications
 
-CoQ10 may modestly lower blood sugar and improve insulin sensitivity at doses of 100-200 mg/day [38]. People taking insulin or oral hypoglycemic agents should monitor blood glucose levels more frequently when starting CoQ10.
+NCCIH warns that CoQ10 may interact with insulin [3], and it lowered fasting glucose in trials [38]. If you take insulin or other diabetes medicines, ask your doctor first.
 
 ### Medications That Lower CoQ10
 
-Several drug classes may reduce the body's natural CoQ10 production or blood levels. The CoQ10 dosage for individuals taking any of these medications may need to be higher than generally recommended [1]:
+Statins lower blood CoQ10: in a 6-month trial, simvastatin lowered plasma and platelet CoQ10, and adding CoQ10 prevented the fall [75].
 
-| Drug Class | Examples | Mechanism |
-|-----------|---------|-----------|
-| Statins | Atorvastatin, rosuvastatin, simvastatin, lovastatin | Inhibit HMG-CoA reductase in the mevalonate pathway |
-| Beta-blockers | Metoprolol, propranolol | May reduce CoQ10 levels |
-| Certain antidepressants | Various | May decrease CoQ10 production |
-| Antipsychotics | Various | May decrease CoQ10 production |
+### Thyroid conditions
 
-### Thyroid Medications
-
-Thyroid hormones affect CoQ10 levels: in hyperthyroidism (overactive thyroid), CoQ10 levels have been found to be among the lowest discovered in human disease, while in hypothyroidism (underactive thyroid), CoQ10 levels tend to be elevated [86]. Treatment of hyperthyroidism in children with methimazole (Tapazole) has been shown to normalize CoQ10 levels [87]. It is not known whether CoQ10 supplementation affects thyroid hormone levels, and interactions between CoQ10 and levothyroxine (Synthroid) have not been reported [1].
+Plasma CoQ10 moves opposite to thyroid hormone. Levels in people with an overactive thyroid are among the lowest found in human disease, and levels are raised in people with an underactive thyroid [86].
 
 ### Black Pepper Extract (Piperine/BioPerine)
 
-Some CoQ10 formulations include piperine to enhance absorption. Piperine inhibits CYP enzymes in the gut lining, which can affect the metabolism of many medications including phenytoin, rifampin, propranolol, theophylline, felodipine, amlodipine, nevirapine, and carbamazepine. Piperine at a dose of 20 mg may increase the bioavailability of carbamazepine (Tegretol, Carbatrol) [88]. Piperine may also have anti-platelet effects and should be used with caution alongside blood-thinning medication [89]. It may have diuretic properties and stimulate stomach acid production [90]. Avoid piperine-containing CoQ10 supplements if taking medications metabolized by CYP enzymes.
+Some CoQ10 products add piperine. In people with epilepsy, a single 20 mg dose of piperine raised blood levels of carbamazepine [88]. In laboratory tests, piperine slowed platelet clumping, though less than several other spice compounds [89]. If you take prescription medicines, check with your doctor or pharmacist before choosing a product with piperine.
 
 ### Chemotherapy and Radiotherapy
 
-CoQ10 may interfere with certain cancer treatments. A study suggested increased cancer recurrence risk with antioxidant supplements during breast cancer chemotherapy [72]. CoQ10 may reduce radiotherapy effectiveness in animal models [73]. Always consult an oncologist before using CoQ10 during cancer treatment.
+CoQ10 may interfere with some cancer treatments [3]. Antioxidant use during breast cancer chemotherapy was linked to a possible rise in recurrence [72], and CoQ10 weakened radiation in mice [73]. Talk to your cancer team before using CoQ10 during treatment.
 
 ## 7. Dietary Sources
 
-The body synthesizes most of its CoQ10 endogenously. Dietary intake typically provides only 3-6 mg per day from a normal mixed diet -- far less than the 100-600 mg doses used in clinical studies [2].
+The average dietary intake is only 3 to 6 mg, about half of it in the reduced form [91]. Most trial doses are far higher.
 
 ### Food Sources of CoQ10
 
-| Food | Serving | Approximate CoQ10 (mg) |
-|------|---------|----------------------|
-| Beef heart | 3 oz (85g) | 26-39 |
-| Reindeer meat | 3 oz (85g) | 12-18 |
-| Beef liver | 3 oz (85g) | 3-4 |
-| Pork chop | 3 oz (85g) | 2-4 |
-| Chicken leg | 3 oz (85g) | 1-2 |
-| Herring | 3 oz (85g) | 2-3 |
-| Rainbow trout | 3 oz (85g) | 1-2 |
-| Sardines (canned) | 3 oz (85g) | 1-2 |
-| Soybeans (boiled) | 1/2 cup | 1-2 |
-| Peanuts (roasted) | 1 oz (28g) | 0.7-1.3 |
-| Spinach, raw | 1 cup | 0.3-0.5 |
-| Broccoli, boiled | 1/2 cup | 0.4-0.6 |
-| Canola oil | 1 tbsp | 0.9-1.3 |
-| Soybean oil | 1 tbsp | 0.9-1.0 |
-
-Sources: USDA; Mattila & Kumpulainen 2001; Pravst et al., *Crit Rev Food Sci Nutr* 2010 [2][91].
+Meat, fish, nuts and some oils are the richest food sources [91]. Most dairy products, vegetables, fruits and cereals contain much less [91]. Content varies widely by where a food comes from [91].
 
 ### Practical Notes on Dietary CoQ10
 
-- **Organ meats** (particularly beef heart) are by far the richest dietary source but are rarely consumed in typical Western diets.
-- **Cooking reduces CoQ10 content** by approximately 14-32%, with frying causing the greatest losses [2].
-- **Dietary CoQ10 is insufficient for therapeutic doses.** Even with an organ meat-rich diet, dietary intake rarely exceeds 10-15 mg/day, whereas clinical applications use 100-600 mg/day [2].
-- **Absorption from food follows the same principles as supplements:** CoQ10 from food is better absorbed when consumed alongside dietary fat.
-- **The main dietary sources are animal products.** Vegetarians and vegans may have lower dietary CoQ10 intake, though endogenous synthesis typically compensates [2].
+- **Food cannot match trial doses.** Diet supplies only 3 to 6 mg [91], far below the doses used in most of the trials above.
+- **The main dietary sources are animal products, nuts and some oils** [91].
 
 ## 8. References
 
-[1] ConsumerLab. "CoQ10 and Ubiquinol Supplements Review." Accessed 2026. [https://www.consumerlab.com/reviews/coq10-ubiquinol-supplements-review/coq10/](https://www.consumerlab.com/reviews/coq10-ubiquinol-supplements-review/coq10/)
+[3] National Center for Complementary and Integrative Health (NCCIH). "Coenzyme Q10." Last updated January 2019. [https://www.nccih.nih.gov/health/coenzyme-q10](https://www.nccih.nih.gov/health/coenzyme-q10)
 
-[2] General CoQ10 biochemistry, dietary sources, and endogenous synthesis (multiple sources).
+[6] Molyneux SL, et al. "Coenzyme Q10: an independent predictor of mortality in chronic heart failure." *J Am Coll Cardiol*. 2008;52(18):1435-1441. doi: [10.1016/j.jacc.2008.07.044](https://doi.org/10.1016/j.jacc.2008.07.044). PMID: [19017509](https://pubmed.ncbi.nlm.nih.gov/19017509/)
 
-[3] National Center for Complementary and Integrative Health (NCCIH). "Coenzyme Q10." Updated January 2019. [https://www.nccih.nih.gov/health/coenzyme-q10](https://www.nccih.nih.gov/health/coenzyme-q10)
+[8] Mantle D, et al. "Primary Coenzyme Q10 Deficiency: An Update." *Antioxidants (Basel)*. 2023;12(8):1652. doi: [10.3390/antiox12081652](https://doi.org/10.3390/antiox12081652). PMID: [37627647](https://pubmed.ncbi.nlm.nih.gov/37627647/)
 
-[4] Niklowitz P, et al. "Enrichment of coenzyme Q10 in plasma and blood cells: defense against oxidative damage." *J Clin Biochem Nutr*. 2016.
+[10] Fotino AD, et al. "Effect of coenzyme Q10 supplementation on heart failure: a meta-analysis." *Am J Clin Nutr*. 2013;97(2):268-275. doi: [10.3945/ajcn.112.040741](https://doi.org/10.3945/ajcn.112.040741). PMID: [23221577](https://pubmed.ncbi.nlm.nih.gov/23221577/)
 
-[5] Claessens AJ, et al. "Decreased coenzyme Q10 ratio as a function of age." *Ann Clin Biochem*. 2016.
+[11] Mortensen SA, et al. "The effect of coenzyme Q10 on morbidity and mortality in chronic heart failure: results from Q-SYMBIO: a randomized double-blind trial." *JACC Heart Fail*. 2014;2(6):641-649. doi: [10.1016/j.jchf.2014.06.008](https://doi.org/10.1016/j.jchf.2014.06.008). PMID: [25282031](https://pubmed.ncbi.nlm.nih.gov/25282031/)
 
-[6] Molyneux SL, et al. "Coenzyme Q10: an independent predictor of mortality in chronic heart failure." *Clin Biochem Rev*. 2008.
+[12] Sandor PS, et al. "Efficacy of coenzyme Q10 in migraine prophylaxis: a randomized controlled trial." *Neurology*. 2005;64(4):713-715. doi: [10.1212/01.WNL.0000151975.03598.ED](https://doi.org/10.1212/01.WNL.0000151975.03598.ED). PMID: [15728298](https://pubmed.ncbi.nlm.nih.gov/15728298/)
 
-[7] Keith M, et al. "Increased oxidative stress in patients with congestive heart failure." *Nutr Metab Cardiovasc Dis*. 2008.
+[13] Samuel TY, et al. "Coenzyme Q10 in the Treatment of Heart Failure with Preserved Ejection Fraction: A Prospective, Randomized, Double-Blind, Placebo-Controlled Trial." *Drugs R D*. 2022;22(1):25-33. doi: [10.1007/s40268-021-00372-1](https://doi.org/10.1007/s40268-021-00372-1). PMID: [34826125](https://pubmed.ncbi.nlm.nih.gov/34826125/)
 
-[8] Mantle D, et al. "Primary coenzyme Q10 deficiency: an update." *Antioxidants (Basel)*. 2023.
+[14] Pierce JD, et al. "Effects of Ubiquinol and/or D-ribose in Patients With Heart Failure With Preserved Ejection Fraction." *Am J Cardiol*. 2022;176:79-88. doi: [10.1016/j.amjcard.2022.04.031](https://doi.org/10.1016/j.amjcard.2022.04.031). PMID: [35644694](https://pubmed.ncbi.nlm.nih.gov/35644694/)
 
-[9] Fischer A, et al. "NQO1 polymorphism and CoQ10 levels." *BMC Res Notes*. 2011.
+[18] Zmitek K, et al. "The effect of dietary intake of coenzyme Q10 on skin parameters and condition: results of a randomised, placebo-controlled, double-blind study." *Biofactors*. 2017;43(1):132-140. doi: [10.1002/biof.1316](https://doi.org/10.1002/biof.1316). PMID: [27548886](https://pubmed.ncbi.nlm.nih.gov/27548886/)
 
-[10] Fotino AD, et al. "Effect of coenzyme Q10 supplementation on heart failure: a meta-analysis." *Am J Clin Nutr*. 2013;97(2):268-275. doi: [10.3945/ajcn.112.040741](https://doi.org/10.3945/ajcn.112.040741)
+[19] Fogacci F, et al. "Effect of Coenzyme Q10 on Physical Performance in Older Adults with Statin-Associated Asthenia: A Double-Blind, Randomized, Placebo-Controlled Clinical Trial." *J Clin Med*. 2024;13(13):3741. doi: [10.3390/jcm13133741](https://doi.org/10.3390/jcm13133741). PMID: [38999304](https://pubmed.ncbi.nlm.nih.gov/38999304/)
 
-[11] Mortensen SA, et al. "The effect of coenzyme Q10 on morbidity and mortality in chronic heart failure: results from Q-SYMBIO: a randomized double-blind trial." *JACC Heart Fail*. 2014;2(6):641-649. doi: [10.1016/j.jchf.2014.06.008](https://doi.org/10.1016/j.jchf.2014.06.008)
+[21] Weyer G, et al. "A controlled study of 2 doses of idebenone in the treatment of Alzheimer's disease." *Neuropsychobiology*. 1997;36(2):73-82. doi: [10.1159/000119366](https://doi.org/10.1159/000119366). PMID: [9267856](https://pubmed.ncbi.nlm.nih.gov/9267856/)
 
-[12] Sandor PS, et al. "Efficacy of coenzyme Q10 in migraine prophylaxis: a randomized controlled trial." *Neurology*. 2005;64(4):713-715. doi: [10.1212/01.WNL.0000151975.03598.ED](https://doi.org/10.1212/01.WNL.0000151975.03598.ED)
+[22] Thal LJ, et al. "Idebenone treatment fails to slow cognitive decline in Alzheimer's disease." *Neurology*. 2003;61(11):1498-1502. doi: [10.1212/01.wnl.0000096376.03678.c1](https://doi.org/10.1212/01.wnl.0000096376.03678.c1). PMID: [14663031](https://pubmed.ncbi.nlm.nih.gov/14663031/)
 
-[13] Samuel TJ, et al. "Randomised, double-blind, placebo-controlled study of coenzyme Q10 in patients with heart failure with preserved ejection fraction." *Drugs R D*. 2021. doi: [10.1007/s40268-021-00359-2](https://doi.org/10.1007/s40268-021-00359-2)
+[23] Rossman MJ, et al. "Chronic supplementation with a mitochondrial antioxidant (MitoQ) improves vascular function in healthy older adults." *Hypertension*. 2018;71(6):1056-1063. doi: [10.1161/HYPERTENSIONAHA.117.10787](https://doi.org/10.1161/HYPERTENSIONAHA.117.10787). PMID: [29661838](https://pubmed.ncbi.nlm.nih.gov/29661838/)
 
-[14] Pierce JD, et al. "Effects of ubiquinol and/or D-ribose in patients with heart failure with preserved ejection fraction." *Am J Cardiol*. 2022. doi: [10.1016/j.amjcard.2022.04.031](https://doi.org/10.1016/j.amjcard.2022.04.031)
+[25] Carlini NA, et al. "Acute effects of MitoQ on vascular endothelial function are influenced by cardiorespiratory fitness and baseline FMD in middle-aged and older adults." *J Physiol*. 2024;602(9):1923-1937. doi: [10.1113/JP285636](https://doi.org/10.1113/JP285636). PMID: [38568933](https://pubmed.ncbi.nlm.nih.gov/38568933/)
 
-[15] Palakornkitti P, et al. "Effects of ubiquinol supplementation on insulin resistance in prediabetes." *Clin Nutr Open Sci*. 2026.
+[26] Gottwald EM, et al. "The targeted anti-oxidant MitoQ causes mitochondrial swelling and depolarization in kidney tissue." *Physiol Rep*. 2018;6(7):e13667. doi: [10.14814/phy2.13667](https://doi.org/10.14814/phy2.13667). PMID: [29611340](https://pubmed.ncbi.nlm.nih.gov/29611340/)
 
-[16] Moreno-Fernandez J, et al. "Ubiquinol supplementation does not enhance resistance training adaptations in trained men." *Antioxidants*. 2023.
+[27] Snow BJ, et al. "A double-blind, placebo-controlled study to assess the mitochondria-targeted antioxidant MitoQ as a disease-modifying therapy in Parkinson's disease." *Mov Disord*. 2010;25(11):1670-1674. doi: [10.1002/mds.23148](https://doi.org/10.1002/mds.23148). PMID: [20568096](https://pubmed.ncbi.nlm.nih.gov/20568096/)
 
-[17] Mantle D, et al. "Coenzyme Q10 supplementation: dosing considerations." *Antioxidants (Basel)*. 2020.
+[28] Gane EJ, et al. "The mitochondria-targeted anti-oxidant mitoquinone decreases liver damage in a phase II study of hepatitis C patients." *Liver Int*. 2010;30(7):1019-1026. doi: [10.1111/j.1478-3231.2010.02250.x](https://doi.org/10.1111/j.1478-3231.2010.02250.x). PMID: [20492507](https://pubmed.ncbi.nlm.nih.gov/20492507/)
 
-[18] Zmitek K, et al. "The effect of dietary intake of coenzyme Q10 on skin parameters and condition: results of a randomised, placebo-controlled, double-blind study." *Biofactors*. 2016;43(1):132-140. doi: [10.1002/biof.1316](https://doi.org/10.1002/biof.1316)
+[29] Orlando P, et al. "Ubiquinol supplementation in elderly patients undergoing aortic valve replacement: biochemical and clinical aspects." *Aging (Albany NY)*. 2020;12(15):15514-15531. doi: [10.18632/aging.103742](https://doi.org/10.18632/aging.103742). PMID: [32741773](https://pubmed.ncbi.nlm.nih.gov/32741773/)
 
-[19] Fogacci F, et al. "Effect of CoQ10 phytosome on statin-associated asthenia." *J Clin Med*. 2024.
+[30] Zhang P, et al. "Treatment of coenzyme Q10 for 24 weeks improves lipid and glycemic profile in dyslipidemic individuals." *J Clin Lipidol*. 2018;12(2):417-427.e5. doi: [10.1016/j.jacl.2017.12.006](https://doi.org/10.1016/j.jacl.2017.12.006). PMID: [29454678](https://pubmed.ncbi.nlm.nih.gov/29454678/)
 
-[20] Voronkova KV, et al. "Idebenone and Alzheimer's disease." *Neurosci*. 2009.
+[31] Zou J, et al. "Coenzyme Q10 supplementation improves cholesterol efflux capacity and antiinflammatory properties of high-density lipoprotein in Chinese adults with dyslipidemia." *Nutrition*. 2022;101:111703. doi: [10.1016/j.nut.2022.111703](https://doi.org/10.1016/j.nut.2022.111703). PMID: [35700592](https://pubmed.ncbi.nlm.nih.gov/35700592/). Erratum published.
 
-[21] Weyer G, et al. "A controlled study of 2 doses of idebenone in the treatment of Alzheimer's disease." *Neuropsychobiology*. 1997.
+[34] Lee BJ, et al. "Effects of coenzyme Q10 supplementation on inflammatory markers (high-sensitivity C-reactive protein, interleukin-6, and homocysteine) in patients with coronary artery disease." *Nutrition*. 2012;28(7-8):767-772. doi: [10.1016/j.nut.2011.11.008](https://doi.org/10.1016/j.nut.2011.11.008). PMID: [22342390](https://pubmed.ncbi.nlm.nih.gov/22342390/)
 
-[22] Thal LJ, et al. "Idebenone treatment fails to slow cognitive decline in Alzheimer's disease." *Neurology*. 2003.
+[36] Ho MJ, et al. "Blood pressure lowering efficacy of coenzyme Q10 for primary hypertension." *Cochrane Database Syst Rev*. 2016;3(3):CD007435. doi: [10.1002/14651858.CD007435.pub3](https://doi.org/10.1002/14651858.CD007435.pub3). PMID: [26935713](https://pubmed.ncbi.nlm.nih.gov/26935713/)
 
-[23] Rossman MJ, et al. "Chronic supplementation with a mitochondrial antioxidant (MitoQ) improves vascular function in healthy older adults." *Hypertension*. 2018;71(6):1056-1063. doi: [10.1161/HYPERTENSIONAHA.117.10787](https://doi.org/10.1161/HYPERTENSIONAHA.117.10787)
+[37] Rembold CM. "Coenzyme Q10 Supplementation in Orthostatic Hypotension and Multiple-System Atrophy: A Report on 7 Cases." *Am J Med*. 2018;131(4):444-446. doi: [10.1016/j.amjmed.2017.10.021](https://doi.org/10.1016/j.amjmed.2017.10.021). PMID: [29080629](https://pubmed.ncbi.nlm.nih.gov/29080629/)
 
-[24] Broome SC, et al. "MitoQ supplementation augments acute exercise training cardiorespiratory performance in healthy middle-aged men." *J Int Soc Sports Nutr*. 2021. doi: [10.1186/s12970-021-00439-1](https://doi.org/10.1186/s12970-021-00439-1)
+[38] Liang Y, et al. "Effects of coenzyme Q10 supplementation on glycemic control: A GRADE-assessed systematic review and dose-response meta-analysis of randomized controlled trials." *EClinicalMedicine*. 2022;52:101602. doi: [10.1016/j.eclinm.2022.101602](https://doi.org/10.1016/j.eclinm.2022.101602). PMID: [35958521](https://pubmed.ncbi.nlm.nih.gov/35958521/)
 
-[25] Carlini NA, et al. "Acute MitoQ supplementation and vascular and cardiac function." *J Physiol*. 2024.
+[39] Kusano Y, et al. "Insulin autoimmune syndrome possibly caused by coenzyme Q10." *J Rural Med*. 2019;14(1):132-137. doi: [10.2185/jrm.2975](https://doi.org/10.2185/jrm.2975). PMID: [31191778](https://pubmed.ncbi.nlm.nih.gov/31191778/)
 
-[26] Gottwald EM, et al. "The targeted anti-oxidant MitoQ causes mitochondrial swelling and depolarization in kidney tissue." *Physiol Rep*. 2018. doi: [10.14814/phy2.13667](https://doi.org/10.14814/phy2.13667)
+[40] Skarlovnik A, et al. "Coenzyme Q10 supplementation decreases statin-related mild-to-moderate muscle symptoms: a randomized clinical study." *Med Sci Monit*. 2014;20:2183-2188. doi: [10.12659/MSM.890777](https://doi.org/10.12659/MSM.890777). PMID: [25375075](https://pubmed.ncbi.nlm.nih.gov/25375075/)
 
-[27] Snow BJ, et al. "A double-blind, placebo-controlled study to assess the mitochondria-targeted antioxidant MitoQ as a disease-modifying therapy in Parkinson's disease." *Mov Disord*. 2010;25(11):1670-1674. doi: [10.1002/mds.23148](https://doi.org/10.1002/mds.23148)
+[41] Bookstaver DA, et al. "Effect of coenzyme Q10 supplementation on statin-induced myalgias." *Am J Cardiol*. 2012;110(4):526-529. doi: [10.1016/j.amjcard.2012.04.026](https://doi.org/10.1016/j.amjcard.2012.04.026). PMID: [22608359](https://pubmed.ncbi.nlm.nih.gov/22608359/)
 
-[28] Gane EJ, et al. "The mitochondria-targeted anti-oxidant mitoquinone decreases liver damage in a phase II study of hepatitis C patients." *Liver Int*. 2010;30(7):1019-1026. doi: [10.1111/j.1478-3231.2010.02250.x](https://doi.org/10.1111/j.1478-3231.2010.02250.x)
+[42] Young JM, et al. "Effect of coenzyme Q10 supplementation on simvastatin-induced myalgia." *Am J Cardiol*. 2007;100(9):1400-1403. doi: [10.1016/j.amjcard.2007.06.030](https://doi.org/10.1016/j.amjcard.2007.06.030). PMID: [17950797](https://pubmed.ncbi.nlm.nih.gov/17950797/)
 
-[29] Orlando P, et al. "Effect of ubiquinol supplementation on biochemical and oxidative stress indexes after coronary artery bypass grafting." *Aging (Albany NY)*. 2020.
+[43] Qu H, et al. "Effects of Coenzyme Q10 on Statin-Induced Myopathy: An Updated Meta-Analysis of Randomized Controlled Trials." *J Am Heart Assoc*. 2018;7(19):e009835. doi: [10.1161/JAHA.118.009835](https://doi.org/10.1161/JAHA.118.009835). PMID: [30371340](https://pubmed.ncbi.nlm.nih.gov/30371340/)
 
-[30] Zhang P, et al. "Effect of coenzyme Q10 on the lipid profile in hypercholesterolemic adults." *J Clin Lipidol*. 2017.
+[44] Kennedy C, et al. "Effect of Coenzyme Q10 on statin-associated myalgia and adherence to statin therapy: A systematic review and meta-analysis." *Atherosclerosis*. 2020;299:1-8. doi: [10.1016/j.atherosclerosis.2020.03.006](https://doi.org/10.1016/j.atherosclerosis.2020.03.006). PMID: [32179207](https://pubmed.ncbi.nlm.nih.gov/32179207/)
 
-[31] Zou L, et al. "The effect of CoQ10 on HDL cholesterol efflux capacity." *Nutrition*. 2022.
+[45] Kovacic S, et al. "Effects of coenzyme Q10 supplementation on myopathy in statin-treated patients: a systematic review and meta-analysis." *J Nutr Sci*. 2025;14:e72. doi: [10.1017/jns.2025.10043](https://doi.org/10.1017/jns.2025.10043). PMID: [41158831](https://pubmed.ncbi.nlm.nih.gov/41158831/)
 
-[32] Hansen M, et al. "Ubiquinol supplementation and lipid profiles in statin-treated patients." *Cytokine*. 2018.
+[46] Dohlmann TL, et al. "Coenzyme Q10 Supplementation in Statin Treated Patients: A Double-Blinded Randomized Placebo-Controlled Trial." *Antioxidants (Basel)*. 2022;11(9):1698. doi: [10.3390/antiox11091698](https://doi.org/10.3390/antiox11091698). PMID: [36139772](https://pubmed.ncbi.nlm.nih.gov/36139772/)
 
-[33] Ritu V, et al. "CoQ10 and homocysteine levels." *J Clin Trials Cardiol*. 2014.
+[47] Chen W, et al. "Coenzyme Q10 supplementation for the treatment of statin-associated muscle symptoms." *Future Cardiol*. 2022;18(6):461-470. doi: [10.2217/fca-2021-0106](https://doi.org/10.2217/fca-2021-0106). PMID: [35297269](https://pubmed.ncbi.nlm.nih.gov/35297269/)
 
-[34] Lee BJ, et al. "Effects of coenzyme Q10 supplementation (60 and 150 mg) on homocysteine levels." *Nutrition*. 2012;28(7-8):767-772. doi: [10.1016/j.nut.2011.10.011](https://doi.org/10.1016/j.nut.2011.10.011)
+[48] Derosa G, et al. "Coenzyme q10 liquid supplementation in dyslipidemic subjects with statin-related clinical symptoms: a double-blind, randomized, placebo-controlled study." *Drug Des Devel Ther*. 2019;13:3647-3655. doi: [10.2147/DDDT.S223153](https://doi.org/10.2147/DDDT.S223153). PMID: [31695332](https://pubmed.ncbi.nlm.nih.gov/31695332/)
 
-[35] Kinoshita T, et al. "Ubiquinol and homocysteine in healthy older adults." *Funct Foods Health Dis*. 2016.
+[52] Sawaddiruk P, et al. "Coenzyme Q10 supplementation alleviates pain in pregabalin-treated fibromyalgia patients via reducing brain activity and mitochondrial dysfunction." *Free Radic Res*. 2019;53(8):901-909. doi: [10.1080/10715762.2019.1645955](https://doi.org/10.1080/10715762.2019.1645955). PMID: [31387429](https://pubmed.ncbi.nlm.nih.gov/31387429/)
 
-[36] Ho MJ, et al. "Blood pressure lowering efficacy of coenzyme Q10 for primary hypertension." *Cochrane Database Syst Rev*. 2016. doi: [10.1002/14651858.CD007435.pub3](https://doi.org/10.1002/14651858.CD007435.pub3)
+[55] Parkinson Study Group QE3 Investigators. "A randomized clinical trial of high-dosage coenzyme Q10 in early Parkinson disease: no evidence of benefit." *JAMA Neurol*. 2014;71(5):543-552. doi: [10.1001/jamaneurol.2014.131](https://doi.org/10.1001/jamaneurol.2014.131). PMID: [24664227](https://pubmed.ncbi.nlm.nih.gov/24664227/)
 
-[37] Rembold CM, et al. "Coenzyme Q10 for orthostatic hypotension." *Am J Med*. 2017.
+[56] Shults CW, et al. "Effects of coenzyme Q10 in early Parkinson disease: evidence of slowing of the functional decline." *Arch Neurol*. 2002;59(10):1541-1550. doi: [10.1001/archneur.59.10.1541](https://doi.org/10.1001/archneur.59.10.1541). PMID: [12374491](https://pubmed.ncbi.nlm.nih.gov/12374491/)
 
-[38] Liang S, et al. "The effect of coenzyme Q10 on glycemic control: a systematic review and meta-analysis of randomized clinical trials." *eClinicalMedicine*. 2022. doi: [10.1016/j.eclinm.2022.101602](https://doi.org/10.1016/j.eclinm.2022.101602)
+[57] Golomb BA, et al. "Coenzyme Q10 benefits symptoms in Gulf War veterans: results of a randomized double-blind study." *Neural Comput*. 2014;26(11):2594-2651. doi: [10.1162/NECO_a_00659](https://doi.org/10.1162/NECO_a_00659). PMID: [25149705](https://pubmed.ncbi.nlm.nih.gov/25149705/)
 
-[39] Kusano R, et al. "Insulin autoimmune syndrome possibly caused by coenzyme Q10." *J Rural Med*. 2019.
+[58] Mizuno K, et al. "Ubiquinol-10 Intake Is Effective in Relieving Mild Fatigue in Healthy Individuals." *Nutrients*. 2020;12(6):1640. doi: [10.3390/nu12061640](https://doi.org/10.3390/nu12061640). PMID: [32498248](https://pubmed.ncbi.nlm.nih.gov/32498248/)
 
-[40] Skarlovnik A, et al. "Coenzyme Q10 supplementation decreases statin-related mild-to-moderate muscle symptoms." *Med Sci Monit*. 2014.
+[59] Hansen KS, et al. "High-dose coenzyme Q10 therapy versus placebo in patients with post COVID-19 condition: a randomized, phase 2, crossover trial." *Lancet Reg Health Eur*. 2023;24:100539. doi: [10.1016/j.lanepe.2022.100539](https://doi.org/10.1016/j.lanepe.2022.100539). PMID: [36337437](https://pubmed.ncbi.nlm.nih.gov/36337437/)
 
-[41] Bookstaver DA, et al. "Effect of coenzyme Q10 supplementation on statin-induced myalgias." *Am J Cardiol*. 2012.
+[60] Drobnic F, et al. "Coenzyme Q10 Supplementation and Its Impact on Exercise and Sport Performance in Humans: A Recovery or a Performance-Enhancing Molecule?" *Nutrients*. 2022;14(9):1811. doi: [10.3390/nu14091811](https://doi.org/10.3390/nu14091811). PMID: [35565783](https://pubmed.ncbi.nlm.nih.gov/35565783/)
 
-[42] Young JM, et al. "Effect of coenzyme Q10 supplementation on simvastatin-induced myalgia." *Am J Cardiol*. 2007.
+[62] Sale ST, et al. "A comparative evaluation of topical and intrasulcular application of coenzyme Q10 (Perio Q) gel in chronic periodontitis patients: A clinical study." *J Indian Soc Periodontol*. 2014;18(4):461-465. doi: [10.4103/0972-124X.138690](https://doi.org/10.4103/0972-124X.138690). PMID: [25210260](https://pubmed.ncbi.nlm.nih.gov/25210260/)
 
-[43] Qu H, et al. "Effects of coenzyme Q10 on statin-induced myopathy: an updated meta-analysis of randomized controlled trials." *J Am Heart Assoc*. 2018.
+[63] Manthena S, et al. "Effectiveness of CoQ10 Oral Supplements as an Adjunct to Scaling and Root Planing in Improving Periodontal Health." *J Clin Diagn Res*. 2015;9(8):ZC26-ZC28. doi: [10.7860/JCDR/2015/13486.6291](https://doi.org/10.7860/JCDR/2015/13486.6291). PMID: [26436041](https://pubmed.ncbi.nlm.nih.gov/26436041/)
 
-[44] Kennedy C, et al. "Effect of coenzyme Q10 on statin-associated myalgia and adherence to statin therapy: a systematic review and meta-analysis." *Atherosclerosis*. 2020.
+[64] Khan M, et al. "A pilot clinical trial of the effects of coenzyme Q10 on chronic tinnitus aurium." *Otolaryngol Head Neck Surg*. 2007;136(1):72-77. doi: [10.1016/j.otohns.2006.07.010](https://doi.org/10.1016/j.otohns.2006.07.010). PMID: [17210337](https://pubmed.ncbi.nlm.nih.gov/17210337/)
 
-[45] Kovacic D, et al. "CoQ10 and statin-associated muscle pain: a meta-analysis." *J Nutr Sci*. 2025.
+[66] Xu Y, et al. "Pretreatment with coenzyme Q10 improves ovarian response and embryo quality in low-prognosis young women with decreased ovarian reserve: a randomized controlled trial." *Reprod Biol Endocrinol*. 2018;16(1):29. doi: [10.1186/s12958-018-0343-0](https://doi.org/10.1186/s12958-018-0343-0). PMID: [29587861](https://pubmed.ncbi.nlm.nih.gov/29587861/)
 
-[46] Dohlmann TL, et al. "Statin-related myopathy and CoQ10 supplementation: effects on muscle CoQ10 and mitochondrial function." *Antioxidants*. 2022. doi: [10.3390/antiox11020228](https://doi.org/10.3390/antiox11020228)
+[69] Teran E, et al. "Coenzyme Q10 supplementation during pregnancy reduces the risk of pre-eclampsia." *Int J Gynaecol Obstet*. 2009;105(1):43-45. doi: [10.1016/j.ijgo.2008.11.033](https://doi.org/10.1016/j.ijgo.2008.11.033). PMID: [19154996](https://pubmed.ncbi.nlm.nih.gov/19154996/)
 
-[47] Chen KK, et al. "CoQ10 and statin-associated muscle symptoms resolution." *Future Cardiol*. 2022.
+[70] Iarussi D, et al. "Protective effect of coenzyme Q10 on anthracyclines cardiotoxicity: control study in children with acute lymphoblastic leukemia and non-Hodgkin lymphoma." *Mol Aspects Med*. 1994;15(Suppl):s207-s212. doi: [10.1016/0098-2997(94)90030-2](https://doi.org/10.1016/0098-2997(94)90030-2). PMID: [7752832](https://pubmed.ncbi.nlm.nih.gov/7752832/)
 
-[48] Derosa G, et al. "Coenzyme Q10 supplementation in patients with statin-related myalgia." *Drug Des Devel Ther*. 2019. doi: [10.2147/DDDT.S203153](https://doi.org/10.2147/DDDT.S203153)
+[72] Ambrosone CB, et al. "Dietary supplement use during chemotherapy and survival outcomes of patients with breast cancer enrolled in a cooperative group clinical trial (SWOG S0221)." *J Clin Oncol*. 2020;38(8):804-814. doi: [10.1200/JCO.19.01203](https://doi.org/10.1200/JCO.19.01203). PMID: [31855498](https://pubmed.ncbi.nlm.nih.gov/31855498/)
 
-[49] Grundy SM, et al. "2018 AHA/ACC Guideline on the Management of Blood Cholesterol." *Circulation*. 2019;139(25):e1082-e1143. doi: [10.1161/CIR.0000000000000625](https://doi.org/10.1161/CIR.0000000000000625)
+[73] Lund EL, et al. "Effect of radiation therapy on small-cell lung cancer is reduced by ubiquinone intake." *Folia Microbiol (Praha)*. 1998;43(5):505-506. doi: [10.1007/BF02820805](https://doi.org/10.1007/BF02820805). PMID: [9821311](https://pubmed.ncbi.nlm.nih.gov/9821311/)
 
-[50] Nattagh-Eshtivani E, et al. "The role of coenzyme Q10 supplementation in alleviating migraine." *Eur J Integr Med*. 2018.
+[74] Gvozdjakova A, et al. "Ubiquinol improves symptoms in children with autism." *Oxid Med Cell Longev*. 2014;2014:798957. doi: [10.1155/2014/798957](https://doi.org/10.1155/2014/798957). PMID: [24707344](https://pubmed.ncbi.nlm.nih.gov/24707344/). Expression of concern published.
 
-[51] Alcocer-Gomez E, et al. "Coenzyme Q10 regulates serotonin levels and depressive symptoms in fibromyalgia patients." *CNS Neurosci Ther*. 2017. doi: [10.1111/cns.12668](https://doi.org/10.1111/cns.12668)
+[75] Bargossi AM, et al. "Exogenous CoQ10 supplementation prevents plasma ubiquinone reduction induced by HMG-CoA reductase inhibitors." *Mol Aspects Med*. 1994;15(Suppl):s187-s193. doi: [10.1016/0098-2997(94)90028-0](https://doi.org/10.1016/0098-2997(94)90028-0). PMID: [7752830](https://pubmed.ncbi.nlm.nih.gov/7752830/)
 
-[52] Sawaddiruk P, et al. "Coenzyme Q10 supplementation reduces pain and brain activity in fibromyalgia." *Free Radic Res*. 2019.
+[78] Hidaka T, et al. "Safety assessment of coenzyme Q10 (CoQ10)." *Biofactors*. 2008;32(1-4):199-208. doi: [10.1002/biof.5520320124](https://doi.org/10.1002/biof.5520320124). PMID: [19096117](https://pubmed.ncbi.nlm.nih.gov/19096117/)
 
-[53] Khuankaew S, et al. "Coenzyme Q10 supplementation in trigeminal neuralgia." *Free Radic Res*. 2018.
+[79] Bonakdar RA, et al. "Coenzyme Q10." *Am Fam Physician*. 2005;72(6):1065-1070. PMID: [16190504](https://pubmed.ncbi.nlm.nih.gov/16190504/)
 
-[54] Garcia-Carpintero S, et al. "Ubiquinol supplementation in mild cognitive impairment." *Antioxidants*. 2021.
+[82] Roberts CL, et al. "Translocation of Crohn's disease Escherichia coli across M-cells: contrasting effects of soluble plant fibres and emulsifiers." *Gut*. 2010;59(10):1331-1339. doi: [10.1136/gut.2009.195370](https://doi.org/10.1136/gut.2009.195370). PMID: [20813719](https://pubmed.ncbi.nlm.nih.gov/20813719/)
 
-[55] Parkinson Study Group QE3 Investigators. "A randomized clinical trial of high-dosage coenzyme Q10 in early Parkinson disease: no evidence of benefit." *JAMA Neurol*. 2014;71(5):543-552. doi: [10.1001/jamaneurol.2014.131](https://doi.org/10.1001/jamaneurol.2014.131)
+[83] Spigset O. "Reduced effect of warfarin caused by ubidecarenone." *Lancet*. 1994;344(8933):1372-1373. doi: [10.1016/s0140-6736(94)90736-6](https://doi.org/10.1016/s0140-6736(94)90736-6). PMID: [7968059](https://pubmed.ncbi.nlm.nih.gov/7968059/)
 
-[56] Shults CW, et al. "Effects of coenzyme Q10 in early Parkinson disease: evidence of slowing of the functional decline." *Arch Neurol*. 2002;59(10):1541-1550. doi: [10.1001/archneur.59.10.1541](https://doi.org/10.1001/archneur.59.10.1541)
+[84] Shalansky S, et al. "Risk of warfarin-related bleeding events and supratherapeutic international normalized ratios associated with complementary and alternative medicine: a longitudinal analysis." *Pharmacotherapy*. 2007;27(9):1237-1247. doi: [10.1592/phco.27.9.1237](https://doi.org/10.1592/phco.27.9.1237). PMID: [17723077](https://pubmed.ncbi.nlm.nih.gov/17723077/)
 
-[57] Golomb BA, et al. "Coenzyme Q10 benefits symptoms in Gulf War veterans: results of a randomized double-blind study." *Neural Comput*. 2014;26(11):2594-2651. doi: [10.1162/NECO_a_00659](https://doi.org/10.1162/NECO_a_00659)
+[85] Engelsen J, et al. "Effect of Coenzyme Q10 and Ginkgo biloba on warfarin dosage in patients on long-term warfarin treatment. A randomized, double-blind, placebo-controlled cross-over trial." *Ugeskr Laeger*. 2003;165(18):1868-1871. PMID: [12772396](https://pubmed.ncbi.nlm.nih.gov/12772396/)
 
-[58] Mizuno K, et al. "Ubiquinol-10 intake is effective in relieving mild fatigue in healthy individuals." *Nutrients*. 2020;12(6):1574. doi: [10.3390/nu12061574](https://doi.org/10.3390/nu12061574)
+[86] Mancini A, et al. "Thyroid hormones and antioxidant systems: focus on oxidative stress in cardiovascular and pulmonary diseases." *Int J Mol Sci*. 2013;14(12):23893-23909. doi: [10.3390/ijms141223893](https://doi.org/10.3390/ijms141223893). PMID: [24351864](https://pubmed.ncbi.nlm.nih.gov/24351864/)
 
-[59] Hansen KS, et al. "High-dose coenzyme Q10 for persistent COVID-19 symptoms: a randomized, double-blind, placebo-controlled trial." *Lancet*. 2022 (preprint).
+[88] Pattanaik S, et al. "Pharmacokinetic interaction of single dose of piperine with steady-state carbamazepine in epilepsy patients." *Phytother Res*. 2009;23(9):1281-1286. doi: [10.1002/ptr.2676](https://doi.org/10.1002/ptr.2676). PMID: [19283724](https://pubmed.ncbi.nlm.nih.gov/19283724/)
 
-[60] Drobnic F, et al. "Coenzyme Q10 supplementation and exercise performance: a systematic review." *Nutrients*. 2022. doi: [10.3390/nu14010020](https://doi.org/10.3390/nu14010020)
+[89] Raghavendra RH, et al. "Spice active principles as the inhibitors of human platelet aggregation and thromboxane biosynthesis." *Prostaglandins Leukot Essent Fatty Acids*. 2009;81(1):73-78. doi: [10.1016/j.plefa.2009.04.009](https://doi.org/10.1016/j.plefa.2009.04.009). PMID: [19501497](https://pubmed.ncbi.nlm.nih.gov/19501497/)
 
-[61] Thar CM, et al. "Acute ubiquinol supplementation and exercise recovery." *Sports Med Health Sci*. 2025.
+[91] Pravst I, et al. "Coenzyme Q10 contents in foods and fortification strategies." *Crit Rev Food Sci Nutr*. 2010;50(4):269-280. doi: [10.1080/10408390902773037](https://doi.org/10.1080/10408390902773037). PMID: [20301015](https://pubmed.ncbi.nlm.nih.gov/20301015/)
 
-[62] Sale ST, et al. "Application of CoQ10 gel in periodontal therapy." *J Indian Soc Periodontol*. 2014.
+[92] Banach M, et al. "Effects of coenzyme Q10 on statin-induced myopathy: a meta-analysis of randomized controlled trials." *Mayo Clin Proc*. 2015;90(1):24-34. doi: [10.1016/j.mayocp.2014.08.021](https://doi.org/10.1016/j.mayocp.2014.08.021). PMID: [25440725](https://pubmed.ncbi.nlm.nih.gov/25440725/)
 
-[63] Manthena SR, et al. "Effectiveness of CoQ10 as adjunct to scaling and root planing." *J Clin Diagn Res*. 2015. doi: [10.7860/JCDR/2015/12908.5717](https://doi.org/10.7860/JCDR/2015/12908.5717)
+[93] Rosenfeldt FL, et al. "Coenzyme Q10 in the treatment of hypertension: a meta-analysis of the clinical trials." *J Hum Hypertens*. 2007;21(4):297-306. doi: [10.1038/sj.jhh.1002138](https://doi.org/10.1038/sj.jhh.1002138). PMID: [17287847](https://pubmed.ncbi.nlm.nih.gov/17287847/)
 
-[64] Khan M, et al. "Coenzyme Q10 therapy for tinnitus." *Otolaryngol Head Neck Surg*. 2007;136(1):72-77. doi: [10.1016/j.otohns.2006.08.017](https://doi.org/10.1016/j.otohns.2006.08.017)
+[94] Mantle D, et al. "Bioavailability of Coenzyme Q10: An Overview of the Absorption Process and Subsequent Metabolism." *Antioxidants (Basel)*. 2020;9(5):386. doi: [10.3390/antiox9050386](https://doi.org/10.3390/antiox9050386). PMID: [32380795](https://pubmed.ncbi.nlm.nih.gov/32380795/)
 
-[65] Abbasi M, et al. "CoQ10 as adjunct therapy for tinnitus." *Iran J Otorhinolaryngol*. 2025.
-
-[66] Xu Y, et al. "Pretreatment with coenzyme Q10 improves ovarian response and embryo quality." *Reprod Biol Endocrinol*. 2018;16(1):29. doi: [10.1186/s12958-018-0343-0](https://doi.org/10.1186/s12958-018-0343-0)
-
-[67] Ryan M, et al. "Adjuvant CoQ10 and DHEA for diminished ovarian reserve." *Fertil Steril*. 2013 (abstract).
-
-[68] Safarinejad MR, et al. "The effects of coenzyme Q10 supplementation on semen parameters." *J Urol*. 2009.
-
-[69] Teran E, et al. "Coenzyme Q10 supplementation during pregnancy reduces the risk of pre-eclampsia." *Int J Gynaecol Obstet*. 2009;105(1):43-45. doi: [10.1016/j.ijgo.2008.11.033](https://doi.org/10.1016/j.ijgo.2008.11.033)
-
-[70] Iarussi D, et al. "Protective effect of coenzyme Q10 on anthracyclines cardiotoxicity." *Mol Aspects Med*. 1994;15(Suppl):s207-s212.
-
-[71] Folkers K, et al. "Activities of vitamin Q10 in animal models and a serious deficiency in patients with cancer." *Biochem Biophys Res Commun*. 1993;192(1):241-245.
-
-[72] Ambrosone CB, et al. "Dietary supplement use during chemotherapy and survival outcomes of patients with breast cancer enrolled in a cooperative group clinical trial (SWOG S0221)." *J Clin Oncol*. 2020;38(8):804-814. doi: [10.1200/JCO.19.01203](https://doi.org/10.1200/JCO.19.01203)
-
-[73] Lund EL, et al. "Effect of radiation and CoQ10 on tumor growth." *Folia Microbiol*. 1998.
-
-[74] Gvozdjakova A, et al. "Ubiquinol improves symptoms in children with autism." *Oxid Med Cell Longev*. 2014. doi: [10.1155/2014/798957](https://doi.org/10.1155/2014/798957)
-
-[75] Bargossi AM, et al. "Exogenous CoQ10 supplementation prevents plasma ubiquinone reduction induced by HMG-CoA reductase inhibitors." *Int J Clin Lab Res*. 1994.
-
-[76] Pepping J. "Coenzyme Q10." *Am J Health-Syst Pharm*. 1999;56(6):519-521.
-
-[77] Langsjoen PH, et al. "Long-term safety and efficacy of CoQ10 therapy for idiopathic dilated cardiomyopathy." *Am J Cardiol*. 1990.
-
-[78] Hidaka T, et al. "Safety assessment of coenzyme Q10." *Biofactors*. 2008;32(1-4):199-208.
-
-[79] Bonakdar RA, et al. "Coenzyme Q10." *Am Fam Physician*. 2005;72(6):1065-1070.
-
-[80] Shinde S, et al. "Coenzyme Q10 supplementation: dosing considerations." *Internet J Nutr Wellness*. 2004.
-
-[81] Price KS, et al. "Polysorbate 80 hypersensitivity." *Allergy Asthma Proc*. 2007.
-
-[82] Roberts CL, et al. "Translocation of Crohn's disease Escherichia coli across M-cells: contrasting effects of soluble plant fibres and emulsifiers." *Gut*. 2010;59(10):1331-1339. doi: [10.1136/gut.2009.195370](https://doi.org/10.1136/gut.2009.195370)
-
-[83] Spigset O. "Reduced effect of warfarin caused by ubidecarenone." *Lancet*. 1994;344(8933):1372-1373.
-
-[84] Shalansky S, et al. "Risk of warfarin-related bleeding events and supratherapeutic international normalized ratios associated with complementary and alternative medicine." *Pharmacotherapy*. 2007;27(9):1237-1247. doi: [10.1592/phco.27.9.1237](https://doi.org/10.1592/phco.27.9.1237)
-
-[85] Engelsen J, et al. "Effect of coenzyme Q10 and Ginkgo biloba on warfarin dosage in stable, long-term warfarin-treated outpatients." *Ugeskr Laeger*. 2003.
-
-[86] Mancini A, et al. "Thyroid hormones, oxidative stress, and inflammation." *Int J Mol Sci*. 2013. doi: [10.3390/ijms140612773](https://doi.org/10.3390/ijms140612773)
-
-[87] Mancini A, et al. "Coenzyme Q10 levels in hyperthyroid children treated with methimazole." *Int J Mol Sci*. 2011.
-
-[88] Pattanaik S, et al. "Pharmacokinetic interaction of single dose of piperine with steady-state carbamazepine." *Phytother Res*. 2009.
-
-[89] Raghavendra RH, et al. "Piperine and anti-platelet effects." *Prostaglandins Leukot Essent Fatty Acids*. 2009.
-
-[90] Meghwal M, et al. "Piper nigrum and piperine: an update." *Sci Rep*. 2012.
-
-[91] Pravst I, et al. "Coenzyme Q10 contents in foods and fortification strategies." *Crit Rev Food Sci Nutr*. 2010;50(4):269-280. doi: [10.1080/10408390902773037](https://doi.org/10.1080/10408390902773037)
+[95] Malm C, et al. "Effects of ubiquinone-10 supplementation and high intensity training on physical performance in humans." *Acta Physiol Scand*. 1997;161(3):379-384. doi: [10.1046/j.1365-201X.1997.00198.x](https://doi.org/10.1046/j.1365-201X.1997.00198.x). PMID: [9401591](https://pubmed.ncbi.nlm.nih.gov/9401591/)

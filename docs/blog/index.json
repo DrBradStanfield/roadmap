@@ -4838,7 +4838,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/coq10-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on CoQ10 (ubiquinol/ubiquinone): heart failure, migraine prevention, statin-related muscle pain and fatigue. Evidence strongest for heart failure (adjunct to medication) and migraine. Ubiquinol preferred over 60; typical dosing 100-300 mg/day with food. Caution with blood thinners, diabetes meds, and during cancer treatment. Always discuss with your doctor."
+    "summary": "Reference on CoQ10 (ubiquinone, ubiquinol). Brad would not take it: he sees no good evidence of benefit and says statin users get none, though meta-analyses on statin muscle pain disagree. Talk to your doctor first, especially if you take warfarin, diabetes medicines or cancer treatment.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Creatine: Benefits, Best Forms, Dosing, and Side Effects",
@@ -5174,7 +5175,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/glucosamine-chondroitin-joint-supplements",
     "type": "reference",
-    "summary": "Reference on joint supplements: glucosamine, chondroitin, MSM, boswellia, collagen, and curcumin for osteoarthritis and joint pain. For adults with knee or hand pain. Forms, dosing, evidence quality, and safety. Always discuss with your doctor."
+    "summary": "Reference on glucosamine, chondroitin, boswellia and related joint supplements. Knee osteoarthritis trials are inconsistent, and the ACR and OARSI guidelines advise against both; chondroitin may help hand osteoarthritis. Talk to your doctor first if you take warfarin or other blood thinners.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Glycine: Benefits, Forms, Dosing, and Side Effects",
@@ -7274,7 +7276,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/boron-supplement-guide",
     "type": "reference",
-    "summary": "Reference on boron: bone health, joint pain (osteoarthritis), vitamin D, cognition. Forms: calcium fructoborate, citrate, glycinate; 1-3 mg/day general, 6 mg for joints. Caution with estrogen-sensitive conditions. Always discuss with your doctor."
+    "summary": "Reference on boron. Brad's view: not an essential mineral, but studies point to potential benefits for bone, brain and hormones; he takes a tiny amount (1 mg in the US version) and warns against megadoses. Talk to your doctor first in pregnancy, kidney disease or a hormone-sensitive condition.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Glutathione: Benefits, Forms, Dosing, and Side Effects",
@@ -10530,7 +10533,8 @@
     "publishedAt": "2024-03-07T17:34:17Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/astaxanthin-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on astaxanthin: antioxidant carotenoid studied for skin UV protection, triglycerides, HDL, joint pain, exercise recovery, and eye fatigue. Natural algal form (4-18 mg/day) used in trials; take with fat. Evidence is mixed and preliminary. Always discuss with your doctor."
+    "summary": "Reference on astaxanthin, a red carotenoid from algae. Human trials are small and short; about 6 mg a day may help skin hydration and elasticity. A 2026 mouse study did not repeat an earlier lifespan gain, and Brad does not take it. Talk to your doctor first if you take blood thinners.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Apple Cider Vinegar: Benefits, Forms, Dosing, and Side Effects",
@@ -10601,7 +10605,8 @@
     "publishedAt": "2024-02-04T08:47:08Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/alpha-lipoic-acid-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on alpha-lipoic acid (ALA): nerve pain, blood sugar control, weight loss. Best evidence for diabetic neuropathy and insulin sensitivity. Forms: racemic or R-ALA, 300-1800 mg/day. Heartburn common. Always discuss with your doctor."
+    "summary": "Reference on alpha-lipoic acid (ALA). Best evidence is for diabetic nerve pain, where Brad sees 600 mg a day as the optimal dose; blood sugar and weight effects are small. For most healthy people he thinks the risks may outweigh the benefits. Talk to your doctor first if you take diabetes medicines.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Alginates: Benefits, Forms, Dosing, and Side Effects",
