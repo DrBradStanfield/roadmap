@@ -177,7 +177,7 @@ describe('step 1: read with fields=version (US-32 phase 2)', () => {
 
     const read = await new DriveAdapter('access-token').read(ROADMAP_FILE_NAME);
     expect((read.body as RoadmapFile).schemaVersion).toBe(1);
-    expect(read.version).toBe(String(file.version));
+    expect(read.version).toBe(JSON.stringify([file.id, String(file.version)]));
     expect(drive.requests.some((r) => r.includes('fields=version'))).toBe(true);
   });
 

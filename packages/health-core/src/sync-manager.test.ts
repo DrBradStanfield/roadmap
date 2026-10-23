@@ -4,10 +4,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createEmptyFile, createMeasurement } from './roadmap-file';
 import type { RoadmapFile } from './roadmap-file';
-import { SyncManager } from './sync-manager';
-import { ROADMAP_FILE_NAME, StorageError } from './adapter';
+import { SyncManager, describeStorageFailure } from './sync-manager';
+import { ROADMAP_FILE_NAME, ConflictError, LostUpdateError, StorageError } from './adapter';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ROADMAP_DOC } from './roadmap-doc';
+import { SchemaTooNewError } from './migrate';
 import { FileAdapter } from './file-adapter';
 
 // US-10 · Cross-device convergence — highest-risk gap flagged in
@@ -242,6 +243,98 @@ describe('SyncManager.verify-after-write (US-32 AC17 · H5)', () => {
       return { ...file, meta: { ...file.meta, lamport: file.meta.lamport + 50 } };
     });
     expect(failure).toBeNull();
+  });
+});
+
+describe('SyncManager.save — uncertainty survives later failures', () => {
+  it.each(['read', 'schema', 'verify'] as const)('does not claim nothing was written after a landed write then %s failure', async (mode) => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const read = adapter.read.bind(adapter);
+    const write = adapter.write.bind(adapter);
+    const fatal = new StorageError('synthetic access refused', undefined, undefined, 403);
+    let reads = 0;
+    let writes = 0;
+    adapter.read = async (...args) => {
+      reads++;
+      if (reads === 2) {
+        if (mode === 'verify') throw fatal;
+        throw new LostUpdateError('synthetic verification lost update');
+      }
+      if (reads === 3) {
+        if (mode === 'read') throw fatal;
+        return { body: { ...makeFile('future'), schemaVersion: 999 }, version: 'future' };
+      }
+      return read(...args);
+    };
+    adapter.write = async (...args) => { writes++; return write(...args); };
+    const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
+    expect(writes).toBe(1);
+    expect(cloud.files.has(ROADMAP_FILE_NAME)).toBe(true);
+    const told = describeStorageFailure(failure, 'Memory');
+    expect(`${told.message} ${told.hint}`).not.toMatch(/nothing was (written|changed)/i);
+    expect(told.hint).toMatch(/may.*landed/);
+    if (mode !== 'schema') expect(failure).toMatchObject({ cause: fatal });
+  });
+
+  it('keeps "may have landed" when the save is cancelled during verification (US-10 AC4a)', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const read = adapter.read.bind(adapter);
+    const abort = new AbortController();
+    let reads = 0;
+    adapter.read = async (...args) => {
+      if (++reads === 2) {
+        abort.abort();
+        abort.signal.throwIfAborted();
+      }
+      return read(...args);
+    };
+    const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer'), abort.signal).then(() => null, (error: unknown) => error);
+    expect(cloud.files.has(ROADMAP_FILE_NAME)).toBe(true);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect(failure).toMatchObject({ cause: abort.signal.reason });
+    const told = describeStorageFailure(failure, 'Memory');
+    expect(`${told.message} ${told.hint}`).not.toMatch(/nothing was (written|changed)/i);
+    expect(told.hint).toMatch(/may.*landed/);
+  });
+
+  it('keeps a 401 after a landed write: the status for a token refresh, and "may have landed" beside "reconnect" (US-10 AC4a)', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const read = adapter.read.bind(adapter);
+    let reads = 0;
+    adapter.read = async (...args) => {
+      if (++reads === 2) throw new StorageError('synthetic token expired', undefined, undefined, 401);
+      return read(...args);
+    };
+    const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
+    expect(failure).toMatchObject({ status: 401 });
+    const told = describeStorageFailure(failure, 'Memory');
+    expect(told.hint).toContain('Reconnect');
+    expect(told.hint).toMatch(/may.*landed/);
+    expect(`${told.message} ${told.hint}`).not.toMatch(/nothing was (read|written)/i);
+  });
+
+  it('still reports no writes for five ordinary pre-upload conflicts', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    let writes = 0;
+    adapter.write = async () => { writes++; throw new ConflictError('pre-upload'); };
+    const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
+    expect(writes).toBe(5);
+    expect(cloud.files.size).toBe(0);
+    expect(describeStorageFailure(failure, 'Memory').hint).toContain('nothing was written');
+  });
+});
+
+describe('describeStorageFailure — a newer schema (US-10 AC4a)', () => {
+  it('asks for an update without claiming reads refuse: on Drive the other copies still load', () => {
+    const told = describeStorageFailure(new SchemaTooNewError(99, 2), 'Google Drive');
+    expect(told.message).toContain('newer version');
+    expect(told.hint).not.toMatch(/read/i);
+    expect(told.hint).toContain('Nothing was written');
+    expect(told.hint).toContain('update');
   });
 });
 

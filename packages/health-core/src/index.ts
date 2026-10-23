@@ -427,6 +427,8 @@ export {
   driveFindFolder,
   driveUpdateIfVersion,
   driveUploadDocument,
+  readDriveRecord,
+  writeDriveRecord,
   DRIVE_API,
   DRIVE_FOLDER_NAME,
   DRIVE_LEGACY_FOLDER_NAME,

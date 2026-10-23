@@ -152,6 +152,8 @@ export class RecordSession {
   private shown: string | null = null;
   /** From the erase's swap to the end of its write. */
   private erasing = false;
+  /** The latest save's `SaveResult.warning`, for the erase to pass on. */
+  private saveWarning: string | undefined;
 
   private constructor(
     private readonly host: RecordHost,
@@ -315,6 +317,7 @@ export class RecordSession {
           .then(({ body }) => (body == null ? null : ROADMAP_DOC.migrate(body, this.ctx())))
           .catch(() => null);
       this.erasing = true;
+      this.saveWarning = undefined;
       this.current = buildErasedFile({ stored, own: this.current, device, ctx: this.ctx() });
       this.touch(); // a change like any other: a failed flush leaves it for a hide to retry
       try {
@@ -348,7 +351,7 @@ export class RecordSession {
         host.mirror.pending.clear();
         await host.mirror.wipe();
       }
-      return { success: true };
+      return { success: true, ...(this.saveWarning ? { warning: this.saveWarning } : {}) };
     } catch (e) {
       const message = (e as Error).message;
       return erased ? { success: true, warning: message } : { success: false, error: message };
@@ -585,6 +588,7 @@ export class RecordSession {
         const saving = this.changes;
         const result = await this.sync.save(this.current);
         this.revisionSeen = result.version; // what it wrote, never what its verify read
+        if (result.warning) this.saveWarning = result.warning;
         this.savedChanges = saving;
         // Fold remote changes back in without dropping edits made during the
         // await; merge is the source of truth for combining the two.
