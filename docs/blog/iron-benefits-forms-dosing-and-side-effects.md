@@ -6,35 +6,56 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["iron", "ferrous sulfate", "ferrous bisglycinate", "ferrous fumarate", "ferrous gluconate", "ferric iron", "heme iron", "carbonyl iron", "ferritin", "hemoglobin", "anemia", "iron deficiency", "fatigue", "pregnancy", "restless legs", "blood donation", "thyroid", "heart failure", "cognitive", "brain health", "depression", "anxiety", "exercise", "athletic performance", "vitamin c", "calcium"]
-summary: "Reference on iron: anemia, fatigue, restless legs, pregnancy, athletic performance. Common in women, adolescent girls, vegetarians, athletes. Ferrous bisglycinate best tolerated; 50-100 mg/day for deficiency. Always discuss with your doctor."
+summary: "Reference on iron: forms, dosing, deficiency and risks. Brad advises getting iron from food and taking a supplement only on a doctor's advice after a blood test shows low iron. Keep iron away from children. Talk to your doctor first if you have hemochromatosis or take levothyroxine or antibiotics."
+reviewed: "2026-10-22"
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Iron-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:2453aa5c612ddabf691d9f9f996e779f401b985282006ee4cde98695ac75fe22"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/this-incredibly-popular-supplement-damages-your-blood-vessels","checked":"2026-10-22","fingerprint":"publishedAt:2025-05-15T23:18:01Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad","checked":"2026-10-22","fingerprint":"publishedAt:2025-01-07T00:08:13Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/iron-supplementation-good-health","checked":"2026-10-22","fingerprint":"publishedAt:2024-09-26T14:30:01Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-supplements-try-avoid","checked":"2026-10-22","fingerprint":"publishedAt:2024-08-11T19:43:34Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/iron-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/iron-benefits-forms-dosing-and-side-effects)*
 
+## Current view (reviewed 22 October 2026)
+
+For most people, Brad says the safest way to get iron is from food, and an iron supplement should be used only on a doctor's recommendation and under supervision ([Brad, 15 May 2025](https://drstanfield.com/blogs/articles/this-incredibly-popular-supplement-damages-your-blood-vessels)). Adult men need 8 mg a day and women need 18 mg until menopause, and good sources include beef, seafood, leafy green vegetables, white beans and lentils ([Brad, 15 May 2025](https://drstanfield.com/blogs/articles/this-incredibly-popular-supplement-damages-your-blood-vessels)). Pregnant women, people with heavy periods and people with certain digestive problems are at higher risk of iron deficiency and might need supplements ([Brad, 15 May 2025](https://drstanfield.com/blogs/articles/this-incredibly-popular-supplement-damages-your-blood-vessels)). If a blood test shows low iron, a supplement is fine, but taking iron without a test is likely to do more harm than good, and Brad has cited a large study in which people with higher iron levels seemed to have a lower life expectancy ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). Unless you are deficient and your doctor has told you to take iron, he says you should probably avoid iron supplements, especially if you are over the age of 50 ([Brad, 26 Sep 2024](https://drstanfield.com/blogs/articles/iron-supplementation-good-health)). Iron supplements often upset the stomach, excess iron can impair zinc absorption and build up in the liver, pancreas and heart, and if you are low in iron you need to find out why, because a supplement could cover up a more serious problem ([Brad, 26 Sep 2024](https://drstanfield.com/blogs/articles/iron-supplementation-good-health)).
+
+## Key safety points
+
+- Iron-containing products are a leading cause of fatal poisoning in children under 6. Keep them out of reach, and if a child swallows them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department, or call poison control [2][11].
+- Iron reduces the absorption of levothyroxine (do not take it within 4 hours of iron), levodopa, ciprofloxacin (take it 2 hours before or 6 hours after iron) and tetracyclines such as doxycycline. If you take prescription medicines, check with your doctor or pharmacist before starting [2][69][70].
+- Proton pump inhibitors reduce iron absorption, and people with iron deficiency who take them may respond poorly to iron tablets [2][14].
+- People with hereditary hemochromatosis absorb too much iron and should avoid iron and vitamin C supplements [2][20].
+- Do not take iron for tiredness without a blood test. Ferritin is the most efficient test for low iron stores, and older adults are more likely to have high iron stores than deficiency [2].
+- The adult upper limit is 45 mg a day unless a doctor prescribes more. Single doses above 20 mg/kg can cause corrosive damage to the intestine, shock and organ failure, so seek emergency care after an overdose [2][12].
+- Common side effects are constipation, nausea, abdominal pain, vomiting and diarrhea; taking iron with food can help. Iron pills occasionally injure the stomach lining and cause bleeding [2][74].
+
+## Brad's videos on this topic
+
+- 15 May 2025, [This Incredibly Popular Supplement DAMAGES Your Blood Vessels](https://drstanfield.com/blogs/articles/this-incredibly-popular-supplement-damages-your-blood-vessels): too much supplemental iron can lower zinc, upset digestion and, at high doses, damage organs, so most people should get iron from food and use supplements only on a doctor's advice.
+- 7 Jan 2025, [Trace Minerals in Vitamins: What Are They and Is It a Fad?](https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad): trace minerals in a multivitamin can cover dietary gaps, including iron, and vegetarians and vegans need about twice as much iron as people who eat meat.
+- 26 Sep 2024, [Iron Benefits: Is Iron Supplementation Good for Your Health?](https://drstanfield.com/blogs/articles/iron-supplementation-good-health): avoid iron supplements unless a doctor finds a deficiency, especially after 50, and find out why your iron is low.
+- 11 Aug 2024, [Which Popular Supplements Should You Actually Try to Avoid?](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid): iron is fine when blood tests show low iron, but taking it blindly likely does more harm than good.
+
 ## 1. Overview
 
-Iron is an essential mineral required in small amounts for a wide range of critical physiological functions. It is a core component of hemoglobin, the erythrocyte (red blood cell) protein responsible for transporting oxygen from the lungs to tissues throughout the body [1][2]. Iron also forms part of myoglobin, a protein that provides oxygen to muscle tissue, supporting muscle metabolism and healthy connective tissue [2]. Beyond oxygen transport, iron is necessary for physical growth, neurological development, cellular functioning, the synthesis of certain hormones, and the conversion of thyroid hormones — specifically, the conversion of thyroxine (T4) into the biologically active triiodothyronine (T3) [2][3][4].
+The body needs only small amounts of iron. Iron is a core component of hemoglobin, the red blood cell protein that carries oxygen from the lungs to the tissues [1][2]. As part of myoglobin, another oxygen-carrying protein, iron supports muscle metabolism and healthy connective tissue [2]. Iron is also needed for physical growth, neurological development, cellular functioning and the synthesis of some hormones [2][3].
 
-The human body contains approximately 3 to 4 grams of elemental iron, most of which resides in hemoglobin [2]. The remainder is stored as ferritin or hemosiderin in the liver, spleen, and bone marrow, or is present in the myoglobin of muscle tissue [1][2]. Transferrin is the primary transport protein that binds iron and distributes it throughout the body. Iron losses are normally small — through urine, feces, sweat, and shed skin cells — but losses increase substantially in menstruating women due to blood loss [2]. Hepcidin, a circulating peptide hormone produced in the liver, is the key regulator of both iron absorption and distribution throughout the body [2][5].
+Adults carry about 3 to 4 grams of elemental iron, most of it in hemoglobin [2]. Much of the rest is stored as ferritin or hemosiderin in the liver, spleen and bone marrow, or sits in the myoglobin of muscle [1][2]. Transferrin is the main protein that carries iron in the blood. The body loses only small amounts of iron in urine, feces, sweat and shed skin cells, but menstruating women lose more through blood loss [2]. Hepcidin, a peptide hormone, is the key regulator of iron absorption and of how iron is distributed through the body [2][5].
 
 ### Dietary Iron: Heme vs. Nonheme
 
 Dietary iron exists in two main forms [1][2]:
 
-- **Heme iron:** Found in meat, seafood, and poultry. Forms when iron combines with protoporphyrin IX. Contributes approximately 10-15% of total iron intake in Western diets but has substantially higher bioavailability (approximately 15-35% absorption) [2][6].
-- **Nonheme iron:** Found in plants, iron-fortified foods, and also in animal products alongside heme iron. Absorption rates are lower (approximately 2-20%) and are more heavily influenced by dietary enhancers and inhibitors [2][6].
+- **Heme iron:** Found in meat, seafood and poultry. It forms when iron combines with protoporphyrin IX and makes up about 10% to 15% of total iron intake in Western populations. It is absorbed better than nonheme iron, and other foods affect it less [2][6].
+- **Nonheme iron:** The only form in plants and iron-fortified foods; meat, seafood and poultry contain it too. Its absorption depends more on what else is in the meal [2][6].
 
 The bioavailability of iron from mixed diets containing substantial amounts of meat, seafood, and vitamin C is approximately 14-18%, compared with 5-12% from vegetarian diets [2][6].
 
 ### Iron Deficiency: Scale of the Problem
 
-Iron deficiency is the most common nutritional deficiency worldwide. The World Health Organization (WHO) estimates that approximately half of the 1.62 billion cases of anemia worldwide are due to iron deficiency [7]. In the United States:
+Iron deficiency is the most common nutritional deficiency worldwide [4]. The World Health Organization (WHO) estimates that approximately half of the 1.62 billion cases of anemia worldwide are due to iron deficiency [2][7]. In the United States and Canada:
 
-- Among females aged 12-21, an estimated 39% are iron deficient (ferritin <15 ng/mL) and 6% have iron deficiency anemia (Weyland, JAMA 2023) [8].
-- Among women aged 25 and older, 7.43% are classified as iron deficient (Barton, JAMA Netw Open 2024) [8].
-- 6.7% of children aged 1-5 are iron deficient, with rates particularly high (11%) among Mexican-American children [8].
-- Approximately 5% of women and 2% of men have iron deficiency anemia [8].
-- 29% of men are at risk for iron excess [8].
+- Among 62,685 women aged 25 and older, 7.43% were iron deficient by the WHO definition (ferritin less than 15 ng/mL) (Barton, JAMA Netw Open 2024) [50].
+- Six percent of White and Black toddlers aged 1 to 3 years in the US are iron deficient, compared with 12% of Hispanic toddlers [2].
+- By contrast, 13% of 1,106 older White adults aged 67 to 96 years in the Framingham Heart Study had high iron stores [2].
 
 ### Assessing Iron Status
 
@@ -52,21 +73,15 @@ Iron deficiency progresses through three stages [2][9]:
 
 ### Symptoms of Iron Deficiency
 
-Symptoms range from mild to severe and include [8][9]:
+Effects can include [2]:
 
-- Easy fatigability, weakness, lethargy
-- Shortness of breath, dizziness, headache
-- Coldness of hands and feet, pale skin
-- Chest pain, irregular heartbeats (arrhythmias), heart murmur, enlarged heart
-- Brittle nails, hair loss
-- Swelling or soreness of the tongue, cracks at the sides of the mouth
-- Loss of taste, enlarged spleen, frequent infections
-- Restless legs syndrome
-- Pica — compulsive eating of non-nutritive substances such as ice, dirt, chalk, or clay (estimated in 11-55% of iron-deficient individuals) [8]
-- Recurrent canker sores (aphthous stomatitis) [8]
-- Difficulty swallowing (particularly in Plummer-Vinson syndrome) [8]
+- Fatigue, weakness and difficulty concentrating
+- Gastrointestinal disturbances
+- Impaired cognitive function, immune function, and exercise or work performance
+- Poor body temperature regulation
+- Restless legs syndrome, which is linked to iron deficiency in a subgroup of patients [28]
 
-Iron deficiency anemia has also been associated with tinnitus. A population-based study of over 100,000 women in Taiwan found that women with iron deficiency anemia had a 278% increased risk of new-onset tinnitus at 1-year follow-up. Older women (>45 years) were more likely to have common subjective tinnitus, while younger women (18-44 years) had increased risk of both subjective and pulsatile tinnitus (Hung, Front Nutr 2025) [8]. Pulsatile tinnitus may resolve when deficiency is corrected with iron supplementation [8].
+In a large health-records cohort study, women with iron deficiency anemia had a higher one-year risk of tinnitus (HR 3.78, 95% CI 2.60 to 5.50). Older women (over 45 years) were more susceptible to general tinnitus, while only younger women showed a higher risk of pulsatile tinnitus (Hung, Front Nutr 2025) [52].
 
 ## 2. Forms and Bioavailability
 
@@ -74,145 +89,131 @@ Not all iron supplements are equivalent. The form determines elemental iron cont
 
 ### Comparison Table
 
-| Form | Elemental Iron (%) | Relative Absorption | GI Side Effects | Notes |
-|------|:-:|:-:|:-:|------|
-| Ferrous Sulfate | 20% | High | Moderate-High | Most studied form. Inexpensive. Standard comparator in clinical trials [2][11]. |
-| Ferrous Fumarate | 33% | High | Moderate-High | Highest elemental iron per gram of compound. Commonly used in prenatal supplements [2][11]. |
-| Ferrous Gluconate | 12% | Moderate-High | Moderate | Lower elemental iron content but generally well tolerated [2][11]. |
-| Ferrous Bisglycinate (Iron Glycinate) | ~20% | High | Low | Chelated to glycine. Better tolerated than ferrous sulfate with comparable absorption. Less affected by food inhibitors [11][12]. |
-| Ferric Citrate | Variable | Moderate | Low-Moderate | Ferric (Fe3+) forms are generally less bioavailable than ferrous (Fe2+) forms due to lower solubility [2][11]. |
-| Ferric Maltol (Accrufer/Feraccru) | Variable | Moderate | Low | Prescription-only. Specifically studied in inflammatory bowel disease patients intolerant of other forms [8][13]. |
-| Heme Iron Polypeptide | Variable | High | Low | Derived from animal hemoglobin. Absorption less affected by food inhibitors than nonheme forms [11]. |
-| Carbonyl Iron | ~98% | Gradual | Low-Moderate | Highly concentrated elemental iron but absorbed slowly via dissolution in gastric acid. Lower acute toxicity risk [11]. |
-| Polysaccharide-Iron Complex | Variable | Moderate | Low | Iron bound to polysaccharide carrier. May have fewer GI side effects than ferrous salts [11]. |
+| Form | Elemental Iron (%) | Notes |
+|------|:-:|------|
+| Ferrous Sulfate | 20% | A common ferrous salt. Ferrous forms are better absorbed than ferric forms [2]. |
+| Ferrous Fumarate | 33% | The most elemental iron by weight of the three common ferrous salts [2]. |
+| Ferrous Gluconate | 12% | Less elemental iron per tablet [2]. |
+| Ferrous Bisglycinate (iron amino-acid chelate) | Varies | Might cause fewer gut side effects than iron salts [2]. |
+| Ferric Citrate | Varies | Ferric (Fe3+) forms dissolve less well, so they are less bioavailable than ferrous (Fe2+) forms [2]. |
+| Heme Iron Polypeptide | Varies | Might cause fewer gut side effects than iron salts [2]. |
+| Carbonyl Iron | Varies | Might cause fewer gut side effects. After poison-centre assessment, an accidental swallow may be watched at home [2][11]. |
+| Polysaccharide-Iron Complex | Varies | Might cause fewer gut side effects. After poison-centre assessment, an accidental swallow may be watched at home [2][11]. |
 
 ### Key Principles for Form Selection
 
-**Ferrous vs. Ferric:** Ferrous iron (Fe2+) has higher bioavailability than ferric iron (Fe3+) because of its greater solubility in the intestinal lumen [2][11]. Most dietary supplements use ferrous forms for this reason.
+**Ferrous vs. Ferric:** Ferrous and ferric salts are the most common forms in supplements. Because it dissolves better, ferrous iron is more bioavailable than ferric iron [2].
 
-**Chelated forms (bisglycinate):** Iron bisglycinate chelate is bound to two molecules of glycine, which protects the iron from interaction with dietary inhibitors (phytates, polyphenols, calcium) and may reduce gastrointestinal side effects. Studies suggest comparable or superior absorption to ferrous sulfate with better tolerance [11][12].
+**Chelated forms (bisglycinate):** Iron amino-acid chelates, such as iron bisglycinate, might cause fewer gut side effects than iron salts [2].
 
-**Heme iron polypeptides:** Derived from animal hemoglobin, these are absorbed through a different pathway (heme carrier protein 1) than nonheme iron, and their absorption is less affected by dietary inhibitors. They may cause fewer GI side effects but tend to be more expensive [11].
+**Heme iron polypeptides:** These might also be easier on the gut than iron salts [2]. Other foods affect the absorption of heme iron less than nonheme iron [2].
 
-**Ferric maltol:** A prescription form (Accrufer/Feraccru) shown to be tolerable and effective in treating iron deficiency anemia in people with Crohn's disease or other inflammatory bowel disease who were unable to tolerate other forms such as ferrous gluconate, ferrous succinate, and ferrous sulfate (Weisshof, Curr Opin Clin Nutr Metab Care 2015) [8][13].
-
-**Carbonyl iron:** Nearly pure elemental iron (98%) that is absorbed gradually via dissolution in gastric acid. The slow absorption provides a safety advantage — lower risk of acute iron poisoning — making it the only form exempted from child-resistant packaging requirements above 30 mg [8][11].
+**Carbonyl iron:** A poison-centre guideline advises that, after poison-centre assessment, people who accidentally swallow carbonyl iron or polysaccharide-iron complex may be watched at home with follow-up, whereas larger doses of adult ferrous salts need medical assessment [11].
 
 ### Factors Affecting Absorption
 
 **Enhancers of iron absorption:**
-- Vitamin C (ascorbic acid): Converts ferric iron to the more absorbable ferrous form and helps overcome dietary inhibitors. Taking iron with orange juice improved absorption in young women given 100 mg ferrous fumarate (von Siebenthal, Am J Hematol 2023) [8]. However, a study of 440 people in China found that taking each 100 mg dose of iron (ferrous succinate) with 200 mg vitamin C did not produce a significantly greater increase in hemoglobin or ferritin at 2 and 8 weeks compared to iron alone (Li, JAMA Netw Open 2020) [8]. Based on this evidence, the British Society of Gastroenterology does not recommend routinely taking vitamin C with iron (Snook, Gut 2021) [8].
+- Vitamin C (ascorbic acid) enhances nonheme iron absorption [2]. In 34 iron-depleted women given 100 mg iron, adding 80 mg vitamin C raised absorption by 30%, while 500 mg gave no further gain (von Siebenthal, Am J Hematol 2023) [46]. In a trial of 440 adults with iron deficiency anemia, pairing each 100 mg iron tablet (taken every 8 hours daily for 3 months) with a 200 mg vitamin C tablet gave the same rise in hemoglobin at 2 weeks and in ferritin at 8 weeks as iron alone (Li, JAMA Netw Open 2020) [30]. Citing this trial, British Society of Gastroenterology guidance advises against routinely adding vitamin C to iron (Snook, Gut 2021) [24].
 - Meat, poultry, and seafood (the "meat factor") enhance nonheme iron absorption [2][6].
-- Gastric acid is essential for nonheme iron absorption — converting ferric to ferrous iron [2].
+- Stomach acid helps the body absorb nonheme iron [2].
 
 **Inhibitors of iron absorption:**
 - Phytates in grains, beans, and legumes [2][6]
-- Polyphenols in tea, coffee, cocoa, and some vegetables. Green tea and coffee may reduce absorption by up to 50%, though drinking coffee at least one hour before iron supplementation does not appear to affect absorption [6][8].
+- Polyphenols in some plant foods reduce nonheme iron absorption [2]. In iron-depleted women, coffee taken with a 100 mg iron dose cut absorption by 54% (von Siebenthal, Am J Hematol 2023) [46], and the inhibitory effect of tea fades within 60 minutes (Snook, Gut 2021) [24].
 - Calcium may reduce absorption of both heme and nonheme iron, though this effect is attenuated in a typical Western diet [2][6].
-- Proton pump inhibitors (PPIs) such as omeprazole and lansoprazole reduce gastric acid, impairing nonheme iron absorption [2][14].
-- Grape seed extract polyphenols can bind iron and inhibit absorption (Ma, J Food Sci 2011; Mottaghi, Complement Ther Clin Pract 2023) [8].
-- Semaglutide (Ozempic, Wegovy) injections may delay gastric emptying and reduce iron absorption. A preliminary study of 51 people with type 2 diabetes showed a 13% reduction in iron absorption from ferrous fumarate after 10 weeks of semaglutide (Melis, Diabetes Obes Metab 2025) [8].
+- Proton pump inhibitors (PPIs), including lansoprazole and omeprazole, lower stomach acid and so reduce nonheme iron absorption [2][14].
+- In lab studies of human intestinal cells, polyphenols from green tea and grape seed extract inhibited heme iron absorption in a dose-dependent way (Ma, J Food Sci 2011) [75].
 
 ### How to Read a Supplement Label
 
-The weight of the iron compound and the weight of elemental iron differ significantly. For example [11]:
+The weight of an iron compound and the weight of its elemental iron differ. Ferrous fumarate is 33% elemental iron by weight, ferrous sulfate is 20% and ferrous gluconate is 12% [2].
 
-- 325 mg ferrous sulfate = approximately 65 mg elemental iron
-- 325 mg ferrous fumarate = approximately 107 mg elemental iron
-- 325 mg ferrous gluconate = approximately 39 mg elemental iron
-
-Look for "elemental iron" on the Supplement Facts panel. The FDA requires that the amount of elemental iron be listed [2].
+Look for "elemental iron" on the Supplement Facts panel. It lists elemental iron, so you do not need to work it out [2].
 
 ## 3. Evidence for Health Benefits
 
 ### Iron Deficiency Anemia
 
-Iron supplementation is the standard treatment for iron deficiency anemia (IDA). The evidence base for this is extensive and well-established [2][8][9]:
+Oral iron is the usual first treatment for iron deficiency anemia (IDA). About a third of men and postmenopausal women with IDA have an underlying disease, most often in the gut, so the cause needs investigating as well as treating (Snook, Gut 2021) [24].
 
-**Dosing for IDA correction:** Traditionally, 100-200 mg elemental iron daily in divided doses was recommended. However, in September 2021, the British Society of Gastroenterology recommended only 50-100 mg of iron once daily on an empty stomach (Snook, Gut 2021) [8]. The reason: a single 60 mg dose of iron increases hepcidin levels, which blocks absorption from subsequent doses the same day. Total iron absorption from a single 60 mg daily dose was similar to that from two 60 mg doses taken the same day [8].
+**Dosing for IDA correction:** British Society of Gastroenterology guidance recommends starting with one tablet a day of ferrous sulfate, fumarate or gluconate. It suggests that a single daily dose of 50 to 100 mg elemental iron, taken while fasting, may be the best compromise, and that one tablet every other day is an option if daily tablets are not tolerated (Snook, Gut 2021) [24]. In iron-depleted young women, doses of 60 mg or more raised hepcidin, which blocks iron absorption, and cut absorption from the next day's dose by 35% to 45%; a third 60 mg dose within 24 hours added no significant absorption (Moretti, Blood 2015) [56]. In a follow-up trial, splitting 120 mg into two 60 mg doses absorbed no more iron than one morning dose, and alternate-day dosing raised the share of iron absorbed (Stoffel, Lancet Haematol 2017) [57].
 
-**High-dose is no better than once-daily:** A study of approximately 72,000 older adults in the U.S. with iron deficiency anemia showed that taking 325 mg ferrous sulfate several times daily was no better at increasing hemoglobin and ferritin over 3-6 months than taking 325 mg once daily or every other day (Patel, JAMA Netw Open 2024) [8].
+**Multiple daily doses:** In a retrospective study of 71,677 US veterans with IDA, hemoglobin rose fastest with doses taken two or more times a day, while daily and alternate-day dosing gave similar gains. The authors suggest choosing based on how fast a response is needed and on side effects (Patel, JAMA Netw Open 2024) [31].
 
-**Daily vs. every-other-day dosing:** A study of 52 people with IDA found that 60 mg iron (ferrous sulfate) daily produced higher iron levels by 12 weeks than every-other-day dosing. Those taking iron daily had slightly greater hemoglobin increases, and 75% were no longer anemic versus 59% in the every-other-day group, though these differences were not statistically significant (Lin, Br J Haematol 2023) [8]. A 14-day study in young women with iron deficiency found that 60 mg iron daily was modestly better than double the dose every other day in increasing hemoglobin in red blood cells, with no increase in side effects (John, Clin Nutr 2025) [8].
+**Daily vs. every-other-day dosing:** A 14-day trial comparing two groups of 30 iron-deficient young women in a lower- or middle-income country found that 60 mg iron daily raised red blood cell measures further than 120 mg every other day did, with no difference in side effects (John, Clin Nutr 2026) [54].
 
-**Time to recovery:** Approximately two months is usually required to restore hemoglobin levels. Many more months of iron supplementation may be required to fully replenish iron stores [8].
-
-**Time of day does not matter:** A study of young female athletes with low ferritin found that evening iron supplementation was equally effective as morning dosing (Atwell, Eur J Sport Sci 2023) [8].
+**Time of day:** In iron-depleted women, absorption from an afternoon dose was 37% lower than from a morning dose, though the difference was not statistically significant (p = .059), and hepcidin was higher in the afternoon (von Siebenthal, Am J Hematol 2023) [46].
 
 ### Fatigue in Non-Anemic Iron Deficiency
 
-Even mild iron deficiency — too mild to cause anemia — may cause clinically significant fatigue. A 12-week RCT of 198 women of childbearing age (18-53 years) who were not anemic but had ferritin levels below 50 mcg/L found that 80 mg iron (ferrous sulfate, time-release pill) daily produced a 47.7% decrease in fatigue versus 28.8% with placebo — a statistically significant difference. Ferritin levels increased by 11.4 mcg/L compared with placebo. There was no significant effect on anxiety or depression (Vaucher, CMAJ 2012) [8].
+Even mild iron deficiency, without anemia, may cause fatigue. A 12-week trial in 198 women aged 18 to 53 years with fatigue, ferritin below 50 mcg/L and no anemia found that 80 mg elemental iron daily as ferrous sulfate cut fatigue scores by 47.7%, against 28.8% with placebo. Ferritin rose 11.4 mcg/L more than with placebo, and quality of life, anxiety and depression did not change significantly (Vaucher, CMAJ 2012) [22].
 
-Similarly, a placebo-controlled trial found that iron supplementation improved one self-reported measure of mood ("vigor"), but not anxiety or depression, among female soldiers with iron deficiency and/or iron deficiency anemia (McClung, Am J Clin Nutr 2009) [8].
+In a placebo-controlled trial in 219 female soldiers in basic training, 100 mg ferrous sulfate improved vigor scores on a mood questionnaire, and running times improved in those who started with iron deficiency anemia (McClung, Am J Clin Nutr 2009) [44].
 
 ### Cognitive Function
 
-**Adolescent girls:** Verbal learning and memory improved when adolescent girls with iron deficiency (without anemia) were treated with 130 mg elemental iron (as ferrous sulfate) twice daily for 8 weeks, which raised average ferritin from 9 to 27 ng/mL (Bruner, Lancet 1996) [8]. Adolescence appears to be a critical window for building brain iron stores. A study showed that adolescent girls (average age 13) with iron deficiency but without anemia had significantly lower iron levels in the striatum, increased volume in some striatal areas (linked to psychiatric or cognitive challenges), and smaller overall brain volume compared to those without iron deficiency. This was generally not found in boys (Fiani, JAMA Netw Open 2025) [8].
+**Adolescent girls:** Teenage girls who were iron deficient without anemia scored better on verbal learning and memory after taking 650 mg ferrous sulfate twice daily for 8 weeks. After treatment, serum ferritin was 27.3 vs 12.1 micrograms/L in the iron and placebo groups (Bruner, Lancet 1996) [23]. In an MRI study of 209 youths aged 10 to 17 years, iron deficiency without anemia was linked to lower iron content in the striatum, and in girls the gap grew with age; this was not seen in boys. Lower striatal iron went with more severe psychiatric symptoms and poorer test performance (Fiani, JAMA Netw Open 2025) [43].
 
-**Children with mood disorders:** A small open-label study found that iron supplementation (25-100 mg daily for 12 weeks) decreased certain symptoms of anxiety, depression, and irritability in iron-deficient children and adolescents diagnosed with mood or behavior disorders. Average ferritin increased from 17 to 54 ng/mL (Mikami, J Nippon Med Sch 2022) [8]. However, this study lacked a placebo control and blinding.
+**Children with mood disorders:** A small study of 19 children and adolescents aged 6 to 15 years with ferritin under 30 ng/mL found that 12 weeks of oral iron improved depression, sleep and mood scores (Mikami, J Nippon Med Sch 2022) [45]. The study had no placebo group and was not blinded.
 
-**Broader evidence:** Iron deficiency in children and adolescents is associated with cognitive achievement deficits, developmental delays, and behavioral problems. If iron deficiency is extremely severe, some of these problems can be irreversible [2][9]. The functional deficits associated with IDA include impaired cognitive function, difficulty concentrating, and psychomotor abnormalities that can lead to learning difficulties without treatment [2][9].
+**Broader evidence:** In infants and children, IDA can cause psychomotor and cognitive problems that, without treatment, can lead to learning difficulties, and some evidence suggests the effects of deficiency early in life persist into adulthood [2].
 
 ### Pregnancy
 
 Iron deficiency during pregnancy increases the risk of maternal and infant mortality, premature birth, low birthweight, and impaired cognitive and behavioral development in infants [2][15].
 
-**Prevalence:** In the U.S., 18% of pregnant women have iron deficiency — 6.9% in the first trimester, 14.3% in the second, and 29.7% in the third [2][15].
+**Prevalence:** In the U.S., 18% of pregnant women have iron deficiency: 6.9% in the first trimester, 14.3% in the second, and 29.7% in the third [2].
 
-**Anemia prevention:** A Cochrane Review showed that daily iron supplementation (9-90 mg) reduced the risk of anemia in pregnant women at term by 70% and of iron deficiency at term by 57%. The risk of low-birthweight newborns was 8.4% with iron vs. 10.2% without, and mean birthweight was 31 g higher with iron supplementation [15].
+**Anemia prevention:** A 2015 Cochrane review (44 trials, 43,274 women) found that daily iron supplements reduced anemia at term by 70% (RR 0.30) and iron deficiency at term by 57% (RR 0.43), from low-quality evidence. Low-birthweight babies were 8.4% with iron vs. 10.3% without, and babies were on average 23.75 g heavier, but neither result was statistically significant [15].
 
-**Does routine supplementation improve outcomes?** An analysis of 17 clinical trials involving more than 24,000 pregnant women showed that routine iron supplementation (typically 30-60 mg daily) reduced the risk of iron deficiency anemia in the mother at term by 60%, but there were no statistically significant differences in rates of preterm birth, low birthweight, need for cesarean delivery, gestational diabetes, or high blood pressure (Cantor, JAMA 2024) [8].
+**Does routine supplementation improve outcomes?** A 2024 review of 17 trials in 24,023 pregnant women for the US Preventive Services Task Force found that routine iron lowered maternal iron deficiency anemia at term (8.6% vs 19.8%; relative risk 0.40, 95% CI 0.26 to 0.61). It made no statistically significant difference to preterm birth, low birth weight, cesarean delivery, gestational diabetes or hypertensive disorders (Cantor, JAMA 2024) [17].
 
 **Guidelines diverge:**
-- The American College of Obstetricians and Gynecologists (ACOG) recommends low-dose iron supplementation starting in the first trimester [15][16].
-- The U.S. Preventive Services Task Force (USPSTF) concluded in 2024 that there is insufficient evidence to recommend routine iron screening and supplementation for asymptomatic pregnant women, though this does not apply to women with symptoms of iron deficiency or IDA [8][17].
-- The CDC, WHO, and Dietary Guidelines for Americans all recommend low-dose iron supplementation (e.g., 30 mg/day) for most or all pregnant women [2][15][16].
+- The American College of Obstetricians and Gynecologists (ACOG) recommends low-dose iron supplementation starting in the first trimester [2][16].
+- The U.S. Preventive Services Task Force (USPSTF) has concluded that the evidence is insufficient to assess routine screening and supplementation for pregnant women without symptoms; this does not apply to women with symptoms of iron deficiency or IDA [2].
+- The Food and Nutrition Board notes that pregnant women need iron supplements because their median dietary intake is well below requirements, and the *Dietary Guidelines for Americans* advise taking one when a health care provider recommends it [2].
 
 ### Restless Legs Syndrome
 
-People with low or deficient levels of iron may be more likely to suffer from restless legs syndrome (Trotti, Cochrane Database Syst Rev 2019) [8]. The American Academy of Neurology advises that 65 mg iron (from 325 mg ferrous sulfate) with 200 mg vitamin C twice daily may improve symptoms in individuals with ferritin levels below 75 ng/mL (Winkelman, Neurology 2016) [8].
+Restless legs syndrome is linked to iron deficiency in a subgroup of patients. A 2019 Cochrane review of 10 trials (428 people) concluded that iron probably improves restlessness and symptom severity compared with placebo (Trotti, Cochrane Database Syst Rev 2019) [28]. A 2016 American Academy of Neurology guideline, since retired, advised that clinicians consider ferrous sulfate with vitamin C for people with restless legs and ferritin of 75 mcg/L or less (Winkelman, Neurology 2016) [26][77].
 
-This recommendation is based on a study of older men and women with ferritin levels 15-75 ng/mL given iron for three months. Restless legs severity decreased by an average of 10 points on a 0-40 scale, versus only 1 point with placebo. Ferritin increased from an average of 40 to 65 ng/mL (Wang, Sleep Med 2009) [8]. However, overall quality of life did not improve in either group.
-
-Note: Restless legs syndrome can also occur in hereditary hemochromatosis (excessive iron absorption), in which case iron supplementation would not be appropriate [8].
+In a 12-week trial against placebo, among people with restless legs and low-normal ferritin, symptom scores fell by 10.3 points with oral iron against 1.14 with placebo, and ferritin rose 25.1 ng/mL against 7.5 ng/mL. Quality of life showed only a non-significant trend toward improvement (Wang, Sleep Med 2009) [25].
 
 ### Athletic Performance and Exercise
 
-Iron deficiency may negatively impact athletic performance. Analysis of 1,190 competitive athletes (average age 21) in Germany found that nearly 20% had iron deficiency, with prevalence higher among females (36.9%) versus males (10.6%). Those with deficiency were approximately half as likely to reach a target VO2 max as those without deficiency (Keller, Nutrition 2024) [8].
-
-Iron requirements increase during intense exercise due to losses through sweat, hemolysis (foot-strike), and increased gastrointestinal losses. Female and adolescent athletes are at particular risk [8][2].
+Iron deficiency may hurt athletic performance. Among 1,190 competitive athletes (mean age 21.9) screened before competition, 19.7% had iron deficiency (ferritin less than 20 mcg/L). Female sex raised the odds of deficiency (OR 4.35, 95% CI 3.13 to 5.88), and deficiency was linked to lower odds of reaching a VO2 peak above 50 mL/min/kg (OR 0.42, 95% CI 0.25 to 0.69) (Keller, Nutrition 2024) [33].
 
 ### Blood Donation Recovery
 
-Among blood donors with normal hemoglobin, moderate iron supplementation (37.5 mg iron as ferrous gluconate daily) reduces the time for hemoglobin and ferritin recovery after donating a unit of blood by more than half. Those receiving iron recovered most of the hemoglobin decrease within about 30 days versus 78-158 days without iron. Ferritin returned to normal within 76 days with iron, while 67% of unsupplemented donors had not recovered iron stores after 168 days (Kiss, JAMA 2015) [8][18]. About 25-35% of regular blood donors develop iron deficiency [18].
+Among 215 donors whose hemoglobin was normal, one tablet of ferrous gluconate (37.5 mg of elemental iron) daily shortened the time to recover 80% of the lost hemoglobin to 32 days in donors with low ferritin and 31 days in those with higher ferritin, against 158 days and 78 days without iron. Iron stores recovered in a median of 76 days with iron, while 67% of donors without iron had not recovered them by 168 days (Kiss, JAMA 2015) [18]. About 25% to 35% of regular blood donors develop iron deficiency [2].
 
 ### Heart Failure
 
-Approximately 60% of patients with chronic heart failure have iron deficiency and 17% have IDA, associated with higher risk of death [2][19]. However, a clinical trial of high-dose oral iron (150 mg as iron polysaccharide twice daily for 16 weeks) in heart failure patients did NOT improve peak oxygen uptake or exercise capacity, and only minimally improved iron levels (3% increase). A possible explanation was abnormally high hepcidin levels in these patients, reducing absorption and trapping iron in white blood cells and liver cells (Lewis, JAMA 2017) [8]. Intravenous iron has been more effective in this population [2].
+Approximately 60% of patients with chronic heart failure have iron deficiency and 17% have IDA, which might be linked to a higher risk of death [2][19]. However, in the IRONOUT HF trial in 225 iron-deficient people with heart failure with reduced ejection fraction, taking 150 mg of oral iron polysaccharide twice a day for 16 weeks left peak oxygen uptake, walking distance and quality of life no better than placebo. The authors concluded that the results do not support oral iron in this group (Lewis, JAMA 2017) [27].
 
 ### Thyroid Function
 
-Iron is required for conversion of thyroxine (T4) to triiodothyronine (T3) and for proper utilization of iodine. Iron deficiency and IDA can cause hypothyroidism, characterized by low T4/T3 and elevated TSH (Garofalo, Nutrients 2023; Zimmermann, Annu Rev Nutr 2006; Ghiya, J Endocr Soc 2019) [4][8].
+A 2023 meta-analysis of 10 cross-sectional studies found lower TSH, free T4 and free T3 levels in iron-deficient people, especially pregnant women, and more frequent thyroid autoantibodies; the authors call for more research (Garofalo, Nutrients 2023) [4]. Where iron and iodine deficiency overlap, iron deficiency in children may make iodized salt programs less effective (Zimmermann, Annu Rev Nutr 2006) [76].
 
 ### ADHD in Children
 
-A small study of iron in children (ages 5-8) with ADHD showed improvement in some symptoms comparable to that with stimulant medicines when given 80 mg iron daily as ferrous sulfate (Konofal, Pediatr Neurol 2008) [8]. This is preliminary evidence and requires confirmation in larger trials.
+A small trial in 23 children with ADHD, aged 5 to 8 years, whose ferritin was under 30 ng/mL found that ferrous sulfate, 80 mg a day for 12 weeks, improved ADHD rating scores, and the authors judged the effect comparable to stimulants (Konofal, Pediatr Neurol 2008) [42]. This is preliminary evidence and requires confirmation in larger trials.
 
 ### Premenstrual Syndrome (PMS)
 
-A lower risk of PMS has been associated with high intake of iron (over 20 mg/day) from supplements or plant-based foods. Compared to women with the lowest intakes (median 9.4 mg daily), risk was reduced by 29% with a median intake of 21.4 mg and by 36% with 49.2 mg (Chocano-Bedoya, Am J Epidem 2013) [8].
+In the Nurses' Health Study II, women in the highest fifth of nonheme iron intake were less likely to develop PMS than women in the lowest fifth (relative risk 0.64, 95% CI 0.44 to 0.92) (Chocano-Bedoya, Am J Epidemiol 2013) [40].
 
 ### ACE Inhibitor-Induced Cough
 
-Iron supplements (51.2 mg daily as 256 mg ferrous sulfate) have shown promise for reducing the dry cough caused by ACE inhibitor medications (Lee, Hypertension 2001) [8].
+In a small placebo-controlled trial in 19 people with cough from ACE inhibitors, 256 mg ferrous sulfate each morning for 4 weeks lowered cough scores, while placebo did not (Lee, Hypertension 2001) [41].
 
 ### Fibromyalgia
 
-A study in Taiwan found that women with iron deficiency anemia had a 22% increased risk of fibromyalgia compared to women without IDA. When receiving iron supplementation, their risk of fibromyalgia was 21% lower than those not receiving iron therapy (Yao, Sci Rep 2021) [8]. The researchers recommended that all people with fibromyalgia have their blood iron levels checked.
+In a Taiwanese nationwide cohort, fibromyalgia was diagnosed more often in people who had iron deficiency anemia (HR 1.19, 95% CI 1.13 to 1.25), and the risk was lower in people treated with iron than in those left untreated (Yao, Sci Rep 2021) [38].
 
 ### Mental Health
 
-Iron deficiency has been associated with an increased risk of anxiety, depression, and certain other psychiatric disorders in observational studies (Lee, BMC Psychiatry 2020; Ahmed, Brain Behav 2023) [8]. However, interventional evidence that iron supplementation improves mood beyond correcting deficiency-related fatigue is limited to small, unblinded studies.
+In a large Taiwanese database study, psychiatric disorders, including anxiety and depression, were diagnosed more often in people who had iron deficiency anemia (adjusted HR 1.52, 95% CI 1.45 to 1.59), and iron treatment was associated with a lower risk (Lee, BMC Psychiatry 2020) [39]. In older adults, untreated anemia was linked to higher odds of depression, but treated anemia was not (Ahmed, Brain Behav 2023) [71]. These studies show associations, not cause and effect.
 
 ### Infants and Young Children
 
@@ -251,46 +252,40 @@ From the Institute of Medicine / National Academies [2][6]:
 
 ### Tolerable Upper Intake Level (UL)
 
-The UL for iron is **45 mg/day** for adults (ages 14+) and **40 mg/day** for children under 13 [2][6]. These limits are based on gastrointestinal side effects from iron salt supplements. However, physicians frequently prescribe doses exceeding the UL when treating iron deficiency anemia [2].
+The UL for iron is **45 mg/day** for adults (ages 14+) and **40 mg/day** from birth to age 13 [2][6]. These limits are based on gastrointestinal side effects from iron salt supplements. However, physicians sometimes prescribe doses above the UL when treating iron deficiency anemia [2].
 
-Note: These limits may be too low for people with hereditary hemochromatosis, who are at unique risk for accumulating harmful levels of iron [8].
+Note: These limits apply to healthy people. People with hereditary hemochromatosis absorb too much iron from food and have a higher risk of iron overload [2].
 
 ### Practical Dosing by Indication
 
-**Treating iron deficiency anemia:** 50-100 mg elemental iron once daily on an empty stomach (British Society of Gastroenterology recommendation, Snook, Gut 2021) [8]. Previously, 100-200 mg daily in divided doses was standard, but evidence now shows a single daily dose is equally effective due to hepcidin-mediated absorption blockade from second doses [8].
+**Treating iron deficiency anemia:** One tablet a day; a single daily dose of 50 to 100 mg elemental iron on an empty stomach may be the best compromise (British Society of Gastroenterology, Snook, Gut 2021) [24]. In absorption studies, a second dose on the same day added little, because the first raises hepcidin [56][57]; one retrospective study saw a faster hemoglobin rise with several daily doses [31].
 
-**Preventing anemia during pregnancy:** 27 mg/day (the RDA) to 30-60 mg/day, depending on guidelines [2][15][16].
+**Preventing anemia during pregnancy:** The RDA is 27 mg a day, and trials of daily supplements used 9 to 90 mg [2]. Take iron in pregnancy as your obstetric provider recommends [2].
 
-**After bariatric surgery:** 45-60 mg/day after Roux-en-Y gastric bypass or sleeve gastrectomy (Mechanick, Endocr Pract 2019) [8]. However, a 2-year study found that even 100 mg daily post-surgery did not reliably prevent hemoglobin decline, suggesting currently recommended regimens may be insufficient (Lener, Nutr Metab Cardiovasc Dis 2023) [8].
+**After bariatric surgery:** In a Swedish cohort, anemia became more common after gastric bypass (Roux-en-Y), rising from 3.0% before treatment to 10.5% two years after it, and iron results and anemia rates were similar whether or not people reported using iron supplements (Lenér, Nutr Metab Cardiovasc Dis 2023) [47]. Follow your surgical team's advice.
 
-**Fatigue in non-anemic women with low ferritin:** 80 mg daily from a time-release ferrous sulfate pill (Vaucher, CMAJ 2012) [8].
+**Fatigue in non-anemic women with low ferritin:** 80 mg elemental iron daily as ferrous sulfate (Vaucher, CMAJ 2012) [22].
 
-**Blood donation recovery:** 37.5 mg daily as ferrous gluconate (Kiss, JAMA 2015) [8][18].
+**Blood donation recovery:** One tablet of ferrous gluconate (37.5 mg of elemental iron) daily (Kiss, JAMA 2015) [18].
 
-**Restless legs syndrome (ferritin <75 ng/mL):** 65 mg iron (from 325 mg ferrous sulfate) with 200 mg vitamin C, twice daily (Winkelman, Neurology 2016) [8].
+**Restless legs syndrome (ferritin 75 mcg/L or less):** Ferrous sulfate with vitamin C, as a 2016 American Academy of Neurology guideline, since retired, advised (Winkelman, Neurology 2016) [26][77].
 
-**Cognitive function in iron-deficient adolescent girls:** 130 mg elemental iron (as ferrous sulfate) twice daily for 8 weeks (Bruner, Lancet 1996) [8].
+**Cognitive function in iron-deficient adolescent girls:** 650 mg ferrous sulfate twice daily for 8 weeks (Bruner, Lancet 1996) [23].
 
-**ADHD in children (ages 5-8):** 80 mg iron daily as ferrous sulfate (Konofal, Pediatr Neurol 2008) [8].
+**ADHD in children (ages 5-8):** 80 mg a day as ferrous sulfate (Konofal, Pediatr Neurol 2008) [42].
 
-**For healthy non-vegetarian adult men and postmenopausal women:** Iron supplementation is generally NOT recommended unless blood tests show deficiency. These groups are at low risk of deficiency and at potential risk of iron excess [8].
+**For healthy adult men and postmenopausal women:** Their RDA is 8 mg, and older adults are more likely to have high iron stores than deficiency [2]. In these groups, IDA often has an underlying cause that needs investigating [24]. Take iron only if blood tests show a deficiency and your doctor advises it.
 
 ### When to Take Iron
 
-- **Preferably on an empty stomach** for maximum absorption. However, taking with food is acceptable when GI side effects are a problem [8].
-- **Avoid taking with green tea, coffee** (can reduce absorption by up to 50%), though coffee consumed at least one hour before supplementation does not appear to affect absorption [8].
-- **Time of day does not appear to matter** — morning and evening dosing are equally effective (Atwell, Eur J Sport Sci 2023) [8].
-- **Avoid taking within 24 hours of an MRI**, as iron can cause imaging artifacts (Green, Cureus 2018; Cook, J Magn Reson Imaging 2006) [8].
-- **Iron can temporarily increase serum iron and transferrin saturation** — avoid supplements and iron-rich foods at least 5-9 hours before blood tests checking iron status [8].
-- **Iron supplementation generally does not need to be stopped before ferritin testing alone** — it does not cause falsely elevated or decreased ferritin levels [8].
+- **Ideally on an empty stomach.** Taking iron salts with meals can cut absorption by up to 75% [24], but taking iron with food can reduce stomach side effects [2].
+- **Keep coffee and tea apart from your dose.** Coffee taken with a 100 mg iron dose cut absorption by 54% [46], and the inhibitory effect of tea fades within 60 minutes [24].
+- **Morning may be better than afternoon.** In one study, absorption from an afternoon dose was 37% lower than from a morning dose, though the difference was not statistically significant (von Siebenthal, Am J Hematol 2023) [46].
+- **Tell your MRI team if you take iron.** Case reports describe MRI image artifacts from a prenatal vitamin (Cook, J Magn Reson Imaging 2006) [60] and from an iron-containing multivitamin and iron-fortified cereal (Green, Cureus 2018) [59].
 
 ### How to Read a Label
 
-The weight of the iron compound differs from elemental iron content [2][11]:
-
-- 325 mg ferrous sulfate = ~65 mg elemental iron (20%)
-- 325 mg ferrous fumarate = ~107 mg elemental iron (33%)
-- 325 mg ferrous gluconate = ~39 mg elemental iron (12%)
+Ferrous sulfate is 20% elemental iron, ferrous fumarate 33% and ferrous gluconate 12% [2].
 
 The Supplement Facts panel is required to list elemental iron. Use this number, not the compound weight, when comparing products.
 
@@ -298,75 +293,65 @@ The Supplement Facts panel is required to list elemental iron. Use this number, 
 
 ### Common Side Effects
 
-The most common side effect of iron supplementation is gastrointestinal distress, including [2][8][11]:
+High-dose iron supplements can cause gastrointestinal effects, including [2]:
 
-- **Constipation** — the most frequently cited complaint
-- **Nausea and stomach upset** — especially when taken on an empty stomach
+- **Constipation**
+- **Nausea and stomach upset**
 - **Diarrhea**
-- **Abdominal cramping**
-- **Black or dark-colored stools** (harmless discoloration from unabsorbed iron)
+- **Abdominal pain**
+- **Vomiting**
 
-These side effects are more common with ferrous salts (sulfate, fumarate, gluconate) at higher doses and when taken without food. Chelated forms (bisglycinate), heme iron polypeptides, carbonyl iron, and polysaccharide-iron complexes generally cause fewer GI side effects [11].
+Doses of 45 mg a day or more are more likely to cause these effects, and taking iron with food can help. Other forms (heme iron polypeptides, carbonyl iron, amino-acid chelates and polysaccharide-iron complexes) might be easier on the gut than iron salts [2].
 
 ### Strategies to Reduce GI Side Effects
 
-- Switch from ferrous sulfate to a better-tolerated form (bisglycinate, carbonyl iron, or liquid formulation) [8]
-- Take with food (reduces absorption modestly but improves tolerance) [8]
-- Use once-daily dosing rather than multiple daily doses [8]
-- Consider every-other-day dosing if daily dosing is intolerable [8]
-- Increase dietary fiber intake and use stool softeners for constipation [8]
+- Take iron with food, which helps side effects but lowers absorption [2][24]
+- Ask about a form that might cause fewer side effects, such as an amino-acid chelate, carbonyl iron or a polysaccharide-iron complex [2]
+- If daily tablets are not tolerated, one tablet every other day is an option [24]
 
 ### Iron-Pill Gastropathy
 
-Prolonged use of iron pills — particularly ferrous sulfate — can occasionally damage the stomach lining, causing gastritis, erosions, ulcers, and gastrointestinal bleeding (iron-pill induced gastropathy). This can paradoxically worsen anemia (Sunkara, Gastroenterology Res 2017) [8]. Reported cases include:
+Case reports, some involving doses of 130 mg iron, describe gastritis and stomach lesions, sometimes with iron deposits in the stomach lining [2]. Iron-pill gastritis can bleed and worsen anemia: a 71-year-old man's stomach healed and his anemia improved after he switched to intravenous iron (Motwani, Clin J Gastroenterol 2020) [74], and a 14-year-old girl had stomach bleeding after about 2 weeks of oral iron (Meliţ, Medicine 2017) [61]. Clinicians are advised to stop oral iron promptly once the condition is recognised (Sunkara, Gastroenterology Res 2017) [29].
 
-- Two men (ages 72 and 81) and a woman (age 90) taking 325 mg ferrous sulfate 1-2 times daily, all of whom had symptoms resolve after switching to intravenous iron (Comba, ACG Annual Meeting 2019) [8].
-- Two 14-year-old girls taking ferrous sulfate on an empty stomach for 2-6 weeks. In one case, switching to liquid iron resolved symptoms (Mauney, J Pediatr Gastroenterol Nutr 2025; Melit, Medicine 2017) [8].
-
-Gastric siderosis (excess iron deposition in the stomach lining) may also occur, appearing as brown discoloration on biopsy, and can increase oxidative stress and clotting risk in the stomach (Tun, ACG Case Rep J 2022) [8].
-
-Strategies to reduce risk include switching to liquid formulations, avoiding ferrous sulfate pills, taking iron with food, and using every-other-day dosing (Mauney, J Pediatr Gastroenterol Nutr 2025) [8].
+Iron from ferrous sulfate tablets can also deposit in the stomach lining (gastric siderosis) and may cause indigestion, nausea and black, tarry stools through injury to the lining (Tun, ACG Case Rep J 2022) [62].
 
 ### Esophageal Injury
 
-Although rare, iron pills can become lodged in the esophagus and cause damage, including ulceration and iron deposits. This risk is higher in people with swallowing disorders or esophageal narrowing from reflux (Stoleru, ACG Case Rep J 2025) [8].
+Although rare, oral iron can injure the esophagus, causing iron deposits (esophageal siderosis) and ulcers (Stoleru, ACG Case Rep J 2025) [63].
 
 ### Aspiration Risk
 
-If iron pills are accidentally inhaled, they can cause chemical burns and serious injuries to the trachea, bronchia, and lungs due to the acidity of ferrous salts. Complications may develop days to weeks after the pill is expelled (Caterino, Respir Med Case Rep 2023) [8].
+If a ferrous sulfate pill is inhaled into the airway, it can cause a chemical burn of the airway lining that may become life-threatening, and it can leave long-term scarring or narrowing (Sedhai, Respir Med Case Rep 2023) [73]. If you think you have inhaled an iron tablet (choking, coughing or trouble breathing), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [73].
 
 ### Long-Term Risks of Excessive Iron
 
-Observational studies have found associations between mildly excessive stored iron and several chronic diseases [2][8]:
+Observational and genetic studies link higher iron levels to some chronic diseases:
 
-- **Cardiovascular disease:** Higher stored iron levels have been associated with modestly higher risk of stroke, particularly cardioembolic stroke, possibly due to iron triggering clot formation (Gill, Stroke 2018) [8]. However, among U.S. women, stroke risk actually decreased with iron intake up to 20 mg daily, with no further decrease at higher intakes. No association was found in men (Xu, Int J Environ Health Res 2021) [8].
-- **Cancer:** Observational associations exist but do not prove causation [8].
-- **Type 2 diabetes:** Similarly based on observational data [8].
-- **Mortality in postmenopausal women:** A study found iron supplement use associated with a 3.9% increased risk of death over 22 years, with risk increasing as dosage increased, particularly at very high doses (50 mg to several hundred mg/day) (Mursu, Arch Int Med 2011) [8].
-- **Cancer recurrence during chemotherapy:** Use of iron supplements before or during breast cancer chemotherapy was associated with a 91% higher risk of cancer recurrence (Ambrosone, J Clin Oncol 2020) [8].
+- **Stroke:** A genetic (Mendelian randomization) study found higher iron status linked to higher stroke risk (for example, transferrin saturation OR 1.06, 95% CI 1.01 to 1.11), driven by cardioembolic stroke (Gill, Stroke 2018) [34]. In US survey data, however, women with higher iron intake had lower stroke prevalence, with the curve leveling off at 20 mg a day; for men there was no link (Xu, Int J Environ Health Res 2022) [64].
+- **Life expectancy:** In another genetic study, each standard deviation of higher genetically predicted serum iron corresponded to 0.70 fewer years of parental lifespan (95% CI -1.17 to -0.24) and lower odds of surviving to old age (OR 0.81, 95% CI 0.70 to 0.93) (Daghlas, Clin Nutr 2021) [68].
+- **Mortality in older women:** In the Iowa Women's Health Study of 38,772 older women, iron supplement use was associated with higher total mortality (HR 1.10, 95% CI 1.03 to 1.17; absolute risk increase 3.9%) (Mursu, Arch Intern Med 2011) [35].
+- **Breast cancer chemotherapy:** Among 1,134 women with breast cancer, iron use during chemotherapy was associated with a higher risk of recurrence (adjusted HR 1.79, 95% CI 1.20 to 2.67) (Ambrosone, J Clin Oncol 2020) [36].
 
 ### Pregnancy-Specific Risks
 
-While pregnant women are generally encouraged to take iron supplements, supplementation beyond the recommended amount may increase complications. One study found that non-iron-deficient breastfed infants do not benefit from iron supplements and might experience decreased health if given supplementation [8].
+In trials of routine iron in pregnancy, the harms reported were short-lived gastrointestinal effects (Cantor, JAMA 2024) [17]. In one trial in 727 pregnant women whose hemoglobin was already 13.2 g/dL or higher, a daily ferrous sulfate tablet containing 50 mg of elemental iron was linked to more small-for-gestational-age babies and more high blood pressure disorders than placebo, and the authors concluded that routine iron in women without anemia may be harmful (Ziaei, BJOG 2007) [78]. In a trial in breastfed babies in Sweden (101 babies) and Honduras (131 babies), iron from 4 to 9 months slowed gains in length and head circumference in the Swedish babies; in Honduras, the same effect on length appeared only from 4 to 6 months, in babies whose hemoglobin was 110 g/L or higher at the start. The authors concluded that routine iron may help babies with low hemoglobin but may present risks for those whose hemoglobin is normal (Dewey, J Nutr 2002) [79]. Take the dose your maternity care provider recommends, and give iron supplements to babies only as a doctor advises.
 
 ### Iron and Carotenoid Absorption
 
-High doses of ferrous iron (but not ferric iron) may decrease absorption of carotenoids such as beta-carotene, lycopene, and astaxanthin from foods and supplements. This is due to reactions between carotenoids and divalent mineral ions (Corte-Real, Food Chem 2016; Biehler, J Nutr 2011) [8]. Take carotenoid supplements at a different time of day than iron.
+In lab digestion studies, iron and other divalent minerals reduced the uptake of carotenoids from spinach in a dose-dependent way, with iron among the strongest effects (Biehler, J Nutr 2011) [65]. A simple precaution is to take carotenoid supplements and iron at separate times.
 
 ### Iron Poisoning
 
-Very high single doses of elemental iron can be life-threatening [2][8]:
+Very high single doses of elemental iron can be life-threatening [2][11][12]:
 
-- **20 mg/kg body weight** (~1,365 mg for a 150-lb person): Can cause corrosive necrosis of the intestine, fluid and blood loss, shock, and organ failure.
-- **60 mg/kg** (~4,090 mg for a 150-lb person): Can lead to multisystem organ failure, coma, seizures, and death.
+- **20 mg/kg body weight** (about 1,365 mg for someone weighing 150 lb): Can cause corrosive necrosis of the intestine, leading to bleeding, fluid loss, shock, tissue damage and organ failure.
+- **60 mg/kg** (about 4,090 mg for a 150-lb person): Can cause multisystem organ failure, coma, convulsions and death.
 
-Iron poisoning is most common in young children (ages 3 and younger) who ingest adult iron supplements. Between 1983 and 2000, at least 43 U.S. children died from iron supplement ingestion [2]. Supplements containing 30 mg or more of iron (except carbonyl iron) are required to carry a warning label, and those containing 250 mg or more per container must be in child-resistant packaging [2].
+Accidental overdose of iron-containing products is a leading cause of fatal poisoning in children under 6, and between 1983 and 2000 at least 43 US children died after swallowing iron supplements [2]. US labels on iron-containing tablets and capsules must carry this warning and tell people to keep the product out of reach of children, and products with 250 mg or more of elemental iron per container must come in child-resistant packaging [2]. Keep iron supplements and iron-containing multivitamins out of reach of children, and close the lid properly after each use. If a child swallows iron tablets or an iron-containing supplement, act immediately: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department, or call a poison control centre [11].
 
 ### Hereditary Hemochromatosis
 
 Hemochromatosis is a genetic condition (HFE gene mutation) causing excessive iron absorption and accumulation. About 1 in 10 Whites carry the most common mutation (C282Y), but only 4.4 per 1,000 are homozygous and develop the disease [2]. Without treatment (periodic phlebotomy), signs of iron toxicity develop by the 30s, including liver cirrhosis, hepatocellular carcinoma, heart disease, and impaired pancreatic function [2]. The American Association for the Study of Liver Diseases recommends that hemochromatosis patients avoid iron and vitamin C supplements [2][20].
-
-People with hemochromatosis should also be cautious of red iron oxide (used as a supplement colorant), though absorption from this source is very low (about 0.01%). Taking it with vitamin C can increase absorption 5-50 fold, but this still results in only about 0.025 mg from a typical 5 mg dose — likely inconsequential for healthy people but worth noting for those with hemochromatosis [8].
 
 ## 6. Drug Interactions
 
@@ -374,37 +359,38 @@ Iron supplements interact with numerous medications. These interactions generall
 
 ### Iron Reduces Drug Absorption
 
-These medications should be separated from iron supplements [2][8][14]:
+These medications should be separated from iron supplements [2][69][70]:
 
 | Drug | Separation Time | Mechanism/Notes |
 |------|:-:|------|
-| Levothyroxine (Synthroid, Levoxyl) | 4+ hours | Iron reduces levothyroxine absorption. Liquid and softgel formulations may be less affected than tablets (Liu, Ther Clin Risk Manag 2023; Gatta, Front Endocrinol 2022) [8][14] |
-| Levodopa (Sinemet, Stalevo) | 2+ hours | Iron reduces levodopa bioavailability via chelation, diminishing effectiveness for Parkinson's disease [2][14] |
-| Quinolone antibiotics (ciprofloxacin, levofloxacin) | 2h before or 6h after | Forms insoluble chelation complexes [8] |
-| Tetracycline antibiotics (doxycycline, minocycline) | 1h before or 2h after | Forms insoluble complexes [8] |
-| Penicillamine | 2+ hours | Iron reduces absorption [8] |
-| Carbamazepine | 2+ hours | Iron may lower carbamazepine concentrations by ~30% (Ahn, Epilepsy Res 2019) [8] |
-| ACE inhibitors | 2+ hours | Iron may reduce absorption (possible interaction) [8] |
+| Levothyroxine (Synthroid, Levoxyl) | 4+ hours | Iron lowers levothyroxine absorption, and labels advise against taking levothyroxine within 4 hours of iron [2]. Liquid levothyroxine may avoid this problem; evidence for softgel capsules is thinner (Liu, Ther Clin Risk Manag 2023; Gatta, Front Endocrinol 2022) [66][67] |
+| Levodopa (Sinemet, Stalevo) | Ask your pharmacist | Iron may reduce levodopa absorption, possibly through chelation, and so make it less effective for Parkinson's disease and restless legs syndrome [2] |
+| Quinolone antibiotics (such as ciprofloxacin) | Ciprofloxacin 2h before or 6h after | Iron reduces ciprofloxacin absorption [69] |
+| Tetracycline antibiotics (such as doxycycline) | Ask your pharmacist | Iron-containing products impair tetracycline absorption [70] |
+| Penicillamine | 2+ hours | Iron reduces the absorption and effect of penicillamine, and its label advises leaving 2 hours between them [80] |
+| Captopril | Ask your pharmacist | Iron may lower captopril levels; blood pressure did not change in a small crossover trial in healthy volunteers (Schaefer, Br J Clin Pharmacol 1998) [81] |
+| Carbamazepine | Ask your pharmacist | In nursing home residents, iron supplements were linked to a 33% decrease in carbamazepine bioavailability (Ahn, Epilepsy Res 2018) [58] |
+
+If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Drugs That Affect Iron Absorption or Levels
 
 | Drug Class | Effect on Iron | Clinical Notes |
 |-----------|:-:|------|
 | Proton pump inhibitors (PPIs) | Reduce absorption | Reduce gastric acid needed for nonheme iron absorption. Long-term use (up to 10 years) does not cause depletion in those with normal stores, but patients with existing iron deficiency may have suboptimal responses to supplementation [2][14] |
-| Low-dose aspirin | Increase loss | Daily 100 mg aspirin for 5 years increased anemia risk by 20% in adults aged ~74, regardless of whether major bleeding occurred (McQuilten, Ann Intern Med 2023) [8] |
-| Semaglutide (Ozempic, Wegovy) | May reduce absorption | Delays gastric emptying; preliminary data showed 13% reduction in iron absorption (Melis, Diabetes Obes Metab 2025) [8] |
+| Low-dose aspirin | Increase loss | In the ASPREE trial of 19,114 older adults, 100 mg aspirin daily raised the incidence of anemia (HR 1.20, 95% CI 1.12 to 1.29), even without major bleeding (McQuilten, Ann Intern Med 2023) [55] |
 
 ### Calcium and Iron
 
-Calcium may interfere with the absorption of both heme and nonheme iron [2][6]. For this reason, experts suggest taking calcium and iron supplements at different times of the day [2].
+Calcium might reduce how well both heme and nonheme iron are absorbed, although this effect has not been definitively established [2][6]. For this reason, experts suggest taking calcium and iron supplements at different times of the day [2].
 
 ### Zinc and Iron
 
-Supplements containing 25 mg or more of iron may reduce zinc absorption and plasma zinc concentrations [2]. High-dose zinc can also interfere with iron regulation [2].
+Iron supplements of 25 mg or more may lower zinc absorption and blood zinc levels [2].
 
 ### Biotin and Ferritin Testing
 
-High doses of biotin may interfere with certain blood ferritin assays, potentially producing inaccurate results [8].
+Biotin, often found in supplements, can interfere with certain lab tests and cause incorrect results that may go undetected, so tell your doctor if you take biotin before a blood test [72].
 
 ## 7. Dietary Sources
 
@@ -434,11 +420,10 @@ Source: USDA FoodData Central [2][21].
 - **Heme iron (from animal sources) is more bioavailable** than nonheme iron and is less affected by dietary inhibitors. However, it represents only 10-15% of total iron intake in typical Western diets [2][6].
 - **Vitamin C-rich foods enhance nonheme iron absorption.** Pair iron-rich plant foods with citrus fruits, bell peppers, tomatoes, or broccoli [2][6].
 - **Phytates in whole grains and legumes** bind nonheme iron and reduce absorption. Soaking, sprouting, or fermenting reduces phytate content [2][6].
-- **Tea and coffee significantly inhibit nonheme iron absorption** due to polyphenol content. Avoid consuming these within an hour of iron-rich meals or supplements [6][8].
-- **Cooking in cast iron cookware** can contribute some iron to food, especially when cooking acidic foods. However, a review found mixed evidence (only about half of studies showed benefit), and iron cookware should not replace dietary changes or supplementation for preventing deficiency (Sharma, Nepal J Epidemiol 2021) [8].
+- **Tea and coffee reduce iron absorption.** Coffee taken with an iron dose cut absorption by 54% in one study [46], and the inhibitory effect of tea fades within 60 minutes, so leave about an hour between tea and iron-rich meals or supplements [24].
 - **Flour fortification:** In the United States, Canada, and many other countries, wheat and other flours are fortified with iron, making bread, cereal, and grain products important sources [2].
 - **Breast milk** contains highly bioavailable iron but in amounts insufficient for infants older than 4-6 months, at which point iron-fortified complementary foods or formula become necessary [2].
-- **The average Western diet provides 10-20 mg of iron per day** [8]. Most non-vegetarian men and postmenopausal women meet their requirements from food alone. Premenopausal women, adolescent girls, and pregnant women are most likely to fall short [2].
+- **Average US intakes from food are 16.3 to 18.2 mg a day in men and 12.6 to 13.5 mg a day in women.** Most people in the US get enough iron from food, but infants, young children, teenage girls, pregnant women and premenopausal women may get too little [2].
 
 ## 8. References
 
@@ -448,7 +433,7 @@ Source: USDA FoodData Central [2][21].
 
 [3] Murray-Kolbe LE, Beard J. Iron. In: Coates PM, Betz JM, Blackman MR, et al., eds. Encyclopedia of Dietary Supplements. 2nd ed. London and New York: Informa Healthcare; 2010:432-8.
 
-[4] Garofalo V, et al. "Iron, Thyroid Function, and the Role of Iodine." *Nutrients*. 2023. Zimmermann MB, Kohrle J. "The impact of iron and selenium deficiencies on iodine and thyroid metabolism." *Annu Rev Nutr*. 2006;26:367-89.
+[4] Garofalo V, Condorelli RA, Cannarella R, et al. Relationship between Iron Deficiency and Thyroid Function: A Systematic Review and Meta-Analysis. Nutrients. 2023;15(22):4790. PMID: 38004184. https://pubmed.ncbi.nlm.nih.gov/38004184/
 
 [5] Drakesmith H, Prentice AM. "Hepcidin and the Iron-Infection Axis." *Science*. 2012;338:768-72. [https://pubmed.ncbi.nlm.nih.gov/23139325/](https://pubmed.ncbi.nlm.nih.gov/23139325/)
 
@@ -456,9 +441,7 @@ Source: USDA FoodData Central [2][21].
 
 [7] World Health Organization. Worldwide Prevalence of Anaemia 1993-2005: WHO Global Database on Anaemia. 2008.
 
-[8] ConsumerLab. "Iron Supplements Review." Accessed 2025. [https://www.consumerlab.com/reviews/iron-supplements-review/iron/](https://www.consumerlab.com/reviews/iron-supplements-review/iron/)
-
-[9] Powers JM, Buchanan GR. "Disorders of iron metabolism: New diagnostic and treatment approaches to iron deficiency." *Hematol Oncol Clin North Am*. 2019;33(3):393-408. [https://pubmed.ncbi.nlm.nih.gov/31030808/](https://pubmed.ncbi.nlm.nih.gov/31030808/)
+[9] Powers JM, Buchanan GR. "Disorders of iron metabolism: New diagnostic and treatment approaches to iron deficiency." *Hematol Oncol Clin North Am*. 2019;33(3):393-408. [https://pubmed.ncbi.nlm.nih.gov/31030809/](https://pubmed.ncbi.nlm.nih.gov/31030809/)
 
 [10] Camaschella C. "Iron-deficiency anemia." *N Engl J Med*. 2015;372(19):1832-43. [https://pubmed.ncbi.nlm.nih.gov/25946282/](https://pubmed.ncbi.nlm.nih.gov/25946282/)
 
@@ -466,15 +449,13 @@ Source: USDA FoodData Central [2][21].
 
 [12] Aggett PJ. Iron. In: Marriott BP, Birt DF, Stallings VA, Yates AA, eds. Present Knowledge in Nutrition. 11th ed. Cambridge, MA: Elsevier; 2020:375-92.
 
-[13] Weisshof R, Chermesh I. "Micronutrient deficiencies in inflammatory bowel disease." *Curr Opin Clin Nutr Metab Care*. 2015;18(6):576-81.
-
 [14] Ajmera AV, Shastri GS, Gajera MJ, Judge TA. "Suboptimal response to ferrous sulfate in iron-deficient patients taking omeprazole." *Am J Ther*. 2012;19:185-9. [https://pubmed.ncbi.nlm.nih.gov/21150767/](https://pubmed.ncbi.nlm.nih.gov/21150767/)
 
-[15] Pena-Rosas JP, De-Regil LM, Dowswell T, Viteri FE. "Daily oral iron supplementation during pregnancy." *Cochrane Database Syst Rev*. 2012;12:CD004736. [https://pubmed.ncbi.nlm.nih.gov/23235616/](https://pubmed.ncbi.nlm.nih.gov/23235616/)
+[15] Peña-Rosas JP, De-Regil LM, Garcia-Casal MN, Dowswell T. "Daily oral iron supplementation during pregnancy." *Cochrane Database Syst Rev*. 2015;(7):CD004736. doi: 10.1002/14651858.CD004736.pub5. PMID: 26198451. [https://pubmed.ncbi.nlm.nih.gov/26198451/](https://pubmed.ncbi.nlm.nih.gov/26198451/)
 
 [16] The American College of Obstetricians and Gynecologists. "Anemia in Pregnancy: ACOG Practice Bulletin, Number 233." *Obstet Gynecol*. 2021;138(2):e55-e64. [https://pubmed.ncbi.nlm.nih.gov/34293770/](https://pubmed.ncbi.nlm.nih.gov/34293770/)
 
-[17] U.S. Preventive Services Task Force. "Screening and Supplementation for Iron Deficiency and Iron Deficiency Anemia During Pregnancy." *JAMA*. 2024. Cantor AG, et al. "Routine iron supplementation and screening for iron deficiency anemia in pregnancy." *JAMA*. 2024.
+[17] Cantor AG, Holmes R, Bougatsos C, et al. Screening and Supplementation for Iron Deficiency and Iron Deficiency Anemia During Pregnancy: Updated Evidence Report and Systematic Review for the US Preventive Services Task Force. JAMA. 2024;332(11):914-928. PMID: 39163033. https://pubmed.ncbi.nlm.nih.gov/39163033/
 
 [18] Kiss JE, Brambilla D, Glynn SA, et al. "Oral iron supplementation after blood donation: a randomized clinical trial." *JAMA*. 2015;313:575-83. [https://pubmed.ncbi.nlm.nih.gov/25668261/](https://pubmed.ncbi.nlm.nih.gov/25668261/)
 
@@ -488,7 +469,7 @@ Source: USDA FoodData Central [2][21].
 
 [23] Bruner AB, Joffe A, Duggan AK, Casella JF, Brandt J. "Randomised study of cognitive effects of iron supplementation in non-anaemic iron-deficient adolescent girls." *Lancet*. 1996;348(9033):992-6. [https://pubmed.ncbi.nlm.nih.gov/8855856/](https://pubmed.ncbi.nlm.nih.gov/8855856/)
 
-[24] Snook J, Bhala N, Beales ILP, et al. "British Society of Gastroenterology guidelines for the management of iron deficiency anaemia in adults." *Gut*. 2021;70(11):2030-51. [https://doi.org/10.1136/gutjnl-2021-325210](https://doi.org/10.1136/gutjnl-2021-325210)
+[24] Snook J, Bhala N, Beales ILP, et al. "British Society of Gastroenterology guidelines for the management of iron deficiency anaemia in adults." *Gut*. 2021;70(11):2030-51. PMID: 34497146. [https://doi.org/10.1136/gutjnl-2021-325210](https://doi.org/10.1136/gutjnl-2021-325210)
 
 [25] Wang J, O'Reilly B, Venkataraman R, Mysliwiec V, Bhatt A. "Efficacy of oral iron in patients with restless legs syndrome and a low-normal ferritin." *Sleep Med*. 2009;10(9):973-5. [https://pubmed.ncbi.nlm.nih.gov/19230757/](https://pubmed.ncbi.nlm.nih.gov/19230757/)
 
@@ -498,56 +479,96 @@ Source: USDA FoodData Central [2][21].
 
 [28] Trotti LM, Becker LA. "Iron for the treatment of restless legs syndrome." *Cochrane Database Syst Rev*. 2019. [https://pubmed.ncbi.nlm.nih.gov/30609006/](https://pubmed.ncbi.nlm.nih.gov/30609006/)
 
-[29] Sunkara T, Caughey ME, Niezen RC, Gaduputi V. "Iron Pill Gastritis: An Under Diagnosed Condition." *Gastroenterology Res*. 2017;10(2):138-40.
+[29] Sunkara T, Caughey ME, Nigar S, et al. Iron Pill Gastritis: An Under Diagnosed Condition With Potentially Serious Outcomes. Gastroenterology Res. 2017;10(2):138-140. PMID: 28496538. https://pubmed.ncbi.nlm.nih.gov/28496538/
 
-[30] Li N, Zhao G, Wu W, et al. "The Efficacy and Safety of Vitamin C for Iron Supplementation in Adult Patients With Iron Deficiency Anemia." *JAMA Netw Open*. 2020;3(11):e2023644. [https://doi.org/10.1001/jamanetworkopen.2020.23644](https://doi.org/10.1001/jamanetworkopen.2020.23644)
+[30] Li N, Zhao G, Wu W, et al. "The Efficacy and Safety of Vitamin C for Iron Supplementation in Adult Patients With Iron Deficiency Anemia." *JAMA Netw Open*. 2020;3(11):e2023644. PMID: 33136134. [https://doi.org/10.1001/jamanetworkopen.2020.23644](https://doi.org/10.1001/jamanetworkopen.2020.23644)
 
-[31] Patel A, et al. "Comparison of High-Dose vs Standard-Dose Oral Iron for Iron Deficiency Anemia in Older Adults." *JAMA Netw Open*. 2024.
+[31] Patel N, Silvey SG, Arora P, et al. Optimal Oral Iron Therapy for Iron Deficiency Anemia Among US Veterans. JAMA Netw Open. 2024;7(5):e2414305. PMID: 38819821. https://pubmed.ncbi.nlm.nih.gov/38819821/
 
-[32] Lin J, et al. "Daily versus alternate-day iron supplementation in iron deficiency anemia." *Br J Haematol*. 2023.
+[33] Keller K, Friedrich O, Treiber J, et al. Iron deficiency in athletes: Prevalence and impact on VO2 peak. Nutrition. 2024;126:112516. PMID: 39002373. https://pubmed.ncbi.nlm.nih.gov/39002373/
 
-[33] Keller K, et al. "Iron deficiency in competitive athletes: prevalence and impact on performance." *Nutrition*. 2024.
-
-[34] Gill D, et al. "Stored Iron Levels and Risk of Stroke." *Stroke*. 2018.
+[34] Gill D, Monori G, Tzoulaki I, et al. Iron Status and Risk of Stroke. Stroke. 2018;49(12):2815-2821. PMID: 30571402. https://pubmed.ncbi.nlm.nih.gov/30571402/
 
 [35] Mursu J, Robien K, Harnack LJ, Park K, Jacobs DR Jr. "Dietary supplements and mortality rate in older women: the Iowa Women's Health Study." *Arch Intern Med*. 2011;171(18):1625-33. [https://pubmed.ncbi.nlm.nih.gov/21987192/](https://pubmed.ncbi.nlm.nih.gov/21987192/)
 
 [36] Ambrosone CB, et al. "Dietary supplement use during chemotherapy and survival outcomes of patients with breast cancer." *J Clin Oncol*. 2020;38(8):804-14. [https://pubmed.ncbi.nlm.nih.gov/31855498/](https://pubmed.ncbi.nlm.nih.gov/31855498/)
 
-[37] Ghiya S. "Inadequate Iron Status in People with Thyroid Disease." *J Endocr Soc*. 2019.
+[38] Yao WC, Chen HJ, Leong KH, et al. The risk of fibromyalgia in patients with iron deficiency anemia: a nationwide population-based cohort study. Sci Rep. 2021;11(1):10496. PMID: 34006944. https://pubmed.ncbi.nlm.nih.gov/34006944/
 
-[38] Yao TC, et al. "Iron deficiency anemia and fibromyalgia in women: A nationwide population-based study." *Sci Rep*. 2021.
+[39] Lee HS, Chao HH, Huang WT, et al. Psychiatric disorders risk in patients with iron deficiency anemia and association with iron supplementation medications: a nationwide database analysis. BMC Psychiatry. 2020;20(1):216. PMID: 32393355. https://pubmed.ncbi.nlm.nih.gov/32393355/
 
-[39] Lee SC, et al. "Association between iron intake and depression, anxiety and sleep disorders." *BMC Psychiatry*. 2020.
+[40] Chocano-Bedoya PO, Manson JE, Hankinson SE, et al. Intake of selected minerals and risk of premenstrual syndrome. Am J Epidemiol. 2013;177(10):1118-27. PMID: 23444100. https://pubmed.ncbi.nlm.nih.gov/23444100/
 
-[40] Chocano-Bedoya PO, et al. "Dietary B vitamins and iron and risk of premenstrual syndrome." *Am J Epidem*. 2013.
-
-[41] Lee YJ, et al. "Inhibition of ACE inhibitor-induced cough by iron supplementation." *Hypertension*. 2001.
+[41] Lee SC, Park SW, Kim DK, et al. Iron supplementation inhibits cough associated with ACE inhibitors. Hypertension. 2001;38(2):166-70. PMID: 11509470. https://pubmed.ncbi.nlm.nih.gov/11509470/
 
 [42] Konofal E, Lecendreux M, Deron J, et al. "Effects of iron supplementation on attention deficit hyperactivity disorder in children." *Pediatr Neurol*. 2008;38(1):20-6. [https://pubmed.ncbi.nlm.nih.gov/18054688/](https://pubmed.ncbi.nlm.nih.gov/18054688/)
 
-[43] Fiani B, et al. "Brain Iron and Volume in Adolescents With Iron Deficiency." *JAMA Netw Open*. 2025.
+[43] Fiani D, Kim JW, Hu M, et al. Iron Deficiency Without Anemia and Reduced Basal Ganglia Iron Content in Youths. JAMA Netw Open. 2025;8(6):e2516687. PMID: 40540272. https://pubmed.ncbi.nlm.nih.gov/40540272/
 
 [44] McClung JP, Karl JP, Cable SJ, et al. "Randomized, double-blind, placebo-controlled trial of iron supplementation in female soldiers during military training: effects on iron status, physical performance, and mood." *Am J Clin Nutr*. 2009;90(1):124-31. [https://pubmed.ncbi.nlm.nih.gov/19474138/](https://pubmed.ncbi.nlm.nih.gov/19474138/)
 
-[45] Mikami K, et al. "Iron supplementation for mood and behavior disorders in iron-deficient children and adolescents." *J Nippon Med Sch*. 2022.
+[45] Mikami K, Akama F, Kimoto K, et al. Iron Supplementation for Hypoferritinemia-Related Psychological Symptoms in Children and Adolescents. J Nippon Med Sch. 2022;89(2):203-211. PMID: 34526463. https://pubmed.ncbi.nlm.nih.gov/34526463/
 
-[46] von Siebenthal HK, et al. "Effect of orange juice on iron absorption from ferrous fumarate." *Am J Hematol*. 2023.
+[46] von Siebenthal HK, Moretti D, Zimmermann MB, et al. Effect of dietary factors and time of day on iron absorption from oral iron supplements in iron deficient women. Am J Hematol. 2023;98(9):1356-1363. PMID: 37357807. https://pubmed.ncbi.nlm.nih.gov/37357807/
 
-[47] Lener F, et al. "Iron status after bariatric surgery: A 2-year observational study." *Nutr Metab Cardiovasc Dis*. 2023.
+[47] Lenér F, Höskuldsdóttir G, Landin-Wilhelmsen K, et al. Anaemia in patients with self-reported use of iron supplements in the BAriatric surgery SUbstitution and nutrition study: A prospective cohort study. Nutr Metab Cardiovasc Dis. 2023;33(5):998-1006. PMID: 36890072. https://pubmed.ncbi.nlm.nih.gov/36890072/
 
-[48] Hashash JG, et al. "American Gastroenterological Association Clinical Practice Update on the Management of Iron Deficiency in Inflammatory Bowel Disease." *Gastroenterology*. 2024.
+[50] Barton JC, Wiener HW, Barton JC, et al. Prevalence of Iron Deficiency Using 3 Definitions Among Women in the US and Canada. JAMA Netw Open. 2024;7(6):e2413967. PMID: 38848068. https://pubmed.ncbi.nlm.nih.gov/38848068/
 
-[49] Weyland PJ, et al. "Iron Deficiency and Iron Deficiency Anemia in Adolescents in the US." *JAMA*. 2023.
+[52] Hung KC, Weng HL, Lai YC, et al. Iron deficiency anemia and the risk of new-onset tinnitus in female patients: a cohort study. Front Nutr. 2025;12:1704946. PMID: 41393945. https://pubmed.ncbi.nlm.nih.gov/41393945/
 
-[50] Barton JC, et al. "Iron Deficiency in Women in the US and Canada." *JAMA Netw Open*. 2024.
+[54] John NM, Ashok B, John O, et al. Daily oral iron supplementation produced greater improvements in hematological parameters than alternate day doses - A pilot double-blind randomized control trial in iron-deficient young women. Clin Nutr. 2026;56:106520. PMID: 41354563. https://pubmed.ncbi.nlm.nih.gov/41354563/
 
-[51] Melis M, et al. "Semaglutide and iron absorption in type 2 diabetes." *Diabetes Obes Metab*. 2025.
+[55] McQuilten ZK, Thao LTP, Pasricha SR, et al. Effect of Low-Dose Aspirin Versus Placebo on Incidence of Anemia in the Elderly: A Secondary Analysis of the Aspirin in Reducing Events in the Elderly Trial. Ann Intern Med. 2023;176(7):913-921. PMID: 37335992. https://pubmed.ncbi.nlm.nih.gov/37335992/
 
-[52] Hung YC, et al. "Iron deficiency anemia and risk of tinnitus in women." *Front Nutr*. 2025.
+[56] Moretti D, Goede JS, Zeder C, et al. Oral iron supplements increase hepcidin and decrease iron absorption from daily or twice-daily doses in iron-depleted young women. Blood. 2015;126(17):1981-9. PMID: 26289639. https://pubmed.ncbi.nlm.nih.gov/26289639/
 
-[53] Atwell KJ, et al. "Evening versus morning iron supplementation in female athletes." *Eur J Sport Sci*. 2023.
+[57] Stoffel NU, Cercamondi CI, Brittenham G, et al. Iron absorption from oral iron supplements given on consecutive versus alternate days and as single morning doses versus twice-daily split dosing in iron-depleted women: two open-label, randomised controlled trials. Lancet Haematol. 2017;4(11):e524-e533. PMID: 29032957. https://pubmed.ncbi.nlm.nih.gov/29032957/
 
-[54] John L, et al. "Daily versus alternate-day iron in young women with iron deficiency." *Clin Nutr*. 2025.
+[58] Ahn JE, Bathena SPR, Brundage RC, et al. Iron supplements in nursing home patients associated with reduced carbamazepine absorption. Epilepsy Res. 2018;147:115-118. PMID: 30327119. https://pubmed.ncbi.nlm.nih.gov/30327119/
 
-[55] McQuilten ZK, et al. "Effect of Low-Dose Aspirin Versus Placebo on Incidence of Anemia in the Elderly." *Ann Intern Med*. 2023.
+[59] Green O, Henke LE, Parikh P, et al. Practical Implications of Ferromagnetic Artifacts in Low-field MRI-guided Radiotherapy. Cureus. 2018;10(3):e2359. PMID: 29805928. https://pubmed.ncbi.nlm.nih.gov/29805928/
+
+[60] Cook SC, Shull J, Pickworth-Pierce K, et al. An unusual cause of susceptibility artifact in magnetic resonance imaging. J Magn Reson Imaging. 2006;24(5):1148-50. PMID: 17036360. https://pubmed.ncbi.nlm.nih.gov/17036360/
+
+[61] Meliţ LE, Mărginean CO, Mocanu S, et al. A rare case of iron-pill induced gastritis in a female teenager: A case report and a review of the literature. Medicine (Baltimore). 2017;96(30):e7550. PMID: 28746201. https://pubmed.ncbi.nlm.nih.gov/28746201/
+
+[62] Tun KM, Naga Y, Mesgun S, et al. Gastric Siderosis Due to Oral Ferrous Sulfate Supplements. ACG Case Rep J. 2022;9(10):e00870. PMID: 36247381. https://pubmed.ncbi.nlm.nih.gov/36247381/
+
+[63] Stoleru G, Jain M, Jones AV, et al. Esophageal Siderosis: An Unusual Complication of Oral Iron Therapy. ACG Case Rep J. 2025;12(3):e01644. PMID: 40078484. https://pubmed.ncbi.nlm.nih.gov/40078484/
+
+[64] Xu J, Xu G, Fang J. Association between iron exposures and stroke in adults: Results from National Health and Nutrition Examination Survey during 2007-2016 in United States. Int J Environ Health Res. 2022;32(9):1925-1934. PMID: 34003723. https://pubmed.ncbi.nlm.nih.gov/34003723/
+
+[65] Biehler E, Hoffmann L, Krause E, et al. Divalent minerals decrease micellarization and uptake of carotenoids and digestion products into Caco-2 cells. J Nutr. 2011;141(10):1769-76. PMID: 21865558. https://pubmed.ncbi.nlm.nih.gov/21865558/
+
+[66] Liu H, Lu M, Hu J, et al. Medications and Food Interfering with the Bioavailability of Levothyroxine: A Systematic Review. Ther Clin Risk Manag. 2023;19:503-523. PMID: 37384019. https://pubmed.ncbi.nlm.nih.gov/37384019/
+
+[67] Gatta E, Bambini F, Buoso C, et al. Liquid levothyroxine formulations in patients taking drugs interfering with L-T4 absorption. Front Endocrinol (Lausanne). 2022;13:1080108. PMID: 36561558. https://pubmed.ncbi.nlm.nih.gov/36561558/
+
+[68] Daghlas I, Gill D. Genetically predicted iron status and life expectancy. Clin Nutr. 2021;40(4):2456-2459. PMID: 32690432. https://pubmed.ncbi.nlm.nih.gov/32690432/
+
+[69] U.S. National Library of Medicine, DailyMed. Ciprofloxacin tablets prescribing information (Hikma Pharmaceuticals USA), section 2.4. 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=3b3d22dc-df09-4910-8c9b-1204eeedbd68](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=3b3d22dc-df09-4910-8c9b-1204eeedbd68)
+
+[70] U.S. National Library of Medicine, DailyMed. Doxycycline hyclate prescribing information (Chartwell), drug interactions. 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=3e7cf78f-3b48-4614-9fa4-c6d1e0c05a35](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=3e7cf78f-3b48-4614-9fa4-c6d1e0c05a35)
+
+[71] Ahmed T, Lamoureux-Lamarche C, Berbiche D, et al. The association between anemia and depression in older adults and the role of treating anemia. Brain Behav. 2023;13(5):e2973. PMID: 36960478. https://pubmed.ncbi.nlm.nih.gov/36960478/
+
+[72] U.S. Food and Drug Administration. UPDATE: The FDA Warns that Biotin May Interfere with Lab Tests: FDA Safety Communication. 5 November 2019. [https://www.fda.gov/medical-devices/safety-communications/update-fda-warns-biotin-may-interfere-lab-tests-fda-safety-communication](https://www.fda.gov/medical-devices/safety-communications/update-fda-warns-biotin-may-interfere-lab-tests-fda-safety-communication)
+
+[73] Sedhai YR, Bhat P, Spalitto D, et al. Iron pill aspiration syndrome: A case report and literature review. Respir Med Case Rep. 2023;45:101908. PMID: 37609001. https://pubmed.ncbi.nlm.nih.gov/37609001/
+
+[74] Motwani K, Rubin J, Yfantis H, Willard M. Iron pill induced gastritis causing severe anemia. Clin J Gastroenterol. 2020;13:732-5. PMID: 32468501. https://pubmed.ncbi.nlm.nih.gov/32468501/
+
+[75] Ma Q, Kim EY, Lindsay EA, et al. Bioactive dietary polyphenols inhibit heme iron absorption in a dose-dependent manner in human intestinal Caco-2 cells. J Food Sci. 2011;76(5):H143-50. PMID: 22417433. https://pubmed.ncbi.nlm.nih.gov/22417433/
+
+[76] Zimmermann MB. The influence of iron status on iodine utilization and thyroid function. Annu Rev Nutr. 2006;26:367-89. PMID: 16602928. https://pubmed.ncbi.nlm.nih.gov/16602928/
+
+[77] AAN Guidelines Subcommittee. "Retirement of Guidelines." *Neurology*. 2026;106(2):e214589. PMID: 41418097. [https://pubmed.ncbi.nlm.nih.gov/41418097/](https://pubmed.ncbi.nlm.nih.gov/41418097/)
+
+[78] Ziaei S, Norrozi M, Faghihzadeh S, Jafarbegloo E. "A randomised placebo-controlled trial to determine the effect of iron supplementation on pregnancy outcome in pregnant women with haemoglobin > or = 13.2 g/dl." *BJOG*. 2007;114(6):684-8. Erratum in BJOG. 2007;114(10):1311. PMID: 17516958. [https://pubmed.ncbi.nlm.nih.gov/17516958/](https://pubmed.ncbi.nlm.nih.gov/17516958/)
+
+[79] Dewey KG, Domellöf M, Cohen RJ, et al. "Iron supplementation affects growth and morbidity of breast-fed infants: results of a randomized trial in Sweden and Honduras." *J Nutr*. 2002;132(11):3249-55. PMID: 12421836. [https://pubmed.ncbi.nlm.nih.gov/12421836/](https://pubmed.ncbi.nlm.nih.gov/12421836/)
+
+[80] U.S. National Library of Medicine, DailyMed. Cuprimine (penicillamine) capsules prescribing information. 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=80e736d3-2017-4d68-94b4-38255c3c59c6](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=80e736d3-2017-4d68-94b4-38255c3c59c6)
+
+[81] Schaefer JP, Tam Y, Hasinoff BB, et al. "Ferrous sulphate interacts with captopril." *Br J Clin Pharmacol*. 1998;46(4):377-81. PMID: 9803987. [https://pubmed.ncbi.nlm.nih.gov/9803987/](https://pubmed.ncbi.nlm.nih.gov/9803987/)
