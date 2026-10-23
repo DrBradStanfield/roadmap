@@ -325,7 +325,7 @@ Source: USDA, FDA, and ODS-NIH Database for the Iodine Content of Common Foods, 
 - **Fruits and vegetables** are generally poor iodine sources, and their content varies based on soil iodine levels, fertilizer use, and irrigation practices [1][2].
 - **Seaweed iodine content** varies enormously by species: *Laminaria digitata* has among the highest concentrations, while nori (*Porphyra*) tends to have lower, more moderate levels [9].
 
-### Groups at Risk of Inadequate Iodine
+### Who Tends to Run Low on Iodine
 
 **People who skip iodized salt:** About 88% of households worldwide use iodized salt, but iodine insufficiency persists in Southeast Asia, sub-Saharan Africa, and Eastern Europe [1][66][67].
 
