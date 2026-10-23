@@ -286,7 +286,7 @@ export function validDate(s: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
 }
 const SOURCE_KEYS = ["name", "url", "checked", "fingerprint"];
-export const SOURCE_NAMES = ["consumerlab", "nih-ods", "brad-video"];
+export const SOURCE_NAMES = ["consumerlab", "nih-ods", "brad-video", "pubmed"];
 const jsonOf = (v: string): unknown => { try { return JSON.parse(v); } catch { return undefined; } };
 
 /** Shape errors of one master frontmatter value (US-50 AC1), or null. `value` is the text after `key:` on its line. */
