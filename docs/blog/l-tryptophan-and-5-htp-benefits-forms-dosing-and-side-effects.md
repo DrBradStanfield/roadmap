@@ -253,7 +253,7 @@ If symptoms like these start after combining either supplement with a serotonerg
 
 **Pregnancy and Breastfeeding:** Safety in pregnancy and breastfeeding is unknown; check with your doctor before taking either supplement.
 
-**Children:** Safety in children is unknown. Older reports linked 5-HTP, given experimentally, with infantile spasms (a type of seizure) in children with Down syndrome [92][93]. A 1978 review of such cases noted that brain differences in Down syndrome may predispose to these spasms, and that the part played by serotonin is uncertain [93].
+**Children:** Safety in children is unknown. Older reports linked 5-HTP, given experimentally, with infantile spasms (a type of seizure) in children with Down syndrome [92][93]. A 1978 report of 5 children with Down syndrome and infantile spasms, with a review of the literature, noted that brain differences in Down syndrome may predispose to these spasms, and that the part played by serotonin is uncertain [93].
 
 ### Toxicity in Dogs
 
@@ -445,6 +445,6 @@ Tryptophan comes from protein in food [12][88]. Normal diets supply about 1/2 g 
 
 [92] Coleman M. "Infantile spasms associated with 5-hydroxytryptophan administration in patients with Down's syndrome." *Neurology*. 1971. PMID: 4328302. doi: [10.1212/wnl.21.9.911](https://doi.org/10.1212/wnl.21.9.911)
 
-[93] Pollack, et al. "Infantile spasms in Down syndrome: a report of 5 cases and review of the literature." *Ann Neurol*. 1978. PMID: 153121. doi: [10.1002/ana.410030508](https://doi.org/10.1002/ana.410030508)
+[93] Pollack MA, Golden GS, Schmidt R, et al. "Infantile spasms in Down syndrome: a report of 5 cases and review of the literature." *Ann Neurol*. 1978. PMID: 153121. doi: [10.1002/ana.410030508](https://doi.org/10.1002/ana.410030508)
 
-[94] "Adverse reactions to St John's Wort." *Can J Psychiatry*. 2001. PMID: 11221494. doi: [10.1177/070674370104600112](https://doi.org/10.1177/070674370104600112)
+[94] Parker V, Wong AH, Boon HS, Seeman MV. "Adverse reactions to St John's Wort." *Can J Psychiatry*. 2001. PMID: 11221494. doi: [10.1177/070674370104600112](https://doi.org/10.1177/070674370104600112)
