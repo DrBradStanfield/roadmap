@@ -140,7 +140,7 @@ The recommended daily intake is 8-11 mg for adults.
 
 ### Ultratrace Minerals and Boron
 
-There are also a set of minerals called ultratrace minerals. This category has significant overlap with the nonessential minerals, and includes minerals like silicon, nickel, boron, cadmium, and lithium. The general recommended daily intake of these minerals is zero, because they can be toxic in extremely small amounts, but some studies have been looking into whether or not they may be beneficial despite that.
+There are also a set of minerals called ultratrace minerals. This category has significant overlap with the nonessential minerals, and includes minerals like silicon, nickel, boron, cadmium, and lithium. No recommended daily intake has been set for these minerals, and some of them, like cadmium, can be toxic in extremely small amounts, but some studies have been looking into whether or not they may be beneficial despite that.
 
 A primary example of this is Boron. Numerous studies over the last few years have been demonstrating the potential benefits of boron in our diets, including functions such as:
 
@@ -152,7 +152,7 @@ A primary example of this is Boron. Numerous studies over the last few years hav
 *   Improving immune system function.
 *   Improving the function of steroid hormones, including estrogen, testosterone, and vitamin D.
 
-So, why is boron not classified as an essential mineral? While we've seen studies that seem to demonstrate benefits to consuming small amounts (usually less than a single microgram) of boron, science has not yet identified the specific enzymatic or molecular pathways the element uses. As such, governing bodies like the Food and Nutrition Board and the World Health Organization have not determined a recommended intake. MicroVitamin contains 1mg of Boron per serving.
+So, why is boron not classified as an essential mineral? While we've seen studies that seem to demonstrate benefits to consuming small amounts (usually a few milligrams a day, such as 3 mg) of boron, science has not yet identified the specific enzymatic or molecular pathways the element uses. As such, governing bodies like the Food and Nutrition Board and the World Health Organization have not determined a recommended intake. MicroVitamin contains 1mg of Boron per serving.
 
 ## Why Are Trace Minerals Added to Vitamins?
 
