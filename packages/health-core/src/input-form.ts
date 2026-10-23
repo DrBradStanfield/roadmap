@@ -10,6 +10,7 @@
  * word for word.
  */
 import { lipidCascade, weightCascade } from './medication-cascades';
+import { stampInstant } from './merge';
 import type { MedicationSave } from './state-edits';
 import { LIPID_DIET_ADVICE, lipidTargetSentence, weightMedIntro, type LipidMarker, type WeightMedicationTrigger } from './suggestions';
 import {
@@ -550,7 +551,9 @@ export function customSupplementMatch<T extends RecordedSupplement>(name: string
   const typed = name.trim().slice(0, 100).trim().toLowerCase();
   const named = supplements.filter(s => typeof s.supplementName === 'string' && s.supplementName.trim().toLowerCase() === typed);
   const active = named.filter(s => s.status === 'active');
-  return (active.length ? active : named).reduce<T | undefined>((best, s) => !best || (s.updatedAt ?? '') > (best.updatedAt ?? '') ? s : best, undefined);
+  // By instant: a stamp may carry an offset, so its text order is not its time order.
+  const at = (s: T) => { const t = stampInstant(s.updatedAt); return Number.isNaN(t) ? -Infinity : t; };
+  return (active.length ? active : named).reduce<T | undefined>((best, s) => !best || at(s) > at(best) ? s : best, undefined);
 }
 
 /** A typed supplement's key and name: a recorded name's own row (active or stopped,

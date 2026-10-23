@@ -64,9 +64,11 @@ it('sends click and input breadcrumbs without labels, names, values or status cl
   ]);
   // The bare value 0.4 is checked in what the page supplies (breadcrumbs,
   // tags, exception), not in Sentry's own ids and timestamps, where "0.4" can
-  // turn up by chance ("…10.405Z" failed the CI deploy gate, 2026-10-23).
+  // turn up by chance ("…10.405Z" failed the CI deploy gate, 2026-10-23; a
+  // breadcrumb's own epoch timestamp "1792729010.481" did the same locally).
   const [, [[, event]]] = envelopes[0] as [unknown, Array<[unknown, Record<string, unknown>]>];
-  const supplied = JSON.stringify({ breadcrumbs: event.breadcrumbs, tags: event.tags, exception: event.exception });
+  const breadcrumbs = (event.breadcrumbs as Array<Record<string, unknown>>).map(({ timestamp: _sentryClock, ...rest }) => rest);
+  const supplied = JSON.stringify({ breadcrumbs, tags: event.tags, exception: event.exception });
   expect(supplied, '0.4').not.toContain('0.4');
   const sent = JSON.stringify(envelopes);
   for (const leak of ['weird', 'zinc', 'Zinc', 'LEAK', 'aria-label', 'ReviewRow', 'Diabetic', 'urgent', 'discharge']) {

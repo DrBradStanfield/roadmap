@@ -26,6 +26,16 @@ describe('customSupplementAdd', () => {
     expect(customSupplementMatch('Taurine', [active, newer])).toBe(active);
   });
 
+  it('picks the newest by instant, not by how the stamp is spelled (US-06 AC1a)', () => {
+    // 23:00+13:00 is 10:00 UTC: it sorts after 11:00Z as text but is the older change.
+    const older = { supplementKey: 'custom_taurine', supplementName: 'Taurine', status: 'stopped', updatedAt: '2026-10-22T23:00:00+13:00' };
+    const newer = { supplementKey: 'custom_taurine_2', supplementName: 'Taurine', status: 'stopped', updatedAt: '2026-10-22T11:00:00Z' };
+    expect(customSupplementMatch('Taurine', [older, newer])).toBe(newer);
+    expect(customSupplementMatch('Taurine', [newer, older])).toBe(newer);
+    const unstamped = { ...older, updatedAt: undefined };
+    expect(customSupplementMatch('Taurine', [unstamped, newer])).toBe(newer);
+  });
+
   it.each(['active', 'stopped'] as const)('reuses a case-insensitive stored name on an arbitrary legacy key (%s)', status => {
     const rows = [{ supplementKey: 'custom_old_7', supplementName: 'Taurine', status }];
     expect(customSupplementAddKey('  TAURINE  ', rows)).toBe('custom_old_7');
