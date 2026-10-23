@@ -6,7 +6,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["red yeast rice", "monacolin K", "lovastatin", "cholesterol", "ldl", "hdl", "triglycerides", "statin", "cardiovascular", "heart attack", "stroke", "coq10", "blood pressure", "blood sugar", "diabetes", "insulin resistance", "inflammation", "liver", "citrinin", "nattokinase", "berberine", "ezetimibe", "pcsk9", "fish oil", "psyllium", "fiber"]
-summary: "Reference on red yeast rice, whose monacolin K is identical to lovastatin. Some products lower LDL cholesterol and one extract cut coronary events in a Chinese trial, but strength varies. It can cause statin-type muscle and liver harm. Talk to your doctor first, especially if you take a statin or are pregnant."
+summary: "Red yeast rice's monacolin K is identical to lovastatin. Some products lower LDL cholesterol and one extract cut coronary events in a Chinese trial, but strength varies. It can cause statin-type muscle and liver harm. Talk to your doctor first, especially if you take a statin or are pregnant."
 reviewed: "2026-10-23"
 sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/red-yeast-rice","checked":"2026-09-29","fingerprint":"sha256:52624c652a73fb41137f6826495849f944f60147cfc6568a6c4ae03939e992e2"}]
 ---
@@ -19,12 +19,12 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- Statin-type muscle damage is possible, including rhabdomyolysis, which can be life-threatening [7][48][72]. Stop it and see your doctor promptly about unexplained muscle pain or weakness; if it comes with dark urine or you feel very unwell, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- It can injure the liver; lovastatin is ruled out in active liver disease [4][53][72].
 - Do not take it with a prescription statin, because monacolin K is identical to lovastatin [4][7].
+- Avoid it with strong CYP3A4 inhibitors such as itraconazole or clarithromycin, and with gemfibrozil, cyclosporine or grapefruit juice; other fibrates and niacin at 1 g a day or more need caution [72]. On warfarin, check with your doctor first [73].
 - It is not recommended in pregnancy or breastfeeding [4][72].
-- Some products contain citrinin, which can damage the kidneys, and contaminated tablets in Japan in 2024 caused serious kidney injury [4][62][74].
-- Avoid it with strong CYP3A4 inhibitors such as itraconazole or clarithromycin, and with gemfibrozil, cyclosporine or grapefruit juice; on warfarin, check with your doctor first [72][73].
+- It can injure the liver; lovastatin is ruled out in active liver disease [4][53][72].
+- Statin-type muscle damage is possible, including rhabdomyolysis, which can be life-threatening [7][48][72]. Stop it and see your doctor promptly about unexplained muscle pain or weakness [72]; if you also feel very unwell, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [48].
+- Some products contain citrinin, which can damage the kidneys [4]. Separately, tablets in Japan in 2024 were contaminated with a different toxin, puberulic acid, and were linked to serious kidney injury [62][74].
 - It may cause diarrhea, nausea or stomach pain [4].
 
 ## Brad's videos on this topic
@@ -37,7 +37,7 @@ Red yeast rice is rice fermented by a fungus, usually *Monascus purpureus*, whic
 
 Depending on the strain and the fermentation conditions, the fungus can enrich the rice with monacolins, including monacolin K, which is structurally identical to the medicine lovastatin [4]. Like other statins, lovastatin slows the body's production of cholesterol [4]. More than 101 compounds have been isolated from red yeast rice, mainly monacolins, pigments, organic acids, sterols and flavonoids [3].
 
-Red yeast rice contains 14 monacolins that inhibit cholesterol synthesis in the liver, and tests measure monacolin K and its related form, monacolin KA, separately [8].
+Red yeast rice contains 14 monacolins that inhibit cholesterol synthesis in the liver [8].
 
 Dose is the key difference from prescription lovastatin. In 26 US brands, the monacolin K consumed per day at the labeled serving would range from 0.09 to 10.94 mg [5], and EFSA concluded that supplements could give monacolin K within the range of therapeutic lovastatin doses [7].
 
@@ -49,7 +49,7 @@ The strongest outcome evidence comes from the China Coronary Secondary Preventio
 
 ### Standard Red Yeast Rice
 
-Most supplements are capsules of fermented rice powder, and their strength varies widely. Twelve products tested in 2010 were each labeled 600 mg per capsule, yet monacolin K ranged from 0.10 to 10.09 mg per capsule, and four had elevated citrinin [8]. In 2017, none of 28 US brands listed monacolin K on the label; two had none detectable, and in the other 26 it ranged more than 60-fold, from 0.09 to 5.48 mg per 1,200 mg of red yeast rice [5].
+Most supplements are capsules of fermented rice powder, and their strength varies widely. In 2017, none of 28 US brands listed monacolin K on the label; two had none detectable, and in the other 26 it ranged more than 60-fold, from 0.09 to 5.48 mg per 1,200 mg of red yeast rice [5].
 
 The content depends on the fungal strain and the fermentation conditions [4].
 
@@ -71,7 +71,7 @@ In a 6-month trial in 47 adults with high blood lipids, nattokinase combined wit
 
 ### Key Bioavailability Considerations
 
-Monacolin K in its lactone form is identical to lovastatin, and red yeast rice also contains monacolin KA [7][8].
+Monacolin K in its lactone form is identical to lovastatin [7].
 
 Lovastatin is broken down by the enzyme CYP3A4, so drugs that block this enzyme can raise its blood levels (see Section 6) [72].
 
@@ -167,11 +167,11 @@ The following table summarizes the doses used in key trials:
 | Mazza 2018 [21] | One tablet with 10 mg of monacolin K and 30 mg of CoQ10 | 2 months |
 | Liu 2024 [15] | 9.0 mg of monacolins (with or without nattokinase) | 90 days |
 
-**Typical effective dose range:** There is no standard dose, because products differ so much in monacolin content [5][8]. Where trials stated the content, they gave 2 to 10 mg of monacolin K a day [21][23].
+**Typical effective dose range:** There is no standard dose, because products differ so much in monacolin K content [5]. Where trials stated the content, they gave 2 to 10 mg of monacolin K a day [21][23].
 
 **Minimum effective dose:** 200 mg a day containing 2 mg of monacolin K lowered LDL cholesterol in one small trial of 18 people [23].
 
-**CCSPS regimen:** Xuezhikang, the extract tested in CCSPS, has the strongest outcome evidence [9]. In Chinese trials it was given at 1.2 g a day, containing 10 mg of lovastatin [31].
+**Xuezhikang dose:** Xuezhikang, the extract tested in CCSPS, has the strongest outcome evidence [9]. In Chinese trials it was given at 1.2 g a day, containing 10 mg of lovastatin [31].
 
 ### Expert Panel Recommendations
 
@@ -194,7 +194,7 @@ Labels rarely state the monacolin K content, so you cannot know how much a produ
 
 - Strength can be far from the label: of 37 supplements sold in the European Union, nine held less monacolin K than labeled and 24 held more [69]
 - Citrinin was found in all 37 of those products, and four labeled "citrinin free" were contaminated [69]
-- Strength also varies widely between brands sold in the United States [5][8]
+- Strength also varies widely between brands sold in the United States [5]
 
 ## 5. Safety and Side Effects
 
@@ -246,7 +246,6 @@ Statin users in a US cohort had a higher risk of new-onset diabetes (adjusted HR
 Some red yeast rice products contain citrinin, a toxin that can damage the kidneys [4]. Citrinin also has liver-toxic, embryocidal and fetotoxic properties [59].
 
 - In 37 supplements sold in the European Union, citrinin was found in all of them; a single product met the limit of 100 μg/kg introduced after April 2020, and four labeled "citrinin free" were contaminated [69]
-- In 2010, four of 12 US products had elevated citrinin [8]
 - In 15 supplements on the Polish market, no citrinin was detected [59]
 
 ### The 2024 Japan Kobayashi Pharmaceutical Incident
@@ -333,7 +332,7 @@ Common red yeast rice is used in food products, while functional red yeast rice 
 
 ### Other Supplements and Foods That May Help Lower Cholesterol
 
-Other options, such as plant sterols and psyllium, are covered in the [cholesterol-lowering supplements reference](https://drstanfield.com/blogs/articles/cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects). Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 2.5 g of psyllium husk — a soluble fiber shown in a Cochrane systematic review to reduce cardiovascular disease risk factors and help maintain healthy cholesterol levels.
+Other options, such as plant sterols and psyllium, are covered in the [cholesterol-lowering supplements reference](https://drstanfield.com/blogs/articles/cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects). Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 2.5 g of psyllium husk, a soluble fiber shown in a Cochrane systematic review to reduce cardiovascular disease risk factors and help maintain healthy cholesterol levels.
 
 ## 8. References
 
