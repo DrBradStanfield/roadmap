@@ -710,5 +710,13 @@
     "reason": "AC4 heading rename ratified (orchestrator 2026-10-23, masters-new-2): selenium deficiency heading renamed 'Who Tends to Run Low on Selenium' (it matched the US-41 AC8 risk-heading pattern; same case as vitamin A in masters-new-1). Declared in selenium addendum-3.",
     "by": "orchestrator",
     "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Groups at Risk of Inadequate Iodine",
+    "reason": "AC4 heading rename ratified (orchestrator 2026-10-23, masters-new-2): kelp and iodine deficiency heading renamed 'Who Tends to Run Low on Iodine' (it matched the US-41 AC8 risk-heading pattern; same case as vitamin A in masters-new-1). Declared in kelp addendum-3.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
   }
 ]
