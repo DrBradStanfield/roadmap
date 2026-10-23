@@ -16,10 +16,12 @@ final class AppStoreScreenshots: XCTestCase {
         let tabs = app.tabBars
         XCTAssertTrue(tabs.buttons["My data"].waitForExistence(timeout: 15), "the seeded record opens on the tabs, not onboarding")
         tabs.buttons["My data"].tap()
+        // At the top: the Weight card leads; rows passing under the translucent tab bar are as iOS draws them.
         shoot(app, "1 my data")
 
         tabs.buttons["My plan"].tap()
         XCTAssertTrue(app.staticTexts["Next Steps"].waitForExistence(timeout: 10) || app.staticTexts["Requires Attention"].waitForExistence(timeout: 5))
+        scroll(app, 0.25) // tiles, then whole cards down to the Medication card, none under the tab bar
         shoot(app, "2 my plan")
 
         // The first suggestion on the plan, opened, by its identifier: the summary tiles above
@@ -27,10 +29,12 @@ final class AppStoreScreenshots: XCTestCase {
         let card = app.buttons.matching(identifier: "plan.suggestion").firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 5), "a suggestion card")
         card.tap()
+        scroll(app, 0.3) // the opened card's title near the top, all its text above the bar
         shoot(app, "3 card opened")
         card.tap()
 
         tabs.buttons["My data"].tap()
+        for _ in 0..<3 { app.swipeDown() }
         let weight = app.staticTexts["Weight"].firstMatch
         XCTAssertTrue(weight.waitForExistence(timeout: 5), "the Weight row")
         weight.tap()
@@ -45,6 +49,14 @@ final class AppStoreScreenshots: XCTestCase {
         agree.tap()
         XCTAssertTrue(app.textFields["Ask a question"].waitForExistence(timeout: 5) || app.textViews["Ask a question"].waitForExistence(timeout: 2), "the question box")
         shoot(app, "5 chat")
+    }
+
+    /// Scrolls the content up by `fraction` of the screen height, slowly so it does not fling.
+    @MainActor
+    private func scroll(_ app: XCUIApplication, _ fraction: Double) {
+        let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+        let to = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8 - fraction))
+        from.press(forDuration: 0.1, thenDragTo: to, withVelocity: .slow, thenHoldForDuration: 0.5)
     }
 
     @MainActor

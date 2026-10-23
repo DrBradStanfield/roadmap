@@ -39,7 +39,7 @@ fs.writeFileSync(process.argv[2], JSON.stringify(record));
 ' ../docs/examples/health-roadmap.sample.json "$DATA/Library/Application Support/Record/health-roadmap.json"
 xcrun simctl spawn "$ID" defaults write "$APP_ID" welcomed -bool YES
 xcrun simctl spawn "$ID" defaults write "$APP_ID" onboarded -bool YES
-xcrun simctl status_bar "$ID" override --time 9:41 --dataNetwork wifi --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
+xcrun simctl status_bar "$ID" override --time 9:41 --dataNetwork wifi --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState discharging --batteryLevel 100
 # The skip settings live outside the app and survive an uninstall: take them away after.
 trap 'xcrun simctl status_bar "$ID" clear; xcrun simctl spawn "$ID" defaults delete "$APP_ID" 2>/dev/null || true' EXIT
 
