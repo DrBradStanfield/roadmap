@@ -93,7 +93,7 @@ In all the heart failure trials below, CoQ10 was added to standard treatment, no
 
 **Q-SYMBIO:** This trial randomized 420 people whose heart failure was moderate or severe to CoQ10 100 mg three times a day or placebo for 2 years [11]. Major cardiac events occurred in 15% on CoQ10 and 26% on placebo (HR 0.50, 95% CI 0.32 to 0.80) [11]. Cardiovascular deaths were 9% versus 16% and all deaths 10% versus 18% [11]. There were no significant changes at 16 weeks [11].
 
-NCCIH, the source Brad cites in his post, still rates the heart failure research as inconclusive [3]. That fits his view that CoQ10 lacks good evidence of benefit ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)), but Q-SYMBIO is the main trial pointing the other way.
+Brad's view is that CoQ10 lacks good evidence of benefit ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). A single trial, Q-SYMBIO, found fewer cardiac events [11], but it has not been repeated, and NCCIH, the source Brad cites in his post, still calls the heart failure research inconclusive [3].
 
 **Heart failure with preserved ejection fraction (HFpEF):** In 39 people aged over 55 years, 4 months of CoQ10 did not change diastolic function or NT-proBNP compared with placebo [13]. A larger trial enrolled 216 people and randomised 153 of them to ubiquinol 600 mg a day, D-ribose 15 g a day, both, or placebo over 12 weeks [14]. The groups given ubiquinol, D-ribose or both had better symptom scores, but no better 6-minute walk [14]. Compared with placebo, ejection fraction rose 7.08% with ubiquinol alone and 8.03% with D-ribose alone, and taking both added nothing [14]. The paper also reports each group separately: ubiquinol alone raised the Kansas City Cardiomyopathy Questionnaire (KCCQ) symptom score by 22.41 points more than placebo [14]. The trial stopped early, short of its target of 276 people, so each group was small [14].
 
@@ -142,7 +142,7 @@ The evidence here is divided.
 
 **Statin-related fatigue:** In older adults with statin-related fatigue (asthenia), a daily 300 mg CoQ10 phytosome (60 mg of CoQ10) for 8 weeks lowered fatigue scores by 30.0 ± 20.0% and improved grip strength, compared with both baseline and placebo [19].
 
-NCCIH concludes that the overall evidence does not support using CoQ10 to ease muscle pain from statins [3]. Brad's view is that statin users get no benefit ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). Two of the four meta-analyses found a benefit, so the trial evidence is mixed rather than uniformly negative.
+NCCIH concludes that the overall evidence does not support using CoQ10 to ease muscle pain from statins [3]. Brad's view is that statin users get no benefit ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). The evidence is mixed: two analyses found no benefit [92][44] and two found reductions in muscle pain [43][45], the later one small.
 
 ### Migraine Prevention
 

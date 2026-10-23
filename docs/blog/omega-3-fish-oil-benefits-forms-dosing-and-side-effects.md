@@ -362,6 +362,8 @@ A study of 176 adults with MASLD found liver fat fell significantly in both the 
 
 However, a meta-analysis of 22 trials found omega-3 supplementation reduced liver fat and improved triglycerides and other blood lipids in people with MASLD (Lee, Nutrients 2020) [153].
 
+The AASLD practice guidance says high triglycerides in people with MASLD can be managed with lifestyle changes and omega-3 fatty acids, icosapent ethyl or fibrates. When a statin alone does not reach lipid goals, it says adding another lipid-lowering drug should be considered, and omega-3 fatty acids are one of the options it lists, alongside ezetimibe, PCSK-9 inhibitors, inclisiran, bempedoic acid, fibrates and icosapent ethyl. For severely high triglycerides (for example, above 500 mg/dL), it says fibrates, alone or with prescription-grade omega-3 or icosapent ethyl, should be used to lower the risk of pancreatitis (Rinella, Hepatology 2023) [220].
+
 ### Migraine Headache
 
 Getting more omega-3 from the diet while reducing omega-6 intake may reduce migraine frequency. Among 182 adults with migraine, a diet raising EPA+DHA to 1,500 mg/day while cutting linoleic acid (an omega-6) decreased total headache hours by 1.7 hours/day compared to a low-omega-3 control diet, and raising omega-3 alone also helped. Reducing linoleic acid intake as well decreased headache days by 2 per month more than omega-3 alone. Both higher-omega-3 diets increased blood levels of 17-HDHA, a pain-relieving compound derived from DHA (Ramsden, BMJ 2021) [20].
@@ -1049,3 +1051,5 @@ Source: USDA FoodData Central [1][11].
 [218] Abdelhamid AS, Brown TJ, Brainard JS, et al. "Omega-3 fatty acids for the primary and secondary prevention of cardiovascular disease." *Cochrane Database Syst Rev*. 2020;3(3):CD003177. doi: [10.1002/14651858.CD003177.pub5](https://doi.org/10.1002/14651858.CD003177.pub5). PMID: 32114706.
 
 [219] National Institutes of Health, Office of Dietary Supplements. "Vitamin A and Carotenoids -- Health Professional Fact Sheet." Updated 2025. [https://ods.od.nih.gov/factsheets/VitaminA-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminA-HealthProfessional/)
+
+[220] Rinella ME, Neuschwander-Tetri BA, Siddiqui MS, et al. "AASLD Practice Guidance on the clinical assessment and management of nonalcoholic fatty liver disease." *Hepatology*. 2023;77(5):1797-1835. doi: [10.1097/HEP.0000000000000323](https://doi.org/10.1097/HEP.0000000000000323). PMID: 36727674.
