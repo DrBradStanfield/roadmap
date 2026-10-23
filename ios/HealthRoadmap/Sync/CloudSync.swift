@@ -57,7 +57,7 @@ final class CloudSync: CloudPort {
     /// News a session sent before the handover showed it: the newest record each
     /// session brought in, and its last failure, shown once that session is (adversary R2, R4).
     private var heldNews: [Int: HealthEngine.CloudView] = [:]
-    private var heldFailures: [Int: String] = [:]
+    private var heldFailures: [Int: SyncProblem] = [:]
 
     init(engine: HealthEngine, store: RecordStore, oauth: OAuthClient) {
         self.engine = engine
@@ -69,7 +69,8 @@ final class CloudSync: CloudPort {
         if provider != nil { store.marksPending = phone }
         syncedBefore = files.read(files.history).flatMap(CloudProvider.init(rawValue:))
         accountEmail = provider == nil ? nil : files.read(files.email)
-        engine.blocking { [phone] in $0.attach(self, phone: phone) }
+        // Queued, not waited for: the engine's queue runs it before any call made after this.
+        engine.enqueue { [phone] in $0.attach(self, phone: phone) }
         store.onEdit = { [weak self] in self?.edited() }
         if provider != nil { status = .connecting }
     }
@@ -222,7 +223,7 @@ final class CloudSync: CloudPort {
                     guard let self, mine == self.generation, self.editsWhileOpening == 0 else { return false }
                     self.shownSession = view.session
                     if let held = self.heldNews[view.session] { self.store.showCloud(held) }
-                    self.status = self.heldFailures[view.session].map { .problem(SyncProblem(json: $0)) } ?? self.settled()
+                    self.status = self.heldFailures[view.session].map { .problem($0) } ?? self.settled()
                     self.heldNews = [:]
                     self.heldFailures = [:]
                     self.syncedBefore = provider
@@ -282,32 +283,29 @@ final class CloudSync: CloudPort {
         }
     }
 
-    func notify(_ event: String, _ payload: String, session: Int, order: Int) {
+    func notify(_ news: HealthEngine.CloudNews, session: Int) {
         guard session == shownSession else {
             // A session still being handed over: keep the record it brought in, and a
             // failure it met, for when it shows.
             guard openingFor != nil else { return }
-            if event == "failed" { heldFailures[session] = payload }
-            if event == "saved" || event == "synced" { heldFailures[session] = nil }
-            if event == "changed", var view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) {
-                view.order = order
-                heldNews[session] = view
+            switch news {
+            case .failed(let problem): heldFailures[session] = problem
+            case .saved, .synced: heldFailures[session] = nil
+            case .changed(let view): heldNews[session] = view
+            case .saving, .other: break
             }
             return
         }
-        switch event {
-        case "saving": status = .saving
+        switch news {
+        case .saving: status = .saving
         // A write landed, but the save may still verify or go round again:
         // "Synced" waits for the marker to clear (the 'synced' event).
-        case "saved": status = settled()
+        case .saved: status = settled()
         // The pending marker cleared, or a re-read worked with nothing waiting.
-        case "synced": status = settled()
-        case "failed": status = .problem(SyncProblem(json: payload))
-        case "changed":
-            guard var view = try? JSONDecoder().decode(HealthEngine.CloudView.self, from: Data(payload.utf8)) else { return }
-            view.order = order
-            store.showCloud(view)
-        default: break
+        case .synced: status = settled()
+        case .failed(let problem): status = .problem(problem)
+        case .changed(let view): store.showCloud(view)
+        case .other: break
         }
     }
 }

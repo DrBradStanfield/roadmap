@@ -4,38 +4,83 @@ import UserNotifications
 
 @main
 struct HealthRoadmapApp: App {
-    @State private var parts = Result { try AppParts() }
+    @State private var launch = Launch()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
-            switch parts {
-            case .success(let parts):
+            switch launch.parts {
+            case nil:
+                LaunchView()
+            case .success(let parts)?:
                 RootView(engine: parts.engine, store: parts.store, sync: parts.sync)
                     .environment(parts.reminders).environment(parts.reminderTaps).environment(parts.health).environment(parts.eraser)
                     .task { await parts.sync.start() }
-                    .onChange(of: scenePhase) { _, phase in follow(phase, parts.sync, parts.updater) }
-            case .failure(let error):
+                    // Initial: the app may have come on screen while its parts were built.
+                    .onChange(of: scenePhase, initial: true) { _, phase in follow(phase, parts) }
+                    #if DEBUG
+                    .onAppear { LaunchClock.mark("app shown") }
+                    #endif
+            case .failure(let error)?:
                 ContentUnavailableView("The app could not start", systemImage: "exclamationmark.triangle", description: Text(error.localizedDescription))
             }
         }
     }
 }
 
+/// Builds the app's parts as the process starts, without holding the main thread
+/// (US-25 AC21): the launch view shows until they are ready. Started from the app's
+/// init, not a view, so a background launch (a Health delivery) builds them too.
+@MainActor
+@Observable
+final class Launch {
+    /// Nil while the parts are built.
+    private(set) var parts: Result<AppParts, Error>?
+
+    init() {
+        #if DEBUG
+        MainThreadWatchdog.start()
+        LaunchClock.mark("app init")
+        #endif
+        // Before launch finishes, so a tap that starts the app still reaches My plan.
+        let reminderTaps = ReminderTaps()
+        UNUserNotificationCenter.current().delegate = reminderTaps
+        let health = HealthKitClient()
+        let building = Task { try await AppParts.build(reminderTaps: reminderTaps, health: health) }
+        // Now, in the app's init, which runs as the process starts: Apple wants Health's
+        // observer queries in place before launch finishes, or a background wake for new
+        // Health data can be missed. The parts are still being built, so a delivery
+        // awaits them before it refreshes (adversary R1).
+        AppleHealthSync.observeAtLaunch(client: health) { try? await building.value.health }
+        Task {
+            do {
+                parts = .success(try await building.value)
+            } catch {
+                parts = .failure(error)
+            }
+            #if DEBUG
+            LaunchClock.mark("parts built")
+            #endif
+        }
+    }
+}
+
 /// Cloud sync follows the app on and off the screen (US-25 AC11c): it re-reads on
 /// return, and saves what waits before iOS suspends the app, asking iOS for the
-/// few seconds that save needs. Coming on screen (launch included) also looks for
-/// a newer engine, at most once in 6 hours (US-25 AC18).
+/// few seconds that save needs. Coming on screen (launch included, so the app is
+/// caught up if it became active while its parts were built) also reads what is new
+/// in Apple Health and looks for a newer engine, at most once in 6 hours (US-25 AC18).
 @MainActor
-private func follow(_ phase: ScenePhase, _ sync: CloudSync, _ updater: EngineUpdater?) {
+private func follow(_ phase: ScenePhase, _ parts: AppParts) {
     switch phase {
     case .active:
-        Task { await sync.foreground() }
-        Task { await updater?.checkIfDue() }
+        Task { await parts.sync.foreground() }
+        Task { await parts.health.refresh() }
+        Task { await parts.updater?.checkIfDue() }
     case .background:
         let task = BackgroundTask()
         Task {
-            await sync.background()
+            await parts.sync.background()
             task.end()
         }
     default:
@@ -71,7 +116,7 @@ struct AppParts {
     let store: RecordStore
     let sync: CloudSync
     let reminders: ReminderScheduler
-    let reminderTaps = ReminderTaps()
+    let reminderTaps: ReminderTaps
     /// Apple Health in and out (ios/architecture.md D6). Started at launch, so its
     /// observers are in place when iOS wakes the app for new Health data.
     let health: AppleHealthSync
@@ -79,27 +124,62 @@ struct AppParts {
     /// Over-the-air engine updates (US-25 AC18); nil if their folder cannot be made.
     let updater: EngineUpdater?
 
-    init() throws {
-        // The newest verified downloaded engine, or the bundled one (ios/architecture.md D3).
+    /// What takes time runs off the main thread, in this order: the files, the engine (its
+    /// checks and load), then the phone's record, read and drawn once (US-25 AC21).
+    static func build(reminderTaps: ReminderTaps, health: HealthStoreClient) async throws -> AppParts {
         // A background launch (a Health delivery) never tries a new engine.
-        let bundled = try BundledEngine()
-        let engineFolder = try? EngineFolder.live()
         let foreground = UIApplication.shared.applicationState != .background
-        engine = try EngineBoot(folder: engineFolder, bundled: bundled, foreground: foreground).start().engine
-        updater = engineFolder.map { EngineUpdater(folder: $0, bundled: bundled.facts) }
-        let folder = try RecordStore.appFolder()
-        store = try RecordStore(folder: folder, engine: engine, deviceId: RecordStore.deviceId(in: folder))
+        let files = try await LaunchFiles.read()
+        // The newest verified downloaded engine, or the bundled one (ios/architecture.md D3).
+        let engine = try await EngineBoot(folder: files.engineFolder, bundled: files.bundled, foreground: foreground).start().engine
+        let store = try await RecordStore.open(folder: files.record, engine: engine, deviceId: files.deviceId)
+        return AppParts(engine: engine, store: store, files: files, reminderTaps: reminderTaps, health: health)
+    }
+
+    private init(engine: HealthEngine, store: RecordStore, files: LaunchFiles, reminderTaps: ReminderTaps, health client: HealthStoreClient) {
+        self.engine = engine
+        self.store = store
+        self.reminderTaps = reminderTaps
+        updater = files.engineFolder.map { EngineUpdater(folder: $0, bundled: files.bundled.facts) }
+        let folder = files.record
         sync = CloudSync(engine: engine, store: store, oauth: OAuthClient())
         let (engine, store) = (engine, store)
         reminders = ReminderScheduler(center: UNUserNotificationCenter.current(), folder: folder) {
             try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         }
-        // Before launch finishes, so a tap that starts the app still reaches My plan.
-        UNUserNotificationCenter.current().delegate = reminderTaps
         let sync = self.sync
-        health = AppleHealthSync(store: store, engine: engine, client: HealthKitClient()) { await sync.syncNow() }
+        health = AppleHealthSync(store: store, engine: engine, client: client) { await sync.syncNow() }
         health.start()
         let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
         eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: health)
+    }
+}
+
+/// The launch's file reads, off the main thread: the bundled engine's source, the
+/// downloaded engines' folder, the record's folder and this install's id.
+private struct LaunchFiles: Sendable {
+    let bundled: BundledEngine
+    let engineFolder: EngineFolder?
+    let record: URL
+    let deviceId: String
+
+    @concurrent
+    static func read() async throws -> LaunchFiles {
+        let record = try RecordStore.appFolder()
+        return LaunchFiles(bundled: try BundledEngine(), engineFolder: try? EngineFolder.live(), record: record, deviceId: try RecordStore.deviceId(in: record))
+    }
+}
+
+/// What shows while the parts are built: the welcome screen's mark on its background,
+/// never a blank screen (US-25 AC21).
+struct LaunchView: View {
+    var body: some View {
+        LogoMark()
+            .accessibilityHidden(true)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(.systemBackground))
+            #if DEBUG
+            .onAppear { LaunchClock.mark("launch view shown") }
+            #endif
     }
 }

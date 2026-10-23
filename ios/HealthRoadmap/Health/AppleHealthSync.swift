@@ -90,18 +90,31 @@ final class AppleHealthSync {
     }
 
     /// At launch and on connect: refresh when Health has new data (in the background
-    /// too), when the app comes forward, when the phone unlocks, and when a typed
-    /// value changes the record. Once per launch.
+    /// too), when the phone unlocks, and when a typed value changes the record. The
+    /// app's `follow` refreshes when it comes forward. Once per launch. At launch the
+    /// observers are already in place (`observeAtLaunch`), so the client keeps those.
     func start() {
         guard memory.connected, client.isAvailable, !started else { return }
         started = true
         client.observe(HealthKind.allCases) { [weak self] in await self?.refresh() }
-        for name in [UIApplication.didBecomeActiveNotification, UIApplication.protectedDataDidBecomeAvailableNotification] {
-            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                Task { @MainActor in await self?.refresh() }
-            }
+        NotificationCenter.default.addObserver(forName: UIApplication.protectedDataDidBecomeAvailableNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in await self?.refresh() }
         }
         watchRecord()
+    }
+
+    /// Apple asks for HealthKit's observer queries and background delivery to be set up
+    /// as the process starts, before `application(_:didFinishLaunchingWithOptions:)`
+    /// returns: when iOS wakes the app for new Health data, a query registered later may
+    /// miss that delivery (adversary R1). So the app's `Launch` calls this from its init,
+    /// synchronously, while its parts are still being built off the main thread. A
+    /// delivery then waits for the parts (`sync`) and refreshes; the handler returns, and
+    /// HealthKit's completion is called, only after that refresh, or at once if the parts
+    /// never come (nil: the launch failed).
+    static func observeAtLaunch(client: HealthStoreClient, memory: HealthSyncMemory = HealthSyncMemory(),
+                                sync: @escaping @MainActor () async -> AppleHealthSync?) {
+        guard memory.connected, client.isAvailable else { return }
+        client.observe(HealthKind.allCases) { await sync()?.refresh() }
     }
 
     /// Reads what is new, then writes what is typed. A call made while a refresh runs

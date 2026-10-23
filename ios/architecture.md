@@ -86,8 +86,17 @@ engine work off the main thread (2026-10-22); stages 1 and 2 are built (below).
 - **A lab report's summary and its import are one step.** On the phone, both run against the record of that turn. In the cloud, one engine door (`cloudLabImport`) takes the summary against the session's working copy and runs the import on it in the same synchronous JavaScript step, so a value another device brought in is never counted as saved. Swift keeps no copy of the session's record.
 - **The cloud stamp.** The engine queue stamps every cloud record it hands to Swift (open, edit, erase and document save as their Promise resolves, each notify as it is sent). An edit's answer can arrive after news of a re-read made before it, so the screen keeps the record with the higher stamp.
 - Sheets set `saving` in the button action (`SheetSave`), hold Save and Cancel, refuse swipe-down while saving and dismiss only on a save; pickers that save at once wait while their edit lands, so a quick change back is never lost. PlanView awaits `planSections`, which skips a plan no longer wanted.
-- `blocking` runs its body inside `queue.sync` through a cast of the isolated closure, not `assumeIsolated`: that check recognises a dispatch queue only with the Swift 6 runtime's `checkIsolated` (iOS 18), and the app supports iOS 17.
-- **Still waiting on the engine from main (`blocking`, a stopgap; DEBUG counts main-thread calls):** launch (the first record load, the sync attach, a downloaded engine's self-test), typed-number reading (a synchronous `read:` on every keystroke), a value's history page (a redraw cache), a trial engine's confirm, and chat history (its read-modify-write is kept atomic with the erase's tombstone write). Next: stages 3 and 4 move these.
+- `blocking` is a test-target extension (`EngineTestDoors.swift`), so app code cannot call it at all: the compiler is the rule. It runs its body on the engine's queue through a cast of the isolated closure (not `assumeIsolated`, whose dispatch-queue check needs iOS 18's `checkIsolated`; the app supports iOS 17) with `queue.async`, the waiting thread held on a semaphore, so the body never runs on the main thread. `enqueue` is the app's one copy of the cast.
+- **Stages 3 and 4 (2026-10-23): nothing in the app waits on the engine.** `blocking` lives in the test target, so the app cannot call it; and wherever JavaScript runs (`callValue`, `settle`, `evaluate`), a DEBUG precondition checks it is on the engine's queue and not on the main queue, the real rule: no JavaScript on main. App code awaits an engine door or `perform` (a body run on the engine's actor). What moved:
+  - **Launch.** `Launch` (HealthRoadmapApp.swift) starts `AppParts.build` from the app's init, not a view, so a background launch builds too, and shows `LaunchView` (the welcome screen's `LogoMark` on the system background) until it is done. The file reads run `@concurrent`; `EngineBoot` is no longer main-actor: its checks, both engine loads and the quarantined self-test run off main, and only the trial mark (`EngineTrial`) is set on main, before the parts are handed out; `RecordStore.open` awaits the first `loadPhone`, once, before the first screen. The notification delegate is set synchronously in `Launch.init`. `CloudSync.init` queues the attach with `engine.enqueue`: the engine's queue runs in order, so the attach lands before any engine call asked for after it, and `marksPending` is set before any edit can be asked for. Health's observer may be set after the app became active, so the build ends with one refresh when it is. Measured (simulator, iPhone 18 Pro Max, two-year record): first frame 150 ms after init, all blocked, before; launch screen at 50 ms and the app at 165 ms after, main free between.
+  - **Typed numbers** are read in Swift, `TypedNumber.read`, the engine's `readNumber` rule (Arabic-Indic digits, JavaScript's trim, either mark, plain decimals only, -0 as 0); NumberReadingTests holds it to the engine's `numberJson` on 47 texts. The engine's door stays (tests only; no bridge change). It is in the binary: a change to health-core's number rule needs an app release (D3).
+  - **A value's history** is `RecordStore.history(for:) async`, read once per metric and record `revision` (a counter that moves with the record and the per-test units); a second ask for the same revision joins the read under way, so a page and the page above it make one engine call. The store keeps each answer with its chart inputs (`ChartData`: points, days, offered ranges, built once per history) and drops older revisions' as a newer one lands. A page draws `shownChart(for:)`, which may trail the record by one read, and asks again on `.task(id: store.revision)`; only `shownHistory(for:)`, the history read for the record and units as they are now, opens a correction, so Show All Data holds its taps while it trails (adversary R2). A correction's "Now" hint comes from that current history, and for Lp(a) only one read in the sheet's unit (`correctionHint`): never "100 mg/dL" from a 100 nmol/L row.
+  - **Onboarding's conversions** (`TypedAnswer`) await the engine; a unit switch's conversion lands only if the box did not move meanwhile, so a box never shows text in units it no longer holds. A trial's confirm awaits its plan (`.task` on My data).
+  - **Chat history** (`ChatHistoryStore`) awaits the engine for its list, messages, saves and deletes; each save or delete reads, changes and writes in one engine step. Both erases now write the chat tombstones on the engine's queue (the phone erase's `keepChat` runs through `perform`), so neither lands between a save's read and write.
+  - **Cloud news** is decoded on the engine's queue (`CloudNews`) before it goes to main.
+  - **Photos and scans** are resized `@concurrent` (`LabFileReader.photo` takes the photo's bytes; `pictures` takes the scan's images, which are Sendable in the iOS 27 SDK).
+- **The watchdog (DEBUG only, opt-in, US-25 AC21c).** `MainThreadWatchdog` runs only when the launch argument `-mainWatchdogLog <path>` names a log. It pings main every 50 ms from its own thread and appends "<timestamp> main stalled N ms" to that file when main took 100 ms or more to answer. It takes no stacks: a tool for timing by hand, not a test. `LaunchClock` logs the launch's milestones in ms since the process started.
+- **Apple Health observers at launch (adversary R1).** `Launch.init`, which runs as the process starts, registers HealthKit's observer queries and background delivery at once (`AppleHealthSync.observeAtLaunch`), as Apple requires, while the parts are still being built. A delivery awaits the parts, then refreshes; HealthKit's completion is called after that refresh, or at once if the parts never come. `HealthKitClient.observe` registers once per process, so the sync's own `start` keeps the launch's queries. Coming on screen refreshes Health from `follow`, beside sync and the updater; the sync itself listens only for the phone unlocking.
 
 The runtime needs a bridge for what a bare JSContext lacks: `fetch`, `Response`, `Headers`,
 `URL`, `AbortController` with `AbortSignal.timeout`/`any`, `Blob`, `TextEncoder`/`Decoder`,
@@ -184,6 +193,11 @@ A signature means "the key holder approved this bundle", nothing more.
 - **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
   bundled engine's is refused. A schema change always needs an app update, so an over-the-
   air engine can never write a record the web or an older phone cannot read.
+- **Typed numbers are read in the binary (US-25 AC21).** `TypedNumber.read` is Swift, a copy
+  of health-core's `parseLocalisedNumber` rule, so typing never waits on the engine. An
+  over-the-air engine does not change how the app reads a typed number: a change to that rule
+  in health-core needs an app release too (NumberReadingTests holds the copy to the bundled
+  engine's `numberJson`).
 - **The bundled engine has a version** (`health-engine.json`, beside the bundle): the
   source commit's UTC minute, not the build time, so a release built later from the same
   source is newer, and an App Store update whose engine is newer deletes older downloads.
@@ -1264,14 +1278,17 @@ A new user answers sex, birth month and year, height and weight, one per screen,
   turn in the tap (R1); reports are decoded on the shared pool, off both the main thread and the
   engine's queue, for Dropbox folders, Dropbox files and Files picks (`LabFileReader.decoded`, R2);
   the correction sheet's id stays its value's when its screen moves, with a test (R3).
+- **Stages 3 and 4 (2026-10-23):** nothing in the app waits on the engine; launch shows
+  a launch screen while the parts build off main; an opt-in debug watchdog logs main-thread
+  stalls (US-25 AC21, AC21b, AC21c; the engine model section above).
 - **Not started:** the "new reports in your Dropbox, read them?" prompt (web and phone; first
   test whether a picked Google Drive folder lets `drive.file` see inside it).
 
 ## Next, in order (2026-10-22)
 
-1. Engine work off the main thread: stage 1 done (the memo); stage 2 on its branch (above);
-   stage 3 (typed-number parsing, history, chat history and the cloud attach still wait on the
-   engine) and stage 4 (engine start behind the launch screen) to follow.
+1. Engine work off the main thread: stages 1 to 4 done (above). Left: profile Charts' first draw
+   on a real iPhone (277 ms in a debug build in the simulator, 2026-10-23, the largest stall
+   under an app screen).
 2. US-56: heart rate, resting heart rate, sleep, VO2 max and steps from Apple Health, read live (D6).
 3. `APP_ATTEST_TEAM_ID` on the education server, so chat and lab upload work on a phone (D8).
 4. The Clarity masking check on a real recording (D9).

@@ -1,6 +1,5 @@
 import Foundation
 import JavaScriptCore
-import os
 
 /// Runs health-core, the web's own engine, in JavaScriptCore (ios/architecture.md D2).
 /// JSON in, JSON out: the record goes in as text and the plan comes back as text,
@@ -79,37 +78,17 @@ actor HealthEngine {
         natives.phone = phone
     }
 
-    /// Runs `body` on the engine's queue and waits for it. A stopgap for callers not
-    /// yet moved off the main thread (stage 2); the engine queue never waits on main,
-    /// so this cannot deadlock. DEBUG counts the calls made from the main thread.
-    nonisolated func blocking<T>(_ body: (isolated HealthEngine) throws -> T) throws -> T {
-        try withoutActuallyEscaping(body) { body in
-            countBlocking()
-            // Run on the engine's executor, so the isolation `body` asks for holds.
-            let run = unsafeBitCast(body, to: ((HealthEngine) throws -> T).self)
-            return try queue.sync { try run(self) }
-        }
+    /// Runs `body` on the engine's queue and answers when it is done, never holding the caller.
+    func perform<T: Sendable>(_ body: @Sendable (isolated HealthEngine) throws -> T) rethrows -> T {
+        try body(self)
     }
 
-    /// `blocking` for a body that cannot throw.
-    nonisolated func blocking<T>(_ body: (isolated HealthEngine) -> T) -> T {
-        withoutActuallyEscaping(body) { body in
-            countBlocking()
-            let run = unsafeBitCast(body, to: ((HealthEngine) -> T).self)
-            return queue.sync { run(self) }
-        }
+    /// Puts `body` on the engine's queue without waiting. The queue runs in order, so it
+    /// runs before any engine call asked for after this one (CloudSync's attach at launch).
+    nonisolated func enqueue(_ body: @escaping @Sendable (isolated HealthEngine) -> Void) {
+        let run = unsafeBitCast(body, to: (@Sendable (HealthEngine) -> Void).self)
+        queue.async { run(self) }
     }
-
-    private nonisolated func countBlocking() {
-        #if DEBUG
-        if Thread.isMainThread { Self.mainThreadBlocks.withLock { $0 += 1 } }
-        #endif
-    }
-
-    #if DEBUG
-    /// How many `blocking` calls the main thread has made (EngineThreadTests).
-    nonisolated static let mainThreadBlocks = OSAllocatedUnfairLock(initialState: 0)
-    #endif
 
     /// The plan's summary tiles and on-screen sections for a record, and how long the engine
     /// took (D2's budget). A plan no longer wanted (the record moved on) is not started.
@@ -176,13 +155,6 @@ actor HealthEngine {
         return try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
     }
 
-    /// A typed number, read by the web's rule (health-core's `parseLocalisedNumber`):
-    /// either decimal mark, and nil for anything that is not a plain decimal.
-    func number(from text: String) throws -> Double? {
-        let json = try call("numberJson", [text])
-        return try JSONDecoder().decode(Double?.self, from: Data(json.utf8))
-    }
-
     /// A typed value in the other units, by health-core's factors (`convertJson`): onboarding's
     /// unit switches are for entry only (US-54 AC6). `from`, `to`: "si" or "conventional".
     func convert(_ value: Double, metric: String, from: String, to: String) throws -> Conversion {
@@ -225,6 +197,7 @@ actor HealthEngine {
 
     /// Runs a script in the engine's context; tests use it to reach the shim directly.
     func evaluate(_ script: String) throws -> JSValue {
+        checkJSThread()
         let result = context.evaluateScript(script)
         if let exception = context.exception {
             context.exception = nil
@@ -240,9 +213,7 @@ actor HealthEngine {
 
     /// Waits for a Promise (or takes a plain value) and answers what `read` makes of it.
     func settle<T: Sendable>(_ value: JSValue, read: @escaping (JSValue) -> T) async throws -> T {
-        #if DEBUG
-        dispatchPrecondition(condition: .onQueue(queue))
-        #endif
+        checkJSThread()
         return try await withCheckedThrowingContinuation { (done: CheckedContinuation<T, Error>) in
             let fulfilled: @convention(block) (JSValue) -> Void = { done.resume(returning: read($0)) }
             let rejected: @convention(block) (JSValue) -> Void = { error in
@@ -255,9 +226,7 @@ actor HealthEngine {
     }
 
     private func callValue(_ name: String, _ arguments: [Any]) throws -> JSValue {
-        #if DEBUG
-        dispatchPrecondition(condition: .onQueue(queue))
-        #endif
+        checkJSThread()
         guard let function = exports.objectForKeyedSubscript(name), !function.isUndefined else {
             throw EngineError.callFailed("HealthEngine.\(name) is not defined")
         }
@@ -267,6 +236,15 @@ actor HealthEngine {
             throw EngineError.callFailed(exception.toString())
         }
         return result ?? JSValue(undefinedIn: context)
+    }
+
+    /// Debug builds: JavaScript runs on the engine's queue and never on the main thread
+    /// (US-25 AC21b). A `queue.sync` from main would pass the first check but not the second.
+    private func checkJSThread() {
+        #if DEBUG
+        dispatchPrecondition(condition: .onQueue(queue))
+        dispatchPrecondition(condition: .notOnQueue(.main))
+        #endif
     }
 
     /// "en-US": the language and region only. The full identifier can end in a keyword

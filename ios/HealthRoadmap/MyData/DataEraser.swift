@@ -61,6 +61,9 @@ final class DataEraser {
         defer { erasing = false }
         let units = store.myData?.unitSystem
         let outcome = if let provider = sync.provider { await eraseInCloud(provider) } else { await eraseOnPhone() }
+        // Either way, the chat list is read again: its file may have been erased, even by a
+        // refused erase that got as far as the chat step.
+        await chat.refresh()
         if case .refused = outcome { return outcome }
         awaitingDismissal = true
         // After the record: an erase refused there must change nothing, and Health's
@@ -79,8 +82,10 @@ final class DataEraser {
     private func eraseOnPhone() async -> Outcome {
         let (history, chatReadable) = chatText()
         // One step in the store's line: an edit asked for meanwhile lands after the erase.
-        switch await store.erasePhone(historyJSON: history, keepChat: { [chat] tombstoned, engineErased in
-            chatReadable && engineErased && chat.keepErased(tombstoned)
+        // The chat file is written on the engine's queue, in line with the chat's own writes.
+        let writeErased = chat.writeErased
+        switch await store.erasePhone(historyJSON: history, keepChat: { tombstoned, engineErased in
+            chatReadable && engineErased && writeErased(tombstoned)
         }) {
         case .unreadable: return .refused(EraseText.unreadable)
         case .notWritten(let why, let chatErased): return .refused(EraseText.notWritten(why, chatErased: chatErased))
@@ -94,7 +99,6 @@ final class DataEraser {
         let written = OSAllocatedUnfairLock(initialState: false)
         let writeErased = chat.writeErased
         var chatWritten: Bool { written.withLock { $0 } }
-        defer { if chatWritten { chat.refresh() } }
         let answer: HealthEngine.CloudErase?
         do {
             answer = try await sync.erase(chatHistory: history) { json in

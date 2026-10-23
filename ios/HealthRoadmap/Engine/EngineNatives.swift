@@ -10,10 +10,8 @@ import os
 protocol CloudPort: AnyObject, Sendable {
     /// A current access token; `force` after the provider refused the last one.
     func accessToken(provider: String, force: Bool) async -> TokenAnswer
-    /// "saving", "saved", "synced", "failed" (payload: kind and detail) or
-    /// "changed" (payload: the record), from engine session `session`. `order`:
-    /// the engine's stamp when it was sent (HealthEngine.stamp).
-    func notify(_ event: String, _ payload: String, session: Int, order: Int)
+    /// What engine session `session` reported, already decoded on the engine's queue.
+    func notify(_ news: HealthEngine.CloudNews, session: Int)
 }
 
 /// The phone's record file and the marker that says the phone holds changes the
@@ -305,10 +303,11 @@ final class EngineNatives {
             owner.value.phone?.pending(op) ?? 0
         }
         // In order, never waited for: the engine's queue must not block on the main thread.
+        // Decoded here, so main only draws (US-25 AC21).
         let notify: @convention(block) (String, String, Int) -> Void = { event, payload, session in
             guard let port = owner.value.cloud else { return }
-            let order = owner.value.stamp()
-            DispatchQueue.main.async { port.notify(event, payload, session: session, order: order) }
+            let news = HealthEngine.CloudNews(event, payload, order: owner.value.stamp())
+            DispatchQueue.main.async { port.notify(news, session: session) }
         }
         return [
             "accessToken": accessToken, "phoneRead": phoneRead, "phoneWrite": phoneWrite,

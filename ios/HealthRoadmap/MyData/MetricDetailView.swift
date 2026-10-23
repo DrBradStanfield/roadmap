@@ -45,18 +45,20 @@ struct MetricDetailView: View {
     }
 
     var body: some View {
-        let history = store.history(for: row.metric)
         List {
-            if let history {
-                chartSection(history)
+            if let chart = store.shownChart(for: row.metric) {
+                chartSection(chart)
                 Section {
                     NavigationLink("Show All Data") {
                         AllDataView(store: store, row: row, saved: saved)
                     }
-                    unitRow(history)
+                    unitRow(chart.history)
                 }
             }
         }
+        // What My data's tap already read draws at once; the engine answers the rest off
+        // the main thread, again whenever the record or its units move.
+        .task(id: store.revision) { _ = await store.chart(for: row.metric) }
         .listStyle(.insetGrouped)
         .navigationTitle(row.label)
         .navigationBarTitleDisplayMode(.inline)
@@ -85,10 +87,8 @@ struct MetricDetailView: View {
 
     // MARK: Chart
 
-    private func chartSection(_ history: MetricHistory) -> some View {
-        let all = ChartPoint.points(history)
-        let days = all.map(\.date)
-        let offered = ChartRange.offered(for: days)
+    private func chartSection(_ chart: ChartData) -> some View {
+        let (history, all, days, offered) = (chart.history, chart.points, chart.days, chart.offered)
         let shown = offered.contains(range) ? range : .all
         // The window ends on the newest value, not today: a weight from months ago fills the chart.
         let newest = days.max()
@@ -108,7 +108,7 @@ struct MetricDetailView: View {
                 if all.isEmpty {
                     Text("No values to draw yet.").font(.subheadline).foregroundStyle(.secondary)
                 } else {
-                    MetricChart(history: history, points: all, window: window, scrolledTo: $scrolledTo, selected: $scrubbed)
+                    MetricChart(chart: chart, window: window, scrolledTo: $scrolledTo, selected: $scrubbed)
                 }
             }
             .padding(.vertical, 6)
@@ -195,8 +195,11 @@ private struct AllDataView: View {
     @State private var editing: MetricDetailView.Editing?
 
     var body: some View {
+        // The rows last read; a tap waits until they are read for the record as it is now
+        // (adversary R2), so a correction never opens on an older unit's value.
+        let current = store.shownHistory(for: row.metric) != nil
         List {
-            if let history = store.history(for: row.metric) {
+            if let history = store.shownChart(for: row.metric)?.history {
                 Section {
                     ForEach(history.rows) { value in
                         if value.isActive {
@@ -204,7 +207,7 @@ private struct AllDataView: View {
                                 HistoryRow(row: value, unit: history.unit, excluded: history.excluded)
                             }
                             .tint(.primary)
-                            .disabled(store.unitSwitches > 0)
+                            .disabled(store.unitSwitches > 0 || !current)
                             .accessibilityHint("Opens a correction")
                         } else {
                             HistoryRow(row: value, unit: history.unit, excluded: history.excluded)
@@ -218,6 +221,8 @@ private struct AllDataView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("All Recorded Data")
         .navigationBarTitleDisplayMode(.inline)
+        // Joins the page beneath's read of the same revision: one engine call.
+        .task(id: store.revision) { _ = await store.chart(for: row.metric) }
         .editingSheet($editing, store: store, saved: saved)
     }
 }
@@ -254,9 +259,12 @@ private struct EditingSheet: View {
         case .correct(let value, let shown, let seen) where shown.metric == MyData.bloodPressure:
             BloodPressureSheet(store: store, correcting: value, seen: seen, saved: saved)
         case .correct(let value, let shown, let seen):
-            // Lp(a)'s value as it is now: its unit can change in the sheet.
-            let now = store.lpaUnit(for: shown) == nil ? value.value : store.history(for: shown.metric)?.rows.first { $0.id == value.id }?.value ?? value.value
-            ValueEntrySheet(title: "Correct \(DayText.short(value.day))", unit: store.lpaUnit(for: shown) ?? shown.unit, current: now, asksForDay: false, read: store.number) { number, _ in
+            // The value and unit as the sheet's screen shows them: Lp(a)'s unit can change in
+            // the sheet, and the hint waits for a history read in it (the page beneath reads
+            // the history again when it does; adversary R2).
+            let unit = store.lpaUnit(for: shown) == nil ? shown.unit : seen.lpaUnit
+            let now = store.correctionHint(for: value.id, metric: shown.metric, unit: unit, on: seen)
+            ValueEntrySheet(title: "Correct \(DayText.short(value.day))", unit: unit, current: now, asksForDay: false) { number, _ in
                 saved(await store.apply(.correct(id: value.id, value: number), as: seen))
             }
             .lpaUnits(store, shown) { reopen(.correct(value, shown, seen.showing(lpaUnit: $0))) }

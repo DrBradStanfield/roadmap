@@ -23,7 +23,7 @@ struct ScreeningsSection: View {
             }
         } else {
             FormSectionsList(
-                sections: data.screenings, months: data.months, read: store.number, title: SectionTitle.screening,
+                sections: data.screenings, months: data.months, title: SectionTitle.screening,
                 answer: { key, value in saved(await store.apply(.form(.screening(key: key, value: value)))) },
                 measurement: { $0 == data.psa.metric ? data.psa : nil },
                 openMeasurement: { _ in open(data.psa) }

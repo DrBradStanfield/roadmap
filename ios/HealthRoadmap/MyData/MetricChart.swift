@@ -23,13 +23,30 @@ struct ChartPoint: Identifiable {
     }
 }
 
+/// A history's chart inputs, built once per history the engine answers, never on a redraw:
+/// a scrub redraws the page many times a second.
+struct ChartData {
+    let history: MetricHistory
+    let points: [ChartPoint]
+    /// Each point's day, in the points' order.
+    let days: [Date]
+    /// The ranges the picker offers for those days.
+    let offered: [ChartRange]
+
+    init(_ history: MetricHistory) {
+        self.history = history
+        points = ChartPoint.points(history)
+        days = points.map(\.date)
+        offered = ChartRange.offered(for: days)
+    }
+}
+
 /// The metric page's chart (US-25 AC17), drawn as Apple Health draws one: a
 /// line through the values, and a finger dragged across it picks the nearest
 /// day, marked by a rule with a callout of its value and date. No target band:
 /// the engine gives the app no range to shade, and Swift invents none.
 struct MetricChart: View {
-    let history: MetricHistory
-    let points: [ChartPoint]
+    let chart: ChartData
     /// A range's length: the chart shows that much and scrolls across the rest, as
     /// Apple Health's does. Nil (All) fits every value.
     let window: TimeInterval?
@@ -81,11 +98,11 @@ struct MetricChart: View {
 
     var body: some View {
         Chart {
-            ForEach(points) { point in
-                LineMark(x: .value("Day", point.date, unit: .day), y: .value(history.unit, point.value))
+            ForEach(chart.points) { point in
+                LineMark(x: .value("Day", point.date, unit: .day), y: .value(chart.history.unit, point.value))
                     .foregroundStyle(by: .value("Reading", point.series))
                     .interpolationMethod(.linear)
-                PointMark(x: .value("Day", point.date, unit: .day), y: .value(history.unit, point.value))
+                PointMark(x: .value("Day", point.date, unit: .day), y: .value(chart.history.unit, point.value))
                     .foregroundStyle(by: .value("Reading", point.series))
                     .symbolSize(point.date == selected ? 90 : 30)
             }
@@ -98,17 +115,16 @@ struct MetricChart: View {
                     }
             }
         }
-        .chartForegroundStyleScale(range: Self.colors(for: history.metric))
-        .chartLegend(history.metric == MyData.bloodPressure ? .visible : .hidden)
+        .chartForegroundStyleScale(range: Self.colors(for: chart.history.metric))
+        .chartLegend(chart.history.metric == MyData.bloodPressure ? .visible : .hidden)
         .chartYScale(domain: .automatic(includesZero: false))
         // Aligned, so the newest month's label stays inside the card.
         .chartXAxis { AxisMarks(preset: .aligned, values: .automatic(desiredCount: textSize.isAccessibilitySize ? 2 : 4)) }
-        .modifier(XDomain(window: window, scrolledTo: $scrolledTo, days: points.map(\.date)))
+        .modifier(XDomain(window: window, scrolledTo: $scrolledTo, days: chart.days))
         .chartXSelection(value: $finger)
         .onChange(of: finger) {
             // On a scrolling range, only the days in view: a finger in a gap never picks one off screen.
-            let days = points.map(\.date)
-            let inView = MetricChart.inView(days, scrolledTo: scrolledTo, window: window)
+            let inView = MetricChart.inView(chart.days, scrolledTo: scrolledTo, window: window)
             let day = finger.flatMap { ChartRange.nearest(to: $0, in: inView) }
             if day != selected { selected = day }
         }
@@ -117,19 +133,19 @@ struct MetricChart: View {
         .environment(\.timeZone, .gmt)
         .environment(\.calendar, DayText.utc)
         .frame(minHeight: 220)
-        .accessibilityChartDescriptor(MetricChartDescriptor(title: history.label, unit: history.unit, points: points))
+        .accessibilityChartDescriptor(MetricChartDescriptor(title: chart.history.label, unit: chart.history.unit, points: chart.points))
     }
 
     /// The history row a day shows: its active value.
     private func row(on day: Date) -> MetricHistory.Row? {
-        history.rows.first { $0.isActive && DayText.date($0.day) == day }
+        chart.history.rows.first { $0.isActive && DayText.date($0.day) == day }
     }
 
     private func callout(_ row: MetricHistory.Row) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(row.value).font(.title2.weight(.semibold)).monospacedDigit()
-                Text(history.unit).font(.subheadline).foregroundStyle(.secondary)
+                Text(chart.history.unit).font(.subheadline).foregroundStyle(.secondary)
             }
             Text(DayText.short(row.day)).font(.subheadline).foregroundStyle(.secondary)
         }

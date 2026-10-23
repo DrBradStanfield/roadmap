@@ -193,13 +193,22 @@ enum LabFileReader {
     /// The most a ZIP's members, or a Dropbox folder's files, may hold in all.
     static let maxFolderBytes = 200 * 1024 * 1024
 
-    /// Pictures of one paper report, from the photo library or the document
-    /// camera: a JPEG page each, as the web sends a picked image (US-52 AC10).
-    /// Its 20-page limit holds. A photo is resized, so a camera's file size is no limit.
-    static func pictures(_ images: [UIImage], name: String) throws -> Document {
+    /// Pictures of one paper report, from the document camera: a JPEG page each, as the
+    /// web sends a picked image (US-52 AC10). Its 20-page limit holds. A picture is resized,
+    /// so a camera's file size is no limit. On the shared pool, never the main thread (AC21).
+    @concurrent
+    static func pictures(_ images: [UIImage], name: String) async throws -> Document {
+        decodingWatch?()
         let pages = images.prefix(maxPages).compactMap(jpegPage)
         guard !pages.isEmpty else { throw Failure.unreadable(name) }
         return Document(name: name, pages: pages, truncated: images.count > maxPages)
+    }
+
+    /// A photo from the library, as its file's bytes: decoded and resized off the main thread too.
+    @concurrent
+    static func photo(_ data: Data) async throws -> Document {
+        guard let image = UIImage(data: data) else { throw Failure.unreadable("The photo") }
+        return try await pictures([image], name: "Photo")
     }
 
     private static func document(from data: Data, name: String) throws -> Document {

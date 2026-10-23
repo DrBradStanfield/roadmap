@@ -7,7 +7,6 @@ struct SupplementSheet: View {
     let row: SupplementsView.Row
     /// The units health-core offers; the row's own unit stays pickable even if not listed.
     let units: [String]
-    let read: (String) -> Double?
     let save: (FormEdit) async -> RecordStore.ApplyResult
 
     @Environment(\.dismiss) private var dismiss
@@ -76,10 +75,10 @@ struct SupplementSheet: View {
     }
 
     /// An empty dose is "no dose"; anything else must read as a number.
-    private var doseReadable: Bool { dose.trimmingCharacters(in: .whitespaces).isEmpty || read(dose) != nil }
+    private var doseReadable: Bool { dose.trimmingCharacters(in: .whitespaces).isEmpty || TypedNumber.read(dose) != nil }
 
     private func saveDose() {
-        let value = dose.trimmingCharacters(in: .whitespaces).isEmpty ? nil : read(dose)
+        let value = dose.trimmingCharacters(in: .whitespaces).isEmpty ? nil : TypedNumber.read(dose)
         submit(.supplement(key: row.key, name: row.name, dose: value, unit: unit.isEmpty ? nil : unit, stopped: false))
     }
 

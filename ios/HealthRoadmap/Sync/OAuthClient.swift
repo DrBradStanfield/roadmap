@@ -54,10 +54,6 @@ final class OAuthClient {
         self.clientId = clientId
     }
 
-    func isSignedIn(_ provider: CloudProvider) -> Bool {
-        tokens.load(provider) != nil
-    }
-
     /// The authorize URL for one sign-in.
     func authorizeURL(_ provider: CloudProvider, pkce: PKCE) -> URL {
         var parts = URLComponents(url: provider.authorizeURL, resolvingAgainstBaseURL: false)!

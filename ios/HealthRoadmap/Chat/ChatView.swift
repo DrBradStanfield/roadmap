@@ -41,11 +41,13 @@ struct ChatView: View {
             lines = []
             error = nil
             conversationId = UUID().uuidString.lowercased()
-            history?.refresh()
+            Task { await history?.refresh() }
         }
         .task {
             if history == nil, let folder = try? RecordStore.appFolder() {
-                history = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
+                let made = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
+                history = made
+                await made.refresh()
             }
         }
     }
@@ -123,7 +125,7 @@ struct ChatView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            Button("History") { history?.refresh(); showingHistory = true }
+            Button("History") { Task { await history?.refresh() }; showingHistory = true }
                 .disabled(sending) // a turn in flight keeps its own conversation
         }
         ToolbarItem(placement: .topBarTrailing) {
@@ -143,16 +145,24 @@ struct ChatView: View {
     // MARK: Actions
 
     private func startNew() {
+        history?.leave()
         conversationId = UUID().uuidString.lowercased()
         lines = []
         error = nil
     }
 
+    /// Shows a saved conversation once the engine has read it. An erase, a question sent,
+    /// New chat or another conversation opened meanwhile wins: the screen keeps what it shows.
     private func open(_ id: String) {
-        conversationId = id
-        lines = (history?.messages(id) ?? []).map { ChatLine(role: $0.role == "user" ? .user : .assistant, text: $0.content) }
-        error = nil
         showingHistory = false
+        let erasures = store.erasures
+        guard let loading = history?.open(id) else { return }
+        Task {
+            guard let messages = await loading.value, store.erasures == erasures, !sending else { return }
+            conversationId = id
+            lines = messages.map { ChatLine(role: $0.role == "user" ? .user : .assistant, text: $0.content) }
+            error = nil
+        }
     }
 
     private func send() async {
@@ -188,7 +198,7 @@ struct ChatView: View {
                     // The final reply replaces what streamed (US-15 AC16).
                     lines[answerIndex].text = content ?? lines[answerIndex].text
                     finished = true
-                    history?.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: lines[answerIndex].text, isFallback: isFallback), askedAt: askedAt)
+                    await history?.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: lines[answerIndex].text, isFallback: isFallback), askedAt: askedAt)
                 case .other: break
                 }
             }

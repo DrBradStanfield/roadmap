@@ -78,7 +78,7 @@ struct LabUploadSheet: View {
         .fullScreenCover(isPresented: $scanning) {
             DocumentScanner { pages in
                 scanning = false
-                if !pages.isEmpty { start { await read { [try LabFileReader.pictures(pages, name: "Scanned report")] } } }
+                if !pages.isEmpty { start { await read { [try await LabFileReader.pictures(pages, name: "Scanned report")] } } }
             }
             .ignoresSafeArea()
         }
@@ -192,10 +192,8 @@ struct LabUploadSheet: View {
 
     private func read(photo item: PhotosPickerItem) async {
         await read {
-            guard let data = try await item.loadTransferable(type: Data.self), let image = UIImage(data: data) else {
-                throw LabFileReader.Failure.unreadable("The photo")
-            }
-            return [try LabFileReader.pictures([image], name: "Photo")]
+            guard let data = try await item.loadTransferable(type: Data.self) else { throw LabFileReader.Failure.unreadable("The photo") }
+            return [try await LabFileReader.photo(data)]
         }
     }
 

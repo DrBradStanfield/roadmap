@@ -77,7 +77,7 @@ struct MyDataView: View {
                 }
                 .listStyle(.insetGrouped)
                 // A downloaded engine on trial has drawn the user's own record (US-25 AC18).
-                .onAppear { store.confirmEngineTrial() }
+                .task { await store.confirmEngineTrial() }
             } else {
                 ContentUnavailableView("Your record could not be opened", systemImage: "exclamationmark.triangle", description: Text(store.problem ?? ""))
             }
@@ -195,12 +195,19 @@ struct MyDataView: View {
         .disabled(store.unitSwitches > 0)
     }
 
-    /// A value with any history opens its page; one with none opens entry (AC9).
+    /// A value with any history opens its page; one with none opens entry (AC9). The
+    /// engine reads the history off the main thread; the screen is the tap's. Only the
+    /// latest tap, with no erase since, opens anything (re-check N4).
     private func open(_ row: MyData.Row) {
-        if MetricDetailView.opensHistory(store.history(for: row.metric)) {
-            detail = row
-        } else {
-            entry = .metric(row, store.screen)
+        let (seen, tap) = (store.screen, store.tap())
+        Task {
+            let history = await store.history(for: row.metric)
+            guard store.isLatest(tap) else { return }
+            if MetricDetailView.opensHistory(history) {
+                detail = row
+            } else {
+                entry = .metric(row, seen)
+            }
         }
     }
 
@@ -215,7 +222,7 @@ struct MyDataView: View {
             }
         case .height(let seen):
             let profile = store.myData?.profile
-            ValueEntrySheet(title: "Height", unit: profile?.heightUnit ?? "", current: profile?.height, asksForDay: false, read: store.number) { value, _ in
+            ValueEntrySheet(title: "Height", unit: profile?.heightUnit ?? "", current: profile?.height, asksForDay: false) { value, _ in
                 saved(await store.apply(.profile(height: value), as: seen))
             }
         case .metric(let row, let seen):

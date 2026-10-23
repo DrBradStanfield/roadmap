@@ -89,8 +89,8 @@ final class DataEraserTests: XCTestCase {
         FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
     }
 
-    private func seedChat(_ chat: ChatHistoryStore) {
-        chat.record(ChatExchange(conversationId: "c1", isNew: true, userText: question, assistantText: "It is above target.", isFallback: false), askedAt: ChatHistoryStore.erasures)
+    private func seedChat(_ chat: ChatHistoryStore) async {
+        await chat.record(ChatExchange(conversationId: "c1", isNew: true, userText: question, assistantText: "It is above target.", isFallback: false), askedAt: ChatHistoryStore.erasures)
         XCTAssertEqual(chat.conversations.count, 1)
     }
 
@@ -100,7 +100,7 @@ final class DataEraserTests: XCTestCase {
         let app = try app(connected: false)
         await XCTAssertSaved(await app.store.apply(.units("conventional")))
         await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 176, day: "2026-10-01")))
-        seedChat(app.chat)
+        await seedChat(app.chat)
         let optedIn = await app.reminders.optIn()
         XCTAssertTrue(optedIn)
         UserDefaults.standard.set(true, forKey: "welcomed")
@@ -123,7 +123,7 @@ final class DataEraserTests: XCTestCase {
 
     func testThePhoneEraseRefusesARecordItCannotReadAndChangesNothing() async throws {
         let first = try app(connected: false)
-        seedChat(first.chat)
+        await seedChat(first.chat)
         try Data("{ not a record".utf8).write(to: phoneFile)
         let app = try app(connected: false)
         XCTAssertNotNil(app.store.problem)
@@ -144,7 +144,7 @@ final class DataEraserTests: XCTestCase {
         await app.sync.start()
         XCTAssertNotNil(app.store.cloudErase)
         XCTAssertEqual(app.sync.accountEmail, "brad@example.com")
-        seedChat(app.chat)
+        await seedChat(app.chat)
 
         guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
 
@@ -170,7 +170,7 @@ final class DataEraserTests: XCTestCase {
         dropbox.chat = (#"{"schemaVersion":1,"conversations":[{"id":"w1","title":"\#(websiteQuestion)","createdAt":"\#(now)","updatedAt":"\#(now)","messages":[{"id":"u-1","role":"user","content":"\#(websiteQuestion)","createdAt":"\#(now)"}]}],"meta":{"updatedAt":"\#(now)","lamport":1,"lastDeviceId":"web"}}"#, 1)
         let app = try app(connected: true)
         await app.sync.start()
-        seedChat(app.chat)
+        await seedChat(app.chat)
 
         guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
 
@@ -192,7 +192,7 @@ final class DataEraserTests: XCTestCase {
         dropbox.chat = ("{not json", 1)
         let app = try app(connected: true)
         await app.sync.start()
-        seedChat(app.chat)
+        await seedChat(app.chat)
 
         guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
 
@@ -210,7 +210,7 @@ final class DataEraserTests: XCTestCase {
         dropbox.put(try record(days: ["2026-10-01"]))
         let app = try app(connected: true)
         await app.sync.start()
-        seedChat(app.chat)
+        await seedChat(app.chat)
         let chatBefore = try String(contentsOf: chatFile, encoding: .utf8)
         let cloudBefore = dropbox.file!.text
         dropbox.online = false
@@ -274,7 +274,7 @@ final class DataEraserTests: XCTestCase {
         dropbox.put(try record(days: ["2026-10-01"]))
         let app = try app(connected: true)
         await app.sync.start()
-        seedChat(app.chat)
+        await seedChat(app.chat)
         // ChatView's own store, apart from the eraser's, as in the app.
         let screen = ChatHistoryStore(engine: try HealthEngine(), folder: folder, deviceId: "ios-test")
         let askedAt = ChatHistoryStore.erasures
@@ -285,11 +285,12 @@ final class DataEraserTests: XCTestCase {
         StubHTTP.handler = { request in
             if request.url.path.hasSuffix("/files/upload"), !landed {
                 landed = true
-                DispatchQueue.main.sync {
-                    MainActor.assumeIsolated {
-                        screen.record(ChatExchange(conversationId: "c-new", isNew: true, userText: self.question, assistantText: "Answer.", isFallback: false), askedAt: askedAt)
-                    }
+                let saved = DispatchSemaphore(value: 0)
+                Task { @MainActor in
+                    await screen.record(ChatExchange(conversationId: "c-new", isNew: true, userText: self.question, assistantText: "Answer.", isFallback: false), askedAt: askedAt)
+                    saved.signal()
                 }
+                saved.wait()
             }
             return fake.answer(request)
         }
@@ -297,7 +298,7 @@ final class DataEraserTests: XCTestCase {
         XCTAssertTrue(landed)
         XCTAssertFalse(try String(contentsOf: chatFile, encoding: .utf8).contains(question), "the late answer was not saved")
         // A question asked after the erase saves as usual.
-        screen.record(ChatExchange(conversationId: "c-after", isNew: true, userText: "Later", assistantText: "Answer.", isFallback: false), askedAt: ChatHistoryStore.erasures)
+        await screen.record(ChatExchange(conversationId: "c-after", isNew: true, userText: "Later", assistantText: "Answer.", isFallback: false), askedAt: ChatHistoryStore.erasures)
         XCTAssertEqual(screen.conversations.count, 1)
     }
 

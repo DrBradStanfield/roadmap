@@ -29,7 +29,7 @@ struct SupplementsSection: View {
             SectionTitle.supplements()
         }
         .sheet(item: $editing) { row in
-            SupplementSheet(row: row, units: supplements.units, read: store.number) { edit in
+            SupplementSheet(row: row, units: supplements.units) { edit in
                 saved(await store.apply(.form(edit)))
             }
             .presentationDetents([.medium, .large])

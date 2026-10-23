@@ -16,7 +16,7 @@ struct ChatHistoryList: View {
                     Button(conversation.title.isEmpty ? "Chat" : conversation.title) { open(conversation.id) }
                 }
                 .onDelete { offsets in
-                    for index in offsets { history.delete(history.conversations[index].id) }
+                    for id in offsets.map({ history.conversations[$0].id }) { history.delete(id) }
                 }
             }
             .navigationTitle("History")

@@ -17,7 +17,7 @@ final class RecordStore {
     }
 
     /// The record as stored, JSON text.
-    private(set) var recordJSON: String
+    private(set) var recordJSON: String { didSet { if recordJSON != oldValue { revision += 1 } } }
     /// What My data shows; nil while the record cannot be read.
     private(set) var myData: MyData?
     /// Why the record cannot be read, if it cannot. The app then writes nothing.
@@ -40,7 +40,9 @@ final class RecordStore {
     /// so a view holding health data outside the record, the open chat, drops it.
     private(set) var erasures = 0
     /// Per-test units (US-25 AC17e): this phone's preference, as the web's are its browser's.
-    private(set) var unitChoices = UnitChoices.saved()
+    private(set) var unitChoices = UnitChoices.saved() { didSet { if unitChoices != oldValue { revision += 1 } } }
+    /// Moves whenever the record or the per-test units change: a page keyed on it asks again.
+    private(set) var revision = 0
 
     /// What the screen showed when an edit began: the erase it was at (nil on the
     /// phone's file) and its units. A sheet pins it as it opens (`pinsRecord`),
@@ -94,10 +96,11 @@ final class RecordStore {
 
     /// The trial's confirm path from My data (review N1): only when the engine drew the
     /// user's record AND planned it (a plan, or health-core's PlanError), never when either threw.
-    func confirmEngineTrial() {
+    /// The plan runs on the engine's queue; main never waits for it (US-25 AC21).
+    func confirmEngineTrial() async {
         let (record, deviceId) = (recordJSON, deviceId)
-        guard let trial = engine.trial, myData != nil,
-              engine.blocking({ EngineTrial.planned($0, recordJSON: record, deviceId: deviceId) })
+        guard let trial = engine.trial, !trial.confirmed, myData != nil,
+              await engine.perform({ EngineTrial.planned($0, recordJSON: record, deviceId: deviceId) })
         else { return }
         trial.confirm()
     }
@@ -105,14 +108,26 @@ final class RecordStore {
     let file: URL
     let deviceId: String
 
-    init(folder: URL, engine: HealthEngine, deviceId: String) throws {
+    /// The store, with the phone's file read and drawn by the engine first: at launch,
+    /// before the first screen, waited for once, off the main thread (US-25 AC21).
+    static func open(folder: URL, engine: HealthEngine, deviceId: String) async throws -> RecordStore {
+        let units = UnitChoices.saved().json
+        let loaded = try await engine.loadPhone(file(in: folder), deviceId: deviceId, units: units)
+        return RecordStore(folder: folder, engine: engine, deviceId: deviceId, loaded: loaded)
+    }
+
+    /// `loaded`: the phone's file as the engine read it (`open`).
+    init(folder: URL, engine: HealthEngine, deviceId: String, loaded: PhoneLoad) {
         self.engine = engine
         self.deviceId = deviceId
-        file = folder.appending(path: "health-roadmap.json")
+        file = Self.file(in: folder)
         recordJSON = ""
-        // At launch, before the first screen: waited for once.
-        let (file, units) = (file, unitChoices.json)
-        show(try engine.blocking { try $0.loadPhone(file, deviceId: deviceId, units: units) })
+        show(loaded)
+    }
+
+    /// The record's file in the app's folder.
+    nonisolated static func file(in folder: URL) -> URL {
+        folder.appending(path: "health-roadmap.json")
     }
 
     /// Runs `job` after every change asked for before it, so two quick edits land in
@@ -200,8 +215,10 @@ final class RecordStore {
     /// "Delete all my data" on the phone's own file (DataEraser), as one step in line:
     /// the record is read, erased by the engine, the chat tombstones kept (`keepChat`,
     /// given the engine's tombstoned chat file), then the erase written and shown. An
-    /// edit asked for meanwhile lands after it, never under it (Codex R1).
-    func erasePhone(historyJSON: String?, keepChat: @escaping @MainActor (_ chatHistory: String?, _ engineErased: Bool) -> Bool) async -> PhoneErase {
+    /// edit asked for meanwhile lands after it, never under it (Codex R1). `keepChat` runs
+    /// on the engine's queue, where the chat history's own read-modify-writes run, so
+    /// neither lands between the other's read and write (ChatHistoryStore).
+    func erasePhone(historyJSON: String?, keepChat: @escaping @Sendable (_ chatHistory: String?, _ engineErased: Bool) -> Bool) async -> PhoneErase {
         await chain {
             guard self.problem == nil, let record = try? self.phoneText() else { return .unreadable }
             let result: HealthEngine.PhoneErase
@@ -210,7 +227,7 @@ final class RecordStore {
             } catch {
                 return .unreadable
             }
-            let chatErased = keepChat(result.chatHistory, result.chatErased)
+            let chatErased = await self.engine.perform { _ in keepChat(result.chatHistory, result.chatErased) }
             do {
                 // A fresh start: no per-test choice, published only once the erase is on disk (Codex R1).
                 // Marked and counted as any phone edit is: a connect in flight that lifted
@@ -249,7 +266,7 @@ final class RecordStore {
     /// The folder the app keeps the record in, made on first use and marked for iOS
     /// to leave out of iCloud and computer backups (Brad 2026-10-21). The mark is on the folder, not the file: every save
     /// replaces the file, and a mark on it would go with the old copy.
-    static func appFolder(in base: URL = .applicationSupportDirectory) throws -> URL {
+    nonisolated static func appFolder(in base: URL = .applicationSupportDirectory) throws -> URL {
         var folder = base.appending(path: "Record", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         var values = URLResourceValues()
@@ -261,7 +278,7 @@ final class RecordStore {
     /// This install's id, for the record's `meta.lastDeviceId`. Kept in the record's folder,
     /// which backups leave out, so a phone restored from a backup gets a new id and never
     /// writes a shared cloud record as the old phone (D5).
-    static func deviceId(in folder: URL) throws -> String {
+    nonisolated static func deviceId(in folder: URL) throws -> String {
         let file = folder.appending(path: "device-id")
         if let id = try? String(contentsOf: file, encoding: .utf8), id.hasPrefix("ios-") { return id }
         let id = "ios-" + UUID().uuidString.lowercased()
@@ -269,29 +286,84 @@ final class RecordStore {
         return id
     }
 
-    /// A typed number, read by the web's rule; nil if it is not a plain decimal.
-    func number(_ text: String) -> Double? {
-        (try? engine.blocking { try $0.number(from: text) }) ?? nil
-    }
-
     /// A typed value in the other units ("si" or "conventional"), by the engine; nil if it cannot.
-    func convert(_ value: Double, metric: String, from: String, to: String) -> HealthEngine.Conversion? {
-        try? engine.blocking { try $0.convert(value, metric: metric, from: from, to: to) }
+    func convert(_ value: Double, metric: String, from: String, to: String) async -> HealthEngine.Conversion? {
+        try? await engine.convert(value, metric: metric, from: from, to: to)
     }
 
-    /// Every value recorded for one metric (US-25 AC9); nil while the record cannot be read.
-    func history(for metric: String) -> MetricHistory? {
+    /// Every value recorded for one metric (US-25 AC9), for the record and units shown now;
+    /// nil while the record cannot be read.
+    func history(for metric: String) async -> MetricHistory? {
+        await chart(for: metric)?.history
+    }
+
+    /// The history and its chart's inputs, read by the engine once per `revision` and metric,
+    /// off the main thread: a second ask while that read runs (a page and the page above it)
+    /// joins it. Kept in `histories`, which a page draws; older revisions' are dropped.
+    func chart(for metric: String) async -> ChartData? {
         guard problem == nil else { return nil }
-        // A value page asks on every redraw (a sheet opening, a range picked): the engine
-        // runs once per record and metric. Not observed: a cache, not state.
-        let (units, record, deviceId) = (unitChoices.json, recordJSON, deviceId)
-        if let cached = historyCache, cached.record == record, cached.metric == metric, cached.units == units { return cached.history }
-        let history = try? engine.blocking { try $0.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units) }
-        historyCache = (recordJSON, metric, units, history)
-        return history
+        let revision = revision
+        if let kept = histories[metric], kept.revision == revision { return kept.chart }
+        if let read = reading[metric], read.revision == revision { return await read.task.value }
+        let (units, record, deviceId, engine) = (unitChoices.json, recordJSON, deviceId, engine)
+        let task = Task {
+            (try? await engine.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units)).map(ChartData.init)
+        }
+        reading[metric] = (revision, task)
+        let chart = await task.value
+        if reading[metric]?.revision == revision { reading[metric] = nil }
+        // The record moved on while the engine ran: a page asks again for the new one.
+        if revision == self.revision {
+            histories = histories.filter { $0.value.revision == revision }
+            histories[metric] = KeptHistory(revision: revision, chart: chart)
+        }
+        return chart
     }
 
-    @ObservationIgnored private var historyCache: (record: String, metric: String, units: String, history: MetricHistory?)?
+    /// The chart last read for `metric`, for a page to draw: it may trail the record by one
+    /// engine call, and the page's `.task(id: revision)` brings it up to date.
+    func shownChart(for metric: String) -> ChartData? {
+        problem == nil ? histories[metric]?.chart : nil
+    }
+
+    /// The history read for the record and units as they are now; nil while it trails them
+    /// (adversary R2). Only this one may open a correction: a page keeps drawing the older
+    /// one, its taps held, until the fresh one lands.
+    func shownHistory(for metric: String) -> MetricHistory? {
+        guard problem == nil, let kept = histories[metric], kept.revision == revision else { return nil }
+        return kept.chart?.history
+    }
+
+    /// A correction sheet's "Now" hint: the value as a current history shows it, only from a
+    /// history in `unit`, the one the sheet shows (and for Lp(a), its screen's). Nil until one
+    /// is read, never a number in another unit ("100 mg/dL" from 100 nmol/L, Codex R2;
+    /// "176.4 kg" once the record flips to lb, re-check N1).
+    func correctionHint(for id: String, metric: String, unit: String, on screen: Screen) -> String? {
+        guard let history = shownHistory(for: metric), history.unit == unit,
+              metric != "lpa" || history.unit == screen.lpaUnit else { return nil }
+        return history.rows.first { $0.id == id }?.value
+    }
+
+    /// A row tap (AC9): only the latest one, with no erase since, may open a page or a sheet
+    /// once its history is read (re-check N4). Taken in the tap.
+    struct Tap: Equatable {
+        fileprivate let tap: Int
+        fileprivate let erasures: Int
+    }
+    func tap() -> Tap {
+        taps += 1
+        return Tap(tap: taps, erasures: erasures)
+    }
+    func isLatest(_ tap: Tap) -> Bool { tap == Tap(tap: taps, erasures: erasures) }
+    @ObservationIgnored private var taps = 0
+
+    private struct KeptHistory {
+        let revision: Int
+        let chart: ChartData?
+    }
+    private var histories: [String: KeptHistory] = [:]
+    /// A history the engine is reading, for the revision it was asked at.
+    @ObservationIgnored private var reading: [String: (revision: Int, task: Task<ChartData?, Never>)] = [:]
 
     /// One edit, checked against the record the screen showed when it was asked for:
     /// the sheet's pin, taken now, before anything waits.

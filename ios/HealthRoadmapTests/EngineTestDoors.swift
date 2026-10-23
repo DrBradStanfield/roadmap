@@ -10,6 +10,39 @@ extension HealthEngine {
         try await settle(evaluate(script))
     }
 
+    /// A typed number as the engine reads it (`numberJson`, the web's rule): the oracle
+    /// `TypedNumber.read` is held to (NumberReadingTests). The app reads numbers in Swift.
+    func number(from text: String) throws -> Double? {
+        try JSONDecoder().decode(Double?.self, from: Data(call("numberJson", [text]).utf8))
+    }
+
+    /// Runs `body` on the engine's queue and waits for it: tests only, so the app cannot
+    /// wait on the engine (US-25 AC21b); it awaits `perform` or a door instead. The body
+    /// runs on the queue's own thread, not the waiting one (as `queue.sync` would), so the
+    /// engine's no-JS-on-main precondition holds for a test that waits from main. The
+    /// engine queue never waits on main, so this cannot deadlock.
+    nonisolated func blocking<T>(_ body: (isolated HealthEngine) throws -> T) throws -> T {
+        try withoutActuallyEscaping(body) { body in
+            // Run on the engine's executor, so the isolation `body` asks for holds.
+            try hop(unsafeBitCast(body, to: ((HealthEngine) throws -> T).self))
+        }
+    }
+
+    /// `blocking` for a body that cannot throw.
+    nonisolated func blocking<T>(_ body: (isolated HealthEngine) -> T) -> T {
+        withoutActuallyEscaping(body) { body in
+            try! hop(unsafeBitCast(body, to: ((HealthEngine) -> T).self))
+        }
+    }
+
+    private nonisolated func hop<T>(_ body: @escaping (HealthEngine) throws -> T) throws -> T {
+        let work = BlockingWork(body)
+        let done = DispatchSemaphore(value: 0)
+        queue.async { work.run(self); done.signal() }
+        done.wait()
+        return try work.result!.get()
+    }
+
     /// Whether the engine's own work runs on the main thread (it must not).
     func onMainThread() -> Bool {
         dispatchPrecondition(condition: .onQueue(queue))
@@ -23,4 +56,28 @@ extension HealthEngine {
 func XCTAssertSaved(_ result: @autoclosure () async -> RecordStore.ApplyResult, _ message: String = "", file: StaticString = #filePath, line: UInt = #line) async {
     let result = await result()
     XCTAssertEqual(result, .saved, message, file: file, line: line)
+}
+
+extension RecordStore {
+    /// The store with the phone's file read at once, as tests want it: the app awaits
+    /// `RecordStore.open` instead, off the main thread (US-25 AC21).
+    convenience init(folder: URL, engine: HealthEngine, deviceId: String) throws {
+        let (file, units) = (RecordStore.file(in: folder), UnitChoices.saved().json)
+        let loaded = try engine.blocking { try $0.loadPhone(file, deviceId: deviceId, units: units) }
+        self.init(folder: folder, engine: engine, deviceId: deviceId, loaded: loaded)
+    }
+}
+
+/// One `blocking` call's body and answer, handed to the engine's queue. The body is
+/// dropped once run, so `withoutActuallyEscaping` sees it released before it returns.
+private final class BlockingWork<T>: @unchecked Sendable {
+    private var body: ((HealthEngine) throws -> T)?
+    private(set) var result: Result<T, Error>?
+
+    init(_ body: @escaping (HealthEngine) throws -> T) { self.body = body }
+
+    func run(_ engine: HealthEngine) {
+        result = Result { try body!(engine) }
+        body = nil
+    }
 }

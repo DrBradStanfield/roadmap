@@ -57,3 +57,44 @@ private struct OnAccentLabel: ViewModifier {
         content.foregroundStyle(enabled ? Color.onAccent : Color.secondary)
     }
 }
+
+extension TypedNumber {
+    /// A typed number by the web's rule: the engine's `readNumber` (ios/engine/my-data.ts)
+    /// over health-core's `parseLocalisedNumber`. Arabic-Indic digits and decimal mark
+    /// become ASCII, JavaScript's `trim` runs, a comma is a decimal mark, and only a plain
+    /// decimal reads; anything else is nil. Pure Swift, so typing never waits on the engine
+    /// (US-25 AC21); NumberReadingTests holds it to the engine's own on the edge cases.
+    static func read(_ text: String) -> Double? {
+        var scalars = text.unicodeScalars.map { scalar -> Unicode.Scalar in
+            switch scalar.value {
+            case 0x0660...0x0669: Unicode.Scalar(scalar.value - 0x0660 + 0x30)!
+            case 0x06F0...0x06F9: Unicode.Scalar(scalar.value - 0x06F0 + 0x30)!
+            case 0x066B, 0x2C: "."
+            default: scalar
+            }
+        }[...]
+        while let first = scalars.first, isJavaScriptSpace(first) { scalars.removeFirst() }
+        while let last = scalars.last, isJavaScriptSpace(last) { scalars.removeLast() }
+        // ^[+-]?(\d+(\.\d*)?|\.\d+)$, the ASCII digits only.
+        var rest = scalars
+        if let sign = rest.first, sign == "+" || sign == "-" { rest.removeFirst() }
+        let whole = rest.prefix { ("0"..."9").contains($0) }.count
+        rest.removeFirst(whole)
+        var decimals = 0
+        if rest.first == "." {
+            rest.removeFirst()
+            decimals = rest.prefix { ("0"..."9").contains($0) }.count
+            rest.removeFirst(decimals)
+        }
+        guard rest.isEmpty, whole + decimals > 0,
+              let number = Double(String(String.UnicodeScalarView(scalars))), number.isFinite else { return nil }
+        // The engine answers in JSON, which writes -0 as 0.
+        return number == 0 ? 0 : number
+    }
+
+    /// What JavaScript's `trim` removes: its WhiteSpace and LineTerminator.
+    private static func isJavaScriptSpace(_ scalar: Unicode.Scalar) -> Bool {
+        [0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x20, 0xA0, 0xFEFF, 0x2028, 0x2029].contains(scalar.value)
+            || scalar.properties.generalCategory == .spaceSeparator
+    }
+}

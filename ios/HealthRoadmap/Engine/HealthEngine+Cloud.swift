@@ -15,6 +15,33 @@ extension HealthEngine {
         var order: Int? = nil
     }
 
+    /// What a cloud session reports (ios/engine/cloud.ts `notify`), decoded on the engine's
+    /// queue before it goes to the main thread (US-25 AC21).
+    enum CloudNews: Equatable, Sendable {
+        case saving, saved, synced
+        /// The engine's failure, from its JSON (`{"kind": "...", "detail": "..."}`).
+        case failed(SyncProblem)
+        /// A record the session took in, carrying the engine's stamp.
+        case changed(CloudView)
+        /// An event this build does not know, or a record that did not decode: dropped.
+        case other
+
+        /// `order`: the engine's stamp when it was sent (`stamp`).
+        init(_ event: String, _ payload: String, order: Int) {
+            switch event {
+            case "saving": self = .saving
+            case "saved": self = .saved
+            case "synced": self = .synced
+            case "failed": self = .failed(SyncProblem(json: payload))
+            case "changed":
+                guard var view = try? JSONDecoder().decode(CloudView.self, from: Data(payload.utf8)) else { self = .other; return }
+                view.order = order
+                self = .changed(view)
+            default: self = .other
+            }
+        }
+    }
+
     /// A number that rises with every cloud record the engine hands to Swift, taken on
     /// the engine's queue. News reaches the main thread in this order, but an edit's
     /// answer may arrive after news of a re-read made before it: the screen keeps
