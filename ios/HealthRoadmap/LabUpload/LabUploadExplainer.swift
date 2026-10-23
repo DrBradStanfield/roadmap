@@ -51,8 +51,8 @@ struct LabUploadExplainer: View {
     /// A lab report with a clinic letter tucked behind it, and a light sweeping down them.
     private func pages(scan t: Double) -> some View {
         ZStack {
-            page(symbol: "envelope.open.fill", title: "Letter").rotationEffect(.degrees(-12)).offset(x: -26, y: 6)
-            page(symbol: "doc.text.fill", title: "Lab report").rotationEffect(.degrees(6)).offset(x: 18)
+            page(symbol: "envelope.open.fill", title: "Letter").rotationEffect(.degrees(-12)).offset(x: -30, y: -10)
+            page(symbol: "doc.text.fill", title: "Lab report").rotationEffect(.degrees(6)).offset(x: 24, y: 6)
                 .overlay {
                     // The scan: down the page in the loop's first 30%, then gone.
                     let sweep = min(t / 0.3, 1)
@@ -60,7 +60,7 @@ struct LabUploadExplainer: View {
                         .frame(height: 14)
                         .offset(y: -40 + sweep * 80)
                         .opacity(t < 0.3 ? 1 : 0)
-                        .offset(x: 18)
+                        .offset(x: 24, y: 6)
                 }
         }
     }
@@ -75,6 +75,7 @@ struct LabUploadExplainer: View {
         }
         .frame(width: 66, height: 90)
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 10, style: .continuous))
+        .diagramCard(cornerRadius: 10)
         .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
     }
 
@@ -113,7 +114,9 @@ struct LabUploadExplainer: View {
             Text("Your record").font(.caption2).foregroundStyle(.secondary).lineLimit(1).fixedSize()
         }
         .frame(width: 80, height: 90)
+        // Opaque under the fill, so a landing result disappears into the card, as before.
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 14, style: .continuous))
+        .diagramCard(cornerRadius: 14)
         .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
         .animation(reduceMotion ? nil : .bouncy, value: filled)
     }
