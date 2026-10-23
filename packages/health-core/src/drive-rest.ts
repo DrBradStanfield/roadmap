@@ -41,7 +41,7 @@ import {
   type WriteResult,
 } from './adapter';
 import { splitDocumentRef } from './document-path';
-import { RecordShapeError, SchemaTooNewError } from './migrate';
+import { counterOf, MAX_COUNTER, RecordShapeError, SchemaTooNewError } from './migrate';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from './roadmap-file';
 import { verifyPersistedFile } from './sync-manager';
@@ -404,11 +404,10 @@ function holdOf(expected: string | null): (Hold & { error: Error }) | null {
   return { ...(hold as Hold), error };
 }
 
-/** A copy's erase epoch from its raw JSON, when it has one: what is known of
- *  a copy this app cannot migrate. */
+/** A copy's erase epoch from its raw JSON, read as migrate reads a counter:
+ *  what is known of a copy this app cannot migrate. */
 function rawEraseEpoch(raw: unknown): number {
-  const epoch = (raw as { meta?: { eraseEpoch?: unknown } } | null | undefined)?.meta?.eraseEpoch;
-  return typeof epoch === 'number' && Number.isFinite(epoch) ? epoch : 0;
+  return counterOf((raw as { meta?: { eraseEpoch?: unknown } } | null | undefined)?.meta?.eraseEpoch, 0);
 }
 
 /** One copy's JSON. Gone (404) is a conflict; empty, `null` or invalid JSON
@@ -471,7 +470,7 @@ export async function readDriveRecord(token: string, known: Set<string>, signal?
 }
 
 /** Save to the winner, after checking every copy's version is still the one read. */
-export async function writeDriveRecord(token: string, body: object, expected: string | null, folder: () => Promise<string>, known: Set<string>, signal?: AbortSignal): Promise<WriteResult> {
+export async function writeDriveRecord(token: string, body: object, expected: string | null, folder: () => Promise<string>, known: Set<string>, signal?: AbortSignal): Promise<WriteResult & { fileId: string }> {
   const context = recordContext();
   // An unreadable copy holds saves, but never "Delete all my data": an erase
   // (an epoch past the readable copies') goes to the oldest READABLE copy, and
@@ -480,7 +479,8 @@ export async function writeDriveRecord(token: string, body: object, expected: st
   const hold = holdOf(expected);
   if (hold) {
     const epoch = ROADMAP_DOC.migrate(body, context).meta.eraseEpoch ?? 0;
-    if (epoch <= hold.readable) throw hold.error;
+    // No epoch goes past the counter cap, so an erase there cannot win: refuse.
+    if (epoch <= hold.readable || hold.seen >= MAX_COUNTER) throw hold.error;
     if (epoch <= hold.seen) body = { ...body, meta: { ...(body as RoadmapFile).meta, eraseEpoch: hold.seen + 1 } };
   }
   const state = await recordSnapshot(token, known, signal);
@@ -536,7 +536,7 @@ export async function writeDriveRecord(token: string, body: object, expected: st
     if (error instanceof LostUpdateError) throw error;
     throw uncertain(`${PROVIDER} canonical record verification failed.`, error);
   }
-  return { version, ...(hold ? { warning: ERASE_KEPT_COPY } : {}) };
+  return { version, fileId: id, ...(hold ? { warning: ERASE_KEPT_COPY } : {}) };
 }
 
 /**

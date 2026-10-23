@@ -80,7 +80,7 @@ export function asArray<T>(v: unknown): T[] {
  * above any real value (they tick once per write) and far below
  * MAX_SAFE_INTEGER, so the `+ 1` increments that order writes always advance.
  */
-const MAX_COUNTER = 1e12;
+export const MAX_COUNTER = 1e12;
 
 /**
  * A meta timestamp from an untrusted writer. Shape-checked, not range-checked,
@@ -124,7 +124,7 @@ function isStamp(value: unknown): value is string {
 }
 
 /** A counter from an untrusted writer: finite, non-negative, integral, bounded. */
-function counterOf(value: unknown, fallback: number): number {
+export function counterOf(value: unknown, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return fallback;
   return Math.min(Math.floor(value), MAX_COUNTER);
 }

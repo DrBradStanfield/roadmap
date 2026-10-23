@@ -652,4 +652,50 @@ describe('US-10 AC4 — ambiguous first-save discovery', () => {
     const store = await ChatHistoryStore.create(adapter('browser', { 'chat-history.json': 'chat-newer' }));
     expect(store.listConversations().map((conv) => conv.id)).toEqual(['old']);
   });
+
+  it('browser erase adopts only the readable write target into the app folder, never an unreadable copy (US-10 AC4a)', async () => {
+    const drive = new Drive();
+    drive.files = [
+      { id: 'bad', name: ROADMAP_FILE_NAME, version: 1, createdTime: '2026-09-01T00:00:00.000Z', content: '{broken' },
+      { id: 'good', name: ROADMAP_FILE_NAME, version: 1, content: JSON.stringify(record('A')) },
+    ];
+    const result = await (await RecordSession.open(webRecordHost(adapter('browser', undefined, null)))).deleteAllData();
+    expect(result.success).toBe(true);
+    await vi.waitFor(() => expect(drive.requests.some((request) => request.includes('/files/good?fields=parents'))).toBe(true));
+    expect(drive.requests.filter((request) => request.includes('/files/bad') && (request.includes('parents') || !request.startsWith('GET ')))).toEqual([]);
+  });
+
+  it.each<Kind>(['hosted', 'browser'])('%s reads an unreadable copy\'s epoch as migrate does: floored, never negative, capped (US-10 AC4a)', async (kind) => {
+    for (const [raw, epoch] of [[5.7, 6], [-3, 1], [1e15, null]] as const) {
+      const drive = new Drive();
+      const newer = record('B');
+      drive.files = [
+        { id: 'bad', name: ROADMAP_FILE_NAME, version: 1, createdTime: '2026-09-01T00:00:00.000Z', content: JSON.stringify({ ...newer, schemaVersion: 999, meta: { ...newer.meta, eraseEpoch: raw } }) },
+        { id: 'good', name: ROADMAP_FILE_NAME, version: 1, content: JSON.stringify(record('A')) },
+      ];
+      const before = drive.files[1].content;
+      const result = await (await RecordSession.open(webRecordHost(adapter(kind)))).deleteAllData();
+      if (epoch === null) {
+        // Past the counter cap nothing can go higher: refuse, write nothing.
+        expect(result.success).toBe(false);
+        expect(drive.files[1].content).toBe(before);
+        expect(drive.requests.some((request) => request.startsWith('PATCH '))).toBe(false);
+      } else {
+        expect(result.success).toBe(true);
+        expect((JSON.parse(drive.files[1].content) as RoadmapFile).meta.eraseEpoch).toBe(epoch);
+      }
+      localStorage.clear();
+    }
+  });
+
+  it.each<Kind>(['hosted', 'browser'])('%s reads a single empty or null record as no record, and a save writes over it (US-10 AC4a)', async (kind) => {
+    for (const content of ['', 'null']) {
+      const drive = new Drive();
+      drive.files = [{ id: 'only', name: ROADMAP_FILE_NAME, version: 1, content }];
+      expect((await manager(adapter(kind), 'reader').load()).measurements).toEqual([]);
+      await manager(adapter(kind), 'writer').save(record('A'));
+      expect(drive.files).toHaveLength(1);
+      expect((JSON.parse(drive.files[0].content) as RoadmapFile).measurements.map((row) => row.id)).toEqual(['A']);
+    }
+  });
 });

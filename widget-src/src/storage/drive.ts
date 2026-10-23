@@ -437,11 +437,12 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
     if (fileName === ROADMAP_FILE_NAME) {
-      const result = await writeDriveRecord(await this.getToken(), body, expectedVersion, () => this.ensureFolderId(), this.recordIds, signal);
-      const winner = this.rememberRecord();
+      const { fileId, ...result } = await writeDriveRecord(await this.getToken(), body, expectedVersion, () => this.ensureFolderId(), this.recordIds, signal);
+      this.rememberRecord();
       // Cosmetic, never blocks the save, and never on a read (reads do not
-      // mutate Drive): adopt a pre-folder record into the app folder.
-      if (winner) void this.ensureInFolderOnce(winner);
+      // mutate Drive): adopt the copy just written, never an unreadable one,
+      // into the app folder.
+      void this.ensureInFolderOnce(fileId);
       return result;
     }
     const json = JSON.stringify(body);
@@ -551,11 +552,10 @@ export class GoogleDriveAdapter implements StorageAdapter {
     return this.stored?.fileIds?.[fileName];
   }
 
-  /** Cache the record's winner for the next page load; returns it. */
-  private rememberRecord(): string | undefined {
+  /** Cache the record's winner for the next page load. */
+  private rememberRecord(): void {
     const [winner] = this.recordIds;
     if (winner) this.rememberFileId(ROADMAP_FILE_NAME, winner);
-    return winner;
   }
 
   private rememberFileId(fileName: string, fileId: string): void {
