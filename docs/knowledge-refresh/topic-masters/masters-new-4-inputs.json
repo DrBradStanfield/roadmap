@@ -1,0 +1,142 @@
+[
+ {
+  "handle": "st-johns-wort-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-st-johns-wort-stjohnswort.md",
+  "cl_raw_sha256": "73e256ba46bb48895359eaca6a54516309fd1efbafb2abf4c9f51b6f034dfd5f",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/stjohnswort-nih.md",
+  "nih_raw_sha256": "56dc1caeb5b6bfa49e7a71156dbfa89ae75ac45f8dcf7ea84458a483adc1f7e7",
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ },
+ {
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-ginkgo-supplements-memory-review-ginkgobiloba.md",
+  "cl_raw_sha256": "a0c65b078667b682f4f3fa92f8f9351ea61cfa9448b3ecd0e6a52c6e179137ca",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/ginkgobiloba-nih.md",
+  "nih_raw_sha256": "dfae212038801311748c01013f84f02684075eaf4413cc06682caa1c71e34aa9",
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ },
+ {
+  "handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-n-acetyl-cysteine-nac-supplements-n-acetyl-cysteine.md",
+  "cl_raw_sha256": "e88bba103e212f6c5df76cc3c8f6adb6c13c000fa1d1066e2b24eedc1a855988",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 440,
+    "text": "- **GlyNAC (Glycine + N-Acetylcysteine) 1g** — to support glutathione, which declines rapidly after 45. A human placebo-controlled trial found GlyNAC corrected glutathione deficiency in older adults and improved hand grip strength (Kumar et"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 785,
+    "text": "<li>A human, placebo-controlled study found that supplementing with the glutathione precursors Glycine &amp; NAC corrected the glutathione deficiency in older adults and improved hand grip strength.[74]</li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 786,
+    "text": "<li>Collagen supplements already contain significant quantities of Glycine, and Trimethylglycine (TMG) contributes further, so anyone already using those is likely to have sufficient glycine — leaving NAC as the only remaining component of "
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 836,
+    "text": "<p>Sulforaphane is a potent activator of an enzyme called NRF2, the ‘master’ antioxidant switch. There are promising cell and mice studies, but at this stage the human data is lacking. Until this molecule is proven in humans, it isn’t inclu"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 915,
+    "text": "<li>Kumar, P., et al., <em>Supplementing Glycine and N-Acetylcysteine (GlyNAC) in Older Adults Improves Glutathione Deficiency, Oxidative Stress, Mitochondrial Dysfunction, Inflammation, Physical Function, and Aging Hallmarks: A Randomized "
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 977,
+    "text": "<li>2<sup>nd</sup> October 2023: added melatonin, NAC, and medications.</li>"
+   }
+  ],
+  "positions_candidates_total": 6,
+  "posts": [
+   {
+    "handle": "the-most-important-antioxidant-study-i-ve-ever-read",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-most-important-antioxidant-study-i-ve-ever-read.md",
+    "url": "https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read",
+    "publishedAt": "2026-02-03T00:32:28Z",
+    "title": "The Most Important Antioxidant Study I’ve Ever Read",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   },
+   {
+    "handle": "only-supplements-work-2025",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/only-supplements-work-2025.md",
+    "url": "https://drstanfield.com/blogs/articles/only-supplements-work-2025",
+    "publishedAt": "2024-11-19T03:13:05Z",
+    "title": "The Only Supplements That ACTUALLY Work (2025)",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "glutathione-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-glutathione-supplements-glutathione.md",
+  "cl_raw_sha256": "7f64cd8ee231fdc254671a5654328f5c44a98d851f2c020941cc2a1790e9381f",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 440,
+    "text": "- **GlyNAC (Glycine + N-Acetylcysteine) 1g** — to support glutathione, which declines rapidly after 45. A human placebo-controlled trial found GlyNAC corrected glutathione deficiency in older adults and improved hand grip strength (Kumar et"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 784,
+    "text": "<li>Glutathione is a powerful antioxidant, and a critical regulator of oxidative stress and immune function, however glutathione levels decline rapidly from the age of 45.[73]</li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 785,
+    "text": "<li>A human, placebo-controlled study found that supplementing with the glutathione precursors Glycine &amp; NAC corrected the glutathione deficiency in older adults and improved hand grip strength.[74]</li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 915,
+    "text": "<li>Kumar, P., et al., <em>Supplementing Glycine and N-Acetylcysteine (GlyNAC) in Older Adults Improves Glutathione Deficiency, Oxidative Stress, Mitochondrial Dysfunction, Inflammation, Physical Function, and Aging Hallmarks: A Randomized "
+   }
+  ],
+  "positions_candidates_total": 4,
+  "posts": [
+   {
+    "handle": "the-most-important-antioxidant-study-i-ve-ever-read",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-most-important-antioxidant-study-i-ve-ever-read.md",
+    "url": "https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read",
+    "publishedAt": "2026-02-03T00:32:28Z",
+    "title": "The Most Important Antioxidant Study I’ve Ever Read",
+    "topic_mentions": 8,
+    "title_names_topic": false
+   },
+   {
+    "handle": "only-supplements-work-2025",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/only-supplements-work-2025.md",
+    "url": "https://drstanfield.com/blogs/articles/only-supplements-work-2025",
+    "publishedAt": "2024-11-19T03:13:05Z",
+    "title": "The Only Supplements That ACTUALLY Work (2025)",
+    "topic_mentions": 8,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-nattokinase-supplement-review-nattokinase.md",
+  "cl_raw_sha256": "4c8fff69092279bbfacfbac934bb4bfb4fbc5a50741813f40a98a8597d9a46ff",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ }
+]
