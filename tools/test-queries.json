@@ -6320,5 +6320,136 @@
     "must_not_match": [
       "^(?:\\s*#[^\\n]*\\n+)*\\s*[^.!?\\n]*\\b(call|ring|dial|phone|go to)\\b[^.!?\\n]*\\b(111|911|999|(?<![\\d,])000|emergency number|emergency department|ambulance)\\b"
     ]
+  },
+  {
+    "category": "masters-new-4",
+    "source": "us-42-ac5-masters-new-4-2026-10-23",
+    "pending": "masters-new-4 not deployed",
+    "surface": "doctor",
+    "query": "I've just been prescribed Paxlovid for COVID. I take St John's wort for my mood. Can I keep taking it?",
+    "answer_handles": [
+      "st-johns-wort-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\b(?:must not|should not|shouldn't|cannot|can't|do not|don't|never|contraindicat\\w*)\\b",
+      "(?:after stopping|straight after|right after|immediately after|recently stopped|\\bwait\\w*|weeks? (?:after|before))",
+      "(?:[Dd]octor|[Pp]harmacist|[Pp]rescriber)"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|OK) to (?:take|combine|use) (?:them |both |it )?(?:together|with)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-4); not run. Key safety points: \"The COVID-19 drug Paxlovid must not be taken with it [51]\"; body: \"Paxlovid must not be taken with the herb, and cannot be started straight after stopping it [51]\" (the FDA label, DailyMed). The old text listed Paxlovid only as a 'Serious' table row (lower levels, loss of response), with no contraindication and nothing about starting it after stopping the herb. Passes: must not combine, the after-stopping caution, and a doctor or pharmacist. Fails: calling the pair safe together."
+  },
+  {
+    "category": "masters-new-4",
+    "source": "us-42-ac5-masters-new-4-2026-10-23",
+    "pending": "masters-new-4 not deployed",
+    "surface": "doctor",
+    "query": "I take efavirenz for HIV. Is it OK to take ginkgo for my memory?",
+    "answer_handles": [
+      "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "(?:treatment failure|breakthrough|(?:virus|viral) (?:levels?|load)[^.]{0,30}(?:rise|rising|rose|increase)|(?:less|not as) effective|(?:weaken|lower|reduce)\\w*[^.]{0,40}efavirenz)",
+      "(?:[Dd]octor|[Pp]harmacist|HIV (?:clinic|specialist|team))"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|OK) to (?:take|combine|use) (?:them |both |it )?(?:together|with)",
+      "\\bno (?:known|reported) interactions?\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-4); not run. Key safety points: \"Case reports link it to coma with trazodone and possible HIV treatment failure with efavirenz ... On any medicine, ask your doctor or pharmacist first\" (Naccarato 2012, [50]). The old text never named efavirenz or HIV drugs. Passes: possible treatment failure (or rising virus levels) and a doctor, pharmacist or HIV clinic check. Fails: calling the pair safe or saying there are no known interactions."
+  },
+  {
+    "category": "masters-new-4",
+    "source": "us-42-ac5-masters-new-4-2026-10-23",
+    "pending": "masters-new-4 not deployed",
+    "surface": "doctor",
+    "query": "What dose did the GlyNAC trial in older adults use? Is 1 g of GlyNAC a day the same thing?",
+    "answer_handles": [
+      "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\b1[23]\\d\\s?mg(?:/| per | of NAC per )(?:kg|kilogram)",
+      "(?:far |much |well )?(?:above|higher than|more than|larger than|exceed\\w*)[^.]{0,40}(?:1 ?g|1,000 mg|one gram|Brad)"
+    ],
+    "must_not_match": [
+      "\\b100 mg/kg each\\b",
+      "\\b1 ?g(?: a day)? (?:is|was|matches) (?:the )?(?:same|trial|study)(?: dose)?\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-4); not run. Body: \"The pilot trial dosed by body weight: glycine 1.33 mmol/kg a day and cysteine 0.81 mmol/kg a day as NAC, roughly 100 mg of glycine and 130 mg of NAC per kilogram, or several grams of each a day for an adult [7], far above the dose in Brad's plan\" (Kumar 2021 full text; orchestrator-checked conversions). The old text said \"100 mg/kg each of NAC and glycine\" and never set the trial dose against Brad's 1 g. Passes: about 130 mg/kg of NAC and far above 1 g. Fails: the old \"100 mg/kg each\" or calling 1 g the trial dose."
+  },
+  {
+    "category": "masters-new-4",
+    "source": "us-42-ac5-masters-new-4-2026-10-23",
+    "pending": "masters-new-4 not deployed",
+    "surface": "doctor",
+    "query": "I'm thinking of getting IV glutathione drips to lighten my skin. Is it safe?",
+    "answer_handles": [
+      "glutathione-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "(?:Stevens-Johnson|toxic epidermal necrolysis|\\bSJS\\b|\\bTEN\\b)",
+      "\\b(?:111|911|999|emergency number)\\b"
+    ],
+    "must_not_match": [
+      "\\bkidney failure\\b",
+      "\\bliver (?:dysfunction|damage|harm)\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-4); not run. Key safety points: \"Reported harms include life-threatening skin reactions (Stevens-Johnson syndrome and toxic epidermal necrolysis), so if a blistering or peeling rash follows an injection, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [85]\" (Sonthalia 2018). The old text listed liver dysfunction and possible kidney failure (unsupported by the new source) and gave no emergency action. Passes: SJS/TEN and an emergency number. Fails: the old liver-dysfunction or kidney-failure claims."
+  },
+  {
+    "category": "masters-new-4",
+    "source": "us-42-ac5-masters-new-4-2026-10-23",
+    "pending": "masters-new-4 not deployed",
+    "surface": "doctor",
+    "query": "I take aspirin every day after a stroke. Can I add nattokinase for my circulation?",
+    "answer_handles": [
+      "nattokinase-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "(?:bleed\\w*|hemorrhag\\w*|haemorrhag\\w*)",
+      "(?:[Dd]octor|[Pp]harmacist)",
+      "\\b(?:111|911|999|emergency number)\\b"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|OK) to (?:take|combine|use) (?:them |both |it )?(?:together|with)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-4); not run. Key safety points: \"A patient on aspirin had a bleed in the cerebellum ... after a week of nattokinase 400 mg a day [53]. Do not combine them unless your doctor agrees\" and the stroke and brain-bleed line ending \"call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK)\". The old text named the aspirin case but gave no emergency number or stroke-sign action. Passes: the bleeding risk, a doctor check and an emergency number. Fails: calling the pair safe together."
+  },
+  {
+    "category": "masters-new-4",
+    "source": "us-42-ac5-masters-new-4-2026-10-23",
+    "pending": "masters-new-4 not deployed",
+    "surface": "doctor",
+    "query": "I've been prescribed ciprofloxacin, or maybe levofloxacin. How should I time my multivitamin around it?",
+    "answer_handles": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\b2\\s?(?:h|hours?)\\b[^.]{0,30}\\bbefore\\b",
+      "\\b6\\s?(?:h|hours?)\\b[^.]{0,30}\\bafter\\b",
+      "[Pp]harmacist"
+    ],
+    "must_not_match": [
+      "\\b90\\s?%"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-4); not run. Interaction table: \"Ciprofloxacin 2h before or 6h after; levofloxacin: ask your pharmacist\" (ciprofloxacin label, DailyMed [87]). The old row gave the same spacing for both drugs and said minerals reduce ciprofloxacin absorption \"up to 90%\" (unsupported, dropped). Merged from main's reviewed multivitamins fix (coordinator's addition). Passes: 2 hours before, 6 hours after, and ask a pharmacist (for levofloxacin). Fails: the old up-to-90% claim."
+  },
+  {
+    "category": "masters-new-4",
+    "source": "us-42-ac5-masters-new-4-2026-10-23",
+    "pending": "masters-new-4 not deployed",
+    "surface": "doctor",
+    "query": "I take levothyroxine. How far apart should it be from my multivitamin that has iron and calcium?",
+    "answer_handles": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "(?:at least |4\\+ ?|four )?\\b(?:4|four)\\s?(?:h|hours?)\\b"
+    ],
+    "must_not_match": [
+      "\\b2\\s?(?:-|to|–)\\s?4\\s?hours?\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-4); not run. Interaction table: \"Levothyroxine ... 4+ hours | Iron and calcium carbonate lower levothyroxine absorption, and labels advise against taking levothyroxine within 4 hours of either [63][79]\". The old row said \"2-4 hours\". Merged from main's reviewed multivitamins fix (coordinator's addition). Passes: at least 4 hours. Fails: the old 2 to 4 hours."
   }
 ]

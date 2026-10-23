@@ -4190,7 +4190,8 @@
     "publishedAt": "2025-05-20T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/st-johns-wort-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on St. John's wort: mild to moderate depression, low mood, menopause hot flashes. Comparable to SSRIs; not for severe depression. Extract 300 mg 3x/day. Interacts with contraceptives, statins, warfarin. Always discuss with your doctor."
+    "summary": "Reference on St. John's wort. Trials suggest it may help mild to moderate depression about as well as standard antidepressants; benefit in severe depression is uncertain. It interacts dangerously with many medicines. Talk to your doctor first if you take any prescription medicine or are pregnant.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "This Incredibly Popular Supplement DAMAGES Your Blood Vessels",
@@ -5478,7 +5479,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/nac-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on NAC (N-acetyl cysteine): glutathione precursor, liver protection (paracetamol/acetaminophen overdose, NAFLD), respiratory mucus clearance, PCOS, and mental health use; dosing and forms; safety and drug interactions. Covers liver health, lung conditions, PCOS. Always discuss with your doctor."
+    "summary": "Reference on NAC (N-acetylcysteine). Brad plans 1 g of GlyNAC (glycine plus NAC) from age 45, citing a small placebo-controlled trial in older adults. Oral NAC reduced COPD exacerbations in trials. Talk to your doctor first if you take nitroglycerin or a blood thinner, or have asthma.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Prebiotics: Benefits, Types, Dosing, and Side Effects",
@@ -6682,7 +6684,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/ginkgo-biloba-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on ginkgo biloba: memory, brain health, vertigo, tinnitus. Evidence largely disappointing; modest benefit for vertigo and diabetic nerve pain. Standardized extract, 120-240 mg/day. Bleeding risk. Always discuss with your doctor."
+    "summary": "Reference on ginkgo biloba leaf extract. Large trials (GEM, GuidAge) found it did not prevent dementia; evidence for memory and tinnitus is weak, and small trials hint at help for vertigo. The large trials gave 120 mg twice a day. Talk to your doctor first if you take blood thinners or are pregnant.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Glutamine: Benefits, Forms, Dosing, and Side Effects",
@@ -7319,7 +7322,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/glutathione-forms-dosing-benefits",
     "type": "reference",
-    "summary": "Reference on glutathione: antioxidant, liver health, immune support, aging, cognitive function. Levels decline with age and in chronic disease. Forms include NAC (most evidence-backed), GlyNAC, liposomal, and reduced glutathione; typical dosing 600-1800 mg/day NAC. Always discuss with your doctor."
+    "summary": "Reference on glutathione. Brad's view: levels decline rapidly from the age of 45, and he plans GlyNAC (the precursors glycine and NAC) at 1 g from 45 rather than vitamin A or E, calling the evidence early. Talk to your doctor first if you take nitrates or are having cancer treatment.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Iron: Benefits, Best Forms, Dosing, and Side Effects",
@@ -7399,7 +7403,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/nattokinase-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on nattokinase: blood clot prevention, blood pressure, heart health. Adults with cardiovascular risk, hypertension, or interest in clot-dissolving enzymes. Enteric-coated or softgel forms, 2000-4000 FU/day; avoid with blood thinners or aspirin. Always discuss with your doctor."
+    "summary": "Nattokinase is an enzyme from natto. Small trials found changes in clotting markers and small blood pressure falls, but a 3-year trial, randomized cholesterol trials and one cognition trial found no benefit. Bleeding is the main risk. Talk to your doctor first if you take blood thinners or aspirin.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Reishi Mushroom: Benefits, Forms, Dosing, and Side Effects",

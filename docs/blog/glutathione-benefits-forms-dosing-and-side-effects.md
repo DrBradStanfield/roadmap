@@ -408,7 +408,7 @@ Because cysteine supply limits glutathione synthesis, foods with cysteine and ot
 
 [19] Bridgeman MM, Marsden M, MacNee W, et al. "Cysteine and glutathione concentrations in plasma and bronchoalveolar lavage fluid after treatment with N-acetylcysteine." *Thorax*. 1991;46(1):39-42. doi: [10.1136/thx.46.1.39](https://doi.org/10.1136/thx.46.1.39) PMID: [1871695](https://pubmed.ncbi.nlm.nih.gov/1871695/)
 
-[20] Dodd S, Dean O, Copolov DL, et al. "N-acetylcysteine for antioxidant therapy: pharmacology and clinical utility." *Expert Opin Biol Ther*. 2008;8(12):1955-1962. doi: [10.1517/14712590802477937](https://doi.org/10.1517/14712590802477937) PMID: [18990082](https://pubmed.ncbi.nlm.nih.gov/18990082/)
+[20] Dodd S, Dean O, Copolov DL, et al. "N-acetylcysteine for antioxidant therapy: pharmacology and clinical utility." *Expert Opin Biol Ther*. 2008;8(12):1955-1962. doi: [10.1517/14728220802517901](https://doi.org/10.1517/14728220802517901) PMID: [18990082](https://pubmed.ncbi.nlm.nih.gov/18990082/)
 
 [21] Kumar P, Liu C, Suliburk J, et al. Supplementing Glycine and N-Acetylcysteine (GlyNAC) in Older Adults Improves Glutathione Deficiency, Oxidative Stress, Mitochondrial Dysfunction, Inflammation, Physical Function, and Aging Hallmarks: A Randomized Clinical Trial. *J Gerontol A Biol Sci Med Sci*. 2023. PMID: 35975308. https://pubmed.ncbi.nlm.nih.gov/35975308/
 
@@ -514,7 +514,7 @@ Because cysteine supply limits glutathione synthesis, foods with cysteine and ot
 
 [76] Gray KM, Carpenter MJ, Baker NL, et al. "A double-blind randomized controlled trial of N-acetylcysteine in cannabis-dependent adolescents." *Am J Psychiatry*. 2012;169(8):805-812. doi: [10.1176/appi.ajp.2012.12010055](https://doi.org/10.1176/appi.ajp.2012.12010055) PMID: [22706327](https://pubmed.ncbi.nlm.nih.gov/22706327/)
 
-[77] Riga MG, Chelis L, Kakolyris S, et al. "Transtympanic injections of N-acetylcysteine for the prevention of cisplatin-induced ototoxicity." *Am J Clin Oncol*. 2013;36(1):1-6. doi: [10.1097/COC.0b013e3182350e58](https://doi.org/10.1097/COC.0b013e3182350e58) PMID: [22134515](https://pubmed.ncbi.nlm.nih.gov/22134515/)
+[77] Riga MG, Chelis L, Kakolyris S, et al. "Transtympanic injections of N-acetylcysteine for the prevention of cisplatin-induced ototoxicity." *Am J Clin Oncol*. 2013;36(1):1-6. doi: [10.1097/COC.0b013e31822e006d](https://doi.org/10.1097/COC.0b013e31822e006d) PMID: [22134515](https://pubmed.ncbi.nlm.nih.gov/22134515/)
 
 [78] Jones DP, Coates RJ, Flagg EW, et al. Glutathione in foods listed in the National Cancer Institute's Health Habits and History Food Frequency Questionnaire. *Nutr Cancer*. 1992. PMID: 1574445. https://pubmed.ncbi.nlm.nih.gov/1574445/
 

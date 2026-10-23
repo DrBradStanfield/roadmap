@@ -396,7 +396,7 @@ The trials above used standardised leaf extracts, not tea [7][9][12].
 
 [37] Kellermann AJ, Kloft C. "Is there a risk of bleeding associated with standardized Ginkgo biloba extract therapy? A systematic review and meta-analysis." *Pharmacotherapy*. 2011;31(5):490-502. PMID: 21923430. [https://doi.org/10.1592/phco.31.5.490](https://doi.org/10.1592/phco.31.5.490)
 
-[38] Bent S, Goldberg H, Padula A, Avins AL. "Spontaneous bleeding associated with ginkgo biloba: a case report and systematic review of the literature." *Journal of General Internal Medicine*. 2005;20(7):657-661. PMID: 16050865. [https://doi.org/10.1111/j.1525-1497.2005.0121.x](https://doi.org/10.1111/j.1525-1497.2005.0121.x)
+[38] Bent S, Goldberg H, Padula A, Avins AL. "Spontaneous bleeding associated with ginkgo biloba: a case report and systematic review of the literature." *Journal of General Internal Medicine*. 2005;20(7):657-661. PMID: 16050865. [https://pmc.ncbi.nlm.nih.gov/articles/PMC1490168/](https://pmc.ncbi.nlm.nih.gov/articles/PMC1490168/)
 
 [39] Granger AS. "Ginkgo biloba precipitating epileptic seizures." *Age and Ageing*. 2001;30(6):523-525. PMID: [11742783](https://pubmed.ncbi.nlm.nih.gov/11742783/)
 
