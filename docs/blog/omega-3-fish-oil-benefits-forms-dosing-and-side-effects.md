@@ -362,7 +362,7 @@ A study of 176 adults with MASLD found liver fat fell significantly in both the 
 
 However, a meta-analysis of 22 trials found omega-3 supplementation reduced liver fat and improved triglycerides and other blood lipids in people with MASLD (Lee, Nutrients 2020) [153].
 
-The AASLD practice guidance says high triglycerides in people with MASLD can be managed with lifestyle changes and omega-3 fatty acids, and that adding omega-3 to a statin should be considered when a statin alone does not reach treatment goals. For triglycerides above 500 mg/dL, it advises fibrates, alone or with prescription-grade omega-3 or icosapent ethyl, to lower the risk of pancreatitis (Rinella, Hepatology 2023) [220].
+The AASLD practice guidance says high triglycerides in people with MASLD can be managed with lifestyle changes and omega-3 fatty acids, icosapent ethyl or fibrates. When a statin alone does not reach lipid goals, it says adding another lipid-lowering drug should be considered, and omega-3 fatty acids are one of the options it lists, alongside ezetimibe, PCSK-9 inhibitors, inclisiran, bempedoic acid, fibrates and icosapent ethyl. For severely high triglycerides (for example, above 500 mg/dL), it says fibrates, alone or with prescription-grade omega-3 or icosapent ethyl, should be used to lower the risk of pancreatitis (Rinella, Hepatology 2023) [220].
 
 ### Migraine Headache
 

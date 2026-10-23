@@ -142,7 +142,7 @@ The evidence here is divided.
 
 **Statin-related fatigue:** In older adults with statin-related fatigue (asthenia), a daily 300 mg CoQ10 phytosome (60 mg of CoQ10) for 8 weeks lowered fatigue scores by 30.0 ± 20.0% and improved grip strength, compared with both baseline and placebo [19].
 
-NCCIH concludes that the overall evidence does not support using CoQ10 to ease muscle pain from statins [3]. Brad's view is that statin users get no benefit ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). The evidence is mixed: two analyses found no benefit [92][44] and two found small reductions in muscle pain [43][45].
+NCCIH concludes that the overall evidence does not support using CoQ10 to ease muscle pain from statins [3]. Brad's view is that statin users get no benefit ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). The evidence is mixed: two analyses found no benefit [92][44] and two found reductions in muscle pain [43][45], the later one small.
 
 ### Migraine Prevention
 

@@ -335,7 +335,7 @@ Some minerals in multivitamins can bind to medications and reduce their absorpti
 |-----------|---------|:-:|----------|
 | Bisphosphonates | Alendronate, risedronate | 2+ hours | Minerals chelate and dramatically reduce absorption |
 | Tetracycline antibiotics | Doxycycline, minocycline | Ask your pharmacist | Calcium, magnesium and iron-containing products impair tetracycline absorption [88]; zinc may too [81] |
-| Fluoroquinolone antibiotics | Ciprofloxacin, levofloxacin | Ciprofloxacin 2h before or 6h after | The ciprofloxacin label gives this spacing for products containing calcium, iron or zinc and for magnesium antacids [87] |
+| Fluoroquinolone antibiotics | Ciprofloxacin, levofloxacin | Ciprofloxacin 2h before or 6h after; levofloxacin: ask your pharmacist | The ciprofloxacin label gives this spacing for products containing calcium, iron or zinc and for magnesium antacids [87] |
 | Levothyroxine | Synthroid, Levoxyl | 4+ hours | Iron and calcium carbonate lower levothyroxine absorption, and labels advise against taking levothyroxine within 4 hours of either [63][79] |
 | Levodopa | Sinemet, Stalevo | Ask your pharmacist | Iron may reduce levodopa absorption, possibly through chelation, and so make it less effective [63] |
 

@@ -117,7 +117,7 @@ Some small trials reported fewer wrinkles, but when the results were pooled in t
 
 **Verisol collagen peptides:** Key trials:
 
-- In 114 women aged 45 to 65 years, 2.5 g a day of Verisol for 8 weeks raised procollagen type I by 65% and elastin by 18% in skin samples compared with placebo [16].
+- In a trial of 114 women aged 45 to 65 years, 2.5 g a day of Verisol for 8 weeks raised procollagen type I by 65% and elastin by 18% compared with placebo in skin samples taken from a subgroup [16].
 - In 69 women, 2.5 g or 5 g a day of collagen peptides for 8 weeks improved skin elasticity compared with placebo, and 4 weeks after stopping, elasticity stayed higher in the older women. Effects on skin moisture did not reach statistical significance [15].
 - In 66 women, bovine-derived collagen peptides for 8 weeks improved skin elasticity and hydration compared with placebo [17][79].
 - In 105 women aged 24 to 50 years with moderate cellulite, 2.5 g a day for 6 months reduced cellulite and skin waviness on the thighs compared with placebo in women of normal weight; the effect was smaller in overweight women [18].
