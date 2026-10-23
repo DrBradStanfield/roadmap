@@ -14,28 +14,30 @@ struct WelcomeView: View {
     @State private var choosingCloud = false
     /// Signed in, but the cloud record did not open: say so, and stay (US-54 AC2).
     @State private var notOpened = false
+    /// The story's scene, lighting its point below.
+    @State private var scene = 0
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 24)
-            hero
-                .scaleEffect(shown ? 1 : 0.6)
-                .opacity(shown ? 1 : 0)
+            Spacer(minLength: 12)
             Text("Your health roadmap")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
-                .padding(.top, 28)
             Text("By Dr Brad Stanfield")
                 .font(.headline)
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)
+            WelcomeStory(scene: $scene)
+                .padding(.top, 20)
+                .scaleEffect(shown ? 1 : 0.9)
+                .opacity(shown ? 1 : 0)
 
-            VStack(alignment: .leading, spacing: 22) {
-                point("list.bullet.clipboard", "Add your numbers", "Height, weight, blood pressure and blood tests. Apple Health and lab reports can fill them in.")
-                point("heart.text.square", "See your next steps", "A plan built from published guidelines, with the evidence behind each step.")
-                point("lock.shield", "Your data stays yours", "Your record lives on this iPhone, or in your own Dropbox or Google Drive, never on our servers.")
+            VStack(alignment: .leading, spacing: 18) {
+                point(0, "list.bullet.clipboard", "Add your numbers", "Height, weight, blood pressure and blood tests. Apple Health and lab reports can fill them in.")
+                point(1, "heart.text.square", "See your next steps", "A plan built from published guidelines, with the evidence behind each step.")
+                point(2, "lock.shield", "Your data stays yours", "Your record lives on this iPhone, or in your own Dropbox or Google Drive, never on our servers.")
             }
-            .padding(.top, 36)
+            .padding(.top, 24)
             .padding(.horizontal, 8)
             .opacity(shown ? 1 : 0)
             .offset(y: shown ? 0 : 20)
@@ -67,26 +69,6 @@ struct WelcomeView: View {
             withAnimation(.spring(duration: 0.8, bounce: 0.35)) { shown = true }
         }
         .sensoryFeedback(.impact(weight: .light), trigger: shown)
-    }
-
-    /// The icon's idea in symbols: a road that ends at a heart.
-    private var hero: some View {
-        ZStack {
-            Circle()
-                .fill(LinearGradient(colors: [Color(red: 0.2, green: 0.83, blue: 0.47), Color(red: 0.03, green: 0.47, blue: 0.43)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 120, height: 120)
-                .shadow(color: .green.opacity(0.3), radius: 20, y: 10)
-            Image(systemName: "point.bottomleft.forward.to.point.topright.scurvepath.fill")
-                .font(.system(size: 50, weight: .semibold))
-                .foregroundStyle(.white)
-                .offset(x: -6, y: 8)
-            Image(systemName: "heart.fill")
-                .font(.system(size: 26))
-                .foregroundStyle(Color(red: 1, green: 0.27, blue: 0.35))
-                .offset(x: 26, y: -26)
-                .symbolEffect(.bounce, value: shown)
-        }
-        .accessibilityHidden(true)
     }
 
     /// Where the website keeps the record: Sync's own connect buttons (US-25 AC11).
@@ -150,17 +132,21 @@ struct WelcomeView: View {
         connected()
     }
 
-    private func point(_ symbol: String, _ title: String, _ detail: String) -> some View {
+    /// One point; the one whose scene is playing is lit, the others rest dimmed.
+    private func point(_ index: Int, _ symbol: String, _ title: String, _ detail: String) -> some View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: symbol)
                 .font(.title2)
                 .foregroundStyle(.tint)
                 .frame(width: 32)
+                .symbolEffect(.bounce, value: scene == index)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.headline)
                 Text(detail).font(.subheadline).foregroundStyle(.secondary)
             }
         }
+        .opacity(scene == index ? 1 : 0.5)
+        .animation(.smooth(duration: 0.5), value: scene)
         .accessibilityElement(children: .combine)
     }
 }

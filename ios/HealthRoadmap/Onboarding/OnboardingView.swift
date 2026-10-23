@@ -76,9 +76,9 @@ struct OnboardingView: View {
         switch step {
         case .health:
             Page(symbol: "heart.fill", tint: .pink, title: "Fill this in from Apple Health?",
-                 detail: "Health Roadmap can read your sex, birth date, height, weight, waist and blood pressure from Apple Health, so you type less. They go only into your record, on this iPhone or in the cloud you connect.",
+                 detail: "Health Roadmap can read these from Apple Health, so you type less. They go only into your record, on this iPhone or in the cloud you connect.",
                  progress: nil) {
-                EmptyView()
+                HealthFillScene()
             } actions: {
                 primary(connecting ? "Connecting…" : "Allow", id: "onboarding.allow") { Task { await allowHealth() } }
                     .disabled(connecting)

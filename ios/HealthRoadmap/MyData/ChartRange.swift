@@ -33,7 +33,8 @@ enum ChartRange: String, CaseIterable, Identifiable {
         return middle.addingTimeInterval(-half)...middle.addingTimeInterval(half)
     }
 
-    /// The first day the range shows, ending today; nil for All.
+    /// The first day the range shows, ending on `today` (the newest value, when the chart
+    /// opens there); nil for All.
     func start(today: Date) -> Date? {
         let step: (Calendar.Component, Int)? = switch self {
         case .week: (.day, -Self.weekDays)
@@ -46,13 +47,14 @@ enum ChartRange: String, CaseIterable, Identifiable {
         return DayText.utc.date(byAdding: step.0, value: step.1, to: today)
     }
 
-    /// The ranges worth offering: each that holds some values but not all, then
-    /// All. A range holding every value would draw the same chart as All.
-    static func offered(for days: [Date], today: Date) -> [ChartRange] {
-        allCases.filter { range in
-            guard let start = range.start(today: today) else { return true }
-            let inside = days.filter { $0 >= start }.count
-            return inside > 0 && inside < days.count
+    /// The ranges worth offering: each shorter than the values' span, then All. One
+    /// spanning them all would draw the same chart as All. The chart opens a range on
+    /// the newest value and scrolls back from there, as Apple Health's does (Brad 2026-10-23).
+    static func offered(for days: [Date]) -> [ChartRange] {
+        guard let first = days.min(), let last = days.max() else { return [.all] }
+        return allCases.filter { range in
+            guard let start = range.start(today: last) else { return true }
+            return start > first
         }
     }
 

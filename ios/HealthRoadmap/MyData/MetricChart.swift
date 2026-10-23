@@ -30,8 +30,11 @@ struct ChartPoint: Identifiable {
 struct MetricChart: View {
     let history: MetricHistory
     let points: [ChartPoint]
-    /// The range's days, first to last; nil fits the values.
-    let domain: ClosedRange<Date>?
+    /// A range's length: the chart shows that much and scrolls across the rest, as
+    /// Apple Health's does. Nil (All) fits every value.
+    let window: TimeInterval?
+    /// The first day a scrolling chart shows.
+    @Binding var scrolledTo: Date
     /// The scrubbed day, shared so the page can hide its headline under the callout.
     @Binding var selected: Date?
     @State private var finger: Date?
@@ -71,7 +74,7 @@ struct MetricChart: View {
         .chartYScale(domain: .automatic(includesZero: false))
         // Aligned, so the newest month's label stays inside the card.
         .chartXAxis { AxisMarks(preset: .aligned, values: .automatic(desiredCount: textSize.isAccessibilitySize ? 2 : 4)) }
-        .modifier(XDomain(domain: domain ?? ChartRange.atLeastAWeek(points.map(\.date))))
+        .modifier(XDomain(window: window, scrolledTo: $scrolledTo, days: points.map(\.date)))
         .chartXSelection(value: $finger)
         .onChange(of: finger) {
             let day = finger.flatMap { ChartRange.nearest(to: $0, in: points.map(\.date)) }
@@ -105,13 +108,24 @@ struct MetricChart: View {
     }
 }
 
-/// A fixed x domain for a range, or the chart's own fit for All.
+/// A range scrolls across every value, a window at a time; All fits them, or a week
+/// around values closer together than that.
 private struct XDomain: ViewModifier {
-    let domain: ClosedRange<Date>?
+    let window: TimeInterval?
+    @Binding var scrolledTo: Date
+    let days: [Date]
 
     func body(content: Content) -> some View {
-        if let domain {
-            content.chartXScale(domain: domain)
+        if let window, let first = days.min(), let last = days.max() {
+            // A little past the newest, so its point is drawn whole at the right edge.
+            let margin = max(86_400, window / 30)
+            content
+                .chartXScale(domain: min(first, last.addingTimeInterval(-window))...last.addingTimeInterval(margin))
+                .chartScrollableAxes(.horizontal)
+                .chartXVisibleDomain(length: window + margin)
+                .chartScrollPosition(x: $scrolledTo)
+        } else if let week = ChartRange.atLeastAWeek(days) {
+            content.chartXScale(domain: week)
         } else {
             content
         }

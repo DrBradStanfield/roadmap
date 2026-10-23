@@ -72,18 +72,17 @@ final class MyDataLayoutTests: XCTestCase {
 
     private func day(_ text: String) -> Date { DayText.date(text)! }
 
-    func testOnlyRangesThatHoldSomeButNotAllValuesAreOffered() {
-        let today = day("2026-10-21")
-        // Values across three years: the week and month hold none.
+    func testOnlyRangesShorterThanTheValuesSpanAreOffered() {
+        // Values across three years, the newest months ago: every range fits inside the span.
         let spread = ["2023-10-01", "2025-06-01", "2026-06-01", "2026-09-01"].map(day)
-        XCTAssertEqual(ChartRange.offered(for: spread, today: today), [.sixMonths, .year, .all])
-        // All within the last week: every range shows the same, so only All.
+        XCTAssertEqual(ChartRange.offered(for: spread), [.week, .month, .sixMonths, .year, .all])
+        // Two days apart: every range would show the same as All.
         let recent = ["2026-10-18", "2026-10-20"].map(day)
-        XCTAssertEqual(ChartRange.offered(for: recent, today: today), [.all])
-        XCTAssertEqual(ChartRange.offered(for: [], today: today), [.all])
-        // A week and a month that each leave some out.
+        XCTAssertEqual(ChartRange.offered(for: recent), [.all])
+        XCTAssertEqual(ChartRange.offered(for: []), [.all])
+        // Nine months: a year would hold them all.
         let dense = ["2026-01-01", "2026-09-30", "2026-10-19"].map(day)
-        XCTAssertEqual(ChartRange.offered(for: dense, today: today), [.week, .month, .sixMonths, .all])
+        XCTAssertEqual(ChartRange.offered(for: dense), [.week, .month, .sixMonths, .all])
     }
 
     func testTheWeekStartsSixDaysBeforeToday() {

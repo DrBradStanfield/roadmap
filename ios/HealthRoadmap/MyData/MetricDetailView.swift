@@ -1,10 +1,12 @@
 import SwiftUI
 
 /// One metric's page, pushed from My data (US-25 AC9, AC17), laid out as Apple
-/// Health's: the range picker, the latest value large with its day, the chart,
-/// then every value newest first. Tapping an active value corrects it: a new
-/// row, the old one kept and struck through as entered in error. There is no
-/// delete: the record is append-only (Brad 2026-09-24). The web twin is
+/// Health's (Brad 2026-10-23: "just copy what Apple Health have done"): "+" at
+/// the top, the range picker, the latest value large with its day, a chart that
+/// opens on the newest value and scrolls back, then Show All Data and Unit.
+/// Tapping an active value in Show All Data corrects it: a new row, the old one
+/// kept and struck through as entered in error. There is no delete: the record
+/// is append-only (Brad 2026-09-24). The web twin is
 /// widget-src/src/components/HistoryPanel.tsx, with the correction the web's
 /// matrices offer on a saved cell.
 struct MetricDetailView: View {
@@ -15,7 +17,8 @@ struct MetricDetailView: View {
 
     @State private var range = ChartRange.all
     @State private var scrubbed: Date?
-    /// Which sheet is open: a new value, or a correction of a row.
+    /// The first day a scrolling range shows; set to end on the newest value as a range opens.
+    @State private var scrolledTo = Date.distantPast
     @State private var editing: Editing?
     /// Why the Lp(a) unit menu's choice was not saved.
     @State private var lpaRefusal: String?
@@ -46,50 +49,27 @@ struct MetricDetailView: View {
         List {
             if let history {
                 chartSection(history)
-                valuesSection(history)
+                Section {
+                    NavigationLink("Show All Data") {
+                        AllDataView(store: store, row: row, saved: saved)
+                    }
+                    unitRow(history)
+                }
             }
         }
         .listStyle(.insetGrouped)
         .navigationTitle(row.label)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            // This test's own units (AC17e), as the web's unit chip: My data's row as it is now.
-            if let live, live.switchable == true {
-                ToolbarItem(placement: .secondaryAction) {
-                    Picker("Units for \(row.label)", selection: Binding(
-                        get: { store.units(for: row.metric) },
-                        set: { store.switchUnits(for: live, to: $0) }
-                    )) {
-                        Text("Metric").tag("si")
-                        Text("US").tag("conventional")
-                    }
-                    .pickerStyle(.menu)
-                    .disabled(store.unitSwitches > 0)
-                }
-            }
-            // Lp(a)'s three units, the web's control (US-05 AC2): kept in the record, so it syncs.
-            if row.metric == "lpa", let unit = store.myData?.lpaUnit {
-                ToolbarItem(placement: .secondaryAction) {
-                    Picker("Units for \(row.label)", selection: Binding(
-                        get: { unit },
-                        set: { unit in
-                            let choosing = store.chooseLpaUnit(unit) // holds entry now, in the tap
-                            Task { lpaRefusal = await choosing.value }
-                        }
-                    )) {
-                        ForEach(RecordStore.lpaUnits, id: \.self) { Text($0).tag($0) }
-                    }
-                    .pickerStyle(.menu)
-                    .disabled(store.unitSwitches > 0)
-                }
-            }
             ToolbarItem(placement: .primaryAction) {
-                Button("Add Data") { editing = .add(live ?? row, store.screen) }
-                    .disabled(store.unitSwitches > 0)
+                Button { editing = .add(Self.live(row, in: store) ?? row, store.screen) } label: {
+                    Label("Add Data", systemImage: "plus")
+                }
+                .disabled(store.unitSwitches > 0)
             }
         }
         .sheet(item: $editing) { editing in
-            sheet(for: editing).presentationDetents([.medium, .large])
+            EditingSheet(store: store, editing: editing, saved: saved) { self.editing = $0 }
         }
         .alert("Not saved", isPresented: Binding(get: { lpaRefusal != nil }, set: { if !$0 { lpaRefusal = nil } })) {
             Button("OK", role: .cancel) {}
@@ -98,8 +78,8 @@ struct MetricDetailView: View {
         }
     }
 
-    /// This metric's row in My data now, so a units switch here shows at once.
-    private var live: MyData.Row? {
+    /// This metric's row in My data now, so a units switch shows at once.
+    static func live(_ row: MyData.Row, in store: RecordStore) -> MyData.Row? {
         guard let data = store.myData else { return nil }
         return (data.vitals + data.bloodTests + [data.psa]).first { $0.metric == row.metric }
     }
@@ -108,11 +88,13 @@ struct MetricDetailView: View {
 
     private func chartSection(_ history: MetricHistory) -> some View {
         let all = ChartPoint.points(history)
-        let today = DayText.date(DayText.iso(.now)) ?? .now
-        let offered = ChartRange.offered(for: all.map(\.date), today: today)
+        let days = all.map(\.date)
+        let offered = ChartRange.offered(for: days)
         let shown = offered.contains(range) ? range : .all
-        let start = shown.start(today: today)
-        let points = start.map { start in all.filter { $0.date >= start } } ?? all
+        // The window ends on the newest value, not today: a weight from months ago fills the chart.
+        let newest = days.max()
+        let opening = newest.flatMap { shown.start(today: $0) }
+        let window = newest.flatMap { newest in opening.map { newest.timeIntervalSince($0) } }
         let latest = history.rows.first(where: \.isActive)
         return Section {
             VStack(alignment: .leading, spacing: 12) {
@@ -124,15 +106,19 @@ struct MetricDetailView: View {
                 }
                 headline(latest, unit: history.unit)
                     .opacity(scrubbed == nil ? 1 : 0)
-                if points.isEmpty {
+                if all.isEmpty {
                     Text("No values to draw yet.").font(.subheadline).foregroundStyle(.secondary)
                 } else {
-                    MetricChart(history: history, points: points, domain: start.map { $0...today }, selected: $scrubbed)
+                    MetricChart(history: history, points: all, window: window, scrolledTo: $scrolledTo, selected: $scrubbed)
                 }
             }
             .padding(.vertical, 6)
+            .onAppear { if let opening { scrolledTo = opening } }
+            .onChange(of: shown) {
+                scrubbed = nil
+                if let opening { scrolledTo = opening }
+            }
         }
-        .onChange(of: range) { scrubbed = nil }
     }
 
     /// The newest value, large, with its day: Apple Health's headline.
@@ -154,29 +140,102 @@ struct MetricDetailView: View {
         .animation(.snappy, value: latest?.value)
     }
 
-    // MARK: Values
+    // MARK: Unit
 
-    private func valuesSection(_ history: MetricHistory) -> some View {
-        Section {
-            ForEach(history.rows) { value in
-                if value.isActive {
-                    Button { editing = .correct(value, live ?? row, store.screen) } label: { HistoryRow(row: value, unit: history.unit, excluded: history.excluded) }
-                        .tint(.primary)
-                        .disabled(store.unitSwitches > 0)
-                        .accessibilityHint("Opens a correction")
-                } else {
-                    HistoryRow(row: value, unit: history.unit, excluded: history.excluded)
+    /// Apple Health's Unit row. A test with its own units (AC17e) switches between Metric and
+    /// US, as the web's unit chip; Lp(a) picks one of its three (US-05 AC2), kept in the record
+    /// so it syncs. Any other metric shows its unit.
+    @ViewBuilder
+    private func unitRow(_ history: MetricHistory) -> some View {
+        if let live = Self.live(row, in: store), live.switchable == true {
+            Menu {
+                Picker("Units for \(row.label)", selection: Binding(get: { store.units(for: row.metric) }, set: { store.switchUnits(for: live, to: $0) })) {
+                    Text("Metric").tag("si")
+                    Text("US").tag("conventional")
+                }
+            } label: {
+                LabeledContent("Unit") {
+                    Label(history.unit, systemImage: "chevron.up.chevron.down").labelStyle(TrailingIcon())
                 }
             }
-        } header: {
-            Text("All values")
-        } footer: {
-            Text("Tap a value to correct it. The old value stays in your record, struck through and marked as entered in error.")
+            .tint(.primary)
+            .disabled(store.unitSwitches > 0)
+        } else if row.metric == "lpa", let unit = store.myData?.lpaUnit {
+            Picker("Unit", selection: Binding(get: { unit }, set: { unit in
+                let choosing = store.chooseLpaUnit(unit) // holds entry now, in the tap
+                Task { lpaRefusal = await choosing.value }
+            })) {
+                ForEach(RecordStore.lpaUnits, id: \.self) { Text($0).tag($0) }
+            }
+            .disabled(store.unitSwitches > 0)
+        } else {
+            LabeledContent("Unit", value: history.unit)
         }
+    }
+}
+
+/// The unit, then its menu's chevrons, in the secondary colour of a row's value.
+private struct TrailingIcon: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 4) {
+            configuration.title
+            configuration.icon.font(.caption.weight(.semibold))
+        }
+        .foregroundStyle(.secondary)
+    }
+}
+
+/// Apple Health's Show All Data: every value, newest first. Tapping an active one opens its correction.
+private struct AllDataView: View {
+    let store: RecordStore
+    let row: MyData.Row
+    let saved: (RecordStore.ApplyResult) -> RecordStore.ApplyResult
+    @State private var editing: MetricDetailView.Editing?
+
+    var body: some View {
+        List {
+            if let history = store.history(for: row.metric) {
+                Section {
+                    ForEach(history.rows) { value in
+                        if value.isActive {
+                            Button { editing = .correct(value, MetricDetailView.live(row, in: store) ?? row, store.screen) } label: {
+                                HistoryRow(row: value, unit: history.unit, excluded: history.excluded)
+                            }
+                            .tint(.primary)
+                            .disabled(store.unitSwitches > 0)
+                            .accessibilityHint("Opens a correction")
+                        } else {
+                            HistoryRow(row: value, unit: history.unit, excluded: history.excluded)
+                        }
+                    }
+                } footer: {
+                    Text("Tap a value to correct it. The old value stays in your record, struck through and marked as entered in error.")
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("All Recorded Data")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $editing) { editing in
+            EditingSheet(store: store, editing: editing, saved: saved) { self.editing = $0 }
+        }
+    }
+}
+
+/// The sheet a tap opened: a new value, or a correction of one.
+private struct EditingSheet: View {
+    let store: RecordStore
+    let editing: MetricDetailView.Editing
+    let saved: (RecordStore.ApplyResult) -> RecordStore.ApplyResult
+    /// Reopens the correction on a new screen when Lp(a)'s unit changes in it.
+    let reopen: (MetricDetailView.Editing) -> Void
+
+    var body: some View {
+        sheet.presentationDetents([.medium, .large])
     }
 
     @ViewBuilder
-    private func sheet(for editing: Editing) -> some View {
+    private var sheet: some View {
         // The row as it was tapped: its unit is the one a typed value is read in (AC17e).
         switch editing {
         case .add(let shown, let seen):
@@ -189,7 +248,7 @@ struct MetricDetailView: View {
             ValueEntrySheet(title: "Correct \(DayText.short(value.day))", unit: store.lpaUnit(for: shown) ?? shown.unit, current: now, asksForDay: false, read: store.number) { number, _ in
                 saved(await store.apply(.correct(id: value.id, value: number), as: seen))
             }
-            .lpaUnits(store, shown) { self.editing = .correct(value, shown, seen.showing(lpaUnit: $0)) }
+            .lpaUnits(store, shown) { reopen(.correct(value, shown, seen.showing(lpaUnit: $0))) }
         }
     }
 }
