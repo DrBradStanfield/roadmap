@@ -516,16 +516,24 @@ final class RecordStore {
     /// sheet's screen. Entry waits while it lands, as for any unit switch. A sheet open as it
     /// is chosen there shows it from then on and moves its own screen with it
     /// (`ValueEntrySheet.lpaUnits`), so a value typed there is read in the unit shown at Save.
-    func setLpaUnit(_ unit: String) async -> ApplyResult {
+    /// Entry is held, and its turn taken, in the tap itself, as `switchUnits` does: a tap
+    /// queued behind the menu cannot open a sheet on the old unit (merge review R1, F1).
+    @discardableResult
+    func setLpaUnit(_ unit: String) -> Task<ApplyResult, Never> {
         unitSwitches += 1
-        defer { unitSwitches -= 1 }
-        return await applyNow(.lpaUnit(unit))
+        return chain {
+            defer { self.unitSwitches -= 1 }
+            return await self.apply(.lpaUnit(unit), as: self.screen)
+        }
     }
 
     /// The same, answering a refusal's words, nil when it was taken.
-    func chooseLpaUnit(_ unit: String) async -> String? {
-        if case .refused(let message, _) = await setLpaUnit(unit) { return message }
-        return nil
+    func chooseLpaUnit(_ unit: String) -> Task<String?, Never> {
+        let setting = setLpaUnit(unit)
+        return Task {
+            if case .refused(let message, _) = await setting.value { return message }
+            return nil
+        }
     }
 
     /// Lp(a)'s unit as the record holds it now, for an Lp(a) row; nil for any other.

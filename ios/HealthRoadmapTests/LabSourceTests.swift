@@ -196,6 +196,33 @@ final class LabSourceTests: XCTestCase {
         XCTAssertEqual(requests.last { $0.url.path.hasSuffix("/files/download") }?.headers["dropbox-api-arg"], #"{"path":"id:b"}"#)
     }
 
+    /// US-25 AC21 (merge review R2, Codex re-check R1): every report is decoded on the shared
+    /// pool, never the main thread or the engine's queue, whether the engine's folder read or
+    /// the sheet (a Files pick, a Dropbox file) asks.
+    func testReportsAreDecodedOffTheMainThreadAndTheEnginesQueue() async throws {
+        addLabs()
+        let (engine, _) = try app()
+        let onEngine = DispatchSpecificKey<Bool>()
+        engine.queue.setSpecific(key: onEngine, value: true)
+        let places = Places()
+        LabFileReader.decodingWatch = {
+            places.add(Thread.isMainThread ? "main" : DispatchQueue.getSpecific(key: onEngine) == true ? "engine" : "pool")
+        }
+        defer { LabFileReader.decodingWatch = nil }
+        _ = try await engine.labFolderDocuments(.init(name: "Labs", path: "Labs"))
+        let picked = folder.appending(path: "picked.pdf")
+        try LabSourceTests.pdf.write(to: picked)
+        _ = try await LabFileReader.decoded(picked: picked)
+        _ = try await LabFileReader.decoded(LabSourceTests.pdf, name: "b.pdf")
+        XCTAssertEqual(places.all, Array(repeating: "pool", count: 5), "three folder reports, a pick, a Dropbox file")
+    }
+    private final class Places: @unchecked Sendable {
+        private let lock = NSLock()
+        private var seen: [String] = []
+        func add(_ place: String) { lock.withLock { seen.append(place) } }
+        var all: [String] { lock.withLock { seen } }
+    }
+
     /// The whole folder reads as a folder picked in Files does: name order, by place.
     func testAWholeFolderReadsEveryReportInsideItInNameOrder() async throws {
         addLabs()

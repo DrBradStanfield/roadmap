@@ -136,6 +136,25 @@ enum LabFileReader {
         return [try document(from: data, name: name)]
     }
 
+    /// `documents(from:name:)` on the shared pool, never the caller's actor: a folder's PDFs
+    /// are rendered and its ZIPs opened without holding the engine's queue (merge review R2).
+    @concurrent
+    static func decoded(_ data: Data, name: String) async throws -> [Document] {
+        decodingWatch?()
+        return try documents(from: data, name: name)
+    }
+
+    /// A file or folder picked in Files, read the same way: off the main thread too (AC21).
+    @concurrent
+    static func decoded(picked url: URL) async throws -> [Document] {
+        decodingWatch?()
+        return try url.hasDirectoryPath ? documents(inFolder: url) : documents(picked: url)
+    }
+
+    /// Called where a report is decoded, so a test can see which thread does it (US-25
+    /// AC21, Codex re-check R1). Nil in the app; set only by a test, before it reads.
+    nonisolated(unsafe) static var decodingWatch: (@Sendable () -> Void)?
+
     /// The reports in one file picked in Files: a ZIP's members keep their bytes; a single
     /// file's original is the file, opened again when it is saved.
     static func documents(picked url: URL) throws -> [Document] {

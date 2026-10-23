@@ -167,7 +167,7 @@ extension HealthEngine {
                 let failure = DropboxFailure(error)
                 throw failure.gone ? LabFileReader.Failure.folderChanged : failure
             }
-            let read = try LabFileReader.documents(from: fetched.data, name: base + file.path)
+            let read = try await LabFileReader.decoded(fetched.data, name: base + file.path)
             bytes += read.reduce(0) { $0 + ($1.original?.size ?? 0) }
             guard bytes <= maxBytes else { throw LabFileReader.Failure.folderTooLarge }
             documents += read

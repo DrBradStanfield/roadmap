@@ -476,7 +476,7 @@ final class CloudSyncTests: XCTestCase {
         dropbox.put(try record(days: [], device: "web"))
         let (store, sync, engine) = try app()
         await sync.start()
-        let chosen = await store.setLpaUnit("mg/dL")
+        let chosen = await store.setLpaUnit("mg/dL").value
         XCTAssertEqual(chosen, .saved, "the menu's choice goes through the session")
         store.pinScreen()
         XCTAssertEqual(store.screen.lpaUnit, "mg/dL")

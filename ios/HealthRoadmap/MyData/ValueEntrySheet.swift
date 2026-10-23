@@ -123,7 +123,7 @@ extension ValueEntrySheet {
         var sheet = self
         sheet.units = RecordStore.lpaUnits
         sheet.chooseUnit = { unit in
-            let refusal = await store.chooseLpaUnit(unit)
+            let refusal = await store.chooseLpaUnit(unit).value
             if refusal == nil { shows(unit) }
             return refusal
         }

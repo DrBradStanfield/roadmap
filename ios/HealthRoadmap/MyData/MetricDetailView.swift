@@ -22,9 +22,12 @@ struct MetricDetailView: View {
 
     /// What a tap opened: the row as this page showed it and the screen it was read
     /// on, so the sheet's unit label and its save agree (Codex R2).
-    private enum Editing: Identifiable {
+    enum Editing: Identifiable {
         case add(MyData.Row, RecordStore.Screen)
         case correct(MetricHistory.Row, MyData.Row, RecordStore.Screen)
+        /// A correction's id is its value's alone, never its screen: choosing Lp(a)'s unit in the
+        /// open sheet rewrites the item's screen, and a new id would re-present the sheet and
+        /// drop what was typed (merge review R3; `testACorrectionKeepsItsSheetWhenItsScreenMoves`).
         var id: String {
             switch self {
             case .add: "add"
@@ -69,7 +72,10 @@ struct MetricDetailView: View {
                 ToolbarItem(placement: .secondaryAction) {
                     Picker("Units for \(row.label)", selection: Binding(
                         get: { unit },
-                        set: { unit in Task { lpaRefusal = await store.chooseLpaUnit(unit) } }
+                        set: { unit in
+                            let choosing = store.chooseLpaUnit(unit) // holds entry now, in the tap
+                            Task { lpaRefusal = await choosing.value }
+                        }
                     )) {
                         ForEach(RecordStore.lpaUnits, id: \.self) { Text($0).tag($0) }
                     }

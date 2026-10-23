@@ -1236,9 +1236,10 @@ A new user answers sex, birth month and year, height and weight, one per screen,
   bfaac736 after a clean adversary and Codex pass on the merge; its AC is US-25 AC21; bridge
   bcb25cd75e262be0). Installed on Brad's iPhone the same day.
 - **Not deployed:** the website's shared document save waits for a real upload checked in Safari.
-- **Small follow-ups from the stage-2 merge review (low, none blocking):** raise `unitSwitches`
-  synchronously when the Lp(a) page menu is used (R1); move PDF decoding in `labFolderDocuments`
-  off the engine actor (R2); a test or comment on the correction sheet's `Editing.id` (R3).
+- **Stage-2 merge review follow-ups, done:** the Lp(a) menu holds entry and takes its chain
+  turn in the tap (R1); reports are decoded on the shared pool, off both the main thread and the
+  engine's queue, for Dropbox folders, Dropbox files and Files picks (`LabFileReader.decoded`, R2);
+  the correction sheet's id stays its value's when its screen moves, with a test (R3).
 - **Not started:** the "new reports in your Dropbox, read them?" prompt (web and phone; first
   test whether a picked Google Drive folder lets `drive.file` see inside it).
 

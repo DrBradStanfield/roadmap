@@ -185,7 +185,7 @@ struct LabUploadSheet: View {
         await read {
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            let read = try url.hasDirectoryPath ? LabFileReader.documents(inFolder: url) : LabFileReader.documents(picked: url)
+            let read = try await LabFileReader.decoded(picked: url)
             return await engine.named(read)
         }
     }
@@ -216,7 +216,7 @@ struct LabUploadSheet: View {
                 throw DropboxFailure(error)
             }
             // Read under the name Dropbox gives it now, not the one the list showed (re-check R3).
-            return await engine.named(try LabFileReader.documents(from: fetched.data, name: fetched.name))
+            return await engine.named(try await LabFileReader.decoded(fetched.data, name: fetched.name))
         }
     }
 

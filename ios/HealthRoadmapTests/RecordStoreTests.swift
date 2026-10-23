@@ -218,7 +218,7 @@ final class RecordStoreTests: XCTestCase {
     /// does; the row, its history and a typed value follow it. On disk before the screen.
     func testLpaUnitMenuWritesTheRecordAndATypedValueIsReadInIt() async throws {
         let store = try store()
-        await XCTAssertSaved(await store.setLpaUnit("mg/L"))
+        await XCTAssertSaved(await store.setLpaUnit("mg/L").value)
         XCTAssertEqual(store.myData?.lpaUnit, "mg/L")
         let onDisk = try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any]
         let profile = try XCTUnwrap(onDisk?["profile"] as? [String: Any])
@@ -233,7 +233,7 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9, "500 mg/L is 125 nmol/L")
         // Choosing it again writes nothing.
         let before = try Data(contentsOf: file)
-        await XCTAssertSaved(await store.setLpaUnit("mg/L"))
+        await XCTAssertSaved(await store.setLpaUnit("mg/L").value)
         XCTAssertEqual(try Data(contentsOf: file), before)
     }
 
@@ -256,6 +256,29 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9, "500 mg/L is 125 nmol/L")
     }
 
+    /// US-25 AC21 (merge review R1): Lp(a)'s menu holds entry from the tap itself, before its
+    /// task first runs, so a tap queued behind it cannot open a sheet on the old unit.
+    func testAnLpaUnitChoiceHoldsEntryFromTheTap() async throws {
+        let store = try store()
+        let choosing = store.setLpaUnit("mg/L")
+        XCTAssertEqual(store.unitSwitches, 1, "held before the task has run")
+        await XCTAssertSaved(await choosing.value)
+        XCTAssertEqual(store.unitSwitches, 0)
+    }
+
+    /// US-25 AC20 (merge review R3): a correction keeps its sheet when Lp(a)'s unit is chosen
+    /// in it. The sheet's item gets a new screen, never a new id, so it is not re-presented.
+    func testACorrectionKeepsItsSheetWhenItsScreenMoves() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 100, day: "2026-10-19")))
+        let value = try XCTUnwrap(store.history(for: "lpa")?.rows.first)
+        let row = try XCTUnwrap(store.myData?.bloodTests.first { $0.metric == "lpa" })
+        let seen = store.screen
+        let before = MetricDetailView.Editing.correct(value, row, seen)
+        let after = MetricDetailView.Editing.correct(value, row, seen.showing(lpaUnit: "mg/L"))
+        XCTAssertEqual(before.id, after.id)
+    }
+
     /// US-25 AC20: on the phone's file too, an Lp(a) value or correction typed before its unit
     /// changed under the sheet is refused; another test's value saves. A refused choice says why.
     func testAnLpaValueTypedBeforeItsUnitChangedIsRefusedOnThePhone() async throws {
@@ -272,7 +295,7 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertTrue(message.contains("Close this"), message)
         guard case .refused = await store.apply(.correct(id: rowId, value: 90), as: seen) else { return XCTFail("the correction too") }
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20"), as: seen))
-        let refused = await store.chooseLpaUnit("g/L")
+        let refused = await store.chooseLpaUnit("g/L").value
         XCTAssertEqual(refused, "Lp(a) is in nmol/L, mg/dL or mg/L.")
     }
 
