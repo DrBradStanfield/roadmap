@@ -1,1 +1,690 @@
-[]
+[
+  {
+    "check": "AC2",
+    "handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+    "match": "token \"1.49\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**CVD mortality:** In US adults aged 50 to 71 years followed for a mean of 12 years, supplemental calcium above 1,000...\"",
+    "reason": "AC2 tokeniser and unit case, \"1 49\" (orchestrator 2026-10-23, masters-new-2): the source writes \"cardiovascular disease (1 49, 1.09 to 2.02)\" (Michaelsson 2013, PMID 23403980); same figure, hazard ratio 1.49.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+    "match": "token \"60 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"See Section 3 (Cardiovascular Disease) for detailed evidence. Some trials and cohort studies link calcium supplements...\"",
+    "reason": "AC2 tokeniser and unit case, \"≥60 years\" vs \"60 or older\" (orchestrator 2026-10-23, masters-new-2): Kassis 2022 (PMID 35470234) writes \"patients aged &#x2265;60 years\"; the body says \"aged 60 or older\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[135] raw_quote shares no number with its body_line: **Anemia prevention:** A 2015 Cochrane review (44 trials, 43,274 women) found that daily iron sup...",
+    "reason": "AC2 tokeniser and unit case, unitless MD values (orchestrator 2026-10-23, masters-new-2): Cochrane 2015 (PMID 26198451) writes \"mean difference (MD) 23.75\" with no unit; the body gives 23.75 g.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[136] raw_quote shares no number with its body_line: In trials of routine iron in pregnancy, the harms reported were short-lived gastrointestinal effe...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers and \"> or =\" (orchestrator 2026-10-23, masters-new-2): Ziaei 2007 writes \"Seven hundred and twenty-seven pregnant women with Hb > or = 13.2 g/dl\"; the body writes 727 and \"13.2 g/dL or higher\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[138] raw_quote shares no number with its body_line: In trials of routine iron in pregnancy, the harms reported were short-lived gastrointestinal effe...",
+    "reason": "AC2 tokeniser and unit case, \"mo\"/\"y\" units (orchestrator 2026-10-23, masters-new-2): the Sweden and Honduras infant trial writes \"at 4 mo of age\"; the body says \"4 months\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[140] raw_quote shares no number with its body_line: In trials of routine iron in pregnancy, the harms reported were short-lived gastrointestinal effe...",
+    "reason": "AC2 tokeniser and unit case, \"mo\"/\"y\" units (orchestrator 2026-10-23, masters-new-2): the Sweden and Honduras infant trial writes \"from 4 to 9 mo\"; the body says \"4 to 9 months\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[141] raw_quote shares no number with its body_line: In trials of routine iron in pregnancy, the harms reported were short-lived gastrointestinal effe...",
+    "reason": "AC2 tokeniser and unit case, \"mo\"/\"y\" units and \"> or =\" (orchestrator 2026-10-23, masters-new-2): the Sweden and Honduras infant trial writes \"only at 4-6 mo among those with initial hemoglobin (Hb) > or =110 g/L\"; the body says months and \"or higher\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Iron-containing products are a leading cause of fatal poisoning in children under 6. Keep them out of reach, and if...\" | \"If a ferrous sulfate pill is inhaled into the airway, it can cause a chemical burn of the airway lining that may beco...\" | \"Accidental overdose of iron-containing products is a leading cause of fatal poisoning in children under 6, and betwee...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Iron-containing products are a leading cause of fatal poisoning in children under 6. Keep them out of reach, and if...\" | \"If a ferrous sulfate pill is inhaled into the airway, it can cause a chemical burn of the airway lining that may beco...\" | \"Accidental overdose of iron-containing products is a leading cause of fatal poisoning in children under 6, and betwee...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Iron-containing products are a leading cause of fatal poisoning in children under 6. Keep them out of reach, and if...\" | \"If a ferrous sulfate pill is inhaled into the airway, it can cause a chemical burn of the airway lining that may beco...\" | \"Accidental overdose of iron-containing products is a leading cause of fatal poisoning in children under 6, and betwee...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Iron-containing products are a leading cause of fatal poisoning in children under 6. Keep them out of reach, and if...\" | \"If a ferrous sulfate pill is inhaled into the airway, it can cause a chemical burn of the airway lining that may beco...\" | \"Accidental overdose of iron-containing products is a leading cause of fatal poisoning in children under 6, and betwee...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"62685\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Among 62,685 women aged 25 and older, 7.43% were iron deficient by the WHO definition (ferritin less than 15 ng/mL)...\"",
+    "reason": "AC2 tokeniser and unit case, thin or narrow no-break spaces (orchestrator 2026-10-23, masters-new-2): Barton 2024 (PMID 38848068) writes \"62&#x202f;685 women\"; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"71677\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Multiple daily doses:** In a retrospective study of 71,677 US veterans with IDA, hemoglobin rose fastest with doses...\"",
+    "reason": "AC2 tokeniser and unit case, thin or narrow no-break spaces (orchestrator 2026-10-23, masters-new-2): Patel 2024 (PMID 38819821) writes \"71&#x202f;677 veterans with IDA\"; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"23750 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Anemia prevention:** A 2015 Cochrane review (44 trials, 43,274 women) found that daily iron supplements reduced ane...\"",
+    "reason": "AC2 tokeniser and unit case, unitless MD values (orchestrator 2026-10-23, masters-new-2): Cochrane 2015 (PMID 26198451) writes \"mean difference (MD) 23.75\" with no unit; the body gives \"23.75 g\", which the tokeniser reads as 23750 mg.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"24023\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Does routine supplementation improve outcomes?** A 2024 review of 17 trials in 24,023 pregnant women for the US Pre...\"",
+    "reason": "AC2 tokeniser and unit case, thin or narrow no-break spaces (orchestrator 2026-10-23, masters-new-2): Cantor 2024 (PMID 39163033) writes \"N&#x2009;=&#x2009;24&#x202f;023\"; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"25.1 ng/mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 12-week trial against placebo, among people with restless legs and low-normal ferritin, symptom scores fell by 1...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" (orchestrator 2026-10-23, masters-new-2): Wang 2009 (PMID 19230757) writes \"25.1+/-20.3ng/ml\" and \"7.5+/-13.7ng/ml\"; the tokeniser reads the SD, not the mean.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"7.5 ng/mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 12-week trial against placebo, among people with restless legs and low-normal ferritin, symptom scores fell by 1...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" (orchestrator 2026-10-23, masters-new-2): Wang 2009 (PMID 19230757) writes \"7.5+/-13.7ng/ml\"; the tokeniser reads the SD, not the mean.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"23\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A small trial in 23 children with ADHD, aged 5 to 8 years, whose ferritin was under 30 ng/mL found that ferrous sulfa...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-2): Konofal 2008 (PMID 18054688) writes \"Twenty-three nonanemic children\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"4 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Guidelines:** The American Academy of Pediatrics recommends 1 mg/kg/day iron supplementation for exclusively breast...\" | \"In trials of routine iron in pregnancy, the harms reported were short-lived gastrointestinal effects (Cantor, JAMA 20...\" | \"- **Breast milk** contains highly bioavailable iron but in amounts insufficient for infants older than 4-6 months, at...\"",
+    "reason": "AC2 tokeniser and unit case, \"mo\"/\"y\" units (orchestrator 2026-10-23, masters-new-2): the Sweden and Honduras infant trial writes \"4 mo\" and \"4 to 9 mo\"; the body says months.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"10.5 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**After bariatric surgery:** In a Swedish cohort, anemia became more common after gastric bypass (Roux-en-Y), rising ...\"",
+    "reason": "AC2 tokeniser and unit case, middle dots (orchestrator 2026-10-23, masters-new-2): Lener 2023 (PMID 36890072) writes \"3&#xb7;0% vs 10&#xb7;5%\"; same figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"727\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In trials of routine iron in pregnancy, the harms reported were short-lived gastrointestinal effects (Cantor, JAMA 20...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-2): Ziaei 2007 writes \"Seven hundred and twenty-seven pregnant women\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"≥13.2 g/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In trials of routine iron in pregnancy, the harms reported were short-lived gastrointestinal effects (Cantor, JAMA 20...\"",
+    "reason": "AC2 tokeniser and unit case, \"> or =\" (orchestrator 2026-10-23, masters-new-2): Ziaei 2007 writes \"Hb > or = 13.2 g/dl\"; the body says \"13.2 g/dL or higher\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"9 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In trials of routine iron in pregnancy, the harms reported were short-lived gastrointestinal effects (Cantor, JAMA 20...\"",
+    "reason": "AC2 tokeniser and unit case, \"mo\"/\"y\" units (orchestrator 2026-10-23, masters-new-2): the Sweden and Honduras infant trial writes \"from 4 to 9 mo\"; the body says months.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"≥110 g/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In trials of routine iron in pregnancy, the harms reported were short-lived gastrointestinal effects (Cantor, JAMA 20...\"",
+    "reason": "AC2 tokeniser and unit case, \"> or =\" (orchestrator 2026-10-23, masters-new-2): the Sweden and Honduras infant trial writes \"initial hemoglobin (Hb) > or =110 g/L\"; the body says \"110 g/L or higher\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"19114\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Low-dose aspirin | Increase loss | In the ASPREE trial of 19,114 older adults, 100 mg aspirin daily raised the inci...\"",
+    "reason": "AC2 tokeniser and unit case, thin or narrow no-break spaces (orchestrator 2026-10-23, masters-new-2): McQuilten 2023 (PMID 37335992) writes \"19&#x2009;114 persons were randomly assigned\"; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"2 hour\": Iron reduces the absorption of levothyroxine (do not take it within 4 hours of iron), levodopa, ciprofloxacin (take i...",
+    "reason": "AC2 tokeniser and unit case, \"at least\" read as \"≥\" (orchestrator 2026-10-23, masters-new-2): the ciprofloxacin label writes \"at least 2 hours before or 6 hours after\"; the tokeniser reads \"≥2 hour\" against the body's \"2 hours before\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"10\": A 2023 meta-analysis of 10 cross-sectional studies found lower TSH, free T4 and free T3 levels in iron-deficient peop...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-2): Garofalo 2023 (PMID 38004184) writes \"Ten cross-sectional studies were identified\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"2 hour\": Quinolone antibiotics (such as ciprofloxacin) | Ciprofloxacin 2h before or 6h after | Iron reduces ciprofloxacin abso...",
+    "reason": "AC2 tokeniser and unit case, \"at least\" read as \"≥\" (orchestrator 2026-10-23, masters-new-2): the ciprofloxacin label writes \"at least 2 hours before or 6 hours after\"; the tokeniser reads \"≥2 hour\" against the body's \"2h before\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "zinc-benefits-forms-dosing-and-side-effects",
+    "match": "token \"108\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Small studies:** In a Dutch trial of 108 fertile and 103 subfertile men, a daily dose of 66 mg zinc sulfate plus 5 ...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-2): Wong 2002 (PMID 11872201) writes \"One hundred eight fertile and 103 subfertile men\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "zinc-benefits-forms-dosing-and-side-effects",
+    "match": "token \"46974\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Prostate cancer:** In a cohort of 46,974 U.S. men, zinc supplements up to 100 mg/day were not linked to prostate ca...\"",
+    "reason": "AC2 tokeniser and unit case, thin or narrow no-break spaces (plain-space variant) (orchestrator 2026-10-23, masters-new-2): Leitzmann 2003 (PMID 12837837) writes \"46 974 U.S. men\" with a plain space as the thousands separator; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "zinc-benefits-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A case series described three patients who developed moderate-to-severe hypoglycemia (low blood sugar) needing glucos...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "zinc-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A case series described three patients who developed moderate-to-severe hypoglycemia (low blood sugar) needing glucos...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "zinc-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A case series described three patients who developed moderate-to-severe hypoglycemia (low blood sugar) needing glucos...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[170] raw_quote shares no number with its body_line: - Brazil nuts hold 68 to 91 mcg per nut and could cause toxicity if eaten regularly [1]. Content ...",
+    "reason": "AC2 tokeniser and unit case, \"mug\" vs mcg (orchestrator 2026-10-23, masters-new-2): Thomson 2008 writes \"Actual intake from nuts averaged 53 mug Se/d (possible range: 20-84 mug Se)\"; same figures in mcg.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"53 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Brazil nuts hold 68 to 91 mcg per nut and could cause toxicity if eaten regularly [1]. Content varies: in one trial...\" | \"- **Brazil nuts are uniquely rich** in selenium but highly variable. In a New Zealand trial, two Brazil nuts a day su...\"",
+    "reason": "AC2 tokeniser and unit case, \"mug\" vs mcg (orchestrator 2026-10-23, masters-new-2): Thomson 2008 writes \"averaged 53 mug Se/d (possible range: 20-84 mug Se)\"; same figures in mcg.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"20 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Brazil nuts hold 68 to 91 mcg per nut and could cause toxicity if eaten regularly [1]. Content varies: in one trial...\" | \"| 7-12 months | 20 mcg* | 20 mcg* | — | — |\" | \"| 1-3 years | 20 mcg | 20 mcg | — | — |\"",
+    "reason": "AC2 tokeniser and unit case, \"mug\" vs mcg (orchestrator 2026-10-23, masters-new-2): Thomson 2008 writes \"averaged 53 mug Se/d (possible range: 20-84 mug Se)\"; same figures in mcg.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"84 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Brazil nuts hold 68 to 91 mcg per nut and could cause toxicity if eaten regularly [1]. Content varies: in one trial...\" | \"- **Brazil nuts are uniquely rich** in selenium but highly variable. In a New Zealand trial, two Brazil nuts a day su...\"",
+    "reason": "AC2 tokeniser and unit case, \"mug\" vs mcg (orchestrator 2026-10-23, masters-new-2): Thomson 2008 writes \"averaged 53 mug Se/d (possible range: 20-84 mug Se)\"; same figures in mcg.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"12\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The SELECT trial assessed cardiovascular risk as a secondary outcome in 17,488 men and found that 200 mcg a day of se...\" | \"| Brown rice, cooked | 1 cup | 12 | 22% |\"",
+    "reason": "AC2 tokeniser and unit case, glued source number (orchestrator 2026-10-23, masters-new-2): the NIH sheet writes \"over 7 to12 years\" (no space) for SELECT; the body says \"7 to 12 years\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"5\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 3-month trial in Scotland, 69 subfertile men with reduced sperm motility took selenium, selenium with vitamins A...\" | \"## 5. Safety and Side Effects\" | \"| Spinach, frozen, boiled | 1/2 cup | 5 | 9% |\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-2): Scott 1998 (PMID 9698665) writes \"Five men (11%) achieved paternity\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"If someone may have taken a large overdose of selenium, call your local emergency number (111 in NZ, 000 in Australia...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"If someone may have taken a large overdose of selenium, call your local emergency number (111 in NZ, 000 in Australia...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"If someone may have taken a large overdose of selenium, call your local emergency number (111 in NZ, 000 in Australia...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"If someone may have taken a large overdose of selenium, call your local emergency number (111 in NZ, 000 in Australia...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"300 mcg/day\": The US upper limit for adults is 400 mcg from food and supplements combined; Europe's EFSA sets 255 mcg a day [1]. In...",
+    "reason": "AC2 tokeniser and unit case, thin or narrow no-break spaces and \"μg\" vs mcg (orchestrator 2026-10-23, masters-new-2): PRECISE (Rayman 2018) writes \"300&#x202f;&#xb5;g selenium/d\"; the body says \"300 mcg a day\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"300 mcg/day\", \"6 month\", \"60 year\", \"74 year\": A randomized trial gave 100, 200, or 300 mcg/day selenium as selenium yeast or placebo for 6 months to UK adults aged...",
+    "reason": "AC2 tokeniser and unit case, \"microg\" vs mcg and \"mo\"/\"y\" units (orchestrator 2026-10-23, masters-new-2): Rayman 2008 writes \"300 microg Se/d\", \"baseline and 6 mo\" and \"60-64 y, 65-69 y, and 70-74 y\"; the body says mcg/day, 6 months and aged 60 to 74 years.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"100 mcg\": Brazil nuts are uniquely rich in selenium but highly variable. In a New Zealand trial, two Brazil nuts a day supplied...",
+    "reason": "AC2 tokeniser and unit case, \"mug\" vs mcg (orchestrator 2026-10-23, masters-new-2): Thomson 2008 writes \"100 mug Se as selenomethionine\"; the body says \"100 mcg of selenomethionine\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[13] raw_quote shares no number with its body_line: Chronic moderate to severe iodine deficiency in children reduces IQ by approximately 12-13.5 poin...",
+    "reason": "AC2 tokeniser and unit case, \"microg\" vs mcg (orchestrator 2026-10-23, masters-new-2): the source (PubMed raw) writes \"urinary iodine levels above 100 microg/liter\"; the body says mcg/L.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[16] raw_quote shares no number with its body_line: **General adult supplementation:** The adult RDA is 150 mcg a day from all sources, and many mult...",
+    "reason": "AC2 tokeniser and unit case, \"μg\"/% unit after an IQR (orchestrator 2026-10-23, masters-new-2): Combet 2014 writes \"33 (interquartile range (IQR) 28-46) % ... compared with 59 (IQR 46-74) %\"; the % follows the IQR, so the tokeniser misses \"59 %\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[20] raw_quote shares no number with its body_line: **Seaweed for mild deficiency:** In the same UK study of women with low iodine intakes, 0.5 g of ...",
+    "reason": "AC2 tokeniser and unit case, middle dots (orchestrator 2026-10-23, masters-new-2): Combet 2014 (PMID 25006699) writes \"from 1&#xb7;5 (IQR 1&#xb7;2-2&#xb7;2) to 2&#xb7;1\"; same figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[21] raw_quote shares no number with its body_line: **Seaweed for mild deficiency:** In the same UK study of women with low iodine intakes, 0.5 g of ...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-2): Combet 2014 writes \"two participants having concentrations exceeding the normal range\"; the body says \"two women\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[54] raw_quote shares no number with its body_line: Kelp supplements are an alternative iodine source, but iodine from seaweed may be less bioavailab...",
+    "reason": "AC2 tokeniser and unit case, \"μg\"/% unit after an IQR (orchestrator 2026-10-23, masters-new-2): Combet 2014 writes \"59 (IQR 46-74) %\"; the % follows the IQR.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[75] raw_quote shares no number with its body_line: - The American Thyroid Association advises against supplements with over 500 mcg of iodine a day ...",
+    "reason": "AC2 tokeniser and unit case, \"μg\" vs mcg (orchestrator 2026-10-23, masters-new-2): the ATA 2015 statement writes \"in excess of 500 μg iodine daily\"; the body says 500 mcg.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[76] raw_quote shares no number with its body_line: In 2015, the American Thyroid Association's Public Health Committee issued a statement on the pot...",
+    "reason": "AC2 tokeniser and unit case, \"μg\" vs mcg (orchestrator 2026-10-23, masters-new-2): the ATA 2015 statement writes \"in excess of 500 μg iodine daily\"; the body says 500 mcg.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "token \">8.165 mg/g\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Seaweeds are common in Asian cooking and are now part of international cuisine [9]. Their iodine content varies enorm...\"",
+    "reason": "AC2 tokeniser and unit case, \"microg\" vs mcg and \"+/-\" (orchestrator 2026-10-23, masters-new-2): Teas 2004 (PMID 15588380) writes \"over 8165 +/- 373 microg/g\"; the body says \"over 8,165 mcg/g\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "token \">100 mcg/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Median urinary iodine concentrations of 100-199 mcg/L in children and non-pregnant adults, 150-249 mcg/L in pregnant ...\" | \"Chronic moderate to severe iodine deficiency in children reduces IQ by approximately 12-13.5 points [1]. A 2004 Cochr...\" | \"Urinary iodine is the standard measure. Median urinary iodine concentrations above 100 mcg/L in non-pregnant adults i...\"",
+    "reason": "AC2 tokeniser and unit case, \"microg\" vs mcg (orchestrator 2026-10-23, masters-new-2): the source writes \"above 100 microg/liter\"; the body says \">100 mcg/L\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"59 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Kelp supplements are an alternative iodine source, but iodine from seaweed may be less bioavailable than from potassi...\" | \"**General adult supplementation:** The adult RDA is 150 mcg a day from all sources, and many multivitamins supply 150...\"",
+    "reason": "AC2 tokeniser and unit case, \"μg\"/% unit after an IQR (orchestrator 2026-10-23, masters-new-2): Combet 2014 writes \"59 (IQR 46-74) %\"; the % follows the IQR.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"140 mcg/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Seaweed for mild deficiency:** In the same UK study of women with low iodine intakes, 0.5 g of *Ascophyllum nodosum...\"",
+    "reason": "AC2 tokeniser and unit case, \"μg\" vs mcg, unit after an IQR (orchestrator 2026-10-23, masters-new-2): Combet 2014 writes \"from 78 (IQR 39-114) to 140 (IQR 103-195) &#x3bc;g/l\"; the unit follows the IQR.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"1.5\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Seaweed for mild deficiency:** In the same UK study of women with low iodine intakes, 0.5 g of *Ascophyllum nodosum...\"",
+    "reason": "AC2 tokeniser and unit case, middle dots (orchestrator 2026-10-23, masters-new-2): Combet 2014 (PMID 25006699) writes \"1&#xb7;5\"; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"2.1\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Seaweed for mild deficiency:** In the same UK study of women with low iodine intakes, 0.5 g of *Ascophyllum nodosum...\"",
+    "reason": "AC2 tokeniser and unit case, middle dots (orchestrator 2026-10-23, masters-new-2): Combet 2014 (PMID 25006699) writes \"2&#xb7;1\"; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Dose-response RCT (n=111):** Women aged 18-50 years with fibrosis and a history of breast pain were randomized to 0...\" | \"Very large doses of iodine (usually many grams) can cause burning of the mouth, throat, and stomach; fever; abdominal...\" | \"| Sea salt, non-iodized | 1/4 teaspoon | 0 | 0% |\"",
+    "reason": "AC2 tokeniser and unit case, bare list numbers and ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): the NIH sheet writes \"0 mcg, 1,500 mcg, 3,000 mcg, or 6,000 mcg\" (Kessler trial) and the body lists \"0, 1,500, 3,000, or 6,000 mcg\"; the other \"0\" is the 000 emergency number (ruling 17).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"7 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Alginate and appetite:** Alginate is a gel-forming fibre made from seaweed. In a 7-day crossover trial in 68 adults...\"",
+    "reason": "AC2 tokeniser and unit case, unit case, \"7 day daily\" (orchestrator 2026-10-23, masters-new-2): Paxman 2008 (PMID 18655817) writes \"7 day daily ingestion\", which the tokeniser reads as a per-day rate; the body says \"7-day crossover trial\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Very large doses of iodine (usually many grams) can cause burning of the mouth, throat, and stomach; fever; abdominal...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Very large doses of iodine (usually many grams) can cause burning of the mouth, throat, and stomach; fever; abdominal...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"111\": Very large doses of iodine (usually many grams) can cause burning of the mouth, throat, and stomach; fever; abdominal...",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-2): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Dysphagia (Swallowing Difficulty)",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-2): calcium \"Dysphagia (Swallowing Difficulty)\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Rheumatoid Arthritis",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-2): selenium \"Rheumatoid Arthritis\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Diabetic Neuropathy",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-2): selenium \"Diabetic Neuropathy\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Achilles Tendinopathy",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-2): selenium \"Achilles Tendinopathy\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "selenium-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Medications That May Reduce Selenium Absorption",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-2): selenium \"Medications That May Reduce Selenium Absorption\" heading removed in the master rewrite. Selenium's interactions heading was renamed \"Other medicines\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Disinfection Byproduct Risk from Cooking with Kelp",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-2): kelp-and-iodine \"Disinfection Byproduct Risk from Cooking with Kelp\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Shellfish Allergy Consideration",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-2): kelp-and-iodine \"Shellfish Allergy Consideration\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Kelp Nutritional Profile (per 100 g dry weight)",
+    "reason": "AC4 heading removal ratified (orchestrator 2026-10-23, masters-new-2): kelp-and-iodine \"Kelp Nutritional Profile (per 100 g dry weight)\" heading removed in the master rewrite.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host dailymed.nlm.nih.gov: [105] FOSAMAX (alendronate sodium) tablets. Prescribing information, Organon. DailyMed, 2026. [ht...",
+    "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-2): DailyMed is the US National Library of Medicine label database, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host dailymed.nlm.nih.gov: [120] Ciprofloxacin hydrochloride tablets. Prescribing information. DailyMed, 2026. [https://dail...",
+    "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-2): DailyMed is the US National Library of Medicine label database, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host dailymed.nlm.nih.gov: [121] Doxycycline hyclate tablets and capsules. Prescribing information. DailyMed, 2026. [https:/...",
+    "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-2): DailyMed is the US National Library of Medicine label database, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host dailymed.nlm.nih.gov: [122] Hydrochlorothiazide tablets. Prescribing information. DailyMed, 2026. [https://dailymed.nlm...",
+    "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-2): DailyMed is the US National Library of Medicine label database, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host dailymed.nlm.nih.gov: [123] LANOXIN (digoxin) tablets. Prescribing information. DailyMed, 2025. [https://dailymed.nlm.n...",
+    "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-2): DailyMed is the US National Library of Medicine label database, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host medlineplus.gov: [124] MedlinePlus. \"Hypercalcemia.\" U.S. National Library of Medicine. Reviewed 25 January 2026. ...",
+    "reason": "AC7 medlineplus.gov host (orchestrator 2026-10-23, masters-new-2): MedlinePlus is the US National Library of Medicine consumer health site, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host dailymed.nlm.nih.gov: [69] U.S. National Library of Medicine, DailyMed. Ciprofloxacin tablets prescribing information (...",
+    "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-2): DailyMed is the US National Library of Medicine label database, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host dailymed.nlm.nih.gov: [70] U.S. National Library of Medicine, DailyMed. Doxycycline hyclate prescribing information (Ch...",
+    "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-2): DailyMed is the US National Library of Medicine label database, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host fda.gov: [72] U.S. Food and Drug Administration. UPDATE: The FDA Warns that Biotin May Interfere with Lab ...",
+    "reason": "AC7 fda.gov host (orchestrator 2026-10-23, masters-new-2): the US Food and Drug Administration, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "iron-benefits-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host dailymed.nlm.nih.gov: [80] U.S. National Library of Medicine, DailyMed. Cuprimine (penicillamine) capsules prescribing ...",
+    "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-2): DailyMed is the US National Library of Medicine label database, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "zinc-benefits-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host web.archive.org: [99] U.S. Food and Drug Administration. \"FDA Advises Consumers Not To Use Certain Zicam Cold Reme...",
+    "reason": "AC7 web.archive.org host (orchestrator 2026-10-23, masters-new-2): an Internet Archive copy of an official FDA page (the original is offline).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "zinc-benefits-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host dailymed.nlm.nih.gov: [102] Ciprofloxacin hydrochloride tablets. Prescribing information. DailyMed, 2026. [https://dail...",
+    "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-2): DailyMed is the US National Library of Medicine label database, an official source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "zinc-benefits-forms-dosing-and-side-effects",
+    "match": "product section changed: ### Zinc Nasal Products — Loss of Smell",
+    "reason": "AC7 product-regex false positive (orchestrator 2026-10-23, masters-new-2): \"Zinc Nasal Products — Loss of Smell\" is a clinical safety section, not a product section.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "match": "product section missing: ### Disinfection Byproduct Risk from Cooking with Kelp",
+    "reason": "AC7 product-regex false positive (orchestrator 2026-10-23, masters-new-2): \"Byproduct\" matched the product pattern; \"Disinfection Byproduct Risk from Cooking with Kelp\" is a clinical section (its heading removal is an AC4 exception).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  }
+]
