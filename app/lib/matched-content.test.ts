@@ -162,8 +162,9 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
   });
 
-  it('[vitamin K, vitamin A post, lithium]: a master shrinks so the post after it loads too (review S1)', async () => {
-    const A = 'vitamin-a-benefits-forms-dosing-and-side-effects';
+  // US-50 masters-new-1 (2026-10-23): vitamin A became a master, so a non-master post of the same size (about 60K) stands in.
+  it('[vitamin K, mangosteen post, lithium]: a master shrinks so the post after it loads too (review S1)', async () => {
+    const A = 'mangosteen-benefits-forms-dosing-and-side-effects';
     expect(index.find(e => e.handle === A) && isMaster(index.find(e => e.handle === A)!)).toBe(false);
     // Vitamin K grown so the three do not fit whole together.
     const { content, skipped } = (await loaderWith(grow({ [K]: MAX_BLOG_CHARS - 40_000 })))([K, A, LITHIUM]);
