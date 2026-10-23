@@ -21,10 +21,11 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 - Garlic supplements may increase bleeding risk; case reports link heavy garlic intake to a spinal bleed and to heavy bleeding during surgery [1][41][42]. Tell your doctor if you take warfarin or another anticoagulant, or aspirin, and tell your surgical team before any operation [1][14][40].
 - Garlic caplets cut exposure to the HIV medicine saquinavir by 51% in healthy volunteers. If you take HIV medicines, check with your HIV doctor before taking garlic supplements [46].
+- Some people are allergic to garlic, and case reports describe anaphylaxis. For swelling of the face or throat or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [1][14].
 - If you take any other medicine, talk with your doctor or pharmacist before starting garlic; some herbs and medicines interact in harmful ways [1].
 - Garlic may not be safe in pregnancy or breastfeeding in amounts above those in food [1].
 - Raw garlic left on the skin can cause chemical burns. Do not apply fresh garlic to the skin [1][44].
-- Breath and body odor, abdominal pain, gas and nausea are common. Some people are allergic to garlic; for swelling of the face or throat or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [1][14].
+- Breath and body odor, abdominal pain, gas and nausea are common [1][14].
 
 ## Brad's videos on this topic
 
@@ -122,9 +123,11 @@ The effect of garlic on blood lipids has been one of the most extensively studie
 
 **LDL and HDL cholesterol:** The effect on LDL ("bad") cholesterol and HDL ("good") cholesterol is inconsistent. A 2013 meta-analysis of 39 trials found garlic taken for longer than 2 months lowered total cholesterol by 17 mg/dL and LDL cholesterol by 9 mg/dL in people with total cholesterol above 200 mg/dL, with only a slight rise in HDL [48]. A 2018 meta-analysis of 14 studies also found falls in total and LDL cholesterol [23]. In contrast, a 6-month trial in 192 adults with LDL cholesterol of 130 to 190 mg/dL compared raw garlic, garlic powder and aged garlic extract, each at a dose equal to about one 4 g clove 6 days a week, with placebo; none changed LDL cholesterol or other lipids [51]. The discrepancy likely reflects differences in study populations, garlic formulations, and dosing.
 
-**NIH assessment:** The NCCIH states that garlic supplements may reduce levels of total cholesterol and LDL cholesterol to a small extent in people who have high blood cholesterol levels [1]. A 2019 meta-analysis of 33 studies in people with diabetes found garlic lowered total cholesterol by 16.87 mg/dL and LDL cholesterol by 9.65 mg/dL compared with placebo (Shabani, *Prim Care Diabetes*, 2019) [24].
+**NIH assessment:** The NCCIH states that garlic supplements may reduce levels of total cholesterol and LDL cholesterol to a small extent in people who have high blood cholesterol levels [1].
 
-**Comparison with statins:** A 28-day trial randomized 190 adults with raised 10-year cardiovascular risk and LDL cholesterol of 70 to 189 mg/dL to rosuvastatin 5 mg a day, placebo, or one of six supplements, garlic among them. Rosuvastatin lowered LDL cholesterol 35.2% more than placebo, and no supplement lowered LDL cholesterol more than placebo [9]. Garlic supplementation is not a substitute for statin therapy in patients who require pharmaceutical lipid management.
+In people with diabetes, a 2019 meta-analysis of 33 studies found garlic lowered total cholesterol by 16.87 mg/dL and LDL cholesterol by 9.65 mg/dL compared with placebo (Shabani, *Prim Care Diabetes*, 2019) [24].
+
+**Comparison with statins:** A 28-day trial randomized adults with raised 10-year cardiovascular risk and LDL cholesterol of 70 to 189 mg/dL to rosuvastatin 5 mg a day, placebo, or one of six supplements, garlic among them; 190 adults completed it. Rosuvastatin lowered LDL cholesterol 35.2% more than placebo, and no supplement lowered LDL cholesterol more than placebo [9]. Garlic supplementation is not a substitute for statin therapy in patients who require pharmaceutical lipid management.
 
 ### Atherosclerosis
 
@@ -156,7 +159,7 @@ Garlic has long been used for immune support, and limited trial evidence suggest
 
 The evidence for garlic in cancer prevention is weak and inconsistent, despite historical interest in this area.
 
-**Gastric cancer:** The Shandong Intervention Trial, in a high-risk area of China, gave 3,365 adults capsules of aged garlic extract plus steam-distilled garlic oil, or placebo, for 7.3 years [34][53]. At 14.7 years of follow-up, garlic was linked to falls in gastric cancer incidence and death that were not statistically significant [53]. A secondary analysis after 22.3 years found lower gastric cancer mortality with garlic only in people who had never drunk alcohol (HR 0.33, 95% CI 0.15 to 0.75), with significant interactions only in people with *H. pylori* infection (Guo, *JAMA Netw Open*, 2020) [33]. The capsules combined two preparations, so the results cannot be credited to either alone.
+**Gastric cancer:** The Shandong Intervention Trial, in a high-risk area of China, gave 3,365 adults capsules of aged garlic extract plus steam-distilled garlic oil, or placebo, for 7.3 years [34][53]. At 14.7 years of follow-up, garlic was linked to falls in gastric cancer incidence and death that were not statistically significant [53]. A secondary analysis after 22.3 years found lower gastric cancer mortality with garlic only in people who had never drunk alcohol (HR 0.33, 95% CI 0.15 to 0.75); this difference by alcohol use was statistically significant only among people with *H. pylori* infection (Guo, *JAMA Netw Open*, 2020) [33]. The capsules combined two preparations, so the results cannot be credited to either alone.
 
 **Colorectal cancer:** A 2020 meta-analysis of 11 observational studies found a lower colorectal cancer risk with the highest garlic intake (RR 0.80, 95% CI 0.69 to 0.91), but the benefit came from case-control studies (RR 0.71, 95% CI 0.60 to 0.84); cohort studies showed no link (RR 0.99, 95% CI 0.80 to 1.23) (Zhou, *Medicine*, 2020) [35].
 
@@ -252,6 +255,7 @@ Garlic may alter platelet function and blood clotting, with a possible risk of b
 
 - **Spontaneous spinal epidural hematoma** with paralysis of the legs was reported in a person in their 90s and was linked to a platelet disorder from excessive garlic intake (Rose, *Neurosurgery*, 1990) [41].
 - **Excessive surgical bleeding** with no clear source was reported during spinal surgery in a patient who had eaten the equivalent of 12 g of garlic a day in the days before; the authors note that the dose needed to cause bleeding is not well described (Woodbury, *A A Case Rep*, 2016) [42].
+- **Pronounced bleeding in the urine (hematuria)** after a day-case, minimally invasive prostate procedure needed extra coagulation in a 65-year-old man with no medical or drug history apart from garlic extract supplements; the authors strongly attributed the bleeding to garlic (Nair, *Urol Case Rep*, 2023) [56].
 
 **Perioperative recommendation:** A 2022 review found garlic supplements strongly associated with surgical bleeding even without anticoagulants, and it advised stopping nonessential supplements 2 weeks before surgery [40]. Tell your surgical team about any garlic supplement [1].
 
@@ -333,19 +337,6 @@ In the breath-test study, cooked and acidified garlic foods delivered less allic
 
 Garlic belongs to the *Allium* genus, which also includes onions, leeks, scallions, chives and garlic chives. These species contain organosulfur compounds, saponins and flavonoids [50].
 
-### Nutritional Profile of Raw Garlic (Per 100g)
-
-While garlic is consumed in small quantities (typically 3-7g per serving), it does contain notable amounts of certain micronutrients per 100g:
-
-- Manganese: 1.67 mg (73% DV)
-- Vitamin B6: 1.24 mg (73% DV)
-- Vitamin C: 31 mg (34% DV)
-- Selenium: 14.2 mcg (26% DV)
-- Phosphorus: 153 mg (12% DV)
-- Calcium: 181 mg (14% DV)
-
-At typical serving sizes (one clove, ~4-7g), these amounts are nutritionally negligible. The health effects of garlic are attributed primarily to its organosulfur compounds, not its micronutrient content.
-
 ## 8. References
 
 [1] National Center for Complementary and Integrative Health (NCCIH). "Garlic." Updated February 2025. [https://www.nccih.nih.gov/health/garlic](https://www.nccih.nih.gov/health/garlic)
@@ -360,7 +351,7 @@ At typical serving sizes (one clove, ~4-7g), these amounts are nutritionally neg
 
 [12] Wlosinska M, Nilsson A-C, Hlebowicz J, et al. "The effect of aged garlic extract on the atherosclerotic process - a randomized double-blind placebo-controlled trial." *BMC Complement Med Ther*. 2020;20(1):132. doi: [10.1186/s12906-020-02932-5](https://doi.org/10.1186/s12906-020-02932-5). PMID: 32349742. https://pubmed.ncbi.nlm.nih.gov/32349742/
 
-[14] Borrelli F, Capasso R, Izzo AA. "Garlic (Allium sativum L.): adverse effects and drug interactions in humans." *Mol Nutr Food Res*. 2007;51(11):1386-1397. doi: [10.1002/mnfr.200700054](https://doi.org/10.1002/mnfr.200700054). PMID: 17918162. https://pubmed.ncbi.nlm.nih.gov/17918162/
+[14] Borrelli F, Capasso R, Izzo AA. "Garlic (Allium sativum L.): adverse effects and drug interactions in humans." *Mol Nutr Food Res*. 2007;51(11):1386-1397. doi: [10.1002/mnfr.200700072](https://doi.org/10.1002/mnfr.200700072). PMID: 17918162. https://pubmed.ncbi.nlm.nih.gov/17918162/
 
 [15] Kimura S, Tung Y-C, Pan M-H, Su N-W, Lai Y-J, Cheng K-C. "Black garlic: A critical review of its production, bioactivity, and application." *J Food Drug Anal*. 2017;25(1):62-70. doi: [10.1016/j.jfda.2016.11.003](https://doi.org/10.1016/j.jfda.2016.11.003). PMID: 28911544. https://pubmed.ncbi.nlm.nih.gov/28911544/
 
@@ -382,7 +373,7 @@ At typical serving sizes (one clove, ~4-7g), these amounts are nutritionally neg
 
 [24] Shabani E, Sayemiri K, Mohammadpour M. "The effect of garlic on lipid profile and glucose parameters in diabetic patients: a systematic review and meta-analysis." *Prim Care Diabetes*. 2019;13(1):28-42. doi: [10.1016/j.pcd.2018.07.007](https://doi.org/10.1016/j.pcd.2018.07.007). PMID: 30049636. https://pubmed.ncbi.nlm.nih.gov/30049636/
 
-[25] Munday JS, James KA, Fray LM, Kirkwood SW, Thompson KG. "Daily supplementation with aged garlic extract, but not raw garlic, protects low density lipoprotein against in vitro oxidation." *Atherosclerosis*. 1999;143(2):399-404. doi: [10.1016/S0021-9150(98)00325-7](https://doi.org/10.1016/S0021-9150(98)00325-7). PMID: 10217370. https://pubmed.ncbi.nlm.nih.gov/10217370/
+[25] Munday JS, James KA, Fray LM, Kirkwood SW, Thompson KG. "Daily supplementation with aged garlic extract, but not raw garlic, protects low density lipoprotein against in vitro oxidation." *Atherosclerosis*. 1999;143(2):399-404. doi: [10.1016/S0021-9150(98)00293-7](https://doi.org/10.1016/S0021-9150(98)00293-7). PMID: 10217370. https://pubmed.ncbi.nlm.nih.gov/10217370/
 
 [26] Josling P. "Preventing the common cold with a garlic supplement: a double-blind, placebo-controlled survey." *Adv Ther*. 2001;18(4):189-193. doi: [10.1007/BF02850113](https://doi.org/10.1007/BF02850113). PMID: 11697022. https://pubmed.ncbi.nlm.nih.gov/11697022/
 
@@ -406,7 +397,7 @@ At typical serving sizes (one clove, ~4-7g), these amounts are nutritionally neg
 
 [36] Moosavian SP, Paknahad Z, Habiri M, Mahaki B. "The effects of garlic (Allium sativum) supplementation on inflammatory biomarkers, fatigue, and clinical symptoms in patients with active rheumatoid arthritis." *Phytother Res*. 2020;34(11):2953-2962. doi: [10.1002/ptr.6723](https://doi.org/10.1002/ptr.6723). PMID: 32478922. https://pubmed.ncbi.nlm.nih.gov/32478922/
 
-[40] Hatfield J, Saad S, Housewright C. "Dietary supplements and bleeding." *Proc (Bayl Univ Med Cent)*. 2022;35(6):802-807. doi: [10.1080/08998280.2022.2089854](https://doi.org/10.1080/08998280.2022.2089854). PMID: 36304597. https://pubmed.ncbi.nlm.nih.gov/36304597/
+[40] Hatfield J, Saad S, Housewright C. "Dietary supplements and bleeding." *Proc (Bayl Univ Med Cent)*. 2022;35(6):802-807. doi: [10.1080/08998280.2022.2121575](https://doi.org/10.1080/08998280.2022.2121575). PMID: 36304597. https://pubmed.ncbi.nlm.nih.gov/36304597/
 
 [41] Rose KD, Croissant PD, Parliament CF, Levin MB. "Spontaneous spinal epidural hematoma with associated platelet dysfunction from excessive garlic ingestion: a case report." *Neurosurgery*. 1990;26(5):880-882. doi: [10.1097/00006123-199005000-00026](https://doi.org/10.1097/00006123-199005000-00026). PMID: 2352608. https://pubmed.ncbi.nlm.nih.gov/2352608/
 
@@ -420,7 +411,7 @@ At typical serving sizes (one clove, ~4-7g), these amounts are nutritionally neg
 
 [49] Crawford C, Brown LL, Costello RB, et al. "Select dietary supplement ingredients for preserving and protecting the immune system in healthy individuals: a systematic review." *Nutrients*. 2022;14(21):4604. doi: [10.3390/nu14214604](https://doi.org/10.3390/nu14214604). PMID: 36364865. https://pubmed.ncbi.nlm.nih.gov/36364865/
 
-[50] Alam A, Jahan AAA, Bari MS, et al. "Allium vegetables: traditional uses, phytoconstituents, and beneficial effects in inflammation and cancer." *Crit Rev Food Sci Nutr*. 2023;63(23):6580-6614. doi: [10.1080/10408398.2022.2036096](https://doi.org/10.1080/10408398.2022.2036096). PMID: 35170391. https://pubmed.ncbi.nlm.nih.gov/35170391/
+[50] Alam A, Jahan AAA, Bari MS, et al. "Allium vegetables: traditional uses, phytoconstituents, and beneficial effects in inflammation and cancer." *Crit Rev Food Sci Nutr*. 2023;63(23):6580-6614. doi: [10.1080/10408398.2022.2036094](https://doi.org/10.1080/10408398.2022.2036094). PMID: 35170391. https://pubmed.ncbi.nlm.nih.gov/35170391/
 
 [51] Gardner CD, Lawson LD, Block E, et al. "Effect of raw garlic vs commercial garlic supplements on plasma lipid concentrations in adults with moderate hypercholesterolemia: a randomized clinical trial." *Arch Intern Med*. 2007;167(4):346-353. doi: [10.1001/archinte.167.4.346](https://doi.org/10.1001/archinte.167.4.346). PMID: 17325296. https://pubmed.ncbi.nlm.nih.gov/17325296/
 
@@ -431,3 +422,5 @@ At typical serving sizes (one clove, ~4-7g), these amounts are nutritionally neg
 [54] Salimzadeh A, et al. "The effect of 12-week garlic supplementation on symptom relief in overweight or obese women with knee osteoarthritis." *Int J Clin Pract*. 2018. doi: [10.1111/ijcp.13208](https://doi.org/10.1111/ijcp.13208). PMID: 29790635. https://pubmed.ncbi.nlm.nih.gov/29790635/
 
 [55] Dehghani S, et al. "The effect of a garlic supplement on the pro-inflammatory adipocytokines, resistin and tumor necrosis factor-alpha, and on pain severity, in overweight or obese women with knee osteoarthritis." *Phytomedicine*. 2018. doi: [10.1016/j.phymed.2018.04.060](https://doi.org/10.1016/j.phymed.2018.04.060). PMID: 30195882. https://pubmed.ncbi.nlm.nih.gov/30195882/
+
+[56] Nair A, Abdelqader B, Sureshkumar S. "Hematuria and dietary supplements - A case report on pronounced bleeding following a minimally invasive urological intervention in a patient on long term garlic supplements." *Urol Case Rep*. 2023. doi: [10.1016/j.eucr.2023.102493](https://doi.org/10.1016/j.eucr.2023.102493). PMID: 37484191. https://pubmed.ncbi.nlm.nih.gov/37484191/
