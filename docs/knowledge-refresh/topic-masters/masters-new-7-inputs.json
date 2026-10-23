@@ -1,0 +1,98 @@
+[
+ {
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-digestive-enzyme-supplements-digestive-enzymes.md",
+  "cl_raw_sha256": "1f401852e91a2e4007fb0479f26c59c89c89f3938c3012cf197133dc455d0971",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ },
+ {
+  "handle": "probiotics-benefits-strains-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-probiotic-supplements-probiotics.md",
+  "cl_raw_sha256": "b5dc8044dfad17c478afdb693f64970489a4010372155a648951f675b742a29e",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/probiotics-nih.md",
+  "nih_raw_sha256": "d3df88ae372409208f366cbdee65111f44695680c54554d5eae35ad549310ab7",
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ },
+ {
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-prebiotic-supplements-prebiotics.md",
+  "cl_raw_sha256": "dc677b1f6a5c3b29ce109efb769bd10604d472a0f25ad231690db6ff576fa2b3",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 270,
+    "text": "- No health claims for this product, ever: no blood pressure, heart, cholesterol, gut, bowel-regularity, prebiotic or blood-sugar benefit tied to the drink or its doses. Nutrient-content statements are fine (\"high in fiber\": 29% DV; \"a good"
+   }
+  ],
+  "positions_candidates_total": 1,
+  "posts": []
+ },
+ {
+  "handle": "greens-powders-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-greens-whole-foods-powders-supplements-greens.md",
+  "cl_raw_sha256": "062a1bb09225740ecc3a19bd4c2783749f4ecba45047d684780d3f1b9f759c4a",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 77,
+    "text": "That's completely normal and a sign the formula contains the ingredients we list on the label. MicroVitamin includes three natural carotenoids: lycopene (which gives tomatoes their deep red colour), lutein, and zeaxanthin (the orange-yellow"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 110,
+    "text": "- Unlike AG1/Athletic Greens ($79/mo), all 26 ingredient doses are individually disclosed on the label"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 193,
+    "text": "- AG1/Athletic Greens ($79/mo) uses proprietary blends without individual dose disclosure; MicroVitamin+ lists every ingredient dose on the label"
+   },
+   {
+    "file": "app/lib/chat-system-prompt.md",
+    "line": 129,
+    "text": "- **Never suggest competitor multivitamin / supplement brands by name** (Thorne, NOW Foods, Pure Encapsulations, Athletic Greens, Ritual, Seed, Setria, Quicksilver Scientific, etc.) — even when answering \"what else could I use?\" The one exc"
+   }
+  ],
+  "positions_candidates_total": 4,
+  "posts": []
+ },
+ {
+  "handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-apple-cider-vinegars-review-apple-cider-vinegar.md",
+  "cl_raw_sha256": "20076723cafb3e26bbdb7e851e1d0a61ece8d229649bfa40e8f378b830282a2b",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": [
+   {
+    "handle": "do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead.md",
+    "url": "https://drstanfield.com/blogs/articles/do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead",
+    "publishedAt": "2025-02-12T03:47:51Z",
+    "title": "Do NOT Use Apple Cider Vinegar To Lose Weight (Use This Instead)",
+    "topic_mentions": 26,
+    "title_names_topic": true
+   },
+   {
+    "handle": "benefits-apple-cider-vinegar",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/benefits-apple-cider-vinegar.md",
+    "url": "https://drstanfield.com/blogs/articles/benefits-apple-cider-vinegar",
+    "publishedAt": "2024-09-06T04:03:40Z",
+    "title": "What Are The Benefits of Apple Cider Vinegar Supplements?",
+    "topic_mentions": 61,
+    "title_names_topic": true
+   }
+  ]
+ }
+]
