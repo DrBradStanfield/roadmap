@@ -7,77 +7,83 @@ type: "reference"
 tags: ["Supplements"]
 keywords: ["tryptophan", "l-tryptophan", "5-htp", "5-hydroxytryptophan", "serotonin", "melatonin", "sleep", "insomnia", "depression", "anxiety", "mood", "migraine", "weight loss", "fibromyalgia", "niacin", "griffonia simplicifolia", "tryptopure", "kynurenine", "brain health", "cognitive", "glycine"]
 product: "sleep"
-summary: "Reference on L-tryptophan and 5-HTP: sleep, mood, depression, anxiety, migraine, fibromyalgia. Serotonin precursors. L-tryptophan 250mg-1g; 5-HTP 50-300mg at bedtime. Do not combine with SSRIs or MAOIs. Always discuss with your doctor."
+summary: "Reference on L-tryptophan and 5-HTP, two serotonin precursors. L-tryptophan 1 g may help mild insomnia, but a sleep guideline advises against it; 5-HTP trials are small. Both can cause serotonin syndrome with other drugs. Talk to your doctor first if you take antidepressants, triptans or tramadol."
+reviewed: "2026-10-23"
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. L-tryptophan at 1 g or more may help people with mild insomnia fall asleep sooner, but the American Academy of Sleep Medicine suggests clinicians not use it for insomnia [24][25][26][27]. 5-HTP has been tested mostly in small trials for depression, migraine, fibromyalgia and weight loss, few depression trials used a placebo, and a Cochrane review judged the evidence for both supplements in depression too weak to be conclusive [35][85]. Both raise serotonin, so taking either with antidepressants or other serotonergic drugs may cause serotonin syndrome, which can be life-threatening; if confusion, agitation, sweating, shivering, tremor, muscle jerks, a fast heartbeat or a high temperature follow such a combination, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [78][79][81]. L-tryptophan from one manufacturer caused the 1989 eosinophilia-myalgia syndrome epidemic, and later reports of the syndrome with L-tryptophan or 5-HTP have been rare [54][56][60][75].
+
+## Key safety points
+
+- Taking either supplement with SSRIs, SNRIs, MAO inhibitors, triptans, tramadol or other serotonergic drugs may cause serotonin syndrome, which can be life-threatening [78][80][81][83]. For confusion, agitation, sweating, shivering, tremor, muscle jerks, a fast heartbeat or a high temperature, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [79].
+- 5-HTP taken with carbidopa was followed by a scleroderma-like illness in one patient [76]. If you take carbidopa, ask your doctor first.
+- Contaminated L-tryptophan caused the 1989 eosinophilia-myalgia syndrome epidemic, with 27 deaths reported by July 1990; one new case was reported after the US ban was lifted [50][54][56]. Stop and see your doctor for muscle pain, swelling or rash; for trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- One family's 5-HTP held an impurity linked to an illness like the syndrome [75].
+- 5-HTP can falsely raise the urine 5-HIAA test for carcinoid tumours [77][66].
+- L-tryptophan at 1 g or more makes people sleepier [24].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-L-Tryptophan is one of the nine essential amino acids, meaning the human body cannot synthesize it and must obtain it from dietary protein sources [1][2]. It is found in many protein-rich foods, including cheese, chicken, eggs, fish, milk, nuts, soy, tofu, and turkey. A typical 100 g (3.5 oz) serving of these foods provides 100-500 mg of L-tryptophan [3]. The estimated average requirement for adults is approximately 4 mg per kg of body weight per day (roughly 280 mg for a 70 kg individual), with the recommended dietary allowance set at approximately 5 mg/kg/day [4][5]. Typical adult intakes in omnivorous populations average 900-1,000 mg per day, well above minimum requirements [4].
+The body cannot make L-tryptophan, an essential amino acid, so it must come from protein in food [12][88]. The body turns it into serotonin, melatonin, kynurenine and the vitamin niacin [88]. Normal diets supply about 1/2 g to 2 g a day of L-tryptophan [25].
 
-5-Hydroxytryptophan (5-HTP, also known as L-5-hydroxytryptophan or oxitriptan) is a non-essential amino acid that is not found in appreciable amounts in the diet [3]. In the body, 5-HTP is synthesized from L-tryptophan as an intermediate step in the production of serotonin. In supplements, 5-HTP is typically extracted from seeds of Griffonia simplicifolia, a West African climbing shrub [3][6].
+5-hydroxytryptophan (5-HTP) is the step between L-tryptophan and serotonin [6]. Supplements use 5-HTP from the seeds of *Griffonia simplicifolia*, a medicinal plant whose seeds hold a high content of it [89].
 
 ### The Serotonin and Melatonin Pathway
 
-Through a series of enzymatic steps, the body converts L-tryptophan into serotonin and melatonin — neurotransmitters that regulate mood, appetite, and sleep [2][3]:
+The body makes serotonin and melatonin from L-tryptophan in three steps [2][6]:
 
-1. **L-Tryptophan → 5-HTP:** Tryptophan hydroxylase (TPH) catalyzes the rate-limiting step in serotonin biosynthesis, hydroxylating L-tryptophan to 5-HTP [7]. Two isoforms exist: TPH1 in peripheral tissues and TPH2 in the central nervous system [8].
-2. **5-HTP → Serotonin (5-HT):** Aromatic L-amino acid decarboxylase (AADC) converts 5-HTP to serotonin [7]. 5-HTP can cross the blood-brain barrier, permitting direct access to the central nervous system for conversion to serotonin [3].
-3. **Serotonin → Melatonin:** In the pineal gland, serotonin is N-acetylated by arylalkylamine N-acetyltransferase (AANAT), then O-methylated to melatonin [9]. This process is under strong circadian control, with peak melatonin production during the dark phase [10].
+1. **L-Tryptophan to 5-HTP:** The enzyme tryptophan hydroxylase makes 5-HTP. This is the rate-limiting step in serotonin synthesis [6].
+2. **5-HTP to serotonin (5-HT):** 5-HTP crosses the blood-brain barrier easily and raises serotonin synthesis in the brain [6].
+3. **Serotonin to melatonin:** In the pineal gland, two enzymes, N-acetyltransferase and hydroxyindole-O-methyltransferase, control melatonin production [9]. In rats, N-acetyltransferase activity is more than 15 times higher at night than in the day [10].
 
-Only a small fraction of dietary tryptophan — approximately 1-2% — enters the serotonin synthesis pathway [11]. The majority (approximately 90-95%) is metabolized via the kynurenine pathway, which produces neuroactive metabolites including kynurenic acid (neuroprotective) and quinolinic acid (neurotoxic), and contributes to NAD+ biosynthesis and niacin (vitamin B3) production [11][12]. The liver can also use tryptophan to produce niacin directly: approximately 60 mg of tryptophan yields 1 mg of niacin via the kynurenine pathway [4].
+Most tryptophan does not become serotonin. The kynurenine pathway accounts for about 95% of the breakdown of dietary tryptophan, 90% of it in the liver [11]. The same pathway makes nicotinic acid, a form of niacin, and the coenzyme NAD+ [11].
 
 ### The Kynurenine Pathway
 
-The kynurenine pathway constitutes the predominant catabolic route for tryptophan degradation. It is initiated by two rate-limiting enzymes: tryptophan 2,3-dioxygenase (TDO2), predominantly expressed in the liver, and indoleamine 2,3-dioxygenase (IDO1/IDO2), which predominates in peripheral tissues and is inducible by proinflammatory cytokines such as interferon-gamma [12][13]. Inflammatory conditions upregulate the pathway via cytokine-induced IDO expression, accelerating tryptophan-to-kynurenine conversion and depleting tryptophan available for serotonin synthesis [13][14]. The plasma kynurenine-to-tryptophan ratio is used as a biomarker of IDO activity and systemic inflammation [14].
+Two enzymes set the pace of the kynurenine pathway: tryptophan 2,3-dioxygenase (TDO) in the liver and indoleamine 2,3-dioxygenase (IDO) elsewhere [11]. Interferon-gamma and other cytokines regulate IDO, and the pathway controls how much tryptophan is left for serotonin synthesis in the brain [11]. Peripheral inflammation can raise kynurenine in the brain, a change linked with depression and schizophrenia [13].
 
-Downstream metabolites include kynurenic acid (KYNA), which acts as an NMDA receptor antagonist with neuroprotective properties, and quinolinic acid (QUIN), an NMDA receptor agonist that can promote neurotoxicity and oxidative stress at elevated concentrations [12]. These metabolites also exert immunoregulatory effects, with kynurenine activating the aryl hydrocarbon receptor (AhR) to modulate T-cell function [15]. This pathway has significant implications for understanding the relationship between inflammation, tryptophan metabolism, and mood disorders.
+The pathway makes kynurenic acid, 3-hydroxykynurenine and quinolinic acid, and the immune system controls it tightly [12]. Kynurenine itself activates the aryl hydrocarbon receptor; in tumour cells this suppresses immune responses against the tumour [15]. Too much or too little activity in the pathway is linked with neurodegenerative disease and with depression and schizophrenia [12].
 
 ### Competition for Blood-Brain Barrier Transport
 
-A critical factor in tryptophan's neurotransmitter functions is transport competition at the blood-brain barrier. Tryptophan crosses the BBB via the large neutral amino acid transporter (LAT1), where it competes with other large neutral amino acids, including branched-chain amino acids (leucine, isoleucine, valine), phenylalanine, and tyrosine [16][17]. This competition means that only approximately 1-3% of plasma tryptophan levels reach the brain under normal conditions [7]. Dietary carbohydrates can facilitate brain tryptophan uptake by stimulating insulin release, which preferentially clears competing amino acids from plasma while sparing tryptophan [18]. Conversely, high-protein meals increase competing amino acids, potentially reducing brain tryptophan availability despite providing more tryptophan overall [19]. This explains the persistent myth about turkey-induced drowsiness — turkey contains comparable tryptophan to chicken or beef, and the high protein content of a turkey meal actually increases amino acid competition [19].
-
-Peripheral serotonin (approximately 90-95% of total body serotonin, produced primarily in enterochromaffin cells of the gastrointestinal tract) cannot cross the blood-brain barrier, necessitating independent central synthesis from tryptophan transported across the BBB [7][16].
+Tryptophan enters the brain through a transporter it shares with other large neutral amino acids, including tyrosine and the branched-chain amino acids [16]. That transporter, LAT1, carries neutral amino acids with branched or aromatic side chains [17]. Plasma tryptophan controls the brain level, but other large neutral amino acids in the blood modify that link [7]. Raising blood levels of branched-chain amino acids lowers tryptophan uptake into the brain [16]. Carbohydrate, acting through insulin and the plasma tryptophan ratio, increases serotonin release; protein does not [18]. Proteins also differ from one another: in 6 fasting men, 40 g of alpha-lactalbumin, a whey protein, raised plasma tryptophan 3-fold, while zein, a corn protein, cut it by 50% [19].
 
 ## 2. Forms and Bioavailability
 
 ### L-Tryptophan
 
-L-Tryptophan is available as a single free-form amino acid supplement, typically at 500 mg per serving [3]. In food, tryptophan is bound to other amino acids within proteins and must be liberated through digestion before absorption. Supplemental L-tryptophan, being in free form, is absorbed more rapidly than protein-bound forms [4].
-
-L-Tryptophan has a molecular weight of 204.23 g/mol and the molecular formula C11H12N2O2 [1]. It is characterized by an indole ring side chain that makes it the largest and most structurally complex of the standard proteinogenic amino acids [1]. It exhibits low water solubility (approximately 10.6 g/L at 20 degrees C) and is susceptible to photooxidation when exposed to ultraviolet or visible light [20].
+L-tryptophan is sold as a single free-form amino acid. Bacteria make it by fermentation, mainly strains of *Corynebacterium glutamicum* and *Escherichia coli* improved by metabolic engineering [21].
 
 #### Manufacturing and Sourcing
 
-L-Tryptophan for supplements is produced primarily by microbial fermentation using genetically engineered strains of Escherichia coli or Corynebacterium glutamicum, which overexpress key enzymes in the tryptophan biosynthetic pathway, achieving production titers of 40-55 g/L [21][22]. Major suppliers include Ajinomoto (Japan), which produces the branded TryptoPure product, CJ CheilJedang (BestAmino brand), and Evonik (TrypAMINO/REXIVA) [22].
-
-TryptoPure, manufactured by Ajinomoto, is noteworthy because it was the only L-tryptophan permitted for pharmaceutical import into the US from 1989 to 2005, following the eosinophilia-myalgia syndrome (EMS) outbreak associated with a different manufacturer (see Safety section) [3]. TryptoPure is manufactured under cGMP conditions using strains of E. coli or Corynebacteria, as opposed to the Bacillus amyloliquefaciens strain used by Showa Denko in the contaminated products that caused the EMS outbreak [23]. Several supplement products on the market indicate they use TryptoPure as their ingredient source.
-
-Post-1989 manufacturing processes incorporate rigorous quality controls with HPLC and LC-MS monitoring of trace contaminants to ensure levels remain below 1 ppm, with minimum purity specifications of 98-99% for feed and pharmaceutical grades [21][22].
+The 1989 eosinophilia-myalgia syndrome (EMS) epidemic was traced to L-tryptophan from one Japanese company, Showa Denko, which made it by fermentation with *Bacillus amyloliquefaciens* [52][54][55] (see Safety section). Cases were linked to lots made with less powdered carbon in a purification step and with a new bacterial strain [55]. Of 6 manufacturers, only Showa Denko's L-tryptophan was clearly linked to illness [74].
 
 ### 5-HTP
 
-5-HTP is typically extracted from seeds of Griffonia simplicifolia [3][6]. Although it is possible to produce 5-HTP by fermentation (similar to L-tryptophan), extraction from Griffonia simplicifolia seeds is the more common commercial method. Consumers should look for products that list Griffonia simplicifolia seed as the source in the Supplement Facts panel [3].
-
-5-HTP is a more expensive raw ingredient than L-tryptophan [3]. Due to high ingredient costs, some companies may cut corners. Be careful not to confuse any listed amount of Griffonia simplicifolia seed (from which 5-HTP is extracted) with the actual amount of 5-HTP, which will be a much smaller fraction of the seed weight [3].
+In *Griffonia simplicifolia* seeds, 5-HTP is the main compound, with smaller amounts of griffonine and other alkaloids [89]. Unlike L-tryptophan, 5-HTP needs no transport molecule to be absorbed, other amino acids do not affect its absorption, and about 70 percent of an oral dose reaches the bloodstream [6].
 
 ### L-Tryptophan vs. 5-HTP: Key Differences
 
 | Factor | L-Tryptophan | 5-HTP |
 |--------|-------------|-------|
-| Dietary source | Abundant in protein-rich foods | Not found in appreciable amounts in diet |
-| Supplement source | Fermentation (bacteria) | Extraction from Griffonia simplicifolia seeds |
-| Metabolic position | Precursor to 5-HTP (one step further from serotonin) | Direct precursor to serotonin |
-| BBB penetration | Competes with other amino acids at LAT1 transporter | Crosses the blood-brain barrier readily |
-| Pathway flexibility | Can enter kynurenine pathway, niacin synthesis, protein synthesis | Committed to serotonin pathway |
-| Typical supplement dose | 500-1,000 mg | 50-300 mg |
-| Cost | Lower | Higher |
-| EMS association | Historical cases (contamination-linked) | Rare cases reported (3 in France, 2001-2012) |
+| Source | Protein in food; supplements made by bacterial fermentation [21][88] | Extracted from *Griffonia simplicifolia* seeds [89] |
+| Metabolic position | Needs tryptophan hydroxylase, the rate-limiting step [6] | Enters after the rate-limiting step [6] |
+| Brain entry | Competes with other large neutral amino acids [16] | Crosses the blood-brain barrier easily [6] |
+| Other uses in the body | Protein, niacin and the kynurenine pathway [6][11] | Cannot be turned into niacin or protein [6] |
+| Doses studied | 1 g for sleep; 6 g a day for premenstrual dysphoria [25][44] | 50 mg in one sleep trial; 900 mg a day in one weight-loss trial [29][37] |
+| EMS link | 1989 epidemic from one maker's product [54] | Impurity in one family's supply [75] |
 
-L-Tryptophan has the advantage of versatility — it feeds into multiple metabolic pathways including protein synthesis, niacin production, and the kynurenine pathway, in addition to serotonin synthesis [2][4]. However, because tryptophan hydroxylase (the enzyme converting tryptophan to 5-HTP) is the rate-limiting step, and because tryptophan competes with other amino acids for brain entry, supplemental L-tryptophan is an indirect way to raise brain serotonin [7][16].
+L-tryptophan feeds protein synthesis, niacin and the kynurenine pathway as well as serotonin [6][11]. Because tryptophan hydroxylase limits the rate, and other amino acids compete for entry to the brain, L-tryptophan raises brain serotonin only indirectly [6][16].
 
-5-HTP bypasses both of these bottlenecks — it does not compete for brain transport at LAT1 and it enters the serotonin pathway downstream of the rate-limiting enzyme [3]. However, 5-HTP is committed exclusively to serotonin production and cannot contribute to protein synthesis or niacin production.
+5-HTP skips the rate-limiting enzyme, and other amino acids do not affect its absorption [6]. It cannot be used to make protein or niacin [6].
 
 ## 3. Evidence for Benefits
 
@@ -85,91 +91,83 @@ L-Tryptophan has the advantage of versatility — it feeds into multiple metabol
 
 #### L-Tryptophan for Sleep
 
-L-Tryptophan has been studied as a sleep aid primarily for its ability to increase sleepiness and reduce the time needed to fall asleep (sleep onset latency), although it has not been shown to increase total sleep time [24].
+A 1982 review of 40 controlled studies concluded that L-tryptophan at 1 g or more makes people feel sleepier and shortens the time it takes to fall asleep; evidence that it lengthens sleep was less firm [24].
 
-A small study found that 1 g of L-tryptophan given 20 minutes before bedtime significantly reduced the time needed to fall asleep, and that lower doses (down to just 250 mg) also appeared to provide some benefit [25]. Doses higher than 1 g may also be effective.
+In a laboratory study of 15 people with mild insomnia, 1 g of L-tryptophan cut the time to fall asleep; 1/4 g and 1/2 g produced a trend in the same direction [25].
 
-A 2021 systematic review and meta-analysis of 10 RCTs (n=258 participants) concluded that daily L-tryptophan doses of 1 g or more improved subjective sleep quality metrics, including reduced wake-after-sleep onset, with a standardized mean difference of -0.56 versus placebo (P<0.05). Effects were negligible at doses below 1 g [26]. Subgroup analyses suggested slightly stronger benefits for maintenance insomnia subtypes, where awakenings decreased by up to 15%, but overall effect sizes remained modest (Hedges' g approximately 0.4) [26].
+A 2022 meta-analysis pooled data from 4 of the 18 articles it collected. Tryptophan shortened time awake after first falling asleep (SMD -1.08 min, 95% CI -1.89 to -0.28), more so at 1 g or more, but did not change other parts of sleep [26].
 
-Best results have been found in people with mild insomnia or needing longer-than-average times to fall asleep. Results have been mixed or negative in entirely normal subjects, severe insomniacs, and people with serious medical or psychiatric illness [24].
+The 1982 review saw the clearest gains in mild insomnia and in healthy people who take longer than average to fall asleep. Results were mixed in severe insomnia and in seriously ill medical or psychiatric patients [24].
 
-Limitations of the sleep literature include small sample sizes (median n=20 per arm), short durations (1-4 weeks), and potential publication bias [27]. Long-term data beyond 3 months are sparse [27]. The American Academy of Sleep Medicine (updated 2017) does not endorse L-tryptophan as first-line therapy for insomnia, prioritizing cognitive behavioral therapy for insomnia (CBT-I) over nutraceuticals [27].
+The American Academy of Sleep Medicine's 2017 guideline suggests that clinicians not use tryptophan to treat trouble falling or staying asleep in adults, a weak recommendation [27].
 
 #### 5-HTP for Sleep
 
-Evidence for 5-HTP as a sleep aid is limited and based on small, older studies.
+Evidence for 5-HTP as a sleep aid is limited.
 
-In healthy adults, two very small preliminary studies in the 1970s suggested certain sleep benefits. In one study, no significant increase in total sleep time was observed for four healthy young adults who took 200 mg of 5-HTP at bedtime or 5 hours before awakening, although there was a 7-53% increase in rapid eye movement (REM) sleep compared to baseline [28]. In the second study, among 8 healthy young adults, a higher dose (200 mg at 9:15 PM followed by 400 mg at 11:15 PM) produced similar results with no significant additional benefit [28]. Neither study involved statistical comparisons to a placebo group.
+A 1971 study gave 5-HTP to healthy volunteers and recorded its effects on their sleep [28].
 
-A study in the UK among 18 men and women (average age 67) with Parkinson's disease and REM sleep behavior disorder (RBD) found that 50 mg of 5-HTP, taken 30 minutes before bedtime daily for one month, modestly improved self-reported functioning during activities of daily living but did not significantly improve muscle atonia or reduce self-reported RBD frequency compared to placebo. However, there was a non-significant trend toward decreased RBD events, and the researchers suggested higher-dose trials may be warranted [29].
-
-The recommended dose for sleep is 50-200 mg of 5-HTP once daily, taken 30 minutes to 2 hours before bedtime. Higher doses do not appear to provide greater benefit for sleep [3].
+In a 2022 crossover trial in 18 Parkinson's patients who also had REM sleep behavior disorder, a daily 50 mg dose of 5-HTP for 4 weeks raised the share of REM sleep without more episodes of the disorder; falls in arousals and in time awake were small and not significant [29]. Self-reported episodes improved on both 5-HTP and placebo, and 5-HTP improved patients' motor experiences of daily living [29]. The authors called for larger trials at higher doses [29].
 
 ### Depression
 
 #### 5-HTP for Depression
 
-The primary clinical use of 5-HTP has been for depression, due to its ability to raise serotonin levels [3]. Several small studies have compared 5-HTP directly to standard antidepressants:
+The case for 5-HTP in depression is that it raises serotonin synthesis in the brain [6]. Small trials have compared it with standard antidepressants:
 
-**5-HTP vs. fluoxetine (Prozac):** A small 8-week study among 60 people with a first depressive episode found 5-HTP to be of equal benefit to fluoxetine (an SSRI) for reducing the severity of depression when taken at a daily dosage of 150-400 mg in three divided doses. Side effects were similar between groups [30].
+**5-HTP vs. fluoxetine (Prozac):** In a double-blind trial, 60 of 70 patients in a first episode of depression completed 8 weeks of 5-HTP or fluoxetine. Depression scores fell by similar amounts, and 73.33% on 5-HTP and 80% on fluoxetine responded [30].
 
-**5-HTP vs. fluvoxamine (Luvox):** A study among 63 adults with major depression showed that taking 100 mg of 5-HTP three times daily for 6 weeks had similar benefit to fluvoxamine (50 mg three times daily) for reducing depressed mood, anxiety, and physical symptoms, and 5-HTP caused fewer and less severe side effects [31].
+**5-HTP vs. fluvoxamine (Luvox):** A 1991 paper compared 5-HTP with fluvoxamine, treating serotonin deficiency as the target [31].
 
-However, drug comparison studies like these do not rule out a placebo effect. As there are no published, placebo-controlled studies of 5-HTP for treating depression, its role remains unproven [3].
+Without a placebo group, such comparisons cannot show how much of the gain was a placebo response. A 2020 systematic review of 13 studies of 5-HTP in depression found that, on the whole, they were relatively weak and few included placebo groups [85].
 
 #### L-Tryptophan for Depression
 
-Limited human research suggests L-tryptophan might be useful for treating depression and seasonal affective disorder (SAD). Improvements in symptoms were reported in two of three people with treatment-resistant unipolar depression and borderline personality disorder given 1-2 g of L-tryptophan daily [32].
+A Cochrane review found only two trials, with 64 patients in total, good enough to include; pooled, tryptophan and 5-HTP did better than placebo (Peto odds ratio 4.10, 95% CI 1.28 to 13.15), but the evidence was too weak to be conclusive [35]. Because proven antidepressants exist, the reviewers judged the clinical usefulness of both supplements limited [35]. As an add-on to antidepressants, tryptophan gave mixed results in a 2016 review [86].
 
 #### The Serotonin Hypothesis: A Critical Perspective
 
-The rationale for using tryptophan or 5-HTP for depression rests on the monoamine hypothesis linking low serotonin to mood disorders. However, this hypothesis has been challenged:
+The case for these supplements in depression rests on the idea that low serotonin causes it. A 2023 umbrella review found no consistent evidence that depression is linked to lower serotonin activity or concentrations [33].
 
-Acute tryptophan depletion (ATD) paradigms, which transiently reduce brain serotonin synthesis by approximately 70-80% through dietary manipulation, demonstrate mood-lowering effects predominantly in remitted depressed patients or those with vulnerability factors (such as prior SSRI treatment), rather than in healthy or never-depressed individuals [33]. A meta-analysis of 25 studies involving 566 healthy volunteers found no significant mood-lowering effects from ATD [33].
+In the tryptophan depletion studies it reviewed, cutting tryptophan had no effect in most healthy volunteers (n = 566), with weak evidence of an effect in those with a family history of depression (n = 75) [33].
 
-A 2022 systematic umbrella review by Moncrieff et al., synthesizing multiple meta-analyses across 360 studies, concluded there is no consistent evidence associating depression with lowered serotonin activity, including from ATD studies and peripheral biomarkers [33]. This challenges the foundational rationale for tryptophan supplementation as an antidepressant.
-
-A 2024 meta-analysis reported improvements in depression scores with tryptophan or 5-HTP, yet overall clinical trials in depressed patients show limited, non-replicable benefits, often confounded by small sample sizes and methodological variability [34][35]. A separate systematic review of 11 RCTs found that doses of 0.14-3 g/day of tryptophan may mildly enhance mood in healthy subjects, but lacked robust evidence for treating clinical depression [35].
-
-Well-designed, placebo-controlled human studies are needed to determine whether L-tryptophan and 5-HTP are genuinely effective for depression [3][33].
+Larger placebo-controlled trials are needed to show whether either supplement works for depression [35][85].
 
 ### Migraine Prevention
 
-Some, but not all, studies have found that 5-HTP may help prevent migraines, although not tension headaches [36]. The typical dosage used in migraine studies has been 400-600 mg daily in divided doses [3]. Serotonin plays a known role in migraine pathophysiology, and 5-HTP's ability to raise serotonin levels provides the mechanistic rationale.
+In a randomized trial in 124 people with migraine, 71% improved on 5-HTP and 75% on methysergide, a prescription preventive [84]. 5-HTP seemed to reduce the intensity and length of attacks more than their frequency, and side effects were more frequent with methysergide [84]. The trial compared two treatments and had no placebo group.
 
 ### Weight Loss
 
-Small studies of several weeks duration have indicated that 5-HTP may help with weight loss by causing people to consume fewer calories and feel full after eating [3].
+In a 1992 double-blind trial, 20 people with obesity took 900 mg of 5-HTP a day or placebo for two 6-week periods, with a 5,040 kJ a day diet recommended only in the second [37].
 
-In one study of 28 obese individuals (average age 43), taking 300 mg of 5-HTP three times daily (900 mg total) for 6 weeks without dieting caused a modest but statistically significant reduction in body weight (-3.7 lbs), while the placebo group showed no weight loss. The reduction appeared to be due to reduced energy and carbohydrate intake. When the same dose of 5-HTP was continued for an additional 6 weeks with calorie restriction, weight loss was even greater for the 5-HTP group (-7.2 lbs), while those taking placebo with calorie restriction showed no significant weight loss — an unusual finding that raises questions about the study design [37].
+The 5-HTP group lost significant weight in both periods, ate less carbohydrate and felt full early [37].
 
 ### Fibromyalgia
 
-One study suggested that 5-HTP can help people with fibromyalgia, a condition characterized by tender muscles, fatigue, and sleep disturbances that is often treated with antidepressants [3].
+A 1990 double-blind trial in 50 people with primary fibromyalgia found that 5-HTP improved all the clinical measures studied compared with placebo, with only mild and short-lived side effects [40]. The authors called for more controlled studies [40].
 
-In this study, 200 participants with fibromyalgia were randomized to receive 400 mg of 5-HTP, the same dose of 5-HTP along with monoamine oxidase inhibitors (MAOIs — pargyline 5-10 mg daily or phenelzine 10-15 mg daily), MAOIs alone, or amitriptyline (10-50 mg daily). All treatments lasted 12 months and daily pain score was evaluated. All treatments led to reduced pain scores compared to baseline, and the researchers stated that improvement was greater for 5-HTP plus MAOIs compared to single treatments, although these analyses were not fully shown. About 8% of people in the 5-HTP groups reported stomachache [38]. Importantly, this study did not include a placebo control group, so it is not possible to confirm that 5-HTP was beneficial.
-
-A separate pilot study involving 23 patients with fibromyalgia supplemented with coenzyme Q10, magnesium, and tryptophan reported reductions in pain and fatigue, though the exact tryptophan dose was not isolated and the sample size limited generalizability [39]. Earlier open-label studies using 5-HTP at doses of 100-300 mg daily over 90 days showed symptom improvement in primary fibromyalgia syndrome, suggesting a serotonergic mechanism [40].
+In a later trial, people with fibromyalgia were randomly given 5-HTP alone, MAO inhibitors alone, both together or the tricyclic drug amitriptyline; the combination gave the largest pain benefit [38]. Some sleep disturbance and mild stomach ache were reported, and one patient on the combination had a short-lived rise in blood pressure [38]. Combining 5-HTP with an MAO inhibitor carries a risk of serotonin syndrome (see Drug Interactions) [80].
 
 ### Cognitive Function
 
-A study in Singapore among 30 healthy older men and women (average age 66) showed that taking 100 mg of 5-HTP (Now Foods brand) 20-30 minutes before bedtime daily for 12 weeks very slightly improved overall cognitive function compared to baseline (1-point improvement on a scale of 0 to 30), but this improvement was not significant compared to the placebo group — meaning there was no proven benefit. There were no between-group differences in language, delayed recall, attention, or executive function. 5-HTP also did not significantly improve mood. Those in the 5-HTP group showed a significant increase in blood serotonin levels compared to placebo (+45.8 vs. -20.2 ng/mL, respectively), but this did not translate into cognitive benefits [41].
+In a 12-week single-blind trial in Singapore, 30 older adults (mean age 66) took a daily 100 mg dose of 5-HTP or nothing; the control group had no placebo [41]. Scores on a cognitive test (MoCA) rose among those taking 5-HTP, from 26.6 to 27.6 points, serum serotonin rose, and depression scores improved; anxiety scores did not change [41]. The authors say the findings are preliminary because the trial was small and short [41].
 
 ### Anxiety
 
-In people with anxiety disorders, 5-HTP was found to be effective but not as effective as the drug clomipramine [42]. However, systematic reviews of tryptophan modulation, including depletion and loading paradigms, conclude that available studies lack power to confirm benefits, with no consistent effects on core anxiety symptoms [43].
+In a double-blind trial in 45 people with anxiety disorders, clomipramine beat placebo on all rating scales [42]. 5-HTP gave a moderate reduction in symptoms on two scales but did not affect depressive symptoms [42].
 
 ### Premenstrual Dysphoric Disorder (PMDD)
 
-Some human research finds that L-tryptophan might help reduce feelings of unhappiness, irritability, and mood swings in women with premenstrual dysphoric disorder (PMDD) [3]. A 1999 placebo-controlled trial of 6 g daily L-tryptophan in 37 women with premenstrual dysphoric disorder reported modest reductions in dysphoria and irritability during the luteal phase, attributed to enhanced serotonin synthesis [44]. Effect sizes were small, and subsequent research has not yielded large confirmatory trials.
+In a double-blind trial, 37 women diagnosed with PMDD took L-tryptophan 6 g a day and 34 took placebo, for 17 days each cycle from ovulation to the third day of menstruation, over three cycles [44]. L-tryptophan improved a cluster of mood symptoms (dysphoria, mood swings, tension and irritability) more than placebo (p = 0.004) [44]. An earlier open pilot study of 13 women at the same dose also reported benefit, with only mild side effects [46].
 
 ### Smoking Cessation
 
-Other human research indicates that L-tryptophan might help reduce cigarette cravings in people who are quitting smoking. The daily dose used was 50 mg/kg of L-tryptophan (approximately 4 g per day for an 80 kg person), taken together with a high-carbohydrate diet and conventional smoking cessation techniques [45]. A 1991 study found that this combination lowered self-reported anxiety and craving intensity versus controls during smoking cessation attempts [45]. Outcomes were subjective and short-term, with no long-term abstinence benefits demonstrated.
+In a trial of L-tryptophan (50 mg/kg/day) plus group therapy and a high-carbohydrate diet, 16 smokers took tryptophan and 15 took placebo with the same therapy [45]. Over a 2-week withdrawal period, the tryptophan group reported less anxiety and fewer withdrawal symptoms, and those who could not fully quit smoked fewer cigarettes a day [45].
 
 ### Sleep Apnea
 
-Limited human research suggests that L-tryptophan might be useful for treating sleep apnea, although well-designed studies are needed to confirm this [3][24].
+Too little evidence exists to support either supplement for sleep apnea.
 
 ## 4. Recommended Dosing
 
@@ -177,345 +175,270 @@ Limited human research suggests that L-tryptophan might be useful for treating s
 
 | Indication | Daily Dose | Timing | Notes |
 |-----------|-----------|--------|-------|
-| Sleep aid | 250 mg - 1 g | 20 minutes before bedtime | Most common recommendation is 1 g at bedtime. Lower doses (250 mg) may also provide benefit [25]. Use lowest effective dose. |
-| Premenstrual dysphoric disorder (PMDD) | 6 g | Throughout the day | An extremely high dose; use only under medical supervision [44][46]. |
-| Smoking cessation | 50 mg/kg (~4 g for 80 kg person) | Throughout the day | Combined with high-carbohydrate diet and conventional cessation techniques [45]. |
-| Depression | 1-2 g | Divided doses | Limited evidence; well-designed trials needed [32]. |
+| Sleep aid | 1 g | At bedtime | 1 g shortened the time to fall asleep in mild insomnia; 1/4 g and 1/2 g trended the same way [25]. Effects were larger at 1 g or more [26]. The AASM suggests against tryptophan for insomnia [27]. |
+| Premenstrual dysphoric disorder (PMDD) | 6 g a day | From ovulation to the third day of menstruation | A very high dose, tested in trials; use only with your doctor [44][46]. |
+| Smoking cessation | 50 mg/kg a day | During a 2-week withdrawal period | Taken alongside group therapy and a high-carbohydrate diet [45]. |
 
 ### 5-HTP Dosing by Indication
 
 | Indication | Daily Dose | Timing | Notes |
 |-----------|-----------|--------|-------|
-| Depression | 300 mg | 100 mg three times daily | Best evidence from comparisons to fluoxetine and fluvoxamine [30][31]. |
-| Fibromyalgia | 300 mg | 100 mg three times daily | Based on limited evidence without placebo control [38][40]. |
-| Migraine prevention | 400-600 mg | Divided doses | Some but not all studies show benefit [36]. |
-| Sleep | 50-200 mg | 30 min to 2 hours before bedtime | Higher doses do not appear to provide greater sleep benefit [3]. |
-| Weight loss | 900 mg | 300 mg three times daily | Based on one small study of 28 individuals [37]. |
+| REM sleep behavior disorder in Parkinson's disease | 50 mg | Daily for 4 weeks | One small crossover trial [29]. |
+| Cognition in older adults | 100 mg | Daily for 12 weeks | One small trial without a placebo [41]. |
+| Weight loss | 900 mg | Two 6-week periods, daily | One small trial of 20 people [37]. |
+
+Doses in 5-HTP depression trials varied, and that variation adds to the uncertainty in the evidence [85].
 
 ### Dietary Requirements
 
-The estimated average requirement (EAR) for tryptophan in adults is 4 mg per kg of body weight per day, corresponding to approximately 280 mg daily for a 70 kg individual [4][5]. The recommended dietary allowance is typically set at 5 mg/kg/day. Requirements are higher during periods of rapid growth, infancy (up to 25 mg/kg/day in the first six months), and pregnancy (an additional 20-30% increment) [4].
-
-Typical adult intakes in omnivorous US populations average approximately 977 mg/day for men and 679 mg/day for women [47]. Well-planned vegan and vegetarian diets typically deliver 800-900 mg daily through combinations of legumes, nuts, seeds, and whole grains, meeting requirements without supplementation [4].
+L-tryptophan is essential, so the diet must supply it [12][88]. Normal diets provide about 1/2 g to 2 g a day [25].
 
 ### General Guidance
 
-For L-tryptophan as a sleep aid, it may be prudent to start with the lowest effective dose and increase only if needed. Doses above 1 g may be effective but carry higher risks of side effects [3][25]. Taking L-tryptophan with a carbohydrate-rich snack may enhance brain uptake by reducing competition from other amino acids at the blood-brain barrier [18].
+For sleep, the best-studied dose of L-tryptophan is 1 g [24][25]. Carbohydrate increases serotonin release through insulin while protein does not, so taking L-tryptophan with a carbohydrate snack rather than a protein meal may help more of it reach the brain [16][18]. If you take any medicine that raises serotonin, talk to your doctor before trying either supplement (see Drug Interactions).
 
 ## 5. Safety and Side Effects
 
 ### L-Tryptophan Side Effects
 
-Common side effects of L-tryptophan include [3][48]:
-- Drowsiness
-- Headache
-- Heartburn and stomachache
-- Nausea and vomiting
-- Abdominal gas
-- Diarrhea
-
-At therapeutic doses (1-5 g daily), drowsiness is the most frequently reported effect due to enhanced serotonin and melatonin synthesis [48]. Nausea, dizziness, tremor, and headache occur more frequently at higher doses exceeding approximately 5 g for a 70 kg adult [48].
-
-Acute toxicity is low, with oral LD50 values in rodents exceeding 5 g/kg. Subchronic rodent studies confirm no significant adverse effects at doses up to 2 g/kg/day [49].
-
-L-Tryptophan can cause respiratory depression of the fetus and should not be used during pregnancy or while breastfeeding [3].
+At 1 g or more, L-tryptophan makes people feel sleepier [24]. An open study of 6 g a day reported only mild side effects [46]. Headache and stomach upset may also occur.
 
 ### Eosinophilia-Myalgia Syndrome (EMS)
 
 #### The 1989 Outbreak
 
-In 1989, L-tryptophan supplements were associated with a serious medical condition called eosinophilia-myalgia syndrome (EMS), characterized by debilitating muscle pain and a high number of eosinophils (a type of white blood cell) in the blood [3][50]. While most patients recovered after withdrawal and treatment (typically with corticosteroids), cases of death or permanent disability were reported.
+In 1989, doctors in New Mexico described three women taking tryptophan, 1.2 to 2.4 g a day, who had severe muscle pain and weakness, mouth ulcers and very high eosinophil counts (eosinophils are white blood cells) [73]. Stopping tryptophan and starting steroids helped, but all three still had symptoms three to five months later [73]. Their cases led to the discovery of an epidemic, now known as eosinophilia-myalgia syndrome (EMS) [73].
 
-The FDA issued a Public Advisory against the use of L-tryptophan and recalled all over-the-counter dietary supplements containing 100 mg or more per daily dose. An import alert blocked foreign shipments of manufactured L-tryptophan. Eventually, more than 1,500 cases of EMS, including 38 deaths, were reported to the U.S. CDC, although the true incidence is thought to be much higher [3][50][51].
+By July 1990, 1,531 US cases had been reported, including 27 deaths [50]. Common features were joint pain (73%), rash (60%), cough or breathlessness (59%) and swelling of the limbs (59%); nerve damage, sometimes causing paralysis and death, occurred in 27% [50]. New cases fell sharply after over-the-counter tryptophan was recalled in November 1989 [50].
 
 #### Cause: Contamination, Not Tryptophan Itself
 
-Epidemiological studies traced the cause of EMS to consumption of L-tryptophan produced by the Japanese company Showa Denko that was contaminated with one or more unidentified substances [52]. According to one report from South Carolina, 29% of people who used that brand developed definite EMS, and the risk increased with dose: 13% at 250-1,500 mg/day, rising to 50% for doses over 4,000 mg/day [53].
+Studies traced the epidemic to L-tryptophan made by Showa Denko. In Oregon, 45 of 46 cases (98%) had taken a product made by this one manufacturer [54]. In New York, all 113 cases with a traceable brand had used Showa Denko tryptophan, against 73% of controls, and risk rose with dose, with age and with use as a sleep aid [52]. In one psychiatric practice in South Carolina, 29% of users of the implicated brand developed definite EMS, as did 50% of those taking more than 4,000 mg a day [53].
 
-The causal mechanism was traced to manufacturing impurities stemming from Showa Denko's process modifications to enhance yield, including the introduction of a genetically modified strain of Bacillus amyloliquefaciens for fermentation and reduced carbon treatment during purification [54]. Ongoing research identifies the most statistically significant contaminant, known as Peak AAA, as being formed by the reaction of L-tryptophan with fatty acids from bacterial cell membranes during the fermentation process [23].
+In Minnesota, cases were linked to lots made with less powdered carbon in a purification step and with a new strain of *Bacillus amyloliquefaciens* [55]. A compound called peak E was found in 75% of lots used by cases and 27% of lots used by controls [55]. In 2018, the most significant contaminant, Peak AAA, turned out to be two compounds formed when L-tryptophan reacts with fatty acids from the bacterial cell membrane [23].
 
-Analytical chemistry confirmed these impurities were absent or minimal in pre-1988 batches and products from competitors using different microbial methods, supporting the conclusion that the contaminants — not the amino acid itself — were responsible [54][55].
+A 1996 review concluded that the evidence meets accepted criteria for cause and effect: of 6 manufacturers, only Showa Denko's tryptophan was clearly linked to illness, risk rose with dose, and cases fell abruptly once tryptophan products were recalled [74].
 
 #### Post-1989 Return to Market
 
-With the passage of the Dietary Supplement Health and Education Act in 1994, L-tryptophan became available again as a supplement in the US if manufactured domestically. The import alert was cancelled in 2005 based on insufficient evidence to warrant detention without physically inspecting each foreign source [3].
-
-Since the return to market, there has been one published case report of EMS associated with L-tryptophan (Allen, Arthritis & Rheumatism 2011) [56]. The case involved a 44-year-old woman in Illinois who developed symptoms within 3 weeks of starting 1,500 mg per day of L-tryptophan in early 2009. She developed swelling of the arms and legs, followed by muscle pain, weakness, and progressive skin thickening and hardening. Analysis of pills from the same lot showed no impurities, but the patient was found to have the HLA-DRB1*04 allele, a genetic risk factor for EMS among L-tryptophan users (increasing odds approximately 4-fold) [56].
-
-The FDA has also received two other reports of possible EMS and two reports of muscle pain associated with L-tryptophan from January 2003 through August 2010 [3].
+The US FDA banned the sale of L-tryptophan after the epidemic and lifted the ban in 2005 [56]. A 2011 report described a new case of L-tryptophan-associated EMS; no new cases had been described since the ban was lifted [56].
 
 #### Role of Pure Tryptophan
 
-Some cases of EMS occurred with L-tryptophan that was relatively pure (99.6%) or made by a company other than Showa Denko, suggesting that the amino acid itself may play a role in susceptible individuals [3][57]. One theory is that large doses of L-tryptophan as a single amino acid increase formation of metabolites that inhibit histamine destruction, which in turn can cause both eosinophilia and myalgia [57]. Other research suggests that people with functional somatic syndromes (fibromyalgia, chronic fatigue syndrome, irritable bowel syndrome, multiple chemical sensitivity) may be prone to develop an allergic reaction toward contaminants and, to a lesser extent, pure L-tryptophan, indicating an autoimmune reaction may be involved [58].
+Some researchers argue that one manufacturer's impurity cannot fully explain EMS. One theory holds that overloads of tryptophan raise metabolites that inhibit the breakdown of histamine, and excess histamine activity can cause eosinophilia and muscle pain [57]. In a laboratory study, immune cells from seven of 12 patients with functional somatic syndromes such as fibromyalgia reacted to the contaminant peak E, against three of 24 controls; the authors see this as support for an allergic mechanism [58].
 
-Talk with your healthcare provider before using L-tryptophan if you have kidney or liver disease, eosinophilia, or a condition involving your muscles. Stop using L-tryptophan and contact your healthcare provider if you develop symptoms of EMS, such as muscle pain, fatigue, nerve pain, rash, or skin changes [3].
+Stop L-tryptophan and see your doctor if you develop muscle pain, swelling, a rash or skin changes while taking it [50][56][73]. If you have trouble breathing or new weakness, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). People with kidney or liver disease, a high eosinophil count or a muscle disorder should talk to their doctor before taking L-tryptophan.
 
 ### 5-HTP Side Effects
 
-Side effects with 5-HTP have generally been limited to short-term, mild digestive distress (e.g., heartburn, nausea, diarrhea) and possible allergic reactions [3].
+In trials, side effects of 5-HTP were mostly mild: short-lived effects in fibromyalgia [40], some sleep disturbance and mild stomach ache [38], and fewer side effects than with methysergide [84].
 
-Unlike L-tryptophan, cases of EMS have not been reported with 5-HTP in the United States [3]. However, three cases of EMS (occurring between 2001 and 2012) associated with 5-HTP use have been reported in France, all involving individuals in their fifties [59]:
-
-- One woman had taken 5-HTP for 3 years and developed scleroderma and itching.
-- Another woman had taken 5-HTP for 1 year and developed joint pain, muscle weakness in all limbs, an "altered state," weight loss, and after another year on 5-HTP, fasciitis.
-- A man taking 5-HTP for 1 year developed diffuse muscle pain and scleroderma.
-
-The conditions of both women improved significantly after 5-HTP was stopped and corticosteroids were given. It is unclear if and how 5-HTP might cause EMS, and the occurrence is rare [59].
+A 2004 review found no definitive cases of toxicity from 5-HTP, with one unresolved case in a Canadian woman as a possible exception [60]. In one family who became ill after taking 5-HTP, one member had EMS and two had high eosinophil counts [75]. Their 5-HTP held an impurity absent from other samples, and after a switch to 5-HTP without it, eosinophil counts returned to normal in two family members [75].
 
 #### Peak X Concern
 
-One report in 1998 discovered an unidentified substance termed "peak X" in a pharmaceutical product containing a combination of 5-HTP, tetrahydrobiopterin, and L-dopa/carbidopa. This raised concern because the substance was assumed to be similar to a contaminant found in L-tryptophan linked to EMS. However, better analytical testing has yet to confirm the presence of "peak X" in the "tainted" pharmaceutical product or other 5-HTP samples [60].
+A 1998 letter raised problems with over-the-counter 5-HTP [90]. A 2004 review argued that a minor peak reported in some 5-HTP samples, called peak X, lacks credibility because of chromatographic artifacts and tiny concentrations, and that analyses of several 5-HTP sources found no toxic contaminants like those in the 1989 L-tryptophan [60].
 
 ### Serotonin Syndrome
 
-Both L-tryptophan and 5-HTP increase serotonin levels and may increase the risk of serotonin syndrome — a serious, potentially life-threatening condition characterized by hyperthermia, autonomic instability, and altered mental status — when taken with drugs that also increase serotonin levels [3][61]. This includes antidepressants (SSRIs, SNRIs, MAOIs), dextromethorphan (Delsym), meperidine (Demerol), tramadol (Ultram), "triptan" anti-migraine drugs, and the supplement St. John's wort [3].
+Both supplements raise serotonin. Serotonin syndrome is a potentially deadly reaction to excess serotonin activity [79]. Its features fall into three groups: nerve and muscle signs such as tremor, overactive reflexes and clonus (rhythmic muscle jerks); autonomic signs such as a fast heart rate, high or low blood pressure and a high temperature; and changes in mental state such as agitation, delirium and coma [79]. In a review of 38 cases, it most often followed the combination of serotonergic drugs with MAO inhibitors, and death has been reported [78].
 
-A case of mania was reported in an individual given 5-HTP (300 mg daily) who was taking antidepressants including the MAOI phenelzine, although it is uncertain to what extent 5-HTP contributed to the mania [62].
+A 1986 report described five cases of a toxic reaction after fluoxetine (an SSRI) was combined with L-tryptophan [81]. Serotonin syndrome has followed linezolid taken with 5-HTP [82]; linezolid is an antibiotic that also acts as an MAO inhibitor [80]. In another patient, adding 5-HTP to an MAO inhibitor appears to have brought on mania [62].
+
+If symptoms like these start after combining either supplement with a serotonergic medicine, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [79]. Treatment starts with stopping the drug that caused it [79].
 
 ### Special Populations
 
-**Pregnancy and Breastfeeding:** L-Tryptophan can cause respiratory depression of the fetus and should not be used during pregnancy or while breastfeeding [3]. The safety of 5-HTP in pregnant or nursing women has not been established [3].
+**Pregnancy and Breastfeeding:** Neither supplement has established safety in pregnancy or breastfeeding; do not use them unless your doctor advises it.
 
-**Children:** Children have been given 5-HTP without harmful effects in some studies, but there is a concern that it could cause seizures in developmentally disabled children, e.g., those with Down's syndrome [3].
+**Children:** Safety in children is unknown.
 
-**Kidney or Liver Disease:** The safety of either supplement in those with liver or kidney disease has not been established [3].
+**Kidney or Liver Disease:** Safety in kidney or liver disease is unknown; talk to your doctor first.
 
 ### Toxicity in Dogs
 
-High doses of 5-HTP can cause a potentially fatal serotonin-like syndrome in dogs. A case was reported in a 17 lb Dachshund after ingesting 29 tablets of 5-HTP (each containing 100 mg of 5-HTP and 820 mg of xylitol, which is also toxic to dogs). The dog exhibited symptoms of serotonin syndrome and/or xylitol toxicosis, including agitation, seizures, rapid and irregular heartbeat, high blood pressure, low blood sugar, and coma. After three days of hospitalization the dog recovered [63]. Keep 5-HTP supplements out of reach of pets.
+A dog developed both xylitol poisoning and a serotonin-like syndrome after eating fast-dissolve 5-HTP tablets that also contained xylitol [63]. Keep 5-HTP supplements out of reach of pets.
 
 ### Test Interference
 
-People who undergo a 24-hour urine 5-HIAA test (used to help diagnose carcinoid syndrome, a potentially life-threatening condition involving rare cancerous tumors that secrete serotonin) are typically advised to avoid tryptophan, and tryptophan-rich and serotonin-rich foods (pineapple, banana, kiwi, plum, tomato, walnut, hickory nut, eggplant) two to three days before this test [64]. There are at least three reported cases of people who had falsely elevated results on this test due to taking 100 mg of 5-HTP per day. Two to four weeks after supplementation was stopped, results were normal [65][66]. If you are prescribed this test, inform your healthcare provider and testing laboratory well in advance if you take L-tryptophan or 5-HTP.
+The 5-HIAA test, done on a 24-hour urine collection, helps detect carcinoid tumours, and 5-HTP can raise the result falsely [77]. A 77-year-old woman's 5-HIAA (510 micromol/day; normal is less than 45 micromol/day) returned to normal after she stopped 5-HTP, and two more patients had markedly raised results from self-medicating with it [77][66]. In 8 healthy volunteers, 5-HTP 100 mg at bedtime for 10 days raised median 5-HIAA to 204 micromol/day, against 18 micromol/day on placebo [77]. If you are booked for this test, tell your doctor and the laboratory if you take 5-HTP.
 
 ## 6. Drug Interactions
 
 ### Serotonergic Medications (Most Critical)
 
-Both L-tryptophan and 5-HTP increase serotonin levels and should NOT be combined with serotonergic drugs without medical supervision due to risk of serotonin syndrome [3][61]:
+Taking either supplement with serotonergic drugs may cause serotonin syndrome [78][79]. Only combinations of serotonergic drugs that act in different ways can raise serotonin to a life-threatening level, and the most common is an MAO inhibitor with any serotonin reuptake inhibitor [80]. In 2006 the FDA warned that triptans taken with SSRIs or SNRIs may cause serotonin syndrome; a 2010 headache society review judged the evidence weak but still urged caution [83].
 
 | Drug Class | Examples | Risk |
 |-----------|---------|------|
-| SSRIs | Fluoxetine (Prozac), sertraline (Zoloft), paroxetine (Paxil), escitalopram (Lexapro) | Serotonin syndrome — potentially life-threatening |
-| SNRIs | Venlafaxine (Effexor), duloxetine (Cymbalta) | Serotonin syndrome |
-| MAOIs | Phenelzine (Nardil), tranylcypromine (Parnate), selegiline | Serotonin syndrome — highest risk combination |
-| Tricyclic antidepressants | Amitriptyline, nortriptyline, clomipramine | Serotonin syndrome |
-| Triptan anti-migraine drugs | Sumatriptan, rizatriptan, eletriptan | Serotonin syndrome |
-| Opioids | Meperidine (Demerol), tramadol (Ultram), fentanyl | Serotonin syndrome |
-| Dextromethorphan | Delsym, Robitussin DM | Serotonin syndrome |
-| Other supplements | St. John's wort | Additive serotonin effects |
+| SSRIs | Fluoxetine, sertraline, paroxetine, escitalopram | Serotonin syndrome; a toxic reaction was reported with fluoxetine plus L-tryptophan [81] |
+| SNRIs | Venlafaxine, duloxetine | Serotonin syndrome [83] |
+| MAO inhibitors | Phenelzine, tranylcypromine, moclobemide, linezolid | Highest risk combination [80][91] |
+| Triptan anti-migraine drugs | Sumatriptan, rizatriptan | FDA warning with SSRIs and SNRIs [83] |
+| Opioids | Pethidine (meperidine), tramadol, methadone | Serotonin toxicity with MAO inhibitors, including deaths [80] |
+| Dextromethorphan | Cough medicines | Serotonin toxicity with MAO inhibitors [80] |
+| Other supplements | St. John's wort | May add to serotonin effects |
 
 ### Carbidopa (Parkinson's Disease)
 
-There is concern with using 5-HTP with carbidopa, as there are reports of this combination causing skin changes similar to those in scleroderma [3].
+A scleroderma-like illness developed in a patient treated with 5-HTP and carbidopa [76]. Carbidopa also blocks the conversion of 5-HTP to serotonin outside the brain, which changes how much 5-HTP reaches it [87].
 
 ### CNS Depressants
 
-Central nervous system depressants such as sedatives or clonidine can exhibit enhanced sedative effects when combined with tryptophan, due to synergistic increases in serotonergic activity, potentially leading to excessive drowsiness or respiratory depression [67].
+Tryptophan may add to the effect of sedatives. If you take sedatives or other prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Branched-Chain Amino Acids (BCAAs)
 
-BCAAs (leucine, isoleucine, valine) compete with tryptophan for transport across the blood-brain barrier via the LAT1 transporter, reducing brain tryptophan availability and subsequent serotonin synthesis [16][68]. Concurrent supplementation with high-dose BCAAs may reduce the effectiveness of tryptophan or 5-HTP supplementation.
+Branched-chain amino acids compete with tryptophan for entry into the brain, and taking them lowers brain tryptophan uptake and serotonin synthesis [16]. High-dose BCAA supplements may therefore blunt the effect of L-tryptophan.
 
 ### Carbohydrate Interaction (Facilitative)
 
-Dietary carbohydrates facilitate tryptophan uptake into the brain by stimulating insulin release, which preferentially clears competing large neutral amino acids from plasma. This is not an adverse interaction but can potentiate the effects of tryptophan supplementation [18].
+Carbohydrate increases serotonin release through insulin and the plasma tryptophan ratio [18]. This is not a harmful interaction, and it may strengthen the effect of L-tryptophan.
 
 ## 7. Dietary Sources
 
 ### Tryptophan in Foods
 
-L-Tryptophan is found in many protein-rich foods. The table below shows approximate tryptophan content per 100 g of food [3][69][70]:
-
-| Food | Tryptophan (mg per 100 g) |
-|------|:------------------------:|
-| Egg white, dried | 1,000 |
-| Spirulina, dried | 930 |
-| Cod, Atlantic, dried | 700 |
-| Soybeans, mature, raw | 590 |
-| Pumpkin seed kernels, raw | 576 |
-| Cheese, Parmesan, shredded | 560 |
-| Sesame seeds, toasted | 370 |
-| Turkey, breast, meat and skin, cooked | 330 |
-| Cheese, cheddar | 320 |
-| Sockeye salmon, cooked | 310 |
-| Sunflower seeds, toasted | 300 |
-| Chicken, breast, meat and skin, raw | 240 |
-| Pork chop, cooked, blade, lean only | 240-410 |
-| Beef, rib eye, lean, raw | 230 |
-| Salmon, Atlantic, wild, raw | 220 |
-| Lamb, leg and sirloin, lean and fat, raw | 210 |
-| Perch, Atlantic, raw | 210 |
-| Beef, rib eye, lean, cooked | 170-410 |
-| Egg, hard boiled | 150 |
-| Wheat flour, white, all-purpose | 130 |
-| Baking chocolate, unsweetened | 130 |
-| Rice, white, long grain, raw | 80 |
-| Milk, whole | 70 |
-| Oatmeal, cooked | 40 |
-| Potatoes, russet, raw | 20 |
-| Banana | 10 |
-
-Source: USDA FoodData Central [3][69][70].
+Tryptophan comes from protein in food [12][88]. Normal diets supply about 1/2 g to 2 g a day [25].
 
 ### Practical Notes on Dietary Tryptophan
 
-- **Protein quality matters.** Tryptophan constitutes approximately 1% of most food proteins, making it the rarest amino acid in proteomes [2][4]. High-quality animal protein sources generally provide more tryptophan per serving than plant sources.
-- **Maize is notably low.** Reliance on untreated maize as a dietary staple provides only 0.5-1% tryptophan with reduced digestibility, contributing to niacin shortfall and historically to pellagra [4].
-- **Cooking preserves tryptophan.** The amino acid is heat-stable under boiling or grilling, though high-temperature roasting (above 200 degrees C) can cause up to 20-30% degradation [71].
-- **Carbohydrate co-ingestion enhances brain delivery.** Consuming tryptophan-rich foods with carbohydrates increases insulin-mediated clearance of competing amino acids, improving brain tryptophan uptake [18].
-- **The turkey myth.** Turkey contains approximately 350 mg of tryptophan per 100 g — comparable to chicken (290 mg/100 g) and beef. Post-Thanksgiving drowsiness is more attributable to caloric overload, carbohydrate-induced insulin responses, and alcohol consumption than to tryptophan specifically [19].
-- **Vegan diets are typically adequate.** Well-planned vegan diets relying on combinations of legumes, nuts, seeds, and whole grains typically deliver 800-900 mg of tryptophan daily, meeting requirements [4].
+- **The type of protein matters.** Alpha-lactalbumin, a whey protein, raised plasma tryptophan 3-fold in fasting men, while zein, a corn protein, lowered it [19].
+- **Carbohydrate helps.** Carbohydrate raises serotonin release through insulin; protein does not [18].
 
 ### Conditions That Impair Tryptophan Status
 
-- **Hartnup disease:** An autosomal recessive disorder caused by mutations in the SLC6A19 gene that impairs intestinal absorption and renal reabsorption of neutral amino acids, including tryptophan [72].
-- **Fructose malabsorption:** Can impair tryptophan absorption [4].
-- **Inflammation:** Proinflammatory cytokines upregulate the kynurenine pathway, diverting tryptophan away from serotonin synthesis and depleting available tryptophan [13][14].
-- **Severe malnutrition or chronic low-protein intake:** Especially in populations reliant on tryptophan-poor staples [4].
+- **Hartnup disorder:** An inherited (autosomal recessive) disorder of an amino acid transporter; in one family it reduced tryptophan absorption on a loading test [72].
+- **Inflammation:** Cytokines such as interferon-gamma regulate IDO, and peripheral inflammation can raise kynurenine in the brain, leaving less tryptophan for serotonin [11][13].
 
 ## 8. References
 
-[1] National Center for Biotechnology Information. "L-Tryptophan | C11H12N2O2 | CID 6305." PubChem. [https://pubchem.ncbi.nlm.nih.gov/compound/6305](https://pubchem.ncbi.nlm.nih.gov/compound/6305)
-
-[2] Palego L, Betti L, Rossi A, Giannaccini G. "Tryptophan Biochemistry: Structural, Nutritional, Metabolic, and Medical Aspects in Humans." *J Amino Acids*. 2016;2016:8952520. doi: [10.1155/2016/8952520](https://doi.org/10.1155/2016/8952520)
-
-[3] ConsumerLab. "L-Tryptophan and 5-HTP Supplements Review." Accessed 2026. [https://www.consumerlab.com/reviews/l-tryptophan-5-htp/tryptophan/](https://www.consumerlab.com/reviews/l-tryptophan-5-htp/tryptophan/)
-
-[4] Grokipedia. "Tryptophan." [https://grokipedia.com/page/Tryptophan](https://grokipedia.com/page/Tryptophan)
-
-[5] Institute of Medicine. *Dietary Reference Intakes for Energy, Carbohydrate, Fiber, Fat, Fatty Acids, Cholesterol, Protein, and Amino Acids*. Washington, DC: National Academies Press; 2005.
+[2] Palego L, Betti L, Rossi A, Giannaccini G. "Tryptophan Biochemistry: Structural, Nutritional, Metabolic, and Medical Aspects in Humans." *J Amino Acids*. 2016;2016:8952520. PMID: 26881063. doi: [10.1155/2016/8952520](https://doi.org/10.1155/2016/8952520)
 
 [6] Birdsall TC. "5-Hydroxytryptophan: a clinically-effective serotonin precursor." *Altern Med Rev*. 1998;3(4):271-280. PMID: [9727088](https://pubmed.ncbi.nlm.nih.gov/9727088/)
 
-[7] Young SN, Gauthier S. "Tryptophan availability and the control of 5-hydroxytryptamine and tryptamine synthesis in human CNS." *Adv Exp Med Biol*. 1981;133:221-230. doi: [10.1007/978-1-4684-3860-4_12](https://doi.org/10.1007/978-1-4684-3860-4_12)
+[7] Young SN, Gauthier S. "Tryptophan availability and the control of 5-hydroxytryptamine and tryptamine synthesis in human CNS." *Adv Exp Med Biol*. 1981;133:221-230. PMID: 6172015. doi: [10.1007/978-1-4684-3860-4_12](https://doi.org/10.1007/978-1-4684-3860-4_12)
 
-[8] Walther DJ, Peter JU, Bashammakh S, et al. "Synthesis of serotonin by a second tryptophan hydroxylase isoform." *Science*. 2003;299(5603):76. doi: [10.1126/science.1078197](https://doi.org/10.1126/science.1078197)
+[9] Liu T, Borjigin J. "N-acetyltransferase is not the rate-limiting enzyme of melatonin synthesis at night." *J Pineal Res*. 2005;39(1):91-96. PMID: 15978063. doi: [10.1111/j.1600-079X.2005.00223.x](https://doi.org/10.1111/j.1600-079X.2005.00223.x)
 
-[9] Liu T, Borjigin J. "N-acetyltransferase is not the rate-limiting enzyme of melatonin synthesis at night." *J Pineal Res*. 2005;39(1):91-96. doi: [10.1111/j.1600-079X.2005.00223.x](https://doi.org/10.1111/j.1600-079X.2005.00223.x)
+[10] Klein DC, Weller JL. "Indole metabolism in the pineal gland: a circadian rhythm in N-acetyltransferase." *Science*. 1970;169(3950):1093-1095. PMID: 4915470. doi: [10.1126/science.169.3950.1093](https://doi.org/10.1126/science.169.3950.1093)
 
-[10] Klein DC, Weller JL. "Indole metabolism in the pineal gland: a circadian rhythm in N-acetyltransferase." *Science*. 1970;169(3950):1093-1095. doi: [10.1126/science.169.3950.1093](https://doi.org/10.1126/science.169.3950.1093)
+[11] Badawy AA. "Kynurenine pathway of tryptophan metabolism: regulatory and functional aspects." *Int J Tryptophan Res*. 2017;10:1178646917691938. PMID: 28469468. doi: [10.1177/1178646917691938](https://doi.org/10.1177/1178646917691938)
 
-[11] Badawy AA. "Kynurenine pathway of tryptophan metabolism: regulatory and functional aspects." *Int J Tryptophan Res*. 2017;10:1178646917691938. doi: [10.1177/1178646917691938](https://doi.org/10.1177/1178646917691938)
+[12] Schwarcz R, Bruno JP, Muchowski PJ, Wu HQ. "Kynurenines in the mammalian brain: when physiology meets pathology." *Nat Rev Neurosci*. 2012;13(7):465-477. PMID: 22678511. doi: [10.1038/nrn3257](https://doi.org/10.1038/nrn3257)
 
-[12] Schwarcz R, Bruno JP, Muchowski PJ, Wu HQ. "Kynurenines in the mammalian brain: when physiology meets pathology." *Nat Rev Neurosci*. 2012;13(7):465-477. doi: [10.1038/nrn3257](https://doi.org/10.1038/nrn3257)
+[13] Cervenka I, Agudelo LZ, Ruas JL. "Kynurenines: Tryptophan's metabolites in exercise, inflammation, and mental health." *Science*. 2017;357(6349):eaaf9794. PMID: 28751584. doi: [10.1126/science.aaf9794](https://doi.org/10.1126/science.aaf9794)
 
-[13] Cervenka I, Agudelo LZ, Ruas JL. "Kynurenines: Tryptophan's metabolites in exercise, inflammation, and mental health." *Science*. 2017;357(6349):eaaf9794. doi: [10.1126/science.aaf9794](https://doi.org/10.1126/science.aaf9794)
+[15] Opitz CA, Litzenburger UM, Sahm F, et al. "An endogenous tumour-promoting ligand of the human aryl hydrocarbon receptor." *Nature*. 2011;478(7368):197-203. PMID: 21976023. doi: [10.1038/nature10491](https://doi.org/10.1038/nature10491)
 
-[14] Schroecksnadel K, Sarcletti M, Winkler C, et al. "Quality of life and immune activation in patients with HIV-infection." *Brain Behav Immun*. 2008;22(6):881-889. doi: [10.1016/j.bbi.2007.12.011](https://doi.org/10.1016/j.bbi.2007.12.011)
+[16] Fernstrom JD. "Large neutral amino acids: dietary effects on brain neurochemistry and function." *Amino Acids*. 2013;45(3):419-430. PMID: 22677921. doi: [10.1007/s00726-012-1330-y](https://doi.org/10.1007/s00726-012-1330-y)
 
-[15] Opitz CA, Litzenburger UM, Sahm F, et al. "An endogenous tumour-promoting ligand of the human aryl hydrocarbon receptor." *Nature*. 2011;478(7368):197-203. doi: [10.1038/nature10491](https://doi.org/10.1038/nature10491)
+[17] Kanai Y, Segawa H, Miyamoto K, et al. "Expression cloning and characterization of a transporter for large neutral amino acids activated by the heavy chain of 4F2 antigen (CD98)." *J Biol Chem*. 1998;273(37):23629-23632. PMID: 9726963. doi: [10.1074/jbc.273.37.23629](https://doi.org/10.1074/jbc.273.37.23629)
 
-[16] Fernstrom JD. "Large neutral amino acids: dietary effects on brain neurochemistry and function." *Amino Acids*. 2013;45(3):419-430. doi: [10.1007/s00726-012-1330-y](https://doi.org/10.1007/s00726-012-1330-y)
+[18] Wurtman RJ, Wurtman JJ. "Brain serotonin, carbohydrate-craving, obesity and depression." *Obes Res*. 1995;3(Suppl 4):477S-480S. PMID: 8697046. doi: [10.1002/j.1550-8528.1995.tb00215.x](https://doi.org/10.1002/j.1550-8528.1995.tb00215.x)
 
-[17] Kanai Y, Segawa H, Miyamoto K, et al. "Expression cloning and characterization of a transporter for large neutral amino acids activated by the heavy chain of 4F2 antigen (CD98)." *J Biol Chem*. 1998;273(37):23629-23632. doi: [10.1074/jbc.273.37.23629](https://doi.org/10.1074/jbc.273.37.23629)
+[19] Fernstrom JD, Langham KA, Marcelino LM, et al. "The ingestion of different dietary proteins by humans induces large changes in the plasma tryptophan ratio, a predictor of brain tryptophan uptake and serotonin synthesis." *Clin Nutr*. 2013;32(6):1073-1076. PMID: 23395255. doi: [10.1016/j.clnu.2012.11.027](https://doi.org/10.1016/j.clnu.2012.11.027)
 
-[18] Wurtman RJ, Wurtman JJ. "Brain serotonin, carbohydrate-craving, obesity and depression." *Obes Res*. 1995;3(Suppl 4):477S-480S. doi: [10.1002/j.1550-8528.1995.tb00215.x](https://doi.org/10.1002/j.1550-8528.1995.tb00215.x)
+[21] Ikeda M. "Towards bacterial strains overproducing L-tryptophan and other aromatics by metabolic engineering." *Appl Microbiol Biotechnol*. 2006;69(6):615-626. PMID: 16374633. doi: [10.1007/s00253-005-0252-y](https://doi.org/10.1007/s00253-005-0252-y)
 
-[19] Fernstrom JD, Langham KA, Marcelino LM, et al. "The ingestion of different dietary proteins by humans induces large changes in the plasma tryptophan ratio, a predictor of brain tryptophan uptake and serotonin synthesis." *Clin Nutr*. 2013;32(6):1073-1076. doi: [10.1016/j.clnu.2012.11.027](https://doi.org/10.1016/j.clnu.2012.11.027)
+[23] Klarskov K, et al. "Peak AAA fatty acid homolog contaminants present in the dietary supplement l-Tryptophan associated with the onset of eosinophilia-myalgia syndrome." *Toxicol Lett*. 2018. PMID: 29800716. doi: [10.1016/j.toxlet.2018.05.027](https://doi.org/10.1016/j.toxlet.2018.05.027)
 
-[20] Fuentes-Lemus E, Davies MJ. "Effect of crowding, compartmentalization and nanodomains on protein modification and redox signaling." *Redox Biol*. 2023;61:102615. doi: [10.1016/j.redox.2023.102615](https://doi.org/10.1016/j.redox.2023.102615)
+[24] Hartmann E. "Effects of L-tryptophan on sleepiness and on sleep." *J Psychiatr Res*. 1982;17(2):107-113. PMID: 6764927. doi: [10.1016/0022-3956(82)90012-7](https://doi.org/10.1016/0022-3956(82)90012-7)
 
-[21] Ikeda M. "Towards bacterial strains overproducing L-tryptophan and other aromatics by metabolic engineering." *Appl Microbiol Biotechnol*. 2006;69(6):615-626. doi: [10.1007/s00253-005-0252-y](https://doi.org/10.1007/s00253-005-0252-y)
+[25] Hartmann E, Spinweber CL. "Sleep induced by L-tryptophan. Effect of dosages within the normal dietary intake." *J Nerv Ment Dis*. 1979;167(8):497-499. PMID: [469515](https://pubmed.ncbi.nlm.nih.gov/469515/)
 
-[22] Grokipedia. "Tryptophan — Industrial Synthesis and Manufacturing." [https://grokipedia.com/page/Tryptophan](https://grokipedia.com/page/Tryptophan)
+[26] Sutanto CN, Loh WW, Kim JE. "The impact of tryptophan supplementation on sleep quality: a systematic review, meta-analysis, and meta-regression." *Nutr Rev*. 2022;80(2):306-316. PMID: 33942088. doi: [10.1093/nutrit/nuab027](https://doi.org/10.1093/nutrit/nuab027)
 
-[23] Klarskov K, Johnson KL, Benson LM, et al. "Peak AAA fatty acid homolog contaminants present in the dietary supplement L-Tryptophan." *Tox Letters*. 2018;282:39-46. doi: [10.1016/j.toxlet.2017.10.005](https://doi.org/10.1016/j.toxlet.2017.10.005)
+[27] Sateia MJ, Buysse DJ, Krystal AD, et al. "Clinical Practice Guideline for the Pharmacologic Treatment of Chronic Insomnia in Adults." *J Clin Sleep Med*. 2017;13(2):307-349. PMID: 27998379. doi: [10.5664/jcsm.6470](https://doi.org/10.5664/jcsm.6470)
 
-[24] Hartmann E. "Effects of L-tryptophan on sleepiness and on sleep." *J Psychiatr Res*. 1982;17(2):107-113. doi: [10.1016/0022-3956(82)90012-7](https://doi.org/10.1016/0022-3956(82)90012-7)
+[28] Wyatt RJ, Zarcone V, Engelman K, et al. "Effects of 5-hydroxytryptophan on the sleep of normal human subjects." *Electroencephalogr Clin Neurophysiol*. 1971;30(6):505-509. PMID: 4105646. doi: [10.1016/0013-4694(71)90147-7](https://doi.org/10.1016/0013-4694(71)90147-7)
 
-[25] Hartmann E, Spinweber CL. "Sleep induced by L-tryptophan. Effect of dosages within the normal dietary intake." *J Nerv Ment Dis*. 1979;167(8):497-499. doi: [10.1097/00005053-197908000-00004](https://doi.org/10.1097/00005053-197908000-00004)
+[29] Meloni M, et al. "Preliminary finding of a randomized, double-blind, placebo-controlled, crossover study to evaluate the safety and efficacy of 5-hydroxytryptophan on REM sleep behavior disorder in Parkinson's disease." *Sleep Breath*. 2022. PMID: 34403081. doi: [10.1007/s11325-021-02417-w](https://doi.org/10.1007/s11325-021-02417-w)
 
-[26] Sutanto CN, Loh WW, Kim JE. "The impact of tryptophan supplementation on sleep quality: a systematic review, meta-analysis, and meta-regression." *Nutr Rev*. 2022;80(2):306-316. doi: [10.1093/nutrit/nuab027](https://doi.org/10.1093/nutrit/nuab027)
+[30] Jangid P, Malik P, Singh P, et al. "Comparative study of efficacy of L-5-hydroxytryptophan and fluoxetine in patients presenting with first depressive episode." *Asian J Psychiatr*. 2013;6(1):29-34. PMID: 23380314. doi: [10.1016/j.ajp.2012.05.011](https://doi.org/10.1016/j.ajp.2012.05.011)
 
-[27] Sateia MJ, Buysse DJ, Krystal AD, et al. "Clinical Practice Guideline for the Pharmacologic Treatment of Chronic Insomnia in Adults." *J Clin Sleep Med*. 2017;13(2):307-349. doi: [10.5664/jcsm.6470](https://doi.org/10.5664/jcsm.6470)
+[31] Poldinger W, Calanchini B, Schwarz W. "A functional-dimensional approach to depression: serotonin deficiency as a target syndrome in a comparison of 5-hydroxytryptophan and fluvoxamine." *Psychopathology*. 1991;24(2):53-81. PMID: 1909444. doi: [10.1159/000284698](https://doi.org/10.1159/000284698)
 
-[28] Wyatt RJ, Zarcone V, Engelman K, et al. "Effects of 5-hydroxytryptophan on the sleep of normal human subjects." *Electroencephalogr Clin Neurophysiol*. 1971;30(6):505-509. doi: [10.1016/0013-4694(71)90147-7](https://doi.org/10.1016/0013-4694(71)90147-7)
+[33] Moncrieff J, Cooper RE, Stockmann T, et al. "The serotonin theory of depression: a systematic umbrella review of the evidence." *Mol Psychiatry*. 2023;28(8):3243-3256. PMID: 35854107. doi: [10.1038/s41380-022-01661-0](https://doi.org/10.1038/s41380-022-01661-0)
 
-[29] Meloni M, Puligheddu M, Carta M, et al. "Efficacy and safety of 5-hydroxytryptophan on depression and apathy in Parkinson's disease: a preliminary finding." *Sleep Breath*. 2021;25(3):1493-1499. doi: [10.1007/s11325-020-02198-y](https://doi.org/10.1007/s11325-020-02198-y)
+[35] Shaw K, Turner J, Del Mar C. "Tryptophan and 5-hydroxytryptophan for depression." *Cochrane Database Syst Rev*. 2002;(1):CD003198. PMID: 11869656. doi: [10.1002/14651858.CD003198](https://doi.org/10.1002/14651858.CD003198)
 
-[30] Jangid P, Malik P, Singh P, et al. "Comparative study of efficacy of L-5-hydroxytryptophan and fluoxetine in patients presenting with first depressive episode." *Asian J Psychiatr*. 2013;6(1):29-34. doi: [10.1016/j.ajp.2012.05.011](https://doi.org/10.1016/j.ajp.2012.05.011)
+[37] Cangiano C, Ceci F, Cascino A, et al. "Eating behavior and adherence to dietary prescriptions in obese adult subjects treated with 5-hydroxytryptophan." *Am J Clin Nutr*. 1992;56(5):863-867. PMID: 1384305. doi: [10.1093/ajcn/56.5.863](https://doi.org/10.1093/ajcn/56.5.863)
 
-[31] Poldinger W, Calanchini B, Schwarz W. "A functional-dimensional approach to depression: serotonin deficiency as a target syndrome in a comparison of 5-hydroxytryptophan and fluvoxamine." *Psychopathology*. 1991;24(2):53-81. doi: [10.1159/000284698](https://doi.org/10.1159/000284698)
+[38] Nicolodi M, Sicuteri F. "Fibromyalgia and migraine, two faces of the same mechanism. Serotonin as the common clue for pathogenesis and therapy." *Adv Exp Med Biol*. 1996;398:373-379. PMID: 8906292. doi: [10.1007/978-1-4613-0381-7_58](https://doi.org/10.1007/978-1-4613-0381-7_58)
 
-[32] Thomas SJ, Shin M, McInnis MG, Bostwick JR. "Combination therapy with monoamine oxidase inhibitors and other antidepressants or stimulants: strategies for the management of treatment-resistant depression." *Adv Integ Med*. 2015;2(1):23-29.
+[40] Caruso I, Sarzi Puttini P, Cazzola M, Azzolini V. "Double-blind study of 5-hydroxytryptophan versus placebo in the treatment of primary fibromyalgia syndrome." *J Int Med Res*. 1990;18(3):201-209. PMID: 2193835. doi: [10.1177/030006059001800304](https://doi.org/10.1177/030006059001800304)
 
-[33] Moncrieff J, Cooper RE, Stockmann T, et al. "The serotonin theory of depression: a systematic umbrella review of the evidence." *Mol Psychiatry*. 2023;28(8):3243-3256. doi: [10.1038/s41380-022-01661-0](https://doi.org/10.1038/s41380-022-01661-0)
+[41] Li SM, et al. "The Impact of 5-Hydroxytryptophan Supplementation on Cognitive Function and Mood in Singapore Older Adults: A Randomized Controlled Trial." *Nutrients*. 2025. PMID: 40944161. doi: [10.3390/nu17172773](https://doi.org/10.3390/nu17172773)
 
-[34] Soh NL, Walter G. "Tryptophan and depression: can diet alone be the answer?" *Acta Neuropsychiatr*. 2011;23(1):3-11. doi: [10.1111/j.1601-5215.2010.00508.x](https://doi.org/10.1111/j.1601-5215.2010.00508.x)
+[42] Kahn RS, Westenberg HG, Verhoeven WM, et al. "Effect of a serotonin precursor and uptake inhibitor in anxiety disorders; a double-blind comparison of 5-hydroxytryptophan, clomipramine and placebo." *Int Clin Psychopharmacol*. 1987;2(1):33-45. PMID: 3312397. doi: [10.1097/00004850-198701000-00003](https://doi.org/10.1097/00004850-198701000-00003)
 
-[35] Shaw K, Turner J, Del Mar C. "Tryptophan and 5-hydroxytryptophan for depression." *Cochrane Database Syst Rev*. 2002;(1):CD003198. doi: [10.1002/14651858.CD003198](https://doi.org/10.1002/14651858.CD003198)
+[44] Steinberg S, Annable L, Young SN, Liyanage N. "A placebo-controlled study of the effects of L-tryptophan in patients with premenstrual dysphoria." *Adv Exp Med Biol*. 1999;467:85-88. PMID: 10721042. doi: [10.1007/978-1-4615-4709-9_11](https://doi.org/10.1007/978-1-4615-4709-9_11)
 
-[36] Jahromi SR, Togha M, Ghorbani Z, et al. "The association between dietary tryptophan intake and migraine." *Neurol Sci*. 2019;40(11):2349-2355. doi: [10.1007/s10072-019-03984-3](https://doi.org/10.1007/s10072-019-03984-3)
+[45] Bowen DJ, Spring B, Fox E. "Tryptophan and high-carbohydrate diets as adjuncts to smoking cessation therapy." *J Behav Med*. 1991;14(2):97-110. PMID: 1880796. doi: [10.1007/BF00846173](https://doi.org/10.1007/BF00846173)
 
-[37] Cangiano C, Ceci F, Cascino A, et al. "Eating behavior and adherence to dietary prescriptions in obese adult subjects treated with 5-hydroxytryptophan." *Am J Clin Nutr*. 1992;56(5):863-867. doi: [10.1093/ajcn/56.5.863](https://doi.org/10.1093/ajcn/56.5.863)
+[46] Steinberg S, Annable L, Young SN, Liyanage N. "Tryptophan in the treatment of late luteal phase dysphoric disorder: a pilot study." *J Psychiatry Neurosci*. 1994;19(2):114-119. PMID: [8204563](https://pubmed.ncbi.nlm.nih.gov/8204563/)
 
-[38] Nicolodi M, Sicuteri F. "Fibromyalgia and migraine, two faces of the same mechanism. Serotonin as the common clue for pathogenesis and therapy." *Recent Advances in Tryptophan Research*. 1996;373-379. doi: [10.1007/978-1-4613-0381-7_58](https://doi.org/10.1007/978-1-4613-0381-7_58)
-
-[39] Cordero MD, Cotan D, del-Pozo-Martin Y, et al. "Oral coenzyme Q10 supplementation improves clinical symptoms and recovers pathologic alterations in blood mononuclear cells in a fibromyalgia patient." *Nutrition*. 2012;28(11-12):1200-1203. doi: [10.1016/j.nut.2012.02.003](https://doi.org/10.1016/j.nut.2012.02.003)
-
-[40] Caruso I, Sarzi Puttini P, Cazzola M, Azzolini V. "Double-blind study of 5-hydroxytryptophan versus placebo in the treatment of primary fibromyalgia syndrome." *J Int Med Res*. 1990;18(3):201-209. doi: [10.1177/030006059001800304](https://doi.org/10.1177/030006059001800304)
-
-[41] Li SM, Chong YS, Godfrey KM, et al. "Effect of 5-hydroxytryptophan supplementation on cognitive function among community-dwelling older adults: a 12-week randomized controlled trial." *Nutrients*. 2025;17(3):421. doi: [10.3390/nu17030421](https://doi.org/10.3390/nu17030421)
-
-[42] Kahn RS, Westenberg HG, Verhoeven WM, et al. "Effect of a serotonin precursor and uptake inhibitor in anxiety disorders; a double-blind comparison of 5-hydroxytryptophan, clomipramine and placebo." *Int Clin Psychopharmacol*. 1987;2(1):33-45. doi: [10.1097/00004850-198701000-00003](https://doi.org/10.1097/00004850-198701000-00003)
-
-[43] Davies SJ, Hood SD, Argyropoulos SV, et al. "Effects of tryptophan depletion on anxiety, a systematic review." *J Psychopharmacol*. 2006;20(6):41.
-
-[44] Steinberg S, Annable L, Young SN, Liyanage N. "A placebo-controlled clinical trial of L-tryptophan in premenstrual dysphoria." *Adv Exp Med Biol*. 1999;467:85-88. doi: [10.1007/978-1-4615-4709-9_11](https://doi.org/10.1007/978-1-4615-4709-9_11)
-
-[45] Bowen DJ, Spring B, Fox E. "Tryptophan and high-carbohydrate diets as adjuncts to smoking cessation therapy." *J Behav Med*. 1991;14(2):97-110. doi: [10.1007/BF00844895](https://doi.org/10.1007/BF00844895)
-
-[46] Steinberg S, Annable L, Young SN, Liyanage N. "Tryptophan in the treatment of late luteal phase dysphoric disorder: a pilot study." *J Psychiatry Neurosci*. 1994;19(2):114-119.
-
-[47] U.S. Department of Agriculture. "What We Eat in America, NHANES." FoodData Central. [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
-
-[48] Sidransky H. "Tryptophan: Biochemical and Health Implications." *CRC Press*. 2001.
-
-[49] European Food Safety Authority. "Safety and efficacy of L-tryptophan produced by fermentation with Escherichia coli for all animal species." *EFSA Journal*. 2024;22(2):e8578.
-
-[50] Swygert LA, Maes EF, Sewell LE, et al. "Eosinophilia-myalgia syndrome. Results of national surveillance." *JAMA*. 1990;264(13):1698-1703. doi: [10.1001/jama.1990.03450130058029](https://doi.org/10.1001/jama.1990.03450130058029)
-
-[51] Centers for Disease Control and Prevention. "Eosinophilia-myalgia syndrome and L-tryptophan-containing products." *MMWR*. 1989;38(45):785-788.
+[50] Swygert LA, Maes EF, Sewell LE, et al. "Eosinophilia-myalgia syndrome. Results of national surveillance." *JAMA*. 1990;264(13):1698-1703. PMID: 2398610. doi: [10.1001/jama.1990.03450130058029](https://doi.org/10.1001/jama.1990.03450130058029)
 
 [52] Back EE, Henning KJ, Kallenbach LR, et al. "Risk factors for developing eosinophilia myalgia syndrome among L-tryptophan users in New York." *J Rheumatol*. 1993;20(4):666-672. PMID: [8496862](https://pubmed.ncbi.nlm.nih.gov/8496862/)
 
-[53] Kamb ML, Murphy JJ, Jones JL, et al. "Eosinophilia-myalgia syndrome in L-tryptophan-exposed patients." *JAMA*. 1992;267(1):77-82. doi: [10.1001/jama.1992.03480010085034](https://doi.org/10.1001/jama.1992.03480010085034)
+[53] Kamb ML, Murphy JJ, Jones JL, et al. "Eosinophilia-myalgia syndrome in L-tryptophan-exposed patients." *JAMA*. 1992;267(1):77-82. PMID: 1727200. doi: [10.1001/jama.267.1.77](https://doi.org/10.1001/jama.267.1.77)
 
-[54] Slutsker L, Hoesly FC, Miller L, et al. "Eosinophilia-myalgia syndrome associated with exposure to tryptophan from a single manufacturer." *JAMA*. 1990;264(2):213-217. doi: [10.1001/jama.1990.03450020075024](https://doi.org/10.1001/jama.1990.03450020075024)
+[54] Slutsker L, Hoesly FC, Miller L, et al. "Eosinophilia-myalgia syndrome associated with exposure to tryptophan from a single manufacturer." *JAMA*. 1990;264(2):213-217. PMID: 2355442. doi: [10.1001/jama.1990.03450020075024](https://doi.org/10.1001/jama.1990.03450020075024)
 
-[55] Belongia EA, Hedberg CW, Gleich GJ, et al. "An investigation of the cause of the eosinophilia-myalgia syndrome associated with tryptophan use." *N Engl J Med*. 1990;323(6):357-365. doi: [10.1056/NEJM199008093230601](https://doi.org/10.1056/NEJM199008093230601)
+[55] Belongia EA, Hedberg CW, Gleich GJ, et al. "An investigation of the cause of the eosinophilia-myalgia syndrome associated with tryptophan use." *N Engl J Med*. 1990;323(6):357-365. PMID: 2370887. doi: [10.1056/NEJM199008093230601](https://doi.org/10.1056/NEJM199008093230601)
 
-[56] Allen JA, Peterson A, Sufit R, et al. "Post-epidemic eosinophilia-myalgia syndrome associated with L-tryptophan." *Arthritis Rheum*. 2011;63(11):3633-3639. doi: [10.1002/art.30514](https://doi.org/10.1002/art.30514)
+[56] Allen JA, Peterson A, Sufit R, et al. "Post-epidemic eosinophilia-myalgia syndrome associated with L-tryptophan." *Arthritis Rheum*. 2011;63(11):3633-3639. PMID: 21702023. doi: [10.1002/art.30514](https://doi.org/10.1002/art.30514)
 
-[57] Smith MJ, Garrett RH. "A heretofore undisclosed crux of eosinophilia-myalgia syndrome: compromised histamine degradation." *Inflamm Res*. 2005;54(11):435-450. doi: [10.1007/s00011-005-1380-7](https://doi.org/10.1007/s00011-005-1380-7)
+[57] Smith MJ, Garrett RH. "A heretofore undisclosed crux of eosinophilia-myalgia syndrome: compromised histamine degradation." *Inflamm Res*. 2005;54(11):435-450. PMID: 16307217. doi: [10.1007/s00011-005-1380-7](https://doi.org/10.1007/s00011-005-1380-7)
 
-[58] Barth H, Berg PA, Clemens H, et al. "Immune reactivity towards tryptophan and EMS-associated contaminants in patients with functional somatic syndromes." *Clin Exp Immunol*. 2001;124(2):303-310. doi: [10.1046/j.1365-2249.2001.01509.x](https://doi.org/10.1046/j.1365-2249.2001.01509.x)
+[58] Barth H, et al. "L-tryptophan contaminant 'peak E' induces the release of IL-5 and IL-10 by peripheral blood mononuclear cells from patients with functional somatic syndromes." *Clin Exp Immunol*. 2001. PMID: 11703359. doi: [10.1046/j.1365-2249.2001.01559.x](https://doi.org/10.1046/j.1365-2249.2001.01559.x)
 
-[59] Auffret M, Tretout L, Gascueres L, et al. "Eosinophilia-myalgia syndrome associated with 5-hydroxytryptophan." *Fundam Clin Pharmacol*. 2013;27(Suppl. 1):108. Abstract P2-204.
+[60] Das YT, et al. "Safety of 5-hydroxy-L-tryptophan." *Toxicol Lett*. 2004;150(1):111-122. PMID: 15068828. doi: [10.1016/j.toxlet.2003.12.070](https://doi.org/10.1016/j.toxlet.2003.12.070)
 
-[60] Das YT, Bagchi M, Bhattacharya S, Bhattacharya D. "Safety of 5-hydroxy-L-tryptophan." *Toxicol Lett*. 2004;150(1):111-122. doi: [10.1016/j.toxlet.2003.12.070](https://doi.org/10.1016/j.toxlet.2003.12.070)
+[62] Pardo JS, et al. "Mania following addition of hydroxytryptophan to monoamine oxidase inhibitor." *Gen Hosp Psychiatry*. 2012. PMID: 21963353. doi: [10.1016/j.genhosppsych.2011.08.014](https://doi.org/10.1016/j.genhosppsych.2011.08.014)
 
-[61] Boyer EW, Shannon M. "The serotonin syndrome." *N Engl J Med*. 2005;352(11):1112-1120. doi: [10.1056/NEJMra041867](https://doi.org/10.1056/NEJMra041867)
+[63] Ortolani KL, et al. "Xylitol toxicosis and serotonin-like syndrome occurring simultaneously in a dog secondary to ingestion of Natrol 5-HTP Fast Dissolve Tablets." *Clin Case Rep*. 2019. PMID: 30655997. doi: [10.1002/ccr3.1869](https://doi.org/10.1002/ccr3.1869)
 
-[62] Pardo JS, Feinstein SH, Fischer PJ. "Mania following addition of hydroxytryptophan to monoamine oxidase inhibitor." *Gen Hosp Psychiatry*. 2012;34(1):102.e13-14. doi: [10.1016/j.genhosppsych.2011.05.016](https://doi.org/10.1016/j.genhosppsych.2011.05.016)
+[66] Hallin ML, et al. "'Sweet Dreams', 'Happy Days' and elevated 24-h urine 5-hydroxyindoleacetic acid excretion." *Ann Clin Biochem*. 2013. PMID: 23086978. doi: [10.1258/acb.2012.012041](https://doi.org/10.1258/acb.2012.012041)
 
-[63] Ortolani KL, Krebs C, Drobatz KJ. "Serotonin-like syndrome and/or xylitol toxicosis in a dog after ingestion of 5-hydroxytryptophan supplement." *Clin Case Rep*. 2019;7(5):1018-1023. doi: [10.1002/ccr3.2140](https://doi.org/10.1002/ccr3.2140)
+[72] Nozaki J, Dakeishi M, Ohura T, et al. "Homozygosity mapping to chromosome 5p15 of a gene responsible for Hartnup disorder." *Biochem Biophys Res Commun*. 2001;284(2):255-260. PMID: 11394870. doi: [10.1006/bbrc.2001.4961](https://doi.org/10.1006/bbrc.2001.4961)
 
-[64] Burks TF. "Neuroendocrine tumors and false-positive 5-hydroxyindoleacetic acid." *AACE Clin Case Rep*. 2016;2(4):e318-e320.
+[73] Hertzman PA, et al. "Association of the eosinophilia-myalgia syndrome with the ingestion of tryptophan." *N Engl J Med*. 1990. PMID: 2314421. https://pubmed.ncbi.nlm.nih.gov/2314421/
 
-[65] Preshaw PM, Cleary E, Heaton H. "Raised level of 5-HIAA in a patient taking 5-HTP." *CMAJ*. 2008;178(3):305. doi: [10.1503/cmaj.071289](https://doi.org/10.1503/cmaj.071289)
+[74] Kilbourne EM, et al. "Tryptophan produced by Showa Denko and epidemic eosinophilia-myalgia syndrome." *J Rheumatol Suppl*. 1996. PMID: 8895184. https://pubmed.ncbi.nlm.nih.gov/8895184/
 
-[66] Hallin ML, Mahmoud M, Swanstrom S, et al. "Falsely elevated urinary 5-HIAA due to 5-HTP ingestion." *Ann Clin Biochem*. 2013;50(Pt 5):496-497. doi: [10.1177/0004563213487793](https://doi.org/10.1177/0004563213487793)
+[75] Michelson D, et al. "An eosinophilia-myalgia syndrome related disorder associated with exposure to L-5-hydroxytryptophan." *J Rheumatol*. 1994. PMID: 7699627. https://pubmed.ncbi.nlm.nih.gov/7699627/
 
-[67] National Library of Medicine. "Tryptophan: MedlinePlus Supplements." [https://medlineplus.gov/druginfo/natural/326.html](https://medlineplus.gov/druginfo/natural/326.html)
+[76] Sternberg EM, et al. "Development of a scleroderma-like illness during therapy with L-5-hydroxytryptophan and carbidopa." *N Engl J Med*. 1980. PMID: 6997735. https://pubmed.ncbi.nlm.nih.gov/6997735/
 
-[68] Fernstrom JD, Fernstrom MH. "Tyrosine, phenylalanine, and catecholamine synthesis and function in the brain." *J Nutr*. 2007;137(6 Suppl 1):1539S-1547S. doi: [10.1093/jn/137.6.1539S](https://doi.org/10.1093/jn/137.6.1539S)
+[77] Joy T, et al. "Increase of urinary 5-hydroxyindoleacetic acid excretion but not serum chromogranin A following over-the-counter 5-hydroxytryptophan intake." *Can J Gastroenterol*. 2008. PMID: 18209781. https://pubmed.ncbi.nlm.nih.gov/18209781/
 
-[69] U.S. Department of Agriculture. FoodData Central. [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
+[78] Sternbach H. "The serotonin syndrome." *Am J Psychiatry*. 1991. PMID: 2035713. https://pubmed.ncbi.nlm.nih.gov/2035713/
 
-[70] USDA Nutrient Data. Additional data available at: [https://ndb.nal.usda.gov/ndb/](https://ndb.nal.usda.gov/ndb/)
+[79] Spadaro A, et al. "High risk and low prevalence diseases: Serotonin syndrome." *Am J Emerg Med*. 2022. PMID: 36057215. https://pubmed.ncbi.nlm.nih.gov/36057215/
 
-[71] Mao X, Hua Y, Chen G. "Analysis, Nutrition, and Health Benefits of Tryptophan." *Int J Mol Sci*. 2021;22(4):1526. doi: [10.3390/ijms22041526](https://doi.org/10.3390/ijms22041526)
+[80] Gillman PK. "Monoamine oxidase inhibitors, opioid analgesics and serotonin toxicity." *Br J Anaesth*. 2005. PMID: 16051647. https://pubmed.ncbi.nlm.nih.gov/16051647/
 
-[72] Nozaki J, Dakeishi M, Ohura T, et al. "Homozygosity mapping to chromosome 5p15 of a gene responsible for Hartnup disorder." *Biochem Biophys Res Commun*. 2001;284(2):255-260. doi: [10.1006/bbrc.2001.4961](https://doi.org/10.1006/bbrc.2001.4961)
+[81] Steiner W, Fontaine R. "Toxic reaction following the combined administration of fluoxetine and L-tryptophan: five case reports." *Biol Psychiatry*. 1986. PMID: 3488767. https://pubmed.ncbi.nlm.nih.gov/3488767/
+
+[82] Ostabal Artigas MI, et al. "Serotoninergic syndrome due to interaction between linezolid and 5-hydroxytryptophan." *Med Clin (Barc)*. 2015. PMID: 25978918. https://pubmed.ncbi.nlm.nih.gov/25978918/
+
+[83] Evans RW, et al. "The FDA alert on serotonin syndrome with use of triptans combined with selective serotonin reuptake inhibitors or selective serotonin-norepinephrine reuptake inhibitors: American Headache Society position paper." *Headache*. 2010. PMID: 20618823. https://pubmed.ncbi.nlm.nih.gov/20618823/
+
+[84] Titus F, et al. "5-Hydroxytryptophan versus methysergide in the prophylaxis of migraine. Randomized clinical trial." *Eur Neurol*. 1986. PMID: 3536521. https://pubmed.ncbi.nlm.nih.gov/3536521/
+
+[85] Javelle F, et al. "Effects of 5-hydroxytryptophan on distinct types of depression: a systematic review and meta-analysis." *Nutr Rev*. 2020. PMID: 31504850. https://pubmed.ncbi.nlm.nih.gov/31504850/
+
+[86] Sarris J, et al. "Adjunctive Nutraceuticals for Depression: A Systematic Review and Meta-Analyses." *Am J Psychiatry*. 2016. PMID: 27113121. https://pubmed.ncbi.nlm.nih.gov/27113121/
+
+[87] Turner EH, et al. "Serotonin a la carte: supplementation with the serotonin precursor 5-hydroxytryptophan." *Pharmacol Ther*. 2006. PMID: 16023217. https://pubmed.ncbi.nlm.nih.gov/16023217/
+
+[88] Friedman M. "Analysis, Nutrition, and Health Benefits of Tryptophan." *Int J Tryptophan Res*. 2018. PMID: 30275700. https://pubmed.ncbi.nlm.nih.gov/30275700/
+
+[89] Vigliante I, et al. "Chemical Characterization and DNA Fingerprinting of Griffonia simplicifolia Baill." *Molecules*. 2019. PMID: 30875930. https://pubmed.ncbi.nlm.nih.gov/30875930/
+
+[90] Williamson BL, et al. "Problems with over-the-counter 5-hydroxy-L-tryptophan." *Nat Med*. 1998. PMID: 9734369. https://pubmed.ncbi.nlm.nih.gov/9734369/
+
+[91] Scotton WJ, et al. "Serotonin Syndrome: Pathophysiology, Clinical Features, Management, and Potential Future Directions." *Int J Tryptophan Res*. 2019. PMID: 31523132. https://pubmed.ncbi.nlm.nih.gov/31523132/
