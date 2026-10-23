@@ -1,20 +1,22 @@
 /** @vitest-environment jsdom */
-/** US-10 AC4 / US-32: independent first saves must not verify private cached ids. */
+/** US-10 AC4 / AC4a / US-32: independent first saves must not verify private cached ids;
+ *  duplicate records reconcile, duplicate chat files keep first-match discovery. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Blob as NodeBlob } from 'node:buffer';
 import {
   ConflictError, buildErasedFile, createEmptyFile, createMeasurement, DriveAdapter, DRIVE_FOLDER_NAME,
   driveFindFileId,
-  ROADMAP_DOC, ROADMAP_FILE_NAME, StorageError, SyncManager,
+  ROADMAP_DOC, ROADMAP_FILE_NAME, SchemaTooNewError, StorageError, SyncManager,
   type RoadmapFile, type StorageAdapter,
 } from '@roadmap/health-core';
 import { GoogleDriveAdapter } from './drive';
+import { ChatHistoryStore } from './chat-history-store';
 import { describeStorageFailure } from '../../../packages/health-core/src/sync-manager';
 
 const NOW = '2026-10-01T00:00:00.000Z';
 const FOLDER = 'folder';
 type Kind = 'hosted' | 'browser';
-interface File { id: string; name: string; content: string; version: number; createdTime?: string }
+interface File { id: string; name: string; content: string; version: number; createdTime?: string; hiddenFor?: number }
 
 /** Provider boundary only: real adapters, multipart uploads and SyncManager. */
 class Drive {
@@ -24,6 +26,11 @@ class Drive {
   pages?: Array<{ files: Array<{ id: string; createdTime?: string }>; nextPageToken?: string; incompleteSearch?: boolean }>;
   afterPatch?: (file: File) => void;
   patchResponseStatus?: number;
+  createResponseStatus?: number;
+  /** Search lags creates: a new file stays out of `files.list` for this many lookups. */
+  listLag = 0;
+  /** The changes feed (US-34): every PATCH lands here, as Drive reports it. */
+  changes: Array<{ fileId: string }> = [];
   omitDates = false;
   loseCreateReply = false;
   onRequest?: (url: URL, method: string) => void;
@@ -46,7 +53,7 @@ class Drive {
       if (q.includes('mimeType=')) return Response.json({ files: [{ id: FOLDER, name: DRIVE_FOLDER_NAME }] });
       if (this.pages) return Response.json(this.pages[Number(url.searchParams.get('pageToken') ?? 0)]);
       const name = /name='([^']+)'/.exec(q)?.[1];
-      const hits = this.files.filter((file) => file.name === name);
+      const hits = this.files.filter((file) => file.name === name && !(file.hiddenFor && file.hiddenFor-- > 0));
       const limit = Number(url.searchParams.get('pageSize'));
       return Response.json({ files: hits.slice(0, limit).map(({ id, createdTime }) => ({ id, ...(this.omitDates ? {} : { createdTime: createdTime ?? NOW }) })) });
     }
@@ -55,7 +62,8 @@ class Drive {
       const parts = text.split(/--rm_boundary_health_roadmap-*\r?\n?/).filter((part) => part.trim());
       const meta = JSON.parse(parts[0].split('\r\n\r\n')[1]) as { name: string };
       const content = parts[1].split('\r\n\r\n')[1].replace(/\r\n$/, '');
-      const file = { id: `file-${this.files.length + 1}`, name: meta.name, content, version: 1 };
+      if (this.createResponseStatus) return new Response('synthetic rejected create', { status: this.createResponseStatus });
+      const file = { id: `file-${this.files.length + 1}`, name: meta.name, content, version: 1, hiddenFor: this.listLag };
       this.files.push(file);
       this.createdBytes.push(content);
       // Both creates land before either returns. No shared adapter or mutex.
@@ -64,15 +72,20 @@ class Drive {
       if (this.loseCreateReply) throw new Error("synthetic lost create reply");
       return Response.json({ id: file.id, version: String(file.version) });
     }
+    if (url.pathname === '/drive/v3/changes/startPageToken') return Response.json({ startPageToken: 't' });
+    if (url.pathname === '/drive/v3/changes') return Response.json({ changes: this.changes.splice(0), newStartPageToken: 't' });
     const id = /\/files\/([^/]+)$/.exec(url.pathname)?.[1];
     const file = this.files.find((entry) => entry.id === id);
     if (file && method === 'GET') {
       return url.searchParams.get('alt') === 'media'
-        ? new Response(file.content) : Response.json({ version: String(file.version) });
+        ? new Response(file.content)
+        : Response.json({ id: file.id, name: file.name, version: String(file.version), createdTime: file.createdTime ?? NOW, trashed: false });
     }
+    if (!file && method === 'GET' && id) return new Response('not found', { status: 404 });
     if (file && method === 'PATCH' && url.pathname.startsWith('/upload/')) {
       file.content = String(init!.body);
       ++file.version;
+      this.changes.push({ fileId: file.id });
       this.afterPatch?.(file);
       if (this.patchResponseStatus) return new Response('synthetic rejected response', { status: this.patchResponseStatus });
       return Response.json({ id: file.id, version: String(file.version) });
@@ -81,11 +94,11 @@ class Drive {
   }
 }
 
-function adapter(kind: Kind): StorageAdapter {
+function adapter(kind: Kind, fileIds?: Record<string, string>): StorageAdapter {
   if (kind === 'hosted') return new DriveAdapter('synthetic');
   // Each adapter captures its own config before any save; persisted ids cannot
   // act as cross-device coordination. No token exchange or live provider call.
-  localStorage.setItem('health_roadmap_gdrive', JSON.stringify({ folderId: FOLDER, folderName: DRIVE_FOLDER_NAME }));
+  localStorage.setItem('health_roadmap_gdrive', JSON.stringify({ folderId: FOLDER, folderName: DRIVE_FOLDER_NAME, fileIds }));
   localStorage.setItem('health_roadmap_gdrive_tokens', JSON.stringify({ accessToken: 'synthetic', expiresAt: Date.now() + 3_600_000 }));
   return new GoogleDriveAdapter({ clientId: 'synthetic', scope: 's', redirectUri: 'https://example.test/', exchangeUrl: 'https://example.test/exchange' });
 }
@@ -313,17 +326,18 @@ describe('US-10 AC4 — ambiguous first-save discovery', () => {
     expect(told.hint).toContain('may already have landed');
   });
 
-  it.each<Kind>(['hosted', 'browser'])('%s does not inherit auth no-write certainty from an uncertain PATCH', async (kind) => {
-    for (const status of [401, 403]) {
+  it.each<Kind>(['hosted', 'browser'])('%s keeps the provider status on an auth-refused record write or create (US-10 AC4a)', async (kind) => {
+    for (const [status, existing] of [[401, true], [403, true], [401, false]] as const) {
       const drive = new Drive();
-      drive.files = [{ id: 'one', name: ROADMAP_FILE_NAME, content: JSON.stringify(record('A')), version: 1 }];
-      drive.patchResponseStatus = status;
+      if (existing) {
+        drive.files = [{ id: 'one', name: ROADMAP_FILE_NAME, content: JSON.stringify(record('A')), version: 1 }];
+        drive.patchResponseStatus = status;
+      } else drive.createResponseStatus = status;
       const failure = await manager(adapter(kind), 'writer').save(record('B')).then(() => null, (error: unknown) => error);
-      expect(drive.files[0].version).toBe(2);
-      const told = describeStorageFailure(failure, 'Google Drive');
-      expect(`${told.message} ${told.hint}`).not.toMatch(/nothing was (written|changed)/i);
-      expect(told.hint).toContain('may already have landed');
-      expect(failure).toMatchObject({ cause: { status } });
+      // iOS refreshes the token on a 401 and the page says "reconnect": both read the status.
+      expect(failure).toBeInstanceOf(StorageError);
+      expect(failure).toMatchObject({ status });
+      expect(describeStorageFailure(failure, 'Google Drive').hint).toContain('Reconnect');
     }
   });
 
@@ -433,14 +447,11 @@ describe('US-10 AC4 — ambiguous first-save discovery', () => {
     expect(await (await adapter('browser').readDocument('scan.pdf')).text()).toBe('synthetic PDF bytes');
   });
 
-  it.each([{ nextPageToken: 'more' }, { incompleteSearch: true }])('refuses an incomplete record lookup: %j', async (extra) => {
-    const fetch = vi.fn(async (_input: string | URL) => Response.json({ files: [{ id: 'one' }], ...extra }));
+  it('keeps first-match lookup for named files, even with a next page (US-10 AC4a)', async () => {
+    const fetch = vi.fn(async (_input: string | URL) => Response.json({ files: [{ id: 'one' }], nextPageToken: 'more' }));
     vi.stubGlobal('fetch', fetch);
-    await expect(driveFindFileId('synthetic', ROADMAP_FILE_NAME, undefined, undefined, true)).rejects.toBeInstanceOf(StorageError);
-    const url = new URL(String(fetch.mock.calls[0]?.[0]));
-    expect(url.searchParams.get('pageSize')).toBe('2');
-    expect(url.searchParams.get('fields')).toContain('nextPageToken');
-    expect(url.searchParams.get('fields')).toContain('incompleteSearch');
+    await expect(driveFindFileId('synthetic', 'chat-history.json')).resolves.toBe('one');
+    expect(new URL(String(fetch.mock.calls[0]?.[0])).searchParams.get('pageSize')).toBe('1');
   });
 
   it.each<Kind>(['hosted', 'browser'])('%s still saves and discovers a unique record', async (kind) => {
@@ -450,5 +461,70 @@ describe('US-10 AC4 — ambiguous first-save discovery', () => {
     const fresh = await manager(adapter(kind), 'fresh').load();
     expect(fresh.measurements.map((row) => row.id)).toEqual(['A']);
     expect(drive.files).toHaveLength(1);
+  });
+
+  it.each<Kind>(['hosted', 'browser'])('%s reads, saves and erases chat beside a duplicate chat-history.json (US-10 AC4a)', async (kind) => {
+    const drive = new Drive();
+    const first = await ChatHistoryStore.create(adapter(kind));
+    await first.recordExchange({ conversationId: 'c1', isNew: true, userText: 'synthetic question', assistantText: 'synthetic answer' });
+    const chat = drive.files.find((file) => file.name === 'chat-history.json')!;
+    // The same race as the record's: a second device's first save made a copy.
+    drive.files.push({ ...chat, id: 'chat-copy' });
+    const store = await ChatHistoryStore.create(adapter(kind));
+    expect(store.listConversations().map((conv) => conv.id)).toEqual(['c1']);
+    await store.recordExchange({ conversationId: 'c2', isNew: true, userText: 'second question', assistantText: 'second answer' });
+    expect((await ChatHistoryStore.create(adapter(kind))).listConversations().map((conv) => conv.id).sort()).toEqual(['c1', 'c2']);
+    await store.eraseAll();
+    expect((await ChatHistoryStore.create(adapter(kind))).listConversations()).toEqual([]);
+    expect(drive.requests.some((request) => request.startsWith('DELETE '))).toBe(false);
+  });
+
+  it.each<Kind>(['hosted', 'browser'])('%s confirms a first create by its id when search lags, and never creates twice (US-10 AC4a)', async (kind) => {
+    const drive = new Drive(); drive.listLag = 50;
+    const a = manager(adapter(kind), 'A');
+    await expect(a.save(record('A'))).resolves.toMatchObject({ attempts: 0 });
+    const both = ROADMAP_DOC.merge(record('A'), record('B'), { deviceId: 'fixture', now: NOW });
+    await expect(a.save(both)).resolves.toBeDefined();
+    expect(drive.requests.filter((request) => request.startsWith('POST '))).toHaveLength(1);
+    expect(drive.files).toHaveLength(1);
+    expect(JSON.parse(drive.files[0].content).measurements.map((row: { id: string }) => row.id).sort()).toEqual(['A', 'B']);
+  });
+
+  it('browser watch follows the record copies, not a stale cached losing id (US-34 AC1, US-10 AC4a)', async () => {
+    const drive = new Drive();
+    drive.files = [
+      { id: 'winner', name: ROADMAP_FILE_NAME, version: 1, createdTime: '2026-09-01T00:00:00.000Z', content: JSON.stringify(record('A')) },
+      { id: 'loser', name: ROADMAP_FILE_NAME, version: 1, content: JSON.stringify(record('B')) },
+    ];
+    const browser = adapter('browser', { [ROADMAP_FILE_NAME]: 'loser' });
+    await browser.read(ROADMAP_FILE_NAME); // the session's open
+    await manager(adapter('hosted'), 'other-device').save(record('C'));
+    expect(drive.changes).toEqual([{ fileId: 'winner' }]);
+    const onChange = vi.fn(); const stop = new AbortController();
+    browser.watch!(ROADMAP_FILE_NAME, onChange, stop.signal);
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
+    stop.abort();
+  });
+
+  it.each<Kind>(['hosted', 'browser'])('%s reads the healthy copies past a damaged or newer-schema one, and refuses only saves (US-10 AC4a)', async (kind) => {
+    const cases: Array<[string, new (...args: never[]) => Error]> = [
+      ['{broken', StorageError],
+      [JSON.stringify({ schemaVersion: 2, measurements: 'not-a-list' }), StorageError],
+      [JSON.stringify({ ...record('B'), schemaVersion: 999 }), SchemaTooNewError],
+    ];
+    for (const [content, refusal] of cases) {
+      const drive = new Drive();
+      drive.files = [
+        { id: 'a', name: ROADMAP_FILE_NAME, version: 1, content: JSON.stringify(record('A')) },
+        { id: 'z', name: ROADMAP_FILE_NAME, version: 1, content },
+      ];
+      const loaded = await manager(adapter(kind), 'reader').load();
+      expect(loaded.measurements.map((row) => row.id)).toEqual(['A']);
+      const failure = await manager(adapter(kind), 'writer').save(record('C')).then(() => null, (error: unknown) => error);
+      expect(failure).toBeInstanceOf(refusal);
+      const told = describeStorageFailure(failure, 'Google Drive');
+      expect(`${told.message} ${told.hint}`).toMatch(refusal === SchemaTooNewError ? /newer version/ : /Nothing was written/);
+      expect(drive.requests.every((request) => request.startsWith('GET '))).toBe(true);
+    }
   });
 });

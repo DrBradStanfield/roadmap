@@ -276,6 +276,28 @@ describe('SyncManager.save — uncertainty survives later failures', () => {
     if (mode !== 'schema') expect(failure).toMatchObject({ cause: fatal });
   });
 
+  it('keeps "may have landed" when the save is cancelled during verification (US-10 AC4a)', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const read = adapter.read.bind(adapter);
+    const abort = new AbortController();
+    let reads = 0;
+    adapter.read = async (...args) => {
+      if (++reads === 2) {
+        abort.abort();
+        abort.signal.throwIfAborted();
+      }
+      return read(...args);
+    };
+    const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer'), abort.signal).then(() => null, (error: unknown) => error);
+    expect(cloud.files.has(ROADMAP_FILE_NAME)).toBe(true);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect(failure).toMatchObject({ cause: abort.signal.reason });
+    const told = describeStorageFailure(failure, 'Memory');
+    expect(`${told.message} ${told.hint}`).not.toMatch(/nothing was (written|changed)/i);
+    expect(told.hint).toMatch(/may.*landed/);
+  });
+
   it('still reports no writes for five ordinary pre-upload conflicts', async () => {
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);

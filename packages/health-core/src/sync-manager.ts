@@ -122,9 +122,9 @@ export class SyncManager<T extends SyncedFile> {
           throw error;
         }
       } catch (error) {
-        // Later reads, schema gates and access failures cannot undo an earlier
-        // write. Preserve the cause, but not its no-write/status certainty.
-        if (!mayHaveWritten || signal?.aborted || (error instanceof Error && error.name === 'AbortError')) throw error;
+        // Later reads, schema gates, access failures and cancellation cannot
+        // undo an earlier write. Preserve the cause, but not its no-write/status certainty.
+        if (!mayHaveWritten) throw error;
         throw new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', VERIFY_HINT, error);
       }
     }

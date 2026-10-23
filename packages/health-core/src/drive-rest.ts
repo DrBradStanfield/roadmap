@@ -30,6 +30,7 @@
 import {
   ConflictError,
   fetchOrFail,
+  LostUpdateError,
   ROADMAP_FILE_NAME,
   jsonBody,
   StorageError,
@@ -39,8 +40,11 @@ import {
   type StoredFile,
   type WriteResult,
 } from './adapter';
-import { readDriveRecord, writeDriveRecord } from './drive-record';
 import { splitDocumentRef } from './document-path';
+import { RecordShapeError, SchemaTooNewError } from './migrate';
+import { ROADMAP_DOC } from './roadmap-doc';
+import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from './roadmap-file';
+import { verifyPersistedFile } from './sync-manager';
 
 /** Exported for the browser adapter's two cosmetic PATCHes (rename, re-parent). */
 export const DRIVE_API = 'https://www.googleapis.com/drive/v3';
@@ -79,36 +83,23 @@ async function fail(what: string, res: Response): Promise<never> {
 }
 
 /** Find one file by name, optionally inside one parent. Undefined = not there.
- * Generic named documents retain unique discovery, including verify-after-write:
- * a cached id can otherwise confirm a private copy beside another device's.
- * Blob reads keep the existing duplicate/orphan semantics. Health records use
- * the paginated union owner in drive-record.ts instead. */
+ *  First match: named files (chat history, documents) keep it on purpose. The
+ *  record has its own every-copy discovery below (US-10 AC4a). */
 export async function driveFindFileId(
   accessToken: string,
   name: string,
   parentId?: string,
   signal?: AbortSignal,
-  requireUnique = false,
 ): Promise<string | undefined> {
   const q = encodeURIComponent(
     `name='${quoted(name)}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
   );
-  const fields = requireUnique ? 'files(id),nextPageToken,incompleteSearch' : 'files(id)';
-  const res = await request(`${DRIVE_API}/files?q=${q}&spaces=drive&fields=${fields}&pageSize=${requireUnique ? 2 : 1}`, {
+  const res = await request(`${DRIVE_API}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`, {
     headers: auth(accessToken),
     signal,
   });
   if (!res.ok) await fail('lookup', res);
-  const result = await jsonBody<{ files?: Array<{ id: string }>; nextPageToken?: string; incompleteSearch?: boolean }>(res);
-  // Do not select a winner, merge unseen files or delete duplicates here. An
-  // incomplete page cannot establish uniqueness either; refuse it safely.
-  if (requireUnique && ((result.files?.length ?? 0) > 1 || result.nextPageToken || result.incompleteSearch)) {
-    throw new StorageError(
-      `${PROVIDER} could not identify a unique record file.`,
-      'A save may already have landed. Keep your local copy. Check Drive for duplicate record files or an incomplete search before retrying; no files were removed.',
-    );
-  }
-  return result.files?.[0]?.id;
+  return (await jsonBody<{ files?: Array<{ id: string }> }>(res)).files?.[0]?.id;
 }
 
 /**
@@ -301,6 +292,207 @@ export async function driveDownloadJson(accessToken: string, fileId: string, sig
   }
 }
 
+// --- The health record (US-10 AC4a) -------------------------------------------
+// Drive allows two files with one name, and two first saves can race to make
+// them. Reads merge every copy in memory; saves go to one fixed copy (oldest
+// `createdTime`, then id) and leave the others in place. Drive has no CAS:
+// enumeration and version checks narrow races, they do not close them.
+
+interface RecordCopy { id: string; createdTime?: string }
+const recordContext = () => ({ deviceId: 'drive-record-discovery', now: new Date().toISOString() });
+const LANDED_HINT = 'A save may already have landed. Keep your local copy and read the record again. No copies were removed.';
+const DAMAGED_HINT = 'Your plan loaded from the other copies. Nothing was written. Saving resumes once that health-roadmap.json in Google Drive is repaired or renamed.';
+
+/** A write that may have landed: keep the provider status, so a 401 still
+ *  refreshes the token (iOS) and still reads as "reconnect" (the page). */
+function uncertain(message: string, error: unknown): StorageError {
+  return new StorageError(message, LANDED_HINT, error, error instanceof StorageError ? error.status : undefined);
+}
+
+/**
+ * Every copy of the record, winner first. Search lags a create, so an id in
+ * `known` (the copies this adapter last found or made) that search misses is
+ * asked for by id; `known` leaves holding exactly the copies found.
+ */
+async function discoverRecord(token: string, known: Set<string>, signal?: AbortSignal): Promise<RecordCopy[]> {
+  const copies = new Map<string, RecordCopy>();
+  const seen = new Set<string>();
+  let page: string | undefined;
+  do {
+    signal?.throwIfAborted();
+    // Shared core also runs in native JS engines without URL/URLSearchParams.
+    const query = `q=${encodeURIComponent(`name='${ROADMAP_FILE_NAME}' and trashed=false`)}`
+      + '&spaces=drive&fields=files(id%2CcreatedTime)%2CnextPageToken%2CincompleteSearch&pageSize=1000'
+      + (page ? `&pageToken=${encodeURIComponent(page)}` : '');
+    const res = await request(`${DRIVE_API}/files?${query}`, { headers: auth(token), signal });
+    if (!res.ok) throw new StorageError(`${PROVIDER} record lookup failed (${res.status}).`, undefined, undefined, res.status);
+    const result = await jsonBody<{ files?: RecordCopy[]; nextPageToken?: string; incompleteSearch?: boolean }>(res);
+    signal?.throwIfAborted();
+    if (result.incompleteSearch || !Array.isArray(result.files)) throw new StorageError(`${PROVIDER} record enumeration is incomplete.`);
+    for (const copy of result.files) {
+      if (!copy.id || typeof copy.id !== 'string' || (copy.createdTime !== undefined && (typeof copy.createdTime !== 'string' || !Number.isFinite(Date.parse(copy.createdTime))))) {
+        throw new StorageError(`${PROVIDER} record metadata is invalid.`);
+      }
+      const prior = copies.get(copy.id);
+      if (prior && prior.createdTime !== copy.createdTime) throw new StorageError(`${PROVIDER} record metadata changed during enumeration.`);
+      copies.set(copy.id, copy);
+    }
+    if (result.nextPageToken !== undefined && (typeof result.nextPageToken !== 'string' || !result.nextPageToken)) {
+      throw new StorageError(`${PROVIDER} record continuation token is invalid.`);
+    }
+    page = result.nextPageToken;
+    if (page) {
+      if (seen.has(page)) throw new StorageError(`${PROVIDER} record enumeration repeated a page token.`);
+      seen.add(page);
+    }
+  } while (page);
+  for (const id of known) {
+    if (copies.has(id)) continue;
+    const res = await request(`${DRIVE_API}/files/${id}?fields=id,name,createdTime,trashed`, { headers: auth(token), signal });
+    if (res.status === 404) continue;
+    if (!res.ok) await fail('record lookup', res);
+    const meta = await jsonBody<RecordCopy & { name?: string; trashed?: boolean }>(res);
+    if (meta.name === ROADMAP_FILE_NAME && !meta.trashed) copies.set(id, { id, createdTime: meta.createdTime });
+  }
+  // Legacy/missing creation metadata: use ID order for the entire set, never
+  // silently drop a copy or mix incomparable metadata. Invalid dates refuse.
+  const all = [...copies.values()];
+  const dated = all.every((copy) => copy.createdTime !== undefined);
+  all.sort((a, b) => (dated ? Date.parse(a.createdTime!) - Date.parse(b.createdTime!) : 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  known.clear();
+  for (const copy of all) known.add(copy.id);
+  return all;
+}
+
+/** The copies and their versions, as one token. One copy keeps the plain
+ *  per-file token; several bind every id and version, winner first. */
+async function recordSnapshot(token: string, known: Set<string>, signal?: AbortSignal): Promise<{ copies: RecordCopy[]; versions: string[]; token: string | null }> {
+  const copies = await discoverRecord(token, known, signal);
+  const versions: string[] = [];
+  for (const copy of copies) {
+    const version = await driveFileVersion(token, copy.id, signal);
+    if (version === null) throw new ConflictError(`${PROVIDER} record disappeared during discovery`);
+    versions.push(version);
+  }
+  if (copies.length < 2) return { copies, versions, token: versions[0] ?? null };
+  return { copies, versions, token: JSON.stringify({ driveRecord: 1, winner: copies[0].id, copies: copies.map((copy, i) => [copy.id, versions[i]]) }) };
+}
+
+/** A copy this app cannot parse or migrate. Its rows stay out of the merged
+ *  read, so a save over the winner could hide them for good. */
+function unreadableCopy(error: unknown): boolean {
+  return error instanceof SchemaTooNewError || error instanceof RecordShapeError
+    || (error instanceof StorageError && error.cause instanceof SyntaxError);
+}
+
+/** The read's token when a copy was unreadable: every save with it refuses. */
+function refusingToken(token: string, error: unknown): string {
+  return JSON.stringify({ driveRecord: 1, refuse: error instanceof SchemaTooNewError ? error.fileVersion : 'damaged', of: token });
+}
+
+function refusalOf(expected: string | null): Error | null {
+  if (!expected?.startsWith('{')) return null;
+  const { refuse } = JSON.parse(expected) as { refuse?: number | 'damaged' };
+  if (refuse === undefined) return null;
+  return typeof refuse === 'number'
+    ? new SchemaTooNewError(refuse, CURRENT_SCHEMA_VERSION)
+    : new StorageError(`A copy of the record in ${PROVIDER} could not be read, so saving is paused.`, DAMAGED_HINT);
+}
+
+/** Read every copy and merge them. A copy this app cannot read is left out
+ *  of the merge and pauses saves (`refusalOf`), never the read itself. */
+export async function readDriveRecord(token: string, known: Set<string>, signal?: AbortSignal): Promise<ReadResult> {
+  const state = await recordSnapshot(token, known, signal);
+  if (!state.token) return { body: null, version: null };
+  if (state.copies.length === 1) {
+    // A unique file keeps the adapter's raw-body/schema policy.
+    const body = await driveDownloadJson(token, state.copies[0].id, signal);
+    signal?.throwIfAborted();
+    if (body === null) throw new ConflictError(`${PROVIDER} record disappeared or is empty during read`);
+    return { body, version: state.token };
+  }
+  const context = recordContext();
+  let merged: RoadmapFile | undefined;
+  let refusal: unknown;
+  for (const copy of state.copies) {
+    signal?.throwIfAborted();
+    let parsed: RoadmapFile;
+    try {
+      const body = await driveDownloadJson(token, copy.id, signal);
+      signal?.throwIfAborted();
+      if (body === null) throw new ConflictError(`${PROVIDER} record disappeared or is empty during read`);
+      parsed = ROADMAP_DOC.migrate(body, context);
+    } catch (error) {
+      if (!unreadableCopy(error)) throw error;
+      if (!(refusal instanceof SchemaTooNewError)) refusal = error; // "update the app" outranks "damaged"
+      continue;
+    }
+    merged = merged ? ROADMAP_DOC.merge(merged, parsed, context) : parsed;
+  }
+  if (!merged) throw refusal;
+  return { body: merged, version: refusal ? refusingToken(state.token, refusal) : state.token };
+}
+
+/** Save to the winner, after checking every copy's version is still the one read. */
+export async function writeDriveRecord(token: string, body: object, expected: string | null, folder: () => Promise<string>, known: Set<string>, signal?: AbortSignal): Promise<WriteResult> {
+  const refusal = refusalOf(expected);
+  if (refusal) throw refusal;
+  const state = await recordSnapshot(token, known, signal);
+  if (state.token !== expected) throw new ConflictError(`${PROVIDER} record membership or contributing version changed`);
+  const context = recordContext();
+  const intended = ROADMAP_DOC.migrate(body, context);
+  const json = JSON.stringify(body);
+  let id = state.copies[0]?.id;
+  let version: string;
+  if (!id) {
+    const parent = await folder();
+    signal?.throwIfAborted();
+    try {
+      const res = await driveCreateFile(token, ROADMAP_FILE_NAME, 'application/json', json, parent, signal);
+      if (!res.ok) throw new StorageError(`${PROVIDER} record create failed (${res.status}).`, LANDED_HINT, undefined, res.status);
+      const created = await jsonBody<{ id?: string }>(res);
+      if (!created.id) throw new Error('Create returned no ID');
+      id = created.id;
+      known.add(id);
+      // Confirm by id, never by search: search lags a create, and a search
+      // that missed this one would send the retry to make a second copy.
+      const confirmed = await driveFileVersion(token, id, signal);
+      if (confirmed === null) throw new LostUpdateError(`${PROVIDER} record vanished after its create`);
+      version = confirmed;
+      // Another device's create may have landed beside this one: reread and
+      // merge both onto the winner. `known` keeps this copy in the retry's view.
+      if ((await discoverRecord(token, known, signal)).length > 1) {
+        throw new LostUpdateError(`${PROVIDER} create landed alongside another record; reread and merge`);
+      }
+    } catch (error) {
+      if (error instanceof LostUpdateError) throw error;
+      throw uncertain(`${PROVIDER} record create failed.`, error);
+    }
+  } else {
+    // Every contributing version was checked above, and the winner gets one
+    // final check before upload. There is still no atomic CAS.
+    try {
+      version = await driveUpdateIfVersion(token, id, json, state.versions[0], signal);
+    } catch (error) {
+      // A rejected precondition did not upload. Any other failure may be a
+      // lost PATCH response: do not claim nothing was written.
+      if (error instanceof ConflictError) throw error;
+      throw uncertain(`${PROVIDER} record update failed.`, error);
+    }
+  }
+  try {
+    signal?.throwIfAborted();
+    const persisted = await driveDownloadJson(token, id, signal);
+    signal?.throwIfAborted();
+    if (persisted === null) throw new LostUpdateError(`${PROVIDER} canonical record missing after write`);
+    verifyPersistedFile(ROADMAP_DOC, intended, ROADMAP_DOC.migrate(persisted, context));
+  } catch (error) {
+    if (error instanceof LostUpdateError) throw error;
+    throw uncertain(`${PROVIDER} canonical record verification failed.`, error);
+  }
+  return { version };
+}
+
 /**
  * One connection's Drive folder, for the life of one request. The access token
  * is minted from the sealed refresh token and dies with the call; the id caches
@@ -316,6 +508,8 @@ export class DriveAdapter implements StorageAdapter {
   readonly id = 'google-drive' as const;
   readonly label = PROVIDER;
   private readonly fileIds = new Map<string, string>();
+  /** The record's copies as last found or made (US-10 AC4a). */
+  private readonly recordIds = new Set<string>();
   /** Document folder ids by ref folder ('' = the app folder), opted-in only.
    *  The promise is cached, so concurrent first writes share one find-or-create. */
   private readonly documentFolders = new Map<string, Promise<string>>();
@@ -343,8 +537,8 @@ export class DriveAdapter implements StorageAdapter {
    * save retries. A wasted round trip beats a silent lost update.
    */
   async read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
-    if (fileName === ROADMAP_FILE_NAME) return readDriveRecord(this.accessToken, signal);
-    const fileId = await this.findFile(fileName, signal, true);
+    if (fileName === ROADMAP_FILE_NAME) return readDriveRecord(this.accessToken, this.recordIds, signal);
+    const fileId = await this.findFile(fileName, signal);
     if (!fileId) return { body: null, version: null };
     const version = await driveFileVersion(this.accessToken, fileId, signal);
     if (version == null) return { body: null, version: null }; // deleted between the two calls
@@ -356,9 +550,9 @@ export class DriveAdapter implements StorageAdapter {
   /** Step 2 of design §7 (`driveUpdateIfVersion`); its `ConflictError` sends
    *  `SyncManager.save` round again. */
   async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
-    if (fileName === ROADMAP_FILE_NAME) return writeDriveRecord(this.accessToken, body, expectedVersion, () => this.folderId(signal), signal);
+    if (fileName === ROADMAP_FILE_NAME) return writeDriveRecord(this.accessToken, body, expectedVersion, () => this.folderId(signal), this.recordIds, signal);
     const json = JSON.stringify(body);
-    const fileId = await this.findFile(fileName, signal, true);
+    const fileId = await this.findFile(fileName, signal);
 
     if (!fileId) {
       // A first-ever create. If the caller thought there was a version, the
@@ -400,13 +594,13 @@ export class DriveAdapter implements StorageAdapter {
     this.fileIds.delete(fileName);
   }
 
-  private async findFile(fileName: string, signal?: AbortSignal, requireUnique = false): Promise<string | undefined> {
+  private async findFile(fileName: string, signal?: AbortSignal): Promise<string | undefined> {
     const cached = this.fileIds.get(fileName);
-    if (cached && !requireUnique) return cached;
+    if (cached) return cached;
     // No parent filter, exactly as the browser adapter searches: `drive.file`
     // already limits the result set to this app's own files, and a record
     // created before the folder existed still lives at the Drive root.
-    const found = await driveFindFileId(this.accessToken, fileName, undefined, signal, requireUnique);
+    const found = await driveFindFileId(this.accessToken, fileName, undefined, signal);
     if (found) this.fileIds.set(fileName, found);
     return found;
   }

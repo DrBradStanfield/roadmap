@@ -36,6 +36,7 @@ import {
   driveFindFolder,
   driveUpdateIfVersion,
   driveUploadDocument,
+  readDriveRecord,
   splitDocumentRef,
   DRIVE_API,
   DRIVE_FOLDER_NAME,
@@ -46,8 +47,8 @@ import {
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
+  writeDriveRecord,
 } from '@roadmap/health-core';
-import { readDriveRecord, writeDriveRecord } from '../../../packages/health-core/src/drive-record';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
@@ -218,6 +219,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
   private lastIdToken: string | null = null;
   /** At-most-once-per-session guard for the cosmetic folder migration. */
   private folderCheckDone = false;
+  /** The record's copies as last found or made, winner first (US-10 AC4a). */
+  private readonly recordIds = new Set<string>();
 
   constructor(private readonly config: GoogleDriveConfig) {
     this.stored = getJson<Stored>(CONFIG_KEY);
@@ -411,8 +414,13 @@ export class GoogleDriveAdapter implements StorageAdapter {
   // --- file ops -------------------------------------------------------------
 
   async read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
-    if (fileName === ROADMAP_FILE_NAME) return readDriveRecord(await this.getToken(), signal);
-    const fileId = await this.findFileId(fileName, undefined, true);
+    if (fileName === ROADMAP_FILE_NAME) {
+      const result = await readDriveRecord(await this.getToken(), this.recordIds, signal);
+      const [winner] = this.recordIds;
+      if (winner) void this.ensureInFolderOnce(winner);
+      return result;
+    }
+    const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
     if (!fileId) return { body: null, version: null };
     this.rememberFileId(fileName, fileId);
     // Cosmetic, never blocks the read: adopt pre-folder files into the app folder.
@@ -425,9 +433,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
-    if (fileName === ROADMAP_FILE_NAME) return writeDriveRecord(await this.getToken(), body, expectedVersion, () => this.ensureFolderId(), signal);
+    if (fileName === ROADMAP_FILE_NAME) return writeDriveRecord(await this.getToken(), body, expectedVersion, () => this.ensureFolderId(), this.recordIds, signal);
     const json = JSON.stringify(body);
-    const fileId = await this.findFileId(fileName, undefined, true);
+    const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
     if (fileId) {
       const version = await driveUpdateIfVersion(await this.getToken(), fileId, json, expectedVersion);
       this.rememberFileId(fileName, fileId);
@@ -481,8 +489,10 @@ export class GoogleDriveAdapter implements StorageAdapter {
           const url = `${DRIVE_API}/changes?pageToken=${encodeURIComponent(token)}&pageSize=100`
             + '&fields=newStartPageToken,nextPageToken,changes(fileId)';
           const page: DriveChangesPage = await jsonBody(await this.changesRequest(url, signal));
-          const fileId = this.cachedFileId(fileName);
-          if (page.changes?.some((c) => !fileId || c.fileId === fileId) && !signal.aborted) onChange();
+          // The record's copies as the last read or write found them, never
+          // only a cached id, which may name a losing copy (US-10 AC4a).
+          const ours = [...(fileName === ROADMAP_FILE_NAME ? this.recordIds : []), this.cachedFileId(fileName)].filter(Boolean);
+          if (page.changes?.some((c) => !ours.length || ours.includes(c.fileId)) && !signal.aborted) onChange();
           // `nextPageToken` means more pages of the SAME batch: take it and
           // read again on the next beat rather than looping the pages here,
           // because the answer is already "something changed".
@@ -619,8 +629,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
     }
   }
 
-  private async findFileId(name: string, parentId?: string, requireUnique = false): Promise<string | undefined> {
-    return driveFindFileId(await this.getToken(), name, parentId, undefined, requireUnique);
+  private async findFileId(name: string): Promise<string | undefined> {
+    return driveFindFileId(await this.getToken(), name);
   }
 
   private async authHeaders(): Promise<Record<string, string>> {
