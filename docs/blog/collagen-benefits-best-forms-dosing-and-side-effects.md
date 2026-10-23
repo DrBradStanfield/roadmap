@@ -105,7 +105,7 @@ A crossover study gave healthy volunteers single doses of collagen hydrolysate m
 
 ### Skin Aging and Wrinkles
 
-The evidence for collagen supplementation and skin health is the most extensively studied application. Multiple placebo-controlled trials suggest modest improvements in skin wrinkles, elasticity, and hydration. The pooled analyses disagree: a 2025 systematic review raised questions about the quality of this evidence, and a larger 2026 meta-analysis found benefits for hydration and elasticity but not for wrinkles [75].
+The evidence for collagen supplementation and skin health is the most extensively studied application. Multiple placebo-controlled trials suggest modest improvements in skin elasticity and hydration. The pooled analyses disagree: a 2025 systematic review raised questions about the quality of this evidence, and a larger 2026 meta-analysis found benefits for hydration and elasticity but not for wrinkles [75].
 
 **Systematic review (2025):** A 2025 meta-analysis of 23 trials (1474 participants) concluded there is no clinical evidence that collagen prevents or treats skin aging: trials without company funding, and high-quality trials, showed no effect on hydration, elasticity or wrinkles; only company-funded trials, and low-quality trials for elasticity, showed benefit [4]. Industry groups said the review misclassified some trials as independent or company-funded, and misreported the length and collagen source of some trials [13][14]. Brad argued that the result for the independent trials only just missed statistical significance, and that 7 of the 9 studies the review graded as high quality showed a benefit [77].
 
@@ -113,24 +113,24 @@ The evidence for collagen supplementation and skin health is the most extensivel
 
 **Meta-analysis (2026):** Batool and colleagues pooled 35 trials and more than 2,500 people. Collagen peptides improved hydration (effect size 0.44) and elasticity (0.62, after setting aside two trials with extreme negative results), and reduced water loss through the skin. Elasticity only clearly improved in trials lasting at least 12 weeks. There was no effect on wrinkles; the authors suggest this is likely due to time, because fewer wrinkles need long-term changes in the deeper structure of the skin. Independently conducted trials reported effect sizes comparable to sponsored ones [75]. Trials used 0.5 to 10 g a day [75].
 
-The single trials below report wrinkle reductions. When wrinkle results were pooled in the 2026 meta-analysis, there was no effect [75].
+Some small trials reported fewer wrinkles, but when the results were pooled in the 2026 meta-analysis there was no effect [75].
 
 **Verisol collagen peptides:** Key trials:
 
-- In 114 women aged 45 to 65 years, 2.5 g a day of Verisol for 8 weeks reduced eye wrinkle volume by 20% compared with placebo, and the benefit was still present 4 weeks after stopping. In skin samples, procollagen type I was 65% and elastin 18% higher than with placebo [16].
+- In 114 women aged 45 to 65 years, 2.5 g a day of Verisol for 8 weeks raised procollagen type I by 65% and elastin by 18% in skin samples compared with placebo [16].
 - In 69 women, 2.5 g or 5 g a day of collagen peptides for 8 weeks improved skin elasticity compared with placebo, and 4 weeks after stopping, elasticity stayed higher in the older women. Effects on skin moisture did not reach statistical significance [15].
-- In 66 women, bovine-derived collagen peptides for 8 weeks reduced eye wrinkle volume by 25% compared with placebo, with gains in skin elasticity and hydration [17][79].
+- In 66 women, bovine-derived collagen peptides for 8 weeks improved skin elasticity and hydration compared with placebo [17][79].
 - In 105 women aged 24 to 50 years with moderate cellulite, 2.5 g a day for 6 months reduced cellulite and skin waviness on the thighs compared with placebo in women of normal weight; the effect was smaller in overweight women [18].
 
 **Fish collagen peptides:**
 
 - In 36 postmenopausal women, 5 g a day of marine collagen hydrolysate for 4 weeks improved skin elasticity on the sun-exposed cheeks compared with placebo, and the difference remained 4 weeks after stopping [19].
-- In 46 women aged 45 to 59 years, hydrolyzed fish cartilage taken for 90 days reduced wrinkles in the nasolabial region (the folds running from the nose to the corners of the mouth) and increased dermis echogenicity compared with placebo and baseline [21].
+- In 46 women aged 45 to 59 years, hydrolyzed fish cartilage taken for 90 days increased dermis echogenicity compared with placebo and baseline [21].
 - In 114 women aged 20 to 50 with thigh cellulite and thinning hair, 1 g a day of low-molecular-weight fish collagen peptides for 24 weeks improved cellulite severity, skin roughness and skin elasticity compared with placebo at weeks 12 and 24, and increased hair diameter at week 24 [22].
 
 **BioCell Collagen (type II, chicken sternal cartilage):**
 
-- In 113 women aged 39 to 59 who completed the trial, BioCell Collagen (500 mg twice daily; hydrolyzed type II collagen with chondroitin sulfate and hyaluronic acid) reduced facial lines and wrinkles, and raised skin elasticity and skin collagen content by 12% compared with placebo. Skin-surface water content did not differ between groups [23]. However, an earlier open-label pilot study of 1 g a day in 26 women found a rise in skin collagen at 6 weeks that was no longer significant by the study's end [24].
+- In 113 women aged 39 to 59 who completed the trial, BioCell Collagen (500 mg twice daily; hydrolyzed type II collagen with chondroitin sulfate and hyaluronic acid) raised skin elasticity and skin collagen content by 12% compared with placebo. Skin-surface water content did not differ between groups [23]. However, an earlier open-label pilot study of 1 g a day in 26 women found a rise in skin collagen at 6 weeks that was no longer significant by the study's end [24].
 
 **Collagen tripeptides:**
 
@@ -138,7 +138,7 @@ The single trials below report wrinkle reductions. When wrinkle results were poo
 
 **Collagen with MSM:** A 12-week double-blind, placebo-controlled trial compared three supplements containing collagen, with or without MSM (methylsulfonylmethane), on dermis density and other skin measures [26].
 
-**Collagen plus face cream:** In 85 East Asian women aged 43 to 65 years who all used the same face cream, 5 g a day of collagen peptides for 84 days improved dermis density and skin moisture compared with placebo. Elasticity, wrinkle visibility and perceived beauty improved within 28 days with collagen, but the placebo group reached the same gains only by day 84 [27].
+**Collagen plus face cream:** In 85 East Asian women aged 43 to 65 years who all used the same face cream, 5 g a day of collagen peptides for 84 days improved dermis density and skin moisture compared with placebo. Elasticity and perceived beauty improved within 28 days with collagen, but the placebo group reached the same gains only by day 84 [27].
 
 **Skin in older adults:** In 39 hospital inpatients aged 65 or older, an oral nutrition supplement containing 10 g of collagen peptides a day raised skin hydration scores from 43.7 to 51.7 in the collagen group and improved skin elasticity from baseline. The study had a control group but was open-label, with no placebo. The researchers suggest such supplements may help prevent skin tears in older adults [28].
 
@@ -252,7 +252,7 @@ Skin supplements often pair collagen with hyaluronic acid, which helps skin hold
 
 ### Practical Dosing Notes
 
-**Skin:** In trials of specific collagen peptides, 2.5 g a day of Verisol reduced eye wrinkles [16], and 2.5 g or 5 g a day improved skin elasticity [15]. Trials in the 2026 meta-analysis used 0.5 to 10 g a day, and elasticity only clearly improved in trials lasting at least 12 weeks [75].
+**Skin:** In one trial, 2.5 g or 5 g a day of collagen peptides improved skin elasticity [15]. Trials in the 2026 meta-analysis used 0.5 to 10 g a day, and elasticity only clearly improved in trials lasting at least 12 weeks [75].
 
 **Joints:** Hydrolyzed collagen trials for joint pain used doses from 1,200 mg to 10 g [36][38]. UC-II (undenatured collagen) uses a much smaller dose of 40 mg. These two approaches work through different mechanisms and should not be directly compared on a weight basis. Benefits for joint pain may take 6 months to appear: in one trial, the gain over placebo was significant at 6 months but not at 3 months [36].
 
@@ -348,7 +348,7 @@ No clinically significant drug interactions with collagen have been documented i
 ## 8. Frequently Asked Questions
 
 **Does collagen actually work for wrinkles?**
-Not on current pooled evidence. Single trials reported smaller eye wrinkles, for example with 2.5 g a day of Verisol for 8 weeks [16]. However, a 2025 meta-analysis of 23 trials concluded there is no clinical evidence that collagen prevents or treats skin aging; trials without company funding, and high-quality trials, showed no effect [4]. A 2026 meta-analysis of 35 trials found no effect on wrinkles, while finding benefits for hydration and elasticity [75]. Longer studies are likely needed to settle whether collagen peptides improve wrinkles [77].
+Not on current pooled evidence. A 2025 meta-analysis of 23 trials concluded there is no clinical evidence that collagen prevents or treats skin aging; trials without company funding, and high-quality trials, showed no effect [4]. A 2026 meta-analysis of 35 trials found no effect on wrinkles, while finding benefits for hydration and elasticity [75]. Longer studies are likely needed to settle whether collagen peptides improve wrinkles [77].
 
 **Is collagen powder better than collagen pills?**
 Neither form is better in itself. What matters is the dose: skin trials used 0.5 to 10 g a day [75], which may take several capsules but fits in one scoop of powder.
@@ -366,7 +366,7 @@ Yes. They serve complementary purposes: whey provides branched-chain amino acids
 Vitamin C is essential for the body's own collagen synthesis, but clinical evidence does not support taking additional vitamin C with collagen supplements. In one trial, 500 mg of vitamin C taken with 3 g of collagen peptides gave no further gain in skin hydration or elasticity [25].
 
 **How long do the benefits last after stopping collagen?**
-Limited data exists on this question. One study found that skin wrinkle improvements persisted for at least 4 weeks after stopping collagen supplementation [16]. For bone density, a 4-year study showed continued benefits with ongoing supplementation, but no data exists on what happens after stopping [47].
+Limited data exists on this question. One study found that skin elasticity stayed higher in older women 4 weeks after stopping [15]. For bone density, a 4-year study showed continued benefits with ongoing supplementation, but no data exists on what happens after stopping [47].
 
 **Is collagen safe during pregnancy?**
 There are no clinical studies evaluating collagen supplementation specifically during pregnancy. While collagen is a naturally occurring protein found in food, pregnant women should consult their healthcare provider before starting any supplement.

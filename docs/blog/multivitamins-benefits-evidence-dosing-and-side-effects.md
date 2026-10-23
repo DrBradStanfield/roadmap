@@ -21,7 +21,7 @@ In the COSMOS trial, more than 21,000 older Americans took an ordinary multivita
 
 - If you take warfarin or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2 (MK-7) or any multivitamin that contains vitamin K, which may interfere with oral anticoagulant treatment [1][73][85].
 - Smokers, and possibly former smokers, should avoid multivitamins with large amounts of beta-carotene or vitamin A, which two large trials linked to more lung cancer in smokers [1][54][55].
-- Iron-containing products are a leading cause of fatal poisoning in children under 6. Keep them out of reach, and if a child swallows them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or poison control centre [63].
+- Iron-containing products are a leading cause of fatal poisoning in children under 6. Keep them out of reach, and if a child swallows them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department, or call poison control [63][89].
 - In pregnancy, keep total preformed vitamin A (retinol) from food and supplements at or below the UL of 3,000 mcg a day (2,800 mcg a day for adolescents), because intakes above it can cause birth defects; prenatal supplements generally provide no retinol [1][74].
 - People with kidney disease or hereditary hemochromatosis should check with their doctor first [80][86][63].
 - Megadoses can harm. Adult upper limits include 4,000 IU of vitamin D, 45 mg of iron and 40 mg of zinc a day [60][76][63][81].
@@ -306,7 +306,7 @@ The USPSTF explicitly warns that beta-carotene supplementation may increase lung
 
 Accidental overdose of iron-containing products is a leading cause of fatal poisoning in children under 6, so US labels on iron-containing tablets and capsules must tell people to keep them out of reach of children [63]. Acute intakes of more than 20 mg/kg iron can lead to corrosive necrosis of the intestine, which might lead to fluid and blood loss, shock, tissue damage and organ failure [63]. Between 1983 and 2000, at least 43 US children died from swallowing supplements containing high doses of iron [63]. In US reports, children often got the iron from a child-resistant container that they or another child opened, or that an adult left open or closed improperly [64].
 
-Keep multivitamins and iron supplements out of reach of children, and close the lid properly after each use. If a child swallows iron tablets or an iron-containing multivitamin, act immediately: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or poison control centre.
+Keep multivitamins and iron supplements out of reach of children, and close the lid properly after each use. If a child swallows iron tablets or an iron-containing multivitamin, act immediately: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department, or call a poison control centre [63][89].
 
 ### Populations Requiring Caution
 
@@ -334,10 +334,10 @@ Some minerals in multivitamins can bind to medications and reduce their absorpti
 | Drug Class | Examples | Separation Time | Notes |
 |-----------|---------|:-:|----------|
 | Bisphosphonates | Alendronate, risedronate | 2+ hours | Minerals chelate and dramatically reduce absorption |
-| Tetracycline antibiotics | Doxycycline, minocycline | 1h before or 2h after | Forms insoluble complexes with calcium, magnesium, iron, zinc |
-| Fluoroquinolone antibiotics | Ciprofloxacin, levofloxacin | 2h before or 6h after | Minerals can reduce ciprofloxacin absorption up to 90% |
-| Levothyroxine | Synthroid, Levoxyl | 2-4 hours | All forms of calcium, magnesium, and iron affect absorption |
-| Levodopa | Sinemet | 2+ hours | Iron reduces absorption |
+| Tetracycline antibiotics | Doxycycline, minocycline | Ask your pharmacist | Calcium, magnesium and iron-containing products impair tetracycline absorption [88]; zinc may too [81] |
+| Fluoroquinolone antibiotics | Ciprofloxacin, levofloxacin | Ciprofloxacin 2h before or 6h after | The ciprofloxacin label gives this spacing for products containing calcium, iron or zinc and for magnesium antacids [87] |
+| Levothyroxine | Synthroid, Levoxyl | 4+ hours | Iron and calcium carbonate lower levothyroxine absorption, and labels advise against taking levothyroxine within 4 hours of either [63][79] |
+| Levodopa | Sinemet, Stalevo | Ask your pharmacist | Iron may reduce levodopa absorption, possibly through chelation, and so make it less effective [63] |
 
 ### Medications That Affect Nutrient Levels
 
@@ -584,3 +584,9 @@ Based on the current evidence, the following groups are most likely to benefit f
 [85] Theuwissen E, Teunissen KJ, Spronk HM, et al. Effect of low-dose supplements of menaquinone-7 (vitamin K2) on the stability of oral anticoagulant treatment: dose-response relationship in healthy volunteers. J Thromb Haemost. 2013;11(6):1085-1092. doi:10.1111/jth.12203. PMID: 23530987. https://pubmed.ncbi.nlm.nih.gov/23530987/
 
 [86] National Institutes of Health, Office of Dietary Supplements. "Potassium: Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/Potassium-HealthProfessional/](https://ods.od.nih.gov/factsheets/Potassium-HealthProfessional/)
+
+[87] U.S. National Library of Medicine, DailyMed. Ciprofloxacin tablets prescribing information (Hikma Pharmaceuticals USA), section 2.4. 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=3b3d22dc-df09-4910-8c9b-1204eeedbd68](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=3b3d22dc-df09-4910-8c9b-1204eeedbd68)
+
+[88] U.S. National Library of Medicine, DailyMed. Doxycycline hyclate prescribing information (Chartwell), drug interactions. 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=3e7cf78f-3b48-4614-9fa4-c6d1e0c05a35](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=3e7cf78f-3b48-4614-9fa4-c6d1e0c05a35)
+
+[89] Manoguerra AS, Erdman AR, Booze LL, et al. "Iron ingestion: an evidence-based consensus guideline for out-of-hospital management." *Clin Toxicol (Phila)*. 2005;43:553-70. [https://pubmed.ncbi.nlm.nih.gov/16255338/](https://pubmed.ncbi.nlm.nih.gov/16255338/)
