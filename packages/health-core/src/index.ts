@@ -449,3 +449,6 @@ export {
   screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, customSupplementAdd, customSupplementMatch,
   type FormOption, type FormField, type FormGroup, type FormSection, type MedicationBasis,
 } from './input-form';
+
+// US-25 AC22: the plan's summary tiles, the web's Quick Stats and the phone's My plan tiles.
+export { statTiles, statTileText, type StatTile, type StatTileOptions, type StatTileStatus, type StatTone } from './stat-tiles';

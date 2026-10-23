@@ -45,3 +45,31 @@ struct PlanCard: Decodable, Identifiable {
 
     var id: String { suggestions.map(\.id).joined(separator: "+") }
 }
+
+/// One summary tile above the plan, as the engine writes it (ios/engine/entry.ts `statTilesJson`): the web's
+/// Quick Stats. Every word and number is the engine's; the app only draws it (US-25 AC22).
+struct StatTile: Decodable, Identifiable {
+    struct Status: Decodable {
+        let label: String
+        /// normal, info, attention or urgent: the web's status colour. Absent: no colour.
+        let tone: String?
+    }
+
+    /// Evidence behind a tap, as on the web.
+    struct Evidence: Decodable {
+        let reason: String
+        let guidelines: [String]
+        let references: [Suggestion.Reference]
+    }
+
+    /// whtr, bmi, ibw, protein, apoB, nonHdl, ldl, egfr, lpa or hba1c.
+    let key: String
+    let label: String
+    let value: String
+    /// Empty for a value with no unit (BMI, waist-to-height).
+    let unit: String
+    let status: Status?
+    let evidence: Evidence?
+
+    var id: String { key }
+}

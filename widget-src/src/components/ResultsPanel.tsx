@@ -1,27 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
-import type { HealthResults, Suggestion, LipidMarker } from '@roadmap/health-core';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
   type UnitSystem,
   type MetricType,
   type SuggestionEvidence,
-  formatDisplayValue,
-  formatGradedValue,
-  getDisplayLabel,
-  formatHeightDisplay,
-  APOB_THRESHOLDS,
-  NON_HDL_THRESHOLDS,
-  LDL_THRESHOLDS,
-  lipidMarkerFor,
-  isWaistToHeightElevated,
-  getEgfrStatus,
-  getLpaStatus,
-  getHba1cStatus,
-  getLipidStatus,
-  getProteinRate,
-  STAT_CARD_EVIDENCE,
-  getIbwEvidence,
-  getProteinEvidence,
-  getBmiEvidence,
+  statTiles,
+  statTileText,
   planSections,
   type PlanCard,
 } from '@roadmap/health-core';
@@ -56,42 +40,6 @@ interface ResultsPanelProps {
   /** The panel's height changed outside its usual triggers (the phone's tab Swiper re-measures). */
   onLayoutChange?: () => void;
 }
-
-function getBmiStatus(bmiCategory: string, waistToHeightRatio?: number): { label: string; className: string } {
-  // When WHtR unknown for BMI 25-29.9, suppress label (prompt user to measure)
-  if (bmiCategory === 'Overweight' && waistToHeightRatio === undefined) {
-    return { label: '', className: '' };
-  }
-  if (bmiCategory.startsWith('Obese')) return { label: 'Obese', className: 'status-attention' };
-  const classMap: Record<string, string> = {
-    'Underweight': 'status-attention',
-    'Normal': 'status-normal',
-    'Overweight': 'status-info',
-  };
-  return { label: bmiCategory, className: classMap[bmiCategory] || '' };
-}
-
-/** The lipid tile for each kind of the plan's lipid marker. */
-const LIPID_TILES: Record<LipidMarker['kind'], { label: string; thresholds: Parameters<typeof getLipidStatus>[1]; metric: MetricType; evidence: string }> = {
-  apoB: { label: 'ApoB', thresholds: APOB_THRESHOLDS, metric: 'apob', evidence: 'apob' },
-  nonHdl: { label: 'Non-HDL Cholesterol', thresholds: NON_HDL_THRESHOLDS, metric: 'ldl', evidence: 'non-hdl' },
-  ldl: { label: 'LDL Cholesterol', thresholds: LDL_THRESHOLDS, metric: 'ldl', evidence: 'ldl' },
-};
-
-function getWaistToHeightStatus(ratio: number): { label: string; className: string } | null {
-  if (isWaistToHeightElevated(ratio)) return { label: 'Elevated', className: 'status-attention' };
-  return { label: 'Healthy', className: 'status-normal' };
-}
-
-const statusClassMap: Record<string, string> = {
-  'Normal': 'status-normal', 'Optimal': 'status-normal', 'Healthy': 'status-normal',
-  'Low Normal': 'status-info', 'Borderline': 'status-info', 'Above optimal': 'status-info', 'Overweight': 'status-info',
-  'Mildly Decreased': 'status-attention', 'High': 'status-attention', 'Elevated': 'status-attention',
-  'Moderately Decreased': 'status-attention', 'Underweight': 'status-attention',
-  'Prediabetic': 'status-attention',
-  'Very High': 'status-urgent', 'Severely Decreased': 'status-urgent', 'Kidney Failure': 'status-urgent',
-  'Diabetic': 'status-urgent',
-};
 
 function StatCard({ label, value, status, evidence }: {
   label: string;
@@ -602,6 +550,8 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
 
   // The note (and the capture box it can sit in) changes the plan's height.
   useEffect(() => { onLayoutChange?.(); }, [pdfBlocked, guestEmailHook.emailError, guestEmailHook.state]);
+  // Above the early return, as hooks must be; worked out again only when their inputs change.
+  const tiles = useMemo(() => (results ? statTiles(results, { unitSystem, unitOverrides, sex }) : []), [results, unitSystem, unitOverrides, sex]);
 
   // US-09 AC19: the guest has their PDF (or, on the gate-skipped page, signed up
   // for reminders, which marks the record captured). Never before, so the storage
@@ -651,15 +601,9 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
     );
   }
 
-  /** Resolve effective unit system for a metric (per-field override or global default). */
-  const usFor = (metric: MetricType): UnitSystem => unitOverrides?.[metric] ?? unitSystem;
-
-  const weightUnit = getDisplayLabel('weight', usFor('weight'));
-  const ibwDisplay = formatDisplayValue('weight', results.idealBodyWeight, usFor('weight'));
   // US-07 AC6: a known minor's tiles keep the values and drop every adult
-  // reading of them, its status and its "why"; tiles that are only a reading go.
+  // reading of them (health-core statTiles); here, no email and no reminders.
   const adult = !results.knownMinor;
-  const reading = <T,>(value: T): T | undefined => (adult ? value : undefined);
   // US-07 AC6: a known minor is never asked for an email (either box joins the
   // mailing list). Their PDF is the gate-skipped page's Save as PDF (US-44 AC2).
   const emailCapture = showEmailCapture && adult;
@@ -700,56 +644,15 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
       {/* Quick Stats */}
       <section className="quick-stats">
         <div className="stats-grid">
-          {results.waistToHeightRatio !== undefined && (() => {
-            const status = getWaistToHeightStatus(results.waistToHeightRatio);
-            return status ? <StatCard label="Waist-to-Height" value={results.waistToHeightRatio} status={status} evidence={STAT_CARD_EVIDENCE['whtr']} /> : null;
-          })()}
-          {results.bmi !== undefined && (
+          {tiles.map((tile) => (
             <StatCard
-              label="BMI"
-              value={results.bmi}
-              status={reading(getBmiStatus(results.bmiCategory!, results.waistToHeightRatio))}
-              evidence={sex ? reading(getBmiEvidence(results.bmi, sex, results.waistToHeightRatio)) : undefined}
+              key={tile.key}
+              label={tile.label}
+              value={statTileText(tile)}
+              status={tile.status && { label: tile.status.label, className: tile.status.tone ? `status-${tile.status.tone}` : '' }}
+              evidence={tile.evidence}
             />
-          )}
-          {adult && <StatCard
-            label="Ideal Body Weight"
-            value={<>{ibwDisplay} {weightUnit}</>}
-            status={{ label: `for ${formatHeightDisplay(results.heightCm, unitSystem)} height`, className: 'status-normal' }}
-            evidence={sex ? getIbwEvidence(sex) : undefined}
-          />}
-          {adult && <StatCard
-            label="Protein Target"
-            value={<>{results.proteinTarget}g/day</>}
-            status={{ label: `${getProteinRate(results.eGFR).toFixed(1)}g per kg IBW`, className: 'status-normal' }}
-            evidence={getProteinEvidence(results.idealBodyWeight, getProteinRate(results.eGFR), results.eGFR)}
-          />}
-
-          {/* Lipid tile: the plan's marker, ApoB → Non-HDL → LDL (results carry ApoB and LDL through from the inputs) */}
-          {(() => {
-            const marker = lipidMarkerFor(results, results);
-            if (!marker) return null;
-            const tile = LIPID_TILES[marker.kind];
-            const s = getLipidStatus(marker.value, tile.thresholds);
-            const u = usFor(tile.metric);
-            // The value reads on the side of the tile's optimal line, the marker's target, that its status grades it (US-07 AC5)
-            return <StatCard label={tile.label} value={<>{formatGradedValue(tile.metric, marker.value, u, marker.target)} {getDisplayLabel(tile.metric, u)}</>} status={reading({ label: s, className: statusClassMap[s] || '' })} evidence={reading(STAT_CARD_EVIDENCE[tile.evidence])} />;
-          })()}
-
-          {adult && results.eGFR !== undefined && (() => {
-            const s = getEgfrStatus(results.eGFR);
-            return <StatCard label="eGFR" value={<>{results.eGFR} mL/min</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['egfr']} />;
-          })()}
-
-          {results.lpa !== undefined && (() => {
-            const s = getLpaStatus(results.lpa);
-            return <StatCard label="Lp(a)" value={<>{Math.round(results.lpa)} nmol/L</>} status={reading({ label: s, className: statusClassMap[s] || '' })} evidence={reading(STAT_CARD_EVIDENCE['lpa'])} />;
-          })()}
-
-          {results.hba1c !== undefined && (() => {
-            const s = getHba1cStatus(results.hba1c);
-            return <StatCard label="HbA1c" value={<>{formatDisplayValue('hba1c', results.hba1c, usFor('hba1c'))} {getDisplayLabel('hba1c', usFor('hba1c'))}</>} status={reading({ label: s, className: statusClassMap[s] || '' })} evidence={reading(STAT_CARD_EVIDENCE['hba1c'])} />;
-          })()}
+          ))}
         </div>
       </section>
 

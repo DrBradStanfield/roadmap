@@ -68,6 +68,7 @@ private struct SuggestionRow: View {
             .buttonStyle(PressableStyle())
             .sensoryFeedback(.selection, trigger: expanded)
             .accessibilityHint(expanded ? "Collapses the details" : "Shows the details")
+            .accessibilityIdentifier("plan.suggestion")
 
             if expanded {
                 SuggestionDetails(suggestion: suggestion)
@@ -105,16 +106,32 @@ private struct SuggestionDetails: View {
                 }
                 .font(.subheadline)
             }
-            if let guidelines = suggestion.guidelines, !guidelines.isEmpty {
-                FlowTags(tags: guidelines)
-            }
-            if let reason = suggestion.reason {
+            EvidenceDetails(reason: suggestion.reason, guidelines: suggestion.guidelines ?? [], references: suggestion.references ?? [],
+                            heading: "Why this suggestion?")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// The evidence behind a suggestion or a summary tile, as the web shows it: guideline
+/// tags, the reason, then the references, which open in the browser.
+struct EvidenceDetails: View {
+    let reason: String?
+    let guidelines: [String]
+    let references: [Suggestion.Reference]
+    /// Over the reason, when the screen around it does not already say what it is.
+    var heading: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if !guidelines.isEmpty { FlowTags(tags: guidelines) }
+            if let reason {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Why this suggestion?").font(.subheadline.weight(.semibold))
+                    if let heading { Text(heading).font(.subheadline.weight(.semibold)) }
                     Text(reason).font(.subheadline).foregroundStyle(.secondary)
                 }
             }
-            if let references = suggestion.references, !references.isEmpty {
+            if !references.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(references, id: \.url) { reference in
                         Link(destination: reference.url) {
@@ -126,7 +143,6 @@ private struct SuggestionDetails: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

@@ -5,6 +5,8 @@ import { mergeFiles } from '../../packages/health-core/src/merge';
 import { computePlan, type Plan } from '../../packages/health-core/src/plan';
 import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-file';
 import { planSections } from '../../packages/health-core/src/plan-sections';
+import { statTiles } from '../../packages/health-core/src/stat-tiles';
+import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
 import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
 import { metricHistory } from './my-data-forms';
@@ -60,6 +62,13 @@ export function sectionsJson(planJsonText: string): string {
   return JSON.stringify(planSections(plan.results.suggestions));
 }
 
+/** The summary tiles above the plan, as JSON: the web's Quick Stats (health-core
+ *  stat-tiles.ts, US-25 AC22), in the phone's per-test units. */
+export function statTilesJson(planJsonText: string, unitsJson: string): string {
+  const plan = JSON.parse(planJsonText) as Plan;
+  return JSON.stringify(statTiles(plan.results, { unitSystem: plan.unitSystem, unitOverrides: readUnitChoices(unitsJson), sex: plan.inputs.sex }));
+}
+
 // The My data tab (my-data.ts). A record from disk is read as the plan's is,
 // migrated, so a record the web wrote in an older shape reads the same.
 
@@ -82,6 +91,22 @@ export function applyEditJson(recordJson: string, editJson: string, nowIso: stri
 /** A typed number as JSON: the number, or null when it is not a plain decimal. */
 export function numberJson(text: string): string {
   return JSON.stringify(readNumber(text) ?? null);
+}
+
+/** A typed value in the other units, as JSON, by health-core's own factors (units.ts):
+ *  `value` unrounded, for an edit; `text` as the record would show it; `feetInches` for
+ *  a height. Onboarding's unit switches are for entry only (US-54 AC6). */
+export function convertJson(metric: string, value: number, from: string, to: string): string {
+  const systems = ['si', 'conventional'];
+  if (!Object.prototype.hasOwnProperty.call(UNIT_DEFS, metric) || !systems.includes(from) || !systems.includes(to) || !Number.isFinite(value)) {
+    throw new Error('convertJson: unknown metric, units or value');
+  }
+  const canonical = toCanonicalValue(metric as MetricType, value, from as UnitSystem);
+  return JSON.stringify({
+    value: fromCanonicalValue(metric as MetricType, canonical, to as UnitSystem),
+    text: formatDisplayValue(metric as MetricType, canonical, to as UnitSystem),
+    feetInches: metric === 'height' ? cmToFeetInches(canonical) : null,
+  });
 }
 
 /** The values to write to Apple Health, as JSON (US-25 AC14, device-export.ts). */

@@ -54,4 +54,19 @@ final class PlanLayoutTests: XCTestCase {
             XCTAssertEqual(suggestion.references?.map(\.url.absoluteString) ?? [], rawReferences.compactMap { $0["url"] }, id)
         }
     }
+
+    /// US-25 AC22: the summary tiles reach the screen as the engine wrote them, the web's
+    /// Quick Stats, each with its why. Their wording is pinned in ios/engine/stat-tiles.test.ts.
+    func testSampleSummaryTilesAreTheEngines() throws {
+        let (engine, planJSON) = try samplePlan()
+        let tiles = try engine.blocking { try $0.statTiles(planJSON: planJSON, units: #"{"hba1c":"conventional"}"#) }
+
+        XCTAssertEqual(tiles.map(\.key), ["bmi", "ibw", "protein", "ldl", "hba1c"])
+        XCTAssertEqual(tiles.map(\.label), ["BMI", "Ideal Body Weight", "Protein Target", "LDL Cholesterol", "HbA1c"])
+        XCTAssertNil(tiles[0].status, "BMI 25-29.9 with no waist has no label, as on the web")
+        XCTAssertEqual(tiles[3].status?.label, "Borderline")
+        XCTAssertEqual(tiles[3].status?.tone, "info")
+        XCTAssertEqual("\(tiles[4].value) \(tiles[4].unit)", "5.6 %", "the phone's own units (AC17e)")
+        for tile in tiles { XCTAssertFalse(tile.evidence?.reason.isEmpty ?? true, tile.key) }
+    }
 }

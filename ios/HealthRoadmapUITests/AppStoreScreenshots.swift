@@ -22,9 +22,10 @@ final class AppStoreScreenshots: XCTestCase {
         XCTAssertTrue(app.staticTexts["Next Steps"].waitForExistence(timeout: 10) || app.staticTexts["Requires Attention"].waitForExistence(timeout: 5))
         shoot(app, "2 my plan")
 
-        // The first card on the plan, opened. Every shot is asserted: a missing one fails the run.
-        let card = app.scrollViews.buttons.firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 5), "a plan card")
+        // The first suggestion on the plan, opened, by its identifier: the summary tiles above
+        // are buttons too. Every shot is asserted: a missing one fails the run.
+        let card = app.buttons.matching(identifier: "plan.suggestion").firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 5), "a suggestion card")
         card.tap()
         shoot(app, "3 card opened")
         card.tap()

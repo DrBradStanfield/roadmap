@@ -53,25 +53,31 @@ struct MetricChart: View {
         return days.filter { $0 >= scrolledTo && $0 <= end }
     }
 
-    /// Apple Health's colours (Brad 2026-10-22): heart readings red, body measurements
-    /// purple. Blood tests blue: Apple gives lab results no colour of its own that we know of.
+    /// Each metric's own graph colour (Brad 2026-10-23): colour lives only in the chart,
+    /// on the metric page and its card's trend line; a card's name stays plain. No two
+    /// metrics share a hue; blood pressure's two lines are related reds. A metric with
+    /// none falls back to the accent colour. Every caller reads it here (US-25 AC17).
     static func colors(for metric: String) -> [Color] {
-        switch metric {
-        case MyData.bloodPressure: [.red, .pink]
-        case "weight", "waist", "height": [.purple]
-        default: [.blue]
-        }
+        palette[metric] ?? [.accentColor]
     }
 
-    /// Apple Health's symbol for a metric's card.
-    static func symbol(for metric: String) -> String {
-        switch metric {
-        case MyData.bloodPressure: "heart.fill"
-        case "weight": "scalemass.fill"
-        case "waist": "figure.arms.open"
-        default: "drop.fill"
-        }
-    }
+    /// Hand-chosen pairs, light then dark, 0xRRGGBB: each reads as a line on its card (3:1,
+    /// MyDataLayoutTests) and is calmer in dark mode (Brad 2026-10-23). Built once.
+    static let palette: [String: [Color]] = [
+        "weight": [Color(light: 0xAF52DE, dark: 0xBE88DA)],
+        "waist": [Color(light: 0x5856D6, dark: 0x8684CF)],
+        MyData.bloodPressure: [Color(light: 0xFF3B30, dark: 0xE6817B), Color(light: 0xD37A70, dark: 0xDAA39C)],
+        "hba1c": [Color(light: 0xD07A00, dark: 0xE6B261)],
+        "ldl": [Color(light: 0x007AFF, dark: 0x61A3E6)],
+        "apob": [Color(light: 0x2E9ED2, dark: 0x92CDE6)],
+        "total_cholesterol": [Color(light: 0x2A9BB0, dark: 0x73BDCA)],
+        "hdl": [Color(light: 0x2CA84B, dark: 0x65BC7B)],
+        "triglycerides": [Color(light: 0xB28F00, dark: 0xE6CF61)],
+        "creatinine": [Color(light: 0xA2845E, dark: 0x9B8B76)],
+        "lpa": [Color(light: 0xB2598C, dark: 0xA0708C)],
+        "psa": [Color(light: 0x6680A6, dark: 0x738195)],
+        "height": [Color(light: 0x8E8E93, dark: 0x828284)],
+    ]
 
     var body: some View {
         Chart {
@@ -146,6 +152,15 @@ extension Color {
             guard color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha) else { return color }
             return UIColor(hue: hue, saturation: saturation * 0.6, brightness: brightness * 0.9, alpha: alpha)
         })
+    }
+
+    /// A fixed colour for each mode, 0xRRGGBB.
+    init(light: UInt32, dark: UInt32) {
+        func rgb(_ hex: UInt32) -> UIColor {
+            UIColor(red: CGFloat(hex >> 16 & 0xFF) / 255, green: CGFloat(hex >> 8 & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+        }
+        let (light, dark) = (rgb(light), rgb(dark))
+        self.init(uiColor: UIColor { $0.userInterfaceStyle == .dark ? dark : light })
     }
 }
 

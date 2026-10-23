@@ -2,7 +2,7 @@ import SwiftUI
 
 /// A My data section's title with one tinted symbol, as Apple Health colours its
 /// categories (US-25 AC17d, Brad 2026-10-22: colour on the sections, not on every
-/// reading). The tints match the charts' (MetricChart.colors).
+/// reading). The charts' colours are each metric's own (MetricChart.colors).
 struct SectionTitle: View {
     let title: String
     let symbol: String

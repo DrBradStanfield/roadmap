@@ -5,7 +5,7 @@ artifact: https://claude.ai/artifact/C9GEKa5VJc3UW2FZN5XFrD
 # iPhone app: onboarding (approved by Brad, 2026-10-22)
 
 Status: **approved 2026-10-22, with every recommendation below** (Health's sex and birth
-date read, weight optional, the "I already use it" path in the same build, App Store
+date read, weight optional (made required 2026-10-23), the "I already use it" path in the same build, App Store
 Connect retention as the signal, existing users skip). The story is US-54 in
 [docs/user-stories.md](../docs/user-stories.md); the code is `ios/HealthRoadmap/Onboarding/`.
 
@@ -51,24 +51,37 @@ flowchart TD
    AC10 text, shortened). Two ways on: **Get started**, and a smaller **I already use
    Health Roadmap**, which connects Dropbox or Google Drive and brings the existing
    record in, so a web user never types their details twice.
-2. **Apple Health.** The only page before Apple's sheet: "Fill this in from Apple Health?",
+2. **Apple Health.** The only page before Apple's sheet: "Use your Apple Health data",
    six tiles (sex, birth date, height, weight, waist, blood pressure) ticking in, one line
-   on where what is read goes and that added values are saved back, and a hint for Apple's
-   two taps. No switch of ours: Apple's sheet cannot be pre-switched. **Connect Apple
-   Health** shows the sheet. **Not now** goes on. Either way the next screens come next.
+   ("So you type less.") on where what is read goes and that added values are saved back.
+   Just above **Connect Apple Health**, the last thing read before the tap, a small tinted
+   callout gives Apple's two taps: **Turn On All**, then **Allow**. No switch of ours:
+   Apple's sheet cannot be pre-switched. **Not now** goes on. Either way the next screens
+   come next.
 3. **Sex.** Female or Male, two large buttons. One line on why: the plan's targets and
-   screenings depend on it.
-4. **Birth month and year.** Two wheels. We never ask for or keep the day.
-5. **Height.** A wheel: centimetres, or feet and inches, by the phone's region, with a
-   switch.
-6. **Weight.** A wheel, in kilograms or pounds. **Skip** is offered.
+   screenings depend on it. A tap saves and moves on; there is no Continue. A sex from
+   Apple Health shows selected and still takes that one tap.
+4. **Birth month and year.** Two wheels. One line on why: age decides which checks are
+   due (bowel and breast cancer screening, bone density scans). We never ask for or keep
+   the day.
+5. **Height.** A large number box, focused on arrival: centimetres, or feet and inches
+   (two boxes). A cm / ft in switch beside it starts from the record's units.
+6. **Weight.** The same, in kilograms or pounds. Required (Brad 2026-10-23): no Skip.
 7. **My plan.** The plan, straight away.
 
+The unit switch is for entry only (review 2026-10-23): it never writes the record's
+units, which come from the region default and change in My data › About you › Units.
+A box left alone shows the record's value again in the new units; a typed one is
+converted, through the engine (`convertJson`, health-core's factors). On Continue a typed
+value is converted once to the units the engine's edit reads. A box filled from the
+record and not typed in saves nothing, in any unit.
+
 Each question screen:
-- has a progress bar (4 steps), **Back**, and one **Continue** at the bottom;
+- has a progress bar (4 steps), **Back**, and one **Continue** at the bottom (sex
+  excepted: its tap is the answer);
 - shows a value from Apple Health already selected, labelled "From Apple Health";
-- saves on Continue through the engine's own writes (`updateProfile`, `appendMeasurement`),
-  so a value the engine refuses shows its words and nothing is written.
+- saves through the engine's own writes (`updateProfile`, `appendMeasurement`), so a
+  value the engine refuses shows its words and nothing is written.
 
 Reminders, the cloud and lab upload are not part of onboarding. Each is offered where it
 lives, the first time it matters.
@@ -92,13 +105,15 @@ Health, and see my plan, without facing the full form.
   "other" or "not set" preselects nothing. Of the birth date, only month and year are
   used; the day is never stored.
 - AC4: each question is one screen with Back, Continue and a 4-step progress bar. Sex,
-  birth month and year, and height are needed to continue. Weight has Skip.
+  birth month and year, and height are needed to continue. Weight has Skip (since
+  2026-10-23 weight is required too; the live ACs are US-54's).
 - AC5: Continue writes through the engine (`updateProfile` for sex, birth year and
   month, height; `appendMeasurement` for weight, dated today, `source: apple_health`
   when it came from Health). A refused value shows the engine's words and stays on the
   screen.
 - AC6: units default to the phone's region (US region: feet, inches, pounds) and are
-  saved as the record's unit choice, which My data can change later.
+  saved as the record's unit choice, which only My data's Units row changes. The height
+  and weight switches are for entry only.
 - AC7: after the last step the app opens My plan. Quitting part way keeps what was
   saved, and the next launch resumes at the first unanswered question.
 - AC8: VoiceOver reads every screen; Dynamic Type sizes keep Continue on screen.
@@ -109,7 +124,7 @@ Health, and see my plan, without facing the full form.
    permission. The purpose text and the App Store privacy answers change. Worth it to
    save two taps? (Recommended: yes. It is the main point of the Allow screen.)
 2. **Weight optional?** The plan runs without it, but the weight cascade and BMI need
-   it. (Recommended: optional, with Skip.)
+   it. (Recommended: optional, with Skip. Brad, 2026-10-23: required.)
 3. **The "I already use it" path.** It needs Google Drive or Dropbox sign-in to work on
    the phone first. Ship it in the same build? (Recommended: yes, Dropbox already
    works.)

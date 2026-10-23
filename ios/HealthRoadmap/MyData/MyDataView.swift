@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// The My data tab (US-25 AC5, AC17): about you, vitals and blood tests, each
+/// The My data tab (US-25 AC5, AC17): vitals, blood tests and about you, each
 /// row with its current value. Every change goes through `RecordStore.apply`,
 /// so the engine's rules decide what is saved. The web twins are
 /// StartingInfoVitals.tsx and BloodTestTimeline.tsx.
 ///
-/// No title bar (Brad 2026-10-22): lab upload and Sync sit on the About you
-/// line, the unit switch on the Vitals line. A value with history opens its
+/// No title bar (Brad 2026-10-22): lab upload and Sync sit on the Vitals line;
+/// the unit switch is a row in About you, near the end, since it is set once
+/// (Brad 2026-10-23). A value with history opens its
 /// page in the tab's navigation stack (MetricDetailView).
 struct MyDataView: View {
     /// Which value the entry sheet is for.
@@ -59,13 +60,13 @@ struct MyDataView: View {
         Group {
             if let data = store.myData {
                 List {
-                    aboutYou(data)
                     vitals(data)
                     metrics(data.bloodTests) { SectionTitle.bloodTests() }
                     MedicationsSection(store: store, data: data, saved: saved)
                     ScreeningsSection(store: store, data: data, saved: saved, open: open)
                     SupplementsSection(store: store, supplements: data.supplements, saved: saved)
                     RemindersSection()
+                    aboutYou(data)
                     AppleHealthSection()
                     RecordSection(store: store, sync: sync)
                     Section {
@@ -121,15 +122,10 @@ struct MyDataView: View {
             }
             .tint(.primary)
             .disabled(store.unitSwitches > 0)
+
+            LabeledContent("Units") { units(data) }
         } header: {
-            header(.aboutYou()) {
-                Button { addingLabs = true } label: {
-                    Label("Add medical records", systemImage: "plus")
-                }
-                Button { showSync = true } label: {
-                    Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
-                }
-            }
+            SectionTitle.aboutYou()
         }
     }
 
@@ -145,7 +141,7 @@ struct MyDataView: View {
         }
     }
 
-    /// Metric or US, compact, on the Vitals line (AC17).
+    /// Metric or US, compact, a row in About you (AC17).
     private func units(_ data: MyData) -> some View {
         Picker("Units", selection: binding(data.unitSystem) { .units($0) }) {
             Text("Metric").tag("si")
@@ -158,7 +154,7 @@ struct MyDataView: View {
 
     private func metrics(_ rows: [MyData.Row], @ViewBuilder header: () -> some View) -> some View {
         Section {
-            ForEach(rows) { metric($0) }
+            ForEach(rows) { metric($0, column: rows) }
         } header: {
             header()
         }
@@ -172,18 +168,28 @@ struct MyDataView: View {
             Section {
                 metric(row, card: row.latest != nil)
             } header: {
-                if index == 0 { header(.vitals()) { units(data) } }
+                if index == 0 {
+                    header(.vitals()) {
+                        Button { addingLabs = true } label: {
+                            Label("Add medical records", systemImage: "plus")
+                        }
+                        Button { showSync = true } label: {
+                            Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
+                        }
+                    }
+                }
             }
             .listSectionSpacing(.compact)
         }
     }
 
-    private func metric(_ row: MyData.Row, card: Bool = false) -> some View {
+    /// `column`: the section's rows, whose widest reading sets every row's value column.
+    private func metric(_ row: MyData.Row, card: Bool = false, column: [MyData.Row] = []) -> some View {
         // A unit switch still landing would open a sheet on the old choices (AC17e).
         Button { open(row) } label: {
             ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
-                     trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0].softInDark,
-                     card: card ? MetricChart.symbol(for: row.metric) : nil)
+                     trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0], card: card,
+                     column: column.map { ($0.latest?.value, $0.unit) })
         }
         .tint(.primary)
         .disabled(store.unitSwitches > 0)
@@ -248,17 +254,22 @@ private struct ValueRow: View {
     /// The recent days, drawn small beside the value (AC17d).
     var trend: [Double] = []
     var tint: Color = .blue
-    /// Drawn as an Apple Health card under this symbol: name and day on top, the value
-    /// large below with a larger trend beside it.
-    var card: String?
+    /// Drawn as an Apple Health card: the plain name and day on top, the value large
+    /// below with a larger trend in the metric's colour beside it.
+    var card = false
+    /// The section's readings: the widest sets this row's value column, so values and
+    /// trends line up down the section however wide one value is (Brad 2026-10-23).
+    var column: [(value: String?, unit: String)] = []
     @Environment(\.dynamicTypeSize) private var textSize
+    /// A compact row's trend, growing a little with the text.
+    @ScaledMetric(relativeTo: .body) private var trendWidth = 44.0
     /// Counts the value's own changes: a new value in the same unit, not a units switch (review R3).
     @State private var bounces = 0
     @State private var shownUnit: String?
 
     var body: some View {
         Group {
-            if let card, let value { cardBody(card, value: value) } else { rowBody }
+            if card, let value { cardBody(value) } else { rowBody }
         }
         .animation(.snappy, value: value)
         .onChange(of: value) {
@@ -269,13 +280,11 @@ private struct ValueRow: View {
         .contentShape(Rectangle())
     }
 
-    private func cardBody(_ symbol: String, value: String) -> some View {
+    private func cardBody(_ value: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             // Name over day at accessibility sizes, where one line would squeeze.
             LabelValue.layout(textSize).callAsFunction {
-                Label(label, systemImage: symbol)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(tint)
+                Text(label).font(.subheadline.weight(.semibold))
                 Spacer()
                 HStack {
                     if let day {
@@ -286,14 +295,7 @@ private struct ValueRow: View {
                 }
             }
             HStack(alignment: .bottom) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(value)
-                        .font(.system(.title, design: .rounded).weight(.semibold))
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                        .modifier(Bounce(trigger: bounces, anchor: .leading))
-                    Text(unit).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
-                }
+                CardValue(value: value, unit: unit, bounces: bounces)
                 Spacer(minLength: 12)
                 if !textSize.isAccessibilitySize {
                     Sparkline(points: trend, tint: tint, size: CGSize(width: 110, height: 40))
@@ -305,7 +307,10 @@ private struct ValueRow: View {
     }
 
     private var rowBody: some View {
-        LabelValue.layout(textSize).callAsFunction {
+        // Side by side: the trend, then the value over its unit, right-aligned in the section's
+        // column. At accessibility sizes, under the label and inline.
+        let stacked = !textSize.isAccessibilitySize
+        return LabelValue.layout(textSize).callAsFunction {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                 if let day {
@@ -313,29 +318,64 @@ private struct ValueRow: View {
                 }
             }
             Spacer(minLength: 0)
-            HStack(alignment: .firstTextBaseline) {
-                Sparkline(points: trend, tint: tint)
+            HStack(alignment: stacked ? .center : .firstTextBaseline, spacing: 12) {
+                Sparkline(points: trend, tint: tint, size: stacked ? CGSize(width: trendWidth, height: trendWidth * 18 / 44) : CGSize(width: 44, height: 18))
                     .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 2 }
-                if let feetInches {
-                    number(String(feetInches.feet), unit: "ft")
-                    number(String(feetInches.inches), unit: "in")
-                } else if let value {
-                    number(value, unit: unit)
-                } else {
-                    Text("Add").foregroundStyle(Color.accentColor)
+                ZStack(alignment: .trailing) {
+                    if stacked {
+                        ForEach(column.indices, id: \.self) { reading(column[$0].value, column[$0].unit, stacked: true).hidden().accessibilityHidden(true) }
+                    }
+                    reading(value, unit, feetInches: feetInches, stacked: stacked)
                 }
             }
         }
     }
 
+    /// A value and its unit: the unit under it in a compact row, beside it otherwise; a US
+    /// height as feet and inches side by side; "Add" when there is none.
     @ViewBuilder
-    private func number(_ value: String, unit: String) -> some View {
-        Text(value)
-            .font(.body.weight(.semibold))
-            .monospacedDigit()
-            .contentTransition(.numericText())
-            .modifier(Bounce(trigger: bounces, anchor: .trailing))
-        Text(unit).font(.subheadline).foregroundStyle(.secondary)
+    private func reading(_ value: String?, _ unit: String, feetInches: MyData.FeetInches? = nil, stacked: Bool) -> some View {
+        if let value {
+            let parts = feetInches.map { [(String($0.feet), "ft"), (String($0.inches), "in")] } ?? [(value, unit)]
+            let under = stacked && feetInches == nil
+            let pair = under ? AnyLayout(VStackLayout(alignment: .trailing, spacing: 0)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 4))
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                ForEach(parts.indices, id: \.self) { index in
+                    pair {
+                        Text(parts[index].0)
+                            .font(.body.weight(.semibold))
+                            .monospacedDigit()
+                            .contentTransition(.numericText())
+                            .modifier(Bounce(trigger: bounces, anchor: .trailing))
+                        Text(parts[index].1).font(under ? .caption : .subheadline).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        } else {
+            Text("Add").foregroundStyle(Color.accentColor)
+        }
+    }
+}
+
+/// A card's value, large, with its unit: My data's vitals cards and the plan's summary tiles.
+struct CardValue: View {
+    let value: String
+    /// Empty for a value with no unit (BMI).
+    let unit: String
+    /// Counts new values, for My data's bounce.
+    var bounces = 0
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(value)
+                .font(.system(.title, design: .rounded).weight(.semibold))
+                .monospacedDigit()
+                .contentTransition(.numericText())
+                .modifier(Bounce(trigger: bounces, anchor: .leading))
+            if !unit.isEmpty {
+                Text(unit).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+            }
+        }
     }
 }
 
