@@ -174,6 +174,56 @@ export async function dropboxListFolder(accessToken: string, folder: string, sig
   }
 }
 
+/** One file or folder of a browsed listing, with its place in the app folder. */
+export interface DropboxTreeEntry {
+  kind: 'file' | 'folder';
+  id: string;
+  name: string;
+  /** App-folder-relative, as Dropbox displays it, no leading slash. */
+  path: string;
+  size: number;
+  modified: string;
+}
+
+/**
+ * The files AND folders under one folder of the app folder (`''` for its
+ * root), every page, and with `recursive` everything below it too: the
+ * iPhone's "From Dropbox" browser (US-52 AC13c). The folder itself never
+ * lists. A folder that does not exist lists as empty. `dropboxListFolder`
+ * stays as it was for the hosted connector (US-35 AC2).
+ */
+export async function dropboxListTree(accessToken: string, folder: string, recursive: boolean, signal?: AbortSignal): Promise<DropboxTreeEntry[]> {
+  const entries: DropboxTreeEntry[] = [];
+  let url = LIST_URL;
+  let body: object = { path: folder ? `/${folder}` : '', recursive, include_deleted: false };
+  for (;;) {
+    const res = await request(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal,
+    });
+    if (res.status === 409 && url === LIST_URL) return []; // path/not_found
+    if (!res.ok) throw new StorageError(`${PROVIDER} list failed (${res.status})`, undefined, undefined, res.status);
+    const page = await jsonBody<{ entries?: Array<Record<string, unknown>>; cursor?: string; has_more?: boolean }>(res);
+    for (const entry of page.entries ?? []) {
+      const kind = entry['.tag'];
+      const shown = typeof entry.path_display === 'string' ? entry.path_display : entry.path_lower;
+      if ((kind !== 'file' && kind !== 'folder') || typeof entry.id !== 'string' || typeof entry.name !== 'string' || typeof shown !== 'string') continue;
+      const path = shown.replace(/^\//, '');
+      if (path.toLowerCase() === folder.toLowerCase()) continue; // a recursive listing names its own folder
+      entries.push({
+        kind, id: entry.id, name: entry.name, path,
+        size: typeof entry.size === 'number' ? entry.size : 0,
+        modified: typeof entry.server_modified === 'string' ? entry.server_modified : '',
+      });
+    }
+    if (!page.has_more || !page.cursor) return entries;
+    url = LIST_CONTINUE_URL;
+    body = { cursor: page.cursor };
+  }
+}
+
 /** Remove one folder-relative file. Already gone is not a failure. */
 async function dropboxDelete(accessToken: string, fileName: string, signal?: AbortSignal): Promise<void> {
   const res = await request(DELETE_URL, {

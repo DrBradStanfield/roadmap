@@ -1,25 +1,30 @@
 import Observation
 import SwiftUI
 
-/// What "From Dropbox" shows of the app folder: loading, the lab files, or why
-/// not. Kept apart from the view so a test can drive it (review: a sign-in
-/// after a refused listing must list afresh).
+/// What "From Dropbox" shows of one folder of the app folder: loading, its
+/// subfolders and lab files, or why not. Kept apart from the view so a test can
+/// drive it (review: a sign-in after a refused listing must list afresh).
 @MainActor
 @Observable
 final class DropboxLabFolder {
     enum Load: Equatable {
         case loading
-        case files([HealthEngine.CloudLabFile])
+        case files(HealthEngine.CloudLabListing)
         case failed(SyncProblem.Kind)
     }
 
+    /// The app folder itself.
+    static let root = HealthEngine.CloudLabFolder(name: CloudProvider.dropbox.folder, path: "")
+
     private(set) var load = Load.loading
+    let folder: HealthEngine.CloudLabFolder
     private let engine: HealthEngine
     private let sync: CloudSync
 
-    init(engine: HealthEngine, sync: CloudSync) {
+    init(engine: HealthEngine, sync: CloudSync, folder: HealthEngine.CloudLabFolder = root) {
         self.engine = engine
         self.sync = sync
+        self.folder = folder
     }
 
     /// List the folder again, keeping the files on screen while it does.
@@ -27,7 +32,7 @@ final class DropboxLabFolder {
         guard sync.provider == .dropbox else { return }
         if case .files = load {} else { load = .loading }
         do {
-            load = .files(try await engine.labFiles())
+            load = .files(try await engine.labFolder(folder.path))
         } catch {
             load = .failed(SyncProblem(error).kind)
         }
@@ -41,23 +46,30 @@ final class DropboxLabFolder {
     }
 }
 
-/// "From Dropbox" under "+" (US-52 AC11). Not connected: what connecting does,
-/// then Sync's own sign-in. Connected: the lab files in the app folder, newest
-/// first, listed by the engine (health-core's dropbox-rest), one tap to read.
+/// "From Dropbox" under "+" (US-52 AC11, AC13c). Not connected: what connecting
+/// does, then Sync's own sign-in. Connected: one folder of the app folder, listed
+/// by the engine (health-core's dropbox-rest): its folders, to open, "Read every
+/// report in this folder", and its lab files, newest first, one tap to read.
 struct DropboxLabFiles: View {
     let engine: HealthEngine
     let sync: CloudSync
     let pick: (HealthEngine.CloudLabFile) -> Void
+    let open: (HealthEngine.CloudLabFolder) -> Void
+    let readAll: (HealthEngine.CloudLabFolder) -> Void
     let browseFiles: () -> Void
 
     @State private var folder: DropboxLabFolder
 
-    init(engine: HealthEngine, sync: CloudSync, pick: @escaping (HealthEngine.CloudLabFile) -> Void, browseFiles: @escaping () -> Void) {
+    init(engine: HealthEngine, sync: CloudSync, folder: HealthEngine.CloudLabFolder = DropboxLabFolder.root,
+         pick: @escaping (HealthEngine.CloudLabFile) -> Void, open: @escaping (HealthEngine.CloudLabFolder) -> Void,
+         readAll: @escaping (HealthEngine.CloudLabFolder) -> Void, browseFiles: @escaping () -> Void) {
         self.engine = engine
         self.sync = sync
         self.pick = pick
+        self.open = open
+        self.readAll = readAll
         self.browseFiles = browseFiles
-        _folder = State(initialValue: DropboxLabFolder(engine: engine, sync: sync))
+        _folder = State(initialValue: DropboxLabFolder(engine: engine, sync: sync, folder: folder))
     }
 
     var body: some View {
@@ -73,7 +85,7 @@ struct DropboxLabFiles: View {
                 Text("The app sees only its own Dropbox folder. For a report anywhere else in Dropbox, use Files with the Dropbox app installed.")
             }
         }
-        .navigationTitle("From Dropbox")
+        .navigationTitle(folder.folder.path.isEmpty ? "From Dropbox" : folder.folder.name)
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await folder.refresh() }
         // Runs again once a Connect here sets the provider.
@@ -112,7 +124,7 @@ struct DropboxLabFiles: View {
                     Text("Looking in your Dropbox folder")
                 }
             }
-        case .files(let files) where files.isEmpty:
+        case .files(let listing) where listing.files.isEmpty && listing.folders.isEmpty:
             Section {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("No lab reports here yet")
@@ -122,16 +134,34 @@ struct DropboxLabFiles: View {
                 .padding(.vertical, 4)
                 Button("Refresh", systemImage: "arrow.clockwise") { Task { await folder.refresh() } }
             }
-        case .files(let files):
+            hiddenNote(listing)
+        case .files(let listing):
             Section {
-                ForEach(files) { file in
-                    Button { pick(file) } label: { LabFileRow(file: file) }
-                }
-            } header: {
-                Text("In \(CloudProvider.dropbox.folder)")
+                Button("Read every report in this folder", systemImage: "doc.on.doc") { readAll(folder.folder) }
             } footer: {
-                Text("Tap a report to read its values. You check them before anything is saved.")
+                Text("Every PDF, photo and ZIP in this folder and the folders inside it, up to 200 files.")
             }
+            if !listing.folders.isEmpty {
+                Section("Folders") {
+                    ForEach(listing.folders, id: \.path) { inner in
+                        Button { open(inner) } label: {
+                            Label(inner.name, systemImage: "folder").foregroundStyle(Color.primary)
+                        }
+                    }
+                }
+            }
+            if !listing.files.isEmpty {
+                Section {
+                    ForEach(listing.files) { file in
+                        Button { pick(file) } label: { LabFileRow(file: file) }
+                    }
+                } header: {
+                    Text("In \(folder.folder.path.isEmpty ? CloudProvider.dropbox.folder : folder.folder.name)")
+                } footer: {
+                    Text("Tap a report to read its values. You check them before anything is saved.")
+                }
+            }
+            hiddenNote(listing)
         case .failed(.signIn):
             Section {
                 Text("Dropbox needs you to sign in again.")
@@ -147,6 +177,19 @@ struct DropboxLabFiles: View {
         }
     }
 
+}
+
+extension DropboxLabFiles {
+    /// At the root, the app's own folders, named, so a person's folder of the same name is not silently missing (review R6).
+    @ViewBuilder
+    func hiddenNote(_ listing: HealthEngine.CloudLabListing) -> some View {
+        if !listing.hidden.isEmpty {
+            Section {
+            } footer: {
+                Text("Not shown: \(listing.hidden.formatted(.list(type: .and))). The app keeps its own files there. For a report of yours in one of them, move it to another folder.")
+            }
+        }
+    }
 }
 
 /// One file in the Dropbox list: its kind, name, day and size.

@@ -145,7 +145,7 @@ final class EngineFenceTests: XCTestCase {
     }
 
     func testTheUploadBranchesLabCallsPass() async throws {
-        // labFilesJson and labFileBytes (the upload branch): files/list_folder and files/download, no query.
+        // labFolderJson, labFolderFilesJson (recursive: the same route, a body Swift does not read) and labFile: files/list_folder and files/download, no query.
         let list = try await fetch("https://api.dropboxapi.com/2/files/list_folder",
                                    headers: "{ Authorization: 'Bearer native-token:dropbox', 'Content-Type': 'application/json' }")
         XCTAssertEqual(list, "200")

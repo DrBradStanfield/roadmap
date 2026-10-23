@@ -296,6 +296,37 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"])
     }
 
+    /// US-25 AC20: the sheet's pin covers Lp(a)'s unit, which the record holds, so a value
+    /// typed in mg/dL is refused after the web switches Lp(a) to mg/L, never read as mg/L.
+    func testLpaValueTypedBeforeTheWebChangesItsUnitIsRefused() async throws {
+        dropbox.put(try record(days: [], device: "web"))
+        let (store, sync, engine) = try app()
+        await sync.start()
+        XCTAssertEqual(store.setLpaUnit("mg/dL"), .saved, "the menu's choice goes through the session")
+        store.pinScreen()
+        XCTAssertEqual(store.screen.lpaUnit, "mg/dL")
+        // Saved without a re-read: the session throttles re-reads, and the web's change comes next.
+        _ = try await engine.cloudFlush()
+        XCTAssertEqual((dropbox.record["profile"] as? [String: Any])?["lpaUnit"] as? String, "mg/dL")
+        let web = try engine.apply(.lpaUnit("mg/L"), to: dropbox.file!.text, now: .now, deviceId: "web")
+        dropbox.put(try JSONSerialization.jsonObject(with: Data(try XCTUnwrap(web.record).utf8)) as! [String: Any])
+        await sync.syncNow()
+        XCTAssertEqual(store.myData?.lpaUnit, "mg/L")
+        guard case .refused(let message, _) = store.apply(.add(metric: "lpa", value: 50, day: "2026-10-02")) else {
+            return XCTFail("50 typed as mg/dL must not be stored as 50 mg/L")
+        }
+        XCTAssertTrue(message.contains("Close this"), message)
+        XCTAssertEqual(store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")), .saved, "another test's value still saves")
+        store.unpinScreen()
+        // A sheet opened now shows mg/L: its value saves, read in mg/L.
+        store.pinScreen()
+        XCTAssertEqual(store.apply(.add(metric: "lpa", value: 500, day: "2026-10-02")), .saved)
+        store.unpinScreen()
+        await sync.background()
+        let lpa = (dropbox.record["measurements"] as? [[String: Any]])?.first { $0["metricType"] as? String == "lpa" }
+        XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9)
+    }
+
     func testR4AReopenThatFailsGoesBackToThePhoneAndKeepsEdits() async throws {
         dropbox.put(try record(days: [], device: "web"))
         let (store, sync, _) = try app()
@@ -425,7 +456,7 @@ final class CloudSyncTests: XCTestCase {
         dropbox.onDownload = nil
         XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .busy)))
         XCTAssertNil(store.cloudErase)
-        let probe = try engine.cloudEdit(.add(metric: "weight", value: 80, day: "2026-10-09"), erase: "x", units: "si", now: .now)
+        let probe = try engine.cloudEdit(.add(metric: "weight", value: 80, day: "2026-10-09"), erase: "x", units: "si", now: .now, lpaUnit: "nmol/L")
         XCTAssertEqual(probe.reason, "not-open", "the engine holds no session that would poll and say Synced")
         XCTAssertNotNil(SyncProblem(kind: .busy).words(.dropbox).range(of: "on this iPhone"))
     }

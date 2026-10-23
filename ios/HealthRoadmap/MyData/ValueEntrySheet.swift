@@ -17,6 +17,11 @@ struct ValueEntrySheet: View {
     let save: (Double, String) -> RecordStore.ApplyResult
     /// Replaces the value in a row with a correction.
     var replace: ((String, Double) -> RecordStore.ApplyResult)?
+    /// Lp(a)'s three units (US-05 AC2, US-25 AC20), chosen here so a first value is typed in
+    /// the lab's unit; `unit` is the record's choice as it is now. Choosing writes the
+    /// record's unit and answers a refusal's words, nil when it was taken.
+    var units: [String] = []
+    var chooseUnit: ((String) -> String?)?
 
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
@@ -43,6 +48,12 @@ struct ValueEntrySheet: View {
                             .focused($focused)
                             .onChange(of: text) { message = nil }
                         Text(unit).font(.title3).foregroundStyle(.secondary)
+                    }
+                    if let chooseUnit, !units.isEmpty {
+                        Picker("Unit", selection: Binding(get: { unit }, set: { message = chooseUnit($0) })) {
+                            ForEach(units, id: \.self) { Text($0).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
                     }
                 } footer: {
                     if let message {
@@ -93,5 +104,16 @@ struct ValueEntrySheet: View {
         case .saved: dismiss()
         case .refused(let why, _): message = why
         }
+    }
+}
+
+extension ValueEntrySheet {
+    /// Lp(a)'s unit picker in its sheets (US-25 AC20); any other row's sheet is as it was.
+    func lpaUnits(_ store: RecordStore, _ row: MyData.Row) -> ValueEntrySheet {
+        guard store.lpaUnit(for: row) != nil else { return self }
+        var sheet = self
+        sheet.units = RecordStore.lpaUnits
+        sheet.chooseUnit = { store.chooseLpaUnit($0) }
+        return sheet
     }
 }

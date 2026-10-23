@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`US-12 / US-13 pins — ReviewTable Save hands up the same rows as today > a report with core and additional values, one core value edited 1`] = `"{"values":[{"metric":"ldl","valueSI":2.9,"recordedAt":"2026-03-10T00:00:00.000Z","source":"lab_import_edited"},{"metric":"hdl","valueSI":1.2,"recordedAt":"2026-03-10T00:00:00.000Z"}],"labValues":[{"name":"Ferritin","value":85,"unit":"µg/L","referenceLow":30,"referenceHigh":300,"recordedAt":"2026-03-10T00:00:00.000Z"},{"name":"Sodium","value":140,"unit":"mmol/L","recordedAt":"2026-03-10T00:00:00.000Z"}]}"`;
+
+exports[`US-12 / US-13 pins — ReviewTable Save hands up the same rows as today > a ticked Replace carries the held row ids 1`] = `"{"values":[{"metric":"hdl","valueSI":1.4,"recordedAt":"2025-09-02T00:00:00.000Z","correctsId":"H"}],"labValues":[{"name":"Ferritin","value":90,"unit":"µg/L","recordedAt":"2025-09-02T00:00:00.000Z","correctsId":"F"}]}"`;
+
+exports[`US-12 / US-13 pins — ReviewTable Save hands up the same rows as today > a value typed in the other unit (the LDL toggle set to mg/dL) saves in SI 1`] = `"120 → {"values":[{"metric":"ldl","valueSI":3.1031807602792862,"recordedAt":"2026-03-10T00:00:00.000Z","source":"lab_import_edited"}],"labValues":[]}"`;
+
+exports[`US-12 / US-13 pins — ReviewTable Save hands up the same rows as today > an undated previous column saves on the picked day 1`] = `"{"values":[{"metric":"ldl","valueSI":2.6,"recordedAt":"2026-03-10T00:00:00.000Z"},{"metric":"ldl","valueSI":3.4,"recordedAt":"2025-09-02T00:00:00.000Z"},{"metric":"hdl","valueSI":1.2,"recordedAt":"2025-09-02T00:00:00.000Z"}],"labValues":[{"name":"sodium","value":139,"unit":"mmol/L","recordedAt":"2025-09-02T00:00:00.000Z"}]}"`;

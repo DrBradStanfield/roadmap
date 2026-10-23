@@ -8,7 +8,8 @@ import { readUnitChoices } from './unit-choices';
 import { planJson } from './entry';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { supplementSchema } from '../../packages/health-core/src/validation';
-import { upsertSupplement } from '../../packages/health-core/src/state-edits';
+import { stampProfile, upsertSupplement } from '../../packages/health-core/src/state-edits';
+import { mergeFiles } from '../../packages/health-core/src/merge';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const LATER = '2026-10-21T09:00:00.000Z';
@@ -545,5 +546,87 @@ describe('metricHistory and the plan\'s exclusions (Codex R2)', () => {
     const history = metricHistory(file, 'systolic_bp', NOW);
     expect(history.excluded).toBe(true);
     expect(history.rows[0].current).toBe(true);
+  });
+});
+
+// US-25 AC20: Lp(a)'s three units on the phone, the web's control (US-05 AC2): the
+// record's `profile.lpaUnit`, read and written through health-core as the web does.
+describe('Lp(a) unit (US-05 AC2, US-25 AC20)', () => {
+  const lpaRow = (file: RoadmapFile) => myData(file).bloodTests.find((row) => row.metric === 'lpa')!;
+  const withLpa = (locale: string, zone: string) =>
+    edited(newRecord(NOW, 'phone', locale, zone), { kind: 'add', metric: 'lpa', value: 124, day: '2026-09-01' });
+  const inUnit = (file: RoadmapFile, unit: 'nmol/L' | 'mg/dL' | 'mg/L') => edited(file, { kind: 'lpaUnit', unit });
+
+  it('with none chosen, US units give mg/dL and any other nmol/L', () => {
+    expect(myData(withLpa('en-US', 'America/New_York'))).toMatchObject({ lpaUnit: 'mg/dL' });
+    // Typed 124 in mg/dL, stored 310 nmol/L, shown back at mg/dL's one place.
+    expect(lpaRow(withLpa('en-US', 'America/New_York'))).toMatchObject({ unit: 'mg/dL', latest: { value: '124.0' } });
+    expect(myData(withLpa('en-NZ', 'Pacific/Auckland'))).toMatchObject({ lpaUnit: 'nmol/L' });
+    // A hand edit can hold anything: an unknown unit reads as none.
+    const odd = withLpa('en-NZ', 'Pacific/Auckland');
+    expect(myData({ ...odd, profile: { ...odd.profile, lpaUnit: 'g/L' as never } }).lpaUnit).toBe('nmol/L');
+  });
+
+  it('shows the row, its history and its trend in the chosen unit, at the web\'s step', () => {
+    const file = withLpa('en-NZ', 'Pacific/Auckland');
+    for (const [unit, value] of [['nmol/L', '124'], ['mg/dL', '49.6'], ['mg/L', '496']] as const) {
+      const chosen = inUnit(file, unit);
+      expect(lpaRow(chosen)).toMatchObject({ unit, latest: { value } });
+      expect(metricHistory(chosen, 'lpa', NOW)).toMatchObject({ unit, rows: [{ value }] });
+      expect(lpaRow(chosen).trend[0]).toBeCloseTo(Number(value), 6);
+    }
+    // Every other test keeps the record's units.
+    expect(myData(inUnit(file, 'mg/dL')).bloodTests.find((row) => row.metric === 'ldl')!.unit).toBe('mmol/L');
+  });
+
+  it('reads a typed value in the chosen unit, and a correction too', () => {
+    const base = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const stored = (file: RoadmapFile) => file.measurements.find((row) => row.metricType === 'lpa' && row.status === 'active')!.value;
+    // US-05 AC1's pairs: 156 mg/dL is 390 nmol/L; 93 mg/L is 23.25.
+    expect(stored(edited(inUnit(base, 'mg/dL'), { kind: 'add', metric: 'lpa', value: 156, day: '2026-09-01' }))).toBeCloseTo(390, 9);
+    expect(stored(edited(inUnit(base, 'mg/L'), { kind: 'add', metric: 'lpa', value: 93, day: '2026-09-01' }))).toBeCloseTo(23.25, 9);
+    expect(stored(edited(base, { kind: 'add', metric: 'lpa', value: 75, day: '2026-09-01' }))).toBe(75);
+    const file = inUnit(withLpa('en-NZ', 'Pacific/Auckland'), 'mg/dL');
+    const row = file.measurements.find((r) => r.metricType === 'lpa')!;
+    // 50 mg/dL over a shown 49.6 corrects it to 125 (US-05 AC2).
+    const corrected = edited(file, { kind: 'correct', id: row.id, value: 50 });
+    expect(corrected.measurements.find((r) => r.correctsId === row.id)!.value).toBeCloseTo(125, 9);
+    // Over the range, said in the unit typed in, as the web's cellRange says it (review R2).
+    expect(applyEdit(file, { kind: 'add', metric: 'lpa', value: 301, day: '2026-09-02' }, NOW))
+      .toMatchObject({ ok: false, reason: 'out-of-range', message: 'Lp(a) must be at most 300 mg/dL (got 301)' });
+    expect(applyEdit(inUnit(file, 'mg/L'), { kind: 'correct', id: row.id, value: 3001 }, NOW))
+      .toMatchObject({ ok: false, reason: 'out-of-range', message: 'Lp(a) must be at most 3000 mg/L (got 3001)' });
+    expect(applyEdit(inUnit(file, 'nmol/L'), { kind: 'add', metric: 'lpa', value: 751, day: '2026-09-02' }, NOW))
+      .toMatchObject({ message: 'Lp(a) must be at most 750 nmol/L (got 751)' });
+    // 3000 mg/L is the bound itself: saved, as 750 nmol/L.
+    expect(applyEdit(inUnit(file, 'mg/L'), { kind: 'add', metric: 'lpa', value: 3000, day: '2026-09-02' }, NOW).ok).toBe(true);
+  });
+
+  it('writes profile.lpaUnit field-stamped, as the web\'s store does, and merges like it', () => {
+    const file = withLpa('en-NZ', 'Pacific/Auckland');
+    const chosen = applyEdit(file, { kind: 'lpaUnit', unit: 'mg/L' }, LATER);
+    if (!chosen.ok) throw new Error(chosen.message);
+    // The web's own write (roadmap-store.ts setLpaUnit).
+    expect(chosen.file).toEqual(stampProfile(file, { lpaUnit: 'mg/L' }, LATER));
+    expect(chosen.file.profile.fieldStamps?.lpaUnit).toBeDefined();
+    // The stored unit again writes nothing; a unit outside the three is refused.
+    expect(applyEdit(chosen.file, { kind: 'lpaUnit', unit: 'mg/L' }, LATER)).toEqual({ ok: true, file: chosen.file });
+    expect(applyEdit(file, { kind: 'lpaUnit', unit: 'g/L' as never }, LATER)).toMatchObject({ ok: false, reason: 'invalid-value' });
+    // The web, from the same copy, changes the units meanwhile: both choices survive the merge.
+    const web = stampProfile(file, { unitSystem: 'conventional' }, LATER);
+    const merged = mergeFiles(chosen.file, web, { deviceId: 'phone', now: LATER });
+    expect(merged.profile).toMatchObject({ lpaUnit: 'mg/L', unitSystem: 'conventional' });
+    expect(mergeFiles(web, chosen.file, { deviceId: 'web', now: LATER }).profile).toMatchObject({ lpaUnit: 'mg/L', unitSystem: 'conventional' });
+    // The web's later choice wins over the phone's (per-field last write).
+    const webLater = stampProfile(chosen.file, { lpaUnit: 'mg/dL' }, '2026-10-21T10:00:00.000Z');
+    expect(mergeFiles(chosen.file, webLater, { deviceId: 'phone', now: LATER }).profile.lpaUnit).toBe('mg/dL');
+  });
+
+  it('leaves the plan\'s Lp(a) text in nmol/L, as the web\'s plan prints it (US-05 AC2 out of scope)', () => {
+    const file = edited(withLpa('en-NZ', 'Pacific/Auckland'), { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
+      { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' });
+    const text = (f: RoadmapFile) => JSON.stringify(JSON.parse(planJson(JSON.stringify(f), NOW, 'phone')).results.suggestions);
+    expect(text(file)).toContain('Lp(a): 124 nmol/L');
+    expect(text(inUnit(file, 'mg/dL'))).toEqual(text(file));
   });
 });

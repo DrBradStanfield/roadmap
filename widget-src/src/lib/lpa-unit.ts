@@ -3,13 +3,11 @@
 // choice (`profile.lpaUnit`), so it follows the user across devices.
 
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
-import { LPA_UNITS, type ApiMeasurement, type LpaUnit, type UnitSystem } from '@roadmap/health-core';
+import { isLpaUnit, recordLpaUnit, type ApiMeasurement, type LpaUnit, type UnitSystem } from '@roadmap/health-core';
 import { getLpaUnit, setLpaUnit } from './roadmap-data';
 import { trackProductEvent } from './server-api';
 import { getJson, LPA_CHECK_KEPT_KEY, safeGetItem, setJson } from './storage';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
-
-const isLpaUnit = (unit: unknown): unit is LpaUnit => (LPA_UNITS as readonly unknown[]).includes(unit);
 
 /**
  * The field's unit. `saved` is the record's choice, unchecked (a hand edit
@@ -18,10 +16,9 @@ const isLpaUnit = (unit: unknown): unit is LpaUnit => (LPA_UNITS as readonly unk
  * With neither, US units give mg/dL and any other nmol/L.
  */
 export function effectiveLpaUnit(saved: unknown, legacy: unknown, unitSystem: UnitSystem): LpaUnit {
-  if (isLpaUnit(saved)) return saved;
-  if (legacy === 'conventional') return 'mg/L';
-  if (legacy === 'si') return 'nmol/L';
-  return unitSystem === 'conventional' ? 'mg/dL' : 'nmol/L';
+  if (!isLpaUnit(saved) && legacy === 'conventional') return 'mg/L';
+  if (!isLpaUnit(saved) && legacy === 'si') return 'nmol/L';
+  return recordLpaUnit(saved, unitSystem);
 }
 
 /** The old build's toggle for the Lp(a) field, in HealthTool's per-field overrides. */

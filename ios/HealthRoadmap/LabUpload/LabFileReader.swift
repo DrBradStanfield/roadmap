@@ -88,12 +88,15 @@ enum LabFileReader {
     }
 
     enum Failure: LocalizedError {
-        case unreadable(String), unsupported(String), tooLarge(String), empty
+        case unreadable(String), unsupported(String), tooLarge(String), folderTooLarge, folderEmpty, folderChanged, empty
         var errorDescription: String? {
             switch self {
             case .unreadable(let name): "\(name) could not be opened."
             case .unsupported(let name): "\(name) is not a PDF, JPEG, PNG or ZIP."
             case .tooLarge(let name): "\(name) is larger than the website's limit (10 MB a file, 20 MB a ZIP of up to 200 files)."
+            case .folderTooLarge: "This folder holds more than 200 MB of reports. Pick a smaller folder, or the reports one at a time."
+            case .folderEmpty: "This folder holds no reports the app can read: no PDF, JPEG, PNG or ZIP."
+            case .folderChanged: "The folder changed while it was read. Try again."
             case .empty: "There was nothing in this file the app can read."
             }
         }
@@ -119,7 +122,7 @@ enum LabFileReader {
         if ext == "zip" {
             // The web's ZIP limits: 20 MB as downloaded, 200 files (the folder's file cap).
             guard fits(name: name, bytes: data.count) else { throw Failure.tooLarge(name) }
-            let members = try ZipReader.members(of: data, maxMemberBytes: maxFileBytes, maxMembers: maxFolderFiles, maxTotalBytes: 200 * 1024 * 1024) { member in
+            let members = try ZipReader.members(of: data, maxMemberBytes: maxFileBytes, maxMembers: maxFolderFiles, maxTotalBytes: maxFolderBytes) { member in
                 !member.contains("__MACOSX") && isReport(member)
             }
             let documents = try members.map { member in
@@ -168,6 +171,8 @@ enum LabFileReader {
 
     /// The web's file cap for a ZIP or folder.
     static let maxFolderFiles = 200
+    /// The most a ZIP's members, or a Dropbox folder's files, may hold in all.
+    static let maxFolderBytes = 200 * 1024 * 1024
 
     /// Pictures of one paper report, from the photo library or the document
     /// camera: a JPEG page each, as the web sends a picked image (US-52 AC10).
