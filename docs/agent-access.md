@@ -325,7 +325,9 @@ Six things differ from the local path, and they are differences you will hit:
   When the budget runs out the refusal says so and reading still works. `add_lab_values`
   also carries its own per-call cap of 50 rows, regardless of budget.
 - **A record whose `schemaVersion` is newer than the server understands is out of reach
-  entirely: reads refuse too**, because the record is migrated before any tool sees it.
+  entirely: reads refuse too**, because the record is migrated before any tool sees it. On
+  Google Drive, a newer copy beside readable ones does not block reads: they load merged, and
+  saves refuse until the app is updated (US-10 AC4a).
 - **Provider calls time out and surface as "did not answer".** A cloud provider that
   accepts the connection and then goes quiet fails the call rather than hanging it.
   Reading and saving a record gets 30 s; a larger upload gets proportionally longer, so

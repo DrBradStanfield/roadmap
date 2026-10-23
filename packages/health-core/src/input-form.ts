@@ -541,3 +541,29 @@ export const SUPPLEMENT_DOSE_UNITS = ['mg', 'mcg', 'g', 'IU', 'capsules', 'scoop
 export function customSupplementKey(name: string): string {
   return `custom_${name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')}`;
 }
+
+type RecordedSupplement = { supplementKey: string; supplementName: string; status?: string; updatedAt?: string };
+
+/** The recorded row a typed name names (US-06 AC1a): both names trimmed, any case;
+ *  an active row first, then a stopped one, the most recently changed of each. */
+export function customSupplementMatch<T extends RecordedSupplement>(name: string, supplements: readonly T[]): T | undefined {
+  const typed = name.trim().slice(0, 100).trim().toLowerCase();
+  const named = supplements.filter(s => typeof s.supplementName === 'string' && s.supplementName.trim().toLowerCase() === typed);
+  const active = named.filter(s => s.status === 'active');
+  return (active.length ? active : named).reduce<T | undefined>((best, s) => !best || (s.updatedAt ?? '') > (best.updatedAt ?? '') ? s : best, undefined);
+}
+
+/** A typed supplement's key and name: a recorded name's own row (active or stopped,
+ *  its stored spelling kept), else a new key that avoids every recorded one. */
+export function customSupplementAdd(name: string, supplements: readonly RecordedSupplement[]): { supplementKey: string; supplementName: string } {
+  const existing = customSupplementMatch(name, supplements);
+  if (existing) return { supplementKey: existing.supplementKey, supplementName: existing.supplementName };
+  const supplementName = name.trim().slice(0, 100);
+  const base = customSupplementKey(supplementName).slice(0, 100);
+  let key = base;
+  for (let suffix = 2; supplements.some(s => s.supplementKey === key); suffix++) {
+    const ending = `_${suffix}`;
+    key = `${base.slice(0, 100 - ending.length)}${ending}`;
+  }
+  return { supplementKey: key, supplementName };
+}

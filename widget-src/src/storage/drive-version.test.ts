@@ -126,7 +126,7 @@ describe('US-10 AC4 — browser GoogleDriveAdapter carries a version', () => {
   it('read() returns the Drive version, fetched BEFORE the download', async () => {
     drive.seed(record());
     const read = await adapter().read(ROADMAP_FILE_NAME);
-    expect(read.version).toBe('1');
+    expect(read.version).toBe(JSON.stringify([FILE_ID, '1']));
     expect((read.body as RoadmapFile).schemaVersion).toBe(1);
     const versionAt = drive.requests.findIndex((r) => r.includes('fields=version'));
     const mediaAt = drive.requests.findIndex((r) => r.includes('alt=media'));
@@ -151,7 +151,7 @@ describe('US-10 AC4 — browser GoogleDriveAdapter carries a version', () => {
     const a = adapter();
     const { version } = await a.read(ROADMAP_FILE_NAME);
     const written = await a.write(ROADMAP_FILE_NAME, record(), version);
-    expect(written.version).toBe('2');
+    expect(written.version).toBe(JSON.stringify([FILE_ID, '2']));
     expect(drive.requests.filter((r) => r.startsWith('PATCH'))).toHaveLength(1);
   });
 

@@ -7,7 +7,7 @@
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { computePlan, derivePlanInputs } from '../../packages/health-core/src/plan';
 import {
-  SUPPLEMENT_DOSE_UNITS, SUPPLEMENT_TEXT, customSupplementKey, medicationForm, medicationWrites, screeningForm,
+  SUPPLEMENT_DOSE_UNITS, SUPPLEMENT_TEXT, medicationForm, medicationWrites, screeningForm,
   screeningMonths, screeningWrites, type FormField, type FormSection,
 } from '../../packages/health-core/src/input-form';
 import { lipidMarkerFor, medicinesShown, weightMedicationTrigger } from '../../packages/health-core/src/suggestions';
@@ -234,12 +234,6 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
   }
   const writes = screeningWrites(derivePlanInputs(file).screenings, edit.key, edit.value);
   return { ok: true, file: writes.reduce((next, [key, value]) => setScreening(next, key, value, now), file) };
-}
-
-/** A typed supplement's key and name, by the web's rule. */
-export function customSupplement(name: string): { supplementKey: string; supplementName: string } {
-  const supplementName = name.trim().slice(0, 100);
-  return { supplementKey: customSupplementKey(supplementName), supplementName };
 }
 
 /**

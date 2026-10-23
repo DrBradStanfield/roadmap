@@ -715,6 +715,10 @@ class FakeDrive implements Server {
     expect(headers.authorization).toBe('Bearer token-1');
     const u = new URL(url);
     const q = u.searchParams.get('q') ?? '';
+    // EngineHTTP.swift's allow-list for a Drive search: no orderBy (US-10 AC4a).
+    if (method === 'GET' && u.pathname === '/drive/v3/files') {
+      expect([...u.searchParams.keys()].filter((key) => !['q', 'spaces', 'fields', 'pageSize', 'pageToken'].includes(key))).toEqual([]);
+    }
     if (method === 'GET' && u.pathname === '/drive/v3/files' && q.includes('application/vnd.google-apps.folder')) {
       return ok({ files: this.folderMade ? [{ id: 'folder-1', name: 'Health Plan by Dr Brad' }] : [] });
     }

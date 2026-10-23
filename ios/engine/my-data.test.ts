@@ -7,6 +7,8 @@ import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
 import { planJson } from './entry';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { supplementSchema } from '../../packages/health-core/src/validation';
+import { upsertSupplement } from '../../packages/health-core/src/state-edits';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const LATER = '2026-10-21T09:00:00.000Z';
@@ -368,6 +370,109 @@ describe('forms (AC8)', () => {
     const data = myData(file, NOW);
     expect(data.screenings[0].groups.find((g) => g.id === 'prostate')!.fields[1]).toMatchObject({ kind: 'measurement', metric: 'psa' });
     expect(data.psa.latest).toMatchObject({ value: '1.2', day: '2026-10-02' });
+  });
+
+  // US-06 AC1a: accepted names must produce keys accepted by the real native writer.
+  it.each([93, 100])('saves long native names and collisions without losing identity (%i characters)', length => {
+    const name = 'a'.repeat(length);
+    const other = length === 93 ? name + '+' : 'a'.repeat(99) + 'b';
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'customSupplement', name });
+    const original = file.supplements[0];
+    const history = [...file.supplementHistory];
+    const added = applyEdit(file, { kind: 'customSupplement', name: other }, LATER);
+    expect(added).toMatchObject({ ok: true });
+    if (!added.ok) throw new Error(added.message);
+    file = added.file;
+    expect(file.supplements).toHaveLength(2);
+    expect(file.supplements[0]).toEqual(original);
+    expect(file.supplementHistory.slice(0, history.length)).toEqual(history);
+    expect(new Set(file.supplements.map(s => s.supplementKey)).size).toBe(2);
+    for (const row of file.supplements) {
+      expect(row.supplementKey.length).toBeLessThanOrEqual(100);
+      expect(supplementSchema.shape.supplementKey.safeParse(row.supplementKey).success).toBe(true);
+    }
+    const second = file.supplements[1];
+    file = edited(readRecord(JSON.stringify(file), LATER, 'phone'), {
+      kind: 'supplement', supplementKey: second.supplementKey, supplementName: second.supplementName,
+      doseValue: 2, doseUnit: 'g', status: 'active',
+    });
+    expect(file.supplements[0]).toEqual(original);
+    expect(file.supplements[1]).toMatchObject({ id: second.id, supplementKey: second.supplementKey, doseValue: 2 });
+    expect(file.supplementHistory.at(-1)).toMatchObject({ supplementKey: second.supplementKey, changeType: 'dose_changed' });
+    const readded = edited(file, { kind: 'customSupplement', name: name.toUpperCase() });
+    expect(readded.supplements).toHaveLength(2);
+    expect(readded.supplements[0]).toMatchObject({ id: original.id, supplementKey: original.supplementKey, startedAt: original.startedAt });
+    expect(readded.supplements[1]).toEqual(file.supplements[1]);
+    expect(readded.supplementHistory.slice(0, file.supplementHistory.length)).toEqual(file.supplementHistory);
+  });
+
+  it('reuses the stored 100-character name at a truncation boundary (US-06 AC1a)', () => {
+    const name = 'Taurine' + ' '.repeat(93) + 'x';
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'customSupplement', name });
+    const original = file.supplements[0];
+    file = edited(file, { kind: 'customSupplement', name: name.toUpperCase() });
+    expect(file.supplements).toHaveLength(1);
+    expect(file.supplements[0]).toMatchObject({ id: original.id, supplementKey: original.supplementKey, startedAt: original.startedAt });
+  });
+
+  // US-06 AC1a / US-25 AC8: the actual typed-name command must preserve identities.
+  it('keeps normalized collisions distinct through native form add, stop, reload and restart', () => {
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'customSupplement', name: 'alanine+' });
+    file = edited(file, { kind: 'supplement', supplementKey: 'custom_alanine', supplementName: 'alanine+', doseValue: 3, doseUnit: 'g', status: 'active' });
+    const original = file.supplements[0];
+    file = edited(file, { kind: 'customSupplement', name: 'alanine' });
+    expect(file.supplements).toHaveLength(2);
+    expect(file.supplements[0]).toEqual(original);
+    expect(file.supplements[1]).toMatchObject({ supplementKey: 'custom_alanine_2', supplementName: 'alanine' });
+    file = edited(file, { kind: 'supplement', supplementKey: original.supplementKey, supplementName: original.supplementName, doseValue: 3, doseUnit: 'g', status: 'stopped' });
+    const history = file.supplementHistory;
+    // A fresh engine invocation receives the serialized record, not a helper fixture.
+    file = edited(JSON.parse(JSON.stringify(file)) as RoadmapFile, { kind: 'customSupplement', name: '  ALANINE+  ' });
+    expect(file.supplements).toHaveLength(2);
+    expect(file.supplements[0]).toMatchObject({ id: original.id, supplementKey: original.supplementKey, startedAt: original.startedAt, status: 'active' });
+    expect(file.supplementHistory.slice(0, history.length)).toEqual(history);
+    expect(file.supplementHistory.at(-1)).toMatchObject({ supplementKey: original.supplementKey, changeType: 'started' });
+    const count = file.supplementHistory.length;
+    file = edited(file, { kind: 'customSupplement', name: 'ALANINE+' });
+    expect(file.supplements).toHaveLength(2);
+    expect(file.supplementHistory).toHaveLength(count);
+    expect(myData(file, NOW).supplements.active.map(s => s.key)).toEqual(['custom_alanine', 'custom_alanine_2']);
+  });
+
+  // US-06 AC1a: an older browser record can hold a custom key over 100 characters.
+  it('restarts a legacy overlong custom key through the native add, and still refuses a new one', () => {
+    const key = 'custom_' + 'a'.repeat(100);
+    const row = { supplementKey: key, supplementName: 'A'.repeat(100), doseValue: 1, doseUnit: 'g' };
+    let legacy = upsertSupplement(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { ...row, status: 'active' }, NOW).file;
+    legacy = upsertSupplement(legacy, { ...row, status: 'stopped' }, NOW).file;
+    const file = readRecord(JSON.stringify(legacy), LATER, 'phone');
+    const restarted = applyEdit(file, { kind: 'customSupplement', name: 'a'.repeat(100) }, LATER);
+    if (!restarted.ok) throw new Error(restarted.message);
+    expect(restarted.file.supplements).toEqual([expect.objectContaining({ id: legacy.supplements[0].id, supplementKey: key, status: 'active' })]);
+    expect(restarted.file.supplementHistory.at(-1)).toMatchObject({ supplementKey: key, changeType: 'started' });
+    expect(applyEdit(restarted.file, { kind: 'supplement', ...row, doseValue: 2, status: 'active' }, LATER)).toMatchObject({ ok: true });
+    expect(applyEdit(file, { kind: 'supplement', ...row, supplementKey: 'custom_' + 'b'.repeat(100), status: 'active' }, LATER))
+      .toMatchObject({ ok: false, reason: 'invalid-value' });
+  });
+
+  // US-06 AC1a: a restart keeps the row's stored spelling.
+  it('restarts a stopped row under its stored name, spaces and case kept', () => {
+    const row = { supplementKey: 'custom_taurine', supplementName: 'Taurine ', doseValue: 1, doseUnit: 'g' };
+    let file = upsertSupplement(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { ...row, status: 'active' }, NOW).file;
+    file = upsertSupplement(file, { ...row, status: 'stopped' }, NOW).file;
+    file = edited(readRecord(JSON.stringify(file), LATER, 'phone'), { kind: 'customSupplement', name: 'TAURINE' });
+    expect(file.supplements).toEqual([expect.objectContaining({ supplementKey: 'custom_taurine', supplementName: 'Taurine ', status: 'active' })]);
+    expect(file.supplementHistory.at(-1)).toMatchObject({ supplementName: 'Taurine ', changeType: 'started' });
+  });
+
+  // US-06 AC1a: re-adding a name already taken keeps its dose and writes no history.
+  it('keeps the dose when an active name is added again', () => {
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'customSupplement', name: 'Taurine' });
+    file = edited(file, { kind: 'supplement', supplementKey: 'custom_taurine', supplementName: 'Taurine', doseValue: 2, doseUnit: 'g', status: 'active' });
+    const again = edited(file, { kind: 'customSupplement', name: ' taurine ' });
+    expect(again.supplements).toEqual(file.supplements);
+    expect(again.supplementHistory).toEqual(file.supplementHistory);
   });
 
   it('lists supplements: quick-add first, a typed one keyed by the web\'s rule, a stopped one kept', () => {

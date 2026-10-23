@@ -107,7 +107,7 @@ struct LabReadingDiagram: View {
                 .font(.system(size: 28))
                 .foregroundStyle(tint)
                 .frame(width: 56, height: 56)
-                .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 14, style: .continuous))
+                .diagramCard(cornerRadius: 14)
             Text(label).font(.caption).foregroundStyle(.secondary).lineLimit(1).fixedSize()
         }
         .accessibilityHidden(true)

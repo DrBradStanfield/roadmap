@@ -51,6 +51,10 @@ private struct SuggestionRow: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .lineLimit(expanded ? nil : 2)
+                            // Snaps to its full length on this row's own toggle: reflowing text
+                            // inside the spring drew half-wrapped lines (Brad, 2026-10-23). Scoped to
+                            // `expanded`, so rows below still slide whole when another opens.
+                            .transaction(value: expanded) { $0.animation = nil }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     Image(systemName: "chevron.down")
@@ -68,10 +72,14 @@ private struct SuggestionRow: View {
             if expanded {
                 SuggestionDetails(suggestion: suggestion)
                     .padding(.leading, showsIcon ? 54 : 0)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    // Fades in below the text, never sliding up over the card being read.
+                    .transition(.opacity)
             }
         }
         .padding(16)
+        // The rows below slide while this one grows: clipped to its own frame, the
+        // opened text is revealed, never drawn over the next suggestion.
+        .clipped()
     }
 }
 
