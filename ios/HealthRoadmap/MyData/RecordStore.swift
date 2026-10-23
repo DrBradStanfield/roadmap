@@ -584,12 +584,19 @@ extension HealthEngine {
     }
 
     /// My data for `record`, drawn first, then the record written: one that cannot be
-    /// drawn is never written. `marking`: set the pending marker once the write has
-    /// landed, in this same step: a refused write never leaves a marker no session holds.
+    /// drawn is never written. `marking`: set the pending marker before the write, in
+    /// this same step, so an app killed between the two never leaves an unmarked edit;
+    /// a refused write takes back a marker it alone set (none was there before).
     func myDataAndWrite(_ record: String, units: String, to file: URL, marking: PhoneFiles?, deviceId: String) throws -> MyData {
         let shown = try myData(recordJSON: record, now: .now, deviceId: deviceId, units: units)
-        try RecordStore.write(record, to: file)
-        _ = marking?.pending("set")
+        let before = marking?.pending("get") ?? 0
+        let generation = marking?.pending("set") ?? 0
+        do {
+            try RecordStore.write(record, to: file)
+        } catch {
+            if before == 0 { _ = marking?.pending("clear-if:\(generation)") }
+            throw error
+        }
         return shown
     }
 

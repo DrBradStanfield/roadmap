@@ -216,19 +216,21 @@ final class CloudSync: CloudPort {
                 first = false
                 // Decided as a step in the store's line: every edit asked for before it has
                 // landed on the phone's file and been counted (US-09 AC4, adversary R2).
+                // The status is set in the same turn the session is shown, from what it held;
+                // news after that turn is its own and is never overwritten here (R2).
                 let shown = await store.handOver(to: view) { [weak self] in
                     guard let self, mine == self.generation, self.editsWhileOpening == 0 else { return false }
                     self.shownSession = view.session
-                    if let held = self.heldNews.removeValue(forKey: view.session) { self.store.showCloud(held) }
+                    if let held = self.heldNews[view.session] { self.store.showCloud(held) }
+                    self.status = self.heldFailures[view.session].map { .problem(SyncProblem(json: $0)) } ?? self.settled()
+                    self.heldNews = [:]
+                    self.heldFailures = [:]
+                    self.syncedBefore = provider
+                    try? self.files.write(provider.rawValue, to: self.files.history)
                     return true
                 }
                 guard mine == generation else { return }
                 guard shown else { continue }
-                heldNews = [:]
-                status = heldFailures[view.session].map { .problem(SyncProblem(json: $0)) } ?? settled()
-                heldFailures = [:]
-                syncedBefore = provider
-                try? files.write(provider.rawValue, to: files.history)
                 return
             } catch {
                 guard mine == generation else { return }

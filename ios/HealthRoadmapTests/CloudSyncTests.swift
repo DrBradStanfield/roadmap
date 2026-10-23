@@ -334,6 +334,54 @@ final class CloudSyncTests: XCTestCase {
         guard case .problem = sync.status else { return XCTFail("the failure it sent was dropped: \(sync.status)") }
     }
 
+    /// US-25 AC20 (R2): a held failure followed by a "synced" before the handover shows
+    /// the session ends synced; and (below) a failure arriving after the session is shown,
+    /// while the open is still finishing, is never overwritten by it.
+    func testASyncedAfterAHeldFailureWins() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync, engine) = try app()
+        let failure = #"{"kind":"unreachable","detail":"Dropbox could not be reached."}"#
+        var sent = false
+        dropbox.onDownload = {
+            guard !sent else { return }
+            sent = true
+            store.chain {
+                try? await Task.sleep(for: .milliseconds(400)) // the handover waits its turn
+                engine.queue.async { Thread.sleep(forTimeInterval: 0.3) } // and its draw waits on the engine
+            }
+            Task {
+                try? await Task.sleep(for: .milliseconds(200)) // before the handover: held
+                sync.notify("failed", failure, session: 1, order: 1_000)
+                sync.notify("synced", "", session: 1, order: 1_001)
+            }
+        }
+        await sync.start()
+        dropbox.onDownload = nil
+        guard case .synced = sync.status else { return XCTFail("a held failure beat the synced after it: \(sync.status)") }
+    }
+
+    func testAFailureAfterTheHandoverIsNotOverwrittenByTheOpen() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync, engine) = try app()
+        let failure = #"{"kind":"unreachable","detail":"Dropbox could not be reached."}"#
+        var sent = false
+        dropbox.onDownload = {
+            guard !sent else { return }
+            sent = true
+            store.chain {
+                try? await Task.sleep(for: .milliseconds(400))
+                engine.queue.async { Thread.sleep(forTimeInterval: 0.3) }
+            }
+            Task {
+                try? await Task.sleep(for: .milliseconds(550)) // shown, its draw still waiting
+                sync.notify("failed", failure, session: 1, order: 2_000)
+            }
+        }
+        await sync.start()
+        dropbox.onDownload = nil
+        guard case .problem = sync.status else { return XCTFail("the open overwrote a newer failure: \(sync.status)") }
+    }
+
     func testACloudThatCannotBeReachedLeavesThePhoneRecordAndMarksEditsForLater() async throws {
         StubHTTP.handler = { _ in .init(offline: true) }
         let (store, sync, engine) = try app()

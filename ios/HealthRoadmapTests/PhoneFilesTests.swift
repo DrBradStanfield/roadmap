@@ -59,5 +59,20 @@ final class PhoneFilesTests: XCTestCase {
         let nowhere = folder.appending(path: "missing folder/health-roadmap.json")
         XCTAssertThrowsError(try engine.blocking { try $0.myDataAndWrite(record, units: "{}", to: nowhere, marking: phone, deviceId: "test") })
         XCTAssertEqual(phone.pending("get"), 0)
+        // The marker was set before the write was tried (generation 1), then taken back:
+        // an app killed after a write that lands is never left with an unmarked edit.
+        XCTAssertEqual(phone.pending("set"), 2)
+    }
+
+    /// A refused write never takes away a marker that was already there: the edit it
+    /// marks still waits for the cloud.
+    func testAFailedPhoneWriteKeepsAMarkerAlreadySet() throws {
+        let engine = try HealthEngine()
+        let phone = files()
+        let earlier = phone.pending("set")
+        let record = try engine.blocking { try $0.newRecord(now: .now, deviceId: "test") }
+        let nowhere = folder.appending(path: "missing folder/health-roadmap.json")
+        XCTAssertThrowsError(try engine.blocking { try $0.myDataAndWrite(record, units: "{}", to: nowhere, marking: phone, deviceId: "test") })
+        XCTAssertGreaterThan(phone.pending("get"), earlier)
     }
 }
