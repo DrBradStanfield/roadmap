@@ -6,275 +6,258 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["garlic", "allicin", "aged garlic extract", "black garlic", "s-allyl-cysteine", "SAC", "blood pressure", "hypertension", "cholesterol", "ldl", "hdl", "triglycerides", "cardiovascular", "atherosclerosis", "heart health", "immune", "inflammation", "statin", "warfarin", "blood sugar", "diabetes", "insulin resistance"]
-summary: "Reference on garlic: high blood pressure, cholesterol, immune support, joint pain, atherosclerosis. Forms include aged garlic extract, powder, black garlic. Bleeding risk; stop before surgery; interacts with warfarin. Always discuss with your doctor."
+summary: "Reference on garlic: aged garlic extract, powder, oil and black garlic. Trials suggest small blood pressure falls in hypertension; cholesterol results are mixed. May raise bleeding risk and lower saquinavir levels. Talk to your doctor first if on blood thinners or HIV medicines, or before surgery."
+reviewed: "2026-10-23"
+sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/garlic","checked":"2026-09-29","fingerprint":"sha256:4e7433f241a4fb954c70776f760ec33ede1c8f112fdaf21ca557ccda36b384b2"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/garlic-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/garlic-benefits-best-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Garlic supplements may lower blood pressure a little in people with high blood pressure: in a 2016 meta-analysis, systolic pressure fell 8.7 mm Hg more than with placebo in trials of hypertensive people, and two trials of aged garlic extract giving 1.2 mg of S-allylcysteine a day found falls of 11.8 and 10 mm Hg [1][7][19][20]. Cholesterol results are mixed: NCCIH says garlic supplements may lower total and LDL cholesterol to a small extent, but a 6-month trial of raw garlic, garlic powder and aged garlic extract, and a 28-day trial of a garlic supplement against rosuvastatin, found no LDL lowering [1][9][51]. Garlic supplements may increase the risk of bleeding, which matters before surgery and with anticoagulants or aspirin, and garlic caplets lowered exposure to the HIV medicine saquinavir by 51% in healthy volunteers [1][46]. Evidence for colds, cancer prevention and other uses is weak or limited [1][29].
+
+## Key safety points
+
+- Garlic supplements may increase bleeding risk; case reports link heavy garlic intake to a spinal bleed and to heavy bleeding during surgery [1][41][42]. Tell your doctor if you take warfarin or another anticoagulant, or aspirin, and tell your surgical team before any operation [1][14][40].
+- Garlic caplets cut exposure to the HIV medicine saquinavir by 51% in healthy volunteers. If you take HIV medicines, check with your HIV doctor before taking garlic supplements [46].
+- If you take any other medicine, talk with your doctor or pharmacist before starting garlic; some herbs and medicines interact in harmful ways [1].
+- Garlic may not be safe in pregnancy or breastfeeding in amounts above those in food [1].
+- Raw garlic left on the skin can cause chemical burns. Do not apply fresh garlic to the skin [1][44].
+- Breath and body odor, abdominal pain, gas and nausea are common. Some people are allergic to garlic; for swelling of the face or throat or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [1][14].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Garlic (*Allium sativum*) has been used both as a culinary ingredient and for medicinal purposes for thousands of years. Ancient writings from Egypt, Greece, and India describe its application for headache, pneumonia, throat conditions, and gastrointestinal disorders [1]. In the 19th century, Louis Pasteur observed that garlic exhibited antibacterial properties, laying the groundwork for modern scientific investigation [2]. The isolation of allicin — garlic's principal organosulfur compound — in 1944 enabled the development of standardized garlic extracts and supplements [2][3].
+Garlic (*Allium sativum*) has been used both as a culinary ingredient and for medicinal purposes for thousands of years. Ancient writings from Egypt, Greece, and India describe its application for headache, pneumonia, throat conditions, and gastrointestinal disorders [1]. Allicin, the sulfur compound that forms when raw garlic is crushed, is thought to account for most of the activity of crushed raw cloves [3].
 
-Today, garlic supplements are promoted for a wide range of health purposes: managing high blood cholesterol and blood pressure, supporting immune function, preventing certain cancers, and reducing cardiovascular risk [1][4]. Garlic contains over 200 chemical compounds, with organosulfur compounds being the most studied and most abundant bioactive constituents [3][5]. These include allicin, alliin, diallyl disulfide, diallyl trisulfide, S-allyl-L-cysteine (SAC), and ajoene — each with distinct chemical properties and biological activities [3][5][6].
+Today, garlic supplements are promoted to help manage high cholesterol, high blood pressure and diabetes, to prevent some cancers, and to support immune function [1]. Garlic and its relatives contain at least 260 plant compounds, among them 63 organosulfur molecules [50]. These include allicin, alliin, ajoene, diallyl disulfide, diallyl trisulfide and S-allylcysteine (SAC) [6][31].
 
-The evidence base for garlic supplementation is substantial but mixed. Meta-analyses of randomized controlled trials suggest modest benefits for blood pressure and cholesterol, and there is preliminary evidence for immune support and slowing atherosclerosis progression [4][7][8]. However, many studies are limited by small sample sizes, short durations, variable formulations, and industry funding. Garlic alone is unlikely to replace pharmaceutical treatments for conditions such as significantly elevated cholesterol, but it may serve as a complementary approach alongside lifestyle modifications and, where indicated, medication [4][9].
+The evidence base for garlic supplementation is substantial but mixed. Meta-analyses suggest small benefits for blood pressure and cholesterol, and there is preliminary evidence on slowing the build-up of coronary artery calcium [1][7][12]. Many trials were small and short, and they used different garlic preparations. In a 28-day trial, rosuvastatin lowered LDL cholesterol more than garlic, and garlic did not lower it more than placebo, so garlic is unlikely to replace prescribed cholesterol treatment [9].
 
-A critical consideration with garlic supplements is that different forms (fresh garlic, dried powder, aged garlic extract, black garlic, garlic oil) contain fundamentally different active compounds in different concentrations — and the clinical evidence for each form varies significantly [4][5][6]. Understanding these distinctions is essential for selecting an appropriate product.
+Processing changes garlic's chemistry, so supplements fall into distinct types, mainly dried garlic powder, garlic oil, garlic oil macerate and aged garlic extract, each with a different mix of compounds [6]. A result from one type does not carry over to another.
 
 ## 2. Forms and Bioavailability
 
 ### Fresh Garlic
 
-One small clove of garlic (approximately 4 grams) yields approximately 4,000-12,000 mcg (4-12 mg) of allicin when crushed or chopped [4]. Allicin is produced by an enzymatic reaction: when garlic tissue is damaged, the enzyme alliinase converts the amino acid alliin (S-allyl-L-cysteine sulfoxide) into allicin [3][5]. Based on sampling of supermarket garlic, cloves tend to weigh about 7 grams on average, so allicin content in some cloves likely exceeds the 4-12 mg range [4].
+Raw garlic contains alliin and the enzyme alliinase. When the clove is crushed or chopped, alliinase turns alliin into allicin [3].
 
-Allicin is highly unstable, with a half-life of less than one minute in blood [10]. It rapidly breaks down into other potentially active compounds including diallyl disulfide, diallyl trisulfide, ajoene, and S-allyl-L-cysteine [3][5][6]. Because of this rapid conversion, allicin itself may not be the active compound responsible for garlic's health effects — rather, it serves as a precursor to other bioactive sulfur compounds [4][5].
+Allicin is unstable and quickly turns into a range of other sulfur compounds [6]. The benefits of garlic may come from many of these compounds working together rather than from allicin alone [6].
 
 ### Garlic Powder (Non-Aged, Dried)
 
-Garlic powder supplements are made from dried garlic that retains the alliin and alliinase system. When the powder dissolves in the gut, alliinase converts alliin to allicin [4]. Garlic powder is typically two to three times more concentrated than fresh garlic, so the label distinction between "fresh garlic equivalent" and "garlic powder" is important [4].
+Garlic powder supplements keep alliin and alliinase, so most of their allicin forms after you swallow them, in a gut that tends to slow the enzyme [3].
 
-Most clinical trials with non-aged garlic have used preparations yielding at least 3,600-5,400 mcg of allicin per day — roughly the amount from one small clove [4]. The United States Pharmacopeial Convention (USP) requires that powdered garlic supplements contain no less than 0.2% γ-glutamyl-(S)-allyl-L-cysteine and 0.5% alliin on a dried basis [11].
+In a breath-test study of 13 supplements, the allicin delivered by garlic powder capsules ranged from 26% to 109% of that from crushed raw garlic [3]. Kwai powder tablets, used in many clinical trials, delivered 80% [3]. Delivery did not depend on how active the product's alliinase was, so a minimum level of the enzyme seems to be enough [3].
 
-Most clinical studies have used standardized garlic powder extract at 1.3% alliin (13 mcg alliin per milligram of powder) [4]. However, the actual allicin yield can vary considerably — from as little as 10% to over 50% — depending on the amount and activity of the alliinase enzyme present [4]. Some products list alliin content but not allicin yield, which makes it difficult for consumers to compare products meaningfully.
-
-**Enteric coating** may improve the effectiveness of garlic powder supplements. The enzyme alliinase is sensitive to stomach acid, and enteric coating protects it from degradation, allowing more allicin to be produced in the intestine [4][11]. Products without enteric coating may deliver substantially less allicin.
-
-Many garlic powder products are marketed as "odorless," "odor free," or "odor controlled." Because allicin is responsible for garlic's characteristic odor, these products are designed to limit allicin formation before ingestion. However, it is not uncommon for such products to still produce garlic odor, either in the capsule itself or after ingestion [4].
+**Enteric coating** did not improve delivery. Enteric-coated tablets delivered 36% to 104% of raw garlic's allicin, and only 22% to 57% when taken with a high-protein meal, while uncoated tablets delivered 80% to 111% whatever the meal [3].
 
 ### Aged Garlic Extract (AGE)
 
-Aged garlic extract is produced by soaking sliced garlic in ethanol for an extended period — typically 10-20 months [3][11]. During the aging process, unstable compounds like allicin are converted into more stable, water-soluble compounds, primarily S-allyl-L-cysteine (SAC) [3][5][6]. Aged garlic does not produce allicin and therefore lacks garlic's characteristic odor [4].
+Aged garlic extract contains compounds formed during extraction, such as S-allylcysteine (SAC) and S-allylmercaptocysteine, rather than allicin [6].
 
-Aged garlic extract should be standardized to contain not less than 0.05% SAC. A typical daily dose of 1,200-1,400 mg of aged garlic extract would provide approximately 600-700 mcg (0.6-0.7 mg) of SAC [4].
+Trials report the SAC content of each dose. In one, 480 mg of extract held 1.2 mg of SAC; in another, 1.2 g held 1.2 mg [19][20]. The amount of extract alone may therefore not show a product's strength.
 
-The clinical track record for aged garlic extract is comparable to that of allicin-containing preparations [4]. This observation is important because it suggests that allicin itself may not be the primary active compound — rather, allicin-derived metabolites (which are also found pre-formed in aged garlic) may be responsible for garlic's health effects [4][5].
+A meta-analysis found garlic powder and aged garlic extract lowered total cholesterol more than other forms [22].
 
-The most widely studied aged garlic extract in clinical trials is Kyolic (manufactured by Wakunaga), which has been used in trials examining blood pressure, atherosclerosis progression, cholesterol, and immune function [4][7][12][13]. The aging process also reduces gastrointestinal irritation compared to fresh or non-aged garlic [14].
+Kyolic, an aged garlic extract, was used in the GarGIC blood pressure trial and, combined with garlic oil, in the Shandong gastric cancer trial [20][34].
 
 ### Black Garlic
 
-Black garlic is produced by fermenting fresh garlic at high temperature under high humidity [4]. Like aged garlic, black garlic has little allicin potential because allicin is converted into other compounds during fermentation. Black garlic has a mild, sweet taste and contains SAC and other organosulfur compounds [4].
+Black garlic is fresh garlic held at 60 to 90°C and 80% to 90% humidity for a period of time [15]. It has a milder flavor than fresh garlic because it contains less allicin [15], and in the breath-test study it delivered 5% of raw garlic's allicin [3].
 
-Although animal studies suggest black garlic may have anti-inflammatory, antioxidant, and potentially anti-cancer effects, human clinical evidence is limited [15]. The available studies have yielded mixed results:
+Human trials are few and small, and their results are mixed:
 
-- A study among 55 men and women in the Republic of Korea with borderline-high LDL cholesterol (average 150 mg/dL) found that 6 g/day of aged black garlic extract (providing 780 mcg SAC, no allicin) for three months slightly increased HDL cholesterol but did not decrease LDL cholesterol, total cholesterol, or triglycerides compared to placebo (Jung, *Nutrition*, 2014) [16].
-- A study in Spain among 61 people (average age 53) with high cholesterol (LDL ≥115 mg/dL) found that 250 mg/day of aged black garlic extract (standardized to 1.25 mg SAC) for six weeks did not improve cholesterol or triglyceride levels compared to placebo. There was no significant reduction in blood pressure overall, except among those with diastolic pressure >75 mmHg, where a modest decrease was observed (4.42 mmHg vs 0.40 mmHg increase for placebo) (Valls, *Nutrients*, 2022) [17].
-- A study in China among 120 men and women (average age 40) with moderate chronic (congestive) heart failure found that 20 g/day of black garlic extract for six months improved left-ventricular ejection fraction (LVEF) by about 14% and improved self-reported quality of life compared to placebo (Liu, *Front Physiol*, 2018) [18].
+- In a 12-week trial in 60 adults with mild high cholesterol, 6 g a day of aged black garlic raised HDL cholesterol and lowered apolipoprotein B; triglycerides and total and LDL cholesterol did not differ from placebo (Jung, *Nutrition*, 2014) [16].
+- In a 6-week crossover trial in 67 adults whose LDL cholesterol was at least 115 mg/dL, an aged black garlic extract tablet (250 mg a day, giving 1.25 mg of SAC) lowered diastolic blood pressure by 5.85 mm Hg compared with placebo, mainly in men whose diastolic pressure was above 75 mm Hg (Valls, *Nutrients*, 2022) [17].
+- In a 6-month trial in 120 people with chronic heart failure caused by coronary heart disease, black garlic raised ejection fraction (LVEF) and quality of life scores and lowered NT-proBNP compared with placebo (Liu, *Front Physiol*, 2018) [18].
 
 ### Garlic Oil
 
-Garlic oil is produced by steam distillation or solvent extraction of crushed garlic. The distillation process converts allicin into allyl sulfides (diallyl disulfide, diallyl trisulfide), which may also have biological activity [4][5]. One German study found benefit with a daily dose of 0.1 mg of garlic oil per kilogram of body weight — approximately 7 mg per day for an adult — although the concentration of active garlic compounds in the oil was not described [4].
+Garlic oil is made almost entirely of sulfur compounds. In one analysis, 17 organosulfur compounds made up 99.4% of a garlic essential oil, and allyl disulfide and allyl trisulfide made up 51.3% [32]. A meta-analysis found garlic oil lowered triglycerides more than other forms [22].
 
 ### Non-Sulfur Bioactive Compounds
 
-In addition to organosulfur compounds, garlic supplements contain flavonoids (including quercetin and kaempferol), saponins, and vitamins including vitamin C [5]. These non-sulfur components provide antioxidant activity, though they are present in varying amounts depending on the supplement form and processing method.
+Besides sulfur compounds, garlic and other Allium vegetables contain saponins, flavonoids, phenolic compounds and vitamins [50]. Saponins and flavonoid glycosides show anti-inflammatory and anticancer activity, mostly in cell and animal studies [50].
 
 ### Comparison Table
 
-| Form | Key Active Compounds | Allicin Content | Odor | Key Advantages | Key Limitations |
-|------|---------------------|:-:|:-:|------|------|
-| Fresh garlic (1 clove, ~4-7g) | Allicin, alliin, diallyl sulfides | 4-12 mg | Strong | Whole-food form; no processing losses | Highly variable potency; odor; GI irritation |
-| Dried garlic powder | Alliin → allicin (via alliinase) | Variable (3,600-12,000 mcg/g) | Moderate-Strong | Concentrated; most clinical trial data | Allicin yield highly variable; may need enteric coating |
-| Aged garlic extract | SAC, allicin-derived compounds | None | Minimal | Stable compounds; well tolerated; good trial data | No allicin; requires standardization to SAC |
-| Black garlic | SAC, other organosulfur compounds | None | Mild/sweet | Palatable; emerging research | Limited human trial data |
-| Garlic oil | Allyl sulfides (diallyl disulfide, trisulfide) | None (converted) | Moderate | Concentrated sulfides | Limited dosing data; variable compositions |
+| Form | Main compounds | Allicin delivered (vs crushed raw garlic) | Human trial evidence |
+|------|---------------------|:-:|------|
+| Raw garlic, crushed | Allicin and its breakdown products [3][6] | 100% (reference) [3] | No LDL lowering at one 4 g clove, 6 days a week [51] |
+| Garlic powder capsules or tablets | Alliin and alliinase, which form allicin after swallowing [3] | Capsules 26% to 109%; uncoated tablets 80% to 111%; enteric tablets 36% to 104% [3] | Kwai powder tablets used in many trials [3] |
+| Aged garlic extract | SAC, S-allylmercaptocysteine [6] | Allicin lost in processing [6] | Blood pressure, coronary calcium, colds [12][19][20][27] |
+| Black garlic | Less allicin than fresh garlic [15] | 5% [3] | Few small trials [16][17][18] |
+| Garlic oil | Allyl disulfide, allyl trisulfide [32] | Allicin lost in processing [6] | Triglycerides, in a meta-analysis [22] |
 
 ## 3. Evidence for Benefits
 
 ### Blood Pressure
 
-Garlic supplements — particularly aged garlic extract — may modestly reduce blood pressure in hypertensive individuals. The evidence is strongest as an adjunct to existing antihypertensive medication rather than as a standalone treatment.
+Garlic supplements may lower blood pressure a little in people with high blood pressure [1][7]. Some trials gave garlic alongside existing blood pressure medicines [19].
 
-**Meta-analysis evidence:** A 2016 meta-analysis of randomized controlled trials published in the *Journal of Nutrition* found that garlic supplementation significantly lowered systolic blood pressure (SBP) by approximately 5.1 mmHg in hypertensive individuals, with similar reductions in diastolic blood pressure observed across multiple studies [7]. A 2025 meta-analysis in *Nutrition Reviews* confirmed garlic's ability to improve key cardiovascular risk markers including blood pressure reductions [8].
+**Meta-analysis evidence:** A 2016 meta-analysis of 20 trials with 970 participants found garlic lowered systolic blood pressure by 5.1 mm Hg and diastolic by 2.5 mm Hg compared with placebo. In trials of people with high blood pressure at baseline, the falls were 8.7 mm Hg systolic and 6.1 mm Hg diastolic [7].
 
-**Aged garlic extract — key clinical trials:**
+**Aged garlic extract: key clinical trials:**
 
-- **Ried et al. (2013):** An RCT of 84 men and women with uncontrolled hypertension (average age 72), already taking an average of two prescription antihypertensive medications, found that taking two capsules of aged garlic extract daily (480 mg, providing 1.2 mg SAC) for 3 months reduced systolic blood pressure by 11.8 mmHg compared to placebo. Diastolic blood pressure was not significantly reduced. Notably, neither a smaller dose (one capsule daily) nor a larger dose (four capsules daily) significantly lowered blood pressure. The researchers attributed the lack of significance at the higher dose to two participants withdrawing due to gastrointestinal side effects, reducing statistical power (Ried, *Eur J Clin Nutr*, 2013) [19].
+- **Ried et al. (2013):** A 12-week trial in 79 general practice patients whose systolic blood pressure stayed high on medication compared one, two or four capsules a day of aged garlic extract (240, 480 or 960 mg, with 0.6, 1.2 or 2.4 mg of SAC) with placebo. Two capsules lowered systolic pressure by 11.8 mm Hg compared with placebo. Four capsules reached only a borderline fall at 8 weeks (7.4 mm Hg), one capsule had no significant effect, and diastolic pressure did not differ from placebo (Ried, *Eur J Clin Nutr*, 2013) [19].
 
-- **Ried et al. (2018):** A subsequent 3-month RCT by the same lead researcher found that two 600 mg capsules of aged garlic extract daily (1,200 mg total, 1.2 mg SAC) reduced systolic blood pressure by 10 mmHg and diastolic blood pressure by 5.4 mmHg compared to placebo. The effect was slightly more pronounced in participants also taking at least one antihypertensive medication (approximately two-thirds of participants). Five participants reported garlic taste and burping in the first week, but overall the capsules were well tolerated. The study was funded by Wakunaga (Ried, *Front Nutr*, 2018) [20].
-
-**Comparison with conventional medication:** A study of 190 adults (average age 64) not taking statins or cholesterol-lowering supplements, with elevated LDL cholesterol and 5-20% ten-year atherosclerotic cardiovascular disease risk, compared rosuvastatin (Crestor) 5 mg daily to a garlic supplement (Garlique brand, 5,000 mg allicin) for 4 weeks. Rosuvastatin produced significantly greater reductions in LDL cholesterol (-43.0%), total cholesterol (-27.2%), and triglycerides (-13.9%). Concerning, the garlic group showed a 7.8% increase in LDL compared to placebo, which was statistically significant. Neither group improved HDL cholesterol or high-sensitivity C-reactive protein. This study was funded by and conducted in part by an employee of AstraZeneca, which manufactures Crestor (Laffin, *J Am Coll Cardiol*, 2023) [9].
+- **Ried et al. (2018):** In the 12-week GarGIC trial, 49 people whose high blood pressure was not controlled took aged garlic extract (Kyolic, 1.2 g a day with 1.2 mg of SAC) or placebo. Garlic lowered blood pressure by 10 mm Hg systolic and 5.4 mm Hg diastolic compared with placebo, and it also lowered central blood pressure and arterial stiffness (Ried, *Front Nutr*, 2018) [20].
 
 **NIH assessment:** The National Center for Complementary and Integrative Health (NCCIH) states that limited evidence suggests garlic supplements may reduce blood pressure to a small extent in people with high blood pressure [1].
 
-**Practical implication:** Garlic supplementation may be most useful as an adjunct to existing antihypertensive therapy rather than as a standalone treatment. The blood pressure-lowering effect, while statistically significant in some trials, is modest compared to standard antihypertensive medications. The best evidence is for aged garlic extract at 480-1,200 mg/day (providing 1.2 mg SAC).
+**Practical implication:** The best-studied dose is aged garlic extract giving 1.2 mg of SAC a day, as 480 mg or 1.2 g of extract depending on the product [19][20]. The falls in pressure are modest, and garlic does not replace prescribed blood pressure treatment.
 
 ### Cholesterol and Lipids
 
-The effect of garlic on blood lipids has been one of the most extensively studied outcomes. Overall, garlic appears to reduce total cholesterol modestly but its effects on specific lipid fractions vary.
+The effect of garlic on blood lipids has been one of the most extensively studied outcomes [1]. Overall, garlic appears to reduce total cholesterol modestly but its effects on specific lipid fractions vary.
 
-**Total cholesterol:** Two meta-analyses of human trials using varied garlic products and doses found that garlic reduces serum total cholesterol by approximately 4-5% [21][22]. This effect appears to operate primarily through reductions in triglycerides rather than LDL cholesterol.
+**Total cholesterol:** A 2009 meta-analysis of 29 trials found garlic lowered total cholesterol by 0.19 mmol/L and triglycerides by 0.11 mmol/L, while LDL and HDL cholesterol did not change; the authors judged the fall in total cholesterol to be driven mostly by triglycerides [21]. A 2012 meta-analysis of 26 trials found falls of 0.28 mmol/L in total cholesterol and 0.13 mmol/L in triglycerides, again without changes in LDL or HDL cholesterol [22].
 
-**Triglycerides:** Meta-analyses indicate garlic reduces triglycerides by 6-22%, particularly reducing the VLDL (very low-density lipoprotein) component [21][22]. Some clinical research suggests that certain garlic powder products may reduce serum triglycerides to a greater degree than others [21].
+**Triglycerides:** In the 2012 meta-analysis, garlic oil lowered triglycerides more than other forms, while garlic powder and aged garlic extract lowered total cholesterol more [22].
 
-**LDL and HDL cholesterol:** The effect on LDL ("bad") cholesterol and HDL ("good") cholesterol is inconsistent. The meta-analyses by Reinhart (2009) and Zeng (2012) found no significant effect on LDL or HDL [21][22]. A more recent meta-analysis by Sun et al. (2018) found that garlic supplementation significantly lowered total cholesterol and LDL cholesterol compared to placebo [23]. The discrepancy likely reflects differences in study populations, garlic formulations, and dosing.
+**LDL and HDL cholesterol:** The effect on LDL ("bad") cholesterol and HDL ("good") cholesterol is inconsistent. A 2013 meta-analysis of 39 trials found garlic taken for longer than 2 months lowered total cholesterol by 17 mg/dL and LDL cholesterol by 9 mg/dL in people with total cholesterol above 200 mg/dL, with only a slight rise in HDL [48]. A 2018 meta-analysis of 14 studies also found falls in total and LDL cholesterol [23]. In contrast, a 6-month trial in 192 adults with LDL cholesterol of 130 to 190 mg/dL compared raw garlic, garlic powder and aged garlic extract, each at a dose equal to about one 4 g clove 6 days a week, with placebo; none changed LDL cholesterol or other lipids [51]. The discrepancy likely reflects differences in study populations, garlic formulations, and dosing.
 
-**NIH assessment:** The NCCIH states that garlic supplements may reduce levels of total cholesterol and LDL cholesterol to a small extent in people who have high blood cholesterol levels [1]. A 2019 systematic review and meta-analysis further confirmed that garlic supplementation may reduce blood sugar, lipids, and inflammatory markers in diabetic patients (Shabani, *Prim Care Diabetes*, 2019) [24].
+**NIH assessment:** The NCCIH states that garlic supplements may reduce levels of total cholesterol and LDL cholesterol to a small extent in people who have high blood cholesterol levels [1]. A 2019 meta-analysis of 33 studies in people with diabetes found garlic lowered total cholesterol by 16.87 mg/dL and LDL cholesterol by 9.65 mg/dL compared with placebo (Shabani, *Prim Care Diabetes*, 2019) [24].
 
-**Comparison with statins:** Garlic is substantially less effective than statin medications for lowering cholesterol. As noted in the Laffin (2023) study above, rosuvastatin 5 mg produced a 43% reduction in LDL versus garlic's 7.8% increase [9]. Garlic supplementation is not a substitute for statin therapy in patients who require pharmaceutical lipid management.
-
-**Mechanisms:** The cholesterol-lowering effects of garlic are attributed to multiple mechanisms. Allicin and SAC inhibit HMG-CoA reductase (the same target as statin drugs, though far less potently), reduce hepatic cholesterol synthesis, and may increase bile acid excretion [5][6]. SAC also reduces LDL oxidation, which may be relevant to atherosclerosis prevention independent of LDL concentration [25].
+**Comparison with statins:** A 28-day trial randomized 190 adults with raised 10-year cardiovascular risk and LDL cholesterol of 70 to 189 mg/dL to rosuvastatin 5 mg a day, placebo, or one of six supplements, garlic among them. Rosuvastatin lowered LDL cholesterol 35.2% more than placebo, and no supplement lowered LDL cholesterol more than placebo [9]. Garlic supplementation is not a substitute for statin therapy in patients who require pharmaceutical lipid management.
 
 ### Atherosclerosis
 
-There is preliminary evidence that aged garlic supplementation may slow the progression of coronary artery calcification (a marker of atherosclerosis).
+Preliminary evidence suggests aged garlic extract may slow the build-up of calcium in the coronary arteries, a marker of atherosclerosis [12].
 
-**Wlosinka et al. (2020):** A one-year study in Sweden among 93 men and women (average age 64) with mild to moderate atherosclerosis found that coronary artery calcification increased by 20% among those given aged garlic (two 600 mg capsules of Kyolic Reserve formula, twice daily) versus 28% among those given placebo. This indicates a modest benefit — garlic did not reverse or halt calcification but slowed its rate of progression. The study was funded by Wakunaga of America Co Ltd (Wlosinka, *BMC Complement Med Ther*, 2020) [12].
+**Wlosinska et al. (2020):** In a 1-year trial at a European university hospital, 104 people with a Framingham risk score of 10 or more took aged garlic extract (2,400 mg a day) or placebo, and 93 were analysed. Coronary artery calcium progressed less with garlic (odds ratio 2.95, 1.05 to 8.27, in favour of garlic), and systolic blood pressure in the garlic group fell from 148 to 140 mm Hg. Neither group reported side effects (Wlosinska, *BMC Complement Med Ther*, 2020) [12].
 
-A 1999 study demonstrated that daily supplementation with aged garlic extract significantly delayed LDL oxidation compared to raw garlic or controls, suggesting a mechanism by which aged garlic could slow atherosclerotic plaque formation [25].
+In a 7-day study, LDL from people taking 2.4 g of aged garlic extract a day resisted oxidation in the laboratory better than LDL from people taking no supplement, while 6 g of raw garlic a day had no such effect [25].
 
-**Practical note:** Garlic alone is probably not sufficient to treat patients with significantly elevated cholesterol levels or established atherosclerotic disease. It may serve as a complementary measure alongside evidence-based therapies.
+**Practical note:** Garlic on its own is unlikely to be enough for people with high cholesterol [9][51]. It may serve as a complementary measure alongside evidence-based therapies.
 
 ### Immune Function and Respiratory Infections
 
-Garlic has a long history of use for immune support, and there is some clinical evidence suggesting it may help prevent common colds.
+Garlic has long been used for immune support, and limited trial evidence suggests it may help prevent colds [26][29].
 
-**Josling (2001):** A double-blind, randomized trial among 146 men and women found that those who took one garlic capsule (containing 180 mg of allicin powder) daily with a meal for three months reported significantly fewer colds than those who took placebo (24 vs 65 colds, respectively). However, garlic did not appear to shorten the duration of individual cold episodes (Josling, *Adv Ther*, 2001) [26].
+**Josling (2001):** In a 12-week winter trial, 146 volunteers took one allicin-containing garlic capsule or placebo daily. The garlic group reported fewer colds (24 vs 65) and shorter symptoms (1.52 vs 5.01 days) (Josling, *Adv Ther*, 2001) [26].
 
-**Nantz et al. (2012):** A randomized, double-blind, placebo-controlled study of 120 healthy adults found that 90 days of aged garlic extract supplementation enhanced natural killer (NK) cell proliferation and activation, as well as γδ-T cell function, leading to a 21% reduction in the severity of cold and flu symptoms and a 61% decrease in days of suboptimal functioning. However, it did not reduce infection incidence [27].
+**Nantz et al. (2012):** In a 90-day trial in 120 healthy adults, aged garlic extract (2.56 g a day) did not change how often people caught colds or flu. Those taking it reported 21% fewer symptoms and 61% fewer days of functioning below par, and their natural killer (NK) cells and γδ-T cells multiplied better in laboratory tests [27].
 
-**Mechanisms:** The immunomodulatory effects are attributed to organosulfur compounds (allicin, alliin, SAC, diallyl sulfides) that stimulate NK cells, modulate cytokine profiles by inhibiting pro-inflammatory mediators (TNF-α, IL-6, IL-1β) through NF-κB suppression, and promote anti-inflammatory cytokines such as IL-10 [27][28].
+**Mechanisms:** Laboratory research suggests garlic compounds stimulate immune cells such as macrophages, lymphocytes and NK cells and change the release of cytokines, the immune system's signalling proteins [28].
 
-**Cochrane review (2014):** The Cochrane systematic review analyzed the limited available trials and concluded there is insufficient high-quality evidence to recommend garlic for preventing or treating the common cold, noting the need for larger, more robust studies [29].
+**Cochrane review (2014):** The Cochrane review found only one trial that met its criteria, the 146-person trial above, which it describes as using 180 mg of allicin a day. It found the days to recover from a cold were similar with garlic and placebo (4.63 vs 5.63) and concluded there is insufficient evidence on garlic for preventing or treating the common cold [29].
 
-**NCCIH assessment:** The NCCIH states that very little research has been done on garlic and immune function, and a 2022 review identified only two studies suggesting a possible benefit, both with small sample sizes and methodological weaknesses [1].
+**NCCIH assessment:** The NCCIH states that very little research has been done on garlic and immune function, and a 2022 review identified only two studies suggesting a possible benefit, both with small sample sizes and methodological weaknesses [1]. That 2022 systematic review of immune supplements in healthy people, garlic among them, found gaps that kept its authors from firm conclusions [49].
 
-**Laboratory evidence:** Garlic has been shown in laboratory studies to inhibit certain viruses, including influenza B and human rhinovirus type 2 (Tsai, *Planta Med*, 1985; Weber, *Planta Med*, 1992) [30][31]. Studies also indicated that sulfur compounds in garlic essential oil interact with the ACE2 protein through which SARS-CoV-2 enters cells (Thuy, *ACS Omega*, 2020) [32]. However, there is no clinical evidence that garlic can prevent or treat COVID-19, as noted by the World Health Organization [32].
-
-**Insect bite prevention:** There is some evidence that consumption of garlic extract may help prevent insect bites, though the evidence base is very limited [4].
+**Laboratory evidence:** A 1985 laboratory study tested garlic against influenza B, herpes simplex and coxsackie viruses [30]. Fresh garlic extract and allicin inactivated viruses including human rhinovirus type 2 in cell culture, at concentrations that were also toxic to the cells (Weber, *Planta Med*, 1992) [31]. A computer docking study suggested organosulfur compounds from garlic essential oil may bind the ACE2 receptor and a SARS-CoV-2 protease (Thuy, *ACS Omega*, 2020) [32]. That was a computer model, not a test in people.
 
 ### Cancer Prevention
 
 The evidence for garlic in cancer prevention is weak and inconsistent, despite historical interest in this area.
 
-**Gastric cancer:** A large, multi-year study in a region of China with high rates of gastric cancer found that garlic supplementation reduced the risk of death from gastric cancer, but this benefit was limited to those with *H. pylori* infection — and among them, the benefit was far greater in those who did not have a history of alcohol consumption. Garlic supplementation was given for 7.3 years (capsules of Kyolic aged garlic extract 400 mg plus steam-distilled garlic oil 2 mg, twice daily) and participants were followed for an additional 15 years (Guo, *JAMA Open*, 2020; Gail, *J Nutr*, 2006) [33][34].
+**Gastric cancer:** The Shandong Intervention Trial, in a high-risk area of China, gave 3,365 adults capsules of aged garlic extract plus steam-distilled garlic oil, or placebo, for 7.3 years [34][53]. At 14.7 years of follow-up, garlic was linked to falls in gastric cancer incidence and death that were not statistically significant [53]. A secondary analysis after 22.3 years found lower gastric cancer mortality with garlic only in people who had never drunk alcohol (HR 0.33, 95% CI 0.15 to 0.75), with significant interactions only in people with *H. pylori* infection (Guo, *JAMA Netw Open*, 2020) [33]. The capsules combined two preparations, so the results cannot be credited to either alone.
 
-**Colorectal cancer:** Observational studies provide only very weak evidence that garlic as a food may help prevent colorectal cancer [4]. A meta-analysis by Zhou et al. (2020) found no significant association between garlic intake and colorectal cancer risk [35].
+**Colorectal cancer:** A 2020 meta-analysis of 11 observational studies found a lower colorectal cancer risk with the highest garlic intake (RR 0.80, 95% CI 0.69 to 0.91), but the benefit came from case-control studies (RR 0.71, 95% CI 0.60 to 0.84); cohort studies showed no link (RR 0.99, 95% CI 0.80 to 1.23) (Zhou, *Medicine*, 2020) [35].
 
 **NCCIH assessment:** The NCCIH states that consuming garlic does not seem to reduce the risk of stomach cancer, and that it is uncertain whether garlic influences colorectal cancer risk [1].
 
-**Systematic review evidence (2021-2022):** Recent systematic reviews and meta-analyses found no significant reduction in overall cancer risk from higher consumption of allium vegetables or garlic supplements (RR ≈ 0.97). For colorectal cancer specifically, pooled analyses showed no association (RR 1.06), with some evidence of increased risk associated with garlic supplement use (RR 1.18 in certain cohorts). The World Cancer Research Fund classifies the evidence as limited, with no conclusions possible on garlic's role in cancer prevention [8]. Major health organizations do not recommend garlic supplements for cancer prevention.
-
 ### Rheumatoid Arthritis
 
-A study in Iran among 62 women (average age 51) with moderate to severe rheumatoid arthritis (average 6 years duration), most of whom were taking steroid, immunosuppressive, and/or anti-rheumatic medications (prednisolone, methotrexate, sulfasalazine), found that 500 mg garlic powder twice daily (equivalent to 2.5 g garlic, approximately 4-6 mg allicin per day) for eight weeks produced several modest improvements compared to placebo (Moosavian, *Phyto Res*, 2020) [36]:
+In an 8-week trial, 70 women with active rheumatoid arthritis took 1,000 mg of a garlic supplement a day or placebo (Moosavian, *Phytother Res*, 2020) [36]:
 
-- Decreased fatigue, pain intensity, and number of tender joints
-- Decreased disease activity score (0.81 vs 0.07 points on a 0-10 scale)
-- Decreased blood markers of inflammation (TNF-α and CRP)
-- No reduction in swollen joints or medication use
-
-An additional RCT showed that 8 weeks of garlic supplementation in women with rheumatoid arthritis improved oxidative stress parameters and disease activity scores [37].
+- Lower blood markers of inflammation (CRP and TNF-α) than placebo
+- Less pain and fatigue, fewer tender joints and a lower disease activity score (DAS-28) than placebo
+- Fewer swollen joints within the garlic group but not the placebo group
+- No change in ESR
 
 ### Osteoarthritis
 
-Limited evidence from small RCTs, primarily involving overweight or obese postmenopausal women with knee osteoarthritis, suggests that garlic supplements (typically 1,000 mg daily for 12 weeks) may reduce pain, stiffness, and improve physical function. These potential benefits may be mediated via anti-inflammatory effects, including reducing levels of the pro-inflammatory adipocytokine resistin [8]. However, results are inconsistent and no strong evidence supports garlic supplements as a standard treatment for osteoarthritis.
+Two small trials in overweight or obese postmenopausal women with knee osteoarthritis tested 1,000 mg a day of garlic tablets for 12 weeks. In one, 80 women had lower pain scores than with placebo, and resistin, an inflammatory signal made by fat tissue, fell in the garlic group; TNF-α did not change [55]. In the other, 76 women taking odourless garlic tablets had less stiffness than with placebo, but pain, function and total WOMAC scores did not differ between groups [54]. However, results are inconsistent and no strong evidence supports garlic supplements as a standard treatment for osteoarthritis.
 
 ### Heart Failure
 
-A study in China among 120 men and women (average age 40) with moderate chronic (congestive) heart failure found that 20 g/day of black garlic extract for six months improved left-ventricular ejection fraction (LVEF) by approximately 14% and improved self-reported quality of life compared to placebo (Liu, *Front Physiol*, 2018) [18]. Effects on cholesterol levels and blood pressure were not reported. This is a single study and requires replication.
+In a 6-month trial in 120 people with chronic heart failure caused by coronary heart disease, black garlic raised ejection fraction (LVEF) and quality of life scores and lowered NT-proBNP compared with placebo (Liu, *Front Physiol*, 2018) [18]. This is a single study and requires replication.
 
 ### Antioxidant Effects
 
-Garlic and its compounds — particularly SAC in aged garlic extract — demonstrate antioxidant activity in multiple studies. A meta-analysis of RCTs found that garlic supplementation significantly improved total antioxidant capacity and decreased malondialdehyde levels, a marker of lipid peroxidation and oxidative stress [37]. Aged garlic extract has been shown to protect LDL from oxidation in vitro and in human subjects, potentially decreasing the progression of atherosclerosis [25].
-
-The antioxidant effects are attributed to organosulfur compounds that scavenge reactive oxygen species, enhance endogenous antioxidant enzyme activity, and reduce oxidative damage to cellular lipids, proteins, and DNA [5][6][25].
+Some garlic preparations appear to act as antioxidants, whereas others may promote oxidation [6]. Aged garlic extract made LDL more resistant to oxidation in a small human study, a possible route to slower atherosclerosis [25].
 
 ### Antimicrobial Properties
 
-Garlic has demonstrated broad-spectrum antimicrobial activity in laboratory studies. Allicin disrupts bacterial cell membranes and inhibits essential enzymes in organisms including *Staphylococcus aureus* and *Candida albicans* [38]. Research has shown garlic extracts can enhance the efficacy of antibiotics against methicillin-resistant *Staphylococcus aureus* (MRSA) in clinical isolates [2][38].
+In laboratory tests, fresh garlic extract and allicin inactivated several viruses, but the concentrations needed were also toxic to human cells in culture [31].
 
-Some clinical trials suggest garlic supplementation may help alleviate symptoms of *Helicobacter pylori* infections when combined with standard therapies, though results are inconsistent [38]. Garlic extracts also exhibit antimicrobial activity against plaque-associated bacteria like *Porphyromonas gingivalis*, suggesting potential benefits for periodontal health [38].
-
-It is important to note that most antimicrobial evidence comes from laboratory studies. The concentrations of active compounds achievable through oral supplementation may not reach the levels used in in vitro experiments.
+Most antimicrobial evidence comes from laboratory studies. The concentrations of active compounds achievable through oral supplementation may not reach the levels used in in vitro experiments.
 
 ### Diabetes and Blood Sugar
 
-The NCCIH notes that garlic supplements may reduce blood sugar to a small extent in people with diabetes [1]. A 2019 systematic review and meta-analysis found that garlic supplementation may modestly improve glucose parameters in diabetic patients (Shabani, *Prim Care Diabetes*, 2019) [24].
+The NCCIH notes that garlic supplements may reduce blood sugar to a small extent in people with diabetes [1]. A 2019 meta-analysis of 33 studies found garlic lowered fasting blood sugar by 10.90 mg/dL compared with placebo in people with diabetes (Shabani, *Prim Care Diabetes*, 2019) [24].
 
-However, the evidence for clinically meaningful effects on blood glucose is limited, and garlic should not be used as a substitute for established diabetes treatments.
+However, the evidence for clinically meaningful effects on blood glucose is limited, and garlic does not replace established diabetes treatment.
 
 ## 4. Recommended Dosing
 
-Dosing for garlic supplements varies substantially depending on the form and the intended health purpose. The following guidelines are based on clinical trial evidence and expert consensus.
+The doses below are those used in trials, named by preparation. Results from one preparation do not transfer to another.
 
 ### Non-Aged Garlic (Powder/Fresh)
 
-For non-aged garlic, some evidence suggests a daily serving should provide at least 3,600-5,400 mcg of allicin — roughly the amount from one small clove (approximately 4 grams) of fresh garlic [4].
-
-The amount of dried garlic powder needed depends on the allicin yield of the specific product [4]:
-
-| Allicin Yield (mcg/g powder) | Suggested Daily Dose |
-|:-:|:-:|
-| 10,000-12,000 (very high) | ~600 mg powder |
-| 5,000-10,000 (high) | ~900 mg powder |
-| 3,000-5,000 (moderate) | >1,000 mg powder |
-
-For cardiovascular support (blood pressure, lipids), clinical trials have typically used 600-900 mg/day of standardized garlic powder or extract providing 3.6-5.4 mg of allicin potential [4][8].
+Raw garlic and a garlic powder supplement, each at a dose equal to about one 4 g clove 6 days a week, did not lower LDL cholesterol in a 6-month trial [51]. Powder products differ widely in how much allicin they deliver, so the same powder dose may not give the same result [3].
 
 ### Aged Garlic Extract
 
-The dose of aged garlic depends on its concentration. Clinical trial dosages range from approximately 480 mg to 2,400 mg daily, with the most replicated dose being 1,200 mg/day (providing approximately 1.2 mg SAC) [4][19][20].
+Aged garlic extracts differ in strength, so trials state the SAC content of each dose [19][20].
 
-- **Blood pressure:** 480-1,200 mg/day of aged garlic extract (1.2 mg SAC) [19][20]
-- **Atherosclerosis/cardiovascular protection:** 1,200-2,400 mg/day [12][33]
-- **General supplementation:** 600-1,200 mg/day [4]
-
-Aged garlic extract should be standardized to contain not less than 0.05% SAC [4].
+- **Blood pressure:** 480 mg to 1.2 g a day of aged garlic extract giving 1.2 mg of SAC [19][20]
+- **Coronary artery calcium:** 2,400 mg a day for 1 year [12]
+- **Colds and flu:** 2.56 g a day for 90 days [27]
 
 ### Black Garlic
 
-Black garlic dosing in clinical trials has ranged from 250 mg to 6,000 mg daily, but the evidence base is too limited to establish firm dosing recommendations [16][17][18]. The one positive trial in heart failure used 20 g/day — a very high dose [18].
+Black garlic trials have used 250 mg of extract (1.25 mg SAC) to 6 g a day, and the evidence base is too limited to establish a dose [16][17].
 
 ### Garlic Oil
 
-Evidence for garlic oil dosing is limited. One study found benefit at approximately 0.1 mg per kilogram of body weight (about 7 mg/day for an average adult), but the active compound concentrations were not well characterized [4].
+Garlic oil has no established dose. In the Shandong trial it was given together with aged garlic extract, so its own effect cannot be separated [34].
 
 ### Practical Considerations
 
-- **Splitting doses:** For daily dosages of 600-1,200 mg, splitting intake into two or three doses throughout the day may help maintain steady levels of active compounds, given allicin's extremely short half-life in blood [10][11].
-- **Taking with food:** Taking garlic supplements with meals may reduce gastrointestinal side effects, particularly nausea and heartburn [14].
-- **Empty stomach:** Some sources suggest taking garlic on an empty stomach may enhance absorption of key bioactive components, but this increases the risk of GI irritation [14].
-- **Storage:** Garlic supplements should be stored in a cool, dry place away from direct sunlight and moisture. Most have a shelf life of approximately two years when stored properly [11].
-- **Enteric coating:** For non-aged garlic powder supplements, enteric-coated formulations protect alliinase from stomach acid, potentially improving allicin delivery to the intestine [4][11].
+- **Taking with food:** A high-protein meal lowered allicin delivery from enteric-coated tablets, while uncoated tablets delivered the same amount whatever the meal [3].
+- **Enteric coating:** Coated tablets did not deliver more allicin than uncoated tablets in a comparison of 13 supplements [3].
 
 ### How to Read a Garlic Supplement Label
 
 Garlic supplement labels can be confusing because manufacturers describe their ingredients inconsistently. Key distinctions to understand:
 
-- **"Fresh garlic equivalent"** vs **"garlic powder"** — powder is 2-3x more concentrated than fresh garlic
-- **"Garlic extract" or "concentrate"** — should be 9-13x more concentrated than fresh garlic, but may not be if the label does not specify alliin, allicin, or SAC content [4]
-- **"Allicin potential" or "allicin yield"** — the amount of allicin that can be produced from the alliin in the product; more meaningful than alliin content alone
-- **"S-allyl-L-cysteine (SAC)"** — the key marker for aged garlic extract; look for standardization to ≥0.05% SAC
-- **"Alliin"** — the precursor to allicin; a product with 1.3% alliin is standard, but conversion to allicin depends on alliinase activity
+- **Preparation** (aged garlic extract, garlic powder, garlic oil or black garlic): each has a different mix of compounds, so trial results do not transfer between them [6]
+- **"Allicin potential" or "allicin yield"**: the allicin a powder product can form; the amount actually delivered varied widely between products [3]
+- **"S-allylcysteine (SAC)"**: the marker reported in aged garlic extract trials, such as 1.2 mg a day for blood pressure [19][20]
+- **"Alliin"**: the compound alliinase turns into allicin; delivery did not depend on how active the product's alliinase was [3]
+- **"Enteric-coated"**: not a sign of better allicin delivery [3]
 
 ## 5. Safety and Side Effects
 
 ### General Safety
 
-Garlic is generally considered safe, even at relatively high doses [1][4][14]. The long-term safety of aged garlic has been established in animal studies, and oral garlic has been used safely in research lasting as long as 7 years [1][14]. However, the long-term safety of high-allicin, non-aged garlic is less well evaluated [4].
+Garlic taken by mouth has been used safely in research studies lasting as long as 7 years [1].
 
 ### Common Side Effects
 
-- **Bad breath and body odor** — the most universally reported side effect of non-aged garlic, caused by volatile sulfur compounds released during digestion [4][14]. Aged garlic extracts minimize this issue.
-- **Gastrointestinal upset** — including nausea, vomiting, heartburn, flatulence, and abdominal discomfort. More common at higher doses and with raw garlic or non-aged formulations [1][4][14].
-- **Facial flushing, rapid pulse, and dizziness** — occasionally reported, particularly at excessive doses [4].
-- **Insomnia** — reported uncommonly [4].
-- **Allergic reactions** — uncommon but can occur in sensitive individuals, manifesting as dermatitis, urticaria, or rarely anaphylaxis. These reactions are mediated by IgE and are more frequent with topical exposure but have been noted with oral intake, particularly in those with pre-existing allergies to *Allium* species [14][39].
+- **Breath and body odor**: the most common and best-documented complaints with garlic [1][14].
+- **Gastrointestinal upset**: abdominal pain, gas and nausea [1].
+- **Allergic reactions**: some people are allergic to garlic. Case reports describe allergic skin rashes, hives, swelling (angioedema) and anaphylaxis [1][14]. For swelling of the face or throat or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Bleeding Risk
 
-Garlic has antiplatelet effects and can prolong bleeding time. This is one of the most clinically significant safety concerns [1][4][14][40]:
+Garlic may alter platelet function and blood clotting, with a possible risk of bleeding, and taking garlic supplements may increase the risk of bleeding [1][14]:
 
-- **Spontaneous spinal epidural hematoma** was reported in a very elderly person consuming 4 cloves of garlic per day (Rose, *Neurosurgery*, 1990) [41].
-- **Excessive surgical bleeding** was reported in a person who consumed 1 teaspoon (~1 clove) of crushed garlic with every meal in the weeks before surgery, plus 1 tablespoon (~12 g) of powdered garlic the evening before surgery (Woodbury, *A A Case Rep*, 2016) [42].
-- **Significant hematuria** (blood in urine) was reported in a 60-year-old man following minimally invasive prostate surgery. The patient had been taking 1-6 capsules daily of garlic supplements (300-900 mg per capsule) in addition to consuming large amounts of raw and cooked garlic (Nair, *Urol Case Rep*, 2023) [43].
+- **Spontaneous spinal epidural hematoma** with paralysis of the legs was reported in a person in their 90s and was linked to a platelet disorder from excessive garlic intake (Rose, *Neurosurgery*, 1990) [41].
+- **Excessive surgical bleeding** with no clear source was reported during spinal surgery in a patient who had eaten the equivalent of 12 g of garlic a day in the days before; the authors note that the dose needed to cause bleeding is not well described (Woodbury, *A A Case Rep*, 2016) [42].
 
-**Perioperative recommendation:** Garlic should be avoided or limited to one small clove (about 4 grams) daily prior to or immediately after surgery or near the time of childbirth [4]. Guidelines suggest discontinuing high-dose garlic supplements 7-10 days before scheduled surgical procedures [8][40].
+**Perioperative recommendation:** A 2022 review found garlic supplements strongly associated with surgical bleeding even without anticoagulants, and it advised stopping nonessential supplements 2 weeks before surgery [40]. Tell your surgical team about any garlic supplement [1].
 
 ### Skin Burns from Topical Application
 
-Applying crushed, raw garlic to the skin can cause second-degree, partial-thickness burns, especially when the garlic is covered with a wrapping or bandage and left on for an extended period (e.g., overnight). A systematic review identified at least 39 reported cases, with the most common reasons for topical use being pain treatment, followed by skin or respiratory conditions, and fever and colds. In some cases, tissue necrosis (death), infection, and scarring occurred. Garlic-induced burns are attributed to allicin naturally formed in crushed garlic (Hitl, *Am J Emerg Med*, 2021) [44]. Fresh raw garlic should not be applied directly to skin.
+Fresh raw garlic left on the skin can cause severe irritation and chemical burns, particularly under a dressing [1][14]. A systematic review found 39 reported cases, mostly second-degree burns, some with dead tissue (necrosis); the legs were the most common site (Hitl, *Am J Emerg Med*, 2021) [44]. Fresh raw garlic should not be applied directly to skin.
 
 ### Pregnancy and Breastfeeding
 
@@ -282,9 +265,9 @@ Garlic may not be safe during pregnancy or breastfeeding when taken in amounts g
 
 ### Special Populations
 
-- **Bleeding disorders:** Garlic supplements are contraindicated in individuals with bleeding disorders, as they may exacerbate clotting problems and increase hemorrhage risk [8][40].
-- **Pre-surgery patients:** Discontinue high-dose garlic supplements 7-10 days before surgery [8][40].
-- **People taking blood thinners:** INR should be monitored when starting or discontinuing garlic supplements (Warfarin Prescribing Information, 2011) [45].
+- **Bleeding disorders:** Garlic supplements may increase the risk of bleeding [1]. If you have a bleeding disorder, check with your doctor before taking them.
+- **Pre-surgery patients:** One review advises stopping nonessential supplements 2 weeks before surgery [40].
+- **People taking blood thinners:** Garlic may enhance the effect of anticoagulants such as warfarin [14]. If you take warfarin, check with your doctor or anticoagulation clinic before starting or stopping a garlic supplement.
 
 ## 6. Drug Interactions
 
@@ -292,34 +275,32 @@ Garlic supplements can interact with several classes of medications. The most si
 
 ### Anticoagulants and Antiplatelet Agents
 
-Garlic has inherent antiplatelet activity that can potentiate the effects of blood-thinning medications:
+Garlic may affect platelet function and may enhance the effect of anticoagulants such as warfarin and fluindione [14]:
 
 | Drug | Interaction | Clinical Implication |
 |------|------------|---------------------|
-| Warfarin (Coumadin) | Potentiates anticoagulant effect | Monitor INR when starting or stopping garlic; increased bleeding risk [4][45] |
-| Aspirin | Additive antiplatelet effect | Increased bleeding risk; use with caution [4][40] |
-| Ginkgo, policosanol, high-dose vitamin E | Additive antiplatelet/antioxidant effects | Increased bleeding risk when combined with garlic [4] |
+| Warfarin (Coumadin) | May enhance the anticoagulant effect [14] | Check with your doctor or anticoagulation clinic before starting or stopping garlic. In a 12-week pilot, 48 closely monitored warfarin patients taking 5 mL of liquid aged garlic extract twice a day had no increase in bleeding [52] |
+| Aspirin | Both may affect bleeding [1] | Talk with your doctor before combining them [1] |
 
 ### HIV Protease Inhibitors
 
-Garlic supplements may induce CYP450 enzymes and reduce plasma concentrations of HIV protease inhibitors, potentially compromising antiretroviral efficacy. Pharmacokinetic trials in healthy volunteers demonstrated decreases in saquinavir levels by up to 50% after short-term garlic supplementation [46][47]. This interaction led to recommendations for caution or avoidance in patients on protease inhibitor therapy.
+In 10 healthy volunteers, garlic caplets taken twice daily (41 doses in total) lowered saquinavir exposure over the dosing interval (AUC) by 51%, trough levels by 49% and peak levels by 54%. Ten days after stopping garlic, levels had recovered only to 60% to 70% of baseline [46]. The authors advise caution when garlic is combined with saquinavir as the only protease inhibitor, and a review lists reduced efficacy of saquinavir among garlic's drug interactions [14][46]. If you take HIV medicines, check with your HIV doctor or pharmacist before taking garlic supplements.
 
 ### Hormonal Contraceptives
 
-Garlic preparations may decrease the effectiveness of birth control drugs. The mechanism is believed to involve CYP enzyme induction affecting hormone metabolism [4].
+If you take prescription medicines, including hormonal contraceptives, check with your doctor or pharmacist before starting.
 
 ### Cyclosporine
 
-Garlic supplements may reduce cyclosporine blood levels through CYP3A4 induction, potentially compromising immunosuppression in transplant recipients [4].
+If you take prescription medicines, including cyclosporine or other transplant medicines, check with your doctor or pharmacist before starting.
 
 ### Statins
 
-There is no strong evidence of significant interactions between garlic supplements and statins (rosuvastatin, atorvastatin) in humans. Some animal studies have suggested potential pharmacokinetic alterations at high doses, but human data indicate limited or no clinically relevant interactions [8].
+The 28-day rosuvastatin trial compared garlic with the statin rather than combining them, so it gives no data on taking the two together [9]. If you take a statin, check with your doctor or pharmacist before adding garlic.
 
 ### Other Interactions
 
-- **Isoniazid:** Garlic may reduce isoniazid absorption [4]
-- **Non-nucleoside reverse transcriptase inhibitors (NNRTIs):** Potential CYP-mediated interactions [4]
+If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### General Recommendation
 
@@ -327,27 +308,30 @@ The NCCIH emphasizes: if you take anticoagulants, aspirin, or any other medicati
 
 ## 7. Dietary Sources
 
-Garlic is primarily consumed as a culinary ingredient. One medium clove of garlic weighs approximately 3-7 grams [4].
+Garlic is primarily consumed as a culinary ingredient. One trial treated a 4 g clove as an average-sized clove [51].
 
 ### Garlic Content and Allicin Potential
 
-| Source | Amount | Estimated Allicin Yield |
-|--------|--------|:-:|
-| 1 small clove, fresh (~4g) | ~4g | 4,000-12,000 mcg (4-12 mg) |
-| 1 average clove (~7g) | ~7g | 7,000-21,000 mcg (7-21 mg) |
-| Garlic powder (cooking) | 1/4 tsp (~1.4g) | Equivalent to ~1 small clove |
-| Cooked garlic | Variable | Cooking reduces allicin; roasting whole cloves destroys most alliinase |
+In the breath-test study, cooked and acidified garlic foods delivered less allicin than crushed raw garlic, though more than expected [3]:
+
+| Garlic food | Allicin delivered (vs crushed raw garlic) |
+|--------|:-:|
+| Crushed raw garlic | 100% (reference) |
+| Acid-minced garlic | 66% |
+| Roasted garlic | 30% |
+| Pickled garlic | 19% |
+| Boiled garlic | 16% |
+| Black garlic | 5% |
 
 ### Maximizing Active Compound Availability
 
-- **Crush or chop** garlic and let it sit for 5-10 minutes before cooking. This allows alliinase to convert alliin to allicin before heat inactivates the enzyme.
-- **Raw garlic** delivers the most allicin but causes the most GI irritation and odor.
-- **Roasting** whole cloves at high temperatures largely destroys alliinase and significantly reduces allicin production. The flavor becomes sweeter and milder, but active organosulfur compounds are substantially reduced.
-- **Brief cooking** (adding crushed garlic in the last minutes of cooking) preserves more active compounds than prolonged high-heat cooking.
+- **Crush or chop** raw garlic: crushing lets alliinase start making allicin [3].
+- **Raw garlic** delivered the most allicin of the garlic foods tested [3].
+- **Cooking** inactivates alliinase, yet cooked garlic still delivered some allicin, partly because the body turns other garlic compounds such as S-allylcysteine into the same breath marker [3].
 
 ### Other Allium Vegetables
 
-Garlic belongs to the *Allium* genus, which also includes onions, leeks, shallots, chives, and scallions. All *Allium* vegetables contain organosulfur compounds, though garlic has the highest concentrations of allicin and related compounds.
+Garlic belongs to the *Allium* genus, which also includes onions, leeks, scallions, chives and garlic chives. These species contain organosulfur compounds, saponins and flavonoids [50].
 
 ### Nutritional Profile of Raw Garlic (Per 100g)
 
@@ -366,100 +350,84 @@ At typical serving sizes (one clove, ~4-7g), these amounts are nutritionally neg
 
 [1] National Center for Complementary and Integrative Health (NCCIH). "Garlic." Updated February 2025. [https://www.nccih.nih.gov/health/garlic](https://www.nccih.nih.gov/health/garlic)
 
-[2] Grokipedia. "Garlic supplements." [https://grokipedia.com/page/Garlic_supplements](https://grokipedia.com/page/Garlic_supplements)
+[3] Lawson LD, Hunsaker SM. "Allicin Bioavailability and Bioequivalence from Garlic Supplements and Garlic Foods." *Nutrients*. 2018;10(7):812. doi: [10.3390/nu10070812](https://doi.org/10.3390/nu10070812). PMID: 29937536. https://pubmed.ncbi.nlm.nih.gov/29937536/
 
-[3] Lawson LD, Hunsaker SM. "Allicin Bioavailability and Bioequivalence from Garlic Supplements and Garlic Foods." *Nutrients*. 2018;10(7):812. doi: [10.3390/nu10070812](https://doi.org/10.3390/nu10070812)
+[6] Amagase H, Petesch BL, Matsuura H, Kasuga S, Itakura Y. "Intake of garlic and its bioactive components." *J Nutr*. 2001;131(3s):955S-962S. doi: [10.1093/jn/131.3.955S](https://doi.org/10.1093/jn/131.3.955S). PMID: 11238796. https://pubmed.ncbi.nlm.nih.gov/11238796/
 
-[4] ConsumerLab. "Garlic Supplements Review." Accessed 2026. [https://www.consumerlab.com/reviews/garlic-supplements/garlic/](https://www.consumerlab.com/reviews/garlic-supplements/garlic/)
+[7] Ried K. "Garlic Lowers Blood Pressure in Hypertensive Individuals, Regulates Serum Cholesterol, and Stimulates Immunity: An Updated Meta-analysis and Review." *J Nutr*. 2016;146(2):389S-396S. doi: [10.3945/jn.114.202192](https://doi.org/10.3945/jn.114.202192). PMID: 26764326. https://pubmed.ncbi.nlm.nih.gov/26764326/
 
-[5] Block E. "Garlic and Other Alliums: The Lore and the Science." *RSC Publishing*. 2010.
+[9] Laffin LJ, Bruemmer D, Garcia M, et al. "Comparative Effects of Low-Dose Rosuvastatin, Placebo, and Dietary Supplements on Lipids and Inflammatory Biomarkers." *J Am Coll Cardiol*. 2023;81(1):1-12. doi: [10.1016/j.jacc.2022.10.013](https://doi.org/10.1016/j.jacc.2022.10.013). PMID: 36351465. https://pubmed.ncbi.nlm.nih.gov/36351465/
 
-[6] Amagase H, Petesch BL, Matsuura H, Kasuga S, Itakura Y. "Intake of garlic and its bioactive components." *J Nutr*. 2001;131(3s):955S-962S. doi: [10.1093/jn/131.3.955S](https://doi.org/10.1093/jn/131.3.955S)
+[12] Wlosinska M, Nilsson A-C, Hlebowicz J, et al. "The effect of aged garlic extract on the atherosclerotic process - a randomized double-blind placebo-controlled trial." *BMC Complement Med Ther*. 2020;20(1):132. doi: [10.1186/s12906-020-02932-5](https://doi.org/10.1186/s12906-020-02932-5). PMID: 32349742. https://pubmed.ncbi.nlm.nih.gov/32349742/
 
-[7] Ried K. "Garlic Lowers Blood Pressure in Hypertensive Individuals, Regulates Serum Cholesterol, and Stimulates Immunity: An Updated Meta-analysis and Review." *J Nutr*. 2016;146(2):389S-396S. doi: [10.3945/jn.114.202192](https://doi.org/10.3945/jn.114.202192)
+[14] Borrelli F, Capasso R, Izzo AA. "Garlic (Allium sativum L.): adverse effects and drug interactions in humans." *Mol Nutr Food Res*. 2007;51(11):1386-1397. doi: [10.1002/mnfr.200700054](https://doi.org/10.1002/mnfr.200700054). PMID: 17918162. https://pubmed.ncbi.nlm.nih.gov/17918162/
 
-[8] Grokipedia evidence synthesis, including: Sun Y-E, Wang W, Qin J. "Anti-hyperlipidemia of garlic by reducing the level of total cholesterol and low-density lipoprotein." *Medicine (Baltimore)*. 2018;97(18):e0255. doi: [10.1097/MD.0000000000010255](https://doi.org/10.1097/MD.0000000000010255); Zhou X et al. "Garlic intake and the risk of colorectal cancer: a meta-analysis." *Medicine (Baltimore)*. 2020;99(1):e18575. doi: [10.1097/MD.0000000000018575](https://doi.org/10.1097/MD.0000000000018575)
+[15] Kimura S, Tung Y-C, Pan M-H, Su N-W, Lai Y-J, Cheng K-C. "Black garlic: A critical review of its production, bioactivity, and application." *J Food Drug Anal*. 2017;25(1):62-70. doi: [10.1016/j.jfda.2016.11.003](https://doi.org/10.1016/j.jfda.2016.11.003). PMID: 28911544. https://pubmed.ncbi.nlm.nih.gov/28911544/
 
-[9] Laffin LJ, Bruemmer D, Garcia M, et al. "Comparative Effects of Low-Dose Rosuvastatin, Placebo, and Dietary Supplements on Lipids and Inflammatory Biomarkers." *J Am Coll Cardiol*. 2023;81(1):1-12. doi: [10.1016/j.jacc.2022.10.013](https://doi.org/10.1016/j.jacc.2022.10.013)
+[16] Jung ES, Park SH, Choi EK, et al. "Reduction of blood lipid parameters by a 12-wk supplementation of aged black garlic: a randomized controlled trial." *Nutrition*. 2014;30(9):1034-1039. doi: [10.1016/j.nut.2014.02.014](https://doi.org/10.1016/j.nut.2014.02.014). PMID: 24976429. https://pubmed.ncbi.nlm.nih.gov/24976429/
 
-[10] Grokipedia: "Allicin has a half-life of less than one minute in blood." Supported by pharmacokinetic data from: Freeman F, Kodera Y. "Garlic chemistry: stability of S-(2-propenyl)-2-propene-1-sulfinothioate (allicin) in blood, solvents, and simulated physiological fluids." *J Agric Food Chem*. 1995;43(9):2332-2338. doi: [10.1021/jf00057a004](https://doi.org/10.1021/jf00057a004)
+[17] Valls RM, Companys J, Calderón-Pérez L, et al. "Effects of an Optimized Aged Garlic Extract on Cardiovascular Disease Risk Factors in Moderate Hypercholesterolemic Subjects: A Randomized, Crossover, Double-Blind, Sustained and Controlled Study." *Nutrients*. 2022;14(3):405. doi: [10.3390/nu14030405](https://doi.org/10.3390/nu14030405). PMID: 35276764. https://pubmed.ncbi.nlm.nih.gov/35276764/
 
-[11] Grokipedia: Standardization and processing methods for garlic supplements, including USP requirements, enteric coating rationale, and aging processes. Supported by: Lawson LD, Wang ZJ. "Allicin and Allicin-Derived Compounds." In: *Garlic and Other Alliums*. RSC Publishing, 2010.
+[18] Liu J, Zhang G, Cong X, Wen C. "Black Garlic Improves Heart Function in Patients with Coronary Heart Disease by Improving Circulating Antioxidant Levels." *Front Physiol*. 2018;9:1435. doi: [10.3389/fphys.2018.01435](https://doi.org/10.3389/fphys.2018.01435). PMID: 30443217. https://pubmed.ncbi.nlm.nih.gov/30443217/
 
-[12] Wlosinka M, Nilsson A-C, Hlebowicz J, et al. "The effect of aged garlic extract on the atherosclerotic process - a randomized double-blind placebo-controlled trial." *BMC Complement Med Ther*. 2020;20(1):132. doi: [10.1186/s12906-020-02932-5](https://doi.org/10.1186/s12906-020-02932-5)
+[19] Ried K, Frank OR, Stocks NP. "Aged garlic extract reduces blood pressure in hypertensives: a dose-response trial." *Eur J Clin Nutr*. 2013;67(1):64-70. doi: [10.1038/ejcn.2012.178](https://doi.org/10.1038/ejcn.2012.178). PMID: 23169470. https://pubmed.ncbi.nlm.nih.gov/23169470/
 
-[13] Nantz MP, Rowe CA, Muller CE, Creasy RA, Stanilka JM, Percival SS. "Supplementation with aged garlic extract improves both NK and γδ-T cell function and reduces the severity of cold and flu symptoms." *Clin Nutr*. 2012;31(3):337-344. doi: [10.1016/j.clnu.2011.11.019](https://doi.org/10.1016/j.clnu.2011.11.019)
+[20] Ried K, Travica N, Sali A. "The Effect of Kyolic Aged Garlic Extract on Gut Microbiota, Inflammation, and Cardiovascular Markers in Hypertensives: The GarGIC Trial." *Front Nutr*. 2018;5:122. doi: [10.3389/fnut.2018.00122](https://doi.org/10.3389/fnut.2018.00122). PMID: 30619868. https://pubmed.ncbi.nlm.nih.gov/30619868/
 
-[14] Borrelli F, Capasso R, Izzo AA. "Garlic (Allium sativum L.): adverse effects and drug interactions in humans." *Mol Nutr Food Res*. 2007;51(11):1386-1397. doi: [10.1002/mnfr.200700054](https://doi.org/10.1002/mnfr.200700054)
+[21] Reinhart KM, Talati R, White CM, Coleman CI. "The impact of garlic on lipid parameters: a systematic review and meta-analysis." *Nutr Res Rev*. 2009;22(1):39-48. doi: [10.1017/S0954422409350003](https://doi.org/10.1017/S0954422409350003). PMID: 19555517. https://pubmed.ncbi.nlm.nih.gov/19555517/
 
-[15] Kimura S, Tung Y-C, Pan M-H, Su N-W, Lai Y-J, Cheng K-C. "Black garlic: A critical review of its production, bioactivity, and application." *J Food Drug Anal*. 2017;25(1):62-70. doi: [10.1016/j.jfda.2016.11.003](https://doi.org/10.1016/j.jfda.2016.11.003)
+[22] Zeng T, Guo FF, Zhang CL, et al. "A meta-analysis of randomized, double-blind, placebo-controlled trials for the effects of garlic on serum lipid profiles." *J Sci Food Agric*. 2012;92(9):1892-1902. doi: [10.1002/jsfa.5557](https://doi.org/10.1002/jsfa.5557). PMID: 22234974. https://pubmed.ncbi.nlm.nih.gov/22234974/
 
-[16] Jung ES, Park SH, Choi EK, et al. "Reduction of blood lipid parameters by a 12-wk supplementation of aged black garlic: a randomized controlled trial." *Nutrition*. 2014;30(9):1034-1039. doi: [10.1016/j.nut.2014.02.014](https://doi.org/10.1016/j.nut.2014.02.014)
+[23] Sun Y-E, Wang W, Qin J. "Anti-hyperlipidemia of garlic by reducing the level of total cholesterol and low-density lipoprotein: A meta-analysis." *Medicine (Baltimore)*. 2018;97(18):e0255. doi: [10.1097/MD.0000000000010255](https://doi.org/10.1097/MD.0000000000010255). PMID: 29718835. https://pubmed.ncbi.nlm.nih.gov/29718835/
 
-[17] Valls RM, Companys J, Calderón-Pérez L, et al. "Effects of an Optimized Aged Black Garlic Extract on Cardiovascular Risk Factors in Moderate Hypercholesterolemic Subjects." *Nutrients*. 2022;14(3):405. doi: [10.3390/nu14030405](https://doi.org/10.3390/nu14030405)
+[24] Shabani E, Sayemiri K, Mohammadpour M. "The effect of garlic on lipid profile and glucose parameters in diabetic patients: a systematic review and meta-analysis." *Prim Care Diabetes*. 2019;13(1):28-42. doi: [10.1016/j.pcd.2018.07.007](https://doi.org/10.1016/j.pcd.2018.07.007). PMID: 30049636. https://pubmed.ncbi.nlm.nih.gov/30049636/
 
-[18] Liu J, Zhang G, Cong X, Wen C. "Black Garlic Improves Heart Function in Patients with Coronary Heart Disease by Improving Circulating Antioxidant Levels." *Front Physiol*. 2018;9:1435. doi: [10.3389/fphys.2018.01435](https://doi.org/10.3389/fphys.2018.01435)
+[25] Munday JS, James KA, Fray LM, Kirkwood SW, Thompson KG. "Daily supplementation with aged garlic extract, but not raw garlic, protects low density lipoprotein against in vitro oxidation." *Atherosclerosis*. 1999;143(2):399-404. doi: [10.1016/S0021-9150(98)00325-7](https://doi.org/10.1016/S0021-9150(98)00325-7). PMID: 10217370. https://pubmed.ncbi.nlm.nih.gov/10217370/
 
-[19] Ried K, Frank OR, Stocks NP. "Aged garlic extract reduces blood pressure in hypertensives: a dose-response trial." *Eur J Clin Nutr*. 2013;67(1):64-70. doi: [10.1038/ejcn.2012.178](https://doi.org/10.1038/ejcn.2012.178)
+[26] Josling P. "Preventing the common cold with a garlic supplement: a double-blind, placebo-controlled survey." *Adv Ther*. 2001;18(4):189-193. doi: [10.1007/BF02850113](https://doi.org/10.1007/BF02850113). PMID: 11697022. https://pubmed.ncbi.nlm.nih.gov/11697022/
 
-[20] Ried K. "Garlic lowers blood pressure in hypertensive subjects, improves arterial stiffness and gut microbiota: A review and meta-analysis." *Front Nutr*. 2018;5:122. doi: [10.3389/fnut.2018.00122](https://doi.org/10.3389/fnut.2018.00122)
+[27] Nantz MP, Rowe CA, Muller CE, Creasy RA, Stanilka JM, Percival SS. "Supplementation with aged garlic extract improves both NK and γδ-T cell function and reduces the severity of cold and flu symptoms: a randomized, double-blind, placebo-controlled nutrition intervention." *Clin Nutr*. 2012;31(3):337-344. doi: [10.1016/j.clnu.2011.11.019](https://doi.org/10.1016/j.clnu.2011.11.019). PMID: 22280901. https://pubmed.ncbi.nlm.nih.gov/22280901/
 
-[21] Reinhart KM, Coleman CI, Teevan C, Vachhani P, White CM. "Effects of garlic on blood pressure in patients with and without systolic hypertension: a meta-analysis." *Nutr Res Rev*. 2009;22(1):39-48. doi: [10.1017/S0954422409350013](https://doi.org/10.1017/S0954422409350013)
+[28] Arreola R, Quintero-Fabián S, López-Roa RI, et al. "Immunomodulation and Anti-Inflammatory Effects of Garlic Compounds." *J Immunol Res*. 2015;2015:401630. doi: [10.1155/2015/401630](https://doi.org/10.1155/2015/401630). PMID: 25961060. https://pubmed.ncbi.nlm.nih.gov/25961060/
 
-[22] Zeng T, Guo FF, Zhang CL, et al. "A meta-analysis of randomized, double-blind, placebo-controlled trials for the effects of garlic on serum lipid profiles." *J Sci Food Agric*. 2012;92(9):1892-1902. doi: [10.1002/jsfa.5557](https://doi.org/10.1002/jsfa.5557)
+[29] Lissiman E, Bhasale AL, Cohen M. "Garlic for the common cold." *Cochrane Database Syst Rev*. 2014;(11):CD006206. doi: [10.1002/14651858.CD006206.pub4](https://doi.org/10.1002/14651858.CD006206.pub4). PMID: 25386977. https://pubmed.ncbi.nlm.nih.gov/25386977/
 
-[23] Sun Y-E, Wang W, Qin J. "Anti-hyperlipidemia of garlic by reducing the level of total cholesterol and low-density lipoprotein: A meta-analysis." *Medicine (Baltimore)*. 2018;97(18):e0255. doi: [10.1097/MD.0000000000010255](https://doi.org/10.1097/MD.0000000000010255)
+[30] Tsai Y, Cole LL, Davis LE, Lockwood SJ, Simmons V, Wild GC. "Antiviral properties of garlic: in vitro effects on influenza B, herpes simplex and coxsackie viruses." *Planta Med*. 1985;51(5):460-461. doi: [10.1055/s-2007-969553](https://doi.org/10.1055/s-2007-969553). PMID: 3001801. https://pubmed.ncbi.nlm.nih.gov/3001801/
 
-[24] Shabani E, Sayemiri K, Mohammadpour M. "The effect of garlic on lipid profile and glucose parameters in diabetic patients: a systematic review and meta-analysis." *Prim Care Diabetes*. 2019;13(1):28-42. doi: [10.1016/j.pcd.2018.07.007](https://doi.org/10.1016/j.pcd.2018.07.007)
+[31] Weber ND, Andersen DO, North JA, Murray BK, Lawson LD, Hughes BG. "In vitro virucidal effects of Allium sativum (garlic) extract and compounds." *Planta Med*. 1992;58(5):417-423. doi: [10.1055/s-2006-961504](https://doi.org/10.1055/s-2006-961504). PMID: 1470664. https://pubmed.ncbi.nlm.nih.gov/1470664/
 
-[25] Munday JS, James KA, Fray LM, Kirkwood SW, Thompson KG. "Daily supplementation with aged garlic extract, but not raw garlic, protects low density lipoprotein against in vitro oxidation." *Atherosclerosis*. 1999;143(2):399-404. doi: [10.1016/S0021-9150(98)00325-7](https://doi.org/10.1016/S0021-9150(98)00325-7)
+[32] Thuy BTP, My TTA, Hai NTT, et al. "Investigation into SARS-CoV-2 Resistance of Compounds in Garlic Essential Oil." *ACS Omega*. 2020;5(14):8312-8320. doi: [10.1021/acsomega.0c00772](https://doi.org/10.1021/acsomega.0c00772). PMID: 32363255. https://pubmed.ncbi.nlm.nih.gov/32363255/
 
-[26] Josling P. "Preventing the common cold with a garlic supplement: a double-blind, placebo-controlled survey." *Adv Ther*. 2001;18(4):189-193. doi: [10.1007/BF02850113](https://doi.org/10.1007/BF02850113)
+[33] Guo Y, Li ZX, Zhang JY, et al. "Association Between Lifestyle Factors, Vitamin and Garlic Supplementation, and Gastric Cancer Outcomes: A Secondary Analysis of a Randomized Clinical Trial." *JAMA Netw Open*. 2020;3(6):e206628. doi: [10.1001/jamanetworkopen.2020.6628](https://doi.org/10.1001/jamanetworkopen.2020.6628). PMID: 32589229. https://pubmed.ncbi.nlm.nih.gov/32589229/
 
-[27] Nantz MP, Rowe CA, Muller CE, Creasy RA, Stanilka JM, Percival SS. "Supplementation with aged garlic extract improves both NK and γδ-T cell function and reduces the severity of cold and flu symptoms: a randomized, double-blind, placebo-controlled nutrition intervention." *Clin Nutr*. 2012;31(3):337-344. doi: [10.1016/j.clnu.2011.11.019](https://doi.org/10.1016/j.clnu.2011.11.019)
+[34] Gail MH, et al. "Factorial trial of three interventions to reduce the progression of precancerous gastric lesions in Shandong, China: design issues and initial data." *Control Clin Trials*. 1998. doi: [10.1016/s0197-2456(98)00016-6](https://doi.org/10.1016/s0197-2456(98)00016-6). PMID: 9683311. https://pubmed.ncbi.nlm.nih.gov/9683311/
 
-[28] Arreola R, Quintero-Fabián S, López-Roa RI, et al. "Immunomodulation and Anti-Inflammatory Effects of Garlic Compounds." *J Immunol Res*. 2015;2015:401630. doi: [10.1155/2015/401630](https://doi.org/10.1155/2015/401630)
+[35] Zhou X, Qian H, Zhang D, Zeng L. "Garlic intake and the risk of colorectal cancer: A meta-analysis." *Medicine (Baltimore)*. 2020;99(1):e18575. doi: [10.1097/MD.0000000000018575](https://doi.org/10.1097/MD.0000000000018575). PMID: 31895803. https://pubmed.ncbi.nlm.nih.gov/31895803/
 
-[29] Lissiman E, Bhasale AL, Cohen M. "Garlic for the common cold." *Cochrane Database Syst Rev*. 2014;(11):CD006206. doi: [10.1002/14651858.CD006206.pub4](https://doi.org/10.1002/14651858.CD006206.pub4)
+[36] Moosavian SP, Paknahad Z, Habiri M, Mahaki B. "The effects of garlic (Allium sativum) supplementation on inflammatory biomarkers, fatigue, and clinical symptoms in patients with active rheumatoid arthritis." *Phytother Res*. 2020;34(11):2953-2962. doi: [10.1002/ptr.6723](https://doi.org/10.1002/ptr.6723). PMID: 32478922. https://pubmed.ncbi.nlm.nih.gov/32478922/
 
-[30] Tsai Y, Cole LL, Davis LE, Lockwood SJ, Simmons V, Wild GC. "Antiviral properties of garlic: in vitro effects on influenza B, herpes simplex and coxsackie viruses." *Planta Med*. 1985;51(5):460-461. doi: [10.1055/s-2007-969553](https://doi.org/10.1055/s-2007-969553)
+[40] Hatfield J, Saad S, Housewright C. "Dietary supplements and bleeding." *Proc (Bayl Univ Med Cent)*. 2022;35(6):802-807. doi: [10.1080/08998280.2022.2089854](https://doi.org/10.1080/08998280.2022.2089854). PMID: 36304597. https://pubmed.ncbi.nlm.nih.gov/36304597/
 
-[31] Weber ND, Andersen DO, North JA, Murray BK, Lawson LD, Hughes BG. "In vitro virucidal effects of Allium sativum (garlic) extract and compounds." *Planta Med*. 1992;58(5):417-423. doi: [10.1055/s-2006-961504](https://doi.org/10.1055/s-2006-961504)
+[41] Rose KD, Croissant PD, Parliament CF, Levin MB. "Spontaneous spinal epidural hematoma with associated platelet dysfunction from excessive garlic ingestion: a case report." *Neurosurgery*. 1990;26(5):880-882. doi: [10.1097/00006123-199005000-00026](https://doi.org/10.1097/00006123-199005000-00026). PMID: 2352608. https://pubmed.ncbi.nlm.nih.gov/2352608/
 
-[32] Thuy BTP, My TTA, Hai NTT, et al. "Investigation into SARS-CoV-2 Resistance of Compounds in Garlic Essential Oil." *ACS Omega*. 2020;5(14):8312-8320. doi: [10.1021/acsomega.0c00772](https://doi.org/10.1021/acsomega.0c00772)
+[42] Woodbury A, Sniecinski R. "Garlic-Induced Surgical Bleeding: How Much Is Too Much?" *A A Case Rep*. 2016;7(12):266-269. doi: [10.1213/XAA.0000000000000403](https://doi.org/10.1213/XAA.0000000000000403). PMID: 27782907. https://pubmed.ncbi.nlm.nih.gov/27782907/
 
-[33] Guo Y, Li ZX, Zhang JY, et al. "Association Between Lifestyle Factors, Vitamin and Garlic Supplementation, and Gastric Cancer Outcomes: A Secondary Analysis of a Randomized Clinical Trial." *JAMA Netw Open*. 2020;3(6):e206628. doi: [10.1001/jamanetworkopen.2020.6628](https://doi.org/10.1001/jamanetworkopen.2020.6628)
+[44] Hitl M, Kladar N, Gavarić N, et al. "Garlic burn injuries—a systematic review of reported cases." *Am J Emerg Med*. 2021;44:5-10. doi: [10.1016/j.ajem.2021.01.039](https://doi.org/10.1016/j.ajem.2021.01.039). PMID: 33571752. https://pubmed.ncbi.nlm.nih.gov/33571752/
 
-[34] Gail MH, You WC, Chang YS, et al. "Factorial trial of three interventions to reduce the progression of precancerous gastric lesions in Shandong, China: design issues and initial data." *J Nutr*. 2006;136(3 Suppl):804S-808S. doi: [10.1093/jn/136.3.804S](https://doi.org/10.1093/jn/136.3.804S)
+[46] Piscitelli SC, Burstein AH, Welden N, Gallicano KD, Falloon J. "The effect of garlic supplements on the pharmacokinetics of saquinavir." *Clin Infect Dis*. 2002;34(2):234-238. doi: [10.1086/324351](https://doi.org/10.1086/324351). PMID: 11740713. https://pubmed.ncbi.nlm.nih.gov/11740713/
 
-[35] Zhou X, Qian H, Zhang D, Zeng L. "Garlic intake and the risk of colorectal cancer: A meta-analysis." *Medicine (Baltimore)*. 2020;99(1):e18575. doi: [10.1097/MD.0000000000018575](https://doi.org/10.1097/MD.0000000000018575)
+[48] Ried K, Toben C, Fakler P. "Effect of garlic on serum lipids: an updated meta-analysis." *Nutr Rev*. 2013;71(5):282-299. doi: [10.1111/nure.12012](https://doi.org/10.1111/nure.12012). PMID: 23590705. https://pubmed.ncbi.nlm.nih.gov/23590705/
 
-[36] Moosavian SP, Paknahad Z, Habiri M, Mahaki B. "The effects of garlic (Allium sativum) supplementation on inflammatory biomarkers, fatigue, and clinical symptoms in patients with active rheumatoid arthritis." *Phytother Res*. 2020;34(11):2953-2962. doi: [10.1002/ptr.6723](https://doi.org/10.1002/ptr.6723)
+[49] Crawford C, Brown LL, Costello RB, et al. "Select dietary supplement ingredients for preserving and protecting the immune system in healthy individuals: a systematic review." *Nutrients*. 2022;14(21):4604. doi: [10.3390/nu14214604](https://doi.org/10.3390/nu14214604). PMID: 36364865. https://pubmed.ncbi.nlm.nih.gov/36364865/
 
-[37] Grokipedia evidence synthesis: meta-analyses of garlic on oxidative stress markers. Supported by multiple RCTs showing improved total antioxidant capacity and decreased malondialdehyde levels.
+[50] Alam A, Jahan AAA, Bari MS, et al. "Allium vegetables: traditional uses, phytoconstituents, and beneficial effects in inflammation and cancer." *Crit Rev Food Sci Nutr*. 2023;63(23):6580-6614. doi: [10.1080/10408398.2022.2036096](https://doi.org/10.1080/10408398.2022.2036096). PMID: 35170391. https://pubmed.ncbi.nlm.nih.gov/35170391/
 
-[38] Grokipedia evidence synthesis: antimicrobial properties of garlic. Supported by in vitro and clinical studies on *S. aureus*, *C. albicans*, MRSA, *H. pylori*, and *P. gingivalis*.
+[51] Gardner CD, Lawson LD, Block E, et al. "Effect of raw garlic vs commercial garlic supplements on plasma lipid concentrations in adults with moderate hypercholesterolemia: a randomized clinical trial." *Arch Intern Med*. 2007;167(4):346-353. doi: [10.1001/archinte.167.4.346](https://doi.org/10.1001/archinte.167.4.346). PMID: 17325296. https://pubmed.ncbi.nlm.nih.gov/17325296/
 
-[39] Hitl M, Kladar N, Gavarić N, et al. "Garlic burn injuries—a systematic review of reported cases." *Am J Emerg Med*. 2021;44:5-10. doi: [10.1016/j.ajem.2021.01.039](https://doi.org/10.1016/j.ajem.2021.01.039) (Also covers allergic reactions to garlic).
+[52] Macan H, et al. "Aged garlic extract may be safe for patients on warfarin therapy." *J Nutr*. 2006. doi: [10.1093/jn/136.3.793S](https://doi.org/10.1093/jn/136.3.793S). PMID: 16484565. https://pubmed.ncbi.nlm.nih.gov/16484565/
 
-[40] Abebe W. "Review of herbal medications with the potential to cause bleeding: dental implications, and risk prediction and prevention avenues." *EPMA J*. 2019;10(1):51-64. doi: [10.1007/s13167-018-0158-2](https://doi.org/10.1007/s13167-018-0158-2); Hatfield J, Saad S, Housewright C. "Dietary supplements and bleeding." *Proc (Bayl Univ Med Cent)*. 2022;35(6):802-807. doi: [10.1080/08998280.2022.2089854](https://doi.org/10.1080/08998280.2022.2089854)
+[53] Ma JL, et al. "Fifteen-year effects of Helicobacter pylori, garlic, and vitamin treatments on gastric cancer incidence and mortality." *J Natl Cancer Inst*. 2012. doi: [10.1093/jnci/djs003](https://doi.org/10.1093/jnci/djs003). PMID: 22271764. https://pubmed.ncbi.nlm.nih.gov/22271764/
 
-[41] Rose KD, Croissant PD, Parliament CF, Levin MB. "Spontaneous spinal epidural hematoma with associated platelet dysfunction from excessive garlic ingestion: a case report." *Neurosurgery*. 1990;26(5):880-882. doi: [10.1097/00006123-199005000-00026](https://doi.org/10.1097/00006123-199005000-00026)
+[54] Salimzadeh A, et al. "The effect of 12-week garlic supplementation on symptom relief in overweight or obese women with knee osteoarthritis." *Int J Clin Pract*. 2018. doi: [10.1111/ijcp.13208](https://doi.org/10.1111/ijcp.13208). PMID: 29790635. https://pubmed.ncbi.nlm.nih.gov/29790635/
 
-[42] Woodbury A, Sniecinski R. "Garlic-Induced Surgical Bleeding: How Much Is Too Much?" *A A Case Rep*. 2016;7(12):266-269. doi: [10.1213/XAA.0000000000000404](https://doi.org/10.1213/XAA.0000000000000404)
-
-[43] Nair RG, Keehn A. "Hematuria following photovaporization of prostate in a patient consuming excessive garlic supplements." *Urol Case Rep*. 2023;47:102330. doi: [10.1016/j.eucr.2023.102330](https://doi.org/10.1016/j.eucr.2023.102330)
-
-[44] Hitl M, Kladar N, Gavarić N, et al. "Garlic burn injuries—a systematic review of reported cases." *Am J Emerg Med*. 2021;44:5-10. doi: [10.1016/j.ajem.2021.01.039](https://doi.org/10.1016/j.ajem.2021.01.039)
-
-[45] Warfarin Prescribing Information. Bristol-Myers Squibb. 2011. (Recommends INR monitoring when starting or discontinuing garlic supplements.)
-
-[46] Piscitelli SC, Burstein AH, Welden N, Gallicano KD, Falloon J. "The effect of garlic supplements on the pharmacokinetics of saquinavir." *Clin Infect Dis*. 2002;34(2):234-238. doi: [10.1086/324351](https://doi.org/10.1086/324351)
-
-[47] Grokipedia: "Studies from the early 2000s demonstrated decreases in saquinavir levels by up to 50% after short-term garlic supplementation." Supported by: Piscitelli et al., *Clin Infect Dis*, 2002.
-
-[48] Ried K, Toben C, Fakler P. "Effect of garlic on serum lipids: an updated meta-analysis." *Nutr Rev*. 2013;71(5):282-299. doi: [10.1111/nure.12012](https://doi.org/10.1111/nure.12012)
-
-[49] Crawford C, Brown LL, Costello RB, et al. "Select dietary supplement ingredients for preserving and protecting the immune system in healthy individuals: a systematic review." *Nutrients*. 2022;14(21):4604. doi: [10.3390/nu14214604](https://doi.org/10.3390/nu14214604)
-
-[50] Alam A, Jahan AAA, Bari MS, et al. "Allium vegetables: traditional uses, phytoconstituents, and beneficial effects in inflammation and cancer." *Crit Rev Food Sci Nutr*. 2023;63(23):6580-6614. doi: [10.1080/10408398.2022.2036096](https://doi.org/10.1080/10408398.2022.2036096)
+[55] Dehghani S, et al. "The effect of a garlic supplement on the pro-inflammatory adipocytokines, resistin and tumor necrosis factor-alpha, and on pain severity, in overweight or obese women with knee osteoarthritis." *Phytomedicine*. 2018. doi: [10.1016/j.phymed.2018.04.060](https://doi.org/10.1016/j.phymed.2018.04.060). PMID: 30195882. https://pubmed.ncbi.nlm.nih.gov/30195882/
