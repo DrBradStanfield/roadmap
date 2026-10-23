@@ -60,7 +60,7 @@ struct MyDataView: View {
             if let data = store.myData {
                 List {
                     aboutYou(data)
-                    metrics(data.vitals) { header(.vitals()) { units(data) } }
+                    vitals(data)
                     metrics(data.bloodTests) { SectionTitle.bloodTests() }
                     MedicationsSection(store: store, data: data, saved: saved)
                     ScreeningsSection(store: store, data: data, saved: saved, open: open)
@@ -158,18 +158,35 @@ struct MyDataView: View {
 
     private func metrics(_ rows: [MyData.Row], @ViewBuilder header: () -> some View) -> some View {
         Section {
-            ForEach(rows) { row in
-                // A unit switch still landing would open a sheet on the old choices (AC17e).
-                Button { open(row) } label: {
-                    ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
-                             trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0])
-                }
-                .tint(.primary)
-                .disabled(store.unitSwitches > 0)
-            }
+            ForEach(rows) { metric($0) }
         } header: {
             header()
         }
+    }
+
+    /// Vitals as Apple Health's cards (Brad 2026-10-23): each its own tile, a gap between;
+    /// a value with a reading shows large with its trend, one with none says Add.
+    @ViewBuilder
+    private func vitals(_ data: MyData) -> some View {
+        ForEach(Array(data.vitals.enumerated()), id: \.element.id) { index, row in
+            Section {
+                metric(row, card: row.latest != nil)
+            } header: {
+                if index == 0 { header(.vitals()) { units(data) } }
+            }
+            .listSectionSpacing(.compact)
+        }
+    }
+
+    private func metric(_ row: MyData.Row, card: Bool = false) -> some View {
+        // A unit switch still landing would open a sheet on the old choices (AC17e).
+        Button { open(row) } label: {
+            ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
+                     trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0].softInDark,
+                     card: card ? MetricChart.symbol(for: row.metric) : nil)
+        }
+        .tint(.primary)
+        .disabled(store.unitSwitches > 0)
     }
 
     /// A value with any history opens its page; one with none opens entry (AC9).
@@ -231,15 +248,60 @@ private struct ValueRow: View {
     /// The recent days, drawn small beside the value (AC17d).
     var trend: [Double] = []
     var tint: Color = .blue
+    /// Drawn as an Apple Health card under this symbol: name and day on top, the value
+    /// large below with a larger trend beside it.
+    var card: String?
     @Environment(\.dynamicTypeSize) private var textSize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Counts the value's own changes: a new value in the same unit, not a units switch (review R3).
     @State private var bounces = 0
     @State private var shownUnit: String?
 
     var body: some View {
-        // Centred on the row (Brad 2026-10-23): on the label's first line, a dated value sat high.
-        LabelValue.layout(textSize, alignment: .center).callAsFunction {
+        Group {
+            if let card, let value { cardBody(card, value: value) } else { rowBody }
+        }
+        .animation(.snappy, value: value)
+        .onChange(of: value) {
+            if shownUnit == nil || shownUnit == unit { bounces += 1 }
+            shownUnit = unit
+        }
+        .onAppear { shownUnit = unit }
+        .contentShape(Rectangle())
+    }
+
+    private func cardBody(_ symbol: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label(label, systemImage: symbol)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(tint)
+                Spacer()
+                if let day {
+                    Text(DayText.short(day)).font(.footnote).foregroundStyle(.secondary)
+                }
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+            }
+            HStack(alignment: .bottom) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(value)
+                        .font(.system(.title, design: .rounded).weight(.semibold))
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                        .modifier(Bounce(trigger: bounces, anchor: .leading))
+                    Text(unit).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 12)
+                if !textSize.isAccessibilitySize {
+                    Sparkline(points: trend, tint: tint, size: CGSize(width: 110, height: 40))
+                }
+            }
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var rowBody: some View {
+        LabelValue.layout(textSize).callAsFunction {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                 if let day {
@@ -260,13 +322,6 @@ private struct ValueRow: View {
                 }
             }
         }
-        .animation(.snappy, value: value)
-        .onChange(of: value) {
-            if shownUnit == nil || shownUnit == unit { bounces += 1 }
-            shownUnit = unit
-        }
-        .onAppear { shownUnit = unit }
-        .contentShape(Rectangle())
     }
 
     @ViewBuilder
@@ -275,22 +330,34 @@ private struct ValueRow: View {
             .font(.body.weight(.semibold))
             .monospacedDigit()
             .contentTransition(.numericText())
-            // A small spring when a new value arrives, saved here or synced in (AC17d); not on a
-            // units switch. Still under Reduce Motion.
-            .keyframeAnimator(initialValue: 1.0, trigger: bounces) { content, scale in
-                content.scaleEffect(reduceMotion ? 1 : scale, anchor: .trailing)
-            } keyframes: { _ in
-                SpringKeyframe(1.15, duration: 0.15, spring: .snappy)
-                SpringKeyframe(1.0, spring: .bouncy)
-            }
+            .modifier(Bounce(trigger: bounces, anchor: .trailing))
         Text(unit).font(.subheadline).foregroundStyle(.secondary)
+    }
+}
+
+/// A small spring when a new value arrives, saved here or synced in (AC17d); not on a
+/// units switch. Still under Reduce Motion.
+private struct Bounce: ViewModifier {
+    let trigger: Int
+    let anchor: UnitPoint
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content.keyframeAnimator(initialValue: 1.0, trigger: trigger) { content, scale in
+            content.scaleEffect(reduceMotion ? 1 : scale, anchor: anchor)
+        } keyframes: { _ in
+            SpringKeyframe(1.15, duration: 0.15, spring: .snappy)
+            SpringKeyframe(1.0, spring: .bouncy)
+        }
     }
 }
 
 /// A row's label and value: side by side, stacked at accessibility text sizes so
 /// neither is squeezed into a broken word. Used by My data and the metric page.
 enum LabelValue {
-    static func layout(_ size: DynamicTypeSize, alignment: VerticalAlignment = .firstTextBaseline) -> AnyLayout {
-        size.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(alignment: alignment))
+    /// Side by side, the value centred on the row (Brad 2026-10-23): on the label's first
+    /// line, a value whose label has a day or a note under it sat high.
+    static func layout(_ size: DynamicTypeSize) -> AnyLayout {
+        size.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(alignment: .center))
     }
 }

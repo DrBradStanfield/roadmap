@@ -50,6 +50,16 @@ struct MetricChart: View {
         }
     }
 
+    /// Apple Health's symbol for a metric's card.
+    static func symbol(for metric: String) -> String {
+        switch metric {
+        case MyData.bloodPressure: "heart.fill"
+        case "weight": "scalemass.fill"
+        case "waist": "figure.arms.open"
+        default: "drop.fill"
+        }
+    }
+
     var body: some View {
         Chart {
             ForEach(points) { point in
@@ -77,7 +87,10 @@ struct MetricChart: View {
         .modifier(XDomain(window: window, scrolledTo: $scrolledTo, days: points.map(\.date)))
         .chartXSelection(value: $finger)
         .onChange(of: finger) {
-            let day = finger.flatMap { ChartRange.nearest(to: $0, in: points.map(\.date)) }
+            // On a scrolling range, only the days in view: a finger in a gap never picks one off screen.
+            let days = points.map(\.date)
+            let inView = window.map { window in days.filter { $0 >= scrolledTo && $0 <= scrolledTo.addingTimeInterval(window) } } ?? days
+            let day = finger.flatMap { ChartRange.nearest(to: $0, in: inView) }
             if day != selected { selected = day }
         }
         .sensoryFeedback(.selection, trigger: selected) { _, new in new != nil }
@@ -105,6 +118,21 @@ struct MetricChart: View {
         .padding(.vertical, 6)
         .background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
         .accessibilityHidden(true)
+    }
+}
+
+extension Color {
+    /// The same hue, calmer on a dark background (Brad 2026-10-23: system red and purple
+    /// glare on black); unchanged in light mode.
+    var softInDark: Color {
+        let base = UIColor(self)
+        return Color(uiColor: UIColor { traits in
+            let color = base.resolvedColor(with: traits)
+            guard traits.userInterfaceStyle == .dark else { return color }
+            var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0, alpha: CGFloat = 0
+            guard color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha) else { return color }
+            return UIColor(hue: hue, saturation: saturation * 0.6, brightness: brightness * 0.9, alpha: alpha)
+        })
     }
 }
 

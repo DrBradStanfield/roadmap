@@ -68,9 +68,7 @@ struct MetricDetailView: View {
                 .disabled(store.unitSwitches > 0)
             }
         }
-        .sheet(item: $editing) { editing in
-            EditingSheet(store: store, editing: editing, saved: saved) { self.editing = $0 }
-        }
+        .editingSheet($editing, store: store, saved: saved)
         .alert("Not saved", isPresented: Binding(get: { lpaRefusal != nil }, set: { if !$0 { lpaRefusal = nil } })) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -81,7 +79,8 @@ struct MetricDetailView: View {
     /// This metric's row in My data now, so a units switch shows at once.
     static func live(_ row: MyData.Row, in store: RecordStore) -> MyData.Row? {
         guard let data = store.myData else { return nil }
-        return (data.vitals + data.bloodTests + [data.psa]).first { $0.metric == row.metric }
+        return data.vitals.first { $0.metric == row.metric } ?? data.bloodTests.first { $0.metric == row.metric }
+            ?? (data.psa.metric == row.metric ? data.psa : nil)
     }
 
     // MARK: Chart
@@ -93,7 +92,7 @@ struct MetricDetailView: View {
         let shown = offered.contains(range) ? range : .all
         // The window ends on the newest value, not today: a weight from months ago fills the chart.
         let newest = days.max()
-        let opening = newest.flatMap { shown.start(today: $0) }
+        let opening = newest.flatMap { shown.start(ending: $0) }
         let window = newest.flatMap { newest in opening.map { newest.timeIntervalSince($0) } }
         let latest = history.rows.first(where: \.isActive)
         return Section {
@@ -113,11 +112,14 @@ struct MetricDetailView: View {
                 }
             }
             .padding(.vertical, 6)
-            .onAppear { if let opening { scrolledTo = opening } }
+            // Opens on the newest value; coming back from Show All Data keeps where it was scrolled.
+            .onAppear { if let opening, scrolledTo == .distantPast { scrolledTo = opening } }
             .onChange(of: shown) {
                 scrubbed = nil
                 if let opening { scrolledTo = opening }
             }
+            // A newer value just added: show it.
+            .onChange(of: newest) { if let opening { scrolledTo = opening } }
         }
     }
 
@@ -216,8 +218,17 @@ private struct AllDataView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("All Recorded Data")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $editing) { editing in
-            EditingSheet(store: store, editing: editing, saved: saved) { self.editing = $0 }
+        .editingSheet($editing, store: store, saved: saved)
+    }
+}
+
+private extension View {
+    /// Presents a new value's or a correction's sheet; a correction reopens on its new screen
+    /// when Lp(a)'s unit changes in it.
+    func editingSheet(_ editing: Binding<MetricDetailView.Editing?>, store: RecordStore,
+                      saved: @escaping (RecordStore.ApplyResult) -> RecordStore.ApplyResult) -> some View {
+        sheet(item: editing) { item in
+            EditingSheet(store: store, editing: item, saved: saved) { editing.wrappedValue = $0 }
         }
     }
 }
@@ -231,12 +242,12 @@ private struct EditingSheet: View {
     let reopen: (MetricDetailView.Editing) -> Void
 
     var body: some View {
-        sheet.presentationDetents([.medium, .large])
+        content.presentationDetents([.medium, .large])
     }
 
+    // The row as it was tapped: its unit is the one a typed value is read in (AC17e).
     @ViewBuilder
-    private var sheet: some View {
-        // The row as it was tapped: its unit is the one a typed value is read in (AC17e).
+    private var content: some View {
         switch editing {
         case .add(let shown, let seen):
             MetricEntrySheet(store: store, row: shown, seen: seen, saved: saved)

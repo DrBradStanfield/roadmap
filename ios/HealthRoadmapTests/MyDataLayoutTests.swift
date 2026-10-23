@@ -85,9 +85,9 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(ChartRange.offered(for: dense), [.week, .month, .sixMonths, .all])
     }
 
-    func testTheWeekStartsSixDaysBeforeToday() {
-        XCTAssertEqual(ChartRange.week.start(today: day("2026-10-21")), day("2026-10-15"))
-        XCTAssertNil(ChartRange.all.start(today: day("2026-10-21")))
+    func testTheWeekStartsSixDaysBeforeItsLastDay() {
+        XCTAssertEqual(ChartRange.week.start(ending: day("2026-10-21")), day("2026-10-15"))
+        XCTAssertNil(ChartRange.all.start(ending: day("2026-10-21")))
     }
 
     func testScrubbingPicksTheNearestValue() {
