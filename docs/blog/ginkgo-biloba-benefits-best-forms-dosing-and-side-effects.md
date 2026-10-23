@@ -19,13 +19,13 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- Ginkgo may raise bleeding risk in people on anticoagulants such as warfarin [2][24]. Case reports include serious bleeds, though trials found no rise in bleeding risk on clotting tests [37][38]. For face drooping, arm or leg weakness or numbness, trouble speaking, or vision loss, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Ginkgo may raise bleeding risk with anticoagulants such as warfarin [2][24]. Case reports include serious bleeds, though clotting tests in trials found no rise [37][38]. For signs of a stroke or brain bleed (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Stop nonessential supplements, ginkgo included, 2 weeks before surgery [24].
-- In people with epilepsy, case reports link ginkgo to returning seizures, one of them fatal [39][40]. If a seizure lasts more than 5 minutes, or seizures come back to back, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- Ginkgo may interact with other drugs. Case reports link it to coma with trazodone and possible HIV treatment failure with efavirenz, and it sped up omeprazole breakdown in a small study [2][42][49][50]. If you take any medicine, ask your doctor or pharmacist first.
+- In epilepsy, case reports link ginkgo to returning seizures, one fatal [39][40]. If a seizure lasts more than 5 minutes, or seizures come back to back, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Ginkgo may interact with other drugs. Case reports link it to coma with trazodone and possible HIV treatment failure with efavirenz; a small study found faster omeprazole breakdown [2][42][49][50]. On any medicine, ask your doctor or pharmacist first.
 - Ginkgo may be unsafe in pregnancy: it might cause early labor or extra bleeding at delivery. Little is known about breastfeeding [2].
-- Ginkgo seeds, raw or roasted, can be poisonous and have caused seizures in children [2][43]. If anyone has a seizure after eating them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- The most common side effects are dizziness, stomach and bowel symptoms, and headache [2].
+- Ginkgo seeds, raw or roasted, can be poisonous and have caused seizures in children [2][43]. For a seizure after eating them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- The most common side effects of leaf extract are dizziness, stomach and bowel symptoms, and headache [2].
 
 ## Brad's videos on this topic
 
@@ -232,7 +232,7 @@ Ginkgo may raise bleeding risk in people who take anticoagulant drugs such as wa
 - **Anticoagulants and surgery:** A 2022 review linked ginkgo to bleeding risk in people on anticoagulants, found conflicting evidence on bleeding risk overall, and advised stopping nonessential supplements 2 weeks before surgery (Hatfield et al., Proceedings of Baylor University Medical Center, 2022) [24].
 - **Bleeding disorders:** People with known bleeding risks should be told about a possible rise in bleeding risk [38].
 
-For face drooping, arm or leg weakness or numbness, trouble speaking, or vision loss, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Dermatologic Reactions
 
@@ -283,7 +283,7 @@ Ginkgo may interact with other drugs, and NCCIH advises anyone who takes medicin
 |------|:-:|:-:|
 | Warfarin and other anticoagulants | Ginkgo may increase bleeding risk | Linked to bleeding in people on anticoagulants [2][24] |
 | Aspirin, clopidogrel and other antiplatelet drugs | EGb 761 inhibits platelet aggregation [45], so effects may add up | Ask your doctor before combining |
-| Ibuprofen | A fatal brain bleed was reported in a person taking ginkgo and ibuprofen [52] | Ask your doctor before combining |
+| Ibuprofen | A case report described a fatal brain bleed in a person taking ginkgo and ibuprofen [52] | Ask your doctor before combining |
 
 Trials of clotting tests did not show a higher bleeding risk, but case reports include serious bleeds [37][38]. If you take a blood thinner, check with your doctor or anticoagulation clinic before taking ginkgo.
 
@@ -301,7 +301,7 @@ In 18 healthy Chinese adults, 12 days of ginkgo at 140 mg twice daily lowered bl
 
 Studies of midazolam, a test drug cleared by CYP3A, disagree: ginkgo lowered its levels by 34% in one and raised them by 25% in another [53][54]. A study of a standardised extract found no relevant effect on the major CYP enzymes [55].
 
-In a case report, a patient on the same efavirenz-containing HIV regimen for 10 years had virological breakthrough (rising virus levels despite treatment), which a drug-herb interaction with ginkgo may have caused; ginkgo can induce the liver enzymes that break down efavirenz [50]. The authors advise avoiding this combination when possible [50].
+In a case report, a patient on the same efavirenz-containing HIV regimen for 10 years had virological breakthrough (rising virus levels despite treatment), which a drug-herb interaction with ginkgo may have caused [50]. The authors note that constituents of ginkgo extract have been shown to induce gene expression of CYP450 enzymes (switch on the genes that make them), which may lower efavirenz levels [50]. The authors advise avoiding this combination when possible [50].
 
 ### Serotonergic Medications
 

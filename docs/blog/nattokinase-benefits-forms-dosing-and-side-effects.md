@@ -6,7 +6,7 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["nattokinase", "fibrinolytic", "cardiovascular", "blood clot", "blood pressure", "hypertension", "cholesterol", "ldl", "hdl", "triglycerides", "atherosclerosis", "stroke", "heart attack", "deep vein thrombosis", "inflammation", "cognitive", "brain health", "dementia", "alzheimer", "natto", "vitamin k", "blood sugar", "insulin resistance", "aging", "longevity"]
-summary: "Nattokinase is an enzyme from natto. Small trials found changes in clotting markers and small blood pressure falls, but a 3-year trial, the cholesterol trials and one cognition trial found no benefit. Bleeding is the main risk. Talk to your doctor first if you take blood thinners or aspirin."
+summary: "Nattokinase is an enzyme from natto. Small trials found changes in clotting markers and small blood pressure falls, but a 3-year trial, randomized cholesterol trials and one cognition trial found no benefit. Bleeding is the main risk. Talk to your doctor first if you take blood thinners or aspirin."
 reviewed: "2026-10-23"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33843667/","checked":"2026-10-23","fingerprint":"sha256:8bc79d76e03cb8c56399866f303698a69f39950839becae0af428092c795ef0a"}]
 ---
@@ -20,7 +20,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - Nattokinase may add to the effect of blood thinners and antiplatelet drugs. A patient on aspirin had a bleed in the cerebellum (part of the brain) after a week of nattokinase 400 mg a day [53]. Do not combine them unless your doctor agrees.
-- An elderly woman taking nattokinase bled into her abdomen and died [52]. For signs of a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, or vision loss that has not recovered), bleeding that will not stop, or a suspected bleed inside the abdomen, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [52][53].
+- An elderly woman taking nattokinase bled into her abdomen and died [52]. For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Call it too for bleeding that will not stop or a suspected bleed inside the abdomen [52][53].
 - Natto is rich in vitamin K2 (MK-7), and MK-7 as low as 10 mcg a day lowered INR in some healthy volunteers on a warfarin-type drug [23][60]. A lower INR means the drug is working less well. If you take warfarin, check with your doctor or anticoagulation clinic before taking nattokinase or eating natto.
 - Anaphylaxis from nattokinase has been reported in a patient with natto allergy [55]. For trouble breathing, swelling of the face or throat, or fainting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 - Nattokinase may lower blood pressure by a few mmHg [33]. If you have low blood pressure or take blood pressure medicines, talk to your doctor first.
@@ -230,7 +230,7 @@ Bleeding is the main safety concern. Nattokinase breaks down fibrin, and a singl
 
 **Fatal hemoperitoneum:** An elderly woman taking nattokinase developed bleeding into the abdominal cavity (hemoperitoneum) and died, and the authors warned against taking nattokinase [52].
 
-**Intracerebral hemorrhage:** A patient taking aspirin to prevent another stroke had a bleed in the cerebellum after taking nattokinase 400 mg a day for 7 days [53]. Brain scans also showed multiple small old bleeds (microbleeds), and the authors suggested nattokinase may raise the risk of brain bleeding in people with fragile small brain vessels who also take another antithrombotic drug [53]. For signs of a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, or vision loss that has not recovered), bleeding that will not stop, or a suspected bleed inside the abdomen, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+**Intracerebral hemorrhage:** A patient taking aspirin to prevent another stroke had a bleed in the cerebellum after taking nattokinase 400 mg a day for 7 days [53]. Brain scans also showed multiple small old bleeds (microbleeds), and the authors suggested nattokinase may raise the risk of brain bleeding in people with fragile small brain vessels who also take another antithrombotic drug [53]. For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Call it too for bleeding that will not stop or a suspected bleed inside the abdomen.
 
 **Theoretical risk of clot embolization:** In theory, breaking up an existing clot could let a piece travel to the lungs or heart.
 

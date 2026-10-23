@@ -6,7 +6,7 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["glutathione", "NAC", "n-acetyl cysteine", "antioxidant", "detox", "liver", "immune", "skin", "aging", "longevity", "inflammation", "glycine", "cysteine", "whey protein", "alpha lipoic acid", "vitamin c", "liposomal glutathione", "s-acetyl glutathione", "reduced glutathione", "oxidative stress", "diabetes", "insulin resistance", "cognitive", "brain health", "alzheimer", "skin lightening", "anti-aging", "liver health"]
-summary: "Reference on glutathione. Brad's view: levels decline rapidly from the age of 45, and he plans GlyNAC (the precursors glycine and NAC) at 1 g from 45 rather than antioxidant pills, calling the evidence early. Talk to your doctor first if you take nitrates or are having cancer treatment."
+summary: "Reference on glutathione. Brad's view: levels decline rapidly from the age of 45, and he plans GlyNAC (the precursors glycine and NAC) at 1 g from 45 rather than vitamin A or E, calling the evidence early. Talk to your doctor first if you take nitrates or are having cancer treatment."
 reviewed: "2026-10-23"
 sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read","checked":"2026-10-23","fingerprint":"publishedAt:2026-02-03T00:32:28Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-10-23","fingerprint":"publishedAt:2024-11-19T03:13:05Z"}]
 ---
@@ -216,7 +216,7 @@ Oxidative stress and poor blood vessel lining (endothelial) function contribute 
 
 **Endothelial function:** The GlyNAC trials found better endothelial function in older adults [10][21]. In 16 people having heart catheterisation, NAC infused into the arteries improved the widening of coronary and leg arteries in response to acetylcholine, a test of endothelial function [65].
 
-**Homocysteine reduction:** In a study of 40 healthy adults, oral NAC at 600 or 1,800 mg a day lowered plasma homocysteine, with larger effects at the higher dose [66].
+**Homocysteine reduction:** In a study of 40 healthy adults, oral NAC at 600 or 1,800 mg a day lowered plasma homocysteine, and the effect appeared larger at the higher dose [66].
 
 **Contrast-induced nephropathy prevention:** NAC has been tested to prevent kidney injury from contrast dye. A meta-analysis of 22 trials with 2,746 patients found that 18 larger, later trials showed no benefit, while 4 early, small, lower-quality trials suggested a large benefit [67]. In the ACT trial of 2,308 patients, NAC 1,200 mg, taken twice before and twice after the procedure, did not prevent kidney injury (12.7% in both groups) [68].
 
@@ -288,7 +288,7 @@ The GlyNAC trials used weight-based doses of glycine and NAC, taken daily for 16
 
 ### Oral Glutathione
 
-In trials lasting 4 to 12 weeks, oral glutathione was well tolerated [61][80]. In a 12-week trial in women, itching, red patches or spots on the skin and tiredness were reported, about as often as with placebo, and there were no serious side effects [80]. Two people had a rise in liver enzymes that returned to normal within a few weeks after they stopped; the authors advise blood tests even for over-the-counter supplements [80].
+In trials lasting 4 to 12 weeks, oral glutathione was well tolerated [61][80]. In a 12-week trial in women, itching, red patches or spots on the skin and tiredness were reported, about as often as with placebo, and there were no serious side effects [80]. Two people had a rise in liver enzymes that promptly returned to normal once they stopped; the authors advise blood tests even for over-the-counter supplements [80].
 
 Long-term safety has not been established [61].
 
@@ -304,14 +304,14 @@ Taken by mouth, NAC is generally safe and well tolerated, while the intravenous 
 
 ### Intravenous Glutathione
 
-IV glutathione carries risks that oral glutathione does not. Harms reported to the Philippine FDA include [85]:
+IV glutathione carries risks that oral glutathione does not. Harms documented in the Philippines include [85]:
 
 - Skin reactions, including potentially fatal Stevens-Johnson syndrome and toxic epidermal necrolysis
 - Severe abdominal pain
 - Thyroid and kidney problems
 - Air embolism or potentially fatal sepsis from unsterile injection or counterfeit products
 
-In the one trial of IV glutathione for skin lightening, liver problems were the main side effect reported, though the trial did not describe them [85]. These harms followed off-label IV use for skin lightening, and the Philippine FDA has warned the public against it [60][85]. If a blistering or peeling rash appears after an injection, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [85].
+In the one trial of IV glutathione for skin lightening, liver problems were the main side effect reported, but reviewers doubt this finding because the liver problems were neither qualified nor quantified [85]. These harms followed off-label IV use for skin lightening, and the Philippine FDA has warned the public against it [60][85]. If a blistering or peeling rash appears after an injection, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [85].
 
 ### Theoretical Cancer Concern
 

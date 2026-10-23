@@ -257,7 +257,7 @@ The following table lists medications whose levels or effects St. John's wort ha
 
 Sources: NCCIH [2], Nicolussi et al. (2020) [10], Soleymani et al. (2017) [11], Henderson et al. (2002) [34], Chan et al. (2023) [36].
 
-The COVID-19 antiviral Paxlovid must not be taken with the herb, and cannot be started straight after stopping it [51]. The labels for the hepatitis C drugs sofosbuvir (Sovaldi) and ledipasvir with sofosbuvir (Harvoni) advise against combining them with the herb, because it can lower their levels through the P-glycoprotein drug pump [52][53]. If you take prescription medicines, check with your doctor or pharmacist before starting.
+The COVID-19 antiviral Paxlovid must not be taken with the herb, and cannot be started straight after stopping it [51]. The labels for the hepatitis C drugs sofosbuvir (Sovaldi) and ledipasvir with sofosbuvir (Harvoni) advise against combining them with the herb, because it may lower their levels through the P-glycoprotein drug pump [52][53]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Medications with Other Interaction Risks
 
@@ -403,6 +403,6 @@ Whole herb preparations use the dried, ground plant without the extraction step 
 
 [51] PAXLOVID (nirmatrelvir tablets; ritonavir tablets). Prescribing information, Pfizer. DailyMed, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=8a99d6d6-fd9e-45bb-b1bf-48c7f761232a](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=8a99d6d6-fd9e-45bb-b1bf-48c7f761232a)
 
-[52] SOVALDI (sofosbuvir) tablets and oral pellets. Prescribing information, Gilead Sciences. DailyMed, 2025. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=80beab2c-396e-4a37-a4dc-40fdb62859cf](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=80beab2c-396e-4a37-a4dc-40fdb62859cf)
+[52] SOVALDI (sofosbuvir) tablets and oral pellets. Prescribing information, Gilead Sciences. DailyMed, revised 03/2020. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=80beab2c-396e-4a37-a4dc-40fdb62859cf](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=80beab2c-396e-4a37-a4dc-40fdb62859cf)
 
-[53] HARVONI (ledipasvir and sofosbuvir) tablets and oral pellets. Prescribing information, Gilead Sciences. DailyMed, 2025. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=f4ec77e4-bae8-4db0-b3d5-bde09c5fa075](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=f4ec77e4-bae8-4db0-b3d5-bde09c5fa075)
+[53] HARVONI (ledipasvir and sofosbuvir) tablets and oral pellets. Prescribing information, Gilead Sciences. DailyMed, revised 03/2020. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=f4ec77e4-bae8-4db0-b3d5-bde09c5fa075](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=f4ec77e4-bae8-4db0-b3d5-bde09c5fa075)
