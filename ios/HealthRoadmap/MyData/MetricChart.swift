@@ -40,6 +40,19 @@ struct MetricChart: View {
     @State private var finger: Date?
     @Environment(\.dynamicTypeSize) private var textSize
 
+    /// A little past the newest value, so its point is drawn whole at the right edge.
+    nonisolated static func margin(window: TimeInterval) -> TimeInterval { max(86_400, window / 30) }
+
+    /// What the chart shows at once; the scrub filter must use the same length.
+    nonisolated static func visibleLength(window: TimeInterval) -> TimeInterval { window + margin(window: window) }
+
+    /// The days a scrubbing finger may pick: those in view on a scrolling range, every day on All.
+    nonisolated static func inView(_ days: [Date], scrolledTo: Date, window: TimeInterval?) -> [Date] {
+        guard let window else { return days }
+        let end = scrolledTo.addingTimeInterval(visibleLength(window: window))
+        return days.filter { $0 >= scrolledTo && $0 <= end }
+    }
+
     /// Apple Health's colours (Brad 2026-10-22): heart readings red, body measurements
     /// purple. Blood tests blue: Apple gives lab results no colour of its own that we know of.
     static func colors(for metric: String) -> [Color] {
@@ -89,7 +102,7 @@ struct MetricChart: View {
         .onChange(of: finger) {
             // On a scrolling range, only the days in view: a finger in a gap never picks one off screen.
             let days = points.map(\.date)
-            let inView = window.map { window in days.filter { $0 >= scrolledTo && $0 <= scrolledTo.addingTimeInterval(window) } } ?? days
+            let inView = MetricChart.inView(days, scrolledTo: scrolledTo, window: window)
             let day = finger.flatMap { ChartRange.nearest(to: $0, in: inView) }
             if day != selected { selected = day }
         }
@@ -145,12 +158,11 @@ private struct XDomain: ViewModifier {
 
     func body(content: Content) -> some View {
         if let window, let first = days.min(), let last = days.max() {
-            // A little past the newest, so its point is drawn whole at the right edge.
-            let margin = max(86_400, window / 30)
+            let margin = MetricChart.margin(window: window)
             content
                 .chartXScale(domain: min(first, last.addingTimeInterval(-window))...last.addingTimeInterval(margin))
                 .chartScrollableAxes(.horizontal)
-                .chartXVisibleDomain(length: window + margin)
+                .chartXVisibleDomain(length: MetricChart.visibleLength(window: window))
                 .chartScrollPosition(x: $scrolledTo)
         } else if let week = ChartRange.atLeastAWeek(days) {
             content.chartXScale(domain: week)

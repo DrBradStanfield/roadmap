@@ -15,6 +15,28 @@ final class MyDataLayoutTests: XCTestCase {
         try XCTUnwrap((JSONSerialization.jsonObject(with: Data(record.utf8)) as? [String: Any])?["measurements"] as? [[String: Any]])
     }
 
+    /// US-25 AC17: the right-most strip of the chart is visible, so it is pickable.
+    func testScrubbingPicksEveryDayInViewIncludingTheRightMostStrip() {
+        let days = (0...10).map { Date(timeIntervalSince1970: 1_792_000_000 + Double($0) * 86_400) }
+        let week: TimeInterval = 7 * 86_400
+        // Daily readings, a week window scrolled to the middle of day 0 (Codex's case): day 7 and
+        // day 8 (inside the margin) are pickable, day 0 (before the left edge) is not.
+        let scrolled = days[0].addingTimeInterval(43_200)
+        let picked = MetricChart.inView(days, scrolledTo: scrolled, window: week)
+        XCTAssertTrue(picked.contains(days[7]))
+        XCTAssertTrue(picked.contains(days[8]))
+        XCTAssertFalse(picked.contains(days[9]))
+        XCTAssertFalse(picked.contains(days[0]))
+        XCTAssertEqual(MetricChart.inView(days, scrolledTo: scrolled, window: nil), days)
+    }
+
+    /// US-25 AC17: a range opens on the newest value, not today.
+    func testARangeOpensOnTheNewestValue() {
+        let newest = Date(timeIntervalSince1970: 1_792_000_000)
+        XCTAssertEqual(ChartRange.month.start(ending: newest), DayText.utc.date(byAdding: .month, value: -1, to: newest))
+        XCTAssertEqual(ChartRange.year.start(ending: newest), DayText.utc.date(byAdding: .year, value: -1, to: newest))
+    }
+
     func testABloodPressureSavesBothHalvesOrNeither() throws {
         let engine = try HealthEngine()
         let empty = try record(engine)

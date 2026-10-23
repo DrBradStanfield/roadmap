@@ -69,7 +69,7 @@ struct WelcomeView: View {
         .onAppear {
             withAnimation(.spring(duration: 0.8, bounce: 0.35)) { shown = true }
         }
-        .sensoryFeedback(.impact(weight: .light), trigger: shown)
+        .sensoryFeedback(.impact(weight: .light), trigger: shown && !reduceMotion)
     }
 
     /// The icon's idea in symbols: a road that ends at a heart.
@@ -87,7 +87,7 @@ struct WelcomeView: View {
                 .font(.system(size: 22))
                 .foregroundStyle(Color(red: 1, green: 0.27, blue: 0.35))
                 .offset(x: 22, y: -22)
-                .symbolEffect(.bounce, value: shown)
+                .symbolEffect(.bounce, value: shown && !reduceMotion)
         }
         .accessibilityHidden(true)
     }

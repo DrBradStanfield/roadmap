@@ -76,11 +76,11 @@ struct OnboardingView: View {
         switch step {
         case .health:
             Page(symbol: "heart.fill", tint: .pink, title: "Fill this in from Apple Health?",
-                 detail: "So you type less. Apple asks next, in two taps:",
+                 detail: "So you type less. What it reads goes only into your record, on this iPhone or in your own cloud, and values you add here are saved back to Apple Health.",
                  progress: nil, spread: true) {
                 HealthFillScene()
             } actions: {
-                primary(connecting ? "Connecting…" : "Continue", id: "onboarding.allow") { Task { await allowHealth() } }
+                primary(connecting ? "Connecting…" : "Connect Apple Health", id: "onboarding.allow") { Task { await allowHealth() } }
                     .disabled(connecting)
                 secondary("Not now", id: "onboarding.notNow") { healthAsked = true; advance(from: .health) }
             }

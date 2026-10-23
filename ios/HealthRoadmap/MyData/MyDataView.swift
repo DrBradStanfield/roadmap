@@ -271,15 +271,19 @@ private struct ValueRow: View {
 
     private func cardBody(_ symbol: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
+            // Name over day at accessibility sizes, where one line would squeeze.
+            LabelValue.layout(textSize).callAsFunction {
                 Label(label, systemImage: symbol)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(tint)
                 Spacer()
-                if let day {
-                    Text(DayText.short(day)).font(.footnote).foregroundStyle(.secondary)
+                HStack {
+                    if let day {
+                        Text(DayText.short(day)).font(.footnote).foregroundStyle(.secondary)
+                    }
+                    Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
                 }
-                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
             }
             HStack(alignment: .bottom) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
