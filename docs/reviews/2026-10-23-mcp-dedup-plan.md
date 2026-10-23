@@ -1,48 +1,56 @@
-# Plan: one lab-import path for the website, the iPhone and MCP
+# Plan: one lab-import path for the website, the iPhone and MCP (v2)
 
 Brad, 2026-10-23: "the only difference is that we want to use the user's openAI or claude or gemini etc rather than ours to do the processing. otherwise, share as much as possible and de-dup."
 
-## Where things stand (investigation, 2026-10-23)
+v2 after the plan reviews (fresh Opus adversary R1-R10, Codex R1-R3, 2026-10-23). v1's single "answer to rows" function is dropped: MCP turns an answer into rows across two tool calls with a parked pending file between them, and the website's review edits values and replaces held days on purpose. Sharing those would change what OpenAI's reviewers see or change the website's behaviour.
+
+## Where things stand
 
 | Step | Website | iPhone | Hosted MCP | stdio MCP / CLI |
 |---|---|---|---|---|
-| Read the file (extraction) | Our Claude, `api.lab-import-v2` (Batch) | Our Claude, `api.app.v1.lab-import` | `file_results`: the person's own AI. `import_documents` (Dropbox folder route): our Claude, metadata mode | `file_results` only (no model, no network) |
-| Parse the answer | `lab-extraction.ts` `parseUnifiedResult` | same | same | same |
-| Answer to rows to save | `UploadModal.tsx` ~720-760 | `ios/engine/lab-review.ts` `labRows` ~128-155 | `mcp-tools.ts` commit ~1740-1763 | same as hosted |
-| Write values | `bulkAppendValues` | `bulkAppendValues` | `bulkAppendValues` | `bulkAppendValues` |
-| Document row | `saveDocuments` (`document-save.ts`) | `saveDocuments` | own inline `FileDocument` (`mcp-tools.ts` ~1772-1778), `extractedText: ''`, `metadata: { importedVia }` | same as hosted |
-| Lab-report archive row | `labArchivePayload` | `labArchivePayload` | hand-built `pathology_report` / `LAB_ARCHIVE_TITLE`, no `labArchive: true` flag (`mcp-tools.ts` ~1529) | same as hosted |
-| Duplicate check | `saveDocuments`: hash, against rows with a stored original | same | `isAlreadyImported` (`mcp-tools.ts` ~1239-1248): hash, else name plus date with " (n)" stripped, name-only against hashless rows | same |
-| Original file | the person's cloud | the person's cloud | none: the file is already in their Dropbox (folder route) or never reaches us (chat route) | none |
-| Content hash | browser `crypto.subtle` | Swift CryptoKit | Node `crypto` | Node `crypto` |
+| Read the file | Our Claude (`api.lab-import-v2`, Batch) | Our Claude (`api.app.v1.lab-import`; sends `ownDates`, `refusedRows`, not `undatedPrev`) | `file_results`: the person's own AI. `import_documents` (Dropbox folder route): our Claude, `documentMode: 'metadata'` | `file_results` only |
+| Parse | `parseUnifiedResult` | same | same | same |
+| Answer to candidates | `ReviewTable.tsx` review (matrix columns, edited values, `UNDATED_PREVIOUS` with a chosen day, replace when `cell.existing`) | `ios/engine/lab-review.ts` `labRows` (own day or report day; a bad day refuses the save) | `prepareImport` (`mcp-tools.ts` ~1398-1544) at extract time: drops previous columns on the folder route, caps candidates, dry-runs `unrecognized`, resolves `fileDates`, marks `sameDayAs`; parks candidates in `imports/pending-<id>.json` | same as hosted |
+| Candidates to `BulkRow` | `ReviewTable.tsx` handleSave ~985-1032, then UploadModal reshapes, two store calls (measurements, labs) | `labRows` | commit ~1704-1761 (held-equal skip, replace, age reject, moved-slot reject) | same as hosted |
+| Write values | `bulkAppendValues` | `bulkAppendValues` | `bulkAppendValues` | same |
+| Document row | `saveDocuments` | `saveDocuments` | own inline row (`mcp-tools.ts` ~1772-1778): `extractedText: ''`, `metadata: { importedVia, client? }` | same |
+| Lab-report archive row | `labArchivePayload` | `labArchivePayload` | hand-built (`mcp-tools.ts` ~1529), no `labArchive: true` | same |
+| Original file | the person's cloud | the person's cloud | none: already in their Dropbox, or never reaches us | none |
+
+**Duplicate checks: five, each on purpose.**
+1. Website review, `isDocDuplicate` (`ReviewTable.tsx` ~207-221): an exact `sourceFileName` match unticks the keep box.
+2. iPhone review, `alreadySaved` (`lab-review.ts` ~72): the same exact-name rule.
+3. `saveDocuments`: hash, skipping only rows that hold a stored original; a same-hash metadata-only row is archived behind and tombstoned (US-13 AC1, US-14 AC4).
+4. MCP `isAlreadyImported` (`mcp-tools.ts` ~1239-1248): hash whatever the row holds, else name and date with " (n)" stripped, because the chat route often has no hash.
+5. MCP `folderNudge`: its own name rule for the folder listing.
+They differ because each surface knows different things at that moment; none is a copy of another. This change leaves them where they are and documents them in one place (step 4).
 
 ## The rule
 
-Everything after "read the file" is one health-core path. The only per-surface difference is who reads the file: our server's Claude for the website and the iPhone, the person's own AI for MCP. Platform primitives stay per platform (SHA-256 library, file pickers, UI).
+Everything after "read the file" that is the same on every surface lives in health-core once; what differs on purpose stays per surface, named and tested. The one per-surface difference Brad wants is who reads the file.
 
-## Steps
+## Steps (each its own commit)
 
-1. **Characterisation tests first, before any code moves.** For each surface, pin today's output for a fixed set of extractions (lab report with core and additional values, own-day values, refused rows, a value with an extractor question, a clinic letter, a ZIP member, a re-import of the same file, a hashless re-import by name and date):
-   - Website: the `BulkRow[]` and document payloads `UploadModal` hands the store, for given ticks and replace choices.
-   - iPhone: `labRows` output and the `documentSave` rows.
-   - MCP: the full `commit` receipt text and the rows appended, through `runToolOverSync`, for both `import_documents` and `file_results`.
-   These tests must pass unchanged after every later step.
-2. **One "answer to rows" function in health-core** (e.g. `lab-rows.ts` `extractionRows(extraction, picks)`), taking the parsed extraction, the person's (or assistant's) ticks, per-row days and replace choices, and returning the `BulkRow[]` plus the refused and skipped lines. The website, the iPhone engine and MCP's commit call it. Surface-specific inputs (the website's replace checkbox, MCP's receipt ids and `fileDates`) stay as arguments, not branches.
-3. **One document-row builder.** Export the row construction `saveDocuments` already does (`newId`, `addedAt`, `sourceFileName`, `contentHash`, `fileRef: ''` for metadata-only) as a small function, and call it from MCP's commit. MCP's own values (`extractedText: ''`, `metadata: { importedVia }`) become arguments, so its rows are byte-identical.
-4. **MCP's lab-report archive row from `labArchivePayload`.** The one intended data change: MCP's row gains `metadata.labArchive: true`, which `isLabArchiveDocument` already accepts by its legacy signature; no tool answer prints document metadata (`read_record` returns id, title, type, date, sourceFileName, extractedText).
-5. **Duplicate rules in one module.** Move `isAlreadyImported` beside `saveDocuments`' hash rule in health-core, with one comment explaining why there are two: MCP often has no hash (the chat route only hands one over if the assistant sends `document.sha256`), so it also matches on name and date; an upload always has the bytes, so it matches on hash only. No behaviour change on any surface.
-6. **Hash format in one place.** One `contentHashTag(hex)` producing `sha256-<lowercase hex>`, used by the Node, browser and engine callers; Swift keeps its own CryptoKit call but its format is pinned by a test against the shared function's output.
-7. **Delete what this orphans** in the same commits: the website's mapping in `UploadModal.tsx`, the iPhone's `labRows` body, MCP's inline row and archive literals.
+1. **Characterisation tests first.** Pin today's output before any code moves:
+   - MCP, through `runToolOverSync`, with the receipt-id and clock seams: the extract answer (`candidates`, `files[].hint`, `unrecognized`, `next`, `documents`), the pending-file `ImportPayload` JSON, the commit receipt, and the rows appended. Cases: lab report core and additional values; own-day values; a folder-route dated previous column (dropped) versus the assistant route (kept); `MAX_IMPORT_CANDIDATES`; `held_equal`, `held_different` with and without `replace`; the non-replaceable age reject; a moved-slot reject; a `sameDayAs` reject; a write-time unit refusal; a `measurementRefusals` reject; `fileDates` giving `bad_date` and `no_date`; a clinic letter; a ZIP member; a hashless re-import by name and date. A receipt issued before the change must still commit after it.
+   - iPhone: `labRows` output and its refusal words through `labImport` (`my-data.ts`) and `labSaveSummaryJson` (`app-doors.ts`).
+   - Website: the rows handleSave produces, including edited values (`lab_import_edited`), `UNDATED_PREVIOUS` with a chosen day, replace, and a unit toggle.
+   These pins stay byte-identical through every later step except the one row change step 3 names.
+2. **One row shape.** A small `bulkRowFor(kind, value, day, { source, correctsId, unit, metricName })` in health-core, the leaf all three build `BulkRow`s with (website handleSave, iPhone `labRows`, MCP commit from a candidate). Edited values and sources stay inputs; `prepareImport`, the review UI and the commit's rules are untouched.
+3. **One document-row builder, and MCP's archive row from the shared shape.** Export the metadata-only row construction `saveDocuments` does, from a module with no `saveDocuments` in it (e.g. `document-rows.ts`), and call it from MCP's commit with MCP's own values (`extractedText: ''`, `metadata: { importedVia, client? }`), byte-identical. Build MCP's lab-report archive row with the same fields `labArchivePayload` sets plus MCP's audit trail: `metadata: { labArchive: true, importedVia, client? }`. That one added key is the only intended row change; no tool answer prints document metadata, merge unions documents by id so it is merge-safe, and every web and iPhone build already reads `labArchive: true`. The step-1 row pin is updated for exactly that key, and US-35 AC8 and the US-14 note are amended in the same commit.
+4. **Document the five duplicate rules** beside `saveDocuments` (a comment block naming each rule, where it lives and why it differs) and in US-35/US-52, so a later "de-dup" does not erase a deliberate difference. No code moves.
+5. **Story.** New ACs: US-35 AC8 amended (the archive row's metadata); a US-52 AC naming the shared row and document builders and the deliberate per-surface differences above (edited values, previous columns, same-day handling, replace rules, the five duplicate rules).
 
-## Not in this change (Brad's call after OpenAI's review)
+## Not in this change
 
-Switching `import_documents` (the Dropbox folder route) from our Claude to the person's own AI. Its behaviour, cost model and published tool text are under OpenAI's review (`app/lib/mcp-freeze.test.ts` pins the text). The plan above leaves its reading step exactly as it is, so the switch later touches only that step.
+- Hashing stays per platform (Node `crypto`, browser `crypto.subtle`, Swift CryptoKit); every producer already writes `sha256-<lowercase hex>`, so there is nothing to fix (v1 step 6 dropped).
+- Sharing more of `prepareImport` and the commit with the website and iPhone, and switching `import_documents` from our Claude to the person's own AI, wait for OpenAI's verdict: both change what the extract answer says. After the verdict they are the next plan.
 
 ## Constraints and checks
 
-- MCP: tool text, `_meta`, refusals and every commit receipt byte-identical; `mcp-freeze.test.ts` and all MCP suites pass; `mcp-documents-guard.test.ts` passes.
-- Website: every existing upload suite passes unchanged; no change a person can see.
-- iPhone: engine goldens match; bridge contract unchanged unless a door must change (then a new bridge id, stated).
-- FHIR: rows only appended or tombstoned; `bulkAppendValues` and slot rules untouched.
-- Each step is its own commit with net production LOC, expected to be negative overall.
-- Review: /simplify, a fresh Opus adversary and Codex on the finished change; one fix-scoped re-check.
+- MCP: tool text, `_meta`, refusals, extract answers and commit receipts byte-identical (step-1 pins); `mcp-freeze.test.ts`, every MCP suite and `mcp-documents-guard.test.ts` pass.
+- Website: every upload suite passes unchanged; no change a person can see; its two store calls and their Sentry tags and retries stay.
+- iPhone: engine goldens match; `labRows`' refusal words unchanged; no bridge change expected.
+- FHIR: rows only appended or tombstoned; `bulkAppendValues` and the slot rules untouched.
+- Size: honest de-dup is small. Expected net production LOC roughly -10 to -30 (the row shape and the document row each written once instead of three and two times), plus test lines.
+- Review: /simplify, a fresh Opus adversary and Codex on the finished change; one fix-scoped re-check. This plan document: docs only, net production LOC 0, nothing deleted.
