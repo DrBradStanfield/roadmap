@@ -5140,7 +5140,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/garlic-supplements-benefits-forms",
     "type": "reference",
-    "summary": "Reference on garlic: high blood pressure, cholesterol, immune support, joint pain, atherosclerosis. Forms include aged garlic extract, powder, black garlic. Bleeding risk; stop before surgery; interacts with warfarin. Always discuss with your doctor."
+    "summary": "Reference on garlic: aged garlic extract, powder, oil and black garlic. Trials suggest small blood pressure falls in hypertension; cholesterol results are mixed. May raise bleeding risk and lower saquinavir levels. Talk to your doctor first if on blood thinners or HIV medicines, or before surgery.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Glucosamine, Chondroitin, and Joint Supplements: Benefits, Forms, Dosing, and Side Effects",
@@ -5660,7 +5661,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/red-yeast-rice-monacolin-k-evidence-guide",
     "type": "reference",
-    "summary": "Reference on red yeast rice: LDL cholesterol lowering, heart attack risk reduction. For high cholesterol or statin-intolerant adults. Monacolin K (like lovastatin); 1,200-2,400 mg/day. Muscle, liver, citrinin risks. Always discuss with your doctor."
+    "summary": "Red yeast rice's monacolin K is identical to lovastatin. Some products lower LDL cholesterol and one extract cut coronary events in a Chinese trial, but strength varies. It can cause statin-type muscle and liver harm. Talk to your doctor first, especially if you take a statin or are pregnant.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Resveratrol: Benefits, Forms, Dosing, and Side Effects",
@@ -6181,7 +6183,8 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/l-tryptophan-5-htp-benefits-dosing",
     "type": "reference",
     "product": "sleep",
-    "summary": "Reference on L-tryptophan and 5-HTP: sleep, mood, depression, anxiety, migraine, fibromyalgia. Serotonin precursors. L-tryptophan 250mg-1g; 5-HTP 50-300mg at bedtime. Do not combine with SSRIs or MAOIs. Always discuss with your doctor."
+    "summary": "L-tryptophan and 5-HTP are serotonin precursors. L-tryptophan 1 g may help mild insomnia, but a sleep guideline suggests against it; 5-HTP trials are small. Both can cause serotonin syndrome with other drugs. Talk to your doctor first if you take antidepressants or other serotonergic drugs.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Lion's Mane and Chaga: Benefits, Forms, Dosing, and Side Effects",
@@ -7201,7 +7204,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/ashwagandha-evidence-guide",
     "type": "reference",
-    "summary": "Reference on ashwagandha: stress, anxiety, sleep, testosterone (men), cognitive function. Most studied in adults with stress or insomnia. Forms: KSM-66, Sensoril, Shoden; 300-600 mg/day standardized extract for 8-12 weeks. Liver injury and thyroid effects reported. Always discuss with your doctor."
+    "summary": "Brad says ashwagandha's anxiety effect is inconsistent; a 2025 trial found no added exercise gain. Liver and thyroid harm is rare. Some experts advise against it in pregnancy and breastfeeding. Talk to your doctor first if you have liver disease or take thyroid, sedative or immunosuppressant drugs.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Berberine: Benefits, Forms, Dosing, and Side Effects",

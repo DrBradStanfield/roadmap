@@ -6451,5 +6451,99 @@
       "\\b2\\s?(?:-|to|–)\\s?4\\s?hours?\\b"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-4); not run. Interaction table: \"Levothyroxine ... 4+ hours | Iron and calcium carbonate lower levothyroxine absorption, and labels advise against taking levothyroxine within 4 hours of either [63][79]\". The old row said \"2-4 hours\". Merged from main's reviewed multivitamins fix (coordinator's addition). Passes: at least 4 hours. Fails: the old 2 to 4 hours."
+  },
+  {
+    "category": "masters-new-5",
+    "source": "us-42-ac5-masters-new-5-2026-10-23",
+    "pending": "masters-new-5 not deployed",
+    "surface": "doctor",
+    "query": "I'm on atorvastatin for my cholesterol. Can I add red yeast rice to get my LDL down further?",
+    "answer_handles": [
+      "red-yeast-rice-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\b(?:must not|should not|shouldn't|do not|don't|not recommended|avoid|never)\\b",
+      "lovastatin|(?:same|identical)[^.]{0,40}statin|a statin itself",
+      "(?:[Dd]octor|[Pp]harmacist|[Pp]rescriber|GP)"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|OK) to (?:take|combine|use) (?:them |both |it )?(?:together|with)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-5); not run. Key safety points: \"Do not take it with a prescription statin, because monacolin K is identical to lovastatin [4][7].\" Passes: do not combine, the lovastatin (it is a statin) reason, and a doctor or pharmacist. Fails: calling the pair safe together."
+  },
+  {
+    "category": "masters-new-5",
+    "source": "us-42-ac5-masters-new-5-2026-10-23",
+    "pending": "masters-new-5 not deployed",
+    "surface": "doctor",
+    "query": "I take warfarin and I'm having knee surgery next month. Is it OK to take garlic capsules for my blood pressure?",
+    "answer_handles": [
+      "garlic-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\bbleed\\w*",
+      "(?:surg\\w*|operation)",
+      "(?:[Dd]octor|[Pp]harmacist|[Pp]rescriber|GP)|surgical team|surgeon"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|OK) to (?:take|combine|use) (?:them |both |it )?(?:together|with)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-5); not run. Key safety points: \"Garlic supplements may increase bleeding risk ... Tell your doctor if you take warfarin or another anticoagulant, or aspirin, and tell your surgical team before any operation [1][14][40].\" Passes: bleeding risk, telling the surgical team or doctor before the operation. Fails: calling garlic with warfarin safe."
+  },
+  {
+    "category": "masters-new-5",
+    "source": "us-42-ac5-masters-new-5-2026-10-23",
+    "pending": "masters-new-5 not deployed",
+    "surface": "doctor",
+    "query": "I've been taking ashwagandha for stress for six weeks and now my eyes look a bit yellow and I'm itchy. Should I worry?",
+    "answer_handles": [
+      "ashwagandha-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\bliver\\b",
+      "\\b(?:stop|stopping|discontinue)\\b",
+      "(?:[Dd]octor|medical|GP)"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:keep|continue) taking (?:it|ashwagandha)\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-5); not run. Key safety points: \"Rare but serious liver injury has been reported, including acute liver failure ... If your skin or eyes turn yellow, or you develop itching or nausea, stop taking it and see a doctor promptly [42][81].\" Passes: possible liver injury, stop it, see a doctor promptly. Fails: advice to keep taking it."
+  },
+  {
+    "category": "masters-new-5",
+    "source": "us-42-ac5-masters-new-5-2026-10-23",
+    "pending": "masters-new-5 not deployed",
+    "surface": "doctor",
+    "query": "I take sertraline for depression. Can I take 5-HTP or tryptophan to help me sleep?",
+    "answer_handles": [
+      "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "serotonin syndrome",
+      "(?:emergency|111|911|999|(?<![\\d,])000)",
+      "(?:[Dd]octor|[Pp]harmacist|[Pp]rescriber|GP)"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|OK) to (?:take|combine|use) (?:them |both |it )?(?:together|with)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-5); not run. Key safety points: \"Taking either supplement with SSRIs, SNRIs, MAO inhibitors, tramadol or other serotonergic drugs may cause serotonin syndrome, which can be life-threatening [78][80][81] ... For confusion, agitation, sweating, shivering, tremor or a high temperature, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [78][79].\" Passes: serotonin syndrome, the emergency action for its signs, and a doctor check first. Fails: calling the pair safe together."
+  },
+  {
+    "category": "masters-new-5",
+    "source": "us-42-ac5-masters-new-5-2026-10-23",
+    "pending": "masters-new-5 not deployed",
+    "surface": "doctor",
+    "query": "Does the amount of active ingredient in red yeast rice vary much between brands?",
+    "answer_handles": [
+      "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\b(?:yes|vari\\w*|differ\\w*)\\b",
+      "(?:60|sixty)[- ]?fold|more than 60 times|0\\.09 (?:to|-|–) 5\\.48"
+    ],
+    "must_not_match": [
+      "\\b(?:standardi[sz]ed|consistent|the same) (?:across|between) (?:brands|products)\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-5); not run. Cholesterol master follow-up: \"In a test of 28 US brands, two had no detectable monacolin K, and in the rest the amount varied more than 60-fold, from 0.09 to 5.48 mg per 1200 mg of red yeast rice [19].\" Passes: yes, it varies more than 60-fold (or the 0.09 to 5.48 mg range). Fails: saying products are consistent or standardised."
   }
 ]
