@@ -116,7 +116,7 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   without, 52 with); proposal filed W36. Real replies end with the 6-word
   `[written by Brad AI for testing]` tag (prompt before 08-10; in W39 raw counts),
   `[by Brad AI]` from 10-19 (3985ae4). Strip URLs before splitting sentences:
-  a plain splitter read 13 of 29 W43 replies as >5 sentences; the true count was 1.
+  a W43 worker's splitter read 13 of 29 replies as >5 sentences; review found 4.
 - **2026-09-19 [latency]** The cache-hit rate is an inter-arrival metric, not
   a router property: on the 5-minute TTL every W36–W38 hit fell within 300 s
   of the previous router call (13/13, 10/13, 2/2) and none beyond (0/28,
@@ -167,8 +167,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   digits as `#` (US-15 AC33), so substitute values (a masked replay flipped
   1 label in 11). No column records the classifier model per turn.
 - **2026-10-25 [retrieval]** Router v4 (pathways removed, US-15 AC39, 10-22):
-  with no pathway to absorb them, symptom questions drift to TREATMENT entries
-  against rule 1 (heartburn → alginates, constipation → psyllium, nerve pain →
-  alpha-lipoic acid, chemo nausea → ginger): 10 of 18 fails on the first v4 arm
-  (250/268). Pre-v4 arms are not comparable: 42 fixtures were deleted and 146
+  symptom questions drift to TREATMENT entries against rule 1 (heartburn →
+  alginates, constipation → psyllium, nerve pain → alpha-lipoic acid, chemo
+  nausea → ginger): 8 of 18 fails on the first v4 arm (250/268). Rule 1 was
+  rewritten in the same change, so the cause is unattributed. Pre-v4 arms are not comparable: 42 fixtures were deleted and 146
   re-pointed to ∅ on 10-22. Baseline any v4 change against a v4 arm.
