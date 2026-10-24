@@ -55,6 +55,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   between them failed `extractJsonObject` (first `{` to last `}`); real
   handles in both. Replays: 0 of 16 as typed, but 1 of 6 on a long
   list-shaped paraphrase (harness L3), scored a silent ∅. Proposed: parse the last object.
+  W43: a third shape, prose reasoning ("per rule 7 …") that hit the 200-token cap
+  before any JSON; replay 10/10 clean. Parsing the last object would not save it.
 - **2026-08-10 [retrieval]** YouTube empty-handles are structurally different
   from web ones: the bot pre-loads the video's companion blog into the reply
   context (`findBlogByVideoId`), so an empty router result on an on-topic
@@ -65,6 +67,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   On YouTube a GREETING label means NO reply, and the classifier labels many
   comments GREETING (W41: 35 of 55 events; 16 substantive health claims and
   one direct question among them, the rest reactions, thanks and spam).
+  But first-person vendor spam reads as a health claim: W43's peptide-vendor
+  burst (19 comments) got ROUTE on 14 and three public replies; no spam rule exists.
 - **2026-08-10 [retrieval]** Term presence in the visible summary is necessary
   but NOT sufficient: before any summary edit, check what the router picked
   INSTEAD. On the Haiku router, steals (a theme neighbour beating the named
@@ -110,7 +114,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   literal `SKIP_NO_REPLY` 1-word assistant row (W36 3, W37 20/45, W39 8/41) —
   exclude them from reply-length stats or the median reads low (W37: 66 words
   without, 52 with); proposal filed W36. Real replies end with the 6-word
-  `[written by Brad AI for testing]` tag (prompt before 08-10; in W39 raw counts).
+  `[written by Brad AI for testing]` tag (prompt before 08-10; in W39 raw counts),
+  `[by Brad AI]` from 10-19 (3985ae4). Strip URLs before splitting sentences:
+  a plain splitter read 13 of 29 W43 replies as >5 sentences; the true count was 1.
 - **2026-09-19 [latency]** The cache-hit rate is an inter-arrival metric, not
   a router property: on the 5-minute TTL every W36–W38 hit fell within 300 s
   of the previous router call (13/13, 10/13, 2/2) and none beyond (0/28,
@@ -160,3 +166,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   production classifies the RAW text (`api.chat.ts:437`); widget rows store
   digits as `#` (US-15 AC33), so substitute values (a masked replay flipped
   1 label in 11). No column records the classifier model per turn.
+- **2026-10-25 [retrieval]** Router v4 (pathways removed, US-15 AC39, 10-22):
+  with no pathway to absorb them, symptom questions drift to TREATMENT entries
+  against rule 1 (heartburn → alginates, constipation → psyllium, nerve pain →
+  alpha-lipoic acid, chemo nausea → ginger): 10 of 18 fails on the first v4 arm
+  (250/268). Pre-v4 arms are not comparable: 42 fixtures were deleted and 146
+  re-pointed to ∅ on 10-22. Baseline any v4 change against a v4 arm.
