@@ -385,15 +385,15 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
     expect(spent.text).toContain('write allowance');
   });
 
-  it('says nothing was filed when GitHub will not answer, and never throws', async () => {
+  it('reports an uncertain outcome when GitHub answers 500, and never throws', async () => {
     const posts = stubGithub(() => new Response('nope', { status: 500 }));
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { access } = await connect();
     const answer = await twoStep(access, 'report_feedback', REPORT);
 
     expect(answer.isError).toBe(true);
-    // US-32 AC39: worded for every failure, not only silence — GitHub may answer and refuse.
-    expect(answer.text).toBe('Feedback could not be filed right now. Nothing was posted. Try again later.');
+    // US-32 AC39 proposal: a 5xx can follow a committed issue, not a refusal.
+    expect(answer.text).toBe('We could not confirm whether GitHub filed the report. It may already be posted; do not submit it again right now.');
     expect(answer.structured).toBeUndefined();
     expect(posts).toHaveLength(1);
     // The status, and not one word of the report.
