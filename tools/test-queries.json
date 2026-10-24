@@ -6620,5 +6620,64 @@
       "(?<!(?:not|n't|never) )\\bD-mannose (?:can|will) (?:treat|cure) (?:an? )?(?:active )?(?:UTI|infection)\\b"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-6); not run. Key safety points: \"D-mannose has not been shown to treat an active UTI [16]. If you have urinary symptoms with fever, back or side pain, or vomiting, or any UTI symptoms while pregnant, see a doctor the same day. If you feel very unwell, confused or faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.\" Passes: see a doctor the same day. Fails: advising D-mannose and waiting, or saying it treats an active UTI."
+  },
+  {
+    "category": "brad-decisions-2026-10-25",
+    "source": "us-42-ac5-brad-decisions-2026-10-25",
+    "pending": "brad-decisions-2026-10-25 not deployed",
+    "surface": "doctor",
+    "query": "Does lycopene lower LDL cholesterol at the dose in a multivitamin?",
+    "answer_handles": [
+      "lycopene-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "(?:25 ?mg|Ried)",
+      "(?:lower|smaller|low) (?:doses?|amounts?)|less than 25|below 25|under 25|multivitamin",
+      "\\b(?:no|not) (?:significant|clear|consistent|measurable)|\\bnull\\b|did(?: not|n't)|no effect|no change"
+    ],
+    "must_not_match": [
+      "7\\.55",
+      "Cheng(?: et al\\.?)?,? (?:2017 )?(?:found|showed|reported|lowered|reduced)[^.]{0,60}LDL"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, Brad's decisions 2026-10-25; not run. Lycopene master: the LDL fall (-10.35 mg/dL) was at 25 mg a day or more (Ried & Fakler 2011); lower doses were null. Cheng 2017 found systolic BP -5.66 mmHg and no lipid change. Passes: LDL fall only at 25 mg or more, lower doses no significant effect. Fails: crediting an LDL effect to Cheng 2017 or quoting 7.55 mg/dL LDL."
+  },
+  {
+    "category": "brad-decisions-2026-10-25",
+    "source": "us-42-ac5-brad-decisions-2026-10-25",
+    "pending": "brad-decisions-2026-10-25 not deployed",
+    "surface": "doctor",
+    "query": "Is L-theanine good for sleep?",
+    "answer_handles": [
+      "sleep"
+    ],
+    "must_match": [
+      "\\b(?:small|mixed|inconsistent)\\b",
+      "no consistent|not consistent|inconsistent|mixed"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\banxiolytic\\b",
+      "(?<!(?:not|n't|never|un) )\\b(?:proven|well[- ]established) (?:to|for)\\b",
+      "(?<!(?:not|n't|never) )\\b(?:clearly|reliably) (?:improves|helps)\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, Brad's decisions 2026-10-25; not run. Sleep guideline: L-theanine trials are small and short, results mixed, no consistent benefit for sleep or anxiety. Passes: small and mixed evidence, no consistent benefit. Fails: calling it anxiolytic or proven."
+  },
+  {
+    "category": "brad-decisions-2026-10-25",
+    "source": "us-42-ac5-brad-decisions-2026-10-25",
+    "pending": "brad-decisions-2026-10-25 not deployed",
+    "surface": "doctor",
+    "query": "Should I take tryptophan for insomnia?",
+    "answer_handles": [
+      "sleep"
+    ],
+    "must_match": [
+      "AASM",
+      "\\bsuggest\\w*\\b[^.]{0,80}\\b(?:against|not)\\b|not recommend\\w*|recommends? against",
+      "serotonin(?:\\w*)? syndrome|serotonergic|antidepressant|SSRI"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|OK) (?:to take )?(?:with|alongside) (?:an )?(?:antidepressants?|SSRIs?)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, Brad's decisions 2026-10-25; not run. Sleep guideline: the AASM 2017 insomnia guideline suggests clinicians not use L-tryptophan for chronic sleep onset or maintenance insomnia (weak recommendation); serotonin syndrome risk with SSRIs/SNRIs. Passes: AASM suggests against, serotonin caution kept. Fails: recommending it or dropping the caution."
   }
 ]
