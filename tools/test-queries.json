@@ -6679,5 +6679,44 @@
       "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|OK) (?:to take )?(?:with|alongside) (?:an )?(?:antidepressants?|SSRIs?)"
     ],
     "notes": "US-42 AC5 / US-50 AC5, Brad's decisions 2026-10-25; not run. Sleep guideline: the AASM 2017 insomnia guideline suggests clinicians not use L-tryptophan for chronic sleep onset or maintenance insomnia (weak recommendation); serotonin syndrome risk with SSRIs/SNRIs. Passes: AASM suggests against, serotonin caution kept. Fails: recommending it or dropping the caution."
+  },
+  {
+    "query": "My kidney function is reduced (eGFR around 40). Which supplements are safe for me to keep taking?",
+    "expected": [],
+    "category": "supplement",
+    "source": "chat-health-2026-W43",
+    "notes": "2026-W43 chat-health: storefront chat turn, paraphrased (personal history dropped). Production empty; replay of the original empty 6/6. No entry covers supplements in CKD as a topic; several ingredient references carry kidney cautions. Revisit expected if a CKD-supplements entry is built (content-backlog.csv)."
+  },
+  {
+    "query": "what does HealthPathways recommend for treating an ear infection in a 4 year old?",
+    "expected": [],
+    "category": "pediatric",
+    "source": "chat-health-2026-W43",
+    "notes": "2026-W43 chat-health: widget first turn, paraphrased. Guards US-15 AC39: the pathway content is gone, so a request naming the publisher routes nothing. Production empty (router v4); replay empty 6/6."
+  },
+  {
+    "query": "Switched my Semax to VendorX after one order from a forum shop. HPLC sheet matched, dose matched my labs. Not going back.",
+    "category": "classifier-greeting",
+    "source": "chat-health-2026-W43",
+    "expected_classification": "GREETING",
+    "notes": "2026-W43 chat-health: YouTube peptide-vendor spam burst on 10-21 (19 comments naming one vendor; vendor name replaced with the placeholder VendorX). Desired: skip (no reply). Production ROUTE on 14 of them; replay ROUTE 5/5 on three texts; the bot replied publicly to 3, one naming the vendor. KNOWN-FAIL until the classifier prompt gets a spam/promotion rule (Tier 0 proposal W43)."
+  },
+  {
+    "query": "Kan ik de MicroVitamin van Dr Brad gebruiken met een nierfunctie (eGFR) van ongeveer 40?",
+    "expected": [
+      "magnesium-benefits-best-forms-dosing",
+      "potassium-benefits-forms-dosing-and-side-effects",
+      "multivitamins-benefits-evidence-dosing-and-side-effects"
+    ],
+    "category": "product",
+    "source": "chat-health-2026-W43",
+    "notes": "2026-W43 chat-health: storefront turn in Dutch, paraphrased (language kept: it is under test). Rule 7: Brad's product alongside a named condition routes the ingredient entries that matter there. Production: router error (prose citing rule 7, then the 200-token cap); replay of the original with its context returned [] 9/10, magnesium + potassium 1/10. KNOWN-FAIL: selection-side."
+  },
+  {
+    "query": "Can you see the calcium score scan report I uploaded?",
+    "category": "measurement",
+    "source": "chat-health-2026-W43",
+    "expected_classification": "MEASUREMENT",
+    "notes": "2026-W43 chat-health: widget turn, paraphrased. A meta read-back ask about the user's own uploaded result, the shape of the prompt's 'did you see my fasting glucose?' example. Production ROUTE mid-thread (router returned nothing); replay in thread MEASUREMENT 4/5. KNOWN-FLAKY: context-free, Haiku 5.5 gives MEASUREMENT 2/5, ROUTE 3/5 (W43)."
   }
 ]
