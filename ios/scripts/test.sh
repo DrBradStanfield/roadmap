@@ -12,6 +12,7 @@ LOG="build/test-output.txt"
 # ~/Documents gets Finder xattrs on its build products, and codesign refuses them.
 DERIVED="${HR_DERIVED_DATA:-${TMPDIR:-/tmp}/HealthRoadmap-$(pwd | shasum | cut -c1-8)}"
 mkdir -p build
+trap scripts/clean-test-clones.sh EXIT
 for ZONE in UTC Pacific/Auckland; do
   echo "== tests in $ZONE"
   TEST_RUNNER_TZ="$ZONE" xcodebuild test \
