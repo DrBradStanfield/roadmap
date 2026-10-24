@@ -184,7 +184,7 @@ Valerian supplements are made from the roots, rhizomes and stolons of *Valeriana
 For those seeking evidence-based sleep support, it is worth noting that other compounds have stronger clinical evidence than valerian:
 
 - **Melatonin** (0.3-0.5 mg) has a well-established mechanism for circadian rhythm regulation
-- **Magnesium**: a 2021 review pooled 2 small trials, both using magnesium oxide at 500-729 mg a day; people fell asleep about 17 minutes sooner than with placebo, but the evidence was rated low to very low quality
+- **Magnesium**: a 2021 review pooled 2 small trials, both using 500 to 729 mg a day of elemental magnesium, given as magnesium oxide; people fell asleep about 17 minutes sooner than with placebo, but the evidence was rated low to very low quality
 - **Glycine** (2,500-3,000 mg) has demonstrated improved subjective sleep quality in three RCTs
 
 Dr Brad Stanfield's [Sleep by Dr Brad](https://drstanfield.com/products/sleep) combines these three evidence-based ingredients: low-dose, sustained-release melatonin (0.8 mg), magnesium bisglycinate (126 mg elemental), and glycine (2,400 mg) — targeting different sleep mechanisms with stronger clinical support than valerian alone.

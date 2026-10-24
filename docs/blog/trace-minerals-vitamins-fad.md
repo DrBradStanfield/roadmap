@@ -110,7 +110,7 @@ Iron is one of the most well-known trace minerals, which means it might surprise
 
 The trick is that dietary iron comes in heme and non-heme forms, which is essentially the difference between iron from animal sources and iron from plant sources. This means vegetarians and vegans typically need twice as much iron in their diet as omnivores because non-heme iron is much more poorly absorbed. If you're interested in learning more, [I have an entire guide on iron intake and supplementation here](https://drstanfield.com/blogs/articles/iron-supplementation-good-health).
 
-Throughout life, your iron needs are around 8-10 mg per day, though pregnant women need closer to 27 mg.
+Throughout life, your iron needs are around 8-10 mg per day (18 mg for women aged 19 to 50), though pregnant women need closer to 27 mg.
 
 ### Manganese
 
