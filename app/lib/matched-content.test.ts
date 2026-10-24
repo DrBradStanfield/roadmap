@@ -285,7 +285,7 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
         expect(content!.length, order.join(' + ')).toBeLessThanOrEqual(MAX_BLOG_CHARS);
       }
     }
-  });
+  }, 300_000); // 3 x masters² loads: ~40 s alone at 48 masters, grows with each batch
 
   it('a reduced master logs what it dropped once, and a whole one logs nothing (review S2)', async () => {
     const loadMatchedContent = await loaderWith((handle, raw) => (handle === K ? raw.replace(/^(## Current view.*)$/m, `$1\n\n${'v'.repeat(6_000)}`) : bigD(handle, raw)));
