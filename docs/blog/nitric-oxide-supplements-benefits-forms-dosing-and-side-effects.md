@@ -331,7 +331,6 @@ Nitric oxide supplements containing precursors such as L-arginine, L-citrulline,
 ### Practical Recommendations
 
 - Consult a healthcare provider before starting NO supplements if taking any prescription medications, particularly blood pressure medications, nitrates, or PDE5 inhibitors
-- If combining NO supplements with antihypertensives, start with the lowest supplement dose and monitor blood pressure at home
 - Consider stopping NO supplements at least 2 weeks before scheduled surgery, and ask your surgeon
 - Avoid chlorhexidine mouthwash if relying on beetroot-derived nitrate supplements for cardiovascular benefit
 - Report any symptoms of excessive blood pressure lowering (dizziness, lightheadedness, fainting) to a healthcare provider immediately; if you faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK)

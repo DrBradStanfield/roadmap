@@ -333,9 +333,21 @@ Mechanism: glycine lowers core body temperature at sleep onset (via peripheral v
 
 ### L-theanine
 
-**Evidence:** L-theanine (200–400 mg) is an amino acid found in green tea with anxiolytic properties. Several small trials suggest benefits for sleep quality, particularly in individuals with anxiety-related sleep difficulties. Promotes alpha brain wave activity. Safe; well-tolerated. Evidence is preliminary and not included in standard clinical guidelines.
+**Evidence:** L-theanine is an amino acid found in green tea, usually taken at 200–400 mg. The trials are small and short, and their results are mixed, with no consistent benefit for sleep or anxiety:
+- Hidese 2019: in a four-week crossover trial in 30 adults, 200 mg a day improved some sleep quality subscores (sleep latency, sleep disturbance, use of sleep medication) compared with placebo.
+- Moulin 2024: in a 28-day trial in 30 moderately stressed adults, 400 mg a day did no better than placebo for perceived stress. On an activity tracker the L-theanine group had less time asleep and significantly less light sleep than placebo; the authors reported better sleep quality. The authors are employees of KGK Science (the contract research company) and Ethical Naturals (the maker of the L-theanine tested).
+- Sarris 2019: in 46 people with generalized anxiety disorder, 450–900 mg a day added to their antidepressants for 8 weeks was no better than placebo for anxiety or insomnia severity. Sleep satisfaction improved compared with placebo, and insomnia scores improved in the subgroup with non-clinical insomnia symptoms.
+- Lyon 2011: in 98 boys aged 8 to 12 with ADHD, 400 mg a day for six weeks improved sleep percentage and sleep efficiency on actigraphy but not time to fall asleep.
 
-**Brad's position:** Not in his Sleep product (not currently in the algorithm either). May be worth considering for future product development given its anxiolytic mechanism complementing the Sleep stack.
+Safe and well tolerated in these trials. Not included in standard clinical guidelines.
+
+**Brad's position:** Not convinced by the evidence for L-theanine's benefits.
+
+**References:**
+- Hidese S et al. 2019 – Effects of L-theanine administration on stress-related symptoms and cognitive functions in healthy adults, Nutrients (DOI: 10.3390/nu11102362)
+- Moulin M et al. 2024 – Safety and efficacy of L-theanine supplementation for 28 days in healthy adults with moderate stress: a randomized, double-blind, placebo-controlled trial, Neurol Ther (PMID: 38758503; DOI: 10.1007/s40120-024-00624-7)
+- Sarris J et al. 2019 – L-theanine in the adjunctive treatment of generalized anxiety disorder, J Psychiatr Res (DOI: 10.1016/j.jpsychires.2018.12.014)
+- Lyon MR et al. 2011 – Effects of L-theanine on objective sleep quality in boys with ADHD, Altern Med Rev (PMID: 22214254)
 
 ### GABA (gamma-aminobutyric acid)
 
@@ -347,7 +359,10 @@ Mechanism: glycine lowers core body temperature at sleep onset (via peripheral v
 
 ### Tryptophan / 5-HTP
 
-**Evidence:** Tryptophan is a melatonin and serotonin precursor. Some studies show modest sleep-onset benefits at doses of 1–2 g. 5-HTP (5-hydroxytryptophan) may have similar effects. Interactions with serotonergic drugs (SSRIs, SNRIs) are a safety concern (serotonin syndrome risk). Not included in clinical guidelines.
+**Evidence:** Tryptophan is a melatonin and serotonin precursor. Small older studies reported modest sleep-onset effects at 1–2 g, but the AASM 2017 insomnia guideline does not recommend it: it suggests that clinicians not use L-tryptophan to treat chronic sleep onset or sleep maintenance insomnia in adults (weak recommendation). 5-HTP (5-hydroxytryptophan) may have similar effects. Interactions with serotonergic drugs (SSRIs, SNRIs) are a safety concern (serotonin syndrome risk).
+
+**References:**
+- Sateia MJ et al. 2017 – AASM Clinical Practice Guideline for Pharmacologic Treatment of Chronic Insomnia (DOI: 10.5664/jcsm.6470)
 
 ### Brad's Sleep product summary
 
