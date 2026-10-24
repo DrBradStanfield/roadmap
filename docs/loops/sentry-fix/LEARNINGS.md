@@ -80,8 +80,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
 - `[base-rate][server]` 2026-10-14, met 10-16 — Router (Sonnet 5.5): 5 s a try, one
   retry on timeout; a double timeout reads `latencyMs` ~11 000, text in `router_error`
   (Supabase only; Sentry sees /api/chat alone). 104 turns 09-29..10-16: good p95 3.5 s;
-  3 first-try timeouts, all 10-14..10-16. PROBABLY upstream (output ≤200 tokens
-  and request ruled out; host/network not). Met 10-16; Brad 10-17 (#157): no change.
+  3 first-try timeouts 10-14..10-16, PROBABLY upstream. Brad 10-17 (#157): no change.
+  6Z also pools PARSE failures: a 6Z event with `latencyMs` ~2 500 is no timeout; read router_raw (10-24: prose, no JSON, cut at 200).
 - `[class][widget]` 2026-09-17, root-fixed 2026-09-20 — Anything `main()`
   awaits before `createRoot` is a blank-widget path: an unhandled rejection
   there leaves the mount empty and the user reloads (1-4 loads per session in
