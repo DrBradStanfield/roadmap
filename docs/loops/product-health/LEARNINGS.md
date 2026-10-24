@@ -177,6 +177,6 @@ duplicates.
   GIS-popup cancels stay silent. Read the funnel per visitor, never starts minus outcomes (US-09 AC22).
   Baseline before the break: 29 of 86 Drive visitors reached no outcome (07-22..10-18).
 - **2026-10-25 [instrumentation]** `lab_unit_refused` drops any unit `isLabUnitWord` distrusts
-  (roadmap-data.ts:206), so the counter goes blind on the spellings it most needs: W43 had 29
-  unit-less blood-count refusals from 5 visitors (W42: 3). Read a rise in unit-less rows as a
-  catalogue gap to probe with real report spellings, never as noise.
+  (roadmap-data.ts:206), so the counter goes blind where it matters: W43 had 27 unit-less
+  blood-count refusals from 4 visitors (W42: 3). A rise means a blank unit or an unknown spelling;
+  probe with labUnitTaken first (a taken spelling never fires), never read it as noise.
