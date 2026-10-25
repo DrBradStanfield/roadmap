@@ -72,10 +72,10 @@ private struct PlanList: View {
                                 .modifier(RiseIn())
                             ForEach(section.cards) { card in
                                 // Tour tip 2 (US-57 AC6): the first Foundation step.
-                                if section.key == Self.foundation, card.id == section.cards.first?.id {
+                                if section.isFoundation, card.id == section.cards.first?.id {
                                     PlanCardView(card: card).modifier(RiseIn())
-                                        .id(Self.foundation)
-                                        .tourTip(FoundationTip(), step: .foundation)
+                                        .id(Self.foundationCard)
+                                        .tourTip(FoundationTip())
                                 } else {
                                     PlanCardView(card: card).modifier(RiseIn())
                                 }
@@ -106,21 +106,20 @@ private struct PlanList: View {
                 .padding(.bottom, 32)
             }
             .task {
-                // Tip 2 is due once tip 1 closes: bring its card into view, or it waits off
-                // screen. A plan with no Foundation card has no tip 2 (AC6): the tour moves on.
+                // Tip 2 is due once tip 1 closes: bring its card into view, or it waits off screen.
                 for await due in FoundationTip().shouldDisplayUpdates where due {
-                    if sections.contains(where: { $0.key == Self.foundation && !$0.cards.isEmpty }) {
-                        withAnimation { proxy.scrollTo(Self.foundation, anchor: .center) }
-                    } else {
-                        _ = Tour.close(.foundation)
-                    }
+                    withAnimation { proxy.scrollTo(Self.foundationCard, anchor: .center) }
                 }
             }
+            // A plan with no tiles or no Foundation card cannot draw that tip: the tour
+            // passes it (AC4, AC6; review R4).
+            .tourStep(SnapshotTip(), hasNoAnchor: tiles.isEmpty)
+            .tourStep(FoundationTip(), hasNoAnchor: !sections.contains { $0.isFoundation && !$0.cards.isEmpty })
         }
     }
 
-    /// health-core's planSections key for the Foundation section.
-    static let foundation = "info"
+    /// The scroll id of the Foundation section's first card.
+    private static let foundationCard = "tour.foundation"
 }
 
 /// A card rises in the first time any of it scrolls into view, then stays (Brad 2026-10-23).

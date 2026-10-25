@@ -16,9 +16,11 @@ export type StatTone = 'normal' | 'info' | 'attention' | 'urgent';
 
 export interface StatTileStatus { label: string; tone?: StatTone }
 
+/** Every tile's stable key. */
+export type StatTileKey = 'whtr' | 'bmi' | 'ibw' | 'protein' | 'apoB' | 'nonHdl' | 'ldl' | 'egfr' | 'lpa' | 'hba1c';
+
 export interface StatTile {
-  /** Stable per tile: whtr, bmi, ibw, protein, apoB, nonHdl, ldl, egfr, lpa, hba1c. */
-  key: string;
+  key: StatTileKey;
   label: string;
   value: string;
   /** The unit after the value; '' when the value has none (BMI, waist-to-height). */
@@ -28,7 +30,7 @@ export interface StatTile {
   /** What a tap opens. */
   evidence?: SuggestionEvidence;
   /** What the tile is, in plain words (US-57 AC5); kept for a known minor's tile too. */
-  about?: string;
+  about: string;
 }
 
 /**
@@ -37,7 +39,7 @@ export interface StatTile {
  * evidence, and suits a known minor's tile (US-07 AC6). Definitions only: outside the
  * three-file sync (Brad, 2026-10-25). The phone shows them; the web may later.
  */
-export const STAT_TILE_ABOUT: Record<string, string> = {
+export const STAT_TILE_ABOUT: Record<StatTileKey, string> = {
   whtr: 'Your waist measurement divided by your height. It shows how much weight you carry around your middle, which BMI cannot show.',
   bmi: 'Body mass index: your weight in kilograms divided by your height in metres, squared. It cannot tell muscle from fat, so your waist measurement can change how the plan reads it.',
   ibw: 'A healthy weight for your height and sex, from the Peterson formula (2016). The plan sets your protein target from it, not from your current weight.',
@@ -96,7 +98,7 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
   // US-07 AC6: a known minor's tiles keep the values and drop every adult reading.
   const adult = !results.knownMinor;
   const reading = <T>(value: T): T | undefined => (adult ? value : undefined);
-  const tiles: StatTile[] = [];
+  const tiles: Omit<StatTile, 'about'>[] = [];
 
   if (results.waistToHeightRatio !== undefined) {
     tiles.push({

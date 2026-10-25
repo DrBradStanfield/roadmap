@@ -6,7 +6,7 @@ import SwiftUI
 /// US-07 AC6) shows the "what it is" alone.
 struct TileExplainerSheet: View {
     let title: String
-    let about: String?
+    let about: String
     let evidence: StatTile.Evidence?
     @Environment(\.dismiss) private var dismiss
 
@@ -14,10 +14,10 @@ struct TileExplainerSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    if let about { Text(about).font(.body) }
+                    Text(about).font(.body)
                     if let evidence {
                         EvidenceDetails(reason: evidence.reason, guidelines: evidence.guidelines, references: evidence.references,
-                                        heading: about == nil ? nil : "The evidence")
+                                        heading: "The evidence")
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

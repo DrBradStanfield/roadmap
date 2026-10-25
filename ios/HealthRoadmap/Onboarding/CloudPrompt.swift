@@ -1,17 +1,41 @@
 import SwiftUI
 
 /// When to offer a backup to the person's own cloud (US-57 AC8, AC9): once, after their
-/// third save, never while a cloud is connected or a tour tip is still due. Showing it
-/// uses it up, whichever button is tapped. Only a count (at most 3) and a done flag are
-/// kept, in UserDefaults; never a health value.
+/// third own save, never while a cloud is connected. The third save also ends a tour still
+/// running (review R2b), so the tour never holds it back. Showing it uses it up, whichever
+/// button is tapped. Only a count (at most 3) and a done flag are kept, in UserDefaults;
+/// never a health value.
 final class CloudPrompt {
     private let defaults: UserDefaults
     private static let savesKey = "backup.saves"
     private static let shownKey = "backup.promptShown"
+    /// RecordStore's `ownSaves` already taken into account, counted or ignored.
+    private var seen = 0
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
+
+    /// RecordStore's running total of the person's saves: the ones not yet seen count.
+    func ownSaves(_ total: Int) {
+        for _ in seen..<max(seen, total) { saved() }
+        seen = max(seen, total)
+    }
+
+    /// Saves up to `total` were onboarding's answers, the last one included (review R1):
+    /// they never count.
+    func ignoreSaves(upTo total: Int) {
+        seen = max(seen, total)
+    }
+
+    /// The person's own saves so far, at most 3.
+    var saves: Int { defaults.integer(forKey: Self.savesKey) }
+
+    /// The third own save ends a tour still running (review R2b).
+    var endsTour: Bool { saves >= 3 }
+
+    /// Shown already: nothing more to wait for.
+    var isSpent: Bool { defaults.bool(forKey: Self.shownKey) }
 
     /// The person saved something (AC9 says which saves count; the caller decides).
     func saved() {
@@ -20,8 +44,8 @@ final class CloudPrompt {
     }
 
     /// True when the prompt should show now.
-    func isDue(connected: Bool, tourRunning: Bool) -> Bool {
-        !connected && !tourRunning && !defaults.bool(forKey: Self.shownKey) && defaults.integer(forKey: Self.savesKey) >= 3
+    func isDue(connected: Bool) -> Bool {
+        !connected && !isSpent && saves >= 3
     }
 
     /// The prompt showed: it never shows again, backed up or not.
@@ -49,14 +73,11 @@ struct CloudPromptView: View {
                 Text("Your record is only on this iPhone. Keep a copy in your own Dropbox or Google Drive, so a lost phone does not lose it. Dr Brad's server never sees it.")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
-                Button {
+                Button("Back up") {
                     dismiss()
                     backUp()
-                } label: {
-                    Text("Back up").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6).onAccentLabel()
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .buttonStyle(.accent)
                 .accessibilityIdentifier("backup.backUp")
                 Button("Not now") { dismiss() }
                     .accessibilityIdentifier("backup.notNow")

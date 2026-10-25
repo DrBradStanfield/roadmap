@@ -236,12 +236,9 @@ struct OnboardingView: View {
     }
 
     private func primary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title).font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6).onAccentLabel()
-        }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        .accessibilityIdentifier(id)
+        Button(title, action: action)
+            .buttonStyle(.accent)
+            .accessibilityIdentifier(id)
     }
 
     private func secondary(_ title: String, id: String, action: @escaping () -> Void) -> some View {

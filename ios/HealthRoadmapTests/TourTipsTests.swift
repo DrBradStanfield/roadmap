@@ -31,10 +31,16 @@ final class TourTipsTests: XCTestCase {
 
     func testSkipEndsTheTourFromAnyTip() {
         for step in [TourStep.snapshot, .foundation, .bloodTests] {
-            XCTAssertEqual(step.skipped(), .done, "AC3")
-            XCTAssertEqual(step.skipped().started(), .done, "a skipped tour never comes back")
+            XCTAssertEqual(step.ended(), .done, "AC3")
+            XCTAssertEqual(step.ended().started(), .done, "a skipped tour never comes back")
         }
-        XCTAssertEqual(TourStep.notStarted.skipped(), .notStarted)
+    }
+
+    /// Review R2(b): the third save ends a tour still running; it never starts one that
+    /// never ran (a phone onboarded before the tour).
+    func testEndingLeavesAnUnstartedTourAlone() {
+        XCTAssertEqual(TourStep.notStarted.ended(), .notStarted)
+        XCTAssertEqual(TourStep.done.ended(), .done)
     }
 
     func testEachTipShowsAtItsOwnStepOnly() {
@@ -45,6 +51,10 @@ final class TourTipsTests: XCTestCase {
     /// Brad 2026-10-25: exactly three tips, one short line each.
     func testThreeTipsOneShortLineEach_AC4_AC6_AC7() {
         XCTAssertEqual(TourStep.allCases.filter(\.isTip), [.snapshot, .foundation, .bloodTests])
+        XCTAssertEqual([SnapshotTip.step, FoundationTip.step, BloodTestsTip.step], [.snapshot, .foundation, .bloodTests],
+                       "each tip carries its own step")
+        XCTAssertEqual([SnapshotTip.tab, FoundationTip.tab, BloodTestsTip.tab], [.plan, .plan, .data],
+                       "and its own tab: a hidden tab's tip never shows over another")
         XCTAssertEqual(SnapshotTip.line, "A snapshot of your health. Tap any tile to learn more.")
         XCTAssertEqual(FoundationTip.line, "Start here. Each step comes with the reason and the evidence.")
         XCTAssertEqual(BloodTestsTip.line, "The more you add, the more personal your plan. A lab report fills these in for you.")

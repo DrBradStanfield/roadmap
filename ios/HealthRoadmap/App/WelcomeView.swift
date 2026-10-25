@@ -48,11 +48,8 @@ struct WelcomeView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Button(action: getStarted) {
-                Text("Get started").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6).onAccentLabel()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            Button("Get started", action: getStarted)
+            .buttonStyle(.accent)
             .padding(.top, 16)
             .accessibilityIdentifier("welcome.start")
             if sync != nil {

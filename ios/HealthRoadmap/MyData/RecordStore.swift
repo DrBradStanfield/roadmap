@@ -47,8 +47,9 @@ final class RecordStore {
     private(set) var erasures = 0
     /// Per-test units (US-25 AC17e): this phone's preference, as the web's are its browser's.
     private(set) var unitChoices = UnitChoices.saved() { didSet { if unitChoices != oldValue { revision += 1 } } }
-    /// The person's own saves (US-57 AC9): a sheet's edit or a lab report's values, never
-    /// an Apple Health import (`applyNow`) or a units choice. The cloud prompt counts them.
+    /// The person's own saves (US-57 AC9): a sheet's edit or a lab report's values that
+    /// changed the record, never an Apple Health import (`applyNow`) or a units choice.
+    /// The cloud prompt counts them.
     private(set) var ownSaves = 0
     /// Moves whenever the record or the per-test units change: a page keyed on it asks again.
     private(set) var revision = 0
@@ -373,11 +374,13 @@ final class RecordStore {
         // The master units switch holds entry while it lands, as a per-test one does.
         let switching = Self.clearsChoices(edit)
         if switching { unitSwitches += 1 }
-        let result = await chain {
+        let (result, changed) = await chain {
             defer { if switching { self.unitSwitches -= 1 } }
-            return await self.applyInTurn(edit, as: seen)
+            let before = self.recordJSON
+            return (await self.applyInTurn(edit, as: seen), self.recordJSON != before)
         }.value
-        if result == .saved, !switching { ownSaves += 1 }
+        // An edit that changed nothing is not a save (review R5).
+        if changed, !switching { ownSaves += 1 }
         return result
     }
 
@@ -468,8 +471,11 @@ final class RecordStore {
     /// device brought in meanwhile as saved (Codex re-check R3).
     func importLabs(extractionJSON: String, refs: [String], reportDay: String) async -> Result<LabSaveSummary, LabRefusal> {
         let seen = pinned ?? screen
-        let result = await chain { await self.importLabsInTurn(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, as: seen) }.value
-        if case .success = result { ownSaves += 1 }
+        let (result, changed) = await chain {
+            let before = self.recordJSON
+            return (await self.importLabsInTurn(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, as: seen), self.recordJSON != before)
+        }.value
+        if changed, case .success = result { ownSaves += 1 }
         return result
     }
 

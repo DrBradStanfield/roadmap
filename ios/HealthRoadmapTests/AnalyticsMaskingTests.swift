@@ -53,14 +53,14 @@ final class AnalyticsMaskingTests: XCTestCase {
     }
 
     func testEachTourTipHasItsOwnClosedAndSkippedWords_US57() {
-        XCTAssertEqual(Analytics.Event.tipClosed(.snapshot), .tourTipClosed1)
-        XCTAssertEqual(Analytics.Event.tipClosed(.foundation), .tourTipClosed2)
-        XCTAssertEqual(Analytics.Event.tipClosed(.bloodTests), .tourTipClosed3)
-        XCTAssertEqual(Analytics.Event.skipped(.snapshot), .tourSkipped1)
-        XCTAssertEqual(Analytics.Event.skipped(.foundation), .tourSkipped2)
-        XCTAssertEqual(Analytics.Event.skipped(.bloodTests), .tourSkipped3)
-        XCTAssertNil(Analytics.Event.tipClosed(.notStarted))
-        XCTAssertNil(Analytics.Event.skipped(.done))
+        XCTAssertEqual(Analytics.Event.tip(.snapshot, skipped: false), .tourTipClosed1)
+        XCTAssertEqual(Analytics.Event.tip(.foundation, skipped: false), .tourTipClosed2)
+        XCTAssertEqual(Analytics.Event.tip(.bloodTests, skipped: false), .tourTipClosed3)
+        XCTAssertEqual(Analytics.Event.tip(.snapshot, skipped: true), .tourSkipped1)
+        XCTAssertEqual(Analytics.Event.tip(.foundation, skipped: true), .tourSkipped2)
+        XCTAssertEqual(Analytics.Event.tip(.bloodTests, skipped: true), .tourSkipped3)
+        XCTAssertNil(Analytics.Event.tip(.notStarted, skipped: false))
+        XCTAssertNil(Analytics.Event.tip(.done, skipped: true))
     }
 
     func testNoProjectIdMeansClarityStaysOff_AC19() {

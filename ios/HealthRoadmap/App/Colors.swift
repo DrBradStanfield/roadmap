@@ -33,6 +33,22 @@ extension View {
     func onAccentLabel() -> some View { modifier(OnAccentLabel()) }
 }
 
+/// The app's filled accent button: a headline label, full width, OnAccent text (US-25
+/// AC17c). Onboarding, the welcome screen, the tour's tip and the cloud prompt use it.
+struct AccentButtonStyle: PrimitiveButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button(role: configuration.role, action: configuration.trigger) {
+            configuration.label.font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6).onAccentLabel()
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+    }
+}
+
+extension PrimitiveButtonStyle where Self == AccentButtonStyle {
+    static var accent: AccentButtonStyle { AccentButtonStyle() }
+}
+
 private struct OnAccentLabel: ViewModifier {
     @Environment(\.isEnabled) private var enabled
 

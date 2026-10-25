@@ -63,23 +63,16 @@ final class Analytics {
         case tileExplainerOpened = "Tile explainer opened"
         case cloudPromptShown = "Cloud prompt shown", cloudPromptBackUp = "Cloud prompt back up", cloudPromptNotNow = "Cloud prompt not now"
 
-        /// A tour tip closed with its x, or acted on: the tour moved on.
-        static func tipClosed(_ step: TourStep) -> Event? {
-            switch step {
-            case .snapshot: .tourTipClosed1
-            case .foundation: .tourTipClosed2
-            case .bloodTests: .tourTipClosed3
-            case .notStarted, .done: nil
-            }
-        }
-
-        /// "Skip tour" on a tip.
-        static func skipped(_ step: TourStep) -> Event? {
-            switch step {
-            case .snapshot: .tourSkipped1
-            case .foundation: .tourSkipped2
-            case .bloodTests: .tourSkipped3
-            case .notStarted, .done: nil
+        /// A tour tip closed (its x, a tap outside it, its action, or no anchor) or skipped.
+        static func tip(_ step: TourStep, skipped: Bool) -> Event? {
+            switch (step, skipped) {
+            case (.snapshot, false): .tourTipClosed1
+            case (.foundation, false): .tourTipClosed2
+            case (.bloodTests, false): .tourTipClosed3
+            case (.snapshot, true): .tourSkipped1
+            case (.foundation, true): .tourSkipped2
+            case (.bloodTests, true): .tourSkipped3
+            default: nil
             }
         }
     }

@@ -70,6 +70,8 @@ struct RootView: View {
         }
         .sensoryFeedback(.selection, trigger: tab)
         .onChange(of: tab) { offerCloud() }
+        // A tour tip shows only on its own tab (TourTips.swift).
+        .onChange(of: tab, initial: true) { Tour.showing(tab == .plan ? .plan : tab == .data ? .data : .other) }
         // Clarity starts only once the whole window is masked (Analytics.swift, D9).
         .background(WindowReader {
             window = $0
@@ -79,6 +81,7 @@ struct RootView: View {
         // Edit sheets pin the record they opened on (MyData/RecordPin.swift).
         .environment(store)
         .environment(\.analytics, analytics)
+        .onAppear { Tour.finished = { Task { await offerCloudSoon() } } }
         .sheet(isPresented: $offeringCloud, onDismiss: cloudPromptClosed) {
             CloudPromptView { backingUp = true }
                 .onAppear {
@@ -89,12 +92,13 @@ struct RootView: View {
         }
         .sheet(isPresented: $showSync) { SyncView(sync: sync) }
         .task(id: store.ownSaves) {
-            // The person's own saves after onboarding (AC9); onboarding's answers are made
-            // under its cover. A pause first, so the sheet that saved has closed.
-            guard store.ownSaves > 0, onboarded, firstRun == nil else { return }
-            cloudPrompt.saved()
-            try? await Task.sleep(for: .seconds(1))
-            if !Task.isCancelled { offerCloud() }
+            // The person's own saves after onboarding (AC9). Onboarding's answers are made
+            // under its cover; finishOnboarding passes over its last one (review R1).
+            guard onboarded, firstRun == nil else { return cloudPrompt.ignoreSaves(upTo: store.ownSaves) }
+            cloudPrompt.ownSaves(store.ownSaves)
+            // The third own save ends a tour still running, so it never blocks the prompt (R2b).
+            if cloudPrompt.endsTour { _ = Tour.end() }
+            await offerCloudSoon()
         }
         .fullScreenCover(isPresented: Binding(get: { firstRun != nil }, set: { if !$0 { firstRun = nil } })) {
             firstRunCover
@@ -121,7 +125,10 @@ struct RootView: View {
             // leaving the tab during it cancels the ask without using it up.
             guard tab == .plan else { return }
             try? await Task.sleep(for: .seconds(2))
-            if !Task.isCancelled, reviewPrompt.planOpened() { requestReview() }
+            // Never over the cloud prompt, a tour tip or any sheet (review R7): a later
+            // visit asks instead, since planOpened is not used up here.
+            guard !Task.isCancelled, !offeringCloud, quiet else { return }
+            if reviewPrompt.planOpened() { requestReview() }
         }
     }
 
@@ -222,16 +229,28 @@ struct RootView: View {
         takeCount()
         tab = .plan
         firstRun = nil
+        // Onboarding's answers, the last one included, are not the person's own saves (R1).
+        cloudPrompt.ignoreSaves(upTo: store.ownSaves)
         // The tour continues on My plan, once ever (US-57 AC1).
         if Tour.start() { analytics.event(.tourStarted) }
     }
 
     // MARK: Cloud prompt (US-57 AC8)
 
-    /// Offers the backup when it is due, at a quiet moment: no cover, no sheet up.
+    /// No sheet, popover or alert is up in the window.
+    private var quiet: Bool { window?.rootViewController?.presentedViewController == nil }
+
+    /// Offers the backup when it is due, at a quiet moment: no cover, no sheet up. A pause
+    /// first, so the sheet that saved, or the tip that closed, has gone. Nothing waits once
+    /// the prompt is spent.
+    private func offerCloudSoon() async {
+        guard !cloudPrompt.isSpent else { return }
+        try? await Task.sleep(for: .seconds(1))
+        if !Task.isCancelled { offerCloud() }
+    }
+
     private func offerCloud() {
-        guard firstRun == nil, window?.rootViewController?.presentedViewController == nil,
-              cloudPrompt.isDue(connected: sync.provider != nil, tourRunning: Tour.running) else { return }
+        guard firstRun == nil, quiet, cloudPrompt.isDue(connected: sync.provider != nil) else { return }
         offeringCloud = true
     }
 

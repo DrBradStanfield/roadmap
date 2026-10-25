@@ -15,20 +15,35 @@ struct SummaryTiles: View {
         LazyVGrid(columns: columns, spacing: 12) {
             ForEach(tiles) { tile in
                 // Every tile says what it is (US-57 AC5); a known minor's has no why (US-07 AC6).
-                Button {
+                let button = Button {
                     opened = tile
                     analytics?.event(.tileExplainerOpened)
                 } label: { TileCard(tile: tile) }
                     .buttonStyle(PressableStyle())
-                    .disabled(!tile.opens)
-                    .accessibilityHint(tile.opens ? "Shows what it means" : "")
+                    .accessibilityHint("Shows what it means")
+                // At accessibility sizes the one-column grid is taller than the screen, which
+                // left the tip no room: it points at the first tile instead (review R3).
+                if textSize.isAccessibilitySize, tile.id == tiles.first?.id {
+                    button.tourTip(SnapshotTip())
+                } else {
+                    button
+                }
             }
         }
         // One tip for the whole row, never one per tile (Brad 2026-10-25).
-        .tourTip(SnapshotTip(), step: .snapshot, arrowEdge: .bottom)
+        .modifier(SnapshotAnchor(on: !textSize.isAccessibilitySize))
         .sheet(item: $opened) { tile in
             TileExplainerSheet(title: tile.label, about: tile.about, evidence: tile.evidence)
         }
+    }
+}
+
+/// Tour tip 1 on the whole grid, unless the first tile carries it.
+private struct SnapshotAnchor: ViewModifier {
+    let on: Bool
+
+    func body(content: Content) -> some View {
+        if on { content.tourTip(SnapshotTip(), arrowEdge: .bottom) } else { content }
     }
 }
 

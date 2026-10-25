@@ -89,6 +89,17 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(store.ownSaves, 2, "a saved lab report counts once")
     }
 
+    /// Review R5: an edit the engine finds changes nothing is not a save.
+    func testAnEditThatChangesNothingIsNotCounted_US57() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.profile(sex: "male")))
+        XCTAssertEqual(store.ownSaves, 1)
+        let before = store.recordJSON
+        await XCTAssertSaved(await store.apply(.profile(sex: "male")))
+        XCTAssertEqual(store.recordJSON, before, "the engine wrote nothing")
+        XCTAssertEqual(store.ownSaves, 1, "so nothing is counted")
+    }
+
     /// A value page asks for its history on every redraw; the answer is cached per
     /// record, so a correction must show at once (US-25 AC9, the cache in RecordStore).
     func testTheValueHistoryFollowsACorrection() async throws {

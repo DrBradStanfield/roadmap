@@ -158,22 +158,26 @@ on", so each tip is one line. The story and its ACs are US-57.
 3. **Blood tests, on My data**: "The more you add, the more personal your plan. A lab
    report fills these in for you." Its action, "Add a lab report", opens the lab upload.
 
-Tips 1 and 2 offer "Skip tour" as plain text. The x moves on to the next tip. A tap
-outside a popover only hides it: the same tip shows on return (iOS 27; iOS 17 was not
-checked, no runtime installed).
+Tips 1 and 2 offer "Skip tour" as plain text. The x moves on to the next tip, and so does
+a tap outside it (review R2a, 2026-10-25): TipKit only hides a popover then, and the tour
+must end. A screen that cannot draw a tip's anchor passes that step. The person's third
+own save ends a tour still running. At accessibility text sizes a tip scrolls.
 
 No cloud sign-up in the tour. One prompt after the person's third own save (a My data
 edit or a saved lab report, not onboarding's answers, Apple Health or a merge) offers a
-copy in their own Dropbox or Google Drive. It shows once, waits for the tour to finish
-and for no sheet to be up, and opens the Sync sheet once it has gone.
+copy in their own Dropbox or Google Drive. It shows once, waits for no sheet or tip to
+be up, and opens the Sync sheet once it has gone. Onboarding's last answer lands in the
+same turn as onboarding ends, so `finishOnboarding` passes over it (review R1).
 
 ### Code
 
 - `Onboarding/TourTips.swift`: the three tips, the tour's step (one TipKit parameter),
-  `TourStep` (the pure order: close moves on, skip ends), the `tourTip` modifier the
-  anchors use (it sends the fixed Clarity events), `TourTipStyle` (the app's accent
-  button, OnAccent text), and `TourSetup` (`Tips.configure` at launch; `--ui-testing`
-  hides the tips, `--ui-testing --show-tips` starts them fresh).
+  `TourStep` (the pure order: close moves on, skip ends), the `TourTip` protocol (each
+  tip's step and line), the `tourTip` modifier the anchors use and `tourStep(_:hasNoAnchor:)`
+  for a screen that cannot draw one (both send the fixed Clarity events), `TourTipStyle`
+  (its view leaving counts as closed; scrolls at large sizes; `AccentButtonStyle` from
+  Colors.swift), and `TourSetup` (`Tips.configure` at launch; `--ui-testing` hides the
+  tips, `--ui-testing --show-tips` starts them fresh).
 - Anchors: `SummaryTiles` (the grid, tip 1), `PlanView` (the first Foundation card,
   tip 2), `MyDataView` (the Blood tests header, tip 3). `RootView.finishOnboarding`
   starts the tour.

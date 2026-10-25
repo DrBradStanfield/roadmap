@@ -51,6 +51,8 @@ struct PlanSection: Decodable, Identifiable {
     let cards: [PlanCard]
 
     var id: String { key }
+    /// health-core's Foundation section (planSections' `info`), where tour tip 2 anchors.
+    var isFoundation: Bool { key == "info" }
 }
 
 /// One card: a single suggestion, or two or more of one category grouped together.
@@ -87,10 +89,9 @@ struct StatTile: Decodable, Identifiable {
     let unit: String
     let status: Status?
     let evidence: Evidence?
-    /// What the tile is, in plain words (US-57 AC5); a known minor's tile has it too.
-    let about: String?
+    /// What the tile is, in plain words (US-57 AC5); a known minor's tile has it too, so
+    /// every tile opens.
+    let about: String
 
     var id: String { key }
-    /// A tile is a button when it has anything to show.
-    var opens: Bool { about != nil || evidence != nil }
 }

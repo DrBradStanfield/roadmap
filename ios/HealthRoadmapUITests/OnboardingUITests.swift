@@ -154,8 +154,9 @@ final class OnboardingUITests: XCTestCase {
         "The more you add, the more personal your plan. A lab report fills these in for you.",
     ]
 
-    /// US-57: after onboarding, the three tips in order, one at a time; a tile explains
-    /// itself; the last tip's action opens the lab upload (AC1, AC2, AC4-AC7).
+    /// US-57: after onboarding, the three tips in order, one at a time; a tap outside a
+    /// tip moves on as its x does; a tile explains itself; the last tip's action opens the
+    /// lab upload and ends the tour for good (AC1-AC7; review R2a, R5).
     @MainActor
     func testTheTourWalksItsThreeTips_US57() throws {
         let app = launch(tips: true)
@@ -163,22 +164,28 @@ final class OnboardingUITests: XCTestCase {
         answerWeight(app)
 
         let snapshot = app.staticTexts[Self.tourLines[0]]
+        let foundation = app.staticTexts[Self.tourLines[1]]
+        let bloodTests = app.staticTexts[Self.tourLines[2]]
         XCTAssertTrue(snapshot.waitForExistence(timeout: 10), "tip 1 shows on My plan after onboarding")
-        XCTAssertFalse(app.staticTexts[Self.tourLines[1]].exists, "one tip at a time")
+        XCTAssertFalse(foundation.exists, "one tip at a time")
         XCTAssertTrue(app.buttons["Skip tour"].exists, "the tour can be skipped")
         snap(app, "tour 1 snapshot")
         closeTip(app)
+        XCTAssertTrue(snapshot.waitForNonExistence(timeout: 5))
 
-        let foundation = app.staticTexts[Self.tourLines[1]]
         XCTAssertTrue(foundation.waitForExistence(timeout: 10), "tip 2 follows tip 1")
-        XCTAssertFalse(snapshot.exists)
         snap(app, "tour 2 foundation")
-        closeTip(app)
-        XCTAssertFalse(foundation.waitForExistence(timeout: 2))
+        // A tap outside the tip only dismisses it, and counts as closed (review R2a).
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).tap()
+        XCTAssertTrue(foundation.waitForNonExistence(timeout: 5))
+        // Its card on screen again: the tip does not come back. (Not by visiting My data:
+        // tip 3 would show there, and leaving the tab counts as closing it too.)
+        app.swipeDown()
+        XCTAssertFalse(foundation.waitForExistence(timeout: 3), "tip 2 does not come back: the tour moved on")
 
         // Every tile explains itself, for good (AC5).
         let tile = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Ideal Body Weight'")).firstMatch
-        if !tile.isHittable { app.swipeDown() }
+        for _ in 0..<4 where !tile.isHittable { app.swipeDown() }
         tile.tap()
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'A healthy weight for your height and sex'")).firstMatch.waitForExistence(timeout: 5),
                       "the tile's what-it-is")
@@ -186,29 +193,117 @@ final class OnboardingUITests: XCTestCase {
         app.buttons["Done"].tap()
 
         app.tabBars.buttons["My data"].tap()
-        let bloodTests = app.staticTexts[Self.tourLines[2]]
-        var tries = 0
-        while !bloodTests.exists && tries < 8 { app.swipeUp(); tries += 1 }
+        for _ in 0..<8 where !bloodTests.exists { app.swipeUp() }
         XCTAssertTrue(bloodTests.waitForExistence(timeout: 10), "tip 3 shows at Blood tests on My data")
         snap(app, "tour 3 blood tests")
         app.buttons["Add a lab report"].tap()
         XCTAssertTrue(app.staticTexts["Add medical records"].waitForExistence(timeout: 5), "the action opens the lab upload")
-        XCTAssertFalse(bloodTests.exists, "acting on it ends the tour")
         snap(app, "tour lab upload")
+        app.buttons["Close"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Add medical records"].waitForNonExistence(timeout: 5))
+        // Back at the Blood tests header, on screen: the tour has ended (review R5).
+        app.tabBars.buttons["My plan"].tap()
+        app.tabBars.buttons["My data"].tap()
+        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"], in: app), "the header tip 3 anchors to is on screen")
+        XCTAssertFalse(bloodTests.waitForExistence(timeout: 3), "tip 3 never shows again")
     }
 
-    /// "Skip tour" ends it: no later tip shows (AC3).
+    /// "Skip tour" ends it: with each later anchor on screen, no later tip shows (AC3, review R5).
     @MainActor
     func testSkipEndsTheTour_US57() throws {
         let app = launch(tips: true)
         try answerUpToWeight(app)
         answerWeight(app)
-        XCTAssertTrue(app.buttons["Skip tour"].waitForExistence(timeout: 10))
+        let snapshot = app.staticTexts[Self.tourLines[0]]
+        XCTAssertTrue(snapshot.waitForExistence(timeout: 10))
         app.buttons["Skip tour"].tap()
+        XCTAssertTrue(snapshot.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(scrollTo(app.staticTexts["Foundation"], in: app), "the Foundation section, where tip 2 anchors, is on screen")
         XCTAssertFalse(app.staticTexts[Self.tourLines[1]].waitForExistence(timeout: 3), "no tip 2")
         app.tabBars.buttons["My data"].tap()
-        for _ in 0..<4 { app.swipeUp() }
-        XCTAssertFalse(app.staticTexts[Self.tourLines[2]].exists, "no tip 3")
+        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"], in: app), "the Blood tests header is on screen")
+        XCTAssertFalse(app.staticTexts[Self.tourLines[2]].waitForExistence(timeout: 3), "no tip 3")
+    }
+
+    /// At the largest accessibility text size a tip scrolls rather than clips, and its x
+    /// and its action stay reachable (AC11, review R3).
+    @MainActor
+    func testATipWorksAtTheLargestTextSize_US57() throws {
+        let app = launch(textSize: "UICTContentSizeCategoryAccessibilityXXXL", tips: true)
+        try answerUpToWeight(app, reachable: true)
+        answerWeight(app, reachable: true)
+        let snapshot = app.staticTexts[Self.tourLines[0]]
+        XCTAssertTrue(snapshot.waitForExistence(timeout: 10))
+        snap(app, "tour 1 snapshot AX5")
+        let skip = app.buttons["Skip tour"]
+        for _ in 0..<4 where !skip.isHittable { app.popovers.firstMatch.swipeUp() }
+        XCTAssertTrue(skip.isHittable, "Skip tour can be reached")
+        let close = app.buttons["Close"].firstMatch
+        for _ in 0..<4 where !close.isHittable { app.popovers.firstMatch.swipeDown() }
+        XCTAssertTrue(close.isHittable, "the x can be reached")
+        close.tap()
+        XCTAssertTrue(snapshot.waitForNonExistence(timeout: 5))
+    }
+
+    /// US-57 AC8, AC9 wiring (review R1, R5): with the tips hidden, onboarding's answers do
+    /// not count, two saves of the person's own show nothing, the third shows the cloud
+    /// prompt once (it also ends the hidden tour, R2b), and it never comes back.
+    @MainActor
+    func testTheThirdOwnSaveOffersACloudCopyOnce_US57() throws {
+        let app = launch()
+        try answerUpToWeight(app)
+        answerWeight(app)
+        XCTAssertTrue(app.tabBars.buttons["My plan"].waitForExistence(timeout: 10))
+        let prompt = app.staticTexts["Back up your record"]
+        XCTAssertFalse(prompt.waitForExistence(timeout: 3), "onboarding's answers are not the person's saves")
+        app.tabBars.buttons["My data"].tap()
+        // About you's sex switch (a segmented control); a bare "Male" query matched an
+        // element that took no tap, so only the first of three edits landed.
+        let sex = app.segmentedControls.containing(.button, identifier: "Male").firstMatch
+        XCTAssertTrue(scrollTo(sex, in: app))
+        let male = sex.buttons["Male"]
+        let female = sex.buttons["Female"]
+        pick(male, in: sex)
+        pick(female, in: sex)
+        XCTAssertFalse(prompt.waitForExistence(timeout: 3), "two saves are not enough")
+        pick(male, in: sex)
+        XCTAssertTrue(prompt.waitForExistence(timeout: 8), "the third own save offers the cloud copy")
+        snap(app, "cloud prompt")
+        app.buttons["backup.notNow"].tap()
+        XCTAssertTrue(prompt.waitForNonExistence(timeout: 5))
+        pick(female, in: sex)
+        app.tabBars.buttons["My plan"].tap()
+        XCTAssertFalse(prompt.waitForExistence(timeout: 4), "once only")
+    }
+
+    /// Taps a sex segment once the switch is enabled again (it is disabled while the last
+    /// edit lands, and drops a tap then by design), then waits for the tap to show. The
+    /// switch is first scrolled clear of the navigation bar and the tab bar: a tap on a
+    /// segment sitting under the nav bar is "hittable" yet lands on the bar, so it never
+    /// reaches the picker (the second and third taps of this test did exactly that).
+    @MainActor
+    private func pick(_ segment: XCUIElement, in control: XCUIElement) {
+        let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: control)
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 10), .completed, "the switch is enabled again")
+        let screen = XCUIApplication().windows.firstMatch.frame
+        for _ in 0..<10 where control.frame.minY < screen.height * 0.25 || control.frame.maxY > screen.height * 0.7 {
+            let up = control.frame.minY > screen.height * 0.5
+            let from = screen.height * (up ? 0.6 : 0.3), to = screen.height * (up ? 0.4 : 0.6)
+            let start = XCUIApplication().coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: from / screen.height))
+            let end = XCUIApplication().coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: to / screen.height))
+            start.press(forDuration: 0.05, thenDragTo: end)
+        }
+        segment.tap()
+        let shown = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isSelected == true"), object: segment)
+        XCTAssertEqual(XCTWaiter.wait(for: [shown], timeout: 5), .completed, "\(segment.label) shows as picked")
+    }
+
+    /// Scrolls the screen until `element` can be tapped.
+    @MainActor
+    private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
+        _ = element.waitForExistence(timeout: 5)
+        for _ in 0..<10 where !(element.exists && element.isHittable) { app.swipeUp() }
+        return element.exists && element.isHittable
     }
 
     /// Closes the tip on screen with its x.

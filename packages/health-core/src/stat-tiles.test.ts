@@ -1,6 +1,6 @@
 // US-25 AC22: the plan's summary tiles, one source for the web's Quick Stats and the phone's tiles.
 import { describe, expect, it } from 'vitest';
-import { STAT_TILE_ABOUT, statTiles, statTileText, type StatTile, type StatTileOptions } from './stat-tiles';
+import { STAT_TILE_ABOUT, statTiles, statTileText, type StatTile, type StatTileKey, type StatTileOptions } from './stat-tiles';
 import { calculateHealthResults } from './calculations';
 import { STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, getProteinEvidence } from './evidence';
 import type { HealthResults } from './types';
@@ -144,6 +144,11 @@ describe('a known minor (US-07 AC6)', () => {
 
 describe('what each tile is (US-57 AC5, Brad 2026-10-25)', () => {
   const KEYS = ['whtr', 'bmi', 'ibw', 'protein', 'apoB', 'nonHdl', 'ldl', 'egfr', 'lpa', 'hba1c'];
+
+  it('types every tile key, so a tile without a line does not compile', () => {
+    const keys: StatTileKey[] = KEYS as StatTileKey[];
+    for (const k of keys) expect(STAT_TILE_ABOUT[k], k).toBeTruthy();
+  });
 
   it('has one line for each of the ten tiles, and no other', () => {
     expect(Object.keys(STAT_TILE_ABOUT).sort()).toEqual([...KEYS].sort());

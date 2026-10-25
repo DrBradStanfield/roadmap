@@ -29,6 +29,8 @@ final class PlanLayoutTests: XCTestCase {
         let layout = sections.map { section in (section.title, section.cards.map { $0.suggestions.map(\.id) }) }
 
         XCTAssertEqual(layout.map(\.0), ["Next Steps", "Foundation", "Skin Health", "Supplements"])
+        // US-57 AC6: tour tip 2 anchors on the Foundation section's first card.
+        XCTAssertEqual(sections.map(\.isFoundation), [false, true, false, false])
         XCTAssertEqual(layout[0].1, [
             ["screening-colorectal", "screening-cervical"],
             ["weight-med-glp1", "med-ezetimibe"],
@@ -77,11 +79,8 @@ final class PlanLayoutTests: XCTestCase {
         XCTAssertEqual(tiles[3].status?.tone, "info")
         XCTAssertEqual("\(tiles[4].value) \(tiles[4].unit)", "5.6 %", "the phone's own units (AC17e)")
         for tile in tiles { XCTAssertFalse(tile.evidence?.reason.isEmpty ?? true, tile.key) }
-        // US-57 AC5: and what it is, so every tile opens.
-        for tile in tiles {
-            XCTAssertFalse(tile.about?.isEmpty ?? true, tile.key)
-            XCTAssertTrue(tile.opens, tile.key)
-        }
+        // US-57 AC5: and what it is, required, so every tile opens.
+        for tile in tiles { XCTAssertFalse(tile.about.isEmpty, tile.key) }
     }
 
     /// Re-check F1: a tile Swift cannot decode leaves no tiles, never a blank plan.

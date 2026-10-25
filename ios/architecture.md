@@ -998,7 +998,7 @@ INC. after enrolment; whether App Attest works under a personal team is not know
 is read, the sheet shows where it goes (`LabUpload/LabReadingDiagram.swift`, US-52 AC13): the
 report, "Read by AI", the record; it is not kept, and every value is checked before saving.
 
-### D9 · No server telemetry; Clarity with every screen masked (Brad, 2026-10-21, amended 2026-10-22)
+### D9 · No server telemetry; Clarity with every screen masked (Brad, 2026-10-21, amended 2026-10-22 and 2026-10-25)
 
 The app sends no product events to Brad's server. Health values never enter any telemetry.
 
