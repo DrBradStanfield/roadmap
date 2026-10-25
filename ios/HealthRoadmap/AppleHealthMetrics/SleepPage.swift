@@ -118,8 +118,8 @@ struct SleepPage: View {
     private var rangeView: some View {
         let geometry = geometry
         let inView = geometry.inViewNights(nights, from: scrolledTo)
-        let average = selected.map(\.asleep) ?? LiveMaths.averageAsleep(inView)
-        total(title: selected == nil ? "Avg. Time Asleep" : "Time Asleep", seconds: average,
+        let head = selected.map { Headline(title: $0.asleep > 0 ? "Time Asleep" : "Time in Bed", seconds: LiveMaths.shown($0)) } ?? Self.headline(inView)
+        total(title: head.title, seconds: head.seconds,
               span: selected.map { geometry.label(of: $0.day) } ?? geometry.label(from: scrolledTo))
         Chart {
             ForEach(nights) { night in
@@ -135,7 +135,7 @@ struct SleepPage: View {
                     .lineStyle(StrokeStyle(lineWidth: 1))
             }
         }
-        .chartForegroundStyleScale(domain: [SleepStage.deep, .core, .rem, .asleep].map(\.label), range: [SleepStage.deep, .core, .rem, .asleep].map(\.tint))
+        .chartForegroundStyleScale(domain: [SleepStage.deep, .core, .rem, .asleep, .inBed].map(\.label), range: [SleepStage.deep, .core, .rem, .asleep, .inBed].map(\.tint))
         .chartLegend(.hidden)
         .chartYAxis { AxisMarks { value in
             AxisGridLine()
@@ -161,9 +161,23 @@ struct SleepPage: View {
         .accessibilityChartDescriptor(SleepRangeDescriptor(nights: nights, calendar: live.calendar))
     }
 
+    /// W, M and 6M's headline for the nights in view.
+    struct Headline: Equatable {
+        let title: String
+        let seconds: TimeInterval?
+    }
+
+    /// Time asleep; nights recorded only as In Bed say time in bed (AC9, Codex R3).
+    static func headline(_ nights: [SleepNight]) -> Headline {
+        if let asleep = LiveMaths.averageAsleep(nights) { return Headline(title: "Avg. Time Asleep", seconds: asleep) }
+        if let inBed = LiveMaths.averageInBed(nights) { return Headline(title: "Avg. Time in Bed", seconds: inBed) }
+        return Headline(title: "Avg. Time Asleep", seconds: nil)
+    }
+
     /// A night's bar: its asleep stages stacked, deep at the bottom; or one "Asleep" bar.
     static func bars(_ night: SleepNight) -> [(SleepStage, TimeInterval)] {
-        night.hasStages ? [SleepStage.deep, .core, .rem].map { ($0, night.stages[$0] ?? 0) } : [(.asleep, night.asleep)]
+        if night.hasStages { return [SleepStage.deep, .core, .rem].map { ($0, night.stages[$0] ?? 0) } }
+        return night.asleep > 0 ? [(.asleep, night.asleep)] : [(.inBed, night.inBed)]
     }
 
     // MARK: Parts
@@ -191,7 +205,7 @@ struct SleepPage: View {
     /// Each stage's time with its colour, as Apple Health lists them under the chart.
     private func stagesList(_ stages: [SleepStage: TimeInterval], title: String?) -> some View {
         Section {
-            ForEach(stages.keys.sorted(), id: \.self) { stage in
+            ForEach(stages.keys.sorted().filter { stages[$0, default: 0] > 0 || stages.keys.contains(where: \.isStage) }, id: \.self) { stage in
                 LabeledContent {
                     Text(LiveMaths.duration(stages[stage] ?? 0).map { "\($0.0) \($0.1)" }.joined(separator: " ")).monospacedDigit()
                 } label: {
@@ -249,7 +263,7 @@ private struct SleepRangeDescriptor: AXChartDescriptorRepresentable {
     func makeChartDescriptor() -> AXChartDescriptor {
         let calendar = calendar
         let times = nights.map { $0.day.timeIntervalSince1970 }
-        let hours = nights.map { $0.asleep / 3600 }
+        let hours = nights.map { LiveMaths.shown($0) / 3600 }
         let xAxis = AXNumericDataAxisDescriptor(title: "Night", range: (times.min() ?? 0)...(times.max() ?? 0), gridlinePositions: []) {
             Date(timeIntervalSince1970: $0).formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, calendar: calendar, timeZone: calendar.timeZone))
         }

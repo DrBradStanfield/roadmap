@@ -14,8 +14,10 @@ protocol LiveHealthStore: Sendable {
     /// statistics: steps summed; heart rate lowest, highest and average; resting heart rate
     /// and VO2 max averaged. Not sleep.
     func points(_ metric: LiveMetric, from start: Date, to end: Date, every component: Calendar.Component) async throws -> [LivePoint]
-    /// The newest heart rate sample, for its card.
-    func latestHeartRate() async throws -> (value: Double, date: Date)?
+    /// The metric's newest sample, however old: its value and when it ended. Each card
+    /// starts from it, so a reading older than a card's trend still shows (Codex R2).
+    /// Sleep's value is 0: only its date is used.
+    func latest(_ metric: LiveMetric) async throws -> (value: Double, date: Date)?
     /// Sleep samples overlapping `start` to `end`.
     func sleep(from start: Date, to end: Date) async throws -> [SleepSegment]
 }
@@ -88,11 +90,17 @@ final class LiveHealthKitStore: LiveHealthStore {
     }
 
     @concurrent
-    func latestHeartRate() async throws -> (value: Double, date: Date)? {
-        let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: HKQuantityType(.heartRate))],
+    func latest(_ metric: LiveMetric) async throws -> (value: Double, date: Date)? {
+        if metric == .sleep {
+            let descriptor = HKSampleQueryDescriptor(predicates: [.categorySample(type: HKCategoryType(.sleepAnalysis))],
+                                                     sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
+            return try await Self.locking { try await descriptor.result(for: store) }.first.map { (0, $0.endDate) }
+        }
+        guard let type = Self.type(of: metric) as? HKQuantityType else { return nil }
+        let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: type)],
                                                  sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
         let samples = try await Self.locking { try await descriptor.result(for: store) }
-        return samples.first.map { ($0.quantity.doubleValue(for: Self.unit(.heartRate)), $0.endDate) }
+        return samples.first.map { ($0.quantity.doubleValue(for: Self.unit(metric)), $0.endDate) }
     }
 
     @concurrent

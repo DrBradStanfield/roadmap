@@ -5,23 +5,9 @@ import SwiftUI
 /// (AC6), each in the vitals card style. A metric with no data is left out. The sections
 /// read `LiveHealth` from the environment, so My data adds one line for each.
 
-extension MetricChart {
-    /// US-56's graph colours, hand-chosen pairs (light, dark) in the palette's rules: each
-    /// its own, 3:1 or better as a line on its card (LiveMathsTests), Apple Health's hues
-    /// (heart red, sleep teal, activity orange) calmer in dark mode. Kept apart from `palette`
-    /// until My data's phase 2 joins them.
-    nonisolated static let livePalette: [String: [Color]] = [
-        "heart_rate": [Color(light: 0xE5244B, dark: 0xEC7F92)],
-        "resting_heart_rate": [Color(light: 0xA8323E, dark: 0xC98C93)],
-        "sleep": [Color(light: 0x0E8A86, dark: 0x5EC2BC)],
-        "vo2_max": [Color(light: 0xB35C00, dark: 0xE0A46A)],
-        "steps": [Color(light: 0xD9480F, dark: 0xF0985E)],
-    ]
-}
-
 extension LiveMetric {
     /// Its graph colour.
-    var tint: Color { MetricChart.livePalette[paletteKey]?.first ?? .accentColor }
+    var tint: Color { MetricChart.colors(for: paletteKey)[0] }
 }
 
 extension SleepStage {
@@ -170,7 +156,10 @@ struct LiveCardView: View {
                 }
             }
             HStack(alignment: .bottom) {
-                LiveValue(metric: metric, value: card.value)
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    LiveValue(metric: metric, value: card.value)
+                    if card.inBed { Text("in bed").font(.subheadline.weight(.medium)).foregroundStyle(.secondary) }
+                }
                 Spacer(minLength: 12)
                 if !textSize.isAccessibilitySize {
                     Sparkline(points: card.trend, tint: metric.tint, size: CGSize(width: 110, height: 40))
@@ -180,13 +169,14 @@ struct LiveCardView: View {
         .padding(.vertical, 4)
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(LiveCardView.spoken(metric, value: card.value, when: when))
+        .accessibilityLabel(LiveCardView.spoken(metric, card: card, when: when))
         .accessibilityAddTraits(.isButton)
     }
 
     /// "Heart Rate, 72 beats per minute, 10:42."
-    static func spoken(_ metric: LiveMetric, value: Double, when: String) -> String {
-        let reading = metric == .sleep ? "\(metric.text(value)) asleep" : "\(metric.text(value)) \(metric.spokenUnit)"
+    static func spoken(_ metric: LiveMetric, card: LiveCard, when: String) -> String {
+        let value = card.value
+        let reading = metric == .sleep ? "\(metric.text(value)) \(card.inBed ? "in bed" : "asleep")" : "\(metric.text(value)) \(metric.spokenUnit)"
         return "\(metric.label), \(reading), \(when)"
     }
 }

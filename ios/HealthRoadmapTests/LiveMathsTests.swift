@@ -90,11 +90,39 @@ final class LiveMathsTests: XCTestCase {
             SleepSegment(stage: .asleep, start: try at("2026-10-21T23:30:00Z"), end: try at("2026-10-22T07:00:00Z"), source: "watch"),
             SleepSegment(stage: .inBed, start: try at("2026-10-22T22:00:00Z"), end: try at("2026-10-23T06:00:00Z"), source: "phone"),
         ], calendar: calendar)
-        let card = try XCTUnwrap(LiveMaths.card(nights: nights))
-        XCTAssertEqual(card.value, 7.5 * 3600, "the newest night with sleep; a night only in bed is not asleep")
+        let card = try XCTUnwrap(LiveMaths.card(nights: Array(nights.prefix(2))))
+        XCTAssertEqual(card.value, 7.5 * 3600, "the newest night's time asleep")
         XCTAssertEqual(card.date, try at("2026-10-22T00:00:00Z"))
         XCTAssertEqual(card.trend, [7, 7.5])
+        XCTAssertFalse(card.inBed)
+        // Codex R3: a newest night recorded only as In Bed shows as time in bed, as Apple Health shows it.
+        let inBed = try XCTUnwrap(LiveMaths.card(nights: nights))
+        XCTAssertEqual(inBed.value, 8 * 3600)
+        XCTAssertEqual(inBed.date, try at("2026-10-23T00:00:00Z"))
+        XCTAssertTrue(inBed.inBed)
+        XCTAssertEqual(inBed.trend, [7, 7.5, 8])
         XCTAssertNil(LiveMaths.card(nights: []))
+    }
+
+    /// Codex R3, AC9: a history recorded only as In Bed (the iPhone's sleep schedule, an
+    /// older app) keeps its card and its page, labelled time in bed.
+    func testAnInBedOnlyHistoryShowsTimeInBed_R3_AC9() throws {
+        let calendar = try calendar("UTC")
+        let nights = LiveMaths.nights([
+            SleepSegment(stage: .inBed, start: try at("2026-10-20T22:00:00Z"), end: try at("2026-10-21T06:00:00Z"), source: "phone"),
+            SleepSegment(stage: .inBed, start: try at("2026-10-21T23:00:00Z"), end: try at("2026-10-22T06:00:00Z"), source: "phone"),
+        ], calendar: calendar)
+        let card = try XCTUnwrap(LiveMaths.card(nights: nights), "an In Bed-only history has a card")
+        XCTAssertTrue(card.inBed)
+        XCTAssertEqual(card.value, 7 * 3600)
+        XCTAssertEqual(card.trend, [8, 7])
+        XCTAssertEqual(LiveCardView.spoken(.sleep, card: card, when: "Today"), "Sleep, 7 hr in bed, Today")
+        XCTAssertEqual(SleepPage.bars(nights[0]).map(\.0), [.inBed], "the page draws time in bed")
+        XCTAssertEqual(SleepPage.bars(nights[0]).first?.1, 8 * 3600)
+        XCTAssertNil(LiveMaths.averageAsleep(nights))
+        XCTAssertEqual(LiveMaths.averageInBed(nights), 7.5 * 3600)
+        XCTAssertEqual(SleepPage.headline(nights), .init(title: "Avg. Time in Bed", seconds: 7.5 * 3600), "W, M and 6M say time in bed")
+        XCTAssertEqual(SleepPage.headline(nights.prefix(1) + []), .init(title: "Avg. Time in Bed", seconds: 8 * 3600))
     }
 
     func testTheCardSaysTimeTodayOrTheDay_AC6() throws {
@@ -193,30 +221,12 @@ final class LiveMathsTests: XCTestCase {
 
     // MARK: Colours and the screen name
 
-    /// AC6 with US-25 AC17: each new metric has its own graph colour, 3:1 on its card in light
-    /// and dark, shared with no vital or blood test.
-    func testEveryLiveMetricHasItsOwnReadableColour_AC6() {
-        for style in [UIUserInterfaceStyle.light, .dark] {
-            let traits = UITraitCollection(userInterfaceStyle: style)
-            let card = UIColor.secondarySystemGroupedBackground.resolvedColor(with: traits)
-            var seen: [String: String] = [:]
-            let all = MetricChart.palette.merging(MetricChart.livePalette) { old, _ in old }
-            XCTAssertEqual(all.count, MetricChart.palette.count + 5, "no key shared with the vitals' palette")
-            for metric in all.keys.sorted() {
-                for color in all[metric]! {
-                    let resolved = UIColor(color).resolvedColor(with: traits)
-                    if MetricChart.livePalette[metric] != nil {
-                        XCTAssertGreaterThanOrEqual(UIColor.contrast(resolved, card), 3, "\(metric) in \(style == .dark ? "dark" : "light")")
-                    }
-                    var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
-                    resolved.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-                    let key = [red, green, blue].map { String(format: "%.2f", $0) }.joined(separator: ",")
-                    XCTAssertNil(seen[key], "\(metric) shares \(seen[key] ?? "")'s colour")
-                    seen[key] = metric
-                }
-            }
+    /// AC6 with US-25 AC17: each new metric's graph colour is in the one palette, whose
+    /// test (MyDataLayoutTests) checks every colour is its own and 3:1 on its card.
+    func testEveryLiveMetricHasAPaletteColour_AC6() {
+        for metric in LiveMetric.allCases {
+            XCTAssertNotNil(MetricChart.palette[metric.paletteKey], metric.label)
         }
-        XCTAssertEqual(Set(LiveMetric.allCases.map(\.paletteKey)), Set(MetricChart.livePalette.keys))
     }
 
     /// The usage signal: one fixed screen name, no metric and no value in it.

@@ -59,6 +59,30 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertNotNil(live.cards[.steps])
     }
 
+    /// Codex R2: a card starts from the metric's newest reading, however old; it is not
+    /// lost because it falls outside the trend's 30 days or sleep's fortnight.
+    func testAnOldReadingStillGetsItsCard_R2() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let day = 86_400.0
+        let today = utc.startOfDay(for: now)
+        store.set(.vo2Max, days: [LivePoint(start: today.addingTimeInterval(-45 * day), value: 41.2)])
+        store.set(.steps, days: [LivePoint(start: today.addingTimeInterval(-90 * day), value: 4321)])
+        store.set(.restingHeartRate, days: [LivePoint(start: today.addingTimeInterval(-200 * day), value: 61),
+                                            LivePoint(start: today.addingTimeInterval(-201 * day), value: 63)])
+        let night = today.addingTimeInterval(-20 * day)
+        store.set(.sleep, segments: [SleepSegment(stage: .core, start: night.addingTimeInterval(-3600), end: night.addingTimeInterval(6 * 3600), source: "watch")])
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
+        await live.refresh()
+        XCTAssertEqual(live.cards[.vo2Max]?.value, 41.2, "a VO2 max from six weeks ago")
+        XCTAssertEqual(live.cards[.vo2Max]?.date, today.addingTimeInterval(-45 * day))
+        XCTAssertEqual(live.cards[.steps]?.value, 4321, "steps from three months ago")
+        XCTAssertEqual(live.cards[.restingHeartRate]?.value, 61)
+        XCTAssertEqual(live.cards[.restingHeartRate]?.trend, [63, 61], "its trend ends on it")
+        XCTAssertEqual(live.cards[.sleep]?.value, 7 * 3600, "a night from 20 days ago")
+        XCTAssertEqual(live.cards[.sleep]?.date, night)
+    }
+
     func testNothingIsKept_AC1_AC2() async {
         let before = Set(UserDefaults.standard.dictionaryRepresentation().keys)
         let store = FakeLiveStore(due: false)
@@ -187,17 +211,29 @@ private final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
         }
     }
 
-    func latestHeartRate() async throws -> (value: Double, date: Date)? {
+    func latest(_ metric: LiveMetric) async throws -> (value: Double, date: Date)? {
         try with { state in
             if state.locked { throw LiveHealthError.locked }
-            return state.empty.contains(.heartRate) ? nil : state.latest.map { (value: $0.0, date: $0.1) }
+            if state.empty.contains(metric) { return nil }
+            switch metric {
+            case .heartRate: return state.latest.map { (value: $0.0, date: $0.1) }
+            case .sleep: return state.segments.map(\.end).max().map { (value: 0, date: $0) }
+            default: return state.days[metric]?.filter { $0.value != nil }.max { $0.start < $1.start }.map { (value: $0.value!, date: $0.start.addingTimeInterval(43_200)) }
+            }
+        }
+    }
+
+    /// Replaces one metric's days, or sleep's segments.
+    func set(_ metric: LiveMetric, days: [LivePoint] = [], segments: [SleepSegment] = []) {
+        with { state in
+            if metric == .sleep { state.segments = segments } else { state.days[metric] = days }
         }
     }
 
     func sleep(from start: Date, to end: Date) async throws -> [SleepSegment] {
         try with { state in
             if state.locked { throw LiveHealthError.locked }
-            return state.empty.contains(.sleep) ? [] : state.segments
+            return state.empty.contains(.sleep) ? [] : state.segments.filter { $0.end > start && $0.start < end }
         }
     }
 }

@@ -168,7 +168,7 @@ actor AppAttestClient {
 private enum Keychain {
     private static var query: [String: Any] { [
         kSecClass as String: kSecClassGenericPassword,
-        kSecAttrService as String: "com.drbrad.healthroadmap.appattest",
+        kSecAttrService as String: "com.drstanfield.healthroadmap.appattest",
         kSecAttrAccount as String: "keyId",
     ] }
 

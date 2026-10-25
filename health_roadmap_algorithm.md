@@ -558,6 +558,8 @@ Used when medications are tracked and a lipid is at or above its target: the val
 | LDL | < 1.4 mmol/L | < 55 mg/dL |
 | Non-HDL | < 1.6 mmol/L | < 62 mg/dL |
 
+ApoB source: Brad's target, extended from the Ez-PAVE LDL-C target trial (Lee 2026) and PESA (Ibanez 2021), and lower than the ESC/EAS 2019 goal of < 65 mg/dL for very high risk.
+
 ---
 
 ## 4. Suggestion Algorithm

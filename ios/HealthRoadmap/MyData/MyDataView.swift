@@ -36,6 +36,10 @@ struct MyDataView: View {
     @State private var saves = 0
     /// A picker's edit is landing: the pickers wait, so a quick change back is never lost.
     @State private var picking = false
+    /// US-56: Apple Health's heart, sleep and fitness metrics, read live; the one whose page is pushed.
+    @Environment(LiveHealth.self) private var live: LiveHealth?
+    @State private var liveDetail: LiveMetric?
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         // The tab's NavigationStack is RootView's; this screen hides its bar.
@@ -49,6 +53,12 @@ struct MyDataView: View {
             .navigationDestination(item: $detail) { row in
                 MetricDetailView(store: store, row: row, saved: saved)
             }
+            .navigationDestination(item: $liveDetail) { metric in
+                if let live { LiveHealthPage(live: live, metric: metric) }
+            }
+            // Read from Health each time My data shows and on return to the app; nothing is kept (US-56 AC2).
+            .task { await live?.refresh() }
+            .onChange(of: scenePhase) { if scenePhase == .active { Task { await live?.refresh() } } }
             .sheet(isPresented: $showSync) { SyncView(sync: sync) }
             // Here, not on the header's "+": a sheet declared in a section header took
             // its grey text, large font and icon-only labels (seen 2026-10-22).
@@ -60,6 +70,9 @@ struct MyDataView: View {
             if let data = store.myData {
                 List {
                     vitals(data)
+                    // Under blood pressure: the access card, then heart rate, resting heart rate and sleep (US-56 AC5, AC6).
+                    LiveVitalsCards { liveDetail = $0 }
+                    LiveFitnessSection { liveDetail = $0 }
                     metrics(data.bloodTests) {
                         // Tour tip 3 (US-57 AC7); its action is the lab upload.
                         SectionTitle.bloodTests().tourTip(BloodTestsTip()) { addingLabs = true }

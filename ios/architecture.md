@@ -684,7 +684,7 @@ and sleep sit in Vitals under blood pressure; VO2 max and steps under a new Fitn
 VO2 max will show Apple's cardio fitness level, worked out in Swift (the D2 exception above; its
 table is not yet in the clinical files).
 
-**US-56 phase 1, built 2026-10-25 (not yet on My data).** `HealthRoadmap/AppleHealthMetrics/`:
+**US-56, built 2026-10-25 (phases 1 and 2), on My data.** `HealthRoadmap/AppleHealthMetrics/`:
 - `LiveHealthStore` is the protocol; `LiveHealthKitStore` the only code touching HealthKit for these
   five types, with its own `HKHealthStore` so its request never carries D6's six. It asks to read
   exactly heart rate, resting heart rate, sleep analysis, VO2 max and step count, shares none, and
@@ -693,23 +693,36 @@ table is not yet in the clinical files).
   hourly maths (steps summed, heart rate min, max and average, the others averaged); sleep is a
   category sample query.
 - `LiveMaths` (pure, tested) buckets days into weeks and months, works out the headline in view,
-  the cards' latest and trend, and sleep's nights. A night runs 6 pm to 6 pm in the phone's zone
+  the cards' latest and trend, and sleep's nights. A night recorded only as "In Bed" shows its time
+  in bed, on the card and the page (Codex R3). A night runs 6 pm to 6 pm in the phone's zone
   and is dated the morning it ends. Several writers can record one night and Apple's source order
   is not readable, so the writer with the most staged time draws the stages; with none, every
   writer's "asleep" is joined; "In Bed" comes from all. Overlaps count once.
-- `LiveHealth` (`@Observable`, main actor) holds only the access state and the cards, in memory.
+- `LiveHealth` (`@Observable`, main actor; one per app in `AppParts`, in the environment) holds only
+  the access state and the cards, in memory. Each card starts from the metric's newest sample
+  however old (`LiveHealthStore.latest`), then reads the 30 days (sleep: the fortnight) ending on it;
+  a fixed window back from today dropped a VO2 max from six weeks ago (Codex R2).
   No record row, file, UserDefaults value, log or telemetry (a source-scan test enforces it). A
   locked phone's read keeps the cards; the unlock notification reads again.
 - Views: `LiveVitalsCards` and `LiveFitnessSection` (sections that read `LiveHealth` from the
   environment), `LiveAccessCard`, `LiveCardView` (the vitals card, rebuilt from `CardValue`,
   `Sparkline` and `LabelValue` because heart rate shows a time, not a day), `LiveMetricPage`
   (D, W, M, 6M, Y; bars, low-to-high bars or points; read-only) and `SleepPage` (D's stages over the
-  night, W/M/6M stacked nights with stage averages). Colours: `MetricChart.livePalette`, kept apart
-  from `palette` until phase 2 joins them; Apple's stage colours by eye, to match on a real iPhone.
+  night, W/M/6M stacked nights with stage averages). Colours: five entries in `MetricChart.palette`
+  (checked by `MyDataLayoutTests` with the rest); Apple's stage colours by eye, to match on a real iPhone.
+- My data: `LiveVitalsCards` right after the vitals (so under blood pressure), then
+  `LiveFitnessSection`, both before Blood tests; tour tip 3 still anchors to the Blood tests header
+  (the tour UI tests pass). A tap pushes `LiveHealthPage` through My data's own
+  `navigationDestination`; My data reads Health on `.task` and on return to the app.
 - Usage signal: `Analytics.Screen.appleHealthMetric` ("Apple Health metric"); `LiveHealth.pagesOpen`
-  counts open pages for RootView's screen name (phase 2).
+  counts open pages, and RootView names the My data tab by it.
+- Simulator seeding: `App/LiveHealthSeed.swift`, DEBUG only (`#if DEBUG`, never in a release build):
+  `--seed-live-health` asks to write the five types and saves 60 days of synthetic samples and a
+  year of VO2 max. A sheet asked for during launch is dismissed by iOS, so it waits 4 s. Apple's
+  sheet in iOS 27 answers by "Select All", "Continue", "All Recorded Data", "Allow"; a UI test can
+  tap them only by screen point (the sheet reports its frames at a third of screen points).
 - Purpose string: the six "go only into your record"; the five are shown, not kept (AC10).
-- **AC8 not built.** Apple publishes only the Low rule (white paper, May 2021: lowest FRIEND quintile
+- **AC8 not built, blocked on Brad.** Apple publishes only the Low rule (white paper, May 2021: lowest FRIEND quintile
   for sex and decade at 20 to 59, Kaminsky 2015; below 18 mL/kg/min for men and 15 for women at 60
   and over). The other levels must be read off Apple Health by hand, then go through the three-file
   sync.
@@ -1366,8 +1379,8 @@ A new user answers sex, birth month and year, height and weight, one per screen,
    on a real iPhone (277 ms in a debug build in the simulator, 2026-10-23, the largest stall
    under an app screen).
 2. US-56: heart rate, resting heart rate, sleep, VO2 max and steps from Apple Health, read live (D6).
-   Phase 1 built 2026-10-25 (D6); left: the My data, palette and RootView wiring, AC8's table, a seeded
-   Health store check, and the real-iPhone comparison.
+   Built 2026-10-25 (D6), checked on seeded simulator data; left: AC8's table (Brad reads the levels
+   off Apple Health), and the side-by-side comparison on Brad's iPhone with a watch.
 3. `APP_ATTEST_TEAM_ID` on the education server, so chat and lab upload work on a phone (D8).
 4. The Clarity masking check on a real recording (D9).
 5. Known gap: an erase arriving from another device while a sheet is open may wait for the next

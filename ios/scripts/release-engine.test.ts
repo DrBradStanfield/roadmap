@@ -124,7 +124,7 @@ export async function resolve(specifier, context, next) {
     expect(Object.keys(m)).toEqual(['appId', 'bridge', 'channel', 'format', 'issuedAt', 'keyId', 'minAppBuild', 'minVersion', 'notAfter', 'schemaVersion', 'sha256', 'size', 'version']);
     expect(bytes.equals(canonicalManifest(m))).toBe(true);
     expect(m).toMatchObject({
-      appId: 'com.drbrad.healthroadmap', bridge: bridgeId(), channel: 'production', format: 1,
+      appId: 'com.drstanfield.healthroadmap', bridge: bridgeId(), channel: 'production', format: 1,
       issuedAt: '2026-10-22T03:15:00Z', notAfter: '2026-11-21T03:15:00Z', keyId: 'daily',
       minAppBuild: 3, minVersion: 0, schemaVersion: 2, version: 202610220315,
     });

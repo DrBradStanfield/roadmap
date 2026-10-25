@@ -68,27 +68,34 @@ final class LiveHealth {
         } while again
     }
 
-    /// The cards' readings, off the main thread: the last 30 days by day, the newest heart
-    /// rate, and the last fortnight's sleep.
+    /// The cards' readings, off the main thread, each metric on its own: its newest sample
+    /// however old, then the 30 days (sleep: the fortnight) ending on that sample's day for
+    /// the value and trend. A fixed window back from today lost a VO2 max from six weeks
+    /// ago (Codex R2).
     @concurrent
     nonisolated static func readCards(_ store: any LiveHealthStore, now: Date, calendar: Calendar) async throws -> [LiveMetric: LiveCard] {
-        let from = calendar.date(byAdding: .day, value: -29, to: calendar.startOfDay(for: now)) ?? now
-        let sleepFrom = calendar.date(byAdding: .day, value: -15, to: now) ?? now
-        async let heart = days(store, .heartRate, from: from, to: now)
-        async let resting = days(store, .restingHeartRate, from: from, to: now)
-        async let vo2 = days(store, .vo2Max, from: from, to: now)
-        async let steps = days(store, .steps, from: from, to: now)
-        async let latest = optional { try await store.latestHeartRate() }
-        async let segments = optional { try await store.sleep(from: sleepFrom, to: now) }
-        let read = try await (heart, resting, vo2, steps, latest, segments)
-        var cards: [LiveMetric: LiveCard] = [:]
-        // Heart rate's card needs a sample; its trend is the days' averages.
-        cards[.heartRate] = read.4.flatMap { latest in LiveMaths.card(days: read.0, latest: latest) }
-        cards[.restingHeartRate] = LiveMaths.card(days: read.1)
-        cards[.vo2Max] = LiveMaths.card(days: read.2)
-        cards[.steps] = LiveMaths.card(days: read.3)
-        cards[.sleep] = LiveMaths.card(nights: LiveMaths.nights(read.5 ?? [], calendar: calendar))
-        return cards
+        async let heart = card(store, .heartRate, now: now, calendar: calendar)
+        async let resting = card(store, .restingHeartRate, now: now, calendar: calendar)
+        async let sleep = card(store, .sleep, now: now, calendar: calendar)
+        async let vo2 = card(store, .vo2Max, now: now, calendar: calendar)
+        async let steps = card(store, .steps, now: now, calendar: calendar)
+        let read = try await [LiveMetric.heartRate: heart, .restingHeartRate: resting, .sleep: sleep, .vo2Max: vo2, .steps: steps]
+        return read.compactMapValues { $0 }
+    }
+
+    /// One metric's card, or nil when Health holds none of it.
+    private nonisolated static func card(_ store: any LiveHealthStore, _ metric: LiveMetric, now: Date, calendar: Calendar) async throws -> LiveCard? {
+        guard let latest = try await optional({ try await store.latest(metric) }) ?? nil else { return nil }
+        let newest = min(latest.date, now)
+        if metric == .sleep {
+            let from = calendar.date(byAdding: .day, value: -15, to: newest) ?? newest
+            let segments = try await optional { try await store.sleep(from: from, to: now) } ?? []
+            return LiveMaths.card(nights: LiveMaths.nights(segments, calendar: calendar))
+        }
+        let from = calendar.date(byAdding: .day, value: -29, to: calendar.startOfDay(for: newest)) ?? newest
+        let days = try await days(store, metric, from: from, to: now)
+        // Heart rate's card is its newest sample; its trend is the days' averages.
+        return LiveMaths.card(days: days, latest: metric == .heartRate ? latest : nil)
     }
 
     /// A metric page's readings (AC7): a year and a bit by day, the last week by hour.

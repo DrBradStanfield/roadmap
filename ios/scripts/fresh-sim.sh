@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 device="${1:-iPhone 18 Pro}"
-bundle=com.drbrad.healthroadmap
+bundle=com.drstanfield.healthroadmap
 derived="${HR_DERIVED_DATA:-$TMPDIR/HealthRoadmap-sim}"
 
 xcrun simctl boot "$device" 2>/dev/null || true

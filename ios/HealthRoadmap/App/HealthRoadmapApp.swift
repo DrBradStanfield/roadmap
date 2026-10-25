@@ -14,7 +14,7 @@ struct HealthRoadmapApp: App {
                 LaunchView()
             case .success(let parts)?:
                 RootView(engine: parts.engine, store: parts.store, sync: parts.sync, chat: parts.chat)
-                    .environment(parts.reminders).environment(parts.reminderTaps).environment(parts.health).environment(parts.eraser)
+                    .environment(parts.reminders).environment(parts.reminderTaps).environment(parts.health).environment(parts.eraser).environment(parts.live)
                     .task { await parts.sync.start() }
                     // Initial: the app may have come on screen while its parts were built.
                     .onChange(of: scenePhase, initial: true) { _, phase in follow(phase, parts) }
@@ -41,6 +41,7 @@ final class Launch {
         #if DEBUG
         MainThreadWatchdog.start()
         LaunchClock.mark("app init")
+        LiveHealthSeed.runIfAsked()
         #endif
         // TipKit before any view asks for a tip (US-57 AC10).
         TourSetup.configure()
@@ -123,6 +124,8 @@ struct AppParts {
     /// Apple Health in and out (ios/architecture.md D6). Started at launch, so its
     /// observers are in place when iOS wakes the app for new Health data.
     let health: AppleHealthSync
+    /// US-56: heart rate, resting heart rate, sleep, VO2 max and steps, read live from Health and never kept.
+    let live = LiveHealth(store: LiveHealthKitStore())
     /// The chat history file: Chat's list and the eraser's tombstones, one store.
     let chat: ChatHistoryStore
     let eraser: DataEraser

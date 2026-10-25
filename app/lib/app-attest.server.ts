@@ -54,7 +54,7 @@ export interface AttestConfig {
 export function attestConfig(env: NodeJS.ProcessEnv = process.env): AttestConfig | null {
   const team = env.APP_ATTEST_TEAM_ID?.trim();
   if (!team) return null;
-  const bundle = env.APP_ATTEST_BUNDLE_ID?.trim() || 'com.drbrad.healthroadmap';
+  const bundle = env.APP_ATTEST_BUNDLE_ID?.trim() || 'com.drstanfield.healthroadmap';
   return {
     appId: `${team}.${bundle}`,
     environments: env.APP_ATTEST_ALLOW_DEVELOPMENT === '1' ? ['production', 'development'] : ['production'],

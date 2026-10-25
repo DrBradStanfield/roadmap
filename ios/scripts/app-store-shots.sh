@@ -8,7 +8,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 DEVICE="${1:-iPhone 18 Pro Max}"
-APP_ID=com.drbrad.healthroadmap
+APP_ID=com.drstanfield.healthroadmap
 DERIVED="${HR_DERIVED_DATA:-${TMPDIR:-/tmp}/HealthRoadmap-$(pwd | shasum | cut -c1-8)}"
 OUT=build/app-store-shots
 ID=$(xcrun simctl list devices available | grep -F "    $DEVICE (" | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')

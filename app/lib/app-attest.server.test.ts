@@ -10,7 +10,7 @@ import {
 } from './app-attest.server';
 import { AAGUID_DEV, encodeCbor, fakeDevice } from './app-attest.test-helpers';
 
-const APP_ID = 'TEAM123456.com.drbrad.healthroadmap';
+const APP_ID = 'TEAM123456.com.drstanfield.healthroadmap';
 const env = { SHOPIFY_API_SECRET: 'test-secret' } as NodeJS.ProcessEnv;
 const device = fakeDevice(APP_ID);
 const config: AttestConfig = { appId: APP_ID, environments: ['production'], rootPem: device.rootPem };
@@ -104,7 +104,7 @@ describe('US-52 AC1: assertions', () => {
 describe('US-52 AC2/AC3: config and the dev bypass', () => {
   it('has no config without a team id, and defaults the placeholder bundle id', () => {
     expect(attestConfig({} as NodeJS.ProcessEnv)).toBeNull();
-    expect(attestConfig({ APP_ATTEST_TEAM_ID: 'T1' } as NodeJS.ProcessEnv)?.appId).toBe('T1.com.drbrad.healthroadmap');
+    expect(attestConfig({ APP_ATTEST_TEAM_ID: 'T1' } as NodeJS.ProcessEnv)?.appId).toBe('T1.com.drstanfield.healthroadmap');
     expect(attestConfig({ APP_ATTEST_TEAM_ID: 'T1', APP_ATTEST_ALLOW_DEVELOPMENT: '1' } as NodeJS.ProcessEnv)?.environments).toEqual(['production', 'development']);
   });
 
