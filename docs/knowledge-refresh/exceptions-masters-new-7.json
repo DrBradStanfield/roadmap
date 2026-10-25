@@ -1,1 +1,474 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "changed_tokens[63] raw_quote shares no number with its body_line: - **Fibrosing colonopathy:** This rare, serious scarring of the colon has been reported after hig...",
+  "reason": "AC2 Creon label (DailyMed [105]) gives \"exceeding 6,000 lipase units/kg/meal\" and \"less than 12 years of age\" (changed_tokens[63]); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "changed_tokens[66] raw_quote shares no number with its body_line: In a post hoc analysis of a 7-day trial in people with EPI from chronic pancreatitis or pancreate...",
+  "reason": "AC2 PMID of [98] gives \"Twenty-five observational studies\"; 10 is exactly 40% of 25 (changed_tokens[66] is the addendum-3 refiling of ratified changed_tokens[51], same quote, line updated by the L114 touch-up); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Papain can cause allergic reactions, including a severe one after eating meat tenderizer, and people allergic to we...\" | \"- Among 475 allergy-clinic patients with seasonal allergies, 5 had papain allergy confirmed by blinded challenge, wit...\" | \"- If you have had an allergic reaction to pork proteins, tell your doctor: the Creon label advises monitoring for all...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Papain can cause allergic reactions, including a severe one after eating meat tenderizer, and people allergic to we...\" | \"- Among 475 allergy-clinic patients with seasonal allergies, 5 had papain allergy confirmed by blinded challenge, wit...\" | \"- If you have had an allergic reaction to pork proteins, tell your doctor: the Creon label advises monitoring for all...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Papain can cause allergic reactions, including a severe one after eating meat tenderizer, and people allergic to we...\" | \"- Among 475 allergy-clinic patients with seasonal allergies, 5 had papain allergy confirmed by blinded challenge, wit...\" | \"- If you have had an allergic reaction to pork proteins, tell your doctor: the Creon label advises monitoring for all...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"10\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a post hoc analysis of a 7-day trial in people with EPI from chronic pancreatitis or pancreatectomy, pancrelipase ...\"",
+  "reason": "AC2 PMID of [98] gives \"Twenty-five observational studies\"; 10 is exactly 40% of 25 (changed_tokens[66] is the addendum-3 refiling of ratified changed_tokens[51], same quote, line updated by the L114 touch-up); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"25\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a post hoc analysis of a 7-day trial in people with EPI from chronic pancreatitis or pancreatectomy, pancrelipase ...\"",
+  "reason": "AC2 PMID of [98] gives \"Twenty-five observational studies\"; 10 is exactly 40% of 25 (changed_tokens[66] is the addendum-3 refiling of ratified changed_tokens[51], same quote, line updated by the L114 touch-up); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"28\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Treatment:** Sacrosidase is a liquid sucrase made from baker's yeast (Saccharomyces cerevisiae). In a randomized do...\"",
+  "reason": "AC2 abstract gives \"Twenty-eight\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"8500 IU\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Treatment:** Sacrosidase is a liquid sucrase made from baker's yeast (Saccharomyces cerevisiae). In a randomized do...\" | \"| Sacrosidase | CSID | 1 mL (8,500 IU) at 15 kg or less; 2 mL (17,000 IU) over 15 kg | With each meal or snack | Tree...\"",
+  "reason": "AC2 Sucraid label gives \"8,500 International Units (1 mL)\" and \"15 kg and less\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"≤15 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Treatment:** Sacrosidase is a liquid sucrase made from baker's yeast (Saccharomyces cerevisiae). In a randomized do...\" | \"| Sacrosidase | CSID | 1 mL (8,500 IU) at 15 kg or less; 2 mL (17,000 IU) over 15 kg | With each meal or snack | Tree...\"",
+  "reason": "AC2 Sucraid label gives \"8,500 International Units (1 mL)\" and \"15 kg and less\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"17000 IU\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Treatment:** Sacrosidase is a liquid sucrase made from baker's yeast (Saccharomyces cerevisiae). In a randomized do...\" | \"| Sacrosidase | CSID | 1 mL (8,500 IU) at 15 kg or less; 2 mL (17,000 IU) over 15 kg | With each meal or snack | Tree...\"",
+  "reason": "AC2 Sucraid label gives \"8,500 International Units (1 mL)\" and \"15 kg and less\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"52\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In 52 children with recurring gas symptoms, 2 weeks of alpha-galactosidase reduced distress, days with moderate to ...\"",
+  "reason": "AC2 abstract gives \"Fifty-two\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"40\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Osteoarthritis pain:** In a 16-week single-blind pilot trial in 40 people with mild-to-moderate knee osteoarthritis...\"",
+  "reason": "AC2 abstract gives \"Forty\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"14.3 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Across 12 human studies, 20 to 320 phytase units per 100 g of flour significantly improved iron absorption [27]. In...\"",
+  "reason": "AC2 Sandberg abstract gives the percentages with a +/- split; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"26.1 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Across 12 human studies, 20 to 320 phytase units per 100 g of flour significantly improved iron absorption [27]. In...\"",
+  "reason": "AC2 Sandberg abstract gives the percentages with a +/- split; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"5\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"## 5. Safety and Side Effects\" | \"- Among 475 allergy-clinic patients with seasonal allergies, 5 had papain allergy confirmed by blinded challenge, wit...\"",
+  "reason": "AC2 abstract gives \"Five\" (also the \"## 5.\" heading number); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \">6000\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Fibrosing colonopathy:** This rare, serious scarring of the colon has been reported after high doses of pancreati...\"",
+  "reason": "AC2 Creon label (DailyMed [105]) gives \"exceeding 6,000 lipase units/kg/meal\" and \"less than 12 years of age\" (changed_tokens[63]); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "token \"<12\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Fibrosing colonopathy:** This rare, serious scarring of the colon has been reported after high doses of pancreati...\"",
+  "reason": "AC2 Creon label (DailyMed [105]) gives \"exceeding 6,000 lipase units/kg/meal\" and \"less than 12 years of age\" (changed_tokens[63]); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": Papain can cause allergic reactions, including a severe one after eating meat tenderizer, and people allergic to weep...",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": Among 475 allergy-clinic patients with seasonal allergies, 5 had papain allergy confirmed by blinded challenge, with ...",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": If you have had an allergic reaction to pork proteins, tell your doctor: the Creon label advises monitoring for aller...",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": Severe allergic reactions, including wheezing, have been reported; in a trial, one child with a history of asthma had...",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "probiotics-benefits-strains-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- People who are critically ill, immunocompromised, tube-fed or have a central venous catheter have developed bloodst...\" | \"- Anaphylaxis from inulin, a prebiotic found in some vegetables and processed foods, has been reported; with trouble ...\" | \"If you take a probiotic while seriously ill or immunocompromised and develop a fever with shivering, confusion or a r...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "probiotics-benefits-strains-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- People who are critically ill, immunocompromised, tube-fed or have a central venous catheter have developed bloodst...\" | \"- Anaphylaxis from inulin, a prebiotic found in some vegetables and processed foods, has been reported; with trouble ...\" | \"If you take a probiotic while seriously ill or immunocompromised and develop a fever with shivering, confusion or a r...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "probiotics-benefits-strains-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- People who are critically ill, immunocompromised, tube-fed or have a central venous catheter have developed bloodst...\" | \"- Anaphylaxis from inulin, a prebiotic found in some vegetables and processed foods, has been reported; with trouble ...\" | \"If you take a probiotic while seriously ill or immunocompromised and develop a fever with shivering, confusion or a r...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "probiotics-benefits-strains-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- People who are critically ill, immunocompromised, tube-fed or have a central venous catheter have developed bloodst...\" | \"- Anaphylaxis from inulin, a prebiotic found in some vegetables and processed foods, has been reported; with trouble ...\" | \"If you take a probiotic while seriously ill or immunocompromised and develop a fever with shivering, confusion or a r...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "changed_tokens[149] raw_quote shares no number with its body_line: **For constipation:** Fiber has a conditional guideline recommendation for chronic idiopathic con...",
+  "reason": "AC2 changed_tokens[149]: the raw_quote (Puhlmann, \"daily 12 g chicory inulin ... with functional constipation\", NBSP before g) supports the line's chicory-inulin claim; checked by the integrator per decisions.md (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Psyllium, glucomannan and guar gum can swell and block the throat or esophagus if taken without enough fluid. Take ...\" | \"Psyllium, glucomannan and guar gum swell when wet. The FDA requires over-the-counter drug products made with them to ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Psyllium, glucomannan and guar gum can swell and block the throat or esophagus if taken without enough fluid. Take ...\" | \"Psyllium, glucomannan and guar gum swell when wet. The FDA requires over-the-counter drug products made with them to ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Psyllium, glucomannan and guar gum can swell and block the throat or esophagus if taken without enough fluid. Take ...\" | \"Psyllium, glucomannan and guar gum swell when wet. The FDA requires over-the-counter drug products made with them to ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "token \"1904\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Psyllium husk comes from the seeds of Plantago ovata and forms a gel in water; it also has prebiotic effects [3]. The...\"",
+  "reason": "AC2 \"1904\" is a year the tokeniser did not skip; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "token \"10200 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Psyllium, a gel-forming fiber, has stronger evidence: a 2018 meta-analysis of 28 trials found that a median of about ...\"",
+  "reason": "AC2 Jovanovski abstract gives \"~10.2 g psyllium\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "token \"13 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Psyllium, a gel-forming fiber, has stronger evidence: a 2018 meta-analysis of 28 trials found that a median of about ...\"",
+  "reason": "AC2 Jovanovski 2018 gives 0.33 mmol/L; x 38.67 = 13 mg/dL (exact conversion, matches algorithm L709); tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "token \"15000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Legumes:** Lentils, common beans and chickpeas bought in US markets held 12 to 15 g of prebiotic carbohydrates per ...\"",
+  "reason": "AC2 source gives \"15/100 g\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10000 mg/day\": Acacia Fiber (Gum Arabic) | Acacia tree | Soluble | No | 10 g/day | IBS-C stool frequency [18] |",
+  "reason": "AC2 sources give \"10 g daily\" / \"10 g day-1\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10000 mg/day\": Acacia fiber (gum arabic) is a soluble fiber with prebiotic effects [3]. In a 4-week trial in 180 adults with IBS-C, ...",
+  "reason": "AC2 sources give \"10 g daily\" / \"10 g day-1\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10000 mg/day\": Acacia fiber for IBS-C: In a 4-week trial in 180 adults with IBS-C, 10 g a day of acacia fiber raised stool frequency...",
+  "reason": "AC2 sources give \"10 g daily\" / \"10 g day-1\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10000 mg/day\": In a 12-week trial in 80 women aged 20 to 50 years with migraine, 10 g a day of inulin reduced attack frequency (-2.0...",
+  "reason": "AC2 sources give \"10 g daily\" / \"10 g day-1\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"95 %\": In a 6-week trial in 117 adults with knee osteoarthritis (mean age 67.5), 20 g a day of inulin reduced pain compared ...",
+  "reason": "AC2 abstract gives \"95%CI\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10000 mg/day\": IBS-C | Acacia fiber | 10 g/day | 4 weeks | Raised stool frequency [18] |",
+  "reason": "AC2 sources give \"10 g daily\" / \"10 g day-1\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10000 mg/day\": Migraine prevention | Inulin | 10 g/day | 12 weeks | Single trial [12] |",
+  "reason": "AC2 sources give \"10 g daily\" / \"10 g day-1\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link it to acute pancreatitis [16] and to liver injury after years of use [61]. For sudden severe uppe...\" | \"For sudden severe upper belly pain with nausea or vomiting, call your local emergency number (111 in NZ, 000 in Austr...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link it to acute pancreatitis [16] and to liver injury after years of use [61]. For sudden severe uppe...\" | \"For sudden severe upper belly pain with nausea or vomiting, call your local emergency number (111 in NZ, 000 in Austr...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link it to acute pancreatitis [16] and to liver injury after years of use [61]. For sudden severe uppe...\" | \"For sudden severe upper belly pain with nausea or vomiting, call your local emergency number (111 in NZ, 000 in Austr...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link it to acute pancreatitis [16] and to liver injury after years of use [61]. For sudden severe uppe...\" | \"For sudden severe upper belly pain with nausea or vomiting, call your local emergency number (111 in NZ, 000 in Austr...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-7): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+  "match": "token \"10.16 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Gheflati et al. (2019), n=70 adults with type 2 diabetes and high blood lipids (Iran):** 20 ml of apple vinegar p...\"",
+  "reason": "AC2 Gheflati abstract gives \"-10.16 ± 19.48 mg/dl\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"11\": Johnston et al. (2005), n=11 healthy adults: In a randomized crossover study, vinegar or peanut products taken with a...",
+  "reason": "AC2 Johnston abstract gives \"Eleven healthy subjects\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC4",
+  "handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Kidney Stones",
+  "reason": "AC4 ### Kidney Stones: section removed by the fix round (no surviving source); ratified in decisions.md (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC4",
+  "handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Non-Alcoholic Fatty Liver Disease (NAFLD)",
+  "reason": "AC4 ### Non-Alcoholic Fatty Liver Disease (NAFLD): section removed by the fix round (no surviving source); ratified in decisions.md (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC4",
+  "handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Intermittent Fasting",
+  "reason": "AC4 ### Intermittent Fasting: section removed by the fix round (no surviving source); ratified in decisions.md (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC4",
+  "handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Exercise Performance",
+  "reason": "AC4 ### Exercise Performance: section removed by the fix round (no surviving source); ratified in decisions.md (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC4",
+  "handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Storage",
+  "reason": "AC4 ### Storage: section removed by the fix round (no surviving source); ratified in decisions.md (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [103] US National Library of Medicine, DailyMed. \"PRECOSE (acarbose) tablet: prescribing informat...",
+  "reason": "AC7 DailyMed prescribing-information host (labels [103]-[106]); ratified in decisions.md, precedent red yeast rice (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [104] US National Library of Medicine, DailyMed. \"Miglitol tablets: prescribing information.\" Wes...",
+  "reason": "AC7 DailyMed prescribing-information host (labels [103]-[106]); ratified in decisions.md, precedent red yeast rice (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [105] US National Library of Medicine, DailyMed. \"CREON (pancrelipase) delayed-release capsules: ...",
+  "reason": "AC7 DailyMed prescribing-information host (labels [103]-[106]); ratified in decisions.md, precedent red yeast rice (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [106] US National Library of Medicine, DailyMed. \"SUCRAID (sacrosidase) oral solution: prescribin...",
+  "reason": "AC7 DailyMed prescribing-information host (labels [103]-[106]); ratified in decisions.md, precedent red yeast rice (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "probiotics-benefits-strains-dosing-and-side-effects",
+  "match": "product section changed: ### Product Selection Guidance",
+  "reason": "AC7 '### Product Selection Guidance' is buying advice, not a Brad product section; ratified in decisions.md (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "reference line has unknown host ecfr.gov: [50] US Food and Drug Administration. 21 CFR 201.319, \"Water-soluble gums, hydrophilic gums, and ...",
+  "reason": "AC7 ecfr.gov host ([50] 21 CFR 201.319); ratified in decisions.md (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "prebiotics-benefits-types-dosing-and-side-effects",
+  "match": "reference line has unknown host medlineplus.gov: [51] MedlinePlus (US National Library of Medicine). \"Psyllium.\" Last revised 20 June 2024. [medli...",
+  "reason": "AC7 medlineplus.gov host ([51] psyllium); ratified in decisions.md (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ }
+]
