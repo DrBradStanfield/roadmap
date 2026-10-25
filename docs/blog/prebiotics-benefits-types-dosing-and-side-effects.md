@@ -6,7 +6,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["prebiotic", "prebiotics", "fiber", "inulin", "FOS", "fructooligosaccharides", "GOS", "galactooligosaccharides", "PHGG", "guar fiber", "acacia fiber", "glucomannan", "soluble corn fiber", "wheat dextrin", "psyllium", "gut health", "microbiome", "cholesterol", "ldl", "weight loss", "obesity", "blood sugar", "diabetes", "insulin resistance", "constipation", "irritable bowel syndrome", "depression", "anxiety", "migraine", "osteoarthritis", "inflammation", "cognitive", "brain health", "sleep", "skin", "immune", "bifidobacterium", "short-chain fatty acids", "butyrate"]
-summary: "Prebiotics such as inulin, FOS, GOS and PHGG feed gut bacteria. Small trials suggest modest help for constipation and IBS, and single trials for mood and migraine; cholesterol and liver-fat trials were negative. Gas and bloating are common. Talk to your doctor first if you have IBS or liver disease."
+summary: "Prebiotics like inulin, FOS and GOS feed gut bacteria. Small trials suggest modest help for constipation and IBS, and single trials for mood and migraine. Inulin's lipid results are mixed; psyllium lowers LDL. Gas and bloating are common. Talk to your doctor first if you have IBS or liver disease."
 reviewed: "2026-10-25"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42600900/","checked":"2026-10-25","fingerprint":"sha256:e071b66f40b935c4640b051ee2955d406477c1b1ccd60285c04285ca41ec5852"}]
 ---
@@ -15,13 +15,14 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42600900/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Prebiotics are substrates that the body's microbes use selectively to give a health benefit, and trials of short-chain FOS, galactooligosaccharides (GOS) and oligofructose-enriched inulin raised Bifidobacterium in stool [2][8][14][30]. For constipation, 12 g a day of chicory inulin modestly raised stool frequency in small trials, and a 2026 meta-analysis of 30 trials in IBS found that fiber supplements, psyllium in particular, improved response (risk ratio 1.21, 95% CI 1.03 to 1.41) [11][24][48]. Single trials reported benefits for mood, migraine and knee osteoarthritis pain, while a 6-month trial found no significant effect on blood lipids in healthy adults and a 24-week trial found no change in liver fat in fatty liver disease [12][13][27][28][35]. Gas and bloating are the main side effects, and in mice inulin-enriched diets led to liver cancer, mainly in animals born with a vessel that bypasses the liver; how often such shunts occur in people has yet to be studied [26][44][45][46].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Prebiotics are substrates that the body's microbes use selectively to give a health benefit, and trials of short-chain FOS, galactooligosaccharides (GOS) and oligofructose-enriched inulin raised Bifidobacterium in stool [2][8][14][30]. For constipation, 12 g a day of chicory inulin modestly raised stool frequency in small trials [11][24]; in a 2026 meta-analysis of IBS trials, 52% responded to fiber supplements against 44% to control in the 16 trials that reported response (risk ratio 1.21, 95% CI 1.03 to 1.41), with a benefit for psyllium, but overall symptom scores did not improve except with β-galacto-oligosaccharides [48]. Single trials reported benefits for mood, migraine and knee osteoarthritis pain, inulin trials gave mixed results for blood lipids while psyllium lowered LDL cholesterol in a meta-analysis, and a 24-week trial found no change in liver fat in fatty liver disease [12][13][26][27][28][35][52]. Gas and bloating are the main side effects, and in mice inulin-enriched diets led to liver cancer, mainly in animals born with a vessel that bypasses the liver; how often silent shunts occur in people has not been studied [26][44][45][46].
 
 ## Key safety points
 
-- Psyllium (ispaghula) husk has been reported to interact with lithium [49]. If you take lithium or other prescription medicines, check with your doctor or pharmacist before starting.
+- Psyllium, glucomannan and guar gum can swell and block the throat or esophagus if taken without enough fluid. Take them with a full glass (at least 8 ounces) of water, and do not take them if you have trouble swallowing; if you get chest pain, vomiting, or trouble swallowing or breathing after a dose, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [50].
 - If you have IBS, fructans such as inulin and FOS may bring on symptoms. In a trial in people with IBS and fructose malabsorption, 77% given fructans said their symptoms were not adequately controlled, against 14% given glucose, and symptoms rose with the dose [47].
 - In mice, inulin-enriched diets caused liver cancer, mainly in animals born with a portosystemic shunt [44][45]. If you have liver disease, talk to your doctor before taking concentrated fermentable fiber.
+- Do not take digoxin, salicylates such as aspirin, or nitrofurantoin within 3 hours of psyllium [51]. Psyllium (ispaghula) husk has also been reported to interact with lithium [49]. If you take lithium or other prescription medicines, check with your doctor or pharmacist before starting.
 - Most people taking in excess of 15 g a day of inulin or oligofructose get gut symptoms [26].
 - Gas, bloating and flatulence are the common side effects, and they are usually mild [20][46]. People who weigh more or already eat more fiber tolerate inulin better [40].
 
@@ -57,7 +58,7 @@ Prebiotic fibers differ in chemistry, fermentation and the evidence behind them.
 | Glucomannan | Konjac root | Soluble, water-absorbing | Yes (strong) | Varies | Constipation [19] |
 | Soluble Corn Fiber | Hydrolyzed corn starch | Soluble | No | 21 g/day | Bifidogenic effect [20] |
 | Wheat Dextrin | Converted wheat starch | Semi-synthetic, soluble | No | Variable | Prebiotic effects [3] |
-| Psyllium Husk | Plantago ovata seeds | Soluble, gel-forming | Yes | Varies | Constipation, IBS [22][48] |
+| Psyllium Husk | Plantago ovata seeds | Soluble, gel-forming | Yes | Varies | Constipation, IBS, LDL cholesterol [22][48][52] |
 
 ### Inulin and FOS
 
@@ -77,7 +78,7 @@ PHGG is guar gum that has been partly broken down, so it does not thicken liquid
 
 Acacia fiber (gum arabic) is a soluble fiber with prebiotic effects [3]. In a 4-week trial in 180 adults with IBS-C, 10 g a day raised stool frequency compared with placebo [18].
 
-Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes both Acacia Fiber and Psyllium Husk (2.5 g) as prebiotic fiber sources alongside 25 core vitamins and minerals, plus collagen, creatine, and taurine — providing prebiotic support as part of a comprehensive daily formula.
+Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes Psyllium Husk (2.5 g) as a prebiotic fiber source alongside 26 core vitamins and minerals, plus collagen, creatine, and taurine — providing prebiotic support as part of a comprehensive daily formula.
 
 ### Glucomannan
 
@@ -85,17 +86,17 @@ Glucomannan is a soluble fiber from konjac root that forms a thick gel with wate
 
 ### Soluble Corn Fiber and Wheat Dextrin
 
-Soluble corn fiber comes from corn starch. In a crossover trial in healthy men, 21 g a day in a snack bar raised Bifidobacterium and increased flatulence compared with no added fiber, though discomfort scores stayed low [20]. Wheat dextrin is made from wheat starch and also has prebiotic effects [3].
+Soluble corn fiber comes from corn starch. In a crossover trial in healthy men, 21 g a day in a snack bar raised Bifidobacterium and increased flatulence and reflux compared with no added fiber, though discomfort scores stayed low [20]. Wheat dextrin is made from wheat starch and also has prebiotic effects [3].
 
 ### Psyllium Husk
 
-Psyllium husk comes from the seeds of Plantago ovata and forms a gel in water; it also has prebiotic effects [3]. The 2023 AGA-ACG guideline on chronic idiopathic constipation made a conditional recommendation for fiber [22]. A 2026 meta-analysis of 30 trials in 1,904 people with IBS found that fiber supplements improved response (risk ratio 1.21, 95% CI 1.03 to 1.41), with a benefit for psyllium specifically (risk ratio 1.53, 95% CI 1.06 to 2.19) [48].
+Psyllium husk comes from the seeds of Plantago ovata and forms a gel in water; it also has prebiotic effects [3]. The 2023 AGA-ACG guideline on chronic idiopathic constipation made a conditional recommendation for fiber [22]. A 2026 meta-analysis of 30 trials in 1,904 people with IBS found that, in the 16 trials (1,293 people) that reported response, 52% responded to fiber supplements against 44% to control (risk ratio 1.21, 95% CI 1.03 to 1.41), with a benefit for psyllium specifically (risk ratio 1.53, 95% CI 1.06 to 2.19) [48]. In 9 trials (497 people), overall symptom scores did not improve, except with β-galacto-oligosaccharides [48].
 
 ### Key Principles for Form Selection
 
 **For general gut health and bifidogenic effects:** Short-chain FOS, GOS and oligofructose-enriched inulin have the most trial evidence for raising Bifidobacterium [8][14][30].
 
-**For constipation:** Fiber has a conditional guideline recommendation for chronic idiopathic constipation [22]. Chicory inulin at 12 g a day and konjac glucomannan modestly helped in small trials [19][24].
+**For constipation:** Fiber has a conditional guideline recommendation for chronic idiopathic constipation [22]. Chicory inulin at 12 g a day modestly helped in a small trial, and konjac glucomannan helped in a trial in athletes [19][24].
 
 **For IBS:** Psyllium showed the clearest benefit in a 2026 meta-analysis, and β-galacto-oligosaccharides improved overall symptoms [48]. Fructans can trigger IBS symptoms [47].
 
@@ -111,11 +112,13 @@ Psyllium husk comes from the seeds of Plantago ovata and forms a gel in water; i
 
 Results for inulin and oligofructose are mixed. A 2002 review of nine human studies found that four showed modest drops in total cholesterol and LDL, three showed falls in triglycerides and three found no effect; doses were limited because most people get gut symptoms in excess of 15 g a day [26].
 
-In an 8-week trial in women with type 2 diabetes, 10 g a day of inulin lowered total cholesterol by 12.90% and LDL cholesterol by 35.30% [9]. A longer trial did not confirm a benefit: in 17 healthy adults, 10 g a day of an inulin and oligofructose mix for 6 months had no significant effect on blood lipids [27].
+One 8-week trial in 49 women with type 2 diabetes, reported in two papers, compared 10 g a day of inulin with maltodextrin: total cholesterol fell by 12.90% and LDL cholesterol by 35.30% within the inulin group, while changes in the control group were not significant [9][33]. A longer trial did not confirm a benefit: in 17 healthy adults, 10 g a day of an inulin and oligofructose mix for 6 months had no significant effect on blood lipids [27].
 
 In the BE GONE trial in 55 adults with obesity and a history of colorectal neoplasia, adding a daily cup of beans for 8 weeks increased gut microbial diversity and Bifidobacterium but did not change circulating lipoproteins [29].
 
-**Synthesis:** Short-term studies of inulin and oligofructose give mixed lipid results, and a 6-month trial in healthy adults found no significant effect [9][26][27][29].
+Psyllium, a gel-forming fiber, has stronger evidence: a 2018 meta-analysis of 28 trials found that a median of about 10.2 g a day lowered LDL cholesterol by 0.33 mmol/L (about 13 mg/dL) [52].
+
+**Synthesis:** Short-term studies of inulin and oligofructose give mixed lipid results, and a 6-month trial in healthy adults found no significant effect [9][26][27][29]. Psyllium lowered LDL cholesterol in a meta-analysis [52].
 
 ### Weight Loss and Appetite
 
@@ -135,7 +138,7 @@ Trials of inulin for weight and appetite have mixed results.
 
 Evidence that inulin may improve blood sugar comes from small trials.
 
-**Type 2 diabetes:** In 49 women with type 2 diabetes, 10 g a day of inulin for 2 months lowered fasting glucose by 8.47% and HbA1c by 10.43% compared with maltodextrin; fasting insulin and insulin resistance did not change significantly [33].
+**Type 2 diabetes:** In the same trial of 49 women with type 2 diabetes (see Cholesterol above), 10 g a day of inulin for 2 months lowered fasting glucose by 8.47% and HbA1c by 10.43% compared with maltodextrin; fasting insulin and insulin resistance did not change significantly [33].
 
 **Insulin resistance in overweight adults:** In a crossover trial in adults with overweight or obesity, 20 g a day of inulin or of an inulin-propionate ester for 42 days improved insulin resistance compared with cellulose [34]. Only the propionate ester lowered the inflammatory marker interleukin-8 [34].
 
@@ -163,9 +166,9 @@ Fiber has been tested for several kinds of constipation. The 2023 AGA-ACG guidel
 
 **Acacia fiber for IBS-C:** In a 4-week trial in 180 adults with IBS-C, 10 g a day of acacia fiber raised stool frequency compared with placebo but did not change stool consistency, stool mass or quality of life [18].
 
-**Soluble corn fiber:** In healthy men, 21 g a day of soluble corn fiber in a snack bar for 21 days raised Bifidobacterium and stool weight and increased flatulence compared with no added fiber [20].
+**Soluble corn fiber:** In healthy men, 21 g a day of soluble corn fiber in a snack bar for 21 days raised Bifidobacterium and stool weight and increased flatulence and reflux compared with no added fiber [20].
 
-**Synthesis:** Fiber has a conditional guideline recommendation for chronic constipation, and psyllium had the clearest benefit in IBS trials [22][48]. Inulin at 12 g a day, acacia fiber and glucomannan modestly improved stool frequency or symptoms in small trials [11][18][19][24]. Higher doses of fermentable fiber bring more gas [20][26].
+**Synthesis:** Fiber has a conditional guideline recommendation for chronic constipation, and psyllium had the clearest benefit in IBS trials [22][48]. Inulin at 12 g a day modestly improved stool frequency in small trials, and acacia fiber and glucomannan improved stool frequency or symptoms in single trials [11][18][19][24]. Higher doses of fermentable fiber bring more gas [20][26].
 
 ### Mood, Anxiety, and Depression
 
@@ -187,7 +190,7 @@ The authors called for further studies to confirm these findings [12].
 
 ### Osteoarthritis
 
-In a 6-week trial in 117 adults with knee osteoarthritis (mean age 67.5), 20 g a day of inulin reduced pain compared with placebo (mean difference -1.11, 95% CI -2.18 to -0.04) and improved grip strength and pain sensitivity [35]. Inulin also raised blood butyrate and GLP-1 [35].
+In a 6-week trial in 117 adults with knee osteoarthritis (mean age 67.5), 20 g a day of inulin reduced pain compared with placebo (mean difference -1.11, 95% CI -2.18 to -0.04) and improved grip strength and pain sensitivity [35]. Inulin also raised blood butyrate and GLP-1 [35]. Of the 50 people who completed an inulin arm, 23 reported very minor gut side effects such as wind and bloating, and none stopped or withdrew because of them [35].
 
 The trial was not powered to test whether inulin and physiotherapy-supported exercise worked better together [35].
 
@@ -275,12 +278,12 @@ Wheat and onions supply most of the inulin and oligofructose in American diets, 
 
 **Legumes:** Lentils, common beans and chickpeas bought in US markets held 12 to 15 g of prebiotic carbohydrates per 100 g, including sugar alcohols, raffinose family oligosaccharides, fructooligosaccharides and resistant starch (Siva, *Front Nutr* 2019) [43].
 
-**Unripe (green) banana:** Bananas have prebiotic effects [3].
+**Bananas:** Bananas have prebiotic effects [3].
 
 ### Practical Notes on Dietary Prebiotics
 
 - **Wheat (about 70%) and onions (about 25%) supply most of the prebiotic fiber Americans eat** [6].
-- **A food-first approach is possible.** Garlic, onions, leeks, asparagus, whole grains, legumes and bananas all supply prebiotic fiber, but average intake is far below the 8 to 20 g a day used in many trials [6][30][35].
+- **A food-first approach is possible.** Wheat, onions, bananas, whole grains and legumes all supply prebiotic fiber or have prebiotic effects [3][6][43], but average intake is far below the 8 to 20 g a day used in many trials [6][30][35].
 
 ## 6. Safety and Side Effects
 
@@ -294,6 +297,7 @@ The main side effects of prebiotic fiber are **gas, bloating and flatulence**, a
 
 In clinical trials:
 - 8 g/day of short-chain FOS for 4 weeks: excess flatus and bloating were more frequent, but very mild [46]
+- 20 g/day of inulin for 6 weeks: 23 of 50 people reported very minor gut events such as wind and bloating, with no withdrawals [35]
 - 18 g/day of inulin: tolerance varied with body weight and habitual fiber intake [40]
 - 21 g/day of soluble corn fiber: more flatulence than no added fiber, with low discomfort scores [20]
 - 5 g of PHGG in a skin trial: no adverse events reported [39]
@@ -306,13 +310,13 @@ Fructans are among the poorly absorbed short-chain carbohydrates (FODMAPs) that 
 
 In mice, adding the soluble fiber inulin to a defined diet caused liver cancer (hepatocellular carcinoma) that depended on gut bacteria; it did not occur in germ-free or antibiotic-treated mice (Singh, *Cell* 2018) [44]. A 2022 follow-up found that cancer-prone mice had a congenital portosystemic shunt, a vessel that lets blood bypass the liver, which raised bile acids in the blood; about 10% of mice from various sources had one (Yeoh, *Gastroenterology* 2022) [45].
 
-The 2018 authors advised great caution about enriching foods with fermentable fiber [44]. The 2022 authors wrote that how often silent shunts occur in people awaits investigation, and that measuring blood bile acids may help assess liver cancer risk [45].
+The 2018 authors advised great caution about enriching foods with fermentable fiber [44]. The 2022 authors wrote that how often silent shunts occur in people awaits investigation, and that measuring blood bile acids may help assess liver cancer risk [45]. They also note that congenital shunts are recognized in about 1 in 30,000 people, though the true figure may be higher because the shunts cause no symptoms, and that shunts can also be acquired through liver disease [45]. They called the extent to which inulin supplements might promote liver disease in people "far from clear", and proposed that people with a raised risk of liver cancer, or with early liver cancer, might do better eating fewer foods enriched with fermentable fiber [45].
 
 ### Populations Requiring Caution
 
 - **IBS patients:** Fructans can bring on symptoms [47]
 - **Low-FODMAP diet followers:** Inulin and FOS are fructans, which this diet restricts [47]
-- **People with chronic liver disease or early-stage liver cancer:** Concern comes from mouse studies of fermentable fiber and bile acids [44][45]
+- **People with chronic liver disease or early-stage liver cancer:** Concern comes from mouse studies of fermentable fiber and bile acids, and the 2022 authors proposed less fermentable fiber for people with a raised risk of liver cancer [44][45]
 - **Low-weight individuals:** Tolerate inulin less well [40]
 - **People on low-fiber diets:** Tolerate inulin less well [40]
 
@@ -322,7 +326,7 @@ Little research has looked at drug interactions with prebiotics.
 
 ### Potential Interactions
 
-**Gel-forming fibers (glucomannan, psyllium):** A 1990 case report described an interaction between lithium and ispaghula (psyllium) husk [49]. Gel-forming fibers may slow the absorption of medicines taken at the same time, so taking medicines a few hours apart from them may help.
+**Gel-forming fibers (glucomannan, psyllium):** A 1990 case report described an interaction between lithium and ispaghula (psyllium) husk [49]. Do not take digoxin, salicylates such as aspirin, or nitrofurantoin within 3 hours of taking psyllium [51].
 
 **Diabetes medications (insulin, metformin, sulfonylureas):** Inulin lowered fasting glucose in small trials [33]. If you take medicines that lower blood sugar, ask your doctor whether you need closer glucose checks.
 
@@ -421,3 +425,9 @@ If you take prescription medicines, check with your doctor or pharmacist before 
 [48] Staudacher HM, Rucco V, Mancell S, et al. "Fiber supplementation in irritable bowel syndrome: a systematic review and meta-analysis of randomized controlled trials." *Gastroenterology*. 2026. PMID: 42600900. doi: [10.1053/j.gastro.2026.07.027](https://doi.org/10.1053/j.gastro.2026.07.027)
 
 [49] Perlman BB. "Interaction between lithium salts and ispaghula husk." *Lancet*. 1990;335(8686):416. PMID: 1968148. doi: [10.1016/0140-6736(90)90256-5](https://doi.org/10.1016/0140-6736(90)90256-5)
+
+[50] US Food and Drug Administration. 21 CFR 201.319, "Water-soluble gums, hydrophilic gums, and hydrophilic mucilloids ... as active ingredients; required warnings and directions." [ecfr.gov](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-C/part-201/subpart-G/section-201.319)
+
+[51] MedlinePlus (US National Library of Medicine). "Psyllium." Last revised 20 June 2024. [medlineplus.gov/druginfo/meds/a601104.html](https://medlineplus.gov/druginfo/meds/a601104.html)
+
+[52] Jovanovski E, Yashpal S, Komishon A, et al. "Effect of psyllium (Plantago ovata) fiber on LDL cholesterol and alternative lipid targets, non-HDL cholesterol and apolipoprotein B: a systematic review and meta-analysis of randomized controlled trials." *Am J Clin Nutr*. 2018;108(5):922-932. PMID: 30239559. doi: [10.1093/ajcn/nqy115](https://doi.org/10.1093/ajcn/nqy115)
