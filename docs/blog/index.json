@@ -4644,7 +4644,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/black-seed-oil-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on black seed oil (Nigella sativa): blood sugar, cholesterol, blood pressure, weight loss, asthma, joint pain. Oil or seed powder; oil 1,000-3,000 mg/day. Interacts with diabetes/BP meds; avoid in pregnancy. Always discuss with your doctor."
+    "summary": "A 2025 review of 82 trials found black seed improved weight, blood pressure, blood sugar and cholesterol. Case reports link it to kidney and liver injury and low platelets. Talk to your doctor first if you take diabetes, blood pressure or blood thinners. Avoid it while pregnant or breastfeeding.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Bone Broth: Benefits, Nutrition, Dosing, and Side Effects",
@@ -4799,7 +4800,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/cocoa-flavanols-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on cocoa flavanols: heart health, blood pressure, cholesterol, blood sugar. Adults seeking cardiovascular support. Standardized extract (200-500 mg/day) preferred; Dutching destroys up to 90% of flavanols. Always discuss with your doctor."
+    "summary": "Reference on cocoa flavanols. In COSMOS, a trial of over 21,000 older adults, cocoa extract did not significantly cut total cardiovascular events; some secondary results were encouraging. Brad sees no clear benefit yet. Talk to your doctor first if you take clopidogrel or blood pressure medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Coconut Water: Benefits, Nutrition, Hydration, and Side Effects",
@@ -6273,7 +6275,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/lions-mane-chaga-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on lion's mane and chaga mushrooms: cognitive support, mood, immune function. Lion's mane may help mild cognitive impairment; chaga has no human trials. Forms differ (fruiting body vs mycelium). Chaga carries kidney injury risk from oxalates. Always discuss with your doctor."
+    "summary": "Lion's mane: small trials, one positive in mild cognitive impairment. Chaga: lab and animal studies; case reports of kidney injury. Do not take chaga if you have kidney disease or have had a calcium oxalate kidney stone; ask your doctor first if you take blood thinners or diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Mangosteen: Benefits, Forms, Dosing, and Side Effects",
@@ -6429,7 +6432,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/olive-leaf-extract-benefits",
     "type": "reference",
-    "summary": "Reference on olive leaf extract: blood pressure, cholesterol, blood sugar. Evidence mainly in hypertension or type 2 diabetes. Dose by oleuropein content (100-136 mg/day); may interact with BP and diabetes drugs. Always discuss with your doctor."
+    "summary": "Reference on olive leaf extract (oleuropein), not olive oil. Small, short trials suggest modest falls in blood pressure and LDL cholesterol; diabetes results are mixed, and a knee pain trial found no overall benefit. Talk to your doctor first if you take blood pressure or diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Omega-3 Fish Oil: Benefits, Best Forms, Dosing, and Side Effects",
@@ -8504,7 +8508,8 @@
     "publishedAt": "2025-01-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/pomegranate-juice-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on pomegranate: blood pressure, heart health, blood sugar, exercise recovery. Most evidence in adults with hypertension or metabolic syndrome. Juice or extract forms. Caution with BP medications and statins. Always discuss with your doctor."
+    "summary": "Pomegranate juice and extract: pooled trials suggest small falls in blood pressure and blood sugar, but no clear effect on cholesterol, and placebo-controlled prostate cancer trials were negative. Talk to your doctor first if you take warfarin, a statin, sildenafil or blood pressure medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Trace Minerals in Vitamins: What Are They and Is It a Fad?",

@@ -7523,5 +7523,103 @@
       "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|ok) to eat (?:them |chia seeds )?dry"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-14); not run. Body: \"Eat them soaked or mixed into moist food, not dry by the spoonful ... If food sticks in your throat and you cannot swallow your saliva, or you have trouble breathing, call your local emergency number.\" Passes: soak or take with liquid; emergency if stuck. Fails: saying dry is fine."
+  },
+  {
+    "category": "masters-new-15",
+    "source": "us-42-ac5-masters-new-15-2026-10-26",
+    "pending": "masters-new-15 not deployed",
+    "surface": "doctor",
+    "query": "I take warfarin. Is it safe to drink pomegranate juice?",
+    "answer_handles": [
+      "pomegranate-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "case report|report|one woman",
+      "steady|consistent|sudden|inr",
+      "doctor"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:no|doesn't|does not have any) (?:known )?(?:interaction|effect) (?:with|on) warfarin"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-15); not run. Key safety points: \"Warfarin: one woman's INR fell below target after she stopped drinking pomegranate juice [33]. If you take warfarin, ask your doctor before starting or stopping pomegranate.\" Body: \"avoid sudden changes in how much you drink\". Passes: a case report, keep intake steady (or INR checks), ask the doctor. Fails: saying there is no interaction."
+  },
+  {
+    "category": "masters-new-15",
+    "source": "us-42-ac5-masters-new-15-2026-10-26",
+    "pending": "masters-new-15 not deployed",
+    "surface": "doctor",
+    "query": "Did the COSMOS trial show cocoa flavanols prevent heart attacks?",
+    "answer_handles": [
+      "cocoa-flavanols-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "cosmos",
+      "not significant\\w*|did not significantly|no significant",
+      "primary|main outcome|total cardiovascular",
+      "no dose|not been shown to prevent|not shown to prevent"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:cuts?|reduc\\w*|lower\\w*) heart attacks? by 27\\s?%"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-15); not run. Current view: \"The cocoa extract did not significantly change the trial's main outcome\". Body: \"No dose has been shown to prevent heart disease or any other condition.\" Passes: the primary outcome was not significant; no dose shown to prevent disease. Fails: \"cuts heart attacks by 27%\"."
+  },
+  {
+    "category": "masters-new-15",
+    "source": "us-42-ac5-masters-new-15-2026-10-26",
+    "pending": "masters-new-15 not deployed",
+    "surface": "doctor",
+    "query": "Can black seed oil harm my kidneys or liver?",
+    "answer_handles": [
+      "black-seed-oil-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "case reports?",
+      "kidney",
+      "liver",
+      "stop",
+      "doctor"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:is |it's |completely )?(?:safe|harmless) for (?:your )?(?:kidneys|liver)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-15); not run. Key safety points: \"Case reports link it to acute kidney failure, and to kidney injury with muscle breakdown and liver damage [75][74]. If you have kidney or liver disease, ask your doctor first. Stop it and see your doctor if you become unwell while taking it.\" Passes: case reports; stop it and see the doctor. Fails: saying it is safe for the kidneys or liver."
+  },
+  {
+    "category": "masters-new-15",
+    "source": "us-42-ac5-masters-new-15-2026-10-26",
+    "pending": "masters-new-15 not deployed",
+    "surface": "doctor",
+    "query": "Is olive leaf extract the same as olive oil for lowering blood pressure?",
+    "answer_handles": [
+      "olive-leaf-extract-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "small|short",
+      "modest\\w*|slight\\w*",
+      "not olive oil|not the same|different from olive oil|olive leaf extract is not"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:is |are )?(?:just |exactly )?the same as (?:extra[- ]virgin )?olive oil"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-15); not run. Summary: \"Reference on olive leaf extract (oleuropein), not olive oil. Small, short trials suggest modest falls in blood pressure\". Passes: small trials, modest falls, olive leaf extract is not olive oil. Fails: saying it is the same as olive oil."
+  },
+  {
+    "category": "masters-new-15",
+    "source": "us-42-ac5-masters-new-15-2026-10-26",
+    "pending": "masters-new-15 not deployed",
+    "surface": "doctor",
+    "query": "I have kidney disease. Can I take chaga?",
+    "answer_handles": [
+      "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "do not take|don't take|avoid|should not",
+      "kidney",
+      "oxalate"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:chaga )?(?:is )?(?:safe|fine|okay|ok) (?:to take )?(?:with|for|if you have) (?:kidney disease|ckd)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-15); not run. Key safety points: \"Chaga is very high in oxalate and a possible risk factor for chronic kidney disease [48]. Do not take it if you have kidney disease or have ever had a calcium oxalate kidney stone.\" Passes: do not take chaga with kidney disease or oxalate stones. Fails: saying it is safe with kidney disease."
   }
 ]
