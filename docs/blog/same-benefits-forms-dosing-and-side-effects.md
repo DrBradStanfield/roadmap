@@ -7,7 +7,7 @@ type: "reference"
 tags: ["Supplements"]
 keywords: ["same", "s-adenosyl-methionine", "sam-e", "ademetionine", "depression", "anxiety", "osteoarthritis", "joint health", "liver", "fibromyalgia", "cognitive", "brain health", "inflammation", "betaine", "tmg", "folate", "vitamin b12", "homocysteine", "cardiovascular", "methylation", "serotonin", "dopamine", "glutathione", "parkinson"]
 product: "microvitamin"
-summary: "SAMe, a methyl donor, may help depression, but trial evidence is low quality. In osteoarthritis it may help function; pain was not significantly better than placebo in pooled trials. It can trigger mania. Talk to your doctor first if you have bipolar disorder or take an antidepressant."
+summary: "SAMe may help depression, but trial evidence is low quality. In osteoarthritis it eased pain about as well as NSAIDs in head-to-head trials, but pooled placebo trials were inconclusive. It can trigger mania. Talk to your doctor first if you have bipolar disorder or take an antidepressant."
 reviewed: "2026-10-26"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27727432/","checked":"2026-10-26","fingerprint":"sha256:3b229fad9512f6bc5eb97060ef2d122597ec1894f0518355b1f801e12e1d5894"}]
 ---
@@ -222,7 +222,7 @@ SAMe may interact with some medicines and supplements [53]. If you take prescrip
 | Drug Class | Examples | Interaction | Clinical Advice |
 |-----------|---------|-------------|:---:|
 | SSRIs | Fluoxetine, sertraline, escitalopram, paroxetine | Added to SRIs at 1,600 mg a day, SAMe was well tolerated in one trial [11]; at 800 mg a day with folinic acid and B12 it was linked to one case of serotonin syndrome-like symptoms [12] | Use only with your doctor's agreement |
-| Tricyclic antidepressants | Imipramine, amitriptyline, nortriptyline | Toxic interaction with clomipramine in a case report [39]. One trial added SAMe to imipramine and found a faster early response [34] | Do not combine without your doctor's agreement |
+| Tricyclic antidepressants | Imipramine, amitriptyline, nortriptyline | Toxic interaction with clomipramine in a case report [39]. One trial added SAMe to imipramine and found a faster early response, though scores did not differ by day 14 [34] | Do not combine without your doctor's agreement |
 
 ### Dopaminergic Medications
 
