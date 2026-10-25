@@ -6,172 +6,153 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["amla", "indian gooseberry", "vitamin c", "antioxidant", "cholesterol", "ldl", "hdl", "triglycerides", "diabetes", "blood sugar", "hba1c", "insulin resistance", "blood pressure", "hypertension", "heart health", "cardiovascular", "atherosclerosis", "inflammation", "statin", "metformin", "gut health", "fiber"]
-summary: "Reference on amla (Indian gooseberry): blood sugar, cholesterol, heart health, blood pressure. Adults with type 2 diabetes or high cholesterol. Powder 1-3g/day or extract 500-1000mg/day; caution with diabetes drugs. Always discuss with your doctor."
+summary: "Amla (Indian gooseberry) is an Ayurvedic fruit. Meta-analyses of small, short trials found lower LDL cholesterol and triglycerides, and lower blood sugar in one, but the trials varied widely. Amla reduced platelet clumping. Talk to your doctor first if you take blood thinners or diabetes medicines."
+reviewed: "2026-10-26"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37296402/","checked":"2026-10-26","fingerprint":"sha256:926eedfd58c56221280b3f360e6064a6d62753d26e843950352f2b69fbd5e95d"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/amla-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/amla-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2023 meta-analysis of nine randomized trials (535 participants) found that amla fruit products lowered LDL cholesterol (mean difference -15.08 mg/dL, 95% CI -25.43 to -4.73) and triglycerides compared with placebo, and a second 2023 meta-analysis of five trials also found lower fasting blood glucose [16][17]. The trials used 500 to 1,500 mg a day for 14 to 84 days, and the authors said the results should be interpreted with caution because the trials differed widely [16]. In a trial of 150 people with high blood pressure, amla extract (500 mg twice daily) added to usual medicines did not lower blood pressure further [21]. Amla extract reduced platelet clumping in two small trials and prolonged bleeding time in one, so people who take blood thinners should ask their doctor before using it [4][18].
+
+## Key safety points
+
+- Amla reduced platelet clumping in two small trials, and in 10 diabetic patients it prolonged bleeding time, alone and with clopidogrel or aspirin [4][18]. If you take a blood thinner or have a bleeding disorder, ask your doctor first. For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Amla lowered blood sugar in trials [6][8][17], so it could add to the effect of diabetes medicines. If you take them, ask your doctor first and watch for signs of low blood sugar.
+- One-fifth of Ayurvedic medicines bought online in a 2008 US study contained lead, mercury or arsenic [24]. Choose products tested for heavy metals.
+- Side effects in trials were few: no serious adverse effects in a 90-day diabetes trial [8] and one case of mild constipation in a 12-week hair trial [5]. The longest trial lasted 4 months, so long-term safety is unknown [16][29].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Amla (*Emblica officinalis*), also known as amalaki or Indian gooseberry, is one of the most widely used ingredients in traditional Ayurvedic medicine. The fruit has been used for thousands of years across the Indian subcontinent for a broad range of health conditions, and in recent decades has attracted scientific interest for its potential effects on blood sugar control, blood lipid levels, cardiovascular health, and digestive function [1][2].
+Amla (*Emblica officinalis*, also called *Phyllanthus emblica*), known in English as Indian gooseberry, ranks among the most important medicinal plants in Ayurveda, India's traditional system of medicine. The fruit is the main part used, alone or combined with other plants [28]. Human trials have tested it for blood lipids, blood sugar, blood pressure and reflux, among other uses [11][16][17][21].
 
-The amla fruit is primarily composed of carbohydrates, roughly half of which is dietary fiber. Its most notable nutritional feature is an exceptionally high vitamin C content — approximately 600 to 700 mg per fresh fruit, making it one of the richest natural sources of ascorbic acid [1][3]. Beyond vitamin C, amla contains a diverse array of phenolic compounds including tannins (both hydrolyzable and condensed), flavonoids, gallic acid, ellagic acid, and the phenolic ester beta-glucogallin [1]. These compounds are responsible for the fruit's characteristic tartness and astringency, and are believed to contribute to its biological activity.
+The fruit is a rich source of vitamin C. Across 51 Indian samples, ascorbic acid averaged 496.47 mg per 100 g and total phenol (tannin) content averaged 4.88% [25]. Amla and its processed products also supply phenols, dietary fibre and antioxidants [3]. Pasteurised amla juice contains gallic acid, ellagic acid, ethyl gallate and quercetin [26].
 
-Beta-glucogallin has attracted particular attention for its potential antidiabetic effects. Laboratory research suggests it may inhibit enzymes involved in glucose metabolism, though the clinical evidence remains preliminary [1]. The hydrolyzable tannins in amla, particularly low-molecular-weight tannins, have been investigated for antiplatelet and anti-inflammatory properties [1][4].
+Beta-glucogallin is the marker compound in one extract, standardised to 10% [8]. In laboratory tests, a beta-glucogallin extract blocked alpha-amylase and alpha-glucosidase, two enzymes that digest starch and sugar, and the enzyme DPP-4 [27]. Another tested extract is standardised to low-molecular-weight hydrolysable tannins (emblicanin A, emblicanin B, pedunculagin and punigluconin) [19][22].
 
-Despite centuries of traditional use and a growing number of clinical studies, most of the human evidence for amla remains preliminary. Studies tend to be small (16 to 124 participants), short-term (4 to 12 weeks), and many lack placebo controls [1]. Larger, longer-term randomized controlled trials are needed to confirm the potential health benefits suggested by the existing research.
+The human evidence is still thin. The trials in two 2023 meta-analyses lasted 14 to 84 days [16] or 3 to 12 weeks [17], and the authors called for more research [16][17].
 
 ## 2. Forms and Bioavailability
 
 ### Available Forms
 
-Amla is sold in a variety of forms for both culinary and supplemental use:
+Amla is sold as food and as supplements. These forms appear in clinical trials:
 
-- **Fresh fruit** — whole amla fruit, available in specialty markets. Contains the full complement of vitamin C, fiber, and phenolic compounds.
-- **Frozen fruit** — preserves more of the vitamin C and phenolic content than dried or processed forms.
-- **Fruit juice** — concentrated liquid form. Often used in Ayurvedic preparations. Vitamin C content varies widely by processing method.
-- **Fruit syrup** — sweetened liquid preparation. Used in some clinical trials at doses of 10 mL three times daily [5].
-- **Fruit powder** — dried and ground whole fruit. Common supplement form. Retains fiber content. Doses of 1 to 3 grams per day have been used in clinical studies [1][6].
-- **Fruit extract** — concentrated form, typically standardized to specific levels of phenolic compounds. May be standardized to polyphenols, tannins, gallic acid equivalents, beta-glucogallin, or triterpenoids. Doses of 500 mg to 1,000 mg per day are common in clinical trials [1][4][7][8].
+- **Fruit powder:** dried, ground fruit, tested at 1, 2 or 3 g a day [6].
+- **Capsules and tablets:** 500 mg amla capsules [9] and tablets [11].
+- **Fruit extract:** concentrated and standardised to marker compounds, tested at doses from 250 mg twice daily up to 2 g a day [7][8][19][20].
+- **Syrup:** tested at 10 mL three times daily [5].
+- **Juice:** pasteurising at 90 °C for 1 minute kept more of its plant compounds [26].
 
 ### Standardization
 
-The lack of a unified standardization approach is a significant issue with amla supplements. Different products are standardized to different marker compounds:
+Extracts are standardised to different marker compounds:
 
-- **Phenols or polyphenols** — broad measure of total phenolic content. One clinical trial used an extract standardized to approximately 175 mg polyphenols per 500 mg dose [7].
-- **Tannins / gallic acid equivalents** — gallic acid is a naturally occurring phenolic compound used as a reference standard to quantify total tannin content. Some products report their polyphenol content as "gallic acid equivalents" [1].
-- **Beta-glucogallin** — the Saberry extract (by Sabinsa) is standardized to 10% beta-glucogallin and hydrolyzable tannins, and was used in the largest diabetes trial [8].
-- **Low-molecular-weight hydrolyzable tannins** — the CAPROS extract (by Natreon) is standardized to 60% low-molecular-weight hydrolyzable tannins, and was used in cardiovascular studies [4].
-- **Triterpenoids** — some extracts also report triterpenoid content. One cholesterol-lowering trial used an extract with approximately 40 mg triterpenoids per 500 mg dose [7].
+- **Beta-glucogallin:** an extract with 10% beta-glucogallin was tested in a diabetes trial [8][27].
+- **Low-molecular-weight hydrolysable tannins:** an aqueous extract standardised to these tannins was tested in type 2 diabetes and in healthy volunteers [19][22]. A standardised aqueous extract was also tested in metabolic syndrome [20], and a branded extract, CAPROS, in overweight adults [4].
+- **Whole-fruit profile:** one extract contained polyphenols, triterpenoids and oils as found in fresh wild amla fruit [7].
 
-Because different extracts contain different concentrations of active compounds, results from one standardized extract may not apply to another. Consumers should note which extract was used in clinical trials and seek products with matching standardization when possible.
+Because extracts differ in their active compounds, results from one extract may not apply to another. Look for a product that matches the extract used in the trial you care about.
 
 ### Vitamin C Content in Supplements
 
-An important caveat: while fresh amla fruit is exceptionally rich in vitamin C (600-700 mg per fruit), the vitamin C content of amla supplements can be very low — often less than 10 mg per serving [1]. Most amla supplements do not even list their vitamin C content on the label. This is a significant discrepancy, and consumers seeking amla primarily for its vitamin C content should verify the amount on the product label rather than assuming the supplement retains the vitamin C levels found in fresh fruit.
-
-### Storage
-
-Due to the possibility of decomposition of bioactive compounds, which is accelerated by moisture and heat, amla powder should be stored in a cool, dry place. Refrigeration is not necessary [1].
+Vitamin C content changes with processing. Pasteurised amla juice extract held 155.04 mg of ascorbic acid per 100 g [26], against an average of 496.47 mg per 100 g in fresh fruit [25]. If you want amla for its vitamin C, check the amount on the label.
 
 ## 3. Evidence for Health Benefits
 
-Although amla has been promoted for numerous conditions, many of these uses have not been evaluated in clinical studies. Among the uses that have been investigated in humans, most studies have been small and preliminary [1]. The following sections detail the available human evidence organized by condition.
+Ayurveda uses amla for many complaints, from colds and fever to ulcers and hair [28]. Human trials cover only a few, and most are small and short [16][17].
 
 ### Blood Sugar and Diabetes
 
-Amla has been traditionally used in Ayurvedic medicine for type 2 diabetes, and laboratory research suggests that beta-glucogallin from amla may have antidiabetic effects through enzyme inhibition pathways [1]. Three clinical studies have examined the effects of amla on blood sugar control in humans.
+A 2023 meta-analysis of five randomized trials found that amla lowered fasting blood glucose (p < 0.001) [17]. In laboratory tests, a beta-glucogallin extract blocked enzymes that digest starch and sugar [27].
 
-**Amla fruit powder in type 2 diabetes (uncontrolled):** A small study in Pakistan enrolled 16 men and women with non-insulin-dependent type 2 diabetes. Participants took 1 to 3 grams of powdered amla fruit daily. After approximately 2 to 3 weeks, both pre-meal and post-meal blood sugar levels appeared to decrease. However, the study did not include a placebo group, which limits the ability to attribute the observed improvements to amla rather than natural variation, dietary changes, or placebo effect (Akhtar, *Int J Food Sci Nutr*, 2011) [6].
+**Amla extract versus metformin (open-label):** Patients with newly found type 2 diabetes and abnormal blood lipids took 1 g or 2 g a day of an extract with 10% beta-glucogallin, or metformin 500 mg a day, for 90 days. Glucose before and after meals, HbA1c and lipids fell in all three groups. With 2 g of extract, glucose and HbA1c ended significantly lower than with metformin or with 1 g, and no serious adverse effects occurred [8].
 
-**Amla fruit extract versus metformin (active-controlled):** The largest and most informative study to date was conducted in India among 124 men and women (average age 47) who had been recently diagnosed with type 2 diabetes but were not yet taking diabetes medication. Participants were randomized to receive either 2 grams per day of amla fruit extract (Saberry by Sabinsa, standardized to 10% beta-glucogallin and hydrolyzable tannins) or 500 mg per day of metformin for 3 months. Key findings [8]:
+The trial was open-label, compared amla with a low dose of metformin and had no placebo group. Its authors work for Sabinsa, a supplement company [8].
 
-- Fasting blood sugar decreased by 6 mg/dL more in the amla group than in the metformin group
-- Post-meal blood sugar decreased by 13 mg/dL more in the amla group
-- HbA1c decreased by 0.3% more in the amla group than in the metformin group
+**Amla extract versus atorvastatin and placebo:** In type 2 diabetes, an aqueous extract given at 250 mg or 500 mg twice daily for 12 weeks improved blood vessel function, the lipid profile and HbA1c compared with placebo. Eighty patients completed the trial, and all treatments were well tolerated [19].
 
-These results suggest that amla extract may have comparable or slightly greater effects on blood sugar control than a low dose of metformin in newly diagnosed, untreated type 2 diabetes. However, several important limitations apply: the study was funded and conducted by Sabinsa (the manufacturer of the Saberry extract), the metformin dose (500 mg/day) was at the low end of the therapeutic range (typically 1,000-2,000 mg/day), and the study lacked a true placebo group [8].
+**Amla fruit powder (no placebo group):** Normal and diabetic volunteers took 1, 2 or 3 g of amla powder a day. By day 21, fasting and 2-hour post-meal blood glucose had fallen from baseline at all three doses [6]. Without a placebo group, the trial cannot show that amla caused the change.
 
-**Clinical significance:** More research is needed to determine whether there is a true and durable benefit, which compounds in amla are responsible for the blood sugar effects and at what optimal dose, and critically, whether amla is safe to take alongside diabetes medications. The risk of hypoglycemia when combining amla with diabetes drugs has not been adequately studied [1].
+**Clinical significance:** The diabetes trials were small and short, and two had no placebo group [6][8]. Larger and longer trials would be needed to show a lasting benefit and the best dose.
 
 ### Heart Health and Cholesterol
 
-Amla contains flavonoids that have been shown in laboratory studies to block the activity of HMG-CoA reductase, the enzyme involved in cholesterol production — the same enzyme targeted by statin medications [1]. Several small clinical studies have investigated amla's effects on blood lipid levels and cardiovascular risk markers.
+A 2023 meta-analysis pooled nine randomized trials (535 participants) using 500 to 1,500 mg of amla a day for 14 to 84 days [16]. Compared with placebo, amla lowered LDL cholesterol (mean difference -15.08 mg/dL, 95% CI -25.43 to -4.73), triglycerides (mean difference -22.35 mg/dL, 95% CI -39.71 to -4.99) and high-sensitivity C-reactive protein (mean difference -1.70 mg/L, 95% CI -2.06 to -1.33) [16]. The prediction intervals for LDL cholesterol (-48.29 to 18.13) and triglycerides crossed zero, and the authors said the results should be interpreted with caution [16]. A second meta-analysis of five trials found lower total cholesterol, LDL cholesterol and triglycerides and higher HDL cholesterol [17].
 
-**Amla versus simvastatin (active-controlled):** A small study in India among 60 people with high cholesterol compared two treatment groups: one receiving 20 mg of simvastatin daily and the other receiving 500 mg of amla fruit powder as capsules once daily at bedtime for 6 weeks. Findings [9]:
+**Amla extract for dyslipidemia (placebo-controlled):** In 98 patients with dyslipidemia, amla extract (500 mg twice daily) for 12 weeks left total cholesterol, triglycerides, LDL and VLDL cholesterol significantly lower than placebo [7]. The atherogenic index of plasma, a measure linked to plaque build-up in arteries, fell by 39% in the amla group [7]. This is among the stronger single trials, though it was small and lasted 12 weeks [7].
 
-- Amla and simvastatin showed similar effects on total cholesterol, LDL ("bad") cholesterol, and HDL ("good") cholesterol
-- Simvastatin produced greater reductions in very low-density lipoprotein (VLDL) cholesterol and triglycerides than amla
-- Among 28 participants in the amla group and 10 in the simvastatin group who also had high blood pressure at baseline, 21 of those taking amla (75%) and 6 of those taking simvastatin (60%) showed reductions in systolic and/or diastolic blood pressure after 6 weeks
-- Whether the blood pressure difference between groups was statistically significant was not reported
+**Amla extract in metabolic syndrome (placebo-controlled):** In 59 people with metabolic syndrome, an aqueous extract at 250 mg or 500 mg twice daily for 12 weeks improved blood vessel function, hs-CRP and the lipid profile, with larger changes at 500 mg twice daily [20].
 
-This study lacked a placebo group, used a relatively low simvastatin dose (20 mg), and was small, so results should be interpreted cautiously (Gopa, *Indian J Pharmacol*, 2012) [9].
+**Amla versus simvastatin (no placebo group):** Of 60 patients with type II hyperlipidemia, 40 took a 500 mg amla capsule and 20 took a 20 mg simvastatin capsule each day for 42 days [9]. Both groups had significant falls in total cholesterol, LDL, triglycerides and VLDL and a rise in HDL [9]. Both treatments also lowered blood pressure, more so with amla [9].
 
-**Amla extract for dyslipidemia (placebo-controlled):** A higher-quality study among 98 people with abnormal blood lipid levels tested 500 mg of amla extract (standardized to approximately 175 mg polyphenols and 40 mg triterpenoids) taken daily for 12 weeks compared to placebo. Results [7]:
+**Amla extract in overweight adults (no control group):** Overweight or class 1 obese adults took CAPROS extract, 500 mg twice daily, for 12 weeks [4]. Compared with two baseline visits, calculated LDL cholesterol, the ratio of total to HDL cholesterol and hs-CRP fell [4]. Platelet clumping triggered by ADP and by collagen also fell, which points to an antiplatelet effect [4].
 
-- Total cholesterol decreased by 54.67 mg/dL from baseline in the amla group
-- Triglycerides decreased by 89.17 mg/dL from baseline
-- LDL cholesterol decreased by 28.43 mg/dL from baseline
-- VLDL cholesterol decreased by 17.52 mg/dL from baseline
-- All reductions were statistically significant compared to the placebo group
-- The atherogenic index of plasma (AIP), a measure used to predict the risk of excess plaque buildup in arteries, showed a 39% reduction from baseline in the amla group, and this reduction was significant compared to placebo
-
-This is the strongest clinical evidence to date for amla's lipid-lowering effects, though the study was still relatively small and of moderate duration (Upadya, *BMC Complement Altern Med*, 2019) [7].
-
-**Amla for cardiovascular markers in overweight/obese individuals (uncontrolled):** A study in Ohio enrolled overweight or obese individuals who took 500 mg of amla extract (CAPROS by Natreon, standardized to 60% low-molecular-weight hydrolyzable tannins) twice daily (1,000 mg total/day) for 12 weeks. Findings [4]:
-
-- HDL ("good") cholesterol increased
-- High-sensitivity C-reactive protein (hs-CRP), a marker of cardiovascular disease risk, decreased
-- Total cholesterol and triglyceride levels did not significantly change compared to baseline
-- Platelet aggregation (clumping) induced by collagen was reduced, suggesting an antiplatelet effect that could lower blood clot risk
-
-The lack of a control group in this study limits the significance of these findings, as improvements in cardiovascular markers could have resulted from lifestyle changes, regression to the mean, or other factors unrelated to amla supplementation (Khanna, *J Med Food*, 2015) [4].
+With no control group, other factors could explain these changes. Not every trial was positive: in the 150-person hypertension trial, 12 weeks of amla extract did not improve the lipid profile, HbA1c or hs-CRP [21].
 
 ### Blood Pressure
 
-Evidence for amla's effect on blood pressure is limited and comes primarily from subgroup analyses within the cholesterol studies described above.
+The best test so far is negative. In a randomized trial of 150 people with essential hypertension, a 500 mg capsule of amla extract or placebo taken twice daily for 12 weeks, added to usual medicines, produced no extra fall in systolic or diastolic blood pressure [21].
 
-In the amla versus simvastatin study, 75% of hypertensive participants in the amla group (21 of 28) showed reductions in systolic and/or diastolic blood pressure after 6 weeks of 500 mg amla fruit powder daily, compared to 60% in the simvastatin group (6 of 10). However, it was not reported whether this difference reached statistical significance [9].
-
-No standalone randomized controlled trial has evaluated amla specifically for blood pressure reduction as a primary endpoint. Given the small numbers and post-hoc nature of the blood pressure observations, no firm conclusions can be drawn about amla's antihypertensive effects.
+In the simvastatin comparison, both treatments lowered blood pressure, with a larger effect from amla [9]. In 12 healthy volunteers, two 250 mg capsules of extract twice daily for 14 days reduced the rise in arterial stiffness and blood pressure during a cold-water stress test, compared with placebo [22].
 
 ### Digestive Health (GERD)
 
-**Amla for gastric ulcer healing (animal study):** Amla was shown in an animal study to improve the healing of gastric and duodenal ulcers by reducing gastric acid secretion (Al-Rehaily, *Phytomedicine*, 2002) [10].
+**Amla for gastric ulcer healing (animal study):** In rats, an ethanol extract of amla at 250 and 500 mg/kg protected the stomach against ulcers and reduced basal gastric secretion and acidity [10].
 
-**Amla for gastroesophageal reflux disease (placebo-controlled):** A clinical study enrolled 68 people with a form of gastroesophageal reflux disease (GERD) that tends to have a lower response to proton-pump inhibitor (PPI) therapy — specifically, functional heartburn and non-erosive reflux disease. Participants took two 500 mg tablets of amla fruit powder twice daily after meals (total daily dose of 2,000 mg) or placebo for 4 weeks. Results [11]:
+**Amla for gastroesophageal reflux disease (placebo-controlled):** A trial enrolled 68 people with non-erosive reflux disease who had had heartburn, regurgitation and upper stomach pain for at least 3 months. They took two 500 mg amla tablets twice a day after meals, or placebo, for 4 weeks [11]. Both groups improved, but heartburn and regurgitation fell more in frequency and severity with amla than with placebo (P < 0.001) [11].
 
-- Self-reported frequency of regurgitation was reduced in the amla group compared to placebo
-- Self-reported severity of regurgitation was reduced in the amla group compared to placebo
-- Self-reported frequency and severity of heartburn were reduced in the amla group compared to placebo
-
-This was a relatively small study and the outcomes were based on self-report rather than objective measures such as pH monitoring. Larger, longer-term studies are needed to confirm this effect (Varnosfaderani, *J Integr Med*, 2018) [11].
+Symptoms were scored on a questionnaire, and the trial was small and short [11]. Larger and longer studies are needed.
 
 ### Immunity and Common Cold
 
-Amla fruit juice has been promoted as an immune booster to help prevent and treat the common cold or flu. The rationale is based primarily on amla's high vitamin C content — approximately 600 to 700 mg per fresh fruit (Goraya, *J Food Sci Technol*, 2015) [3]. Evidence from other sources shows that taking vitamin C prior to the onset of a cold may help reduce the duration and severity of cold symptoms.
+Ayurveda uses amla fruit for the common cold and fever [28]. In a randomized trial in 61 people in hospital with COVID-19, amla tea added to usual care shortened the hospital stay (4.44 days against 7.18 days) and eased fever, cough, breathlessness and muscle pain more than in the control group [32]. It did not change PCR test results [32].
 
-However, no clinical studies have specifically evaluated the effects of amla on cold or flu risk [1]. Furthermore, the vitamin C content in amla supplements (as opposed to fresh fruit) is often very low — typically less than 10 mg per serving — and most supplements do not disclose the amount of vitamin C they provide [1]. Without clinical evidence and with uncertain vitamin C delivery in supplement form, the immune-boosting claims for amla supplements remain unsubstantiated.
+One trial in COVID-19 [32] does not show that amla prevents colds or flu.
 
 ### Hair Growth
 
-It has been speculated that amla might help strengthen hair follicles by boosting vitamin C levels, as well as promote hair growth through anti-inflammatory and exfoliating properties (Lanjewar, *J Drug Deliv Therapeut*, 2020) [12].
+Amla fruit is used as a hair tonic in Traditional Persian Medicine, by mouth and on the skin [5].
 
-**Amla syrup for female hair loss (placebo-controlled):** A clinical trial enrolled 52 women in Iran with female androgenetic alopecia, a common cause of hair loss in women. Participants consumed 10 mL (approximately 2 teaspoons) of amla syrup standardized to 306.95 mg of gallic acid per milliliter, taken three times daily for 12 weeks, compared to a placebo syrup. Findings [5]:
+**Amla syrup for female hair loss (placebo-controlled):** A trial randomized 60 women with female-pattern hair loss (female androgenetic alopecia) to 10 mL of amla syrup or placebo syrup three times a day for 12 weeks; 27 and 25 women completed it [5]. Findings [5]:
 
-- Average hair count did not significantly improve in the amla group compared to placebo
-- Mean hair thickness did not significantly improve in the amla group compared to placebo
-- Those in the amla group showed a slightly higher percentage of hair in the anagen (growing) phase after 12 weeks
-- Those in the amla group showed a slightly lower percentage of hair in the telogen (resting) phase after 12 weeks
-- These hair cycle phase differences were modest and the study was small
+- The ratio of growing (anagen) to resting (telogen) hairs rose more with amla than with placebo (P = 0.002)
+- Physician and patient satisfaction scores were higher with amla at 12 weeks
+- One woman had mild constipation
 
-Overall, amla supplementation did not demonstrate clinically meaningful improvements in hair count or thickness, though it may have a marginal effect on hair cycle dynamics (Akhbari, *J Ethnopharmacol*, 2024) [5].
+The trial was small, and its authors called for further studies [5].
 
 ### Liver and Kidney Function
 
-Amla has shown benefit in animal research for improving liver function and kidney health, but clinical studies supporting these benefits in humans are lacking [1]. No human trials have evaluated amla's effects on liver enzymes, liver fibrosis markers, or kidney function parameters as primary outcomes.
+Laboratory and animal studies suggest liver- and kidney-protecting effects [28]. In people with uremia (kidney failure), amla extract for 4 months lowered a marker of oxidative stress but did not change liver function, kidney function, blood glucose or cholesterol [29].
 
 ### Cognitive Function and Dementia
 
-Amla has been shown to possess anticholinesterase activity in animal research, suggesting it may have benefit in the management of dementia or Alzheimer's disease (Golechha, *J Environ Biol*, 2012) [13]. Anticholinesterase inhibitors (such as donepezil and rivastigmine) are the mainstay of symptomatic treatment for Alzheimer's disease, so a natural compound with similar activity is of theoretical interest.
+In mice, amla extract reversed drug-induced memory loss and a drug-induced rise in brain acetylcholinesterase, the enzyme that drugs such as donepezil block [13]. The authors said its potential in dementia and Alzheimer's disease needs further study [13].
 
-However, no human studies have evaluated the effects of amla on cognitive function, memory, or dementia risk. The animal findings, while mechanistically interesting, cannot be extrapolated to clinical recommendations.
+The evidence comes from mice. It cannot guide treatment in people.
 
 ### Eye Health (Macular Degeneration and Cataract)
 
-Amla has been promoted for preventing age-related macular degeneration and cataracts, likely based on its antioxidant properties and vitamin C content. However, no clinical studies have assessed the effects of amla on these eye conditions in humans [1].
+In laboratory cells carrying mitochondria from people with age-related macular degeneration, amla extract improved cell survival and reduced oxidative stress [30]. This was a laboratory study, and the authors called for further studies [30].
 
 ### Skin Aging
 
-Amla has been promoted for improving the appearance of aging skin, again likely based on its antioxidant and vitamin C content. Vitamin C is known to play a role in collagen synthesis and photoprotection. However, no clinical studies have assessed the effects of amla supplementation on skin aging parameters in humans [1].
+In 99 healthy women, a daily drink with lingonberry and amla fruit extracts for 12 weeks improved skin elasticity, thickness, moisture and wrinkles around the eyes compared with placebo [31]. Because the drink combined two extracts, the trial cannot show an effect of amla alone.
 
 ### Cancer Prevention
 
-Amla has been promoted for cancer prevention, and some in vitro and animal studies have suggested antiproliferative effects. However, no clinical studies have assessed the effects of amla on cancer incidence, cancer mortality, or cancer biomarkers in humans [1].
+Laboratory and animal studies suggest that amla and some of its compounds, such as gallic acid and ellagic acid, have anticancer effects [28]. A 2011 review said further research is needed to establish whether amla works to prevent or treat cancer in humans [28].
 
 ### Diuretic Effect
 
-Amla fruit has been traditionally used in Indian medicine for its diuretic effect — increasing urine output (Talreja, *WJPPS*, 2019; Grover, *J Oral Res Rev*, 2015) [14][15]. Theoretically, consuming amla fruit or supplements may increase the volume and/or frequency of urination. However, this side effect does not appear to have been reported in the clinical trials summarized above, and the mechanism of action of such an effect is not well characterized [1].
+Ayurveda uses amla fruit as a diuretic, to increase urine output [28].
 
 ## 4. Recommended Dosing
 
@@ -181,21 +162,22 @@ There is no established recommended daily intake or standardized dosing protocol
 
 | Form | Dose | Duration | Condition Studied | Study |
 |------|------|----------|-------------------|-------|
-| Amla fruit powder | 1-3 g/day | 2-3 weeks | Type 2 diabetes (blood sugar) | Akhtar 2011 [6] |
-| Amla fruit extract (Saberry, 10% beta-glucogallin) | 2 g/day | 3 months | Type 2 diabetes (blood sugar, HbA1c) | Majeed 2023 [8] |
-| Amla fruit powder | 500 mg/day (once at bedtime) | 6 weeks | High cholesterol | Gopa 2012 [9] |
-| Amla fruit extract (standardized polyphenols) | 500 mg/day | 12 weeks | Dyslipidemia (cholesterol, triglycerides) | Upadya 2019 [7] |
-| Amla extract (CAPROS, 60% tannins) | 500 mg twice daily (1,000 mg/day) | 12 weeks | Cardiovascular markers (overweight/obese) | Khanna 2015 [4] |
-| Amla fruit powder | 2,000 mg/day (500 mg x 2, twice daily) | 4 weeks | GERD (heartburn, regurgitation) | Varnosfaderani 2018 [11] |
-| Amla syrup (306.95 mg gallic acid/mL) | 10 mL three times daily | 12 weeks | Female hair loss | Akhbari 2024 [5] |
+| Amla fruit powder | 1, 2 or 3 g a day | 21 days | Blood sugar (normal and type 2 diabetes) | Akhtar 2011 [6] |
+| Amla fruit extract (10% beta-glucogallin) | 1 g or 2 g a day | 90 days | Newly diagnosed type 2 diabetes | Majeed 2022 [8] |
+| Aqueous extract (hydrolysable tannins) | 250 mg or 500 mg twice daily | 12 weeks | Type 2 diabetes | Usharani 2013 [19] |
+| Amla capsule | 500 mg a day | 42 days | High cholesterol | Gopa 2012 [9] |
+| Amla extract | 500 mg twice daily | 12 weeks | Dyslipidemia | Upadya 2019 [7] |
+| Standardised aqueous extract | 250 mg or 500 mg twice daily | 12 weeks | Metabolic syndrome | Usharani 2019 [20] |
+| Amla extract (CAPROS) | 500 mg twice daily | 12 weeks | Overweight adults | Khanna 2015 [4] |
+| Amla extract | 500 mg twice daily, added to usual medicines | 12 weeks | Hypertension (no effect on blood pressure) | Shanmugarajan 2021 [21] |
+| Amla tablets | two 500 mg tablets twice daily after meals | 4 weeks | Non-erosive reflux disease | Karkon Varnosfaderani 2018 [11] |
+| Amla syrup | 10 mL three times daily | 12 weeks | Female hair loss | Akhbari 2024 [5] |
 
 ### General Guidance
 
-- **For blood sugar control:** 1 to 3 grams daily of amla fruit powder, or 2 grams daily of a standardized fruit extract (10% beta-glucogallin) [1][6][8].
-- **For cholesterol lowering:** 500 mg daily of amla fruit extract or amla fruit powder [1][7][9].
-- **For GERD / digestive symptoms:** 2,000 mg daily of amla fruit powder, divided into two doses taken after meals [11].
-- **Timing:** It is not clear whether amla is best taken at any particular time of day or with or without food [1].
-- **Powder preparation:** Amla powders are meant to be mixed with water or another beverage, such as juice, or blended into a smoothie [1].
+- **For blood sugar:** trials used 1 to 3 g a day of amla fruit powder [6], or 1 g or 2 g a day of an extract with 10% beta-glucogallin [8].
+- **For cholesterol:** trials used 500 mg a day of amla capsules [9] up to 500 mg of extract twice daily [7][20]; the meta-analysis range was 500 to 1,500 mg a day [16].
+- **For reflux symptoms:** two 500 mg tablets twice a day after meals [11].
 
 ### Important Caveats
 
@@ -205,23 +187,25 @@ These dosing suggestions are based on small, short-term studies, many with signi
 
 ### General Safety
 
-Amla fruit is considered safe to consume in normal dietary amounts as a food [1]. It has been consumed as a food and traditional remedy in India for centuries without reports of widespread toxicity. However, taking amla in concentrated supplemental doses may have side effects and interactions that are not apparent from dietary consumption.
+Amla fruit is eaten as a food and used in Ayurveda [28]. In trials, amla extracts were well tolerated: no serious adverse effects occurred during a 90-day trial [8], laboratory safety tests did not change significantly for 12 weeks [19], and a 12-week trial in hypertension reported a good safety profile [21].
+
+Ayurvedic products carry a separate risk. In a 2004 Boston study, 14 of 70 Ayurvedic herbal medicine products from South Asia contained lead, mercury or arsenic, and each could give intakes above regulatory standards if taken as directed [23]. In a 2008 study, one-fifth of Ayurvedic medicines bought online, made in the US or India, contained detectable lead, mercury or arsenic [24]. These studies tested Ayurvedic medicines in general, not amla alone. Choose products tested for heavy metals; consumerlab.com and Labdoor list independent test results.
 
 ### Known and Potential Side Effects
 
-**Blood sugar lowering:** Amla may lower blood sugar levels. While this is a potential benefit for people with diabetes or prediabetes, it creates a risk of hypoglycemia (dangerously low blood sugar) in people who are already taking diabetes medications such as metformin, sulfonylureas, or insulin. The interaction between amla and diabetes drugs has not been adequately studied. Anyone taking diabetes medications should consult their doctor before taking amla, as dose adjustments to diabetes medications might be necessary [1].
+**Blood sugar lowering:** Amla lowered blood sugar in trials [6][8][17]. That could add to the effect of diabetes medicines such as metformin, sulfonylureas or insulin and cause low blood sugar. If you take diabetes medicines, check with your doctor first. Your doctor may want to check your blood sugar more often or adjust your dose. If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not give food or drink by mouth.
 
-**Antiplatelet effects and bleeding risk:** Amla may reduce blood clotting through its antiplatelet effects. The CAPROS study demonstrated that amla extract reduced collagen-induced platelet aggregation in overweight/obese individuals [4]. This antiplatelet effect means amla may increase the risk of bleeding, particularly in people with bleeding disorders or those taking blood-thinning medications such as warfarin, aspirin, clopidogrel, or direct oral anticoagulants. Anyone with a bleeding disorder or taking anticoagulant or antiplatelet medications should consult their doctor before taking amla [1].
+**Antiplatelet effects and bleeding risk:** In overweight adults, 12 weeks of amla extract reduced platelet clumping triggered by ADP and by collagen [4]. In 10 diabetic patients, amla extract at 500 mg (a single dose, then twice daily for 10 days), alone or with 75 mg of clopidogrel or 75 mg of aspirin (as Ecosprin), reduced platelet clumping and prolonged bleeding and clotting time [18]. Amla may therefore raise bleeding risk, especially with blood thinners such as warfarin, aspirin, clopidogrel or direct oral anticoagulants, or with a bleeding disorder. If either applies to you, check with your doctor before you start. Report nosebleeds, bleeding gums, blood in urine or black stools to your doctor the same day. For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
-**Anticholinesterase activity:** Amla has demonstrated anticholinesterase activity in animal research [13]. This means it could theoretically interfere with anticholinergic drugs such as atropine (Atropen) and benztropine (Cogentin), which are used to treat conditions ranging from bradycardia to Parkinson's disease symptoms. The clinical significance of this interaction in humans is not established, but caution is warranted [1].
+**Anticholinesterase activity:** In mice, amla extract reversed a drug-induced rise in brain acetylcholinesterase [13]. In theory, this could work against anticholinergic medicines. The evidence comes from a mouse study. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
-**Diuretic effect:** Amla has traditionally been used as a diuretic. Theoretically, supplementation may increase the volume and/or frequency of urination, though this has not been reported in the clinical trials reviewed above [1][14][15].
+**Diuretic effect:** Ayurveda uses amla as a diuretic [28]. Whether amla supplements increase urination is unknown.
 
-**Gastrointestinal effects:** Due to its high tannin content and astringency, amla may cause GI discomfort in some individuals, particularly at higher doses. However, significant GI side effects were not prominently reported in the clinical trials reviewed.
+**Gastrointestinal effects:** In the hair-loss trial, one woman had mild constipation after a month of amla syrup [5].
 
 ### Side Effects Not Reported in Clinical Trials
 
-The clinical trials on amla have generally been small (16-124 participants) and short (2-12 weeks), which means that rare or long-term side effects may not have been detected. The safety profile of chronic amla supplementation beyond 12 weeks is largely unknown.
+The trials were small and short: 14 to 84 days in the main meta-analysis [16], and 4 months at most [29]. Rare or long-term side effects may have been missed.
 
 ## 6. Drug Interactions
 
@@ -229,16 +213,16 @@ The clinical trials on amla have generally been small (16-124 participants) and 
 
 | Drug Class | Examples | Nature of Interaction | Clinical Implication |
 |-----------|---------|----------------------|---------------------|
-| Diabetes medications | Metformin, sulfonylureas, insulin, SGLT2 inhibitors | Additive blood sugar lowering | Risk of hypoglycemia. Monitor blood sugar closely; dose adjustment may be needed [1][8] |
-| Anticoagulants | Warfarin (Coumadin), heparin, enoxaparin | Additive antiplatelet/anticoagulant effect | Increased bleeding risk. Consult doctor before use [1][4] |
-| Antiplatelet drugs | Aspirin, clopidogrel (Plavix) | Additive antiplatelet effect | Increased bleeding risk. Consult doctor before use [1][4] |
-| Anticholinergic drugs | Atropine (Atropen), benztropine (Cogentin) | Amla's anticholinesterase activity may oppose drug effects | May reduce effectiveness of anticholinergic medications [1][13] |
-| Statins | Simvastatin, atorvastatin, rosuvastatin | Possible additive cholesterol-lowering effect | May be beneficial but requires monitoring. One study compared amla directly to simvastatin [9] |
-| Diuretics | Furosemide, hydrochlorothiazide | Possible additive diuretic effect | Theoretical; monitor hydration and electrolytes [14][15] |
+| Diabetes medications | Metformin, sulfonylureas, insulin, SGLT2 inhibitors | Possible additive blood sugar lowering | Risk of low blood sugar. Ask your doctor first; doses may need to change [6][8][17] |
+| Anticoagulants | Warfarin, heparin, enoxaparin, direct oral anticoagulants | Amla's antiplatelet effect may add to their effect | Possible higher bleeding risk. Ask your doctor before use [4][18] |
+| Antiplatelet drugs | Aspirin, clopidogrel | Bleeding and clotting time were prolonged when amla was taken with either drug | Possible higher bleeding risk. Ask your doctor before use [18] |
+| Anticholinergic drugs | Medicines that block acetylcholine | Amla's anticholinesterase activity in mice may oppose their effect | Theoretical. Check with your doctor or pharmacist [13] |
+| Statins | Simvastatin, atorvastatin | Trials compared amla with simvastatin and atorvastatin, not in combination | Effect of combining them is unknown [9][19] |
+| Diuretics | Furosemide, hydrochlorothiazide | Possible additive diuretic effect, based on traditional use | Theoretical; monitor hydration and electrolytes [28] |
 
 ### Surgical Considerations
 
-Due to its antiplatelet effects, amla supplementation should be discontinued at least 2 weeks before scheduled surgery to reduce the risk of excessive bleeding. Discuss with your surgeon and anesthesiologist [1][4].
+Because amla prolonged bleeding time in a small trial [18], tell your surgeon, anaesthetist and dentist that you take it, and stop it before planned surgery. Ask your surgeon how far ahead to stop.
 
 ## 7. Dietary Sources
 
@@ -246,62 +230,74 @@ Amla is primarily consumed as a food in South Asia, where it is used in a variet
 
 ### Fresh Amla Fruit
 
-Fresh amla fruit is the richest dietary source of amla's bioactive compounds. Each fruit provides approximately 600-700 mg of vitamin C, along with the full spectrum of tannins, flavonoids, gallic acid, ellagic acid, and beta-glucogallin [3]. Fresh amla has a distinctive sour, bitter, and astringent taste.
+Fresh amla fruit is rich in vitamin C (see the table below) and contains tannins, gallic acid and ellagic acid [25][26][28].
 
 ### Common Culinary Preparations
 
-- **Amla pickle (achar)** — fresh amla preserved in oil, spices, and salt. A staple condiment in Indian cuisine.
-- **Amla candy (murabba)** — amla fruit preserved in sugar syrup. Sweet and tangy.
-- **Amla juice** — fresh-pressed or reconstituted from powder. Often mixed with other fruit juices to improve palatability.
-- **Amla chutney** — ground fresh amla with spices, herbs, and sometimes coconut.
-- **Dried amla** — dehydrated slices or pieces, sometimes salted or spiced. Shelf-stable snack.
-- **Chyawanprash** — a traditional Ayurvedic jam-like preparation where amla is the primary ingredient, combined with ghee, honey, sesame oil, and numerous herbs and spices.
+- **Amla preserve, candy, shreds, pulp and powder:** processed amla products, also tested as ice cream ingredients [3].
+- **Amla juice:** pasteurising it briefly keeps more of its plant compounds [26].
 
 ### Nutritional Profile of Fresh Amla Fruit (per 100g)
 
 | Nutrient | Amount |
 |----------|--------|
-| Calories | ~44 kcal |
-| Carbohydrates | ~10 g |
-| Fiber | ~4.3 g |
-| Vitamin C | ~600-700 mg |
-| Protein | ~0.9 g |
-| Fat | ~0.6 g |
+| Ascorbic acid (vitamin C) | 496.47 mg on average (highest 654.50 mg) |
+| Total phenol (tannin) | 4.88% on average |
 
-Note: Nutritional values vary by variety, growing conditions, and ripeness.
-
-### Availability
-
-Fresh amla fruit is seasonal (typically harvested October through February in India) and is available in Indian grocery stores and specialty markets in countries with significant South Asian populations. Frozen amla and amla juice are more widely available year-round. Amla powder is the most accessible form globally, available in health food stores and online retailers.
+Note: Nutritional values vary by variety, growing conditions, and ripeness. These figures come from 51 samples grown in Madhya Pradesh, India [25].
 
 ## 8. References
 
-[1] ConsumerLab. "Amla Supplements Review." Accessed 2026. [https://www.consumerlab.com/reviews/amla-review-comparisons/amla/](https://www.consumerlab.com/reviews/amla-review-comparisons/amla/)
+[3] Goraya RK, Bajwa U. "Enhancing the functional properties and nutritional quality of ice cream with processed amla (Indian gooseberry)." *J Food Sci Technol*. 2015;52(12):7861-7871. PMID: 26604358. doi: [10.1007/s13197-015-1877-1](https://doi.org/10.1007/s13197-015-1877-1)
 
-[2] Traditional Ayurvedic usage references cited in ConsumerLab and clinical literature.
+[4] Khanna S, Das A, Spieldenner J, et al. "Supplementation of a Standardized Extract from Phyllanthus emblica Improves Cardiovascular Risk Factors and Platelet Aggregation in Overweight/Class-1 Obese Adults." *J Med Food*. 2015;18(4):415-420. PMID: 25756303. doi: [10.1089/jmf.2014.0178](https://doi.org/10.1089/jmf.2014.0178)
 
-[3] Goraya RK, Bajwa U. "Enhancing the functional properties and nutritional quality of ice cream with processed amla (Indian gooseberry)." *J Food Sci Technol*. 2015;52(12):7861-7871.
+[5] Akhbari M, Firooz A, Rahimi R, et al. "The effect of an oral product containing Amla fruit (Phyllanthus emblica L.) on female androgenetic alopecia: A randomized controlled trial." *J Ethnopharmacol*. 2024;318(Pt A):116958. PMID: 37487962. doi: [10.1016/j.jep.2023.116958](https://doi.org/10.1016/j.jep.2023.116958)
 
-[4] Khanna S, Das A, Spieldenner J, et al. "Supplementation of a Standardized Extract from Phyllanthus emblica Improves Cardiovascular Risk Factors and Platelet Aggregation in Overweight/Class-1 Obese Adults." *J Med Food*. 2015;18(4):415-420. doi: [10.1089/jmf.2014.0178](https://doi.org/10.1089/jmf.2014.0178)
+[6] Akhtar MS, Ramzan A, Ali A, Ahmad M. "Effect of Amla fruit (Emblica officinalis Gaertn.) on blood glucose and lipid profile of normal subjects and type 2 diabetic patients." *Int J Food Sci Nutr*. 2011;62(6):609-616. PMID: 21495900. doi: [10.3109/09637486.2011.560565](https://doi.org/10.3109/09637486.2011.560565)
 
-[5] Akhbari M, et al. "Effect of amla (Phyllanthus emblica) syrup on female androgenetic alopecia: A randomized, double-blind, placebo-controlled trial." *J Ethnopharmacol*. 2024. doi: [10.1016/j.jep.2024.117888](https://doi.org/10.1016/j.jep.2024.117888)
+[7] Upadya H, Prabhu S, Prasad A, et al. "A randomized, double blind, placebo controlled, multicenter clinical trial to assess the efficacy and safety of Emblica officinalis extract in patients with dyslipidemia." *BMC Complement Altern Med*. 2019;19(1):27. PMID: 30670010. doi: [10.1186/s12906-019-2430-y](https://doi.org/10.1186/s12906-019-2430-y)
 
-[6] Akhtar MS, Ramzan A, Ali A, Ahmad M. "Effect of Amla fruit (Emblica officinalis Gaertn.) on blood glucose and lipid profile of normal subjects and type 2 diabetic patients." *Int J Food Sci Nutr*. 2011;62(6):609-616. doi: [10.3109/09637486.2011.560565](https://doi.org/10.3109/09637486.2011.560565)
+[8] Majeed M, Mundkur L, Paulose S, et al. "Novel Emblica officinalis extract containing β-glucogallin vs. metformin: a randomized, open-label, comparative efficacy study in newly diagnosed type 2 diabetes mellitus patients with dyslipidemia." *Food Funct*. 2022;13(18):9523-9531. PMID: 35996967. doi: [10.1039/d2fo01862d](https://doi.org/10.1039/d2fo01862d)
 
-[7] Upadya H, Prabhu S, Prasad A, et al. "A randomized, double blind, placebo controlled, multicenter clinical trial to assess the efficacy and safety of Emblica officinalis extract in patients with dyslipidemia." *BMC Complement Altern Med*. 2019;19(1):27. doi: [10.1186/s12906-019-2430-y](https://doi.org/10.1186/s12906-019-2430-y)
+[9] Gopa B, Bhatt J, Hemavathi KG. "A comparative clinical study of hypolipidemic efficacy of Amla (Emblica officinalis) with 3-hydroxy-3-methylglutaryl-coenzyme-A reductase inhibitor simvastatin." *Indian J Pharmacol*. 2012;44(2):238-242. PMID: 22529483. doi: [10.4103/0253-7613.93857](https://doi.org/10.4103/0253-7613.93857)
 
-[8] Majeed M, Majeed S, Nagabhushanam K, et al. "A randomized, double-blind, active controlled study to evaluate the efficacy of Saberry (standardized amla extract) on glycemic markers in newly diagnosed type 2 diabetes patients." *Food Funct*. 2023;14(9):4091-4102. doi: [10.1039/D2FO03183A](https://doi.org/10.1039/D2FO03183A)
+[10] Al-Rehaily AJ, Al-Howiriny TA, Al-Sohaibani MO, Rafatullah S. "Gastroprotective effects of 'Amla' Emblica officinalis on in vivo test models in rats." *Phytomedicine*. 2002;9(6):515-522. PMID: 12403160. doi: [10.1078/09447110260573146](https://doi.org/10.1078/09447110260573146)
 
-[9] Gopa B, Bhatt J, Hemavathi KG. "A comparative clinical study of hypolipidemic efficacy of Amla (Emblica officinalis) with 3-hydroxy-3-methylglutaryl-coenzyme-A reductase inhibitor simvastatin." *Indian J Pharmacol*. 2012;44(2):238-242. doi: [10.4103/0253-7613.93857](https://doi.org/10.4103/0253-7613.93857)
+[11] Karkon Varnosfaderani S, Hashem-Dabaghian F, Amin G, et al. "Efficacy and safety of Amla (Phyllanthus emblica L.) in non-erosive reflux disease: a double-blind, randomized, placebo-controlled clinical trial." *J Integr Med*. 2018;16(2):126-131. PMID: 29526236. doi: [10.1016/j.joim.2018.02.008](https://doi.org/10.1016/j.joim.2018.02.008)
 
-[10] Al-Rehaily AJ, Al-Howiriny TA, Al-Sohaibani MO, Rafatullah S. "Gastroprotective effects of 'Amla' Emblica officinalis on in vivo test models in rats." *Phytomedicine*. 2002;9(6):515-522. doi: [10.1078/09447110260573146](https://doi.org/10.1078/09447110260573146)
+[13] Golechha M, Bhatia J, Arya DS. "Studies on effects of Emblica officinalis (Amla) on oxidative stress and cholinergic function in scopolamine induced amnesia in mice." *J Environ Biol*. 2012;33(1):95-100. PMID: 23033650. [https://pubmed.ncbi.nlm.nih.gov/23033650/](https://pubmed.ncbi.nlm.nih.gov/23033650/)
 
-[11] Varnosfaderani SM, Hashem-Dabaghian F, Amin G, et al. "Efficacy and safety of Amla (Phyllanthus emblica L.) in non-erosive reflux disease: a double-blind, randomized, placebo-controlled clinical trial." *J Integr Med*. 2018;16(2):126-131. doi: [10.1016/j.joim.2018.02.008](https://doi.org/10.1016/j.joim.2018.02.008)
+[16] Brown PDS, Ketter N, Vis-Dunbar M, Sakakibara BM. "Clinical effects of Emblica officinalis fruit consumption on cardiovascular disease risk factors: a systematic review and meta-analysis." *BMC Complement Med Ther*. 2023;23(1):190. PMID: 37296402. doi: [10.1186/s12906-023-03997-8](https://doi.org/10.1186/s12906-023-03997-8)
 
-[12] Lanjewar A, Maurya PK. "Comprehensive Review: Indian Gooseberry (Amla) for Hair and Skin." *J Drug Deliv Therapeut*. 2020.
+[17] Setayesh L, Haghighat N, Rasaei N, et al. "The impact of Emblica Officinalis (Amla) on lipid profile, glucose, and C-reactive protein: A systematic review and meta-analysis of randomized controlled trials." *Diabetes Metab Syndr*. 2023;17(3):102729. PMID: 36934568. doi: [10.1016/j.dsx.2023.102729](https://doi.org/10.1016/j.dsx.2023.102729)
 
-[13] Golechha M, Bhatia J, Arya DS. "Studies on effects of Emblica officinalis (Amla) on oxidative stress and cholinergic function in scopolamine induced amnesia in mice." *J Environ Biol*. 2012;33(1):95-100.
+[18] Fatima N, Pingali U, Muralidhar N. "Study of pharmacodynamic interaction of Phyllanthus emblica extract with clopidogrel and ecosprin in patients with type II diabetes mellitus." *Phytomedicine*. 2014;21(5):579-585. PMID: 24291054. doi: [10.1016/j.phymed.2013.10.024](https://doi.org/10.1016/j.phymed.2013.10.024)
 
-[14] Talreja D, Borde S, Shah R. "A review on pharmaceutical and pharmacological aspects of Emblica officinalis." *World J Pharm Pharm Sci (WJPPS)*. 2019.
+[19] Usharani P, Fatima N, Muralidhar N. "Effects of Phyllanthus emblica extract on endothelial dysfunction and biomarkers of oxidative stress in patients with type 2 diabetes mellitus: a randomized, double-blind, controlled study." *Diabetes Metab Syndr Obes*. 2013;6:275-284. PMID: 23935377. doi: [10.2147/DMSO.S46341](https://doi.org/10.2147/DMSO.S46341)
 
-[15] Grover IS, Bala S. "Amla (Emblica officinalis Gaertn.) — A wonder fruit." *J Oral Res Rev*. 2015;7(2):77.
+[20] Usharani P, Merugu PL, Nutalapati C. "Evaluation of the effects of a standardized aqueous extract of Phyllanthus emblica fruits on endothelial dysfunction, oxidative stress, systemic inflammation and lipid profile in subjects with metabolic syndrome: a randomised, double blind, placebo controlled clinical study." *BMC Complement Altern Med*. 2019;19(1):97. PMID: 31060549. doi: [10.1186/s12906-019-2509-5](https://doi.org/10.1186/s12906-019-2509-5)
+
+[21] Shanmugarajan D, Girish C, Harivenkatesh N, et al. "Antihypertensive and pleiotropic effects of Phyllanthus emblica extract as an add-on therapy in patients with essential hypertension-A randomized double-blind placebo-controlled trial." *Phytother Res*. 2021;35(6):3275-3285. PMID: 33570228. doi: [10.1002/ptr.7043](https://doi.org/10.1002/ptr.7043)
+
+[22] Fatima N, Pingali U, Pilli R. "Evaluation of Phyllanthus emblica extract on cold pressor induced cardiovascular changes in healthy human subjects." *Pharmacognosy Res*. 2014;6(1):29-35. PMID: 24497739. doi: [10.4103/0974-8490.122914](https://doi.org/10.4103/0974-8490.122914)
+
+[23] Saper RB, Kales SN, Paquin J, et al. "Heavy metal content of ayurvedic herbal medicine products." *JAMA*. 2004;292(23):2868-2873. PMID: 15598918. doi: [10.1001/jama.292.23.2868](https://doi.org/10.1001/jama.292.23.2868)
+
+[24] Saper RB, Phillips RS, Sehgal A, et al. "Lead, mercury, and arsenic in US- and Indian-manufactured Ayurvedic medicines sold via the Internet." *JAMA*. 2008;300(8):915-923. PMID: 18728265. doi: [10.1001/jama.300.8.915](https://doi.org/10.1001/jama.300.8.915)
+
+[25] Pandey G, Pandey D, Tripathi M, et al. "Studies on bio-chemical profiling of Indian gooseberry (Emblica officinalis) for genetic diversity." *J Environ Biol*. 2016;37(2):179-184. PMID: 27097435. [https://pubmed.ncbi.nlm.nih.gov/27097435/](https://pubmed.ncbi.nlm.nih.gov/27097435/)
+
+[26] Kumari P, Khatkar BS. "Effect of processing treatment on nutritional properties and phytochemical contents of aonla (Emblica officinalis) juice." *J Food Sci Technol*. 2019;56(4):2010-2015. PMID: 30996435. doi: [10.1007/s13197-019-03674-0](https://doi.org/10.1007/s13197-019-03674-0)
+
+[27] Majeed M, Majeed S, Mundkur L, et al. "Standardized Emblica officinalis fruit extract inhibited the activities of α-amylase, α-glucosidase, and dipeptidyl peptidase-4 and displayed antioxidant potential." *J Sci Food Agric*. 2020;100(2):509-516. PMID: 31487036. doi: [10.1002/jsfa.10020](https://doi.org/10.1002/jsfa.10020)
+
+[28] Baliga MS, Dsouza JJ. "Amla (Emblica officinalis Gaertn), a wonder berry in the treatment and prevention of cancer." *Eur J Cancer Prev*. 2011;20(3):225-239. PMID: 21317655. doi: [10.1097/CEJ.0b013e32834473f4](https://doi.org/10.1097/CEJ.0b013e32834473f4)
+
+[29] Chen TS, Liou SY, Chang YL. "Supplementation of Emblica officinalis (Amla) extract reduces oxidative stress in uremic patients." *Am J Chin Med*. 2009;37(1):19-25. PMID: 19222108. doi: [10.1142/S0192415X09006680](https://doi.org/10.1142/S0192415X09006680)
+
+[30] Nashine S, Kanodia R, Nesburn AB, et al. "Nutraceutical effects of Emblica officinalis in age-related macular degeneration." *Aging (Albany NY)*. 2019;11(4):1177-1188. PMID: 30792375. doi: [10.18632/aging.101820](https://doi.org/10.18632/aging.101820)
+
+[31] Uchiyama T, Tsunenaga M, Miyanaga M, et al. "Oral intake of lingonberry and amla fruit extract improves skin conditions in healthy female subjects: A randomized, double-blind, placebo-controlled clinical trial." *Biotechnol Appl Biochem*. 2019;66(5):870-879. PMID: 31342566. doi: [10.1002/bab.1800](https://doi.org/10.1002/bab.1800)
+
+[32] Varnasseri M, Siahpoosh A, Hoseinynejad K, et al. "The effects of add-on therapy of Phyllanthus Emblica (Amla) on laboratory confirmed COVID-19 Cases: A randomized, double-blind, controlled trial." *Complement Ther Med*. 2022;65:102808. PMID: 35093510. doi: [10.1016/j.ctim.2022.102808](https://doi.org/10.1016/j.ctim.2022.102808)
