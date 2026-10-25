@@ -20,7 +20,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - GABA lowered blood pressure in some studies, so taking it with blood pressure medicines could raise the risk of low blood pressure [28]. If you take prescription medicines, check with your doctor or pharmacist before starting.
-- No studies have tested GABA in pregnancy or breastfeeding, and a safety review advises caution [28]. In pregnant mice, a high dose of GABA reduced embryo implantation [29].
+- A safety review found no studies of GABA in pregnancy or breastfeeding [28]. In pregnant mice, a dose far above supplement doses reduced embryo implantation [29].
 - Studies found no serious side effects at up to 18 g a day for 4 days, or at 120 mg a day for 12 weeks [28].
 - Reported side effects were mild to moderate: abdominal discomfort, headache, drowsiness, and a brief burning feeling in the throat after large doses [12][28].
 
@@ -54,7 +54,7 @@ GABA supplements are made in several ways:
 
 **Natural GABA from fermented foods:** GABA present naturally in foods [5]. Trials have used a fermented milk [19], a GABA-rich chlorella [20] and an extract of fermented rice germ [12].
 
-**GABA in combination products:** Some products add L-theanine, magnesium or valerian. Few of these blends have been tested in controlled trials, and a blend's effects cannot be credited to GABA alone.
+**GABA in combination products:** A blend's effects cannot be credited to GABA alone.
 
 ### Supplement Delivery Forms
 
@@ -80,7 +80,7 @@ GABA is quickly absorbed. In one study, blood GABA was highest 30 minutes after 
 
 ### Vitamin B6 Dependency
 
-The enzyme that makes GABA from glutamate, glutamic acid decarboxylase, needs pyridoxal 5'-phosphate, the active form of vitamin B6. Getting enough vitamin B6 from diet supports the body's own GABA production in the brain, where oral GABA may not reach.
+The enzyme that makes GABA from glutamate, glutamic acid decarboxylase, needs pyridoxal 5'-phosphate, the active form of vitamin B6.
 
 ## 3. Evidence for Benefits
 
@@ -112,17 +112,17 @@ Sleep medicines such as benzodiazepines work by boosting GABA's action at GABA_A
 
 ### Epilepsy
 
-Many epilepsy drugs work on the GABA system, and the epilepsy drug gabapentin raised brain GABA in a brain-scan study [14]. This led to interest in whether GABA itself could reduce seizures.
+Many epilepsy drugs work on the GABA system, and the epilepsy drug gabapentin raised brain GABA in a brain-scan study [14].
 
 **High-dose study:** In an old study, very large GABA doses (0.8 g/kg daily) reduced seizures in only 4 of 12 people with epilepsy, all of them children below the age of 15 [7]. The response in children fits the idea that the blood-brain barrier lets less GABA through with age [7].
 
-**Summary:** GABA supplements are unlikely to help epilepsy in adults. A benefit in children is unproven [7].
+**Summary:** The only evidence is one small, old study, and it does not show that GABA helps epilepsy [7].
 
 ### Cognitive Function
 
 In 24 older people with subjective cognitive decline or mild cognitive impairment, groups at high risk of Alzheimer's disease, higher GABA levels in the prefrontal cortex went with better memory scores [15]. Trials of oral GABA for thinking are few and limited to single doses in young adults.
 
-**Positive findings:** In a randomised, placebo-controlled experiment in young healthy adults, GABA improved some measures of temporal attention (fewer order errors) but did not change spatial attention [17]. A 2015 trial that reported better action selection after 800 mg of GABA was later retracted [16].
+**Positive findings:** In a randomised, placebo-controlled experiment in young healthy adults, GABA improved some measures of temporal attention (fewer order errors) but did not change spatial attention [17]. A 2015 trial that reported better action selection after 800 mg of GABA was later retracted [16], and two of its authors also wrote the attention study [17].
 
 **Negative finding:** In a trial of 48 healthy volunteers split into four groups, GABA alone, and GABA with tyrosine, worsened task switching, a measure of cognitive flexibility [18].
 
@@ -146,7 +146,7 @@ GABA raised growth hormone levels in some studies, so it has been tested for mus
 
 **Muscle mass with whey protein:** In a trial in 21 healthy men doing resistance training twice a week, 100 mg of GABA with 10 g of whey protein daily for 12 weeks led to a larger gain in whole-body fat-free mass than whey alone [22]. Resting growth hormone rose at 4 and 8 weeks from baseline in the GABA group, and only at 8 weeks in the whey-only group [22].
 
-**Negative findings in women:** In a trial in 26 women with obesity who exercised 3 days a week, 200 mg GABA a day for 90 days made no difference compared with placebo to growth hormone, body fat, fat-free mass, blood pressure or heart rate [23]. Sit-up performance improved only in the GABA group [23].
+**Negative findings in women:** In a trial in 26 women with obesity who exercised 3 days a week, 200 mg GABA a day for 90 days made no difference compared with placebo to growth hormone, body fat, fat-free mass, blood pressure or heart rate [23]. Sit-up performance improved only in the GABA group [23]. This trial and the sleep trial above [13] share authors and a design, so they probably report one trial.
 
 **Summary:** A single 3 g dose may briefly raise growth hormone. One trial found more fat-free mass with GABA plus whey protein, but a trial in women found no difference from placebo in growth hormone or body composition [21][22][23].
 
@@ -213,11 +213,11 @@ The longer studies in the 2021 safety review ran for 12 weeks, at 120 mg a day, 
 
 No studies have tested GABA in pregnancy or breastfeeding [28]. A safety review advises caution because GABA can affect neurotransmitters and hormones, raising growth hormone and prolactin [28]. A mouse study adds to the concern:
 
-- High-dose oral GABA (12.5 mg/g) given to pregnant mice before implantation reduced the number of implantation sites, and most unimplanted embryos were degenerated or underdeveloped [29].
+- High-dose oral GABA (12.5 mg/g, about 12.5 g/kg, far above supplement doses) given to pregnant mice before implantation reduced the number of implantation sites, and most unimplanted embryos were degenerated or underdeveloped [29].
 - Markers of a receptive womb lining (LIF, E-cadherin and HOXA10) fell [29].
 - In the lab, GABA at 10 to 50 μg/μL slowed early embryo development as the dose rose, through GABA_B receptors [29].
 
-The authors concluded that these findings could raise concerns about GABA during early pregnancy [29]. With no human safety data and these animal findings, avoid GABA during pregnancy, while trying to conceive, or while breastfeeding unless your doctor advises it.
+The authors concluded that these findings could raise concerns about GABA during early pregnancy [29]. Talk to your doctor before using GABA if you are pregnant, trying to conceive or breastfeeding [28].
 
 ### Alcohol Interaction
 
@@ -231,7 +231,7 @@ Because GABA lowered blood pressure in some studies, a safety review considers i
 
 ### SSRIs and Antidepressants
 
-SSRI antidepressants raise brain GABA: a single intravenous dose of citalopram raised it by 35% in healthy volunteers [26], and about 2 months of SSRI treatment raised it in 11 people with depression [25]. GABA from supplements may not affect brain levels. If you take prescription medicines, check with your doctor or pharmacist before starting.
+If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Benzodiazepines and Sedatives
 
@@ -256,7 +256,7 @@ If you take immunosuppressant medicines, check with your doctor or pharmacist be
 | Blood pressure medications | Additive low blood pressure | Possible; flagged by a safety review [28] |
 | Benzodiazepines / sedatives | Additive sedation | Theoretical |
 | Alcohol | Additive drowsiness | Theoretical |
-| SSRIs / antidepressants | Unknown; ask your doctor | No documented interaction |
+| SSRIs / antidepressants | Unknown; ask your doctor | Not studied |
 | Gabapentin / pregabalin | Possible additive sedation | Theoretical |
 | Antiepileptic drugs | May confound treatment | Caution advised |
 
@@ -324,9 +324,6 @@ The body makes its own GABA in the brain, where oral GABA may not reach:
 
 [24] Winkelman JW, Schoerning L, Platt S, Jensen JE. "Restless legs syndrome and central nervous system gamma-aminobutyric acid: preliminary associations with periodic limb movements in sleep and restless leg syndrome symptom severity." *Sleep Med*. 2014;15(10):1225-1230. doi: [10.1016/j.sleep.2014.05.019](https://doi.org/10.1016/j.sleep.2014.05.019) PMID: 25129262. https://pubmed.ncbi.nlm.nih.gov/25129262/
 
-[25] Sanacora G, Mason GF, Rothman DL, Krystal JH. "Increased occipital cortex GABA concentrations in depressed patients after therapy with selective serotonin reuptake inhibitors." *Am J Psychiatry*. 2002;159(4):663-665. doi: [10.1176/appi.ajp.159.4.663](https://doi.org/10.1176/appi.ajp.159.4.663) PMID: 11925309. https://pubmed.ncbi.nlm.nih.gov/11925309/
-
-[26] Bhagwagar Z, Wylezinska M, Taylor M, Jezzard P, Matthews PM, Cowen PJ. "Increased brain GABA concentrations following acute administration of a selective serotonin reuptake inhibitor." *Am J Psychiatry*. 2004;161(2):368-370. doi: [10.1176/appi.ajp.161.2.368](https://doi.org/10.1176/appi.ajp.161.2.368) PMID: 14754790. https://pubmed.ncbi.nlm.nih.gov/14754790/
 
 [27] Poleszak E. "Benzodiazepine/GABA(A) receptors are involved in magnesium-induced anxiolytic-like behavior in mice." *Pharmacol Rep*. 2008;60(4):483-489. PMID: [18799816](https://pubmed.ncbi.nlm.nih.gov/18799816/)
 
