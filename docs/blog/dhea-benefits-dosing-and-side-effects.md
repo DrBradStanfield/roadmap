@@ -68,10 +68,6 @@ In that randomized, placebo-controlled trial (325 women on DHEA, 157 on placebo)
 
 The DHEA trials on this page tested DHEA on its own.
 
-### Bovine Adrenal Gland Concentrates
-
-None of the studies on this page tested cow adrenal gland concentrates.
-
 ### Comparison of DHEA Forms
 
 | Form | Route | Typical Dose | Key Characteristics |
