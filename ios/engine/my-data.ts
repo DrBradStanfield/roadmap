@@ -8,6 +8,7 @@ import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/sr
 import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { hasStampShape } from '../../packages/health-core/src/migrate';
+import { localDay } from '../../packages/health-core/src/merge';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
 import { appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
 import { labRows, type Extraction } from './lab-review';
@@ -33,15 +34,13 @@ export interface MyDataRow {
   label: string;
   unit: string;
   latest: { id: string; value: string; day: string } | null;
-  /** The newest TREND_POINTS days' values, oldest first, in the user's units: the web's
-   *  Trend sparkline (BloodTestTimeline.tsx). Blood pressure's is its systolic half. */
+  /** The recent days' values (`trends`), oldest first, in the user's units. Unlike the web's
+   *  Trend sparkline (BloodTestTimeline.tsx), which draws the full series, iOS shows only
+   *  recent data, as Apple Health does (US-25 AC17f). Blood pressure's is its systolic half. */
   trend: number[];
   /** Whether this test has its own Metric/US choice, as the web's unit chip (not Lp(a), height or blood pressure). */
   switchable: boolean;
 }
-
-/** Days a row's trend line holds: enough to show a direction, small enough to send every render. */
-export const TREND_POINTS = 30;
 
 export interface MyData {
   unitSystem: UnitSystem;
@@ -164,7 +163,7 @@ export function newRecord(now: string, deviceId: string, locale: string, timeZon
 export function myData(file: RoadmapFile, now = new Date().toISOString(), choices: UnitChoices = {}, plan: Plan | null = planOf(file, now, choices)): MyData & FormsView {
   const system = unitsOf(file);
   const current = new Map(latestActivePerMetric(file.measurements).map((row) => [row.metricType, row]));
-  const trend = trends(file, (metric, valueSI) => cellFromSI(metric as MetricType, valueSI, cellUnitFor(file, metric, choices)));
+  const trend = trends(file, now, (metric, valueSI) => cellFromSI(metric as MetricType, valueSI, cellUnitFor(file, metric, choices)));
   const row = (metric: string): MyDataRow => {
     const latest = current.get(metric);
     const shown = cellUnitFor(file, metric, choices);
@@ -328,8 +327,13 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>): MyDataRow
 }
 
 /** Every metric's trend in one pass: each day's active value (the slot's first, as
- *  findActiveInSlot reads it), the newest TREND_POINTS days, oldest first. */
-function trends(file: RoadmapFile, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
+ *  findActiveInSlot reads it), oldest first. As Apple Health, the last 30 days (today, the
+ *  phone's local day, and the 29 before), or the last seven days however old when those 30
+ *  hold fewer than two (US-25 AC17f). A day after today (an import that kept another zone's
+ *  offset) is left out of both, as the phone leaves out a night dated after today. */
+function trends(file: RoadmapFile, now: string, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
+  const today = localDay(new Date(now));
+  const from = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
   const byMetric = new Map<string, Map<string, number>>();
   for (const row of file.measurements) {
     if (row.status !== 'active') continue;
@@ -340,8 +344,9 @@ function trends(file: RoadmapFile, shown: (metric: string, valueSI: number) => n
   }
   const out = new Map<string, number[]>();
   for (const [metric, days] of byMetric) {
-    const newest = [...days.keys()].sort().slice(-TREND_POINTS);
-    out.set(metric, newest.map((day) => shown(metric, days.get(day)!)));
+    const sorted = [...days.keys()].filter((day) => day <= today).sort();
+    const recent = sorted.filter((day) => day >= from);
+    out.set(metric, (recent.length >= 2 ? recent : sorted.slice(-7)).map((day) => shown(metric, days.get(day)!)));
   }
   return out;
 }

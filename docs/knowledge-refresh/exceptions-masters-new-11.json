@@ -1,0 +1,514 @@
+[
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[44] raw_quote shares no number with its body_line: **Anderson et al. (2016):** in China, 173 adults with raised blood glucose were enrolled (137 com...",
+  "reason": "AC2 cinnamon tokeniser/unit case changed_tokens[44] ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[50] raw_quote: its numbers are not whole tokens in the raw: **Zelicha et al. (2024):** 18 adults with obesity and prediabetes (mean age 51.1; mean fasting gl...",
+  "reason": "AC2 cinnamon tokeniser/unit case changed_tokens[50] ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[67] raw_quote shares no number with its body_line: - Cinnamon: 1 g a day [23], 2 g a day [22], or 1, 3 or 6 g a day [20]",
+  "reason": "AC2 cinnamon tokeniser/unit case changed_tokens[67] ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[72] raw_quote shares no number with its body_line: - CinSulin extract: 250 mg twice a day [14]",
+  "reason": "AC2 cinnamon tokeniser/unit case changed_tokens[72] ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[80] raw_quote shares no number with its body_line: - Cassia cinnamon: high coumarin in tested powders (mean 2,650 to 7,017 mg per kg across brands) ...",
+  "reason": "AC2 cinnamon tokeniser/unit case changed_tokens[80] ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[88] raw_quote shares no number with its body_line: **Case report:** an adult man developed edema while taking 1000 mg of cinnamon bark powder daily,...",
+  "reason": "AC2 cinnamon tokeniser/unit case changed_tokens[88] ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[96] raw_quote shares no number with its body_line: In the Ziegenfuss et al. (2006) Cinnulin PF trial, lean mass rose 1.1% over 12 weeks [13].",
+  "reason": "AC2 cinnamon tokeniser/unit case changed_tokens[96] ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A man on the blood thinner dabigatran died of bleeding after starting a ginger and cinnamon drink, and daily Ceylon...\" | \"**Case report:** an 80-year-old man on dabigatran vomited blood and passed black stools three days after starting a b...\" | \"- **Allergic reactions:** cinnamaldehyde is mostly linked to contact allergy [64]. Allergic reactions inside the mout...\"",
+  "reason": "AC2 cinnamon ruling 17 emergency number \"111\"; ratified in decisions.md (Cinnamon Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A man on the blood thinner dabigatran died of bleeding after starting a ginger and cinnamon drink, and daily Ceylon...\" | \"**Case report:** an 80-year-old man on dabigatran vomited blood and passed black stools three days after starting a b...\" | \"- **Allergic reactions:** cinnamaldehyde is mostly linked to contact allergy [64]. Allergic reactions inside the mout...\"",
+  "reason": "AC2 cinnamon ruling 17 emergency number \"0\"; ratified in decisions.md (Cinnamon Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A man on the blood thinner dabigatran died of bleeding after starting a ginger and cinnamon drink, and daily Ceylon...\" | \"**Case report:** an 80-year-old man on dabigatran vomited blood and passed black stools three days after starting a b...\" | \"- **Allergic reactions:** cinnamaldehyde is mostly linked to contact allergy [64]. Allergic reactions inside the mout...\"",
+  "reason": "AC2 cinnamon ruling 17 emergency number \"911\"; ratified in decisions.md (Cinnamon Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A man on the blood thinner dabigatran died of bleeding after starting a ginger and cinnamon drink, and daily Ceylon...\" | \"**Case report:** an 80-year-old man on dabigatran vomited blood and passed black stools three days after starting a b...\" | \"- **Allergic reactions:** cinnamaldehyde is mostly linked to contact allergy [64]. Allergic reactions inside the mout...\"",
+  "reason": "AC2 cinnamon ruling 17 emergency number \"999\"; ratified in decisions.md (Cinnamon Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2650 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Cassia cinnamon** (*Cinnamomum aromaticum*, also called *C. cassia*) grows in southeastern Asia and is the type sol...\" | \"- Cassia cinnamon: high coumarin in tested powders (mean 2,650 to 7,017 mg per kg across brands) [19]. Most cassia do...\"",
+  "reason": "AC2 cinnamon tokeniser/unit case \"2650 mg/kg\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7017 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Cassia cinnamon** (*Cinnamomum aromaticum*, also called *C. cassia*) grows in southeastern Asia and is the type sol...\" | \"- Cassia cinnamon: high coumarin in tested powders (mean 2,650 to 7,017 mg per kg across brands) [19]. Most cassia do...\"",
+  "reason": "AC2 cinnamon tokeniser/unit case \"7017 mg/kg\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"250 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**CinSulin:** a spray-dried water extract of *Cinnamomum cassia*, tested at 250 mg twice a day for two months in peop...\" | \"**Anderson et al. (2016):** in China, 173 adults with raised blood glucose were enrolled (137 completed) and took Cin...\" | \"- CinSulin extract: 250 mg twice a day [14]\"",
+  "reason": "AC2 cinnamon tokeniser/unit case \"250 mg\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Crawford (2009):** 109 patients with type 2 diabetes and an HbA1c above 7.0 received usual care alone or usual care...\" | \"**Case report:** an adult man developed edema while taking 1000 mg of cinnamon bark powder daily, and it resolved aft...\"",
+  "reason": "AC2 cinnamon tokeniser/unit case \"1000 mg\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.56\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**de Moura et al. (2025):** a larger meta-analysis of 28 trials lasting 30 to 120 days, with 3,054 patients with type...\"",
+  "reason": "AC2 cinnamon tokeniser/unit case \"0.56\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"116.3 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Ziegenfuss et al. (2006):** 22 people with prediabetes and the metabolic syndrome took 500 mg/d of Cinnulin PF or p...\"",
+  "reason": "AC2 cinnamon tokeniser/unit case \"116.3 mg/dL\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"106.5 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Ziegenfuss et al. (2006):** 22 people with prediabetes and the metabolic syndrome took 500 mg/d of Cinnulin PF or p...\"",
+  "reason": "AC2 cinnamon tokeniser/unit case \"106.5 mg/dL\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"53.7 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Ziegenfuss et al. (2006):** 22 people with prediabetes and the metabolic syndrome took 500 mg/d of Cinnulin PF or p...\"",
+  "reason": "AC2 cinnamon tokeniser/unit case \"53.7 kg\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"54.3 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Ziegenfuss et al. (2006):** 22 people with prediabetes and the metabolic syndrome took 500 mg/d of Cinnulin PF or p...\"",
+  "reason": "AC2 cinnamon tokeniser/unit case \"54.3 kg\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \">12 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In the Ziegenfuss et al. (2006) Cinnulin PF trial, lean mass rose 1.1% over 12 weeks [13].\"",
+  "reason": "AC2 cinnamon tokeniser/unit case \">12 week\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"400 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In an 8-week randomized controlled trial in 70 people with diarrhea symptoms, a *Cinnamomum cassia* water extract (th...\"",
+  "reason": "AC2 cinnamon tokeniser/unit case \"400 mg/day\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "token \"38\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A systematic review of adverse events found 38 clinical trials, five of which reported adverse events, plus case repo...\"",
+  "reason": "AC2 cinnamon tokeniser/unit case \"38\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"6000 mg\": Khan et al. (2003): 60 adults with type 2 diabetes (mean age 52.2 years) took 1, 3 or 6 g of cinnamon a day or placeb...",
+  "reason": "AC2 cinnamon tokeniser/unit case \"6000 mg\" ratified in decisions.md (Cinnamon Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "changed_tokens[115] raw_quote shares no number with its body_line: **For ginger root powder:** Powder trials gave 1 g as a single dose for seasickness [20] and 1.2 ...",
+  "reason": "AC2 ginger tokeniser/unit case changed_tokens[115] ratified in decisions.md (Ginger Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports describe a sharp rise in INR in people on warfarin who started ginger [42][43]. If you take warfarin, ...\" | \"- For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, v...\"",
+  "reason": "AC2 ginger ruling 17 emergency number \"111\"; ratified in decisions.md (Ginger Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports describe a sharp rise in INR in people on warfarin who started ginger [42][43]. If you take warfarin, ...\" | \"- For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, v...\"",
+  "reason": "AC2 ginger ruling 17 emergency number \"0\"; ratified in decisions.md (Ginger Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports describe a sharp rise in INR in people on warfarin who started ginger [42][43]. If you take warfarin, ...\" | \"- For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, v...\"",
+  "reason": "AC2 ginger ruling 17 emergency number \"911\"; ratified in decisions.md (Ginger Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports describe a sharp rise in INR in people on warfarin who started ginger [42][43]. If you take warfarin, ...\" | \"- For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, v...\"",
+  "reason": "AC2 ginger ruling 17 emergency number \"999\"; ratified in decisions.md (Ginger Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"80\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In 80 naval cadets sailing in heavy seas, 1 g of ginger root powder reduced vomiting and cold sweating over the nex...\"",
+  "reason": "AC2 ginger tokeniser/unit case \"80\" ratified in decisions.md (Ginger Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"28\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In 28 volunteers, 500 or 1,000 mg of powdered ginger root or 1,000 mg of fresh root gave no protection [22]\"",
+  "reason": "AC2 ginger tokeniser/unit case \"28\" ratified in decisions.md (Ginger Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"103\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A placebo-controlled trial at two hospitals in Australia enrolled 103 adults about to start moderately or highly emet...\"",
+  "reason": "AC2 ginger tokeniser/unit case \"103\" ratified in decisions.md (Ginger Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"6\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a meta-analysis of 6 trials in 538 patients, ginger did not clearly prevent postoperative nausea and vomiting (RR ...\" | \"## 6. Drug Interactions\"",
+  "reason": "AC2 ginger tokeniser/unit case \"6\" ratified in decisions.md (Ginger Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"16.1 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a small crossover trial in 11 people with functional dyspepsia, 1.2 g of ginger sped up stomach emptying compared ...\"",
+  "reason": "AC2 ginger tokeniser/unit case \"16.1 min\" ratified in decisions.md (Ginger Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"≤4000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**For ginger root powder:** Powder trials gave 1 g as a single dose for seasickness [20] and 1.2 to 2 g a day, in two...\"",
+  "reason": "AC2 ginger tokeniser/unit case \"≤4000 mg/day\" ratified in decisions.md (Ginger Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5\": Brad has not made a video on this topic; this is a summary of the evidence, not his view. The US National Center for ...",
+  "reason": "AC2 ginger tokeniser/unit case \"5\" ratified in decisions.md (Ginger Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5\": A meta-analysis of 5 placebo-controlled trials (593 patients) found that ginger modestly reduced osteoarthritis pain ...",
+  "reason": "AC2 ginger tokeniser/unit case \"5\" ratified in decisions.md (Ginger Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"8\": A meta-analysis of 8 randomized trials in 454 people with type 2 diabetes, using 1,600 to 4,000 mg a day of ginger, f...",
+  "reason": "AC2 ginger tokeniser/unit case \"8\" ratified in decisions.md (Ginger Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5\": The NCCIH states that research suggests ginger dietary supplements might be helpful for reducing the severity of mens...",
+  "reason": "AC2 ginger tokeniser/unit case \"5\" ratified in decisions.md (Ginger Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3 month\": In 66 women with high body fat, 600 mg a day of ginger extract for 3 months did not change resting energy expenditure...",
+  "reason": "AC2 ginger tokeniser/unit case \"3 month\" ratified in decisions.md (Ginger Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "echinacea-benefits-dosing-and-side-effects",
+  "match": "token \"24\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Taking echinacea may slight...\" | \"**Cochrane Review (2006):** A Cochrane review found some evidence that preparations based on the aerial parts of *E. ...\"",
+  "reason": "AC2 echinacea tokeniser/unit case \"24\" ratified in decisions.md (Echinacea Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "echinacea-benefits-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- If hives, swelling of the face or throat, wheezing or trouble breathing start after a dose, call your local emergen...\" | \"Some people have allergic reactions to echinacea, which may be severe [3]. Echinacea is closely related to sunflowers...\"",
+  "reason": "AC2 echinacea ruling 17 emergency number \"111\"; ratified in decisions.md (Echinacea Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "echinacea-benefits-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- If hives, swelling of the face or throat, wheezing or trouble breathing start after a dose, call your local emergen...\" | \"Some people have allergic reactions to echinacea, which may be severe [3]. Echinacea is closely related to sunflowers...\"",
+  "reason": "AC2 echinacea ruling 17 emergency number \"0\"; ratified in decisions.md (Echinacea Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "echinacea-benefits-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- If hives, swelling of the face or throat, wheezing or trouble breathing start after a dose, call your local emergen...\" | \"Some people have allergic reactions to echinacea, which may be severe [3]. Echinacea is closely related to sunflowers...\"",
+  "reason": "AC2 echinacea ruling 17 emergency number \"911\"; ratified in decisions.md (Echinacea Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "echinacea-benefits-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- If hives, swelling of the face or throat, wheezing or trouble breathing start after a dose, call your local emergen...\" | \"Some people have allergic reactions to echinacea, which may be severe [3]. Echinacea is closely related to sunflowers...\"",
+  "reason": "AC2 echinacea ruling 17 emergency number \"999\"; ratified in decisions.md (Echinacea Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "echinacea-benefits-dosing-and-side-effects",
+  "match": "token \"39\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review of immune supplements (2022-2023):** A systematic review of 39 trials of immune supplements, incl...\"",
+  "reason": "AC2 echinacea tokeniser/unit case \"39\" ratified in decisions.md (Echinacea Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "echinacea-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3\": Seven-day placebo-controlled trial: In volunteers with high anxiety scores, 40 mg of a standardized E. angustifolia r...",
+  "reason": "AC2 echinacea tokeniser/unit case \"3\" ratified in decisions.md (Echinacea Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "echinacea-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"12\": In 12 healthy people, E. purpurea root (400 mg 4 times a day for 8 days) reduced the oral clearance of caffeine from ...",
+  "reason": "AC2 echinacea tokeniser/unit case \"12\" ratified in decisions.md (Echinacea Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "elderberry-benefits-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Raw or unripe elderberries, leaves and stems contain cyanide-producing substances, which can cause nausea, vomiting...\" | \"- Some people with summer hay fever are allergic to elderberry, with eye and nose symptoms or shortness of breath [39...\" | \"**Important safety note:** Raw or unripe elderberries and other parts of the elder tree, such as the leaves and stem,...\"",
+  "reason": "AC2 elderberry ruling 17 emergency number \"111\"; ratified in decisions.md (Elderberry Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "elderberry-benefits-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Raw or unripe elderberries, leaves and stems contain cyanide-producing substances, which can cause nausea, vomiting...\" | \"- Some people with summer hay fever are allergic to elderberry, with eye and nose symptoms or shortness of breath [39...\" | \"**Important safety note:** Raw or unripe elderberries and other parts of the elder tree, such as the leaves and stem,...\"",
+  "reason": "AC2 elderberry ruling 17 emergency number \"0\"; ratified in decisions.md (Elderberry Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "elderberry-benefits-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Raw or unripe elderberries, leaves and stems contain cyanide-producing substances, which can cause nausea, vomiting...\" | \"- Some people with summer hay fever are allergic to elderberry, with eye and nose symptoms or shortness of breath [39...\" | \"**Important safety note:** Raw or unripe elderberries and other parts of the elder tree, such as the leaves and stem,...\"",
+  "reason": "AC2 elderberry ruling 17 emergency number \"911\"; ratified in decisions.md (Elderberry Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "elderberry-benefits-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Raw or unripe elderberries, leaves and stems contain cyanide-producing substances, which can cause nausea, vomiting...\" | \"- Some people with summer hay fever are allergic to elderberry, with eye and nose symptoms or shortness of breath [39...\" | \"**Important safety note:** Raw or unripe elderberries and other parts of the elder tree, such as the leaves and stem,...\"",
+  "reason": "AC2 elderberry ruling 17 emergency number \"999\"; ratified in decisions.md (Elderberry Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "elderberry-benefits-dosing-and-side-effects",
+  "match": "token \"42.3 ng/mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Thyroid effects:** Serum from the 18-person trial showed higher thyroxine (T4) after a week of elderberry juice tha...\"",
+  "reason": "AC2 elderberry tokeniser/unit case \"42.3 ng/mL\" ratified in decisions.md (Elderberry Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "elderberry-benefits-dosing-and-side-effects",
+  "match": "token \"0.094 ng/mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Thyroid effects:** Serum from the 18-person trial showed higher thyroxine (T4) after a week of elderberry juice tha...\"",
+  "reason": "AC2 elderberry tokeniser/unit case \"0.094 ng/mL\" ratified in decisions.md (Elderberry Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cranberry-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Cranberry does not treat an existing UTI [4][29]. See a doctor the same day for urinary symptoms with fever, back o...\"",
+  "reason": "AC2 cranberry ruling 17 emergency number \"111\"; ratified in decisions.md (Cranberry Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cranberry-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Cranberry does not treat an existing UTI [4][29]. See a doctor the same day for urinary symptoms with fever, back o...\"",
+  "reason": "AC2 cranberry ruling 17 emergency number \"911\"; ratified in decisions.md (Cranberry Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cranberry-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Cranberry does not treat an existing UTI [4][29]. See a doctor the same day for urinary symptoms with fever, back o...\"",
+  "reason": "AC2 cranberry ruling 17 emergency number \"999\"; ratified in decisions.md (Cranberry Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cranberry-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10\": In 10 men on stable warfarin, cranberry juice at 240 mL twice daily for 7 days did not change prothrombin time [68]",
+  "reason": "AC2 cranberry tokeniser/unit case \"10\" ratified in decisions.md (Cranberry Ratified lines) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "echinacea-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Phenol Content by Species and Plant Part",
+  "reason": "AC4 echinacea ConsumerLab-only table heading removed; ratified in decisions.md (Echinacea Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host nccih.nih.gov: [68] National Center for Complementary and Integrative Health (NCCIH). \"Cinnamon.\" Last updated N...",
+  "reason": "AC7 cinnamon host nccih.nih.gov; ratified in decisions.md (Cinnamon Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "echinacea-benefits-dosing-and-side-effects",
+  "match": "product section changed: ### Thuja-Containing Combination Products",
+  "reason": "AC7 echinacea false positive \"### Thuja-Containing Combination Products\"; ratified in decisions.md (Echinacea Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "echinacea-benefits-dosing-and-side-effects",
+  "match": "product section changed: ### Combination Products",
+  "reason": "AC7 echinacea false positive \"### Combination Products\"; ratified in decisions.md (Echinacea Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "cranberry-benefits-best-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Product Forms Comparison",
+  "reason": "AC7 cranberry false positive \"### Product Forms Comparison\"; ratified in decisions.md (Cranberry Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "cranberry-benefits-best-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Cranberry Products and Approximate PAC Content",
+  "reason": "AC7 cranberry false positive \"### Cranberry Products and Approximate PAC Content\"; ratified in decisions.md (Cranberry Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ }
+]

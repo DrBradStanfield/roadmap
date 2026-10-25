@@ -6,53 +6,63 @@ publishedAt: "2024-01-09T11:21:25Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["acetyl-l-carnitine", "carnitine", "l-carnitine", "cognitive", "brain health", "blood pressure", "neuropathy", "depression", "alzheimer", "dementia", "diabetes", "insulin resistance", "heart health", "cardiovascular", "inflammation", "exercise", "weight loss", "cholesterol", "ldl", "triglycerides", "anxiety"]
-summary: "Reference on acetyl-L-carnitine (ALCAR): memory, nerve pain, depression, blood pressure. May help older adults with early cognitive decline, diabetic neuropathy, low mood. Typical dose 1-3 g/day. Avoid if on chemotherapy or with thyroid/seizure disorders. Always discuss with your doctor."
+summary: "Reference on acetyl-L-carnitine (ALCAR). Trials in early memory loss, diabetic nerve pain and low mood show mixed or low-certainty benefits; it worsened nerve damage from taxane chemotherapy. Talk to your doctor first if you have chemotherapy, a thyroid or seizure disorder, or take a blood thinner."
+reviewed: "2026-10-25"
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Carnitine-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:9c746d275ca48140731d7d04d7954bf10cba243d50bb14ba8532e50cd7a45120"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/acetyl-l-carnitine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/acetyl-l-carnitine-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Trials of acetyl-L-carnitine at 1.5 to 3.0 g a day in mild cognitive impairment and mild Alzheimer's disease have had mixed results, and a Cochrane review found no evidence to recommend its routine use [3][15][16]. For diabetic nerve pain, a Cochrane review found only very low-certainty evidence that it eases pain more than placebo, and a meta-analysis of randomized trials suggests it may reduce depressive symptoms [26][30]. In women having taxane chemotherapy for breast cancer, acetyl-L-carnitine 3,000 mg a day made nerve damage worse, and the American Society of Clinical Oncology says its use to prevent that damage should be discouraged [29][78]. Carnitine doses of about 3 g a day can cause stomach upset and a fishy body odor [1].
+
+## Key safety points
+
+- In women having taxane chemotherapy, acetyl-L-carnitine 3,000 mg a day made nerve damage worse, and the harm lasted two years [28][78]. The American Society of Clinical Oncology says its use to prevent this nerve damage should be discouraged [29].
+- Two reports describe L-carnitine strengthening the effect of acenocoumarol, a blood thinner like warfarin [85][86]. If you take warfarin or another blood thinner, talk to your doctor before starting, as your INR may need checking.
+- Carnitine blocks thyroid hormone from entering cell nuclei [70][81]. If you have an underactive thyroid or take thyroid medicine, talk to your doctor first.
+- Carnitine can cause seizures in people with seizure disorders and muscle weakness in people with uremia [1].
+- No upper limit has been set. About 3 g a day can cause nausea, vomiting, abdominal cramps, diarrhea and a fishy body odor [1].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Acetyl-L-carnitine (ALCAR) is an acetylated form of L-carnitine, a naturally occurring compound derived from the amino acids lysine and methionine [1][2]. Carnitine plays a critical role in energy production by transporting long-chain fatty acids into the mitochondria, where they undergo beta-oxidation to produce adenosine triphosphate (ATP) [1][3]. Approximately 95% of total body carnitine is stored in heart and skeletal muscle, with the remainder in the liver, kidneys, and circulating plasma [1][4].
+Acetyl-L-carnitine (ALCAR) is an acetylated form of L-carnitine, a compound the body makes from the amino acids lysine and methionine [1][2]. Carnitine carries long-chain fatty acids into the mitochondria, where they are burned to make energy in the form of adenosine triphosphate (ATP) [1]. About 95% of total body carnitine is stored in heart and skeletal muscle, and most of the rest is in the liver and kidney [1].
 
-What distinguishes acetyl-L-carnitine from standard L-carnitine is the acetyl group attached at the 3-position oxygen, which increases lipophilicity and allows ALCAR to cross the blood-brain barrier more effectively than L-carnitine [5][6]. This property enables ALCAR to influence central nervous system functions, including neurotransmitter synthesis, mitochondrial energy metabolism in neurons, and neuroprotection [2][5]. ALCAR is believed to play a role in the production of acetylcholine, an important neurotransmitter involved in memory and learning, by donating acetyl groups to choline [7][8].
+ALCAR can supply an acetyl group that cells burn for energy or use to make acetylcholine, a chemical messenger involved in memory and learning [2].
 
-The body synthesizes carnitine endogenously in the liver, kidneys, and brain. Healthy adults produce approximately 14.4 mg/day, which, combined with dietary intake, is sufficient to meet carnitine needs under normal conditions [1][4]. The Food and Nutrition Board of the National Academies concluded in 1989 that carnitine is not an essential nutrient and did not establish Dietary Reference Intakes (DRIs) [1][9]. However, carnitine becomes conditionally essential under certain conditions, such as premature birth, end-stage renal disease, or genetic transport defects [1][2].
+The body synthesizes carnitine in the liver, kidneys, and brain, and this is enough to meet the needs of healthy people [1]. A 165 lb person on a strict vegetarian diet, for example, makes about 14.4 mg a day [1]. In 1989 the Food and Nutrition Board of the National Academies concluded that carnitine is not an essential nutrient and set no Dietary Reference Intakes (DRIs) [1]. Carnitine becomes conditionally essential in some situations, such as premature birth or kidney disease [1].
 
-Dietary carnitine has a bioavailability of approximately 63-75% from foods [1][10]. In contrast, absorption of supplemental L-carnitine is substantially lower at 14-18% [1][10]. Unabsorbed carnitine is degraded by microorganisms in the large intestine [11]. The bioavailability of supplemental acetyl-L-carnitine has not been as well studied, though some evidence suggests slightly higher circulating concentrations compared to equivalent L-carnitine doses, with peak plasma levels typically achieved 2-4 hours after oral administration [5][12].
+Dietary carnitine has a bioavailability of about 63% to 75%, while absorption of supplemental L-carnitine is only about 14% to 18% [1]. Most unabsorbed L-carnitine is broken down by bacteria in the large intestine [10]. The bioavailability of acetyl-L-carnitine has not been well studied [1].
 
 Carnitine status can be assessed by measuring circulating carnitine levels. A plasma free carnitine concentration of 20 mcmol/L or less, or a total carnitine concentration of 30 mcmol/L or less, is considered abnormally low [1]. The ratio of acyl-L-carnitine ester to free L-carnitine (a ratio of 0.4 or greater indicates abnormal metabolism) can also be used [1].
-
-ALCAR has been approved in various countries for indications including cerebrovascular disorders, mental function enhancement, and nutritional supplementation [5]. It is widely available as an over-the-counter dietary supplement, with the global market valued at $58.1 million in 2023, projected to grow to $97.5 million by 2033 [5].
 
 ## 2. Forms and Bioavailability
 
 ### Carnitine Forms Comparison
 
-Several forms of carnitine are used in supplements and clinical settings. Each has distinct properties and applications. It is important not to substitute one form for another, as the benefits of each form may depend on the intact molecule or its specific metabolites [11].
+The two main forms of carnitine in supplements are L-carnitine and acetyl-L-carnitine, in amounts from about 3 mg to 5,000 mg [1].
 
 | Form | Key Properties | Primary Uses |
 |------|---------------|-------------|
-| Acetyl-L-Carnitine (ALCAR) | Acetylated form. Crosses blood-brain barrier. Molecular formula C9H17NO4 (MW 203.24 g/mol). Oral bioavailability higher than L-carnitine supplements [5][12]. | Cognitive decline, neuropathy, depression, blood pressure [2][5][7] |
-| L-Carnitine | Unacetylated form. Oral supplement bioavailability 14-18%. Dietary bioavailability 63-75% [1][10]. | Cardiovascular disease, athletic performance, weight loss, dialysis-related deficiency [1][3] |
-| Propionyl-L-Carnitine | Acyl derivative of L-carnitine. | Peripheral artery disease, intermittent claudication, sexual dysfunction [3][13] |
-| L-Carnitine-L-Tartrate | Combined with tartaric acid. NOT found to be more bioavailable than L-carnitine in a study of 5 healthy men [11]. | Exercise recovery (marketed, limited evidence) |
-| L-Carnitine Fumarate | Combined with fumaric acid. Lower absorption than L-carnitine [14]. | Generally not recommended due to inferior absorption |
-| D-Carnitine | Biologically inactive stereoisomer. Should NOT be used -- competes with active L-forms and can cause symptoms of carnitine deficiency [11]. | None (contraindicated) |
+| Acetyl-L-Carnitine (ALCAR) | Acetylated form. Bioavailability not well studied [1]. | Studied for cognitive decline, nerve pain, depression [15][25][30] |
+| L-Carnitine | Unacetylated form. Oral supplement bioavailability 14-18%. Dietary bioavailability 63-75% [1]. | Cardiovascular disease, athletic performance, weight loss, dialysis-related deficiency [1][3] |
+| Propionyl-L-Carnitine | Acyl derivative of L-carnitine. | Peripheral artery disease, intermittent claudication [3][13] |
+| L-Carnitine-L-Tartrate | L-carnitine combined with tartaric acid. | Used in some exercise studies [58] |
 
 ### Bioavailability and Absorption
 
-ALCAR is absorbed primarily through the gastrointestinal tract via a combination of active transport and passive diffusion [5][12]. Its acetylated structure enhances absorption compared to L-carnitine supplements, with studies demonstrating a 43% increase in circulating ALCAR concentrations following daily oral doses of 2 g [12]. Peak plasma levels are typically achieved 2-4 hours after oral administration [5][12].
+Supplemental L-carnitine (0.5 to 6 g) is absorbed mainly by passive diffusion [10]. Lab experiments suggest some acetyl-L-carnitine is broken down in the gut wall, but circulating acetyl-L-carnitine rose 43% after oral doses of 2 g a day, so at least part is absorbed intact [10].
 
-Transport of ALCAR across cell membranes, including the blood-brain barrier, is primarily mediated by the organic cation/carnitine transporter 2 (OCTN2, encoded by SLC22A5), a sodium-dependent transporter expressed on the luminal side of endothelial cells [5]. This transporter exhibits high affinity for ALCAR, enabling efficient delivery to neuronal cells.
-
-ALCAR is eliminated mainly through renal excretion, with the unchanged compound and its metabolites (such as L-carnitine following deacetylation) appearing in urine. Renal reabsorption is efficient at low plasma concentrations but becomes saturated at higher levels, leading to increased clearance. Plasma concentrations return to baseline within 12 hours after intravenous administration of 0.5 g [5][12].
+The kidneys reabsorb 90% to 99% of filtered L-carnitine at normal blood levels, but this process saturates. At higher blood levels, as after large doses, more is lost in urine, and acetyl-L-carnitine is cleared in a similar way [10]. After a single intravenous dose of 0.5 g, acetyl-L-carnitine and L-carnitine levels return to baseline within 12 hours [10].
 
 ### Chemical Stability
 
-Acetyl-L-carnitine is stable in neutral to acidic aqueous solutions (pH below 9) but degrades rapidly at alkaline pH values greater than 9, with significant loss of integrity observed after short exposure times at room temperature [5]. This pH-dependent stability influences handling in pharmaceutical preparations, where acidic or neutral conditions are preferred.
-
-The hydrochloride salt (C9H18ClNO4) is the most common commercial form, appearing as a white to off-white crystalline powder with a melting point of approximately 194 degrees C. It exhibits high solubility in water (greater than 100 mg/mL) and ethanol (approximately 20 mg/mL) [5].
+Trials name the salt they used: the large 1996 Alzheimer's trial gave acetyl-L-carnitine hydrochloride [18].
 
 ## 3. Evidence for Health Benefits
 
@@ -60,75 +70,65 @@ The hydrochloride salt (C9H18ClNO4) is the most common commercial form, appearin
 
 #### Alzheimer's Disease and Dementia
 
-ALCAR has been one of the most extensively studied dietary supplement ingredients for memory disorders. Its mechanism involves supporting acetylcholine synthesis and helping remove toxic compounds to alleviate mitochondrial dysfunction associated with degeneration of brain structures [2][15].
+ALCAR has been one of the most extensively studied dietary supplement ingredients for memory disorders. Carnitine may support acetylcholine synthesis and help remove toxic compounds that impair mitochondria in degenerating brain tissue [2][3].
 
-**Montgomery et al. 2003 meta-analysis:** A meta-analysis of 21 clinical trials including a total of 1,204 adults with mild cognitive impairment or mild Alzheimer's disease examined the effects of 1.5 to 3.0 g/day acetyl-L-carnitine versus placebo for 3 to 12 months. Clinical and psychometric assessment scores were better, and clinician-determined improvements were greater in supplement users than in placebo groups [16].
+**Montgomery et al. 2003 meta-analysis:** A meta-analysis of 21 clinical trials including a total of 1,204 adults with mild cognitive impairment or mild Alzheimer's disease examined the effects of 1.5 to 3.0 g/day acetyl-L-carnitine versus placebo for 3 to 12 months. Clinical and psychometric assessment scores were better, and clinician-determined improvements were greater in supplement users than in placebo groups [3][16].
 
-**Hudson & Tabet 2003 Cochrane Review:** A Cochrane Review of 15 clinical trials (including 13 of those in the meta-analysis above) assessed 1 to 3 g/day ALCAR supplementation versus placebo over 12 to 52 weeks in participants with mild to moderate dementia or cognitive decline. The results showed that supplementation decreased symptom severity at 12 and 24 weeks but NOT at 52 weeks. Similarly, ALCAR improved Mini Mental State Examination (MMSE) scores at 24 weeks but not at 12 or 52 weeks. It had no effect on the severity of dementia, functional ability, or overall clinical global impression scores. The authors noted that results from more recent studies were less positive than those from earlier studies, and concluded that routine clinical use of ALCAR to treat dementia signs and symptoms was not justified [15].
+**Hudson & Tabet 2003 Cochrane Review:** This review included 11 double-blind trials, all in people with Alzheimer's disease. More people improved on ALCAR than on placebo by clinical global impression at 12 weeks (OR 2.33, 95% CI 1.25 to 4.35) and 24 weeks (OR 3.91, 95% CI 1.32 to 11.54), but not at 52 weeks. There was no benefit for cognition, severity of dementia or functional ability. The authors noted the positive result may be due to chance and found no evidence to recommend routine clinical use [15].
 
-**Spagnoli et al. 1991 (landmark Italian trial):** A double-blind, placebo-controlled trial involving 130 patients with Alzheimer's disease demonstrated that one year of ALCAR treatment resulted in a slower rate of deterioration compared to placebo across 13 of 14 outcome measures, including significant improvements in the Blessed Dementia Scale, logical intelligence, verbal critical abilities, long-term verbal memory, and selective attention [5][17].
+**Spagnoli et al. 1991:** In a double-blind, placebo-controlled trial in 130 patients with Alzheimer's disease, both groups had worsened after 1 year, but the ALCAR group declined more slowly on 13 of 14 outcome measures. After adjusting for starting scores, the differences were significant for the Blessed Dementia Scale, logical intelligence, verbal critical abilities, long-term verbal memory, and selective attention [17].
 
-**Thal et al. 1996 (multicenter trial):** A larger multicenter, randomized, double-blind, placebo-controlled study enrolled 431 patients with mild to moderate probable Alzheimer's disease, administering 3 g/day of ALCAR for 12 months. While overall decline rates were similar between groups, post-hoc subgroup analysis indicated slower cognitive decline in early-onset patients (aged 65 or younger) compared to placebo, as measured by the Alzheimer's Disease Assessment Scale cognitive subscale and Clinical Dementia Rating Scale [5][18].
+**Thal et al. 1996 (multicenter trial):** A 1-year double-blind trial gave 3 g/day of ALCAR or placebo to 431 patients aged 50 or older with mild to moderate probable Alzheimer's disease. Both groups declined at the same rate on all primary and most secondary measures. In a post-hoc analysis, early-onset patients (aged 65 or younger) on ALCAR tended to decline more slowly than those on placebo, while older patients on ALCAR tended to do worse [18].
 
-**Summary:** While early studies found evidence of modest benefit, later and larger studies failed to find ALCAR effective for established dementia [15]. If there is any benefit at all, it may be limited to people with mild cognitive impairment and early Alzheimer's disease, and particularly to younger-onset cases [7][16]. The effects remain an area of active research [2][19][20].
+**Summary:** Early studies suggested a benefit, but later, larger studies have not supported it [15]. Any benefit may be confined to people with mild memory problems or mild Alzheimer's disease, and possibly to younger patients, a post-hoc finding that has not been confirmed [16][18]. The effects remain an area of active research [3][19][20].
 
 #### Preclinical Combination Data (ALCAR + Alpha-Lipoic Acid)
 
-Preclinical studies in aged rats have demonstrated that combining ALCAR with alpha-lipoic acid (ALA) synergistically improves cognitive function more effectively than either compound alone. Dietary supplementation restored performance on spatial memory (Morris water maze) and temporal memory tasks, reduced oxidative damage to RNA in the hippocampus, and reversed age-associated mitochondrial structural decay (fewer broken cristae, more intact mitochondria). Similar trends were observed in ApoE4 mouse models relevant to Alzheimer's risk. While direct human trials on the combination for cognition are sparse, the mechanistic synergy (ALCAR supporting fatty acid transport and acetylcholine synthesis, ALA providing broad antioxidant protection) supports potential for addressing mitochondrial dysfunction in age-related cognitive decline [5].
+In old rats, feeding ALCAR, R-alpha-lipoic acid, or both improved spatial and temporal memory, and the combination worked best [82]. The supplements also reduced oxidative damage to RNA in the hippocampus and reversed age-related decay of mitochondrial structure [82]. These are animal results and have not been confirmed in human trials.
 
 ### Blood Pressure
 
-Acetyl-L-carnitine (500 to 1,000 mg taken twice daily) for a period of months may modestly reduce systolic blood pressure in people with high blood pressure, although it does not appear to lower diastolic blood pressure [7].
+**Ruggenenti et al. 2009:** In a pilot study with no comparison group, 32 nondiabetic people at increased cardiovascular risk took acetyl-L-carnitine 1 g twice daily for 24 weeks. Systolic blood pressure fell from 144.0 to 135.1 mm Hg in those with more insulin resistance and from 130.8 to 123.8 mm Hg in the others, then drifted back toward baseline over 8 weeks after stopping [21].
 
-**Ruggenenti et al. 2009:** A study found that taking 1 gram of acetyl-L-carnitine twice daily for 6 months lowered systolic blood pressure by approximately 8 mmHg compared to baseline. However, this study did not include a comparison group, making the results uncertain [7][21].
+**McMackin et al. 2007:** In a double-blind crossover trial, 36 adults with coronary artery disease took combined alpha-lipoic acid and acetyl-L-carnitine or placebo for 8 weeks each. Systolic pressure tended to fall across the whole group, but not significantly. In those with blood pressure above the median, systolic pressure fell from 151 to 142 mm Hg. The result belongs to the combination, not to acetyl-L-carnitine alone [22].
 
-**McMackin et al. 2007:** A study in 36 people (average age 63) with coronary artery disease found that taking 500 mg of acetyl-L-carnitine plus 200 mg of alpha-lipoic acid twice daily for 8 weeks lowered systolic blood pressure by 9 mmHg in those with coronary artery disease and high blood pressure, which was significant compared to placebo. The study was partially funded by the maker of the supplement (Juvenon Cellular Health Supplement, Juvenon Inc.) [7][22].
+**Parvanova et al. 2018 (DIABASI trial):** In 229 adults with type 2 diabetes, high blood pressure and abnormal blood fats, all on simvastatin, acetyl-L-carnitine 1,000 mg twice daily did no better than placebo: after 6 months, systolic pressure had changed by -2.09 vs -3.57 mm Hg. Blood lipids, blood glucose, HbA1c and insulin sensitivity also did not differ between groups [23].
 
-**Parvanova et al. 2018 (DIABASI trial):** A study in 219 older people with high blood pressure, high cholesterol, and diabetes found that taking 1 gram of acetyl-L-carnitine twice daily for 6 months did NOT lower systolic blood pressure compared to placebo. The participants were taking the cholesterol-lowering medicine simvastatin, which can also lower blood pressure and may have overshadowed any effects of acetyl-L-carnitine [7][23]. This trial also observed no significant changes in glycemic control or insulin sensitivity [5].
-
-**Insulin sensitivity pilot study (Ruggenenti):** A pilot study in nondiabetic subjects at increased cardiovascular risk with insulin resistance found that 2 g/day of oral ALCAR for 6 months improved insulin-mediated glucose disposal (measured by euglycemic hyperinsulinemic clamp) alongside reductions in blood pressure [5][21].
+**Insulin sensitivity pilot study (Ruggenenti):** In the same pilot study, acetyl-L-carnitine raised the glucose disposal rate, measured by hyperinsulinemic euglycemic clamp, from 4.89 to 6.72 mg/kg per minute in those with more insulin resistance, with no effect in the others [21].
 
 ### Peripheral Neuropathy
 
 #### Diabetic Neuropathy
 
-Guidelines from the American Society of Pain and Neuroscience (ASPN) state that, although dietary supplements including acetyl-L-carnitine may have a role in managing painful diabetic neuropathy, there is insufficient high-quality evidence comparing ALCAR to typical pharmacologic drugs, and there is not enough information about safe dosing, to recommend for or against its use [7][24].
+**Li et al. 2015 meta-analysis:** A meta-analysis of four placebo-controlled trials (523 patients) with peripheral nerve pain found that ALCAR reduced pain on a visual analog scale (mean difference 1.20, 95% CI 0.68 to 1.72). The effect was larger in diabetic nerve pain (mean difference 1.47, 95% CI 1.06 to 1.87) [25].
 
-**Li et al. 2019 meta-analysis:** A systematic review and meta-analysis of four randomized controlled trials involving patients with painful peripheral neuropathy found that ALCAR significantly reduced pain by 20.2% (95% CI: 8.3-32.1%, P < 0.0001) relative to baseline on a 10-cm Visual Analog Scale. A subgroup of three RCTs in diabetic peripheral neuropathy showed even greater relief at 24.6% (95% CI: 12.4-36.8%, P < 0.0001). Evidence was graded as Class II (probably effective) per American Academy of Neurology guidelines for diabetic, antiretroviral toxic, and chemotherapy-induced neuropathies [5][25].
-
-**2019 Cochrane Review:** A Cochrane review of RCTs on ALCAR for diabetic peripheral neuropathy concluded very low-certainty evidence (GRADE system) indicating uncertainty regarding short-term pain relief, but noted potential improvements in nerve conduction velocity. It highlighted gaps in long-term data beyond 6-12 months and heterogeneity in dosing protocols [5][26].
-
-Clinical evidence demonstrates that oral doses of 1-3 grams per day, administered for 6-12 months, can reduce neuropathic pain scores, with enhancements in nerve fiber regeneration and sensory function, particularly when combined with standard therapies [5]. Dosing regimens typically start at 500 mg twice daily, titrated up to 1.5-3 grams per day. Intravenous administration is sometimes used initially for severe cases to achieve faster symptom relief [5].
+**Rolim et al. 2019 Cochrane Review:** This review included four trials (907 participants). In three placebo-controlled trials, ALCAR reduced pain more than placebo on a 0 to 100 mm scale (MD -9.16, 95% CI -16.76 to -1.57), but the evidence was of very low certainty. Doses of more than 1,500 mg a day appeared to work better than lower doses, a finding that is even less certain. The authors were very uncertain whether ALCAR reduces pain after 6 to 12 months of treatment [26].
 
 #### Antiretroviral-Associated Neuropathy
 
-**Youle et al. 2007:** A small, multicenter clinical study among 56 people with neuropathy associated with antiretroviral drug therapy showed that receiving 500 mg of acetyl-L-carnitine twice daily intramuscularly for two weeks, followed by 1,000 mg twice daily orally for 6 weeks, reduced pain by 0.89 points (on a pain scale of 0 to 10) compared to placebo. However, it did not reduce pain, burning, or numbness based on two other symptom scales [7][27].
+**Youle et al. 2007:** In a trial of 90 people with HIV and nerve damage from antiretroviral drugs, participants received 500 mg of ALCAR or placebo by intramuscular injection twice daily for 14 days, then oral ALCAR 1,000 mg twice daily for 42 days. Pain on a visual analog scale did not differ between groups in the full study population, but fell more with ALCAR in those who completed the study as planned [27].
 
 #### Chemotherapy-Induced Neuropathy -- CAUTION
 
-**Hershman et al. 2018:** A double-blind, placebo-controlled study among women receiving taxane-based chemotherapy to treat breast cancer found that 3 grams of acetyl-L-carnitine taken daily for 5.5 months significantly WORSENED symptoms of chemotherapy-induced peripheral neuropathy compared to placebo, and this difference persisted after 2 years. The effect was unexpected, although a similar problem has been observed with other antioxidants given during chemotherapy [7][28].
+**Hershman et al. 2013 and 2018:** In a double-blind trial in 409 women having taxane chemotherapy for breast cancer, acetyl-L-carnitine 3,000 mg a day for 24 weeks did not prevent nerve damage. Nerve damage was worse with acetyl-L-carnitine than with placebo at 24 weeks, and grade 3 to 4 nerve damage occurred in eight women on it versus one on placebo [78]. The harm persisted over two years of follow-up [28].
 
-**Loprinzi et al. 2020 (ASCO guideline):** Based on the above evidence, the American Society of Clinical Oncology recommended in 2020 that clinicians DISCOURAGE use of acetyl-L-carnitine for preventing chemotherapy-related nerve damage [29].
+**Loprinzi et al. 2020 (ASCO guideline):** In its 2020 guideline update, the American Society of Clinical Oncology stated that using acetyl-L-carnitine to prevent nerve damage from chemotherapy should be discouraged [29].
 
 ### Depression
 
-ALCAR shows promise in treating depression, with research dating back to the 1990s highlighting antidepressant-like effects through modulation of neurotransmitter systems [5].
-
-**Veronese et al. 2017 meta-analysis:** A systematic review and meta-analysis of nine randomized controlled trials showed that ALCAR supplementation significantly decreased depressive symptoms compared to placebo (standardized mean difference -1.10, 95% CI -1.65 to -0.56), with effects comparable to established antidepressants like fluoxetine, particularly in older adults or those with treatment-resistant depression [5][30].
-
-Early studies from the late 1990s reported that supplementation at 1-2 grams per day improved mood and reduced fatigue in patients with major depressive disorder, as evidenced by reductions in Hamilton Depression Rating Scale scores by about 20-30% over 4-8 weeks [5].
+**Veronese et al. 2018 meta-analysis:** Pooled data from nine randomized trials showed that ALCAR reduced depressive symptoms compared with placebo or no treatment (standardized mean difference -1.10, 95% CI -1.65 to -0.56). In three trials it worked about as well as antidepressants with fewer side effects, and it appeared most effective in older adults. The authors called for larger trials to confirm or refute these findings [30].
 
 ### Fibromyalgia
 
-**Leombruni et al. 2015:** A study of 51 people with fibromyalgia (average age 52) compared 500 mg of acetyl-L-carnitine three times daily versus 30 to 60 mg of duloxetine (an antidepressant) daily. Those given ALCAR did NOT experience an improvement in pain intensity or anxiety compared to baseline. While they showed a 2.18-point improvement (on a 7-point scale) in overall severity of illness and a reduction in depression based on one scale, they did not show improvement in depression based on another scale. Those in the duloxetine group showed similar improvements in depression and no improvement in anxiety, but DID show reduction in pain compared to baseline. Critically, the study lacked a placebo group, making it impossible to determine whether ALCAR was truly beneficial [7][31].
+**Leombruni et al. 2015:** In 65 women with fibromyalgia randomized to duloxetine 60 mg a day or ALCAR 500 mg three times daily for 12 weeks, both treatments improved pain and depressive symptoms, and neither improved anxiety. Only duloxetine improved the mental part of quality of life. The trial had no placebo group, so it cannot show whether ALCAR itself helped [31].
 
 ### Chronic Fatigue Syndrome
 
-A 2004 randomized trial demonstrated decreased fatigue severity and improved quality of life metrics in patients with chronic fatigue syndrome after 24 weeks of treatment at 2 grams daily [5][32].
+**Vermeulen and Scholte 2004:** In an open-label randomized study of three groups of 30 people with chronic fatigue syndrome, acetyl-L-carnitine 2 g a day for 24 weeks improved mental fatigue, propionyl-L-carnitine improved general fatigue, and the combination helped less [32].
 
 ### Cardiovascular Disease
 
-Carnitine plays a role in transporting long-chain fatty acids in the myocardial mitochondria for energy production, moderating oxidative stress, and potentially decreasing markers of inflammation. During ischemic events, carnitine prevents fatty acid ester accumulation, which can lead to fatal ventricular arrhythmias [3][33][34].
+Carnitine helps transport long-chain fatty acids into heart mitochondria for energy, helps moderate oxidative stress, and might reduce markers of inflammation. During ischemic events, carnitine prevents fatty acid ester accumulation, which can lead to fatal ventricular arrhythmias [3][33][34].
 
 #### Acute Myocardial Infarction
 
@@ -140,21 +140,21 @@ Carnitine plays a role in transporting long-chain fatty acids in the myocardial 
 
 #### TMAO and Cardiovascular Risk -- Important Concern
 
-**Koeth et al. 2013 (Nature Medicine):** A study including 2,595 adults aged 54-71 years undergoing elective cardiac evaluation found that L-carnitine is metabolized by intestinal microbiota to trimethylamine-N-oxide (TMAO), a proatherogenic substance associated with increased CVD risk. Because of differences in intestinal bacteria composition, omnivorous participants produced more TMAO than vegans or vegetarians after consumption of L-carnitine. The study found dose-dependent associations between fasting plasma L-carnitine concentrations and risk of coronary artery disease, peripheral artery disease, and CVD, but only in participants with concurrently high TMAO levels [3][7][36].
+**Koeth et al. 2013 (Nature Medicine):** Gut bacteria turn L-carnitine, which is plentiful in red meat, into trimethylamine-N-oxide (TMAO), a compound that promotes atherosclerosis. Omnivores made more TMAO than vegans or vegetarians after taking L-carnitine. In 2,595 people having a heart evaluation, higher blood L-carnitine predicted heart disease and major cardiac events, but only in those who also had high TMAO [3][36].
 
-Although acetyl-L-carnitine is not identical to L-carnitine, it contains and provides L-carnitine. Both contain the TMA moiety, so supplementing with acetyl-L-carnitine may potentially foster growth of TMAO-producing organisms, increase TMAO levels, and have negative long-term cardiovascular effects, although clinical evidence is mixed [7][36].
+Whether acetyl-L-carnitine raises TMAO the way L-carnitine does has not been well studied.
 
-**Johri et al. 2022 (atherosclerosis RCT):** A clinical trial in 157 individuals aged 58-75 with metabolic syndrome who received 1 g supplemental L-carnitine or placebo twice daily for 6 months found potentially deleterious outcomes. Although total plaque volume did not differ between groups, total cholesterol and LDL cholesterol levels were higher in participants taking L-carnitine. L-carnitine supplementation was also associated with 9.3% greater carotid arterial plaque stenosis in males who ate less red meat and had lower baseline stenosis and total plaque volume [3][37].
+**Johri et al. 2022 (atherosclerosis RCT):** A clinical trial in 157 individuals aged 58-75 with metabolic syndrome who received 1 g supplemental L-carnitine or placebo twice daily for 6 months found potentially deleterious outcomes. Although total plaque volume did not differ between groups, total cholesterol and LDL cholesterol levels were higher in participants taking L-carnitine. Carotid plaque stenosis also rose 9.3% more on L-carnitine than on placebo (p = 0.02) [3][37].
 
 #### Peripheral Artery Disease
 
-**Tama et al. 2021 systematic review:** A systematic review of three randomized clinical trials compared 234 participants who took 2 g/day oral propionyl-L-carnitine for 4 to 6 months with 222 patients who took placebo. In one trial, participants supplemented with propionyl-L-carnitine had improved peak walking times, self-reported improvements in walking distance and speed, and decreased pain. The other two trials showed no benefit compared to placebo [3][38].
+**Tama et al. 2021 systematic review:** A systematic review of three randomized clinical trials compared 234 participants who took 2 g/day oral propionyl-L-carnitine for 4 to 6 months with 222 patients who took placebo. In one trial, participants supplemented with propionyl-L-carnitine had improved peak walking times, self-reported improvements in walking distance and speed, and decreased pain. The other two trials showed no benefit compared to placebo [3][13].
 
 ### Insulin Resistance and Diabetes
 
 Insulin resistance may be associated with mitochondrial dysfunction and defects in fatty-acid oxidation in muscle. Carnitine supplementation has therefore been studied for possible effects on insulin resistance and diabetes [3][39][40].
 
-**Zamani et al. 2023 meta-analysis:** A meta-analysis of 41 randomized clinical trials examined the effects of L-carnitine supplementation on glycemic markers in 2,900 men and women aged 18 years and older. Most participants had health conditions such as type 2 diabetes, obesity, polycystic ovary syndrome, or nonalcoholic fatty liver disease. L-carnitine supplements at doses of 0.25 to 4 g/day for 2 to 52 weeks reduced fasting blood glucose, insulin resistance, and glycosylated hemoglobin (HbA1c) but NOT serum insulin levels [3][41].
+**Zamani et al. 2023 meta-analysis:** A meta-analysis of 41 randomized clinical trials examined the effects of L-carnitine supplementation on glycemic markers in 2,900 men and women aged 18 years and older. Most participants had health conditions such as type 2 diabetes, obesity, polycystic ovary syndrome, or nonalcoholic fatty liver disease. L-carnitine supplements at doses of 0.25 to 4 g/day for 2 to 52 weeks reduced fasting blood glucose, insulin resistance, and glycosylated hemoglobin (HbA1c) but NOT serum insulin levels [3][41]. This meta-analysis pooled two El Sharkwy PCOS trials (one of them [50]) that have since been retracted, so its estimates may be overstated [41][80][89].
 
 **Xu et al. 2017 meta-analysis:** A meta-analysis of five randomized clinical trials (three included in the 2023 meta-analysis) in 631 adults with insulin resistance who took 2 or 3 g/day L-carnitine or placebo for 4 weeks to 12 months found that L-carnitine improved measures of insulin resistance. Benefits at 12 months exceeded those at 3 months [3][42].
 
@@ -162,39 +162,35 @@ Insulin resistance may be associated with mitochondrial dysfunction and defects 
 
 ### Male Infertility
 
-Carnitine plays a role in sperm maturation, motility, and spermatogenesis, and may reduce oxidative stress that could improve oocyte growth and maturation [3][44][45].
+Carnitine might play a role in sperm maturation, motility, and sperm production [3].
 
 **Salas-Huetos et al. 2018 meta-analysis:** A systematic review and meta-analysis of three randomized clinical trials examined the effects of 1-3 g/day L-carnitine or acetyl-L-carnitine for 2 to 6 months on sperm parameters in 201 men aged 20-40 years with infertility. Compared to placebo, supplemental carnitine improved sperm motility by 7.84% and morphology by 4.91% but did NOT affect sperm concentration [3][46].
 
 **de Ligny et al. 2022 Cochrane Review:** A review of six randomized clinical trials in 1,089 men with subfertility who took 1,000-3,000 mg/day carnitine for 8 weeks to 6 months found that carnitine supplementation increased sperm motility and concentration at some timepoints (e.g., 3 months) but did NOT affect rates of live birth or pregnancy [3][47].
 
-**Mongioi et al. 2020 meta-analysis:** A systematic review confirmed that supplementation with L-carnitine and acetyl-L-carnitine significantly improved total sperm motility, progressive sperm motility, and sperm morphology in men with idiopathic infertility, but did not significantly affect sperm concentration or clinical pregnancy rates. Research indicates that combined supplementation at doses of at least 3 g per day is required for significant effects [5][48].
-
 ### Female Infertility (PCOS)
 
-**Ismail et al. 2014:** A 26-month randomized controlled trial of 170 women younger than 35 with PCOS found that those taking clomiphene citrate plus 3 g/day supplemental L-carnitine (from day 3 of their menstrual cycle until the day of their first positive pregnancy test) had 64.4% higher ovulation rates and thicker endometrial tissue (10.1 mm vs. 6.8 mm) than the placebo group. More participants in the L-carnitine group became pregnant and had fewer miscarriages [3][49].
-
-**El Sharkwy et al. 2019:** A 3-month randomized controlled trial of 280 women with PCOS found that those receiving 3 g L-carnitine had improved menstrual cycle regularity and higher ovulation and pregnancy rates, but miscarriage rates did not differ between groups [3][50].
+Carnitine might reduce oxidative stress in ways that could improve egg growth and maturation [45]. Two randomized trials once reported that L-carnitine improved ovulation and pregnancy rates in women with polycystic ovary syndrome (PCOS) [49][50]. Both trials have since been retracted by their journals, so they no longer count as evidence [79][80].
 
 ### Osteoarthritis
 
-**Mahdavi et al. 2016:** A randomized clinical trial in 69 women aged 40-60 with mild to moderate knee osteoarthritis found that 250 mg L-carnitine three times daily for 8 weeks reduced several inflammation biomarkers and pain scores compared to placebo: interleukin-1-beta levels decreased 5.53%, matrix metalloproteinase-1 levels decreased 9.10%, and the visual analog scale of pain decreased 52.67% [3][51].
+**Mahdavi et al. 2016:** In 72 women with mild to moderate knee osteoarthritis, L-carnitine 750 mg/day or placebo was given for 8 weeks. Compared with placebo, L-carnitine lowered the inflammation markers interleukin-1-beta and matrix metalloproteinase-1 and improved pain scores; pain fell 52.67% on L-carnitine and 21.82% on placebo [51].
 
 **Baghban et al. 2021:** A randomized clinical trial of 76 women (average age 55) with obesity and knee osteoarthritis found that 1 g/day L-carnitine for 12 weeks did NOT reduce osteoarthritis pain or stiffness or increase physical function compared to placebo [3][52].
 
 ### Leg Cramps
 
-High doses of L-carnitine given orally (typically 1,500 mg or more per day) or intravenously have been used to treat leg cramps and nocturnal leg cramps due to carnitine deficiency, which can occur due to genetic disorders (primary carnitine deficiency), medical conditions such as liver cirrhosis and chronic kidney failure, or use of certain medications [7][53][54].
+L-carnitine is often used for leg cramps during hemodialysis, though it does not help every patient [53]. In people with cirrhosis, L-carnitine 900 mg/day or 1,200 mg/day for 8 weeks reduced muscle cramps, with better results at the higher dose; the study had no placebo group [54].
 
-**Miwa 2020:** L-carnitine supplementation (1,500 mg per day for one week, then reduced to 750 mg per day thereafter) has been reported to reduce the frequency of nocturnal leg cramps after stroke [7][55].
+**Miwa et al. 2020:** In a case report, L-carnitine reduced nocturnal leg cramps in a man paralysed on one side after a stroke [55].
 
-**Imbe et al. 2018:** L-carnitine at 600 mg per day reduced leg cramps among people with type 1 and type 2 diabetes [7][56].
+**Imbe et al. 2018:** In 25 people with diabetes and muscle cramps, L-carnitine 600 mg a day for 4 months reduced how often cramps occurred and how painful they were; there was no placebo group [56].
 
-However, there do not appear to be any published clinical trials specifically on acetyl-L-carnitine (as opposed to L-carnitine) in people with leg cramps or nocturnal leg cramps [7].
+All of these studies tested L-carnitine rather than the acetyl form.
 
 ### Athletic Performance
 
-Carnitine helps preserve muscle glycogen and promotes fat oxidation, spares amino acid use as energy sources during exercise (making them available for new protein synthesis), and decreases lactate accumulation [3][57]. However, findings on supplemental carnitine for athletic performance are mixed.
+Carnitine helps preserve muscle glycogen and promotes fat oxidation, spares amino acid use as energy sources during exercise (making them available for new protein synthesis), and decreases lactate accumulation [3]. However, findings on supplemental carnitine for athletic performance are mixed.
 
 **Wall et al. 2011:** A study randomly assigned 14 recreational athletes aged 24-28 to consume a carbohydrate solution with or without 2.0 g L-carnitine tartrate twice daily for 24 weeks. At the end of the trial, perceived exertion on a cycle ergometer at 50% and 80% VO2max was lower in the carnitine group (14.0, Borg scale) than the control group (16.2) [3][58].
 
@@ -206,9 +202,9 @@ Carnitine helps preserve muscle glycogen and promotes fat oxidation, spares amin
 
 ### Weight Loss
 
-**Villani et al. 2000:** A study in which moderately obese women were given 2 grams daily of L-carnitine for eight weeks showed no effect on body fat or body weight [7][62].
+**Villani et al. 2000:** In 36 moderately overweight women who walked four days a week, L-carnitine 2 g twice daily for 8 weeks did not change body weight or fat mass compared with placebo. Five women taking L-carnitine dropped out because of nausea or diarrhea [62].
 
-**Pooyandjoo et al. 2016 meta-analysis:** A systematic review and meta-analysis combining results from nine randomized clinical trials in 911 participants found that study participants taking carnitine supplements lost an average of 1.33 kg more weight than those who took placebo, regardless of study duration or L-carnitine dose [3][63].
+**Pooyandjoo et al. 2016 meta-analysis:** A systematic review and meta-analysis combining results from nine randomized clinical trials in 911 participants found that study participants taking carnitine supplements lost an average of 1.33 kg more weight than those who took placebo, but the effect shrank with longer use (p = 0.002) [3][63].
 
 **Derosa et al. 2010:** In 258 adults aged 47-59 with uncontrolled type 2 diabetes, participants taking 2 g/day L-carnitine plus orlistat (360 mg/day) for 1 year lost more weight (11.3 kg) than those taking orlistat alone (9.5 kg) [3][64].
 
@@ -216,23 +212,19 @@ Carnitine helps preserve muscle glycogen and promotes fat oxidation, spares amin
 
 ### Androgen Decline in Older Men
 
-Taking acetyl-L-carnitine in combination with propionyl-L-carnitine appears to help symptoms of androgen decline in older men, improving sexual dysfunction, depression, and fatigue. For symptoms of age-related testosterone deficiency, 2 grams of acetyl-L-carnitine plus 2 grams of propionyl-L-carnitine daily have been used [7][11].
+**Cavallini et al. 2004:** In 120 men aged 60 to 74 with symptoms of aging, propionyl-L-carnitine 2 g plus acetyl-L-carnitine 2 g a day for 6 months improved erectile function, depressed mood and fatigue scores, while placebo did not. Testosterone also improved these scores, and the effects of both faded after treatment stopped [83].
 
 ### Peyronie's Disease
 
-**Biagiotti 2001:** Acetyl-L-carnitine may be helpful in Peyronie's disease (an inflammatory condition of the penis), where it has been shown to reduce pain and slow progression of the disease. A dose of 2 grams divided into two doses daily for 3 months has been used [7][66].
-
-### Eye Health
-
-Clinical observations from combination therapies including acetyl-L-carnitine, omega-3 fatty acids, and coenzyme Q10 have reported significant reductions in irritation symptoms, clinical signs, and the need for topical treatments for dry eye syndrome after three months of use [5][67].
+**Biagiotti 2001:** In 48 men with early Peyronie's disease (scarring and curvature of the penis), acetyl-L-carnitine 1 g twice daily for 3 months reduced pain and slowed disease progression more than tamoxifen, with fewer side effects [66].
 
 ### Sarcopenia
 
-Preliminary evidence suggests acetyl-L-carnitine may help preserve muscle mass and function in the elderly by improving mitochondrial efficiency and reducing fatigue. Supplementation has been associated with increased muscle strength, mobility, and overall physical well-being in geriatric populations [5][68].
+**Malaguarnera et al. 2007:** In 66 centenarians who tired after slight activity, L-carnitine 2 g once daily increased total muscle mass by 3.80 kg compared with 0.8 kg on placebo and reduced physical and mental fatigue [68]. The trial tested L-carnitine rather than the acetyl form.
 
 ### Fragile X Syndrome
 
-Early research suggests that acetyl-L-carnitine might reduce hyperactivity in boys with fragile X syndrome. The daily dose studied was 20 to 50 mg/kg [7][11].
+**Torrioli et al. 2008:** In 63 boys aged 6 to 13 with fragile X syndrome and attention deficit hyperactivity disorder, acetyl-L-carnitine 20 to 50 mg/kg a day for one year reduced hyperactivity and improved social behavior more than placebo [84].
 
 ### Hemodialysis and Renal Disease
 
@@ -244,33 +236,32 @@ Individuals with end-stage renal disease, particularly those on hemodialysis, of
 
 ### Dosing by Indication
 
-There is no established Dietary Reference Intake for carnitine. The following dosing ranges are based on clinical trial protocols:
+There is no established Dietary Reference Intake for carnitine [1]. The doses below are those used in clinical trials, not proven treatments:
 
 | Indication | Dose (Acetyl-L-Carnitine) | Duration |
 |-----------|--------------------------|----------|
-| Alzheimer's disease / dementia | 1.5-4 g/day, divided into 2-3 doses | 3-12 months [7][11] |
-| Age-related memory impairment | 1.5-2 g/day | Ongoing [7][11] |
-| Depression in elderly | 1.5-3 g/day, divided doses | 4-12 weeks [5][7][11] |
-| Blood pressure | 1-2 g/day (500-1,000 mg twice daily) | 2-6 months [7][21][22] |
-| Diabetic neuropathy | 1.5-3 g/day, divided doses (higher dose may be more effective for vibratory sensation and pain) | 6-12 months [5][7][11] |
-| Antiretroviral neuropathy | 1 g twice daily | 6-8 weeks [7][27] |
-| Fibromyalgia | 1.5 g/day (500 mg three times daily) | Variable [7][31] |
-| Male infertility | 3-4 g/day (sometimes as mixed ALCAR + L-carnitine) | 2-6 months [7][11] |
-| Peyronie's disease | 2 g/day, divided into 2 doses | 3 months [7][66] |
-| Androgen decline (older men) | 2 g ALCAR + 2 g propionyl-L-carnitine daily | Variable [7][11] |
-| Fragile X syndrome (children) | 20-50 mg/kg/day | Variable [7][11] |
-| Chronic fatigue syndrome | 2 g/day | 24 weeks [5][32] |
-| Insulin resistance / diabetes | 2-3 g/day (L-carnitine) | 4 weeks to 12 months [3][41][42] |
+| Mild cognitive impairment / early Alzheimer's disease | 1.5-3.0 g/day | 3-12 months [16] |
+| Depression | Varied by trial | Varied [30] |
+| Blood pressure | 1 g twice daily | 24 weeks [21]; no effect on blood pressure in a 6-month RCT [23] |
+| Diabetic neuropathy | 1.5-3 g/day | 6-12 months [26] |
+| Antiretroviral neuropathy | 1 g twice daily (after 2 weeks of injections) | 6 weeks, open-label [27] |
+| Fibromyalgia | 1.5 g/day (500 mg three times daily) | 12 weeks [31] |
+| Male infertility | 1-3 g/day (L-carnitine or acetyl-L-carnitine) | 2-6 months [3] |
+| Peyronie's disease | 1 g twice daily | 3 months [66] |
+| Androgen decline (older men) | 2 g ALCAR + 2 g propionyl-L-carnitine daily | 6 months [83] |
+| Fragile X syndrome (children) | 20-50 mg/kg/day | 1 year [84] |
+| Chronic fatigue syndrome | 2 g/day | 24 weeks [32] |
+| Insulin resistance / diabetes | 2-3 g/day (L-carnitine) | 4 weeks to 12 months [3] |
 
 ### Important Notes on Dosing
 
-Acetyl-L-carnitine is taken in fairly large doses, often measured in grams rather than milligrams (1,000 mg = 1 gram) [11]. Doses are typically divided into two or three administrations per day.
+Trials used gram doses, often split through the day: 1 g twice daily or 500 mg three times daily, for example [21][31].
 
-For general cognitive support, doses of 1-2 g/day are common. For neuropathic conditions, higher doses of 2-3 g/day are typically used. Doses of approximately 3 g/day or more are associated with increased gastrointestinal side effects [1][11].
+Doses of about 3 g/day of carnitine can cause stomach and bowel side effects [1].
 
 ## 5. Dietary Sources
 
-Carnitine is found primarily in animal products, especially red meat [1][10]. An omnivorous diet provides approximately 24-145 mg carnitine daily, while a vegan diet provides only about 1.2 mg [1]. The body needs approximately 15 mg/day from a combination of dietary sources and endogenous synthesis [1].
+Carnitine is found primarily in animal products, especially red meat [1]. An omnivorous diet provides approximately 24-145 mg carnitine daily, while a vegan diet provides only about 1.2 mg [1]. The body needs approximately 15 mg/day from a combination of dietary sources and endogenous synthesis [1].
 
 | Food | Serving | Carnitine (mg) |
 |------|---------|:-:|
@@ -286,51 +277,50 @@ Carnitine is found primarily in animal products, especially red meat [1][10]. An
 
 Source: NIH Office of Dietary Supplements [1].
 
-Poultry, fish, and dairy provide some carnitine, while vegetables, fruits, and grains provide negligible amounts [1]. Endogenous synthesis in the liver and kidneys, combined with dietary intake, is sufficient for healthy individuals [1][4]. A person weighing 165 lb on a strict vegetarian diet synthesizes approximately 14.4 mg/day of carnitine endogenously [1].
+Poultry, fish, and dairy provide some carnitine, while vegetables, fruits, and grains provide negligible amounts [1]. Endogenous synthesis in the liver and kidneys, combined with dietary intake, is sufficient for healthy individuals [1]. A person weighing 165 lb on a strict vegetarian diet synthesizes approximately 14.4 mg/day of carnitine endogenously [1].
 
 ## 6. Safety and Side Effects
 
 ### General Safety Profile
 
-Acetyl-L-carnitine is generally considered safe and well-tolerated at recommended doses [5][7]. Carnitine does not have an established tolerable upper intake level [1].
+Carnitine does not have an established tolerable upper intake level [1]. Trials of acetyl-L-carnitine in dementia and nerve pain reported adverse events at similar rates on acetyl-L-carnitine and placebo [15][25]. A Cochrane review in diabetic nerve pain judged the adverse-event evidence too uncertain to make any judgements on safety [26].
 
 ### Common Side Effects
 
-- **Gastrointestinal:** Nausea, vomiting, abdominal cramps, and diarrhea. These are the most common adverse effects, occurring primarily at doses exceeding 3 g/day [1][5][7].
-- **Fishy body odor:** Carnitine supplementation at approximately 3 g/day can cause urine, breath, and sweat to have a fishy odor [1][7].
-- **Agitation and restlessness:** ALCAR may cause agitation in some users [7]. Mild nervous system effects including restlessness and insomnia have been reported, particularly when taken in elevated doses or later in the day [5].
+- **Gastrointestinal:** Doses of about 3 g/day can cause nausea, vomiting, abdominal cramps, and diarrhea [1].
+- **Fishy body odor:** Carnitine supplementation at approximately 3 g/day can cause a fishy body odor [1].
 - **Muscle weakness:** Can occur in people with uremia [1].
-- **Seizures:** Can potentially increase the number or severity of seizures in those with seizure disorders [1][5].
+- **Seizures:** Can occur in those with seizure disorders [1].
 
 ### Populations Requiring Caution
 
-**Thyroid disorders:** People with low or borderline-low thyroid levels should NOT take acetyl-L-carnitine or other forms of carnitine because it may impair thyroid hormone function. Low thyroid levels are particularly common among women over 60 years of age. Conversely, in cases of hyperthyroidism, giving carnitine may be helpful [7][70].
+**Thyroid disorders:** Carnitine acts against thyroid hormone in the body's tissues by blocking its entry into cell nuclei [70][81]. People with an underactive thyroid, or who take thyroid medicine, should talk to their doctor before taking any carnitine supplement. In women taking thyroid hormone at TSH-suppressive doses, L-carnitine 2 or 4 g a day reversed and prevented symptoms of an overactive thyroid [70].
 
-**Chemotherapy patients:** ALCAR significantly worsened chemotherapy-induced peripheral neuropathy in a placebo-controlled trial (Hershman et al. 2018). The American Society of Clinical Oncology recommends AGAINST use for preventing chemotherapy-related nerve damage [28][29].
+**Chemotherapy patients:** ALCAR significantly worsened chemotherapy-induced peripheral neuropathy in a placebo-controlled trial (Hershman et al. 2013) [78]. The American Society of Clinical Oncology says its use to prevent this kind of nerve damage should be discouraged [29].
 
-**Seizure disorders:** Individuals with a history of seizure disorders should exercise caution, as ALCAR has been associated with increased number or severity of seizures in some cases, particularly at high doses [1][5].
+**Seizure disorders:** Carnitine can cause seizures in people with seizure disorders [1].
 
-**Renal disease / dialysis:** Individuals on dialysis should not take carnitine without physician supervision [7]. Renal diseases can impair carnitine homeostasis due to reduced synthesis and increased elimination [1][3].
+**Renal disease / dialysis:** Renal diseases can impair carnitine homeostasis due to reduced synthesis and increased elimination [1][3]. Studies in hemodialysis gave high doses of carnitine, often by injection [1], and a National Kidney Foundation consensus conference has set practice recommendations for its use in dialysis [88]. People on dialysis should take it only under their kidney doctor's supervision.
 
 **Pregnancy and breastfeeding:** Insufficient evidence to establish safety during pregnancy and breastfeeding.
 
 ### TMAO Cardiovascular Concern
 
-Some research suggests that L-carnitine intake may contribute to cardiovascular disease in certain people. People who eat red meat maintain organisms in their gut that digest carnitine to trimethylamine (TMA), a precursor to TMAO, which appears to advance atherosclerosis by reducing normal cholesterol clearing [7][36]. Vegetarians and vegans do not have this reaction when first exposed to carnitine. Supplementing with carnitine (including acetyl-L-carnitine due to their chemical similarity -- both contain the TMA moiety) may potentially foster growth of these organisms, increase TMAO levels, and have negative long-term cardiovascular effects, although clinical evidence is mixed [7][36][37].
+Gut bacteria break down unabsorbed carnitine to TMAO, which might raise the risk of heart disease [1][36][37]. This appears to happen more in people who eat meat than in vegans or vegetarians, and in mice it reduced reverse cholesterol transport, the route that carries cholesterol out of tissues [1][36]. What these findings mean for people who take carnitine supplements remains unclear [1].
 
 ### Hair Loss Concerns
 
-No robust scientific evidence links ALCAR supplementation to hair loss. Studies on related carnitine forms, such as L-carnitine-L-tartrate, actually indicate potential promotion of scalp hair growth through upregulation of proliferation and downregulation of apoptosis in follicular cells. Anecdotal reports of hair loss among users are often attributable to confounding factors such as stress, dietary deficiencies, or unrelated medications [5].
+In human scalp hair follicles grown in the lab, L-carnitine-L-tartrate lengthened hair shafts and reduced cell death [87]. This was a laboratory study, so it does not show what acetyl-L-carnitine does to hair in people.
 
 ## 7. Drug Interactions
 
 ### Blood Thinners (Anticoagulants)
 
-Acetyl-L-carnitine should be used with caution in people taking blood-thinning medication, as it can theoretically increase the anticoagulant effect, increasing the risk of bruising and bleeding. Regular INR monitoring is recommended when co-administered with warfarin [7][5].
+Two published reports describe L-carnitine strengthening the effect of acenocoumarol, a blood thinner similar to warfarin [85][86]. If you take warfarin or another blood thinner, talk to your doctor before starting acetyl-L-carnitine, as your INR may need checking.
 
 ### Thyroid Medications
 
-ALCAR may decrease the effectiveness of thyroid hormone by interfering with its activity, potentially necessitating monitoring or dosage adjustments in patients on levothyroxine or similar therapies [5][7][70].
+Because carnitine blocks thyroid hormone from entering cell nuclei, it may blunt the effect of thyroid hormone, including levothyroxine [70][81]. Check with your doctor before combining them.
 
 ### Anticonvulsants (Valproic Acid)
 
@@ -342,7 +332,7 @@ Carnitine interacts with pivalate-conjugated antibiotics such as pivampicillin (
 
 ### Famotidine (H2 Blockers)
 
-**Sato et al. 2025:** A retrospective study among 25 adults (average age 23) requiring carnitine replacement therapy showed that those on famotidine (found in Pepcid and Zantac 360) were much more likely to have low carnitine levels despite L-carnitine supplementation compared to those not taking famotidine (36.8% vs. 3.9%). Famotidine can increase urinary carnitine excretion by inhibiting a kidney transporter that helps retain carnitine. It may be prudent for people at risk for carnitine deficiency to avoid famotidine [7][77].
+**Sato et al. 2025:** In a retrospective study of 25 tube-fed patients with severe motor and intellectual disabilities who took L-carnitine, those on famotidine needed higher L-carnitine doses to keep normal blood carnitine levels. Despite supplementation, 36.8% of famotidine users had persistently low free carnitine, compared with 3.9% of non-users. The authors think famotidine reduces how much carnitine the kidneys reabsorb [77].
 
 ## 8. References
 
@@ -352,87 +342,63 @@ Carnitine interacts with pivalate-conjugated antibiotics such as pivampicillin (
 
 [3] National Institutes of Health, Office of Dietary Supplements. "Carnitine -- Health Professional Fact Sheet." (Carnitine and Health sections). [https://ods.od.nih.gov/factsheets/Carnitine-HealthProfessional/](https://ods.od.nih.gov/factsheets/Carnitine-HealthProfessional/)
 
-[4] Borum PR. "Carnitine." In: Marriott B, Birt DF, Stalling V, Yates A, eds. Present Knowledge in Nutrition, 11th ed. 2020:551-9.
+[10] Rebouche CJ. "Kinetics, pharmacokinetics, and regulation of L-carnitine and acetyl-L-carnitine metabolism." Ann N Y Acad Sci 2004;1033:30-41. PMID: 15591001. [https://pubmed.ncbi.nlm.nih.gov/15591001/](https://pubmed.ncbi.nlm.nih.gov/15591001/)
 
-[5] Grokipedia. "Acetyl-L-carnitine." [https://grokipedia.com/page/Acetyl-L-carnitine](https://grokipedia.com/page/Acetyl-L-carnitine)
-
-[6] Gnoni A, Longo S, Gnoni GV, Giudetti AM. "Carnitine in human muscle bioenergetics: Can carnitine supplementation improve physical exercise?" Molecules 2020;25:182. [https://pubmed.ncbi.nlm.nih.gov/31906498/](https://pubmed.ncbi.nlm.nih.gov/31906498/)
-
-[7] ConsumerLab. "Acetyl-L-Carnitine Supplements Review." [https://www.consumerlab.com/reviews/acetyl-l-carnitine-supplements-review/acetyl-l-carnitine/](https://www.consumerlab.com/reviews/acetyl-l-carnitine-supplements-review/acetyl-l-carnitine/)
-
-[8] Bianchetti A, Rozzini R, Trabucchi M. "Effects of acetyl-L-carnitine in Alzheimer's disease patients unresponsive to acetylcholinesterase inhibitors." Curr Med Res Opin 2003;19:350-3. [https://pubmed.ncbi.nlm.nih.gov/12841930/](https://pubmed.ncbi.nlm.nih.gov/12841930/)
-
-[9] National Research Council. Food and Nutrition Board. Recommended Dietary Allowances, 10th ed. National Academy Press, Washington, DC, 1989.
-
-[10] Rebouche CJ. "Kinetics, pharmacokinetics, and regulation of L-carnitine and acetyl-L-carnitine metabolism." Ann NY Acad Sci 2004;1033:30-41.
-
-[11] ConsumerLab. "Acetyl-L-Carnitine Supplements Review -- ConsumerTips section." [https://www.consumerlab.com/reviews/acetyl-l-carnitine-supplements-review/acetyl-l-carnitine/](https://www.consumerlab.com/reviews/acetyl-l-carnitine-supplements-review/acetyl-l-carnitine/)
-
-[12] Rebouche CJ. "Carnitine." In: Ross AC, Caballero B, Cousins RJ, et al., eds. Modern Nutrition in Health and Disease. 11th ed. Baltimore, MD: Lippincott Williams & Wilkins, 2014:252-3.
-
-[13] Tama B, Fabara SP, Zarrate D, Anas Sohail A. "Effectiveness of propionyl-L-carnitine supplementation on exercise performance in intermittent claudication: a systematic review." Cureus 2021;13:e17592. [https://pubmed.ncbi.nlm.nih.gov/34650861/](https://pubmed.ncbi.nlm.nih.gov/34650861/)
-
-[14] EFSA (European Food Safety Authority). AFC Panel. "L-carnitine-L-tartrate for use in foods for particular nutritional uses." EFSA J 2003.
+[13] Tama B, Fabara SP, Zarrate D, Anas Sohail A. "Effectiveness of propionyl-L-carnitine supplementation on exercise performance in intermittent claudication: a systematic review." Cureus 2021;13:e17592. [https://pubmed.ncbi.nlm.nih.gov/34513531/](https://pubmed.ncbi.nlm.nih.gov/34513531/)
 
 [15] Hudson S, Tabet N. "Acetyl-L-carnitine for dementia." Cochrane Database Syst Rev 2003;2003(2):CD003158. [https://pubmed.ncbi.nlm.nih.gov/12804452/](https://pubmed.ncbi.nlm.nih.gov/12804452/)
 
 [16] Montgomery SA, Thal LJ, Amrein R. "Meta-analysis of double blind randomized controlled clinical trials of acetyl-L-carnitine versus placebo in the treatment of mild cognitive impairment and mild Alzheimer's disease." Int Clin Psychopharmacol 2003;18:61-71. [https://pubmed.ncbi.nlm.nih.gov/12598816/](https://pubmed.ncbi.nlm.nih.gov/12598816/)
 
-[17] Spagnoli A, et al. "Long-term acetyl-L-carnitine treatment in Alzheimer's disease." Neurology 1991;41(11):1726-32.
+[17] Spagnoli A, et al. "Long-term acetyl-L-carnitine treatment in Alzheimer's disease." Neurology 1991;41(11):1726-32. PMID: 1944900. [https://pubmed.ncbi.nlm.nih.gov/1944900/](https://pubmed.ncbi.nlm.nih.gov/1944900/)
 
-[18] Thal LJ, et al. "A 1-year multicenter placebo-controlled study of acetyl-L-carnitine in patients with Alzheimer's disease." Neurology 1996;47(3):705-11.
+[18] Thal LJ, et al. "A 1-year multicenter placebo-controlled study of acetyl-L-carnitine in patients with Alzheimer's disease." Neurology 1996;47(3):705-11. PMID: 8797468. [https://pubmed.ncbi.nlm.nih.gov/8797468/](https://pubmed.ncbi.nlm.nih.gov/8797468/)
 
 [19] Pennisi M, Lanza G, Cantone M, D'Amico E, Fisicaro F, et al. "Acetyl-L-carnitine in dementia and other cognitive disorders: A critical update." Nutrients 2020;12:1389. [https://pubmed.ncbi.nlm.nih.gov/32408706/](https://pubmed.ncbi.nlm.nih.gov/32408706/)
 
-[20] Lodeiro M, Ibanez C, Cifuentes A, Simo C, Cedazo-Minguez A. "Decreased cerebrospinal fluid levels of L-carnitine in non-apolipoprotein E4 carriers at early stages of Alzheimer's disease." J Alzheimers Dis 2014;41:223-32. [https://pubmed.ncbi.nlm.nih.gov/24577479/](https://pubmed.ncbi.nlm.nih.gov/24577479/)
+[20] Lodeiro M, Ibanez C, Cifuentes A, Simo C, Cedazo-Minguez A. "Decreased cerebrospinal fluid levels of L-carnitine in non-apolipoprotein E4 carriers at early stages of Alzheimer's disease." J Alzheimers Dis 2014;41:223-32. [https://pubmed.ncbi.nlm.nih.gov/24595197/](https://pubmed.ncbi.nlm.nih.gov/24595197/)
 
-[21] Ruggenenti P, et al. "Ameliorating hypertension and insulin resistance in subjects at increased cardiovascular risk: effects of acetyl-L-carnitine therapy." Hypertension 2009;54(3):567-74.
+[21] Ruggenenti P, et al. "Ameliorating hypertension and insulin resistance in subjects at increased cardiovascular risk: effects of acetyl-L-carnitine therapy." Hypertension 2009;54(3):567-74. PMID: 19620516. [https://pubmed.ncbi.nlm.nih.gov/19620516/](https://pubmed.ncbi.nlm.nih.gov/19620516/)
 
-[22] McMackin CJ, et al. "Effect of combined treatment with alpha-lipoic acid and acetyl-L-carnitine on vascular function and blood pressure in patients with coronary artery disease." J Clin Hypertens 2007;9(4):249-55.
+[22] McMackin CJ, et al. "Effect of combined treatment with alpha-lipoic acid and acetyl-L-carnitine on vascular function and blood pressure in patients with coronary artery disease." J Clin Hypertens 2007;9(4):249-55. PMID: 17396066. [https://pubmed.ncbi.nlm.nih.gov/17396066/](https://pubmed.ncbi.nlm.nih.gov/17396066/)
 
-[23] Parvanova A, et al. "DIABASI trial." J Endocr Soc 2018.
+[23] Parvanova A, et al. "Blood pressure and metabolic effects of acetyl-L-carnitine in type 2 diabetes: DIABASI randomized controlled trial." J Endocr Soc 2018;2(5):420-36. PMID: 29696241. [https://pubmed.ncbi.nlm.nih.gov/29696241/](https://pubmed.ncbi.nlm.nih.gov/29696241/)
 
-[24] Sayed D, et al. "American Society of Pain and Neuroscience (ASPN) evidence-based clinical guideline of interventional treatments for painful diabetic peripheral neuropathy." J Pain Res 2024.
+[25] Li S, Li Q, Li Y, Li L, Tian H, Sun X. "Acetyl-L-carnitine in the treatment of peripheral neuropathic pain: a systematic review and meta-analysis of randomized controlled trials." PLoS One 2015;10(3):e0119479. PMID: 25751285. [https://pubmed.ncbi.nlm.nih.gov/25751285/](https://pubmed.ncbi.nlm.nih.gov/25751285/)
 
-[25] Li S, et al. "Acetyl-L-carnitine in the treatment of peripheral neuropathic pain: a systematic review and meta-analysis." J Pain Res 2019.
+[26] Rolim LC, da Silva EM, Flumignan RL, Abreu MM, Dib SA. "Acetyl-L-carnitine for the treatment of diabetic peripheral neuropathy." Cochrane Database Syst Rev 2019;6:CD011265. PMID: 31201734. [https://pubmed.ncbi.nlm.nih.gov/31201734/](https://pubmed.ncbi.nlm.nih.gov/31201734/)
 
-[26] Cochrane Review. "Acetyl-L-carnitine for diabetic peripheral neuropathy." 2019.
+[27] Youle M, Osio M. "A double-blind, parallel-group, placebo-controlled, multicentre study of acetyl L-carnitine in the symptomatic treatment of antiretroviral toxic neuropathy in patients with HIV-1 infection." HIV Med 2007;8(4):241-50. PMID: 17461852. [https://pubmed.ncbi.nlm.nih.gov/17461852/](https://pubmed.ncbi.nlm.nih.gov/17461852/)
 
-[27] Youle M, et al. "Acetyl-L-carnitine for antiretroviral toxic neuropathy." HIV Med 2007.
+[28] Hershman DL, et al. "Two-year trends of taxane-induced neuropathy in women enrolled in a randomized trial of acetyl-L-carnitine (SWOG S0715)." J Natl Cancer Inst 2018;110(6):669-76. PMID: 29361042. [https://pubmed.ncbi.nlm.nih.gov/29361042/](https://pubmed.ncbi.nlm.nih.gov/29361042/)
 
-[28] Hershman DL, et al. "Randomized double-blind placebo-controlled trial of acetyl-L-carnitine for the prevention of taxane-induced neuropathy in women undergoing adjuvant breast cancer therapy." J Clin Oncol 2018;36(20):2048-55.
+[29] Loprinzi CL, et al. "Prevention and management of chemotherapy-induced peripheral neuropathy in survivors of adult cancers: ASCO guideline update." J Clin Oncol 2020;38(28):3325-48. PMID: 32663120. [https://pubmed.ncbi.nlm.nih.gov/32663120/](https://pubmed.ncbi.nlm.nih.gov/32663120/)
 
-[29] Loprinzi CL, et al. "Prevention and management of chemotherapy-induced peripheral neuropathy in survivors of adult cancers: ASCO guideline update." J Clin Oncol 2020;38(28):3325-48.
+[30] Veronese N, Stubbs B, Solmi M, et al. "Acetyl-L-carnitine supplementation and the treatment of depressive symptoms: a systematic review and meta-analysis." Psychosom Med 2018;80:154-9. PMID: 29076953. [https://pubmed.ncbi.nlm.nih.gov/29076953/](https://pubmed.ncbi.nlm.nih.gov/29076953/)
 
-[30] Veronese N, Stubbs B, Solmi M, et al. "Acetyl-L-carnitine supplementation and the treatment of depressive symptoms: a systematic review and meta-analysis." Psychosom Med 2018;80:154-9.
+[31] Leombruni P, et al. "A randomised controlled trial comparing duloxetine and acetyl L-carnitine in fibromyalgic patients: preliminary data." Clin Exp Rheumatol 2015;33(1 Suppl 88):S82-5. PMID: 25786048. [https://pubmed.ncbi.nlm.nih.gov/25786048/](https://pubmed.ncbi.nlm.nih.gov/25786048/)
 
-[31] Leombruni P, et al. "A randomised controlled trial comparing duloxetine and acetyl-L-carnitine in fibromyalgia." Clin Exp Rheumatol 2015;33(1 Suppl 88):S82-5.
-
-[32] Vermeulen RCW, Scholte HR. "Exploratory open label, randomized study of acetyl- and propionyl-carnitine in chronic fatigue syndrome." Psychosom Med 2004;66(2):276-82.
+[32] Vermeulen RCW, Scholte HR. "Exploratory open label, randomized study of acetyl- and propionylcarnitine in chronic fatigue syndrome." Psychosom Med 2004;66(2):276-82. PMID: 15039515. [https://pubmed.ncbi.nlm.nih.gov/15039515/](https://pubmed.ncbi.nlm.nih.gov/15039515/)
 
 [33] DiNicolantonio JJ, Lavie CJ, Fares H, Menezes AR, O'Keefe JH. "L-carnitine in the secondary prevention of cardiovascular disease: systematic review and meta-analysis." Mayo Clin Proc 2013;88:544-51. [https://pubmed.ncbi.nlm.nih.gov/23597877/](https://pubmed.ncbi.nlm.nih.gov/23597877/)
 
-[34] Oyanagi E, Yano H, Uchida M, Utsumi K, Sasaki J. "Protective action of L-carnitine on mitochondrial function and structure against fatty acid stress." Biochem Biophys Res Commun 2011;412:61-7.
+[34] Oyanagi E, Yano H, Uchida M, Utsumi K, Sasaki J. "Protective action of L-carnitine on cardiac mitochondrial function and structure against fatty acid stress." Biochem Biophys Res Commun 2011;412:61-7. PMID: 21791201. [https://pubmed.ncbi.nlm.nih.gov/21791201/](https://pubmed.ncbi.nlm.nih.gov/21791201/)
 
 [35] Song X, Qu H, Yang Z, Rong J, Cai W, et al. "Efficacy and safety of L-carnitine treatment for chronic heart failure: a meta-analysis of randomized controlled trials." Biomed Res Int 2017;2017:6274854. [https://pubmed.ncbi.nlm.nih.gov/28497060/](https://pubmed.ncbi.nlm.nih.gov/28497060/)
 
 [36] Koeth RA, Wang Z, Levison BS, Buffa JA, Org E, et al. "Intestinal microbiota metabolism of L-carnitine, a nutrient in red meat, promotes atherosclerosis." Nat Med 2013;19:576-85. [https://pubmed.ncbi.nlm.nih.gov/23563705/](https://pubmed.ncbi.nlm.nih.gov/23563705/)
 
-[37] Johri AM, Hetu M-F, Heyland DK, Herr JE, Korol J, et al. "Progression of atherosclerosis with carnitine supplementation: a randomized controlled trial in the metabolic syndrome." Nutr Metab (Lond) 2022;19:26. [https://pubmed.ncbi.nlm.nih.gov/35365175/](https://pubmed.ncbi.nlm.nih.gov/35365175/)
+[37] Johri AM, Hetu M-F, Heyland DK, Herr JE, Korol J, et al. "Progression of atherosclerosis with carnitine supplementation: a randomized controlled trial in the metabolic syndrome." Nutr Metab (Lond) 2022;19:26. [https://pubmed.ncbi.nlm.nih.gov/35366920/](https://pubmed.ncbi.nlm.nih.gov/35366920/)
 
-[38] Tama B, Fabara SP, Zarrate D, Anas Sohail A. "Effectiveness of propionyl-L-carnitine supplementation on exercise performance in intermittent claudication: a systematic review." Cureus 2021;13:e17592. [https://pubmed.ncbi.nlm.nih.gov/34650861/](https://pubmed.ncbi.nlm.nih.gov/34650861/)
-
-[39] Sangwung P, Petersen KF, Shulman GI, Knowles JW. "Mitochondrial dysfunction, insulin resistance, and potential genetic implications." Endocrinology 2020;161:bqaa017. [https://pubmed.ncbi.nlm.nih.gov/32060541/](https://pubmed.ncbi.nlm.nih.gov/32060541/)
+[39] Sangwung P, Petersen KF, Shulman GI, Knowles JW. "Mitochondrial dysfunction, insulin resistance, and potential genetic implications." Endocrinology 2020;161:bqaa017. [https://pubmed.ncbi.nlm.nih.gov/32060542/](https://pubmed.ncbi.nlm.nih.gov/32060542/)
 
 [40] Yazici D, Sezer H. "Insulin resistance, obesity and lipotoxicity." Adv Exp Med Biol 2017;960:277-304. [https://pubmed.ncbi.nlm.nih.gov/28585204/](https://pubmed.ncbi.nlm.nih.gov/28585204/)
 
-[41] Zamani M, Pahlavani N, Nikbaf-Shandiz M, Rasaei N, Ghaffarian-Ensaf R, et al. "The effects of L-carnitine supplementation on glycemic markers in adults: A systematic review and dose-response meta-analysis." Front Nutr 2023;9:1082097. [https://pubmed.ncbi.nlm.nih.gov/36698467/](https://pubmed.ncbi.nlm.nih.gov/36698467/)
+[41] Zamani M, Pahlavani N, Nikbaf-Shandiz M, Rasaei N, Ghaffarian-Ensaf R, et al. "The effects of L-carnitine supplementation on glycemic markers in adults: A systematic review and dose-response meta-analysis." Front Nutr 2022;9:1082097. [https://pubmed.ncbi.nlm.nih.gov/36704801/](https://pubmed.ncbi.nlm.nih.gov/36704801/)
 
 [42] Xu Y, Jiang W, Chen G, Zhu W, Ding W, et al. "L-carnitine treatment of insulin resistance: A systematic review and meta-analysis." Adv Clin Exp Med 2017;26:333-8. [https://pubmed.ncbi.nlm.nih.gov/28791854/](https://pubmed.ncbi.nlm.nih.gov/28791854/)
 
-[43] Vidal-Casariego A. "Metabolic effects of L-carnitine on type 2 diabetes mellitus: systematic review and meta-analysis." Exp Clin Endocrinol Diabetes 2013;121:5. [https://pubmed.ncbi.nlm.nih.gov/23147210/](https://pubmed.ncbi.nlm.nih.gov/23147210/)
-
-[44] Skoracka K, Eder P, Lykowska-Szuber L, Dobrowolska A, Krela-Kazmierczak I. "Diet and nutritional factors in male (in)fertility -- underestimated factors." J Clin Med 2020;9:1400. [https://pubmed.ncbi.nlm.nih.gov/32397541/](https://pubmed.ncbi.nlm.nih.gov/32397541/)
+[43] Vidal-Casariego A. "Metabolic effects of L-carnitine on type 2 diabetes mellitus: systematic review and meta-analysis." Exp Clin Endocrinol Diabetes 2013;121:5. [https://pubmed.ncbi.nlm.nih.gov/23430574/](https://pubmed.ncbi.nlm.nih.gov/23430574/)
 
 [45] Agarwal A, Sengupta P, Durairajanayagam D. "Role of L-carnitine in female infertility." Reprod Biol Endocrinol 2018;16:5. [https://pubmed.ncbi.nlm.nih.gov/29373970/](https://pubmed.ncbi.nlm.nih.gov/29373970/)
 
@@ -440,25 +406,21 @@ Carnitine interacts with pivalate-conjugated antibiotics such as pivampicillin (
 
 [47] de Ligny W, Smits RM, Mackenzie-Proctor R, Jordan V, Fleischer K, et al. "Antioxidants for male subfertility." Cochrane Database Syst Rev 2022;5:CD007411. [https://pubmed.ncbi.nlm.nih.gov/35506389/](https://pubmed.ncbi.nlm.nih.gov/35506389/)
 
-[48] Mongioi LM, et al. "The role of carnitine in male infertility." Andrology 2020.
+[49] Ismail AM, Hamed AH, Saso S, Thabet HH. "Adding L-carnitine to clomiphene resistant PCOS women improves the quality of ovulation and the pregnancy rate. A randomized clinical trial." Eur J Obstet Gynecol Reprod Biol 2014;180:148-52. Retracted. [https://pubmed.ncbi.nlm.nih.gov/25015747/](https://pubmed.ncbi.nlm.nih.gov/25015747/)
 
-[49] Ismail AM, Hamed AH, Saso S, Thabet HH. "Adding L-carnitine to clomiphene resistant PCOS women improves the quality of ovulation and the pregnancy rate. A randomized clinical trial." Eur J Obstet Gynecol Reprod Biol 2014;180:148-52. [https://pubmed.ncbi.nlm.nih.gov/25015747/](https://pubmed.ncbi.nlm.nih.gov/25015747/)
+[50] El Sharkwy I, Sharaf El-Din M. "L-Carnitine plus metformin in clomiphene-resistant obese PCOS women, reproductive and metabolic effects: a randomized clinical trial." Gynecol Endocrinol 2019;35:701-5. Retracted. [https://pubmed.ncbi.nlm.nih.gov/30806102/](https://pubmed.ncbi.nlm.nih.gov/30806102/)
 
-[50] El Sharkwy I, El-Din MS. "L-Carnitine plus metformin in clomiphene-resistant obese PCOS women, reproductive and metabolic effects: a randomized clinical trial." Gynecol Endocrinol 2019;35:701-5. [https://pubmed.ncbi.nlm.nih.gov/30810434/](https://pubmed.ncbi.nlm.nih.gov/30810434/)
+[51] Malek Mahdavi A, Mahdavi R, Kolahi S. "Effects of L-carnitine supplementation on serum inflammatory factors and matrix metalloproteinase enzymes in females with knee osteoarthritis: A randomized, double-blind, placebo-controlled pilot study." J Am Coll Nutr 2016;35:597-603. [https://pubmed.ncbi.nlm.nih.gov/26933897/](https://pubmed.ncbi.nlm.nih.gov/26933897/)
 
-[51] Mahdavi AM, Mahdavi R, Kolahi S. "Effects of L-carnitine supplementation on serum inflammatory factors and matrix metalloproteinase enzymes in females with knee osteoarthritis: A randomized, double-blind, placebo-controlled pilot study." J Am Coll Nutr 2016;35:597-603. [https://pubmed.ncbi.nlm.nih.gov/26923508/](https://pubmed.ncbi.nlm.nih.gov/26923508/)
+[52] Baghban F, Hosseinzadeh M, Mozaffari-Khosravi H, Dehghan A, Fallahzadeh H. "The effect of L-carnitine supplementation on clinical symptoms, C-reactive protein and malondialdehyde in obese women with knee osteoarthritis: a double blind randomized controlled trial." BMC Musculoskelet Disord 2021;22:195. [https://pubmed.ncbi.nlm.nih.gov/33596883/](https://pubmed.ncbi.nlm.nih.gov/33596883/)
 
-[52] Baghban F, Hosseinzadeh M, Mozaffari-Khosravi H, Dehghan A, Fallahzadeh H. "The effect of L-carnitine supplementation on clinical symptoms, C-reactive protein and malondialdehyde in obese women with knee osteoarthritis: a double blind randomized controlled trial." BMC Musculoskelet Disord 2021;22:195. [https://pubmed.ncbi.nlm.nih.gov/33607984/](https://pubmed.ncbi.nlm.nih.gov/33607984/)
+[53] Takahashi A. "The pathophysiology of leg cramping during dialysis and the use of carnitine in its treatment." Physiol Rep 2021;9(21):e15114. PMID: 34762357. [https://pubmed.ncbi.nlm.nih.gov/34762357/](https://pubmed.ncbi.nlm.nih.gov/34762357/)
 
-[53] Takahashi M, et al. "L-carnitine supplementation for nocturnal leg cramps." Physiol Rep 2021.
+[54] Nakanishi H, et al. "L-carnitine reduces muscle cramps in patients with cirrhosis." Clin Gastroenterol Hepatol 2015;13(8):1540-3. PMID: 25496816. [https://pubmed.ncbi.nlm.nih.gov/25496816/](https://pubmed.ncbi.nlm.nih.gov/25496816/)
 
-[54] Nakanishi H, et al. "L-carnitine reduces muscle cramps in patients with cirrhosis." Clin Gastroenterol Hepatol 2015.
+[55] Miwa T, et al. "Effect of L-carnitine supplementation on muscle cramps induced by stroke: A case report." Nutrition 2020;71:110638. PMID: 31864971. [https://pubmed.ncbi.nlm.nih.gov/31864971/](https://pubmed.ncbi.nlm.nih.gov/31864971/)
 
-[55] Miwa H. "L-carnitine supplementation for nocturnal leg cramps after stroke." Nutrition 2020.
-
-[56] Imbe A, et al. "L-carnitine supplementation reduces leg cramps in diabetes patients." Endocr J 2018.
-
-[57] Peeling P, Binnie MJ, Goods PSR, Sim M, Burke LM. "Evidence-based supplements for the enhancement of athletic performance." Int J Sport Nutr Exerc Metab 2018;28:178-87. [https://pubmed.ncbi.nlm.nih.gov/29345167/](https://pubmed.ncbi.nlm.nih.gov/29345167/)
+[56] Imbe A, et al. "Effects of L-carnitine supplementation on the quality of life in diabetic patients with muscle cramps." Endocr J 2018;65(5):521-6. PMID: 29515058. [https://pubmed.ncbi.nlm.nih.gov/29515058/](https://pubmed.ncbi.nlm.nih.gov/29515058/)
 
 [58] Wall BT, Stephens FB, Constantin-Teodosiu D, Marimuthu K, Macdonald IA, Greenhaff PL. "Chronic oral ingestion of L-carnitine and carbohydrate increases muscle carnitine content and alters muscle fuel metabolism during exercise in humans." J Physiol 2011;589:963-73. [https://pubmed.ncbi.nlm.nih.gov/21224234/](https://pubmed.ncbi.nlm.nih.gov/21224234/)
 
@@ -466,36 +428,58 @@ Carnitine interacts with pivalate-conjugated antibiotics such as pivampicillin (
 
 [60] Fielding R, Riede L, Lugo JP, Bellamine A. "L-carnitine supplementation in recovery after exercise." Nutrients 2018;10:349. [https://pubmed.ncbi.nlm.nih.gov/29534031/](https://pubmed.ncbi.nlm.nih.gov/29534031/)
 
-[61] Mielgo-Ayuso J, Pietrantonio L, Viribay A, Calleja-Gonzalez J, Gonzalez-Bernal J, et al. "Effect of acute and chronic oral L-carnitine supplementation on exercise performance based on the exercise intensity: A systematic review." Nutrients 2021;13:4359. [https://pubmed.ncbi.nlm.nih.gov/34959937/](https://pubmed.ncbi.nlm.nih.gov/34959937/)
+[61] Mielgo-Ayuso J, Pietrantonio L, Viribay A, Calleja-Gonzalez J, Gonzalez-Bernal J, et al. "Effect of acute and chronic oral L-carnitine supplementation on exercise performance based on the exercise intensity: A systematic review." Nutrients 2021;13:4359. [https://pubmed.ncbi.nlm.nih.gov/34959912/](https://pubmed.ncbi.nlm.nih.gov/34959912/)
 
-[62] Villani RG, et al. "L-carnitine supplementation combined with aerobic training does not promote weight loss in moderately obese women." Int J Sport Nutr Exerc Metab 2000;10:199-207.
+[62] Villani RG, et al. "L-carnitine supplementation combined with aerobic training does not promote weight loss in moderately obese women." Int J Sport Nutr Exerc Metab 2000;10:199-207. PMID: 10861338. [https://pubmed.ncbi.nlm.nih.gov/10861338/](https://pubmed.ncbi.nlm.nih.gov/10861338/)
 
 [63] Pooyandjoo M, Nouhi M, Shab-Bidar S, Djafarian K, Olyaeemanesh A. "The effect of L-carnitine on weight loss in adults: a systematic review and meta-analysis of randomized controlled trials." Obes Rev 2016;17:970-6. [https://pubmed.ncbi.nlm.nih.gov/27335245/](https://pubmed.ncbi.nlm.nih.gov/27335245/)
 
-[64] Derosa G, Maffioli P, Ferrari I, et al. "Orlistat and L-carnitine compared to orlistat alone on insulin resistance in obese diabetic patients." Endocr J 2010;57:777-86. [https://pubmed.ncbi.nlm.nih.gov/20683172/](https://pubmed.ncbi.nlm.nih.gov/20683172/)
+[64] Derosa G, Maffioli P, Ferrari I, et al. "Orlistat and L-carnitine compared to orlistat alone on insulin resistance in obese diabetic patients." Endocr J 2010;57:777-86. [https://pubmed.ncbi.nlm.nih.gov/20683173/](https://pubmed.ncbi.nlm.nih.gov/20683173/)
 
-[65] Derosa G, Cicero AF, Gaddi A, et al. "The effect of L-carnitine on plasma lipoprotein(a) levels in hypercholesterolemic patients with type 2 diabetes mellitus." Clin Ther 2003;25:1429-39. [https://pubmed.ncbi.nlm.nih.gov/12867218/](https://pubmed.ncbi.nlm.nih.gov/12867218/)
+[65] Derosa G, Cicero AF, Gaddi A, et al. "The effect of L-carnitine on plasma lipoprotein(a) levels in hypercholesterolemic patients with type 2 diabetes mellitus." Clin Ther 2003;25:1429-39. [https://pubmed.ncbi.nlm.nih.gov/12867219/](https://pubmed.ncbi.nlm.nih.gov/12867219/)
 
-[66] Biagiotti G, Cavallini G. "Acetyl-L-carnitine vs tamoxifen in the oral therapy of Peyronie's disease: a preliminary report." BJU Int 2001;88:63-7.
+[66] Biagiotti G, Cavallini G. "Acetyl-L-carnitine vs tamoxifen in the oral therapy of Peyronie's disease: a preliminary report." BJU Int 2001;88:63-7. PMID: 11446848. [https://pubmed.ncbi.nlm.nih.gov/11446848/](https://pubmed.ncbi.nlm.nih.gov/11446848/)
 
-[67] Combination therapy studies for dry eye (ALCAR + omega-3 + CoQ10). Various clinical observations.
-
-[68] Malaguarnera M, et al. "L-carnitine treatment reduces severity of physical and mental fatigue and increases cognitive functions in centenarians." Am J Clin Nutr 2007;86(6):1738-44.
+[68] Malaguarnera M, et al. "L-carnitine treatment reduces severity of physical and mental fatigue and increases cognitive functions in centenarians: a randomized and controlled clinical trial." Am J Clin Nutr 2007;86(6):1738-44. PMID: 18065594. [https://pubmed.ncbi.nlm.nih.gov/18065594/](https://pubmed.ncbi.nlm.nih.gov/18065594/)
 
 [69] Hurot J-M, Cucherat M, Haugh M, Fouque D. "Effects of L-carnitine supplementation in maintenance hemodialysis patients: a systematic review." J Am Soc Nephrol 2002;13:708-14. [https://pubmed.ncbi.nlm.nih.gov/11856775/](https://pubmed.ncbi.nlm.nih.gov/11856775/)
 
-[70] Benvenga S, et al. "Usefulness of L-carnitine, a naturally occurring peripheral antagonist of thyroid hormone action, in iatrogenic hyperthyroidism: a randomized, double-blind, placebo-controlled clinical trial." Ann NY Acad Sci 2004.
+[70] Benvenga S, et al. "Usefulness of L-carnitine, a naturally occurring peripheral antagonist of thyroid hormone action, in iatrogenic hyperthyroidism: a randomized, double-blind, placebo-controlled clinical trial." J Clin Endocrinol Metab 2001;86(8):3579-94. PMID: 11502782. [https://pubmed.ncbi.nlm.nih.gov/11502782/](https://pubmed.ncbi.nlm.nih.gov/11502782/)
 
-[71] Hug G, McGraw CA, Bates SR, Landrigan EA. "Reduction of serum carnitine concentrations during anticonvulsant therapy with phenobarbital, valproic acid, phenytoin, and carbamazepine in children." J Pediatr 1991;119:799-802.
+[71] Hug G, McGraw CA, Bates SR, Landrigan EA. "Reduction of serum carnitine concentrations during anticonvulsant therapy with phenobarbital, valproic acid, phenytoin, and carbamazepine in children." J Pediatr 1991;119:799-802. PMID: 1941389. [https://pubmed.ncbi.nlm.nih.gov/1941389/](https://pubmed.ncbi.nlm.nih.gov/1941389/)
 
-[72] Castro-Gago M, Eiris-Punal J, Novo-Rodriguez MI, et al. "Serum carnitine levels in epileptic children before and during treatment with valproic acid, carbamazepine, and phenobarbital." J Child Neurol 1998;13:546-9.
+[72] Castro-Gago M, Eiris-Punal J, Novo-Rodriguez MI, et al. "Serum carnitine levels in epileptic children before and during treatment with valproic acid, carbamazepine, and phenobarbital." J Child Neurol 1998;13:546-9. PMID: 9853647. [https://pubmed.ncbi.nlm.nih.gov/9853647/](https://pubmed.ncbi.nlm.nih.gov/9853647/)
 
-[73] Verrotti A, Greco R, Morgese G, Chiarelli F. "Carnitine deficiency and hyperammonemia in children receiving valproic acid with and without other anticonvulsant drugs." Int J Clin Lab Res 1999;29:36-40.
+[73] Verrotti A, Greco R, Morgese G, Chiarelli F. "Carnitine deficiency and hyperammonemia in children receiving valproic acid with and without other anticonvulsant drugs." Int J Clin Lab Res 1999;29:36-40. PMID: 10356662. [https://pubmed.ncbi.nlm.nih.gov/10356662/](https://pubmed.ncbi.nlm.nih.gov/10356662/)
 
-[74] Lheureux PE, Hantson P. "Carnitine in the treatment of valproic acid-induced toxicity." Clin Toxicol (Phila) 2009;47:101-11.
+[74] Lheureux PE, Hantson P. "Carnitine in the treatment of valproic acid-induced toxicity." Clin Toxicol (Phila) 2009;47:101-11. PMID: 19280426. [https://pubmed.ncbi.nlm.nih.gov/19280426/](https://pubmed.ncbi.nlm.nih.gov/19280426/)
 
-[75] Perrott J, Murphy NG, Zed PJ. "L-carnitine for acute valproic acid overdose: a systematic review of published cases." Ann Pharmacother 2010;44:1287-93.
+[75] Perrott J, Murphy NG, Zed PJ. "L-carnitine for acute valproic acid overdose: a systematic review of published cases." Ann Pharmacother 2010;44:1287-93. PMID: 20587742. [https://pubmed.ncbi.nlm.nih.gov/20587742/](https://pubmed.ncbi.nlm.nih.gov/20587742/)
 
-[76] Brass EP. "Pivalate-generating prodrugs and carnitine homeostasis in man." Pharmacol Rev 2002;54:589-98.
+[76] Brass EP. "Pivalate-generating prodrugs and carnitine homeostasis in man." Pharmacol Rev 2002;54:589-98. PMID: 12429869. [https://pubmed.ncbi.nlm.nih.gov/12429869/](https://pubmed.ncbi.nlm.nih.gov/12429869/)
 
-[77] Sato K, et al. "Famotidine reduces carnitine levels through inhibition of renal carnitine transporter." Pharmazie 2025.
+[77] Sato N, et al. "Impact of famotidine on blood carnitine levels and L-carnitine supplementation dose in tube-fed patients with severe motor and intellectual disabilities." Pharmazie 2025;80(9):88-92. PMID: 41145993. [https://pubmed.ncbi.nlm.nih.gov/41145993/](https://pubmed.ncbi.nlm.nih.gov/41145993/)
+
+[78] Hershman DL, et al. "Randomized double-blind placebo-controlled trial of acetyl-L-carnitine for the prevention of taxane-induced neuropathy in women undergoing adjuvant breast cancer therapy." J Clin Oncol 2013;31(20):2627-33. PMID: 23733756. [https://pubmed.ncbi.nlm.nih.gov/23733756/](https://pubmed.ncbi.nlm.nih.gov/23733756/)
+
+[79] Retraction notice to "Adding L-carnitine to clomiphene resistant PCOS women improves the quality of ovulation and the pregnancy rate. A randomized clinical trial." Eur J Obstet Gynecol Reprod Biol 2023;291:22. PMID: 37806027. [https://pubmed.ncbi.nlm.nih.gov/37806027/](https://pubmed.ncbi.nlm.nih.gov/37806027/)
+
+[80] Retraction notice to "L-Carnitine plus metformin in clomiphene-resistant obese PCOS women, reproductive and metabolic effects: a randomized clinical trial." Gynecol Endocrinol 2024;40(1):2419767. PMID: 39487685. [https://pubmed.ncbi.nlm.nih.gov/39487685/](https://pubmed.ncbi.nlm.nih.gov/39487685/)
+
+[81] Benvenga S, Amato A, Calvani M, Trimarchi F. "Effects of carnitine on thyroid hormone action." Ann N Y Acad Sci 2004;1033:158-67. PMID: 15591013. [https://pubmed.ncbi.nlm.nih.gov/15591013/](https://pubmed.ncbi.nlm.nih.gov/15591013/)
+
+[82] Liu J, Head E, Gharib AM, et al. "Memory loss in old rats is associated with brain mitochondrial decay and RNA/DNA oxidation: partial reversal by feeding acetyl-L-carnitine and/or R-alpha-lipoic acid." Proc Natl Acad Sci U S A 2002;99(4):2356-61. PMID: 11854529. [https://pubmed.ncbi.nlm.nih.gov/11854529/](https://pubmed.ncbi.nlm.nih.gov/11854529/)
+
+[83] Cavallini G, Caracciolo S, Vitali G, Modenini F, Biagiotti G. "Carnitine versus androgen administration in the treatment of sexual dysfunction, depressed mood, and fatigue associated with male aging." Urology 2004;63(4):641-6. PMID: 15072869. [https://pubmed.ncbi.nlm.nih.gov/15072869/](https://pubmed.ncbi.nlm.nih.gov/15072869/)
+
+[84] Torrioli MG, Vernacotola S, Peruzzi L, et al. "A double-blind, parallel, multicenter comparison of L-acetylcarnitine with placebo on the attention deficit hyperactivity disorder in fragile X syndrome boys." Am J Med Genet A 2008;146A(7):803-12. PMID: 18286595. [https://pubmed.ncbi.nlm.nih.gov/18286595/](https://pubmed.ncbi.nlm.nih.gov/18286595/)
+
+[85] Martinez E, Domingo P, Roca-Cusachs A. "Potentiation of acenocoumarol action by L-carnitine." J Intern Med 1993;233(1):94. PMID: 8429297. [https://pubmed.ncbi.nlm.nih.gov/8429297/](https://pubmed.ncbi.nlm.nih.gov/8429297/)
+
+[86] Bachmann HU, Hoffmann A. "Interaction of food supplement L-carnitine with oral anticoagulant acenocoumarol." Swiss Med Wkly 2004;134(25-26):385. PMID: 15340883. [https://pubmed.ncbi.nlm.nih.gov/15340883/](https://pubmed.ncbi.nlm.nih.gov/15340883/)
+
+[87] Foitzik K, Hoting E, Forster T, Pertile P, Paus R. "L-carnitine-L-tartrate promotes human hair growth in vitro." Exp Dermatol 2007;16(11):936-45. PMID: 17927577. [https://pubmed.ncbi.nlm.nih.gov/17927577/](https://pubmed.ncbi.nlm.nih.gov/17927577/)
+
+[88] Eknoyan G, Latos DL, Lindberg J, National Kidney Foundation Carnitine Consensus Conference. "Practice recommendations for the use of L-carnitine in dialysis-related carnitine disorder." Am J Kidney Dis 2003;41:868-76. PMID: 12666074. [https://pubmed.ncbi.nlm.nih.gov/12666074/](https://pubmed.ncbi.nlm.nih.gov/12666074/)
+
+[89] Retraction notice to "Randomized controlled trial of N-acetylcysteine versus l-carnitine among women with clomiphene-citrate-resistant polycystic ovary syndrome." Int J Gynaecol Obstet 2023;162(3):1130. PMID: 37422702. [https://pubmed.ncbi.nlm.nih.gov/37422702/](https://pubmed.ncbi.nlm.nih.gov/37422702/)

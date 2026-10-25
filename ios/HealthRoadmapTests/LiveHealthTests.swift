@@ -85,6 +85,70 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(live.cards[.sleep]?.date, night)
     }
 
+    /// AC14: a metric with fewer than two readings in the last 30 days draws its last seven,
+    /// however old, so the card reads back past its 30 days; a dense one draws its 30 days.
+    func testASparseMetricsTrendReadsBackForSevenReadings_AC14() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let today = utc.startOfDay(for: now)
+        let backs = [380, 350, 300, 250, 200, 150, 100, 45]
+        store.set(.vo2Max, days: backs.enumerated().map { LivePoint(start: today.addingTimeInterval(Double(-$1) * 86_400), value: Double(40 + $0)) })
+        let night = { (back: Int) in today.addingTimeInterval(Double(-back) * 86_400) }
+        store.set(.sleep, segments: [190, 120, 90, 60, 50, 40, 35, 25].map {
+            SleepSegment(stage: .core, start: night($0).addingTimeInterval(-3600), end: night($0).addingTimeInterval(6 * 3600), source: "watch")
+        })
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
+        await live.refresh()
+        XCTAssertEqual(live.cards[.vo2Max]?.value, 47, "the newest, six weeks ago")
+        XCTAssertEqual(live.cards[.vo2Max]?.trend, [41, 42, 43, 44, 45, 46, 47], "the last seven, back a year")
+        XCTAssertEqual(live.cards[.sleep]?.trend.count, 7, "one night in 30 days: the last seven nights")
+        XCTAssertEqual(live.cards[.steps]?.trend.count, 14, "every day of the fortnight, all in the last 30 days")
+    }
+
+    /// AC14, adversary R2, Codex R1: two or more readings in the 30 days need nothing older,
+    /// so the card reads once; one recent reading still reads back for the last seven.
+    func testACardReadsBackOnlyWhenItsTrendNeedsOlderReadings_AC14() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let today = utc.startOfDay(for: now)
+        let day = { (back: Int) in today.addingTimeInterval(Double(-back) * 86_400) }
+        store.set(.vo2Max, days: [20, 10, 2].enumerated().map { LivePoint(start: day($1), value: Double(40 + $0)) })
+        store.set(.sleep, segments: [20, 10, 2].map {
+            SleepSegment(stage: .core, start: day($0).addingTimeInterval(-3600), end: day($0).addingTimeInterval(6 * 3600), source: "watch")
+        })
+        store.set(.steps, days: [300, 250, 200, 150, 100, 60, 45, 3].enumerated().map { LivePoint(start: day($1), value: Double(1000 + $0)) })
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
+        await live.refresh()
+        XCTAssertEqual(live.cards[.vo2Max]?.trend, [40, 41, 42])
+        XCTAssertEqual(store.calls[.vo2Max], 1, "three readings in 30 days: one read")
+        XCTAssertEqual(live.cards[.sleep]?.trend.count, 3)
+        XCTAssertEqual(store.calls[.sleep], 1, "three nights in 30 days: one read")
+        XCTAssertEqual(live.cards[.steps]?.trend, (1001...1007).map(Double.init), "one recent reading: the last seven")
+        XCTAssertEqual(store.calls[.steps], 2, "one recent reading: it reads back")
+    }
+
+    /// Codex R2: a read-back that fails keeps the card the first read drew, trend and all,
+    /// heart rate's too (its card stands on its newest sample, so an empty read still makes one).
+    func testAFailedReadBackKeepsTheFirstCard_AC14() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let today = utc.startOfDay(for: now)
+        let day = { (back: Int) in today.addingTimeInterval(Double(-back) * 86_400) }
+        store.set(.heartRate, days: [LivePoint(start: day(90), value: 66, low: 50, high: 120), LivePoint(start: day(1), value: 72, low: 55, high: 130)])
+        store.set(.vo2Max, days: [LivePoint(start: day(90), value: 39), LivePoint(start: day(3), value: 41)])
+        store.set(.sleep, segments: [90, 2].map {
+            SleepSegment(stage: .core, start: day($0).addingTimeInterval(-3600), end: day($0).addingTimeInterval(6 * 3600), source: "watch")
+        })
+        store.failFrom = [.heartRate: 2, .vo2Max: 2, .sleep: 2]
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
+        await live.refresh()
+        XCTAssertEqual(store.calls[.heartRate], 2, "it tried to read back")
+        XCTAssertEqual(live.cards[.heartRate]?.trend, [72], "heart rate keeps its first trend")
+        XCTAssertEqual(live.cards[.heartRate]?.value, 64)
+        XCTAssertEqual(live.cards[.vo2Max]?.trend, [41])
+        XCTAssertEqual(live.cards[.sleep]?.trend, [7])
+    }
+
     /// Adversary R3: a nap after 6 pm today is dated tomorrow; the card keeps last night.
     func testAFutureDatedNightIsLeftOutOfTheCard_R3() async throws {
         let store = FakeLiveStore(due: false)
@@ -452,6 +516,8 @@ private final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
         var days: [LiveMetric: [LivePoint]] = [:]
         var latest: (Double, Date)?
         var segments: [SleepSegment] = []
+        var calls: [LiveMetric: Int] = [:]
+        var failFrom: [LiveMetric: Int] = [:]
         init(due: Bool = true) { self.due = due }
     }
 
@@ -468,6 +534,15 @@ private final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
     /// Each read waits this long, cancellably, as a slow HealthKit query would.
     var delay: Duration? { get { with { $0.delay } } set { with { $0.delay = newValue } } }
     var latestCalls: Int { with { $0.latestCalls } }
+    /// Each metric's points or sleep reads so far.
+    var calls: [LiveMetric: Int] { with { $0.calls } }
+    /// A metric's reads from this call on (1 is the first) fail, as HealthKit's other errors do.
+    var failFrom: [LiveMetric: Int] { get { with { $0.failFrom } } set { with { $0.failFrom = newValue } } }
+
+    private func count(_ metric: LiveMetric, _ state: inout State) throws {
+        state.calls[metric, default: 0] += 1
+        if let from = state.failFrom[metric], state.calls[metric]! >= from { throw HKError(.errorDatabaseInaccessible) }
+    }
 
     private func wait() async throws {
         if let delay { try await Task.sleep(for: delay) }
@@ -504,6 +579,7 @@ private final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
             state.reads += 1
             state.queries.append((start, end, component))
             if state.locked { throw HealthStoreError.locked }
+            try count(metric, &state)
             return state.empty.contains(metric) ? [] : (state.days[metric] ?? []).filter { $0.start >= start.addingTimeInterval(-86_400) && $0.start <= end }
         }
     }
@@ -533,6 +609,7 @@ private final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
         try await wait()
         return try with { state in
             if state.locked { throw HealthStoreError.locked }
+            try count(.sleep, &state)
             return state.empty.contains(.sleep) ? [] : state.segments.filter { $0.end > start && $0.start < end }
         }
     }
