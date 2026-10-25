@@ -21,8 +21,8 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 - Amla reduced platelet clumping in two small trials, and in 10 diabetic patients it prolonged bleeding time, alone and with clopidogrel or aspirin [4][18]. If you take a blood thinner or have a bleeding disorder, ask your doctor first. For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Amla lowered blood sugar in trials [6][8][17], so it could add to the effect of diabetes medicines. If you take them, ask your doctor first and watch for signs of low blood sugar.
-- One-fifth of Ayurvedic medicines bought online in a 2008 US study contained lead, mercury or arsenic [24]. Choose products tested for heavy metals.
-- Side effects in trials were few: no serious adverse effects in a 90-day diabetes trial [8] and one case of mild constipation in a 12-week hair trial [5]. The longest trial lasted 4 months, so long-term safety is unknown [16][29].
+- One-fifth of Ayurvedic medicines bought online in a 2008 US study contained lead, mercury or arsenic [24]. This applies to Ayurvedic medicines in general, not amla. Choose products tested for heavy metals.
+- Side effects in trials were few: no serious adverse effects in a 90-day diabetes trial [8] and one case of mild constipation in a 12-week hair trial [5]. The longest trial cited here lasted 4 months, so long-term safety is unknown [16][29].
 
 ## Brad's videos on this topic
 
@@ -32,7 +32,7 @@ None yet.
 
 Amla (*Emblica officinalis*, also called *Phyllanthus emblica*), known in English as Indian gooseberry, ranks among the most important medicinal plants in Ayurveda, India's traditional system of medicine. The fruit is the main part used, alone or combined with other plants [28]. Human trials have tested it for blood lipids, blood sugar, blood pressure and reflux, among other uses [11][16][17][21].
 
-The fruit is a rich source of vitamin C. Across 51 Indian samples, ascorbic acid averaged 496.47 mg per 100 g and total phenol (tannin) content averaged 4.88% [25]. Amla and its processed products also supply phenols, dietary fibre and antioxidants [3]. Pasteurised amla juice contains gallic acid, ellagic acid, ethyl gallate and quercetin [26].
+The fruit is a rich source of vitamin C. In mature fruit from 51 Indian accessions, ascorbic acid averaged 496.47 mg per 100 g and total phenol (tannin) content averaged 4.88% [25]. Reported values vary widely: another source gives 1,100 to 1,700 mg per 100 g of fruit [29]. Amla and its processed products also supply phenols, dietary fibre and antioxidants [3]. Pasteurised amla juice contains gallic acid, ellagic acid, ethyl gallate and quercetin [26].
 
 Beta-glucogallin is the marker compound in one extract, standardised to 10% [8]. In laboratory tests, a beta-glucogallin extract blocked alpha-amylase and alpha-glucosidase, two enzymes that digest starch and sugar, and the enzyme DPP-4 [27]. Another tested extract is standardised to low-molecular-weight hydrolysable tannins (emblicanin A, emblicanin B, pedunculagin and punigluconin) [19][22].
 
@@ -60,27 +60,13 @@ Extracts are standardised to different marker compounds:
 
 Because extracts differ in their active compounds, results from one extract may not apply to another. Look for a product that matches the extract used in the trial you care about.
 
-### Vitamin C Content in Supplements
+### Vitamin C in Amla Juice
 
-Vitamin C content changes with processing. Pasteurised amla juice extract held 155.04 mg of ascorbic acid per 100 g [26], against an average of 496.47 mg per 100 g in fresh fruit [25]. If you want amla for its vitamin C, check the amount on the label.
+In one study, pasteurised amla juice extract held 155.04 mg of ascorbic acid per 100 g [26]. A separate study of mature fruit found an average of 496.47 mg per 100 g [25].
 
 ## 3. Evidence for Health Benefits
 
 Ayurveda uses amla for many complaints, from colds and fever to ulcers and hair [28]. Human trials cover only a few, and most are small and short [16][17].
-
-### Blood Sugar and Diabetes
-
-A 2023 meta-analysis of five randomized trials found that amla lowered fasting blood glucose (p < 0.001) [17]. In laboratory tests, a beta-glucogallin extract blocked enzymes that digest starch and sugar [27].
-
-**Amla extract versus metformin (open-label):** Patients with newly found type 2 diabetes and abnormal blood lipids took 1 g or 2 g a day of an extract with 10% beta-glucogallin, or metformin 500 mg a day, for 90 days. Glucose before and after meals, HbA1c and lipids fell in all three groups. With 2 g of extract, glucose and HbA1c ended significantly lower than with metformin or with 1 g, and no serious adverse effects occurred [8].
-
-The trial was open-label, compared amla with a low dose of metformin and had no placebo group. Its authors work for Sabinsa, a supplement company [8].
-
-**Amla extract versus atorvastatin and placebo:** In type 2 diabetes, an aqueous extract given at 250 mg or 500 mg twice daily for 12 weeks improved blood vessel function, the lipid profile and HbA1c compared with placebo. Eighty patients completed the trial, and all treatments were well tolerated [19].
-
-**Amla fruit powder (no placebo group):** Normal and diabetic volunteers took 1, 2 or 3 g of amla powder a day. By day 21, fasting and 2-hour post-meal blood glucose had fallen from baseline at all three doses [6]. Without a placebo group, the trial cannot show that amla caused the change.
-
-**Clinical significance:** The diabetes trials were small and short, and two had no placebo group [6][8]. Larger and longer trials would be needed to show a lasting benefit and the best dose.
 
 ### Heart Health and Cholesterol
 
@@ -96,6 +82,20 @@ A 2023 meta-analysis pooled nine randomized trials (535 participants) using 500 
 
 With no control group, other factors could explain these changes. Not every trial was positive: in the 150-person hypertension trial, 12 weeks of amla extract did not improve the lipid profile, HbA1c or hs-CRP [21].
 
+### Blood Sugar and Diabetes
+
+A 2023 meta-analysis of five randomized trials found that amla lowered fasting blood glucose (p < 0.001) [17]. In laboratory tests, a beta-glucogallin extract blocked enzymes that digest starch and sugar [27].
+
+**Amla extract versus atorvastatin and placebo:** In type 2 diabetes, an aqueous extract given at 250 mg or 500 mg twice daily for 12 weeks improved blood vessel function, the lipid profile and HbA1c compared with placebo. Eighty patients completed the trial, and all treatments were well tolerated [19].
+
+**Amla extract versus metformin (open-label):** Patients with newly found type 2 diabetes and abnormal blood lipids took 1 g or 2 g a day of an extract with 10% beta-glucogallin, or metformin 500 mg a day, for 90 days. Glucose before and after meals, HbA1c and lipids fell in all three groups. With 2 g of extract, glucose and HbA1c ended significantly lower than with metformin or with 1 g, and no serious adverse effects occurred [8].
+
+The trial was open-label, compared amla with a low dose of metformin and had no placebo group. Its authors work for Sabinsa, a supplement company [8].
+
+**Amla fruit powder (no placebo group):** Normal and diabetic volunteers took 1, 2 or 3 g of amla powder a day. By day 21, fasting and 2-hour post-meal blood glucose had fallen from baseline at all three doses [6]. Without a placebo group, the trial cannot show that amla caused the change.
+
+**Clinical significance:** The diabetes trials were small and short, and two had no placebo group [6][8]. Larger and longer trials would be needed to show a lasting benefit and the best dose.
+
 ### Blood Pressure
 
 The best test so far is negative. In a randomized trial of 150 people with essential hypertension, a 500 mg capsule of amla extract or placebo taken twice daily for 12 weeks, added to usual medicines, produced no extra fall in systolic or diastolic blood pressure [21].
@@ -104,11 +104,11 @@ In the simvastatin comparison, both treatments lowered blood pressure, with a la
 
 ### Digestive Health (GERD)
 
-**Amla for gastric ulcer healing (animal study):** In rats, an ethanol extract of amla at 250 and 500 mg/kg protected the stomach against ulcers and reduced basal gastric secretion and acidity [10].
-
 **Amla for gastroesophageal reflux disease (placebo-controlled):** A trial enrolled 68 people with non-erosive reflux disease who had had heartburn, regurgitation and upper stomach pain for at least 3 months. They took two 500 mg amla tablets twice a day after meals, or placebo, for 4 weeks [11]. Both groups improved, but heartburn and regurgitation fell more in frequency and severity with amla than with placebo (P < 0.001) [11].
 
 Symptoms were scored on a questionnaire, and the trial was small and short [11]. Larger and longer studies are needed.
+
+**Amla for gastric ulcer healing (animal study):** In rats, an ethanol extract of amla at 250 and 500 mg/kg protected the stomach against ulcers and reduced basal gastric secretion and acidity [10].
 
 ### Immunity and Common Cold
 
@@ -126,7 +126,11 @@ Amla fruit is used as a hair tonic in Traditional Persian Medicine, by mouth and
 - Physician and patient satisfaction scores were higher with amla at 12 weeks
 - One woman had mild constipation
 
-The trial was small, and its authors called for further studies [5].
+The abstract does not report hair counts or thickness. The trial was small, and its authors called for further studies [5].
+
+### Skin Aging
+
+In 99 healthy women, a daily drink with lingonberry and amla fruit extracts for 12 weeks improved skin elasticity, thickness, moisture and wrinkles around the eyes compared with placebo [31]. Because the drink combined two extracts, the trial cannot show an effect of amla alone.
 
 ### Liver and Kidney Function
 
@@ -138,13 +142,9 @@ In mice, amla extract reversed drug-induced memory loss and a drug-induced rise 
 
 The evidence comes from mice. It cannot guide treatment in people.
 
-### Eye Health (Macular Degeneration and Cataract)
+### Eye Health (Macular Degeneration)
 
 In laboratory cells carrying mitochondria from people with age-related macular degeneration, amla extract improved cell survival and reduced oxidative stress [30]. This was a laboratory study, and the authors called for further studies [30].
-
-### Skin Aging
-
-In 99 healthy women, a daily drink with lingonberry and amla fruit extracts for 12 weeks improved skin elasticity, thickness, moisture and wrinkles around the eyes compared with placebo [31]. Because the drink combined two extracts, the trial cannot show an effect of amla alone.
 
 ### Cancer Prevention
 
@@ -175,9 +175,9 @@ There is no established recommended daily intake or standardized dosing protocol
 
 ### General Guidance
 
-- **For blood sugar:** trials used 1 to 3 g a day of amla fruit powder [6], or 1 g or 2 g a day of an extract with 10% beta-glucogallin [8].
-- **For cholesterol:** trials used 500 mg a day of amla capsules [9] up to 500 mg of extract twice daily [7][20]; the meta-analysis range was 500 to 1,500 mg a day [16].
-- **For reflux symptoms:** two 500 mg tablets twice a day after meals [11].
+- **Extracts:** most trials gave 250 mg or 500 mg twice daily for 12 weeks [4][7][19][20][21]; one gave 1 g or 2 g a day for 90 days [8].
+- **Fruit powder, capsules and tablets:** 1, 2 or 3 g of powder a day [6], one 500 mg capsule a day [9], or two 500 mg tablets twice a day after meals [11].
+- **Across trials:** the 2023 meta-analysis covered 500 to 1,500 mg a day for 14 to 84 days [16].
 
 ### Important Caveats
 
@@ -193,19 +193,17 @@ Ayurvedic products carry a separate risk. In a 2004 Boston study, 14 of 70 Ayurv
 
 ### Known and Potential Side Effects
 
-**Blood sugar lowering:** Amla lowered blood sugar in trials [6][8][17]. That could add to the effect of diabetes medicines such as metformin, sulfonylureas or insulin and cause low blood sugar. If you take diabetes medicines, check with your doctor first. Your doctor may want to check your blood sugar more often or adjust your dose. If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not give food or drink by mouth.
-
 **Antiplatelet effects and bleeding risk:** In overweight adults, 12 weeks of amla extract reduced platelet clumping triggered by ADP and by collagen [4]. In 10 diabetic patients, amla extract at 500 mg (a single dose, then twice daily for 10 days), alone or with 75 mg of clopidogrel or 75 mg of aspirin (as Ecosprin), reduced platelet clumping and prolonged bleeding and clotting time [18]. Amla may therefore raise bleeding risk, especially with blood thinners such as warfarin, aspirin, clopidogrel or direct oral anticoagulants, or with a bleeding disorder. If either applies to you, check with your doctor before you start. Report nosebleeds, bleeding gums, blood in urine or black stools to your doctor the same day. For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
-**Anticholinesterase activity:** In mice, amla extract reversed a drug-induced rise in brain acetylcholinesterase [13]. In theory, this could work against anticholinergic medicines. The evidence comes from a mouse study. If you take prescription medicines, check with your doctor or pharmacist before starting.
+**Blood sugar lowering:** Amla lowered blood sugar in trials [6][8][17]. That could add to the effect of diabetes medicines such as metformin, sulfonylureas or insulin and cause low blood sugar. If you take diabetes medicines, check with your doctor first. Your doctor may want to check your blood sugar more often or adjust your dose. If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not give food or drink by mouth.
 
-**Diuretic effect:** Ayurveda uses amla as a diuretic [28]. Whether amla supplements increase urination is unknown.
+**Anticholinesterase activity:** In mice, amla reversed the memory effects of scopolamine, an anticholinergic drug, and its rise in brain acetylcholinesterase [13]. Whether it weakens anticholinergic medicines in people is unknown. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 **Gastrointestinal effects:** In the hair-loss trial, one woman had mild constipation after a month of amla syrup [5].
 
 ### Side Effects Not Reported in Clinical Trials
 
-The trials were small and short: 14 to 84 days in the main meta-analysis [16], and 4 months at most [29]. Rare or long-term side effects may have been missed.
+The trials were small and short: 14 to 84 days in the main meta-analysis [16], and 4 months for the longest trial cited here [29]. Rare or long-term side effects may have been missed.
 
 ## 6. Drug Interactions
 
@@ -213,12 +211,11 @@ The trials were small and short: 14 to 84 days in the main meta-analysis [16], a
 
 | Drug Class | Examples | Nature of Interaction | Clinical Implication |
 |-----------|---------|----------------------|---------------------|
-| Diabetes medications | Metformin, sulfonylureas, insulin, SGLT2 inhibitors | Possible additive blood sugar lowering | Risk of low blood sugar. Ask your doctor first; doses may need to change [6][8][17] |
 | Anticoagulants | Warfarin, heparin, enoxaparin, direct oral anticoagulants | Amla's antiplatelet effect may add to their effect | Possible higher bleeding risk. Ask your doctor before use [4][18] |
-| Antiplatelet drugs | Aspirin, clopidogrel | Bleeding and clotting time were prolonged when amla was taken with either drug | Possible higher bleeding risk. Ask your doctor before use [18] |
-| Anticholinergic drugs | Medicines that block acetylcholine | Amla's anticholinesterase activity in mice may oppose their effect | Theoretical. Check with your doctor or pharmacist [13] |
+| Antiplatelet drugs | Aspirin, clopidogrel | Amla alone, each drug alone and each combination prolonged bleeding and clotting time compared with baseline; the study did not show an added effect from combining them | Possible higher bleeding risk. Ask your doctor before use [18] |
+| Diabetes medications | Metformin, sulfonylureas, insulin | Possible additive blood sugar lowering | Risk of low blood sugar. Ask your doctor first; your doctor may want to adjust your dose [6][8][17] |
+| Anticholinergic drugs | Medicines that block acetylcholine | In mice, amla reversed the effects of scopolamine, an anticholinergic drug; effect in people unknown | Theoretical. Check with your doctor or pharmacist [13] |
 | Statins | Simvastatin, atorvastatin | Trials compared amla with simvastatin and atorvastatin, not in combination | Effect of combining them is unknown [9][19] |
-| Diuretics | Furosemide, hydrochlorothiazide | Possible additive diuretic effect, based on traditional use | Theoretical; monitor hydration and electrolytes [28] |
 
 ### Surgical Considerations
 
@@ -226,7 +223,7 @@ Because amla prolonged bleeding time in a small trial [18], tell your surgeon, a
 
 ## 7. Dietary Sources
 
-Amla is primarily consumed as a food in South Asia, where it is used in a variety of culinary preparations.
+Amla is a traditional food in Asia [29].
 
 ### Fresh Amla Fruit
 
@@ -239,12 +236,12 @@ Fresh amla fruit is rich in vitamin C (see the table below) and contains tannins
 
 ### Nutritional Profile of Fresh Amla Fruit (per 100g)
 
-| Nutrient | Amount |
+| Nutrient | Amount (mature fruit, 51 accessions) |
 |----------|--------|
 | Ascorbic acid (vitamin C) | 496.47 mg on average (highest 654.50 mg) |
 | Total phenol (tannin) | 4.88% on average |
 
-Note: Nutritional values vary by variety, growing conditions, and ripeness. These figures come from 51 samples grown in Madhya Pradesh, India [25].
+Note: Nutritional values vary by variety, growing conditions, and ripeness. These figures come from mature fruit of 51 accessions grown in Madhya Pradesh, India [25]. Another source gives 1,100 to 1,700 mg of ascorbic acid per 100 g of fruit [29].
 
 ## 8. References
 
