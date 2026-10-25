@@ -19,7 +19,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- Case reports describe a sharp rise in INR in people on warfarin who started ginger [42][43]. If you take warfarin, ask your doctor about an extra INR check when starting or stopping ginger, and report black stools, blood in urine, nosebleeds or bleeding gums to your doctor the same day [42]. For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Case reports describe a sharp rise in INR in people on warfarin who started ginger [42][43]. If you take warfarin, ask your doctor about an extra INR check when starting or stopping ginger, and report black stools, blood in urine, nosebleeds or bleeding gums to your doctor the same day. For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - In a review of eight trials, four found that ginger reduced platelet clumping and four found no effect [51]. If you take aspirin, clopidogrel or another blood thinner, ask your doctor first.
 - A case report linked ginger to a serious interaction with the cancer drug crizotinib [7]. If you take any medicine, ask your doctor or pharmacist before using ginger [2].
 - Ginger supplements may be safe in pregnancy, but check with your health care provider first. Little is known about safety while breastfeeding [2].
@@ -278,9 +278,9 @@ Ginger may affect blood clotting, though the evidence is mixed. A systematic rev
 
 **Practical implications:**
 - An FDA warning advises healthcare providers to be cautious with patients who take warfarin and also use ginger [42]
-- If you take warfarin, ask your doctor about an extra INR check when starting or stopping ginger, and report black stools, blood in urine, nosebleeds or bleeding gums to your doctor the same day [42]
+- If you take warfarin, ask your doctor about an extra INR check when starting or stopping ginger, and report black stools, blood in urine, nosebleeds or bleeding gums to your doctor the same day
 - Because ginger may affect platelets, people taking aspirin, clopidogrel (Plavix) or other blood thinners should ask their doctor before using it [51]
-- If you take prescription medicines, check with your doctor or pharmacist before starting
+- Tell your surgeon if you take ginger supplements
 - For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK)
 
 ### Pregnancy Considerations
@@ -297,7 +297,7 @@ Ginger lowered fasting glucose in a meta-analysis of trials in overweight and ob
 
 ### Liver and Kidney Disease
 
-If you take prescription medicines, check with your doctor or pharmacist before starting.
+If you have liver or kidney disease, ask your doctor before taking ginger supplements.
 
 ## 6. Drug Interactions
 
