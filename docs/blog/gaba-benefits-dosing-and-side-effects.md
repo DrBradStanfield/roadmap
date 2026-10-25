@@ -20,7 +20,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - GABA lowered blood pressure in some studies, so taking it with blood pressure medicines could raise the risk of low blood pressure [28]. If you take prescription medicines, check with your doctor or pharmacist before starting.
-- A safety review found no studies of GABA in pregnancy or breastfeeding [28]. In pregnant mice, a dose far above supplement doses reduced embryo implantation [29].
+- A safety review found no studies of GABA in pregnancy or breastfeeding [28]. In pregnant mice, a dose far above supplement doses reduced embryo implantation [29]. Avoid it if you are pregnant, trying to conceive or breastfeeding unless your doctor advises it.
 - Studies found no serious side effects at up to 18 g a day for 4 days, or at 120 mg a day for 12 weeks [28].
 - Reported side effects were mild to moderate: abdominal discomfort, headache, drowsiness, and a brief burning feeling in the throat after large doses [12][28].
 
@@ -217,7 +217,7 @@ No studies have tested GABA in pregnancy or breastfeeding [28]. A safety review 
 - Markers of a receptive womb lining (LIF, E-cadherin and HOXA10) fell [29].
 - In the lab, GABA at 10 to 50 μg/μL slowed early embryo development as the dose rose, through GABA_B receptors [29].
 
-The authors concluded that these findings could raise concerns about GABA during early pregnancy [29]. Talk to your doctor before using GABA if you are pregnant, trying to conceive or breastfeeding [28].
+The authors concluded that these findings could raise concerns about GABA during early pregnancy [29]. With no human safety data and these animal findings, avoid GABA during pregnancy, while trying to conceive, or while breastfeeding unless your doctor advises it [28][29].
 
 ### Alcohol Interaction
 
@@ -272,7 +272,7 @@ Trials have used foods made to carry more GABA: a fermented milk [19], a GABA-ri
 
 Whether fermented foods change GABA signalling through the gut in people is unknown; one review raises the gut's own nervous system as a possible route [7].
 
-### Nutrients That Support Endogenous GABA Production
+### Nutrients Involved in GABA Production
 
 The body makes its own GABA in the brain, where oral GABA may not reach:
 
