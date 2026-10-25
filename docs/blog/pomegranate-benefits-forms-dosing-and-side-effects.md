@@ -15,7 +15,7 @@ sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/pomegranate"
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2024 meta-analysis of 22 randomised trials found that pomegranate lowered systolic blood pressure by 7.87 mmHg and diastolic by 3.23 mmHg, with large differences between studies [10], and NIH says additional research is needed to confirm the effect [2]. A second 2024 meta-analysis of 32 trials found small falls in fasting glucose (2.22 mg/dL), fasting insulin and HbA1c (0.22%) [16], while two reviews found no clear effect on cholesterol or other blood fats [13][14]. In men with a rising PSA after prostate cancer treatment, pomegranate extract did not lengthen PSA doubling time more than placebo [19]. Pomegranate juice is believed to be safe and the extract may be, but some people get digestive symptoms or allergic reactions, and the root, stem and peel may not be safe in large amounts [2].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2024 meta-analysis of 22 randomised trials found that pomegranate lowered systolic blood pressure by 7.87 mmHg and diastolic by 3.23 mmHg, with large differences between studies [10], and NIH says additional research is needed to confirm the effect [2]. A second 2024 meta-analysis of 32 trials found small falls in fasting glucose (2.22 mg/dL), fasting insulin and HbA1c (0.22%) [16], but a 2025 meta-analysis of 34 trials found no significant change in HbA1c [38]. Two reviews found no clear effect on cholesterol or other blood fats [13][14]. In men with a rising PSA after prostate cancer treatment, pomegranate extract did not lengthen PSA doubling time more than placebo [19]. Pomegranate juice is believed to be safe and the extract may be, but some people get digestive symptoms or allergic reactions, and the root, stem and peel may not be safe in large amounts [2].
 
 ## Key safety points
 
@@ -119,6 +119,8 @@ The evidence does not support a benefit for cholesterol.
 
 The authors called for longer trials (Bahari et al., *Diabetes Metab Syndr*, 2024) [16].
 
+**2025 meta-analysis (HbA1c not significant):** A 2025 meta-analysis of 34 randomised trials (1500 participants) found falls in fasting glucose, insulin and HOMA-IR, but the change in HbA1c was not statistically significant (WMD 0.046, 95% CI -0.207 to 0.298, P = 0.723). So the effect on HbA1c is uncertain. The authors called for longer and larger trials (Mohammadzaheri et al., *BMC Nutr*, 2025) [38].
+
 **NCCIH summary:** "Studies show that pomegranate may reduce blood glucose levels to a small extent" [2].
 
 **Glycemic considerations of the fruit itself:** Juice keeps the fruit's sugars but loses its fiber. The nutrition table below gives the fiber and sugar in raw arils [4].
@@ -129,12 +131,11 @@ Laboratory work found that a pomegranate extract slowed the growth of human pros
 
 **Early positive study:** In a phase II trial of men with a rising PSA after surgery or radiation, 8 ounces (about 240 mL) of Wonderful variety juice a day lengthened mean PSA doubling time from 15 months to 54 months. There was no placebo group, and the authors called for a placebo-controlled trial (Pantuck et al., *Clin Cancer Res*, 2006) [18].
 
-**Dose-comparison study (no placebo):** In a trial of 104 men randomised to 1 or 3 g doses of pomegranate extract, median PSA doubling time lengthened from 11.9 to 18.5 months, with no difference between doses. The authors said the meaning of this was unclear without a placebo group (Paller et al., *Prostate Cancer Prostatic Dis*, 2013) [20].
+**Dose-comparison study (no placebo):** In a trial of 104 men randomised to 1 or 3 g doses of pomegranate extract, median PSA doubling time lengthened from 11.9 to 18.5 months, with no significant difference between doses. The authors said the meaning of this was unclear without a placebo group (Paller et al., *Prostate Cancer Prostatic Dis*, 2013) [20].
 
 **Subsequent negative study:** In a placebo-controlled trial of 183 men, PSA doubling time lengthened in both the extract and placebo arms, and the extract did not lengthen it significantly more than placebo (Pantuck et al., *Prostate Cancer Prostatic Dis*, 2015) [19].
 
-
-**RCT in active surveillance (negative):** Men with favorable-risk prostate cancer on active surveillance took 1,000 mg of pomegranate fruit extract (15 men) or placebo (15 men) daily for a year. The extract made no difference to PSA doubling time, IGF-1 levels or biopsy findings compared with placebo, though it did reduce a DNA damage marker and androgen receptor expression in prostate tumour tissue (Jarrard et al., *Prostate*, 2021) [21].
+**RCT in active surveillance (negative):** Men with favorable-risk prostate cancer on active surveillance took 1,000 mg of pomegranate fruit extract (15 men) or placebo (15 men) daily for a year. The extract made no difference to PSA doubling time, IGF-1 levels or biopsy findings compared with placebo, though tumour tissue showed falls from baseline in a DNA damage marker and androgen receptor expression (Jarrard et al., *Prostate*, 2021) [21].
 
 **Preclinical urolithin data:** Ellagic acid and several urolithins slowed the growth of human prostate cancer cells in the laboratory [5]. This has not translated into benefit in placebo-controlled trials [19][21].
 
@@ -247,7 +248,7 @@ Because pomegranate may reduce blood pressure [9][10], it may add to the effect 
 
 ### Statins (HMG-CoA Reductase Inhibitors)
 
-A case report linked pomegranate juice with rhabdomyolysis in a man taking rosuvastatin; the authors pointed to the juice's known effect on intestinal CYP3A4 [29]. In rats, pomegranate juice blocked enteric (gut) but not liver CYP3A [34]. In 13 healthy volunteers, though, 8 ounces of juice did not change how the body cleared midazolam, a test drug for CYP3A [36]. If you take a statin, ask your doctor before drinking pomegranate juice regularly.
+A case report linked pomegranate juice with rhabdomyolysis in a man taking rosuvastatin; the authors pointed to the juice's known effect on intestinal CYP3A4 [29]. In rats, pomegranate juice blocked enteric (gut) but not liver CYP3A [34]. In 13 healthy volunteers, though, 8 ounces of juice did not change how the body cleared midazolam, a test drug for CYP3A [36]. The clinical meaning is uncertain. If you take a statin, ask your doctor before drinking pomegranate juice regularly.
 
 ### Warfarin and Other Anticoagulants
 
@@ -381,3 +382,5 @@ Arils give fiber, while whole-fruit juice gives more punicalagin.
 [36] Farkas D, Oleson LE, Zhao Y, et al. Pomegranate juice does not impair clearance of oral or intravenous midazolam, a probe for cytochrome P450-3A activity: comparison with grapefruit juice. *J Clin Pharmacol*. 2007;47(3):286-294. PMID: 17322140. [https://pubmed.ncbi.nlm.nih.gov/17322140/](https://pubmed.ncbi.nlm.nih.gov/17322140/)
 
 [37] Hanley MJ, Masse G, Harmatz JS, et al. Pomegranate juice and pomegranate extract do not impair oral clearance of flurbiprofen in human volunteers: divergence from in vitro results. *Clin Pharmacol Ther*. 2012;92(5):651-657. PMID: 23047652. [https://pubmed.ncbi.nlm.nih.gov/23047652/](https://pubmed.ncbi.nlm.nih.gov/23047652/)
+
+[38] Mohammadzaheri F, Sheikhhossein F, Hemmati A, et al. The effect of pomegranate products on glycemic profile in adults: a GRADE-assessed systematic review and dose-response meta-analysis of randomized controlled trials. *BMC Nutr*. 2025;11(1):168. PMID: 40847381. [https://pubmed.ncbi.nlm.nih.gov/40847381/](https://pubmed.ncbi.nlm.nih.gov/40847381/)
