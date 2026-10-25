@@ -438,5 +438,21 @@
   "reason": "AC7 product-heading regex false positive (orchestrator 2026-10-23, masters-new-5): not a Brad product section (orchestrator-ratified).",
   "by": "orchestrator",
   "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-theanine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"16\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 16 healthy volunteers, L-theanine 200 mg showed some relaxing effect at rest, but neither it nor 1 mg of the benzo...\"",
+  "reason": "AC2 Lu 2004 gives \"Sixteen healthy volunteers\"; tokeniser case ratified in decisions.md, checked against the raw by the integrator (orchestrator 2026-10-25, masters-new-7, ratified in masters-new-5 decisions).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC4",
+  "handle": "l-theanine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Supplements That May Lower Blood Pressure",
+  "reason": "AC4 ### Supplements That May Lower Blood Pressure: section removed (ratified in masters-new-5 decisions) (orchestrator 2026-10-25, masters-new-7).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
  }
 ]

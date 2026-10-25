@@ -6,216 +6,214 @@ publishedAt: "2024-12-24T00:38:34Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["green tea", "EGCG", "epigallocatechin gallate", "matcha", "catechins", "l-theanine", "antioxidant", "weight loss", "cardiovascular", "heart health", "cholesterol", "ldl", "blood pressure", "blood sugar", "diabetes", "insulin resistance", "cognitive", "brain health", "dementia", "alzheimer", "cancer", "breast cancer", "prostate", "colon cancer", "lung cancer", "stroke", "inflammation", "gut health", "microbiome", "caffeine", "iron", "liver", "kidney"]
-summary: "Reference on green tea (EGCG, matcha): heart health, blood pressure, cholesterol, blood sugar, weight, cognition. 2-4 cups/day for general health. Supplements risk liver injury above 338 mg EGCG/day; avoid with iron. Always discuss with your doctor."
+summary: "Reference on green tea: brewed tea, matcha and extracts. Brad sees a few cups a day as an easy way to add polyphenols, part of a diet that doubled visceral fat loss in a trial. Extracts have caused rare liver injury. Talk to your doctor first if you are pregnant or take nadolol or other medicines."
+reviewed: "2026-10-23"
+sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/green-tea","checked":"2026-10-23","fingerprint":"sha256:87c019bfda7b7144346d27722d51e96c8d6d9999e38ce73130d8285bef4d27a3"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart","checked":"2026-10-23","fingerprint":"publishedAt:2026-07-16T08:00:00Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/green-tea-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/green-tea-benefits-forms-dosing-and-side-effects)*
 
+## Current view (reviewed 23 October 2026)
+
+Brad counts green tea among the polyphenol-rich plant foods, along with walnuts and colourful vegetables, that may help people lose visceral fat without going hungry ([Brad, 16 Jul 2026](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart)). His key study is a randomised trial that added walnuts, green tea and a green-plant shake to a Mediterranean diet at the same calories, and that group lost more than double the visceral fat ([Brad, 16 Jul 2026](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart)). He suggests a few cups of green tea a day as an easy way to get some of those polyphenols in ([Brad, 16 Jul 2026](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart)). He is clear that this was a visceral-fat result, not a heart-fat result, because no trial has measured this diet on the fat around the heart ([Brad, 16 Jul 2026](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart)). He asks viewers to talk to their own doctor before making any changes to their health regimen ([Brad, 16 Jul 2026](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart)).
+
+## Key safety points
+
+- A man on warfarin who began drinking half a gallon to a gallon of green tea a day saw his INR fall to 1.37; it rose again after he stopped [53]. If you take warfarin, check with your doctor or anticoagulation clinic before changing your tea intake.
+- Green tea cut blood levels of nadolol by about 85% and weakened its effect on blood pressure [41]. It also lowers levels of raloxifene, atorvastatin and rosuvastatin [7][40][42]. If you take prescription medicines, ask your doctor or pharmacist before drinking a lot of green tea or using extracts [7][41].
+- In lab and animal studies, EGCG blocked the cancer drug bortezomib [43]. Ask your oncologist before using green tea products.
+- Extracts have caused rare but serious liver injury, a few needing a transplant [11][21]. Supplement doses equal to or above 800 mg of EGCG a day raised liver enzymes in trials [8]. Do not use extracts if you have a liver problem; take them with food. Stop and see a doctor promptly if you get yellow skin or eyes, dark urine or belly pain [21].
+- If you are pregnant, keep caffeine moderate (under 200 mg a day) and ask your doctor about green tea [7][24]. One study linked tea drinking around conception with spina bifida [52].
+- Tea drunk with a meal cut absorption of its fortified iron by more than 85% [23]. If you have low iron, ask your doctor about drinking tea away from meals.
+- Extracts can cause nausea, constipation, belly discomfort and raised blood pressure [7][20].
+
+## Brad's videos on this topic
+
+- 16 Jul 2026, [Shrink the Fat Around Your Heart](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart): green tea is one of the polyphenol foods in a Mediterranean-style diet that more than doubled visceral fat loss in a trial; a few cups a day is an easy way to get some.
+
 ## 1. Overview
 
-Green tea is made from the leaves of Camellia sinensis, the same plant used to produce black and oolong teas. The difference lies in processing: green tea leaves are lightly steamed or pan-fired to halt enzymatic oxidation, preserving their natural polyphenolic compounds. Black tea is fully fermented, and oolong tea is partially fermented. This minimal oxidation is what gives green tea its characteristic higher catechin content [1][2].
+Green tea comes from the leaves of Camellia sinensis, the same plant as black and oolong tea. Its leaves are steamed, pan fried and dried without fermentation, whereas black tea goes through fermentation and oolong through partial fermentation [7].
 
-The primary bioactive compounds in green tea are catechins — a class of polyphenols with antioxidant properties. The four major catechins are epigallocatechin gallate (EGCG), epigallocatechin (EGC), epicatechin gallate (ECG), and epicatechin (EC). EGCG is the most abundant, comprising 40-69% of total catechins, and is the most studied for health effects [2][3]. Total catechin content in green tea leaves typically ranges from 59-103 mg/g dry leaf weight, though values vary by cultivar, growing conditions, and processing [3].
+Most of the polyphenols in green tea are catechins [8]. The main ones are epigallocatechin gallate (EGCG), epigallocatechin, epicatechin gallate and epicatechin, and EGCG is the most abundant and most studied [3]. Catechin content varies with the plant, season, climate and growing practices [3].
 
-Green tea also contains caffeine (approximately 20-45 mg per standard 240 mL cup — less than black tea and considerably less than coffee), L-theanine (an amino acid that promotes relaxation and may modulate caffeine's stimulant effects), and small amounts of vitamins and minerals [2][4][5].
+It also has caffeine, though less than black tea [56].
 
-The tea plant was first cultivated in China over 3,000 years ago. Archaeological evidence from the Han Yangling Mausoleum (circa 100 BCE) provides the earliest direct evidence of tea consumption in ancient China [6]. Green tea has been promoted for a variety of health benefits including cardiovascular disease prevention, cancer risk reduction, blood sugar control, and weight management. Much of the research, however, comes from population studies in Asia where green tea consumption is common, rather than from randomized controlled trials that can establish cause and effect [1][7].
+People first grew the tea plant in China thousands of years ago, and its use for health goes back about 3,000 years [7]. Plant remains show tea was grown 2,100 years ago for the drinking habits of the Western Han Dynasty [6]. Green tea and its extracts are promoted for weight loss, lower cholesterol and the prevention of heart disease and cancer, but definite conclusions cannot yet be reached for most of these uses [7]. Much of the evidence comes from observational studies, which are open to confounding by lifestyle and diet [45].
 
-The U.S. Food and Drug Administration has approved a topical ointment containing a specific green tea extract (sinecatechins) for the treatment of external genital and perianal warts — the only FDA-approved therapeutic application of green tea [7].
+The U.S. Food and Drug Administration has approved a topical ointment containing a specific green tea extract for external genital and perianal warts [7].
 
 ## 2. Forms and Bioavailability
 
-Green tea is available in several forms, each delivering different amounts of catechins and caffeine.
+Green tea comes as brewed tea, matcha powder and concentrated extracts, which deliver very different amounts of catechins.
 
 ### Brewed Green Tea
 
-A standard cup of brewed green tea (1.5-2 grams of tea steeped for 3-5 minutes in recently boiled water) provides approximately 30-60 mg of EGCG and 20-45 mg of caffeine [1][4][5]. A study of commercially available green teas in the U.S. found an enormous range of catechins (about 15-85 mg per cup for most products) and EGCG (10-40 mg for most) when brewing 1.5 grams for 5 minutes (Friedman, J Food Sci 2005) [1]. A British study found generally higher amounts, with three cups providing approximately 400 mg of total catechins (about 133 mg per serving) when using 2 grams brewed for 5 minutes (Khokhar, J Agric Food Chem 2002) [1].
+In European adults, green tea infusions supply an average of 90 to 300 mg a day of EGCG [8]. A U.K. analysis estimated that three 200 mL cups of green tea provide about 405.5 mg a day of total catechins, with wide variation between products [56].
 
-Brewing time beyond 3 minutes does not significantly increase catechin levels — it primarily makes the tea more bitter [1]. Cold-brewing green tea leaves for approximately 12 hours can yield similar EGCG levels as hot brewing but with somewhat less caffeine, since caffeine release is heat-dependent (Lantano, J Food Sci Technol 2015) [1].
+Steeping method changes what ends up in the cup. Cold steeping extracted more of the beneficial compounds than hot steeping, which degraded some of them, but it needed a long time; a brief hot infusion followed by ice gave about double the EGCG of a standard hot infusion [60].
 
-**Water quality matters.** A Cornell University study found that green tea brewed with local tap water (high in calcium and magnesium) contained approximately half the EGCG present in tea brewed with purified or bottled water. Minerals in hard water may degrade EGCG (Franks, Nutrients 2019; Wang, Food Chemistry 2000) [1]. For maximum catechin extraction, use soft (low-mineral) water.
+**Water quality matters.** Brewing green tea with bottled or deionised water could double its EGCG content compared with tap water, though it also made the tea more bitter [59].
 
 ### Matcha
 
-Matcha is a powdered form of green tea in which the entire leaf is consumed, rather than just the water-soluble extract. This means matcha delivers higher amounts of EGCG per serving: approximately 70-110 mg per level teaspoon, compared to 30-60 mg in a cup of brewed green tea [1]. Turning green tea leaves into powder allows them to release higher amounts of EGCG and other catechins (Fujioka, Molecules 2016) [1]. Matcha made from leaves harvested in July ("daily" matcha) provides about 12% more polyphenols than leaves harvested earlier in April ("traditional" matcha), which has a smoother flavor due to lower polyphenol concentration (Jakubczyk, Foods 2020) [1].
+Matcha is powdered green tea, so the whole leaf is consumed. In one trial, 2.7 g of matcha daily provided 71.5 mg of caffeine, 301.4 mg of catechins and 50.3 mg of theanine [89].
 
-The claim that matcha provides "137 times" the EGCG of brewed green tea is not correct. This figure originates from a small study comparing one brand of matcha to one brand of green tea, and the brewed green tea result appears erroneous — approximately 100 times lower than what multiple researchers have found (Weiss, J Chromatogr A 2003) [1].
-
-Because matcha powder is consumed whole, it also delivers approximately 20 mcg of vitamin K per cup (from the leaf itself). Brewed green tea liquid contains negligible vitamin K (about 0.1 mcg per cup) because most vitamin K remains in the leaf (Booth, JADA 1995) [1]. This has implications for people taking blood-thinning medications (see Drug Interactions).
+The often-quoted "137 times" figure comes from a 2003 analysis that compared matcha with one green tea brand. The same analysis put matcha's available EGCG at least three times higher than the largest value reported for other green teas [57].
 
 ### Green Tea Extract Supplements
 
-Green tea extract supplements provide concentrated doses of catechins, typically hundreds of milligrams of EGCG per serving — far exceeding what is achievable through drinking tea. This concentrated delivery is both the advantage and the primary safety concern, as high bolus doses of EGCG have been associated with liver injury (see Safety and Side Effects) [1][8].
-
-Supplements may be caffeinated or decaffeinated. Decaffeinated green tea typically has lower EGCG content, particularly if decaffeinated with the solvent ethyl acetate (used by brands described as "naturally decaffeinated"). Decaffeination via supercritical carbon dioxide extraction or water extraction retains a majority of catechins (Vuong, Sep Purif Rev 2014) [1].
+Green tea extract supplements supply 5 to 1,000 mg a day of EGCG [8]. Taken as a solid bolus, concentrated extracts carry the main safety concern, liver injury (see Safety and Side Effects) [8][47].
 
 ### White Tea
 
-White tea is made from the same plant but picked at a less mature stage. It provides comparable catechin levels to green tea when brewed, though with generally less caffeine and lower lead content. Green tea may have higher overall antioxidant activity due to the presence of non-catechin antioxidant compounds such as flavanol glycosides (Uchenna, J Food Sci 2010) [1].
-
-### Bottled Green Tea
-
-Bottled green tea beverages vary enormously in catechin content. Some provide levels comparable to brewed green tea, while others provide very little. They also tend to contain sweeteners and other additives [1].
+White teas varied widely in catechin content. Some had amounts comparable to some green teas but less antioxidant capacity, which suggests fewer non-catechin antioxidants [61].
 
 ### Bioavailability Considerations
 
-EGCG has low oral bioavailability — less than 1% reaches systemic circulation after ingestion, with peak plasma concentrations reaching only 0.57 mcM after 3 grams of green tea extract. Post-digestion stability is poor, with less than 10% of EGCG remaining intact after gastrointestinal transit [9][10]. This is a fundamental limitation that separates in vitro study results (which use much higher concentrations) from what is achievable in the human body.
+Food lowers EGCG absorption. EGCG capsules swallowed with water while fasting gave blood levels (AUC) 2.7 times higher than the same capsules with a light breakfast [9]. Fasting also raises the risk of liver injury from bolus doses of extract, so higher absorption is not always better [21][47].
 
-Proteins in milk and soy can bind to and significantly decrease catechin bioavailability. A study found that replacing just 20% of the water in a green tea beverage with skim milk decreased blood levels of catechins by 87% and EGCG by 68% (Egert, Eur J Nutr 2013) [1]. Similar reductions occur with soy protein or casein. For maximum catechin absorption, avoid adding milk or soy to green tea.
+Dietary proteins reduce absorption of some catechins. Adding skimmed milk to a green tea extract drink cut the bioavailability of total catechins to 87% and of EGCG to 68% of the drink without milk; soy protein and casein had similar effects [58].
 
-Iron can bind to EGCG and neutralize its antioxidant activity. Conversely, just one cup of green tea can reduce iron absorption by approximately 80% when consumed with a meal (Lazrak, J Nutr 2021) [1]. Separate green tea consumption from iron-rich foods or iron supplements by at least one hour.
-
-Taking green tea extract with food rather than on an empty stomach may reduce the risk of liver injury and slow absorption, which appears to improve safety [1][11].
+Tea also reduces iron absorption. Moroccan green tea drunk with a meal cut absorption of the meal's fortified iron by more than 85% (see Iron Absorption Interference) [23].
 
 ## 3. Evidence for Health Benefits
 
 ### Cardiovascular Disease
 
-**Population studies** consistently link moderate green tea consumption with reduced cardiovascular risk. An analysis of seven population studies from China and Japan following nearly 780,000 people for 5-13 years found that 1, 2, 3, or 4 cups of green tea per day were associated with 11%, 16%, 15%, and 12% lower risks of coronary heart disease, respectively, compared to nondrinkers. Five or more cups per day was not associated with additional benefit. Note: 1 "cup" in this analysis was 300 mL, approximately 25% larger than a standard cup (Wang, Nutr Metab Cardiovasc Dis 2023) [1].
+**Population studies** link green tea with lower coronary heart disease risk in Asian populations but not in Western ones [7]. A 2023 meta-analysis of seven East Asian cohort studies (772,922 participants) found coronary relative risks of 0.89 for 1 cup a day, 0.84 for 2 cups, 0.85 for 3 cups and 0.88 for 4 cups, compared with nonconsumers; at 5 cups a day the risk was 0.92 (95% CI 0.82 to 1.04), not significant. Each cup was 300 mL [26].
 
-An earlier Japanese study found that 5 or more cups per day was associated with 23% reduced risk of death from heart disease among women and 12% among men. However, cup size in this study was only 100 mL — so 5 cups equaled only 500 mL total (Kuriyama, JAMA 2006) [1].
+In the Japanese Ohsaki study of 40,530 adults, women drinking 5 or more cups a day had a hazard ratio for death from any cause of 0.77 (95% CI 0.67 to 0.89), and men 0.88 (95% CI 0.79 to 0.98). In women, the hazard ratio for cardiovascular death was 0.69 at both 3 to 4 cups and 5 or more cups a day [27].
 
-A U.K. study following nearly 500,000 people (average age 57) for about 11 years found that 2-3 cups of tea per day (89% black tea) was associated with 15% decreased risk of cardiovascular disease-related death and 17% decreased risk of coronary artery disease death compared to non-consumers. Black tea intake was not associated with reduced stroke death risk (Inoue-Choi, Ann Intern Med 2022) [1].
+**Blood pressure:** In a crossover study of two groups of 100 people with high blood pressure, 4 months of regular green tea lowered systolic pressure by 6.6%, diastolic by 5.1% and pulse pressure by 9.1% in the first group, with smaller falls of 5.4%, 4.1% and 7.7% in the second. Pressures returned to pretreatment levels over 4 months of hot water instead. Signs of left ventricular hypertrophy fell from 20% to 8% and from 24% to 10% of patients [28].
 
-A very large U.S. study lasting 43 years found that higher daily tea intake was associated with 14% lower risk of dementia, with the greatest risk reduction at 1-2 cups per day and no greater benefit at higher intake. This study did not differentiate between tea types (Zhang, JAMA 2026) [1].
+**Cholesterol:** A meta-analysis of 14 randomised trials (1,136 people) found that green tea beverages or extracts lowered total cholesterol by 7.20 mg/dL and LDL by 2.19 mg/dL, with no effect on HDL [29].
 
-**Blood pressure:** A study in Egypt of people with high blood pressure (average age early 50s) who drank 4 cups daily of decaffeinated green tea (each providing approximately 130 mg of total catechins) for four months found systolic, diastolic, and pulse pressures decreased by approximately 6%, 4-5%, and 8-9%, respectively. The percentage of participants with left ventricular hypertrophy fell by 60%. Measurements returned to baseline after discontinuation of green tea. Participants continued their normal blood pressure medications throughout (Al-Shafei, Physiologic Rep 2019) [1].
+A larger analysis of 31 trials (3,321 people) found smaller falls: 4.66 mg/dL for total cholesterol and 4.55 mg/dL for LDL. Green tea did not affect HDL cholesterol and did not significantly lower triglycerides [12]. Most of the trials tested extract supplements rather than the beverage [7].
 
-**Cholesterol:** An analysis of 14 studies (3 weeks to 3 months duration) found that green tea reduced total cholesterol by 7.2 mg/dL and LDL cholesterol by 2.2 mg/dL compared to controls. Green tea did not significantly affect HDL cholesterol (Zheng, Am J Clin Nutr 2011) [1][12].
+**Stroke:** A meta-analysis of 9 studies found that people who drank at least 3 cups of tea a day, green or black, had a 21% lower risk of stroke than those drinking less than 1 cup [30]. In a Japanese cohort of 82,369 adults, hazard ratios for stroke were 0.86 for green tea at 2 to 3 cups a day and 0.80 at 4 or more, compared with seldom drinking it [31]. In the China Kadoorie Biobank (487,377 adults, mostly green tea drinkers), daily tea drinking had a hazard ratio for stroke of 0.92 (95% CI 0.89 to 0.95); the link held for green tea and was seen in men but not women [101].
 
-A larger analysis of 31 studies (3 weeks to 1 year duration) found more modest reductions: total cholesterol decreased by 4.66 mg/dL and LDL cholesterol by 4.55 mg/dL. Both green tea beverage and extract reduced total cholesterol, but only green tea extract reduced LDL cholesterol. Both caffeinated and decaffeinated green tea reduced total cholesterol by about 4.3 mg/dL, but only decaffeinated green tea reduced LDL cholesterol. Green tea did not significantly reduce triglycerides or increase HDL cholesterol regardless of type or caffeine content. Average daily catechin intake was 631 mg (range 80-2,489 mg/day) (Xu, Nutr J 2020) [1][12].
-
-A small study in China found that drinking 8 fl oz of green tea with a fat- and carbohydrate-rich breakfast resulted in blood triglyceride levels increasing only half as much compared to oolong tea, black tea, coffee, or water. Green tea also modestly reduced rises in total, LDL, and HDL cholesterol compared to controls. However, none of the beverages significantly affected post-meal blood sugar or insulin levels (Zhang, Asia Pac J Clin Nutr 2024) [1].
-
-Further cholesterol-lowering benefit is not seen with doses above 625 mg of green tea catechins (Zheng, Am J Clin Nutr 2011) [1].
-
-**Stroke:** Population studies found consumption of 3 or more cups of green tea associated with a 21% reduction in ischemic stroke risk compared to less than 1 cup per day (Arab, Stroke 2009) [1]. A Japanese study found 14% and 20% lower stroke risk for 2-3 cups and 4+ cups daily, respectively, compared to seldom drinking green tea (Kokubo, Stroke 2013) [1]. A large Chinese study found green tea consumption associated with decreased stroke risk, but only in men — 11% lower risk for daily consumers versus non-consumers — with risk also decreasing with years of tea consumption (Tian, Am J Clin Nutr 2019) [1].
-
-**Synthesis:** The cardiovascular evidence is strongest for population-level associations with moderate intake (2-4 cups daily). The cholesterol-lowering effects are modest (4-7 mg/dL total cholesterol) and unlikely to be clinically significant as standalone therapy. The blood pressure reduction shown in the Egyptian study is more clinically meaningful but needs replication. A 2022 meta-analysis of 34 RCT arms showed green tea supplementation significantly raised HDL cholesterol by 1.85 mg/dL but had modest or null effects on LDL, total cholesterol, and blood pressure [13].
+**Synthesis:** The cardiovascular evidence rests mostly on population associations, which may be confounded by lifestyle and diet [45]. The cholesterol effects are small. The blood pressure study is promising but needs repeating.
 
 ### Blood Sugar Control and Diabetes
 
-Green tea catechins may reduce fasting and postprandial blood sugar levels by inhibiting digestive enzymes that break down starches — similar to the effects of alpha-amylase inhibitors (Xu, ACS Food Sci Technol 2023) [1].
+**Timing matters.** In 17 healthy young men, catechin-rich green tea taken with an evening meal lowered blood sugar 60 minutes later compared with placebo. Taken with a morning meal, it left blood sugar higher than placebo at 120 and 180 minutes [62].
 
-**Timing matters.** A study among 17 healthy young men in Japan found that consuming brewed green tea (615 mg total catechins, 135 mg EGCG, 85 mg caffeine) with an evening meal significantly reduced blood sugar levels one hour later compared to caffeinated water. However, there was no significant effect when the same experiment was repeated with a morning meal. The researchers noted that blood sugar tends to rise in the evening, possibly explaining the greater benefit of green tea at dinner (Takahashi, J Nutr Biochem 2019) [1].
+**Metabolic syndrome:** In a crossover trial in 21 adults with metabolic syndrome and 19 healthy adults, a decaffeinated green tea extract confection (890 mg of catechins a day) for 4 weeks lowered serum endotoxin compared with placebo, and fasting blood sugar fell from baseline. It did not change liver enzymes, blood pressure, blood lipids or markers of systemic inflammation [63].
 
-**Metabolic syndrome:** A study among 19 healthy adults and 21 with metabolic syndrome found that consuming decaffeinated green tea extract (890 mg catechins, 552 mg EGCG) daily for 4 weeks slightly reduced fasting blood sugar compared to baseline in both groups. The extract also significantly decreased blood levels of endotoxin — a bacterial compound linked to insulin resistance and low-grade inflammation — attributed to reduced intestinal permeability. Green tea did not significantly affect liver function markers or systemic inflammation markers (Zeng, Nutr Res 2024) [1].
+**Population data:** In a meta-analysis that included 7 studies of tea, high tea intake, like high coffee intake, was linked to lower type 2 diabetes risk [14].
 
-**Population data:** An analysis of 20 population studies found that drinking 3 or more cups of black or green tea daily is associated with a 16% reduced risk of developing type 2 diabetes (Huxley, Arch Intern Med 2009) [1][14].
-
-**Meta-analysis of RCTs:** A 2024 meta-analysis of RCTs reported green tea supplementation reduced fasting blood glucose by approximately 5.5 mg/dL, HbA1c by 0.3%, and insulin resistance indices, though effects were small and not always sustained beyond 12 weeks [13]. A 2025 meta-analysis of 15 RCTs in 722 type 2 diabetes participants affirmed improvements in glycemic control but emphasized small effect sizes [15].
-
-**Synthesis:** Green tea may modestly improve blood sugar markers, particularly when consumed with meals (especially dinner). The effects are small relative to pharmaceutical interventions and are best viewed as a dietary adjunct rather than primary treatment.
+**Synthesis:** Green tea may modestly affect blood sugar, and the timing of intake may matter. The trials are small and short, so green tea is at most an adjunct to diet and treatment.
 
 ### Weight Loss
 
-The evidence for green tea as a weight loss aid is mixed, and the benefit — when present — appears to be modest and potentially attributable to caffeine.
+Evidence that green tea helps weight loss is mixed. Any benefit appears small and may depend on caffeine.
 
-**Caffeinated green tea extract:** Some researchers have proposed that weight loss associated with green tea is largely due to caffeine content rather than catechins specifically (Phung, Am J Clin Nutr 2010) [1]. One study gave normal weight, overweight, and obese individuals 9 capsules daily of green tea extract (280-540 mg caffeine, minimum 560 mg EGCG) for 3 months and found no significant change in body weight compared to placebo. The study also found no effect on fat absorption — another proposed mechanism (Janssens, J Nutr 2015) [1].
+**Caffeinated green tea extract:** A meta-analysis of 15 trials found that catechins with caffeine lowered body weight by 1.38 kg compared with caffeine alone, and by 0.44 kg compared with a caffeine-free control. Catechins without caffeine showed no benefit [64]. In a 12-week trial in 60 adults, extract providing more than 0.56 g a day of EGCG and 0.28 to 0.45 g a day of caffeine had no effect on fat absorption, energy expenditure or body composition [65].
 
-**Decaffeinated green tea extract — generally ineffective.** A study in obese young women in Spain on a low-calorie diet found that approximately 300 mg of EGCG daily from decaffeinated extract for 12 weeks produced equal weight loss to placebo (Mielgo-Ayuso, Br J Nutr 2014) [1]. A study in obese Taiwanese women using 856.8 mg of EGCG daily for 12 weeks found weight decreased by 2.4 lbs in the treatment group, but weight also decreased in the placebo group and the difference was not statistically significant. Liver enzymes increased in the treatment group (Chen, Clin Nutr 2015) [1].
+**Decaffeinated extract:** In 83 obese women on a calorie-restricted diet, 300 mg a day of EGCG did not add to weight loss over 12 weeks (difference -0.3 kg, 95% CI -5.0 to 4.3) and did not harm liver function markers [66]. In 102 women with central obesity, 856.8 mg of EGCG a day for 12 weeks was followed by a fall in weight from 76.8 kg to 75.7 kg in the treatment group, and the trial reported no side effects [67].
 
-**One positive decaffeinated study:** A study in sedentary overweight and obese men in England given 530 mg of decaffeinated green tea extract twice daily (432 mg EGCG/day) for 6 weeks showed weight loss of 1.4 lbs while placebo gained 1.2 lbs despite similar caloric intake. One capsule was taken an hour before breakfast and the other an hour before dinner (Brown, Br J Nutr 2011) [1].
+**A crossover trial in men:** Inactive men with overweight or obesity took 530 mg of a decaffeinated extract twice a day for 6 weeks. In the first period, weight fell by 0.64 kg on the extract and rose by 0.53 kg on placebo, despite a similar rise in energy intake [68].
 
-**Carbohydrate absorption:** A study in young adults found that 4 grams of green tea extract (257.6 mg EGCG) reduced carbohydrate absorption from corn flakes by 29%, measured by carbon breath analysis (Lochocka, Nature Sci Reports 2015) [1].
+**Within a whole diet:** In the 18-month DIRECT PLUS trial, the green-Mediterranean group added green tea at 3 to 4 daily cups, a duckweed plant shake and less red meat to a Mediterranean diet with walnuts. Visceral fat fell by 14.1% compared with 6.0% on the Mediterranean diet and 4.2% on healthy dietary guidelines, independent of weight loss [46]. The trial result belongs to the whole diet, but within it, drinking more green tea and eating more walnuts and duckweed were linked with greater visceral fat loss [46].
 
-**Meta-analyses:** Meta-analyses of RCTs report modest reductions in body weight averaging 1.3 kg over 12 weeks when catechins are combined with caffeine [16]. The effects are attributed to augmented diet-induced thermogenesis and postprandial fat oxidation. EGCG inhibits catechol-O-methyltransferase (COMT), prolonging norepinephrine-mediated lipolysis in adipocytes [16].
+**Meta-analyses:** A meta-analysis of 11 studies found that catechins, or an EGCG and caffeine mixture, lowered body weight by 1.31 kg on average, a small effect [16].
 
-**Synthesis:** Green tea may contribute modestly to weight management, particularly caffeinated formulations, but the effects are small (1-2 lbs over several weeks to months) and inconsistent. Decaffeinated extracts have generally not shown benefit. Green tea should not be relied upon as a primary weight loss strategy.
+**Synthesis:** Green tea extracts may contribute modestly to weight management, mostly in caffeinated forms, but the effects are small and inconsistent. Decaffeinated extracts have generally not shown benefit. It is not a primary weight loss strategy.
 
 ### Memory and Cognition
 
-Green tea consumption has been associated with lower risk of cognitive decline in population studies, but clinical trials show modest or no benefit.
+Observational studies have linked green tea drinking to less cognitive decline, but trials show modest or no benefit.
 
 **Population studies (brewed tea):**
 
-Higher consumption of green tea has been associated with lower prevalence of cognitive impairment in older adults (Kuriyama, Am J Clin Nutr 2006) [1].
+In 1,003 Japanese adults aged 70 or older, those drinking green tea at least twice a day (2 cups) had lower odds of cognitive impairment (odds ratio 0.46, 95% CI 0.30 to 0.72) than those drinking 3 cups a week or less [69].
 
-A 4-year study of 957 older Chinese adults (average age 64) found that regular consumption of at least 1 cup of green tea per week lowered the risk of cognitive decline by 57% compared to non-regular tea drinkers. "Medium" consumption (3-4 cups daily of all tea types) had a 64% risk reduction — more than "high" consumption (5+ cups, 54% reduction) or "low" (1-2 cups, 25% reduction). Among people with the ApoE4 gene (increased Alzheimer's risk), regular tea consumption reduced cognitive decline risk by 86% (Feng, J Nutr Health Aging 2016) [1].
+In 957 Chinese older adults in Singapore, green tea drinkers had lower odds of new neurocognitive disorders (odds ratio 0.43). Among carriers of the APOE e4 gene, tea drinking had an odds ratio of 0.14 [70].
 
-A Japanese study following older adults for 5.3 years found cognitive decline risk was 30% lower for those consuming green tea once daily versus less than once a day. More frequent consumption conferred no significant additional benefit (Shirai, Public Health Nutr 2019) [1].
+In a Japanese study of 620 men and 685 women aged 60 to 85 years, followed for 5.3 years, hazard ratios for cognitive decline were 0.71 for green tea 2 to 3 times a day and 0.72 for 4 or more times, compared with under once a day. At once a day the hazard ratio was 0.70 (95% CI 0.45 to 1.06), not significant [71].
 
-A January 2025 cohort study of older Japanese adults found that those consuming 3+ cups daily had significantly fewer cerebral white matter lesions — hyperintensities associated with cognitive impairment — compared to non-consumers [17].
+In two U.S. cohorts followed for up to 43 years, tea drinking was associated with lower dementia risk, most clearly at about 1 to 2 cups a day; the study measured tea in general, not green tea [72].
 
 **Clinical trials (green tea extract):**
 
-A randomized, placebo-controlled study among 47 healthy older adults (average age 58) found that green tea extract (336.4 mg catechins including 216.9 mg EGCG) taken daily for 12 weeks did not improve visual or verbal memory, attention, facial expression recognition, visual processing, or motor function compared to placebo. There was improvement only on a working memory task. The study was sponsored by the manufacturer of the extract (Baba, Molecules 2020) [1].
+In Japanese adults aged 50 to 69 years with self-assessed cognitive decline, a daily 336.4 mg of catechins from decaffeinated green tea for 12 weeks shortened response time on one working-memory test [73].
 
-A study in elderly Japanese adults (average age 84) with dementia found that 2 grams of green tea extract powder daily (220 mg total catechins, 88 mg EGCG) for one year showed no improvement in cognitive function compared to placebo (Yamada, Nutr J 2016) [1].
+In 33 nursing home residents with cognitive problems (mean age 84.8), 2 g a day of green tea powder (220.2 mg of catechins) for 12 months did not change cognitive scores compared with placebo [74].
 
-A study of green tea extract with added L-theanine suggested improvement in memory and attention in subjects with mild cognitive impairments (Park, J Med Food 2011) [1].
+In 91 people with mild cognitive impairment, a green tea extract and L-theanine combination for 16 weeks gave only a marginal gain in memory overall, with clearer gains in the most impaired subgroup [75].
 
-**Matcha for cognition:** A study in healthy young adults (average age 25) found that 4 grams of matcha powder (280 mg EGCG, 67 mg L-theanine, 136 mg caffeine) consumed as brewed tea significantly improved attention and response time 1 hour after consumption. There was no improvement in memory, other cognition measures, or mood. The researchers noted that the 136 mg of caffeine alone could explain the effects (Dietz, Food Res Int 2017) [1].
+**Matcha for cognition:** In 23 adults, matcha tea or a matcha bar (each with 4 g of matcha powder) mainly improved basic attention and speed of response 60 minutes later compared with placebo. Mood did not change [76].
 
-**L-theanine and caffeine synergy:** L-theanine at 200 mg elevates alpha-wave brain activity within 40 minutes, promoting relaxed wakefulness. When combined with caffeine (approximately 40 mg), this synergy improves attention, working memory, and task-switching performance beyond either compound alone [18][19]. Both compounds have high oral bioavailability (L-theanine approximately 100%, caffeine approximately 99%) and peak within 1 hour [18].
+**L-theanine and caffeine synergy:** In one trial, 250 mg of L-theanine with 150 mg of caffeine improved several measures of speed, accuracy and alertness [18]. In another, 100 mg of L-theanine with 50 mg of caffeine improved speed and accuracy on an attention-switching task [19].
 
-**Synthesis:** Regular green tea consumption (1+ cups daily) is consistently associated with lower cognitive decline risk in population studies, but this may reflect healthier lifestyles among tea drinkers rather than causal effects. Green tea extract supplements have not convincingly improved cognition in clinical trials. Any short-term cognitive benefits from matcha or green tea may be largely attributable to the caffeine and L-theanine content.
+**Synthesis:** Green tea drinking is associated with lower cognitive decline risk in population studies, but this may reflect healthier lifestyles among tea drinkers. Extract supplements have not convincingly improved cognition in trials. Short-term effects from matcha or tea may come mainly from caffeine and L-theanine.
 
 ### Cancer Prevention
 
 Evidence for green tea in cancer prevention is largely limited to population associations, with clinical trial results being inconsistent.
 
-**Overall:** A Cochrane analysis of 51 studies found no consistent association between green tea consumption and gastric, colon, esophageal, pancreatic, or bladder cancer risk, although some studies found associations with reduced liver cancer and ovarian cancer risk (Boehm, Cochrane Database Syst Rev 2009) [1][20].
+**Overall:** A 2020 Cochrane review of 142 studies found inconsistent results and limited evidence that green tea lowers overall cancer risk or risk at specific sites. Most studies were in Asian populations with high green tea intake [20].
 
-**Prostate cancer:** Population-based studies have not found drinking green tea to significantly reduce prostate cancer risk (Zheng, Nutr Cancer 2011) [1]. However, clinical studies in men with pre-cancerous prostate changes have shown some benefit:
+**Prostate cancer:** Observational studies give mixed results: the pooled odds ratio was 0.43 in case-control studies but 1.00 in cohort studies [77]. Trials in men with precancerous prostate changes (high-grade prostatic intraepithelial neoplasia) have also been mixed:
 
-- A well-controlled study using green tea extract providing 311 mg EGCG per day for one year found that only 3% of men developed prostate cancer versus 30% in the placebo group (Bettuzzi, Cancer Res 2006) [1].
-- A NIH-funded study using 400 mg EGCG per day for one year found lower incidence in the extract group (10.2%) versus placebo (18.8%), but the results were not statistically significant due to the small study size. There were significant decreases in PSA levels (Kumar, Canc Prev Res 2015) [1].
-- A study of 60 men in Italy using 600 mg of green tea catechins daily for one year significantly lowered PSA levels but did not decrease prostate cancer incidence — 18% in both groups (Micali, Arch Ital Urol Androl 2017) [1].
+- In 60 men, green tea catechins at 600 mg a day for one year was followed by prostate cancer in 1 of 30 treated men (about 3%) versus 9 of 30 on placebo (30%) [32].
+- In 97 men, a catechin mixture with 400 mg of EGCG a day for one year did not reduce prostate cancer: 5 of 49 versus 9 of 48 on placebo. PSA fell in the treated group [33].
+- In another 60 men, a daily 600 mg of catechins from green tea for one year lowered PSA but did not change prostate cancer incidence [78].
 
-**Breast cancer:** A U.S. study following over 45,000 women for approximately 8 years found breast cancer risk was 18% lower among those consuming 5+ cups of green tea per week compared to never-consumers (Zhang, Int J Cancer 2019) [1]. An analysis of 9 population studies found drinking more than 3 cups daily associated with 27% reduced risk of breast cancer recurrence (Ogunleye, Breast Cancer Res Treat 2010) [1].
+**Breast cancer:** In the U.S. Sister Study of 45,744 women, drinking green tea at least 5 cups a week had a hazard ratio for breast cancer of 0.82 (95% CI 0.70 to 0.95) compared with none [79]. A meta-analysis found that green tea intake above 3 cups a day was associated with less breast cancer recurrence (relative risk 0.73) [80].
 
-However, a large clinical trial of high-dose decaffeinated green tea extract (1,315 mg total catechins, 843 mg EGCG daily) given to postmenopausal women at high risk for breast cancer found no effect on breast density after one year. Concerning finding: the extract increased estradiol levels (the opposite of what brewed green tea has shown), and women on the extract were more likely to experience liver enzyme elevations (Samavat, Cancer Prev Res 2017; Samavat, J Nutr 2019) [1].
+However, a large trial of a decaffeinated extract (1,315 mg of catechins, including 843 mg of EGCG, a day for one year) in 1,075 postmenopausal women found no overall change in breast density [34]. The extract raised blood estradiol by 16% compared with placebo [81], and more women on it had liver enzyme rises [39].
 
-**Ovarian cancer:** An analysis found that one cup of green tea per day was associated with a 31% reduction in ovarian cancer risk; black tea was associated with a more modest 8% reduction. More than 1.7 cups daily did not further reduce risk (Zhang, Carcinogenesis 2018) [1].
+**Ovarian cancer:** A meta-analysis of 14 observational studies found a pooled relative risk of ovarian cancer of 0.64 for green tea, but no significant link for black tea [82].
 
-**Lung cancer:** An analysis of 12 population studies found that 2 cups daily was associated with an 18% reduction in lung cancer risk (Tang, Lung Cancer 2009) [1].
+**Lung cancer:** In a meta-analysis of 22 studies, each extra 2 cups of green tea a day was linked to an 18% lower lung cancer risk (relative risk 0.82) [83].
 
-**Gastric cancer:** An analysis suggests long-term, high-dose consumption may reduce gastric cancer risk — but only if the tea is cool or warm (up to 46.9 C / 116 F). Drinking very hot green tea (above 54.9 C / 130 F) may increase gastric cancer risk by 7.6 times compared to cool tea (Huang, Pub Health Nutr 2017) [1].
+**Gastric cancer:** A meta-analysis found no link in cohort studies (relative risk 1.05) but lower odds in case-control studies (0.84). Very hot green tea was associated with a relative risk of 7.60 (95% CI 1.67 to 34.60), though the authors called this unclear [84].
 
-**Esophageal cancer:** Drinking green tea, particularly when very hot, may increase esophageal cancer risk. Men who drank green tea in China had 1.5 times the risk, increasing to 2.5 times if consumed very hot — within one minute after pouring boiling water (Yang, Clin Epidemiol 2018) [1]. A 10-year study in Iran found that "very hot" tea drinkers had 2.4 times the esophageal cancer risk of "cold/lukewarm" tea drinkers. Waiting 4-5 minutes for tea to cool was sufficient to avoid the increased risk (Islami, Int J Cancer 2019) [1].
+**Esophageal cancer:** In an Iranian cohort of 50,045 adults, a preference for very hot tea was associated with a hazard ratio for esophageal squamous cell carcinoma of 2.41 compared with cold or lukewarm tea. Drinking tea less than 2 minutes after pouring, versus 6 minutes or more, had a hazard ratio of 1.51 [85].
 
-**Colon polyps:** A Korean study of 143 people who had polyps removed found that green tea extract (900 mg extract, 600 mg catechins, 200 mg EGCG) daily for one year reduced new polyp development: 28% versus 61% in controls (Shin, Clin Nutr 2017) [1]. However, a larger German study of 632 people found that decaffeinated green tea extract (150 mg EGCG twice daily) for 2-3.5 years did not significantly reduce polyp recurrence overall — 51.1% versus 55.7% in placebo. There was a modest reduction in tubular adenoma recurrence among men only (Seufferlein, Am J Gastroenterol 2022) [1].
+**Colon polyps:** In a Korean trial of 143 people who had polyps removed, 0.9 g of green tea extract daily for 12 months lowered new adenomas to 23.6% versus 42.3% in controls (relative risk 0.56) [35]. A larger German trial (632 people analysed) of extract with 150 mg of EGCG twice a day over 3 years found 51.1% versus 55.7% on placebo, a difference that was not significant [36].
 
-**Cancer treatment (blood cancers):** A study of 42 people with early/intermediate chronic lymphocytic leukemia found that 2,000 mg EGCG twice daily for up to 6 months induced a "biological response" (>20% white blood cell reduction or >30% lymph node reduction) in 69% of patients. However, the study lacked a control group (Shanafelt, Cancer 2013) [1]. An observational study of 11 patients with blood cancers found that approximately 200 mg EGCG daily reduced white blood cell counts by 37-74%, but also lacked a control group (Willard, Blood 2020) [1].
+**Cancer treatment (blood cancers):** In a phase 2 trial in 42 people with early chronic lymphocytic leukemia, 2,000 mg of EGCG twice a day in treatment lasting up to 6 months gave a biologic response in 69% [37].
 
-**Low bioavailability undermines translation from lab studies:** In vitro and animal studies show EGCG inducing apoptosis in cancer cells and inhibiting the NF-kB inflammatory pathway. However, oral EGCG absorption is below 1%, with peak plasma concentrations far lower than the effective concentrations used in laboratory studies (typically 5-50 times higher) [9][10]. This gap limits the applicability of laboratory cancer findings to humans.
+**Low bioavailability undermines translation from lab studies:** Many cancer effects of tea polyphenols come from cell culture and animal studies [3]. Food further reduces how much EGCG reaches the blood [9].
 
-**Synthesis:** The overall body of cancer evidence relies heavily on population-level associations that cannot establish causation. The most promising clinical data is in men with pre-cancerous prostate lesions, where green tea extract may reduce the risk of progression. For most cancers, the evidence is insufficient to recommend green tea specifically for prevention. The temperature at which tea is consumed may be more important than the tea itself — very hot beverages independently increase esophageal and gastric cancer risk.
+**Synthesis:** The cancer evidence relies heavily on population associations that cannot establish cause. Trial results in men with precancerous prostate changes and in people with colon polyps are mixed. Drinking tea very hot is linked to higher esophageal cancer risk.
 
 ### Uterine Fibroids
 
-A study of 33 women ages 18-50 with uterine fibroids found that 800 mg of green tea extract (45% EGCG) daily for 4 months reduced fibroid volume by 32.6%, while fibroids grew by 24.3% in the placebo group. Treatment also significantly reduced symptom severity and anemia. No adverse effects were observed (Roshdy, Int J Wom Health 2013) [1]. Laboratory research indicated that EGCG exhibits anti-fibrotic effects on uterine muscle and fibroid cells — reducing fibrotic protein production rather than killing the cells (Islam, Scientific Reports 2023) [1].
+In a pilot trial, 33 women with fibroids, aged 18 to 50 years, completed 4 months of treatment with 800 mg of a green tea extract standardised to 45% EGCG, or placebo, taken daily. Fibroid volume fell by 32.6% on the extract and grew by 24.3% on placebo. Symptoms and anemia also improved, with no adverse effects seen [38].
 
-However, green tea extract is not advisable for women who may be conceiving or are pregnant due to potential effects on folate metabolism and birth defect risk (see Safety and Side Effects) [1].
+Women who may conceive or are pregnant should talk to their doctor first: tea drinking around conception has been linked with spina bifida, and green tea lowered folic acid exposure in clinical studies (see Safety and Side Effects) [52][54].
 
 ### Influenza Prevention
 
-In laboratory and animal studies, green tea catechins have antiviral effects. A study among Japanese children ages 6-13 found that drinking 1-5 cups of green tea daily between November and February was associated with decreased flu risk (Park, J Nutr 2011) [1].
+In 2,050 Japanese schoolchildren, drinking green tea at 1 to under 3 cups a day had an odds ratio for influenza of 0.62, and 3 to 5 cups 0.54, compared with less than 1 cup [86].
 
-A review of five clinical studies found that gargling with tea (green or black tea extract, 2-3 times daily) reduced flu infection risk by 30% compared to gargling with water or not gargling (Kazuki, BMC Public Health 2016) [1].
+A meta-analysis of 5 studies found that gargling with tea or its ingredients lowered the risk of influenza (relative risk 0.70) [87].
 
-A study of 197 Japanese healthcare workers during flu season found significantly fewer influenza cases among those taking green tea catechins (378 mg catechins including 270 mg EGCG) plus 210 mg L-theanine daily: 4.1% diagnosed with flu versus 13.1% in the placebo group based on symptoms. However, laboratory-confirmed flu incidence was not significantly different between groups (Matsumoto, BMC Complement Altern Med 2011) [1].
+In 197 Japanese healthcare workers, capsules with green tea catechins (378 mg a day) and theanine (210 mg a day) lowered clinically defined influenza to 4.1% versus 13.1% on placebo. Laboratory-confirmed influenza was not significantly different [88].
 
 ### Sleep
 
-A study of 46 adults with difficulty sleeping found that 2,700 mg of matcha powder (standardized to 50.3 mg theanine, 301.5 mg catechins including 143 mg EGCG, and 71.5 mg caffeine) taken at least 2 hours before bedtime for 4 weeks did not significantly improve any sleep measure — total sleep time, sleep latency, wake after sleep onset, sleep efficiency, or subjective sleep quality — compared to placebo (Baba, Nutrients 2024) [1]. Green tea, due to its caffeine content, is generally not recommended for sleep support.
+In healthy Japanese adults, 2.7 g of matcha daily for 4 weeks made no difference to sleep latency, total sleep time, waking after sleep onset or sleep efficiency measured by EEG, compared with placebo. Satisfaction with sleep time showed only a trend toward improvement [89]. Green tea's caffeine is thought to worsen sleep quality [89].
 
 ### Dental Health
 
-Green tea polyphenols may inhibit dental plaque buildup by preventing oral bacteria from feeding on sugar (Koo, Eur J Pharmacol 2004) [1]. A small study found that rinsing with brewed green tea for 1 minute resulted in 16% lower counts of decay-causing bacteria (Streptococcus mutans) — similar to the 17% reduction seen with chlorhexidine (prescription antibacterial mouthwash) — compared to water (Neturi, J Clin Diagn Res 2014) [1].
+In a crossover trial in 30 young adults, rinsing with green tea for one minute lowered counts of the decay-causing bacterium Streptococcus mutans compared with water, as chlorhexidine did [90].
 
 ### Prebiotic Effect
 
-Green tea polyphenols may stimulate growth of beneficial gut bacteria (such as Bifidobacterium) and inhibit pathogenic bacteria (such as Clostridium species). A human study found that drinking approximately 4 cups daily for 10 days tended to increase Bifidobacterium proportions (Jin, Microbiol Immunol 2012) [1]. However, a study of green tea extract capsules (at least 560 mg EGCG daily) showed no effect on gut bacterial species (Janssens, PLoS One 2016) [1]. The difference may relate to the broader matrix of compounds in brewed tea versus isolated extract.
+In 10 volunteers, drinking green tea for 10 days tended to raise the proportion of Bifidobacterium in stool [91]. A 12-week trial of green tea capsules (more than 0.56 g a day of EGCG) in 58 adults found no change in gut bacteria [92].
 
 ### Acne
 
-A study of 64 young women with moderate-severe acne found that 500 mg of decaffeinated green tea extract (285.6 mg EGCG) three times daily for 4 weeks reduced inflammatory acne lesions on the nose, around the mouth, and chin compared to placebo, but the reductions were very small. There was no improvement on the forehead, cheeks, or whole face, and no improvement in non-inflammatory lesions (Lu, Complement Ther Med 2016) [1].
+In a trial of 64 women with moderate to severe acne, participants took 1,500 mg of a decaffeinated extract of green tea (856 mg of EGCG) or placebo daily. After 4 weeks the extract reduced inflammatory lesions on the chin, nose and around the mouth versus placebo, but not total lesion counts [93].
 
 ### Cold Sores
 
-Laboratory studies have shown that EGCG inhibits herpes simplex virus growth (HSV-1 and HSV-2) (Isaacs, Antimicrob Agents Chemother 2008; de Oliveira, Food Chem Toxicol 2013) [1]. However, there are no published human studies investigating the effects of green tea — applied topically or consumed as a supplement or beverage — on herpes simplex outbreaks [1].
+In laboratory studies, EGCG inactivated clinical isolates of herpes simplex virus (HSV-1 and HSV-2) [94].
 
 ## 4. Recommended Dosing
 
@@ -223,129 +221,120 @@ There is no established recommended daily allowance for green tea or its catechi
 
 ### By Indication
 
-**General health and cardiovascular support:** 2-4 cups of brewed green tea daily (approximately 200-500 mg total catechins, 80-200 mg EGCG). This range is associated with the most consistent cardiovascular benefits in population studies [1][7].
+**General health and cardiovascular support:** In East Asian cohorts, the lowest coronary risk was seen at about 2 to 3 cups (300 mL each) a day [26].
 
-**Cholesterol reduction:** Green tea catechins up to 625 mg/day — further benefit is not seen above this dose (Zheng, Am J Clin Nutr 2011) [1].
+**Cancer prevention (high-risk individuals):** Prostate trials used 600 mg of catechins or 400 mg of EGCG a day for one year, with mixed results. This should only be considered under medical supervision [32][33][78].
 
-**Cancer prevention (high-risk individuals):** In studies of men with pre-cancerous prostate lesions, 200-400 mg of EGCG daily for one year showed benefit. This should only be considered under medical supervision [1].
+**Fibroids:** The pilot trial gave 800 mg of a green tea extract standardised to 45% EGCG, or placebo by mouth each day [38]. Women who may conceive or are pregnant should talk to their doctor first [52][54].
 
-**Fibroids:** 800 mg green tea extract (45% EGCG) daily, taken after meals (Roshdy, Int J Wom Health 2013) [1]. Not suitable for women who may conceive or are pregnant.
+**Weight management:** Evidence is inconsistent. The crossover trial in overweight men used 530 mg of a decaffeinated extract twice a day [68].
 
-**Weight management:** Evidence is inconsistent. The positive study in overweight men used 530 mg of decaffeinated green tea extract (432 mg EGCG) twice daily — one capsule before breakfast, one before dinner (Brown, Br J Nutr 2011) [1].
-
-**Blood sugar support:** Green tea consumed with meals, particularly dinner, may help blunt postprandial blood sugar spikes [1].
+**Blood sugar support:** Green tea taken with an evening meal may blunt the blood sugar rise that follows the meal [62].
 
 ### How to Brew
 
-Steep 1.5-2 grams of tea (approximately 1 tea bag or 1 teaspoon of loose tea) in recently boiled water for 3-5 minutes. Longer steeping does not significantly increase catechin extraction but does increase bitterness [1]. Use soft (low-mineral) water for maximum catechin yield. Let tea cool to a comfortable temperature before drinking — very hot beverages increase esophageal and gastric cancer risk regardless of their content [1].
+Hot water extracts compounds quickly but degrades some of them; cold steeping extracts more but takes longer [60]. Brewing with bottled or deionised water gives more EGCG than tap water [59]. Let tea cool before drinking: very hot tea is linked to esophageal cancer [85].
 
 ### Upper Safety Limits
 
-The European Food Safety Authority (EFSA) concluded in 2018 that catechin doses at or above 800 mg per day from supplements may be associated with initial signs of liver injury. EFSA recommends no more than 338 mg of EGCG daily from concentrated supplement forms [8][21]. Green tea consumed as brewed tea at 3-5 cups daily (providing approximately 90-300 mg EGCG) is considered safe with no liver toxicity risk at typical intakes [8][21].
+The European Food Safety Authority (EFSA) concluded in 2018 that green tea infusions prepared in the traditional way are in general safe. It found that doses equal to or above 800 mg of EGCG a day, taken as a food supplement, raised liver enzymes in trials [8]. A 2018 systematic review derived a safe intake of 338 mg of EGCG a day for extracts taken as a solid bolus dose, and an observed safe level of 704 mg of EGCG a day for tea preparations in beverage form [47].
 
 ## 5. Safety and Side Effects
 
 ### Green Tea Beverage — Generally Safe
 
-No significant safety concerns have been reported for green tea consumed as a beverage by adults at moderate intake (3-5 cups daily) [7][8]. The primary considerations are caffeine-related effects (see below) and the risk of very hot beverages increasing cancer risk in the upper digestive tract.
+No safety concerns have been reported for green tea consumed as a beverage by adults, though it contains caffeine [7]. Rare cases of liver injury have followed green tea infusions, most likely an idiosyncratic reaction [8]. Very hot tea is linked to esophageal cancer [85].
 
 ### Caffeine-Related Effects
 
-Green tea contains approximately 20-45 mg of caffeine per cup, less than coffee (80-100 mg per cup) but enough to cause effects in sensitive individuals. Even "decaffeinated" products may contain up to 2% caffeine [1]. Excessive caffeine can cause insomnia, anxiety, increased heart rate, digestive upset, and interference with MAO inhibitor medications [1].
+Green tea contains caffeine [7]. Caffeine can cause poor sleep, jitteriness and a faster heartbeat in sensitive people. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Liver Injury — The Primary Supplement Safety Concern
 
-Liver toxicity is the most serious safety concern associated with green tea, occurring almost exclusively with concentrated extract supplements rather than brewed tea [1][8][11].
+In laboratory studies, the liver is the target organ of green tea toxicity [47]. Although uncommon, liver injury has been reported mainly with green tea extracts in tablet or capsule form [7].
 
-**Evidence of risk:** A study sponsored by U.S. government agencies gave over 1,000 postmenopausal women 1,315 mg of catechins (843 mg EGCG) twice daily with meals for one year. While overall adverse events were similar to placebo, 6.7% of the extract group (versus 0.7% of placebo) experienced liver enzyme elevations. Enzyme levels returned to normal with discontinuation in all but one person (Dostal, Food Chem Tox 2015) [1].
+**Evidence of risk:** In the Minnesota Green Tea Trial, 1,075 postmenopausal women took extract with 843 mg of EGCG a day or placebo for one year. Overall adverse events were similar, but 6.7% of women taking the extract had an ALT liver enzyme rise versus 0.7% on placebo, and 1.3% had serious ALT-related events [39].
 
-**Cases of severe injury:** There are reports of liver toxicity beginning 5 days to 4 months after starting green tea extract supplements. Most cases resolved after discontinuation, but one patient required a liver transplant [1][11]. A case of acute liver failure in a 16-year-old male was associated with a green tea extract providing 400 mg of EGCG daily (World J Gastroent 2013) [1]. One case of acute hepatitis was associated with drinking 3 cups of a brewable green tea (as tea bags) daily for 3 months (Lugg, BMJ Case Rep 2015) [1]. A 2022 analysis identified 27 probable instances of green tea extract-induced liver damage among 216 reported cases [21].
+**Cases of severe injury:** In the U.S. Drug-Induced Liver Injury Network, 40 of 1,414 assessed cases (3%) were attributed to green tea. Symptoms began 15 to 448 days after starting; 35% were severe and 3 people (8%) needed a liver transplant [11]. A teenage boy using a weight-loss product containing green tea extract developed impending acute liver failure [48]. A 16-year-old girl developed acute hepatitis after three months of drinking Chinese green tea ordered online, and recovered after stopping [49]. If you take a green tea product and get yellow skin or eyes, dark urine or belly pain, stop it and see a doctor promptly [21]. Case reports link liver injury to EGCG intakes from 140 mg to about 1,000 mg a day [21].
 
-**Genetic susceptibility:** Individuals with the HLA-B*35:01 gene variant (present in 5-15% of Americans) appear especially susceptible to green tea-induced liver injury (Hoofnagle, Hepatology 2021) [7][11]. The USP panel found no evidence that liver damage was due to solvents, pesticides, or other impurities, and theorized that genetic factors play the primary role (Oketch-Rabah, Toxicol Rep 2020) [1].
+**Genetic susceptibility:** The HLA-B*35:01 gene variant was found in 72% of green tea liver injury cases, compared with 12% of drug cases [11]. Between 5 and 15% of Americans carry this variant [7]. The USP review found no evidence that solvents, pesticides or other impurities caused the injuries [21].
 
-**Mechanism:** EGCG at high concentrations can induce mitochondrial dysfunction in hepatocytes, disrupting oxidative phosphorylation and promoting reactive oxygen species accumulation [21][22].
+**Risk mitigation:** Bolus doses of extract taken while fasting raise EGCG exposure [21]. In dogs, green tea extract caused lethal toxicity when given fasting but not when given with food [50]. The USP requires this label: "Do not take on an empty stomach. Take with food. Do not use if you have a liver problem and discontinue use and consult a healthcare practitioner if you develop symptoms of liver trouble, such as abdominal pain, dark urine, or jaundice (yellowing of the skin or eyes)." [21]
 
-**Risk mitigation:** Take green tea extract with food, not on an empty stomach. A study in dogs found that high doses of green tea extract induced lethal toxicity when given without food but showed no significant toxicity when given with food (Wu, Int J Toxicology 2011) [1]. The USP added a labeling requirement in 2019: "Do not take on an empty stomach. Take with food. Discontinue use and consult a healthcare practitioner if you develop symptoms of liver trouble, such as abdominal pain, dark urine, or jaundice" [1].
-
-**EFSA threshold:** Green tea catechins at or above 800 mg/day from supplements may cause initial signs of liver injury. The proposed safe upper limit for concentrated supplement forms is 338 mg EGCG daily. Brewed tea at typical intakes poses no liver toxicity risk [8][21].
+**EFSA threshold:** Supplement doses equal to or above 800 mg of EGCG a day raised liver enzymes in trials. A systematic review proposed 338 mg of EGCG a day as a safe intake for extracts taken as a solid bolus [8][47].
 
 ### Fluorosis
 
-Excessive green tea consumption can cause fluorosis (brittle teeth and bones) because green tea contains small amounts of fluoride. This is unlikely with just a few cups daily but has occurred with extreme consumption (e.g., 100-150 tea bags daily or pitchers of instant tea daily), providing approximately 20+ mg of fluoride — above the 10 mg/day Tolerable Upper Intake Level. Green teas contain approximately 1.2 mg of fluoride per 6 oz serving; it would be safe for healthy adults to consume up to 5 cups of green tea daily without fluorosis risk (Kakumanu, NEJM 2013; Das, Environ Pollut 2017) [1].
+Tea contains fluoride. A 2013 case report described skeletal fluorosis from excessive tea drinking [95].
 
 ### Kidney Stones (Oxalate)
 
-Green tea contains much lower oxalate (1.36 mg per cup) than black tea (9.54 mg per cup) (Charrier, Asia Pacific J Clin Nutr 2002) [1]. In animal studies, EGCG from green tea has actually been shown to reduce kidney stone formation (Chen, CrystEngComm 2010; Itoh, J Urol 2005) [1]. Observational studies report decreased kidney stone risk of 8% and 14% in women and men, respectively, who drink 2-3 cups of tea daily (Curhan, Ann Intern Med 1998; Curhan, Am J Epidemiol 1996) [1]. Green tea appears safe for individuals prone to kidney stones.
+In U.S. cohorts, each daily 240 mL serving of tea was associated with an 8% lower kidney stone risk in women and 14% lower in men [96][97]. These studies did not separate green tea from other teas.
 
 ### Iron Absorption Interference
 
-Green tea polyphenols can significantly inhibit non-heme iron absorption. One cup of green tea (492 mg total polyphenols) consumed with a small meal reduced iron absorption by approximately 80% compared to mineral water (Lazrak, J Nutr 2021) [1][23].
+Tea polyphenols inhibit non-heme iron absorption. In Moroccan women, a 300 mL serving of green tea (492 mg of polyphenols) with a meal reduced absorption of the meal's fortified iron by more than 85%, in women with and without iron deficiency anemia [23].
 
-A case was reported of a 23-year-old woman who developed severe iron-deficiency anemia from consuming two cups of green tea daily within 30 minutes of eating. Even with oral iron supplementation and blood transfusions, her hemoglobin levels declined until she discontinued green tea. Upon resuming one cup daily, her hemoglobin declined again. The anemia resolved only after limiting intake to no more than 5 grams of tea leaves per day and avoiding tea within one hour of meals (He, Heliyon 2024) [1].
+A woman developed severe iron-deficiency anemia after three months of moderate green tea drinking, with hemoglobin falling by 6.9 g/dL; the anemia did not return after she changed how she drank tea [51].
 
-**Recommendation:** Separate green tea consumption from iron-rich foods and iron supplements by at least one hour [1].
+**Recommendation:** If you have low iron, ask your doctor about drinking tea away from meals and iron supplements [23].
 
 ### Pregnancy and Breastfeeding
 
-Women attempting to conceive or in their first trimester should avoid large amounts of green tea. Catechins may inhibit the conversion of folic acid to its active folate form, which is needed for normal spinal cord development. Preliminary evidence suggests increasing maternal tea consumption is associated with increased risk of spina bifida (Correa, Ann Epidemiol 2000) [1].
+During pregnancy, caffeine intake should stay moderate; if you are or might be pregnant, ask your health care provider about caffeine [7]. ACOG judged moderate caffeine intake, less than 200 mg a day, unlikely to be a major factor in miscarriage or preterm birth [24].
 
-Green tea is generally considered safe during pregnancy at moderate intake (1-3 cups per day), keeping total daily caffeine under 200 mg as recommended by ACOG. An 8-ounce cup contains approximately 25-45 mg of caffeine [24]. Women taking prenatal vitamins providing 400-600 mcg of folic acid should have mitigated risk from catechin interference with folate absorption [24].
+In a U.S. case-control study, tea drinking around conception was associated with spina bifida (odds ratio 2.3, 95% CI 1.2 to 4.4) [52]. Green tea also lowered exposure to folic acid in clinical studies [54].
 
-Breastfeeding women should limit green tea to avoid excessive caffeine transfer to infants [1][7].
+Caffeine passes into breast milk. High intakes can cause fussiness and poor sleep in the infant, though low to moderate intakes usually cause no problems [7].
 
 ### Microplastics from Tea Bags
 
-Plastic tea bags release billions of microplastic particles into brewed tea. A study found that steeping a single plastic teabag at brewing temperature for 5 minutes released approximately 11.6 billion microplastic particles and 3.1 billion nanoplastic particles — several orders of magnitude higher than levels reported in foods (Hernandez, Environ Sci Technol 2019) [1]. A later study found nanoplastics from tea bags could be taken up by human intestinal cells (Banaei, Chemosphere 2024) [1].
+Steeping a single plastic tea bag at 95 °C released about 11.6 billion microplastic particles and 3.1 billion nanoplastic ones into one cup, several orders of magnitude more than levels reported in other foods [44]. Nanoplastics released from tea bags were taken up by human intestinal cells in the laboratory [98].
 
-Even tea bags that appear to be paper may contain plastic fibers or be heat-sealed with PLA (a plant-based plastic). To avoid microplastics, use loose tea in a metal filter such as a tea ball infuser [1].
+Loose tea avoids plastic tea bags.
 
 ### Contamination Concerns
 
-**Lead:** Tea leaves absorb lead from their surroundings. Most lead stays with the leaf when brewed; standard 5-minute brewing extracts minimal lead into the water. Tea leaves can actually remove lead from water during extended steeping — overnight steeping removes most lead from water (Science Daily 2025; Shindel, ACS Food Sci Technol 2025) [1].
+**Pesticides:** Rinsing tea leaves before brewing cut pesticide risk in the infusion by 5 to 59%, while lowering EGCG, caffeine and other compounds by 0 to 11% [99].
 
-**Pesticides:** Trace levels of pesticides have been reported in green tea but not in amounts that would elicit adverse health effects. A "pre-rinse" (swirling leaves in boiled water for 5-25 seconds and discarding) can reduce pesticide residues by approximately 10% with minimal EGCG loss (no more than 5%) (Gao, J Agric Food Chem 2018) [1].
-
-**Radiation (Japanese green tea):** Following the 2011 Fukushima nuclear accident, radiation contamination was initially found in some green teas from nearby regions. By 2013-2014, monitoring confirmed levels well below safety limits. The EU and U.S. FDA have concluded there is no public health concern from Japanese green tea (Cook, J Environ Radioact 2016; FDA 2015) [1][2].
-
-**PFAS:** Limited testing has found very low or undetectable levels of PFAS in green tea. Testing of 12 green tea products in the U.S. in 2025 found quantifiable levels in only 4, at concentrations near or below EPA drinking water limits [1].
+**Radiation (Japanese green tea):** Health Canada found trace radioactive cesium from the Fukushima accident in Japanese green teas. Doses from drinking tea made from the most contaminated samples were insignificant compared with natural background radiation [100].
 
 ## 6. Drug Interactions
 
-Green tea, particularly at higher intakes or in supplement form, can interact with several medications. The interactions are primarily mediated through EGCG's effects on drug transporters (OATP1A2) and liver enzymes (CYP3A4).
+Green tea, particularly at higher intakes or in supplement form, can interact with several medications. Most interactions lower drug levels, mainly by blocking drug uptake transporters in the gut such as OATP1A2 [54].
 
 ### Drugs Whose Levels Are DECREASED by Green Tea
 
 | Medication | Effect | Evidence |
 |-----------|--------|----------|
-| Nadolol (beta-blocker) | Blood levels decreased by 85% | 700 mL green tea daily (322 mg EGCG) for 2 weeks. Blood pressure effect of nadolol also significantly reduced (Misaka, Clin Pharm Ther 2014) [1]. |
-| Raloxifene (osteoporosis, breast cancer prevention) | Absorption decreased by 60% | Even a single cup of green tea (26 mg EGCG) with 60 mg raloxifene reduced absorption (Clarke, Clin Transl Sci 2023) [1]. |
-| Rosuvastatin (statin) | Blood levels decreased by 19% | When given simultaneously with 300 mg EGCG. Effect disappeared after 10 days of regular EGCG intake (Kim, Drug Des Devel Ther 2017) [1]. |
-| Digoxin (heart failure, atrial fibrillation) | Blood levels significantly decreased | Green tea extract (500-600 mg, approximately 300 mg EGCG) taken 1 hour before the medication (Kyriacou, Clin Pharmacol Ther 2025) [1]. |
-| Nintedanib (pulmonary fibrosis) | Blood levels significantly decreased | Same OATP1A2 transporter mechanism as digoxin (Kyriacou, Clin Pharmacol Ther 2025) [1]. |
-| Iron absorption | Reduced by approximately 80% | Green tea polyphenols chelate non-heme iron (Lazrak, J Nutr 2021) [1]. |
+| Nadolol (beta-blocker) | Peak level and exposure down by 85.3% and 85.0% | 700 mL a day of green tea for 14 days; the drug's blood pressure effect was weaker [41]. |
+| Raloxifene (osteoporosis, breast cancer prevention) | Exposure ratio about 0.60 | Green tea taken with 60 mg raloxifene, for one day or for 4 days [40]. |
+| Rosuvastatin (statin) | Exposure down by 19% | 300 mg of EGCG taken with 20 mg rosuvastatin; the effect disappeared after 10 days of EGCG pretreatment [42]. |
+| Atorvastatin (statin) | Levels reduced | Green tea extract [7][54]. |
+| Digoxin, nintedanib, lisinopril, fexofenadine, celiprolol | Exposure reduced | Clinical studies summarised in a 2025 review [54]. |
+| Iron absorption | Reduced by more than 85% | Tea with an iron-fortified meal [23]. |
 
 ### Drugs Whose Levels Are INCREASED by Green Tea
 
 | Medication | Effect | Evidence |
 |-----------|--------|----------|
-| Simvastatin (statin) | Blood levels modestly increased | Via CYP3A4 inhibition. In about one-fourth of participants, blood levels increased two-fold with 3 cups/day. Individual susceptibility varies (Werba, Curr Pharm Des 2015; Werba, Ann Intern Med 2008) [1]. |
-| Sildenafil (Viagra) | Peak blood levels increased by 30%, total exposure by 50% | 2,000 mg green tea powder (130 mg catechins) taken immediately before 50 mg sildenafil (Hegazy, J Pharm Res Int 2013) [1]. |
-| Tacrolimus (immunosuppressant) | Blood levels may increase | Via CYP3A4 inhibition (Werba, J Food Drug Anal 2018) [1]. |
-| Atorvastatin, lovastatin | Potentially increased | Metabolized by CYP3A4 like simvastatin; effect likely similar but not directly studied [1][7]. |
+| Sildenafil | Exposure up by 50% | One clinical analysis in a 2025 review [54]. |
 
 ### Other Important Interactions
 
-**Warfarin (blood thinner):** Matcha (where leaf powder is consumed) can provide approximately 20 mcg of vitamin K per cup, potentially reducing warfarin effectiveness. Brewed green tea contains negligible vitamin K. One case report showed significantly decreased INR from half a gallon to one gallon of green tea daily. Conversely, green tea catechins may have anti-clotting effects that could enhance warfarin. A review concluded that moderate green tea consumption does not pose a clinically significant risk (Nutescu, Expert Opin Drug Safety 2006) [1].
+**Warfarin (blood thinner):** A 44-year-old man on warfarin began drinking half a gallon to a gallon of green tea a day, and his INR fell from 3.79 to 1.37. After he stopped, it rose to 2.55. The authors attributed this to vitamin K in green tea [53]. If you take warfarin, check with your doctor or anticoagulation clinic before changing your tea intake.
 
-**Proteasome inhibitors (cancer drugs):** EGCG may block the action of boronic acid-based proteasome inhibitors such as bortezomib, negating their therapeutic efficacy. Green tea should not be used with these medications (Golden, Blood 2009) [1].
+**Proteasome inhibitors (cancer drugs):** In cell and animal studies, EGCG blocked bortezomib and other boronic acid-based proteasome inhibitors, and the authors suggest green tea products may be contraindicated during bortezomib therapy [43].
 
-**Thyroid medication (levothyroxine):** In animal studies, high-dose green tea extract impaired thyroid function. Green tea contains caffeine, which may reduce thyroid medication absorption. Separate green tea from levothyroxine by at least one hour (Bajaj, J Clin Diagn Res 2016) [1].
+**Tacrolimus (immunosuppressant):** Tacrolimus has a narrow therapeutic index. Evidence of an interaction with green tea rests on a single case report; green tea catechins may inhibit CYP3A and P-glycoprotein, which could reduce the drug's effect or raise the risk of toxicity [102]. If you take tacrolimus, check with your doctor before using green tea products.
 
-**Fluvastatin:** Neither green tea extract (150 mg EGCG) nor brewed green tea (approximately 2 cups, 78 mg EGCG) affected blood levels of fluvastatin (Misaka, Eur J Clin Pharmacol 2018) [1].
+**Thyroid medication (levothyroxine):** If you take prescription medicines, check with your doctor or pharmacist before starting.
 
-**NSAIDs:** Green tea catechins (particularly EGCG) exhibit antiplatelet effects that may potentiate the antiplatelet effects of NSAIDs such as aspirin, potentially increasing bleeding risk, particularly with high doses of green tea or concentrated supplements [25].
+**Fluvastatin:** Fluvastatin levels did not change with green tea extract (150 mg of EGCG) or with 300 mL of brewed green tea [55].
 
-**Overall guidance:** Modest daily intake of green tea (2-3 cups) is not problematic for most people taking statins, but individual susceptibility varies. People taking nadolol, raloxifene, digoxin, proteasome inhibitors, or warfarin should discuss green tea consumption with their healthcare provider [1].
+**Simvastatin, tamoxifen and pseudoephedrine:** In a 2025 review, green tea did not affect their pharmacokinetics in clinical studies [54]. Two earlier reviews disagree with it: they list simvastatin among drugs that interact with green tea, with mild to modest average effects [103] and mild to moderate effects on drug exposure that varied widely between people [102].
+
+**Overall guidance:** If you take any type of medicine, talk with your health care provider before using green tea supplements [7].
 
 ## 7. Dietary Sources
 
@@ -355,117 +344,210 @@ Green tea is itself a dietary source of catechins. The following table compares 
 
 | Form | EGCG per Serving | Total Catechins per Serving | Caffeine per Serving | Notes |
 |------|:-:|:-:|:-:|------|
-| Brewed green tea (1 cup, 240 mL) | 30-60 mg | 50-150 mg | 20-45 mg | Varies widely by brand, brewing time, water quality [1][4]. |
-| Matcha (1 tsp, approx. 2g) | 70-110 mg | 100-200 mg | 50-70 mg | Entire leaf consumed. Higher catechins and caffeine than brewed [1]. |
-| Green tea extract supplement | 100-800+ mg | 200-1,300+ mg | 0-150+ mg | Concentrated form. Liver risk above 800 mg catechins/day [1][8]. |
-| Brewed black tea (1 cup) | 5-15 mg | 30-40 mg | 40-70 mg | Fermentation converts catechins to theaflavins/thearubigins [1]. |
-| White tea (1 cup) | Similar to green tea | Similar to green tea | Less than green tea | Less caffeine and lower lead content [1]. |
-| Bottled green tea | Highly variable | Highly variable | Variable | Some comparable to brewed; others very low [1]. |
-| Decaf green tea | Lower than regular | Lower than regular | Less than 5 mg | Decaf process removes some catechins, especially ethyl acetate method [1]. |
+| Brewed green tea | 90 to 300 mg a day from infusions | About 405.5 mg a day from 3 cups | Less than black tea | Varies widely by product [8][56]. |
+| Matcha (2.7 g daily) | Not stated | 301.4 mg | 71.5 mg | Whole leaf consumed [89]. |
+| Green tea extract supplement | 5 to 1,000 mg a day | Varies | Varies | Liver enzymes rose at doses equal to or above 800 mg of EGCG a day [8]. |
+| Brewed black tea | Not stated | About 92.7 mg a day from 3 cups | More than green tea | Contains theaflavins and thearubigins [3][56]. |
+| White tea | Varies | Comparable to some green teas | Varies | Less antioxidant capacity [61]. |
 
 ### Maximizing Catechin Intake from Brewed Tea
 
-- Use soft (low-mineral) water — hard water can halve EGCG content [1]
-- Steep for 3-5 minutes in recently boiled water — longer does not help [1]
-- Do not add milk or soy — reduces catechin bioavailability by 68-87% [1]
-- Cold-brewing for 12 hours yields similar EGCG with less caffeine [1]
-- Use loose tea in a metal filter to avoid microplastics from tea bags [1]
-- A "pre-rinse" of tea leaves (swirl in boiled water for 5-25 seconds, discard) can reduce pesticide residues by approximately 10% with minimal EGCG loss (Gao, J Agric Food Chem 2018) [1]
-- Let tea cool before drinking to avoid esophageal and gastric cancer risk [1]
-- Separate from iron-rich foods by at least 1 hour [1]
+- Use bottled or deionised water rather than tap water: it could double EGCG [59]
+- Do not add milk or soy: they cut EGCG bioavailability to 68% to 76% of tea without them [58]
+- Cold steeping extracts more of the beneficial compounds than hot steeping but is slow [60]
+- Use loose tea to avoid microplastics from plastic tea bags [44]
+- A brief rinse of the leaves cuts pesticide residues with little loss of EGCG [99]
+- Let tea cool before drinking [85]
+- If you have low iron, avoid drinking tea with meals [23]
 
 ### Lead in Tea
 
-Tea leaves absorb lead from their surroundings. However, most lead stays with the leaf when brewed. Tea leaf can actually remove lead from water — though standard 5-minute brewing only removes about 15%. Overnight steeping (as for iced tea) removes "most" or "close to all" lead from water. Finely ground tea (especially black) is most effective for lead removal (Science Daily 2025; Shindel, ACS Food Sci Technol 2025) [1].
+Green tea extracts may contain elemental impurities, a group that includes heavy metals like lead, though the USP review found no evidence that they caused liver injury [21]. For independent product testing, see consumerlab.com.
 
 ## 8. References
 
-[1] ConsumerLab. "Green Tea Review." Accessed 2025. [https://www.consumerlab.com/reviews/green-tea-review-tea-bags-matcha-supplements/green-tea/](https://www.consumerlab.com/reviews/green-tea-review-tea-bags-matcha-supplements/green-tea/)
+[3] Khan N, Mukhtar H. "Tea Polyphenols in Promotion of Human Health." *Nutrients*. 2018;11(1):39. doi: [10.3390/nu11010039](https://doi.org/10.3390/nu11010039) PMID: 30585192. [https://pubmed.ncbi.nlm.nih.gov/30585192/](https://pubmed.ncbi.nlm.nih.gov/30585192/)
 
-[2] Grokipedia. "Green Tea." [https://grokipedia.com/page/Green_tea](https://grokipedia.com/page/Green_tea)
-
-[3] Khan N, Mukhtar H. "Tea Polyphenols in Promotion of Human Health." *Nutrients*. 2018;11(1):39. doi: [10.3390/nu11010039](https://doi.org/10.3390/nu11010039)
-
-[4] U.S. Department of Agriculture and U.S. Department of Health and Human Services. *Dietary Guidelines for Americans, 2020-2025.* 9th Edition.
-
-[5] Brody H. "Tea." *Nature*. 2019;566(7742):S1. doi: [10.1038/d41586-019-00398-1](https://doi.org/10.1038/d41586-019-00398-1)
-
-[6] Lu H, Zhang J, Yang Y, et al. "Earliest tea as evidence for one branch of the Silk Road across the Tibetan Plateau." *Sci Rep*. 2016;6:18955. doi: [10.1038/srep18955](https://doi.org/10.1038/srep18955)
+[6] Lu H, Zhang J, Yang Y, et al. "Earliest tea as evidence for one branch of the Silk Road across the Tibetan Plateau." *Sci Rep*. 2016;6:18955. doi: [10.1038/srep18955](https://doi.org/10.1038/srep18955) PMID: 26738699. [https://pubmed.ncbi.nlm.nih.gov/26738699/](https://pubmed.ncbi.nlm.nih.gov/26738699/)
 
 [7] National Center for Complementary and Integrative Health. "Green Tea." Updated February 2025. [https://www.nccih.nih.gov/health/green-tea](https://www.nccih.nih.gov/health/green-tea)
 
-[8] European Food Safety Authority. "Scientific opinion on the safety of green tea catechins." *EFSA J*. 2018;16(4):e05239. doi: [10.2903/j.efsa.2018.5239](https://doi.org/10.2903/j.efsa.2018.5239)
+[8] EFSA Panel on Food Additives and Nutrient Sources added to Food (Younes M, et al.). "Scientific opinion on the safety of green tea catechins." *EFSA J*. 2018;16(4):e05239. doi: [10.2903/j.efsa.2018.5239](https://doi.org/10.2903/j.efsa.2018.5239) PMID: 32625874. [https://pubmed.ncbi.nlm.nih.gov/32625874/](https://pubmed.ncbi.nlm.nih.gov/32625874/)
 
-[9] Naumovski N, Blades BL, Roach PD. "Food Inhibits the Oral Bioavailability of the Major Green Tea Antioxidant Epigallocatechin Gallate in Humans." *Antioxidants*. 2015;4(2):373-393. doi: [10.3390/antiox4020373](https://doi.org/10.3390/antiox4020373)
+[9] Naumovski N, Blades BL, Roach PD. "Food Inhibits the Oral Bioavailability of the Major Green Tea Antioxidant Epigallocatechin Gallate in Humans." *Antioxidants*. 2015;4(2):373-393. doi: [10.3390/antiox4020373](https://doi.org/10.3390/antiox4020373) PMID: 26783711. [https://pubmed.ncbi.nlm.nih.gov/26783711/](https://pubmed.ncbi.nlm.nih.gov/26783711/)
 
-[10] Cai Y, et al. Referenced in Grokipedia Green Tea article on EGCG bioavailability and post-digestion stability.
+[11] Hoofnagle JH, Bonkovsky HL, Phillips EJ, et al. "HLA-B*35:01 and green tea-induced liver injury." *Hepatology*. 2021;73(6):2484-2493. doi: [10.1002/hep.31538](https://doi.org/10.1002/hep.31538) PMID: 32892374. [https://pubmed.ncbi.nlm.nih.gov/32892374/](https://pubmed.ncbi.nlm.nih.gov/32892374/)
 
-[11] Hoofnagle JH, Bonkovsky HL, Phillips EJ, et al. "HLA-B*35:01 and green tea-induced liver injury." *Hepatology*. 2021;73(6):2484-2493. doi: [10.1002/hep.31538](https://doi.org/10.1002/hep.31538)
+[12] Xu R, Yang K, Li S, et al. "Effect of green tea consumption on blood lipids: a systematic review and meta-analysis of randomized controlled trials." *Nutr J*. 2020;19(1):48. doi: [10.1186/s12937-020-00557-5](https://doi.org/10.1186/s12937-020-00557-5) PMID: 32434539. [https://pubmed.ncbi.nlm.nih.gov/32434539/](https://pubmed.ncbi.nlm.nih.gov/32434539/)
 
-[12] Xu R, Yang K, Li S, et al. "Effect of green tea consumption on blood lipids: a systematic review and meta-analysis of randomized controlled trials." *Nutr J*. 2020;19(1):48. doi: [10.1186/s12937-020-00557-5](https://doi.org/10.1186/s12937-020-00557-5)
+[14] Huxley R, Lee CM, Barzi F, et al. "Coffee, decaffeinated coffee, and tea consumption in relation to incident type 2 diabetes mellitus." *Arch Intern Med*. 2009;169(22):2053-2063. doi: [10.1001/archinternmed.2009.439](https://doi.org/10.1001/archinternmed.2009.439) PMID: 20008687. [https://pubmed.ncbi.nlm.nih.gov/20008687/](https://pubmed.ncbi.nlm.nih.gov/20008687/)
 
-[13] Referenced in Grokipedia Green Tea article — 2022 meta-analysis of 34 RCT arms on cardiovascular and glycemic outcomes.
+[16] Hursel R, Viechtbauer W, Westerterp-Plantenga MS. "The effects of green tea on weight loss and weight maintenance: a meta-analysis." *Int J Obes*. 2009;33(9):956-961. doi: [10.1038/ijo.2009.135](https://doi.org/10.1038/ijo.2009.135) PMID: 19597519. [https://pubmed.ncbi.nlm.nih.gov/19597519/](https://pubmed.ncbi.nlm.nih.gov/19597519/)
 
-[14] Huxley R, Lee CM, Barzi F, et al. "Coffee, decaffeinated coffee, and tea consumption in relation to incident type 2 diabetes mellitus." *Arch Intern Med*. 2009;169(22):2053-2063. doi: [10.1001/archinternmed.2009.439](https://doi.org/10.1001/archinternmed.2009.439)
+[18] Haskell CF, Kennedy DO, Milne AL, et al. "The effects of L-theanine, caffeine and their combination on cognition and mood." *Biol Psychol*. 2008;77(2):113-122. doi: [10.1016/j.biopsycho.2007.09.008](https://doi.org/10.1016/j.biopsycho.2007.09.008) PMID: 18006208. [https://pubmed.ncbi.nlm.nih.gov/18006208/](https://pubmed.ncbi.nlm.nih.gov/18006208/)
 
-[15] Referenced in Grokipedia Green Tea article — 2025 meta-analysis of 15 RCTs in type 2 diabetes (n=722).
+[19] Owen GN, Parnell H, De Bruin EA, Rycroft JA. "The combined effects of L-theanine and caffeine on cognitive performance and mood." *Nutr Neurosci*. 2008;11(4):193-198. doi: [10.1179/147683008X301513](https://doi.org/10.1179/147683008X301513) PMID: 18681988. [https://pubmed.ncbi.nlm.nih.gov/18681988/](https://pubmed.ncbi.nlm.nih.gov/18681988/)
 
-[16] Hursel R, Viechtbauer W, Westerterp-Plantenga MS. "The effects of green tea on weight loss and weight maintenance: a meta-analysis." *Int J Obes*. 2009;33(9):956-961. doi: [10.1038/ijo.2009.135](https://doi.org/10.1038/ijo.2009.135)
+[20] Filippini T, Malavolti M, Borrelli F, et al. "Green tea (Camellia sinensis) for the prevention of cancer." *Cochrane Database Syst Rev*. 2020;(3):CD005004. doi: [10.1002/14651858.CD005004.pub3](https://doi.org/10.1002/14651858.CD005004.pub3) PMID: 32118296. [https://pubmed.ncbi.nlm.nih.gov/32118296/](https://pubmed.ncbi.nlm.nih.gov/32118296/)
 
-[17] Referenced in Grokipedia Green Tea article — January 2025 cohort study of cerebral white matter lesions in Japanese older adults.
+[21] Oketch-Rabah HA, Roe AL, Rider CV, et al. "United States Pharmacopeia (USP) comprehensive review of the hepatotoxicity of green tea extracts." *Toxicol Rep*. 2020;7:386-402. doi: [10.1016/j.toxrep.2020.02.008](https://doi.org/10.1016/j.toxrep.2020.02.008) PMID: 32140423. [https://pubmed.ncbi.nlm.nih.gov/32140423/](https://pubmed.ncbi.nlm.nih.gov/32140423/)
 
-[18] Haskell CF, Kennedy DO, Milne AL, et al. "The effects of L-theanine, caffeine and their combination on cognition and mood." *Biol Psychol*. 2008;77(2):113-122. doi: [10.1016/j.biopsycho.2007.09.008](https://doi.org/10.1016/j.biopsycho.2007.09.008)
+[23] Lazrak M, et al. "Tea Consumption Reduces Iron Bioavailability from NaFeEDTA in Nonanemic Women and Women with Iron Deficiency Anemia: Stable Iron Isotope Studies in Morocco." *J Nutr*. 2021;151(9):2714-2720. PMID: 34038558. [https://pubmed.ncbi.nlm.nih.gov/34038558/](https://pubmed.ncbi.nlm.nih.gov/34038558/)
 
-[19] Owen GN, Parnell H, De Bruin EA, Rycroft JA. "The combined effects of L-theanine and caffeine on cognitive performance and mood." *Nutr Neurosci*. 2008;11(4):193-198. doi: [10.1179/147683008X301513](https://doi.org/10.1179/147683008X301513)
+[24] American College of Obstetricians and Gynecologists. "ACOG Committee Opinion No. 462: Moderate caffeine consumption during pregnancy." *Obstet Gynecol*. 2010;116(2 Pt 1):467-468. Reaffirmed 2020. PMID: 20664420. [https://pubmed.ncbi.nlm.nih.gov/20664420/](https://pubmed.ncbi.nlm.nih.gov/20664420/)
 
-[20] Filippini T, Malavolti M, Borrelli F, et al. "Green tea (Camellia sinensis) for the prevention of cancer." *Cochrane Database Syst Rev*. 2020;(3):CD005004. doi: [10.1002/14651858.CD005004.pub3](https://doi.org/10.1002/14651858.CD005004.pub3)
+[26] Wang ZM, Zhao D, Wang H, et al. "Green tea consumption and the risk of coronary heart disease: a systematic review and meta-analysis of cohort studies." *Nutr Metab Cardiovasc Dis*. 2023;33(4):715-723. doi: [10.1016/j.numecd.2023.01.017](https://doi.org/10.1016/j.numecd.2023.01.017) PMID: 36849317. [https://pubmed.ncbi.nlm.nih.gov/36849317/](https://pubmed.ncbi.nlm.nih.gov/36849317/)
 
-[21] Oketch-Rabah HA, Roe AL, Rider CV, et al. "United States Pharmacopeia (USP) comprehensive review of the hepatotoxicity of green tea extracts." *Toxicol Rep*. 2020;7:386-402. doi: [10.1016/j.toxrep.2020.02.008](https://doi.org/10.1016/j.toxrep.2020.02.008)
+[27] Kuriyama S, Shimazu T, Ohmori K, et al. "Green tea consumption and mortality due to cardiovascular disease, cancer, and all causes in Japan: the Ohsaki study." *JAMA*. 2006;296(10):1255-1265. doi: [10.1001/jama.296.10.1255](https://doi.org/10.1001/jama.296.10.1255) PMID: 16968850. [https://pubmed.ncbi.nlm.nih.gov/16968850/](https://pubmed.ncbi.nlm.nih.gov/16968850/)
 
-[22] LiverTox: Clinical and Research Information on Drug-Induced Liver Injury. "Green Tea." National Institute of Diabetes and Digestive and Kidney Diseases. Updated November 20, 2020. [https://www.ncbi.nlm.nih.gov/books/NBK547925/](https://www.ncbi.nlm.nih.gov/books/NBK547925/)
+[28] Al-Shafei AI, et al. "Regular consumption of green tea improves pulse pressure and induces regression of left ventricular hypertrophy in hypertensive patients." *Physiol Rep*. 2019;7(6):e14030. PMID: 30912296. [https://pubmed.ncbi.nlm.nih.gov/30912296/](https://pubmed.ncbi.nlm.nih.gov/30912296/)
 
-[23] Lazrak F, et al. "Green tea polyphenols reduce iron absorption from a meal." *J Nutr*. 2021.
+[29] Zheng XX, Xu YL, Li SH, et al. "Green tea intake lowers fasting serum total and LDL cholesterol in adults: a meta-analysis of 14 randomized controlled trials." *Am J Clin Nutr*. 2011;94(2):601-610. doi: [10.3945/ajcn.110.010926](https://doi.org/10.3945/ajcn.110.010926) PMID: 21715508. [https://pubmed.ncbi.nlm.nih.gov/21715508/](https://pubmed.ncbi.nlm.nih.gov/21715508/)
 
-[24] American College of Obstetricians and Gynecologists. "Moderate Caffeine Consumption During Pregnancy." Committee Opinion No. 462, August 2010. Reaffirmed 2020.
+[30] Arab L, Liu W, Elashoff D. "Green and black tea consumption and risk of stroke: a meta-analysis." *Stroke*. 2009;40(5):1786-1792. doi: [10.1161/STROKEAHA.108.538470](https://doi.org/10.1161/STROKEAHA.108.538470) PMID: 19228856. [https://pubmed.ncbi.nlm.nih.gov/19228856/](https://pubmed.ncbi.nlm.nih.gov/19228856/)
 
-[25] Referenced in Grokipedia Green Tea article — EGCG antiplatelet effects and NSAID interaction potential.
+[31] Kokubo Y, Iso H, Saito I, et al. "The impact of green tea and coffee consumption on the reduced risk of stroke incidence in Japanese population: the Japan public health center-based study cohort." *Stroke*. 2013;44(5):1369-1374. doi: [10.1161/STROKEAHA.111.677500](https://doi.org/10.1161/STROKEAHA.111.677500) PMID: 23493733. [https://pubmed.ncbi.nlm.nih.gov/23493733/](https://pubmed.ncbi.nlm.nih.gov/23493733/)
 
-[26] Wang ZM, Zhao D, Wang H, et al. "Green tea consumption and the risk of coronary heart disease: a systematic review and meta-analysis of cohort studies." *Nutr Metab Cardiovasc Dis*. 2023;33(4):715-723. doi: [10.1016/j.numecd.2023.01.003](https://doi.org/10.1016/j.numecd.2023.01.003)
+[32] Bettuzzi S, Brausi M, Rizzi F, et al. "Chemoprevention of human prostate cancer by oral administration of green tea catechins in volunteers with high-grade prostate intraepithelial neoplasia: a preliminary report from a one-year proof-of-principle study." *Cancer Res*. 2006;66(2):1234-1240. PMID: 16424063. [https://pubmed.ncbi.nlm.nih.gov/16424063/](https://pubmed.ncbi.nlm.nih.gov/16424063/). doi: [10.1158/0008-5472.CAN-05-1145](https://doi.org/10.1158/0008-5472.CAN-05-1145)
 
-[27] Kuriyama S, Shimazu T, Ohmori K, et al. "Green tea consumption and mortality due to cardiovascular disease, cancer, and all causes in Japan." *JAMA*. 2006;296(10):1255-1265. doi: [10.1001/jama.296.10.1255](https://doi.org/10.1001/jama.296.10.1255)
+[33] Kumar NB, Pow-Sang J, Egan KM, et al. "Randomized, placebo-controlled trial of green tea catechins for prostate cancer prevention." *Cancer Prev Res*. 2015;8(10):879-887. doi: [10.1158/1940-6207.CAPR-14-0324](https://doi.org/10.1158/1940-6207.CAPR-14-0324) PMID: 25873370. [https://pubmed.ncbi.nlm.nih.gov/25873370/](https://pubmed.ncbi.nlm.nih.gov/25873370/)
 
-[28] Al-Shafei AIM, et al. "Green tea drinking and associated cardiovascular, left ventricular and blood pressure benefits." *Physiologic Rep*. 2019.
+[34] Samavat H, Ursin G, Emory TH, et al. "A randomized controlled trial of green tea extract supplementation and mammographic density in postmenopausal women at increased risk of breast cancer." *Cancer Prev Res*. 2017;10(12):710-718. doi: [10.1158/1940-6207.CAPR-17-0187](https://doi.org/10.1158/1940-6207.CAPR-17-0187) PMID: 28904061. [https://pubmed.ncbi.nlm.nih.gov/28904061/](https://pubmed.ncbi.nlm.nih.gov/28904061/)
 
-[29] Zheng XX, Xu YL, Li SH, et al. "Green tea intake lowers fasting serum total and LDL cholesterol in adults: a meta-analysis of 14 randomized controlled trials." *Am J Clin Nutr*. 2011;94(2):601-610. doi: [10.3945/ajcn.110.010926](https://doi.org/10.3945/ajcn.110.010926)
+[35] Shin CM, Lee DH, Seo AY, et al. "Green tea extracts for the prevention of metachronous colorectal polyps among patients who underwent endoscopic removal of colorectal adenomas: a randomized clinical trial." *Clin Nutr*. 2018;37(2):452-458. PMID: 28209333. [https://pubmed.ncbi.nlm.nih.gov/28209333/](https://pubmed.ncbi.nlm.nih.gov/28209333/)
 
-[30] Arab L, Liu W, Elashoff D. "Green and black tea consumption and risk of stroke: a meta-analysis." *Stroke*. 2009;40(5):1786-1792. doi: [10.1161/STROKEAHA.108.538470](https://doi.org/10.1161/STROKEAHA.108.538470)
+[36] Seufferlein T, Ettrich TJ, Menzler S, et al. "Green tea extract to prevent colorectal adenomas, results of a randomized, placebo-controlled clinical trial." *Am J Gastroenterol*. 2022;117(6):884-894. PMID: 35213393. [https://pubmed.ncbi.nlm.nih.gov/35213393/](https://pubmed.ncbi.nlm.nih.gov/35213393/)
 
-[31] Kokubo Y, Iso H, Saito I, et al. "The impact of green tea and coffee consumption on the reduced risk of stroke incidence in Japanese population." *Stroke*. 2013;44(5):1369-1374. doi: [10.1161/STROKEAHA.111.677500](https://doi.org/10.1161/STROKEAHA.111.677500)
+[37] Shanafelt TD, Call TG, Zent CS, et al. "Phase 2 trial of daily, oral Polyphenon E in patients with asymptomatic, Rai stage 0 to II chronic lymphocytic leukemia." *Cancer*. 2013;119(2):363-370. doi: [10.1002/cncr.27719](https://doi.org/10.1002/cncr.27719) PMID: 22760587. [https://pubmed.ncbi.nlm.nih.gov/22760587/](https://pubmed.ncbi.nlm.nih.gov/22760587/)
 
-[32] Bettuzzi S, Brausi M, Rizzi F, et al. "Chemoprevention of human prostate cancer by oral administration of green tea catechins in volunteers with high-grade prostate intraepithelial neoplasia." *Cancer Res*. 2006;66(2):1234-1240. doi: [10.1158/0008-5472.CAN-05-1145](https://doi.org/10.1158/0008-5472.CAN-05-1145)
+[38] Roshdy E, Rajaratnam V, Maitra S, et al. "Treatment of symptomatic uterine fibroids with green tea extract: a pilot randomized controlled clinical study." *Int J Womens Health*. 2013;5:477-486. doi: [10.2147/IJWH.S41021](https://doi.org/10.2147/IJWH.S41021) PMID: 23950663. [https://pubmed.ncbi.nlm.nih.gov/23950663/](https://pubmed.ncbi.nlm.nih.gov/23950663/)
 
-[33] Kumar NB, Pow-Sang J, Egan KM, et al. "Randomized, placebo-controlled trial of green tea catechins for prostate cancer prevention." *Cancer Prev Res*. 2015;8(10):879-887. doi: [10.1158/1940-6207.CAPR-14-0324](https://doi.org/10.1158/1940-6207.CAPR-14-0324)
+[39] Dostal AM, Samavat H, Bedell S, et al. "The safety of green tea extract supplementation in postmenopausal women at risk for breast cancer: results of the Minnesota Green Tea Trial." *Food Chem Toxicol*. 2015;83:26-35. PMID: 26051348. [https://pubmed.ncbi.nlm.nih.gov/26051348/](https://pubmed.ncbi.nlm.nih.gov/26051348/)
 
-[34] Samavat H, Ursin G, Emory TH, et al. "A randomized controlled trial of green tea extract supplementation and mammographic density in postmenopausal women." *Cancer Prev Res*. 2017;10(12):710-718. doi: [10.1158/1940-6207.CAPR-17-0187](https://doi.org/10.1158/1940-6207.CAPR-17-0187)
+[40] Clarke JD, Judson SM, Tian DD, et al. "Co-consuming green tea with raloxifene decreases raloxifene systemic exposure in healthy adult participants." *Clin Transl Sci*. 2023;16(10):1779-1790. doi: [10.1111/cts.13578](https://doi.org/10.1111/cts.13578) PMID: 37639334. [https://pubmed.ncbi.nlm.nih.gov/37639334/](https://pubmed.ncbi.nlm.nih.gov/37639334/)
 
-[35] Shin CM, Lee DH, Seo AY, et al. "Green tea extracts for the prevention of metachronous colorectal polyps." *Clin Nutr*. 2017;36(2):452-458. doi: [10.1016/j.clnu.2015.12.010](https://doi.org/10.1016/j.clnu.2015.12.010)
+[41] Misaka S, Yatabe J, Müller F, et al. "Green tea ingestion greatly reduces plasma concentrations of nadolol in healthy subjects." *Clin Pharmacol Ther*. 2014;95(4):432-438. doi: [10.1038/clpt.2013.241](https://doi.org/10.1038/clpt.2013.241) PMID: 24419562. [https://pubmed.ncbi.nlm.nih.gov/24419562/](https://pubmed.ncbi.nlm.nih.gov/24419562/)
 
-[36] Seufferlein T, Ettrich TJ, Engemann A, et al. "Green tea extract and colorectal adenoma prevention: the MIRACLE randomized clinical trial." *Am J Gastroenterol*. 2022;117(6):884-894.
+[42] Kim TE, Ha N, Kim Y, et al. "Effect of epigallocatechin-3-gallate, major ingredient of green tea, on the pharmacokinetics of rosuvastatin in healthy volunteers." *Drug Des Devel Ther*. 2017;11:1409-1416. doi: [10.2147/DDDT.S130050](https://doi.org/10.2147/DDDT.S130050) PMID: 28533679. [https://pubmed.ncbi.nlm.nih.gov/28533679/](https://pubmed.ncbi.nlm.nih.gov/28533679/)
 
-[37] Shanafelt TD, Call TG, Zent CS, et al. "Phase 2 trial of daily, oral Polyphenon E in patients with chronic lymphocytic leukemia." *Cancer*. 2013;119(2):363-370. doi: [10.1002/cncr.27719](https://doi.org/10.1002/cncr.27719)
+[43] Golden EB, Lam PY, Kardosh A, et al. "Green tea polyphenols block the anticancer effects of bortezomib and other boronic acid-based proteasome inhibitors." *Blood*. 2009;113(23):5927-5937. doi: [10.1182/blood-2008-07-171389](https://doi.org/10.1182/blood-2008-07-171389) PMID: 19190249. [https://pubmed.ncbi.nlm.nih.gov/19190249/](https://pubmed.ncbi.nlm.nih.gov/19190249/)
 
-[38] Roshdy E, Rajaratnam V, Maitra S, et al. "Treatment of symptomatic uterine fibroids with green tea extract." *Int J Wom Health*. 2013;5:477-486. doi: [10.2147/IJWH.S41021](https://doi.org/10.2147/IJWH.S41021)
+[44] Hernandez LM, Xu EG, Larsson HCE, et al. "Plastic Teabags Release Billions of Microparticles and Nanoparticles into Tea." *Environ Sci Technol*. 2019;53(21):12300-12310. doi: [10.1021/acs.est.9b02540](https://doi.org/10.1021/acs.est.9b02540) PMID: 31552738. [https://pubmed.ncbi.nlm.nih.gov/31552738/](https://pubmed.ncbi.nlm.nih.gov/31552738/)
 
-[39] Dostal AM, Samavat H, Espejo L, et al. "Green tea extract safety and hepatotoxicity in a large clinical trial of postmenopausal women." *Food Chem Tox*. 2015.
+[45] Deka A, Vita JA. "Tea and cardiovascular disease." *Pharmacol Res*. 2011;64(2):136-145. doi: [10.1016/j.phrs.2011.03.009](https://doi.org/10.1016/j.phrs.2011.03.009) PMID: 21477653. [https://pubmed.ncbi.nlm.nih.gov/21477653/](https://pubmed.ncbi.nlm.nih.gov/21477653/)
 
-[40] Clarke JD, Judson SM, Tian DD, et al. "Co-consuming green tea with raloxifene decreases raloxifene systemic exposure." *Clin Transl Sci*. 2023;16(10):1779-1790. doi: [10.1111/cts.13582](https://doi.org/10.1111/cts.13582)
+[46] Zelicha H, et al. "The effect of high-polyphenol Mediterranean diet on visceral adiposity: the DIRECT PLUS randomized controlled trial." *BMC Med*. 2022;20(1):327. PMID: 36175997. [https://pubmed.ncbi.nlm.nih.gov/36175997/](https://pubmed.ncbi.nlm.nih.gov/36175997/)
 
-[41] Misaka S, Yatabe J, Mueller F, et al. "Green tea ingestion greatly reduces plasma concentrations of nadolol." *Clin Pharmacol Ther*. 2014;95(4):432-438. doi: [10.1038/clpt.2013.241](https://doi.org/10.1038/clpt.2013.241)
+[47] Hu J, et al. "The safety of green tea and green tea extract consumption in adults - Results of a systematic review." *Regul Toxicol Pharmacol*. 2018;95:412-433. PMID: 29580974. [https://pubmed.ncbi.nlm.nih.gov/29580974/](https://pubmed.ncbi.nlm.nih.gov/29580974/)
 
-[42] Kim TE, Ha N, Kim Y, et al. "Effect of EGCG on the pharmacokinetics of rosuvastatin." *Drug Des Devel Ther*. 2017;11:1409-1416. doi: [10.2147/DDDT.S130050](https://doi.org/10.2147/DDDT.S130050)
+[48] Patel SS, et al. "Green tea extract: a potential cause of acute liver failure." *World J Gastroenterol*. 2013;19(31):5174-5177. PMID: 23964154. [https://pubmed.ncbi.nlm.nih.gov/23964154/](https://pubmed.ncbi.nlm.nih.gov/23964154/)
 
-[43] Golden EB, Lam PY, Kardosh A, et al. "Green tea polyphenols block the anticancer effects of bortezomib." *Blood*. 2009;113(23):5927-5937. doi: [10.1182/blood-2008-07-171389](https://doi.org/10.1182/blood-2008-07-171389)
+[49] Lugg ST, et al. "Chinese green tea and acute hepatitis: a rare yet recurring theme." *BMJ Case Rep*. 2015. PMID: 26400588. [https://pubmed.ncbi.nlm.nih.gov/26400588/](https://pubmed.ncbi.nlm.nih.gov/26400588/)
 
-[44] Hernandez LM, Xu EG, Larsson HCE, et al. "Plastic Teabags Release Billions of Microparticles and Nanoparticles into Tea." *Environ Sci Technol*. 2019;53(21):12300-12310. doi: [10.1021/acs.est.9b02540](https://doi.org/10.1021/acs.est.9b02540)
+[50] Wu KM, et al. "Green tea extract-induced lethal toxicity in fasted but not in nonfasted dogs." *Int J Toxicol*. 2011;30(1):19-20. PMID: 21098339. [https://pubmed.ncbi.nlm.nih.gov/21098339/](https://pubmed.ncbi.nlm.nih.gov/21098339/)
 
-[45] Deka A, Vita JA. "Tea and cardiovascular disease." *Pharmacol Res*. 2011;64(2):136-145. doi: [10.1016/j.phrs.2011.03.009](https://doi.org/10.1016/j.phrs.2011.03.009)
+[51] He H, et al. "Severe iron-deficiency anemia after short-term moderate consumption of green tea in woman: a rare case report." *Heliyon*. 2024;10(17):e36666. PMID: 39263133. [https://pubmed.ncbi.nlm.nih.gov/39263133/](https://pubmed.ncbi.nlm.nih.gov/39263133/)
+
+[52] Correa A, et al. "Prenatal tea consumption and risks of anencephaly and spina bifida." *Ann Epidemiol*. 2000;10(7):476-477. PMID: 11018418. [https://pubmed.ncbi.nlm.nih.gov/11018418/](https://pubmed.ncbi.nlm.nih.gov/11018418/)
+
+[53] Taylor JR, Wilt VM. "Probable antagonism of warfarin by green tea." *Ann Pharmacother*. 1999;33(4):426-428. PMID: 10332534. [https://pubmed.ncbi.nlm.nih.gov/10332534/](https://pubmed.ncbi.nlm.nih.gov/10332534/)
+
+[54] Kyriacou C, et al. "Green Tea Catechins as Perpetrators of Drug Pharmacokinetic Interactions." *Clin Pharmacol Ther*. 2025;118(1):45-61. PMID: 39748104. [https://pubmed.ncbi.nlm.nih.gov/39748104/](https://pubmed.ncbi.nlm.nih.gov/39748104/)
+
+[55] Misaka S, et al. "Lack of pharmacokinetic interaction between fluvastatin and green tea in healthy volunteers." *Eur J Clin Pharmacol*. 2018;74(5):601-609. PMID: 29368187. [https://pubmed.ncbi.nlm.nih.gov/29368187/](https://pubmed.ncbi.nlm.nih.gov/29368187/)
+
+[56] Khokhar S, Magnusdottir SG. "Total phenol, catechin, and caffeine contents of teas commonly consumed in the United Kingdom." *J Agric Food Chem*. 2002;50(3):565-570. PMID: 11804530. [https://pubmed.ncbi.nlm.nih.gov/11804530/](https://pubmed.ncbi.nlm.nih.gov/11804530/)
+
+[57] Weiss DJ, Anderton CR. "Determination of catechins in matcha green tea by micellar electrokinetic chromatography." *J Chromatogr A*. 2003;1011(1-2):173-180. PMID: 14518774. [https://pubmed.ncbi.nlm.nih.gov/14518774/](https://pubmed.ncbi.nlm.nih.gov/14518774/)
+
+[58] Egert S, et al. "Simultaneous ingestion of dietary proteins reduces the bioavailability of galloylated catechins from green tea in humans." *Eur J Nutr*. 2013;52(1):281-288. PMID: 22366739. [https://pubmed.ncbi.nlm.nih.gov/22366739/](https://pubmed.ncbi.nlm.nih.gov/22366739/)
+
+[59] Franks M, et al. "The Influence of Water Composition on Flavor and Nutrient Extraction in Green and Black Tea." *Nutrients*. 2019;11(1). PMID: 30609818. [https://pubmed.ncbi.nlm.nih.gov/30609818/](https://pubmed.ncbi.nlm.nih.gov/30609818/)
+
+[60] Lantano C, et al. "Effects of alternative steeping methods on composition, antioxidant property and colour of green, black and oolong tea infusions." *J Food Sci Technol*. 2015;52(12):8276-8283. PMID: 26604404. [https://pubmed.ncbi.nlm.nih.gov/26604404/](https://pubmed.ncbi.nlm.nih.gov/26604404/)
+
+[61] Unachukwu UJ, et al. "White and green teas (Camellia sinensis var. sinensis): variation in phenolic, methylxanthine, and antioxidant profiles." *J Food Sci*. 2010;75(6):C541-C548. PMID: 20722909. [https://pubmed.ncbi.nlm.nih.gov/20722909/](https://pubmed.ncbi.nlm.nih.gov/20722909/)
+
+[62] Takahashi M, et al. "Effects of timing of acute catechin-rich green tea ingestion on postprandial glucose metabolism in healthy men." *J Nutr Biochem*. 2019;73:108221. PMID: 31522082. [https://pubmed.ncbi.nlm.nih.gov/31522082/](https://pubmed.ncbi.nlm.nih.gov/31522082/)
+
+[63] Zeng L, et al. "A green tea extract confection decreases circulating endotoxin and fasting glucose by improving gut barrier function but without affecting systemic inflammation." *Nutr Res*. 2024;124:94-110. PMID: 38430822. [https://pubmed.ncbi.nlm.nih.gov/38430822/](https://pubmed.ncbi.nlm.nih.gov/38430822/)
+
+[64] Phung OJ, et al. "Effect of green tea catechins with or without caffeine on anthropometric measures: a systematic review and meta-analysis." *Am J Clin Nutr*. 2010;91(1):73-81. PMID: 19906797. [https://pubmed.ncbi.nlm.nih.gov/19906797/](https://pubmed.ncbi.nlm.nih.gov/19906797/)
+
+[65] Janssens PL, et al. "Long-term green tea extract supplementation does not affect fat absorption, resting energy expenditure, and body composition in adults." *J Nutr*. 2015;145(5):864-870. PMID: 25740906. [https://pubmed.ncbi.nlm.nih.gov/25740906/](https://pubmed.ncbi.nlm.nih.gov/25740906/)
+
+[66] Mielgo-Ayuso J, et al. "Effects of dietary supplementation with epigallocatechin-3-gallate on weight loss, energy homeostasis, cardiometabolic risk factors and liver function in obese women." *Br J Nutr*. 2014;111(7):1263-1271. PMID: 24299662. [https://pubmed.ncbi.nlm.nih.gov/24299662/](https://pubmed.ncbi.nlm.nih.gov/24299662/)
+
+[67] Chen IJ, et al. "Therapeutic effect of high-dose green tea extract on weight reduction: a randomized, double-blind, placebo-controlled clinical trial." *Clin Nutr*. 2016;35(3):592-599. PMID: 26093535. [https://pubmed.ncbi.nlm.nih.gov/26093535/](https://pubmed.ncbi.nlm.nih.gov/26093535/)
+
+[68] Brown AL, et al. "Health effects of green tea catechins in overweight and obese men: a randomised controlled cross-over trial." *Br J Nutr*. 2011;106(12):1880-1889. PMID: 21736785. [https://pubmed.ncbi.nlm.nih.gov/21736785/](https://pubmed.ncbi.nlm.nih.gov/21736785/)
+
+[69] Kuriyama S, et al. "Green tea consumption and cognitive function: a cross-sectional study from the Tsurugaya Project 1." *Am J Clin Nutr*. 2006;83(2):355-361. PMID: 16469995. [https://pubmed.ncbi.nlm.nih.gov/16469995/](https://pubmed.ncbi.nlm.nih.gov/16469995/)
+
+[70] Feng L, et al. "Tea Consumption Reduces the Incidence of Neurocognitive Disorders: Findings from the Singapore Longitudinal Aging Study." *J Nutr Health Aging*. 2016;20(10):1002-1009. PMID: 27925140. [https://pubmed.ncbi.nlm.nih.gov/27925140/](https://pubmed.ncbi.nlm.nih.gov/27925140/)
+
+[71] Shirai Y, et al. "Green tea and coffee intake and risk of cognitive decline in older adults: the National Institute for Longevity Sciences, Longitudinal Study of Aging." *Public Health Nutr*. 2020;23(6):1049-1057. PMID: 31544736. [https://pubmed.ncbi.nlm.nih.gov/31544736/](https://pubmed.ncbi.nlm.nih.gov/31544736/)
+
+[72] Zhang Y, et al. "Coffee and Tea Intake, Dementia Risk, and Cognitive Function." *JAMA*. 2026;335(11):961-974. PMID: 41661604. [https://pubmed.ncbi.nlm.nih.gov/41661604/](https://pubmed.ncbi.nlm.nih.gov/41661604/)
+
+[73] Baba Y, et al. "Effect of Daily Intake of Green Tea Catechins on Cognitive Function in Middle-Aged and Older Subjects: A Randomized, Placebo-Controlled Study." *Molecules*. 2020;25(18). PMID: 32957612. [https://pubmed.ncbi.nlm.nih.gov/32957612/](https://pubmed.ncbi.nlm.nih.gov/32957612/)
+
+[74] Ide K, et al. "Effects of green tea consumption on cognitive dysfunction in an elderly population: a randomized placebo-controlled study." *Nutr J*. 2016;15(1):49. PMID: 27142448. [https://pubmed.ncbi.nlm.nih.gov/27142448/](https://pubmed.ncbi.nlm.nih.gov/27142448/)
+
+[75] Park SK, et al. "A combination of green tea extract and l-theanine improves memory and attention in subjects with mild cognitive impairment: a double-blind placebo-controlled study." *J Med Food*. 2011;14(4):334-343. PMID: 21303262. [https://pubmed.ncbi.nlm.nih.gov/21303262/](https://pubmed.ncbi.nlm.nih.gov/21303262/)
+
+[76] Dietz C, et al. "An intervention study on the effect of matcha tea, in drink and snack bar formats, on mood and cognitive performance." *Food Res Int*. 2017;99(Pt 1):72-83. PMID: 28784536. [https://pubmed.ncbi.nlm.nih.gov/28784536/](https://pubmed.ncbi.nlm.nih.gov/28784536/)
+
+[77] Zheng J, et al. "Green tea and black tea consumption and prostate cancer risk: an exploratory meta-analysis of observational studies." *Nutr Cancer*. 2011;63(5):663-672. PMID: 21667398. [https://pubmed.ncbi.nlm.nih.gov/21667398/](https://pubmed.ncbi.nlm.nih.gov/21667398/)
+
+[78] Micali S, et al. "Effect of green tea catechins in patients with high-grade prostatic intraepithelial neoplasia: results of a short-term double-blind placebo controlled phase II clinical trial." *Arch Ital Urol Androl*. 2017;89(3):197-202. PMID: 28969404. [https://pubmed.ncbi.nlm.nih.gov/28969404/](https://pubmed.ncbi.nlm.nih.gov/28969404/)
+
+[79] Zhang D, et al. "Tea consumption and breast cancer risk in a cohort of women with family history of breast cancer." *Int J Cancer*. 2020;147(3):876-886. PMID: 31837003. [https://pubmed.ncbi.nlm.nih.gov/31837003/](https://pubmed.ncbi.nlm.nih.gov/31837003/)
+
+[80] Ogunleye AA, et al. "Green tea consumption and breast cancer risk or recurrence: a meta-analysis." *Breast Cancer Res Treat*. 2010;119(2):477-484. PMID: 19437116. [https://pubmed.ncbi.nlm.nih.gov/19437116/](https://pubmed.ncbi.nlm.nih.gov/19437116/)
+
+[81] Samavat H, et al. "Green Tea Catechin Extract Supplementation Does Not Influence Circulating Sex Hormones and Insulin-Like Growth Factor Axis Proteins in a Randomized Controlled Trial of Postmenopausal Women at High Risk of Breast Cancer." *J Nutr*. 2019;149(4):619-627. PMID: 30926986. [https://pubmed.ncbi.nlm.nih.gov/30926986/](https://pubmed.ncbi.nlm.nih.gov/30926986/)
+
+[82] Zhang D, et al. "Non-herbal tea consumption and ovarian cancer risk: a systematic review and meta-analysis of observational epidemiologic studies with indirect comparison and dose-response analysis." *Carcinogenesis*. 2018;39(6):808-818. PMID: 29579174. [https://pubmed.ncbi.nlm.nih.gov/29579174/](https://pubmed.ncbi.nlm.nih.gov/29579174/)
+
+[83] Tang N, et al. "Green tea, black tea consumption and risk of lung cancer: a meta-analysis." *Lung Cancer*. 2009;65(3):274-283. PMID: 19128856. [https://pubmed.ncbi.nlm.nih.gov/19128856/](https://pubmed.ncbi.nlm.nih.gov/19128856/)
+
+[84] Huang Y, et al. "Association between green tea intake and risk of gastric cancer: a systematic review and dose-response meta-analysis of observational studies." *Public Health Nutr*. 2017;20(17):3183-3192. PMID: 28980522. [https://pubmed.ncbi.nlm.nih.gov/28980522/](https://pubmed.ncbi.nlm.nih.gov/28980522/)
+
+[85] Islami F, et al. "A prospective study of tea drinking temperature and risk of esophageal squamous cell carcinoma." *Int J Cancer*. 2020;146(1):18-25. PMID: 30891750. [https://pubmed.ncbi.nlm.nih.gov/30891750/](https://pubmed.ncbi.nlm.nih.gov/30891750/)
+
+[86] Park M, et al. "Green tea consumption is inversely associated with the incidence of influenza infection among schoolchildren in a tea plantation area of Japan." *J Nutr*. 2011;141(10):1862-1870. PMID: 21832025. [https://pubmed.ncbi.nlm.nih.gov/21832025/](https://pubmed.ncbi.nlm.nih.gov/21832025/)
+
+[87] Ide K, et al. "Effect of gargling with tea and ingredients of tea on the prevention of influenza infection: a meta-analysis." *BMC Public Health*. 2016;16:396. PMID: 27175786. [https://pubmed.ncbi.nlm.nih.gov/27175786/](https://pubmed.ncbi.nlm.nih.gov/27175786/)
+
+[88] Matsumoto K, et al. "Effects of green tea catechins and theanine on preventing influenza infection among healthcare workers: a randomized controlled trial." *BMC Complement Altern Med*. 2011;11:15. PMID: 21338496. [https://pubmed.ncbi.nlm.nih.gov/21338496/](https://pubmed.ncbi.nlm.nih.gov/21338496/)
+
+[89] Baba Y, et al. "Matcha Does Not Affect Electroencephalography during Sleep but May Enhance Mental Well-Being: A Randomized Placebo-Controlled Clinical Trial." *Nutrients*. 2024;16(17). PMID: 39275223. [https://pubmed.ncbi.nlm.nih.gov/39275223/](https://pubmed.ncbi.nlm.nih.gov/39275223/)
+
+[90] Neturi RS, et al. "Effects of Green Tea on Streptococcus mutans Counts: A Randomised Control Trial." *J Clin Diagn Res*. 2014;8(11):ZC128-ZC130. PMID: 25584303. [https://pubmed.ncbi.nlm.nih.gov/25584303/](https://pubmed.ncbi.nlm.nih.gov/25584303/)
+
+[91] Jin JS, et al. "Effects of green tea consumption on human fecal microbiota with special reference to Bifidobacterium species." *Microbiol Immunol*. 2012;56(11):729-739. PMID: 22924537. [https://pubmed.ncbi.nlm.nih.gov/22924537/](https://pubmed.ncbi.nlm.nih.gov/22924537/)
+
+[92] Janssens PL, et al. "Long-Term Green Tea Supplementation Does Not Change the Human Gut Microbiota." *PLoS One*. 2016;11(4):e0153134. PMID: 27054321. [https://pubmed.ncbi.nlm.nih.gov/27054321/](https://pubmed.ncbi.nlm.nih.gov/27054321/)
+
+[93] Lu PH, Hsu CH. "Does supplementation with green tea extract improve acne in post-adolescent women? A randomized, double-blind, and placebo-controlled clinical trial." *Complement Ther Med*. 2016;25:159-163. PMID: 27062963. [https://pubmed.ncbi.nlm.nih.gov/27062963/](https://pubmed.ncbi.nlm.nih.gov/27062963/)
+
+[94] Isaacs CE, et al. "Epigallocatechin gallate inactivates clinical isolates of herpes simplex virus." *Antimicrob Agents Chemother*. 2008;52(3):962-970. PMID: 18195068. [https://pubmed.ncbi.nlm.nih.gov/18195068/](https://pubmed.ncbi.nlm.nih.gov/18195068/)
+
+[95] Kakumanu N, Rao SD. "Skeletal fluorosis due to excessive tea drinking." *N Engl J Med*. 2013;368(12):1140. PMID: 23514291. [https://pubmed.ncbi.nlm.nih.gov/23514291/](https://pubmed.ncbi.nlm.nih.gov/23514291/)
+
+[96] Curhan GC, et al. "Beverage use and risk for kidney stones in women." *Ann Intern Med*. 1998;128(7):534-540. PMID: 9518397. [https://pubmed.ncbi.nlm.nih.gov/9518397/](https://pubmed.ncbi.nlm.nih.gov/9518397/)
+
+[97] Curhan GC, et al. "Prospective study of beverage use and the risk of kidney stones." *Am J Epidemiol*. 1996;143(3):240-247. PMID: 8561157. [https://pubmed.ncbi.nlm.nih.gov/8561157/](https://pubmed.ncbi.nlm.nih.gov/8561157/)
+
+[98] Banaei G, et al. "Teabag-derived micro/nanoplastics (true-to-life MNPLs) as a surrogate for real-life exposure scenarios." *Chemosphere*. 2024;368:143736. PMID: 39542373. [https://pubmed.ncbi.nlm.nih.gov/39542373/](https://pubmed.ncbi.nlm.nih.gov/39542373/)
+
+[99] Gao W, et al. "Rinsing Tea before Brewing Decreases Pesticide Residues in Tea Infusion." *J Agric Food Chem*. 2019;67(19):5384-5393. PMID: 30350971. [https://pubmed.ncbi.nlm.nih.gov/30350971/](https://pubmed.ncbi.nlm.nih.gov/30350971/)
+
+[100] Cook M, et al. "The determination of Fukushima-derived cesium-134 and cesium-137 in Japanese green tea samples and their distribution subsequent to simulated beverage preparation." *J Environ Radioact*. 2016;153:23-30. PMID: 26714059. [https://pubmed.ncbi.nlm.nih.gov/26714059/](https://pubmed.ncbi.nlm.nih.gov/26714059/)
+
+[101] Tian T, et al. "Tea consumption and risk of stroke in Chinese adults: a prospective cohort study of 0.5 million men and women." *Am J Clin Nutr*. 2020;111(1):197-206. PMID: 31711152. [https://pubmed.ncbi.nlm.nih.gov/31711152/](https://pubmed.ncbi.nlm.nih.gov/31711152/)
+
+[102] Werba JP, et al. "Update of green tea interactions with cardiovascular drugs and putative mechanisms." *J Food Drug Anal*. 2018;26(2S):S72-S77. doi: [10.1016/j.jfda.2018.01.008](https://doi.org/10.1016/j.jfda.2018.01.008) PMID: 29703388. [https://pubmed.ncbi.nlm.nih.gov/29703388/](https://pubmed.ncbi.nlm.nih.gov/29703388/)
+
+[103] Werba JP, et al. "Overview of green tea interaction with cardiovascular drugs." *Curr Pharm Des*. 2015;21(9):1213-1219. doi: [10.2174/1381612820666141013135045](https://doi.org/10.2174/1381612820666141013135045) PMID: 25312732. [https://pubmed.ncbi.nlm.nih.gov/25312732/](https://pubmed.ncbi.nlm.nih.gov/25312732/)
