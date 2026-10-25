@@ -20,10 +20,10 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - A man on the blood thinner dabigatran died of bleeding after starting a ginger and cinnamon drink, and daily Ceylon cinnamon was linked to bleeding after surgery [9][52]. If you take a blood thinner, ask your doctor first; if you vomit blood or pass black stools, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- A woman on a statin got hepatitis a week after starting cinnamon supplements [53]. If you take a statin, ask your doctor first; stop and see a doctor promptly for abdominal pain, vomiting or yellow skin [53].
+- A woman on a statin got hepatitis a week after starting cinnamon supplements [53]. If you take a statin, ask your doctor first; stop and see a doctor promptly for abdominal pain, vomiting or yellow skin or eyes.
 - Larger amounts of Ceylon cinnamon are considered unsafe in pregnancy, and little is known about them while breastfeeding [68].
-- Coumarin in cassia can harm the liver, and adults taking cinnamon tea and supplements can exceed a tolerable intake, by 7- to 20-fold in some scenarios [10][70]. For daily use, choose Ceylon or a water extract; with liver disease, ask your doctor first [29][68].
-- Cinnamon may lower blood glucose [67]. If you take diabetes medicines, ask your doctor whether you need closer glucose checks.
+- Coumarin in cassia can harm the liver; adults taking cinnamon tea and supplements can exceed a tolerable intake, and some intake scenarios exceed it 7- to 20-fold [10][70]. For daily use, choose Ceylon or a water extract; with liver disease, ask your doctor first [29][68].
+- Cinnamon may lower blood glucose [67]. If you take diabetes medicines, ask your doctor about closer glucose checks.
 - Cinnamon bark powder was linked to fluid retention in one case and could possibly worsen heart failure. With heart failure, ask your doctor first; report new ankle swelling or breathlessness [54].
 - Side effects are mostly stomach upset and allergic reactions [51][68]. Never try the "cinnamon challenge", an unsafe dare with dry cinnamon powder that can cause serious harm [68].
 
@@ -45,7 +45,7 @@ The primary bioactive compounds in cinnamon include:
 
 - **Proanthocyanidins (PACs):** water-soluble polyphenol polymers. In the laboratory, A-type PACs from cinnamon raised insulin-dependent glucose metabolism roughly 20-fold [6]. Cinnamon may also block the enzymes that digest starch, as the drug acarbose does [12].
 - **Cinnamaldehyde:** a major compound in the bark. Trans-cinnamaldehyde made up more than 60% of the compounds found in one batch of Ceylon bark [11]. In laboratory tests it is active against *Candida* yeasts [44].
-- **Coumarin:** a compound with hepatotoxic and carcinogenic properties in toxicology studies [10]. The authors of one case report suggest coumarin may block vitamin K recycling, which the body needs to activate several clotting factors [52].
+- **Coumarin:** a compound with hepatotoxic and carcinogenic properties in toxicology studies [10]. It is a different compound from the blood thinner warfarin, which is a coumarin derivative. The authors of one case report suggest coumarin may block vitamin K recycling, which the body needs to activate several clotting factors [52].
 
 Many products do not clearly state which species or plant part they contain, and these differences change a product's chemistry and its effects on people [68]. That also makes many cinnamon studies hard to interpret [68].
 
@@ -55,7 +55,7 @@ Cinnamon supplements come in several forms, which differ in what they contain.
 
 ### Ground Bark Powder
 
-The simplest form: ground bark sold loose or in capsules. Clinical trials in type 2 diabetes have used cinnamon doses from 120 mg a day up to 6 g a day [30].
+The simplest form: ground bark sold loose or in capsules. Diabetes trials that gave cinnamon itself, not an extract, used 1 to 6 g a day [20][22][23]. The lowest dose in pooled trials, 120 mg a day, was a cinnamon extract [21][30].
 
 In a crossover trial in 19 people with type 2 diabetes, 3 or 6 g of raw cinnamon stirred into water before a meal reduced the glucose spike after that meal [12]. The same doses taken in hard gelatin capsules lost most or all of this effect [12]. The trial measured glucose for only 2 hours [12], and capsule trials over months have also found glucose benefits [67].
 
@@ -127,7 +127,7 @@ The evidence for cinnamon in type 2 diabetes is mixed. Several trials show benef
 
 **Allen et al. (2013):** a meta-analysis of 10 trials (n = 543 patients) using cinnamon doses of 120 mg/d to 6 g/d for 4 to 18 weeks [30]. Cinnamon lowered fasting plasma glucose (-24.59 mg/dL; 95% CI, -40.52 to -8.67 mg/dL), total cholesterol, LDL cholesterol and triglycerides, and raised HDL cholesterol, but had no significant effect on HbA1c (-0.16%; 95% CI -0.39% to 0.02%) [30]. Results varied widely between trials, and the best dose and duration were unclear [30].
 
-**de Moura et al. (2025):** a larger meta-analysis of 28 trials lasting 30 to 120 days, with 3,054 patients with type 2 diabetes [67]. Cinnamon lowered fasting glucose (WMD: -15.26 mg/dL; 95% CI: -22.23 to -8.30) and HbA1c (WMD: -0.56; 95% CI: -0.99 to -0.13), again with large differences between trials [67]. Only doses of 2 g a day or less lowered HbA1c [67]. An umbrella review of 21 meta-analyses reached similar conclusions for fasting glucose and lipids [34].
+**de Moura et al. (2025):** a larger meta-analysis of 28 trials lasting 30 to 120 days, with 3,054 patients with type 2 diabetes [67]. Cinnamon lowered fasting glucose (WMD: -15.26 mg/dL; 95% CI: -22.23 to -8.30) and HbA1c (WMD: -0.56; 95% CI: -0.99 to -0.13), again with large differences between trials [67]. In subgroup analyses, only doses of 2 g a day or less lowered HbA1c [67]. An umbrella review of 21 meta-analyses reached similar conclusions for fasting glucose and lipids [34].
 
 #### Synthesis
 
@@ -278,7 +278,7 @@ The authors of one case report suggest coumarin may block vitamin K recycling, s
 
 **Case report:** a 73-year-old woman who had taken a statin for many months developed hepatitis about 1 week after starting cinnamon supplements [53]. Both were stopped; she later resumed the statin without problems [53]. The authors advise against combining cinnamon supplements with drugs that can harm the liver [53].
 
-If you take a statin, ask your doctor before taking cinnamon supplements. Stop and see a doctor promptly if you get abdominal pain, vomiting or yellow skin.
+If you take a statin, ask your doctor before taking cinnamon supplements. Stop and see a doctor promptly if you get abdominal pain, vomiting or yellow skin or eyes.
 
 ### Edema
 
@@ -291,7 +291,7 @@ If you have heart failure, ask your doctor before taking cinnamon, and report ne
 ### Other Reported Adverse Effects
 
 - **Rosacea flare:** a 68-year-old woman with type 2 diabetes had a severe rosacea flare 2 weeks after starting cinnamon oil pills [55]
-- **Allergic reactions:** cinnamaldehyde is mostly linked to contact allergy [64]. Allergic reactions inside the mouth from gum, candy, toothpaste and food are uncommon [57]. Anaphylaxis to cinnamon in food has been reported [64]. For swelling of the face, lips or throat, or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK)
+- **Allergic reactions:** cinnamaldehyde is mostly linked to contact allergy [64]. Allergic reactions inside the mouth from gum, candy, toothpaste and food are uncommonly reported [57]. Anaphylaxis to cinnamon in food has been reported [64]. For swelling of the face, lips or throat, or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK)
 - **The "cinnamon challenge":** this internet dare with dry cinnamon powder is unsafe, and serious harm is possible [68]
 
 ### Lead Contamination
@@ -307,7 +307,7 @@ In 2023, the FDA found lead, and later chromium, in the cinnamon used in a brand
 
 ## 6. Drug Interactions
 
-Cinnamon may interact with medicines in three ways: added glucose lowering, added bleeding risk from coumarin, and possible liver harm with drugs that affect the liver. NCCIH also notes theoretical reasons to suspect interactions with an anticancer medicine and with nicotine [68].
+Cinnamon may interact with medicines in three ways: added glucose lowering, possible added bleeding risk, and possible liver harm with drugs that affect the liver. NCCIH also notes theoretical reasons to suspect interactions with an anticancer medicine and with nicotine [68].
 
 ### Blood Sugar-Lowering Medications
 
@@ -345,7 +345,7 @@ USDA FoodData Central lists the full nutrient content of ground cinnamon.
 |-----------|----------|:---:|
 | Cinnamaldehyde | Flavour; antimicrobial in the laboratory | More than 60% of compounds in one Ceylon batch [11] |
 | Proanthocyanidins (PACs) | Insulin-enhancing in the laboratory | Varies by product |
-| Coumarin | Hepatotoxic in toxicology studies; may block vitamin K recycling | High in cassia; trace or none in Ceylon [19] |
+| Coumarin | Hepatotoxic in toxicology studies; a different compound from its derivative warfarin | High in cassia; trace or none in Ceylon [19] |
 
 Sources: [6][10][11][19][52]
 
