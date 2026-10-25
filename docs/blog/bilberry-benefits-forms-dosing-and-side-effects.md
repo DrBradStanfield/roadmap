@@ -20,7 +20,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - Bilberry has been associated with bleeding risk in people taking anticoagulants, and it may add to the bleeding risk of aspirin and other NSAIDs [45][46]. If you take a blood thinner, aspirin or an NSAID, talk to your doctor before using it.
-- A single dose of bilberry extract lowered blood sugar and insulin after a sugar drink in men with type 2 diabetes [25]. If you take diabetes medicines, talk to your doctor first and check your blood sugar more often.
+- A single dose of bilberry extract lowered blood sugar and insulin after a starch drink in men with type 2 diabetes [25]. If you take diabetes medicines, talk to your doctor first and check your blood sugar more often.
 - Stop non-essential supplements such as bilberry 2 weeks before planned surgery [46].
 - Bilberry leaves may be unsafe in high doses or when taken for long periods [9].
 - Little is known about whether it is safe to use bilberry in amounts greater than those found in foods during pregnancy or while breastfeeding [9].
@@ -89,7 +89,7 @@ Check that the label names *Vaccinium myrtillus*. Bilberries are expensive, and 
 
 ### Retinopathy (Diabetic and Hypertensive)
 
-A 1987 double-blind, placebo-controlled trial tested the anthocyanoside extract Tegens in diabetic and hypertensive retinopathy [18]. A 2022 review found that vision trials gave contradictory results with no clear conclusion on benefit or dose, and that the vision claims arose from unproven or false claims [1].
+A 2022 review found that vision trials gave contradictory results with no clear conclusion on benefit or dose, and that the vision claims arose from unproven or false claims [1].
 
 ### Night Vision
 
@@ -117,7 +117,7 @@ Human evidence on blood sugar is limited to small studies.
 
 **Blood sugar effects:** In diabetic rats, a bilberry leaf extract given for 4 days lowered plasma glucose by about 26% [33]. Leaf extracts are sold for type 2 diabetes, but a 2022 review traced the diabetes claims to unproven or false claims and found contradictory trial results [1].
 
-**Human evidence:** In 8 men with type 2 diabetes managed by diet and lifestyle, a single 0.47 g capsule of standardized extract (36% anthocyanins) before a sugar drink lowered the rise in blood glucose (P = 0.003) and insulin (P = 0.03) compared with placebo [25]. The authors suggest bilberry may slow how fast carbohydrate is digested or absorbed [25].
+**Human evidence:** In 8 men with type 2 diabetes managed by diet and lifestyle, a single 0.47 g capsule of standardized extract (36% anthocyanins) before a starch drink lowered the rise in blood glucose (P = 0.003) and insulin (P = 0.03) compared with placebo [25]. The authors suggest bilberry may slow how fast carbohydrate is digested or absorbed [25].
 
 **Insulin sensitivity:** The single-dose study measured the insulin response to one drink, not insulin sensitivity over time [25].
 
@@ -184,7 +184,7 @@ No dose has been shown to treat any condition. NCCIH notes that bilberry fruit e
 
 ### Timing and Administration
 
-Trials have given bilberry extract once, twice or three times a day [42][38][37]. The diabetes study gave a single capsule followed by a sugar drink [25].
+Trials have given bilberry extract once, twice or three times a day [37][38][42]. The diabetes study gave a single capsule followed by a starch drink [25].
 
 ### How to Read a Bilberry Supplement Label
 
@@ -193,7 +193,6 @@ The most important factors to verify on a bilberry supplement label:
 1. **Species:** Confirm *Vaccinium myrtillus*; testing has found products made with other plants [43][44]
 2. **Standardization:** Look for a stated anthocyanin or anthocyanoside percentage, as trials used [25][37]
 3. **Dose per serving:** Multiply the extract amount by its percentage to estimate the anthocyanins per serving
-4. **Named extract:** Mirtoselect is the extract used in the dry eye trial [40]
 
 ## 5. Safety and Side Effects
 
@@ -203,20 +202,11 @@ Bilberry fruit is considered safe in amounts typically found in foods [9]. Bilbe
 
 ### Reported Side Effects
 
-Side effects from bilberry extract appear to be uncommon. Reported ones may include:
-
-- **Gastrointestinal:** Mild digestive upset
-- **Skin reactions:** Skin rash
-- **Drowsiness:** Reported in at least one study
 - **Allergic reactions:** Possible. For trouble breathing, swelling of the face or throat, or fainting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Blood Sugar Effects
 
-A single dose of bilberry extract lowered the rise in blood glucose and insulin after a sugar drink in men with type 2 diabetes [25]. This could add to the effect of glucose-lowering medicines or supplements, and may matter for:
-
-- People prone to **low blood sugar (hypoglycemia)**
-- People taking **diabetes medicines** (insulin, metformin, sulfonylureas and others)
-- People taking other glucose-lowering supplements
+A single dose of bilberry extract lowered the rise in blood glucose and insulin after a starch drink in men with type 2 diabetes [25]. This could add to the effect of diabetes medicines.
 
 People with diabetes, or on blood sugar-lowering medicines, should talk to their doctor before taking bilberry and check their blood sugar more often [9][25]. If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not give food or drink by mouth.
 
@@ -226,21 +216,19 @@ Bilberry is one of several herbs reported to have antiplatelet activity, and wit
 
 ### Surgery
 
-Because bilberry may affect bleeding and blood sugar, stop it 2 weeks before planned surgery, as the 2022 review advises for non-essential supplements [46].
+A 2022 review advises stopping non-essential supplements, such as bilberry, 2 weeks before planned surgery [46].
 
 ### Bilberry Leaf Safety
 
 Bilberry leaf safety is less established than bilberry fruit safety [9]:
 
 - **Long-term use:** Bilberry leaves may be unsafe when consumed in high doses or for long periods of time [9]
-- **Blood sugar:** A leaf extract lowered blood sugar in diabetic rats [33], so people with diabetes who use bilberry leaf may need their medicine adjusted; talk to your doctor first
+- **Blood sugar:** A leaf extract lowered blood sugar in diabetic rats [33]. If you have diabetes, talk to your doctor before using bilberry leaf.
 - **Lack of human data:** Bilberry leaf extract has not been tested in rigorous human safety studies
 
 ### Special Populations
 
 - **Pregnancy and breastfeeding:** Little is known about whether it is safe to use bilberry in amounts greater than those found in foods during pregnancy or while breastfeeding [9]
-- **Children:** Safety in young children has not been established
-- **Serious liver or kidney disease:** Safety is unknown for these groups
 
 ## 6. Drug Interactions
 
@@ -252,14 +240,14 @@ Bilberry's reported antiplatelet activity, and its link with bleeding in people 
 |-----------|---------|---------|----------------|
 | Vitamin K antagonists | Warfarin (Coumadin) | Possible increased bleeding risk [46] | Talk to your doctor before use |
 | Direct oral anticoagulants | Apixaban, rivaroxaban, dabigatran | Possible increased bleeding risk [46] | Talk to your doctor before use |
-| Antiplatelet drugs | Aspirin, clopidogrel | Possible increased bleeding risk [45] | Talk to your doctor before use |
+| Antiplatelet drugs | Aspirin | Possible increased bleeding risk [45] | Talk to your doctor before use |
 | NSAIDs | Ibuprofen, naproxen | Possible increased bleeding risk [45] | Talk to your doctor before use |
 
 If you take any type of medicine, talk with your health care provider before using bilberry; some herbs and medicines interact in harmful ways [9].
 
 ### Blood Sugar-Lowering Medications
 
-Bilberry extract lowered the blood sugar response to a sugar drink [25], so it may add to diabetes medicines:
+Bilberry extract lowered the blood sugar response to a starch drink [25], so it may add to diabetes medicines:
 
 | Drug Class | Examples | Concern | Recommendation |
 |-----------|---------|---------|----------------|
@@ -273,7 +261,7 @@ Bilberry extract lowered the blood sugar response to a sugar drink [25], so it m
 ### Other Potential Interactions
 
 - **Drug absorption:** In cells, bilberry extract blocked a gut transporter (OATP-B) that carries some medicines by 75.5%, and the authors suggest some supplements may reduce the absorption of drugs that use it [47]. Whether this matters in people is unknown. If you take prescription medicines, check with your doctor or pharmacist before starting.
-- **Iron absorption:** Bilberry contains tannins [9]. Tannins may bind iron, so taking bilberry and an iron supplement at different times of day is a cautious step.
+- **Iron absorption:** Bilberry contains tannins [9].
 
 ## 7. Dietary Sources
 
@@ -299,21 +287,19 @@ Bilberries and blueberries are among the best sources of anthocyanins, and bilbe
 
 ## 8. References
 
-[1] Vaneková Z, Rollinger JM. "Bilberries: curative and miraculous — a review on bioactive constituents and clinical research." *Frontiers in Pharmacology*. 2022;13:909914. PMID: 35847049. [https://doi.org/10.3389/fphar.2022.909914](https://doi.org/10.3389/fphar.2022.909914)
+[1] Vaneková Z, Rollinger JM. "Bilberries: curative and miraculous - a review on bioactive constituents and clinical research." *Frontiers in Pharmacology*. 2022;13:909914. PMID: 35847049. [https://doi.org/10.3389/fphar.2022.909914](https://doi.org/10.3389/fphar.2022.909914)
 
 [6] Riihinen K, Jaakola L, Kärenlampi S, Hohtola A. "Organ-specific distribution of phenolic compounds in bilberry (Vaccinium myrtillus) and 'northblue' blueberry (Vaccinium corymbosum x V. angustifolium)." *Food Chemistry*. 2008;110(1):156-160. PMID: 26050178. [https://doi.org/10.1016/j.foodchem.2008.01.057](https://doi.org/10.1016/j.foodchem.2008.01.057)
 
 [9] National Center for Complementary and Integrative Health (NCCIH). "Bilberry." National Institutes of Health. Updated November 2024. [https://www.nccih.nih.gov/health/bilberry](https://www.nccih.nih.gov/health/bilberry)
 
-[11] Canter PH, Ernst E. "Anthocyanosides of Vaccinium myrtillus (bilberry) for night vision — a systematic review of placebo-controlled trials." *Survey of Ophthalmology*. 2004;49(1):38-50. PMID: 14711439. [https://doi.org/10.1016/j.survophthal.2003.10.006](https://doi.org/10.1016/j.survophthal.2003.10.006)
+[11] Canter PH, Ernst E. "Anthocyanosides of Vaccinium myrtillus (bilberry) for night vision--a systematic review of placebo-controlled trials." *Survey of Ophthalmology*. 2004;49(1):38-50. PMID: 14711439. [https://doi.org/10.1016/j.survophthal.2003.10.006](https://doi.org/10.1016/j.survophthal.2003.10.006)
 
 [12] Chan SW, Tomlinson B. "Effects of bilberry supplementation on metabolic and cardiovascular disease risk." *Molecules*. 2020;25(7):1653. PMID: 32260262. [https://doi.org/10.3390/molecules25071653](https://doi.org/10.3390/molecules25071653)
 
 [15] Fang J. "Bioavailability of anthocyanins." *Drug Metabolism Reviews*. 2014;46(4):508-520. PMID: 25347327. [https://doi.org/10.3109/03602532.2014.978080](https://doi.org/10.3109/03602532.2014.978080)
 
 [16] Passamonti S, Vrhovsek U, Vanzo A, Mattivi F. "The stomach as a site for anthocyanins absorption from food." *FEBS Letters*. 2003;544(1-3):210-213. PMID: 12782318. [https://doi.org/10.1016/S0014-5793(03)00504-0](https://doi.org/10.1016/S0014-5793(03)00504-0)
-
-[18] Perossini M, Guidi G, Chiellini S, Siravo D. "Diabetic and hypertensive retinopathy therapy with Vaccinium myrtillus anthocyanosides (Tegens): double blind placebo-controlled clinical trial." *Annali di Ottalmologia e Clinica Oculistica*. 1987;113:1173-1190.
 
 [25] Hoggard N, Cruickshank M, Moar KM, et al. "A single supplement of a standardised bilberry (Vaccinium myrtillus L.) extract (36% wet weight anthocyanins) modifies glycaemic response in individuals with type 2 diabetes controlled by diet and lifestyle." *Journal of Nutritional Science*. 2013;2:e22. PMID: 25191571. [https://doi.org/10.1017/jns.2013.16](https://doi.org/10.1017/jns.2013.16)
 
