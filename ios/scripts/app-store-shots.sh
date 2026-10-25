@@ -4,10 +4,10 @@
 # skips the welcome and onboarding, sets Apple's 9:41 status bar, then runs the opt-in
 # AppStoreScreenshots UI test and saves its pictures in ios/build/app-store-shots/.
 # Uninstalls the app from that simulator first.
-#   ios/scripts/app-store-shots.sh ["iPhone 18 Pro Max"]
+#   ios/scripts/app-store-shots.sh ["iPhone 18 Pro"]  (App Store Connect's iPhone slot takes 1206 × 2622, 2026-10-26)
 set -eu
 cd "$(dirname "$0")/.."
-DEVICE="${1:-iPhone 18 Pro Max}"
+DEVICE="${1:-iPhone 18 Pro}"
 APP_ID=com.drstanfield.healthroadmap
 DERIVED="${HR_DERIVED_DATA:-${TMPDIR:-/tmp}/HealthRoadmap-$(pwd | shasum | cut -c1-8)}"
 OUT=build/app-store-shots

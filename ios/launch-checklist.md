@@ -2,7 +2,7 @@
 artifact: https://claude.ai/artifact/NbkzYiX7CfGmpFFXJcY2E7
 ---
 
-# iPhone app: launch checklist (updated 2026-10-25)
+# iPhone app: launch checklist (updated 2026-10-26)
 
 Everything below is on `main` and pushed. The app runs in the simulator with every
 feature. What is left needs your accounts, a real iPhone, a deploy or a decision.
@@ -71,14 +71,20 @@ by the orchestrator, not a fresh reviewer.
    `APP_ATTEST_TEAM_ID=KAV75KMV2R` and `APP_ATTEST_BUNDLE_ID=com.drstanfield.healthroadmap`
    are set on `health-tool-edu`. Proven on Brad's iPhone: attest/register 200, chat 200.
    Never set `APP_ATTEST_DEV_BYPASS` in production.
-7. **App Store (Brad's decisions, 2026-10-25):** version 0.1, free, all countries,
-   release automatically after approval, submitted by the orchestrator. App Review
-   contact: Brad Stanfield, brad@drstanfield.com, his personal number (in App Store
-   Connect, not in this public repo).
-6. **Privacy:** read the live page and its "Items still to verify" list
-   (legal review, App Attest row retention).
-8. **App Store Connect:** the listing and the privacy answers from app-store.md,
-   screenshots, archive, upload, submit (in progress 2026-10-25).
+6. **Privacy:** published again 2026-10-26 with the five Apple Health readings. Read the
+   live page and its "Items still to verify" list (legal review, App Attest row retention).
+7. **App Store Connect (2026-10-26): ready except the build.** App record 6826824214:
+   listing, review notes and contact (Brad's number lives there, not here), version 0.1,
+   automatic release, free in 175 countries (no Mac, no Vision Pro), age rating 16+,
+   App Privacy published, five 6.3-inch screenshots (1206 × 2622, `app-store-shots.sh
+   "iPhone 18 Pro"`; the slot refuses 6.9-inch). The 0.1 archive is in Xcode's Organizer.
+   - **Upload (Brad):** Xcode › Window › Organizer › HealthRoadmap 0.1 › Distribute App ›
+     App Store Connect › Upload. `xcodebuild -exportArchive` from an agent shell fails:
+     it has no App Store Connect token for the team.
+   - **Then:** the version page's Build › pick build 1 › Add for Review › Submit.
+   - **Brad's legal calls:** declare whether the app is a regulated medical device (App
+     Information; needed for the US, UK and EU) and the EU trader status (Business ›
+     Digital Services Act). Without them the app is not sold in those regions.
 8. **Regulatory advice** on whether the app counts as a medical device in your markets.
 9. **Clinical call:** should the value pages show target bands (blood pressure goal,
    healthy waist, ideal weight)? The targets live only in the website's code today;
@@ -88,7 +94,7 @@ by the orchestrator, not a fresh reviewer.
     recording to confirm every screen is masked (the supplement search bar included).
     Decide whether to pause Clarity on two-button questions (tap position can show the answer).
 11. **App Store pictures** are in `ios/build/app-store-shots/` (run
-    `ios/scripts/app-store-shots.sh` again after any UI change).
+    `ios/scripts/app-store-shots.sh "iPhone 18 Pro"` again after any UI change).
 
 ## To check on a real iPhone
 
