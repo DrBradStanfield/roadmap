@@ -19,13 +19,13 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- A man on the blood thinner dabigatran died of bleeding after starting a boiled ginger and cinnamon drink, and daily Ceylon cinnamon was linked to bleeding after surgery [9][52]. If you take a blood thinner, ask your doctor first; if you vomit blood or pass black stools, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- A woman on a statin developed hepatitis a week after starting cinnamon supplements [53]. Coumarin in cassia can harm the liver, so long-term use may be a problem for people with liver disease [10][68].
-- Larger amounts of Ceylon cinnamon are considered unsafe in pregnancy, and little is known about larger amounts while breastfeeding [68].
-- The tolerable daily intake for coumarin is 0.1 mg per kg of body weight, and heavy users of cassia cinnamon may reach it [10].
-- Cinnamon may lower blood glucose [67]. If you take insulin or other diabetes medicines, ask your doctor whether you need closer glucose checks.
-- A case report linked cinnamon bark powder to fluid retention, and its author warns it could worsen heart failure [54].
-- Side effects are mostly stomach upset and allergic reactions [51][68]. Never take the "cinnamon challenge", an unsafe internet dare with dry cinnamon powder; serious harm is possible [68].
+- A man on the blood thinner dabigatran died of bleeding after starting a ginger and cinnamon drink, and daily Ceylon cinnamon was linked to bleeding after surgery [9][52]. If you take a blood thinner, ask your doctor first; if you vomit blood or pass black stools, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- A woman on a statin got hepatitis a week after starting cinnamon supplements [53]. If you take a statin, ask your doctor first; stop and see a doctor promptly for abdominal pain, vomiting or yellow skin [53].
+- Larger amounts of Ceylon cinnamon are considered unsafe in pregnancy, and little is known about them while breastfeeding [68].
+- Coumarin in cassia can harm the liver, and adults taking cinnamon tea and supplements can exceed a tolerable intake, by 7- to 20-fold in some scenarios [10][70]. For daily use, choose Ceylon or a water extract; with liver disease, ask your doctor first [29][68].
+- Cinnamon may lower blood glucose [67]. If you take diabetes medicines, ask your doctor whether you need closer glucose checks.
+- Cinnamon bark powder was linked to fluid retention in one case and could possibly worsen heart failure. With heart failure, ask your doctor first; report new ankle swelling or breathlessness [54].
+- Side effects are mostly stomach upset and allergic reactions [51][68]. Never try the "cinnamon challenge", an unsafe dare with dry cinnamon powder that can cause serious harm [68].
 
 ## Brad's videos on this topic
 
@@ -45,7 +45,7 @@ The primary bioactive compounds in cinnamon include:
 
 - **Proanthocyanidins (PACs):** water-soluble polyphenol polymers. In the laboratory, A-type PACs from cinnamon raised insulin-dependent glucose metabolism roughly 20-fold [6]. Cinnamon may also block the enzymes that digest starch, as the drug acarbose does [12].
 - **Cinnamaldehyde:** a major compound in the bark. Trans-cinnamaldehyde made up more than 60% of the compounds found in one batch of Ceylon bark [11]. In laboratory tests it is active against *Candida* yeasts [44].
-- **Coumarin:** a compound with hepatotoxic and carcinogenic properties in toxicology studies [10]. It can block vitamin K recycling, which the body needs to make several clotting factors [52]. This is the pathway the blood thinner warfarin targets.
+- **Coumarin:** a compound with hepatotoxic and carcinogenic properties in toxicology studies [10]. The authors of one case report suggest coumarin may block vitamin K recycling, which the body needs to activate several clotting factors [52].
 
 Many products do not clearly state which species or plant part they contain, and these differences change a product's chemistry and its effects on people [68]. That also makes many cinnamon studies hard to interpret [68].
 
@@ -55,7 +55,7 @@ Cinnamon supplements come in several forms, which differ in what they contain.
 
 ### Ground Bark Powder
 
-The simplest form: ground bark sold loose or in capsules. Clinical trials in type 2 diabetes have used doses from 120 mg a day of extract up to 6 g a day of cinnamon [30].
+The simplest form: ground bark sold loose or in capsules. Clinical trials in type 2 diabetes have used cinnamon doses from 120 mg a day up to 6 g a day [30].
 
 In a crossover trial in 19 people with type 2 diabetes, 3 or 6 g of raw cinnamon stirred into water before a meal reduced the glucose spike after that meal [12]. The same doses taken in hard gelatin capsules lost most or all of this effect [12]. The trial measured glucose for only 2 hours [12], and capsule trials over months have also found glucose benefits [67].
 
@@ -127,11 +127,11 @@ The evidence for cinnamon in type 2 diabetes is mixed. Several trials show benef
 
 **Allen et al. (2013):** a meta-analysis of 10 trials (n = 543 patients) using cinnamon doses of 120 mg/d to 6 g/d for 4 to 18 weeks [30]. Cinnamon lowered fasting plasma glucose (-24.59 mg/dL; 95% CI, -40.52 to -8.67 mg/dL), total cholesterol, LDL cholesterol and triglycerides, and raised HDL cholesterol, but had no significant effect on HbA1c (-0.16%; 95% CI -0.39% to 0.02%) [30]. Results varied widely between trials, and the best dose and duration were unclear [30].
 
-**de Moura et al. (2025):** a larger meta-analysis of 28 trials lasting 30 to 120 days, with 3,054 patients with type 2 diabetes [67]. Cinnamon lowered fasting glucose (WMD: -15.26 mg/dL; 95% CI: -22.23 to -8.30) and HbA1c (WMD: -0.56; 95% CI: -0.99 to -0.13), again with large differences between trials [67]. An umbrella review of 21 meta-analyses reached similar conclusions for fasting glucose and lipids [34].
+**de Moura et al. (2025):** a larger meta-analysis of 28 trials lasting 30 to 120 days, with 3,054 patients with type 2 diabetes [67]. Cinnamon lowered fasting glucose (WMD: -15.26 mg/dL; 95% CI: -22.23 to -8.30) and HbA1c (WMD: -0.56; 95% CI: -0.99 to -0.13), again with large differences between trials [67]. Only doses of 2 g a day or less lowered HbA1c [67]. An umbrella review of 21 meta-analyses reached similar conclusions for fasting glucose and lipids [34].
 
 #### Synthesis
 
-The evidence for cinnamon in type 2 diabetes is inconsistent. Pooled trials point to lower fasting glucose, and the newer meta-analysis also found a small fall in HbA1c, but the trials differ widely and many are small [30][67]. The best-known positive trial is now under an expression of concern [69]. Most positive trials gave cinnamon alongside diabetes medicines. NCCIH judges that higher quality research is needed before cinnamon can be said to help diabetes [68].
+The evidence for cinnamon in type 2 diabetes is inconsistent. Pooled trials point to lower fasting glucose, and the newer meta-analysis also found a small fall in HbA1c, but the trials differ widely and many are small [30][67]. The best-known positive trial is now under an expression of concern that questions the plausibility of its data, and the publisher could not reach its authors [69]. Most positive trials gave cinnamon alongside diabetes medicines. NCCIH judges that higher quality research is needed before cinnamon can be said to help diabetes [68].
 
 ### Blood Sugar Control in Prediabetes
 
@@ -228,7 +228,7 @@ Larger trials would be needed to confirm a benefit for IBS or other bowel disord
 
 ### Dosing Considerations
 
-- **Studied range:** trials in type 2 diabetes used 120 mg a day of extract up to 6 g a day of cinnamon, for 4 to 18 weeks [30]
+- **Studied range:** trials in type 2 diabetes used cinnamon doses of 120 mg a day up to 6 g a day, for 4 to 18 weeks [30]
 - **Upper end:** 6 g a day was given for 40 days in one trial [20]; long-term use of cassia at high doses raises coumarin intake [10][19]
 - **Coumarin limits:** the tolerable daily intake for coumarin is 0.1 mg per kg of body weight, and heavy users of cassia cinnamon may reach it [10]. Ceylon cinnamon or a cassia water extract lowers coumarin intake [29].
 - **Form matters:** cinnamon stirred into water acted faster than capsules on the glucose spike after a meal [12]
@@ -238,10 +238,6 @@ Larger trials would be needed to confirm a benefit for IBS or other bowel disord
 Key information to check:
 
 1. **Species of cinnamon:** many products do not state it [68]. Ceylon has much less coumarin than cassia [19].
-2. **Form:** extract versus bark powder.
-3. **Amount per serving:** listed in milligrams (mg) or grams (g). For extracts, check the concentration ratio (e.g., 20:1, 40:1).
-4. **Standardization:** if available, look for standardization to PACs (proanthocyanidins), particularly type-A PACs.
-5. **Coumarin content:** rarely listed, but relevant for cassia products used at higher doses.
 
 To check whether a product has been independently tested for quality, see ConsumerLab (consumerlab.com) or Labdoor (labdoor.com).
 
@@ -253,7 +249,7 @@ Cinnamon is likely safe in the amounts used in food [68]. Used in larger amounts
 
 ### Common Side Effects
 
-A systematic review of adverse events found 38 clinical trials, five of which reported adverse events, plus case reports and 160 spontaneous reports [51]. The most frequent were gastrointestinal disorders and allergic reactions, mostly self-limiting [51]. The authors advise clinical monitoring of medicinal use at larger doses or for longer periods [51].
+A systematic review of adverse events found 38 clinical trials, five of which reported adverse events, plus case reports and spontaneous reports including 160 adverse events [51]. The most frequent were gastrointestinal disorders and allergic reactions, mostly self-limiting [51]. The authors advise clinical monitoring of medicinal use at larger doses or for longer periods [51].
 
 ### Coumarin Toxicity
 
@@ -263,6 +259,8 @@ The main safety concern with cinnamon, particularly cassia, is long-term coumari
 - The European Food Safety Authority set a tolerable daily intake (TDI) of 0.1 mg per kg of body weight for coumarin, and an analysis of human data confirmed it [10]
 - Heavy consumers of cassia cinnamon may reach a daily coumarin intake equal to the TDI [10]
 - A subgroup of people is more susceptible to coumarin's liver toxicity than animals are, for reasons that are not yet known [10]
+- Cassia cinnamon can contain up to 1% coumarin, and the body absorbs coumarin from cinnamon almost as well as pure coumarin, so the TDI applies to cinnamon foods [71]
+- A Norwegian assessment set a stricter TDI of 0.07 mg per kg; adults drinking cinnamon tea and taking cinnamon supplements could exceed it, and in some intake scenarios coumarin intake could exceed it 7- to 20-fold [70]
 
 **Species-specific risk:**
 - Ceylon cinnamon: trace or no coumarin [19][68]
@@ -270,7 +268,7 @@ The main safety concern with cinnamon, particularly cassia, is long-term coumari
 
 ### Anticoagulant Effects
 
-Coumarin can block vitamin K recycling and so stop several clotting factors from being activated [52]. In excess, it may add to the effect of blood thinners and raise bleeding risk, especially around surgery [9][52].
+The authors of one case report suggest coumarin may block vitamin K recycling, so that several clotting factors are not activated, and they linked a patient's bleeding after surgery to dietary coumarin [52]. The second case below, in a man on the blood thinner dabigatran, stands apart: he also took ginger, and how the herbs might have caused his bleeding is not known [9].
 
 **Case report:** a 49-year-old man who had taken a tablespoon of Ceylon cinnamon daily for ten months bled inside the abdomen after bowel cancer surgery [52]. His haemoglobin fell from 17.4 g/dL to 8.0 g/dL over the next four days and his INR was 1.59 [52]. The authors attributed the bleeding to dietary coumarin [52].
 
@@ -280,28 +278,32 @@ Coumarin can block vitamin K recycling and so stop several clotting factors from
 
 **Case report:** a 73-year-old woman who had taken a statin for many months developed hepatitis about 1 week after starting cinnamon supplements [53]. Both were stopped; she later resumed the statin without problems [53]. The authors advise against combining cinnamon supplements with drugs that can harm the liver [53].
 
+If you take a statin, ask your doctor before taking cinnamon supplements. Stop and see a doctor promptly if you get abdominal pain, vomiting or yellow skin.
+
 ### Edema
 
-Cinnamon bark powder activates the same receptors (PPARs) as thiazolidinedione drugs such as pioglitazone, which cause fluid retention [54].
+Cinnamon bark powder activates the same receptors (PPARs) as thiazolidinedione drugs, which cause fluid retention [54].
 
 **Case report:** an adult man developed edema while taking 1000 mg of cinnamon bark powder daily, and it resolved after he stopped [54]. The author warns that cinnamon bark powder could cause fluid retention and possibly worsen heart failure [54].
+
+If you have heart failure, ask your doctor before taking cinnamon, and report new ankle swelling or breathlessness.
 
 ### Other Reported Adverse Effects
 
 - **Rosacea flare:** a 68-year-old woman with type 2 diabetes had a severe rosacea flare 2 weeks after starting cinnamon oil pills [55]
-- **Allergic reactions:** cinnamaldehyde most often causes contact allergy, including allergic reactions inside the mouth from gum, candy, toothpaste and food [57]. Anaphylaxis to cinnamon in food has been reported [64]. For swelling of the face, lips or throat, or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK)
+- **Allergic reactions:** cinnamaldehyde is mostly linked to contact allergy [64]. Allergic reactions inside the mouth from gum, candy, toothpaste and food are uncommon [57]. Anaphylaxis to cinnamon in food has been reported [64]. For swelling of the face, lips or throat, or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK)
 - **The "cinnamon challenge":** this internet dare with dry cinnamon powder is unsafe, and serious harm is possible [68]
 
 ### Lead Contamination
 
-In 2023, the FDA found lead, and later chromium, in the cinnamon used in a brand of applesauce pouches, and the product was recalled [60]. From November 2023 to April 2024, 566 cases of raised blood lead were reported across 44 states, the District of Columbia and Puerto Rico, 55% in children aged under 2 years [60]. Buying from manufacturers that use third-party testing may lower this risk.
+In 2023, the FDA found lead, and later chromium, in the cinnamon used in a brand of applesauce pouches, and the product was recalled [60]. From November 2023 to April 2024, 566 cases of raised blood lead were reported across 44 states, the District of Columbia and Puerto Rico, 55% in children aged under 2 years [60].
 
 ### Special Populations
 
 - **Pregnancy and breastfeeding:** cinnamon in food amounts appears safe in pregnancy, but larger amounts of Ceylon cinnamon are considered unsafe [68]. Little is known about larger amounts of either type while breastfeeding [68]
 - **Children:** supplement doses have not been well studied in children; ask a doctor before giving them
-- **Liver disease:** long-term use of cassia cinnamon may be a problem for people with liver disease [68]
-- **Surgery:** cinnamon was linked to bleeding after surgery in one case [52]. Tell your surgeon if you take cinnamon supplements.
+- **Liver disease:** long-term use of cassia cinnamon may be a problem for people with liver disease [68]; ask your doctor first
+- **Surgery:** cinnamon was linked to bleeding after surgery in one case [52]. Tell your surgeon if you take cinnamon supplements [52].
 
 ## 6. Drug Interactions
 
@@ -309,11 +311,11 @@ Cinnamon may interact with medicines in three ways: added glucose lowering, adde
 
 ### Blood Sugar-Lowering Medications
 
-Pooled trials suggest cinnamon may lower fasting glucose [30][67]. Several positive trials gave it alongside diabetes medicines such as gliclazide [21][22]. If you take insulin, a sulfonylurea or other diabetes medicines, ask your doctor whether you need closer glucose checks. Cinnamon bark powder acts on the same receptors as pioglitazone, and a case report linked it to fluid retention [54].
+Pooled trials suggest cinnamon may lower fasting glucose [30][67]. Several positive trials gave it alongside diabetes medicines such as gliclazide [21][22]. If you take insulin, a sulfonylurea or other diabetes medicines, ask your doctor whether you need closer glucose checks. Cinnamon bark powder acts on the same receptors as thiazolidinedione drugs, and a case report linked it to fluid retention [54].
 
 ### Anticoagulant and Antiplatelet Drugs
 
-Coumarin can block vitamin K recycling [52], the pathway warfarin targets. A man on dabigatran died of bleeding after starting a ginger and cinnamon drink [9]. If you take warfarin, dabigatran or another blood thinner, or an antiplatelet drug such as aspirin or clopidogrel, check with your doctor or pharmacist before starting.
+The authors of one case report suggest coumarin may block vitamin K recycling [52]. A man on dabigatran died of bleeding after starting a ginger and cinnamon drink [9]. If you take warfarin, dabigatran or another blood thinner, or an antiplatelet drug such as aspirin or clopidogrel, check with your doctor or pharmacist before starting.
 
 ### Hepatotoxic Drugs
 
@@ -327,7 +329,7 @@ Cinnamon may lower blood pressure slightly [66]. It could in theory add to blood
 
 - Cinnamon in food amounts is likely safe [68]
 - If you take prescription medicines, check with your doctor or pharmacist before starting.
-- If you take any medicine, talk with your health care provider before using cinnamon supplements, especially before surgery [68]
+- If you take any medicine, talk with your health care provider before using cinnamon supplements [68]
 
 ## 7. Dietary Sources
 
@@ -343,7 +345,7 @@ USDA FoodData Central lists the full nutrient content of ground cinnamon.
 |-----------|----------|:---:|
 | Cinnamaldehyde | Flavour; antimicrobial in the laboratory | More than 60% of compounds in one Ceylon batch [11] |
 | Proanthocyanidins (PACs) | Insulin-enhancing in the laboratory | Varies by product |
-| Coumarin | Hepatotoxic in toxicology studies; blocks vitamin K recycling | High in cassia; trace or none in Ceylon [19] |
+| Coumarin | Hepatotoxic in toxicology studies; may block vitamin K recycling | High in cassia; trace or none in Ceylon [19] |
 
 Sources: [6][10][11][19][52]
 
@@ -354,7 +356,7 @@ Cinnamon has a long history in cooking in many parts of the world [68]. It is us
 ### Practical Considerations
 
 - **Cassia vs Ceylon in cooking:** cassia is the usual supermarket cinnamon in North America [68]. For daily use, such as cinnamon on porridge every morning, Ceylon has much less coumarin [19]
-- **Sticks vs powder:** sticks and powder come from the same bark, so the species matters more than the form [19]
+- **Sticks vs powder:** coumarin varies widely in sticks too; in a German study, sticks from two packages ranged from below detection to about 10,000 mg per kg [72]
 
 ## 8. References
 
@@ -445,3 +447,9 @@ Cinnamon has a long history in cooking in many parts of the world [68]. It is us
 [68] National Center for Complementary and Integrative Health (NCCIH). "Cinnamon." Last updated November 2024. [https://www.nccih.nih.gov/health/cinnamon](https://www.nccih.nih.gov/health/cinnamon)
 
 [69] American Diabetes Association. "Expression of Concern: Khan A, et al. Cinnamon Improves Glucose and Lipids of People With Type 2 Diabetes. Diabetes Care 2003;26:3215-3218." *Diabetes Care*. 2025;48(9):1646. PMID: 40834253. [https://doi.org/10.2337/dc25-ec09](https://doi.org/10.2337/dc25-ec09)
+
+[70] Fotland TØ, et al. "Risk assessment of coumarin using the bench mark dose (BMD) approach: children in Norway which regularly eat oatmeal porridge with cinnamon may exceed the TDI for coumarin with several folds." *Food Chem Toxicol*. 2012;50(3-4):903-912. PMID: 22178604. [https://doi.org/10.1016/j.fct.2011.12.005](https://doi.org/10.1016/j.fct.2011.12.005)
+
+[71] Abraham K, et al. "Relative bioavailability of coumarin from cinnamon and cinnamon-containing foods compared to isolated coumarin: a four-way crossover study in human volunteers." *Mol Nutr Food Res*. 2011;55(4):644-653. PMID: 21462332. [https://doi.org/10.1002/mnfr.201000394](https://doi.org/10.1002/mnfr.201000394)
+
+[72] Woehrlin F, et al. "Quantification of flavoring constituents in cinnamon: high variation of coumarin in cassia bark from the German retail market and in authentic samples from Indonesia." *J Agric Food Chem*. 2010;58(19):10568-10575. PMID: 20853872. [https://doi.org/10.1021/jf102112p](https://doi.org/10.1021/jf102112p)
