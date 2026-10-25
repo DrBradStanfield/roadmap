@@ -1,1 +1,738 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "pomegranate-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Three men developed priapism (a prolonged, painful erection) after taking sildenafil with pomegranate juice [26]. P...\" | \"- Allergic reactions have been reported [2][30]. If you get swelling of the face, lips or tongue, or trouble breathin...\" | \"Allergic reactions to pomegranate have been reported [2]. In case reports, allergic reaction was the most significant...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Pomegranate review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "pomegranate-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Three men developed priapism (a prolonged, painful erection) after taking sildenafil with pomegranate juice [26]. P...\" | \"- Allergic reactions have been reported [2][30]. If you get swelling of the face, lips or tongue, or trouble breathin...\" | \"- HOMA-IR: -0.30 (95% CI: -0.61 to -0.00; P = 0.046)\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Pomegranate review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "pomegranate-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Three men developed priapism (a prolonged, painful erection) after taking sildenafil with pomegranate juice [26]. P...\" | \"- Allergic reactions have been reported [2][30]. If you get swelling of the face, lips or tongue, or trouble breathin...\" | \"Allergic reactions to pomegranate have been reported [2]. In case reports, allergic reaction was the most significant...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Pomegranate review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "pomegranate-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Three men developed priapism (a prolonged, painful erection) after taking sildenafil with pomegranate juice [26]. P...\" | \"- Allergic reactions have been reported [2][30]. If you get swelling of the face, lips or tongue, or trouble breathin...\" | \"Allergic reactions to pomegranate have been reported [2]. In case reports, allergic reaction was the most significant...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Pomegranate review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "pomegranate-benefits-forms-dosing-and-side-effects",
+  "match": "token \"183\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Subsequent negative study:** In a placebo-controlled trial of 183 men, PSA doubling time lengthened in both the ext...\"",
+  "reason": "AC2 pomegranate tokeniser case (\"183\" spelled One-hundred eighty-three; \"<1.69 g/L\" middle-dot decimal in the abstract); ratified in decisions.md (Pomegranate review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "pomegranate-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<1.69 g/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Systematic review (2018):** A 2018 systematic review concluded that pomegranate may improve endurance, strength and...\"",
+  "reason": "AC2 pomegranate tokeniser case (\"183\" spelled One-hundred eighty-three; \"<1.69 g/L\" middle-dot decimal in the abstract); ratified in decisions.md (Pomegranate review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[241] raw_quote shares no number with its body_line: **Dark chocolate and appetite regulation:** In 14 healthy postmenopausal women, people later ate ...",
+  "reason": "AC2 cocoa changed_tokens[241] from the fix round (same number in another form: 2,099 vs 2099 kJ; 200 mg a day; 500 mg a day); ratified in decisions.md (Cocoa fix committed a4961844, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[259] raw_quote shares no number with its body_line: The European Food Safety Authority (EFSA) concluded in 2012 that cocoa flavanols help arteries wi...",
+  "reason": "AC2 cocoa changed_tokens[259] from the fix round (same number in another form: 2,099 vs 2099 kJ; 200 mg a day; 500 mg a day); ratified in decisions.md (Cocoa fix committed a4961844, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[260] raw_quote shares no number with its body_line: **Cardiovascular risk reduction:** COSMOS used 500 mg a day and did not significantly reduce tota...",
+  "reason": "AC2 cocoa changed_tokens[260] from the fix round (same number in another form: 2,099 vs 2099 kJ; 200 mg a day; 500 mg a day); ratified in decisions.md (Cocoa fix committed a4961844, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[274] raw_quote shares no number with its body_line: **High-flavanol dark chocolate:** One trial compared a high-flavanol (410 mg) and a low-flavanol ...",
+  "reason": "AC2 cocoa changed_tokens[274] (410 mg vs \"410 mg of flavanols per day\", tokeniser); ratified in decisions.md (Lion's mane recheck entry, cocoa touch-up 96c7d387 Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"34.6 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Processing changes how much flavanol a product holds. \"Dutching\", or treating cocoa with alkali, darkens the powder a...\" | \"| Natural cocoa powder | 34.6 mg per gram (average) [3] | Highest of the powders surveyed. |\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"13.8 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Processing changes how much flavanol a product holds. \"Dutching\", or treating cocoa with alkali, darkens the powder a...\" | \"| Lightly alkalized cocoa powder | 13.8 mg per gram (average) [3] | |\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7.8 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Processing changes how much flavanol a product holds. \"Dutching\", or treating cocoa with alkali, darkens the powder a...\" | \"| Medium alkalized cocoa powder | 7.8 mg per gram (average) [3] | |\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.9 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Processing changes how much flavanol a product holds. \"Dutching\", or treating cocoa with alkali, darkens the powder a...\" | \"| Heavily alkalized cocoa powder | 3.9 mg per gram (average) [3] | |\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Caffeine and theobromine content:** Cocoa contains caffeine and theobromine, both stimulants of the methylxanthine ...\" | \"A meta-analysis of 5 prospective studies with 106,109 people found that eating chocolate less than 7 times a week was...\" | \"## 5. Safety and Side Effects\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"65 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**COSMOS trial:** COSMOS randomized 21,442 US adults (women aged 65 and over, men aged 60 and over) without major hea...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"60 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**COSMOS trial:** COSMOS randomized 21,442 US adults (women aged 65 and over, men aged 60 and over) without major hea...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.76 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Short-term trials:** A Cochrane review of 35 trials in 1,804 mainly healthy adults found that flavanol-rich cocoa p...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"120 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**In people without hypertension:** In 8,905 COSMOS participants free of hypertension at the start (mean age 71.1 yea...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"139 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**In people without hypertension:** In 8,905 COSMOS participants free of hypertension at the start (mean age 71.1 yea...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.2 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Short-term improvements in healthy adults:** In the same trial of 100 healthy adults taking 450 mg of cocoa flavano...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.17 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Short-term improvements in healthy adults:** In the same trial of 100 healthy adults taking 450 mg of cocoa flavano...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Dose-dependent effects:** In 48 healthy adults given 1, 2 or 4 g of flavanol-rich cocoa a day for 4 weeks, the 4 g ...\" | \"**Blood lipid support:** 4 g of cocoa with about 220 mg of flavanols a day [17], or 450 mg of flavanols twice daily [...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.2 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Endothelial function:** The trial of 100 healthy adults also found that cocoa flavanols raised flow-mediated dilati...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"75 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Peripheral artery disease:** In 20 people with peripheral artery disease (PAD), 40 g of dark chocolate (over 85% co...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"55502\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Observational evidence:** In a Danish study of 55,502 adults followed for a median of 13.5 years, people eating cho...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"81 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Interaction with antiplatelet medications:** In 20 people with stable coronary artery disease taking aspirin 81 mg ...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"42\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**No additional benefit when diabetes is already treated:** In 42 people with type 2 diabetes and hypertension on sta...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2099\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Dark chocolate and appetite regulation:** In 14 healthy postmenopausal women, people later ate 1,355 kJ after dark ...\"",
+  "reason": "AC2 cocoa tokeniser case from the fix round (\"11\" eleven Bapir; \"2500 mg\" 2.5 g/day; \"7\" Seven participants; \"2099\" 2,099 kJ); ratified in decisions.md (Cocoa fix committed a4961844, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.63 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Modest body composition changes:** In 132 postmenopausal women, adding 10 g of 99% cocoa chocolate a day for 6 mont...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"410 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a trial of 100 healthy older adults aged 65 to 75, 50 g of dark chocolate with 410 mg of flavanols a day for eight...\" | \"**High-flavanol dark chocolate:** One trial compared a high-flavanol (410 mg) and a low-flavanol (86 mg) dark chocola...\" | \"| High- and low-flavanol dark chocolate in one trial | 410 mg and 86 mg per 50 g [37] | Comes with calories and fat. |\"",
+  "reason": "AC2 cocoa Suominen 410/86 mg tokens from fix F4, verbatim in the abstract (\"410 mg of flavanols per day\", \"86 mg of flavanols per day\"); ratified in decisions.md (Cocoa review, Ratified line: new tokens from these fixes) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"86 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a trial of 100 healthy older adults aged 65 to 75, 50 g of dark chocolate with 410 mg of flavanols a day for eight...\" | \"**High-flavanol dark chocolate:** One trial compared a high-flavanol (410 mg) and a low-flavanol (86 mg) dark chocola...\" | \"| High- and low-flavanol dark chocolate in one trial | 410 mg and 86 mg per 50 g [37] | Comes with calories and fat. |\"",
+  "reason": "AC2 cocoa Suominen 410/86 mg tokens from fix F4, verbatim in the abstract (\"410 mg of flavanols per day\", \"86 mg of flavanols per day\"); ratified in decisions.md (Cocoa review, Ratified line: new tokens from these fixes) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"415\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 36 healthy adults, drinks with 415 or 623 mg of flavanols did not improve cognitive control or response inhibition...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"9\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**In young adults:** In 9 moderately trained men, 40 g of dark chocolate a day for two weeks improved a 2-minute cycl...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"70\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**In older adults:** In a two-phase trial (60 adults aged 55 to 70, then 74 aged 65 to 90), a flavonoid-rich cocoa dr...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"90\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**In older adults:** In a two-phase trial (60 adults aged 55 to 70, then 74 aged 65 to 90), a flavonoid-rich cocoa dr...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"79\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**In older adults:** In a two-phase trial (60 adults aged 55 to 70, then 74 aged 65 to 90), a flavonoid-rich cocoa dr...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "token \"450 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Blood lipid support:** 4 g of cocoa with about 220 mg of flavanols a day [17], or 450 mg of flavanols twice daily [...\"",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3.6 year\": Interest began with population studies. The Kuna people of Panama drink large amounts of flavanol-rich cocoa and have...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3.6 year\": COSMOS trial: COSMOS randomized 21,442 US adults (women aged 65 and over, men aged 60 and over) without major heart d...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"35\": Short-term trials: A Cochrane review of 35 trials in 1,804 mainly healthy adults found that flavanol-rich cocoa produ...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"35\", \"60\": Short-term effects in healthy adults: In 100 healthy adults aged 35 to 60, a drink with 450 mg of cocoa flavanols tak...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"11\": Response varies between people: In 11 healthy young adults with normal blood pressure, 862 mg of cocoa flavanols lowe...",
+  "reason": "AC2 cocoa tokeniser case from the fix round (\"11\" eleven Bapir; \"2500 mg\" 2.5 g/day; \"7\" Seven participants; \"2099\" 2,099 kJ); ratified in decisions.md (Cocoa fix committed a4961844, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0.1 mmol/L\": Short-term improvements in healthy adults: In the same trial of 100 healthy adults taking 450 mg of cocoa flavanols t...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"15 %\": Peripheral artery disease: In 20 people with peripheral artery disease (PAD), 40 g of dark chocolate (over 85% cocoa)...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"18\": Acute platelet effects: In 18 healthy men, 50 g of 90% cocoa chocolate lengthened one measure of platelet clotting ti...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"6\": Interaction with antiplatelet medications: In 20 people with stable coronary artery disease taking aspirin 81 mg and ...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"32\": No benefit in insulin-resistant women: In 32 premenopausal women with overweight or obesity and insulin resistance, a...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2500 mg\": No additional benefit when diabetes is already treated: In 42 people with type 2 diabetes and hypertension on stable ...",
+  "reason": "AC2 cocoa tokeniser case from the fix round (\"11\" eleven Bapir; \"2500 mg\" 2.5 g/day; \"7\" Seven participants; \"2099\" 2,099 kJ); ratified in decisions.md (Cocoa fix committed a4961844, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"40\": Middle-aged women: In 60 women aged 40 to 60 with fatigue, a cacao drink with 240 mg of flavanols a day for 8 weeks l...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"95 %\": Epidemiological association with depression: In a US survey of 13,626 adults, people who reported eating dark chocola...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"22\": Cocoa flavanols may act as a prebiotic, feeding helpful gut bacteria. In pigs fed cocoa powder for 27 days, Lactobaci...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3.6 year\": COSMOS used 500 mg of flavanols a day, 80 mg of it epicatechin, taken once a day for a median of 3.6 years [5]. Acros...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"7\": Chocolate is rich in oxalic acid [77]. In 6 men, 50 g and 100 g of chocolate raised urine oxalate 2 to 4 hours later,...",
+  "reason": "AC2 cocoa tokeniser case from the fix round (\"11\" eleven Bapir; \"2500 mg\" 2.5 g/day; \"7\" Seven participants; \"2099\" 2,099 kJ); ratified in decisions.md (Cocoa fix committed a4961844, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"6\": Ochratoxin A: All 32 cocoa powders and 28 chocolates tested in Canada contained this fungal toxin. Six powders and on...",
+  "reason": "AC2 cocoa tokeniser case (middle dots, thin spaces, +/-, spelled numbers, ranges, /d units, \"95%CI\", y for years, g->mg conversions), number present in the cited abstract in another form; ratified in decisions.md (Cocoa review, Ratified line: AC2 tokeniser cases as listed by the writer except \">=200 mg\") (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "black-seed-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- On the skin it has caused contact dermatitis [5], and case reports describe blistering reactions to the oil and to ...\" | \"Stevens-Johnson syndrome and DRESS can be life-threatening. For a widespread blistering rash, peeling skin or a rash ...\" | \"The authors advised that anaesthesia teams be aware that people taking black seed oil may develop serotonin syndrome ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Black seed oil review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "black-seed-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- On the skin it has caused contact dermatitis [5], and case reports describe blistering reactions to the oil and to ...\" | \"Stevens-Johnson syndrome and DRESS can be life-threatening. For a widespread blistering rash, peeling skin or a rash ...\" | \"The authors advised that anaesthesia teams be aware that people taking black seed oil may develop serotonin syndrome ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Black seed oil review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "black-seed-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- On the skin it has caused contact dermatitis [5], and case reports describe blistering reactions to the oil and to ...\" | \"Stevens-Johnson syndrome and DRESS can be life-threatening. For a widespread blistering rash, peeling skin or a rash ...\" | \"The authors advised that anaesthesia teams be aware that people taking black seed oil may develop serotonin syndrome ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Black seed oil review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "black-seed-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.26 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Meta-analysis of 11 trials:** A 2016 meta-analysis of 11 randomized trials in 860 people, some with high blood pres...\"",
+  "reason": "AC2 black seed oil tokeniser case (CI between number and unit for 3.26/2.8 mmHg; \"15\" spelled Fifteen); ratified in decisions.md (Black seed oil review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "black-seed-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2.8 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Meta-analysis of 11 trials:** A 2016 meta-analysis of 11 randomized trials in 860 people, some with high blood pres...\"",
+  "reason": "AC2 black seed oil tokeniser case (CI between number and unit for 3.26/2.8 mmHg; \"15\" spelled Fifteen); ratified in decisions.md (Black seed oil review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "black-seed-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"15\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Children:** A 2025 review of 15 pediatric trials reported no severe adverse effects, but found too few studies to...\"",
+  "reason": "AC2 black seed oil tokeniser case (CI between number and unit for 3.26/2.8 mmHg; \"15\" spelled Fifteen); ratified in decisions.md (Black seed oil review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.33 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Small, short trials suggest...\" | \"**Olive leaf extract and 24-hour ambulatory BP (n=60, 2017):** In a crossover trial, 60 men with prehypertension (mea...\"",
+  "reason": "AC2 olive leaf tokeniser case (+/-SD forms and spelled numbers: 3.33, 0.19, 0.32 mmol/L, 149.3, 93.9, 4.8, 6.4 mmHg, the 11.5/13.7 mmHg line, \"32\" Thirty-two); ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.19 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Small, short trials suggest...\" | \"**Olive leaf extract (n=60, 2017):** In the prehypertension crossover trial, total cholesterol fell by 0.32 mmol/L, L...\"",
+  "reason": "AC2 olive leaf tokeniser case (+/-SD forms and spelled numbers: 3.33, 0.19, 0.32 mmol/L, 149.3, 93.9, 4.8, 6.4 mmHg, the 11.5/13.7 mmHg line, \"32\" Thirty-two); ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- People with olive pollen allergy may also react to olives, and possibly to olive leaf extract; one man with olive p...\" | \"- **Allergic reactions:** People with olive pollen allergy may also react to olives, and possibly to olive leaf extra...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- People with olive pollen allergy may also react to olives, and possibly to olive leaf extract; one man with olive p...\" | \"- **Allergic reactions:** People with olive pollen allergy may also react to olives, and possibly to olive leaf extra...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- People with olive pollen allergy may also react to olives, and possibly to olive leaf extract; one man with olive p...\" | \"- **Allergic reactions:** People with olive pollen allergy may also react to olives, and possibly to olive leaf extra...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- People with olive pollen allergy may also react to olives, and possibly to olive leaf extract; one man with olive p...\" | \"- **Allergic reactions:** People with olive pollen allergy may also react to olives, and possibly to olive leaf extra...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"149.3 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Olive leaf extract vs. captopril (2011):** In a double-blind, eight-week trial in stage 1 hypertension (olive group...\"",
+  "reason": "AC2 olive leaf tokeniser case (+/-SD forms and spelled numbers: 3.33, 0.19, 0.32 mmol/L, 149.3, 93.9, 4.8, 6.4 mmHg, the 11.5/13.7 mmHg line, \"32\" Thirty-two); ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"93.9 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Olive leaf extract vs. captopril (2011):** In a double-blind, eight-week trial in stage 1 hypertension (olive group...\"",
+  "reason": "AC2 olive leaf tokeniser case (+/-SD forms and spelled numbers: 3.33, 0.19, 0.32 mmol/L, 149.3, 93.9, 4.8, 6.4 mmHg, the 11.5/13.7 mmHg line, \"32\" Thirty-two); ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4.8 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Olive leaf extract vs. captopril (2011):** In a double-blind, eight-week trial in stage 1 hypertension (olive group...\"",
+  "reason": "AC2 olive leaf tokeniser case (+/-SD forms and spelled numbers: 3.33, 0.19, 0.32 mmol/L, 149.3, 93.9, 4.8, 6.4 mmHg, the 11.5/13.7 mmHg line, \"32\" Thirty-two); ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6.4 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Olive leaf extract vs. captopril (2011):** In a double-blind, eight-week trial in stage 1 hypertension (olive group...\"",
+  "reason": "AC2 olive leaf tokeniser case (+/-SD forms and spelled numbers: 3.33, 0.19, 0.32 mmol/L, 149.3, 93.9, 4.8, 6.4 mmHg, the 11.5/13.7 mmHg line, \"32\" Thirty-two); ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.32 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Olive leaf extract (n=60, 2017):** In the prehypertension crossover trial, total cholesterol fell by 0.32 mmol/L, L...\"",
+  "reason": "AC2 olive leaf tokeniser case (+/-SD forms and spelled numbers: 3.33, 0.19, 0.32 mmol/L, 149.3, 93.9, 4.8, 6.4 mmHg, the 11.5/13.7 mmHg line, \"32\" Thirty-two); ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"32\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**High school athletes and colds (n=32, 2019):** In a nine-week trial during a competitive season, a daily extract (e...\"",
+  "reason": "AC2 olive leaf tokeniser case (+/-SD forms and spelled numbers: 3.33, 0.19, 0.32 mmol/L, 149.3, 93.9, 4.8, 6.4 mmHg, the 11.5/13.7 mmHg line, \"32\" Thirty-two); ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"11.5 mmHg\", \"13.7 mmHg\": Olive leaf extract vs. captopril (2011): In a double-blind, eight-week trial in stage 1 hypertension (olive group mea...",
+  "reason": "AC2 olive leaf tokeniser case (+/-SD forms and spelled numbers: 3.33, 0.19, 0.32 mmol/L, 149.3, 93.9, 4.8, 6.4 mmHg, the 11.5/13.7 mmHg line, \"32\" Thirty-two); ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A man developed acute respiratory distress syndrome and needed a ventilator after taking lion's mane extract [51]. ...\" | \"- A 63-year-old man developed acute respiratory distress syndrome, a severe lung reaction, four months after using a ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Lion's mane/chaga review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A man developed acute respiratory distress syndrome and needed a ventilator after taking lion's mane extract [51]. ...\" | \"- A 63-year-old man developed acute respiratory distress syndrome, a severe lung reaction, four months after using a ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Lion's mane/chaga review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A man developed acute respiratory distress syndrome and needed a ventilator after taking lion's mane extract [51]. ...\" | \"- A 63-year-old man developed acute respiratory distress syndrome, a severe lung reaction, four months after using a ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Lion's mane/chaga review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A man developed acute respiratory distress syndrome and needed a ventilator after taking lion's mane extract [51]. ...\" | \"- A 63-year-old man developed acute respiratory distress syndrome, a severe lung reaction, four months after using a ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Lion's mane/chaga review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects",
+  "match": "token \"18\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Study 4, single 3 g dose:** In a crossover trial in 18 healthy adults aged 18 to 35 years, one 3 g dose of a 10:1 f...\"",
+  "reason": "AC2 lion's mane and chaga tokeniser case (\"18\" Eighteen; \"<=3000 mg/kg\" from 3 g/kg body weight/day; Study 5 label); ratified in decisions.md (Lion's mane/chaga review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤3000 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 49-week trial, four people dropped out because of abdominal discomfort, nausea and skin rash, and no other adver...\"",
+  "reason": "AC2 lion's mane and chaga tokeniser case (\"18\" Eighteen; \"<=3000 mg/kg\" from 3 g/kg body weight/day; Study 5 label); ratified in decisions.md (Lion's mane/chaga review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5\": Study 5, healthy young adults (pilot study): A double-blind trial in 41 healthy adults aged 18 to 45 years tested 1.8...",
+  "reason": "AC2 lion's mane and chaga tokeniser case (\"18\" Eighteen; \"<=3000 mg/kg\" from 3 g/kg body weight/day; Study 5 label); ratified in decisions.md (Lion's mane/chaga review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "pomegranate-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Benign Color Changes",
+  "reason": "AC4 heading removed (Grokipedia-only section); ratified in decisions.md (Pomegranate review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Acrylamide",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Cocoa review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Caffeine-Sensitive Medications",
+  "reason": "AC4 heading renamed to \"Caffeine and Theobromine\"; ratified in decisions.md (Cocoa recheck, L294 rename) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Fat Content",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Cocoa review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "black-seed-oil-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Topical Side Effects",
+  "reason": "AC4 heading renamed to \"Skin Reactions\"; ratified in decisions.md (Black seed oil recheck, L271 rename) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Factors Affecting Composition",
+  "reason": "AC4 section removed (fix F11: Synergistic Effects, Factors Affecting Composition, Global Production); ratified in decisions.md (Olive leaf review, F11 AC4 removals) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Synergistic Effects",
+  "reason": "AC4 section removed (fix F11: Synergistic Effects, Factors Affecting Composition, Global Production); ratified in decisions.md (Olive leaf review, F11 AC4 removals) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Global Production",
+  "reason": "AC4 section removed (fix F11: Synergistic Effects, Factors Affecting Composition, Global Production); ratified in decisions.md (Olive leaf review, F11 AC4 removals) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Alzheimer's Disease — No Significant Benefit",
+  "reason": "AC4 heading renamed (S7, \"Alzheimer's Disease — Mixed Pilot Results\"); ratified in decisions.md (Lion's mane fix committed f46c8587, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Types of Olive Leaf Extract Products",
+  "reason": "AC7 product-heading keyword false positive (no product named); ratified in decisions.md (Olive leaf review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "match": "product section missing: ### Global Production",
+  "reason": "AC7 product-heading keyword false positive ratified in decisions.md (Olive leaf review, Ratified line); the section was then removed under fix F11 (AC4 removal ratified in the same entry) (orchestrator 2026-10-26, masters-new-15).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ }
+]
