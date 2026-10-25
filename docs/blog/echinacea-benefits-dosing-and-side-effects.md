@@ -276,7 +276,7 @@ Echinacea is sometimes combined with other ingredients:
 
 [17] Ogal M, Johnston SL, Klein P, Schoop R. "Echinacea reduces antibiotic usage in children through respiratory tract infection prevention: a randomized, blinded, controlled clinical trial." *Eur J Med Res*. 2021;26(1):33. doi: [10.1186/s40001-021-00499-6](https://doi.org/10.1186/s40001-021-00499-6). PMID: [33832544](https://pubmed.ncbi.nlm.nih.gov/33832544/)
 
-[18] Yuan Y, Wang RT, Xia J, et al. "Interventions for preventing influenza: an overview of Cochrane systematic reviews and a Bayesian network meta-analysis." *J Integr Med*. 2021;19(6):503-514. doi: [10.1016/j.joim.2021.09.005](https://doi.org/10.1016/j.joim.2021.09.005). PMID: [34544670](https://pubmed.ncbi.nlm.nih.gov/34544670/)
+[18] Yuan Y, Wang RT, Xia J, et al. "Interventions for preventing influenza: an overview of Cochrane systematic reviews and a Bayesian network meta-analysis." *J Integr Med*. 2021;19(6):503-514. doi: [10.1016/j.joim.2021.09.001](https://doi.org/10.1016/j.joim.2021.09.001). PMID: [34544670](https://pubmed.ncbi.nlm.nih.gov/34544670/)
 
 [19] Barrett B, Brown RL, Rakel D, et al. "Echinacea for treating the common cold: a randomized trial." *Ann Intern Med*. 2010;153(12):769-777. doi: [10.7326/0003-4819-153-12-201012210-00003](https://doi.org/10.7326/0003-4819-153-12-201012210-00003). PMID: [21173411](https://pubmed.ncbi.nlm.nih.gov/21173411/)
 
@@ -294,7 +294,7 @@ Echinacea is sometimes combined with other ingredients:
 
 [26] Crawford C, Brown LL, Costello RB, et al. "Select dietary supplement ingredients for preserving and protecting the immune system in healthy individuals: a systematic review." *Nutrients*. 2022;14(21):4604. doi: [10.3390/nu14214604](https://doi.org/10.3390/nu14214604). PMID: [36364865](https://pubmed.ncbi.nlm.nih.gov/36364865/)
 
-[27] Crawford C, Brown LL, Costello RB, et al. "Immune supplements under the magnifying glass: an expert panel develops priorities and evidence-based recommendations for future research regarding dietary supplements." *J Integr Complement Med*. 2023;29(4):261-267. doi: [10.1089/jicm.2022.0722](https://doi.org/10.1089/jicm.2022.0722). PMID: [36862130](https://pubmed.ncbi.nlm.nih.gov/36862130/)
+[27] Crawford C, Brown LL, Costello RB, et al. "Immune supplements under the magnifying glass: an expert panel develops priorities and evidence-based recommendations for future research regarding dietary supplements." *J Integr Complement Med*. 2023;29(4):261-267. doi: [10.1089/jicm.2022.0800](https://doi.org/10.1089/jicm.2022.0800). PMID: [36862130](https://pubmed.ncbi.nlm.nih.gov/36862130/)
 
 [28] Signer J, Jonsdottir HR, Albrich WC, et al. "In vitro virucidal activity of Echinaforce, an Echinacea purpurea preparation, against coronaviruses, including common cold coronavirus 229E and SARS-CoV-2." *Virol J*. 2020;17(1):136. doi: [10.1186/s12985-020-01401-2](https://doi.org/10.1186/s12985-020-01401-2). PMID: [32907596](https://pubmed.ncbi.nlm.nih.gov/32907596/). Erratum in: *Virol J*. 2020;17(1):172.
 
@@ -312,7 +312,7 @@ Echinacea is sometimes combined with other ingredients:
 
 [39] Abdul MI, Jiang X, Williams KM, et al. "Pharmacokinetic and pharmacodynamic interactions of echinacea and policosanol with warfarin in healthy subjects." *Br J Clin Pharmacol*. 2010;69(5):508-515. doi: [10.1111/j.1365-2125.2010.03620.x](https://doi.org/10.1111/j.1365-2125.2010.03620.x). PMID: [20573086](https://pubmed.ncbi.nlm.nih.gov/20573086/)
 
-[42] Anheyer D, Cramer H, Lauche R, et al. "Herbal medicine in children with respiratory tract infection: systematic review and meta-analysis." *Acad Pediatr*. 2018;18(1):8-19. doi: [10.1016/j.acap.2017.08.006](https://doi.org/10.1016/j.acap.2017.08.006). PMID: [28610802](https://pubmed.ncbi.nlm.nih.gov/28610802/)
+[42] Anheyer D, Cramer H, Lauche R, et al. "Herbal medicine in children with respiratory tract infection: systematic review and meta-analysis." *Acad Pediatr*. 2018;18(1):8-19. doi: [10.1016/j.acap.2017.06.006](https://doi.org/10.1016/j.acap.2017.06.006). PMID: [28610802](https://pubmed.ncbi.nlm.nih.gov/28610802/)
 
 [43] Karsch-Völk M, Barrett B, Kiefer D, Bauer R, Ardjomand-Woelkart K, Linde K. "Echinacea for preventing and treating the common cold." *Cochrane Database Syst Rev*. 2014;(2):CD000530. doi: [10.1002/14651858.CD000530.pub3](https://doi.org/10.1002/14651858.CD000530.pub3). PMID: [24554461](https://pubmed.ncbi.nlm.nih.gov/24554461/)
 
