@@ -15,14 +15,14 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31855111/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Three small trials from one research group in Cameroon reported weight loss and lower cholesterol with African mango seed or its extract IGOB131 (150 mg twice daily before meals), but a systematic review found reporting flaws in all three and judged the effect on weight unproven [7][8][9][10]. A 2020 meta-analysis of five trials found pooled falls in body weight, body fat and waist size, yet four trials had a high risk of bias and the one low-risk trial found no significant difference [16]. Side effects in the trials were minor, such as headache and sleep difficulty, and no trial ran long enough to judge long-term safety [10][16].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Three small trials from one research group in Cameroon reported weight loss and lower cholesterol with African mango seed, its extract IGOB131 (150 mg twice daily before meals), or IGOB131 combined with *Cissus quadrangularis*, but a systematic review found reporting flaws in all three and judged the effect on weight unproven [7][8][9][10]. A 2020 meta-analysis of five trials found pooled falls in body weight, body fat and waist size, yet four trials had a high risk of bias and the one low-risk trial found no significant difference [16]. Side effects in the trials were minor, such as headache, sleep difficulty and gas [7][8][10][16], with similar rates on placebo [7], and no trial ran long enough to judge long-term safety [10][16].
 
 ## Key safety points
 
 - Folk medicine uses the seeds as a blood thinner [14], and no study has tested African mango with warfarin or other anticoagulants. If you take prescription medicines, check with your doctor or pharmacist before starting.
 - Trials reported lower blood glucose with African mango [7][18], so it could add to the effect of diabetes medicines. If you take them, ask your doctor first and watch for signs of low blood sugar.
 - A 2014 case report on African mango is indexed on PubMed under drug-induced liver injury [22]. Stop taking it and see your doctor the same day if you notice yellow skin or eyes or dark urine.
-- Side effects reported in trials were minor, including headache and sleep difficulty [10][16]. The trials were short, so long-term safety is unknown.
+- Side effects reported in trials were minor, including headache, sleep difficulty and gas [7][8][10][16], at similar rates on placebo [7]. The trials were short, so long-term safety is unknown.
 
 ## Brad's videos on this topic
 
@@ -69,7 +69,7 @@ African mango supplements are made from the seed (kernel), not the fruit pulp [7
 |------|-------------|:-:|-------|
 | Seed preparation | *Irvingia gabonensis* seed, as used in the first trial | 1.05 g three times a day | Used in the 2005 trial [9]. |
 | IGOB131 | A specific seed extract | 150 mg twice daily before meals | Used in the 2009 trial [7]. |
-| Other seed extracts | Kernel extracts from other makers | 150 mg twice a day, or 300 mg as one tablet a day | Used in the 2018 and 2022 trials [18][19]. |
+| Other seed extracts | Seed or kernel extracts not named as IGOB131 | 150 mg twice a day, or 300 mg as one tablet a day | Used in the 2018 and 2022 trials [18][19]. |
 | Combination products | African mango extract combined with other weight loss ingredients | Varies | The 2008 trial combined IGOB131 with veldt-grape (*Cissus quadrangularis*), so effects cannot be attributed to African mango alone [8]. |
 | Seed powder (whole ground seed) | Dried, ground African mango seeds | Not studied in clinical trials | Sold as a food ingredient (ogbono) for soups [21]. |
 
@@ -93,7 +93,7 @@ African mango (*Irvingia gabonensis*) and common mango (*Mangifera indica*) are 
 
 The research base has serious limits:
 
-1. **The first three human trials came from a single research group** in Cameroon (Oben, Ngondi and colleagues) [7][8][9].
+1. **The first three human trials came from a single research group** in Cameroon (Oben, Ngondi and colleagues) [7][8][9]. The 2008 and 2009 trials used extracts supplied by Gateway Health Alliances, which also part-funded the 2009 trial [7][8].
 2. **The trials were short:** those described here lasted from one month [9] to 90 days [18].
 3. **Sample sizes were small:** 40, 72 and 102 participants in the first three trials [7][8][9], and 24 in the 2018 trial [18].
 4. **Reporting was poor.** A 2013 review found flaws in how all three original trials reported their methods [10]. A 2020 meta-analysis rated four of five trials at high risk of bias [16].
@@ -115,7 +115,7 @@ The first trial tested *Irvingia gabonensis* seed in obese adults in Cameroon [9
 - **Results:**
   - Body weight fell by 5.26 +/- 2.37% in the African mango group and by 1.32 +/- 0.41% in the placebo group; the difference was significant [9]
   - The African mango group also had lower total cholesterol, LDL cholesterol and triglycerides, and higher HDL cholesterol [9]
-- **Limitations:** Small sample, especially the placebo group of 12; unequal groups (28 vs 12); short duration; single site [9]
+- **Limitations:** Small sample, especially the placebo group of 12; unequal groups (28 vs 12); short duration [9]
 
 #### Study 2: IGOB131 Extract (Ngondi et al., 2009)
 
@@ -128,7 +128,7 @@ The second trial gave the IGOB131 extract to 102 overweight or obese volunteers 
 - **Results:**
   - Body weight, body fat and waist circumference improved in the IGOB131 group compared with placebo [7]
   - So did total cholesterol, LDL cholesterol, blood glucose, C-reactive protein, adiponectin and leptin [7]
-- **Limitations:** Same research group as Study 1, single site, and reporting flaws noted by a later review [10]
+- **Limitations:** Same research group as Study 1, and reporting flaws noted by a later review [10]
 
 #### Study 3: IGOB131 + Cissus quadrangularis Combination (Oben et al., 2008)
 
@@ -179,7 +179,7 @@ Any cholesterol effect of the whole seed may come from its soluble fiber (mucila
 
 Other fibers show the size of this effect:
 - A meta-analysis of 67 trials found that 2-10 g/d of soluble fiber caused small but significant falls in total and LDL cholesterol; oat, psyllium and pectin worked about equally [12]
-- A Cochrane review of 23 trials found more fiber lowered total cholesterol (mean difference -0.23 mmol/L, 95% CI -0.40 to -0.06) and LDL cholesterol (mean difference -0.14 mmol/L, 95% CI -0.22 to -0.06) [6]
+- A Cochrane review found more fiber lowered total cholesterol (17 trials; mean difference -0.23 mmol/L, 95% CI -0.40 to -0.06) and LDL cholesterol (mean difference -0.14 mmol/L, 95% CI -0.22 to -0.06) [6]
 
 If African mango lowers cholesterol mainly through fiber, established fiber supplements have far more evidence behind them.
 
@@ -200,12 +200,12 @@ This finding has not been confirmed in people and only generates hypotheses. Com
 
 ### Summary of Evidence Quality
 
-| Outcome | Number of Trials | Quality | Conclusion |
-|---------|:-:|:-:|----------|
-| Weight loss | 5 in the 2020 meta-analysis [16] | Very low | Four at high risk of bias; the low-risk trial found no significant difference |
-| Cholesterol reduction | 5 in the 2020 meta-analysis [16] | Very low | Pooled benefit; may be explained by soluble fiber content |
-| Blood glucose reduction | 3 [7][8][18] | Very low | May follow weight loss; not studied in diabetes |
-| Fat cell inhibition | 1 (in vitro) [5] | Preclinical only | Cell culture data only; not shown in humans |
+| Outcome | Number of Trials | Conclusion |
+|---------|:-:|----------|
+| Weight loss | 5 in the 2020 meta-analysis [16] | Four at high risk of bias; the low-risk trial found no significant difference |
+| Cholesterol reduction | Pooled in [16] | Pooled benefit; may be explained by soluble fiber content |
+| Blood glucose reduction | 3 [7][8][18] | May follow weight loss; not studied in diabetes |
+| Fat cell inhibition | 1 (in vitro) [5] | Cell culture data only; not shown in humans |
 
 ## 4. Recommended Dosing
 
@@ -238,7 +238,7 @@ There is not enough data to recommend a dose for any use. Reviews have concluded
 
 The human safety data come from small, short trials that were not designed to study safety:
 
-- Adverse events in the first three trials included headache and sleep difficulty [10]
+- Adverse events in the first three trials included headache and sleep difficulty [10]; the 2008 and 2009 trials also reported gas [7][8], and in the 2009 trial side effects were similar on placebo [7]
 - Across five trials, the reported adverse events were minor [16]
 - The trials were small and short (the longest described here lasted 90 days [18]), too short to detect rare or delayed harms
 
@@ -257,7 +257,7 @@ The fruit and seeds of *Irvingia gabonensis* have long been eaten in West and Ce
 
 The following concerns come from the limited data and from how the supplement may act:
 
-**Gastrointestinal effects:** The whole seed is rich in mucilage [20], a soluble fiber. Fiber supplements mostly cause mild to moderate gut side effects [6]. Whether a 150 mg extract carries enough fiber to do this is unknown.
+**Gastrointestinal effects:** The seed contains mucilage [20], a soluble fiber. Fiber supplements mostly cause mild to moderate gut side effects [6]. Whether a 150 mg extract carries enough fiber to do this is unknown.
 
 **Hypoglycemia risk:** Trials reported lower blood glucose with African mango [7][8][18]. That could raise the risk of low blood sugar in:
 - People taking diabetes medicines (insulin, sulfonylureas or other glucose-lowering drugs)
@@ -266,7 +266,7 @@ The following concerns come from the limited data and from how the supplement ma
 
 **Allergic reactions:** As with any plant product, allergic reactions are possible. People allergic to *Irvingia* should avoid it.
 
-**Hepatotoxicity (theoretical):** Some weight-loss supplements have been linked to liver injury. A 2014 case report on African mango, titled "innocent magic formula?", is indexed on PubMed under drug-induced liver injury [22]. A single case cannot show that African mango caused the injury. Stop taking it and see your doctor the same day if you notice yellow skin or eyes or dark urine.
+**Liver injury (one case report):** Some weight-loss supplements have been linked to liver injury. A 2014 case report on African mango, titled "innocent magic formula?", is indexed on PubMed under drug-induced liver injury [22]. A single case cannot show that African mango caused the injury. Stop taking it and see your doctor the same day if you notice yellow skin or eyes or dark urine.
 
 **Quality and contamination:** Bush mango seeds sold as a soup thickener in Nigeria carried aflatoxins (mould toxins): every sample exceeded the 2 μg/kg limit for aflatoxin B1, and 55% exceeded the 4 μg/kg EU limit for total aflatoxins [21]. Discoloured seeds had higher levels of most mycotoxins [21]. Supplement extracts were not tested in that study. Independent testing services such as consumerlab.com can help you check product quality.
 
@@ -286,16 +286,15 @@ No drug interaction studies have been published for African mango. The interacti
 
 ### Potential Interactions Based on Observed Effects
 
-| Drug Class | Examples | Potential Interaction | Risk Level |
-|-----------|---------|----------|:-:|
-| Diabetes medications | Metformin, insulin, sulfonylureas, SGLT2 inhibitors, GLP-1 agonists | Additive blood glucose lowering; possible low blood sugar | Moderate (theoretical) |
-| Cholesterol-lowering drugs | Statins, ezetimibe, bile acid sequestrants, PCSK9 inhibitors | Additive cholesterol lowering; fiber in the whole seed might reduce absorption if taken together | Low-Moderate (theoretical) |
-| Blood thinners | Warfarin, aspirin, clopidogrel | Folk medicine uses the seeds as a blood thinner [14]; not studied with these drugs | Unknown |
-| Appetite suppressants | Phentermine, GLP-1 agonists (for weight loss) | Possible additive appetite suppression | Low (theoretical) |
+| Drug Class | Examples | Potential Interaction |
+|-----------|---------|----------|
+| Diabetes medications | Metformin, insulin, sulfonylureas, SGLT2 inhibitors, GLP-1 agonists | Additive blood glucose lowering; possible low blood sugar |
+| Cholesterol-lowering drugs | Statins, ezetimibe, bile acid sequestrants, PCSK9 inhibitors | Additive cholesterol lowering; fiber in the whole seed might reduce absorption if taken together |
+| Blood thinners | Warfarin, aspirin, clopidogrel | Folk medicine uses the seeds as a blood thinner [14]; not studied with these drugs |
 
 ### Fiber-Related Drug Absorption Interactions
 
-The whole seed is rich in mucilage [20]. Soluble fibers can form a gel in the gut that may slow or reduce absorption of some medicines. Whether a 150 mg extract carries enough fiber to matter is unknown. Spacing supplements and medicines apart may help; ask your pharmacist how far apart.
+The seed contains mucilage [20]. Soluble fibers can form a gel in the gut that may slow or reduce absorption of some medicines. Whether a 150 mg extract carries enough fiber to matter is unknown. Spacing supplements and medicines apart may help; ask your pharmacist how far apart.
 
 ### No Confirmed Interactions
 
