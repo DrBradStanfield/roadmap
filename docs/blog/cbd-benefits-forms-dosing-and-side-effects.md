@@ -6,67 +6,78 @@ publishedAt: "2024-05-17T22:30:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["cbd", "cannabidiol", "cbda", "cbg", "hemp extract", "hemp oil", "anxiety", "sleep", "insomnia", "pain", "inflammation", "epilepsy", "seizures", "schizophrenia", "psychosis", "depression", "blood pressure", "neuropathy", "arthritis", "parkinson", "ptsd", "melatonin", "l-theanine", "omega-3", "fish oil"]
-summary: "Reference on CBD (cannabidiol): anxiety, insomnia, pain, and epilepsy/seizures. Adults use it for social anxiety (300 mg), sleep problems (160 mg), and chronic pain. Forms: full-spectrum, isolate, oils, topicals. Always discuss with your doctor."
+summary: "Reference on CBD (cannabidiol). Prescription CBD cuts seizures in two rare epilepsies; evidence for anxiety, sleep and pain is small and mixed. CBD can raise liver enzymes and alter other drug levels. Talk to your doctor first if you take prescription drugs, especially clobazam, valproate or warfarin."
+reviewed: "2026-10-25"
+sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/cannabis-marijuana-and-cannabinoids-what-you-need-to-know","checked":"2026-09-29","fingerprint":"sha256:d139f786b30c4fde5f7e10960e22b50235124483914ef9693cdcfa44ee5f8d8f"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/cbd-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/cbd-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. In trials, prescription CBD (Epidiolex) at 10 mg or 20 mg per kilogram of body weight a day cut seizures in two rare, severe epilepsies, Dravet and Lennox-Gastaut syndromes, but there is not enough research on more common forms of epilepsy [2][16][17][109]. For anxiety, sleep and pain the evidence is small and mixed: single doses of 300 mg or 600 mg eased anxiety during a simulated public speech, while daily doses of 20 to 30 mg did not ease arthritis pain and one 400 mg dose did not ease acute low back pain [2][20][22][37][38]. CBD can raise liver enzymes, even in healthy adults, and liver tests were higher in people also taking valproate [110][113][114]. It also changes blood levels of other medicines, including clobazam and warfarin, so people who take prescription medicines should talk to their doctor before using it [101][110][111][112].
+
+## Key safety points
+
+- CBD changes blood levels of other medicines. It raised levels of clobazam's active metabolite and some other seizure medicines, and warfarin doses were cut by 20 to 30% in two case reports [101][110][111][112]. If you take prescription medicines, check with your doctor or pharmacist before starting.
+- CBD can raise liver enzymes. In a trial of healthy adults taking 5 mg/kg a day, 8 people (5.6%) had levels over 3 times the upper limit of normal, against none on placebo [114]. Liver tests were higher in people also taking valproate [110].
+- In trials of prescription CBD, common side effects were diarrhea, sleepiness, vomiting, fever and loss of appetite [16][17].
+- In healthy men, one 600 mg dose cut resting systolic blood pressure by 6 mmHg and raised heart rate [84].
+- Over-the-counter CBD products may hold more or less CBD than the label says and may contain THC [2]. Daily THC intake from hemp oil has caused positive urine drug screens [91][92].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Cannabidiol (CBD) is one of over 100 cannabinoid compounds found in the Cannabis sativa plant [1][2]. Unlike tetrahydrocannabinol (THC) — the primary psychoactive cannabinoid responsible for marijuana's intoxicating effects — CBD is not believed to produce psychoactive effects affecting perception and behavior [1][3]. The cannabis plant contains approximately 540 chemical substances, with CBD and THC being the two dominant cannabinoids [2].
+Cannabidiol (CBD) is one of more than 100 cannabinoids in the cannabis plant, *Cannabis sativa*, which contains about 540 chemical substances [2][3]. Tetrahydrocannabinol (THC) is the substance mainly responsible for the effects of marijuana on a person's mental state, while CBD is the main cannabinoid that is not psychoactive [2][3].
 
-CBD exists naturally in the plant primarily as cannabidiolic acid (CBDa), its precursor compound, which converts to CBD through decarboxylation (heat or aging). When CBDa converts to CBD, the conversion is efficient: 87.7% of CBDa in a product can be counted as CBD [1]. This distinction matters when reading supplement labels, as some products list CBDa content rather than CBD content.
+Cannabigerol (CBG) is a related cannabinoid that is also not psychoactive. Laboratory studies show it acts on some of the same nerve sodium channels as CBD, and in skin cells it blocked some inflammatory signals more strongly than CBD [4][5]. In a survey of 127 people who used CBG-rich cannabis, the most common reasons were anxiety, chronic pain, depression and poor sleep [6].
 
-Another non-psychoactive cannabinoid gaining attention is cannabigerol (CBG), along with its precursor cannabigerolic acid (CBGA). Laboratory research suggests CBG may share some effects with CBD, with CBG potentially having stronger anti-inflammatory effects but less potent pain-relieving effects [4][5]. However, no clinical studies in humans have confirmed health benefits of CBG. People have reported using CBG-predominant products for anxiety, chronic pain, depression, insomnia, and migraine [6].
+The FDA has not approved the cannabis plant for any medical use, but it has approved several drugs that contain single cannabinoids [2]:
 
-CBD products also contain terpene compounds — aromatic molecules found in fruits and vegetables (such as the citrus-scented terpene limonene). An "entourage effect" (synergistic interaction between cannabinoids and terpenes) has been proposed, but it remains unclear whether or how terpenes meaningfully impact CBD's effects [1].
+- **Epidiolex**: a purified form of CBD from cannabis, approved for seizures in Lennox-Gastaut syndrome or Dravet syndrome, two rare and severe forms of epilepsy
+- **Marinol and Syndros**: dronabinol (synthetic THC), for nausea and vomiting from cancer chemotherapy and for loss of appetite and weight loss in HIV/AIDS
+- **Cesamet**: nabilone (a synthetic substance similar to THC), for nausea and vomiting from cancer chemotherapy
 
-The legal landscape for CBD is complex. The FDA has not approved the cannabis plant for any medical use, but has approved several cannabinoid-based drugs [2]:
-
-- **Epidiolex** — purified CBD derived from cannabis, approved for seizures associated with Lennox-Gastaut syndrome, Dravet syndrome, and tuberous sclerosis complex
-- **Marinol and Syndros** — containing dronabinol (synthetic THC), approved for chemotherapy-induced nausea/vomiting and HIV/AIDS-related appetite loss
-- **Cesamet** — containing nabilone (a synthetic THC analogue), approved for chemotherapy-induced nausea/vomiting
-
-The FDA has determined that products containing THC or CBD cannot legally be sold as dietary supplements, and foods with added THC or CBD cannot be sold in interstate commerce [2]. State laws vary regarding intrastate sales.
+The FDA has determined that products containing THC or CBD cannot be sold legally as dietary supplements, and foods with added THC or CBD cannot be sold legally across state lines [2]. Sales within a state depend on that state's laws.
 
 ## 2. Forms and Bioavailability
 
 ### Types of CBD Products
 
-CBD is available in multiple forms, each with distinct characteristics:
+Labels describe CBD products in several ways:
 
 | Form | Description | Typical CBD Content |
 |------|-------------|---------------------|
-| Full-spectrum hemp extract | Contains CBD plus other cannabinoids (including trace THC <0.3%), terpenes, and flavonoids | Varies; check label for CBD per serving |
-| Broad-spectrum hemp extract | Similar to full-spectrum but with THC removed | Varies; check label for CBD per serving |
-| CBD isolate | Purified CBD (typically 99%+) with no other cannabinoids | Precisely measurable |
-| Hemp oil / Hemp seed oil | Oil from hemp seeds; contains minimal to no CBD | Little to no CBD |
-
-An important distinction: "hemp oil" alone would not be expected to contain meaningful CBD, whereas "hemp extract" or products specifically listing CBD as an ingredient should contain CBD [1]. If a product lists only "cannabinoids" without specifying CBD content, the actual CBD amount is unknown.
+| Full-spectrum hemp extract | CBD plus other cannabinoids, including small amounts of THC | Check the label for CBD per serving |
+| Broad-spectrum hemp extract | Like full-spectrum, with THC removed | Check the label for CBD per serving |
+| CBD isolate | Purified CBD with no other cannabinoids | Stated per serving |
+| Hemp seed oil | Oil pressed from hemp seeds | Little or no CBD |
 
 ### Oral Bioavailability
 
-CBD is highly lipophilic (fat-soluble), and oral bioavailability without food may be as low as 6% [7]. Taking CBD with a fat-containing meal dramatically improves absorption:
+CBD dissolves in fat, and much of an oral dose is broken down by the liver before it reaches the blood, so its oral bioavailability is limited and varies a lot between people [10]. Food changes this a great deal:
 
-- A 5-fold increase in blood levels of CBD occurred when an oral CBD solution was taken with a high-fat/high-calorie meal versus on an empty stomach [7][8]
-- Another study found a 4-fold increase in blood levels when 200-300 mg of purified CBD extract in capsules was taken with a high-fat meal (500-600 calories from fat) compared to fasting. Blood levels temporarily reached a peak 14 times higher, and the half-life extended from 24 hours to 39 hours with food [9]
+- In 8 adults with epilepsy, one dose of 99% pure CBD capsules eaten with a high-fat breakfast (840 to 860 calories) gave a 14-fold higher peak blood level and 4-fold higher total exposure than the same dose on an empty stomach [9]
 
-After oral administration, peak blood levels of CBD are typically reached within 2.5-5 hours. The half-life of CBD in the blood ranges from 18-32 hours under normal conditions [7] to 56-61 hours after 7 days of repeated high dosing [8].
+In a study of CBD in oil taken fasting, blood levels peaked about 3 hours after the dose [10].
 
 ### Enhanced Absorption Formulations
 
 Several delivery technologies aim to improve CBD absorption:
 
-- **VESIsorb (nano-colloid):** A company-funded study found that a 25 mg dose of CBD formulated with VESIsorb increased blood levels 2.9 times compared to the same extract in oil when taken on an empty stomach — though this increase was less than what is achieved simply by taking CBD with a fat-containing meal [10]
-- **Liposomal formulations:** A liposomal CBD preparation using sunflower lecithin (phosphatidylcholine) increased bioavailability of a 10 mg dose by 17-fold one hour after consumption compared to unformulated CBD taken on an empty stomach. CBD was undetectable in 2 of 5 volunteers who took the unformulated version [11]
+- **VESIsorb (self-emulsifying system):** In 16 healthy volunteers given a 25 mg CBD dose while fasting, the VESIsorb form gave a 4.4-fold higher peak blood level and a 2.85-fold higher exposure over 8 hours than the same hemp extract in MCT oil, with the peak at 1 hour instead of 3 hours [10]
+- **Liposomal formulations:** A liposomal form of CBD raised its bioavailability in mice and in humans, in a study that then tested it in dogs with arthritis [11]
 
 ### Transdermal and Topical Delivery
 
-CBD appears to be better absorbed through the skin than THC [12]. Topical CBD preparations (creams, gels, lotions) deliver CBD locally rather than systemically. A study of transdermal CBD gel for epilepsy (195 mg or 390 mg twice daily for 12 weeks) raised blood levels comparable to oral administration, but did not reduce seizures compared to placebo [13].
+Creams, gels and ointments apply CBD to the skin. In adults with focal epilepsy, 12 weeks of a twice-daily transdermal CBD gel (195 mg or 390 mg) worked no better than placebo for seizures [13].
 
 ### Does CBD Convert to THC in the Body?
 
-Although some preliminary laboratory studies suggested CBD might convert to THC during digestion [14], a clinical trial showed that no THC was detected in blood up to 6 hours after consuming 300 mg of pure CBD (99.5%), with or without food. None of the participants experienced psychoactive effects associated with THC [15].
+In a laboratory test, simulated stomach acid converted CBD into THC [14]. In people, however, no THC was found in the blood of 120 healthy adults after a 300 mg oral dose of CBD, taken fasting or with food, and none had psychotic-like effects [15].
 
 ## 3. Evidence for Health Benefits
 
@@ -74,45 +85,43 @@ Although some preliminary laboratory studies suggested CBD might convert to THC 
 
 This is the most well-established medical application of CBD, supported by the FDA approval of Epidiolex.
 
-**Dravet syndrome:** A placebo-controlled clinical trial found that a high daily dose of CBD (20 mg/kg body weight — hundreds of milligrams) reduced the frequency of convulsions in children and young adults with this rare, severe form of epilepsy. However, CBD was also associated with higher rates of adverse effects including diarrhea, vomiting, fatigue, pyrexia, somnolence, and abnormal liver function tests (Devinsky et al., *N Engl J Med*, 2017) [16].
+**Dravet syndrome:** In a placebo-controlled trial of 120 children and young adults, CBD at 20 mg per kilogram of body weight a day cut the median number of convulsive seizures from 12.4 to 5.9 a month, against 14.9 to 14.1 with placebo. Abnormal liver-function tests, diarrhea, vomiting, fatigue, fever and sleepiness were all more common with CBD (Devinsky et al., *N Engl J Med*, 2017) [16].
 
-**Lennox-Gastaut syndrome:** The same high daily dose (20 mg/kg) reduced drop seizures in a 3-month study of treatment-resistant Lennox-Gastaut syndrome. Seizures per month decreased 44% with CBD versus 22% with placebo. Adverse effects again included diarrhea, somnolence, fever, decreased appetite, and vomiting (Thiele et al., *Lancet*, 2018) [17].
+**Lennox-Gastaut syndrome:** During a 14-week trial, 171 patients whose seizures had resisted at least two drugs took 20 mg/kg of oral CBD daily or placebo. Monthly drop seizures fell by a median of 43.9%, against 21.8% with placebo. Vomiting, fever, loss of appetite, diarrhoea and sleepiness were the common side effects (Thiele et al., *Lancet*, 2018) [17]. A second trial of 225 patients found that 10 mg per kilogram a day also worked (37.2% fewer drop seizures, against 17.2% with placebo); 14 patients on CBD (9%) had raised liver enzymes (Devinsky et al., *N Engl J Med*, 2018) [109].
 
-Both studies were funded by GW Pharmaceuticals, the maker of Epidiolex. Notably, the UK's National Institute for Health and Care Excellence (NICE) initially raised concerns about these trials, particularly their short duration, because other antiepileptic drugs are known to lose effectiveness over time (Dijk, *BMJ*, 2019) [18].
+GW Pharmaceuticals, which makes Epidiolex, paid for both Lennox-Gastaut trials [17][109].
 
-**Refractory epilepsy in children (commercially available CBD):** A study of 108 children with refractory epilepsy treated with commercially marketed CBD preparations found CBD comparable to the anticonvulsant clobazam as add-on therapy. A seizure reduction of at least 50% occurred in 33% receiving CBD, 38% receiving clobazam, and 44% receiving both. Notably, CBD appeared to increase alertness and verbal interactions compared to clobazam, without the sedation common with clobazam. The average daily dose was approximately 3 mg/kg body weight (e.g., 100 mg/day for a 73 lb child) (Porcari et al., *Epilepsy Behav*, 2018) [19].
+**Refractory epilepsy in children (commercially available CBD):** A review of 108 children with hard-to-treat epilepsy who used artisanal CBD oils found that 39% had their seizures cut by more than half, and 10% became seizure-free. The response with clobazam alone was similar. Increased alertness and better verbal interaction were reported in 14% of children on CBD alone (Porcari et al., *Epilepsy Behav*, 2018) [19].
 
-**Focal epilepsy (transdermal CBD):** A study in Australia and New Zealand giving high-dose transdermal CBD gel (195 mg or 390 mg twice daily) for 12 weeks to 174 adults with focal epilepsy (the most common form) did not show a reduction in seizure activity compared to placebo, despite achieving adequate blood levels of CBD (O'Brien et al., *JAMA Netw Open*, 2022) [13].
+**Focal epilepsy (transdermal CBD):** At 14 Australian and New Zealand centres, 188 adults whose focal seizures resisted drugs (the commonest drug-resistant epilepsy in adults) used 195 mg or 390 mg of transdermal CBD gel twice a day, or placebo, for 12 weeks. Seizure frequency did not differ between groups (O'Brien et al., *JAMA Netw Open*, 2022) [13].
 
-**Synthesis:** CBD is effective for reducing seizures in rare, severe epilepsy syndromes (Dravet, Lennox-Gastaut) at high doses (20 mg/kg/day), but evidence does not support its use for more common forms of epilepsy [2][16][17].
+**Synthesis:** Prescription CBD at 10 mg or 20 mg per kilogram a day reduces seizures in Dravet and Lennox-Gastaut syndromes, but not enough research has been done on more common forms of epilepsy [2][16][17][109].
 
 ### Anxiety
 
-Several small studies suggest CBD may reduce anxiety, particularly in social and performance-related contexts, although the evidence involves varying doses with inconsistent results.
+A small amount of evidence suggests CBD might reduce anxiety, mostly in single-dose public-speaking tests [2].
 
-**Social anxiety — public speaking:** A placebo-controlled study found that a single 300 mg dose of CBD given 90 minutes before a simulated public speaking test reduced anxiety in treatment-naive patients with social anxiety disorder. A lower dose (150 mg) was not effective, and results with 600 mg were mixed (Bergamaschi et al., *Neuropsychopharmacology*, 2011; Zuardi et al., *J Psychopharmacol*, 1993; Linares et al., *Braz J Psychiatr*, 2018) [20][21][22].
+**Social anxiety, public speaking:** In 24 people with untreated social anxiety disorder, one 600 mg dose taken 90 minutes before a simulated public speaking test reduced anxiety compared to placebo (Bergamaschi et al., *Neuropsychopharmacology*, 2011) [20]. In 57 healthy men, 300 mg reduced anxiety during the speech, but 150 mg and 600 mg did not (Linares et al., *Braz J Psychiatry*, 2019) [22]. An earlier study in healthy volunteers found that 300 mg reduced anxiety after the test (Zuardi et al., *J Psychopharmacol*, 1993) [21].
 
-**General anxiety — single dose:** A placebo-controlled study found that a single 400 mg dose of CBD taken as a capsule reduced self-reported anxiety in healthy young men one hour after ingestion, though it also increased feelings of mental sedation (Crippa et al., *Neuropsychopharmacology*, 2004) [23].
+**General anxiety, single dose:** In 10 healthy men, one 400 mg CBD dose lowered self-rated anxiety but made them feel mentally sedated, compared to placebo (Crippa et al., *Neuropsychopharmacology*, 2004) [23].
 
-**Social anxiety in adolescents:** A study among Japanese teenagers with social anxiety found that 300 mg of CBD (in MCT oil, no THC) daily for 4 weeks led to a modest decrease in symptoms compared to placebo (olive oil) (Masataka, *Front Psychol*, 2019) [24].
+**Social anxiety in adolescents:** In 37 Japanese teenagers aged 18 to 19 years with social anxiety disorder, daily CBD (300 mg) for 4 weeks lowered anxiety scores compared to placebo (Masataka, *Front Psychol*, 2019) [24].
 
-**Chronic worriers:** A study of 63 adults who tend to be worriers found that 125 mg of CBD twice daily for 2 weeks modestly reduced symptoms of anxiety (trembling, rapid breathing) compared to placebo, but did not reduce worry severity. Lower doses (25 mg twice daily), a single high dose (300 mg), and a single lower dose (50 mg) were all ineffective for both worry and anxiety (Gournay et al., *Psychopharmacology*, 2023) [25].
+**Chronic worriers:** In 63 adults with high levels of worry, neither 300 mg nor 50 mg of CBD reduced worry, after one dose or after 2 weeks. Daily 300 mg did reduce physical anxiety symptoms over the 2 weeks compared to placebo (Gournay et al., *Psychopharmacology*, 2023) [25].
 
-**Clinical case series:** In a group of 72 patients treated with CBD daily for 2 months at an outpatient mental health clinic in Colorado, anxiety scores decreased within the first month in 79.2% of patients and remained decreased throughout the study. Most took 25 mg of CBD daily and continued their prescribed medications. However, 15.3% reported worsening anxiety. CBD was taken after breakfast for anxiety (Shannon et al., *Perm J*, 2019) [26].
+**Clinical case series:** In a chart review of 72 adults at a psychiatric clinic who took CBD alongside usual care, 79.2% had lower anxiety scores in the first month, and they stayed lower (Shannon et al., *Perm J*, 2019) [26]. There was no control group.
 
-**No benefit in healthy adults at low doses:** A study of 102 healthy young adults found that drinking a beverage containing about 30 or 60 mg of CBD (plus 177 mg of L-theanine) daily for 8 weeks did not significantly reduce symptoms of anxiety or depression compared to placebo (Ramani et al., *BBI — Integrative*, 2024) [27].
+**Healthcare workers during COVID-19:** An open-label trial randomized 120 frontline health workers to CBD 150 mg twice a day plus standard care or standard care alone for 28 days. Emotional exhaustion and burnout scores fell more with CBD. Four people on CBD developed raised liver enzymes (1 critical), and one had a severe drug rash (Crippa et al., *JAMA Netw Open*, 2021) [28].
 
-**Healthcare workers during COVID-19:** A study gave 118 healthcare workers high-dose CBD (150 mg twice daily) for 28 days. The CBD group had a slightly greater reduction in anxiety symptoms (30% decrease vs 2%) compared to standard care alone, but results for burnout were not statistically significant. Four participants developed elevated liver enzymes, including one severe case (Crippa et al., *JAMA Netw Open*, 2021) [28].
-
-**Synthesis:** CBD at doses of 125-600 mg may reduce acute anxiety, particularly in social/performance settings. The 300 mg single dose has the most consistent evidence for social anxiety. Lower doses (15-60 mg) appear ineffective. Effects on chronic, generalized anxiety are less clear [1][20][25][26].
+**Synthesis:** Single doses of 300 to 600 mg reduced anxiety in public-speaking tests, but the dose that worked differed between studies, and 50 mg did not help worry. Daily 300 mg for 2 to 4 weeks reduced some anxiety symptoms in two small trials [20][22][24][25].
 
 ### PTSD
 
 Preliminary evidence from case reports suggests CBD may help relieve PTSD symptoms.
 
-A series of case reports from a Colorado clinic found that in 11 adults with diagnosed PTSD, overall symptoms decreased by an average of 28% over 2 months of CBD supplementation. The average daily dose was 33.4 mg at the start, increasing to 44.6 mg by the end of the study. Participants took 25 mg capsules and/or an oral spray (1.5 mg CBD per spray) (Elms et al., *J Altern Complement Med*, 2019) [29].
+In a case series of 11 adults with PTSD at a psychiatry clinic who took oral CBD alongside usual care for 8 weeks, 10 had lower symptom scores, and the average score fell 28% (Elms et al., *J Altern Complement Med*, 2019) [29].
 
-Separately, CBD was reported helpful for a 10-year-old girl with anxiety and sleep disorder due to PTSD from sexual abuse. She took 25 mg CBD at bedtime and 6-12 mg from sublingual spray as needed during the day for 5 months. Her anxiety and sleep improved to the point that they were no longer classified as disorders (Shannon et al., *Perm J*, 2016) [30]. However, there is concern that cannabinoids may affect brain development in children.
+A case report described a girl aged 10 whose PTSD caused anxiety and poor sleep; both improved on CBD oil (Shannon et al., *Perm J*, 2016) [30].
 
 From the NIH/NCCIH: Observational studies of PTSD patients who chose to use cannabis have not provided clear evidence of benefit or harm, and only one very small study (10 people) found the cannabinoid nabilone more effective than placebo for PTSD-related nightmares (Jetly et al., *Psychoneuroendocrinology*, 2015) [31][2].
 
@@ -120,507 +129,476 @@ From the NIH/NCCIH: Observational studies of PTSD patients who chose to use cann
 
 CBD's effects on sleep appear to depend on dose, the presence of underlying conditions, and the population studied.
 
-**Insomnia:** A small study of 15 people with insomnia found that 160 mg of CBD taken 30 minutes before bedtime for one week significantly increased self-reported sleep duration compared to placebo. Ten of 15 participants reported sleeping more than 7 hours with CBD versus 6 of 15 with placebo. However, there was no decrease in time to fall asleep. Lower doses (40 mg and 80 mg) did not increase sleep time. No participants reported increased difficulty waking or feeling sleepy upon waking (Carlini et al., *J Clin Pharmacol*, 1981) [32].
+**Insomnia:** In 15 people with insomnia, those given 160 mg of CBD reported sleeping significantly more than with placebo; lower doses (40 and 80 mg) were also tested (Carlini et al., *J Clin Pharmacol*, 1981) [32].
 
-**Healthy adults — no benefit:** A dose of 300 mg CBD taken 30 minutes before bedtime had no effect on time to fall asleep, time spent in sleep stages (including REM), total sleep time (measured by polysomnography), or self-reported sleep quality in healthy men compared to placebo. CBD did not impair cognitive function the following morning (Linares et al., *Front Pharmacol*, 2018) [33].
+**Healthy adults, no benefit:** In 27 healthy volunteers, CBD 300 mg given 30 minutes before an 8-hour sleep recording did not change sleep, and there were no next-morning effects on thinking (Linares et al., *Front Pharmacol*, 2018) [33].
 
-**Low-dose CBD — no benefit:** A study of 65 healthy, overweight adults found that 15 mg of CBD from hemp extract taken daily for 6 weeks did not improve sleep quality, mood, or ability to cope with stress compared to placebo (Lopez et al., *J Diet Suppl*, 2020) [34].
+**Low-dose CBD, no benefit:** In 65 healthy, overweight adults, a daily hemp extract supplying 15 mg of CBD for 6 weeks left sleep, mood and stress no better than placebo, though HDL cholesterol rose (Lopez et al., *J Diet Suppl*, 2020) [34].
 
-**CBD + melatonin:** Taking 15 mg of CBD with 5 mg of melatonin once daily at bedtime for one month did not improve sleep quality compared to taking either supplement alone, though it did not increase side effects or grogginess either (Saleska et al., *J Am Nutr Assoc*, 2023) [35].
+**CBD and melatonin:** In 1,793 adults with poor sleep, 15 mg of CBD isolate or 5 mg of melatonin, alone or combined with other cannabinoids, each improved sleep for 4 weeks, with no difference between products. There was no placebo group, and 12% reported a side effect, none severe (Saleska et al., *J Am Nutr Assoc*, 2024) [35].
 
-**Clinical case series:** In the Colorado clinic case series of 72 patients, sleep scores improved within the first month in 66.7% but fluctuated over time. Notably, 25% reported worsening sleep. Most took 25 mg of CBD daily (Shannon et al., *Perm J*, 2019) [26].
+**Clinical case series:** In the clinic chart review of 72 adults, 66.7% slept better in the first month, but their sleep scores went up and down afterward (Shannon et al., *Perm J*, 2019) [26].
 
-**Dose-dependent effects on alertness:** Preliminary research suggests CBD may have a stimulating effect at low doses (around 15 mg) while being sedating at moderate to high doses, and may improve sleep primarily in people with anxiety or other conditions rather than in healthy individuals (Babson et al., *Curr Psychiatry Rep*, 2017) [36].
+**Review:** A 2017 review found that early research suggests CBD may have potential for insomnia, REM sleep behavior disorder and excessive daytime sleepiness, but research on cannabis and sleep has yielded mixed results (Babson et al., *Curr Psychiatry Rep*, 2017) [36].
 
-**NIH assessment:** Many studies of cannabis/cannabinoids in people with conditions like multiple sclerosis, PTSD, or chronic pain have found evidence of better sleep quality, fewer sleep disturbances, or decreased time to fall asleep — but it is uncertain whether the products affected sleep directly or whether people slept better because symptoms of their underlying conditions had improved [2].
+**NIH assessment:** Many studies of cannabis/cannabinoids in people with conditions like multiple sclerosis, PTSD, or chronic pain have found evidence of better sleep quality, fewer sleep disturbances, or decreased time to fall asleep, but it is uncertain whether the products affected sleep directly or whether people slept better because symptoms of their underlying conditions had improved [2].
 
-**Synthesis:** CBD at 160 mg may increase sleep duration in people with insomnia, but lower doses (15-80 mg) appear ineffective, and CBD does not appear to help healthy people without sleep disorders. The evidence is preliminary and inconsistent [1][26][32][33][34].
+**Synthesis:** One old, small study found 160 mg increased reported sleep in insomnia, but 300 mg did not change sleep in healthy people and 15 mg did not beat placebo. The evidence is preliminary [26][32][33][34].
 
 ### Pain
 
-The evidence for CBD as an oral pain reliever is weak. Most positive studies have used combinations of THC and CBD rather than CBD alone. There is some preliminary evidence for topical CBD in specific pain conditions.
+Placebo-controlled trials of CBD alone taken by mouth have not reduced pain [37][38][40]. Reviews of cannabis and cannabinoids in general found at most a small benefit for chronic pain [2][44][45].
 
 #### Oral CBD for Pain
 
-**Acute low back pain:** A study of 100 adults treated in an emergency room found that a single high dose of CBD (400 mg in MCT oil) added to standard treatment (acetaminophen + ibuprofen) did not reduce pain better than placebo, did not reduce the need for rescue opioid medication, and did not shorten hospital stays. Side effects were similar between groups (Bebee et al., *Med J Aust*, 2021) [37].
+**Acute low back pain:** In 100 adults with acute low back pain in an emergency department, one 400 mg CBD dose added to standard pain medicine did not lower pain at 2 hours compared to placebo. Length of stay, oxycodone use and side effects were similar (Bebee et al., *Med J Aust*, 2021) [37].
 
-**Arthritis pain:** A 3-month study of 129 adults with moderate chronic pain from hand osteoarthritis or psoriatic arthritis found that CBD (starting at 10 mg, increasing to 20-30 mg daily) did not decrease pain or improve sleep quality, depression, or anxiety compared to placebo (Vela et al., *Pain*, 2021) [38]. A review of four clinical studies investigating cannabinoids for rheumatic diseases concluded there is "currently insufficient evidence to recommend cannabinoid treatments for management of rheumatic diseases" (Fitzcharles et al., *Schmerz*, 2016) [39].
+**Arthritis pain:** In a 12-week trial of 129 adults with hand osteoarthritis or psoriatic arthritis, synthetic CBD at 20 to 30 mg a day did no better than placebo for pain, sleep, anxiety or depression (Vela et al., *Pain*, 2022) [38]. A review of four trials in rheumatic diseases, none testing CBD alone, found insufficient evidence to recommend any cannabinoid for this pain (Fitzcharles et al., *Schmerz*, 2016) [39].
 
-**Cancer-related pain:** High-dose CBD oil (average 400 mg/day) for one month did not reduce self-reported pain, the need for opioid medication, fatigue, nausea, appetite loss, depression, anxiety, or any other quality-of-life measure compared to placebo in 144 adults with advanced cancer. Concerningly, more CBD recipients (8 vs 2) experienced new or worsening shortness of breath (Hardy et al., *J Clin Oncol*, 2022) [40].
+**Cancer-related pain:** In 144 adults with advanced cancer in palliative care, CBD oil (median dose 400 mg a day) for 28 days did no better than placebo for symptom distress, anxiety, depression or quality of life. Shortness of breath was more common with CBD (Hardy et al., *J Clin Oncol*, 2023) [40].
 
-**Chronic pain with opioid use (no placebo control):** A study gave hemp extract softgels (31.4 mg CBD/day) to 94 patients with chronic pain who had been on opioids for at least one year. Among those who completed the study, 94% reported quality-of-life improvements and 53% reduced their opioid use, with three eliminating opioids entirely. However, this study lacked a placebo control and was funded by the hemp extract manufacturer (Capano et al., *Postgrad Med*, 2019) [41].
+**Chronic pain with opioid use (no placebo control):** In a single-arm study, 97 chronic pain patients on opioids for a year or more completed 8 weeks of CBD-rich hemp extract. Over half (53%) cut or stopped their opioids and 94% reported better quality of life, but there was no comparison group (Capano et al., *Postgrad Med*, 2020) [41].
 
-**Pain perception:** A review of experimental pain studies found that cannabis products containing CBD (plus THC) may not reduce pain intensity but may make pain feel less unpleasant. However, a subsequent study found that CBD alone (50 mg) did not reduce pain threshold, tolerance, or severity compared to placebo, and suggested the reduction in pain "unpleasantness" may be largely a placebo effect — participants given CBD but told they received placebo reported similar pain unpleasantness as those given placebo but told they received CBD (De Vita et al., *Exp Clin Psychopharmacol*, 2021; De Vita et al., *JAMA Psychiatry*, 2018) [42][43].
+**Pain perception:** A review of 18 placebo-controlled experimental pain studies in healthy adults found that cannabinoids did not reliably reduce pain intensity but made pain feel less unpleasant (De Vita et al., *JAMA Psychiatry*, 2018) [42]. In a later study of 15 healthy adults, CBD did not change pain threshold, tolerance or intensity. Pain unpleasantness fell both with CBD and when people were only told they had received CBD (De Vita et al., *Exp Clin Psychopharmacol*, 2022) [43].
 
-**Chronic pain (NIH review):** A 2018 review of 47 studies (4,743 participants) of cannabis/cannabinoids for chronic non-cancer pain found evidence of only a small benefit: 29% had a 30% pain reduction with cannabis versus 26% with placebo — a difference that may be too small to be meaningful. Adverse events were more common with cannabis/cannabinoids (Stockings et al., *Pain*, 2018) [44]. A 2015 review of 28 studies (2,454 participants) found improvements in pain measures with cannabinoids, but these did not reach statistical significance in most studies (Whiting et al., *JAMA*, 2015) [45].
+**Chronic pain (NIH review):** A 2018 review of 47 studies (4,743 participants) of cannabis/cannabinoids for chronic non-cancer pain found evidence of only a small benefit: 29% had a 30% pain reduction with cannabis versus 26% with placebo, a difference that may be too small to be meaningful. Adverse events were more common with cannabis/cannabinoids (Stockings et al., *Pain*, 2018) [2]. A 2015 review of 28 studies (2,454 participants) found improvements in pain measures with cannabinoids, but these did not reach statistical significance in most studies (Whiting et al., *JAMA*, 2015) [2].
 
 #### Topical CBD for Pain
 
-Topical preparations show more promise than oral CBD for certain localized pain conditions, though evidence remains preliminary.
+Small trials of topical CBD have given mixed results.
 
-**Thumb arthritis:** A study of 18 adults with basal thumb joint arthritis found that CBD cream (6.2 mg CBD in shea butter) applied twice daily for 2 weeks significantly reduced pain (from 5 to 2 on a 10-point scale vs no decrease with placebo) and disability (39% reduction vs 14%). However, physical tests of thumb function (range of motion, grip, pinch strength) did not improve (Heineman et al., *J Hand Surg*, 2022) [46].
+**Thumb arthritis:** In a crossover trial of 18 adults with thumb base arthritis, a CBD cream (6.2 mg/mL in shea butter) applied twice daily for 2 weeks improved pain and disability scores compared to shea butter alone. Range of motion, grip and pinch strength did not change (Heineman et al., *J Hand Surg Am*, 2022) [46].
 
-**Temporomandibular disorder (TMD):** A study of 60 young adults with jaw muscle pain from teeth grinding found that CBD ointment (approximately 7 mg CBD per application) applied twice daily for 14 days reduced pain intensity by 70% versus 10% for the control group. A follow-up study found that intraoral CBD gel (20 mg or 40 mg daily for 30 days) also reduced pain significantly compared to placebo, though application to the skin appeared more effective than inside the mouth (Nitecka-Buchta et al., *J Clin Med*, 2019; Walczynska-Dragon et al., *J Clin Med*, 2024) [47][48].
+**Temporomandibular disorder (TMD):** In 60 young adults with jaw muscle pain, a CBD formulation applied over the jaw muscle twice daily for 14 days reduced pain scores by 70.2%, against 9.81% with placebo (Nitecka-Buchta et al., *J Clin Med*, 2019) [47]. In a later trial of 60 people with jaw muscle disorders and night-time teeth grinding, 10% and 5% CBD formulations reduced pain by 57.4% and 40.8% after 30 days, compared to placebo (Walczyńska-Dragon et al., *J Clin Med*, 2024) [48].
 
-**Peripheral neuropathy:** A study of 29 adults with peripheral neuropathy found that CBD cream blended with emu oil (250 mg CBD per 3 oz container) applied up to 4 times daily for one month modestly reduced self-reported intense pain, sharp pain, cold sensations, and itchiness compared to placebo — but did not reduce hot, dull, sensitive, or deep pain (Xu et al., *Curr Pharm Biotechnol*, 2019) [49].
+**Peripheral neuropathy:** In 29 adults with peripheral neuropathy, a topical oil with 250 mg CBD per 3 fl oz, used for 4 weeks, reduced intense pain, sharp pain, and cold and itchy sensations compared to placebo (Xu et al., *Curr Pharm Biotechnol*, 2020) [49].
 
-**No benefit after knee replacement:** Topical CBD applied around the knee 3 times daily for 2 weeks after knee replacement surgery did not reduce pain, opioid use, or improve sleep or knee function compared to placebo in 80 adults. Those using CBD-only actually had slightly worse knee function at day 14 (Haffar et al., *J Arthroplasty*, 2022) [50].
+**No benefit after knee replacement:** In 80 adults after knee replacement, topical CBD applied around the knee 3 times daily for 2 weeks left pain, opioid use and sleep no better than placebo (Haffar et al., *J Arthroplasty*, 2022) [50].
 
-**No benefit for exercise-induced soreness:** CBD cream applied after leg exercises did not decrease delayed-onset muscle soreness in the 48 hours following exercise compared to placebo (petroleum jelly) in 13 young adults (Garcia et al., *Int J Exerc Sci*, 2019) [51].
-
-**Knee osteoarthritis (synthetic CBD gel):** A gel containing 10.5 mg or 21 mg of synthetic CBD applied daily to the knees did not significantly reduce pain scores compared to placebo (Hunter et al., *Osteoarthritis Cartilage*, 2018) [52].
-
-**Synthesis:** Oral CBD does not appear to reduce most types of pain when used without THC. Topical CBD shows preliminary benefit for localized conditions — particularly thumb arthritis, temporomandibular disorder, and peripheral neuropathy — but not for post-surgical pain, exercise-induced soreness, or knee osteoarthritis [1][37][38][40][46][47][49].
+**Synthesis:** Oral CBD alone has not reduced pain in placebo-controlled trials of back pain, arthritis or cancer. Topical CBD helped in small trials of thumb arthritis, jaw muscle pain and peripheral neuropathy, but not after knee replacement [37][38][40][46][47][49][50].
 
 ### Parkinson's Disease and Movement Disorders
 
-CBD does not appear to improve motor symptoms of Parkinson's disease (tremor, difficulty initiating movement, levodopa-induced dyskinesia). However, it may help non-motor symptoms such as psychosis, mood disturbances, and sleep disorders [53].
+A review found three small, short studies of CBD in Parkinson's disease. All reported benefits for non-motor symptoms (psychosis, REM sleep behaviour disorder, daily activities and stigma) [53].
 
-**Quality of life:** A small double-blind, placebo-controlled study in Brazil found no motor function improvement in adults with mild-moderate Parkinson's disease taking 75 mg or 300 mg CBD daily for 6 weeks alongside their anti-Parkinson medications. However, those taking 300 mg CBD had significant improvements in Parkinson's Disease Questionnaire-39 scores, including activities of daily living, stigma, and emotional well-being. No adverse effects were reported (Chagas et al., *J Psychopharmacol*, 2014) [54].
+**Quality of life:** In 21 people with Parkinson's disease, CBD at 75 mg/day or 300 mg/day did not change motor scores compared to placebo, but quality-of-life scores differed between the 300 mg/day and placebo groups (Chagas et al., *J Psychopharmacol*, 2014) [54].
 
-**REM sleep behavior disorder (RBD):** In three older men with Parkinson's and RBD (characterized by intense dreams, yelling, kicking, punching during sleep), none experienced these disruptive episodes during a 6-week period of daily 75 mg CBD dosing. A fourth man taking 300 mg daily reduced episodes from 2-4/week to once/week (Chagas et al., *J Clin Pharm Ther*, 2014) [55].
+**REM sleep behavior disorder:** In a case series of four Parkinson's patients who acted out their dreams in sleep, CBD quickly and substantially reduced RBD events without side effects (Chagas et al., *J Clin Pharm Ther*, 2014) [55].
 
-**Psychosis:** Preliminary reports suggest CBD at 150-400 mg may improve psychotic symptoms in Parkinson's patients without worsening motor function (Zuardi et al., *J Psychopharmacol*, 2009) [56].
+**Psychosis:** In an open-label study of six Parkinson's patients who had psychosis, CBD (starting at 150 mg a day) for 4 weeks reduced psychotic symptoms without worsening motor function (Zuardi et al., *J Psychopharmacol*, 2009) [56].
 
-**Dystonia:** A preliminary trial found modest, dose-related improvements in dystonia symptoms in five individuals taking 100-500 mg/day. However, at the highest dosages (300-500 mg), tremor and movement initiation worsened in two participants who also had Parkinson's disease (Consroe et al., *Int J Neurosci*, 1986) [57].
+**Dystonia:** In an open study of five people with dystonia, CBD rising from 100 to 600 mg a day during 6 weeks improved dystonia by 20 to 50%. In two people who also had Parkinsonian features, doses over 300 mg a day worsened slowness of movement and resting tremor (Consroe et al., *Int J Neurosci*, 1986) [57].
 
-**Essential tremor:** A study of 19 people with essential tremor found that a single dose of 300 mg CBD did not reduce upper limb tremor severity compared to placebo. Whether long-term treatment would be beneficial is unclear (Santos de Alencar et al., *Parkinsonism Relat Disord*, 2021) [58].
+**Essential tremor:** In 19 people with essential tremor, a single 300 mg dose of CBD did not reduce upper limb tremor compared to placebo. Whether longer treatment would help is unknown (Santos de Alencar et al., *Parkinsonism Relat Disord*, 2021) [58].
 
 ### Schizophrenia and Psychosis
 
 Results have been mixed.
 
-**Positive trial:** A study of high-dose CBD (500 mg morning and evening) in adults with schizophrenia found that adding CBD to existing treatments for 6 weeks reduced psychotic symptoms and showed a trend toward improved cognitive performance, though the cognitive improvement was not statistically significant. CBD was well tolerated with no increase in adverse effects (McGuire et al., *Am J Psychiatry*, 2017) [59].
+**Positive trial:** In 43 people with schizophrenia given CBD and 45 given placebo, adding CBD at 1,000 mg a day to their antipsychotic for 6 weeks lowered positive psychotic symptoms compared to placebo. Cognitive improvement fell short of statistical significance, and side effects were similar to placebo (McGuire et al., *Am J Psychiatry*, 2018) [59].
 
-**Negative trial:** A 6-week study found that 300 mg CBD twice daily did not improve cognitive or psychotic symptoms in adults with schizophrenia on stable medications. Only those taking placebo experienced modest symptom improvement. Twenty percent of CBD recipients experienced sedation versus 5% on placebo (Boggs et al., *Psychopharmacology*, 2018) [60].
+**Negative trial:** In 36 people with stable schizophrenia, CBD at 600 mg a day for 6 weeks did not improve thinking or psychotic symptoms; only the placebo group improved on thinking tests. Sedation was more common with CBD (Boggs et al., *Psychopharmacology*, 2018) [60].
 
-**Mechanism — brain imaging:** A placebo-controlled study found that a single 600 mg dose of CBD in people at high risk of psychosis caused brain activity patterns during a verbal learning task to more closely resemble those of people not at risk of psychosis, compared to placebo. Interestingly, THC has the opposite effect and has been associated with psychosis development and relapse (Bhattacharyya et al., *JAMA Psychiatry*, 2018) [61]. A possible mechanism is that CBD at 600-800 mg/day elevates natural levels of the endocannabinoid anandamide by moderately inhibiting its degradation (Rohleder et al., *Front Pharmacol*, 2016) [62].
+**Mechanism, brain imaging:** Among 33 people judged at clinical high risk of psychosis, one 600 mg CBD dose partly normalized brain activity during a word-learning task, to a level between placebo and healthy controls (Bhattacharyya et al., *JAMA Psychiatry*, 2018) [61]. In one trial in acute schizophrenia, improvement with CBD was linked to higher levels of the body's own cannabinoid anandamide (Rohleder et al., *Front Pharmacol*, 2016) [62].
 
 ### Substance Use Disorders
 
-**Heroin use disorder:** High-dose CBD (400 mg or 800 mg of Epidiolex) taken once daily for 3 days reduced drug cravings in a placebo-controlled study of 42 adults with heroin use disorder (most abstinent <1 month). CBD reduced cue-induced drug craving and anxiety and reduced physiological measures of craving (such as increased heart rate) compared to placebo, both 1-2 hours after the first dose and at day 7. Both doses were equally effective. No significant cognitive effects or serious adverse events occurred (Hurd et al., *Am J Psychiatry*, 2019) [63].
+**Heroin use disorder:** In drug-abstinent adults with heroin use disorder, CBD at 400 or 800 mg once daily for 3 days reduced cue-induced craving and anxiety compared to placebo, both soon after dosing and 7 days after the last dose. CBD also lowered the heart rate and cortisol rise from drug cues, with no effects on thinking and no serious side effects (Hurd et al., *Am J Psychiatry*, 2019) [63].
 
-**Cannabis use disorder:** A 4-week placebo-controlled trial of 82 people found that 100 mg CBD twice daily was not effective. However, 200 mg twice daily provided modest benefit (about half a day more abstinence per week than placebo), confirmed by reduced urinary THC metabolite levels. A higher dose of 400 mg twice daily was only marginally better than 200 mg (Freeman et al., *Lancet Psychiatry*, 2020) [64].
+**Cannabis use disorder:** In a 4-week trial of 82 people trying to stop cannabis, 200 mg of CBD was dropped as ineffective. 400 mg added 0.48 days of abstinence per week compared to placebo and lowered urine THC metabolite levels; 800 mg also lowered them (Freeman et al., *Lancet Psychiatry*, 2020) [64].
 
-**Multiple substance use disorder — case report:** A 17-year-old male with cannabis, MDMA, cocaine, and ecstasy use disorders, severe depression, and social phobia was started on 100 mg CBD (50 mg morning and evening), gradually increased to 600 mg (300 mg twice daily), for 8 weeks alongside psychotherapy, occupational therapy, and physiotherapy. He improved regarding depressive and anxiety symptoms and quit abusing drugs without withdrawal symptoms. No side effects from CBD were reported (Laczkovics et al., *Neuropsychiatr*, 2020) [65].
+**Multiple substance use disorder, case report:** A 16-year-old with several substance use disorders, severe depression and social phobia took CBD capsules from 100 mg up to 600 mg over 8 weeks. His depression and anxiety improved, and he stopped using illegal drugs without withdrawal symptoms (Laczkovics et al., *Neuropsychiatr*, 2021) [65].
 
 ### Gastroparesis (Delayed Stomach Emptying)
 
-A 4-week placebo-controlled study at the Mayo Clinic found that very high-dose CBD (approximately 750 mg per dose, twice daily — about 10 mg/kg) improved symptoms of gastroparesis, including reduced fullness, nausea, and vomiting, and allowed increased food intake. Paradoxically, CBD did not improve stomach emptying — it actually further slowed it — leading researchers to speculate that benefits came from reduced gut sensation rather than improved motility. The participants were predominantly women. The only notable side effect attributed to CBD was diarrhea (Zheng et al., *Clin Gastroenterol Hepatol*, 2023) [66].
+In a 4-week trial of 44 people with idiopathic or diabetic gastroparesis, prescription CBD (Epidiolex) taken twice daily and raised to 20 mg/kg a day reduced overall symptoms, vomiting episodes and inability to finish a normal meal compared to placebo. CBD slowed stomach emptying further. The most common side effects were diarrhea, fatigue, headache and nausea (Zheng et al., *Clin Gastroenterol Hepatol*, 2023) [66].
 
 ### Multiple Sclerosis
 
-Most multiple sclerosis research has involved cannabis preparations containing both THC and CBD (particularly nabiximols/Sativex), rather than CBD alone.
+Most multiple sclerosis research has involved cannabis preparations containing both THC and CBD (particularly nabiximols/Sativex), rather than CBD alone [2][67][68].
 
-A review of 17 studies (3,161 participants) using various cannabinoid preparations found a small improvement in patient-assessed spasticity, pain, and bladder problems, but no significant improvement on objective spasticity measures (Torres-Moreno et al., *JAMA Netw Open*, 2018) [67].
+A review of 17 studies (3,161 participants) using various cannabinoid preparations found a small improvement in patient-assessed spasticity, pain, and bladder problems, but no significant improvement on objective spasticity measures (Torres-Moreno et al., *JAMA Netw Open*, 2018) [2].
 
-A 2010 analysis of 3 studies (666 participants) of nabiximols found that about one-third of people given nabiximols as add-on therapy had at least 30% improvement in spasticity, usually within 3 weeks. Nabiximols appeared reasonably safe (Wade et al., *Mult Scler*, 2010) [68].
+A 2010 analysis of 3 studies (666 participants) of nabiximols found that about one-third of people given nabiximols as add-on therapy had at least 30% improvement in spasticity, usually within 3 weeks. Nabiximols appeared reasonably safe (Wade et al., *Mult Scler*, 2010) [68][2].
 
-The American Academy of Neurology concluded in 2014 that nabiximols is probably effective for improving subjective spasticity symptoms, probably ineffective for reducing objective spasticity measures or bladder incontinence, and possibly ineffective for reducing MS-related tremor (Yadav et al., *Neurology*, 2014) [69].
+The American Academy of Neurology concluded in 2014 that nabiximols is probably effective for improving subjective spasticity symptoms, probably ineffective for reducing objective spasticity measures or bladder incontinence, and possibly ineffective for reducing MS-related tremor (Yadav et al., *Neurology*, 2014) [69][2].
 
-**Note:** These findings reflect THC+CBD combinations, not CBD alone. The contribution of CBD independent of THC in these preparations is uncertain [2].
+**Note:** These findings reflect THC+CBD combinations, not CBD alone [2].
 
 ### Nausea and Vomiting (Chemotherapy-Related)
 
-A 2015 Cochrane review of 23 studies (1,326 participants) found that the cannabinoids dronabinol and nabilone were more effective than placebo and similar to other antiemetics for chemotherapy-induced nausea/vomiting. Side effects (dizziness, sleepiness) were more common with cannabinoids. Notably, this research was done primarily in the 1980s-1990s and does not reflect current chemotherapy regimens or antiemetic options (Smith et al., *Cochrane Database Syst Rev*, 2015) [70]. These studies used synthetic THC analogues, not CBD.
+A 2015 review of 23 studies (1,326 participants) found that the cannabinoids dronabinol and nabilone were more effective than placebo and similar to other antinausea medicines for chemotherapy-induced nausea/vomiting. Side effects (dizziness, sleepiness) were more common with cannabinoids. This research was done mainly in the 1980s and 1990s and does not reflect current chemotherapy regimens or antinausea options (Smith et al., *Cochrane Database Syst Rev*, 2015) [70][2]. These studies used synthetic THC-like drugs, not CBD.
 
 ### Psoriasis
 
-A study of 26 adults with mild plaque psoriasis found that 30 mg CBD orally twice daily for 12 weeks did not improve the appearance of plaques or decrease itching compared to placebo (Roongpisuthipong et al., *J Dermatolog Treat*, 2025) [71].
+In a trial of 28 adults with chronic plaque psoriasis, oral CBD oil at 60 mg a day did not improve psoriasis severity compared to placebo. Itch fell by week 8 and time to fall asleep shortened by week 6, though that effect did not last (Roongpisuthipong et al., *J Dermatolog Treat*, 2026) [71].
 
 ### Hair Loss
 
-A study of 35 adults with androgenetic alopecia (male/female pattern baldness) found that applying hemp extract paste containing CBD to bald areas once daily for 6 months substantially increased hair counts — 74.1% increase in temple areas for men and 55.2% for women. However, there was no placebo control, so the findings are not definitive. About one-third reported increased hair shedding during the first month. The average daily applied dose was 3-4 mg CBD (Smith et al., *Cannabis*, 2021) [72].
+In a case series of 35 people with pattern hair loss (androgenetic alopecia), a topical hemp oil giving about 3 to 4 mg of CBD a day for 6 months increased hair counts by an average of 93.5%, with men doing slightly better than women. With no placebo group, the result is not conclusive (Smith et al., *Cannabis*, 2021) [72].
 
 ### Cancer
 
-Preliminary evidence suggests CBD may have anti-cancer properties and may enhance immune responses to cancer, but no clinical trials have been conducted. A single case was reported of a man in his early 80s with lung adenocarcinoma who, after declining traditional therapies, had a dramatic reduction in tumor size after self-administering low-dose CBD twice daily (starting at 1.32 mg twice daily for one week, then 6 mg twice daily). A scan 2 months after stopping CBD showed the tumor remained stable (Sule-Suso et al., *SAGE Open Medical Case Reports*, 2019) [73]. This is a single anecdotal case and does not constitute evidence of anti-cancer efficacy.
+Laboratory work suggests CBD could act against tumours and boost immune responses to cancer [73]. A case report described a man with lung adenocarcinoma who declined chemotherapy and radiotherapy and whose tumour shrank after he took CBD on his own (Sulé-Suso et al., *SAGE Open Med Case Rep*, 2019) [73]. A single case does not show that CBD treats cancer.
 
 ### COVID-19 and Viral Infections
 
-CBD has been promoted for colds, flu, and COVID-19, but there is no direct clinical evidence supporting these uses. Laboratory research found that CBD inhibited SARS-CoV-2 replication in cell cultures, and an analysis of prescription CBD (Epidiolex) users found a lower COVID-19 positivity rate (4.9% vs 9.0% of matched controls) (Nguyen et al., *Sci Adv*, 2022) [74]. However, this was only an association, not a causal finding. Paradoxically, when high-dose CBD was given to children for seizures, upper respiratory infections were slightly more common in the CBD group than placebo (11% vs 8%) [16]. Animal experiments suggest CBD may dampen immune responses by decreasing inflammatory cytokines and immune cell production, which could theoretically benefit autoimmune conditions but might also worsen infections [75][76].
+No clinical trial supports CBD for colds, flu or COVID-19, though it has been promoted for them. CBD blocked SARS-CoV-2 replication in cells and in mice, and in matched patient records, people taking prescription CBD oral solution were less likely to test positive (Nguyen et al., *Sci Adv*, 2022) [74]. That link is an association, not proof of cause, and the authors cautioned against using non-medical CBD products to prevent or treat COVID-19 [74]. Reviews of laboratory and animal studies find that CBD suppresses immune responses [75][76].
 
 ### Glaucoma
 
-CBD does not appear beneficial and may be harmful. A single sublingual dose containing CBD plus approximately 1-2 mg THC had no effect on intraocular pressure at low dose, while a 40 mg dose temporarily increased intraocular pressure (Tomida et al., *J Glaucoma*, 2006) [77]. An animal study also found that CBD applied directly to the eye caused an undesirable increase in pressure [2]. Cannabis-based products that do lower intraocular pressure (primarily via THC) only do so for a short period and are not as effective as existing treatments [2].
+CBD does not appear beneficial and may be harmful. In six people with raised eye pressure or early glaucoma, 20 mg of CBD under the tongue did not lower eye pressure, and 40 mg briefly raised it (Tomida et al., *J Glaucoma*, 2006) [77]. An animal study also found that CBD applied directly to the eye caused an undesirable increase in pressure [2]. Cannabis-based products that do lower intraocular pressure only do so for a short period and are not as effective as existing treatments [2].
 
 ### Inflammatory Bowel Disease
 
-A 2018 Cochrane review of 3 studies (93 participants) comparing smoked cannabis or cannabis oil with placebos in people with active Crohn's disease found no difference in clinical remission rates. Some patients had symptom improvements but also experienced undesirable side effects (Kafil et al., *Cochrane Database Syst Rev*, 2018) [107].
+A 2018 Cochrane review of 3 studies (93 participants) comparing smoked cannabis or cannabis oil with placebos in people with active Crohn's disease found no difference in clinical remission rates. Some patients had symptom improvements but also experienced undesirable side effects (Kafil et al., *Cochrane Database Syst Rev*, 2018) [107][2].
 
-For ulcerative colitis, a 2018 Cochrane review of 2 studies (92 participants) found that CBD capsules did not differ from placebo for clinical remission, and people taking CBD had more side effects. In a smoked cannabis study, disease activity was lower after 8 weeks in the cannabis group (Kafil et al., *Cochrane Database Syst Rev*, 2018) [108].
+For ulcerative colitis, a 2018 Cochrane review of 2 studies (92 participants) found that CBD capsules did not differ from placebo for clinical remission, and people taking CBD had more side effects. In a smoked cannabis study, disease activity was lower after 8 weeks in the cannabis group (Kafil et al., *Cochrane Database Syst Rev*, 2018) [108][2].
 
 ### Opioid Use Reduction
 
-Animal studies suggest THC given with opioids may allow pain control with lower opioid doses. However, a 2017 review of 9 human studies (750 participants), including 3 high-quality RCTs (642 participants), found inconsistent results — none of the high-quality studies showed that cannabinoids could lead to decreased opioid use (Nielsen et al., *Neuropsychopharmacology*, 2017) [78].
+Animal studies suggest THC given with opioids may allow pain control with lower opioid doses [78]. However, a 2017 review of 9 human studies (750 participants), including 3 high-quality RCTs (642 participants), found inconsistent results; none of the high-quality studies showed that cannabinoids could lead to decreased opioid use (Nielsen et al., *Neuropsychopharmacology*, 2017) [2].
 
-Population-level data has also been inconsistent: while states with medical marijuana laws initially showed lower opioid overdose death rates (1999-2010), extending the analysis through 2017 showed higher death rates (Shover et al., *PNAS*, 2019) [79]. Medical marijuana access was not associated with reduced nonmedical prescription opioid use in a national survey (Segura et al., *JAMA Netw Open*, 2019) [80].
+Population-level data has also been inconsistent: while states with medical marijuana laws initially showed lower opioid overdose death rates (1999-2010), extending the analysis through 2017 showed higher death rates (Shover et al., *PNAS*, 2019) [79][2]. Medical marijuana laws were not associated with less nonmedical prescription opioid use in a national survey (Segura et al., *JAMA Netw Open*, 2019) [80][2].
 
 ## 4. Recommended Dosing
 
-Most clinical research has used daily doses of hundreds of milligrams of CBD — far more than most commercial products provide (which typically deliver tens of milligrams or less per day). It is not known whether these lower doses are as effective as the higher doses used in clinical trials [1].
+There is no established dose of CBD as a supplement. The trials above used doses from 15 mg [34][35] to 20 mg per kilogram of body weight a day [16][17], and a result at one dose does not show what a different dose will do.
 
 ### Doses Used in Clinical Studies
 
 | Indication | Daily Dose | Duration | Notes |
 |-----------|-----------|----------|-------|
-| Social anxiety (acute) | 300 mg single dose | One-time | Taken 90 minutes before stressor [20][22] |
-| Generalized anxiety | 125 mg twice daily (250 mg total) | 2 weeks | Modest benefit for physical anxiety symptoms [25] |
-| Insomnia | 160 mg | Nightly | 30 min before bedtime; increases sleep duration but not onset latency [32] |
-| Epilepsy (Dravet/LGS) | 20 mg/kg/day | Ongoing | FDA-approved as Epidiolex; divided into 2 doses [16][17] |
-| Schizophrenia (adjunctive) | 1,000 mg/day | 6 weeks | 500 mg morning and evening [59] |
-| Heroin craving reduction | 400-800 mg/day | 3 days | Both doses equally effective [63] |
-| Cannabis use disorder | 400 mg/day | 4 weeks | 200 mg twice daily; 100 mg twice daily ineffective [64] |
-| Parkinson's quality of life | 300 mg/day | 6 weeks | 75 mg not effective for QoL measures [54] |
-| Gastroparesis | ~1,500 mg/day | 4 weeks | ~750 mg twice daily (~10 mg/kg) [66] |
+| Social anxiety (acute) | 600 mg single dose (social anxiety disorder); 300 mg (healthy men) | One-time | Taken 90 minutes before a simulated speech [20][22] |
+| Anxiety in high worriers | 300 mg | 2 weeks | Reduced physical anxiety symptoms, not worry [25] |
+| Insomnia | 160 mg | Not stated | Increased reported sleep time [32] |
+| Epilepsy (Dravet/LGS) | 10 mg or 20 mg per kilogram | 14 weeks in trials | FDA-approved as Epidiolex; given in 2 equal doses [16][17][109] |
+| Schizophrenia (adjunctive) | 1,000 mg/day | 6 weeks | Added to antipsychotic [59] |
+| Heroin craving reduction | 400 or 800 mg | 3 days | Once daily [63] |
+| Cannabis use disorder | 400 mg | 4 weeks | 200 mg ineffective [64] |
+| Parkinson's quality of life | 300 mg/day | Not stated | 75 mg/day did not differ from placebo [54] |
+| Gastroparesis | Raised to 20 mg/kg/day | 4 weeks | Twice daily [66] |
 
 ### Practical Dosing Considerations
 
-**Start low and increase gradually.** For individuals who wish to try CBD for anxiety or sleep, starting with 25-50 mg daily and increasing as tolerated over several weeks is a conservative approach, though most positive clinical evidence involves doses of 150-300 mg or more [1][26].
+**Take with fat-containing food.** A high-fat meal raised the peak blood level of CBD about 14-fold and total exposure about 4-fold compared to fasting [9].
 
-**Take with fat-containing food.** CBD bioavailability is dramatically increased (4-5 fold) when taken with a meal containing fats. Taking CBD on an empty stomach may result in as little as 6% absorption [7][8][9].
+**Timing:** In public-speaking studies, CBD was taken 90 minutes before the test [20][23].
 
-**Timing:** For anxiety, studies have dosed CBD 60-90 minutes before the anxiety-provoking situation [20][23]. For sleep, 160 mg taken 30 minutes before bedtime has been studied [32]. For ongoing conditions, CBD is typically taken in divided doses (morning and evening).
-
-**Read labels carefully.** Look for products that list the amount of CBD per serving, not just per bottle. "Hemp oil" alone does not provide meaningful CBD. "Full-spectrum" products contain trace THC (<0.3%) and other cannabinoids; "CBD isolate" products contain purified CBD only [1].
+**Read labels carefully.** Over-the-counter products may contain more or less CBD than stated and may contain THC [2]. Independent testers such as consumerlab.com and Labdoor publish product test results.
 
 ## 5. Safety and Side Effects
 
 ### Common Side Effects
 
-At typical supplement doses (tens of milligrams), CBD appears generally well tolerated. An analysis of adverse events reported with PlusCBD products (5 million units sold 2018-2019) found that only 0.03% of sales resulted in a reported adverse event. The most common adverse events with oral use were abdominal discomfort (24% of reports), headache (7%), hypersensitivity (6%), and nausea (6%). With topical products, hypersensitivity, dermatitis, and rash were most common, though there were only 95 reports total (Schmitz et al., *J Diet Suppl*, 2020) [81].
+CBD may cause decreased alertness, mood changes, decreased appetite and digestive symptoms such as diarrhea, and it has been associated with liver injury, male reproductive harm and drug interactions [2]. A review of clinical studies found the most common side effects were tiredness, diarrhea and changes in appetite or weight [98]. A manufacturer's surveillance of about five million units of its hemp extract products sold in 2018 and 2019 logged 1,429 adverse event reports (0.03%), mostly digestive complaints with oral products and rashes with topical ones (Schmitz et al., *J Diet Suppl*, 2020) [81].
 
 ### Side Effects at High Doses
 
-Very high daily doses (20 mg/kg/day — hundreds to thousands of milligrams) carry significantly greater risks [1][16][17][82]:
+Prescription doses (10 mg or 20 mg per kilogram a day) carry greater risks [16][17][109]:
 
-- **Gastrointestinal:** Decreased appetite, diarrhea, vomiting, nausea
-- **Neurological:** Fatigue, somnolence, sedation
-- **Hepatic:** Elevated liver enzymes (ALT/AST) — occurring in 8% at 10 mg/kg/day and 16% at 20 mg/kg/day. High-dose CBD should be used with caution in people with pre-existing liver disease [82]
-- **Hematologic:** Approximately 35% of people treated for epilepsy with 10-20 mg/kg/day of prescription CBD developed anemia versus 14% on placebo [8]
-- **Weight loss:** At 25 mg/kg/day, adverse events occurred in 80.8% of children. Weight loss emerged after several months, was clinically significant in 30.7%, and resolved with dose reduction or cessation (Sands et al., *CNS Drugs*, 2018) [83]
-- **Fever (pyrexia):** Commonly reported in epilepsy trials
+- **Gastrointestinal:** Decreased appetite, diarrhea, vomiting [16][17]
+- **Neurological:** Fatigue, somnolence [16][17]
+- **Hepatic:** Raised liver enzymes occurred in 9% of patients on 10 mg or 20 mg per kilogram a day in one trial [109], and liver tests were higher in people also taking valproate [110]. In 16 healthy adults taking 1,500 mg a day, 7 (44%) had ALT above the upper limit of normal and 5 (31%) had levels that exceeded 5 times the limit, starting within 2 to 4 weeks; some had symptoms of hepatitis [113]. In a placebo-controlled trial of 201 healthy adults, 5 mg/kg a day for 28 days raised liver enzymes over 3 times the upper limit in 8 people (5.6%), against none on placebo [114]. If you have liver disease, talk to your doctor before taking CBD.
+- **Hematologic:** A review of prescribing information listed anemia and infection among common adverse events [82]
+- **Weight loss:** In 26 children titrated to 25 mg/kg a day for a mean of 21 months, 80.8% had side effects, including reduced appetite (38.4%), diarrhea (34.6%) and weight loss (30.7%) that became clear only later in treatment (Sands et al., *CNS Drugs*, 2019) [83]
+- **Fever (pyrexia):** Commonly reported in epilepsy trials [16][17]
 
 ### Cardiovascular Effects
 
-A single 600 mg dose of CBD in healthy young men decreased resting systolic blood pressure by 6 mmHg and increased heart rate by approximately 10 bpm one hour after taking. The same dose also lowered systolic blood pressure by 5 mmHg and increased heart rate by 10 bpm during exercise (Jadoon et al., *JCI Insight*, 2017) [84]. Blood pressure drops of 10-20 mmHg upon standing were reported in patients with movement disorders taking 100-500 mg CBD, with two reporting lightheadedness [57].
+In 9 healthy men, one 600 mg CBD dose cut resting systolic pressure 6 mmHg and raised heart rate. During stress tests, blood pressure was 5 mmHg lower and heart rate 10 bpm higher than with placebo (Jadoon et al., *JCI Insight*, 2017) [84]. Low blood pressure and lightheadedness were side effects in a small study of CBD for movement disorders [57].
 
 ### Cannabinoid Hyperemesis Syndrome
 
-Rarely, recurrent nausea, vomiting, and abdominal cramping — cannabinoid hyperemesis syndrome — have been reported with CBD use. One case occurred in a 41-year-old woman ingesting about 25-75 mg of CBD oil three times weekly for 2 months [85]. Another case involved a 13-year-old boy taking approximately 700 mg/day for seizures for 2 years, with symptoms appearing 6 months after starting a ketogenic diet (which may have promoted release of accumulated CBD from fat tissue) [86]. The condition has also been linked with daily use of CBD cigarettes [87].
+Cases of cannabinoid hyperemesis syndrome (repeated bouts of severe vomiting) linked to CBD are rare. A case report letter asked whether CBD can cause the syndrome [85]. A child with Lennox-Gastaut syndrome on CBD had monthly bouts of severe vomiting within 6 months of starting a ketogenic diet, which stopped within 2 months of stopping CBD [86]. A 32-year-old man had repeated vomiting episodes with daily CBD use after he stopped cannabis [87].
 
 ### Dry Mouth
 
-CBD may cause dry mouth, possibly due to inhibition of cannabinoid receptors (CB1 and CB2) in the salivary glands [88][89].
+Dry mouth was a side effect in a small study of CBD for movement disorders [57].
 
 ### Skin Reactions
 
-Two days after starting CBD supplementation, a 63-year-old man with a history of plaque psoriasis developed a red, pustular rash on the arms, underarms, buttocks, and groin. The rash improved within 4 days of stopping CBD and cleared completely within several weeks — consistent with a pustular drug eruption [90]. One person in a topical CBD study developed a mild allergic skin rash [50].
+A case report described acute generalized exanthematous pustulosis, a widespread pustular rash, attributed to CBD [90]. In the COVID-19 health worker trial, one person on CBD had a severe drug rash [28].
 
 ### THC Content and Drug Testing
 
-CBD supplements can contain enough THC to cause a positive drug test for marijuana (using a 50 ng/mL urine cutoff):
+THC in hemp oil can trigger a positive marijuana urine screen (50 ng/mL cutoff):
 
-- One of 7 adults tested positive at just 0.39 mg THC/day [91]
-- One of 15 tested positive at 0.6 mg THC/day [92]
-- Seven of 14 tested positive after taking a full-spectrum CBD liquid providing approximately 0.8 mg THC daily for 4 weeks (Dahlgren et al., *JAMA Psychiatry*, 2021) [93]
+- In a controlled study, 7 adults took 0.39, 0.47, 7.5, and 14.8 mg THC/day as hemp oil or the drug Marinol. The two low doses caused positive screens in under 0.2% of urine samples, and the two high doses in 23 to 46% [91]
+- In 15 adults taking hemp oil daily, no one screened positive at 0.45 mg of THC a day, and one urine sample screened positive at a daily dose of 0.6 mg [92]
 
-THC is fat-soluble and can be stored in body fat, potentially affecting drug tests for several days after stopping CBD use. Higher CBD doses from hemp extracts will likely provide higher amounts of THC [1].
-
-Some CBD products may also contain synthetically manufactured delta-8 THC, which is psychoactive and intoxicating [1]. Some branches of the US military forbid any hemp-based products. The World Anti-Doping Agency removed CBD from its prohibited list in 2018 but cautioned that CBD extracted from cannabis may contain varying THC concentrations [1].
+Some products sold as CBD may contain other forms of THC that can cause a high.
 
 ### Product Safety Concerns
 
-Over-the-counter CBD products may contain more or less CBD than stated on labels, and may contain contaminants such as THC [2]. A dangerous synthetic cannabinoid (AB-FUBINACA) has been found in some CBD products, including e-cigarette fluid. It has been linked to several deaths and was detected in a CBD oil that caused a sudden increase in seizure frequency, agitation, and delirium in an 8-year-old boy being treated for seizures [94].
+Over-the-counter CBD products may contain more or less CBD than stated on labels, and may contain contaminants such as THC [2]. A case report described a commercial CBD oil contaminated with the synthetic cannabinoid AB-FUBINACA that was given to a child [94].
 
 ### Special Populations
 
-**Children:** The American Academy of Pediatrics has not endorsed cannabis/cannabinoid use in children due to concerns about brain development [1][2].
+**Children:** Prescription CBD is approved for seizures in Lennox-Gastaut and Dravet syndromes in patients aged 2 years or older [111]. Talk to your child's doctor before giving any CBD product.
 
-**Pregnancy:** Smoking cannabis during pregnancy has been linked to lower birth weight [2]. Delta-9-THC is on California's Proposition 65 list for reproductive harm based on animal evidence showing effects on offspring brain development, behavior, and learning ability [1].
+**Pregnancy:** Smoking cannabis during pregnancy has been linked to lower birth weight [2]. If you are pregnant or breastfeeding, talk to your doctor before using CBD.
 
-**Pets:** In dogs, CBD (2 mg/kg twice daily) for one month caused an increase in alkaline phosphatase levels. Researchers recommend monitoring liver enzymes in dogs receiving CBD [95]. In cats, one of eight cats studied had a significant increase in ALT [96]. CBD at 5 mg/kg/day for 90 days in dogs elevated one biomarker of liver injury compared to placebo [97].
+**Pets:** In dogs with osteoarthritis, CBD at 2 mg/kg every 12 hours for 4 weeks raised alkaline phosphatase, a liver enzyme [95]. In a 12-week study in healthy dogs and cats, one cat had a persistent rise in ALT [96].
 
 ## 6. Drug Interactions
 
-CBD is metabolized by the cytochrome P450 enzymes CYP3A4 and CYP2C19. By competing for these enzymes, CBD can reduce the metabolism of co-administered drugs, raising their blood levels and potentially requiring dose adjustments. These interactions are dose-dependent — they have primarily been documented at high CBD doses (hundreds of milligrams daily), and lower doses (tens of milligrams) may have more modest effects [1][82].
+CBD acts on liver enzymes that break down many drugs, such as CYP3A4 and CYP2C19, so the potential for interactions with common medicines is high; reducing doses of affected medicines and watching for side effects may be needed [82]. CBD is itself broken down by CYP3A4, so other drugs can change its levels [106]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Anticonvulsants
 
-Several hundred milligrams of CBD daily in epilepsy trials caused sizable increases in blood levels of clobazam, valproic acid, levetiracetam, felbamate, lamotrigine, and zonisamide [82][98]. Adding 50-300 mg of CBD per day to brivaracetam increased blood levels by 95-280% (Klotz et al., *Epilepsia*, 2019) [99].
+In 39 adults and 42 children taking prescription CBD (started at 5 mg/kg/day, up to a maximum of 50 mg/kg/day), levels of topiramate, rufinamide and N-desmethylclobazam (clobazam's active metabolite) rose with the CBD dose, and clobazam levels fell. Zonisamide and eslicarbazepine rose in adults. Liver tests were higher in people also taking valproate (Gaston et al., *Epilepsia*, 2017) [110]. In 13 children on clobazam, N-desmethylclobazam levels rose by a mean of 500 ± 300% after 4 weeks of CBD; side effects in 10 eased when the clobazam dose was lowered (Geffrey et al., *Epilepsia*, 2015) [112]. In healthy volunteers, CBD raised N-desmethylclobazam exposure 3.4-fold and stiripentol slightly, with no relevant effect on valproate levels (Morrison et al., *Clin Pharmacol Drug Dev*, 2019) [111]. In five patients, adding CBD raised brivaracetam levels by 95% to 280% (Klotz et al., *Epilepsia*, 2019) [99].
 
 ### Warfarin (Blood Thinners)
 
-CBD may increase the blood-thinning effects of warfarin. In one case, a man's INR (measure of clotting time) began increasing several weeks after starting CBD for seizures, eventually requiring a 30% reduction in warfarin dose (Grayson et al., *Epilepsy Behav Case Rep*, 2017) [100]. A dose-dependent INR increase was also reported in another patient taking warfarin alongside Epidiolex (805-3,000+ mg/day), requiring a 20% warfarin dose reduction (Cortopassi et al., *Am J Health Syst Pharm*, 2020) [101].
+Warfarin's effect may be strengthened by CBD, and INR (a measure of clotting time) should be monitored when CBD is started (Grayson et al., *Epilepsy Behav Case Rep*, 2018) [100]. A man taking warfarin needed a nearly 20% lower warfarin dose to keep his INR in range after starting prescription CBD; in an earlier case, INR rose to 6.86 and the weekly warfarin dose was cut by 30% (Cortopassi et al., *Am J Health Syst Pharm*, 2020) [101].
 
 ### Caffeine
 
-Very high-dose CBD (1,500 mg) nearly doubled blood levels of caffeine (Thai et al., *Clin Pharmacol Drug Dev*, 2021) [102]. This effect is mediated via CYP1A2 inhibition.
+In healthy adults taking 750 mg CBD twice daily, total caffeine exposure rose by 95% and its half-life doubled from 5.4 to 10.9 hours. CBD inhibits CYP1A2, the enzyme that breaks down caffeine. Six of 16 people stopped because of raised liver enzymes (Thai et al., *Clin Pharmacol Drug Dev*, 2021) [102].
 
 ### THC
 
-Very high-dose CBD (640 mg) increased the effects of delta-9-THC (20 mg). Participants who consumed THC with CBD experienced greater anxiety, sedation, memory difficulty, increased heart rate, and greater cognitive/psychomotor impairment compared to THC without CBD (Zamarripa et al., *JAMA Netw Open*, 2023) [103].
+In 18 healthy adults, brownies with 20 mg of THC plus 640 mg of CBD raised THC blood levels and caused more anxiety, sedation and memory trouble, a faster heart rate, and worse scores on thinking and coordination tests than the same THC dose alone (Zamarripa et al., *JAMA Netw Open*, 2023) [103].
 
 ### Sedatives and Sleep Aids
 
-CBD should be used with caution with sedative and sleep-inducing medications, as it may enhance their effects. It has been suggested that CBD might increase effects of herbs/supplements with sedating properties (melatonin, valerian, SAMe, ashwagandha), although one study found that 15 mg CBD with 5 mg melatonin did not increase side effects or grogginess compared to either alone [35][1].
+CBD can cause sleepiness on its own [16][17]. With clobazam, sedation was more frequent in adults with higher levels of clobazam's active metabolite [110]. Taking CBD with other sedating medicines may add to drowsiness; check with your doctor or pharmacist first.
 
 ### Levothyroxine
 
-Levothyroxine may increase blood levels of CBD (by inhibiting CYP3A4). Two children on high-dose CBD (12 mg/kg/day) who were also taking levothyroxine showed a 4-fold increase in CBD exposure compared to those not taking levothyroxine (Caceres Guido et al., *Epilepsia*, 2021) [104]. Conversely, co-administration may increase levothyroxine effects, potentially causing hyperthyroidism symptoms [105].
+In 12 children taking a median dose of 12.2 (range 5.3 to 19.4) mg/kg of CBD a day, researchers recorded a new interaction between levothyroxine and CBD (Cáceres Guido et al., *Epilepsia*, 2021) [104].
 
 ### Other Medications to Use with Caution
 
-Because CBD can inhibit CYP3A4, CYP2C19, and (at high doses) CYP1A2, the following medications may be affected [82]:
+Because CBD affects CYP3A4 and CYP2C19, and CYP1A2 at high doses [82][102], it may change levels of many common medicines, including some heart, psychiatric, statin, transplant and blood-thinning drugs. One analysis listed 57 prescription medicines with a narrow margin between a safe and a harmful dose that cannabinoids may affect [105]. Taking CBD with other medicines that can harm the liver may add to that risk.
 
-- **Macrolide antibiotics:** clarithromycin, azithromycin
-- **Immunosuppressants:** cyclosporine
-- **Statins:** atorvastatin, simvastatin, rosuvastatin
-- **Cardiovascular:** nifedipine, metoprolol, propranolol, flecainide, losartan, valsartan
-- **Psychiatric:** haloperidol, risperidone, clozapine, fluoxetine, fluvoxamine, paroxetine, mirtazapine
-- **Other:** sildenafil, testosterone, progesterone, omeprazole, ondansetron, clopidogrel, celecoxib, naproxen, carisoprodol, cyclophosphamide, efavirenz, enzalutamide
-- **Hepatotoxic drugs:** acetaminophen, certain antibiotics (amoxicillin, nitrofurantoin), antifungals (ketoconazole), verapamil — use with caution due to combined liver injury risk [82]
-
-A study found that ketoconazole (400 mg) increased blood levels of CBD, while rifampicin (600 mg) decreased blood levels of CBD [106].
+In a study of a THC/CBD mouth spray, ketoconazole (400 mg) raised the peak CBD level by 89%, while rifampicin (600 mg) lowered it by 52% [106].
 
 ## 7. Dietary Sources
 
-CBD is not an essential nutrient and is not found in the general food supply. It is derived exclusively from the Cannabis sativa plant.
+CBD is not an essential nutrient. It comes from the cannabis plant [2].
 
 ### Natural Sources
 
-- **Hemp plants:** Cannabis sativa varieties bred to contain <0.3% THC by dry weight (the legal definition of "hemp" in the US). CBD content varies by cultivar.
-- **Marijuana plants:** Cannabis sativa varieties with >0.3% THC. Also contain CBD but in varying ratios to THC.
-
-Hemp seeds and hemp seed oil, while nutritious (rich in omega-3 and omega-6 fatty acids, protein, and minerals), contain minimal to no CBD. The cannabinoids are concentrated in the flowers, leaves, and stalks of the hemp plant — not the seeds [1].
+- **Hemp plants:** cannabis plants with very little THC, which US law treats as "industrial hemp" rather than marijuana [2]
+- **Marijuana plants:** cannabis plants with substantial amounts of THC [2]
 
 ### Common Product Forms
 
 | Product Type | Typical CBD Content | Notes |
 |-------------|--------------------|-------|
-| CBD oil/tincture | 5-50 mg per mL | Usually in MCT oil or hemp seed oil base; taken sublingually or added to food |
-| CBD capsules/softgels | 10-50 mg per capsule | Easier to dose consistently |
-| CBD gummies/edibles | 5-30 mg per piece | Added sugars; dose accuracy varies |
-| CBD topical cream/salve | 100-1,000 mg per container | Applied locally; not for systemic absorption |
-| CBD vape products | Varies | FDA has warned against vaping THC products; safety concerns with vaping in general |
-| CBD beverages | 10-60 mg per serving | Emerging category; limited efficacy data |
-| Full-spectrum hemp extract | Varies | Contains CBD, trace THC, other cannabinoids, terpenes |
-| CBD isolate | 99%+ CBD | No other cannabinoids or terpenes |
+| CBD oil/tincture | Varies; check label | Taken under the tongue or added to food |
+| CBD capsules/softgels | Varies; check label | Easier to dose consistently |
+| CBD gummies/edibles | Varies; check label | Often contain added sugar |
+| CBD topical cream/salve | Varies; check label | Applied to the skin |
+| CBD vape products | Varies | The FDA has warned against vaping products that contain THC [2] |
+| CBD beverages | Varies; check label | Little efficacy data |
+| Full-spectrum hemp extract | Varies | Contains CBD, small amounts of THC, other cannabinoids |
+| CBD isolate | Purified CBD | No other cannabinoids |
 
 ## 8. References
 
-[1] ConsumerLab. "CBD and Hemp Oil Supplements Review." Accessed 2025. [https://www.consumerlab.com/reviews/cbd-oil-hemp-review/cbd-oil/](https://www.consumerlab.com/reviews/cbd-oil-hemp-review/cbd-oil/)
-
 [2] National Center for Complementary and Integrative Health (NCCIH). "Cannabis (Marijuana) and Cannabinoids: What You Need to Know." Updated November 2019. [https://www.nccih.nih.gov/health/cannabis-marijuana-and-cannabinoids-what-you-need-to-know](https://www.nccih.nih.gov/health/cannabis-marijuana-and-cannabinoids-what-you-need-to-know)
 
-[3] Amin MR, Ali DW. "Pharmacology of medical cannabis." *Adv Exp Med Biol*. 2019;1162:151-165. doi: [10.1007/978-3-030-21737-2_8](https://doi.org/10.1007/978-3-030-21737-2_8)
+[3] Amin MR, Ali DW. "Pharmacology of Medical Cannabis." *Adv Exp Med Biol*. 2019;1162:151-165. doi: [10.1007/978-3-030-21737-2_8](https://doi.org/10.1007/978-3-030-21737-2_8). PMID: [31332738](https://pubmed.ncbi.nlm.nih.gov/31332738/)
 
-[4] Ghovanloo MR, et al. "Inhibitory effects of cannabidiol and cannabigerol on voltage-gated sodium channels." *Front Physiol*. 2022. doi: [10.3389/fphys.2022.1066455](https://doi.org/10.3389/fphys.2022.1066455)
+[4] Ghovanloo MR, Dib-Hajj SD, Goodchild SJ, et al. "Non-psychotropic phytocannabinoid interactions with voltage-gated sodium channels: An update on cannabidiol and cannabigerol." *Front Physiol*. 2022;13:1066455. doi: [10.3389/fphys.2022.1066455](https://doi.org/10.3389/fphys.2022.1066455). PMID: [36439273](https://pubmed.ncbi.nlm.nih.gov/36439273/)
 
-[5] Perez E, et al. "A comparison of cannabidiol (CBD) and cannabigerol (CBG): examining their anti-inflammatory and analgesic properties." *Molecules*. 2022. doi: [10.3390/molecules27092561](https://doi.org/10.3390/molecules27092561)
+[5] Perez E, Fernandez JR, Fitzgerald C, et al. "In Vitro and Clinical Evaluation of Cannabigerol (CBG) Produced via Yeast Biosynthesis: A Cannabinoid with a Broad Range of Anti-Inflammatory and Skin Health-Boosting Properties." *Molecules*. 2022;27(2):491. doi: [10.3390/molecules27020491](https://doi.org/10.3390/molecules27020491). PMID: [35056807](https://pubmed.ncbi.nlm.nih.gov/35056807/)
 
-[6] Russo EB, et al. "Survey of patients employing cannabigerol-predominant cannabis preparations." *Cannabis Cannabinoid Res*. 2022. doi: [10.1089/can.2021.0058](https://doi.org/10.1089/can.2021.0058)
+[6] Russo EB, Cuttler C, Cooper ZD, et al. "Survey of Patients Employing Cannabigerol-Predominant Cannabis Preparations: Perceived Medical Effects, Adverse Events, and Withdrawal Symptoms." *Cannabis Cannabinoid Res*. 2022;7(5):706-716. doi: [10.1089/can.2021.0058](https://doi.org/10.1089/can.2021.0058). PMID: [34569849](https://pubmed.ncbi.nlm.nih.gov/34569849/)
 
-[7] Devinsky O, et al. "Cannabidiol: pharmacology and potential therapeutic role in epilepsy and other neuropsychiatric disorders." *Epilepsia*. 2014;55(6):791-802. doi: [10.1111/epi.12631](https://doi.org/10.1111/epi.12631)
+[9] Birnbaum AK, Karanam A, Marino SE, et al. "Food effect on pharmacokinetics of cannabidiol oral capsules in adult patients with refractory epilepsy." *Epilepsia*. 2019;60(8):1586-1592. doi: [10.1111/epi.16093](https://doi.org/10.1111/epi.16093). PMID: [31247132](https://pubmed.ncbi.nlm.nih.gov/31247132/)
 
-[8] U.S. Food and Drug Administration. "Epidiolex prescribing information." Revised 3/2024. [https://www.accessdata.fda.gov/drugsatfda_docs/label/2024/210365s029lbl.pdf](https://www.accessdata.fda.gov/drugsatfda_docs/label/2024/210365s029lbl.pdf)
+[10] Knaub K, Sartorius T, Dharsono T, et al. "A Novel Self-Emulsifying Drug Delivery System (SEDDS) Based on VESIsorb® Formulation Technology Improving the Oral Bioavailability of Cannabidiol in Healthy Subjects." *Molecules*. 2019;24(16):2967. doi: [10.3390/molecules24162967](https://doi.org/10.3390/molecules24162967). PMID: [31426272](https://pubmed.ncbi.nlm.nih.gov/31426272/)
 
-[9] Birnbaum AK, et al. "Food effect on pharmacokinetics of cannabidiol oral capsules in adult patients with refractory epilepsy." *Epilepsia*. 2019;60(8):1586-1592. doi: [10.1111/epi.16093](https://doi.org/10.1111/epi.16093)
+[11] Verrico CD, Wesson S, Konduri V, et al. "A randomized, double-blind, placebo-controlled study of daily cannabidiol for the treatment of canine osteoarthritis pain." *Pain*. 2020;161(9):2191-2202. doi: [10.1097/j.pain.0000000000001896](https://doi.org/10.1097/j.pain.0000000000001896). PMID: [32345916](https://pubmed.ncbi.nlm.nih.gov/32345916/)
 
-[10] Knaub K, et al. "A Novel Self-Emulsifying Drug Delivery System (SEDDS) Based on VESIsorb Formulation Technology Improving the Oral Bioavailability of Cannabidiol in Healthy Subjects." *Molecules*. 2019;24(16):2967. doi: [10.3390/molecules24162967](https://doi.org/10.3390/molecules24162967)
+[13] O'Brien TJ, Berkovic SF, French JA, et al. "Adjunctive Transdermal Cannabidiol for Adults With Focal Epilepsy: A Randomized Clinical Trial." *JAMA Netw Open*. 2022;5(7):e2220189. doi: [10.1001/jamanetworkopen.2022.20189](https://doi.org/10.1001/jamanetworkopen.2022.20189). PMID: [35802375](https://pubmed.ncbi.nlm.nih.gov/35802375/)
 
-[11] Verrico CD, et al. "A randomized, double-blind, placebo-controlled study of daily cannabidiol for the treatment of canine osteoarthritis pain." *Pain*. 2020;161(9):2191-2202. doi: [10.1097/j.pain.0000000000001896](https://doi.org/10.1097/j.pain.0000000000001896)
+[14] Merrick J, Lane B, Sebree T, et al. "Identification of Psychoactive Degradants of Cannabidiol in Simulated Gastric and Physiological Fluid." *Cannabis Cannabinoid Res*. 2016;1(1):102-112. doi: [10.1089/can.2015.0004](https://doi.org/10.1089/can.2015.0004). PMID: [28861485](https://pubmed.ncbi.nlm.nih.gov/28861485/)
 
-[12] Huestis MA. "Human cannabinoid pharmacokinetics." *Chem Biodivers*. 2007;4(8):1770-1804. doi: [10.1002/cbdv.200790152](https://doi.org/10.1002/cbdv.200790152)
+[15] Crippa JAS, Zuardi AW, Hallak JEC, et al. "Oral Cannabidiol Does Not Convert to Δ8-THC or Δ9-THC in Humans: A Pharmacokinetic Study in Healthy Subjects." *Cannabis Cannabinoid Res*. 2020;5(1):89-98. doi: [10.1089/can.2019.0024](https://doi.org/10.1089/can.2019.0024). PMID: [32322680](https://pubmed.ncbi.nlm.nih.gov/32322680/)
 
-[13] O'Brien TJ, et al. "Effect of Cannabidiol Transdermal Gel for Treatment of Drug-Resistant Focal Epilepsy in Adults." *JAMA Netw Open*. 2022;5(7):e2222863. doi: [10.1001/jamanetworkopen.2022.22863](https://doi.org/10.1001/jamanetworkopen.2022.22863)
+[16] Devinsky O, Cross JH, Laux L, et al. "Trial of Cannabidiol for Drug-Resistant Seizures in the Dravet Syndrome." *N Engl J Med*. 2017;376(21):2011-2020. doi: [10.1056/NEJMoa1611618](https://doi.org/10.1056/NEJMoa1611618). PMID: [28538134](https://pubmed.ncbi.nlm.nih.gov/28538134/)
 
-[14] Merrick J, et al. "Identification of Psychoactive Degradants of Cannabidiol in Simulated Gastric and Physiological Fluid." *Cannabis Cannabinoid Res*. 2016;1(1):102-112. doi: [10.1089/can.2015.0004](https://doi.org/10.1089/can.2015.0004)
+[17] Thiele EA, Marsh ED, French JA, et al. "Cannabidiol in patients with seizures associated with Lennox-Gastaut syndrome (GWPCARE4): a randomised, double-blind, placebo-controlled phase 3 trial." *Lancet*. 2018;391(10125):1085-1096. doi: [10.1016/S0140-6736(18)30136-3](https://doi.org/10.1016/S0140-6736(18)30136-3). PMID: [29395273](https://pubmed.ncbi.nlm.nih.gov/29395273/)
 
-[15] Crippa JA, et al. "Oral Cannabidiol Does Not Convert to Delta-8-THC or Delta-9-THC in Humans: A Pharmacokinetic Study in Healthy Subjects." *Cannabis Cannabinoid Res*. 2019. doi: [10.1089/can.2019.0024](https://doi.org/10.1089/can.2019.0024)
+[19] Porcari GS, Fu C, Doll ED, et al. "Efficacy of artisanal preparations of cannabidiol for the treatment of epilepsy: Practical experiences in a tertiary medical center." *Epilepsy Behav*. 2018;80:240-246. doi: [10.1016/j.yebeh.2018.01.026](https://doi.org/10.1016/j.yebeh.2018.01.026). PMID: [29429908](https://pubmed.ncbi.nlm.nih.gov/29429908/)
 
-[16] Devinsky O, et al. "Trial of Cannabidiol for Drug-Resistant Seizures in the Dravet Syndrome." *N Engl J Med*. 2017;376(21):2011-2020. doi: [10.1056/NEJMoa1611618](https://doi.org/10.1056/NEJMoa1611618)
+[20] Bergamaschi MM, Queiroz RH, Chagas MH, et al. "Cannabidiol reduces the anxiety induced by simulated public speaking in treatment-naïve social phobia patients." *Neuropsychopharmacology*. 2011;36(6):1219-26. doi: [10.1038/npp.2011.6](https://doi.org/10.1038/npp.2011.6). PMID: [21307846](https://pubmed.ncbi.nlm.nih.gov/21307846/)
 
-[17] Thiele EA, et al. "Cannabidiol in patients with seizures associated with Lennox-Gastaut syndrome (GWPCARE4): a randomised, double-blind, placebo-controlled phase 3 trial." *Lancet*. 2018;391(10125):1085-1096. doi: [10.1016/S0140-6736(18)30136-3](https://doi.org/10.1016/S0140-6736(18)30136-3)
+[21] Zuardi AW, Cosme RA, Graeff FG, et al. "Effects of ipsapirone and cannabidiol on human experimental anxiety." *J Psychopharmacol*. 1993;7(1 Suppl):82-8. doi: [10.1177/026988119300700112](https://doi.org/10.1177/026988119300700112). PMID: [22290374](https://pubmed.ncbi.nlm.nih.gov/22290374/)
 
-[18] Dijk DJ. "NICE draft guidance on cannabis-based medicinal products." *BMJ*. 2019. doi: [10.1136/bmj.l5765](https://doi.org/10.1136/bmj.l5765)
+[22] Linares IM, Zuardi AW, Pereira LC, et al. "Cannabidiol presents an inverted U-shaped dose-response curve in a simulated public speaking test." *Braz J Psychiatry*. 2019;41(1):9-14. doi: [10.1590/1516-4446-2017-0015](https://doi.org/10.1590/1516-4446-2017-0015). PMID: [30328956](https://pubmed.ncbi.nlm.nih.gov/30328956/)
 
-[19] Porcari GS, et al. "Efficacy of artisanal preparations of cannabidiol for the treatment of epilepsy: Practical experiences in a tertiary medical center." *Epilepsy Behav*. 2018;80:240-246. doi: [10.1016/j.yebeh.2018.01.026](https://doi.org/10.1016/j.yebeh.2018.01.026)
+[23] Crippa JA, Zuardi AW, Garrido GE, et al. "Effects of cannabidiol (CBD) on regional cerebral blood flow." *Neuropsychopharmacology*. 2004;29(2):417-26. doi: [10.1038/sj.npp.1300340](https://doi.org/10.1038/sj.npp.1300340). PMID: [14583744](https://pubmed.ncbi.nlm.nih.gov/14583744/)
 
-[20] Bergamaschi MM, et al. "Cannabidiol reduces the anxiety induced by simulated public speaking in treatment-naïve social phobia patients." *Neuropsychopharmacology*. 2011;36(6):1219-1226. doi: [10.1038/npp.2011.6](https://doi.org/10.1038/npp.2011.6)
+[24] Masataka N. "Anxiolytic Effects of Repeated Cannabidiol Treatment in Teenagers With Social Anxiety Disorders." *Front Psychol*. 2019;10:2466. doi: [10.3389/fpsyg.2019.02466](https://doi.org/10.3389/fpsyg.2019.02466). PMID: [31787910](https://pubmed.ncbi.nlm.nih.gov/31787910/)
 
-[21] Zuardi AW, et al. "Effects of ipsapirone and cannabidiol on human experimental anxiety." *J Psychopharmacol*. 1993;7(1 Suppl):82-88. doi: [10.1177/026988119300700112](https://doi.org/10.1177/026988119300700112)
+[25] Gournay LR, Ferretti ML, Bilsky S, et al. "The effects of cannabidiol on worry and anxiety among high trait worriers: a double-blind, randomized placebo controlled trial." *Psychopharmacology (Berl)*. 2023;240(10):2147-2161. doi: [10.1007/s00213-023-06437-0](https://doi.org/10.1007/s00213-023-06437-0). PMID: [37552290](https://pubmed.ncbi.nlm.nih.gov/37552290/)
 
-[22] Linares IM, et al. "Cannabidiol presents an inverted U-shaped dose-response curve in a simulated public speaking test." *Braz J Psychiatry*. 2018;41(1):9-14. doi: [10.1590/1516-4446-2017-0015](https://doi.org/10.1590/1516-4446-2017-0015)
+[26] Shannon S, Lewis N, Lee H, et al. "Cannabidiol in Anxiety and Sleep: A Large Case Series." *Perm J*. 2019;23:18-041. doi: [10.7812/TPP/18-041](https://doi.org/10.7812/TPP/18-041). PMID: [30624194](https://pubmed.ncbi.nlm.nih.gov/30624194/)
 
-[23] Crippa JA, et al. "Effects of cannabidiol (CBD) on regional cerebral blood flow." *Neuropsychopharmacology*. 2004;29(2):417-426. doi: [10.1038/sj.npp.1300340](https://doi.org/10.1038/sj.npp.1300340)
+[28] Crippa JAS, Zuardi AW, Guimarães FS, et al. "Efficacy and Safety of Cannabidiol Plus Standard Care vs Standard Care Alone for the Treatment of Emotional Exhaustion and Burnout Among Frontline Health Care Workers During the COVID-19 Pandemic: A Randomized Clinical Trial." *JAMA Netw Open*. 2021;4(8):e2120603. doi: [10.1001/jamanetworkopen.2021.20603](https://doi.org/10.1001/jamanetworkopen.2021.20603). PMID: [34387679](https://pubmed.ncbi.nlm.nih.gov/34387679/)
 
-[24] Masataka N. "Anxiolytic Effects of Repeated Cannabidiol Treatment in Teenagers With Social Anxiety Disorders." *Front Psychol*. 2019;10:2466. doi: [10.3389/fpsyg.2019.02466](https://doi.org/10.3389/fpsyg.2019.02466)
+[29] Elms L, Shannon S, Hughes S, et al. "Cannabidiol in the Treatment of Post-Traumatic Stress Disorder: A Case Series." *J Altern Complement Med*. 2019;25(4):392-397. doi: [10.1089/acm.2018.0437](https://doi.org/10.1089/acm.2018.0437). PMID: [30543451](https://pubmed.ncbi.nlm.nih.gov/30543451/)
 
-[25] Gournay LR, et al. "Cannabidiol reduces worry in a randomized, double-blind, placebo-controlled trial." *Psychopharmacology (Berl)*. 2023. doi: [10.1007/s00213-023-06427-8](https://doi.org/10.1007/s00213-023-06427-8)
+[30] Shannon S, Opila-Lehman J. "Effectiveness of Cannabidiol Oil for Pediatric Anxiety and Insomnia as Part of Posttraumatic Stress Disorder: A Case Report." *Perm J*. 2016;20(4):16-005. doi: [10.7812/TPP/16-005](https://doi.org/10.7812/TPP/16-005). PMID: [27768570](https://pubmed.ncbi.nlm.nih.gov/27768570/)
 
-[26] Shannon S, et al. "Cannabidiol in Anxiety and Sleep: A Large Case Series." *Perm J*. 2019;23:18-041. doi: [10.7812/TPP/18-041](https://doi.org/10.7812/TPP/18-041)
+[31] Jetly R, Heber A, Fraser G, et al. "The efficacy of nabilone, a synthetic cannabinoid, in the treatment of PTSD-associated nightmares: A preliminary randomized, double-blind, placebo-controlled cross-over design study." *Psychoneuroendocrinology*. 2015;51:585-8. doi: [10.1016/j.psyneuen.2014.11.002](https://doi.org/10.1016/j.psyneuen.2014.11.002). PMID: [25467221](https://pubmed.ncbi.nlm.nih.gov/25467221/)
 
-[27] Ramani K, et al. "Effects of a CBD and L-theanine beverage on fatigue, anxiety, depression, and cognitive function in healthy adults." *BBI — Integrative*. 2024. doi: [10.1016/j.bbii.2024.100053](https://doi.org/10.1016/j.bbii.2024.100053)
+[32] Carlini EA, Cunha JM. "Hypnotic and antiepileptic effects of cannabidiol." *J Clin Pharmacol*. 1981;21(S1):417S-427S. doi: [10.1002/j.1552-4604.1981.tb02622.x](https://doi.org/10.1002/j.1552-4604.1981.tb02622.x). PMID: [7028792](https://pubmed.ncbi.nlm.nih.gov/7028792/)
 
-[28] Crippa JA, et al. "Efficacy and Safety of Cannabidiol Plus Standard Care vs Standard Care Alone for the Treatment of Emotional Exhaustion and Burnout Among Frontline Health Care Workers During the COVID-19 Pandemic." *JAMA Netw Open*. 2021;4(8):e2120603. doi: [10.1001/jamanetworkopen.2021.20603](https://doi.org/10.1001/jamanetworkopen.2021.20603)
+[33] Linares IMP, Guimaraes FS, Eckeli A, et al. "No Acute Effects of Cannabidiol on the Sleep-Wake Cycle of Healthy Subjects: A Randomized, Double-Blind, Placebo-Controlled, Crossover Study." *Front Pharmacol*. 2018;9:315. doi: [10.3389/fphar.2018.00315](https://doi.org/10.3389/fphar.2018.00315). PMID: [29674967](https://pubmed.ncbi.nlm.nih.gov/29674967/)
 
-[29] Elms L, et al. "Cannabidiol in the Treatment of Post-Traumatic Stress Disorder: A Case Series." *J Altern Complement Med*. 2019;25(4):392-397. doi: [10.1089/acm.2018.0437](https://doi.org/10.1089/acm.2018.0437)
+[34] Lopez HL, Cesareo KR, Raub B, et al. "Effects of Hemp Extract on Markers of Wellness, Stress Resilience, Recovery and Clinical Biomarkers of Safety in Overweight, But Otherwise Healthy Subjects." *J Diet Suppl*. 2020;17(5):561-586. doi: [10.1080/19390211.2020.1765941](https://doi.org/10.1080/19390211.2020.1765941). PMID: [32456572](https://pubmed.ncbi.nlm.nih.gov/32456572/)
 
-[30] Shannon S, Opila-Lehman J. "Effectiveness of Cannabidiol Oil for Pediatric Anxiety and Insomnia as Part of Posttraumatic Stress Disorder: A Case Report." *Perm J*. 2016;20(4):16-005. doi: [10.7812/TPP/16-005](https://doi.org/10.7812/TPP/16-005)
+[35] Saleska JL, Bryant C, Kolobaric A, et al. "The Safety and Comparative Effectiveness of Non-Psychoactive Cannabinoid Formulations for the Improvement of Sleep: A Double-Blinded, Randomized Controlled Trial." *J Am Nutr Assoc*. 2024;43(1):1-11. doi: [10.1080/27697061.2023.2203221](https://doi.org/10.1080/27697061.2023.2203221). PMID: [37162192](https://pubmed.ncbi.nlm.nih.gov/37162192/)
 
-[31] Jetly R, et al. "The efficacy of nabilone, a synthetic cannabinoid, in the treatment of PTSD-associated nightmares: a preliminary randomized, double-blind, placebo-controlled cross-over design study." *Psychoneuroendocrinology*. 2015;51:585-588. doi: [10.1016/j.psyneuen.2014.11.002](https://doi.org/10.1016/j.psyneuen.2014.11.002)
+[36] Babson KA, Sottile J, Morabito D. "Cannabis, Cannabinoids, and Sleep: a Review of the Literature." *Curr Psychiatry Rep*. 2017;19(4):23. doi: [10.1007/s11920-017-0775-9](https://doi.org/10.1007/s11920-017-0775-9). PMID: [28349316](https://pubmed.ncbi.nlm.nih.gov/28349316/)
 
-[32] Carlini EA, Cunha JM. "Hypnotic and antiepileptic effects of cannabidiol." *J Clin Pharmacol*. 1981;21(S1):417S-427S. doi: [10.1002/j.1552-4604.1981.tb02622.x](https://doi.org/10.1002/j.1552-4604.1981.tb02622.x)
+[37] Bebee B, Taylor DM, Bourke E, et al. "The CANBACK trial: a randomised, controlled clinical trial of oral cannabidiol for people presenting to the emergency department with acute low back pain." *Med J Aust*. 2021;214(8):370-375. doi: [10.5694/mja2.51014](https://doi.org/10.5694/mja2.51014). PMID: [33846971](https://pubmed.ncbi.nlm.nih.gov/33846971/)
 
-[33] Linares IM, et al. "No Acute Effects of Cannabidiol on the Sleep-Wake Cycle of Healthy Subjects." *Front Pharmacol*. 2018;9:315. doi: [10.3389/fphar.2018.00315](https://doi.org/10.3389/fphar.2018.00315)
+[38] Vela J, Dreyer L, Petersen KK, et al. "Cannabidiol treatment in hand osteoarthritis and psoriatic arthritis: a randomized, double-blind, placebo-controlled trial." *Pain*. 2022;163(6):1206-1214. doi: [10.1097/j.pain.0000000000002466](https://doi.org/10.1097/j.pain.0000000000002466). PMID: [34510141](https://pubmed.ncbi.nlm.nih.gov/34510141/)
 
-[34] Lopez HL, et al. "Effects of Hemp Extract on Markers of Wellness, Stress Resilience, Recovery, and Clinical Biomarkers of Safety in Overweight, But Otherwise Healthy Subjects." *J Diet Suppl*. 2020;17(5):561-586. doi: [10.1080/19390211.2020.1765941](https://doi.org/10.1080/19390211.2020.1765941)
+[39] Fitzcharles MA, Baerwald C, Ablin J, et al. "Efficacy, tolerability and safety of cannabinoids in chronic pain associated with rheumatic diseases (fibromyalgia syndrome, back pain, osteoarthritis, rheumatoid arthritis): A systematic review of randomized controlled trials." *Schmerz*. 2016;30(1):47-61. doi: [10.1007/s00482-015-0084-3](https://doi.org/10.1007/s00482-015-0084-3). PMID: [26767993](https://pubmed.ncbi.nlm.nih.gov/26767993/)
 
-[35] Saleska JL, et al. "The Safety and Comparative Effectiveness of Non-Psychoactive Cannabinoid Formulations for the Improvement of Sleep." *J Am Nutr Assoc*. 2023. doi: [10.1080/27697061.2023.2207252](https://doi.org/10.1080/27697061.2023.2207252)
+[40] Hardy J, Greer R, Huggett G, et al. "Phase IIb Randomized, Placebo-Controlled, Dose-Escalating, Double-Blind Study of Cannabidiol Oil for the Relief of Symptoms in Advanced Cancer (MedCan1-CBD)." *J Clin Oncol*. 2023;41(7):1444-1452. doi: [10.1200/JCO.22.01632](https://doi.org/10.1200/JCO.22.01632). PMID: [36409969](https://pubmed.ncbi.nlm.nih.gov/36409969/)
 
-[36] Babson KA, et al. "Cannabis, Cannabinoids, and Sleep: a Review of the Literature." *Curr Psychiatry Rep*. 2017;19(4):23. doi: [10.1007/s11920-017-0775-9](https://doi.org/10.1007/s11920-017-0775-9)
+[41] Capano A, Weaver R, Burkman E. "Evaluation of the effects of CBD hemp extract on opioid use and quality of life indicators in chronic pain patients: a prospective cohort study." *Postgrad Med*. 2020;132(1):56-61. doi: [10.1080/00325481.2019.1685298](https://doi.org/10.1080/00325481.2019.1685298). PMID: [31711352](https://pubmed.ncbi.nlm.nih.gov/31711352/)
 
-[37] Bebee B, et al. "The CANBACK trial: a randomised, controlled clinical trial of oral cannabidiol for people presenting to the emergency department with acute low back pain." *Med J Aust*. 2021;214(8):370-375. doi: [10.5694/mja2.51014](https://doi.org/10.5694/mja2.51014)
+[42] De Vita MJ, Moskal D, Maisto SA, et al. "Association of Cannabinoid Administration With Experimental Pain in Healthy Adults: A Systematic Review and Meta-analysis." *JAMA Psychiatry*. 2018;75(11):1118-1127. doi: [10.1001/jamapsychiatry.2018.2503](https://doi.org/10.1001/jamapsychiatry.2018.2503). PMID: [30422266](https://pubmed.ncbi.nlm.nih.gov/30422266/)
 
-[38] Vela J, et al. "Cannabidiol treatment in hand osteoarthritis and psoriatic arthritis: a randomized, double-blind, placebo-controlled trial." *Pain*. 2021;163(6):1206-1214. doi: [10.1097/j.pain.0000000000002466](https://doi.org/10.1097/j.pain.0000000000002466)
+[43] De Vita MJ, Maisto SA, Gilmour CE, et al. "The effects of cannabidiol and analgesic expectancies on experimental pain reactivity in healthy adults: A balanced placebo design trial." *Exp Clin Psychopharmacol*. 2022;30(5):536-546. doi: [10.1037/pha0000465](https://doi.org/10.1037/pha0000465). PMID: [34251840](https://pubmed.ncbi.nlm.nih.gov/34251840/)
 
-[39] Fitzcharles MA, et al. "Efficacy, tolerability, and safety of cannabinoid treatments in the rheumatic diseases: a systematic review of randomized controlled trials." *Schmerz*. 2016;30(1):47-61. doi: [10.1007/s00482-015-0084-3](https://doi.org/10.1007/s00482-015-0084-3)
+[44] Stockings E, Campbell G, Hall WD, et al. "Cannabis and cannabinoids for the treatment of people with chronic noncancer pain conditions: a systematic review and meta-analysis of controlled and observational studies." *Pain*. 2018;159(10):1932-1954. doi: [10.1097/j.pain.0000000000001293](https://doi.org/10.1097/j.pain.0000000000001293). PMID: [29847469](https://pubmed.ncbi.nlm.nih.gov/29847469/)
 
-[40] Hardy J, et al. "Phase IIb Randomized, Placebo-Controlled, Dose-Escalating, Double-Blind Study of Cannabidiol Oil for the Treatment of Symptoms in Advanced Cancer." *J Clin Oncol*. 2022;41(7):1444-1452. doi: [10.1200/JCO.22.01221](https://doi.org/10.1200/JCO.22.01221)
+[45] Whiting PF, Wolff RF, Deshpande S, et al. "Cannabinoids for Medical Use: A Systematic Review and Meta-analysis." *JAMA*. 2015;313(24):2456-73. doi: [10.1001/jama.2015.6358](https://doi.org/10.1001/jama.2015.6358). PMID: [26103030](https://pubmed.ncbi.nlm.nih.gov/26103030/)
 
-[41] Capano A, et al. "Evaluation of the effects of CBD hemp extract on opioid use and quality of life indicators in chronic pain patients." *Postgrad Med*. 2019;132(1):56-61. doi: [10.1080/00325481.2019.1685298](https://doi.org/10.1080/00325481.2019.1685298)
+[46] Heineman JT, Forster GL, Stephens KL, et al. "A Randomized Controlled Trial of Topical Cannabidiol for the Treatment of Thumb Basal Joint Arthritis." *J Hand Surg Am*. 2022;47(7):611-620. doi: [10.1016/j.jhsa.2022.03.002](https://doi.org/10.1016/j.jhsa.2022.03.002). PMID: [35637038](https://pubmed.ncbi.nlm.nih.gov/35637038/)
 
-[42] De Vita MJ, et al. "Association of Cannabinoid Administration With Experimental Pain in Healthy Adults: A Systematic Review and Meta-analysis." *JAMA Psychiatry*. 2018;75(11):1118-1127. doi: [10.1001/jamapsychiatry.2018.2503](https://doi.org/10.1001/jamapsychiatry.2018.2503)
+[47] Nitecka-Buchta A, Nowak-Wachol A, Wachol K, et al. "Myorelaxant Effect of Transdermal Cannabidiol Application in Patients with TMD: A Randomized, Double-Blind Trial." *J Clin Med*. 2019;8(11):1886. doi: [10.3390/jcm8111886](https://doi.org/10.3390/jcm8111886). PMID: [31698733](https://pubmed.ncbi.nlm.nih.gov/31698733/)
 
-[43] De Vita MJ, et al. "The Effects of Cannabidiol and Analgesic Expectancies on Experimental Pain Reactivity in Healthy Adults." *Exp Clin Psychopharmacol*. 2021;30(6):833-844. doi: [10.1037/pha0000465](https://doi.org/10.1037/pha0000465)
+[48] Walczyńska-Dragon K, Kurek-Górecka A, Niemczyk W, et al. "Cannabidiol Intervention for Muscular Tension, Pain, and Sleep Bruxism Intensity-A Randomized, Double-Blind Clinical Trial." *J Clin Med*. 2024;13(5):1417. doi: [10.3390/jcm13051417](https://doi.org/10.3390/jcm13051417). PMID: [38592260](https://pubmed.ncbi.nlm.nih.gov/38592260/)
 
-[44] Stockings E, et al. "Cannabis and cannabinoids for the treatment of people with chronic noncancer pain conditions." *Pain*. 2018;159(10):1932-1954. doi: [10.1097/j.pain.0000000000001293](https://doi.org/10.1097/j.pain.0000000000001293)
+[49] Xu DH, Cullen BD, Tang M, et al. "The Effectiveness of Topical Cannabidiol Oil in Symptomatic Relief of Peripheral Neuropathy of the Lower Extremities." *Curr Pharm Biotechnol*. 2020;21(5):390-402. doi: [10.2174/1389201020666191202111534](https://doi.org/10.2174/1389201020666191202111534). PMID: [31793418](https://pubmed.ncbi.nlm.nih.gov/31793418/)
 
-[45] Whiting PF, et al. "Cannabinoids for Medical Use: A Systematic Review and Meta-analysis." *JAMA*. 2015;313(24):2456-2473. doi: [10.1001/jama.2015.6358](https://doi.org/10.1001/jama.2015.6358)
+[50] Haffar A, Khan IA, Abdelaal MS, et al. "Topical Cannabidiol (CBD) After Total Knee Arthroplasty Does Not Decrease Pain or Opioid Use: A Prospective Randomized Double-Blinded Placebo-Controlled Trial." *J Arthroplasty*. 2022;37(9):1763-1770. doi: [10.1016/j.arth.2022.03.081](https://doi.org/10.1016/j.arth.2022.03.081). PMID: [35390457](https://pubmed.ncbi.nlm.nih.gov/35390457/)
 
-[46] Heineman JT, et al. "A Randomized Controlled Trial of Topical Cannabidiol for the Treatment of Thumb Basal Joint Arthritis." *J Hand Surg Am*. 2022;47(7):611-620. doi: [10.1016/j.jhsa.2022.03.002](https://doi.org/10.1016/j.jhsa.2022.03.002)
+[53] Crippa JAS, Hallak JEC, Zuardi AW, et al. "Is cannabidiol the ideal drug to treat non-motor Parkinson's disease symptoms?." *Eur Arch Psychiatry Clin Neurosci*. 2019;269(1):121-133. doi: [10.1007/s00406-019-00982-6](https://doi.org/10.1007/s00406-019-00982-6). PMID: [30706171](https://pubmed.ncbi.nlm.nih.gov/30706171/)
 
-[47] Nitecka-Buchta A, et al. "Myorelaxant Effect of Transdermal Cannabidiol Application in Patients with TMD." *J Clin Med*. 2019;8(11):1886. doi: [10.3390/jcm8111886](https://doi.org/10.3390/jcm8111886)
+[54] Chagas MH, Zuardi AW, Tumas V, et al. "Effects of cannabidiol in the treatment of patients with Parkinson's disease: an exploratory double-blind trial." *J Psychopharmacol*. 2014;28(11):1088-98. doi: [10.1177/0269881114550355](https://doi.org/10.1177/0269881114550355). PMID: [25237116](https://pubmed.ncbi.nlm.nih.gov/25237116/)
 
-[48] Walczynska-Dragon K, et al. "Efficacy of intraoral cannabidiol gel in the management of temporomandibular disorder pain." *J Clin Med*. 2024. doi: [10.3390/jcm13061588](https://doi.org/10.3390/jcm13061588)
+[55] Chagas MH, Eckeli AL, Zuardi AW, et al. "Cannabidiol can improve complex sleep-related behaviours associated with rapid eye movement sleep behaviour disorder in Parkinson's disease patients: a case series." *J Clin Pharm Ther*. 2014;39(5):564-6. doi: [10.1111/jcpt.12179](https://doi.org/10.1111/jcpt.12179). PMID: [24845114](https://pubmed.ncbi.nlm.nih.gov/24845114/)
 
-[49] Xu DH, et al. "The Effectiveness of Topical Cannabidiol Oil in Symptomatic Relief of Peripheral Neuropathy of the Lower Extremities." *Curr Pharm Biotechnol*. 2019;21(5):390-402. doi: [10.2174/1389201020666191202111534](https://doi.org/10.2174/1389201020666191202111534)
+[56] Zuardi AW, Crippa JA, Hallak JE, et al. "Cannabidiol for the treatment of psychosis in Parkinson's disease." *J Psychopharmacol*. 2009;23(8):979-83. doi: [10.1177/0269881108096519](https://doi.org/10.1177/0269881108096519). PMID: [18801821](https://pubmed.ncbi.nlm.nih.gov/18801821/)
 
-[50] Haffar A, et al. "Topical Cannabidiol (CBD) After Total Knee Arthroplasty Does Not Decrease Pain or Opioid Use." *J Arthroplasty*. 2022;37(6S):S852-S856. doi: [10.1016/j.arth.2022.01.073](https://doi.org/10.1016/j.arth.2022.01.073)
+[57] Consroe P, Sandyk R, Snider SR. "Open label evaluation of cannabidiol in dystonic movement disorders." *Int J Neurosci*. 1986;30(4):277-82. doi: [10.3109/00207458608985678](https://doi.org/10.3109/00207458608985678). PMID: [3793381](https://pubmed.ncbi.nlm.nih.gov/3793381/)
 
-[51] Garcia FJ, et al. "Topical CBD cream does not reduce delayed onset muscle soreness." *Int J Exerc Sci*. 2019;12(S2):Abstract.
+[58] Santos de Alencar S, Crippa JAS, Brito MCM, et al. "A single oral dose of cannabidiol did not reduce upper limb tremor in patients with essential tremor." *Parkinsonism Relat Disord*. 2021;83:37-40. doi: [10.1016/j.parkreldis.2021.01.001](https://doi.org/10.1016/j.parkreldis.2021.01.001). PMID: [33465546](https://pubmed.ncbi.nlm.nih.gov/33465546/)
 
-[52] Hunter DJ, et al. "Synthetic transdermal cannabidiol for the treatment of knee pain due to osteoarthritis." *Osteoarthritis Cartilage*. 2018;26(Suppl 1):S26. doi: [10.1016/j.joca.2018.02.067](https://doi.org/10.1016/j.joca.2018.02.067)
+[59] McGuire P, Robson P, Cubala WJ, et al. "Cannabidiol (CBD) as an Adjunctive Therapy in Schizophrenia: A Multicenter Randomized Controlled Trial." *Am J Psychiatry*. 2018;175(3):225-231. doi: [10.1176/appi.ajp.2017.17030325](https://doi.org/10.1176/appi.ajp.2017.17030325). PMID: [29241357](https://pubmed.ncbi.nlm.nih.gov/29241357/)
 
-[53] Crippa JA, et al. "Is cannabidiol the ideal drug to treat non-motor Parkinson's disease symptoms?" *Eur Arch Psychiatry Clin Neurosci*. 2019;269(1):121-133. doi: [10.1007/s00406-019-00982-6](https://doi.org/10.1007/s00406-019-00982-6)
+[60] Boggs DL, Surti T, Gupta A, et al. "The effects of cannabidiol (CBD) on cognition and symptoms in outpatients with chronic schizophrenia a randomized placebo controlled trial." *Psychopharmacology (Berl)*. 2018;235(7):1923-1932. doi: [10.1007/s00213-018-4885-9](https://doi.org/10.1007/s00213-018-4885-9). PMID: [29619533](https://pubmed.ncbi.nlm.nih.gov/29619533/)
 
-[54] Chagas MH, et al. "Effects of cannabidiol in the treatment of patients with Parkinson's disease: an exploratory double-blind trial." *J Psychopharmacol*. 2014;28(11):1088-1098. doi: [10.1177/0269881114550355](https://doi.org/10.1177/0269881114550355)
+[61] Bhattacharyya S, Wilson R, Appiah-Kusi E, et al. "Effect of Cannabidiol on Medial Temporal, Midbrain, and Striatal Dysfunction in People at Clinical High Risk of Psychosis: A Randomized Clinical Trial." *JAMA Psychiatry*. 2018;75(11):1107-1117. doi: [10.1001/jamapsychiatry.2018.2309](https://doi.org/10.1001/jamapsychiatry.2018.2309). PMID: [30167644](https://pubmed.ncbi.nlm.nih.gov/30167644/)
 
-[55] Chagas MH, et al. "Cannabidiol can improve complex sleep-related behaviours associated with rapid eye movement sleep behaviour disorder in Parkinson's disease patients: a case series." *J Clin Pharm Ther*. 2014;39(5):564-566. doi: [10.1111/jcpt.12179](https://doi.org/10.1111/jcpt.12179)
+[62] Rohleder C, Müller JK, Lange B, et al. "Cannabidiol as a Potential New Type of an Antipsychotic. A Critical Review of the Evidence." *Front Pharmacol*. 2016;7:422. doi: [10.3389/fphar.2016.00422](https://doi.org/10.3389/fphar.2016.00422). PMID: [27877130](https://pubmed.ncbi.nlm.nih.gov/27877130/)
 
-[56] Zuardi AW, et al. "Cannabidiol for the treatment of psychosis in Parkinson's disease." *J Psychopharmacol*. 2009;23(8):979-983. doi: [10.1177/0269881108096519](https://doi.org/10.1177/0269881108096519)
+[63] Hurd YL, Spriggs S, Alishayev J, et al. "Cannabidiol for the Reduction of Cue-Induced Craving and Anxiety in Drug-Abstinent Individuals With Heroin Use Disorder: A Double-Blind Randomized Placebo-Controlled Trial." *Am J Psychiatry*. 2019;176(11):911-922. doi: [10.1176/appi.ajp.2019.18101191](https://doi.org/10.1176/appi.ajp.2019.18101191). PMID: [31109198](https://pubmed.ncbi.nlm.nih.gov/31109198/)
 
-[57] Consroe P, et al. "Open label evaluation of cannabidiol in dystonic movement disorders." *Int J Neurosci*. 1986;30(4):277-282. doi: [10.3109/00207458608985678](https://doi.org/10.3109/00207458608985678)
+[64] Freeman TP, Hindocha C, Baio G, et al. "Cannabidiol for the treatment of cannabis use disorder: a phase 2a, double-blind, placebo-controlled, randomised, adaptive Bayesian trial." *Lancet Psychiatry*. 2020;7(10):865-874. doi: [10.1016/S2215-0366(20)30290-X](https://doi.org/10.1016/S2215-0366(20)30290-X). PMID: [32735782](https://pubmed.ncbi.nlm.nih.gov/32735782/)
 
-[58] Santos de Alencar S, et al. "Acute effects of cannabidiol on essential tremor: a pilot study." *Parkinsonism Relat Disord*. 2021;86:27-29. doi: [10.1016/j.parkreldis.2021.03.014](https://doi.org/10.1016/j.parkreldis.2021.03.014)
+[65] Laczkovics C, Kothgassner OD, Felnhofer A, et al. "Cannabidiol treatment in an adolescent with multiple substance abuse, social anxiety and depression." *Neuropsychiatr*. 2021;35(1):31-34. doi: [10.1007/s40211-020-00334-0](https://doi.org/10.1007/s40211-020-00334-0). PMID: [32052321](https://pubmed.ncbi.nlm.nih.gov/32052321/)
 
-[59] McGuire P, et al. "Cannabidiol (CBD) as an Adjunctive Therapy in Schizophrenia: A Multicenter Randomized Controlled Trial." *Am J Psychiatry*. 2018;175(3):225-231. doi: [10.1176/appi.ajp.2017.17030325](https://doi.org/10.1176/appi.ajp.2017.17030325)
+[66] Zheng T, BouSaba J, Taylor A, et al. "A Randomized, Controlled Trial of Efficacy and Safety of Cannabidiol in Idiopathic and Diabetic Gastroparesis." *Clin Gastroenterol Hepatol*. 2023;21(13):3405-3414.e4. doi: [10.1016/j.cgh.2023.07.008](https://doi.org/10.1016/j.cgh.2023.07.008). PMID: [37482172](https://pubmed.ncbi.nlm.nih.gov/37482172/)
 
-[60] Boggs DL, et al. "The effects of cannabidiol (CBD) on cognition and symptoms in outpatients with chronic schizophrenia." *Psychopharmacology (Berl)*. 2018;235(7):1923-1932. doi: [10.1007/s00213-018-4885-9](https://doi.org/10.1007/s00213-018-4885-9)
+[67] Torres-Moreno MC, Papaseit E, Torrens M, et al. "Assessment of Efficacy and Tolerability of Medicinal Cannabinoids in Patients With Multiple Sclerosis: A Systematic Review and Meta-analysis." *JAMA Netw Open*. 2018;1(6):e183485. doi: [10.1001/jamanetworkopen.2018.3485](https://doi.org/10.1001/jamanetworkopen.2018.3485). PMID: [30646241](https://pubmed.ncbi.nlm.nih.gov/30646241/)
 
-[61] Bhattacharyya S, et al. "Effect of Cannabidiol on Medial Temporal, Midbrain, and Striatal Dysfunction in People at Clinical High Risk of Psychosis." *JAMA Psychiatry*. 2018;75(11):1107-1117. doi: [10.1001/jamapsychiatry.2018.2309](https://doi.org/10.1001/jamapsychiatry.2018.2309)
+[68] Wade DT, Collin C, Stott C, et al. "Meta-analysis of the efficacy and safety of Sativex (nabiximols), on spasticity in people with multiple sclerosis." *Mult Scler*. 2010;16(6):707-14. doi: [10.1177/1352458510367462](https://doi.org/10.1177/1352458510367462). PMID: [20558502](https://pubmed.ncbi.nlm.nih.gov/20558502/)
 
-[62] Rohleder C, et al. "Cannabidiol as a Potential New Type of an Antipsychotic." *Front Pharmacol*. 2016;7:422. doi: [10.3389/fphar.2016.00422](https://doi.org/10.3389/fphar.2016.00422)
+[69] Yadav V, Bever C, Bowen J, et al. "Summary of evidence-based guideline: complementary and alternative medicine in multiple sclerosis: report of the guideline development subcommittee of the American Academy of Neurology." *Neurology*. 2014;82(12):1083-92. doi: [10.1212/WNL.0000000000000250](https://doi.org/10.1212/WNL.0000000000000250). PMID: [24663230](https://pubmed.ncbi.nlm.nih.gov/24663230/)
 
-[63] Hurd YL, et al. "Cannabidiol for the Reduction of Cue-Induced Craving and Anxiety in Drug-Abstinent Individuals With Heroin Use Disorder." *Am J Psychiatry*. 2019;176(11):911-922. doi: [10.1176/appi.ajp.2019.18101191](https://doi.org/10.1176/appi.ajp.2019.18101191)
+[70] Smith LA, Azariah F, Lavender VT, et al. "Cannabinoids for nausea and vomiting in adults with cancer receiving chemotherapy." *Cochrane Database Syst Rev*. 2015;2015(11):CD009464. doi: [10.1002/14651858.CD009464.pub2](https://doi.org/10.1002/14651858.CD009464.pub2). PMID: [26561338](https://pubmed.ncbi.nlm.nih.gov/26561338/)
 
-[64] Freeman TP, et al. "Cannabidiol for the treatment of cannabis use disorder: a phase 2a, double-blind, placebo-controlled, randomised, adaptive Bayesian trial." *Lancet Psychiatry*. 2020;7(10):865-874. doi: [10.1016/S2215-0366(20)30290-X](https://doi.org/10.1016/S2215-0366(20)30290-X)
+[71] Roongpisuthipong W, Klangjareonchai T, Kurathong S, et al. "Efficacy and safety of cannabidiol oil in psoriasis: a randomized, double-blind, placebo-controlled trial." *J Dermatolog Treat*. 2026;37(1):2604448. doi: [10.1080/09546634.2025.2604448](https://doi.org/10.1080/09546634.2025.2604448). PMID: [41459647](https://pubmed.ncbi.nlm.nih.gov/41459647/)
 
-[65] Laczkovics C, et al. "Cannabidiol treatment in an adolescent with multiple substance abuse, social anxiety and depression." *Neuropsychiatr*. 2020;35(1):31-34. doi: [10.1007/s40211-020-00334-0](https://doi.org/10.1007/s40211-020-00334-0)
+[72] Smith GL, Satino J. "Hair Regrowth with Cannabidiol (CBD)-rich Hemp Extract - A Case Series." *Cannabis*. 2021;4(1):53-59. doi: [10.26828/cannabis/2021.01.003](https://doi.org/10.26828/cannabis/2021.01.003). PMID: [37287996](https://pubmed.ncbi.nlm.nih.gov/37287996/)
 
-[66] Zheng T, et al. "Cannabidiol Improves Digestive Symptoms in Patients With Gastroparesis in a Randomized, Controlled Pilot Trial." *Clin Gastroenterol Hepatol*. 2023;21(6):1668-1670.e1. doi: [10.1016/j.cgh.2022.06.006](https://doi.org/10.1016/j.cgh.2022.06.006)
+[73] Sulé-Suso J, Watson NA, van Pittius DG, et al. "Striking lung cancer response to self-administration of cannabidiol: A case report and literature review." *SAGE Open Med Case Rep*. 2019;7:2050313X19832160. doi: [10.1177/2050313X19832160](https://doi.org/10.1177/2050313X19832160). PMID: [30815264](https://pubmed.ncbi.nlm.nih.gov/30815264/)
 
-[67] Torres-Moreno MC, et al. "Assessment of Efficacy and Tolerability of Medicinal Cannabinoids in Patients With Multiple Sclerosis." *JAMA Netw Open*. 2018;1(6):e183485. doi: [10.1001/jamanetworkopen.2018.3485](https://doi.org/10.1001/jamanetworkopen.2018.3485)
+[74] Nguyen LC, Yang D, Nicolaescu V, et al. "Cannabidiol inhibits SARS-CoV-2 replication through induction of the host ER stress and innate immune responses." *Sci Adv*. 2022;8(8):eabi6110. doi: [10.1126/sciadv.abi6110](https://doi.org/10.1126/sciadv.abi6110). PMID: [35050692](https://pubmed.ncbi.nlm.nih.gov/35050692/)
 
-[68] Wade DT, et al. "Meta-analysis of the efficacy and safety of Sativex (nabiximols), on spasticity in people with multiple sclerosis." *Mult Scler*. 2010;16(6):707-714. doi: [10.1177/1352458510367462](https://doi.org/10.1177/1352458510367462)
+[75] Nichols JM, Kaplan BLF. "Immune Responses Regulated by Cannabidiol." *Cannabis Cannabinoid Res*. 2020;5(1):12-31. doi: [10.1089/can.2018.0073](https://doi.org/10.1089/can.2018.0073). PMID: [32322673](https://pubmed.ncbi.nlm.nih.gov/32322673/)
 
-[69] Yadav V, et al. "Summary of evidence-based guideline: complementary and alternative medicine in multiple sclerosis." *Neurology*. 2014;82(12):1083-1092. doi: [10.1212/WNL.0000000000000250](https://doi.org/10.1212/WNL.0000000000000250)
+[76] Barichello T, Ceretta RA, Generoso JS, et al. "Cannabidiol reduces host immune response and prevents cognitive impairments in Wistar rats submitted to pneumococcal meningitis." *Eur J Pharmacol*. 2012;697(1-3):158-64. doi: [10.1016/j.ejphar.2012.09.053](https://doi.org/10.1016/j.ejphar.2012.09.053). PMID: [23085269](https://pubmed.ncbi.nlm.nih.gov/23085269/)
 
-[70] Smith LA, et al. "Cannabinoids for nausea and vomiting in adults with cancer receiving chemotherapy." *Cochrane Database Syst Rev*. 2015;(11):CD009464. doi: [10.1002/14651858.CD009464.pub2](https://doi.org/10.1002/14651858.CD009464.pub2)
+[77] Tomida I, Azuara-Blanco A, House H, et al. "Effect of sublingual application of cannabinoids on intraocular pressure: a pilot study." *J Glaucoma*. 2006;15(5):349-53. doi: [10.1097/01.ijg.0000212260.04488.60](https://doi.org/10.1097/01.ijg.0000212260.04488.60). PMID: [16988594](https://pubmed.ncbi.nlm.nih.gov/16988594/)
 
-[71] Roongpisuthipong W, et al. "Cannabidiol for the treatment of plaque psoriasis." *J Dermatolog Treat*. 2025. doi: [10.1080/09546634.2024.2389205](https://doi.org/10.1080/09546634.2024.2389205)
+[78] Nielsen S, Sabioni P, Trigo JM, et al. "Opioid-Sparing Effect of Cannabinoids: A Systematic Review and Meta-Analysis." *Neuropsychopharmacology*. 2017;42(9):1752-1765. doi: [10.1038/npp.2017.51](https://doi.org/10.1038/npp.2017.51). PMID: [28327548](https://pubmed.ncbi.nlm.nih.gov/28327548/)
 
-[72] Smith GL, et al. "A Case Series on the Topical Use of a Hemp-Derived CBD Compound for Androgenetic Alopecia." *Cannabis*. 2021. doi: [10.26828/cannabis/2021.02.004](https://doi.org/10.26828/cannabis/2021.02.004)
+[79] Shover CL, Davis CS, Gordon SC, et al. "Association between medical cannabis laws and opioid overdose mortality has reversed over time." *Proc Natl Acad Sci U S A*. 2019;116(26):12624-12626. doi: [10.1073/pnas.1903434116](https://doi.org/10.1073/pnas.1903434116). PMID: [31182592](https://pubmed.ncbi.nlm.nih.gov/31182592/)
 
-[73] Sule-Suso J, et al. "Striking lung cancer response to self-administration of cannabidiol: A case report and literature review." *SAGE Open Med Case Rep*. 2019;7:2050313X19832160. doi: [10.1177/2050313X19832160](https://doi.org/10.1177/2050313X19832160)
+[80] Segura LE, Mauro CM, Levy NS, et al. "Association of US Medical Marijuana Laws With Nonmedical Prescription Opioid Use and Prescription Opioid Use Disorder." *JAMA Netw Open*. 2019;2(7):e197216. doi: [10.1001/jamanetworkopen.2019.7216](https://doi.org/10.1001/jamanetworkopen.2019.7216). PMID: [31314118](https://pubmed.ncbi.nlm.nih.gov/31314118/)
 
-[74] Nguyen LC, et al. "Cannabidiol inhibits SARS-CoV-2 replication through induction of the host ER stress and innate immune responses." *Sci Adv*. 2022;8(8):eabi6110. doi: [10.1126/sciadv.abi6110](https://doi.org/10.1126/sciadv.abi6110)
+[81] Schmitz SM, Lopez HL, Marinotti O. "Post Marketing Safety of Plus CBD™ Products, a Full Spectrum Hemp Extract: A 2-Year Experience." *J Diet Suppl*. 2020;17(5):587-598. doi: [10.1080/19390211.2020.1767255](https://doi.org/10.1080/19390211.2020.1767255). PMID: [32449632](https://pubmed.ncbi.nlm.nih.gov/32449632/)
 
-[75] Nichols JM, Kaplan BL. "Immune Responses Regulated by Cannabidiol." *Cannabis Cannabinoid Res*. 2020;5(1):12-31. doi: [10.1089/can.2018.0073](https://doi.org/10.1089/can.2018.0073)
+[82] Brown JD, Winterstein AG. "Potential Adverse Drug Events and Drug-Drug Interactions with Medical and Consumer Cannabidiol (CBD) Use." *J Clin Med*. 2019;8(7):989. doi: [10.3390/jcm8070989](https://doi.org/10.3390/jcm8070989). PMID: [31288397](https://pubmed.ncbi.nlm.nih.gov/31288397/)
 
-[76] Barichello T, et al. "Cannabidiol reduces host immune response and prevents cognitive impairments in Wistar rats submitted to pneumococcal meningitis." *Eur J Pharmacol*. 2012;697(1-3):158-164. doi: [10.1016/j.ejphar.2012.09.053](https://doi.org/10.1016/j.ejphar.2012.09.053)
+[83] Sands TT, Rahdari S, Oldham MS, et al. "Long-Term Safety, Tolerability, and Efficacy of Cannabidiol in Children with Refractory Epilepsy: Results from an Expanded Access Program in the US." *CNS Drugs*. 2019;33(1):47-60. doi: [10.1007/s40263-018-0589-2](https://doi.org/10.1007/s40263-018-0589-2). PMID: [30460546](https://pubmed.ncbi.nlm.nih.gov/30460546/)
 
-[77] Tomida I, et al. "Effect of sublingual application of cannabinoids on intraocular pressure: a pilot study." *J Glaucoma*. 2006;15(5):349-353. doi: [10.1097/01.ijg.0000212260.04488.60](https://doi.org/10.1097/01.ijg.0000212260.04488.60)
+[84] Jadoon KA, Tan GD, O'Sullivan SE. "A single dose of cannabidiol reduces blood pressure in healthy volunteers in a randomized crossover study." *JCI Insight*. 2017;2(12):e93760. doi: [10.1172/jci.insight.93760](https://doi.org/10.1172/jci.insight.93760). PMID: [28614793](https://pubmed.ncbi.nlm.nih.gov/28614793/)
 
-[78] Nielsen S, et al. "Opioid-Sparing Effect of Cannabinoids: A Systematic Review and Meta-Analysis." *Neuropsychopharmacology*. 2017;42(9):1752-1765. doi: [10.1038/npp.2017.51](https://doi.org/10.1038/npp.2017.51)
+[85] Laborde-Casterot H, Larabi IA, Dufayet L, et al. "Does cannabidiol induce cannabinoid hyperemesis syndrome?." *Clin Toxicol (Phila)*. 2020;58(12):1351-1352. doi: [10.1080/15563650.2020.1736298](https://doi.org/10.1080/15563650.2020.1736298). PMID: [32163300](https://pubmed.ncbi.nlm.nih.gov/32163300/)
 
-[79] Shover CL, et al. "Association between medical cannabis laws and opioid overdose mortality has reversed over time." *Proc Natl Acad Sci U S A*. 2019;116(26):12624-12626. doi: [10.1073/pnas.1903434116](https://doi.org/10.1073/pnas.1903434116)
+[86] Katz DT, Fifi A, Milesi-Halle A, et al. "A Rare Case of Cannabinoid Hyperemesis Syndrome Secondary to Cannabidiol for Refractory Epilepsy." *JPGN Rep*. 2023;4(1):e280. doi: [10.1097/PG9.0000000000000280](https://doi.org/10.1097/PG9.0000000000000280). PMID: [37181918](https://pubmed.ncbi.nlm.nih.gov/37181918/)
 
-[80] Segura LE, et al. "Association of US Medical Marijuana Laws With Nonmedical Prescription Opioid Use and Prescription Opioid Use Disorder." *JAMA Netw Open*. 2019;2(7):e197216. doi: [10.1001/jamanetworkopen.2019.7216](https://doi.org/10.1001/jamanetworkopen.2019.7216)
+[87] Lefebvre E, Simons L, Duval M, et al. "Cannabinoid Hyperemesis Syndrome Presumed Secondary to CBD Use: A Case Report." *J Addict Med*. 2025;19(1):115-117. doi: [10.1097/ADM.0000000000001378](https://doi.org/10.1097/ADM.0000000000001378). PMID: [39221821](https://pubmed.ncbi.nlm.nih.gov/39221821/)
 
-[81] Schmitz N, et al. "Post-Market Safety Surveillance of a Full Spectrum Hemp-Derived Cannabidiol (CBD) Dietary Supplement." *J Diet Suppl*. 2020. doi: [10.1080/19390211.2020.1842116](https://doi.org/10.1080/19390211.2020.1842116)
+[90] Pettit C, Massick S, Bechtel M. "Cannabidiol-Induced Acute Generalized Exanthematous Pustulosis." *Dermatitis*. 2018;29(6):345-346. doi: [10.1097/DER.0000000000000422](https://doi.org/10.1097/DER.0000000000000422). PMID: [30422887](https://pubmed.ncbi.nlm.nih.gov/30422887/)
 
-[82] Brown JD, Winterstein AG. "Potential Adverse Drug Events and Drug-Drug Interactions with Medical and Consumer Cannabidiol (CBD) Use." *J Clin Med*. 2019;8(7):989. doi: [10.3390/jcm8070989](https://doi.org/10.3390/jcm8070989)
+[91] Gustafson RA, Levine B, Stout PR, et al. "Urinary cannabinoid detection times after controlled oral administration of delta9-tetrahydrocannabinol to humans." *Clin Chem*. 2003;49(7):1114-24. doi: [10.1373/49.7.1114](https://doi.org/10.1373/49.7.1114). PMID: [12816908](https://pubmed.ncbi.nlm.nih.gov/12816908/)
 
-[83] Sands TT, et al. "Long-Term Safety, Tolerability, and Efficacy of Cannabidiol in Children with Refractory Epilepsy." *CNS Drugs*. 2019;33(6):593-604. doi: [10.1007/s40263-019-00624-4](https://doi.org/10.1007/s40263-019-00624-4)
+[92] Leson G, Pless P, Grotenhermen F, et al. "Evaluating the impact of hemp food consumption on workplace drug tests." *J Anal Toxicol*. 2001;25(8):691-8. doi: [10.1093/jat/25.8.691](https://doi.org/10.1093/jat/25.8.691). PMID: [11765026](https://pubmed.ncbi.nlm.nih.gov/11765026/)
 
-[84] Jadoon KA, et al. "A single dose of cannabidiol reduces blood pressure variability and resting blood pressure." *JCI Insight*. 2017;2(11):e93760. doi: [10.1172/jci.insight.93760](https://doi.org/10.1172/jci.insight.93760)
+[94] Rianprakaisang T, Gerona R, Hendrickson RG. "Commercial cannabidiol oil contaminated with the synthetic cannabinoid AB-FUBINACA given to a pediatric patient." *Clin Toxicol (Phila)*. 2020;58(3):215-216. doi: [10.1080/15563650.2019.1619758](https://doi.org/10.1080/15563650.2019.1619758). PMID: [31126197](https://pubmed.ncbi.nlm.nih.gov/31126197/)
 
-[85] Laborde-Casterot H, et al. "A case of cannabinoid hyperemesis syndrome triggered by cannabidiol." *Clin Toxicol (Phila)*. 2020. doi: [10.1080/15563650.2020.1767208](https://doi.org/10.1080/15563650.2020.1767208)
+[95] Gamble LJ, Boesch JM, Frye CW, et al. "Pharmacokinetics, Safety, and Clinical Efficacy of Cannabidiol Treatment in Osteoarthritic Dogs." *Front Vet Sci*. 2018;5:165. doi: [10.3389/fvets.2018.00165](https://doi.org/10.3389/fvets.2018.00165). PMID: [30083539](https://pubmed.ncbi.nlm.nih.gov/30083539/)
 
-[86] Katz A, et al. "Cannabinoid hyperemesis syndrome in a pediatric patient with epilepsy receiving cannabidiol." *JPGN Rep*. 2023. doi: [10.1097/PG9.0000000000000295](https://doi.org/10.1097/PG9.0000000000000295)
+[96] Deabold KA, Schwark WS, Wolf L, et al. "Single-Dose Pharmacokinetics and Preliminary Safety Assessment with Use of CBD-Rich Hemp Nutraceutical in Healthy Dogs and Cats." *Animals (Basel)*. 2019;9(10):832. doi: [10.3390/ani9100832](https://doi.org/10.3390/ani9100832). PMID: [31635105](https://pubmed.ncbi.nlm.nih.gov/31635105/)
 
-[87] Lefebvre M, et al. "Cannabinoid hyperemesis syndrome associated with daily CBD cigarette use." *J Addict Med*. 2024. doi: [10.1097/ADM.0000000000001255](https://doi.org/10.1097/ADM.0000000000001255)
+[98] Iffland K, Grotenhermen F. "An Update on Safety and Side Effects of Cannabidiol: A Review of Clinical Data and Relevant Animal Studies." *Cannabis Cannabinoid Res*. 2017;2(1):139-154. doi: [10.1089/can.2016.0034](https://doi.org/10.1089/can.2016.0034). PMID: [28861514](https://pubmed.ncbi.nlm.nih.gov/28861514/)
 
-[88] Prestifilippo JP, et al. "Inhibition of salivary secretion by activation of cannabinoid receptors." *Exp Biol Med*. 2006;231(8):1421-1428. doi: [10.1177/153537020623100816](https://doi.org/10.1177/153537020623100816)
+[99] Klotz KA, Hirsch M, Heers M, et al. "Effects of cannabidiol on brivaracetam plasma levels." *Epilepsia*. 2019;60(7):e74-e77. doi: [10.1111/epi.16071](https://doi.org/10.1111/epi.16071). PMID: [31211851](https://pubmed.ncbi.nlm.nih.gov/31211851/)
 
-[89] Pertwee RG. "The diverse CB1 and CB2 receptor pharmacology of three plant cannabinoids." *Br J Pharmacol*. 2008;153(2):199-215. doi: [10.1038/sj.bjp.0707442](https://doi.org/10.1038/sj.bjp.0707442)
+[100] Grayson L, Vines B, Nichol K, et al. "An interaction between warfarin and cannabidiol, a case report." *Epilepsy Behav Case Rep*. 2018;9:10-11. doi: [10.1016/j.ebcr.2017.10.001](https://doi.org/10.1016/j.ebcr.2017.10.001). PMID: [29387536](https://pubmed.ncbi.nlm.nih.gov/29387536/)
 
-[90] Pettit DA. "Pustular drug eruption following CBD oil use." *Dermatitis*. 2018. doi: [10.1097/DER.0000000000000397](https://doi.org/10.1097/DER.0000000000000397)
+[101] Cortopassi J. "Warfarin dose adjustment required after cannabidiol initiation and titration." *Am J Health Syst Pharm*. 2020;77(22):1846-1851. doi: [10.1093/ajhp/zxaa268](https://doi.org/10.1093/ajhp/zxaa268). PMID: [33016308](https://pubmed.ncbi.nlm.nih.gov/33016308/)
 
-[91] Gustafson RA, et al. "Urinary cannabinoid detection times after controlled oral administration of delta-9-tetrahydrocannabinol to humans." *Clin Chem*. 2003;49(7):1114-1124. doi: [10.1373/49.7.1114](https://doi.org/10.1373/49.7.1114)
+[102] Thai C, Tayo B, Critchley D. "A Phase 1 Open-Label, Fixed-Sequence Pharmacokinetic Drug Interaction Trial to Investigate the Effect of Cannabidiol on the CYP1A2 Probe Caffeine in Healthy Subjects." *Clin Pharmacol Drug Dev*. 2021;10(11):1279-1289. doi: [10.1002/cpdd.950](https://doi.org/10.1002/cpdd.950). PMID: [33951339](https://pubmed.ncbi.nlm.nih.gov/33951339/)
 
-[92] Leson G, et al. "Evaluating the impact of hemp food consumption on workplace drug tests." *J Anal Toxicol*. 2001;25(8):691-698. doi: [10.1093/jat/25.8.691](https://doi.org/10.1093/jat/25.8.691)
+[103] Zamarripa CA, Spindle TR, Surujunarain R, et al. "Assessment of Orally Administered Δ9-Tetrahydrocannabinol When Coadministered With Cannabidiol on Δ9-Tetrahydrocannabinol Pharmacokinetics and Pharmacodynamics in Healthy Adults: A Randomized Clinical Trial." *JAMA Netw Open*. 2023;6(2):e2254752. doi: [10.1001/jamanetworkopen.2022.54752](https://doi.org/10.1001/jamanetworkopen.2022.54752). PMID: [36780161](https://pubmed.ncbi.nlm.nih.gov/36780161/)
 
-[93] Dahlgren MK, et al. "Clinical and Cognitive Improvement Following Full-Spectrum, High-Cannabidiol Treatment for Anxiety." *JAMA Psychiatry*. 2021;79(5):439-447. doi: [10.1001/jamapsychiatry.2022.0030](https://doi.org/10.1001/jamapsychiatry.2022.0030)
+[104] Cáceres Guido P, Riva N, Caraballo R, et al. "Pharmacokinetics of cannabidiol in children with refractory epileptic encephalopathy." *Epilepsia*. 2021;62(1):e7-e12. doi: [10.1111/epi.16781](https://doi.org/10.1111/epi.16781). PMID: [33280111](https://pubmed.ncbi.nlm.nih.gov/33280111/)
 
-[94] Rianprakaisang T, et al. "Commercial CBD oil contaminated with the synthetic cannabinoid AB-FUBINACA given to a pediatric patient." *Clin Toxicol*. 2019;58(3):215-216. doi: [10.1080/15563650.2019.1619758](https://doi.org/10.1080/15563650.2019.1619758)
+[105] Kocis PT, Vrana KE. "Delta-9-Tetrahydrocannabinol and Cannabidiol Drug-Drug Interactions." *Med Cannabis Cannabinoids*. 2020;3(1):61-73. doi: [10.1159/000507998](https://doi.org/10.1159/000507998). PMID: [34676340](https://pubmed.ncbi.nlm.nih.gov/34676340/)
 
-[95] Gamble LJ, et al. "Pharmacokinetics, Safety, and Clinical Efficacy of Cannabidiol Treatment in Osteoarthritic Dogs." *Front Vet Sci*. 2018;5:165. doi: [10.3389/fvets.2018.00165](https://doi.org/10.3389/fvets.2018.00165)
+[106] Stott C, White L, Wright S, et al. "A Phase I, open-label, randomized, crossover study in three parallel groups to evaluate the effect of Rifampicin, Ketoconazole, and Omeprazole on the pharmacokinetics of THC/CBD oromucosal spray in healthy volunteers." *Springerplus*. 2013;2(1):236. doi: [10.1186/2193-1801-2-236](https://doi.org/10.1186/2193-1801-2-236). PMID: [23750331](https://pubmed.ncbi.nlm.nih.gov/23750331/)
 
-[96] Deabold KA, et al. "Single-Dose Pharmacokinetics and Preliminary Safety Assessment with Use of CBD-Rich Hemp Nutraceutical in Healthy Dogs and Cats." *Animals (Basel)*. 2019;9(10):832. doi: [10.3390/ani9100832](https://doi.org/10.3390/ani9100832)
+[107] Kafil TS, Nguyen TM, MacDonald JK, et al. "Cannabis for the treatment of Crohn's disease." *Cochrane Database Syst Rev*. 2018;11(11):CD012853. doi: [10.1002/14651858.CD012853.pub2](https://doi.org/10.1002/14651858.CD012853.pub2). PMID: [30407616](https://pubmed.ncbi.nlm.nih.gov/30407616/)
 
-[97] Alvarenga IC, et al. "Cannabidiol did not reduce anxiety but influenced some behavioral and physiological parameters in dogs: A 90-day randomized, blinded, placebo-controlled trial." *J Vet Behav*. 2026. doi: [10.1016/j.jveb.2025.12.005](https://doi.org/10.1016/j.jveb.2025.12.005)
+[108] Kafil TS, Nguyen TM, MacDonald JK, et al. "Cannabis for the treatment of ulcerative colitis." *Cochrane Database Syst Rev*. 2018;11(11):CD012954. doi: [10.1002/14651858.CD012954.pub2](https://doi.org/10.1002/14651858.CD012954.pub2). PMID: [30406638](https://pubmed.ncbi.nlm.nih.gov/30406638/)
 
-[98] Iffland K, Grotenhermen F. "An Update on Safety and Side Effects of Cannabidiol: A Review of Clinical Data and Relevant Animal Studies." *Cannabis Cannabinoid Res*. 2017;2(1):139-154. doi: [10.1089/can.2016.0034](https://doi.org/10.1089/can.2016.0034)
+[109] Devinsky O, Patel AD, Cross JH, et al. "Effect of Cannabidiol on Drop Seizures in the Lennox-Gastaut Syndrome." *N Engl J Med*. 2018;378(20):1888-1897. doi: [10.1056/NEJMoa1714631](https://doi.org/10.1056/NEJMoa1714631). PMID: [29768152](https://pubmed.ncbi.nlm.nih.gov/29768152/)
 
-[99] Klotz KA, et al. "CBD interacts with brivaracetam and increases its blood levels." *Epilepsia*. 2019;60(12):e136-e139. doi: [10.1111/epi.16398](https://doi.org/10.1111/epi.16398)
+[110] Gaston TE, Bebin EM, Cutter GR, et al. "Interactions between cannabidiol and commonly used antiepileptic drugs." *Epilepsia*. 2017;58(9):1586-1592. doi: [10.1111/epi.13852](https://doi.org/10.1111/epi.13852). PMID: [28782097](https://pubmed.ncbi.nlm.nih.gov/28782097/)
 
-[100] Grayson L, et al. "An interaction between warfarin and cannabidiol, a case report." *Epilepsy Behav Case Rep*. 2017;9:10-11. doi: [10.1016/j.ebcr.2017.10.001](https://doi.org/10.1016/j.ebcr.2017.10.001)
+[111] Morrison G, Crockett J, Blakey G, et al. "A Phase 1, Open-Label, Pharmacokinetic Trial to Investigate Possible Drug-Drug Interactions Between Clobazam, Stiripentol, or Valproate and Cannabidiol in Healthy Subjects." *Clin Pharmacol Drug Dev*. 2019;8(8):1009-1031. doi: [10.1002/cpdd.665](https://doi.org/10.1002/cpdd.665). PMID: [30791225](https://pubmed.ncbi.nlm.nih.gov/30791225/)
 
-[101] Cortopassi J, et al. "Warfarin dose adjustment required after cannabidiol initiation and titration." *Am J Health Syst Pharm*. 2020;77(22):1846-1851. doi: [10.1093/ajhp/zxaa268](https://doi.org/10.1093/ajhp/zxaa268)
+[112] Geffrey AL, Pollack SF, Bruno PL, et al. "Drug-drug interaction between clobazam and cannabidiol in children with refractory epilepsy." *Epilepsia*. 2015;56(8):1246-51. doi: [10.1111/epi.13060](https://doi.org/10.1111/epi.13060). PMID: [26114620](https://pubmed.ncbi.nlm.nih.gov/26114620/)
 
-[102] Thai C, et al. "Effect of Cannabidiol on CYP1A2-Mediated Caffeine Metabolism." *Clin Pharmacol Drug Dev*. 2021;10(10):1213-1222. doi: [10.1002/cpdd.960](https://doi.org/10.1002/cpdd.960)
+[113] Watkins PB, Church RJ, Li J, et al. "Cannabidiol and Abnormal Liver Chemistries in Healthy Adults: Results of a Phase I Clinical Trial." *Clin Pharmacol Ther*. 2021;109(5):1224-1231. doi: [10.1002/cpt.2071](https://doi.org/10.1002/cpt.2071). PMID: [33022751](https://pubmed.ncbi.nlm.nih.gov/33022751/)
 
-[103] Zamarripa CA, et al. "Assessment of Orally Administered Delta-9-Tetrahydrocannabinol When Coadministered With Cannabidiol on Delta-9-Tetrahydrocannabinol Pharmacokinetics and Pharmacodynamics." *JAMA Netw Open*. 2023;6(2):e2254752. doi: [10.1001/jamanetworkopen.2022.54752](https://doi.org/10.1001/jamanetworkopen.2022.54752)
-
-[104] Caceres Guido P, et al. "Cannabidiol and levothyroxine co-administration in a pediatric population." *Epilepsia*. 2021. doi: [10.1111/epi.16839](https://doi.org/10.1111/epi.16839)
-
-[105] Kocis PT, Vrana KE. "Delta-9-Tetrahydrocannabinol and Cannabidiol Drug-Drug Interactions." *Med Cannabis Cannabinoids*. 2020;3(1):61-73. doi: [10.1159/000507998](https://doi.org/10.1159/000507998)
-
-[106] Stott CG, et al. "A Phase I Study to Assess the Effect of Food on the Single Dose Bioavailability of the THC/CBD Oromucosal Spray." *Springerplus*. 2013;2:236. doi: [10.1186/2193-1801-2-236](https://doi.org/10.1186/2193-1801-2-236)
-
-[107] Kafil TS, et al. "Cannabis for the treatment of Crohn's disease." *Cochrane Database Syst Rev*. 2018;(11):CD012853. doi: [10.1002/14651858.CD012853.pub2](https://doi.org/10.1002/14651858.CD012853.pub2)
-
-[108] Kafil TS, et al. "Cannabis for the treatment of ulcerative colitis." *Cochrane Database Syst Rev*. 2018;(11):CD012954. doi: [10.1002/14651858.CD012954.pub2](https://doi.org/10.1002/14651858.CD012954.pub2)
+[114] Florian J, Salcedo P, Burkhart K, et al. "Cannabidiol and Liver Enzyme Level Elevations in Healthy Adults: A Randomized Clinical Trial." *JAMA Intern Med*. 2025;185(9):1070-1078. doi: [10.1001/jamainternmed.2025.2366](https://doi.org/10.1001/jamainternmed.2025.2366). PMID: [40622698](https://pubmed.ncbi.nlm.nih.gov/40622698/)
