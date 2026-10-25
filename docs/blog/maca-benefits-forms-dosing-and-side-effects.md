@@ -6,456 +6,428 @@ publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["maca", "maca root", "maca powder", "gelatinized maca", "black maca", "red maca", "yellow maca", "libido", "sexual function", "erectile dysfunction", "fertility", "testosterone", "estrogen", "hormone", "energy", "adaptogen", "menopause", "anxiety", "depression", "sperm", "blood pressure", "antioxidant", "exercise", "aging"]
-summary: "Reference on maca root: libido, sexual function, erectile dysfunction, sperm quality, menopausal symptoms. Used by men and postmenopausal women. Powder or capsules; 1,500-3,000 mg/day. Thyroid caution; avoid in hormone-sensitive conditions. Always discuss with your doctor."
+summary: "Maca root may improve sexual desire and sexual function scores in small trials, without changing sex hormones; reviews call the evidence limited. Safety data are thin, and products can contain lead. Talk to your doctor first if you have a hormone-sensitive cancer, liver disease or a thyroid condition."
+reviewed: "2026-10-25"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20691074/","checked":"2026-10-25","fingerprint":"sha256:10aa1a19f8b194e9f6449e575f4cdac2c4e9a404bb5c7da721206d24fdb27841"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/maca-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/maca-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. In small randomized trials, gelatinized maca at 1,500 mg or 3,000 mg a day improved sexual desire in healthy men in a 12-week trial [23], and 3.5 g a day of maca powder for 6 weeks lowered anxiety, depression and sexual dysfunction scores in 14 postmenopausal women [26]; neither trial found changes in sex hormone levels. Systematic reviews call the evidence limited because the trials are few and small [54][35], and a 2022 review of five trials found unclear effects on semen quality; its pooled analysis showed no clear rise in sperm concentration [55]. Safety data are thin: in one 90-day trial maca at 0.6 g a day raised the liver enzyme AST and diastolic blood pressure [42], a case report linked maca root powder to a rise in blood lead [58], and lab studies found estrogen-like activity [62] and faster migration of breast cancer cells [47].
+
+## Key safety points
+
+- Lab studies found estrogen-like activity in breast cancer cells, and maca extract made triple-negative breast cancer cells migrate more [62][47]. If you have a hormone-sensitive cancer or condition, talk to your doctor before using maca.
+- Maca products can contain lead. One woman's blood lead rose after she began maca root powder and fell when she stopped; the authors warn women of childbearing age in particular [58].
+- In a 90-day trial, maca at 0.6 g a day raised the liver enzyme AST and diastolic blood pressure [42]. LiverTox says maca has not been implicated in liver injury, though one case report followed a single drink of a maca liquor [66][59]; if you have liver disease or high blood pressure, ask your doctor first.
+- Maca contains glucosinolates, and some glucosinolates can affect the thyroid [7][51]. If you have a thyroid condition or take thyroid medicine, ask your doctor first.
+- A chart review reported restless legs with maca taken alongside the antidepressant mianserin [65]. If you take an antidepressant, ask your prescriber first.
+- A report of two cases and a review of online reports link maca to psychotic symptoms, mood changes and anxiety [60][61]. If you have bipolar disorder or a history of psychosis, ask your doctor first.
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Maca (*Lepidium meyenii*), also known as Peruvian ginseng, is a starchy root vegetable in the Brassicaceae (cruciferous) family, native to the high-altitude central Andes of Peru at elevations between 4,000 and 4,500 meters [1][2]. The edible portion is a fleshy, radish-like underground tuber (technically a fused hypocotyl and taproot) measuring 10-14 cm in length and 3-5 cm in width when fresh [1]. Maca has been cultivated for over 2,000 years in the Peruvian Andes, with archaeological evidence of domestication dating back approximately 1,300-2,000 years in the Junín region [1][2].
+Maca (*Lepidium meyenii*) belongs to the Brassicaceae (cabbage and mustard) family and grows in the central Andes of Peru between 4,000 and 4,500 m [2]. It has been cultivated for more than 2,000 years [2]. The edible part is the underground storage organ, the hypocotyl [8].
 
-Maca is consumed as a traditional food in Peru and neighboring Andean countries, where it is boiled, roasted in earthen ovens (huatia), ground into flour for porridges and baked goods, or fermented into a mildly alcoholic beverage (chicha de maca) [2]. Historically, the Incas valued maca highly, reportedly feeding it to soldiers before battle to enhance stamina and endurance, and using it as a form of tribute and currency [2]. Spanish colonial records from 1653 document its use for enhancing fertility in both humans and livestock at high altitudes [1][2].
+Andean people use maca as food and medicine: the root is cooked, baked, fermented into a drink or made into porridge, and it is used as a tonic and fertility enhancer for people and cattle [39]. Its medicinal use was first recorded in the seventeenth century [4]. Online marketing has promoted it as "Peruvian Ginseng" for libido and fertility [39].
 
-The nutritional profile of maca is similar to grains such as rice and wheat. On a dry weight basis, maca root contains 55-73% carbohydrates (primarily starch and polysaccharides), 8.9-21% protein, 8.2-25.6% dietary fiber, and 0.6-2.2% lipids [3]. It provides approximately 325 kcal per 100 g of dried powder and is a source of essential minerals including iron, calcium, potassium, and iodine, along with B vitamins and vitamin C [3][4]. Compared to other root vegetables, maca has notably higher protein content than potatoes (approximately 8-10% dry basis) [3].
+Maca's major constituents are starch, dietary fiber and protein [3]. It also contains essential amino acids, fatty acids, vitamin C, copper, iron and calcium [30].
 
-Beyond its nutritional value, maca contains several unique bioactive compounds that may contribute to its biological effects. The most distinctive are macamides — N-benzylamide fatty acid derivatives structurally similar to the endocannabinoid anandamide — and macaenes (unsaturated variants of macamides), which are found exclusively in dried maca hypocotyls [5][6]. Maca also contains glucosinolates (sulfur-containing compounds typical of Brassicaceae plants, primarily glucotropaeolin and m-methoxyglucotropaeolin), polyphenols with antioxidant activity, alkamides, and a beta-carboline alkaloid called MTCA (1-methyl-1,2,3,4-tetrahydro-beta-carboline-3-carboxylic acid) [5][7][8]. The relative concentrations of these bioactive compounds vary by root color, growing conditions, and processing method [3][9].
+Some of its compounds, such as macamides, are unique to maca [39]. Macamides are fatty acid N-benzylamides [5]. In lab tests, several macamides block fatty acid amide hydrolase (FAAH), an enzyme of the endocannabinoid system [5][6]. Fresh roots contain almost no macamides; they form when the roots are dried [8]. Maca also contains the glucosinolates glucotropaeolin and m-methoxyglucotropaeolin, and a beta-carboline compound (MTCA, 1-methyltetrahydro-beta-carboline-3-carboxylic acid) [7]. Plant genetics, the part of the plant used and processing all change the chemical makeup of maca products [3].
 
-Maca has been promoted for a wide range of uses, including increasing energy, stamina, and sexual ability, improving mood, boosting the immune system, and alleviating menopausal symptoms [10]. These claims are based largely on traditional use and several small clinical studies, most of which were short-term (12 weeks or less), had small sample sizes, and some lacked placebo controls. The potentially active components of maca have not been definitively determined, and no official guidelines (such as those set by the USP) have been established regarding the amounts of macamides or other compounds to be expected of authentic maca products [10]. Larger, well-controlled, long-term studies are needed to confirm most claimed benefits.
+Maca is promoted for libido, fertility, menopausal symptoms, erectile dysfunction and prostate enlargement [39]. A 2018 review concluded that these health claims cannot be fully supported; trials have been inconclusive, with weak methods and small samples [39]. Another review found clinical studies to support the claimed health effects lacking [3].
 
-Peru remains the world's leading producer and exporter of maca, with exports reaching approximately 1,830 tons valued at USD 14 million in the first eight months of 2023, supporting thousands of small-scale farmers in highland regions [11]. Global demand has surged since the 1990s, with export values growing from USD 1.415 million in 2001 to USD 6.17 million by 2010 [1]. However, this growth has also raised biopiracy concerns, particularly regarding unauthorized cultivation of Peruvian maca varieties in China's Yunnan Province and foreign patents on maca propagation methods [12][13].
+Exports of maca from Peru grew from USD 1,415,000 in 2001 to USD 6,170,000 in 2010 [2]. Maca is now also grown widely in China's Yunnan Province, and the surge in demand has had serious consequences for local producers in Peru [39].
 
 ## 2. Forms and Bioavailability
 
 ### Root Color Varieties
 
-Maca root grows in a variety of colors, with the most common being yellow, red, and black. These vary in their chemical and nutrient composition and are sometimes promoted for different uses [10][3].
+Maca hypocotyls come in different colors, from white to black, and one research group has compared yellow, black and red maca [28]. Studies have found differences between them [9].
 
-| Color | Characteristics | Promoted Uses |
-|-------|----------------|---------------|
-| Yellow | Most common variety; sweetest flavor; lower polyphenol and anthocyanin content | General health; most widely available; used in the majority of clinical studies |
-| Red | Higher anthocyanin content; intermediate macamide levels | Prostate health (animal data); bone density (animal data); antioxidant support |
-| Black | Sweet-bitter flavor profile; elevated macamide levels; highest polyphenol content among some analyses | Sperm count and motility (animal data); memory and cognition (animal data); physical endurance |
-| Purple | Highest anthocyanin content | Limited research; antioxidant properties |
+| Color | Findings in experimental studies |
+|-------|----------------------------------|
+| Yellow | Moderate effects on sperm production in rats [28]; larger litters in female mice [16] |
+| Red | No effect on sperm production; reduced prostate size in rats [28][14]; reversed experimentally induced osteoporosis [9] |
+| Black | Best effects on sperm production, memory and fatigue [9][28] |
 
-**Important caveat:** Most evidence for the differential effects of maca colors comes from laboratory and animal studies, not human clinical trials [10]. For example, red maca (but not black or yellow) reduced prostate weight in rats (Gonzales, *Reprod Biol Endocrinol*, 2005) [14]. Black maca increased sperm count and motility in rats compared to red or yellow maca (Gonzales, *J Ethnopharmacol*, 2006) [15]. Yellow maca increased fertility measures in female mice, though other colors were not tested (Ruiz-Luna, *Reprod Biol Endocrinol*, 2005) [16]. No human studies have directly compared the effects of different maca colors, and most clinical trials do not specify which color was used [10].
-
-One clinical study in postmenopausal women used a branded formula (Maca-GO) containing a specific blend of colors (16% black, 48% yellow, 9% red, and 27% other colors) and found increases in estrogen levels and reductions in FSH and hot flashes compared to placebo — but it is unknown how this blend compares to single-color products or other combinations (Meissner, *Int J Biomed Sci*, 2006) [17].
+**Important caveat:** These color differences come from experimental studies, mostly in animals [9][28]. Red maca, but neither yellow nor black, reduced prostate size in rats [14]. Black maca raised sperm counts in rats within one day of starting treatment [15]. Yellow maca increased litter size in female mice [16].
 
 ### Processing Forms
 
-**Raw maca powder:** The dried root is ground into a fine powder, retaining the full spectrum of nutrients and bioactive compounds including fiber, starch, macamides, glucosinolates, and micronutrients [18][19]. Raw powder has a malty, somewhat sweet, slightly burnt taste. This is the form used in most clinical studies [10].
+**Raw maca powder:** The dried root is ground into powder. Trials have tested maca powder [26] and maca tablets [32].
 
-**Gelatinized maca powder:** A process using heat and pressure to remove fibrous starch material, breaking starches down into simpler sugars [10][18]. Gelatinization is believed to make the powder easier to digest and may concentrate the remaining bioactive constituents. This is particularly beneficial for individuals with digestive sensitivity to maca's natural fiber content [18]. Despite the name, gelatinization does not involve gelatin — it refers to the starch gelatinization process.
+**Gelatinized maca powder:** Gelatinized maca was used in a trial in men [23][52], and pre-gelatinized maca in trials in women around menopause [17][34].
 
-**Maca extract:** Concentrated preparations obtained through solvent processing to isolate specific bioactive compounds. Extracts are available as liquids, powders, or capsulated products [13]. There is considerably less clinical evidence for extracts compared to whole root powder, and because the active components of maca have not been definitively identified, it is unclear which type of extract would be most therapeutically appropriate [10].
+**Maca extract:** Trials have also used maca extracts [29][25]. Results from one preparation may not apply to another; a toxicology review stressed the need for standardized quality [4].
 
-**Capsules:** Pre-measured doses of either powder or extract in capsule form. Convenient for standardized dosing but typically require multiple capsules per day due to the relatively high doses used in clinical studies (1,500-3,000 mg) [10][13].
+**Capsules:** Capsules and tablets hold powder or extract. In the 2002 trial in men, doses were 1,500 mg or 3,000 mg a day [23].
 
-**Maca flour (harina de maca):** Fine flour from ground dried roots, used in baking to add nutritional value and a nutty flavor to breads and other foods. This form has been promoted for enhancing the antioxidant properties of baked products [20].
+**Maca flour (harina de maca):** Maca is sold as powder, capsules, pills, flour, liquor and extracts [28].
 
 ### Bioavailability Considerations
 
-The potentially active components of maca responsible for its reported effects have not been conclusively determined. Macamides are the most studied candidates, as they are structurally similar to the endocannabinoid anandamide and are unique to maca [5][6]. However, no standardization exists for macamide content in commercial products [10].
+The parts of maca that cause its effects are not known. Its effects have been ascribed to macamides and glucosinolates, but this cannot be confirmed for lack of data [39]. Data on how maca works are inadequate [4].
 
-**Gelatinized vs. raw powder:** Gelatinization may improve digestibility and concentrate non-starch bioactive compounds, but direct bioavailability comparisons in human studies are lacking. Both forms have been used in clinical research with positive outcomes [10][18].
+**Gelatinized vs. raw powder:** Both gelatinized and plain powders have been tested in trials [23][26].
 
-**Powder vs. extract:** Most positive clinical evidence comes from whole root powder (loose or in capsules), not concentrated extracts. Given the uncertainty about which components drive maca's effects, whole root powder appears to be the more evidence-supported form [10].
+**Powder vs. extract:** Trials have used both powder and extract [26][29].
 
-**Dose-form practical considerations:** The typical effective dose of maca is relatively high (1,500-3,000 mg per day). Loose powder mixed with water, juice, milk, or blended into a smoothie may be preferable for individuals who do not wish to take multiple capsules daily [10].
+**Dose-form practical considerations:** Trial doses run to several grams a day [26].
 
 ### Growing Region and Quality Concerns
 
-Maca is traditionally grown in Peru and Bolivia. More recently, it has been cultivated in China's Yunnan Province at elevations of 2,500-3,500 meters [21]. Concerns exist about potential differences in bioactive compound profiles between Andean-grown and Chinese-grown maca due to variations in altitude, UV exposure, soil conditions, and climate [21][22]. Additionally, concerns about industrial pollutants and heavy metals in Chinese growing regions have been raised [10]. Maca grows poorly when cultivated below 3,500 meters or where summer temperatures exceed 24 degrees Celsius, often resulting in reduced root development and potentially lower concentrations of bioactive compounds [22].
+Maca is now grown outside the Andes, including in Yunnan Province in China, and farming has shifted to mass production with fertilisers and pesticides [39]. This may affect the chemistry of the plant and the quality, safety and efficacy of maca products [39]. One case report links maca root powder to raised blood lead [58].
 
 ## 3. Evidence for Benefits
 
 ### Sexual Desire (Libido)
 
-Sexual desire enhancement is the most widely studied and traditionally promoted use of maca. Several small clinical trials have shown promising but preliminary results.
+Sexual desire is the most studied use of maca. A 2010 systematic review found four small randomized trials and called the evidence limited [54].
 
-**Men — positive evidence for libido:**
+**Men:**
 
-A randomized, double-blind, placebo-controlled trial in men aged 21-56 found that gelatinized maca tablets (Maca Gelatinizada La Molina, Laboratorios Hersil, Peru) taken daily for 8 weeks at either 1,500 mg or 3,000 mg per day significantly increased self-reported sexual desire compared to placebo. Notably, the higher dose did not produce more benefit than the lower dose. There were no changes in blood levels of testosterone or estradiol, and no improvement in depression or anxiety scores (Gonzales, *Andrologia*, 2002) [23]. This study is significant because it demonstrated that maca's effect on sexual desire appears to be independent of sex hormone levels.
+A 12-week randomized, double-blind, placebo-controlled trial in men aged 21-56 tested gelatinized maca at 1,500 mg or 3,000 mg a day. Sexual desire improved from 8 weeks of treatment. Serum testosterone and oestradiol levels did not differ from placebo, and the effect on desire was independent of mood scores and hormone levels [23]. A companion report found no effect on any of the reproductive hormones measured [52].
 
-A study of 47 healthy men and women aged 18-53 found that 2,100 mg per day of a patented blend of black and red maca powders (Lepidamax, Nutrition21) taken as three 700 mg capsules daily for 28 days improved self-reported sexual functioning (including arousal and satisfaction) in men. Some improvement was also observed in women, but this did not reach statistical significance (Jiannine, *J Exerc Nutr*, 2019) [24].
+In a randomized crossover pilot study in eight trained male cyclists, 14 days of maca extract improved self-rated sexual desire compared with placebo [25].
 
-A pilot study in trained male cyclists found that 14 days of maca extract supplementation (2 g/day) significantly increased self-reported sexual desire (Stone, 2009) [25].
+**Women:**
 
-**Women — mixed evidence for libido:**
+In a randomized, double-blind, placebo-controlled crossover trial, 14 postmenopausal women took 3.5 g a day of maca powder for 6 weeks. Sexual dysfunction scores fell compared with both baseline and placebo [26]. Estradiol, FSH, LH and sex hormone-binding globulin (SHBG) did not change.
 
-A randomized, double-blind, placebo-controlled crossover trial in 14 postmenopausal women found that 3,500 mg of maca powder daily for 6 weeks produced a 34.6% decrease in measures of sexual dysfunction compared to placebo (Brooks, *Menopause*, 2008) [26]. This included improvements in sexual desire and satisfaction. No significant changes in blood levels of estradiol, FSH, LH, or sex-hormone-binding globulin (SHBG) were observed, again suggesting maca's effects on sexual function are not mediated through direct hormonal changes.
+A randomized, double-blind pilot study compared 1.5 g and 3.0 g of maca a day in 20 people with sexual dysfunction caused by SSRI antidepressants (17 were women). On 3.0 g a day, sexual dysfunction scores improved from baseline; on 1.5 g a day they did not [27]. The study compared two doses and had no placebo group.
 
-A study in 17 women and 3 men with SSRI-associated sexual dysfunction found that 3,000 mg of maca root powder significantly improved sexual desire (libido) and number of enjoyable sexual experiences compared to the lower 1,500 mg dose (Dording, *CNS Neurosci Ther*, 2008) [27]. However, this study did not include a placebo group, making it impossible to rule out placebo effects. A small number of adverse events including headache, stomach upset, sleep disruption, and increased sweating were reported.
-
-The Lepidamax study (Jiannine, *J Exerc Nutr*, 2019) noted some improvement in women's sexual functioning, but the changes were not statistically significant compared to placebo [24].
-
-**Mechanism:** Importantly, multiple human studies have consistently shown that maca does not significantly alter serum hormone levels — including testosterone, estrogen, FSH, or LH — despite improvements in sexual desire and sexual function [23][26][28]. This suggests maca acts through non-hormonal mechanisms, potentially related to its macamide content and structural similarity to endocannabinoids, or through effects on the central nervous system [5][28]. Black maca in particular has been studied for potential non-hormonal effects on spermatogenesis and libido [28].
+**Mechanism:** Several trials found no change in sex hormone levels [23][26][52][53]. Maca extracts showed no estrogenic or androgenic activity in yeast-based tests [26]. How maca works is still unclear [28]. Lab studies suggest macamides might act on the central nervous system by blocking FAAH [6].
 
 ### Erectile Dysfunction
 
-A randomized, double-blind, placebo-controlled trial in young men (average age 36) with mild erectile dysfunction found that 2,400 mg of dried maca extract daily for 12 weeks produced a slight but statistically significant improvement in erectile function compared to placebo (Zenico, *Andrologia*, 2009) [29]. Those with the most erectile dysfunction at baseline experienced the greatest improvement. Men taking maca also reported significant improvements in physical and social performance measures of daily life satisfaction compared to the placebo group.
+A double-blind trial randomized 50 men with mild erectile dysfunction to 2,400 mg of dry maca extract or placebo for 12 weeks [29]. Erectile function scores (IIEF-5) rose more on maca than on placebo (1.6 versus 0.5 points). Only the maca group improved on physical and social well-being scores compared with baseline. The authors described the effect as small but significant.
 
-A 2024 systematic review and meta-analysis confirmed that maca supplementation shows potential benefits for sexual function including erectile dysfunction in mild cases, though the evidence is limited by small sample sizes and methodological issues [30][31].
+The 2010 systematic review counted this trial as positive but judged the overall evidence for sexual function too limited for firm conclusions [54].
 
 ### Sperm Quality and Male Fertility
 
-An early study in 9 men reported that maca tablets (1,500 mg or 3,000 mg daily) significantly increased semen volume, total sperm count, motile sperm count, and certain measures of sperm motility (Gonzales, *Asian J Androl*, 2001) [32]. However, this study did not include a control group, limiting the strength of its conclusions.
+An early study gave nine men maca tablets (1500 or 3000 mg/day) for 4 months. Semen volume, sperm count per ejaculate, the number of motile sperm and sperm motility rose, while hormone levels did not change [32]. All nine men took maca; there was no comparison group.
 
-A 2016 systematic review of clinical trials concluded that maca supplementation improves semen quality parameters, including sperm concentration and motility, in healthy adult men based on evidence from multiple randomized controlled trials [33]. However, the review noted that most individual studies were small and short-term.
+A 2016 systematic review of five studies (three randomized trials and two uncontrolled studies) found suggestive evidence that maca improves semen quality, but too few, small and biased studies to draw firm conclusions [33]. A 2022 systematic review of five randomized trials found unclear effects on semen quality; its pooled analysis showed no clear rise in sperm concentration compared with placebo (weighted mean difference, 2.22, 95% confidence interval -2.94 to 7.37) [55].
 
-Animal studies have provided supporting evidence: black maca in particular has been found to increase sperm count and motility in rats compared to red or yellow maca (Gonzales, *J Ethnopharmacol*, 2006) [15]. Animal models have also demonstrated enhanced sexual behavior and mounting frequency with maca extracts [28].
+In rats, black maca raised sperm counts within days of starting treatment [15].
 
 ### Female Fertility
 
-Yellow maca was reported to increase measures of fertility in female mice, although other colors of maca were not tested for comparison (Ruiz-Luna, *Reprod Biol Endocrinol*, 2005) [16]. No well-designed human clinical trials have specifically investigated maca's effects on female fertility outcomes such as conception rates, ovulation, or IVF success.
+An extract of yellow maca increased litter size in female mice, and it increased uterine weight in mice whose ovaries had been removed [16]. This is a mouse study; it does not show that maca helps women conceive.
 
 ### Menopausal Symptoms
 
-**Psychological symptoms:** The Brooks (2008) crossover trial in 14 postmenopausal women found that 3,500 mg of maca powder daily for 6 weeks significantly reduced psychological symptoms including anxiety (27.3% decrease) and depression (26.8% decrease) compared to placebo, as measured by the Greene Climacteric Scale [26]. No changes in serum estradiol, FSH, LH, or SHBG were observed, suggesting the mood improvements occurred through non-hormonal pathways.
+**Psychological symptoms:** In the Brooks (2008) crossover trial, 14 postmenopausal women taking 3.5 g a day of maca powder for 6 weeks had lower psychological symptom scores, including anxiety and depression, than at baseline or on placebo, measured by the Greene Climacteric Scale [26]. Estradiol, FSH, LH and SHBG did not change. In a crossover trial in 29 postmenopausal Chinese women, 3.3 g a day for 6 weeks lowered depression scores, with no change in hormone levels [53].
 
-**Hot flashes and hormonal markers:** The Maca-GO study (Meissner, *Int J Biomed Sci*, 2006) using a multi-color maca blend in postmenopausal women found increases in serum estrogen levels, reductions in FSH, and decreases in hot flashes compared to placebo [17]. A 2013 clinical study reported that maca may modulate endocrine function by balancing hormones along the hypothalamus-pituitary-ovarian axis, including increasing serum estrogen in postmenopausal women [34].
+**Hot flashes and hormonal markers:** In a crossover trial in 34 early-postmenopausal women, 2 g a day of pre-gelatinized maca (Maca-GO) for two months raised estradiol, lowered FSH and relieved menopausal symptoms, mainly hot flushes and night sweats [17]. A pilot trial by the same lead author in 20 perimenopausal women reported symptom relief in 74%-87% of women, with a clear placebo effect early in the study [34]. Unlike the other trials, these two reported changes in hormone levels.
 
-**Systematic review evidence:** A 2011 systematic review of randomized controlled trials found limited evidence that maca alleviates menopausal symptoms such as hot flashes and mood disturbances, though results were inconclusive due to small sample sizes and methodological limitations across the available studies [35].
+**Systematic review evidence:** A 2011 systematic review found four randomized trials, all favoring maca, but judged the evidence limited because the trials were few, small and of limited quality; it added that maca's safety had not been proven [35].
 
-**Important distinction:** Maca is not a true hormone replacement therapy (HRT). Most human studies show no significant alteration of serum hormone levels, and it does not provide the same degree or type of symptom relief as established HRT. There are no direct head-to-head studies comparing maca with conventional HRT [36]. Maca should not be used as a substitute for HRT in women with clinically significant menopausal symptoms without medical guidance.
+**Important distinction:** Maca is not hormone therapy, and its trials have compared it only with placebo [35]. Do not use it in place of treatment your doctor recommends for severe menopausal symptoms.
 
 ### Mood — Anxiety and Depression
 
-**Postmenopausal anxiety and depression:** The Brooks (2008) trial demonstrated significant reductions in anxiety (27.3%) and depression (26.8%) in 14 postmenopausal women taking 3,500 mg maca daily for 6 weeks versus placebo [26].
+**Postmenopausal anxiety and depression:** In the Brooks (2008) trial, anxiety and depression scores fell in 14 postmenopausal women taking 3.5 g a day of maca for 6 weeks, compared with placebo [26]. In the Hong Kong trial, depression scores also fell [53].
 
-**SSRI-associated mood changes:** The Dording (2008) study found a small but significant decrease in depression and anxiety measures in the group taking 3,000 mg maca daily, though the absence of a placebo control limits this finding [27].
+**Reports of worse mental health:** A review of online sources linked maca, among other sexual enhancement products, to mood changes, anxiety and hallucinations [61]. A 2024 report of two cases describes acute psychotic episodes after regular use of herbal products and discusses maca as a possible cause [60].
 
-**Anecdotal reports:** User reports on maca's effects on anxiety are mixed, with some individuals reporting reduced symptoms and others reporting worsened anxiety or even triggered panic attacks [37]. Rare case reports have documented manic episodes associated with maca use [37].
-
-**Panic disorder:** There is no scientific evidence from clinical trials that maca is effective for treating or alleviating panic disorder or panic attacks. No dedicated clinical research has investigated this specific application [37].
-
-**Synthesis:** Preliminary evidence suggests maca may reduce anxiety and depression in postmenopausal women, but the data consists of very small trials. The conflicting anecdotal reports and absence of large-scale mood disorder trials mean maca cannot be recommended as a treatment for clinical anxiety or depression.
+**Synthesis:** Small trials suggest maca may ease anxiety and depression symptoms in postmenopausal women [26][53]. The trials were small and short, so maca cannot be recommended as a treatment for clinical anxiety or depression.
 
 ### Physical Performance and Energy
 
-Maca has traditionally been used to enhance energy, stamina, and physical endurance, earning it the "Peruvian ginseng" designation [1][2].
+Maca is marketed as "Peruvian Ginseng" [39].
 
-**Cycling performance:** A pilot study in trained male cyclists found that 14 days of maca extract supplementation (2 g/day) significantly improved 40 km cycling time trial performance (Stone, 2009) [25].
+**Cycling performance:** In eight trained male cyclists, 14 days of maca extract improved 40 km time trial performance compared with their baseline test, but not compared with placebo [25].
 
-**Hand-grip strength:** The Lepidamax study (Jiannine, 2019) found that 2,100 mg of black and red maca blend taken daily for 28 days improved hand-grip strength and reduced self-reported fatigue in men. Improvements in women did not reach statistical significance [24].
+**Systematic review evidence:** A 2024 systematic review and meta-analysis of 21 studies in animals and humans found large effects on all its outcomes, including forced swimming, grip strength and lactic acid [56]. Its main outcomes included animal tests such as forced swimming, so the results say little about people.
 
-**Anti-fatigue mechanisms:** In vitro and in vivo research supports maca's anti-fatigue effects by demonstrating its ability to prevent mitochondria-mediated muscle damage and reduce oxidative stress during exercise [38]. The antioxidant properties of macamides are proposed as a mechanism for these effects [28].
-
-**Systematic review evidence:** A 2024 systematic review and meta-analysis of 21 studies (including animal and human data) confirmed maca's positive impact on physical performance and stamina, with large effect sizes observed for endurance, strength, and reduced lactic acid accumulation. However, the review emphasized the need for larger, high-quality randomized trials to validate these benefits beyond short-term observations [30][31].
-
-**Oxidative stress:** A 2024 systematic review and meta-analysis confirmed that maca supplementation positively affects cellular oxidative stress markers, which may underlie some of its purported anti-fatigue and performance effects [39].
+**Oxidative stress:** A 2024 meta-analysis of eight studies found that maca lowered markers of oxidative stress, but noted that information in humans is scarce [57].
 
 ### Osteoarthritis
 
-Although maca is sometimes promoted for joint pain, the evidence is limited and of low quality.
+Evidence for joint pain is limited.
 
-A laboratory study showed that a branded maca extract (RNI 249) increased levels of IGF-1 (insulin-like growth factor) in cartilage cells from patients with knee osteoarthritis (Miller, *BMC Complement Altern Med*, 2006) [40].
+A laboratory study found that a maca extract (RNI 249) raised production of IGF-1 (insulin-like growth factor 1) in human cartilage cells [40].
 
-A clinical trial found that a combination supplement (Reparagen, Rainforest Nutritionals Inc.) containing 1,500 mg of RNI 249 maca extract plus 300 mg of cat's claw, taken twice daily for 8 weeks, reduced pain in adults with knee osteoarthritis similarly to treatment with 1,500 mg of glucosamine sulfate. Ninety-four percent of the Reparagen group and 89% of the glucosamine group achieved at least a 20% reduction in knee pain (Mehta, *BMC Complement Altern Med*, 2007) [41].
+A randomized, double-blind trial in 95 adults with knee osteoarthritis compared reparagen (1800 mg/day), a combination of 300 mg of vincaria (*Uncaria guianensis*, a cat's claw species) and 1500 mg of the maca extract RNI 249 taken twice daily, with 1500 mg/day of glucosamine sulfate for 8 weeks. At least a 20% fall in pain scores occurred in 94% of people on reparagen and 89% on glucosamine, and the reparagen group used less rescue paracetamol [41].
 
-**Critical limitations:** This study did not include a placebo group, so it is impossible to determine whether either treatment was truly effective beyond natural symptom fluctuation. Additionally, the supplement contained cat's claw in addition to maca, and cat's claw alone has been shown in at least one clinical trial to reduce knee osteoarthritis pain. Therefore, the maca component's contribution cannot be isolated [10][41].
+**Critical limitations:** The trial compared reparagen with glucosamine and had no placebo group, and reparagen also contained cat's claw [41].
 
 ### Prostate Health
 
-Red maca (but not black or yellow) was found to reduce prostate gland weight in rats with experimentally enlarged prostates (Gonzales, *Reprod Biol Endocrinol*, 2005) [14]. This has led to promotion of red maca for prostate health, but no human clinical trials have investigated maca's effects on prostate enlargement (BPH), PSA levels, or prostate cancer risk.
+Red maca reduced prostate size in normal rats and in rats given testosterone to enlarge the prostate [14]. This finding has been used to promote red maca for prostate health, but the evidence comes from rats.
 
 ### Bone Density
 
-Animal studies have suggested that red maca may help maintain bone mineral density, potentially relevant for postmenopausal osteoporosis. However, no human clinical data exists for this indication [14].
+In rats whose ovaries had been removed, a higher dose of maca extract prevented bone loss [21], and red maca reversed experimentally induced osteoporosis [9]. These are rat studies.
 
 ### Neuroprotection and Cognition
 
-Animal studies have demonstrated that black maca may improve memory and learning in rodent models, attributed to its macamide and polyphenol content [28]. However, no well-designed human clinical trials have investigated maca's effects on cognitive function, memory, or neuroprotection. Broader systematic reviews mention neuroprotection as a potential benefit, but the evidence remains limited to preclinical data [30].
+In experimental studies, black maca gave the best results on memory [9]. Reviews list neuroprotection and memory among maca's possible effects, based on experimental work [30][28].
 
 ### Diabetes and Blood Sugar
 
-Based on animal research, maca has been promoted for blood sugar regulation and diabetes management. However, there is insufficient evidence from human clinical trials for these uses [10]. One clinical study noted that 600 mg of maca powder daily for 3 months or longer may cause a small but significant increase in alanine aminotransferase (ALT) levels, which is notable because liver health is relevant to glucose metabolism (Valentova, *Food Chem Tox*, 2008) [42]. This finding warrants caution rather than supporting a therapeutic role.
+A 2014 review reports that maca lowers glucose levels [9]. In a 6-week trial in 29 postmenopausal women, glucose did not change [53].
 
 ## 4. Recommended Dosing
 
 ### Clinical Trial Doses
 
-No official dosing guidelines for maca have been established by regulatory bodies. The following doses have been used in clinical studies [10]:
+No official dosing guidelines exist for maca. Trials have used these doses:
 
 | Indication | Dose | Form | Duration | Study |
 |-----------|------|------|----------|-------|
-| Sexual desire (men) | 1,500-3,000 mg/day | Gelatinized powder | 8 weeks | Gonzales 2002 [23] |
-| Sexual desire and fatigue (men and women) | 2,100 mg/day (3 x 700 mg) | Black/red maca blend (Lepidamax) | 28 days | Jiannine 2019 [24] |
-| Erectile dysfunction | 2,400 mg/day | Dried maca extract | 12 weeks | Zenico 2009 [29] |
-| Menopausal symptoms (psychological) | 3,500 mg/day | Maca powder | 6 weeks | Brooks 2008 [26] |
-| SSRI-related sexual dysfunction | 3,000 mg/day | Maca root powder | — | Dording 2008 [27] |
-| Sperm quality | 1,500-3,000 mg/day | Gelatinized maca tablets | — | Gonzales 2001 [32] |
-| Cycling performance | 2,000 mg/day | Maca extract | 14 days | Stone 2009 [25] |
+| Sexual desire (men) | 1,500 mg or 3,000 mg/day | Gelatinized maca | 12 weeks | Gonzales 2002 [23] |
+| Erectile dysfunction | 2,400 mg/day | Dry maca extract | 12 weeks | Zenico 2009 [29] |
+| Menopausal symptoms (psychological) | 3.5 g/day | Maca powder | 6 weeks | Brooks 2008 [26] |
+| Menopausal symptoms and blood pressure | 3.3 g/day | Maca | 6 weeks | Stojanovska 2015 [53] |
+| Menopausal symptoms | 2 g/day | Pre-gelatinized maca | Two months | Meissner 2006 [17] |
+| Sperm quality | 1500 or 3000 mg/day | Maca tablets | 4 months | Gonzales 2001 [32] |
 
 ### General Recommendations
 
-**Typical dose range:** 1,500 to 3,000 mg per day of maca root powder is the most commonly studied and used dose [10].
+**Typical dose range:** Trials have used 1.5 g to 3.5 g a day [27][26].
 
-**Starting dose:** Beginning with 500 mg per day and gradually increasing to the target dose over 1-2 weeks may help minimize gastrointestinal side effects [10].
+**Form selection:** Trials have used gelatinized maca, plain powder and extracts [23][26][29].
 
-**Daily doses from 500 mg to 3,500 mg** of maca root powder have been used in clinical studies for improving mood and sexual desire and reducing sexual dysfunction [10].
+**Timing:** No specific timing relative to meals has been established. In two trials, capsules were taken twice daily with meals [17][34].
 
-**Form selection:** Most clinical studies used whole root powder (loose or in capsules), not concentrated extracts. Because the active components of maca remain unidentified, whole root powder appears to be the safest choice aligned with the existing evidence [10].
-
-**Timing:** No specific timing relative to meals has been established. Maca is traditionally consumed with food as part of meals.
-
-**Duration of use:** Most clinical trials lasted 4-12 weeks. Long-term safety data beyond 12 weeks of supplementation are limited [10][43].
+**Duration of use:** Trials have lasted from 14 days [25] to 4 months [32].
 
 ### Traditional Consumption
 
-In Andean populations where maca is a staple food, daily consumption of dried maca exceeds 20 grams per day as part of the regular diet, far exceeding typical supplement doses [1]. This long history of food-level consumption provides some reassurance about the safety of lower supplement doses, though supplement forms may differ in composition and concentration from traditionally prepared maca.
+In the Andes maca is eaten as a food: cooked, baked, fermented into a drink or made into porridge [39]. Amounts eaten as food do not show what a safe supplement dose is.
 
 ## 5. Safety and Side Effects
 
 ### General Safety Profile
 
-Maca has been consumed as a food for millennia in Andean populations, and clinical studies using maca root powder have not reported serious adverse effects [10][43]. However, most studies were short-term (12 weeks or less) and had small sample sizes, limiting their ability to detect rare or delayed adverse effects.
+In animals, maca has a low degree of acute oral toxicity, and it has low toxicity to cells in lab tests [4]. Experimental studies of short- and long-term use found no toxicity [9]. Human trials have been small and short, and a 2011 review noted that maca's safety had not been proven [35].
 
 ### Reported Side Effects
 
-Side effects reported in clinical trials and anecdotal reports include [10][27][37]:
-
-- **Gastrointestinal:** Stomach upset, digestive discomfort (occasionally reported)
-- **Headache** (reported in the Dording 2008 study)
-- **Sleep disruption** (reported in the Dording 2008 study)
-- **Increased sweating** (reported in the Dording 2008 study)
-- **Anxiety or mood changes:** Anecdotal reports are mixed — some users report reduced anxiety, while others report worsened anxiety or triggered panic attacks. Rare case reports have documented manic episodes [37]
+- **General tolerance:** In a small trial in people taking SSRIs, side effects were common but mild and short-lived [27].
+- **Mild symptoms:** In the SSRI trial, 11 of 16 people reported at least one side effect: stomach upset (5 people), headache (2), irritability (2), and one case each of panic attack, trouble sleeping, sweating and several other complaints. All were short-lived, and none led anyone to stop [27].
+- **Anxiety or mood changes:** In the SSRI trial, one person had a panic attack and two had irritability, though the authors found it hard to link most events directly to maca [27]. Online reports link maca to mood changes, anxiety and hallucinations [61], and a 2024 report of two cases discusses maca as a possible cause of psychotic episodes [60].
 
 ### Liver Enzyme Effects
 
-A clinical study found that daily consumption of 600 mg of maca powder for 3 months or longer caused a small but statistically significant increase in alanine aminotransferase (ALT) levels, high levels of which are associated with liver dysfunction (Valentova, *Food Chem Tox*, 2008) [42]. Individuals with existing liver conditions should exercise caution and monitor liver enzymes if taking maca long-term.
+In a 90-day randomized, placebo-controlled trial in people with the metabolic syndrome, maca at 0.6 g a day caused a moderate rise in the liver enzyme AST [42]. The authors advised that this be considered with high doses of maca powder. A 2017 case report describes liver injury in a man after one 300 ml drink of a maca medicinal liquor containing 50% alcohol; such liquors are made with traditional Chinese medicines, and its other ingredients were not listed [59]. LiverTox states that maca has not been implicated in liver injury, either as passing rises in liver enzymes or as clinically apparent liver injury [66]. In rat liver cells, maca extracts were not toxic [62]. People with liver disease should ask their doctor before taking maca.
 
 ### Blood Pressure Effects
 
-The same study by Valentova (2008) found that 600 mg of maca daily caused a moderate increase in systolic and diastolic blood pressure specifically in women [42]. Individuals with hypertension or cardiovascular conditions should monitor blood pressure when supplementing with maca.
+In the same trial, maca at 0.6 g a day raised diastolic blood pressure [42]. Other trials found the opposite: diastolic blood pressure fell in postmenopausal women [53], and blood pressure fell in perimenopausal women [34]. People with high blood pressure should check it when starting maca.
 
 ### Thyroid Considerations
 
-Maca contains glucosinolates, sulfur-containing compounds that can exhibit goitrogenic effects — meaning they may interfere with iodine uptake by the thyroid gland and potentially impair thyroid function [44][45]. Individuals with existing thyroid conditions (hypothyroidism, Hashimoto's thyroiditis, Graves' disease) should exercise caution with maca and consult their healthcare provider before use. This concern is particularly relevant for individuals with marginal iodine status, as glucosinolates are most likely to cause thyroid disruption when iodine intake is inadequate.
+Maca contains glucosinolates [7], and some glucosinolates can affect the thyroid (they are goitrogenic) [51]. In one trial, thyroid-stimulating hormone (TSH) did not change [53]; in another, maca lowered the thyroid hormone T3 [17]. People with a thyroid condition (hypothyroidism, Hashimoto's thyroiditis, Graves' disease) should talk to their doctor before using maca.
 
 ### MTCA Concerns
 
-Maca contains a beta-carboline alkaloid called MTCA (1-methyl-1,2,3,4-tetrahydro-beta-carboline-3-carboxylic acid), which has properties as a monoamine oxidase inhibitor. In 2002, the French food safety agency (AFSSA) issued a warning about potential neurotoxic and mutagenic effects of MTCA in powdered maca root [7][46]. However, subsequent research demonstrated that MTCA is a natural constituent of maca with no observed toxicity upon consumption at typical doses, and that its activity may be deactivated by heat processing during traditional preparation methods [7][46].
+Maca contains a beta-carboline compound, (1R,3S)-1-methyltetrahydro-beta-carboline-3-carboxylic acid, which is reported to act on the central nervous system [7]. A toxicology review lists carbolines among maca's compounds of toxicological interest [4]. A French health agency issued an alert about powdered maca, describing an alkaloid derived from this compound that inhibits monoamine oxidase (MAO) [67]. The authors of a 2009 commentary reported that their lab found no effect on brain MAO [67], and later lab work found that maca root extracts did not inhibit MAO-A [68]. Its safety at supplement doses has not been well studied.
 
 ### Hormone-Sensitive Conditions
 
-Although most human studies show that maca does not significantly alter serum hormone levels, theoretical concerns exist based on in vitro evidence of estrogenic activity. Cell studies have shown that maca extract upregulates MMP-1 expression and stimulates migration in triple-negative breast cancer cells [47]. Consequently, maca is generally cautioned against in individuals with hormone-sensitive cancers (breast, uterine, ovarian, endometrial cancer) or conditions such as endometriosis or uterine fibroids. Consultation with a healthcare provider is recommended for anyone with a history of hormone-sensitive conditions [47][48].
+Most human trials found no change in sex hormone levels [26][52][53]. Lab studies point the other way: maca extracts showed estrogenic activity in MCF-7 breast cancer cells [62], and maca increased uterine weight in mice without ovaries [16]. In triple-negative breast cancer cells, maca extract raised expression of MMP-1, a gene linked to cancer spread, and made the cells migrate more; the authors warned that eating maca may be dangerous [47]. People with a hormone-sensitive cancer (breast, uterine or ovarian) or condition (endometriosis, uterine fibroids) should talk to their doctor before using maca [47][62].
 
 ### Body Composition Claims
 
-There is no reliable scientific evidence from clinical trials that maca enhances body curves, enlarges hips, buttocks, or breasts, or alters fat distribution. Such claims are marketing-based and not supported by research [36][28].
+Claims that maca enlarges the breasts, hips or buttocks have not been tested in clinical trials.
 
 ### Pregnancy and Lactation
 
-Long-term safety studies on maca supplementation in pregnant or nursing women have not been conducted. Use during pregnancy or breastfeeding is not advised due to insufficient safety data [10][43].
+No trial has tested maca in pregnancy or breastfeeding; the SSRI trial excluded women who were pregnant or breastfeeding [27]. Avoid it while pregnant or breastfeeding unless your doctor advises otherwise. A case report on lead in maca powder warns women of childbearing age to be aware that imported products may contain significant amounts of lead [58].
 
 ### Psychiatric Effects
 
-Rare case reports have documented manic episodes associated with maca use [37]. Individuals with bipolar disorder, a history of mania, or other psychiatric conditions should exercise caution with maca supplementation.
+A 2024 report of two cases describes acute psychotic episodes after regular use of herbal products and discusses maca as a possible cause [60]. In the SSRI trial, one person had a panic attack, though the authors found it hard to link most side effects directly to maca [27]. People with bipolar disorder, a history of psychosis or another psychiatric condition should ask their doctor before using maca.
 
 ### Long-Term Safety
 
-Long-term safety studies on maca supplement use in humans have not been conducted. Most clinical trials lasted 12 weeks or less [10][43]. While traditional food-level consumption (>20 g/day) over centuries provides some reassurance, concentrated supplement forms may have different safety profiles. As of 2024, a working group of EU member states has proposed restrictions on maca in food supplements due to identified safety risks [45].
+Trials have lasted from 14 days to 4 months [25][32]. A 2011 review said maca's safety had not been proven and called for larger studies [35].
 
 ### Contaminant Concerns
 
-Heavy metal contamination is a concern with maca supplements, particularly those sourced from regions with industrial soil contamination. Products grown in China's Yunnan Province have raised specific concerns about heavy metal levels [10][22]. Independent testing has found lead contamination in some maca products, including those labeled as sourced from Peru [10]. Choosing products from reputable sources with third-party testing for heavy metals is advisable.
+Maca can contain lead. A woman aged 32 had a blood lead level of 44 μg/dL; after an earlier source was removed, her level rose again when she began taking maca root powder and fell when she stopped [58]. The authors warn that imported products may contain significant amounts of lead [58]. Mass production with fertilisers and pesticides may also affect product safety [39]. Choosing products tested by a third party for heavy metals is sensible; consumerlab.com and Labdoor publish testing results.
 
 ## 6. Drug Interactions
 
-Limited pharmacokinetic data is available on maca, which complicates the full assessment of potential drug interactions [44]. The following interactions are based on the known properties of maca's bioactive compounds:
+Few studies have tested maca with medicines.
 
 ### Anticoagulant/Antiplatelet Medications
 
-Maca has a high concentration of vitamin K and it is therefore possible that it could adversely affect bleeding control in people taking anticoagulant medication such as warfarin (Coumadin) (USP Dietary Supplement Compendium, 2012) [49]. Individuals on blood thinners should consult their healthcare provider before taking maca and may need more frequent INR monitoring.
+Maca has not been tested with warfarin or other blood thinners. If you take a blood thinner, check with your doctor or pharmacist before starting.
 
 ### Hormone Therapies
 
-Maca's potential adaptogenic properties may influence estrogen or testosterone levels, although human evidence for significant hormonal changes is inconsistent [36][28]. Theoretical interactions exist with:
+Most human trials found no change in sex hormone levels, but lab studies found estrogen-like activity [26][62]. Theoretical concerns apply to:
 
 - **Hormone replacement therapy (HRT):** Maca may theoretically interact with estrogen or progesterone therapy, though no clinical interaction studies have been conducted
-- **Oral contraceptives:** Theoretical concern based on potential estrogenic activity in vitro
-- **Anti-estrogen medications** (tamoxifen, aromatase inhibitors): Caution warranted given in vitro estrogenic activity [47]
+- **Oral contraceptives:** Theoretical concern based on estrogen-like activity in lab studies [62]
+- **Anti-estrogen medications** (tamoxifen, aromatase inhibitors): Caution warranted given lab findings in breast cancer cells [47][62]
 
 ### Thyroid Medications
 
-Due to the glucosinolate content and potential goitrogenic effects, maca may theoretically interfere with thyroid hormone replacement therapy (levothyroxine) or anti-thyroid medications. Individuals taking thyroid medications should consult their healthcare provider [44][45].
+Because maca contains glucosinolates, some of which are goitrogenic [7][51], it may in theory affect thyroid hormone replacement (levothyroxine) or anti-thyroid medicines. People taking thyroid medicines should talk to their doctor first.
 
 ### Monoamine Oxidase Inhibitors (MAOIs)
 
-The MTCA content of maca has monoamine oxidase inhibitory properties [7]. Although the clinical significance at typical supplement doses is likely minimal (and may be reduced by heat processing in gelatinized products), a theoretical interaction exists with MAO inhibitor medications (phenelzine, tranylcypromine, selegiline). Caution is advisable if combining maca with MAOIs.
+Maca contains a beta-carboline compound reported to act on the central nervous system [7]. A French health agency alert said a related alkaloid inhibits MAO [67]. The authors of a 2009 commentary reported that their lab found no effect on brain MAO [67], and later lab work found no MAO-A inhibition by maca extracts [68]. Whether maca affects MAO inhibitor medicines (phenelzine, tranylcypromine, selegiline) is unknown. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### SSRI Antidepressants
 
-One small study specifically investigated maca in combination with SSRIs for sexual dysfunction (Dording, 2008) [27]. At 3,000 mg/day, maca appeared to improve SSRI-related sexual dysfunction without reported significant adverse interactions. However, given maca's MTCA content and potential serotonergic effects, individuals taking SSRIs should discuss maca use with their prescriber.
+One small study tested maca in people taking SSRIs for sexual dysfunction [27]. Side effects were common but mild and short-lived [27]. A chart review of drug interactions reported restless legs syndrome with maca taken alongside the antidepressant mianserin [65]. People taking antidepressants should discuss maca with their prescriber.
 
 ### Stimulant Medications
 
-Drug interaction databases report no known interactions between maca and methylphenidate (Concerta) or other ADHD stimulants (e.g., Adderall), although the absence of documented interactions does not rule out the possibility of effects in some individuals [50]. Consulting a healthcare provider is advised before combining maca with prescription stimulants.
+Maca has not been tested with methylphenidate or other ADHD stimulants. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Blood Pressure Medications
 
-Given the finding that maca may modestly increase blood pressure in some individuals (particularly women), those taking antihypertensive medications should monitor blood pressure when adding maca supplementation (Valentova, 2008) [42].
+Diastolic blood pressure rose with maca in one trial [42] but fell in another [53]. People taking blood pressure medicines should check their blood pressure when adding maca.
 
 ### Summary Table
 
 | Drug Class | Concern | Recommendation |
 |-----------|---------|----------------|
-| Anticoagulants (warfarin) | Vitamin K content may affect INR | Consult provider; monitor INR |
-| Hormone therapies (HRT, OC, tamoxifen) | Theoretical estrogenic activity | Consult provider; avoid with hormone-sensitive cancers |
+| Anticoagulants (warfarin) | Not tested | Ask your doctor or pharmacist |
+| Hormone therapies (HRT, OC, tamoxifen) | Estrogen-like activity in lab studies | Consult provider; avoid with hormone-sensitive cancers |
 | Thyroid medications | Glucosinolate goitrogenic effects | Consult provider |
-| MAO inhibitors | MTCA has MAO inhibitory properties | Exercise caution; discuss with prescriber |
-| SSRIs | Limited data; MTCA content | Discuss with prescriber |
-| Antihypertensives | May modestly raise blood pressure | Monitor blood pressure |
+| MAO inhibitors | Contains a beta-carboline; a French alert cited MAO inhibition, later lab work found none [67][68]; interaction unknown | Ask your doctor or pharmacist |
+| SSRIs | One small trial; side effects common but mild and short-lived | Discuss with prescriber |
+| Antihypertensives | Blood pressure rose in one trial and fell in others | Monitor blood pressure |
 
 ## 7. Dietary Sources
 
-Maca is not commonly found in Western diets outside of supplement form. In its native Andes region, it is consumed as a whole food.
+Maca is not commonly found in Western diets outside of supplement form. In the Andes, people eat it as a whole food.
 
 ### Traditional Preparations
 
 | Preparation | Description |
 |------------|-------------|
-| Boiled maca | Hypocotyls are boiled to soften and eaten directly, or added to soups and stews |
-| Roasted maca (huatia) | Roots baked underground with hot stones in traditional earthen ovens; produces a caramelized flavor |
-| Maca flour (harina de maca) | Dried roots ground into fine flour for bread, porridges (mazamorra), and other baked goods |
-| Chicha de maca | Fermented mildly alcoholic beverage made from dried roots; traditional brewing technique |
-| Maca juice | Blended fresh or dried root with water or milk |
-| Maca leaves | Edible leaves consumed raw in salads or cooked like spinach |
+| Cooked maca | The root is cooked and eaten [39] |
+| Baked maca | The root is baked [39] |
+| Fermented drink | The root is fermented into a drink [39] |
+| Porridge | The root is made into porridge [39] |
 
 ### Nutritional Content of Dried Maca Root
 
-Per 100 g of dried maca powder [3][4]:
+Main constituents of dried maca root [3][30]:
 
 | Nutrient | Amount |
 |----------|--------|
-| Calories | ~325 kcal |
-| Carbohydrates | 55-73% |
-| Protein | 8.9-21% |
-| Dietary fiber | 8.2-25.6% |
-| Fat | 0.6-2.2% |
-| Iron | Rich source |
-| Calcium | Rich source |
-| Potassium | Rich source |
-| Iodine | Present |
+| Starch | Major constituent |
+| Dietary fiber | Major constituent |
+| Protein (essential amino acids) | Major constituent |
+| Fatty acids | Present |
+| Iron | Present |
+| Calcium | Present |
+| Copper | Present |
 | Vitamin C | Present |
-| B vitamins (B1, B2) | Present |
 
 ### Modern Dietary Use
 
-Outside of the Andes, maca is most commonly consumed as:
-
-- **Powder added to smoothies** — the most popular preparation method; the malty flavor blends well with banana, cacao, and nut-based smoothies
-- **Powder mixed into beverages** — water, juice, milk, or coffee
-- **Capsules** — convenient for those who dislike the taste
-- **Added to oatmeal, yogurt, or energy balls** — as a nutritional booster
-- **Baked goods** — maca flour added to breads, muffins, and pancakes
+Outside the Andes, maca is sold as powder, capsules, pills, flour, liquor and extracts [28]. The powder is often stirred into drinks, smoothies or food.
 
 ### Traditional Consumption Levels
 
-In Andean populations, daily consumption of dried maca commonly exceeds 20 grams per day — roughly 7-13 times the typical supplement dose of 1,500-3,000 mg [1]. This represents one of the highest daily intakes of any single plant food in traditional Andean diets. The roots were historically so valued that they were traded for lowland goods such as salt, corn, and fish, and served as tribute payment during both Inca and Spanish colonial periods [2].
+Traditionally, maca is used as a tonic, a fertility enhancer for people and cattle, and a remedy for rheumatism, respiratory disorders and anaemia [39].
 
 ## 8. References
 
-[1] Grokipedia. "Maca." Accessed 2026. [https://grokipedia.com/page/Maca](https://grokipedia.com/page/Maca)
+[2] Gonzales GF. "Ethnobiology and ethnopharmacology of Lepidium meyenii (maca), a plant from the Peruvian highlands." *Evid Based Complement Alternat Med*. 2012;2012:193496. doi: [10.1155/2012/193496](https://doi.org/10.1155/2012/193496). PMID: [21977053](https://pubmed.ncbi.nlm.nih.gov/21977053/)
 
-[2] Gonzales GF. "Ethnobiology and ethnopharmacology of Lepidium meyenii (maca), a plant from the Peruvian highlands." *Evid Based Complement Alternat Med*. 2012;2012:193496. doi: [10.1155/2012/193496](https://doi.org/10.1155/2012/193496)
+[3] Wang S, Zhu F. "Chemical composition and health effects of maca (Lepidium meyenii)." *Food Chem*. 2019;288:422-443. doi: [10.1016/j.foodchem.2019.02.071](https://doi.org/10.1016/j.foodchem.2019.02.071). PMID: [30902313](https://pubmed.ncbi.nlm.nih.gov/30902313/)
 
-[3] Wang S, Zhu F. "Chemical composition and health effects of maca (Lepidium meyenii)." *Food Chem*. 2019;288:422-443. doi: [10.1016/j.foodchem.2019.02.071](https://doi.org/10.1016/j.foodchem.2019.02.071)
+[4] Valerio LG Jr, Gonzales GF. "Toxicological aspects of the South American herbs cat's claw (Uncaria tomentosa) and maca (Lepidium meyenii): a critical synopsis." *Toxicol Rev*. 2005;24(1):11-35. doi: [10.2165/00139709-200524010-00002](https://doi.org/10.2165/00139709-200524010-00002). PMID: [16042502](https://pubmed.ncbi.nlm.nih.gov/16042502/)
 
-[4] Valerio LG Jr, Gonzales GF. "Toxicological aspects of the South American herbs cat's claw (Uncaria tomentosa) and maca (Lepidium meyenii): a critical synopsis." *Toxicol Rev*. 2005;24(1):11-35. doi: [10.2165/00139709-200524010-00002](https://doi.org/10.2165/00139709-200524010-00002)
+[5] Wu H, Kelley CJ, Pino-Figueroa A, Vu HD, Maher TJ. "Macamides and their synthetic analogs: evaluation of in vitro FAAH inhibition." *Bioorg Med Chem*. 2013;21(17):5188-5197. doi: [10.1016/j.bmc.2013.06.034](https://doi.org/10.1016/j.bmc.2013.06.034). PMID: [23891163](https://pubmed.ncbi.nlm.nih.gov/23891163/)
 
-[5] Wu H, Kelley CJ, Pino-Figueroa A, Vu HD, Maher TJ. "Macamides and their synthetic analogs: evaluation of in vitro FAAH inhibition." *Bioorg Med Chem*. 2013;21(17):5188-5197. doi: [10.1016/j.bmc.2013.06.034](https://doi.org/10.1016/j.bmc.2013.06.034)
+[6] Almukadi H, Wu H, Böhlke M, Böhlke C, Telange R, Ansari MS, Pino-Figueroa A. "The macamide N-3-methoxybenzyl-linoleamide is a time-dependent fatty acid amide hydrolase (FAAH) inhibitor." *Mol Neurobiol*. 2013;48(2):333-339. doi: [10.1007/s12035-013-8499-2](https://doi.org/10.1007/s12035-013-8499-2). PMID: [23853040](https://pubmed.ncbi.nlm.nih.gov/23853040/)
 
-[6] Almukadi H, Wu H, Böhlke M, Böhlke C, Telange R, Ansari MS, Pino-Figueroa A. "The macamide N-3-methoxybenzyl-linoleamide is a time-dependent fatty acid amide hydrolase (FAAH) inhibitor." *Mol Neurobiol*. 2013;48(2):333-339. doi: [10.1007/s12035-013-8499-2](https://doi.org/10.1007/s12035-013-8499-2)
+[7] Piacente S, Carbone V, Plaza A, Zampelli A, Pizza C. "Investigation of the tuber constituents of maca (Lepidium meyenii Walp.)." *J Agric Food Chem*. 2002;50(20):5621-5625. doi: [10.1021/jf020280x](https://doi.org/10.1021/jf020280x). PMID: [12236688](https://pubmed.ncbi.nlm.nih.gov/12236688/)
 
-[7] Piacente S, Carbone V, Plaza A, Zampelli A, Pizza C. "Investigation of the tuber constituents of maca (Lepidium meyenii Walp.)." *J Agric Food Chem*. 2002;50(20):5621-5625. doi: [10.1021/jf020280x](https://doi.org/10.1021/jf020280x)
-
-[8] Esparza E, Hadzich A, Kofer W, Mithöfer A, Cosio EG. "Bioactive maca (Lepidium meyenii) alkamides are a result of traditional Andean postharvest drying practices." *Phytochemistry*. 2015;116:138-148. doi: [10.1016/j.phytochem.2015.02.030](https://doi.org/10.1016/j.phytochem.2015.02.030)
+[8] Esparza E, Hadzich A, Kofer W, Mithöfer A, Cosio EG. "Bioactive maca (Lepidium meyenii) alkamides are a result of traditional Andean postharvest drying practices." *Phytochemistry*. 2015;116:138-148. doi: [10.1016/j.phytochem.2015.02.030](https://doi.org/10.1016/j.phytochem.2015.02.030). PMID: [25817836](https://pubmed.ncbi.nlm.nih.gov/25817836/)
 
 [9] Gonzales GF, Villaorduña L, Gasco M, Rubio J, Gonzales C. "Maca (Lepidium meyenii Walp), a review of its biological properties." *Rev Peru Med Exp Salud Publica*. 2014;31(1):100-110. PMID: [24718534](https://pubmed.ncbi.nlm.nih.gov/24718534/)
 
-[10] ConsumerLab. "Maca Supplements Review." Accessed 2026. [https://www.consumerlab.com/reviews/maca-supplement-review/maca/](https://www.consumerlab.com/reviews/maca-supplement-review/maca/)
+[14] Gonzales GF, Miranda S, Nieto J, Fernández G, Yucra S, Rubio J, Yi P, Gasco M. "Red maca (Lepidium meyenii) reduced prostate size in rats." *Reprod Biol Endocrinol*. 2005;3:5. doi: [10.1186/1477-7827-3-5](https://doi.org/10.1186/1477-7827-3-5). PMID: [15661081](https://pubmed.ncbi.nlm.nih.gov/15661081/)
 
-[11] Peru Ministry of Agriculture / Trade data. Maca export statistics, 2023. Cited in Grokipedia [1].
+[15] Gonzales GF, Nieto J, Rubio J, Gasco M. "Effect of black maca (Lepidium meyenii) on one spermatogenic cycle in rats." *Andrologia*. 2006;38(5):166-172. doi: [10.1111/j.1439-0272.2006.00733.x](https://doi.org/10.1111/j.1439-0272.2006.00733.x). PMID: [16961569](https://pubmed.ncbi.nlm.nih.gov/16961569/)
 
-[12] Quiros CF, Aliaga R. "Maca (Lepidium meyenii Walp.)." In: Hermann M, Heller J, eds. *Andean roots and tubers: ahipa, arracacha, maca and yacon*. Rome: International Plant Genetic Resources Institute; 1997:173-197.
-
-[13] Loyer J. "The social lives of superfoods." PhD dissertation, University of Adelaide. 2016.
-
-[14] Gonzales GF, Miranda S, Nieto J, Fernández G, Yucra S, Rubio J, Yi P, Gasco M. "Red maca (Lepidium meyenii) reduced prostate size in rats." *Reprod Biol Endocrinol*. 2005;3:5. doi: [10.1186/1477-7827-3-5](https://doi.org/10.1186/1477-7827-3-5)
-
-[15] Gonzales GF, Nieto J, Rubio J, Gasco M. "Effect of black maca (Lepidium meyenii) on one spermatogenic cycle in rats." *J Ethnopharmacol*. 2006;18(5):563-570.
-
-[16] Ruiz-Luna AC, Salazar S, Gonzales NJ, Rubio J, Gasco M, Gonzales GF. "Lepidium meyenii (maca) increases litter size in normal adult female mice." *Reprod Biol Endocrinol*. 2005;3:16. doi: [10.1186/1477-7827-3-16](https://doi.org/10.1186/1477-7827-3-16)
+[16] Ruiz-Luna AC, Salazar S, Gonzales NJ, Rubio J, Gasco M, Gonzales GF. "Lepidium meyenii (maca) increases litter size in normal adult female mice." *Reprod Biol Endocrinol*. 2005;3:16. doi: [10.1186/1477-7827-3-16](https://doi.org/10.1186/1477-7827-3-16). PMID: [15869705](https://pubmed.ncbi.nlm.nih.gov/15869705/)
 
 [17] Meissner HO, Mscisz A, Reich-Bilinska H, et al. "Hormone-balancing effect of pre-gelatinized organic maca (Lepidium peruvianum Chacon): (III) Clinical responses of early-postmenopausal women to maca in double blind, randomized, placebo-controlled, crossover configuration, outpatient study." *Int J Biomed Sci*. 2006;2(4):375-394. PMID: [23675006](https://pubmed.ncbi.nlm.nih.gov/23675006/)
 
-[18] Gonzales GF. "Maca: from traditional food crop to energy and libido stimulant." *Evid Based Complement Alternat Med*. 2012. doi: [10.1155/2012/193496](https://doi.org/10.1155/2012/193496)
+[21] Zhang Y, Yu L, Ao M, Jin W. "Effect of ethanol extract of Lepidium meyenii Walp. on osteoporosis in ovariectomized rat." *J Ethnopharmacol*. 2006;105(1-2):274-279. doi: [10.1016/j.jep.2005.12.013](https://doi.org/10.1016/j.jep.2005.12.013). PMID: [16466876](https://pubmed.ncbi.nlm.nih.gov/16466876/)
 
-[19] Dini A, Migliuolo G, Rastrelli L, Saturnino P, Schettino O. "Chemical composition of Lepidium meyenii." *Food Chem*. 1994;49(4):347-349. doi: [10.1016/0308-8146(94)90003-5](https://doi.org/10.1016/0308-8146(94)90003-5)
+[23] Gonzales GF, Cordova A, Vega K, Chung A, Villena A, Góñez C, Castillo S. "Effect of Lepidium meyenii (maca) on sexual desire and its absent relationship with serum testosterone levels in adult healthy men." *Andrologia*. 2002;34(6):367-372. doi: [10.1046/j.1439-0272.2002.00519.x](https://doi.org/10.1046/j.1439-0272.2002.00519.x). PMID: [12472620](https://pubmed.ncbi.nlm.nih.gov/12472620/)
 
-[20] Chen L, Li J, Fan L. "The nutritional composition of maca in hypocotyls (Lepidium meyenii Walp.) cultivated in different regions of China." *J Food Qual*. 2017;2017:3749627. doi: [10.1155/2017/3749627](https://doi.org/10.1155/2017/3749627)
+[25] Stone M, Ibarra A, Roller M, Zangara A, Stevenson E. "A pilot investigation into the effect of maca supplementation on physical activity and sexual desire in sportsmen." *J Ethnopharmacol*. 2009;126(3):574-576. doi: [10.1016/j.jep.2009.09.012](https://doi.org/10.1016/j.jep.2009.09.012). PMID: [19781622](https://pubmed.ncbi.nlm.nih.gov/19781622/)
 
-[21] Zhang Y, Yu L, Ao M, Jin W. "Effect of ethanol extract of Lepidium meyenii Walp. on osteoporosis in ovariectomized rat." *J Ethnopharmacol*. 2006;105(1-2):274-279. doi: [10.1016/j.jep.2005.12.013](https://doi.org/10.1016/j.jep.2005.12.013)
+[26] Brooks NA, Wilcox G, Walker KZ, Ashton JF, Cox MB, Stojanovska L. "Beneficial effects of Lepidium meyenii (maca) on psychological symptoms and measures of sexual dysfunction in postmenopausal women are not related to estrogen or androgen content." *Menopause*. 2008;15(6):1157-1162. doi: [10.1097/gme.0b013e3181732953](https://doi.org/10.1097/gme.0b013e3181732953). PMID: [18784609](https://pubmed.ncbi.nlm.nih.gov/18784609/)
 
-[22] FoxNews.com. "Peruvian maca root: China concerns about growing conditions." 2014. Cited in ConsumerLab [10].
+[27] Dording CM, Fisher L, Papakostas G, Farabaugh A, Sonawalla S, Fava M, Mischoulon D. "A double-blind, randomized, pilot dose-finding study of maca root (L. meyenii) for the management of SSRI-induced sexual dysfunction." *CNS Neurosci Ther*. 2008;14(3):182-191. doi: [10.1111/j.1755-5949.2008.00052.x](https://doi.org/10.1111/j.1755-5949.2008.00052.x). PMID: [18801111](https://pubmed.ncbi.nlm.nih.gov/18801111/)
 
-[23] Gonzales GF, Cordova A, Vega K, Chung A, Villena A, Góñez C, Castillo S. "Effect of Lepidium meyenii (maca) on sexual desire and its absent relationship with serum testosterone levels in adult healthy men." *Andrologia*. 2002;34(6):367-372. doi: [10.1046/j.1439-0272.2002.00519.x](https://doi.org/10.1046/j.1439-0272.2002.00519.x)
+[28] Gonzales GF. "Lepidium meyenii (maca): a plant from the highlands of Peru, from tradition to science." *Forsch Komplementmed*. 2009;16(6):373-380. doi: [10.1159/000264618](https://doi.org/10.1159/000264618). PMID: [20090350](https://pubmed.ncbi.nlm.nih.gov/20090350/)
 
-[24] Jiannine LM, Antonio J. "The effects of Lepidium meyenii on grip strength, fatigue, and sexual function." *J Exerc Nutr*. 2019;2(4).
+[29] Zenico T, Cicero AF, Valmorri L, Mercuriali M, Bercovich E. "Subjective effects of Lepidium meyenii (maca) extract on well-being and sexual performances in patients with mild erectile dysfunction: a randomised, double-blind clinical trial." *Andrologia*. 2009;41(2):95-99. doi: [10.1111/j.1439-0272.2008.00892.x](https://doi.org/10.1111/j.1439-0272.2008.00892.x). PMID: [19260845](https://pubmed.ncbi.nlm.nih.gov/19260845/)
 
-[25] Stone M, Ibarra A, Roller M, Zangara A, Stevenson E. "A pilot investigation into the effect of maca supplementation on physical activity and sexual desire in sportsmen." *J Ethnopharmacol*. 2009;126(3):574-576. doi: [10.1016/j.jep.2009.09.012](https://doi.org/10.1016/j.jep.2009.09.012)
-
-[26] Brooks NA, Wilcox G, Walker KZ, Ashton JF, Cox MB, Stojanovska L. "Beneficial effects of Lepidium meyenii (maca) on psychological symptoms and measures of sexual dysfunction in postmenopausal women are not related to estrogen or androgen content." *Menopause*. 2008;15(6):1157-1162. doi: [10.1097/gme.0b013e3181732953](https://doi.org/10.1097/gme.0b013e3181732953)
-
-[27] Dording CM, Fisher L, Papakostas G, Farabaugh A, Sonawalla S, Fava M, Mischoulon D. "A double-blind, randomized, pilot dose-finding study of maca root (L. meyenii) for the management of SSRI-induced sexual dysfunction." *CNS Neurosci Ther*. 2008;14(3):182-191. doi: [10.1111/j.1755-5949.2008.00052.x](https://doi.org/10.1111/j.1755-5949.2008.00052.x)
-
-[28] Gonzales GF. "Lepidium meyenii (maca): a plant from the highlands of Peru — from tradition to science." *Forsch Komplementmed*. 2009. PMID: [20090350](https://pubmed.ncbi.nlm.nih.gov/20090350/)
-
-[29] Zenico T, Cicero AF, Valmorri L, Mercuriali M, Bercovich E. "Subjective effects of Lepidium meyenii (maca) extract on well-being and sexual performances in patients with mild erectile dysfunction: a randomised, double-blind clinical trial." *Andrologia*. 2009;41(2):95-99. doi: [10.1111/j.1439-0272.2008.00892.x](https://doi.org/10.1111/j.1439-0272.2008.00892.x)
-
-[30] da Silva Leitão Peres N, Cabrera Parra Bortoluzzi L, de Medeiros Araujo L, Nardello AL, Farias Zuniga LE, Figueiredo Wouk J, Lampe L, de Oliveira Petkowicz CL, Masson ML. "Medicinal effects of Peruvian maca (Lepidium meyenii): a review." *Food Funct*. 2020;11(1):83-92. doi: [10.1039/C9FO02732G](https://doi.org/10.1039/C9FO02732G)
-
-[31] Zheng W, Wang G, Zhang Z, Wang Z, Ma K. "Research progress on classical traditional uses, phytochemistry, pharmacology, and toxicology of maca." *J Ethnopharmacol*. 2024;332:118366. doi: [10.1016/j.jep.2024.118366](https://doi.org/10.1016/j.jep.2024.118366)
+[30] da Silva Leitão Peres N, Cabrera Parra Bortoluzzi L, de Medeiros Araujo L, Nardello AL, Farias Zuniga LE, Figueiredo Wouk J, Lampe L, de Oliveira Petkowicz CL, Masson ML. "Medicinal effects of Peruvian maca (Lepidium meyenii): a review." *Food Funct*. 2020;11(1):83-92. doi: [10.1039/C9FO02732G](https://doi.org/10.1039/C9FO02732G). PMID: [31951246](https://pubmed.ncbi.nlm.nih.gov/31951246/)
 
 [32] Gonzales GF, Córdova A, Gonzales C, Chung A, Vega K, Villena A. "Lepidium meyenii (maca) improved semen parameters in adult men." *Asian J Androl*. 2001;3(4):301-303. PMID: [11753476](https://pubmed.ncbi.nlm.nih.gov/11753476/)
 
-[33] Lee MS, Lee HW, You S, Ha KT. "The use of maca (Lepidium meyenii) to improve semen quality: a systematic review." *Maturitas*. 2016;92:64-69. doi: [10.1016/j.maturitas.2016.07.013](https://doi.org/10.1016/j.maturitas.2016.07.013)
+[33] Lee MS, Lee HW, You S, Ha KT. "The use of maca (Lepidium meyenii) to improve semen quality: a systematic review." *Maturitas*. 2016;92:64-69. doi: [10.1016/j.maturitas.2016.07.013](https://doi.org/10.1016/j.maturitas.2016.07.013). PMID: [27621241](https://pubmed.ncbi.nlm.nih.gov/27621241/)
 
-[34] Meissner HO, Reich-Bilinska H, Mscisz A, Kedzia B. "Therapeutic effects of pre-gelatinized maca (Lepidium peruvianum Chacon) used as a non-hormonal alternative to HRT in perimenopausal women — clinical pilot study." *Int J Biomed Sci*. 2013;2(2):143-159.
+[34] Meissner HO, Reich-Bilinska H, Mscisz A, Kedzia B. "Therapeutic effects of pre-gelatinized maca (Lepidium peruvianum Chacon) used as a non-hormonal alternative to HRT in perimenopausal women: clinical pilot study." *Int J Biomed Sci*. 2006;2(2):143-159. PMID: [23674976](https://pubmed.ncbi.nlm.nih.gov/23674976/)
 
-[35] Lee MS, Shin BC, Yang EJ, Lim HJ, Ernst E. "Maca (Lepidium meyenii) for treatment of menopausal symptoms: a systematic review." *Maturitas*. 2011;70(3):227-233. doi: [10.1016/j.maturitas.2011.07.017](https://doi.org/10.1016/j.maturitas.2011.07.017)
+[35] Lee MS, Shin BC, Yang EJ, Lim HJ, Ernst E. "Maca (Lepidium meyenii) for treatment of menopausal symptoms: a systematic review." *Maturitas*. 2011;70(3):227-233. doi: [10.1016/j.maturitas.2011.07.017](https://doi.org/10.1016/j.maturitas.2011.07.017). PMID: [21840656](https://pubmed.ncbi.nlm.nih.gov/21840656/)
 
-[36] Grokipedia summary of hormone and HRT comparisons. Maca is not a true HRT; no head-to-head studies with HRT exist. Cited in [1].
+[39] Beharry S, Heinrich M. "Is the hype around the reproductive health claims of maca (Lepidium meyenii Walp.) justified?" *J Ethnopharmacol*. 2018;211:126-170. doi: [10.1016/j.jep.2017.08.003](https://doi.org/10.1016/j.jep.2017.08.003). PMID: [28811221](https://pubmed.ncbi.nlm.nih.gov/28811221/)
 
-[37] Grokipedia. Anecdotal reports and case reports of psychiatric effects of maca. Cited in [1].
+[40] Miller MJS, Ahmed S, Bobrowski P, Haqqi TM. "The chrondoprotective actions of a natural product are associated with the activation of IGF-1 production by human chondrocytes despite the presence of IL-1beta." *BMC Complement Altern Med*. 2006;6:13. doi: [10.1186/1472-6882-6-13](https://doi.org/10.1186/1472-6882-6-13). PMID: [16603065](https://pubmed.ncbi.nlm.nih.gov/16603065/)
 
-[38] Li J, Chen L, Li J, et al. "Anti-fatigue effects of maca (Lepidium meyenii) on preventing mitochondria-mediated muscle damage." *J Funct Foods*. 2017;37:405-414.
+[41] Mehta K, Gala J, Bhasale S, et al. "Comparison of glucosamine sulfate and a polyherbal supplement for the relief of osteoarthritis of the knee: a randomized controlled trial." *BMC Complement Altern Med*. 2007;7:34. doi: [10.1186/1472-6882-7-34](https://doi.org/10.1186/1472-6882-7-34). PMID: [17974032](https://pubmed.ncbi.nlm.nih.gov/17974032/)
 
-[39] Beharry S, Heinrich M. "Is the hype around the reproductive health claims of maca (Lepidium meyenii Walp.) justified?" *J Ethnopharmacol*. 2018;211:126-170. doi: [10.1016/j.jep.2017.08.003](https://doi.org/10.1016/j.jep.2017.08.003)
+[42] Valentová K, Stejskal D, Bartek J, et al. "Maca (Lepidium meyenii) and yacon (Smallanthus sonchifolius) in combination with silymarin as food supplements: in vivo safety assessment." *Food Chem Toxicol*. 2008;46(3):1006-1013. doi: [10.1016/j.fct.2007.10.031](https://doi.org/10.1016/j.fct.2007.10.031). PMID: [18054420](https://pubmed.ncbi.nlm.nih.gov/18054420/)
 
-[40] Miller MJS, Ahmed S, Engleman RM, et al. "Maca extract (Lepidium meyenii) increases IGF-1 levels in chondrocytes." *BMC Complement Altern Med*. 2006;6:45.
+[47] Bizinelli D, et al. "Maca root (Lepidium meyenii) extract increases the expression of MMP-1 and stimulates migration of triple-negative breast cancer cells." *Nutr Cancer*. 2022;74(1):346-356. doi: [10.1080/01635581.2021.1882511](https://doi.org/10.1080/01635581.2021.1882511). PMID: [33560149](https://pubmed.ncbi.nlm.nih.gov/33560149/)
 
-[41] Mehta K, Gala J, Bhasale S, et al. "Comparison of glucosamine sulfate and a polyherbal supplement for the relief of osteoarthritis of the knee: a randomized controlled trial." *BMC Complement Altern Med*. 2007;7:34. doi: [10.1186/1472-6882-7-34](https://doi.org/10.1186/1472-6882-7-34)
+[51] Fahey JW, Zalcmann AT, Talalay P. "The chemical diversity and distribution of glucosinolates and isothiocyanates among plants." *Phytochemistry*. 2001;56(1):5-51. doi: [10.1016/S0031-9422(00)00316-2](https://doi.org/10.1016/S0031-9422(00)00316-2). PMID: [11198818](https://pubmed.ncbi.nlm.nih.gov/11198818/)
 
-[42] Valentova K, Stejskal D, Bednar P, et al. "Biosafety, antioxidant status, and metabolites in urine after consumption of dried cranberry juice in healthy women: a pilot double-blind placebo-controlled trial." *J Agric Food Chem*. 2007. See also: Valentova K, et al. "The in vitro biological activity of Lepidium meyenii extracts." *Cell Biol Toxicol*. 2006;22(2):91-99. doi: [10.1007/s10565-006-0033-0](https://doi.org/10.1007/s10565-006-0033-0). Valentova K, et al. *Food Chem Tox*. 2008.
+[52] Gonzales GF, Córdova A, Vega K, et al. "Effect of Lepidium meyenii (maca), a root with aphrodisiac and fertility-enhancing properties, on serum reproductive hormone levels in adult healthy men." *J Endocrinol*. 2003;176(1):163-168. doi: [10.1677/joe.0.1760163](https://doi.org/10.1677/joe.0.1760163). PMID: [12525260](https://pubmed.ncbi.nlm.nih.gov/12525260/)
 
-[43] USP Dietary Supplement Compendium. Maca safety evaluation. 2012.
+[53] Stojanovska L, Law C, Lai B, et al. "Maca reduces blood pressure and depression, in a pilot study in postmenopausal women." *Climacteric*. 2015;18(1):69-78. doi: [10.3109/13697137.2014.929649](https://doi.org/10.3109/13697137.2014.929649). PMID: [24931003](https://pubmed.ncbi.nlm.nih.gov/24931003/)
 
-[44] Grokipedia. Safety and thyroid concerns. Cited in [1].
+[54] Shin BC, Lee MS, Yang EJ, Lim HS, Ernst E. "Maca (L. meyenii) for improving sexual function: a systematic review." *BMC Complement Altern Med*. 2010;10:44. doi: [10.1186/1472-6882-10-44](https://doi.org/10.1186/1472-6882-10-44). PMID: [20691074](https://pubmed.ncbi.nlm.nih.gov/20691074/)
 
-[45] EU Working Group on Food Supplements. Proposed restrictions on maca in food supplements. 2024. Cited in Grokipedia [1].
+[55] Lee HW, Lee MS, Qu F, et al. "Maca (Lepidium meyenii Walp.) on semen quality parameters: a systematic review and meta-analysis." *Front Pharmacol*. 2022;13:934740. doi: [10.3389/fphar.2022.934740](https://doi.org/10.3389/fphar.2022.934740). PMID: [36110519](https://pubmed.ncbi.nlm.nih.gov/36110519/)
 
-[46] AFSSA (French Agency for Food, Environmental and Occupational Health & Safety). Warning on MTCA in maca. 2002. Cited in Grokipedia [1].
+[56] Huerta Ojeda Á, et al. "Effects of maca (Lepidium meyenii Walp.) on physical performance in animals and humans: a systematic review and meta-analysis." *Nutrients*. 2024;17(1):107. doi: [10.3390/nu17010107](https://doi.org/10.3390/nu17010107). PMID: [39796542](https://pubmed.ncbi.nlm.nih.gov/39796542/)
 
-[47] Bai L, et al. Maca extract upregulates MMP-1 expression and stimulates migration in triple-negative breast cancer cells. In vitro study. Cited in Grokipedia [1].
+[57] Huerta Ojeda Á, et al. "The effects of maca (Lepidium meyenii Walp) on cellular oxidative stress: a systematic review and meta-analysis." *Antioxidants (Basel)*. 2024;13(9):1046. doi: [10.3390/antiox13091046](https://doi.org/10.3390/antiox13091046). PMID: [39334705](https://pubmed.ncbi.nlm.nih.gov/39334705/)
 
-[48] Combined estrogen-progestin HRT and breast cancer risk: Women's Health Initiative trial (HR 1.24). Cited for comparison in Grokipedia [1].
+[58] Johnson-Arbor K, et al. "Unintentional and sequential lead exposure from a ceramic mug and maca (Lepidium meyenii)." *J Med Toxicol*. 2018;14(2):152-155. doi: [10.1007/s13181-017-0649-x](https://doi.org/10.1007/s13181-017-0649-x). PMID: [29313251](https://pubmed.ncbi.nlm.nih.gov/29313251/)
 
-[49] USP Dietary Supplement Compendium. Vitamin K content of maca and anticoagulant interaction potential. 2012.
+[59] Xiao A, et al. "Drug-induced liver injury due to Lepidium meyenii (maca) medicinal liquor." *Chin Med J (Engl)*. 2017;130(24):3005-3006. doi: [10.4103/0366-6999.220314](https://doi.org/10.4103/0366-6999.220314). PMID: [29237937](https://pubmed.ncbi.nlm.nih.gov/29237937/)
 
-[50] Drugs.com; HelloPharmacist. Drug interaction databases: no known interactions between maca and methylphenidate or ADHD stimulants. Cited in Grokipedia [1].
+[60] Şair YB, et al. "From garden to madness: herbal products and psychotic experiences." *Neurocase*. 2024;30(5):198-203. doi: [10.1080/13554794.2024.2436217](https://doi.org/10.1080/13554794.2024.2436217). PMID: [39611748](https://pubmed.ncbi.nlm.nih.gov/39611748/)
 
-[51] Fahey JW, Zalcmann AT, Talalay P. "The chemical diversity and distribution of glucosinolates and isothiocyanates among plants." *Phytochemistry*. 2001;56(1):5-51. doi: [10.1016/S0031-9422(00)00316-2](https://doi.org/10.1016/S0031-9422(00)00316-2)
+[61] Corazza O, et al. "Sexual enhancement products for sale online: raising awareness of the psychoactive effects of yohimbine, maca, horny goat weed, and Ginkgo biloba." *Biomed Res Int*. 2014;2014:841798. doi: [10.1155/2014/841798](https://doi.org/10.1155/2014/841798). PMID: [25025070](https://pubmed.ncbi.nlm.nih.gov/25025070/)
+
+[62] Valentová K, Buckiová D, Kren V, et al. "The in vitro biological activity of Lepidium meyenii extracts." *Cell Biol Toxicol*. 2006;22(2):91-99. doi: [10.1007/s10565-006-0033-0](https://doi.org/10.1007/s10565-006-0033-0). PMID: [16528448](https://pubmed.ncbi.nlm.nih.gov/16528448/)
+
+[65] Siwek M, et al. "Harder, better, faster, stronger? Retrospective chart review of adverse events of interactions between adaptogens and antidepressant drugs." *Front Pharmacol*. 2023;14:1271776. doi: [10.3389/fphar.2023.1271776](https://doi.org/10.3389/fphar.2023.1271776). PMID: [37829299](https://pubmed.ncbi.nlm.nih.gov/37829299/)
+
+[66] LiverTox: Clinical and Research Information on Drug-Induced Liver Injury. "Maca." Bethesda (MD): National Institute of Diabetes and Digestive and Kidney Diseases; 2012 (updated 2019). NCBI Bookshelf NBK548552. PMID: [31643869](https://pubmed.ncbi.nlm.nih.gov/31643869/)
+
+[67] Gonzales GF, Gonzales-Castañeda C. "The methyltetrahydro-beta-carbolines in maca (Lepidium meyenii)." *Evid Based Complement Alternat Med*. 2009;6(3):315-316. doi: [10.1093/ecam/nen041](https://doi.org/10.1093/ecam/nen041). PMID: [18955346](https://pubmed.ncbi.nlm.nih.gov/18955346/)
+
+[68] Herraiz T, Guillén H. "Monoamine oxidase-A inhibition and associated antioxidant activity in plant extracts with potential antidepressant actions." *Biomed Res Int*. 2018;2018:4810394. doi: [10.1155/2018/4810394](https://doi.org/10.1155/2018/4810394). PMID: [29568754](https://pubmed.ncbi.nlm.nih.gov/29568754/)

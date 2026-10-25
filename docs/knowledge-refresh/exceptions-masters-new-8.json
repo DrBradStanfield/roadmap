@@ -1,0 +1,370 @@
+[
+ {
+  "check": "AC2",
+  "handle": "menopause-supplements-benefits-evidence-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Black cohosh has been linked to at least 83 reports of liver damage, though no causal link is proven, and people wi...\" | \"Liver injury is the most serious concern. Worldwide, at least 83 cases of liver damage, including hepatitis, liver fa...\" | \"A case report described repeated fainting in a 76-year-old woman taking black cohosh for years, with her heart rate d...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "menopause-supplements-benefits-evidence-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Black cohosh has been linked to at least 83 reports of liver damage, though no causal link is proven, and people wi...\" | \"Liver injury is the most serious concern. Worldwide, at least 83 cases of liver damage, including hepatitis, liver fa...\" | \"A case report described repeated fainting in a 76-year-old woman taking black cohosh for years, with her heart rate d...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "menopause-supplements-benefits-evidence-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Black cohosh has been linked to at least 83 reports of liver damage, though no causal link is proven, and people wi...\" | \"Liver injury is the most serious concern. Worldwide, at least 83 cases of liver damage, including hepatitis, liver fa...\" | \"A case report described repeated fainting in a 76-year-old woman taking black cohosh for years, with her heart rate d...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "menopause-supplements-benefits-evidence-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Black cohosh has been linked to at least 83 reports of liver damage, though no causal link is proven, and people wi...\" | \"Liver injury is the most serious concern. Worldwide, at least 83 cases of liver damage, including hepatitis, liver fa...\" | \"A case report described repeated fainting in a 76-year-old woman taking black cohosh for years, with her heart rate d...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "menopause-supplements-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"24 month\": A 24-month trial (Wong et al., 2009) gave 403 postmenopausal women 80 or 120 mg a day of soy hypocotyl aglycone isofl...",
+  "reason": "AC2 tokeniser/unit case \"24 month\" ratified in decisions.md (menopause Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. For urinary symptoms from a...\" | \"- Case reports link saw palmetto to pancreatitis and liver injury that improved after stopping it or with treatment, ...\" | \"**Hepatic and pancreatic effects:** Case reports link saw palmetto to inflammation of the liver or pancreas that impr...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. For urinary symptoms from a...\" | \"- Case reports link saw palmetto to pancreatitis and liver injury that improved after stopping it or with treatment, ...\" | \"**Hepatic and pancreatic effects:** Case reports link saw palmetto to inflammation of the liver or pancreas that impr...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. For urinary symptoms from a...\" | \"- Case reports link saw palmetto to pancreatitis and liver injury that improved after stopping it or with treatment, ...\" | \"**Hepatic and pancreatic effects:** Case reports link saw palmetto to inflammation of the liver or pancreas that impr...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"130 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Products sold as \"beta-sitosterol\" can contain a mixture of plant sterols. The Berges 1995 trial used 20 mg of beta-s...\" | \"**Klippel et al., Br J Urol 1997:** A German trial in 177 men used 130 mg of free beta-sitosterol daily for 6 months ...\" | \"**BPH dose:** The two main positive trials used 20 mg three times a day and 130 mg of free beta-sitosterol daily [26]...\"",
+  "reason": "AC2 tokeniser/unit case \"130 mg/day\" ratified in decisions.md (saw Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.5\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 1999 systematic review of four trials (519 men) found that beta-sitosterol improved urinary symptom scores and flow...\"",
+  "reason": "AC2 tokeniser/unit case \"3.5\" ratified in decisions.md (saw Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"46974\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Zinc and Prostate Cancer:** In a Greek case-control study, men with higher dietary zinc had a higher risk of BPH (L...\"",
+  "reason": "AC2 tokeniser/unit case \"46974\" ratified in decisions.md (saw Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": Brad has not made a video on this topic; this is a summary of the evidence, not his view. For urinary symptoms from a...",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": Case reports link saw palmetto to pancreatitis and liver injury that improved after stopping it or with treatment, th...",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": Hepatic and pancreatic effects: Case reports link saw palmetto to inflammation of the liver or pancreas that improved...",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Some of these products contain hidden sildenafil or similar drugs, which with nitrates can drop blood pressure shar...\" | \"- Tribulus may block CYP3A4, which clears statins; a man on atorvastatin taking it had muscle breakdown [41]. For mus...\" | \"- Never use yohimbe with an MAOI or tricyclic antidepressant [69]. It raises blood pressure and pulse. At 200 mg or m...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Some of these products contain hidden sildenafil or similar drugs, which with nitrates can drop blood pressure shar...\" | \"- Tribulus may block CYP3A4, which clears statins; a man on atorvastatin taking it had muscle breakdown [41]. For mus...\" | \"- Never use yohimbe with an MAOI or tricyclic antidepressant [69]. It raises blood pressure and pulse. At 200 mg or m...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Some of these products contain hidden sildenafil or similar drugs, which with nitrates can drop blood pressure shar...\" | \"- Tribulus may block CYP3A4, which clears statins; a man on atorvastatin taking it had muscle breakdown [41]. For mus...\" | \"- Never use yohimbe with an MAOI or tricyclic antidepressant [69]. It raises blood pressure and pulse. At 200 mg or m...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Some of these products contain hidden sildenafil or similar drugs, which with nitrates can drop blood pressure shar...\" | \"- Tribulus may block CYP3A4, which clears statins; a man on atorvastatin taking it had muscle breakdown [41]. For mus...\" | \"- Never use yohimbe with an MAOI or tricyclic antidepressant [69]. It raises blood pressure and pulse. At 200 mg or m...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-25, masters-new-8): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"21\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Testosterone claims:** In a 4-week trial in 21 healthy young men, tribulus extract at 20 and 10 mg/kg body weight p...\"",
+  "reason": "AC2 tokeniser/unit case \"21\" ratified in decisions.md (sexual Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"10 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Epidemiological evidence:** In a prospective study of 25,096 men followed for 10 years, higher intakes of flavones,...\"",
+  "reason": "AC2 tokeniser/unit case \"10 year\" ratified in decisions.md (sexual Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Evidence:** In a small study, zinc supplements given to 9 marginally zinc-deficient older men for 3 to 6 months rai...\"",
+  "reason": "AC2 tokeniser/unit case \"3 month\" ratified in decisions.md (sexual Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"110\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Evidence in men:** In the DAWN trial in 110 men and 115 women aged 55 to 85, 50 mg a day of oral DHEA for 1 year di...\"",
+  "reason": "AC2 tokeniser/unit case \"110\" ratified in decisions.md (sexual Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"24\": Yohimbine plus arginine in women: In a crossover trial in 24 postmenopausal women with sexual arousal disorder, a sin...",
+  "reason": "AC2 tokeniser/unit case \"24\" ratified in decisions.md (sexual Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"9\", \"2\": Evidence in men: In a 1999 trial in 50 men with organic erectile dysfunction, 5 g a day of L-arginine for 6 weeks led...",
+  "reason": "AC2 tokeniser/unit case \"9\", \"2\" ratified in decisions.md (sexual Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"6 month\", \"4\": Evidence: In a small study, zinc supplements given to 9 marginally zinc-deficient older men for 3 to 6 months raised ...",
+  "reason": "AC2 tokeniser/unit case \"6 month\", \"4\" ratified in decisions.md (sexual Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2\": Two deaths were attributed to acute yohimbine poisoning [38].",
+  "reason": "AC2 tokeniser/unit case \"2\" ratified in decisions.md (sexual Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "dhea-benefits-dosing-and-side-effects",
+  "match": "token \"110\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. In a trial of 110 men and 1...\" | \"The DHEA and Well-Ness (DAWN) trial gave 110 men and 115 women aged 55 to 85 either 50 mg a day of DHEA or placebo fo...\"",
+  "reason": "AC2 tokeniser/unit case \"110\" ratified in decisions.md (dhea Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "dhea-benefits-dosing-and-side-effects",
+  "match": "token \"744 mg/cm2\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"DHEA can be applied to the skin, which avoids its first pass through the liver; a DHEA solution applied for 2 weeks r...\"",
+  "reason": "AC2 tokeniser/unit case \"744 mg/cm2\" ratified in decisions.md (dhea Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "dhea-benefits-dosing-and-side-effects",
+  "match": "token \"759 mg/cm2\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"DHEA can be applied to the skin, which avoids its first pass through the liver; a DHEA solution applied for 2 weeks r...\"",
+  "reason": "AC2 tokeniser/unit case \"759 mg/cm2\" ratified in decisions.md (dhea Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "dhea-benefits-dosing-and-side-effects",
+  "match": "token \"71\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Immune function:** An early study in people above age 65 suggested that DHEA sulfate taken before a flu vaccine mig...\"",
+  "reason": "AC2 tokeniser/unit case \"71\" ratified in decisions.md (dhea Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "dhea-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1 year\", \"2 year\": Bone mineral density (with vitamin D + calcium) | 50 mg/day | 1-2 years | Weiss et al., 2009 [19] |",
+  "reason": "AC2 tokeniser/unit case \"1 year\", \"2 year\" ratified in decisions.md (dhea Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "dhea-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"100 mg/day\": Schizophrenia (medication augmentation) | 100-400 mg/day | 6-8 weeks | Nachshoni et al., 2005 [32]; Ritsner et al., 2...",
+  "reason": "AC2 tokeniser/unit case \"100 mg/day\" ratified in decisions.md (dhea Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "maca-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[72] raw_quote shares no number with its body_line: Maca contains a beta-carboline compound, (1R,3S)-1-methyltetrahydro-beta-carboline-3-carboxylic a...",
+  "reason": "AC2 year-only tokeniser case: the 2009 commentary quote (PMID 18955346 citation line) and the body line share only \"2009\", which the tokeniser skips; ratified in decisions.md (integrator stop) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "maca-benefits-forms-dosing-and-side-effects",
+  "match": "token \"11\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Mild symptoms:** In the SSRI trial, 11 of 16 people reported at least one side effect: stomach upset (5 people), ...\"",
+  "reason": "AC2 tokeniser/unit case \"11\" ratified in decisions.md (maca Ratified lines) (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC4",
+  "handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### A Note on Prostadine",
+  "reason": "AC4 heading removal/rename ratified in decisions.md (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC4",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Lifestyle Factors That Outperform Supplements",
+  "reason": "AC4 heading removal/rename ratified in decisions.md (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC4",
+  "handle": "dhea-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Bovine Adrenal Gland Concentrates",
+  "reason": "AC4 heading removal/rename ratified in decisions.md (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "menopause-supplements-benefits-evidence-dosing-and-side-effects",
+  "match": "reference line has unknown host nccih.nih.gov: [59] National Center for Complementary and Integrative Health. \"Black Cohosh.\" Last updated Novem...",
+  "reason": "AC7 host nccih.nih.gov ratified in decisions.md (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "menopause-supplements-benefits-evidence-dosing-and-side-effects",
+  "match": "reference line has unknown host nccih.nih.gov: [60] National Center for Complementary and Integrative Health. \"Soy.\" Last updated April 2025. [h...",
+  "reason": "AC7 host nccih.nih.gov ratified in decisions.md (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host mayoclinic.org: [55] Mayo Clinic Staff. \"L-arginine.\" Mayo Clinic. 16 Mar 2026. [https://www.mayoclinic.org/drugs...",
+  "reason": "AC7 host mayoclinic.org ratified in decisions.md (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host nccih.nih.gov: [61] National Center for Complementary and Integrative Health. \"Asian Ginseng.\" [https://www.ncci...",
+  "reason": "AC7 host nccih.nih.gov ratified in decisions.md (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host nccih.nih.gov: [69] National Center for Complementary and Integrative Health. \"Yohimbe.\" Updated May 2025. [http...",
+  "reason": "AC7 host nccih.nih.gov ratified in decisions.md (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host fdc.nal.usda.gov: [74] U.S. Department of Agriculture, FoodData Central, SR Legacy (FDC 170556, 168634, 171477, 168...",
+  "reason": "AC7 host fdc.nal.usda.gov ratified in decisions.md (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Multi-Ingredient Products — Compounded Risk",
+  "reason": "AC7 product-section false positive (not a Brad product section) ratified in decisions.md (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "dhea-benefits-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [76] INTRAROSA (prasterone) vaginal insert. Prescribing information, Millicent U.S. Inc. DailyMed...",
+  "reason": "AC7 host dailymed.nlm.nih.gov ratified in decisions.md (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "dhea-benefits-dosing-and-side-effects",
+  "match": "product section changed: ### Supporting Natural DHEA Production",
+  "reason": "AC7 product-section false positive (not a Brad product section) ratified in decisions.md (orchestrator 2026-10-25, masters-new-8).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ }
+]

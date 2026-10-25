@@ -1155,3 +1155,19 @@ describe('US-12 AC13 / US-35 AC5: inflateCapped, shared by the .docx reader and 
     await expect(inflateCapped(entry([['data', bytes(1)], ['error', new Error('corrupt')]]), 3)).rejects.toThrow('corrupt');
   });
 });
+
+describe('US-12 AC8: a row with no printedMonth or question is read, not dropped', () => {
+  // zod 4 refuses an absent key whose transform answers undefined unless the
+  // key is optional: every such row would have been counted as dropped.
+  it('keeps a bare core row and a bare additional row', () => {
+    const parsed = parseUnifiedResult({
+      classification: 'lab_report',
+      reportDate: '2026-01-01',
+      values: [{ metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high' }],
+      additionalValues: [{ name: 'Ferritin', value: 120, unit: 'ug/L' }],
+    });
+    expect(parsed.droppedValueCount).toBe(0);
+    expect(parsed.values).toEqual([{ metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high' }]);
+    expect(parsed.additionalValues).toEqual([{ name: 'Ferritin', value: 120, unit: 'ug/L' }]);
+  });
+});

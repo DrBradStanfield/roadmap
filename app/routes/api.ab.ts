@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs } from "react-router";
-import { z } from 'zod';
+import * as z from '../../packages/health-core/src/zod';
 import { authenticate } from '../shopify.server';
 import { getActiveABTests, recordABEvent, type ABEventType } from '../lib/supabase.server';
 import { createRateLimiter } from '../lib/rate-limiter';
@@ -14,9 +14,9 @@ const checkABRateLimit = createRateLimiter(10, 60_000, 5 * 60_000);
 const checkABIpRateLimit = createRateLimiter(600, 60 * 60_000, 10 * 60_000);
 
 const abEventSchema = z.object({
-  testId: z.string().uuid(),
+  testId: z.guid(),
   variantId: z.string().min(1).max(10),
-  visitorId: z.string().uuid(),
+  visitorId: z.guid(),
 });
 
 export async function action({ request }: ActionFunctionArgs) {
