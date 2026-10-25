@@ -6,7 +6,7 @@ publishedAt: "2024-06-06T08:34:17Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["choline", "choline bitartrate", "citicoline", "cdp-choline", "alpha-gpc", "phosphatidylcholine", "lecithin", "cognitive", "brain health", "memory", "acetylcholine", "liver", "fatty liver", "tmao", "cardiovascular", "stroke", "alzheimer", "dementia", "betaine", "folate", "pregnancy", "asthma", "parkinson", "glaucoma"]
-summary: "Evidence summary on choline: most adults eat less than the Adequate Intake. Citicoline and alpha-GPC improved memory modestly in some trials; choline bitartrate raised TMAO in a trial and alpha-GPC was linked to stroke. Talk to your doctor first if you take Alzheimer's medicines or have heart disease."
+summary: "Evidence summary on choline: most adults eat less than the Adequate Intake. Citicoline and alpha-GPC improved memory in some trials; choline bitartrate raised TMAO in a trial and alpha-GPC was linked to stroke. Talk to your doctor first if you take Alzheimer's medicines or have heart disease."
 reviewed: "2026-10-25"
 sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Choline-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:33b3558bc48be3eef3add1bf3fb0e3193f841679ea255a8347d4db4d7698e380"}]
 ---
@@ -70,7 +70,7 @@ The NIH fact sheet notes that no studies had compared absorption of the differen
 
 **Phosphatidylcholine and lecithin** are partly absorbed intact, packed into chylomicrons and carried in the lymph to tissues, including the brain and placenta [93].
 
-**CDP-choline (citicoline)** is much less toxic than choline on a molar basis, according to a 2019 review, which also proposed that its choline is less prone to conversion to TMA [20]. A 1985 rat study still found more urinary radioactivity linked to TMA after oral than after intravenous dosing, which suggests some citicoline is broken down before it is absorbed [26].
+**CDP-choline (citicoline)** is significantly less toxic than choline on a molar basis, according to a 2019 review, which also proposed that its choline is less prone to conversion to TMA [20]. A 1985 rat study still found more urinary radioactivity linked to TMA after oral than after intravenous dosing, which suggests some citicoline is broken down before it is absorbed [26].
 
 **Choline bitartrate** raised TMAO in a 2021 trial in healthy volunteers with normal kidney function. Plasma TMAO rose in all three groups taking choline bitartrate supplements, and so did platelet reactivity. Four large eggs a day or phosphatidylcholine supplements raised neither [18]. In a crossover study of 37 healthy men, a meal containing 600 mg choline as choline bitartrate gave three times the plasma TMAO response of a meal with phosphatidylcholine or no added choline [27].
 
@@ -108,7 +108,7 @@ Choline, especially as phosphatidylcholine, is needed to move fat out of the liv
 
 ### Stroke
 
-A 2002 pooled analysis of four trials of oral citicoline (500, 1,000 or 2,000 mg) given within 24 hours of a moderate to severe ischemic stroke included 1,372 patients. Recovery at 3 months was 25.2% with citicoline and 20.2% with placebo (OR 1.33, 95% CI 1.10 to 1.62); the 2,000 mg dose showed the largest difference [36]. A 2014 review later noted that two large pivotal trials found no benefit of citicoline in ischemic stroke or traumatic brain injury [72]. A supplement is no substitute for emergency care: if you think someone is having a stroke, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+A 2002 pooled analysis of four trials of oral citicoline (500, 1,000 or 2,000 mg) given within 24 hours of a moderate to severe ischemic stroke included 1,372 patients. Recovery at 3 months was 25.2% with citicoline and 20.2% with placebo (OR 1.33, 95% CI 1.10 to 1.62); the 2,000 mg dose showed the largest difference [36]. A 2014 review later noted that two large pivotal trials found no benefit of citicoline in ischemic stroke or traumatic brain injury [72]. A supplement is no substitute for emergency care: if you think someone is having a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, or vision loss that has not recovered), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Memory and Cognition
 
@@ -130,7 +130,7 @@ Results have been mixed. The more promising trials used citicoline (CDP-choline)
 
 #### Attention in Adolescents
 
-**CDP-choline in male adolescents (2015).** In 75 healthy adolescent males, citicoline 250 mg or 500 mg for 28 days improved attention and psychomotor speed compared with placebo, and a higher weight-adjusted dose predicted less impulsivity [44].
+**CDP-choline in male adolescents (2019).** In 75 healthy adolescent males, citicoline 250 mg or 500 mg for 28 days improved attention and psychomotor speed compared with placebo, and a higher weight-adjusted dose predicted less impulsivity [44].
 
 #### Observational Data on Choline and Cognition
 
@@ -142,6 +142,10 @@ Higher choline intakes and plasma levels have been linked to better cognitive pe
 However, a 2015 systematic review of 13 studies on choline levels and neurological outcomes in adults found that choline supplements did not result in clear improvements in cognition in healthy adults [93]. The review concluded that high-quality intervention studies are lacking [47].
 
 ### Alzheimer's Disease and Dementia
+
+#### Egg Consumption and Alzheimer's Risk
+
+In the Rush Memory and Aging Project, 1,024 older adults with a mean age of about 81 were followed for a mean of 6.7 years. Eating more than one egg a week was linked to a lower risk of Alzheimer's dementia (HR 0.53, 95% CI 0.34 to 0.83), and the authors estimated that 39% of this link ran through dietary choline [48]. The study is observational and cannot show that eggs prevent dementia.
 
 #### Lecithin for Alzheimer's Disease
 
@@ -187,7 +191,9 @@ In a population-based study of 1,508 women with breast cancer and 1,556 controls
 
 ### Asthma
 
-In an Indian trial, choline 500 mg or 1,000 mg three times daily for four months lowered symptom scores and raised the share of symptom-free days compared with placebo. Only the higher dose reduced the need for asthma medicine [66].
+In an Indian trial, choline 500 mg or 1,000 mg three times daily or placebo was given for four months. Symptom scores fell and symptom-free days rose in all three groups, but the changes were significant only in the choline groups, and only the higher dose significantly reduced the need for asthma medicine [66].
+
+In a 6-month trial in 76 people with asthma, a choline supplement of 1,500 mg twice daily lowered symptom and drug scores and markers of airway inflammation compared with baseline or standard treatment [67].
 
 ### Ulcerative Colitis
 
@@ -251,19 +257,19 @@ These are the doses trials used, not recommendations:
 
 **For attention in adolescents.** Citicoline 250 mg or 500 mg a day for 28 days [44].
 
-**For asthma.** Choline 500 mg or 1,000 mg three times daily [66].
+**For asthma.** Choline 500 mg or 1,000 mg three times daily [66]; 1,500 mg twice daily [67].
 
 **For pregnancy.** The AI is 450 mg a day [93]. The feeding trial compared total intakes of 480 mg or 930 mg choline a day [58].
 
 ### How to Read a Supplement Label
 
-Most labels give the weight of the whole compound, not the choline it supplies. A capsule of choline bitartrate, citicoline or lecithin supplies less choline than the compound weight on the label, so look for a label that states the choline content.
+The weight of a choline compound is not its choline content. A capsule of choline bitartrate, citicoline or lecithin supplies less choline than the compound weight, so look for a label that states the choline content.
 
 ## 5. Safety and Side Effects
 
 ### Common Side Effects
 
-The UL for adults is 3,500 mg of choline a day [93]. High intakes are associated with fishy body odor, vomiting, excessive sweating and salivation, low blood pressure, and liver toxicity [93]. High doses may also upset the stomach.
+The UL for adults is 3,500 mg of choline a day [93]. High intakes are associated with fishy body odor, vomiting, excessive sweating and salivation, low blood pressure, and liver toxicity [93].
 
 **Fishy body odor.** People with trimethylaminuria (fish malodor syndrome) have abnormal amounts of trimethylamine in their urine, sweat and breath, which gives a strong fishy odor [75]. Because gut bacteria make trimethylamine from choline, high choline intake can cause a fishy body odor [93].
 
@@ -281,11 +287,11 @@ Gut bacteria convert some choline to TMA, which the liver turns into TMAO. Choli
 
 ### Alpha-GPC and Stroke Risk
 
-A South Korean cohort study followed about 12 million adults aged 50 or older. People prescribed alpha-GPC during 2006 to 2008 were more likely to have a stroke from 2009 to 2018 than matched nonusers (adjusted HR 1.43, 95% CI 1.41 to 1.46), and risk rose with greater use in a dose-response pattern [22]. The study shows an association, not cause and effect. TMAO was not measured; higher TMAO was linked to first stroke in a separate study of patients with high blood pressure [79]. If you have had a stroke or have high cardiovascular risk, talk to your doctor before taking alpha-GPC.
+A South Korean cohort study followed about 12 million adults aged 50 or older. People prescribed alpha-GPC during 2006 to 2008 were more likely to have a stroke from 2009 to 2018 than matched nonusers (adjusted HR 1.43, 95% CI 1.41 to 1.46), and risk rose with greater use in a dose-response pattern [22]. The study shows an association, not cause and effect. TMAO was not measured; higher TMAO was linked to first stroke in a separate study of patients with high blood pressure [79]. If you have had a stroke or have high cardiovascular risk, talk to your doctor before taking alpha-GPC [22].
 
 ### Choline and Mortality
 
-In 80,978 women and 39,434 men followed for mortality, higher phosphatidylcholine intake was linked to higher all-cause mortality (HR 1.11, 95% CI 1.06 to 1.17) and cardiovascular mortality (HR 1.26, 95% CI 1.15 to 1.39), top versus bottom quintile [94]. The authors suggest TMAO as a cause but did not measure it, and the link is observational [93].
+In 80,978 women and 39,434 men followed for mortality, higher phosphatidylcholine intake was linked to higher all-cause mortality (HR 1.11, 95% CI 1.06 to 1.17) and cardiovascular mortality (HR 1.26, 95% CI 1.15 to 1.39), top versus bottom quintile [94]. The authors suggest TMAO as a cause but did not measure it, and the link is observational [93]. In US national survey data, adults in the highest quartile of choline intake had a greater risk of total (23%), cardiovascular (33%) and stroke (30%) mortality than those in the lowest. In the same paper's meta-analysis of prospective studies, choline intake was linked to overall (RR 1.12, 95% CI 1.08 to 1.17) and cardiovascular (RR 1.28, 95% CI 1.17 to 1.39) mortality, but not significantly to stroke mortality [80].
 
 Several large observational studies have found no significant associations between choline intakes and cardiovascular disease risk. An analysis of 72,348 women and 44,504 men showed no association between choline intake and risk of peripheral artery disease [93]. A prospective study of 14,430 middle-aged adults found that over 14 years, risk of coronary heart disease was not significantly different across choline intake quartiles [82]. Choline intakes also had no association with cardiovascular disease risk in 16,165 women in the European Prospective Investigation into Cancer and Nutrition [93].
 
@@ -295,7 +301,7 @@ In 96,831 postmenopausal women in the Women's Health Initiative, eating one or m
 
 ### Kidney Stones
 
-Very high intakes of choline bitartrate may lead to a rare kidney stone made of calcium tartrate, because most of the compound's weight is tartaric acid. Case reports describe these stones in men who took a choline-containing supplement several times a day for more than a year.
+Rare kidney stones made of calcium tartrate have been reported in people who regularly took an energy supplement; in one case report, the supplement held choline bitartrate and L-carnitine tartrate [24][95]. The link to the supplement is unproven [95].
 
 ### Cancer Risk
 
@@ -367,7 +373,9 @@ Sources: NIH Office of Dietary Supplements [93]; USDA FoodData Central [90].
 
 [20] Synoradzki K, Grieb P. "Citicoline: a superior form of choline?" *Nutrients*. 2019;11(7):1569. PMID: 31336819. [https://pubmed.ncbi.nlm.nih.gov/31336819/](https://pubmed.ncbi.nlm.nih.gov/31336819/)
 
-[22] Lee G, et al. "Association of L-α glycerylphosphorylcholine with subsequent stroke risk after 10 years." *JAMA Netw Open*. 2021;4(11):e2136008. PMID: 34817582. [https://pubmed.ncbi.nlm.nih.gov/34817582/](https://pubmed.ncbi.nlm.nih.gov/34817582/)
+[22] Lee G, et al. "Association of L-α glycerylphosphorylcholine with subsequent stroke risk after 10 years." *JAMA Netw Open*. 2021;4(11):e2136008. PMID: 34817582. [https://pubmed.ncbi.nlm.nih.gov/34817582/](https://pubmed.ncbi.nlm.nih.gov/34817582/) Correction: "Errors in Methods and Article Information." *JAMA Netw Open*. 2026. PMID: 42783376. [https://pubmed.ncbi.nlm.nih.gov/42783376/](https://pubmed.ncbi.nlm.nih.gov/42783376/)
+
+[24] Kleinguetl C, et al. "Uncovering a novel stone in 27 patients: calcium tartrate tetrahydrate." *Urology*. 2019. PMID: 30654140. [https://pubmed.ncbi.nlm.nih.gov/30654140/](https://pubmed.ncbi.nlm.nih.gov/30654140/)
 
 [25] Smolders L, de Wit NJW, et al. "Natural choline from egg yolk phospholipids is more efficiently absorbed compared with choline bitartrate; outcomes of a randomized trial in healthy adults." *Nutrients*. 2019;11(11):2758. PMID: 31766273. [https://pubmed.ncbi.nlm.nih.gov/31766273/](https://pubmed.ncbi.nlm.nih.gov/31766273/)
 
@@ -392,7 +400,7 @@ Sources: NIH Office of Dietary Supplements [93]; USDA FoodData Central [90].
 
 [42] Lippelt DP, van der Kint S, van Herk K, Naber M. "No acute effects of choline bitartrate food supplements on memory in healthy, young, human adults." *PLoS One*. 2016;11(6):e0157714. PMID: 27341028. [https://pubmed.ncbi.nlm.nih.gov/27341028/](https://pubmed.ncbi.nlm.nih.gov/27341028/)
 
-[43] O'Connor LE, et al. "The effects of 9 months of formulated whole-egg or milk powder food products as meal or snack replacements on executive function in preadolescents: a randomized, placebo-controlled trial." *Am J Clin Nutr*. 2022. PMID: 36173384. [https://pubmed.ncbi.nlm.nih.gov/36173384/](https://pubmed.ncbi.nlm.nih.gov/36173384/)
+[43] O'Connor PJ, et al. "The effects of 9 months of formulated whole-egg or milk powder food products as meal or snack replacements on executive function in preadolescents: a randomized, placebo-controlled trial." *Am J Clin Nutr*. 2022. PMID: 36173384. [https://pubmed.ncbi.nlm.nih.gov/36173384/](https://pubmed.ncbi.nlm.nih.gov/36173384/)
 
 [44] McGlade E, Agoston AM, DiMuzio J, et al. "The effect of citicoline supplementation on motor speed and attention in adolescent males." *J Atten Disord*. 2019;23(2):121-34. PMID: 26179181. [https://pubmed.ncbi.nlm.nih.gov/26179181/](https://pubmed.ncbi.nlm.nih.gov/26179181/)
 
@@ -401,6 +409,8 @@ Sources: NIH Office of Dietary Supplements [93]; USDA FoodData Central [90].
 [46] Poly C, Massaro JM, Seshadri S, et al. "The relation of dietary choline to cognitive performance and white-matter hyperintensity in the Framingham Offspring Cohort." *Am J Clin Nutr*. 2011;94(6):1584-91. [https://pubmed.ncbi.nlm.nih.gov/22071706/](https://pubmed.ncbi.nlm.nih.gov/22071706/)
 
 [47] Leermakers ET, Moreira EM, Kiefte-de Jong JC, et al. "Effects of choline on health across the life course: a systematic review." *Nutr Rev*. 2015;73(8):500-22. [https://pubmed.ncbi.nlm.nih.gov/26108618/](https://pubmed.ncbi.nlm.nih.gov/26108618/)
+
+[48] Pan Y, et al. "Association of egg intake with Alzheimer's dementia risk in older adults: the Rush Memory and Aging Project." *J Nutr*. 2024. PMID: 38782209. [https://pubmed.ncbi.nlm.nih.gov/38782209/](https://pubmed.ncbi.nlm.nih.gov/38782209/)
 
 [49] Etienne P, Dastoor D, Gauthier S, et al. "Alzheimer disease: lack of effect of lecithin treatment for 3 months." *Neurology*. 1981;31(11):1552-4. PMID: 7198209. [https://pubmed.ncbi.nlm.nih.gov/7198209/](https://pubmed.ncbi.nlm.nih.gov/7198209/)
 
@@ -428,6 +438,8 @@ Sources: NIH Office of Dietary Supplements [93]; USDA FoodData Central [90].
 
 [66] Gupta SK, Gaur SN. "A placebo controlled trial of two dosages of LPC antagonist--choline in the management of bronchial asthma." *Indian J Chest Dis Allied Sci*. 1997;39(3):149-56. PMID: 9357148. [https://pubmed.ncbi.nlm.nih.gov/9357148/](https://pubmed.ncbi.nlm.nih.gov/9357148/)
 
+[67] Mehta AK, et al. "Choline attenuates immune inflammation and suppresses oxidative stress in patients with asthma." *Immunobiology*. 2010. PMID: 19897276. [https://pubmed.ncbi.nlm.nih.gov/19897276/](https://pubmed.ncbi.nlm.nih.gov/19897276/)
+
 [69] Karner M, Kocjan A, Stein J, et al. "First multicenter study of modified release phosphatidylcholine 'LT-02' in ulcerative colitis: a randomized, placebo-controlled trial in mesalazine-refractory courses." *Am J Gastroenterol*. 2014;109(7):1041-51. PMID: 24796768. [https://pubmed.ncbi.nlm.nih.gov/24796768/](https://pubmed.ncbi.nlm.nih.gov/24796768/)
 
 [71] Stremmel W, Hanemann A, Braun A, et al. "Delayed-release phosphatidylcholine is effective for treatment of ulcerative colitis: a meta-analysis." *Dig Dis*. 2021;39(5):508-15. PMID: 33440385. [https://pubmed.ncbi.nlm.nih.gov/33440385/](https://pubmed.ncbi.nlm.nih.gov/33440385/)
@@ -438,17 +450,19 @@ Sources: NIH Office of Dietary Supplements [93]; USDA FoodData Central [90].
 
 [75] Mitchell SC, Smith RL. "Trimethylaminuria: the fish malodor syndrome." *Drug Metab Dispos*. 2001;29(4 Pt 2):517-21. PMID: 11259343. [https://pubmed.ncbi.nlm.nih.gov/11259343/](https://pubmed.ncbi.nlm.nih.gov/11259343/)
 
-[76] Koay YC, Chen YC, Wali JA, et al. "Plasma levels of trimethylamine-N-oxide can be increased with 'healthy' and 'unhealthy' diets and do not correlate with the extent of atherosclerosis but with plaque instability." *Cardiovasc Res*. 2020;117(2):435-49. PMID: 32267921. [https://pubmed.ncbi.nlm.nih.gov/32267921/](https://pubmed.ncbi.nlm.nih.gov/32267921/)
+[76] Koay YC, Chen YC, Wali JA, et al. "Plasma levels of trimethylamine-N-oxide can be increased with 'healthy' and 'unhealthy' diets and do not correlate with the extent of atherosclerosis but with plaque instability." *Cardiovasc Res*. 2021;117(2):435-49. PMID: 32267921. [https://pubmed.ncbi.nlm.nih.gov/32267921/](https://pubmed.ncbi.nlm.nih.gov/32267921/)
 
 [77] Tang WH, Wang Z, Levison BS, et al. "Intestinal microbial metabolism of phosphatidylcholine and cardiovascular risk." *N Engl J Med*. 2013;368(17):1575-84. PMID: 23614584. [https://pubmed.ncbi.nlm.nih.gov/23614584/](https://pubmed.ncbi.nlm.nih.gov/23614584/)
 
 [79] Nie J, Xie L, Zhao BX, et al. "Serum trimethylamine N-oxide concentration is positively associated with first stroke in hypertensive patients." *Stroke*. 2018;49(9):2021-28. PMID: 30354996. [https://pubmed.ncbi.nlm.nih.gov/30354996/](https://pubmed.ncbi.nlm.nih.gov/30354996/)
 
+[80] Mazidi M, et al. "Dietary choline is positively related to overall and cause-specific mortality: results from individuals of the National Health and Nutrition Examination Survey and pooling prospective data." *Br J Nutr*. 2019. PMID: 31288869. [https://pubmed.ncbi.nlm.nih.gov/31288869/](https://pubmed.ncbi.nlm.nih.gov/31288869/)
+
 [82] Bidulescu A, Chambless LE, Siega-Riz AM, et al. "Usual choline and betaine dietary intake and incident coronary heart disease: the Atherosclerosis Risk in Communities (ARIC) study." *BMC Cardiovasc Disord*. 2007;7:20. [https://pubmed.ncbi.nlm.nih.gov/17629908/](https://pubmed.ncbi.nlm.nih.gov/17629908/)
 
 [84] Chen GC, Chen LH, Mossavar-Rahmani Y, et al. "Dietary cholesterol and egg intake in relation to incident cardiovascular disease and all-cause and cause-specific mortality in postmenopausal women." *Am J Clin Nutr*. 2021;113(4):948-59. PMID: 33330926. [https://pubmed.ncbi.nlm.nih.gov/33330926/](https://pubmed.ncbi.nlm.nih.gov/33330926/)
 
-[85] Niu K, et al. "Association between egg consumption and mortality risk in United States adults with established coronary heart disease or stroke: a cohort study using data from NHANES 1999-2018." *Arch Gerontol Geriatr*. 2024. PMID: 38733921. [https://pubmed.ncbi.nlm.nih.gov/38733921/](https://pubmed.ncbi.nlm.nih.gov/38733921/)
+[85] Niu PP, et al. "Association between egg consumption and mortality risk in United States adults with established coronary heart disease or stroke: a cohort study using data from NHANES 1999-2018." *Arch Gerontol Geriatr*. 2024. PMID: 38733921. [https://pubmed.ncbi.nlm.nih.gov/38733921/](https://pubmed.ncbi.nlm.nih.gov/38733921/)
 
 [86] Cho E, Willett WC, Colditz GA, et al. "Dietary choline and betaine and the risk of distal colorectal adenoma in women." *J Natl Cancer Inst*. 2007;99(16):1224-31. PMID: 17686825. [https://pubmed.ncbi.nlm.nih.gov/17686825/](https://pubmed.ncbi.nlm.nih.gov/17686825/)
 
@@ -461,3 +475,5 @@ Sources: NIH Office of Dietary Supplements [93]; USDA FoodData Central [90].
 [93] NIH Office of Dietary Supplements. "Choline: Fact Sheet for Health Professionals." [https://ods.od.nih.gov/factsheets/Choline-HealthProfessional/](https://ods.od.nih.gov/factsheets/Choline-HealthProfessional/)
 
 [94] Zheng Y, Li Y, Rimm EB, et al. "Dietary phosphatidylcholine and risk of all-cause and cardiovascular-specific mortality among US women and men." *Am J Clin Nutr*. 2016;104(1):173-80. PMID: 27281307. [https://pubmed.ncbi.nlm.nih.gov/27281307/](https://pubmed.ncbi.nlm.nih.gov/27281307/)
+
+[95] Kleinguetl C, et al. "Calcium tartrate tetrahydrate, case report of a novel human kidney stone." *J Endourol Case Rep*. 2017. PMID: 29279874. [https://pubmed.ncbi.nlm.nih.gov/29279874/](https://pubmed.ncbi.nlm.nih.gov/29279874/)
