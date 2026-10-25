@@ -284,7 +284,7 @@ There is no established dose of CBD as a supplement. The trials above used doses
 
 **Take with fat-containing food.** A high-fat meal raised the peak blood level of CBD about 14-fold and total exposure about 4-fold compared to fasting [9].
 
-**Timing:** In one public-speaking study, CBD was taken 90 minutes before the test [20].
+**Timing:** In two public-speaking studies, CBD was taken 90 minutes before the test [20][22].
 
 **Read labels carefully.** Over-the-counter products may contain more or less CBD than stated and may contain THC [2]. Independent testers such as consumerlab.com and Labdoor publish product test results.
 
@@ -302,7 +302,7 @@ Prescription doses (10 mg or 20 mg per kilogram a day) carry greater risks [16][
 - **Neurological:** Fatigue, somnolence [16][17]
 - **Hepatic:** Raised liver enzymes occurred in 9% of patients on 10 mg or 20 mg per kilogram a day in one trial [109], and liver tests were higher in people also taking valproate [110]. In 16 healthy adults taking 1,500 mg a day, 7 (44%) had ALT above the upper limit of normal and 5 (31%) had levels that exceeded 5 times the limit, starting within 2 to 4 weeks; some had symptoms of hepatitis [113]. This is the same trial as the caffeine study under Drug Interactions [102]. In a placebo-controlled trial of 201 healthy adults, 5 mg/kg a day for 28 days raised liver enzymes over 3 times the upper limit in 8 people (5.6%), against none on placebo [114]. If you get yellow skin or eyes, dark urine, or unexplained nausea, vomiting or pain under the right ribs while taking CBD, stop over-the-counter CBD and see a doctor promptly [115]. Do not stop prescription CBD without your doctor's advice, because stopping it suddenly can bring on more seizures [115]. People with moderate or severe liver disease need lower prescription doses [115], and a review advises caution with CBD in people with liver disease [82]. If you have liver disease, talk to your doctor before taking CBD.
 - **Hematologic:** In the prescription trials in Lennox-Gastaut and Dravet syndromes, 30% of people on CBD developed new anemia, against 13% on placebo [115]
-- **Mood:** Like other seizure medicines, prescription CBD can raise the risk of suicidal thoughts or behavior. Report new or worse depression, mood changes or thoughts of self-harm to a doctor right away [115]
+- **Mood:** Like other seizure medicines, prescription CBD can raise the risk of suicidal thoughts or behavior. Report new or worse depression, mood changes or thoughts of self-harm to a doctor right away [115]. If you might act on these thoughts, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - **Weight loss:** In 26 children titrated to 25 mg/kg a day for a mean of 21 months, 80.8% had side effects, including reduced appetite (38.4%), diarrhea (34.6%) and weight loss (30.7%) that became clear only later in treatment (Sands et al., *CNS Drugs*, 2019) [83]
 - **Fever (pyrexia):** Commonly reported in epilepsy trials [16][17]
 
@@ -373,7 +373,7 @@ In 12 children taking a median dose of 12.2 (range 5.3 to 19.4) mg/kg of CBD a d
 
 ### Other Medications to Use with Caution
 
-Because CBD affects CYP3A4 and CYP2C19, and CYP1A2 at high doses [82][102], it may change levels of many common medicines. A review lists statins, calcium channel blockers, antidepressants, antipsychotics, benzodiazepines, immunosuppressants, warfarin and clopidogrel [82]. The prescribing information adds tacrolimus, sirolimus, everolimus and digoxin, and warns that CBD may make clopidogrel work less well [115]. One analysis listed 57 prescription medicines with a narrow margin between a safe and a harmful dose that cannabinoids may affect [105]. A review advises caution when CBD is taken with other medicines that can harm the liver, such as some seizure medicines, antipsychotics and acetaminophen [82]. In the prescription trials, ALT rose above 3 times the upper limit of normal in 30% of people taking both valproate and clobazam, against 21% on valproate alone, 4% on clobazam alone and 3% on neither [115].
+Because CBD affects CYP3A4 and CYP2C19, and CYP1A2 at high doses [82][102], it may change levels of many common medicines. A review lists statins, calcium channel blockers, antidepressants, antipsychotics, benzodiazepines, immunosuppressants, warfarin and clopidogrel [82]. The prescribing information adds tacrolimus, sirolimus, everolimus and digoxin, and warns that CBD may make clopidogrel work less well [115]. One analysis listed 57 prescription medicines with a narrow margin between a safe and a harmful dose that cannabinoids may affect [105]. A review advises caution when CBD is taken with other medicines that can harm the liver, such as some seizure medicines, antipsychotics and acetaminophen [82]. In the Lennox-Gastaut and Dravet trials, ALT rose above 3 times the upper limit of normal in 30% of people taking both valproate and clobazam, against 21% on valproate alone, 4% on clobazam alone and 3% on neither [115].
 
 In a study of a THC/CBD mouth spray, ketoconazole (400 mg) raised the peak CBD level by 89%, while rifampicin (600 mg) lowered it by 52% [106].
 
