@@ -15,7 +15,7 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33868820/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Small, short trials suggest olive leaf extract may modestly lower blood pressure: a 2021 meta-analysis of five trials in 325 adults with prehypertension or hypertension found that 500 mg a day lowered systolic blood pressure (MD -5.78 mmHg, 95% CI -10.27 to -1.30), while the comparisons at 1,000 mg a day showed no significant difference [12]. In a six-week crossover trial in 60 men with prehypertension, an extract providing 136 mg of oleuropein a day lowered 24-hour systolic blood pressure by 3.33 mmHg and LDL cholesterol by 0.19 mmol/L compared with control [17]. In 79 adults with type 2 diabetes, 500 mg once daily for 14 weeks lowered HbA1c and fasting insulin [29], but a six-month trial in 124 people with knee pain or mobility problems found no overall benefit [33]. Because the extract may add to the effects of blood pressure and diabetes medicines, people who take them should talk to their doctor first [25][29][53].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Small, short trials suggest olive leaf extract may modestly lower blood pressure: a 2021 meta-analysis of five trials in 325 adults with prehypertension or hypertension found that 500 mg a day lowered systolic blood pressure (MD -5.78 mmHg, 95% CI -10.27 to -1.30), while the comparisons at 1,000 mg a day showed no significant difference [12]. In a six-week crossover trial in 60 men with prehypertension, an extract providing 136 mg of oleuropein a day lowered 24-hour systolic blood pressure by 3.33 mmHg and LDL cholesterol by 0.19 mmol/L compared with control [17]. Diabetes results are mixed: in 79 adults with type 2 diabetes, 500 mg once daily for 14 weeks lowered HbA1c and fasting insulin [29], but a 24-week pilot trial in 31 adults with type 2 diabetes found no significant difference from placebo in HbA1c or insulin sensitivity [56]. A six-month trial in 124 people with knee pain or mobility problems found no overall benefit [33]. Because the extract may add to the effects of blood pressure and diabetes medicines, people who take them should talk to their doctor first [25][29][53].
 
 ## Key safety points
 
@@ -23,7 +23,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 - Olive leaf extract lowered HbA1c and fasting insulin in a type 2 diabetes trial [29], and in diabetic rats it strengthened the glucose-lowering effect of glyburide [53]. If you take insulin or other diabetes medicines, talk to your doctor first and check your glucose more often.
 - It lowered blood pressure in trials, and in one the drop was similar to captopril (12.5 to 25 mg twice daily) [17][25]. If you take blood pressure medicines or have low blood pressure, ask your doctor first and watch for dizziness, light-headedness or fainting.
 - People with olive pollen allergy may also react to olives, and possibly to olive leaf extract; one man with olive pollen allergy developed itching and hives after eating olives [52]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- In a six-month trial, gastrointestinal complaints (abdominal pain, nausea, dyspepsia) were the most common side effects in both the extract and placebo groups [33].
+- In a six-month trial, gastrointestinal complaints (abdominal pain, nausea, dyspepsia) were among the most frequent adverse events with the extract (7 of 47 events) and with placebo (6 of 67) [33].
 
 ## Brad's videos on this topic
 
@@ -47,7 +47,7 @@ Olive leaf extract is sold in several forms, which differ in strength and in how
 
 **Capsules and Tablets:** The form used in most of the trials described below. Trials used 250 mg [27][28] to 1,000 mg [25] of extract a day.
 
-**Liquid Extracts and Tinctures:** Liquid concentrates and alcohol-based tinctures are also sold, with widely varying oleuropein content.
+**Liquid Extracts and Tinctures:** Liquid concentrates and alcohol-based tinctures are also sold.
 
 **Teas and Infusions:** Dried olive leaves can be steeped in hot water.
 
@@ -55,7 +55,7 @@ Olive leaf extract is sold in several forms, which differ in strength and in how
 
 ### Oleuropein Standardization
 
-Extracts are made to different strengths, and their mix of phenolic compounds also varies, so the milligrams of extract on a label say little on their own. Compare products by the milligrams of oleuropein per serving. Trials that reported oleuropein content gave from 51.1 mg [14] to 136 mg [17] of oleuropein a day.
+Extracts are made to different strengths, so the milligrams of extract on a label say little on their own. Compare products by the milligrams of oleuropein per serving. Trials that reported oleuropein content gave from 51.1 mg [14] to 136 mg [17] of oleuropein a day.
 
 ### Key Bioactive Compounds
 
@@ -107,11 +107,13 @@ In rats, olive leaf extract reduced starch digestion and absorption in the gut [
 
 **Type 2 diabetes (n=79, 2012):** In a 14-week trial in 79 adults with type 2 diabetes, a 500 mg tablet of olive leaf extract once daily lowered HbA1c and fasting plasma insulin compared with placebo, but did not change insulin levels after meals [29].
 
+**Type 2 diabetes pilot trial (n=31, 2025):** In a 24-week placebo-controlled pilot trial (ESOLED) in adults with type 2 diabetes not taking insulin, olive leaf extract capsules did not change HbA1c significantly compared with placebo. Insulin sensitivity improved more with the extract, but the difference between groups was not significant. The extract was well tolerated, and the authors judged the trial inconclusive on glycaemic control [56].
+
 **Overweight men without diabetes (n=46, 2013):** In a 12-week crossover trial, olive leaf polyphenols (51.1 mg oleuropein, 9.7 mg hydroxytyrosol per day) improved insulin sensitivity by 15% and pancreatic beta-cell responsiveness by 28% compared with placebo [14].
 
 **Men with prehypertension (n=60, 2017):** In the six-week crossover trial, markers of glucose metabolism did not change [17].
 
-**Overall assessment:** Olive leaf extract may modestly improve HbA1c and fasting insulin in type 2 diabetes, based mainly on one trial. In people without diabetes, one trial found better insulin sensitivity and another found no change in glucose markers. Results are inconsistent and need confirming in larger trials.
+**Overall assessment:** In type 2 diabetes, results are mixed: one 14-week trial found lower HbA1c and fasting insulin [29], while a smaller 24-week pilot trial found no significant difference from placebo [56]. In people without diabetes, one trial found better insulin sensitivity and another found no change in glucose markers. Results are inconsistent and need confirming in larger trials.
 
 ### Bone Health
 
@@ -214,15 +216,15 @@ In a six-month trial, olive leaf extract was well tolerated [33]. Most trials we
 
 ### Common Side Effects
 
-The most commonly reported side effects are gastrointestinal:
+Reported side effects include:
 
-- **Gastrointestinal symptoms:** In the six-month knee trial, gastrointestinal complaints (abdominal pain, nausea, dyspepsia) were the most common adverse events in both groups: 7 of the 47 adverse events with olive leaf extract and 6 of the 67 with placebo [33].
+- **Gastrointestinal symptoms and joint pain:** In the six-month knee trial, 47 adverse events were recorded with olive leaf extract and 67 with placebo. Joint and back pain were the most frequent (12 vs 22 events), followed by gastrointestinal complaints (abdominal pain, nausea, dyspepsia; 7 vs 6). The number of people with at least one adverse event did not differ between groups [33].
 - **Headaches:** Headaches may occur, though how often is unknown.
 - **Allergic reactions:** People with olive pollen allergy may also react to olives, and possibly to olive leaf extract; one man with olive pollen allergy developed itching of the palate and widespread hives after eating olives [52]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Toxicology
 
-In a 90-day study in rats, an olive leaf extract (Bonolive) caused no deaths or toxic effects, and the highest dose tested, 1,000 mg/kg body weight a day, was the no observed adverse effect level. Laboratory and mouse tests found no mutagenic or genotoxic activity up to the limit dose of 2,000 mg/kg body weight a day [55]. Safety data in people come from short trials, the longest lasting 12 months [27].
+In a 90-day study in rats, an olive leaf extract (Bonolive) caused no deaths or toxic effects, and the highest dose tested, 1,000 mg/kg body weight a day, was the no observed adverse effect level. Bacterial and cell tests found no mutagenicity, and a mouse test found no genotoxicity up to the limit dose of 2,000 mg/kg body weight a day [55]. Safety data in people come from short trials, the longest lasting 12 months [27].
 
 ### Hypotension Risk
 
@@ -345,3 +347,5 @@ Olive fruit is a main part of the Mediterranean diet [6], but its polyphenols di
 [54] Singh I, Mok M, Christensen AM, Turner AH, Hawley JA. "The effects of polyphenols in olive leaves on platelet function." *Nutr Metab Cardiovasc Dis*. 2008;18(2):127-132. PMID: 17346951. doi: [10.1016/j.numecd.2006.09.001](https://doi.org/10.1016/j.numecd.2006.09.001)
 
 [55] Clewell AE, Beres E, Vertesi A, et al. "A Comprehensive Toxicological Safety Assessment of an Extract of Olea Europaea L. Leaves (Bonolive)." *Int J Toxicol*. 2016;35(2):208-221. PMID: 26658007. doi: [10.1177/1091581815619764](https://doi.org/10.1177/1091581815619764)
+
+[56] Leach MJ, Breakspear I. "Efficacy and safety of olive leaf extract (Olea europaea L.) for glycaemic control in adults with type 2 diabetes mellitus (ESOLED): A pilot randomised controlled trial." *Complement Ther Clin Pract*. 2025;59:101949. PMID: 39818111. doi: [10.1016/j.ctcp.2025.101949](https://doi.org/10.1016/j.ctcp.2025.101949)
