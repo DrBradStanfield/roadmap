@@ -15,14 +15,14 @@ sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/milk-thistle
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. NCCIH says there is not enough high-quality evidence to reach firm conclusions about milk thistle for any health condition, though a few small studies, mostly from Middle Eastern countries, suggest its extracts may help control blood sugar in type 2 diabetes [4][17]. For liver disease the results conflict: silymarin may lower liver enzymes in fatty liver disease, but a 2025 Cochrane review rated that evidence very uncertain, and NCCIH-funded trials in hepatitis C and in steatohepatitis found no benefit [4][23][27][30]. Trials have used silymarin, the main constituent of milk thistle extract, at doses from 140 mg three times a day in cirrhosis to 200 mg three times a day in type 2 diabetes [4][20][32]. It is usually well tolerated, but people allergic to ragweed, daisies and related plants, and anyone taking medicines such as warfarin, insulin or other diabetes drugs, should talk to their doctor first [4][21][55].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. NCCIH says there is not enough high-quality evidence to reach firm conclusions about milk thistle for any health condition, though a few small studies, mostly from Middle Eastern countries, suggest its extracts may help control blood sugar in type 2 diabetes [4][17]. For liver disease the results conflict: silymarin may lower liver enzymes in fatty liver disease, but a 2025 Cochrane review rated that evidence very uncertain, and NCCIH-funded trials in hepatitis C and in steatohepatitis found no benefit [4][23][27][30]. Trials have used silymarin, the main constituent of milk thistle extract, at doses between 140 mg and 700 mg three times a day [4][27][30][32]. It is usually well tolerated, but people allergic to ragweed, daisies and related plants, and anyone taking medicines such as warfarin, insulin or other diabetes drugs, should talk to their doctor first [4][21][55].
 
 ## Key safety points
 
 - Warfarin: in one case report, a man's INR rose from 2.64 to 4.12 after he started a "liver cleanse" product with milk thistle (200 mg), and returned to normal after he stopped it [55]. If you take warfarin, talk to your doctor first.
-- Diabetes medicines: silymarin lowered blood sugar in people already on diabetes drugs, and cut the insulin dose needed in insulin-treated patients [20][21]. Doses may need review, so check with your doctor first.
+- Diabetes medicines: silymarin lowered blood sugar in people already on diabetes drugs, and cut the insulin dose needed in insulin-treated patients with cirrhosis [20][21]. Doses may need review, so check with your doctor first.
+- Allergy is more likely if you react to ragweed, chrysanthemums, marigolds or daisies [4]. Anaphylaxis is rare [64]: for swelling of the face or throat or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - If you take any medicine, NCCIH advises talking with your health care provider first, and a 2019 review urges caution with drugs that have a narrow safety margin [4][48].
-- Allergy is more likely if you react to ragweed, chrysanthemums, marigolds or daisies [4]. Anaphylaxis is rare [64][65]: for swelling of the face or throat or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 - Little is known about safety in pregnancy or while breastfeeding [4].
 - Some products hold mycotoxins, pesticides or microbes, or a silymarin dose unlike the label [4][7].
 - The most common side effects are digestive: bloating, nausea and gas [4].
@@ -49,13 +49,13 @@ NCCIH says there is not enough high-quality evidence to reach definite conclusio
 
 Supplements come as ground seed or as concentrated extracts. Silymarin is the main constituent of milk thistle extract [4], and most trials below gave a stated dose of silymarin rather than whole seed [20][30][32]. In a survey of US milk thistle botanicals, whole seeds carried the highest fungal levels, followed by cut herb [53].
 
-### Testing Method Confusion (UV-VIS vs. HPLC)
+### Testing Methods
 
 Labels do not always match what is in the bottle. An analysis of 26 US and Czech supplements by U-HPLC-HRMS found large differences in silymarin content, often unlike the manufacturer's information, and differences between batches [7].
 
 ### Phospholipid Complexes and Enhanced Absorption
 
-At customary doses silymarin has low bioavailability [14]. Binding silybin to phosphatidylcholine is one way around this: in 9 healthy volunteers, a silybin-phosphatidylcholine complex (IdB 1016) gave much higher blood silybin levels than plain silymarin at the same silybin dose [11]. Less than 3% of the dose appeared in the urine, and much of it is probably excreted in bile [11].
+At customary doses silymarin may have low bioavailability [14]. Binding silybin to phosphatidylcholine is one way around this: in 9 healthy volunteers, a silybin-phosphatidylcholine complex (IdB 1016) gave much higher blood silybin levels than plain silymarin at the same silybin dose [11]. Less than 3% of the dose appeared in the urine, and much of it is probably excreted in bile [11].
 
 Silybin has a short terminal half-life, generally less than 4 hours, with either preparation [11]. Most trials in this article gave silymarin three times a day [20][30][32].
 
@@ -109,7 +109,7 @@ A 2025 meta-analysis of 25 studies with 2,283 patients found that silymarin alon
 
 Some important caveats:
 
-- A 55-study meta-analysis of liver injury of several causes found greater enzyme falls at doses less than 400 mg and courses of 2 months or less, and no effect in people with a BMI of 30 or more [40].
+- A 55-study meta-analysis of liver injury of several causes found greater enzyme falls at doses less than 400 mg and courses of 2 months or less, and no effect in people with a BMI of 30 or more, though its meta-regression found no link between dose or treatment duration and effect [40].
 - A US trial funded by NCCIH gave Legalon 420 mg or 700 mg three times a day for 48 weeks to 78 people with NASH without cirrhosis, and found no benefit in the primary analysis [27]. The trial authors still called the effect inconclusive because many participants did not meet the biopsy entry criteria [27]. The journal later published a correction to the paper [27].
 
 Silymarin may lower liver enzymes a little in fatty liver disease, but lower enzymes have not been shown to mean better liver tissue, and the certainty is low [23][25].
@@ -210,7 +210,7 @@ There is no agreed dose. Trials have used silymarin from 140 mg three times a da
 
 Higher doses are not clearly better [38][40]:
 
-- A 55-study meta-analysis found greater liver-enzyme falls at doses less than 400 mg and courses of 2 months or less [40].
+- A 55-study meta-analysis found greater liver-enzyme falls at doses less than 400 mg and courses of 2 months or less, though its meta-regression found no link between dose or treatment duration and effect [40].
 - In cancer care, a dose of 300 to 450 mg appeared effective, and more gave little extra benefit [38].
 - In mice, the highest silymarin dose harmed the liver more than an intermediate dose [39].
 - Up to 2.1 g a day for 7 days was safe in hepatitis C, but gave no clinical benefit [14].
@@ -234,11 +234,11 @@ The most common side effects are digestive, such as bloating, nausea and gas [4]
 
 Milk thistle may cause allergic reactions, particularly in people allergic to related plants such as ragweed, chrysanthemum, marigold and daisy [4]. LactMed advises avoiding it with known allergy to the aster (Asteraceae) family, including daisies, artichokes, common thistle and kiwi, and notes that severe allergies and anaphylaxis are rarely reported [64]. A 2025 case report describes anaphylaxis after eating milk thistle seed [65].
 
-If you get swelling of the face, lips or throat, or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+If you get swelling of the face, lips or throat, or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Hormonal Considerations
 
-In ovariectomized rats, silymarin bound only to estrogen receptor beta; it had estrogen-like effects in bone but no effect, or an anti-estrogen effect, in the uterus [66]. Whether this matters in people with hormone-sensitive cancers is unknown, so they may wish to ask their doctor first.
+Silybin, the main component of silymarin, binds only to estrogen receptor beta; in ovariectomized rats, silymarin had estrogen-like effects in bone but no effect, or an anti-estrogen effect, in the uterus [66]. Whether this matters in people with hormone-sensitive cancers is unknown, so they may wish to ask their doctor first.
 
 ### Thyroid Function
 
@@ -272,6 +272,8 @@ Laboratory studies suggest some milk thistle components can block liver enzymes 
 
 **HIV drugs:** silymarin did not meaningfully change darunavir levels in 15 people taking darunavir-ritonavir [56], and had no apparent effect on indinavir levels in 10 healthy volunteers [58].
 
+**Losartan, metronidazole and tamoxifen:** in two small trials in healthy volunteers, silymarin slowed the conversion of losartan to its active metabolite (140 mg three times a day for 14 days) [67] and raised metronidazole clearance by 29.51% (140 mg a day) [68], and LactMed notes that milk thistle might increase the metabolism of some drugs [64]. In rats, silybin raised blood levels of oral tamoxifen; whether this happens in people is unknown [69].
+
 A 2019 review concluded that silymarin has few drug interactions and no major effect on CYP450 enzymes, but advises caution with drugs that have a narrow safety margin [48].
 
 ### Specific Drug Interactions
@@ -281,6 +283,7 @@ A 2019 review concluded that silymarin has few drug interactions and no major ef
 | Warfarin | INR rise in one case report | Talk to your doctor first [55] |
 | Insulin and other diabetes medicines | Blood sugar and insulin need fell in trials | Doses may need review [20][21] |
 | Darunavir-ritonavir, indinavir | No meaningful change in drug levels | Low risk in available human studies [56][58] |
+| Losartan, metronidazole | Silymarin slowed losartan breakdown and sped metronidazole clearance in small trials | Drug levels may change [67][68] |
 | Thyroid medicine | Silymarin blocked a thyroid hormone transporter in cells | Clinical relevance unknown [51] |
 
 ### General Recommendations
@@ -288,7 +291,7 @@ A 2019 review concluded that silymarin has few drug interactions and no major ef
 - People taking warfarin should talk to their doctor before using milk thistle [55].
 - People on insulin or other diabetes medicines should talk to their doctor before starting, as blood sugar may fall [20][21].
 - Anyone taking any medicine should talk with a health care provider before using milk thistle [4].
-- The human enzyme studies so far are reassuring, but they are small [56][57][58].
+- Human studies are mixed: most found no meaningful effect, but in small trials losartan levels rose and metronidazole levels fell [56][57][58][67][68].
 
 ## 7. Dietary Sources
 
@@ -395,3 +398,9 @@ Milk thistle is often combined with other herbs in liver formulas. Artichoke lea
 [65] Planas-Vinos M, Sala-Cunill A, Luengo O, et al. "Anaphylaxis induced by milk thistle (Silybum marianum) seed ingestion: a case report." *Journal of Investigational Allergology and Clinical Immunology*. 2025;35(3):235-236. PMID: 40036083. [https://doi.org/10.18176/jiaci.1057](https://doi.org/10.18176/jiaci.1057)
 
 [66] Seidlová-Wuttke D, Becker T, Christoffel V, et al. "Silymarin is a selective estrogen receptor beta (ERbeta) agonist and has estrogenic effects in the metaphysis of the femur but no or antiestrogenic effects in the uterus of ovariectomized (ovx) rats." *Journal of Steroid Biochemistry and Molecular Biology*. 2003;86(2):179-188. PMID: 14568570. [https://doi.org/10.1016/s0960-0760(03)00270-x](https://doi.org/10.1016/s0960-0760(03)00270-x)
+
+[67] Han Y, Guo D, Chen Y, et al. "Effect of silymarin on the pharmacokinetics of losartan and its active metabolite E-3174 in healthy Chinese volunteers." *European Journal of Clinical Pharmacology*. 2009;65(6):585-591. PMID: 19221727. [https://doi.org/10.1007/s00228-009-0624-9](https://doi.org/10.1007/s00228-009-0624-9)
+
+[68] Rajnarayana K, Reddy MS, Vidyasagar J, et al. "Study on the influence of silymarin pretreatment on metabolism and disposition of metronidazole." *Arzneimittelforschung*. 2004;54(2):109-113. PMID: 15038460. [https://doi.org/10.1055/s-0031-1296944](https://doi.org/10.1055/s-0031-1296944)
+
+[69] Kim CS, Choi SJ, Park CY, et al. "Effects of silybinin on the pharmacokinetics of tamoxifen and its active metabolite, 4-hydroxytamoxifen in rats." *Anticancer Research*. 2010;30(1):79-85. PMID: 20150620. [https://pubmed.ncbi.nlm.nih.gov/20150620/](https://pubmed.ncbi.nlm.nih.gov/20150620/)
