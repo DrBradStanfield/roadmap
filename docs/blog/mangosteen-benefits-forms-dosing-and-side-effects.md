@@ -117,7 +117,7 @@ Applying mangosteen to the skin avoids the poor absorption that limits oral use.
 
 **Clinical translation gap:** These trials were small, used different products, and measured blood markers rather than disease outcomes. A laboratory antioxidant effect does not show a health benefit when taken by mouth.
 
-### Obesity and Weight Management (Preclinical)
+### Obesity and Weight Management
 
 Reviews describe anti-obesity effects of mangosteen xanthones in preclinical studies [14]. In an 8-week trial in 60 adults with obesity, 400 mg twice daily of a blend of *Sphaeranthus indicus* and *Garcinia mangostana* extracts produced a net weight loss of 3.74 kg compared with placebo [77]. The blend combined two plants, so the effect cannot be credited to mangosteen.
 
@@ -144,7 +144,7 @@ In diabetic rats, mangosteen pericarp extract lowered triglycerides, total chole
 
 Reviews report antiviral activity of mangosteen extracts and xanthones in experimental studies [10][15]. In cell culture, alpha- and gamma-mangostin inhibited four strains of SARS-CoV-2, the virus that causes COVID-19 (EC50 0.70 to 3.05 µM) [78]. The mangostins interfered with the 3C-like protease, which earlier computer studies had proposed as a target, but this effect was insufficient to be a major target [78]. No benefit for COVID-19 or any other viral infection has been shown in people.
 
-### Immunomodulatory Effects (Preclinical)
+### Immunomodulatory Effects
 
 Reviews describe antiallergic activity of mangosteen extracts and xanthones [10][15]. A 30-day trial in 59 healthy adults of a mangosteen product that also contained multivitamins and minerals reported a rise in T-helper cell frequency and a fall in CRP [83]. Because the product held other nutrients, the result cannot be credited to mangosteen.
 
@@ -213,7 +213,7 @@ A 2018 review noted conflicting results from mangosteen safety studies that need
 
 **Kidney disease:** People with kidney disease should ask their doctor first, because how reduced kidney function affects xanthone clearance has not been studied.
 
-**Surgery:** Alpha- and gamma-mangostin inhibited platelet clumping in laboratory tests, although effects in people have not been assessed [81]. A 2022 review advises stopping non-essential supplements, such as mangosteen, 2 weeks before planned surgery [85].
+**Surgery:** Alpha- and gamma-mangostin inhibited platelet clumping in laboratory tests, although effects in people have not been assessed [81]. A 2022 review advises stopping non-essential supplements 2 weeks before planned surgery, which would include mangosteen [85].
 
 ### Common Side Effects
 
@@ -252,7 +252,7 @@ Given the limited formal interaction data, the following precautions are advisab
 1. **Consult a healthcare provider.** If you take prescription medicines, check with your doctor or pharmacist before starting. This matters most for blood thinners, diabetes medicines and cancer treatment.
 2. **Avoid concurrent use** with anticoagulants or antiplatelet drugs unless your doctor agrees, given the platelet effects seen in laboratory tests [81].
 3. **Monitor blood glucose** if combining mangosteen supplements with diabetes medicines [70][72]. If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not give food or drink by mouth.
-4. **Stop before surgery:** A 2022 review advises stopping non-essential supplements, such as mangosteen, 2 weeks before planned surgery [85].
+4. **Stop before surgery:** A 2022 review advises stopping non-essential supplements 2 weeks before planned surgery, which would include mangosteen [85].
 
 ## 7. Dietary Sources
 
