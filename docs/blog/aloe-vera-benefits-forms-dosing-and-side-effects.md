@@ -6,387 +6,380 @@ publishedAt: "2025-06-10T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["aloe", "aloe vera", "skin", "gut health", "inflammation", "wound healing", "diabetes", "blood sugar", "constipation", "fiber", "probiotic", "prebiotic", "psoriasis", "hba1c", "insulin resistance", "weight loss", "collagen"]
-summary: "Reference on aloe vera: skin healing, gut health, blood sugar, constipation, GERD. Topical use for burns, sunburn, psoriasis, acne; oral use for IBS, ulcerative colitis, diabetes. Gel vs latex distinction critical — latex carries carcinogenicity and liver toxicity risks. Always discuss with your doctor."
+summary: "Reference on aloe vera. Gel on the skin may help burns and some skin conditions; gel by mouth may lower blood sugar a little. Aloe latex and non-decolorized whole-leaf extract carry cancer and liver concerns. Talk to your doctor first if pregnant, breastfeeding, or on digoxin or diabetes medicines."
+reviewed: "2026-10-26"
+sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/aloe-vera","checked":"2026-09-29","fingerprint":"sha256:72f729b0ca07f538a25a2089d49763174b1ac41ad72425460dd09e05869ae997"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/aloe-vera-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/aloe-vera-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Aloe gel from the inner leaf, put on the skin, may speed burn healing and ease burn pain, and a meta-analysis of 4 small trials found second-degree burns healed 4.44 days sooner with aloe [2][11]. Taken by mouth, aloe gel may lower blood sugar and HbA1c in people with diabetes, but the trials are small and their results vary widely [2][27]. Aloe latex and non-decolorized whole-leaf extract are a different product: latex can cause cramps and diarrhea, the FDA removed it from over-the-counter laxatives in 2002 for lack of safety data, and a non-decolorized whole-leaf extract caused cancers of the large intestine in rats [2][36]. Oral aloe gel appears safe for up to 42 days in studies, but aloe by mouth may be unsafe in pregnancy and breastfeeding, and aloe leaf extracts have been linked to cases of acute hepatitis [2].
+
+## Key safety points
+
+- Overuse of aloe latex may raise the risk of side effects from digoxin and other cardiac glycosides, likely through potassium loss [2][22]. If you take digoxin and have a racing, slow or irregular heartbeat, or faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Aloe has been loosely linked with bleeding during surgery, and one woman taking aloe tablets bled heavily during surgery under sevoflurane [35][38]. Stop aloe 2 weeks before planned surgery and tell your surgeon [38].
+- Aloe gel lowered fasting blood sugar in trials, including in people already taking glyburide and metformin [7][27]. With diabetes medicines, check your blood sugar more often.
+- Aloe gel, latex or whole-leaf extract taken by mouth may be unsafe during pregnancy and breastfeeding [2].
+- Non-decolorized whole-leaf extract caused large-intestine cancers in rats, and IARC classes it as a possible human carcinogen [2][36].
+- Aloe leaf extracts taken for 3 weeks to 5 years have been linked to acute hepatitis [2]. In reported cases, it settled after stopping [21].
+- Latex can cause abdominal pain, cramps and diarrhea; on the skin, aloe gel occasionally causes burning, itching, rash or eczema [2].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Aloe vera (typically labeled as *Aloe barbadensis*) is a short-stemmed, cactus-like succulent plant with thick, fleshy leaves that has been used medicinally for thousands of years. Historical records document its use in ancient Greece, Rome, Babylonia, and China for skin conditions, wound healing, and digestive ailments [1][2]. The plant is now grown commercially in subtropical regions around the world, including the southern border areas of Texas, New Mexico, Arizona, and California [2].
+Aloe vera is a cactus-like plant that grows in hot, dry climates. It was used in ancient Greece, Rome, Babylonia, and China, mainly for skin conditions and wound healing [2]. It is grown in subtropical regions around the world, including the southern border areas of Texas, New Mexico, Arizona, and California [2].
 
-The aloe leaf contains two distinct bioactive zones, each with different compositions and clinical applications [1][3]:
+Aloe products can come from different parts of the leaf, and the parts differ in what they contain [2][24]:
 
-- **Aloe gel** — derived from the inner leaf. Although mostly water (>98%), it contains polysaccharide compounds, most notably acemannan (acetylated mannose), which is considered the primary bioactive component. Acemannan has demonstrated immunomodulatory, anti-inflammatory, and wound-healing properties in laboratory and animal studies [1][3].
-- **Aloe latex** — found in the outer portion of the leaf, beneath the skin. Contains anthraquinone compounds, primarily aloins (including the compound aloin A and aloin B) and emodin. Aloe latex acts as a potent stimulant laxative. Products made from whole aloe leaf or unpurified aloe leaf juice will contain these latex compounds [1][3].
+- **Aloe gel:** from the inner leaf. Its main bioactive compounds are carbohydrates, chiefly acemannan, along with related complexes of sugars, proteins and fats [24].
+- **Aloe latex:** from the leaf's outer layer. It contains anthraquinones such as aloin, which may be toxic [2][24]. Whole crushed leaf contains both gel and latex [2].
 
-This distinction between gel and latex is clinically important because the safety profiles differ markedly. Aloe gel is generally considered safe for both oral and topical use in moderate amounts, while aloe latex raises serious safety concerns including potential carcinogenicity (see Safety and Side Effects) [1][2][3].
+This split matters because the safety profiles differ. Short-term oral gel and topical gel appear well tolerated, while latex and non-decolorized whole-leaf extract carry cancer and other safety concerns (see Safety and Side Effects) [2].
 
-Most commercial aloe products are made with *Aloe barbadensis*, but other species may be used, such as *Aloe ferox* (Cape aloe), which contains higher concentrations of latex [1]. Additional species include *Aloe africana* and *Aloe arborescens* [2]. The species should be noted on the product label.
+Aloe products may be labeled with several species names, including *Aloe vera*, *Aloe barbadensis*, *Aloe africana*, and *Aloe arborescens* [2].
 
-Aloe vera is marketed for a wide range of uses. Topically, it is promoted for burns, sunburn, wound healing, acne, psoriasis, lichen planus, oral submucous fibrosis, genital herpes, and skin damage from radiation therapy [1][2]. Orally, it is promoted for constipation, gastroesophageal reflux disease (GERD), blood sugar regulation, weight loss, inflammatory bowel disease (including ulcerative colitis and Crohn's disease), irritable bowel syndrome (IBS), and osteoarthritis [1][2][3].
+Topical aloe is promoted for acne, psoriasis, lichen planus, oral submucous fibrosis, burns, and skin damage from radiation therapy. Oral aloe is promoted for weight loss, diabetes, and inflammatory bowel disease, including Crohn's disease and ulcerative colitis [2].
 
-In 2002, the U.S. Food and Drug Administration (FDA) issued a ruling that required manufacturers to remove aloe latex from over-the-counter laxative products, deeming aloe "not generally safe and effective" for this use due to a lack of adequate safety data [1][2][3]. The International Agency for Research on Cancer (IARC) of the World Health Organization has classified non-decolorized whole leaf extract of aloe vera as "possibly carcinogenic to humans" (Group 2B) [2][3][4].
+In 2002, the U.S. Food and Drug Administration (FDA) required manufacturers to remove aloe latex from over-the-counter laxative products because of a lack of safety data [2][3]. The International Agency for Research on Cancer (IARC) has classified whole leaf extract of aloe vera, in its non-decolorized form, as a possible carcinogen in humans [2][4].
 
-Despite these regulatory concerns, aloe vera remains one of the most widely consumed botanical supplements globally, available as juices, gels, capsules, powders, and topical preparations.
+Aloe is one of the most popular botanical medicines in the world [19].
 
 ## 2. Forms and Bioavailability
 
 ### Types of Aloe Products
 
-The clinical effects of aloe vera depend critically on the type of preparation used. The following table summarizes the major forms:
+What aloe does depends on the part of the leaf used and how it was processed. The main forms:
 
 | Form | Source | Key Compounds | Typical Use | Latex Content |
 |------|--------|---------------|-------------|:---:|
-| Aloe Vera Gel | Inner leaf | Acemannan, polysaccharides, vitamins, minerals, amino acids | Topical (burns, wound healing); Oral (blood sugar, GI) | Very low |
-| Aloe Vera Juice (Purified/Decolorized) | Whole leaf, filtered | Polysaccharides; latex largely removed | Oral health supplement | <10 ppm aloin (IASC standard) |
-| Aloe Vera Juice (Unpurified/Raw) | Whole leaf, unfiltered | Polysaccharides + aloins + emodin | Laxative; oral supplement | High |
-| Aloe Latex | Outer leaf (under skin) | Aloins (aloin A, aloin B), emodin, anthraquinones | Stimulant laxative | Very high |
-| Aloe Vera Cream/Ointment | Gel extract in topical base | Standardized aloe extract (typically 0.5%) | Skin conditions (herpes, psoriasis) | Variable |
-| Dried Aloe Extract/Powder | Concentrated gel or whole leaf | Concentrated polysaccharides +/- aloins | Capsules, tablets | Depends on processing |
-| Aloe Ferox (Cape Aloe) | *Aloe ferox* species | Higher latex/aloin content than *A. barbadensis* | Stronger laxative effect | Very high |
+| Aloe Vera Gel | Inner leaf | Acemannan and related carbohydrates [24] | Topical (burns, skin); oral (blood sugar, gut) | Very low |
+| Decolorized Whole-Leaf Extract or Juice | Whole leaf, activated carbon treated | Carbohydrates; anthraquinones largely removed [2] | Oral drinks | Low |
+| Non-Decolorized Whole-Leaf Extract | Whole crushed leaf | Gel plus latex anthraquinones [2] | Laxative | High |
+| Aloe Latex | Outer leaf layer | Anthraquinones such as aloin [22][24] | Stimulant laxative | Very high |
+| Aloe Vera Cream | Aloe extract in a cream base | 0.5% aloe extract in one psoriasis trial [29] | Skin conditions | Variable |
+| Dried Aloe Extract/Powder | Concentrated gel or whole leaf | Carbohydrates, with or without aloin | Capsules, tablets | Depends on processing |
 
 ### Processing and Decolorization
 
-The safety and composition of aloe products depends heavily on processing [1][3]:
+Processing changes both the composition and the safety of aloe products [2][24]:
 
-- **Decolorized (purified)** aloe has undergone filtration or activated carbon treatment to remove the yellowish latex containing anthraquinone compounds. Products labeled as "filtered," "purified," or "decolorized" should contain minimal latex.
-- **Non-decolorized** aloe retains the full latex content, including aloins and emodin. This is the form classified as "possibly carcinogenic" by IARC [2][4].
-- The International Aloe Science Council (IASC) certification program requires certified aloe products for internal consumption to contain less than 10 parts per million (ppm) of aloin [1].
+- **Decolorized** aloe has had activated carbon treatment to remove the toxic anthraquinone components. Controlled decolorization markedly reduces aloin and potential allergens [2][24].
+- **Non-decolorized** aloe has not had this treatment. This is the form IARC classes as a possible human carcinogen [2][4].
+- A 2023 review of food-grade aloe drinks covered products containing no more than 10 parts per million of aloin [2][19].
 
 ### Key Bioactive Compounds
 
-**Acemannan** is the primary bioactive polysaccharide in aloe vera gel, consisting of acetylated mannose units. It has demonstrated immunomodulatory properties, stimulating macrophage activity and cytokine production in laboratory studies [3]. However, many commercial aloe products do not list their acemannan content, and independent testing has found that some products contain little or no acemannan [1].
+**Acemannan** is a carbohydrate that dominates the bioactive compounds in aloe gel [24]. Laboratory work suggests aloe has immunomodulatory, anti-inflammatory and antioxidant activity [16].
 
-**Aloins** (anthraquinone glycosides) are the primary active compounds in aloe latex. Aloin is converted by gut bacteria to aloe-emodin, which stimulates colonic motility and fluid secretion, producing the laxative effect [1][3].
-
-**Other compounds** present in aloe gel include vitamins (A, C, E, B12, folic acid), minerals (calcium, chromium, copper, selenium, magnesium, manganese, potassium, sodium, zinc), enzymes (amylase, lipase, alkaline phosphatase), amino acids, salicylic acid, lignin, and saponins [3].
+**Aloin** and related anthracenes are found in aloe extracts. They may be allergenic and potentially toxic [24].
 
 ### Bioavailability Considerations
 
-Limited human bioavailability data exist for orally consumed aloe vera compounds. The polysaccharides in aloe gel are large molecular weight molecules, and their absorption from the gastrointestinal tract is not well characterized. Most evidence for systemic effects comes from clinical outcome studies rather than pharmacokinetic research.
+Trials of oral aloe have used specific preparations, such as a standardized syrup, gel capsules, or a set volume of gel [5][7][8]. Results from one preparation may not apply to another.
 
-For topical preparations, the aloe gel matrix appears to enhance skin penetration of active compounds, though the degree of absorption through intact skin varies by formulation. Standardized cream preparations (e.g., 0.5% aloe extract) used in clinical trials for herpes and psoriasis represent a specific concentration, distinct from applying pure aloe gel directly from the plant [1].
+Topical trials also used specific products, such as a hydrophilic cream with 0.5% aloe extract [29] or a commercial aloe gel [30]. These differ from gel taken straight from the plant.
 
 ## 3. Evidence for Benefits
 
 ### Constipation (Laxative Effect)
 
-Aloe vera juice containing latex reliably produces a laxative effect due to the anthraquinone compounds (aloins), which act as stimulant laxatives by increasing colonic motility and fluid secretion [1][3].
+Aloe latex taken by mouth can cause abdominal pain, cramps, and diarrhea [2].
 
-The mechanism involves bacterial conversion of aloin to aloe-emodin in the large intestine, which stimulates peristalsis and inhibits water and electrolyte reabsorption, producing softer, more frequent stools [3].
+Taking aloe preparations by mouth has been linked to diarrhea, low potassium (hypokalemia), pseudomelanosis coli, and kidney failure [22].
 
-However, the FDA banned aloe latex in over-the-counter laxative products in 2002, requiring manufacturers to remove it from OTC formulations due to insufficient safety and efficacy data meeting modern regulatory standards [1][2][3]. This does not mean the laxative effect is absent — rather, the FDA determined there was inadequate data to classify it as both safe and effective for OTC drug use.
-
-For constipation, aloe is typically taken in the evening. The dose ranges from 50 to 200 mg of dried aloe juice (as an extract or powder), or one tablespoon of aloe juice up to three times per day [1]. A number of other supplements, including those providing fiber (such as psyllium husk), may be safer and helpful alternatives for constipation [1].
+In 2002, the FDA required manufacturers to remove aloe latex from over-the-counter laxative products because of a lack of safety data [2][3]. The ruling reflected missing safety data, not proof that the laxative effect is absent.
 
 ### Gastroesophageal Reflux Disease (GERD)
 
-An open-label study in Iran among 79 people (average age 47) with GERD evaluated aloe vera gel syrup (standardized to 5.0 mg of polysaccharide per mL of syrup) at a dose of 10 mL (0.34 fl oz) once daily for 4 weeks [1].
+A pilot randomized trial in Iran gave 79 people with GERD aloe vera syrup (standardized to 5.0 mg polysaccharide per mL of syrup), 10 mL a day, or omeprazole or ranitidine, for 4 weeks [5].
 
 Key findings from Panahi et al. (*J Tradit Chin Med*, 2015) [5]:
-- Aloe vera gel syrup significantly reduced self-reported GERD symptoms compared to baseline, including heartburn, food and acid regurgitation, difficulty swallowing, flatulence, belching, nausea, and vomiting
-- Aloe syrup was as effective as omeprazole (20 mg once daily) and ranitidine (150 mg twice daily) at reducing regurgitation, nausea, and vomiting
-- However, aloe was less effective than both drugs at reducing heartburn and flatulence
-- Study limitations: open-label design (no blinding), relatively small sample (n=79), short duration (4 weeks), single-center
+- Aloe syrup reduced how often each of the 8 assessed GERD symptoms occurred, including heartburn, food regurgitation, flatulence, belching, dysphagia, nausea, vomiting and acid regurgitation
+- Aloe was safe and well tolerated, with no adverse events requiring withdrawal
+- Study limitations: pilot design, small sample (n=79), short duration (4 weeks)
 
-This remains the only clinical trial evaluating aloe for GERD. While the results are encouraging, the open-label design means placebo effects cannot be excluded, and the finding that aloe was inferior to standard medications for the primary symptom of heartburn limits its clinical utility as a standalone treatment.
+These results come from one small pilot trial and need confirmation in larger studies.
 
 ### Blood Sugar and Diabetes
 
-Preliminary evidence suggests that consuming aloe vera gel or juice shortly after eating slightly reduces the normal postprandial rise in blood sugar levels [1][2].
+A small amount of research suggests that aloe taken by mouth may lower blood sugar in people with diabetes [2].
 
-**Postprandial glucose reduction:** Thilavech et al. (*J Funct Food*, 2024) [6] found that aloe vera gel consumption after meals modestly reduced the normal rise in blood sugar, though effects on triglycerides and free amino acids were not significant.
+**Meta-analysis:** Suksomboon et al. (*J Clin Pharm Ther*, 2016) [27] pooled 8 randomized trials with 470 patients. In prediabetes, aloe lowered fasting plasma glucose (mean difference -0.22 mmol/L, 95% CI -0.32 to -0.12) with no effect on HbA1c. In type 2 diabetes, it gave a marginal fall in fasting glucose (mean difference -1.17 mmol/L, 95% CI -2.35 to 0.00) and a significant fall in HbA1c (mean difference -11 mmol/mol, 95% CI -19 to -2). The authors noted high heterogeneity between studies.
 
-**Type 2 diabetes:** Huseini et al. (*Planta Med*, 2012) [7] conducted a randomized double-blind placebo-controlled clinical trial in hyperlipidemic type 2 diabetic patients and reported anti-hyperglycemic and anti-hypercholesterolemic effects of aloe vera leaf gel. The study found modest reductions in fasting blood glucose and postprandial glucose.
+**Type 2 diabetes:** Huseini et al. (*Planta Med*, 2012) [7] ran a randomized double-blind placebo-controlled trial in people with type 2 diabetes and high blood lipids whose blood sugar was not controlled on glyburide and metformin. Aloe gel (one 300 mg capsule every 12 hours for 2 months, 30 patients) lowered fasting blood glucose, HbA1c, total cholesterol and LDL compared with placebo (30 patients). No adverse effects were reported.
 
-**Weight and metabolic parameters:** The NIH notes that a small study showed a specific aloe gel product taken orally for 8 weeks modestly reduced weight and fat mass in adults with obesity or overweight who had diabetes or prediabetes [2].
+**Weight and metabolic parameters:** In 136 obese people with prediabetes or early untreated diabetes, an aloe gel complex taken for 8 weeks lowered body weight and body fat mass compared with control [2][28].
 
 **HbA1c:** A small amount of research suggests that aloe taken orally may reduce blood sugar and HbA1c (a marker of long-term blood sugar control) in people with diabetes [2].
 
-**Limitations:** These studies are small, short-term, and preliminary. There have been no large, long-term, randomized, controlled clinical trials demonstrating clinically meaningful improvements in glycemic control with aloe vera. People with diabetes should be aware that aloe may potentially cause blood sugar levels to fall too low, particularly when used alongside diabetes medications (see Drug Interactions) [1][3].
+**Limitations:** These studies are small and short. The meta-analysis authors called for high-quality, well-powered trials using standardized preparations [27]. Because aloe may lower blood sugar, people taking diabetes medicines should watch their blood sugar more closely (see Drug Interactions) [7][27].
 
 ### Ulcerative Colitis
 
-Langmead et al. (*Aliment Pharmacol Ther*, 2004) [8] conducted a randomized, double-blind, placebo-controlled trial of aloe vera gel for mild to moderate ulcerative colitis:
+Langmead et al. (*Aliment Pharmacol Ther*, 2004) [8] conducted a randomized, double-blind, placebo-controlled trial of aloe vera gel for mildly to moderately active ulcerative colitis:
 
-- **Design:** 44 patients randomized to oral aloe vera gel (100 mL twice daily) or placebo for 4 weeks
-- **Results:** Clinical remission, clinical improvement, and simple clinical colitis activity index (SCCAI) scores improved more in the aloe group than placebo, though the study was small
-- **Histological improvement** was also observed in the aloe group
-- **Limitations:** Small sample size (n=44), short duration (4 weeks), single-center study
+- **Design:** 44 evaluable outpatients given oral aloe vera gel or placebo, 100 mL twice daily for 4 weeks, in a 2:1 ratio
+- **Results:** Clinical remission occurred in 9 of 30 patients (30%) on aloe and 1 of 14 (7%) on placebo; clinical response occurred in 14 (47%) and 2 (14%), respectively
+- **Histological scores** fell with aloe, but sigmoidoscopic scores and laboratory tests did not differ from placebo
+- **Limitations:** Small sample size (n=44), short duration (4 weeks)
 
-This remains the only published RCT of aloe for ulcerative colitis. While the results showed promise, the evidence is considered preliminary and insufficient to recommend aloe as a treatment for inflammatory bowel disease [1][2].
+The authors called for further evaluation. The NIH says there is not enough reliable information to know whether aloe helps ulcerative colitis [2].
 
 ### Irritable Bowel Syndrome (IBS)
 
-Davis et al. (*Int J Clin Pract*, 2006) [9] evaluated decolorized aloe leaf extract for diarrhea-predominant IBS:
+Davis et al. (*Int J Clin Pract*, 2006) [9] tested aloe vera in people with IBS referred to secondary care:
 
-- **Design:** Randomized double-blind placebo-controlled trial with patients receiving 50 mL of decolorized aloe leaf extract taken four times daily for one month
-- **Results:** Some improvement in IBS symptoms was reported
-- **Limitations:** No large, long-term, randomized, controlled clinical studies have confirmed these findings [1]
+- **Design:** Randomized double-blind placebo-controlled trial; 58 patients took aloe vera or matching placebo for a month
+- **Results:** At 1 month, 11 of 31 (35%) on aloe and 6 of 27 (22%) on placebo responded (p = 0.763), so the trial found no evidence of benefit. People with diarrhea-predominant IBS showed a trend toward response (10 of 23 vs 2 of 14, p = 0.07)
+- **Limitations:** The authors called for further trials in diarrhea-predominant IBS
 
-The evidence for aloe in IBS remains insufficient for clinical recommendations [2].
+The NIH says there is not enough reliable information to know whether aloe helps IBS [2].
 
 ### Burns and Sunburn
 
-Although aloe vera gel is one of the most commonly used home remedies for sunburn and other burns, the clinical evidence is mixed [1][2].
+Aloe vera gel is a common home remedy for burns, and the clinical evidence is encouraging but small [2][11].
 
-**Positive evidence:** The NIH states that clinical research suggests topical application of aloe gel may speed burn healing and reduce burn-related pain [2]. Mahboub et al. (*J Caring Sci*, 2021) [10] conducted a randomized clinical trial comparing aloe vera gel with silver sulfadiazine cream 1% for burn wound healing and found potential benefits for aloe in healing, itching, and pain management. Sharma et al. (*Adv Skin Wound Care*, 2022) [11] published a meta-analysis and systematic review of second-degree burns and aloe vera, contributing to the evidence base for burn applications.
+**Positive evidence:** The NIH states that clinical research suggests topical application of aloe gel may speed burn healing and reduce burn-related pain [2]. Mahboub et al. (*J Caring Sci*, 2022) [10] randomized patients with first- and second-degree burns to aloe vera gel or silver sulfadiazine cream (34 per group); wounds healed faster and hurt less with aloe. Sharma et al. (*Adv Skin Wound Care*, 2022) [11] pooled 4 trials of second-degree burns (133 patients, 163 wounds) and found healing was 4.44 days faster with aloe (P = .004).
 
-**Limitations:** Despite widespread use, there are no large, high-quality RCTs definitively establishing aloe's superiority over standard wound care for burns. The evidence base consists primarily of small trials with heterogeneous methodologies [1][2].
+**Limitations:** The meta-analysis was small, and the same review described published reports on aloe for wounds in general as inconclusive [11].
 
 ### Radiation Dermatitis
 
-Aloe vera has been applied to the skin of patients receiving radiation therapy for cancer, but the evidence indicates it is not effective for this use [1].
+Aloe vera gel has been tested on the skin of people having radiation therapy for cancer, and trials found no protection [31][32].
 
-Clinical studies have found that topical aloe vera does not significantly reduce redness, itching, or peeling associated with radiation therapy-induced skin damage [1][2]. Despite its continued recommendation in some complementary medicine resources, the clinical trial data do not support its use for radiation dermatitis.
+Two phase III trials, in 194 and 108 women having breast or chest wall radiation, found dermatitis scores were virtually identical with or without aloe gel [31]. A 2005 systematic review of 5 published randomized trials found no evidence that topical aloe prevents or reduces radiation skin reactions [32]. The NIH lists radiation skin damage among uses where a small amount of research suggests topical aloe may help [2].
 
 ### Genital Herpes
 
-Some preliminary evidence suggests that a topical cream containing 0.5% aloe extract (as opposed to pure aloe gel) may be effective for treating genital herpes lesions [1][2].
+A small amount of research suggests topical aloe may help people with genital herpes [2].
 
-In clinical studies, topical aloe vera cream containing 0.5% aloe extract was applied three times daily to herpes lesions. The cream preparations showed potential for accelerating healing time [1]. Note that this is a specific standardized extract concentration, not raw aloe gel applied directly.
-
-The evidence remains preliminary and limited to small studies. Standard antiviral medications (e.g., acyclovir, valacyclovir) remain the mainstay of herpes treatment [1][2].
+A 2009 review of dermatology studies concluded that topical aloe can be effective for genital herpes, while noting that its clinical effectiveness has not been explored thoroughly [40].
 
 ### Psoriasis
 
-Evidence for aloe vera cream in treating psoriasis is mixed [1][2].
+Evidence for topical aloe in psoriasis is mixed [29][30].
 
-Some studies using topical aloe preparations have reported improvements in psoriasis symptoms, including reduced scaling and erythema (redness). However, other studies have failed to replicate these findings, and the overall evidence base is inconsistent [1][2].
+In a placebo-controlled trial of 60 patients, a hydrophilic cream with 0.5% aloe extract, applied 3 times daily for 5 days a week (up to 4 weeks), cured 25 of 30 patients (83.3%) compared with 2 of 30 (6.6%) on placebo [29]. A later trial in 41 patients found a commercial aloe gel, applied twice daily for 4 weeks, was not better than placebo; 55% of patients reported local side effects, mainly dry skin [30].
 
-The NIH notes that a small amount of research suggests topical use of aloe may help people with psoriasis, but the quality of evidence is limited [2].
+The NIH notes that a small amount of research suggests topical use of aloe may help people with psoriasis [2].
 
 ### Lichen Planus
 
-Several studies have shown benefits of topical aloe gel for relieving symptoms of lichen planus, a skin condition characterized by itchy, flat, scaly patches [1].
+Lichen planus is a very itchy rash on the skin or in the mouth [2].
 
-Lichen planus can affect the skin, mouth, and other mucosal surfaces. Aloe gel has been studied as a topical treatment for oral lichen planus, with some studies demonstrating reduced pain, burning sensation, and clinical improvement compared to placebo [1][2].
+In a randomized, double-blind trial of 54 people with oral lichen planus, 22 of 27 (81%) treated with aloe gel for 8 weeks had a good response, compared with 1 of 27 (4%) on placebo [34]. No serious side effects occurred [34]. The NIH notes a small amount of research suggesting topical aloe may help lichen planus [2].
 
-While the evidence is more consistent here than for some other indications, the studies remain small and additional research is needed.
+The trials remain small.
 
 ### Oral Submucous Fibrosis
 
-Oral submucous fibrosis is a chronic condition causing scarring, tissue fibrosis, and a burning sensation in the mouth. Al-Maweri et al. (*J Oral Pathol Med*, 2019) [12] published a systematic review and meta-analysis evaluating aloe vera in the treatment of this condition.
+Oral submucous fibrosis is a disease that causes scars and tissue fibrosis and can involve a burning sensation in the mouth [2]. Al-Maweri et al. (*J Oral Pathol Med*, 2019) [12] pooled 6 randomized trials: aloe eased pain and burning more than control at 1 and 2 months, but not at 3 months, and objective clinical outcomes did not differ.
 
-The NIH notes that a small amount of research suggests topical aloe may help people with oral submucous fibrosis [2]. The evidence base is growing but still limited.
+The NIH notes that a small amount of research suggests topical aloe may help people with oral submucous fibrosis [2]. The review authors called for better-designed trials with longer follow-up [12].
 
 ### Acne
 
 Two small studies suggest that topical application of aloe gel, in combination with other forms of treatment, may improve acne [2].
 
-Zhong et al. (*Front Med*, 2021) [13] evaluated aloe vera gel combined with ultrasound and soft mask for the treatment of mild to severe facial acne and reported positive results. However, because aloe was used as part of a combination therapy, its independent contribution to the observed benefits is difficult to isolate.
+Zhong et al. (*Front Med*, 2021) [13] evaluated aloe vera gel combined with ultrasound and soft mask for the treatment of mild to severe facial acne and reported fewer papules and smaller hyperpigmented areas. Because aloe was part of a combination therapy, its own contribution cannot be separated out.
 
 ### Seborrhea
 
-An ointment made of aloe vera may reduce symptoms of seborrhea (seborrheic dermatitis), which presents as red, scaly skin eruptions typically on the scalp, face, and chest [1]. The evidence is limited to small studies.
+A 2009 review of dermatology studies concluded that topical aloe can be effective for seborrheic dermatitis, though the authors noted its clinical effectiveness has not been explored thoroughly [40].
 
 ### Wound Healing
 
-Several studies have evaluated topical aloe in wound healing, and the results have been mixed [1][2]. Long (*JAMA Dermatol*, 2016) [14] reviewed aloe vera's historical use in dermatology, noting both traditional applications and the inconsistency of modern evidence.
+A systematic review described published reports on aloe in wound care as inconclusive [11]. Long (*JAMA Dermatol*, 2016) [14] wrote a short piece on aloe's history in dermatology.
 
-Notably, one study suggested that aloe vera can actually impair wound healing, raising concerns about its routine application to surgical wounds or other non-burn injuries [1].
+In one study of 21 women whose wounds after cesarean delivery or gynecologic surgery had to heal by second intention, wounds treated with aloe gel took 83 days on average to heal, compared with 53 days with standard care (P = .003) [33]. This raises concern about routine use on surgical wounds.
 
-The NIH notes interest in using aloe for diabetic foot ulcers, but there is insufficient reliable evidence to determine whether it is helpful for this condition [2].
+The NIH notes interest in using aloe for diabetic foot ulcers, but there is not enough reliable information to say whether it helps [2].
 
 ### Osteoarthritis
 
-Taking aloe orally has been proposed as a treatment for osteoarthritis due to aloe's potential anti-inflammatory action [1].
+Oral aloe has been proposed for osteoarthritis as an anti-inflammatory agent [15].
 
-Cowan (*Br J Community Nurs*, 2010) [15] discussed the rationale for using aloe in osteoarthritis management. However, there have been no large, long-term, randomized, controlled clinical studies evaluating aloe gel for osteoarthritis [1], and the evidence remains speculative.
+Cowan (*Br J Community Nurs*, 2010) [15] argued for trials of oral aloe in osteoarthritis, noting that evidence of benefit is anecdotal or from small studies and that long-term randomized controlled trials are still needed.
 
 ### Weight Loss
 
-The NIH notes that oral use of aloe is promoted for weight loss [2]. A small study showed that a specific aloe gel product taken orally for 8 weeks modestly reduced weight and fat mass in adults with obesity or overweight who had diabetes or prediabetes [2].
+The NIH notes that oral use of aloe is promoted for weight loss [2]. A small study showed that a specific aloe gel product taken orally for 8 weeks modestly reduced weight and fat mass in adults with obesity or overweight who had diabetes or prediabetes [2][28].
 
-However, the evidence is too limited to recommend aloe vera for weight management.
+The evidence is too limited to recommend aloe vera for weight management.
 
 ### Eye Health (Dry Eye)
 
-Placing aloe in the eye is recommended on some websites as a home remedy for dry eye. However, this recommendation appears to be based solely on a single laboratory (in vitro) study [1].
+Some websites suggest putting aloe in the eye for dry eye. The research behind this is laboratory and animal work.
 
-Wozniak and Paduch (*Pharm Biol*, 2012) [16] studied cells from the cornea of the eye and found that certain ethanol and ethyl acetate extracts of aloe reduced markers of inflammation and had free radical scavenging effects in the laboratory setting.
+Wozniak and Paduch (*Pharm Biol*, 2012) [16] studied human corneal cells and found that aloe extracts made with ethanol or ethyl acetate lowered nitric oxide and inflammatory cytokines; only the ethyl acetate extract showed a clear free radical scavenging effect.
 
-Animal studies using aloe to treat corneal lesions and burns have yielded mixed results:
-- Green et al. (*J Toxicol Cutaneous Ocul Toxicol*, 2008) [17] reported mixed outcomes
-- Atiba et al. (*Clin Ophthalmol*, 2015) [18] also found inconsistent results
+In rats with corneal alkali burns, aloe gel eye drops improved healing of the corneal surface, most clearly in diabetic rats [18].
 
-There is no clinical evidence supporting the use of aloe in the eye, and self-treating with non-sterile plant preparations carries a risk of eye infection and irritation.
+These are cell and animal studies and do not show that aloe helps dry eye in people. Putting non-sterile plant material in the eye may cause infection or irritation.
 
 ## 4. Recommended Dosing
 
-There is no established standard dose for aloe vera, as the appropriate amount depends on the form, preparation method, and intended use. The following dosing information is derived from clinical studies and expert guidance [1]:
+There is no established standard dose for aloe vera. The doses below are those used in clinical trials:
 
 ### By Indication
 
 | Indication | Form | Dose | Frequency | Duration Studied |
 |-----------|------|------|-----------|:---:|
-| Constipation | Dried aloe juice (extract/powder) | 50-200 mg | Once daily (evening) | Short-term only |
-| Constipation | Aloe juice (liquid) | 1 tablespoon (~15 mL) | Up to 3 times daily | Short-term only |
-| GERD | Aloe vera gel syrup (5.0 mg polysaccharide/mL) | 10 mL | Once daily | 4 weeks |
-| Blood sugar management | Aloe vera gel | 1 tablespoon (~15 mL) | Once daily | Varies |
-| Genital herpes (topical) | 0.5% aloe cream | Applied to lesions | 3 times daily | Until healing |
+| GERD | Aloe vera syrup (5.0 mg polysaccharide/mL) | 10 mL | Once daily | 4 weeks |
+| Type 2 diabetes (with glyburide and metformin) | Aloe gel capsule | 300 mg | Every 12 hours | 2 months |
 | Ulcerative colitis | Aloe vera gel (oral) | 100 mL | Twice daily | 4 weeks |
-| IBS (diarrhea-predominant) | Decolorized aloe leaf extract | 50 mL | 4 times daily | 1 month |
+| Psoriasis (topical) | 0.5% aloe extract cream | Applied to plaques | 3 times daily, 5 days a week | Up to 4 weeks |
 
 ### Important Dosing Notes
 
-- **For laxative use**, aloe latex products should only be used short-term. Chronic use of stimulant laxatives can lead to electrolyte imbalance, dependency, and colonic dysfunction [1][3].
-- **For oral supplementation**, the NIH suggests that short-term use of oral aloe gel up to 42 days appears safe based on available research [2].
-- **Topical use** of aloe gel has no established upper limit and is generally well tolerated, though patch testing is advisable for those with sensitive skin or known plant allergies [1][2].
-- **Quality variation** is a significant concern. Most aloe products do not list their acemannan or aloin content, and independent testing has found that some products contain little or no acemannan [1]. The IASC certification seal provides some quality assurance for products intended for internal use (<10 ppm aloin) [1].
+- **For laxative use**, aloe latex products should only be used short-term. Taking aloe by mouth has been linked to diarrhea, low potassium, and kidney failure [22]. Long-term use of stimulant laxatives may also cause dependence and bowel problems.
+- **For oral supplementation**, the NIH notes that research studies suggest short-term use of oral aloe gel up to 42 days is safe [2].
+- **Topical use** of aloe gel is generally well tolerated, though burning, itching, rash, and eczema have been reported occasionally [2]. Testing a small patch of skin first may help people with sensitive skin or plant allergies.
+- **Processing matters.** Controlled decolorization markedly reduces aloin and potential allergens [24]. Products in the 2023 genotoxicity review contained no more than 10 parts per million of aloin [2][19].
 
 ## 5. Safety and Side Effects
 
 ### Aloe Gel Safety
 
-Aloe vera gel is generally considered safe when taken orally in small doses and when applied topically [1][2].
+Aloe gel appears safe short term by mouth and is generally well tolerated on the skin [2].
 
-**Oral use:** Research studies suggest that short-term use of oral aloe gel up to 42 days is safe [2]. The primary concern with oral aloe gel is the potential to lower blood glucose levels, which could be problematic for people with diabetes or those taking hypoglycemic medications [1][3].
+**Oral use:** Research studies suggest that short-term use of oral aloe gel up to 42 days is safe [2]. Aloe gel can lower fasting blood sugar, which matters for people with diabetes or those taking glucose-lowering medicines [7][27].
 
-**Topical use:** Generally well tolerated. However, there have been occasional reports of burning, itching, rash, and eczema with topical application [2]. Some individuals may experience allergic contact dermatitis, particularly those with known allergies to plants in the Liliaceae family (which includes garlic and onions) [1][2].
+**Topical use:** Generally well tolerated. However, there have been occasional reports of burning, itching, rash, and eczema with topical application [2]. Aloe extracts contain substances that may be allergenic, and rare contact dermatitis was the only side effect of aloe gel in two radiation trials [24][31]. People allergic to plants in the lily family, such as garlic and onions, may be more likely to react.
 
 ### Aloe Latex Safety — Serious Concerns
 
-Products containing aloe vera latex carry significantly greater safety risks [1][2][3]:
+Products containing aloe latex carry much greater safety concerns [2][22]:
 
-**Gastrointestinal effects:** Aloe latex may cause diarrhea, which in turn can lead to electrolyte imbalance (particularly potassium depletion), kidney dysfunction, dry mouth, headache, and nausea [1][3].
+**Gastrointestinal effects:** Oral aloe latex can cause abdominal pain, cramps, and diarrhea [2]. Taking aloe by mouth has been linked to low potassium and kidney failure [22]. Nausea, headache and a dry mouth may also occur.
 
-**Carcinogenicity concerns:** Animal studies have shown that aloe latex may cause genetic mutations and be carcinogenic [1][2][3]. The evidence includes:
-- The International Agency for Research on Cancer (IARC) classifies non-decolorized whole leaf extract of aloe vera as "possibly carcinogenic to humans" (Group 2B) [2][3][4]
+**Carcinogenicity concerns:** Animal studies have linked non-decolorized whole leaf extract to cancer [2][36]. The evidence includes:
+- IARC classes the non-decolorized form of whole leaf extract as a possible human carcinogen [2][4]
 - Some animal studies have noted an association between non-decolorized aloe vera leaf extract taken orally and gastrointestinal cancer in rats and mice [2]
 - Most toxicity and safety studies in animals tested non-decolorized whole leaf extract, which is not commonly used by consumers [2]
 - A small amount of laboratory research suggests that even decolorized extract might have the potential to damage DNA or chromosomes [2]
 
-**California Prop 65:** On December 4, 2015, California's Office of Environmental Health Hazard Assessment (OEHHA) added non-decolorized whole leaf extract of aloe vera to the state's list of chemicals known to cause cancer, based on the IARC classification. Dietary supplements sold in California that contain this ingredient must include a warning [3]. The Prop 65 list does not include aloe vera decolorized whole leaf extract, aloe vera gel, or aloe vera gel extract [3].
+**2023 safety review:** Kim et al. (*Food Chem Toxicol*, 2023) [19] reviewed animal and laboratory studies of aloe vera inner leaf gel extract and decolorized whole leaf extract used in commercially available food-grade drinkable products containing no more than 10 ppm of aloin. The authors concluded that these drinkable products were not genotoxic [2][19]. This offers some reassurance for properly processed aloe drinks, but does not extend to non-decolorized products.
 
-**2023 safety review:** Kim et al. (*Food Chem Toxicol*, 2023) [19] reviewed animal and laboratory studies of aloe vera inner leaf gel extract and decolorized whole leaf extract used in commercially available food-grade drinkable products containing no more than 10 ppm of aloin. The authors concluded that these drinkable products were not genotoxic [2]. This provides some reassurance for consumers of properly processed aloe beverages, but does not extend to unprocessed or non-decolorized products.
-
-**FDA action:** The FDA banned aloe latex in over-the-counter laxative drugs in 2002, deeming it "not generally safe and effective" [1][2][3].
+**FDA action:** In 2002, the FDA required aloe latex to be removed from over-the-counter laxative products because of a lack of safety data [2][3].
 
 ### Liver Toxicity
 
-Rarely, liver injury associated with oral consumption of aloe vera extract has been reported [1][3]:
+Rarely, liver injury linked to aloe taken by mouth has been reported [2][21]:
 
-- From 2005 to 2016, approximately 12 published case reports of liver toxicity (elevated liver enzymes, jaundice, acute hepatitis) were documented worldwide in association with consuming aloe vera extract [3]
-- Liver injury typically occurred between 3 and 24 weeks after starting aloe vera supplementation [3]
-- No specific components of aloe vera extract have been identified as hepatotoxic; researchers suspect that certain individuals may be "hypersensitive" or experience an idiosyncratic immune system reaction [3]
 - Oral consumption of aloe leaf extracts (for as little as 3 weeks and as long as 5 years) has been related to cases of acute hepatitis [2]
-- Most cases resolved when aloe vera extract supplementation was discontinued [3]
-
-References: LiverTox, National Institute of Diabetes and Digestive and Kidney Diseases, 2017 [20]; Yang et al. (*J Korean Med Sci*, 2010) [21].
+- In one report, a 57-year-old, a 62-year-old and a 55-year-old woman were admitted to hospital with acute hepatitis after taking aloe preparations for months; their liver enzymes returned to normal after they stopped [21]
+- A systematic review of herb-induced liver injury listed aloe vera among the supplements most often reported [39]
 
 ### Contraindicated Populations
 
-The following groups should avoid or use aloe products with extreme caution [1][2][3]:
+The following groups should avoid aloe products or use them only with medical advice [2][22]:
 
-- **Pregnant or nursing women** — Aloe in gel, latex, or whole leaf extract form, when taken by mouth, may be unsafe during pregnancy and breastfeeding [2]. If aloe vera is used topically on nipples, it should be washed off before nursing as this has been reported to interfere with feeding and cause diarrhea in infants [3][26].
-- **Children** — Should not use latex-containing aloe products [3].
-- **Elderly** — Should not use latex-containing aloe products [3].
-- **People with kidney disorders** — Aloe latex should not be used due to the risk of electrolyte imbalance and potential kidney dysfunction [3].
-- **People with gastrointestinal disorders** — Aloe latex may worsen existing GI conditions [3].
-- **People with hemorrhoids** — Aloe latex is contraindicated [3].
-- **People with diabetes** — Aloe may cause blood sugar levels to fall too low, particularly when used alongside diabetes medications [1][3].
+- **Pregnant or nursing women:** Aloe in gel, latex, or whole leaf extract form, when taken by mouth, may be unsafe during pregnancy and breastfeeding [2]. Wash off any aloe used on the nipples before breastfeeding, as reports link it to feeding problems and infant diarrhea.
+- **Children:** Should avoid latex-containing aloe products.
+- **Older adults:** Should avoid latex-containing aloe products.
+- **People with kidney disorders:** Should avoid aloe latex, since oral aloe has been linked to low potassium and kidney failure [22].
+- **People with gastrointestinal disorders:** Aloe latex may worsen existing gut conditions.
+- **People with hemorrhoids:** Should avoid aloe latex.
+- **People with diabetes:** Aloe gel can lower blood sugar, so blood sugar may fall further when it is combined with diabetes medicines [7][27].
 
 ## 6. Drug Interactions
 
 ### Blood Sugar-Lowering Medications
 
-Aloe vera gel may lower blood glucose levels, potentially causing additive hypoglycemia when taken alongside diabetes medications including insulin, metformin, sulfonylureas, and other glucose-lowering drugs [1][3]. Blood sugar should be monitored more closely if combining aloe with these medications.
+Aloe gel lowered fasting blood sugar and HbA1c in trials, including in people already taking glyburide and metformin [7][27]. Combined with insulin, metformin, sulfonylureas, or other glucose-lowering drugs, it may push blood sugar lower. Monitor blood sugar more closely if you combine them.
 
 ### Cardiac Glycosides (Digoxin)
 
-Overuse of aloe latex (as a stimulant laxative) may increase the risk of adverse effects from cardiac glycosides such as digoxin. The mechanism involves latex-induced diarrhea leading to potassium depletion, which increases sensitivity to digoxin toxicity (potentially causing dangerous cardiac arrhythmias) [2][3].
+Overuse of aloe latex may increase the risk of adverse effects from cardiac glycosides such as digoxin [2]. Oral aloe has been linked to low potassium [22], and low potassium makes digoxin toxicity, including dangerous heart rhythm problems, more likely. If you take digoxin and have a racing, slow or irregular heartbeat, or faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Stimulant Laxatives
 
-Combining aloe latex with other stimulant laxatives may increase the risk of electrolyte imbalance, particularly hypokalemia (low potassium) [3].
+Combining aloe latex with other stimulant laxatives may add to the risk of low potassium (hypokalemia) [22].
 
 ### Diuretics
 
-Concurrent use of aloe latex and diuretics may compound potassium loss, increasing the risk of hypokalemia and associated cardiac complications [3].
+Some diuretics also lower potassium, so combining them with aloe latex may compound potassium loss and its heart risks [22].
 
 ### Anticoagulants and Antiplatelet Drugs
 
-Some evidence suggests aloe may affect blood clotting. Patients on warfarin, heparin, aspirin, or other anticoagulant/antiplatelet medications should exercise caution and consult their healthcare provider before using aloe supplements [3].
+A 2022 review found aloe vera loosely associated with bleeding during surgery, independent of anticoagulants [38]. Aloe compounds may reduce prostaglandin synthesis, which may inhibit platelet aggregation [35]. If you take warfarin, heparin, aspirin, or another anticoagulant or antiplatelet medicine, talk with your doctor before using aloe supplements.
 
 ### Sevoflurane (Anesthetic)
 
-Case reports suggest that aloe vera may interfere with the anesthetic sevoflurane, potentially affecting blood clotting during surgery. Patients should disclose aloe use to their anesthesiologist before surgical procedures [3].
+A case report described a 35-year-old woman who lost 5 L of blood during surgery after taking oral aloe vera tablets; the authors judged an interaction between aloe and the anesthetic sevoflurane a possible contributing cause [35]. The authors advised stopping herbal medicines with antiplatelet potential before anesthesia and surgery [35]. Tell your anesthesiologist if you use aloe.
 
 ### General Recommendation
 
-If you take any type of medication, talk with your healthcare provider before using aloe vera or other herbal products, as some herbs and medicines interact in harmful ways [2]. Discontinue oral aloe supplements at least 2 weeks before any scheduled surgery.
+If you take any type of medicine, talk with your health care provider before using aloe vera or other herbal products, as some herbs and medicines interact in harmful ways [2]. Stop nonessential supplements, including oral aloe, 2 weeks before planned surgery [38].
 
 ## 7. Dietary Sources and Quality Considerations
 
 ### Natural Sources
 
-Unlike vitamins and minerals that occur in a wide range of foods, aloe vera is not a common dietary component. It must be consumed as a supplement or applied topically.
+Aloe vera is not a usual part of the diet. People take it as a supplement or put it on the skin.
 
-The aloe vera plant can be grown at home in warm, dry environments. To extract the gel directly from a plant, cut a mature outer leaf, slice it open, and scoop out the clear inner gel. This method provides fresh aloe gel for topical use but offers no standardization of active compound content.
+The plant grows well in hot, dry climates [2]. Gel scooped from a fresh leaf can be applied to the skin, but its content of active compounds is not standardized.
 
 ### Choosing an Aloe Product
 
-When selecting an aloe vera supplement, the key decision is whether you want aloe gel only (no latex) or a product that includes latex [1]:
+The first question is whether a product contains only gel or also contains latex [2]:
 
 **If you want to avoid latex (most consumers):**
-- Look for products labeled "aloe vera gel," or aloe vera leaf juice that has been "filtered," "purified," or "decolorized" [1]
-- Products with the IASC (International Aloe Science Council) certification seal must contain less than 10 ppm aloin for products intended for internal consumption [1]
-- Avoid products labeled "whole leaf" unless they specify decolorization/purification
+- Choose products made from inner-leaf gel, or decolorized whole-leaf products, which have had activated carbon treatment to remove the anthraquinones [2]
+- Avoid products labeled "whole leaf" unless they state that they are decolorized [2]
 
-**If you specifically want latex (laxative effect):**
-- Look for unprocessed or "raw" aloe vera juice [1]
-- Products made from *Aloe ferox* (Cape aloe) species contain higher latex content [1]
+**If you are considering latex (laxative effect):**
+- Latex and non-decolorized whole-leaf products carry the safety concerns outlined above, including the FDA's 2002 removal of latex from over-the-counter laxatives [2][3]
 - Use only short-term and be aware of the safety concerns outlined above
 
 ### Quality Concerns
 
-- Most aloe products do not list their amounts of acemannan or aloins [1]
-- Independent testing has found that some products contain little or no acemannan — the primary bioactive compound in aloe gel [1]
-- Third-party testing (such as by ConsumerLab.com or IASC certification) provides greater confidence in product quality [1]
+- Controlled decolorization markedly reduces aloin and potential allergens [24]
+- Independent testers such as ConsumerLab.com publish product test results
 - Look for products that specify the standardized content of polysaccharides or acemannan
 
 ### The Aloe Vera Plant
 
-Aloe vera (*Aloe barbadensis*) is a perennial succulent belonging to the family Asphodelaceae (formerly classified in Liliaceae). The plant features:
-- Thick, fleshy, lance-shaped leaves arranged in a rosette pattern
-- Leaves with serrated edges containing spiny teeth
-- A central gel (inner leaf) surrounded by a thin layer of latex beneath the outer rind
-- Yellow flowers on a spike when mature
+Aloe vera (*Aloe barbadensis* Miller) is a succulent that grows easily in hot, dry climates and is widely distributed in Asia, Africa, and other tropical areas [40]. Older sources place it in the lily family (Liliaceae) [16]; a 2016 meta-analysis placed it in the Xanthorrhoeaceae family [27]. The plant has:
+- Thick, fleshy leaves
+- A central gel (inner leaf) surrounded by a layer of latex beneath the outer skin [2]
 
-The plant has been cultivated for over 6,000 years, with historical records from Egypt, Greece, and China documenting its medicinal use [3][14].
+Aloe was used in ancient Greece, Rome, Babylonia, and China [2].
 
 ## 8. Toxicity Studies and Safety Reviews
 
 ### Animal Studies
 
-The most concerning safety data for aloe vera comes from animal toxicology studies:
+The most concerning safety data for aloe vera come from animal toxicology studies:
 
-- The National Toxicology Program (NTP) conducted two-year studies in rats and mice using non-decolorized whole leaf extract of aloe vera. These studies found clear evidence of carcinogenic activity, with increased incidence of tumors in the large intestine [4].
-- Guo and Mei (*J Environ Sci Health C*, 2016) [22] published a comprehensive review of aloe vera toxicity and adverse clinical effects, noting the association between non-decolorized aloe extracts and genotoxicity in animal models.
-- It is important to note that most toxicity studies tested non-decolorized whole leaf extract, which is not commonly used by consumers who purchase purified aloe gel products [2].
+- The National Toxicology Program (NTP) gave rats (0.5%, 1%, or 1.5%) and mice (1%, 2%, or 3%) non-decolorized whole leaf extract in drinking water for 2 years. Adenomas and carcinomas of the large intestine were significantly more common in male and female rats at the 1% and 1.5% doses; mice developed no large-intestine tumors but did show large-intestine hyperplasia [36][37].
+- Guo and Mei (*J Environ Sci Health C*, 2016) [22] reviewed aloe toxicity, covering cytotoxicity, genotoxicity, carcinogenicity, and adverse clinical effects of whole leaf extract, gel, and latex.
+- Most toxicity studies tested non-decolorized whole leaf extract, which is not commonly used by consumers [2].
 
 ### Genotoxicity Assessment
 
-A small amount of laboratory research suggests that even decolorized aloe extract might have the potential to damage DNA or chromosomes, though this finding requires further investigation [2].
+A small amount of laboratory research suggests that even decolorized aloe extract might have the potential to damage DNA or chromosomes [2].
 
-Kim et al. (*Food Chem Toxicol*, 2023) [19] reviewed the genotoxicity data specifically for commercially available food-grade aloe beverages (inner leaf gel extract and decolorized whole leaf extract with no more than 10 ppm aloin) and concluded these products were not genotoxic. This review provides the most relevant safety data for typical consumer products.
+Kim et al. (*Food Chem Toxicol*, 2023) [19] reviewed the genotoxicity data for commercially available food-grade aloe drinks (inner leaf gel extract and decolorized whole leaf extract with no more than 10 ppm aloin) and concluded these products were not genotoxic. This review is the most relevant safety data for typical drinkable products.
 
 ### Key Safety Reviews and Regulatory Sources
 
 | Source | Assessment | Year |
 |--------|-----------|:---:|
-| IARC (WHO) | Non-decolorized whole leaf extract classified as "possibly carcinogenic to humans" (Group 2B) | 2016 [4] |
-| U.S. FDA | Banned aloe latex in OTC laxative products; "not generally safe and effective" | 2002 [3] |
-| California Prop 65 | Non-decolorized whole leaf extract added to carcinogen list | 2015 [3] |
-| NatMed Pro | Comprehensive safety and efficacy monograph | 2023 [23] |
+| IARC (WHO) | Non-decolorized whole leaf extract classified as a possible human carcinogen | 2016 [2][4] |
+| U.S. FDA | Required removal of aloe latex from OTC laxative products for lack of safety data | 2002 [2][3] |
+| NTP | Non-decolorized whole leaf extract caused large-intestine cancers in rats | 2013 [36][37] |
 | Kim et al. | Food-grade decolorized aloe beverages (no more than 10 ppm aloin) are not genotoxic | 2023 [19] |
-| Pressman et al. | Review of safety at frontier of glycobiology and integrative medicine | 2019 [24] |
+| Pressman et al. | Controlled decolorization markedly reduces aloin and potential allergens | 2019 [24] |
 
 ## 9. References
-
-[1] ConsumerLab. "Aloe Supplements Review." Accessed 2025. [https://www.consumerlab.com/reviews/aloe-juicies-gels-and-supplements/aloe/](https://www.consumerlab.com/reviews/aloe-juicies-gels-and-supplements/aloe/)
 
 [2] National Center for Complementary and Integrative Health (NCCIH). "Aloe Vera." Updated February 2025. [https://www.nccih.nih.gov/health/aloe-vera](https://www.nccih.nih.gov/health/aloe-vera)
 
@@ -394,46 +387,62 @@ Kim et al. (*Food Chem Toxicol*, 2023) [19] reviewed the genotoxicity data speci
 
 [4] International Agency for Research on Cancer (IARC). "Some Drugs and Herbal Products." *IARC Monographs on the Evaluation of Carcinogenic Risks to Humans*, No. 108. Lyon, France: IARC; 2016. [https://ncbi.nlm.nih.gov/books/NBK350406/](https://ncbi.nlm.nih.gov/books/NBK350406/)
 
-[5] Panahi Y, Khedmat H, Valizadegan G, et al. "Efficacy and safety of Aloe vera syrup for the treatment of gastroesophageal reflux disease: a pilot randomized positive-controlled trial." *J Tradit Chin Med*. 2015;35(6):632-636.
+[5] Panahi Y, Khedmat H, Valizadegan G, et al. "Efficacy and safety of Aloe vera syrup for the treatment of gastroesophageal reflux disease: a pilot randomized positive-controlled trial." *J Tradit Chin Med*. 2015;35(6):632-636. PMID: 26742306. [https://pubmed.ncbi.nlm.nih.gov/26742306/](https://pubmed.ncbi.nlm.nih.gov/26742306/)
 
-[6] Thilavech T, et al. "Effect of aloe vera gel consumption on postprandial glycemic, lipidemic, and amino acid responses." *J Funct Food*. 2024.
+[7] Huseini HF, Kianbakht S, Hajiaghaee R, Dabaghian FH. "Anti-hyperglycemic and anti-hypercholesterolemic effects of Aloe vera leaf gel in hyperlipidemic type 2 diabetic patients: a randomized double-blind placebo-controlled clinical trial." *Planta Med*. 2012;78(4):311-316. PMID: 22198821. [https://pubmed.ncbi.nlm.nih.gov/22198821/](https://pubmed.ncbi.nlm.nih.gov/22198821/)
 
-[7] Huseini HF, Kianbakht S, Hajiaghaee R, Dabaghian FH. "Anti-hyperglycemic and anti-hypercholesterolemic effects of Aloe vera leaf gel in hyperlipidemic type 2 diabetic patients: a randomized double-blind placebo-controlled clinical trial." *Planta Med*. 2012;78(4):311-316.
+[8] Langmead L, Feakins RM, Goldthorpe S, et al. "Randomized, double-blind, placebo-controlled trial of oral aloe vera gel for active ulcerative colitis." *Aliment Pharmacol Ther*. 2004;19(7):739-747. PMID: 15043514. [https://pubmed.ncbi.nlm.nih.gov/15043514/](https://pubmed.ncbi.nlm.nih.gov/15043514/)
 
-[8] Langmead L, Feakins RM, Goldthorpe S, et al. "Randomized, double-blind, placebo-controlled trial of oral aloe vera gel for active ulcerative colitis." *Aliment Pharmacol Ther*. 2004;19(7):739-747.
+[9] Davis K, Philpott S, Kumar D, Mendall M. "Randomised double-blind placebo-controlled trial of aloe vera for irritable bowel syndrome." *Int J Clin Pract*. 2006;60(9):1080-1086. PMID: 16749917. [https://pubmed.ncbi.nlm.nih.gov/16749917/](https://pubmed.ncbi.nlm.nih.gov/16749917/)
 
-[9] Davis K, Philpott S, Kumar D, Mendall M. "Randomised double-blind placebo-controlled trial of aloe vera for irritable bowel syndrome." *Int J Clin Pract*. 2006;60(9):1080-1086.
+[10] Mahboub M, Aghazadeh Attari AM, Sheikhalipour Z, et al. "A comparative study of the impacts of aloe vera gel and silver sulfadiazine cream 1% on healing, itching and pain of burn wounds: a randomized clinical trial." *J Caring Sci*. 2022;11(3):132-138. PMID: 36247037. [https://pubmed.ncbi.nlm.nih.gov/36247037/](https://pubmed.ncbi.nlm.nih.gov/36247037/)
 
-[10] Mahboub M, Aghazadeh Attari AM, Sheikhalipour Z, et al. "A comparative study of the impacts of aloe vera gel and silver sulfadiazine cream 1% on healing, itching and pain of burn wounds: a randomized clinical trial." *J Caring Sci*. 2021;11(3):132-138.
+[11] Sharma S, Alfonso AR, Gordon AJ, et al. "Second-degree burns and aloe vera: a meta-analysis and systematic review." *Adv Skin Wound Care*. 2022;35(11):1-9. PMID: 36264753. [https://pubmed.ncbi.nlm.nih.gov/36264753/](https://pubmed.ncbi.nlm.nih.gov/36264753/)
 
-[11] Sharma S, Alfonso AR, Gordon AJ, et al. "Second-degree burns and aloe vera: a meta-analysis and systematic review." *Adv Skin Wound Care*. 2022;35(11):1-9.
+[12] Al-Maweri SA, Ashraf S, Lingam AS, et al. "Aloe vera in treatment of oral submucous fibrosis: a systematic review and meta-analysis." *J Oral Pathol Med*. 2019;48(2):99-107. PMID: 30329174. [https://pubmed.ncbi.nlm.nih.gov/30329174/](https://pubmed.ncbi.nlm.nih.gov/30329174/)
 
-[12] Al-Maweri SA, Ashraf S, Lingam AS, et al. "Aloe vera in treatment of oral submucous fibrosis: a systematic review and meta-analysis." *J Oral Pathol Med*. 2019;48(2):99-107.
+[13] Zhong H, Li X, Zhang W, et al. "Efficacy of a new non-drug acne therapy: aloe vera gel combined with ultrasound and soft mask for the treatment of mild to severe facial acne." *Front Med*. 2021;8:662640. PMID: 34095172. [https://pubmed.ncbi.nlm.nih.gov/34095172/](https://pubmed.ncbi.nlm.nih.gov/34095172/)
 
-[13] Zhong H, Li X, Zhang W, et al. "Efficacy of a new non-drug acne therapy: aloe vera gel combined with ultrasound and soft mask for the treatment of mild to severe facial acne." *Front Med*. 2021;8:662640.
+[14] Long V. "Aloe vera in dermatology — the plant of immortality." *JAMA Dermatol*. 2016;152(12):1364. PMID: 27973656. [https://pubmed.ncbi.nlm.nih.gov/27973656/](https://pubmed.ncbi.nlm.nih.gov/27973656/)
 
-[14] Long V. "Aloe vera in dermatology — the plant of immortality." *JAMA Dermatol*. 2016;152(12):1364.
+[15] Cowan D. "Oral Aloe vera as a treatment for osteoarthritis: a summary." *Br J Community Nurs*. 2010;15(6):280-282. PMID: 20679979. [https://pubmed.ncbi.nlm.nih.gov/20679979/](https://pubmed.ncbi.nlm.nih.gov/20679979/)
 
-[15] Cowan D. "Oral Aloe vera as a treatment for osteoarthritis: a summary." *Br J Community Nurs*. 2010;15(6):280-282.
+[16] Wozniak A, Paduch R. "Aloe vera extract activity on human corneal cells." *Pharm Biol*. 2012;50(2):147-154. PMID: 22338121. [https://pubmed.ncbi.nlm.nih.gov/22338121/](https://pubmed.ncbi.nlm.nih.gov/22338121/)
 
-[16] Wozniak A, Paduch R. "Aloe vera extract activity on human corneal cells." *Pharm Biol*. 2012;50(2):147-154.
+[18] Atiba A, Wasfy T, Abdo W, et al. "Aloe vera gel facilitates re-epithelialization of corneal alkali burn in normal and diabetic rats." *Clin Ophthalmol*. 2015;9:2019-2026. PMID: 26604672. [https://pubmed.ncbi.nlm.nih.gov/26604672/](https://pubmed.ncbi.nlm.nih.gov/26604672/)
 
-[17] Green M, et al. "Toxicological evaluation of aloe vera in the eye." *J Toxicol Cutaneous Ocul Toxicol*. 2008.
+[19] Kim S-T, Pressman P, Clemens R, et al. "The absence of genotoxicity of aloe vera beverages: a review of the literature." *Food Chem Toxicol*. 2023;174:113628. PMID: 36702364. [https://pubmed.ncbi.nlm.nih.gov/36702364/](https://pubmed.ncbi.nlm.nih.gov/36702364/)
 
-[18] Atiba A, et al. "Aloe vera and corneal wound healing." *Clin Ophthalmol*. 2015.
+[21] Yang HN, Kim DJ, Kim YM, et al. "Aloe-induced toxic hepatitis." *J Korean Med Sci*. 2010;25(3):492-495. PMID: 20191055. [https://pubmed.ncbi.nlm.nih.gov/20191055/](https://pubmed.ncbi.nlm.nih.gov/20191055/)
 
-[19] Kim S-T, Pressman P, Clemens R, et al. "The absence of genotoxicity of aloe vera beverages: a review of the literature." *Food Chem Toxicol*. 2023;174:113628.
+[22] Guo X, Mei N. "Aloe vera: a review of toxicity and adverse clinical effects." *J Environ Sci Health C Environ Carcinog Ecotoxicol Rev*. 2016;34(2):77-96. PMID: 26986231. [https://pubmed.ncbi.nlm.nih.gov/26986231/](https://pubmed.ncbi.nlm.nih.gov/26986231/)
 
-[20] LiverTox: Clinical and Research Information on Drug-Induced Liver Injury. "Aloe Vera." National Institute of Diabetes and Digestive and Kidney Diseases. 2017. [https://www.ncbi.nlm.nih.gov/books/NBK548206/](https://www.ncbi.nlm.nih.gov/books/NBK548206/)
+[24] Pressman P, Clemens R, Hayes AW. "Aloe vera at the frontier of glycobiology and integrative medicine: health implications of an ancient plant." *SAGE Open Med*. 2019;7:2050312119875921. PMID: 35154752. [https://pubmed.ncbi.nlm.nih.gov/35154752/](https://pubmed.ncbi.nlm.nih.gov/35154752/)
 
-[21] Yang HN, Kim DJ, Kim YM, et al. "Aloe-induced toxic hepatitis." *J Korean Med Sci*. 2010;25(3):492-495.
+[27] Suksomboon N, Poolsup N, Punthanitisarn S. "Effect of Aloe vera on glycaemic control in prediabetes and type 2 diabetes: a systematic review and meta-analysis." *J Clin Pharm Ther*. 2016;41(2):180-188. PMID: 27009750. [https://pubmed.ncbi.nlm.nih.gov/27009750/](https://pubmed.ncbi.nlm.nih.gov/27009750/)
 
-[22] Guo X, Mei N. "Aloe vera: a review of toxicity and adverse clinical effects." *J Environ Sci Health C Environ Carcinog Ecotoxicol Rev*. 2016;34(2):77-96.
+[28] Choi HC, Kim SJ, Son KY, et al. "Metabolic effects of aloe vera gel complex in obese prediabetes and early non-treated diabetic patients: randomized controlled trial." *Nutrition*. 2013;29(9):1110-1114. PMID: 23735317. [https://pubmed.ncbi.nlm.nih.gov/23735317/](https://pubmed.ncbi.nlm.nih.gov/23735317/)
 
-[23] Aloe. NatMed Pro website. Accessed at naturalmedicines.therapeuticresearch.com on July 18, 2023. [Database subscription].
+[29] Syed TA, Ahmad SA, Holt AH, et al. "Management of psoriasis with Aloe vera extract in a hydrophilic cream: a placebo-controlled, double-blind study." *Trop Med Int Health*. 1996;1(4):505-509. PMID: 8765459. [https://pubmed.ncbi.nlm.nih.gov/8765459/](https://pubmed.ncbi.nlm.nih.gov/8765459/)
 
-[24] Pressman P, Clemens R, Hayes AW. "Aloe vera at the frontier of glycobiology and integrative medicine: health implications of an ancient plant." *SAGE Open Med*. 2019;7:2050312119875921.
+[30] Paulsen E, Korsholm L, Brandrup F. "A double-blind, placebo-controlled study of a commercial Aloe vera gel in the treatment of slight to moderate psoriasis vulgaris." *J Eur Acad Dermatol Venereol*. 2005;19(3):326-331. PMID: 15857459. [https://pubmed.ncbi.nlm.nih.gov/15857459/](https://pubmed.ncbi.nlm.nih.gov/15857459/)
 
-[25] Rodriguez S, Dentali S, Powell D. "Aloe vera." In: Coates PM, Betz JM, Blackman MR, et al., eds. *Encyclopedia of Dietary Supplements*. 2nd ed. New York, NY: Informa Healthcare; 2010:7-14.
+[31] Williams MS, Burk M, Loprinzi CL, et al. "Phase III double-blind evaluation of an aloe vera gel as a prophylactic agent for radiation-induced skin toxicity." *Int J Radiat Oncol Biol Phys*. 1996;36(2):345-349. PMID: 8892458. [https://pubmed.ncbi.nlm.nih.gov/8892458/](https://pubmed.ncbi.nlm.nih.gov/8892458/)
 
-[26] National Library of Medicine. "Drugs and Lactation Database (LactMed): Aloe." 2020.
+[32] Richardson J, Smith JE, McIntyre M, et al. "Aloe vera for preventing radiation-induced skin reactions: a systematic literature review." *Clin Oncol (R Coll Radiol)*. 2005;17(6):478-484. PMID: 16149293. [https://pubmed.ncbi.nlm.nih.gov/16149293/](https://pubmed.ncbi.nlm.nih.gov/16149293/)
+
+[33] Schmidt JM, Greenspoon JS. "Aloe vera dermal wound gel is associated with a delay in wound healing." *Obstet Gynecol*. 1991;78(1):115-117. PMID: 2047051. [https://pubmed.ncbi.nlm.nih.gov/2047051/](https://pubmed.ncbi.nlm.nih.gov/2047051/)
+
+[34] Choonhakarn C, Busaracome P, Sripanidkulchai B, et al. "The efficacy of aloe vera gel in the treatment of oral lichen planus: a randomized controlled trial." *Br J Dermatol*. 2008;158(3):573-577. PMID: 18093246. [https://pubmed.ncbi.nlm.nih.gov/18093246/](https://pubmed.ncbi.nlm.nih.gov/18093246/)
+
+[35] Lee A, Chui PT, Aun CS, et al. "Possible interaction between sevoflurane and Aloe vera." *Ann Pharmacother*. 2004;38(10):1651-1654. PMID: 15292490. [https://pubmed.ncbi.nlm.nih.gov/15292490/](https://pubmed.ncbi.nlm.nih.gov/15292490/)
+
+[36] Boudreau MD, Mellick PW, Olson GR, et al. "Clear evidence of carcinogenic activity by a whole-leaf extract of Aloe barbadensis miller (aloe vera) in F344/N rats." *Toxicol Sci*. 2013;131(1):26-39. PMID: 22968693. [https://pubmed.ncbi.nlm.nih.gov/22968693/](https://pubmed.ncbi.nlm.nih.gov/22968693/)
+
+[37] Boudreau MD, Beland FA, Nichols JA, et al. "Toxicology and carcinogenesis studies of a nondecolorized whole leaf extract of Aloe barbadensis Miller (Aloe vera) in F344/N rats and B6C3F1 mice (drinking water study)." *Natl Toxicol Program Tech Rep Ser*. 2013;(577):1-266. PMID: 24042237. [https://pubmed.ncbi.nlm.nih.gov/24042237/](https://pubmed.ncbi.nlm.nih.gov/24042237/)
+
+[38] Hatfield J, Saad S, Housewright C. "Dietary supplements and bleeding." *Proc (Bayl Univ Med Cent)*. 2022;35(6):802-807. PMID: 36304597. [https://pubmed.ncbi.nlm.nih.gov/36304597/](https://pubmed.ncbi.nlm.nih.gov/36304597/)
+
+[39] Ballotin VR, Bigarella LG, Brandão ABM, et al. "Herb-induced liver injury: systematic review and meta-analysis." *World J Clin Cases*. 2021;9(20):5490-5513. PMID: 34307603. [https://pubmed.ncbi.nlm.nih.gov/34307603/](https://pubmed.ncbi.nlm.nih.gov/34307603/)
+
+[40] Feily A, Namazi MR. "Aloe vera in dermatology: a brief review." *G Ital Dermatol Venereol*. 2009;144(1):85-91. PMID: 19218914. [https://pubmed.ncbi.nlm.nih.gov/19218914/](https://pubmed.ncbi.nlm.nih.gov/19218914/)
