@@ -6,7 +6,7 @@ publishedAt: "2025-09-21T21:38:34Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["rhodiola", "rhodiola rosea", "adaptogen", "stress", "fatigue", "depression", "anxiety", "cognitive", "brain health", "exercise", "ashwagandha", "salidroside", "rosavin", "sleep", "insomnia", "blood pressure", "blood sugar"]
-summary: "Rhodiola rosea is sold for stress, fatigue and mood. Evidence is preliminary and mixed; a 6-week trial found 340 or 680 mg/day of extract eased mild to moderate depression. Possibly safe up to 12 weeks. Talk to your doctor first if you take antidepressants or blood pressure drugs, or are pregnant."
+summary: "Rhodiola rosea is sold for stress, fatigue and mood. Evidence is preliminary and mixed; a 6-week trial found 340 or 680 mg/day of extract eased mild to moderate depression. Possibly safe up to 12 weeks. Talk to your doctor first if you take any medicine, or if you are pregnant or breastfeeding."
 reviewed: "2026-10-25"
 sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/rhodiola","checked":"2026-09-29","fingerprint":"sha256:fa4cfe2337aa31d138030dda47a1acd2c815ff25185c362d0f929c0276c94fc4"}]
 ---
@@ -220,7 +220,7 @@ Trials used these timing patterns:
 
 ### Important Considerations
 
-- Higher doses did not clearly do better for depression alone: at either 340 or 680 mg/day, symptoms improved and self-esteem did not [7]. Added to sertraline, 0.6 g/day did better than 0.3 g/day [14]. In a 12-week comparison with sertraline, a standardized extract did no better than placebo [8].
+- Higher doses did not clearly do better for depression alone: at either 340 or 680 mg/day, symptoms improved and self-esteem did not [7]. Added to sertraline, 0.6 g/day did better than 0.3 g/day [14]. In a 12-week comparison with sertraline, a standardized extract showed no significant difference from placebo [8].
 - In one trial, 364 mg capsules taken for 42 days worsened fatigue compared with placebo [10].
 - For exercise, 1,500 mg/day for 4 days did not help muscle recovery [24], while single doses lowered perceived effort in two small trials [22][23].
 
@@ -242,7 +242,7 @@ The following side effects have been reported:
 | Insomnia | Not stated | NCCIH [3] |
 | Excessive saliva production | Not stated | NCCIH [3] |
 
-In one 42-day trial, one rhodiola user each reported nausea, diarrhea with nausea, dark stools or blurred vision; the total number of adverse events matched placebo [10].
+In one 42-day trial, 3 of 21 rhodiola users reported headache, and one each reported nausea, diarrhea with nausea, dark stools or blurred vision; the total number of adverse events (10) matched placebo [10].
 
 ### Blood Pressure Effects
 
@@ -270,7 +270,7 @@ Most clinical trials lasted 2-12 weeks, and NCCIH rates rhodiola possibly safe o
 
 **MAO Inhibitors:** In test-tube studies, *R. rosea* root extracts blocked MAO A and MAO B [17]. This may not happen when rhodiola is taken by mouth. If you take an MAO inhibitor, talk to your doctor before using rhodiola [3][17].
 
-**Sertraline combination:** In one trial, the higher dose of rhodiola capsule added to sertraline lowered depression scores more than sertraline with placebo [14]. Given the case report with an SSRI [32], any combination of rhodiola with an antidepressant should be supervised by a doctor.
+**Sertraline combination:** In one trial, the higher dose of rhodiola capsule added to sertraline lowered depression scores more than sertraline with placebo [14]. Given the case report with an SSRI, talk with your doctor before combining rhodiola with an antidepressant [3][32].
 
 ### Antihypertensive Medications
 
