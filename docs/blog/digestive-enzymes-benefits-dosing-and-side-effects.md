@@ -20,7 +20,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - Bromelain may inhibit platelet aggregation, and papaya preparations have been reported to cause over-anticoagulation with warfarin. Check with your doctor before using bromelain or papain with warfarin, aspirin, clopidogrel or other blood thinners [72][97].
-- The acarbose and miglitol labels say enzyme products containing amylase or pancreatin may reduce the effect of these diabetes drugs and should not be taken at the same time [103][104].
+- The acarbose and miglitol labels say enzyme products containing amylase or pancreatin may reduce the effect of these diabetes drugs and should not be used together [103][104].
 - Alpha-galactosidase partly blunted the blood-sugar-lowering effect of acarbose in people with type 2 diabetes [80]. If you take diabetes medicines, check with your doctor first.
 - Papain can cause allergic reactions, including a severe one after eating meat tenderizer, and people allergic to weeping fig latex may react to papain [67][68][92]. In a severe allergic reaction, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - High doses of pancreatic enzymes are linked to fibrosing colonopathy, a scarring of the bowel seen mostly in children with cystic fibrosis [91][105]. The Creon label says not to exceed 2,500 lipase units per kilogram per meal or 10,000 per kilogram per day without further investigation [105].
@@ -111,7 +111,7 @@ Exocrine pancreatic insufficiency is a condition in which the pancreas fails to 
 
 **Pancreatic Enzyme Replacement Therapy (PERT):** Enzyme replacement together with dietary advice and support is the cornerstone of EPI treatment [90]. Enzymes come as enteric-coated minimicrospheres taken during meals, so that active lipase reaches the duodenum as food leaves the stomach [13][40].
 
-In a post hoc analysis of a 7-day trial in people with EPI from chronic pancreatitis or pancreatectomy, pancrelipase at 72,000 lipase units per meal and 36,000 per snack improved fat and protein absorption more than placebo [99]. The usual dose is 40,000 to 50,000 lipase units per main meal and half that for a snack, matched to the meal's fat content; if symptoms persist, the dose can be doubled, within the label maximum, and an acid-reducing drug added [13][105]. In 40% of the studies (10 of 25 observational studies), average doses were below this range, and lower doses still eased diarrhea but did not improve nutritional status [98].
+In a post hoc analysis of a 7-day trial in people with EPI from chronic pancreatitis or pancreatectomy, pancrelipase at 72,000 lipase units per meal and 36,000 per snack improved fat and protein absorption more than placebo [99]. The usual dose is 40,000 to 50,000 lipase units per main meal and half that for a snack, matched to the meal's fat content; if symptoms persist, the dose can be doubled, within the label's dose limits [105], and an acid-reducing drug added [13][105]. In 40% of the studies (10 of 25 observational studies), average doses were below this range, and lower doses still eased diarrhea but did not improve nutritional status [98].
 
 **Older dosing advice:** A 2003 review advised 25,000 to 40,000 units of porcine lipase per meal [30]; current guidance is higher [13].
 
@@ -226,14 +226,14 @@ In a post hoc analysis of a 7-day trial of prescription pancrelipase, side effec
 
 **Pancreatin and other porcine enzymes:**
 - Pancreatic extract reduced folate absorption in both healthy people and people with pancreatic insufficiency, so folate status should be monitored in people on long-term treatment [74].
-- If you have had an allergic reaction to pork proteins, tell your doctor: the Creon label advises monitoring for allergic reactions during treatment, and severe reactions, including anaphylaxis, have been reported with pancreatic enzyme products [105].
+- If you have had an allergic reaction to pork proteins, tell your doctor: the Creon label advises monitoring for allergic reactions during treatment, and severe reactions, including anaphylaxis, have been reported with pancreatic enzyme products [105]. In a severe allergic reaction, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - High doses of pancreatic extract raised uric acid in the urine of children with cystic fibrosis, and the authors advised using the lowest effective dose to protect the kidneys [94]. Pancreatic enzyme products contain purines that may raise blood uric acid, and the Creon label suggests considering uric acid tests in people with gout, kidney problems or high uric acid [105].
 - In people with EPI after chronic pancreatitis or pancreatectomy, low and high blood sugar were about as common with pancrelipase as with placebo [99].
 - **Fibrosing colonopathy:** This rare, serious scarring of the colon has been reported after high doses of pancreatic enzymes, usually taken for a long time and mostly in children with cystic fibrosis [105]. Doses above 6,000 lipase units per kilogram per meal have been linked to narrowing of the colon in children under 12 [105]. Compared with 0 to 24,000 lipase units per kilogram per day, the relative risk was 10.9 (95% CI 1.6 to 71.8) at 24,001 to 50,000 units and 199.5 (95% CI 9.9 to 4026.0) above 50,000 units [91].
 
 **Sacrosidase:**
 - Do not use it if you are allergic to yeast, yeast products, glycerin (glycerol) or papain [106].
-- Severe allergic reactions, including wheezing, have been reported; in a trial, one child with a history of asthma developed wheezing [51][106]. Stop it and seek medical help if allergy symptoms appear [106].
+- Severe allergic reactions, including wheezing, have been reported; in a trial, one child with a history of asthma had severe wheezing that needed hospital care [51][106]. Stop it and seek medical help if allergy symptoms appear [106]. In a severe allergic reaction, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - It lets the body absorb the glucose and fructose from sucrose, so people with diabetes should monitor their blood glucose [106].
 
 **Alpha-galactosidase:**
@@ -251,8 +251,8 @@ Some digestive enzymes interact with medicines. Check with your doctor or pharma
 
 | Enzyme | Drug Affected | Interaction | Clinical Significance |
 |--------|-------------|-------------|------|
-| Amylase / Pancreatin | Acarbose | Acarbose works by blocking carbohydrate digestion [80]; its label says enzyme products containing amylase or pancreatin may reduce its effect [103] | Should not be taken at the same time [103] |
-| Amylase / Pancreatin | Miglitol | Miglitol also blocks carbohydrate digestion; its label says enzyme products containing amylase or pancreatin may reduce its effect [104] | Should not be taken at the same time [104] |
+| Amylase / Pancreatin | Acarbose | Acarbose works by blocking carbohydrate digestion [80]; its label says enzyme products containing amylase or pancreatin may reduce its effect [103] | Should not be used together [103] |
+| Amylase / Pancreatin | Miglitol | Miglitol also blocks carbohydrate digestion; its label says enzyme products containing amylase or pancreatin may reduce its effect [104] | Should not be used together [104] |
 | Alpha-galactosidase | Acarbose | In a crossover trial in 37 people with type 2 diabetes, blood sugar after meals was higher with alpha-galactosidase plus acarbose than with acarbose alone, though still lower than with placebo [80] | Alpha-galactosidase may partly counteract acarbose |
 | DPP-IV (dipeptidyl peptidase IV) | DPP-4 inhibitors (gliptins) such as sitagliptin | Gliptins work by blocking the DPP-4 enzyme [81], so a supplement containing the enzyme could in theory interfere | Check with your doctor before combining |
 
@@ -278,7 +278,7 @@ Bromelain may increase the absorption of certain drugs [17][57][72]:
 
 ### Practical Guidance
 
-- **Diabetes medications:** Do not take amylase or pancreatin products at the same time as acarbose or miglitol [103][104]. Check with your doctor before combining alpha-galactosidase with acarbose [80], or DPP-IV enzyme supplements with gliptins, which work by blocking that enzyme [81].
+- **Diabetes medications:** Do not use amylase or pancreatin products together with acarbose or miglitol [103][104]. Check with your doctor before combining alpha-galactosidase with acarbose [80], or DPP-IV enzyme supplements with gliptins, which work by blocking that enzyme [81].
 - **Blood thinners:** Use bromelain and papain with caution when taking anticoagulant or antiplatelet medicines, and tell your doctor before combining them [72][97].
 - **Chronic pancreatin use:** Have folate status monitored; supplementation may be needed [74].
 
