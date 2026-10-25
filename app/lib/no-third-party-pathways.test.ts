@@ -208,6 +208,15 @@ describe('US-15 AC39 — no third-party pathway content', () => {
     expect(entry!.summary ?? '').not.toMatch(/uptodate/i);
   });
 
+  // 2026-10-26 sleep rewrite (Codex r2 R1): the rewrite must keep the safety advice the old text carried.
+  it('the sleep guideline keeps trazodone priapism with the emergency line, falls in older adults and rebound insomnia', () => {
+    const sleep = fs.readFileSync(path.join(ROOT, 'docs/guideline/sleep.md'), 'utf-8').toLowerCase();
+    const trazodone = sleep.slice(sleep.indexOf('**trazodone**'), sleep.indexOf('\n', sleep.indexOf('**trazodone**')));
+    for (const s of ['priapism', 'prolonged erection', 'emergency number', 'emergency department']) expect(trazodone, s).toContain(s);
+    expect(sleep).toMatch(/risk of falls, particularly in older people/);
+    expect(sleep).toContain('rebound insomnia');
+  });
+
   it('the router routes a named condition only when an entry covers it', () => {
     const prompt = fs.readFileSync(path.join(ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8');
     expect(prompt).not.toContain('are NEVER out of scope');
