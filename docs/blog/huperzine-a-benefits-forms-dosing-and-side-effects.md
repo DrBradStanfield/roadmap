@@ -259,7 +259,7 @@ Huperzine A blocks AChE, as do the dementia drugs donepezil, rivastigmine and ga
 
 - Succinylcholine and similar muscle relaxants used in anaesthesia, whose effect these drugs may exaggerate [69][77]
 - Dementia drugs: donepezil, rivastigmine, galantamine
-- Myasthenia gravis drugs: pyridostigmine, neostigmine
+- Myasthenia gravis drugs that block the same enzyme, such as pyridostigmine and neostigmine [77]
 - Bethanechol, which stimulates acetylcholine receptors directly [77]
 
 Signs of excess cholinergic effect include sweating, vomiting, diarrhoea, dizziness, cramps and slurred speech [67]. For severe symptoms, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
@@ -277,7 +277,7 @@ Cholinesterase inhibitors can slow the heart, and a review lists bradycardia-ind
 
 ### Pharmacokinetic Considerations
 
-Huperzine A barely affects CYP enzymes, so the main concerns are its added or opposing effects on acetylcholine, not blood levels of other drugs [22].
+In lab tests it barely affected CYP enzymes, so it is unlikely to change blood levels of other drugs [22].
 
 ### General Recommendation
 
@@ -399,4 +399,4 @@ Because huperzine A cannot be obtained from food, supplementation is the only op
 
 [76] Yang Y, Dai L, Wu D et al. In Vitro Propagation, Huperzine A Content and Antioxidant Activity of Three Genotypic Huperzia serrata. Plants (Basel). 2021;10(6):1112. PMID: 34072855. https://pubmed.ncbi.nlm.nih.gov/34072855/
 
-[77] ARICEPT (donepezil hydrochloride) tablets. Prescribing information, Eisai. DailyMed, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=98e451e1-e4d7-4439-a675-c5457ba20975](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=98e451e1-e4d7-4439-a675-c5457ba20975)
+[77] ARICEPT (donepezil hydrochloride) tablets. Prescribing information, Eisai. DailyMed, 2021 (accessed 2026). [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=98e451e1-e4d7-4439-a675-c5457ba20975](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=98e451e1-e4d7-4439-a675-c5457ba20975)
