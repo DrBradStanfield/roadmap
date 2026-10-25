@@ -2,7 +2,7 @@
 artifact: https://claude.ai/artifact/NbkzYiX7CfGmpFFXJcY2E7
 ---
 
-# iPhone app: launch checklist (updated 2026-10-22)
+# iPhone app: launch checklist (updated 2026-10-25)
 
 Everything below is on `main` and pushed. The app runs in the simulator with every
 feature. What is left needs your accounts, a real iPhone, a deploy or a decision.
@@ -48,28 +48,32 @@ by the orchestrator, not a fresh reviewer.
    - The daily key is in this Mac's Keychain. To release from another Mac, move it there
      (engine-updates.md says how).
    - On every release prompt, click **Allow**, never **Always Allow**.
-2. **Apple enrolment** (ID 726UVSY5YZ). When approved: in Xcode set the team, confirm
-   the bundle id `com.drstanfield.healthroadmap` (registered 2026-10-25; the free team holds the old `com.drbrad.healthroadmap`, which Apple will not release; the Google iOS client was made for the old id), and add the
-   HealthKit and App Attest capabilities
-   (`com.apple.developer.devicecheck.appattest-environment` = production). Replace the
-   placeholder release host in `ios/HealthRoadmap/Chat/ServerConfig.swift`.
+2. **Apple enrolment: done 2026-10-25.** Team Dr Brad, Inc (KAV75KMV2R), account
+   brad@drstanfield.com, signed in to Xcode. Bundle id `com.drstanfield.healthroadmap`,
+   registered with HealthKit and App Attest (the free team holds the old
+   `com.drbrad.healthroadmap`, which Apple will not release). Brad's iPhone 15 Pro Max is a
+   registered device. Release host stays `health-tool-edu.fly.dev` (Brad's call). The
+   Google iOS client was made for the old id: if Drive sign-in fails, change its bundle id
+   in Google Cloud (Brad approved).
 3. **Dropbox.** The redirect `db-xf96vqvjotm5xhx://2/token` is added. Sign in once in the
    simulator (Sync, or "+", From Dropbox) as brad@microvitamin.com, so the live sync
    check can run. Agents may not type passwords. Put lab reports in
    Dropbox › Apps › Health Plan by Dr Brad to see them in the list.
 4. **Google Drive.** The iOS client exists (2026-10-22). Keep it in the website's project
    (687809032623): `drive.file` shows an app only the files its own project created.
-5. **Server, for chat and lab upload.**
-   - Paste the whole of `supabase/rls-policies.sql` into the Supabase SQL editor and run
-     it (it now holds the App Attest table).
-   - Set `APP_ATTEST_TEAM_ID` on `health-tool-edu` once Apple gives you the team id
-     (until then the routes answer 503).
-   - Never set `APP_ATTEST_DEV_BYPASS` in production.
-   - Deploy through CI (it deploys canary-first).
+5. **Server, for chat and lab upload: done 2026-10-25.** Brad ran
+   `supabase/rls-policies.sql` (the App Attest table and `app_attest_use` exist).
+   `APP_ATTEST_TEAM_ID=KAV75KMV2R` and `APP_ATTEST_BUNDLE_ID=com.drstanfield.healthroadmap`
+   are set on `health-tool-edu`. Proven on Brad's iPhone: attest/register 200, chat 200.
+   Never set `APP_ATTEST_DEV_BYPASS` in production.
+7. **App Store (Brad's decisions, 2026-10-25):** version 0.1, free, all countries,
+   release automatically after approval, submitted by the orchestrator. App Review
+   contact: Brad Stanfield, brad@drstanfield.com, his personal number (in App Store
+   Connect, not in this public repo).
 6. **Privacy:** read the live page and its "Items still to verify" list
    (legal review, App Attest row retention).
-7. **App Store Connect:** paste the listing and the privacy answers from app-store.md,
-   add screenshots, archive, TestFlight.
+8. **App Store Connect:** the listing and the privacy answers from app-store.md,
+   screenshots, archive, upload, submit (in progress 2026-10-25).
 8. **Regulatory advice** on whether the app counts as a medical device in your markets.
 9. **Clinical call:** should the value pages show target bands (blood pressure goal,
    healthy waist, ideal weight)? The targets live only in the website's code today;
