@@ -7,16 +7,16 @@ type: "reference"
 tags: ["Supplements"]
 keywords: ["menopause", "soy isoflavones", "black cohosh", "red clover", "phytoestrogens", "hot flashes", "estrogen", "hormone", "genistein", "daidzein", "equol", "bone density", "osteoporosis", "cholesterol", "ldl", "cardiovascular", "breast cancer", "thyroid", "sleep", "anxiety", "depression", "cognitive", "progesterone", "weight loss", "inflammation"]
 product: "sleep"
-summary: "Evidence summary on menopause supplements: black cohosh and red clover did not beat placebo for hot flashes, soy isoflavone results are mixed, and hormone therapy works best. Black cohosh has rare liver injury reports. Talk to your doctor first with liver disease or breast cancer, or on simvastatin."
+summary: "Menopause supplement evidence: black cohosh and red clover mostly did not beat placebo for hot flashes, soy isoflavone results are mixed, and hormone therapy works best. Black cohosh has rare liver injury reports. Talk to your doctor first with liver disease or breast cancer, or on simvastatin."
 reviewed: "2026-10-25"
-sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/BlackCohosh-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:364c7be86c787d780d44fe200d74f52180b992ec05c296917aaac5ac590af9a8"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/hrt-just-changed","checked":"2026-10-25","fingerprint":"publishedAt:2026-01-16T00:00:34Z"}]
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/BlackCohosh-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:364c7be86c787d780d44fe200d74f52180b992ec05c296917aaac5ac590af9a8"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/menopause-supplements-benefits-evidence-dosing-and-side-effects](https://drstanfield.com/blogs/articles/menopause-supplements-benefits-evidence-dosing-and-side-effects)*
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Black cohosh and red clover did not reduce hot flashes more than placebo in randomized trials, and a Cochrane review found insufficient evidence to support black cohosh for menopausal symptoms [3][14][26]. Results for soy isoflavones are mixed: a 2016 meta-analysis linked phytoestrogens with modest drops in daily hot flashes and vaginal dryness, but 74% of its trials had a high risk of bias in 3 or more areas [20][22]. Menopausal hormone therapy is the most effective treatment for hot flashes, and cognitive behavioural therapy has trial support among the non-hormonal options [6][7][18][32]. Black cohosh has been linked to at least 83 reports of liver damage, though a causal link is unproven; stop it and contact your doctor if you develop abdominal pain, dark urine or jaundice [15].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Black cohosh and red clover did not reduce hot flashes more than placebo in randomized trials, and a 2012 Cochrane review found insufficient evidence to support black cohosh, though a 2023 meta-analysis of 22 trials of black cohosh extracts, alone or combined with other ingredients, reported possible benefit for hot flashes [3][14][26][62]. Results for soy isoflavones are mixed: a 2016 meta-analysis linked phytoestrogens with modest drops in daily hot flashes and vaginal dryness, but 74% of its trials had a high risk of bias in 3 or more areas [20][22]. Menopausal hormone therapy is the most effective treatment for hot flashes, and cognitive behavioural therapy has trial support among the non-hormonal options [6][7][18][32]. Black cohosh has been linked to at least 83 reports of liver damage, though a causal link is unproven; stop it and contact your doctor if you develop abdominal pain, dark urine or jaundice [15].
 
 ## Key safety points
 
@@ -31,7 +31,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Brad's videos on this topic
 
-- 16 Jan 2026, [HRT Just Changed](https://drstanfield.com/blogs/articles/hrt-just-changed): the FDA's label change reopens hormone therapy, an effective treatment for hot flashes and other menopause symptoms, best started before 60 or within 10 years of menopause; the post covers hormone therapy, not supplements.
+None yet.
 
 ## 1. Overview
 
@@ -163,6 +163,10 @@ A 2012 Cochrane review (Leach and Moore) included 16 randomized trials with a to
 **Systematic review and meta-analysis (2016):**
 
 Franco et al. (2016) examined four black cohosh trials (three from the Cochrane Review above) randomizing a total of 511 women to 6.5-160 mg/day black cohosh extract or placebo [15]. There were no significant associations between black cohosh supplementation and reduction in vasomotor symptom frequency. Nor was black cohosh linked to relief of menopausal symptoms on self-reported rating scales.
+
+**Updated meta-analysis (2023):**
+
+A 2023 meta-analysis (Sadahiro et al.) pooled 22 trials with 2,310 menopausal women taking black cohosh extracts, alone or combined with other ingredients, and found possible benefit over placebo for hot flashes (Hedges' g 0.315, 95% CI 0.107 to 0.524) but not for anxiety or depressive symptoms [62].
 
 **Clinical guideline positions:**
 
@@ -327,7 +331,7 @@ A case report described repeated fainting in a 76-year-old woman taking black co
 | Supplement | Common Side Effects | Serious Concerns | Talk to your doctor first if |
 |---|---|---|---|
 | Soy Isoflavones | Stomach upset [30] | Endometrial hyperplasia with long-term high doses [39] | Hypothyroidism; soy allergy; pregnancy [40][60] |
-| Red Clover | Not well studied | Safety in breast or endometrial cancer not established [13] | Breast or endometrial cancer; pregnancy |
+| Red Clover | Not well studied | Safety in breast or endometrial cancer not established [13] | Breast or endometrial cancer |
 | Black Cohosh | Stomach upset, rash [15] | Liver injury reports; one case of slow heart rate [15][48] | Liver disorder; past breast or uterine cancer; pregnancy or breastfeeding [47][59] |
 | Progesterone Cream | Headache [55] | May not protect the uterus [56] | You also use estrogen |
 
@@ -489,3 +493,5 @@ The Endocrine Society advises all postmenopausal women to adopt appropriate life
 [60] National Center for Complementary and Integrative Health. "Soy." Last updated April 2025. [https://www.nccih.nih.gov/health/soy](https://www.nccih.nih.gov/health/soy)
 
 [61] The North American Menopause Society. "The 2023 nonhormone therapy position statement of The North American Menopause Society." *Menopause*. 2023;30(6):573-590. doi: [10.1097/GME.0000000000002200](https://doi.org/10.1097/GME.0000000000002200) [PubMed abstract](https://pubmed.ncbi.nlm.nih.gov/37252752/)
+
+[62] Sadahiro R, Matsuoka LN, Zeng BS, et al. "Black cohosh extracts in women with menopausal symptoms: an updated pairwise meta-analysis." *Menopause*. 2023;30(7):766-773. doi: [10.1097/GME.0000000000002196](https://doi.org/10.1097/GME.0000000000002196) [PubMed abstract](https://pubmed.ncbi.nlm.nih.gov/37192826/)
