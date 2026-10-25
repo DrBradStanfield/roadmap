@@ -51,7 +51,7 @@ class SignInError extends StorageError {
   }
 }
 
-export function accessToken(provider: Provider, force: boolean): Promise<string> {
+function accessToken(provider: Provider, force: boolean): Promise<string> {
   return new Promise((resolve, reject) => {
     __native.accessToken(provider, force, (token, error, signIn) => {
       if (token) resolve(token);
@@ -62,7 +62,7 @@ export function accessToken(provider: Provider, force: boolean): Promise<string>
 }
 
 /** A call the provider refused with 401 runs once more on a forced token refresh. */
-export async function refreshOn401<T>(call: (force: boolean) => Promise<T>): Promise<T> {
+async function refreshOn401<T>(call: (force: boolean) => Promise<T>): Promise<T> {
   try {
     return await call(false);
   } catch (error) {

@@ -122,9 +122,9 @@ final class MyDataLayoutTests: XCTestCase {
 
     func testScrubbingPicksTheNearestValue() {
         let dates = ["2026-10-01", "2026-10-10", "2026-10-20"].map(day)
-        XCTAssertEqual(ChartRange.nearest(to: day("2026-10-14"), in: dates), day("2026-10-10"))
-        XCTAssertEqual(ChartRange.nearest(to: day("2026-12-01"), in: dates), day("2026-10-20"))
-        XCTAssertNil(ChartRange.nearest(to: day("2026-10-14"), in: []))
+        XCTAssertEqual(ChartRange.nearest(to: day("2026-10-14"), in: dates, by: \.self), day("2026-10-10"))
+        XCTAssertEqual(ChartRange.nearest(to: day("2026-12-01"), in: dates, by: \.self), day("2026-10-20"))
+        XCTAssertNil(ChartRange.nearest(to: day("2026-10-14"), in: [], by: \.self))
     }
 
     /// US-25 AC17 (Brad 2026-10-23): each metric has its own graph colour, readable as a

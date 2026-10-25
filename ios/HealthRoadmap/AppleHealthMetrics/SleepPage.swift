@@ -5,53 +5,40 @@ import SwiftUI
 /// stages (Awake, REM, Core, Deep) over its clock times in Apple's stage colours, each
 /// stage's time beside it; on W, M and 6M, each night's time asleep with the stages'
 /// averages. A source with only "Asleep" or "In Bed" shows those, without stages.
-/// Read-only, read from HealthKit each time it shows (AC2).
+/// Read-only, read from HealthKit each time it shows, on a return to the app and on
+/// unlock (AC2, Codex R1).
 struct SleepPage: View {
     let live: LiveHealth
-    @State private var range: LiveRange = .day
+    /// The card's night: the page reads back to it and opens on it (Codex R2).
+    let reading: Date?
+    @State private var range = LiveMetric.sleep.opening
     @State private var nights: [SleepNight] = []
     @State private var read = false
-    /// D's night, counted back from the newest (0).
-    @State private var back = 0
+    /// D's night, by its day; nil for the newest up to today (`LiveMaths.newestNight`).
+    @State private var picked: Date?
     @State private var scrolledTo = Date.distantPast
-    @State private var finger: Date?
     @State private var selected: SleepNight?
+    /// The card's night is not yet in view: until the first read lands the chart has no
+    /// nights to reach it, whatever range is picked (N7).
+    @State private var opening = true
+    /// The wake and appearance the nights belong to (AC2, Codex R1).
+    @State private var readFor: ReadFor?
 
     var body: some View {
-        List {
-            Section {
-                VStack(alignment: .leading, spacing: 12) {
-                    Picker("Range", selection: $range) {
-                        ForEach(LiveRange.sleep) { Text($0.rawValue).tag($0).accessibilityLabel($0.spoken) }
-                    }
-                    .pickerStyle(.segmented)
-                    if read && nights.isEmpty {
-                        Text("No sleep in Apple Health for this time.").font(.subheadline).foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, minHeight: 220)
-                    } else if range == .day {
-                        dayView
-                    } else {
-                        rangeView
-                    }
-                    Text("From Apple Health").font(.footnote).foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 6)
-            }
-            if range == .day, let night = night {
+        LivePageFrame(metric: .sleep, ranges: LiveRange.sleep, range: $range, empty: read && !nights.contains(where: \.hasSleep), key: live.wakes) { shows in
+            await load(ReadFor(wakes: live.wakes, shows: shows))
+        } reset: {
+            selected = nil
+            scrolledTo = geometry.opening(showing: reading)
+        } content: {
+            if range == .day { dayView } else { rangeView }
+        } below: {
+            if range == .day, let night {
                 stagesList(night.hasStages ? night.stages : [.asleep: night.asleep, .inBed: night.inBed], title: nil)
             } else if range != .day {
-                let shown = selected.map { [$0] } ?? geometry.inViewNights(nights, from: scrolledTo)
-                let averages = LiveMaths.stageAverages(shown)
+                let averages = LiveMaths.stageAverages(selected.map { [$0] } ?? geometry.inView(nights, by: \.day, from: scrolledTo))
                 if !averages.isEmpty { stagesList(averages, title: selected == nil ? "Average" : nil) }
             }
-        }
-        .listStyle(.insetGrouped)
-        .navigationTitle("Sleep")
-        .navigationBarTitleDisplayMode(.inline)
-        .task { await load() }
-        .onChange(of: range, initial: true) {
-            selected = nil
-            scrolledTo = geometry.windowStart
         }
     }
 
@@ -59,37 +46,60 @@ struct SleepPage: View {
         LiveChartGeometry(range: range, now: live.now(), calendar: live.calendar, first: nights.first?.day)
     }
 
-    /// D's night, newest first.
+    /// The nights with sleep or time in bed, oldest first: D steps through them.
+    private var held: [SleepNight] { nights.filter(\.hasSleep) }
+
+    /// D's night: the one picked, else the newest dated today or earlier (adversary R3).
     private var night: SleepNight? {
-        let held = nights.filter { $0.asleep > 0 || $0.inBed > 0 }
-        return back < held.count ? held[held.count - 1 - back] : nil
+        picked.flatMap { day in nights.first { $0.day == day } } ?? LiveMaths.newestNight(nights, today: live.calendar.startOfDay(for: live.now()))
     }
 
-    private func load() async {
-        guard let read = try? await LiveHealth.readNights(live.store, now: live.now(), calendar: live.calendar) else { return }
-        (nights, self.read) = (read, true)
+    private func load(_ fresh: ReadFor) async {
+        guard fresh != readFor else { return }
+        // A cancelled read marks nothing read (N1).
+        guard let read = try? await LiveHealth.readNights(live.store, reaching: reading, now: live.now(), calendar: live.calendar), !Task.isCancelled else { return }
+        if read != nights { nights = read }
+        self.read = true
+        readFor = fresh
+        scrolledTo = Self.landed(opening: opening, scrolledTo: scrolledTo, geometry: geometry, reading: reading)
+        opening = false
+    }
+
+    /// Where the chart sits once the nights land: on the card's night while it is still to be
+    /// brought into view (N7), else where the person left it.
+    static func landed(opening: Bool, scrolledTo: Date, geometry: LiveChartGeometry, reading: Date?) -> Date {
+        opening ? geometry.opening(showing: reading) : scrolledTo
+    }
+
+    /// A night's headline: its time asleep, or time in bed for a night with no sleep (Codex R3).
+    static func headline(night: SleepNight) -> Headline {
+        Headline(title: night.isInBedOnly ? "Time in Bed" : "Time Asleep", parts: LiveMaths.duration(night.shown))
     }
 
     // MARK: D
 
     @ViewBuilder
     private var dayView: some View {
-        let held = nights.filter { $0.asleep > 0 || $0.inBed > 0 }.count
-        if let night {
+        if let night, let index = held.firstIndex(of: night) {
             HStack(alignment: .bottom) {
-                total(title: night.asleep > 0 ? "Time Asleep" : "Time in Bed", seconds: night.asleep > 0 ? night.asleep : night.inBed,
-                      span: night.day.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, calendar: live.calendar, timeZone: live.calendar.timeZone)))
+                PageHeadline(headline: dayHeadline(night))
                 Spacer()
-                Button { back += 1 } label: { Image(systemName: "chevron.left") }
-                    .disabled(back + 1 >= held)
+                Button { picked = held[index - 1].day } label: { Image(systemName: "chevron.left") }
+                    .disabled(index == 0)
                     .accessibilityLabel("Night before")
-                Button { back -= 1 } label: { Image(systemName: "chevron.right") }
-                    .disabled(back == 0)
+                Button { picked = held[index + 1].day } label: { Image(systemName: "chevron.right") }
+                    .disabled(index + 1 >= held.count)
                     .accessibilityLabel("Night after")
             }
             .buttonStyle(.borderless)
             hypnogram(night)
         }
+    }
+
+    private func dayHeadline(_ night: SleepNight) -> Headline {
+        var head = Self.headline(night: night)
+        head.span = night.day.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, calendar: live.calendar, timeZone: live.calendar.timeZone))
+        return head
     }
 
     /// The night's stages over its clock times, a row per stage, as Apple Health draws them.
@@ -117,61 +127,22 @@ struct SleepPage: View {
     @ViewBuilder
     private var rangeView: some View {
         let geometry = geometry
-        let inView = geometry.inViewNights(nights, from: scrolledTo)
-        let head = selected.map { Headline(title: $0.asleep > 0 ? "Time Asleep" : "Time in Bed", seconds: LiveMaths.shown($0)) } ?? Self.headline(inView)
-        total(title: head.title, seconds: head.seconds,
-              span: selected.map { geometry.label(of: $0.day) } ?? geometry.label(from: scrolledTo))
-        Chart {
-            ForEach(nights) { night in
-                ForEach(Self.bars(night), id: \.0) { stage, seconds in
-                    BarMark(x: .value("Night", night.day, unit: .day), y: .value("Hours", seconds / 3600))
-                        .foregroundStyle(by: .value("Stage", stage.label))
-                        .opacity(selected == nil || selected == night ? 1 : 0.4)
-                }
-            }
-            if let selected {
-                RuleMark(x: .value("Night", selected.day, unit: .day))
-                    .foregroundStyle(Color.secondary.opacity(0.5))
-                    .lineStyle(StrokeStyle(lineWidth: 1))
-            }
-        }
-        .chartForegroundStyleScale(domain: [SleepStage.deep, .core, .rem, .asleep, .inBed].map(\.label), range: [SleepStage.deep, .core, .rem, .asleep, .inBed].map(\.tint))
-        .chartLegend(.hidden)
-        .chartYAxis { AxisMarks { value in
-            AxisGridLine()
-            AxisValueLabel { if let hours = value.as(Double.self) { Text("\(Int(hours)) hr") } }
-        } }
-        .chartXAxis { AxisMarks(preset: .aligned, values: .automatic(desiredCount: 4)) { _ in
-            AxisGridLine()
-            AxisValueLabel(format: geometry.axisFormat)
-        } }
-        .chartXScale(domain: geometry.domain)
-        .chartScrollableAxes(.horizontal)
-        .chartXVisibleDomain(length: geometry.window)
-        .chartScrollPosition(x: $scrolledTo)
-        .chartXSelection(value: $finger)
-        .onChange(of: finger) {
-            let near = finger.flatMap { finger in inView.min { abs($0.day.timeIntervalSince(finger)) < abs($1.day.timeIntervalSince(finger)) } }
-            if near != selected { selected = near }
-        }
-        .sensoryFeedback(.selection, trigger: selected) { _, new in new != nil }
-        .environment(\.calendar, live.calendar)
-        .environment(\.timeZone, live.calendar.timeZone)
-        .frame(minHeight: 220)
-        .accessibilityChartDescriptor(SleepRangeDescriptor(nights: nights, calendar: live.calendar))
+        PageHeadline(headline: rangeHeadline(geometry))
+        SleepRangeChart(nights: nights, geometry: geometry, scrolledTo: $scrolledTo, selected: $selected)
     }
 
-    /// W, M and 6M's headline for the nights in view.
-    struct Headline: Equatable {
-        let title: String
-        let seconds: TimeInterval?
+    private func rangeHeadline(_ geometry: LiveChartGeometry) -> Headline {
+        var head = selected.map(Self.headline(night:)) ?? Self.headline(geometry.inView(nights, by: \.day, from: scrolledTo))
+        head.span = selected.map { geometry.label(of: $0.day) } ?? geometry.label(from: scrolledTo)
+        return head
     }
 
-    /// Time asleep; nights recorded only as In Bed say time in bed (AC9, Codex R3).
+    /// W, M and 6M's headline for the nights in view: the average time asleep; nights
+    /// recorded only as In Bed say time in bed (AC9, Codex R3).
     static func headline(_ nights: [SleepNight]) -> Headline {
-        if let asleep = LiveMaths.averageAsleep(nights) { return Headline(title: "Avg. Time Asleep", seconds: asleep) }
-        if let inBed = LiveMaths.averageInBed(nights) { return Headline(title: "Avg. Time in Bed", seconds: inBed) }
-        return Headline(title: "Avg. Time Asleep", seconds: nil)
+        if let asleep = LiveMaths.average(nights, \.asleep) { return Headline(title: "Avg. Time Asleep", parts: LiveMaths.duration(asleep)) }
+        if let inBed = LiveMaths.average(nights, \.inBed) { return Headline(title: "Avg. Time in Bed", parts: LiveMaths.duration(inBed)) }
+        return Headline(title: "Avg. Time Asleep")
     }
 
     /// A night's bar: its asleep stages stacked, deep at the bottom; or one "Asleep" bar.
@@ -182,32 +153,12 @@ struct SleepPage: View {
 
     // MARK: Parts
 
-    private func total(title: String, seconds: TimeInterval?, span: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if let seconds, seconds > 0 {
-                    ForEach(LiveMaths.duration(seconds), id: \.1) { number, unit in
-                        HStack(alignment: .firstTextBaseline, spacing: 3) {
-                            Text(number).font(.system(.largeTitle, design: .rounded).weight(.semibold)).monospacedDigit()
-                            Text(unit).font(.title3).foregroundStyle(.secondary)
-                        }
-                    }
-                } else {
-                    Text("None").font(.system(.largeTitle, design: .rounded).weight(.semibold))
-                }
-            }
-            Text(span).font(.subheadline).foregroundStyle(.secondary)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
     /// Each stage's time with its colour, as Apple Health lists them under the chart.
     private func stagesList(_ stages: [SleepStage: TimeInterval], title: String?) -> some View {
         Section {
             ForEach(stages.keys.sorted().filter { stages[$0, default: 0] > 0 || stages.keys.contains(where: \.isStage) }, id: \.self) { stage in
                 LabeledContent {
-                    Text(LiveMaths.duration(stages[stage] ?? 0).map { "\($0.0) \($0.1)" }.joined(separator: " ")).monospacedDigit()
+                    Text(LiveMetric.sleep.text(stages[stage] ?? 0)).monospacedDigit()
                 } label: {
                     Label {
                         Text(stage.label)
@@ -222,20 +173,46 @@ struct SleepPage: View {
     }
 }
 
-extension LiveChartGeometry {
-    /// The nights dated in view.
-    func inViewNights(_ nights: [SleepNight], from start: Date) -> [SleepNight] {
-        let start = max(start, domain.lowerBound)
-        let stop = start.addingTimeInterval(window)
-        return nights.filter { $0.day >= start && $0.day < stop }
+/// W, M and 6M's chart: each night's stages stacked, scrolled across every night. Its own
+/// view, so a scrub redraws only it (E3).
+private struct SleepRangeChart: View {
+    let nights: [SleepNight]
+    let geometry: LiveChartGeometry
+    @Binding var scrolledTo: Date
+    @Binding var selected: SleepNight?
+
+    var body: some View {
+        Chart {
+            ForEach(nights) { night in
+                ForEach(SleepPage.bars(night), id: \.0) { stage, seconds in
+                    BarMark(x: .value("Night", night.day, unit: .day), y: .value("Hours", seconds / 3600))
+                        .foregroundStyle(by: .value("Stage", stage.label))
+                        .opacity(selected == nil || selected == night ? 1 : 0.4)
+                }
+            }
+            if let selected { SelectionRule(date: selected.day, unit: .day) }
+        }
+        .chartForegroundStyleScale(domain: Self.stacked.map(\.label), range: Self.stacked.map(\.tint))
+        .chartLegend(.hidden)
+        .chartYAxis { AxisMarks { value in
+            AxisGridLine()
+            AxisValueLabel { if let hours = value.as(Double.self) { Text("\(Int(hours)) hr") } }
+        } }
+        .modifier(ScrollingChart(geometry: geometry, items: nights, date: \.day, scrolledTo: $scrolledTo, selected: $selected))
+        .accessibilityChartDescriptor(SleepRangeDescriptor(nights: nights, geometry: geometry, from: scrolledTo))
     }
+
+    private static let stacked: [SleepStage] = [.deep, .core, .rem, .asleep, .inBed]
 }
 
-/// VoiceOver's audio graph of one night: each segment's stage over time (AC12).
-private struct SleepNightDescriptor: AXChartDescriptorRepresentable {
+/// VoiceOver's audio graph of one night: each segment's stage over time (AC12). A night
+/// without stages is named for what it holds: time asleep, or time in bed (Codex R3).
+struct SleepNightDescriptor: AXChartDescriptorRepresentable {
     let night: SleepNight
     let rows: [SleepStage]
     let calendar: Calendar
+
+    var title: String { night.hasStages ? "Sleep stages" : night.isInBedOnly ? "Time in bed" : "Time asleep" }
 
     func makeChartDescriptor() -> AXChartDescriptor {
         let calendar = calendar
@@ -250,27 +227,40 @@ private struct SleepNightDescriptor: AXChartDescriptorRepresentable {
         let points = night.segments.compactMap { segment in
             rows.firstIndex(of: segment.stage).map { AXDataPoint(x: segment.start.timeIntervalSince1970, y: Double($0), label: segment.stage.label) }
         }
-        return AXChartDescriptor(title: "Sleep stages", summary: nil, xAxis: xAxis, yAxis: yAxis, additionalAxes: [],
-                                 series: [AXDataSeriesDescriptor(name: "Stages", isContinuous: false, dataPoints: points)])
+        return AXChartDescriptor(title: title, summary: nil, xAxis: xAxis, yAxis: yAxis, additionalAxes: [],
+                                 series: [AXDataSeriesDescriptor(name: night.hasStages ? "Stages" : title, isContinuous: false, dataPoints: points)])
     }
 }
 
-/// VoiceOver's audio graph of the nights' time asleep (AC12).
-private struct SleepRangeDescriptor: AXChartDescriptorRepresentable {
+/// VoiceOver's audio graph of the nights in view (AC12, adversary R8): each night's time
+/// asleep, or "Time in bed" when the nights in view hold only time in bed (Codex R3).
+struct SleepRangeDescriptor: AXChartDescriptorRepresentable {
     let nights: [SleepNight]
     let calendar: Calendar
 
+    init(nights: [SleepNight], geometry: LiveChartGeometry, from start: Date) {
+        self.nights = geometry.inView(nights, by: \.day, from: start)
+        calendar = geometry.calendar
+    }
+
+    /// As the headline reads them (N4): time asleep, of the nights with sleep; time in bed
+    /// only when every night in view has none.
+    private var inBed: Bool { nights.contains(where: \.isInBedOnly) && !nights.contains { $0.asleep > 0 } }
+    var title: String { inBed ? "Time in bed" : "Time asleep" }
+
     func makeChartDescriptor() -> AXChartDescriptor {
-        let calendar = calendar
-        let times = nights.map { $0.day.timeIntervalSince1970 }
-        let hours = nights.map { LiveMaths.shown($0) / 3600 }
+        let (calendar, title) = (calendar, title)
+        let time: KeyPath<SleepNight, TimeInterval> = inBed ? \.inBed : \.asleep
+        let plotted = nights.filter { $0[keyPath: time] > 0 }
+        let times = plotted.map { $0.day.timeIntervalSince1970 }
+        let hours = plotted.map { $0[keyPath: time] / 3600 }
         let xAxis = AXNumericDataAxisDescriptor(title: "Night", range: (times.min() ?? 0)...(times.max() ?? 0), gridlinePositions: []) {
             Date(timeIntervalSince1970: $0).formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, calendar: calendar, timeZone: calendar.timeZone))
         }
-        let yAxis = AXNumericDataAxisDescriptor(title: "Time asleep", range: 0...max(hours.max() ?? 0, 1), gridlinePositions: []) {
-            LiveMaths.duration($0 * 3600).map { "\($0.0) \($0.1)" }.joined(separator: " ")
+        let yAxis = AXNumericDataAxisDescriptor(title: title, range: 0...max(hours.max() ?? 0, 1), gridlinePositions: []) {
+            LiveMetric.sleep.text($0 * 3600)
         }
-        return AXChartDescriptor(title: "Time asleep", summary: nil, xAxis: xAxis, yAxis: yAxis, additionalAxes: [],
-                                 series: [AXDataSeriesDescriptor(name: "Time asleep", isContinuous: false, dataPoints: zip(times, hours).map { AXDataPoint(x: $0, y: $1) })])
+        return AXChartDescriptor(title: title, summary: nil, xAxis: xAxis, yAxis: yAxis, additionalAxes: [],
+                                 series: [AXDataSeriesDescriptor(name: title, isContinuous: false, dataPoints: zip(times, hours).map { AXDataPoint(x: $0, y: $1) })])
     }
 }

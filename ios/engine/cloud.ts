@@ -6,7 +6,7 @@
 // connect and the copy-down on leaving. This file builds the RecordHost the
 // phone stands behind (its stores: cloud-adapters.ts) and the session doors
 // Swift calls. Web twin: widget-src/src/storage/roadmap-store.ts, the web's
-// RecordSession owner. Lab files from Dropbox are lab-files.ts.
+// RecordSession owner.
 import { StorageError } from '../../packages/health-core/src/adapter';
 import { ChatSession } from '../../packages/health-core/src/chat-session';
 import { LiveRefresh } from '../../packages/health-core/src/live-refresh';

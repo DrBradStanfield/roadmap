@@ -54,8 +54,10 @@ flowchart TD
 2. **Apple Health.** The only page before Apple's sheet: "Use your Apple Health data",
    six tiles (sex, birth date, height, weight, waist, blood pressure) ticking in, one line
    ("So you type less.") on where what is read goes and that added values are saved back.
-   Just above **Connect Apple Health**, the last thing read before the tap, a small tinted
-   callout gives Apple's two taps: **Turn On All**, then **Allow**. No switch of ours:
+   Just above **Connect Apple Health**, the last thing read before the tap, a small callout
+   in the accent green (not red, which read as something wrong; Brad 2026-10-25) gives
+   Apple's two taps: "Next, Apple asks for access. Tap **Turn On All**, then **Allow**."
+   No switch of ours:
    Apple's sheet cannot be pre-switched. **Not now** goes on. Either way the next screens
    come next.
 3. **Sex.** Female or Male, two large buttons. One line on why: the plan's targets and
@@ -155,12 +157,16 @@ on", so each tip is one line. The story and its ACs are US-57.
    any tile to learn more." Every tile opens its "what it is" line, for good.
 2. **The first Foundation card**: "Start here. Each step comes with the reason and the
    evidence." My plan scrolls the card into view when the tip is due.
-3. **Blood tests, on My data**: "The more you add, the more personal your plan. A lab
-   report fills these in for you." Its action, "Add a lab report", opens the lab upload.
+3. **Blood tests, on My data**: "The more data you add, the more personal your plan. You
+   can upload lab reports to fill these in for you." Its action, "Add a lab report",
+   opens the lab upload.
 
-Tips 1 and 2 offer "Skip tour" as plain text. The x moves on to the next tip, and so does
-a tap outside it (review R2a, 2026-10-25): TipKit only hides a popover then, and the tour
-must end. A screen that cannot draw a tip's anchor passes that step. The person's third
+Every tip ends on one row (Brad 2026-10-25): "Skip tour" as plain text on the left, its
+counter ("1/3", read "Tip 1 of 3") centred, "Next" on the right; tip 3's reads "Done".
+Tip 2's Next switches to My data, which scrolls Blood tests into view for tip 3. There
+is no x. A tap outside a tip also moves on (review R2a, 2026-10-25): TipKit only hides a
+popover then, and the tour must end; after tip 2 it stays on My plan, and tip 3 waits
+for My data. A screen that cannot draw a tip's anchor passes that step. The person's third
 own save ends a tour still running. At accessibility text sizes a tip scrolls.
 
 No cloud sign-up in the tour. One prompt after the person's third own save (a My data
@@ -173,13 +179,15 @@ same turn as onboarding ends, so `finishOnboarding` passes over it (review R1).
 
 - `Onboarding/TourTips.swift`: the three tips, the tour's step (one TipKit parameter),
   `TourStep` (the pure order: close moves on, skip ends), the `TourTip` protocol (each
-  tip's step and line), the `tourTip` modifier the anchors use and `tourStep(_:hasNoAnchor:)`
+  tip's step, line, counter and Next or Done), the `tourTip` modifier the anchors use and `tourStep(_:hasNoAnchor:)`
   for a screen that cannot draw one (both send the fixed Clarity events), `TourTipStyle`
-  (its view leaving counts as closed; scrolls at large sizes; `AccentButtonStyle` from
+  (its view leaving counts as closed; the Skip tour, counter, Next row in `TourControls`,
+  stacked at accessibility sizes; scrolls at large sizes; `AccentButtonStyle` from
   Colors.swift), and `TourSetup` (`Tips.configure` at launch; `--ui-testing` hides the
   tips, `--ui-testing --show-tips` starts them fresh).
 - Anchors: `SummaryTiles` (the grid, tip 1), `PlanView` (the first Foundation card,
-  tip 2), `MyDataView` (the Blood tests header, tip 3). `RootView.finishOnboarding`
+  tip 2; its Next calls `showMyData`), `MyDataView` (the Blood tests header, tip 3; it
+  scrolls the header into view once tip 3 is due). `RootView.finishOnboarding`
   starts the tour.
 - `Plan/TileExplainerSheet.swift`: a tile's line above its existing evidence. It
   replaced `SummaryTiles`' `TileEvidenceSheet`.

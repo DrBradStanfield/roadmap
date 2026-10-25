@@ -46,7 +46,7 @@ enum Tour {
     /// Ends a running tour; true when it was running.
     @MainActor static func end() -> Bool { move(to: current.ended()) }
 
-    /// `step`'s tip was closed: its x, a tap outside it, its action, or its screen having
+    /// `step`'s tip was closed: its Next, a tap outside it, its action, or its screen having
     /// no anchor (review R4). Moves the tour on and sends "Tour tip closed n", once; a late
     /// or repeated close does nothing.
     @MainActor static func closed(_ step: TourStep, analytics: Analytics?) {
@@ -74,14 +74,15 @@ enum Tour {
     }
 
     static let skipAction = "skip"
+    static let nextAction = "next"
     static let uploadAction = "upload"
 }
 
 /// The tabs a tip can show on.
 enum TourTab: Int { case plan = 1, data, other }
 
-/// One of the tour's three tips: one line (Brad 2026-10-25), shown only at its own step
-/// and on its own tab.
+/// One of the tour's three tips: one line, then "Skip tour", its counter and "Next"
+/// (Brad 2026-10-25), shown only at its own step and on its own tab.
 protocol TourTip: Tip {
     static var step: TourStep { get }
     static var tab: TourTab { get }
@@ -90,7 +91,15 @@ protocol TourTip: Tip {
 
 extension TourTip {
     var title: Text { Text(Self.line) }
-    var actions: [Action] { [Action(id: Tour.skipAction, title: "Skip tour")] }
+    var actions: [Action] { Self.controls }
+    /// The bottom row's two buttons; the style draws the counter between them.
+    static var controls: [Action] { [Action(id: Tour.skipAction, title: "Skip tour"), Action(id: Tour.nextAction, title: nextTitle)] }
+    /// "1/3", read by VoiceOver as "Tip 1 of 3".
+    static var counter: String { "\(step.rawValue)/\(tipCount)" }
+    static var spokenCounter: String { "Tip \(step.rawValue) of \(tipCount)" }
+    private static var tipCount: Int { TourStep.allCases.filter(\.isTip).count }
+    /// The last tip's Next ends the tour.
+    static var nextTitle: String { step.closing(step) == .done ? "Done" : "Next" }
     var rules: [Rule] {
         let (mine, myTab) = (Self.step.rawValue, Self.tab.rawValue)
         return [#Rule(Tour.$step) { $0 == mine }, #Rule(Tour.$tab) { $0 == myTab }]
@@ -111,20 +120,22 @@ struct FoundationTip: TourTip {
     static let line = "Start here. Each step comes with the reason and the evidence."
 }
 
-/// Tip 3 (AC7): Blood tests on My data, with the lab upload.
+/// Tip 3 (AC7): Blood tests on My data, with the lab upload above the row.
 struct BloodTestsTip: TourTip {
     static let step = TourStep.bloodTests
     static let tab = TourTab.data
-    static let line = "The more you add, the more personal your plan. A lab report fills these in for you."
+    static let line = "The more data you add, the more personal your plan. You can upload lab reports to fill these in for you."
     static let actionTitle = "Add a lab report"
-    var actions: [Action] { [Action(id: Tour.uploadAction, title: Self.actionTitle)] }
+    var actions: [Action] { [Action(id: Tour.uploadAction, title: Self.actionTitle)] + Self.controls }
 }
 
 extension View {
-    /// Anchors one of the tour's tips here (US-57). Its x, or a tap outside it, moves the
-    /// tour on (review R2a); "Skip tour" ends it; the last tip's action goes to `action`.
-    func tourTip<T: TourTip>(_ tip: T, arrowEdge: Edge = .top, action: @escaping @MainActor () -> Void = {}) -> some View {
-        modifier(TourTipAnchor(tip: tip, arrowEdge: arrowEdge, action: action))
+    /// Anchors one of the tour's tips here (US-57). Its Next, or a tap outside it, moves
+    /// the tour on (review R2a), and Next then runs `next`; "Skip tour" ends it; the last
+    /// tip's own action goes to `action`, first so a trailing closure binds to it.
+    func tourTip<T: TourTip>(_ tip: T, arrowEdge: Edge = .top, action: @escaping @MainActor () -> Void = {},
+                             next: @escaping @MainActor () -> Void = {}) -> some View {
+        modifier(TourTipAnchor(tip: tip, arrowEdge: arrowEdge, next: next, action: action))
     }
 
     /// A screen that cannot draw `tip`'s anchor (no tiles, no Foundation card): the step
@@ -137,29 +148,26 @@ extension View {
 private struct TourTipAnchor<T: TourTip>: ViewModifier {
     let tip: T
     let arrowEdge: Edge
+    let next: @MainActor () -> Void
     let action: @MainActor () -> Void
     @Environment(\.analytics) private var analytics
 
     func body(content: Content) -> some View {
         content
             .popoverTip(tip, arrowEdge: arrowEdge) { chosen in
-                if chosen.id == Tour.skipAction {
-                    Tour.skipped(T.step, analytics: analytics)
-                } else {
-                    closed()
-                    action()
+                switch chosen.id {
+                case Tour.skipAction: Tour.skipped(T.step, analytics: analytics)
+                case Tour.nextAction: closed(); next()
+                default: closed(); action()
                 }
             }
             // The tip's view leaves when the popover goes for any reason, a tap outside it
             // or leaving its tab included, which TipKit does not report: that counts as
             // closed (review R2a).
             .tipViewStyle(TourTipStyle(gone: closed))
-            .task {
-                // The x invalidates the tip: move on.
-                for await status in tip.statusUpdates {
-                    if case .invalidated = status { closed() }
-                }
-            }
+            // Solid, not glass: on glass, dark mode's accent text fell to 2.6:1 where a
+            // light patch showed through (measured 2026-10-25). On this it clears 4.5:1.
+            .tipBackground(Color(.secondarySystemGroupedBackground))
     }
 
     private func closed() { Tour.closed(T.step, analytics: analytics) }
@@ -180,10 +188,11 @@ private struct TourStepWithoutAnchor<T: TourTip>: ViewModifier {
     }
 }
 
-/// A tour tip's look: its one line, its x, "Skip tour" as plain text, and tip 3's action
-/// as the app's accent button (OnAccent text, US-25 AC17c; TipKit's own drew white on the
-/// light dark-mode green, about 2:1). At accessibility text sizes it scrolls rather than
-/// clips (AC11).
+/// A tour tip's look: its one line, tip 3's action as the app's accent button (OnAccent
+/// text, US-25 AC17c; TipKit's own drew white on the light dark-mode green, about 2:1),
+/// then one row: "Skip tour", the counter, "Next" (Brad 2026-10-25). No x: Next and a tap
+/// outside both move on, and Skip tour ends the tour. At accessibility text sizes it
+/// scrolls rather than clips (AC11).
 private struct TourTipStyle: TipViewStyle {
     let gone: @MainActor () -> Void
 
@@ -197,37 +206,67 @@ private struct TourTipStyle: TipViewStyle {
     }
 
     private func card(_ configuration: Configuration) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
-                configuration.title?
-                    .font(.headline)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Button { configuration.tip.invalidate(reason: .tipClosed) } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(Color(.secondaryLabel), Color(.tertiarySystemFill))
-                        // A real 44-point target around the small symbol (review R6).
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .padding(-10)
-                .accessibilityLabel("Close")
+        let controls = [Tour.skipAction, Tour.nextAction]
+        return VStack(alignment: .leading, spacing: 14) {
+            configuration.title?
+                .font(.headline)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            ForEach(configuration.actions.filter { !controls.contains($0.id) }) { action in
+                Button(action: action.handler) { action.label() }
+                    .buttonStyle(.accent)
             }
-            ForEach(configuration.actions) { action in
-                if action.id == Tour.skipAction {
-                    // Skipping is offered, not urged: a plain text button.
-                    Button(action: action.handler) { action.label().font(.subheadline.weight(.semibold)) }
-                        .buttonStyle(.borderless)
-                } else {
-                    Button(action: action.handler) { action.label() }
-                        .buttonStyle(.accent)
-                }
+            if let tip = configuration.tip as? any TourTip,
+               let skip = configuration.actions.first(where: { $0.id == Tour.skipAction }),
+               let next = configuration.actions.first(where: { $0.id == Tour.nextAction }) {
+                TourControls(tip: type(of: tip), skip: skip, next: next)
             }
         }
         .padding(20)
+    }
+}
+
+/// "Skip tour" on the left, "1/3" centred, "Next" on the right; stacked at accessibility
+/// sizes, where one row does not fit. Each button has a 44-point target (review R6); the
+/// accent text clears 4.5:1 on the tip in both modes.
+private struct TourControls: View {
+    let tip: any TourTip.Type
+    let skip: Tips.Action
+    let next: Tips.Action
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 4) {
+                counter
+                button(next, weight: .semibold, alignment: .leading)
+                button(skip, weight: .regular, alignment: .leading)
+            }
+        } else {
+            HStack(spacing: 8) {
+                button(skip, weight: .regular, alignment: .leading)
+                counter
+                button(next, weight: .semibold, alignment: .trailing)
+            }
+        }
+    }
+
+    private var counter: some View {
+        Text(tip.counter)
+            .font(.subheadline.monospacedDigit())
+            .accessibilityLabel(tip.spokenCounter)
+    }
+
+    /// Plain accent text, not a filled button: the row offers, it does not urge. The
+    /// whole half-row (or the whole line, stacked) taps, 44 points tall (review R1).
+    private func button(_ action: Tips.Action, weight: Font.Weight, alignment: Alignment) -> some View {
+        Button(action: action.handler) {
+            action.label()
+                .font(.subheadline.weight(weight))
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: alignment)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
     }
 }
 
