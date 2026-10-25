@@ -6,8 +6,8 @@ publishedAt: "2025-05-13T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["ginger", "gingerols", "shogaols", "nausea", "inflammation", "digestion", "pain", "gut health", "osteoarthritis", "motion sickness", "pregnancy nausea", "chemotherapy nausea", "blood sugar", "diabetes", "hba1c", "weight loss", "migraine", "menstrual pain", "indigestion", "heartburn", "cognitive", "brain health", "muscle", "exercise"]
-summary: "Evidence summary on ginger: it may ease pregnancy nausea and delayed chemotherapy nausea and modestly reduce osteoarthritis pain; results for motion sickness and blood sugar are mixed. Talk to your doctor first if you take warfarin or another blood thinner, or are pregnant."
-reviewed: "2026-10-25"
+summary: "Evidence summary on ginger: it may ease pregnancy nausea and modestly reduce osteoarthritis pain; results for chemotherapy nausea, motion sickness and blood sugar are mixed. Talk to your doctor first if you take warfarin or another blood thinner, or are pregnant."
+reviewed: "2026-10-26"
 sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/ginger","checked":"2026-10-25","fingerprint":"sha256:6dc5d44cedfeffabafaa6869eac57d537f42d95ca2668e1ca95a5a3c7fa4b45d"}]
 ---
 
@@ -15,16 +15,16 @@ sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/ginger","che
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. The US National Center for Complementary and Integrative Health (NCCIH) says ginger may help nausea and vomiting in pregnancy and might ease menstrual cramps, but most studies of motion sickness have not shown a benefit [2]. A meta-analysis of 12 trials in 1,278 pregnant women found that ginger eased nausea but did not significantly reduce vomiting [8], and in an Australian trial, standardized ginger root powder giving 84 mg a day of gingerols and shogaols, added to anti-nausea drugs, lowered delayed nausea after chemotherapy [11]. For osteoarthritis, a meta-analysis of 5 trials found a modest drop in pain [30], while trials in type 2 diabetes give mixed results [49][50]. Ginger may affect clotting, and case reports describe a sharp rise in INR in people taking warfarin, so anyone on a blood thinner should talk to their doctor first [42][43].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. The US National Center for Complementary and Integrative Health (NCCIH) says ginger may help nausea and vomiting in pregnancy and might ease menstrual cramps, but most studies of motion sickness have not shown a benefit [2]. A meta-analysis of 12 trials in 1,278 pregnant women found that ginger eased nausea but did not significantly reduce vomiting [8], and in an Australian trial, standardized ginger root powder giving 84 mg a day of gingerols and shogaols, added to anti-nausea drugs, lowered delayed nausea after chemotherapy [11], though a larger trial and a review of 23 trials found no overall benefit [23][25]. For osteoarthritis, a meta-analysis of 5 trials found a modest drop in pain [30], while trials in type 2 diabetes give mixed results [49][50]. Ginger may affect clotting, and case reports describe a sharp rise in INR in people taking warfarin, so anyone on a blood thinner should talk to their doctor first [42][43].
 
 ## Key safety points
 
-- Case reports describe a sharp rise in INR in people on warfarin who started ginger, and an FDA warning advises caution with this combination [42][43]. For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- In a review of eight trials, four found that ginger reduced platelet clumping and four found no effect [51]. If you take aspirin, clopidogrel or another blood thinner, ask your doctor before using ginger.
-- A case report linked ginger to a serious interaction with the cancer drug crizotinib [7]. If you take any medicine, talk with your doctor or pharmacist before using ginger [2].
+- Case reports describe a sharp rise in INR in people on warfarin who started ginger [42][43]. If you take warfarin, ask your doctor about an extra INR check when starting or stopping ginger, and report black stools, blood in urine, nosebleeds or bleeding gums to your doctor the same day [42]. For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- In a review of eight trials, four found that ginger reduced platelet clumping and four found no effect [51]. If you take aspirin, clopidogrel or another blood thinner, ask your doctor first.
+- A case report linked ginger to a serious interaction with the cancer drug crizotinib [7]. If you take any medicine, ask your doctor or pharmacist before using ginger [2].
 - Ginger supplements may be safe in pregnancy, but check with your health care provider first. Little is known about safety while breastfeeding [2].
 - Ginger lowered fasting glucose in a meta-analysis of trials in overweight adults [36]. If you take diabetes medicines, ask your doctor whether you need closer glucose checks.
-- Side effects include abdominal discomfort, heartburn, diarrhea and mouth or throat irritation [2]. In osteoarthritis trials, people taking ginger were more than twice as likely to stop treatment as those on placebo [30].
+- Side effects include abdominal discomfort, heartburn, diarrhea and mouth or throat irritation [2]. In osteoarthritis trials, people on ginger were more than twice as likely to stop treatment as those on placebo [30].
 
 ## Brad's videos on this topic
 
@@ -80,7 +80,7 @@ One small trial in 20 people with type 2 diabetes who had dry mouth tested a gin
 
 ### How to Read a Ginger Supplement Label
 
-A label that names the plant (*Zingiber officinale*), the part used (root or rhizome), the form (powder or extract) and, for extracts, the gingerol percentage lets you compare a product with the doses trials used [11][14]. Shogaols are used as quality-control markers for ginger products [3].
+Shogaols are used as quality-control markers for ginger products [3].
 
 ### Key Principle: Powder vs. Extract Dosing
 
@@ -97,8 +97,8 @@ Ginger has been studied for several types of nausea and vomiting, mostly as supp
 Pregnancy-related nausea has the strongest evidence. A meta-analysis of 12 randomized trials in 1,278 pregnant women found that ginger improved nausea compared with placebo but did not significantly reduce vomiting episodes [8].
 
 Key findings from this meta-analysis [8]:
-- Subgroup analyses favored a daily dose of less than 1,500 mg for nausea relief
-- Ginger did not significantly raise the risk of miscarriage (RR 3.14, 95% CI 0.65 to 15.11), heartburn or drowsiness
+- Subgroup analyses seemed to favor a daily dose of less than 1,500 mg for nausea relief
+- Ginger did not significantly raise the risk of miscarriage (RR 3.14, 95% CI 0.65 to 15.11), though the estimate was very imprecise, nor the risk of heartburn or drowsiness
 - The authors rated the evidence as low quality
 
 A later meta-analysis of 13 trials in 1,174 people also found that ginger eased nausea but not vomiting compared with placebo, and it did not differ significantly from vitamin B6 [48]. A systematic review of complementary approaches in pregnancy found ginger capsules among the effective options [17]. The NCCIH (National Center for Complementary and Integrative Health) states that research shows ginger may be helpful for nausea and vomiting associated with pregnancy [2].
@@ -134,7 +134,7 @@ A systematic review of 23 randomized trials found no overall difference in acute
 
 #### Postoperative Nausea and Vomiting
 
-In a meta-analysis of 6 trials in 538 patients, ginger did not clearly prevent postoperative nausea and vomiting (RR 0.84, 95% CI 0.69 to 1.03) and judged it not clinically relevant [26]. A later meta-analysis of 10 trials in 918 patients found that ginger reduced the severity of postoperative nausea and vomiting, but its effect on how often they occurred was not statistically significant [27].
+In a meta-analysis of 6 trials in 538 patients, ginger did not clearly prevent postoperative nausea and vomiting (RR 0.84, 95% CI 0.69 to 1.03), and the authors judged it not clinically relevant [26]. A later meta-analysis of 10 trials in 918 patients found that ginger reduced the severity of postoperative nausea and vomiting, but its effect on how often they occurred was not statistically significant [27].
 
 #### Gastroenteritis (Stomach Flu) in Children
 
@@ -234,7 +234,8 @@ The dose depends on the form (powder or extract) and the condition. The table li
 | Pregnancy-related nausea | Ginger | Less than 1,500 mg favored in subgroup analyses [8] | Not stated | Low-quality evidence |
 | Chemotherapy-related nausea (delayed) | Standardized ginger root powder | 4 capsules totaling 84 mg a day of active gingerols and shogaols [11] | 5 days per cycle | One positive trial; reviews mixed [25] |
 | Functional dyspepsia | Ginger | 1.2 g [5] | Single dose | Faster stomach emptying, no symptom change |
-| Osteoarthritis | Ginger extract | 125 mg (10% gingerols) [14] | 58 days | Modest [30] |
+| Joint and muscle pain | Ginger extract | 125 mg (10% gingerols) [14] | 58 days | One trial [14] |
+| Osteoarthritis | Ginger | Dose varied [30] | Varies | Modest [30] |
 | Type 2 diabetes (blood sugar) | Ginger root powder | 1.2 to 2 g a day, in two doses [50] | 4 to 12 weeks | Mixed [49] |
 | Menstrual pain | Ginger | Varies by trial | Varies | Meta-analysis favors ginger [34] |
 | Weight loss | Ginger | Varies by trial | Varies | Small effect at best [36] |
@@ -243,7 +244,7 @@ The dose depends on the form (powder or extract) and the condition. The table li
 
 ### General Dosing Principles
 
-**For ginger root powder:** Powder trials gave 1 g as a single dose for seasickness [20] and 1.2 to 2 g a day, in two doses, for type 2 diabetes [50].
+**For ginger root powder:** Powder trials gave 1 g as a single dose for seasickness [20] and 1.2 to 2 g a day, in two doses, for type 2 diabetes [50]. Diabetes trials have used up to 4,000 mg a day [49].
 
 **For ginger root extract:** Extract trials used smaller amounts, such as 125 mg a day of a 10% extract [14] or 200 mg of a 5% extract three times a day [32].
 
@@ -269,27 +270,26 @@ In osteoarthritis trials, people given ginger were more than twice as likely as 
 
 ### Bleeding Risk
 
-Ginger may affect blood clotting, though the evidence is mixed. A systematic review found that four of eight clinical trials reported less platelet clumping with ginger and four found no effect; the authors called the evidence equivocal [51].
+Ginger may affect blood clotting, though the evidence is mixed. A systematic review found that four of eight clinical trials reported less platelet clumping with ginger and four found no effect; the authors called the evidence equivocal [51]. In a Canadian study that followed 171 adults on warfarin for 16 weeks, ginger use was linked to more self-reported bleeding (OR 3.20, 95% CI 2.42 to 4.24), and so was using more than one complementary product [52].
 
 **Case reports:**
 - A 70-year-old woman taking long-term warfarin (7.5 mg a day, 10 mg on Wednesdays) had an INR of 8.0, up from 2.7 a month earlier, after starting a daily 48 mg chewable ginger supplement. She had no bleeding. After she stopped ginger and held 3 warfarin doses, her INR was back to 2.6 a week later [42]
 - The same authors cite an earlier report of a 76-year-old woman taking warfarin, with erratic anticoagulation and a high INR, loosely linked to ginger [42][43]
 
 **Practical implications:**
-- The FDA advises caution in people who take warfarin and also use ginger [42]
+- An FDA warning advises healthcare providers to be cautious with patients who take warfarin and also use ginger [42]
+- If you take warfarin, ask your doctor about an extra INR check when starting or stopping ginger, and report black stools, blood in urine, nosebleeds or bleeding gums to your doctor the same day [42]
 - Because ginger may affect platelets, people taking aspirin, clopidogrel (Plavix) or other blood thinners should ask their doctor before using it [51]
-- Because of the possible bleeding effect, tell your surgeon if you take ginger before any planned operation
+- If you take prescription medicines, check with your doctor or pharmacist before starting
 - For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK)
 
 ### Pregnancy Considerations
 
-Ginger may ease pregnancy nausea, and subgroup analyses favored a daily dose of less than 1,500 mg [8].
+Ginger may ease pregnancy nausea, and subgroup analyses seemed to favor a daily dose of less than 1,500 mg [8].
 
 In a Norwegian cohort of 68,522 pregnant women, the 1,020 who used ginger had no higher risk of birth defects, stillbirth or perinatal death, preterm birth, low birth weight or low Apgar scores [18].
 
 The NCCIH notes that the use of ginger dietary supplements during pregnancy may be safe, but advises consulting a health care provider before use. Little is known about whether it is safe to use ginger while breastfeeding [2].
-
-**Recommendation:** Because ginger may affect bleeding, ask your midwife or doctor before taking it close to your due date.
 
 ### Blood Sugar Effects
 
@@ -297,7 +297,7 @@ Ginger lowered fasting glucose in a meta-analysis of trials in overweight and ob
 
 ### Liver and Kidney Disease
 
-If you have liver or kidney disease, check with your doctor before taking ginger supplements.
+If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ## 6. Drug Interactions
 
@@ -307,17 +307,14 @@ Ginger may change blood levels of some medicines. A case report described a seri
 
 ### Drugs Metabolized by CYP3A4
 
-If you take prescription medicines, check with your doctor or pharmacist before starting. Case reports so far involve a cancer drug and a blood thinner [7][42].
+Any effect of ginger on drugs broken down by CYP3A4 is uncertain. If you take prescription medicines, check with your doctor or pharmacist before starting. Case reports so far involve a cancer drug and a blood thinner [7][42].
 
 ### Blood-Thinning Medications
 
-As detailed in the Safety section, ginger may add to the effects of anticoagulant and antiplatelet medicines [42][43][51]:
+As detailed in the Safety section, ginger may add to the effects of some blood thinners:
 
-- Warfarin (Coumadin)
-- Aspirin
-- Clopidogrel (Plavix)
-- Heparin
-- Ticlopidine (Ticlid)
+- Warfarin (Coumadin) [42][52]
+- Antiplatelet medicines such as aspirin or clopidogrel (Plavix), since some trials found less platelet clumping with ginger [51]
 
 ### Blood Sugar-Lowering Medications
 
@@ -325,7 +322,7 @@ Because ginger may reduce blood sugar [36][49], it could add to the effect of in
 
 ### Blood-Thinning Supplements
 
-Taking ginger with other supplements that may affect bleeding, such as fish oil or ginkgo, could add to any bleeding effect. Check with your doctor first.
+In warfarin users, using more than one complementary product was linked to more self-reported bleeding [52]. Check with your doctor before combining ginger with other supplements that may affect bleeding.
 
 ### General Recommendation
 
@@ -341,7 +338,7 @@ Fresh root is the most common food form. It contains gingerols, while shogaols f
 
 ### Dried/Ground Ginger (Spice)
 
-Ground ginger is dried root, so it contains both gingerols and the shogaols formed during drying [3]. Amounts used in cooking are usually smaller than the 1.2 to 2 g a day of powder given in diabetes trials [50].
+Ground ginger is dried root, so it contains both gingerols and the shogaols formed during drying [3]. Amounts used in cooking are usually smaller than trial doses.
 
 ### Ginger Tea
 
@@ -361,7 +358,7 @@ Ginger ales and ginger beers are sweetened soft drinks, and their ginger content
 
 ### Putting Dietary Sources in Perspective
 
-Matching the 1.2 to 2 g a day of ginger powder used in diabetes trials from food takes regular, deliberate use [50].
+Matching trial doses from food takes regular, deliberate use.
 
 ## 8. References
 
@@ -450,3 +447,5 @@ Matching the 1.2 to 2 g a day of ginger powder used in diabetes trials from food
 [50] Schumacher JC, Mueller V, Sousa C, et al. "The effect of oral supplementation of ginger on glycemic control of patients with type 2 diabetes mellitus - A systematic review and meta-analysis." *Clin Nutr ESPEN*. 2024;63:615-622. PMID: 39053695. doi: [10.1016/j.clnesp.2024.07.011](https://doi.org/10.1016/j.clnesp.2024.07.011)
 
 [51] Marx W, McKavanagh D, McCarthy AL, et al. "The Effect of Ginger (Zingiber officinale) on Platelet Aggregation: A Systematic Literature Review." *PLoS One*. 2015;10(10):e0141119. PMID: 26488162. doi: [10.1371/journal.pone.0141119](https://doi.org/10.1371/journal.pone.0141119). Correction: *PLoS One*. 2015;10(11):e0143675.
+
+[52] Shalansky S, Lynd L, Richardson K, Ingaszewski A, Kerr C. "Risk of warfarin-related bleeding events and supratherapeutic international normalized ratios associated with complementary and alternative medicine: a longitudinal analysis." *Pharmacotherapy*. 2007;27(9):1237-1247. PMID: 17723077. doi: [10.1592/phco.27.9.1237](https://doi.org/10.1592/phco.27.9.1237)
