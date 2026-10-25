@@ -66,7 +66,7 @@ The form of choline affects how well it is absorbed and how much reaches gut bac
 
 ### Absorption and TMAO Considerations
 
-The NIH fact sheet notes that no studies had compared absorption of the different supplement forms [93]. A 2019 crossover trial in 18 adults then compared a drink with 3 g of phospholipid-bound choline from egg yolk against a control drink with 3 g of choline bitartrate. The rise in plasma choline was four times higher after the egg yolk drink [25]. Gut bacteria can turn unabsorbed choline into trimethylamine (TMA), and the liver converts TMA to TMAO, a compound linked to higher cardiovascular risk [93].
+The NIH fact sheet notes that no studies had compared absorption of the different supplement forms [93]. A 2019 crossover trial in 18 adults then compared a drink with 3 g of phospholipid-bound choline from egg yolk against a control drink with 3 g of choline supplied as choline bitartrate (9.3 g of the compound). The rise in plasma choline was four times higher after the egg yolk drink [25]. Gut bacteria can turn unabsorbed choline into trimethylamine (TMA), and the liver converts TMA to TMAO, a compound linked to higher cardiovascular risk [93].
 
 **Phosphatidylcholine and lecithin** are partly absorbed intact, packed into chylomicrons and carried in the lymph to tissues, including the brain and placenta [93].
 
