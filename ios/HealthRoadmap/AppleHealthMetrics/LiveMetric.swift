@@ -277,24 +277,43 @@ enum LiveMaths {
 
     // MARK: Cards
 
-    /// A card from the recent days: the newest day with a value, and up to the last seven
-    /// days' values for its trend. Heart rate's card takes its newest sample (`latest`) and
-    /// its days' averages for the trend.
-    static func card(days: [LivePoint], latest: (value: Double, date: Date)? = nil) -> LiveCard? {
+    /// A card's trend, as Apple Health (AC14; the record cards match, US-25 AC17f): the
+    /// readings of the last 30 days, today and the 29 before, or the last seven however old
+    /// when those 30 hold fewer than two. `held` is oldest first, each a day and its value.
+    static func trend(_ held: [(day: Date, value: Double)], today: Date, calendar: Calendar) -> [Double] {
+        let recent = held.filter { $0.day >= trendStart(today: today, calendar: calendar) }
+        return (recent.count >= 2 ? recent : Array(held.suffix(7))).map(\.value)
+    }
+
+    /// Whether a card's trend may need readings older than the days read (AC14): fewer than
+    /// two in its 30 days and fewer than seven in all.
+    static func readsBack(_ days: [Date], today: Date, calendar: Calendar) -> Bool {
+        days.count < 7 && days.filter { $0 >= trendStart(today: today, calendar: calendar) }.count < 2
+    }
+
+    /// The first day of a card's trend: 29 days before today.
+    private static func trendStart(today: Date, calendar: Calendar) -> Date {
+        calendar.date(byAdding: .day, value: -29, to: calendar.startOfDay(for: today)) ?? today
+    }
+
+    /// A card from the recent days: the newest day with a value, and its `trend`. Heart
+    /// rate's card takes its newest sample (`latest`) and its days' averages for the trend.
+    static func card(days: [LivePoint], latest: (value: Double, date: Date)? = nil, today: Date, calendar: Calendar) -> LiveCard? {
         let held = days.filter { $0.value != nil }.sorted { $0.start < $1.start }
-        let trend = held.suffix(7).compactMap(\.value)
+        let trend = trend(held.map { (day: $0.start, value: $0.value!) }, today: today, calendar: calendar)
         if let latest { return LiveCard(value: latest.value, date: latest.date, trend: trend) }
         guard let newest = held.last, let value = newest.value else { return nil }
         return LiveCard(value: value, date: newest.start, trend: trend)
     }
 
-    /// Sleep's card: the newest night up to today (`newestNight`), and the last seven
-    /// nights' time for its trend (in hours). A night recorded only as In Bed shows its time
-    /// in bed, as Apple Health shows it (AC9, Codex R3).
-    static func card(nights: [SleepNight], today: Date) -> LiveCard? {
+    /// Sleep's card: the newest night up to today (`newestNight`), and the nights' time for
+    /// its `trend` (in hours). A night recorded only as In Bed shows its time in bed, as Apple
+    /// Health shows it (AC9, Codex R3).
+    static func card(nights: [SleepNight], today: Date, calendar: Calendar) -> LiveCard? {
         let held = nights.filter { $0.hasSleep && $0.day <= today }.sorted { $0.day < $1.day }
         guard let newest = held.last else { return nil }
-        return LiveCard(value: newest.shown, date: newest.day, trend: held.suffix(7).map { $0.shown / 3600 }, inBed: newest.isInBedOnly)
+        let trend = trend(held.map { (day: $0.day, value: $0.shown / 3600) }, today: today, calendar: calendar)
+        return LiveCard(value: newest.shown, date: newest.day, trend: trend, inBed: newest.isInBedOnly)
     }
 
     /// The newest night with sleep or time in bed, dated today or earlier: the card's night

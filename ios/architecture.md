@@ -715,8 +715,13 @@ table is not yet in the clinical files).
   writer's "asleep" is joined; "In Bed" comes from all. Overlaps count once.
 - `LiveHealth` (`@Observable`, main actor; one per app in `AppParts`, in the environment) holds only
   the access state and the cards, in memory. Each card starts from the metric's newest sample
-  however old (`LiveHealthStore.latest`), then reads the 30 days (sleep: the fortnight) ending on it;
-  a fixed window back from today dropped a VO2 max from six weeks ago (Codex R2).
+  however old (`LiveHealthStore.latest`), then reads the 30 days ending on it (sleep too, since
+  2026-10-26); a fixed window back from today dropped a VO2 max from six weeks ago (Codex R2).
+  The trend is the last 30 days' readings, or the last seven however old (US-56 AC14); only a
+  card with fewer than two readings in its 30 days and fewer than seven read reads further back
+  (400 days before its window; sleep, the 200 nights a sleep page reads, or back to its first
+  read's start when that is older), and a read-back that
+  fails or finds nothing more keeps the first card.
   No record row, file, UserDefaults value, log or telemetry (a source-scan test enforces it). A
   locked phone's read keeps the cards. A return to the app (My data's `scenePhase`) or an unlock
   calls `wake()`, which bumps `wakes` and refreshes; an open page reads again on each wake (Codex

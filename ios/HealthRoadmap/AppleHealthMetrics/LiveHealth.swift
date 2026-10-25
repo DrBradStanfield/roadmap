@@ -116,9 +116,9 @@ final class LiveHealth {
     }
 
     /// The cards' readings, off the main thread, each metric on its own: its newest sample
-    /// however old, then the 30 days (sleep: the fortnight) ending on that sample's day for
-    /// the value and trend. A fixed window back from today lost a VO2 max from six weeks
-    /// ago (Codex R2).
+    /// however old, then the 30 days ending on that sample's day for the value and trend. A
+    /// fixed window back from today lost a VO2 max from six weeks ago (Codex R2). A trend of
+    /// fewer than seven reads further back, for the last seven readings however old (AC14).
     @concurrent
     nonisolated static func readCards(_ store: any LiveHealthStore, now: Date, calendar: Calendar) async throws -> [LiveMetric: LiveCard] {
         try await withThrowingTaskGroup(of: (LiveMetric, LiveCard?).self) { group in
@@ -137,21 +137,37 @@ final class LiveHealth {
         let newest = min(latest.date, now)
         if metric == .sleep {
             let today = calendar.startOfDay(for: now)
-            let from = calendar.date(byAdding: .day, value: -15, to: newest) ?? newest
+            let from = calendar.date(byAdding: .day, value: -30, to: newest) ?? newest
             let segments = try await optional { try await store.sleep(from: from, to: now) } ?? []
-            if let card = LiveMaths.card(nights: LiveMaths.nights(segments, calendar: calendar), today: today) { return card }
-            // The newest sample was a nap after 6 pm, dated tomorrow, and the last real night is
-            // older than the fortnight (Codex R2, 2026-10-26): look back as far as a sleep page does.
+            let nights = LiveMaths.nights(segments, calendar: calendar)
+            let card = LiveMaths.card(nights: nights, today: today, calendar: calendar)
+            let held = nights.filter { $0.hasSleep && $0.day <= today }.map(\.day)
+            if let card, !LiveMaths.readsBack(held, today: now, calendar: calendar) { return card }
+            // The trend needs older nights (AC14), or the newest sample was a nap after 6 pm,
+            // dated tomorrow, and the last real night is older than the 30 days (Codex R2,
+            // 2026-10-26): look back as far as a sleep page does, and at least as far as the
+            // first read. A read-back that fails or finds nothing more keeps the first card
+            // (Codex R2, 2026-10-26).
             guard !segments.isEmpty else { return nil }
-            let back = LiveHealth.pageStart(reaching: nil, back: 200, now: now, calendar: calendar)
-            let older = try await optional { try await store.sleep(from: back, to: now) } ?? []
-            return LiveMaths.card(nights: LiveMaths.nights(older, calendar: calendar), today: today)
+            let back = LiveHealth.pageStart(reaching: from, back: 200, now: now, calendar: calendar)
+            let older = LiveMaths.nights(try await optional { try await store.sleep(from: back, to: now) } ?? [], calendar: calendar)
+            guard older.filter({ $0.hasSleep && $0.day <= today }).count > held.count else { return card }
+            return LiveMaths.card(nights: older, today: today, calendar: calendar) ?? card
         }
         let from = calendar.date(byAdding: .day, value: -29, to: calendar.startOfDay(for: newest)) ?? newest
         let days = try await days(store, metric, from: from, to: now)
         // Heart rate's card is its newest sample; its trend is the days' averages.
         let sample = metric.aggregation == .range ? latest.value.map { (value: $0, date: latest.date) } : nil
-        return LiveMaths.card(days: days, latest: sample)
+        let card = LiveMaths.card(days: days, latest: sample, today: now, calendar: calendar)
+        let held = days.filter { $0.value != nil }
+        guard let card, LiveMaths.readsBack(held.map(\.start), today: now, calendar: calendar) else { return card }
+        // The last seven, however old, may be further back (AC14). A read-back that fails or
+        // finds nothing more keeps the first card: heart rate's would otherwise lose its
+        // trend, since its newest sample makes a card from no days (Codex R2, 2026-10-26).
+        let back = calendar.date(byAdding: .day, value: -400, to: from) ?? from
+        let older = try await self.days(store, metric, from: back, to: now)
+        guard older.filter({ $0.value != nil }).count > held.count else { return card }
+        return LiveMaths.card(days: older, latest: sample, today: now, calendar: calendar) ?? card
     }
 
     /// The first instant a page reads: `back` days before today, or the day of the card's
